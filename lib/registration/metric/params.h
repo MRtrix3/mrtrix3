@@ -34,6 +34,8 @@ namespace MR
                 class Im1ImageType,
                 class Im2ImageType,
                 class MidwayImageType,
+                class Im1MaskType,
+                class Im2MaskType,
                 class Im1ImageInterpolatorType,
                 class Im2ImageInterpolatorType,
                 class Im1MaskInterpolatorType,
@@ -55,15 +57,23 @@ namespace MR
           Params (TransformType& transform,
                   Im1ImageType& im1_image,
                   Im2ImageType& im2_image,
-                  MidwayImageType& midway_image) :
+                  MidwayImageType& midway_image,
+                  Im1MaskType& im1_mask,
+                  Im2MaskType& im2_mask) :
                     transformation (transform),
                     im1_image (im1_image),
                     im2_image (im2_image),
                     midway_image (midway_image),
+                    im1_mask (im1_mask),
+                    im2_mask (im2_mask),
                     loop_density(1.0),
                     robust_estimate(false) {
                       im1_image_interp.reset (new Im1ImageInterpolatorType (im1_image));
                       im2_image_interp.reset (new Im2ImageInterpolatorType (im2_image));
+                      if (im1_mask.valid())
+                        im1_mask_interp.reset (new Im1MaskInterpolatorType (im1_mask));
+                      if (im2_mask.valid())
+                        im2_mask_interp.reset (new Im1MaskInterpolatorType (im2_mask));
           }
 
           void set_extent (std::vector<size_t> extent_vector) { extent=std::move(extent_vector); }
@@ -82,13 +92,13 @@ namespace MR
           MidwayImageType midway_image;
           MR::copy_ptr<Im1ImageInterpolatorType> im1_image_interp;
           MR::copy_ptr<Im2ImageInterpolatorType> im2_image_interp;
+          Im1MaskType im1_mask;
+          Im2MaskType im2_mask;
+          MR::copy_ptr<Im1MaskInterpolatorType> im1_mask_interp;
+          MR::copy_ptr<Im2MaskInterpolatorType> im2_mask_interp;
           default_type loop_density;
           bool robust_estimate;
           std::vector<size_t> extent;
-          Image<bool> im1_mask;
-          Image<bool> im2_mask;
-          MR::copy_ptr<Im1MaskInterpolatorType> im1_mask_interp;
-          MR::copy_ptr<Im2MaskInterpolatorType> im2_mask_interp;
 
           ProcessedImageType processed_image;
           MR::copy_ptr<ProcessedImageInterpolatorType> processed_image_interp;

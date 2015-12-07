@@ -125,7 +125,7 @@ namespace MR
               params.transformation.transform_half_inverse (im2_point, midway_point);
               if (params.im2_mask_interp) {
                 params.im2_mask_interp->scanner (im2_point);
-                if (!params.im2_mask_interp->value())
+                if (params.im2_mask_interp->value() < 0.5)
                   return;
               }
 
@@ -133,7 +133,7 @@ namespace MR
               params.transformation.transform_half (im1_point, midway_point);
               if (params.im1_mask_interp) {
                 params.im1_mask_interp->scanner (im1_point);
-                if (!params.im1_mask_interp->value())
+                if (params.im1_mask_interp->value() < 0.5)
                   return;
               }
 

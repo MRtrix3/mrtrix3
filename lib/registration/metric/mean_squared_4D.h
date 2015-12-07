@@ -70,17 +70,44 @@ namespace MR
               return total_diff;
           }
           #else
-            // TODO: symmetric
-            template <class Params>
-              default_type operator() (Params& params,
-                                       const Eigen::Vector3 im1_point,
-                                       const Eigen::Vector3 im2_point,
-                                       const Eigen::Vector3 midway_point,
-                                       Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
 
-                throw Exception ("symmetric 4D MSQ not implemented yet"); // TODO
-                return 0.0;
-            }
+          template <class Params>
+            default_type operator() (Params& params,
+                                     const Eigen::Vector3 im1_point,
+                                     const Eigen::Vector3 im2_point,
+                                     const Eigen::Vector3 midway_point,
+                                     Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
+              Eigen::MatrixXd jacobian = params.transformation.get_jacobian_wrt_params (midway_point);
+
+              Eigen::Matrix<typename Params::Im1ValueType, Eigen::Dynamic, 3> im1_grad;
+              Eigen::Matrix<typename Params::Im2ValueType, Eigen::Dynamic, 3> im2_grad;
+              Eigen::Matrix<typename Params::Im1ValueType, Eigen::Dynamic, 1> im1_value;
+              Eigen::Matrix<typename Params::Im2ValueType, Eigen::Dynamic, 1> im2_value;
+
+
+              params.im1_image_interp->value_and_gradient_row (im1_value, im1_grad);
+              params.im2_image_interp->value_and_gradient_row (im2_value, im2_grad);
+              for (size_t i = 0; i < params.im1_image.size(3); ++i) {
+                if (isnan (default_type (im1_value[i])))
+                  return 0.0;
+                if (isnan (default_type (im2_value[i])))
+                  return 0.0;
+              }
+
+              default_type total_diff = 0.0;
+              for (size_t i = 0; i < params.im1_image.size(3); ++i) {
+
+                default_type diff = im1_value[i] - im2_value[i];
+                total_diff += diff * diff;
+                for (ssize_t par = 0; par < gradient.size(); par++) {
+                  default_type sum = 0.0;
+                  for ( size_t dim = 0; dim < 3; dim++)
+                    sum += diff * jacobian (dim, par) * (im1_grad(i, dim) + im2_grad(i, dim));
+                  gradient[par] += sum / (default_type)params.im1_image.size(3);
+                }
+              }
+              return total_diff / (default_type)params.im1_image.size(3);
+          }
           #endif
 
       };

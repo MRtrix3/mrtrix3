@@ -228,6 +228,8 @@ namespace MR
 #else
                 typedef decltype(parameters.im1_image) Im1Type;
                 typedef decltype(parameters.im2_image) Im2Type;
+                typedef decltype(parameters.im1_mask) Im1MaskType;
+                typedef decltype(parameters.im2_mask) Im2MaskType;
                 typedef typename ParamType::ImProcessedValueType ProcessedImageValueType;
                 typedef typename ParamType::ImProcessedMaskType ProcessedMaskType;
                 typedef typename ParamType::ImProcessedMaskInterpolatorType ProcessedMaskInterpolatorType;
@@ -252,13 +254,13 @@ namespace MR
                   else if (!parameters.im1_mask.valid() and parameters.im2_mask.valid())
                     Filter::reslice <Interp::Nearest> (parameters.im2_mask, cc_mask, parameters.transformation.get_transform_half_inverse(), Adapter::AutoOverSample);
                   else if (parameters.im1_mask.valid() and parameters.im2_mask.valid()){
-                    Adapter::Reslice<Interp::Nearest, Image<bool>> mask_reslicer1 (parameters.im1_mask, cc_mask_header, parameters.transformation.get_transform_half());
-                    Adapter::Reslice<Interp::Nearest, Image<bool>> mask_reslicer2 (parameters.im2_mask, cc_mask_header, parameters.transformation.get_transform_half_inverse());
+                    Adapter::Reslice<Interp::Linear, Im1MaskType> mask_reslicer1 (parameters.im1_mask, cc_mask_header, parameters.transformation.get_transform_half());
+                    Adapter::Reslice<Interp::Linear, Im2MaskType> mask_reslicer2 (parameters.im2_mask, cc_mask_header, parameters.transformation.get_transform_half_inverse());
                     // TODO should be faster to just loop over m1:
                     //    if (m1.value())
                     //     assign_pos_of(m1).to(m2); cc_mask.value() = m2.value()
                     auto both = [](decltype(cc_mask)& cc_mask, decltype(mask_reslicer1)& m1, decltype(mask_reslicer2)& m2) {
-                      cc_mask.value() = m1.value() & m2.value();
+                      cc_mask.value() = ((m1.value() + m2.value()) / 2.0) > 0.5 ? true : false;
                     };
                     ThreadedLoop (cc_mask).run (both, cc_mask, mask_reslicer1, mask_reslicer2);
                   }

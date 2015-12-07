@@ -268,10 +268,6 @@ namespace MR
               return overall_cost_function;
             }
 
-            void set_directions (Eigen::MatrixXd& dir) {
-              directions = dir;
-            }
-
             size_t size() {
               return params.transformation.size();
             }
@@ -284,7 +280,6 @@ namespace MR
           protected:
               MetricType metric;
               ParamType params;
-              Eigen::MatrixXd directions;
               std::vector<size_t> extent;
               size_t iteration;
 

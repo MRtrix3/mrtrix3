@@ -537,7 +537,49 @@ namespace MR
         }
 
 
-        //TODO value_and_gradient_row() will be useful for registration of 4D images
+        // Simultaneously get both the image value and gradient in 4D
+        void value_and_gradient_row (Eigen::Matrix<value_type, Eigen::Dynamic, 1>& value, Eigen::Matrix<value_type, Eigen::Dynamic, 3>& gradient)
+        {
+
+          if (out_of_bounds) {
+            Eigen::Matrix<value_type, Eigen::Dynamic, 3> out_of_bounds_matrix (ImageType::size(3), 3);
+            out_of_bounds_matrix.setOnes();
+            out_of_bounds_matrix *= out_of_bounds_value;
+            gradient = out_of_bounds_matrix;
+
+            Eigen::Matrix<value_type, Eigen::Dynamic, 1> out_of_bounds_row (ImageType::size(3));
+            out_of_bounds_row.setOnes();
+            out_of_bounds_row *= out_of_bounds_value;
+            value = out_of_bounds_row;
+            return;
+          }
+
+          assert (ndim() == 4);
+
+          ssize_t c[] = { ssize_t (std::floor (P[0])-1), ssize_t (std::floor (P[1])-1), ssize_t (std::floor (P[2])-1) };
+          Eigen::Matrix<value_type, Eigen::Dynamic, 64> coeff_matrix (size(3), 64);
+
+          size_t i(0);
+          for (ssize_t z = 0; z < 4; ++z) {
+            ImageType::index(2) = check (c[2] + z, size (2)-1);
+            for (ssize_t y = 0; y < 4; ++y) {
+              ImageType::index(1) = check (c[1] + y, size (1)-1);
+              for (ssize_t x = 0; x < 4; ++x) {
+                ImageType::index(0) = check (c[0] + x, size (0)-1);
+                coeff_matrix.col(i) = ImageType::row (3);
+                ++i;
+              }
+            }
+          }
+
+          Eigen::Matrix<value_type, Eigen::Dynamic, 4> grad_and_value (coeff_matrix * weights_matrix);
+          if (gradient_wrt_scanner)
+            gradient.noalias() = grad_and_value.block(0,0,ImageType::size(3),3) * wrt_scanner_transform;
+          else
+            gradient = grad_and_value.block(0,0,ImageType::size(3),3);
+          value = grad_and_value.block(0,0,ImageType::size(3),1);
+        }
+
 
         //! Set the current position to <b>image space</b> position \a pos
         /*! This will set the position from which the image intensity values will

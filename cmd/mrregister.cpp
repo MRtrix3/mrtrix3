@@ -369,14 +369,14 @@ void run ()
 
 
   opt = get_options ("mask2");
-  Image<bool> mask2_image;
+  Image<value_type> mask2_image;
   if (opt.size ())
-    mask2_image = Image<bool>::open(opt[0][0]);
+    mask2_image = Image<value_type>::open(opt[0][0]);
 
   opt = get_options ("mask1");
-  Image<bool> mask1_image;
+  Image<value_type> mask1_image;
   if (opt.size ())
-    mask1_image = Image<bool>::open(opt[0][0]);
+    mask1_image = Image<value_type>::open(opt[0][0]);
 
   opt = get_options ("rigid_niter");
   std::vector<int> rigid_niter;

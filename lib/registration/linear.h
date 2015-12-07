@@ -154,7 +154,7 @@ namespace MR
           TransformType& transform,
           Im1ImageType& im1_image,
           Im2ImageType& im2_image) {
-            typedef Image<bool> BogusMaskType;
+            typedef Image<float> BogusMaskType;
             run_masked<MetricType, TransformType, Im1ImageType, Im2ImageType, BogusMaskType, BogusMaskType >
               (metric, transform, im1_image, im2_image, nullptr, nullptr);
           }
@@ -166,7 +166,7 @@ namespace MR
           Im1ImageType& im1_image,
           Im2ImageType& im2_image,
           std::unique_ptr<Im2MaskType>& im2_mask) {
-            typedef Image<bool> BogusMaskType;
+            typedef Image<float> BogusMaskType;
             run_masked<MetricType, TransformType, Im1ImageType, Im2ImageType, BogusMaskType, Im2MaskType >
               (metric, transform, im1_image, im2_image, nullptr, im2_mask);
           }
@@ -179,7 +179,7 @@ namespace MR
           Im1ImageType& im1_image,
           Im2ImageType& im2_image,
           std::unique_ptr<Im1MaskType>& im1_mask) {
-            typedef Image<bool> BogusMaskType;
+            typedef Image<float> BogusMaskType;
             run_masked<MetricType, TransformType, Im1ImageType, Im2ImageType, Im1MaskType, BogusMaskType >
               (metric, transform, im1_image, im2_image, im1_mask, nullptr);
           }
@@ -245,10 +245,12 @@ namespace MR
                                    Im1ImageType,
                                    Im2ImageType,
                                    MidwayImageType,
+                                   Im1MaskType,
+                                   Im2MaskType,
                                    Im1ImageInterpolatorType,
                                    Im2ImageInterpolatorType,
-                                   Interp::Nearest<Im1MaskType>,
-                                   Interp::Nearest<Im2MaskType>,
+                                   Interp::Linear<Im1MaskType>,
+                                   Interp::Linear<Im2MaskType>,
                                    ProcessedImageType,
                                    ProcessedImageInterpolatorType,
                                    ProcessedMaskType,
@@ -330,7 +332,7 @@ namespace MR
                 #endif
               }
 
-              ParamType parameters (transform, im1__smoothed, im2__smoothed, midway_resized);
+              ParamType parameters (transform, im1__smoothed, im2__smoothed, midway_resized, im1_mask, im2_mask);
 
               INFO ("loop density: " +str(loop_density[level]));
               parameters.loop_density = loop_density[level];
@@ -341,19 +343,10 @@ namespace MR
               DEBUG ("neighbourhood kernel extent: " +str(kernel_extent));
               parameters.set_extent (kernel_extent);
 
-              if (im1_mask.valid()){
-                parameters.im1_mask = im1_mask;
-                parameters.im1_mask_interp.reset (new Interp::Nearest<Im1MaskType> (parameters.im1_mask));
-              }
-              if (im2_mask.valid()){
-                parameters.im2_mask = im2_mask;
-                parameters.im2_mask_interp.reset (new Interp::Nearest<Im2MaskType> (parameters.im2_mask));
-              }
-
 
               Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
-              if (directions.cols())
-                evaluate.set_directions (directions);
+//              if (directions.cols())
+//                evaluate.set_directions (directions);
 
               for (auto gd_iteration = 0; gd_iteration < gd_repetitions[level]; ++gd_iteration){
                 Math::GradientDescent<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
