@@ -175,7 +175,6 @@ namespace MR
             VAR(out.transpose());
             VAR(half.transpose());
             VAR(half_inverse.transpose());
-            // assert ((out-in).isApprox(half-half_inverse-in));
           }
         #endif
 
@@ -196,11 +195,6 @@ namespace MR
 
             void compute_offset () {
               Eigen::Vector3 offset = trafo.translation() + centre - trafo.linear() * centre;
-              // for( size_t i = 0; i < 3; i++ ) {
-              //   offset[i] = translation[i] + centre[i];
-              //   for( size_t j = 0; j < 3; j++ )
-              //     offset[i] -= matrix(i, j) * centre[j];
-              // }
               trafo.translation() = offset;
             }
 

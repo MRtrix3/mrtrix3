@@ -38,7 +38,7 @@ namespace MR
     //! \addtogroup Optimisation
     // @{
     template<class MatrixType = Eigen::Matrix<double, 4, 4>>
-    void param_mat2vec_affine (const MatrixType& transformation_matrix,
+    inline void param_mat2vec_affine (const MatrixType& transformation_matrix,
                                       Eigen::Matrix<double,
                                       Eigen::Dynamic, 1>& param_vector) {
         assert(transformation_matrix.cols()==4);
@@ -54,7 +54,7 @@ namespace MR
       }
 
     template<class MatrixType = Eigen::Matrix<double, 4, 4>>
-    void param_vec2mat_affine (const Eigen::Matrix<double, Eigen::Dynamic, 1>& param_vector,
+    inline void param_vec2mat_affine (const Eigen::Matrix<double, Eigen::Dynamic, 1>& param_vector,
                                      MatrixType& transformation_matrix) {
         assert(transformation_matrix.cols()==4);
         assert(transformation_matrix.rows()>=3);
@@ -66,11 +66,6 @@ namespace MR
         }
         for (size_t dim = 0; dim < 3; ++dim)
           transformation_matrix(dim,3) = param_vector[index++];
-        // transformation_matrix(3,3) = 1.0;
-        // M1.template transpose().template topLeftCorner<3,3>() << newx1.template segment<9>(0);
-        // M1.col(3) << newx1.template segment<3>(9), 1.0;
-        // M2.template transpose().template topLeftCorner<3,3>() << newx2.template segment<9>(0);
-        // M2.col(3) << newx2.template segment<3>(9), 1.0;
       }
 
 
@@ -189,11 +184,10 @@ namespace MR
           typedef Math::AffineUpdate UpdateType;
           typedef AffineRobustEstimator RobustEstimatorType;
           typedef int has_robust_estimator;
-          // void has_robust_estimator() { };
 
           Affine () : Base (12) {
             for (size_t i = 0; i < 9; ++i)
-              this->optimiser_weights[i] = 0.0003; // was 0.003 but hessian suggest smaller should be better
+              this->optimiser_weights[i] = 0.0003; // was 0.003 but hessian suggests smaller value should be better
             for (size_t i = 9; i < 12; ++i)
               this->optimiser_weights[i] = 1.0;
           }
@@ -276,14 +270,12 @@ namespace MR
 
             transform_type trafo_upd;
             for (size_t j =0; j < n_estimates; ++j){
-              // gradient += grad_estimates[j]; // TODO remove me
               Eigen::Matrix<ParameterType, Eigen::Dynamic, 1> candidate =  parameter_vector - grad_estimates[j];
               Math::param_vec2mat_affine(candidate, trafo_upd.matrix());
               for (size_t i = 0; i < n_corners; ++i){
                 transformed_corner[i].col(j) = trafo_upd * corners.col(i);
               }
             }
-            // return true; // hack
 
             for (size_t i = 0; i < n_corners; ++i){
               Eigen::Matrix<ParameterType, 3, 1> median_corner;
