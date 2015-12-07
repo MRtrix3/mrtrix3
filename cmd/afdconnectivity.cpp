@@ -69,13 +69,13 @@ void usage ()
   ARGUMENTS
   + Argument ("image", "the input FOD image.").type_image_in()
 
-  + Argument ("tracks", "the input track file defining the bundle of interest.").type_file_in();
+  + Argument ("tracks", "the input track file defining the bundle of interest.").type_tracks_in();
 
   OPTIONS
   + Option ("wbft", "provide a whole-brain fibre-tracking data set (of which the input track file "
                     "should be a subset), to improve the estimate of fibre bundle volume in the "
                     "presence of partial volume")
-    + Argument ("tracks").type_file_in()
+    + Argument ("tracks").type_tracks_in()
 
   + Option ("afd_map", "output a 3D image containing the AFD estimated for each voxel.")
     + Argument ("image").type_image_out()

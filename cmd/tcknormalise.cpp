@@ -39,9 +39,9 @@ void usage ()
   + "apply a normalisation map to a tracks file.";
 
   ARGUMENTS
-  + Argument ("tracks", "the input track file.").type_file_in()
+  + Argument ("tracks", "the input track file.").type_tracks_in()
   + Argument ("transform", "the image containing the transform.").type_image_in()
-  + Argument ("output", "the output track file").type_file_out();
+  + Argument ("output", "the output track file").type_tracks_out();
 }
 
 

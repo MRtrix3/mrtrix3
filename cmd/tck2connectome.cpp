@@ -56,7 +56,7 @@ void usage ()
   + "generate a connectome matrix from a streamlines file and a node parcellation image";
 
   ARGUMENTS
-  + Argument ("tracks_in",      "the input track file").type_file_in()
+  + Argument ("tracks_in",      "the input track file").type_tracks_in()
   + Argument ("nodes_in",       "the input node parcellation image").type_image_in()
   + Argument ("connectome_out", "the output .csv file containing edge weights").type_file_out();
 

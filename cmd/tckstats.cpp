@@ -54,7 +54,7 @@ void usage ()
   + "calculate statistics on streamlines length.";
 
   ARGUMENTS
-  + Argument ("tracks_in", "the input track file").type_file_in();
+  + Argument ("tracks_in", "the input track file").type_tracks_in();
 
   OPTIONS
   + Option ("histogram", "output a histogram of streamline lengths")

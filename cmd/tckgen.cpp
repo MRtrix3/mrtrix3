@@ -58,7 +58,7 @@ const char* algorithms[] = { "fact", "ifod1", "ifod2", "nulldist1", "nulldist2",
 void usage ()
 {
 
-  AUTHOR = "Robert E. Smith (r.smith@brain.org.au) & J-Donald Tournier (jdtournier@gmail.com)";
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) & Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
   + "perform streamlines tractography.";
@@ -122,7 +122,7 @@ void usage ()
         "- TensorDet / TensorProb: the DWI image.\n"
         ).type_image_in()
 
-    + Argument ("tracks", "the output file containing the tracks generated.").type_file_out();
+    + Argument ("tracks", "the output file containing the tracks generated.").type_tracks_out();
 
 
 

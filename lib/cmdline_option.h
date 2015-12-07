@@ -58,7 +58,9 @@ namespace MR
       ImageIn,
       ImageOut,
       IntSeq,
-      FloatSeq
+      FloatSeq,
+      TracksIn,
+      TracksOut
     } ArgType;
 
     typedef int ArgFlags;
@@ -264,6 +266,20 @@ namespace MR
         //! specifies that the argument should be a sequence of comma-separated floating-point values.
         Argument& type_sequence_float () {
           type = FloatSeq;
+          defaults.text = nullptr;
+          return *this;
+        }
+
+        //! specifies that the argument should be an input tracks file
+        Argument& type_tracks_in () {
+          type = TracksIn;
+          defaults.text = nullptr;
+          return *this;
+        }
+
+        //! specifies that the argument should be an output tracks file
+        Argument& type_tracks_out () {
+          type = TracksOut;
           defaults.text = nullptr;
           return *this;
         }

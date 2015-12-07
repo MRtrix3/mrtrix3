@@ -190,6 +190,10 @@ namespace MR
           return ("int seq");
         case FloatSeq:
           return ("float seq");
+        case TracksIn:
+          return ("tracks in");
+        case TracksOut:
+          return ("tracks out");
         default:
           return ("undefined");
       }
@@ -428,6 +432,12 @@ namespace MR
           break;
         case FloatSeq:
           stream << "FSEQ";
+          break;
+        case TracksIn:
+          stream << "TRACKSIN";
+          break;
+        case TracksOut:
+          stream << "TRACKSOUT";
           break;
         default:
           assert (0);
@@ -854,22 +864,31 @@ namespace MR
       // check for the existence of all specified input files (including optional ones that have been provided)
       // if necessary, also check for pre-existence of any output files with known paths
       //   (if the output is e.g. given as a prefix, the argument should be flagged as type_text())
-        for (const auto& i : argument) {
-        if ((i.arg->type == ArgFileIn) && !Path::exists (std::string(i)))
+      for (const auto& i : argument) {
+        if ((i.arg->type == ArgFileIn || i.arg->type == TracksIn) && !Path::exists (std::string(i)))
           throw Exception ("required input file \"" + str(i) + "\" not found");
-        if (i.arg->type == ArgFileOut)
+        if (i.arg->type == ArgFileOut || i.arg->type == TracksOut)
           check_overwrite (std::string(i));
+        if (i.arg->type == TracksIn && !Path::has_suffix (str(i), ".tck"))
+          throw Exception ("input file " + str(i) + " is not a valid track file");
+        if (i.arg->type == TracksOut && !Path::has_suffix (str(i), ".tck"))
+          throw Exception ("output track file (" + str(i) + ") must use the .tck suffix");
       }
       for (const auto& i : option) {
         for (size_t j = 0; j != i.opt->size(); ++j) {
           const Argument& arg = i.opt->operator [](j);
           const char* const name = i.args[j];
-          if ((arg.type == ArgFileIn) && !Path::exists (name))
+          if ((arg.type == ArgFileIn || arg.type == TracksIn) && !Path::exists (name))
             throw Exception ("input file \"" + str(name) + "\" not found (required for option \"-" + std::string(i.opt->id) + "\")");
-          if (arg.type == ArgFileOut)
+          if (arg.type == ArgFileOut || arg.type == TracksOut)
             check_overwrite (name);
+          if (arg.type == TracksIn && !Path::has_suffix (str(name), ".tck"))
+            throw Exception ("input file " + str(name) + " is not a valid track file");
+          if (arg.type == TracksOut && !Path::has_suffix (str(name), ".tck"))
+            throw Exception ("output track file (" + str(name) + ") must use the .tck suffix");
         }
       }
+
     }
 
 
