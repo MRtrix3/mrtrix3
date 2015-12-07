@@ -80,15 +80,15 @@ namespace MR {
         
         const ParticleGrid::ParticleVectorType* ParticleGrid::at(const int x, const int y, const int z) const
         {
-          if ((x < 0) || (x >= n[0]) || (y < 0) || (y >= n[1]) || (z < 0) || (z >= n[2]))   // if out of bounds
-            return NULL;                                                                    // return empty vector
+          if ((x < 0) || (x >= dims[0]) || (y < 0) || (y >= dims[1]) || (z < 0) || (z >= dims[2]))  // out of bounds
+            return nullptr;
           return &grid[xyz2idx(x, y, z)];
         }
         
         Particle* ParticleGrid::getRandom(size_t& idx)
         {
           if (list.empty())
-            return NULL;
+            return nullptr;
           std::uniform_int_distribution<size_t> dist(0, list.size()-1);
           idx = dist(rng);
           return list[idx];

@@ -53,17 +53,18 @@ namespace MR {
           ParticleGrid(const HeaderType& image)
           {
             DEBUG("Initialise particle grid.");
-            n[0] = Math::ceil<size_t>( image.size(0) * image.spacing(0) / (2*Particle::L) );
-            n[1] = Math::ceil<size_t>( image.size(1) * image.spacing(1) / (2*Particle::L) );
-            n[2] = Math::ceil<size_t>( image.size(2) * image.spacing(2) / (2*Particle::L) );
-            grid.resize(n[0]*n[1]*n[2]);
+            dims[0] = Math::ceil<size_t>( image.size(0) * image.spacing(0) / (2*Particle::L) );
+            dims[1] = Math::ceil<size_t>( image.size(1) * image.spacing(1) / (2*Particle::L) );
+            dims[2] = Math::ceil<size_t>( image.size(2) * image.spacing(2) / (2*Particle::L) );
+            grid.resize(dims[0]*dims[1]*dims[2]);
             
+            // Initialise scanner-to-grid transform
             Eigen::DiagonalMatrix<default_type, 3> newspacing (2*Particle::L, 2*Particle::L, 2*Particle::L);
             Eigen::Vector3 shift (image.spacing(0)/2 - Particle::L, 
                                   image.spacing(1)/2 - Particle::L, 
                                   image.spacing(2)/2 - Particle::L);
-            T = image.transform() * newspacing;
-            T = T.inverse().translate(shift);
+            T_s2g = image.transform() * newspacing;
+            T_s2g = T_s2g.inverse().translate(shift);
           }
           
           ParticleGrid(const ParticleGrid&) = delete;
@@ -98,8 +99,8 @@ namespace MR {
           ParticleVectorType list;
           std::vector<ParticleVectorType> grid;
           Math::RNG rng;
-          transform_type T;
-          size_t n[3];     // grid dimensions
+          transform_type T_s2g;
+          size_t dims[3];
           
           
           inline size_t pos2idx(const Point_t& pos) const
@@ -112,7 +113,7 @@ namespace MR {
         public:
           inline void pos2xyz(const Point_t& pos, size_t& x, size_t& y, size_t& z) const
           {
-            Point_t gpos = T.cast<float>() * pos;
+            Point_t gpos = T_s2g.cast<float>() * pos;
             x = Math::round<size_t>(gpos[0]);
             y = Math::round<size_t>(gpos[1]);
             z = Math::round<size_t>(gpos[2]);
@@ -121,7 +122,7 @@ namespace MR {
         protected:
           inline size_t xyz2idx(const size_t x, const size_t y, const size_t z) const
           {
-            return z + n[2] * (y + n[1] * x);
+            return z + dims[2] * (y + dims[1] * x);
           }
           
         };

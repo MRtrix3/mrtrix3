@@ -41,50 +41,42 @@ namespace MR {
         {
         public:
           
-          static float L;			// Particle length
+          // Particle length
+          static float L;
           
           // Constructors and destructor --------------------------------------------------
           
           Particle()
           {
-            pos = Point_t();		// initialize to NaN
-            dir = Point_t();		// initialize to NaN
-            predecessor = NULL;
-            successor = NULL;
+            predecessor = nullptr;
+            successor = nullptr;
             visited = false;
           }
           
           Particle(const Point_t& p, const Point_t& d)
           {
-            setPosition(p);
-            setDirection(d);
-            predecessor = NULL;
-            successor = NULL;
-            visited = false;
+            init(p, d);
           }
           
           ~Particle()
           {
-            if (predecessor != NULL)
-              removePredecessor();
-            if (successor != NULL)
-              removeSuccessor();
+            finalize();
           }
           
-          void init(const Point_t& p, const Point_t& d)
+          inline void init(const Point_t& p, const Point_t& d)
           {
             setPosition(p);
             setDirection(d);
-            predecessor = NULL;
-            successor = NULL;
+            predecessor = nullptr;
+            successor = nullptr;
             visited = false;
           }
           
-          void finalize()
+          inline void finalize()
           {
-            if (predecessor != NULL)
+            if (predecessor)
               removePredecessor();
-            if (successor != NULL)
+            if (successor)
               removeSuccessor();
           }
           
@@ -119,7 +111,7 @@ namespace MR {
           
           bool hasPredecessor() const
           {
-            return (predecessor != NULL);
+            return (predecessor != nullptr);
           }
           
           Particle* getPredecessor() const
@@ -129,7 +121,7 @@ namespace MR {
           
           void connectPredecessor(Particle* p1, const int a1)
           {
-            // assert(p1 != NULL);
+            assert(p1 != nullptr);
             setPredecessor(p1);
             if (a1 == 1)
               p1->setSuccessor(this);
@@ -139,18 +131,18 @@ namespace MR {
           
           void removePredecessor()
           {
-            // assert(predecessor != NULL);
-            // assert(predecessor->predecessor == this || predecessor->successor == this);
+            assert(predecessor != nullptr);
+            assert(predecessor->predecessor == this || predecessor->successor == this);
             if (predecessor->predecessor == this)
-              predecessor->predecessor = NULL;
+              predecessor->predecessor = nullptr;
             if (predecessor->successor == this)
-              predecessor->successor = NULL;
-            predecessor = NULL;
+              predecessor->successor = nullptr;
+            predecessor = nullptr;
           }
           
           bool hasSuccessor() const
           {
-            return (successor != NULL);
+            return (successor != nullptr);
           }
           
           Particle* getSuccessor() const
@@ -160,7 +152,7 @@ namespace MR {
           
           void connectSuccessor(Particle* p1, const int a1)
           {
-            // assert(p1 != NULL);
+            assert(p1 != nullptr);
             setSuccessor(p1);
             if (a1 == 1)
               p1->setSuccessor(this);
@@ -170,13 +162,13 @@ namespace MR {
           
           void removeSuccessor()
           {
-            // assert(successor != NULL);
-            // assert(successor->predecessor == this || successor->successor == this);
+            assert(successor != nullptr);
+            assert(successor->predecessor == this || successor->successor == this);
             if (successor->predecessor == this)
-              successor->predecessor = NULL;
+              successor->predecessor = nullptr;
             if (successor->successor == this)
-              successor->successor = NULL;
-            successor = NULL;
+              successor->successor = nullptr;
+            successor = nullptr;
           }
           
           bool isVisited() const
@@ -199,14 +191,14 @@ namespace MR {
           
           void setPredecessor(Particle* p1)
           {
-            if (predecessor != NULL)
+            if (predecessor)
               removePredecessor();
             predecessor = p1;
           }
           
           void setSuccessor(Particle* p1)
           {
-            if (successor != NULL)
+            if (successor)
               removeSuccessor();
             successor = p1;
           }
