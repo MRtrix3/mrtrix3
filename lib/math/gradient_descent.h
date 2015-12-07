@@ -107,8 +107,10 @@ namespace MR
             relative_cost_improvement = std::numeric_limits<value_type>::quiet_NaN();
 
             #ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG
-              auto hessian = Math::check_function_gradient (func, x, 0.001, true, preconditioner_weights);
-              save_matrix(hessian, "/tmp/gddebug/" "iter_" + str(0) + "_hessian" +".txt");
+              #ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG_HESSIAN
+                auto hessian = Math::check_function_gradient (func, x, 0.001, true, preconditioner_weights);
+                save_matrix(hessian, "/tmp/gddebug/" "iter_" + str(0) + "_hessian" +".txt");
+              #endif
               save_matrix(x, "/tmp/gddebug/" "iter_" + str(0) + "_x" +".txt");
               save_matrix(g, "/tmp/gddebug/" "iter_" + str(0) + "_g" +".txt");
               std::ofstream outfile;
@@ -119,9 +121,11 @@ namespace MR
               outfile << "step_size " << str(dt) << std::endl;
               outfile << "x " << str(x.transpose()) << std::endl;
               outfile << "g " << str(g.transpose()) << std::endl;
-              for (ssize_t row = 0; row < hessian.rows(); ++row) {
-                outfile << "hessian " << str(hessian.row(row)) << std::endl;
-              }
+              #ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG_HESSIAN
+                for (ssize_t row = 0; row < hessian.rows(); ++row) {
+                  outfile << "hessian " << str(hessian.row(row)) << std::endl;
+                }
+              #endif
             #endif
 
             #ifdef GRADIENT_DESCENT_LOG
@@ -157,9 +161,10 @@ namespace MR
                   VEC(x);
                   VEC(g);
                   INFO("step size: " + str(dt));
-
-                  hessian = Math::check_function_gradient (func, x, 0.001, true, preconditioner_weights);
-                  save_matrix(hessian, "/tmp/gddebug/" "iter_" + str(niter) + "_hessian" +".txt");
+                  #ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG_HESSIAN
+                    hessian = Math::check_function_gradient (func, x, 0.001, true, preconditioner_weights);
+                    save_matrix(hessian, "/tmp/gddebug/" "iter_" + str(niter) + "_hessian" +".txt");
+                  #endif
                   save_matrix(x, "/tmp/gddebug/" "iter_" + str(niter) + "_x" +".txt");
                   save_matrix(g, "/tmp/gddebug/" "iter_" + str(niter) + "_g" +".txt");
 
@@ -168,9 +173,11 @@ namespace MR
                   outfile << "step_size " << str(dt) << std::endl;
                   outfile << "x " << str(x.transpose()) << std::endl;
                   outfile << "g " << str(g.transpose()) << std::endl;
-                  for (ssize_t row = 0; row < hessian.rows(); ++row) {
-                    outfile << "hessian " << str(hessian.row(row)) << std::endl;
-                  }
+                  #ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG_HESSIAN
+                    for (ssize_t row = 0; row < hessian.rows(); ++row) {
+                      outfile << "hessian " << str(hessian.row(row)) << std::endl;
+                    }
+                  #endif
                 #endif
                 #ifdef GRADIENT_DESCENT_LOG
                   if (log_stream){
