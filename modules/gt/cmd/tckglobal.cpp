@@ -48,8 +48,11 @@ void usage ()
 
   AUTHOR = "Daan Christiaens (daan.christiaens@kuleuven.be)";
   
-  COPYRIGHT = "KU Leuven, Dept. Electrical Engineering, ESAT/PSI,\n"
-              "Herestraat 49 box 7003, 3000 Leuven, Belgium";
+  COPYRIGHT = "Copyright (C) 2015 KU Leuven, Dept. Electrical Engineering, ESAT/PSI,\n"
+              "Herestraat 49 box 7003, 3000 Leuven, Belgium \n\n"
+
+              "This is free software; see the source for copying conditions.\n"
+              "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.";
 
   DESCRIPTION
   + "Multi-Shell Multi-Tissue Global Tractography."
@@ -142,7 +145,7 @@ void usage ()
   + OptionGroup("Output options")
 
   + Option ("todi", "filename of the resulting TOD image. (output)")
-    + Argument ("todimage").type_image_out()
+    + Argument ("tod").type_image_out()
 
   + Option ("fiso", "filename of the resulting isotropic fractions image. (output)")
     + Argument ("iso").type_image_out()
