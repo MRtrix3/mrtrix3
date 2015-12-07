@@ -23,8 +23,6 @@
 
 #include <vector>
 
-#include <gsl/gsl_fit.h>
-
 #include "app.h"
 #include "bitset.h"
 #include "command.h"

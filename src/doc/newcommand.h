@@ -234,7 +234,7 @@ namespace MR
  By default, the search path provided to the compiler to look for headers
  consists of the compiler's default path for system headers, any additional
  paths identified by the \c configure script as necessary to meet
- dependencies (e.g. Zlib or GSL), and the \c lib/ and \c src/ folders.
+ dependencies (e.g. Zlib or Eigen), and the \c lib/ and \c src/ folders.
  Headers should therefore be included by their path relative to one of these
  folders. For example, to include the file \c lib/math/SH.h, use the
  following:

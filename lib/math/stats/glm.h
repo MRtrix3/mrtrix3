@@ -64,8 +64,8 @@ namespace MR
 
         //! generic GLM t-test
         /*! note that the data, effects, and residual matrices are transposed.
-         * This is to take advantage of the GSL's convention of storing
-         * matrices in column-major format.  TODO check Eigen default stride
+         * This is to take advantage of Eigen's convention of storing
+         * matrices in column-major format by default.
          *
          * Note also that the contrast matrix should already have been scaled
          * using the GLM::scale_contrasts() function. */

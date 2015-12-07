@@ -85,7 +85,7 @@ namespace MR
  The first step required for building the software is to run the \c configure
  script, which tailors various parameters to the specific system that it is run
  on. This includes checking that a compiler is available and behaves as
- expected, that other required packages are available (such as GSL), whether
+ expected, that other required packages are available (such as Eigen), whether
  the system is a 64-bit machine, etc. It is also possible to create distinct
  co-existing configurations, for example to compile either release and debug
  code. For details, see \ref configure_page.
