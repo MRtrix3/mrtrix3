@@ -90,7 +90,7 @@ namespace MR
 
           // This is used for creating a `null lobe' i.e. an FOD lobe with zero size, containing all directions not
           //   assigned to any other lobe in the voxel
-          FOD_lobe (const Mask& i) :
+          FOD_lobe (const DWI::Directions::Mask& i) :
               mask (i),
               values (i.size(), 0.0),
               peak_dir_bin (i.size()),
@@ -149,7 +149,7 @@ namespace MR
             integral += that.integral;
           }
 
-          const Mask& get_mask() const { return mask; }
+          const DWI::Directions::Mask& get_mask() const { return mask; }
           const std::vector<float>& get_values() const { return values; }
           dir_t get_peak_dir_bin() const { return peak_dir_bin; }
           float get_peak_value() const { return peak_value; }
@@ -160,7 +160,7 @@ namespace MR
 
 
         private:
-          Mask mask;
+          DWI::Directions::Mask mask;
           std::vector<float> values;
           dir_t peak_dir_bin;
           float peak_value;

@@ -197,14 +197,14 @@ namespace MR {
 
       const uint8_t* get_data_ptr() const { return data; }
 
+      friend std::ostream& operator<< (std::ostream&, BitSet&);
 
-    private:
+
+    protected:
       size_t   bits;
       size_t   bytes;
-      uint8_t* data;
 
-      static const uint8_t masks[8];
-
+      size_t excess_bits() const { return (bits - (8 * (bytes - 1))); }
 
       bool test  (const size_t index) const
       {
@@ -227,6 +227,25 @@ namespace MR {
         uint8_t prev = *at, new_value;
         do { new_value = prev & ~masks[index&7]; } while (!at->compare_exchange_weak (prev, new_value));
       }
+
+
+    private:
+      uint8_t* data;
+
+      static const uint8_t masks[8];
+      static const char dbyte_to_hex[16];
+
+      std::string byte_to_hex (const uint8_t d) const
+      {
+        std::string out;
+        for (size_t i = 0; i != 2; ++i) {
+          const uint8_t dm = i ? (d & 0x0F) : ((d & 0xF0) >> 4);
+          out.push_back (dbyte_to_hex[dm]);
+        }
+        return out;
+      }
+
+
 
   };
 
