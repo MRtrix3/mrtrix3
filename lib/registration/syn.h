@@ -76,11 +76,6 @@ namespace MR
             for (size_t level = 0; level < scale_factor.size(); level++) {
                 CONSOLE ("SyN: multi-resolution level " + str(level + 1) + ", scale factor: " + str(scale_factor[level]));
 
-                //Setup energy curve
-
-                //Grad_Step_altered = grad_step.
-
-
                 // Resize midway image
                 Filter::Resize resize_filter (midway_image);
                 resize_filter.set_scale_factor (scale_factor[level]);
@@ -99,7 +94,6 @@ namespace MR
                 {
                   LogLevelLatch log_level (0);
                   resize_filter (midway_image, midway_resized);
-
                   im1_smooth_filter (im1_image, im1_smoothed);
                   im2_smooth_filter (im2_image, im2_smoothed);
                 }
@@ -128,10 +122,16 @@ namespace MR
                   im2_disp_field_inv = std::move (reslice (*im2_disp_field_inv, field_header));
                 }
 
+                //Setup energy curve
+                //Grad_Step_altered = grad_step.
 
 //                Registration::Metric::SynDemons<Interp::Linear> metric (im1_smoothed, im2_smoothed, im1_mask, im2_mask);
                 bool converged = false;
                 while (!converged) {
+
+
+
+
 
                   // TODO look at composing on the fly (not sure what is faster with FOD reorientation)
 //                  Image<float> im1_deform_field = Image<float>::scratch (field_header);

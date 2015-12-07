@@ -23,50 +23,43 @@
 #ifndef __registration_metric_syn_demons_h__
 #define __registration_metric_syn_demons_h__
 
+#include "adapter/gradient3D.h"
+
 namespace MR
 {
   namespace Registration
   {
     namespace Metric
     {
-      template <class InterpolatorType>
+
+      template <class Im1ImageType, class Im2ImageType>
       class SynDemons {
         public:
-          SynDemons (InterpolatorType& im1_image,
-                     InterpolatorType& im2_image,
-                     InterpolatorType& im1_mask,
-                     InterpolatorType& im2_mask) :
-                       im1_image (im1_image),
-                       im2_image (im2_image),
-                       im1_mask (im1_mask),
-                       im2_mask (im2_mask){ }
+          SynDemons (Im1ImageType& im1_image, ){}
 
           void ~SynDemons () {
             global_energy += thread_energy;
           }
 
-          void operator() (Image<float>& im1_deform, Image<float>& im2_deform, Image<float>& im1_update, Image<float>& im2_update) {
+          template <class Im1UpdateVecType, class Im2UpdateVecType>
+            default_type operator() (const Im1ImageType& im1_image,
+                                     const Im2ImageType& im2_image,
+                                     Im1UpdateVecType& im1_update,
+                                     Im2UpdateVecType& im2_update) {
 
-            //Loop over non-boundary voxels
-              //if (in both masks)
-                //computeUpdate (weighted by mask)
-                //computeUpdateInv (weighted by mask)
+              typename Im1ImageType::ValueType im1_value;
+              typename Im2ImageType::ValueType im2_value;
 
-            if (im1_mask.valid()) {
 
-            }
+            protected:
+              Adapter::Gradient3D<Im1ImageType> im1_gradient;
+              Adapter::Gradient3D<Im2ImageType> im2_gradient;
+
+              // Need to adjust
+
+
 
           }
-
-        protected:
-          InterpolatorType im1_image;
-          InterpolatorType im2_image;
-          InterpolatorType im1_mask;
-          InterpolatorType im2_mask;
-
-          default_type& global_energy;
-          default_type thread_energy;
-
       };
     }
   }
