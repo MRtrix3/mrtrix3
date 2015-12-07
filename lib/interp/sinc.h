@@ -109,10 +109,8 @@ namespace MR
          * (floating-point) voxel coordinate within the dataset. */
         template <class VectorType>
         bool voxel (const VectorType& pos) {
-          if (!within_bounds (pos)) {
-            out_of_bounds = true;
+          if ((out_of_bounds = is_out_of_bounds (pos)))
             return true;
-          }
           Sinc_x.set (*this, 0, pos[0]);
           Sinc_y.set (*this, 1, pos[1]);
           Sinc_z.set (*this, 2, pos[2]);
@@ -164,15 +162,6 @@ namespace MR
         const int kernel_width;
         Math::Sinc<value_type> Sinc_x, Sinc_y, Sinc_z;
         std::vector<value_type> y_values, z_values;
-
-        template <class VectorType>
-        bool within_bounds (const VectorType& p) {
-          // Bounds testing is different for sinc interpolation than others
-          // Not only due to the width of the kernel, but also the mirroring of the image data beyond the FoV
-          return (round (p[0]) > -size(0) + kernel_width) && (round (p[0]) < (2 * size(0)) - kernel_width)
-              && (round (p[1]) > -size(1) + kernel_width) && (round (p[1]) < (2 * size(1)) - kernel_width)
-              && (round (p[2]) > -size(2) + kernel_width) && (round (p[2]) < (2 * size(2)) - kernel_width);
-        }
 
     };
 
