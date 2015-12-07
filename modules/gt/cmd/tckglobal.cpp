@@ -52,7 +52,10 @@ void usage ()
               "Herestraat 49 box 7003, 3000 Leuven, Belgium";
 
   DESCRIPTION
-  + "Multi-Shell Multi-Tissue Global Tractography.";
+  + "Multi-Shell Multi-Tissue Global Tractography."
+  
+  + "This command will reconstruct the global white matter fibre tractogram that best "
+    "explains the input DWI data, using a multi-tissue spherical convolution model.";
   
   REFERENCES
   + "Christiaens, D.; Reisert, M.; Dhollander, T.; Sunaert, S.; Suetens, P. & Maes, F. "
@@ -60,107 +63,94 @@ void usage ()
     "NeuroImage, 2015, 123, 89-101";
 
   ARGUMENTS
-  + Argument ("source",
-              "the image containing the raw DWI data.").type_image_in()
+  + Argument ("source", "the image containing the raw DWI data.").type_image_in()
 
   + Argument ("tracks", "the output file containing the tracks generated.").type_file_out();
 
 
 
   OPTIONS
-
-  + Option ("grad",
-            "specify the diffusion encoding scheme (if not supplied in the header).")
+  + OptionGroup("General options")
+  
+  + Option ("grad", "specify the diffusion encoding scheme (required if not supplied in the header).")
     + Argument ("scheme").type_file_in()
 
-  + Option ("lmax",
-            "set the maximum harmonic order for the output series. (default = 8)")
+  + Option ("mask", "only reconstruct the tractogram within the specified brain mask image.")
+    + Argument ("image").type_image_in()
+
+
+  + OptionGroup("Response functions")
+  
+  + Option ("wmr", "set the response of a single particle on the DWI signal. (required)").required()
+    + Argument ("response").type_file_in()
+
+  + Option ("csfr", "set the response of CSF on the DWI signal.")
+    + Argument ("response").type_file_in()
+  
+  + Option ("gmr", "set the response of GM on the DWI signal.")
+    + Argument ("response").type_file_in()
+
+  + Option ("riso", "set one or more isotropic response functions.").allow_multiple()
+    + Argument ("response").type_file_in()
+
+
+  + OptionGroup("Parameters")
+  
+  + Option ("lmax", "set the maximum harmonic order for the output series. (default = 8)")
     + Argument ("order").type_integer (2, 8, 30)
 
-  + Option ("mask",
-            "only reconstruct the tractogram within the specified brain mask image.")
-    + Argument ("image").type_image_in()
-  
-  + Option ("length",
-            "set the length of the particles (fibre segments). (default = 1.0 mm)")
+  + Option ("length", "set the length of the particles (fibre segments). (default = 1.0 mm)")
     + Argument ("size").type_float(1e-6, 1.0, 10.0)
       
-  + Option ("weight",
-            "set the weight by which particles contribute to the model. (default = 0.1)")
+  + Option ("weight", "set the weight by which particles contribute to the model. (default = 0.1)")
     + Argument ("w").type_float(1e-6, 0.1, 1.0)
 
-  + Option ("wmr",
-            "set the response of a single particle on the DWI signal. (required)").required()
-    + Argument ("response").type_file_in()
-
-  + Option ("csfr",
-            "set the response of CSF on the DWI signal.")
-    + Argument ("response").type_file_in()
-  
-  + Option ("gmr",
-            "set the response of GM on the DWI signal.")
-    + Argument ("response").type_file_in()
-
-  + Option ("riso",
-            "set one or more isotropic response kernels.").allow_multiple()
-    + Argument ("response").type_file_in()
-
-  + Option ("ppot",
-            "set the particle potential, i.e., the cost of adding one segment, relative to the particle weight. (default = 5% w)")
+  + Option ("ppot", "set the particle potential, i.e., the cost of adding one segment, relative to the particle weight. (default = 5% w)")
     + Argument ("u").type_float(0.0, 0.05, 1.)
 
-  + Option ("cpot",
-            "set the connection potential, i.e., the energy term that drives two segments together. (default = 0.5)")
+  + Option ("cpot", "set the connection potential, i.e., the energy term that drives two segments together. (default = 0.5)")
     + Argument ("v").type_float(0, 0.5, 1e6)
 
-  + Option ("t0",
-            "set the initial temperature of the metropolis hastings optimizer. (default = 0.1)")
+  + Option ("t0", "set the initial temperature of the metropolis hastings optimizer. (default = 0.1)")
     + Argument ("start").type_float(1e-6, 0.1, 1e6)
 
-  + Option ("t1",
-            "set the final temperature of the metropolis hastings optimizer. (default = 0.001)")
+  + Option ("t1", "set the final temperature of the metropolis hastings optimizer. (default = 0.001)")
     + Argument ("end").type_float(1e-6, 0.001, 1e6)
 
-  + Option ("niter",
-            "set the number of iterations of the metropolis hastings optimizer. (default 10^6)")
+  + Option ("niter", "set the number of iterations of the metropolis hastings optimizer. (default = 10^6)")
     + Argument ("n").type_float(0, 1e6, std::numeric_limits<float>::max())
 
-  + Option ("balance",
-            "balance internal and external energy. (default = 0)\n"
+  + Option ("balance", "balance internal and external energy. (default = 0)\n"
             "Negative values give more weight to the internal energy, positive to the external energy.")
     + Argument ("b").type_float(-100, 0, 100)
 
-  + Option ("density",
-            "set the desired density of the free Poisson process. (default = 1)")
+  + Option ("density", "set the desired density of the free Poisson process. (default = 1)")
     + Argument ("lambda").type_float(0, 1., std::numeric_limits<float>::max())
 
-  + Option ("prob",
-            "set the probabilities of generating birth, death, randshift, optshift and connect probabilities respectively. (default = .25,.05,.25,.10,.35)")
+  + Option ("prob", "set the probabilities of generating birth, death, randshift, optshift "
+            "and connect probabilities respectively. (default = .25,.05,.25,.10,.35)")
     + Argument ("prob").type_sequence_float()
 
-  + Option ("beta",
-            "set the width of the Hanning interpolation window. (default = 0)")
+  + Option ("beta", "set the width of the Hanning interpolation window. (default = 0)")
     + Argument ("b").type_float(0.0, 0.0, 1.0)
 
-  + Option ("lambda",
-            "set the weight of the internal energy directly. (default = 1.0)\n"
+  + Option ("lambda", "set the weight of the internal energy directly. (default = 1.0)\n"
             "If provided, any value of -balance will be ignored.")
     + Argument ("lam").type_float(0.0, 1.0, 1e5)
 
-  + Option ("todi",
-            "filename of the resulting TOD image. (output)")
+
+  + OptionGroup("Output options")
+
+  + Option ("todi", "filename of the resulting TOD image. (output)")
     + Argument ("todimage").type_image_out()
 
-  + Option ("fiso",
-            "filename of the resulting isotropic fractions image. (output)")
+  + Option ("fiso", "filename of the resulting isotropic fractions image. (output)")
     + Argument ("iso").type_image_out()
 
-  + Option ("eext",
-            "filename of the resulting image of the residual external energy. (output)")
+  + Option ("eext", "filename of the resulting image of the residual external energy. (output)")
     + Argument ("eext").type_image_out()
 
-  + Option ("etrend",
-            "internal and external energy trend and cooling statistics. (output)")
+  + Option ("etrend", "internal and external energy trend and cooling statistics. (output)")
     + Argument ("stats").type_file_out();
 
 
