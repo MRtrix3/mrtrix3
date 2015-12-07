@@ -50,8 +50,11 @@ namespace MR {
           header.size(3) = ncols;
           tod = Image<float>::scratch(header, "TOD image");
           
-          header.size(3) = nf;
-          fiso = Image<float>::scratch(header, "isotropic fractions");
+          if (nf > 0) {
+            WARN("No isotropic response functions provided; using single-tissue white matter model.");
+            header.size(3) = nf;
+            fiso = Image<float>::scratch(header, "isotropic fractions");
+          }
           
           header.set_ndim(3);
           eext = Image<float>::scratch(header, "external energy");
@@ -124,16 +127,15 @@ namespace MR {
           DEBUG("Reset external energy.");
           double e;
           dE = 0.0;
-          for (auto l = Loop(dwi, 0, 3) (dwi, tod, fiso, eext); l; ++l)
+          for (auto l = Loop(dwi, 0, 3) (dwi, tod, eext); l; ++l)
           {
             y = dwi.row(3).cast<double>();
             t = tod.row(3).cast<double>();
             e = calcEnergy();
             eext.value() = e;
             dE += e;
-            fiso.row(3) = fk.tail(nf).cast<float>();
           }
-          stats.incEextTotal(dE - stats.getEextTotal());  // Reset total external energy
+          stats.incEextTotal(dE - stats.getEextTotal());
           dE = 0.0;
         }
         
@@ -142,11 +144,14 @@ namespace MR {
         {
           for (int k = 0; k != changes_vox.size(); ++k) 
           {
-            assign_pos_of(changes_vox[k], 0, 3).to(tod, fiso, eext);
+            assign_pos_of(changes_vox[k], 0, 3).to(tod, eext);
             assert(!is_out_of_bounds(tod));
             tod.row(3) = changes_tod[k].cast<float>();
-            fiso.row(3) = changes_fiso[k].cast<float>();
             eext.value() = changes_eext[k];
+            if (fiso.valid()) {
+              assign_pos_of(changes_vox[k], 0, 3).to(fiso);
+              fiso.row(3) = changes_fiso[k].cast<float>();
+            }
           }
           stats.incEextTotal(dE);
           clearChanges();

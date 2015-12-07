@@ -340,10 +340,15 @@ void run ()
   
   opt = get_options("fiso");
   if (opt.size()) {
-    INFO("Saving isotropic fractions to file");
-    header.size(3) = properties.resp_ISO.size();
-    auto Fiso = Image<float>::create (opt[0][0], header);
-    threaded_copy(Eext->getFiso(), Fiso);
+    if (properties.resp_ISO.size() > 0) {
+      INFO("Saving isotropic fractions to file");
+      header.size(3) = properties.resp_ISO.size();
+      auto Fiso = Image<float>::create (opt[0][0], header);
+      threaded_copy(Eext->getFiso(), Fiso);
+    }
+    else {
+      WARN("Ignore saving file " + opt[0][0] + ", because no isotropic response functions were provided.");
+    }
   }
   
   opt = get_options("eext");
