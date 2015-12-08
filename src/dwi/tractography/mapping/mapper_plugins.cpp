@@ -40,7 +40,7 @@ namespace MR {
           const int step = end ? -1 : 1;
           while (!interp.scanner (tck[index])) {
             index += step;
-            if (index == -1 || index == tck.size())
+            if (index == -1 || index == int(tck.size()))
               return { NaN, NaN, NaN };
           }
           return tck[index];

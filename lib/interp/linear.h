@@ -25,8 +25,11 @@
 
 #include <complex>
 #include <type_traits>
-#include "transform.h"
+
 #include "datatype.h"
+#include "types.h"
+#include "interp/base.h"
+
 
 namespace MR
 {
@@ -84,37 +87,28 @@ namespace MR
     };
 
     template <class ImageType>
-      class Linear : public ImageType, public Transform
+      class Linear : public Base<ImageType>
     {
       public:
-        typedef typename ImageType::value_type value_type;
+        using typename Base<ImageType>::value_type;
+
+        using Base<ImageType>::bounds;
+        using Base<ImageType>::index;
+        using Base<ImageType>::out_of_bounds;
+        using Base<ImageType>::out_of_bounds_value;
+
         typedef typename value_type_of<value_type>::type coef_type;
 
-        using ImageType::size;
-        using ImageType::index;
-        using Transform::set_to_nearest;
-        using Transform::voxelsize;
-        using Transform::scanner2voxel;
-        using Transform::operator!;
-        using Transform::out_of_bounds;
-        using Transform::bounds;
-
-        //! construct an Linear object to obtain interpolated values using the
-        // parent DataSet class
-        Linear (const ImageType& parent, value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
-          ImageType (parent),
-          Transform (parent),
-          out_of_bounds_value (value_when_out_of_bounds),
-          zero (0.0),
-          eps (1.0e-6) { }
+        Linear (const ImageType& parent, value_type value_when_out_of_bounds = Base<ImageType>::default_out_of_bounds_value()) :
+            Base<ImageType> (parent, value_when_out_of_bounds),
+            zero (0.0),
+            eps (1.0e-6) { }
 
         //! Set the current position to <b>voxel space</b> position \a pos
-        /*! This will set the position from which the image intensity values will
-         * be interpolated, assuming that \a pos provides the position as a
-         * (floating-point) voxel coordinate within the dataset. */
+        /*! See file interp/base.h for details. */
         template <class VectorType>
         bool voxel (const VectorType& pos) {
-          Eigen::Vector3 f = set_to_nearest (pos.template cast<default_type>());
+          Eigen::Vector3 f = Base<ImageType>::intravoxel_offset (pos.template cast<default_type>());
           if (out_of_bounds)
             return false;
 
@@ -165,24 +159,20 @@ namespace MR
         }
 
         //! Set the current position to <b>image space</b> position \a pos
-        /*! This will set the position from which the image intensity values will
-         * be interpolated, assuming that \a pos provides the position as a
-         * coordinate relative to the axes of the dataset, in units of
-         * millimeters. The origin is taken to be the centre of the voxel at [
-         * 0 0 0 ]. */
+        /*! See file interp/base.h for details. */
         template <class VectorType>
-          FORCE_INLINE bool image (const VectorType& pos) {
-            return voxel (voxelsize.inverse() * pos.template cast<default_type>());
-          }
+        FORCE_INLINE bool image (const VectorType& pos) {
+          return voxel (Transform::voxelsize.inverse() * pos.template cast<default_type>());
+        }
         //! Set the current position to the <b>scanner space</b> position \a pos
-        /*! This will set the position from which the image intensity values will
-         * be interpolated, assuming that \a pos provides the position as a
-         * scanner space coordinate, in units of millimeters. */
+        /*! See file interp/base.h for details. */
         template <class VectorType>
         FORCE_INLINE bool scanner (const VectorType& pos) {
-          return voxel (scanner2voxel * pos.template cast<default_type>());
+          return voxel (Transform::scanner2voxel * pos.template cast<default_type>());
         }
 
+        //! Read an interpolated image value from the current position.
+        /*! See file interp/base.h for details. */
         FORCE_INLINE value_type value () {
           if (out_of_bounds)
             return out_of_bounds_value;
@@ -208,8 +198,11 @@ namespace MR
           return val;
         }
 
-        // Collectively interpolates values along axis >= 3
+        //! Read interpolated values from volumes along axis >= 3
+        /*! See file interp/base.h for details. */
         Eigen::Matrix<value_type, Eigen::Dynamic, 1> row (size_t axis) {
+          assert (axis > 2);
+          assert (axis < ImageType::ndim());
           if (out_of_bounds) {
             Eigen::Matrix<value_type, Eigen::Dynamic, 1> out_of_bounds_row (ImageType::size(axis));
             out_of_bounds_row.setOnes();
@@ -240,12 +233,16 @@ namespace MR
           return row;
         }
 
-        const value_type out_of_bounds_value;
+      protected:
+        coef_type faaa, faab, faba, fabb, fbaa, fbab, fbba, fbbb;
+
+      private:
         const coef_type zero, eps;
 
-      protected:
-        coef_type  faaa, faab, faba, fabb, fbaa, fbab, fbba, fbbb;
+
     };
+
+
 
     template <class ImageType, typename... Args>
       inline Linear<ImageType> make_linear (const ImageType& parent, Args&&... args) {

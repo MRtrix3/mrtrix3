@@ -60,7 +60,7 @@ namespace MR
 
           Warp (const ImageType& original,
                 const WarpType& warp,
-                const value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
+                const value_type value_when_out_of_bounds = Interpolator<ImageType>::default_out_of_bounds_value()) :
             interp (original, value_when_out_of_bounds),
             warp (warp),
             x { 0, 0, 0 },

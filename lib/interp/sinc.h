@@ -23,7 +23,8 @@
 #ifndef __interp_sinc_h__
 #define __interp_sinc_h__
 
-#include "transform.h"
+#include "types.h"
+#include "interp/base.h"
 #include "math/sinc.h"
 
 
@@ -72,25 +73,15 @@ namespace MR
      * \endcode
      */
 
-    template <class ImageType> class Sinc : public ImageType, public Transform
+    template <class ImageType> class Sinc : public Base<ImageType>
     {
       public:
-        typedef typename ImageType::value_type value_type;
+        using typename Base<ImageType>::value_type;
+        using Base<ImageType>::out_of_bounds;
+        using Base<ImageType>::out_of_bounds_value;
 
-        using Transform::set_to_nearest;
-        using ImageType::index;
-        using ImageType::size;
-        using Transform::scanner2voxel;
-        using Transform::operator!;
-        using Transform::out_of_bounds;
-        using Transform::bounds;
-
-        //! construct an Interp object to obtain interpolated values using the
-        // parent DataSet class
-        Sinc (const ImageType& parent, value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>(), const size_t w = SINC_WINDOW_SIZE) :
-            ImageType (parent),
-            Transform (parent),
-            out_of_bounds_value (value_when_out_of_bounds),
+        Sinc (const ImageType& parent, value_type value_when_out_of_bounds = Base<ImageType>::default_out_of_bounds_value(), const size_t w = SINC_WINDOW_SIZE) :
+            Base<ImageType> (parent, value_when_out_of_bounds),
             window_size (w),
             kernel_width ((window_size-1)/2),
             Sinc_x (w),
@@ -100,48 +91,44 @@ namespace MR
             z_values (w, 0.0)
         {
           assert (w % 2);
-          out_of_bounds = false;
         }
 
         //! Set the current position to <b>voxel space</b> position \a pos
-        /*! This will set the position from which the image intensity values will
-         * be interpolated, assuming that \a pos provides the position as a
-         * (floating-point) voxel coordinate within the dataset. */
+        /*! See file interp/base.h for details. */
         template <class VectorType>
         bool voxel (const VectorType& pos) {
-          if ((out_of_bounds = is_out_of_bounds (pos)))
+          if ((out_of_bounds = Base<ImageType>::is_out_of_bounds (pos)))
             return false;
           Sinc_x.set (*this, 0, pos[0]);
           Sinc_y.set (*this, 1, pos[1]);
           Sinc_z.set (*this, 2, pos[2]);
           return true;
         }
+
         //! Set the current position to <b>image space</b> position \a pos
-        /*! This will set the position from which the image intensity values will
-         * be interpolated, assuming that \a pos provides the position as a
-         * coordinate relative to the axes of the dataset, in units of
-         * millimeters. The origin is taken to be the centre of the voxel at [
-         * 0 0 0 ]. */
+        /*! See file interp/base.h for details. */
         template <class VectorType>
-        bool image (const VectorType& pos) {
-          return voxel (voxelsize.inverse() * pos.template cast<double>());
-        }
-        //! Set the current position to the <b>scanner space</b> position \a pos
-        /*! This will set the position from which the image intensity values will
-         * be interpolated, assuming that \a pos provides the position as a
-         * scanner space coordinate, in units of millimeters. */
-        template <class VectorType>
-        bool scanner (const VectorType& pos) {
-          return voxel (Transform::scanner2voxel * pos.template cast<double>());
+        FORCE_INLINE bool image (const VectorType& pos) {
+          return voxel (Transform::voxelsize.inverse() * pos.template cast<default_type>());
         }
 
-        value_type value () {
+        //! Set the current position to the <b>scanner space</b> position \a pos
+        /*! See file interp/base.h for details. */
+        template <class VectorType>
+        FORCE_INLINE bool scanner (const VectorType& pos) {
+          return voxel (Transform::scanner2voxel * pos.template cast<default_type>());
+        }
+
+        //! Read an interpolated image value from the current position.
+        /*! See file interp/base.h for details. */
+        FORCE_INLINE value_type value () {
           if (out_of_bounds)
             return out_of_bounds_value;
           for (size_t z = 0; z != window_size; ++z) {
-            index(2) = Sinc_z.index (z);
+            ImageType::index(2) = Sinc_z.index (z);
             for (size_t y = 0; y != window_size; ++y) {
-              index(1) = Sinc_y.index (y);
+              ImageType::index(1) = Sinc_y.index (y);
+              // Cast necessary so that Sinc_x calls the ImageType value() function
               y_values[y] = Sinc_x.value (static_cast<ImageType&>(*this), 0);
             }
             z_values[z] = Sinc_y.value (y_values);
@@ -149,13 +136,28 @@ namespace MR
           return Sinc_z.value (z_values);
         }
 
-        // Collectively interpolates values along axis >= 3
+        //! Read interpolated values from volumes along axis >= 3
+        /*! See file interp/base.h for details. */
         Eigen::Matrix<value_type, Eigen::Dynamic, 1> row (size_t axis) {
-          // TODO
-          throw Exception ("Sinc interpolation of 4D images not yet implemented");
+          assert (axis > 2);
+          assert (axis < ImageType::ndim());
+          if (out_of_bounds) {
+            Eigen::Matrix<value_type, Eigen::Dynamic, 1> out_of_bounds_row (ImageType::size(axis));
+            out_of_bounds_row.setOnes();
+            out_of_bounds_row *= out_of_bounds_value;
+            return out_of_bounds_row;
+          }
+
+          Eigen::Matrix<value_type, Eigen::Dynamic, 1> row (ImageType::size(axis));
+          // Lazy, non-optimized code, since nothing is actually using this yet
+          // Just make use of the kernel setup within voxel()
+          for (ssize_t volume = 0; volume != ImageType::size(axis); ++volume) {
+            ImageType::index (axis) = volume;
+            row (volume,0) = value();
+          }
+          return row;
         }
 
-        const value_type out_of_bounds_value;
 
       protected:
         const size_t window_size;
