@@ -149,7 +149,8 @@ namespace MR {
             case 0xFFFEU: 
               switch (item.element) {
                 case 0xE000U:
-                  if (item.parents.back().group ==  0x5200U &&
+                  if (item.parents.size() &&
+                      item.parents.back().group ==  0x5200U &&
                       item.parents.back().element == 0x9230U) { // multi-frame item
                     if (in_frames) {
                       calc_distance();

@@ -231,10 +231,10 @@ namespace MR
           const Eigen::Vector3f p_prev (end ? tck[last-1] : tck[1]);
 
           // Before proceeding, make sure that the interface lies somewhere in between these two points
-          if (interp.scanner (p_end))
+          if (!interp.scanner (p_end))
             return p_end;
           const Tissues t_end (interp);
-          if (interp.scanner (p_prev))
+          if (!interp.scanner (p_prev))
             return p_end;
           const Tissues t_prev (interp);
           if (! (((t_end.get_gm() > t_end.get_wm()) && (t_prev.get_gm() < t_prev.get_wm()))

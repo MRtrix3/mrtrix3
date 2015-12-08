@@ -31,6 +31,7 @@ namespace MR {
 
   const uint8_t BitSet::masks[8] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80};
 
+  const char BitSet::dbyte_to_hex[16] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 
 
   BitSet::BitSet (const size_t b, const bool allocator) :
@@ -70,8 +71,7 @@ namespace MR {
       if (new_bytes > bytes) {
         memcpy (new_data, data, bytes);
         memset (new_data + bytes, (allocator ? 0xFF : 0x00), new_bytes - bytes);
-        const size_t excess_bits = bits - (8 * (bytes - 1));
-        const uint8_t mask = 0xFF << excess_bits;
+        const uint8_t mask = 0xFF << excess_bits();
         data[bytes - 1] = allocator ? (data[bytes - 1] | mask) : (data[bytes - 1] & ~mask);
       } else {
         memcpy (new_data, data, new_bytes);
@@ -105,8 +105,7 @@ namespace MR {
     if (!(bits % 8))
       return true;
 
-    const size_t excess_bits = bits - (8 * (bytes - 1));
-    const uint8_t mask = 0xFF << excess_bits;
+    const uint8_t mask = 0xFF << excess_bits();
     if ((data[bytes - 1] | mask) != 0xFF)
       return false;
     return true;
@@ -148,6 +147,25 @@ namespace MR {
 
 
 
+  std::ostream& operator<< (std::ostream& stream, BitSet& d)
+  {
+    stream << "0x";
+    if (d.excess_bits()) {
+      const uint8_t mask = 0xFF << d.excess_bits();
+      stream << d.byte_to_hex (d.data[d.bytes - 1] & mask);
+      for (size_t i = d.bytes - 2; i--;)
+        stream << d.byte_to_hex (d.data[i]);
+    } else {
+      for (size_t i = d.bytes - 1; i--;)
+        stream << d.byte_to_hex (d.data[i]);
+    }
+    return stream;
+  }
+
+
+
+
+
 
 
   BitSet& BitSet::operator= (const BitSet& that)
@@ -168,12 +186,9 @@ namespace MR {
     if (bits % bytes) {
       if (memcmp(data, that.data, bytes - 1))
         return false;
-
-      const size_t excess_bits = bits - (8 * (bytes - 1));
-      const uint8_t mask = ~(0xFF << excess_bits);
+      const uint8_t mask = ~(0xFF << excess_bits());
       if ((data[bytes - 1] & mask) != (that.data[bytes - 1] & mask))
         return false;
-
       return true;
     } else {
       return (!memcmp (data, that.data, bytes));
@@ -189,8 +204,7 @@ namespace MR {
 
   BitSet& BitSet::operator|= (const BitSet& that)
   {
-    if (bits != that.bits)
-      throw Exception ("\nFIXME: Illegal BitSet '|' operator call - size mismatch\n");
+    assert (bits == that.bits);
     for (size_t i = 0; i != bytes; ++i)
       data[i] |= that.data[i];
     return *this;
@@ -198,19 +212,17 @@ namespace MR {
 
 
   BitSet& BitSet::operator&= (const BitSet& that)
-    {
-    if (bits != that.bits)
-      throw Exception ("\nFIXME: Illegal BitSet '&' operator call - size mismatch\n");
+  {
+    assert (bits == that.bits);
     for (size_t i = 0; i != bytes; ++i)
       data[i] &= that.data[i];
     return *this;
-    }
+  }
 
 
   BitSet& BitSet::operator^= (const BitSet& that)
   {
-    if (bits != that.bits)
-      throw Exception ("\nFIXME: Illegal BitSet '^' operator call - size mismatch\n");
+    assert (bits == that.bits);
     for (size_t i = 0; i != bytes; ++i)
       data[i] ^= that.data[i];
     return *this;

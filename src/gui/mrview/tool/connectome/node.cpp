@@ -80,7 +80,7 @@ namespace MR
         Node::Mesh::Mesh (MR::Mesh::Mesh& in) :
             count (3 * in.num_triangles())
         {
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
           std::vector<float> vertices;
@@ -141,7 +141,7 @@ namespace MR
 
         Node::Mesh::~Mesh()
         {
-          Window::GrabContext context;
+          MRView::GrabContext context;
           vertex_buffer.clear();
           normal_buffer.clear();
           vertex_array_object.clear();
@@ -161,9 +161,7 @@ namespace MR
         void Node::Mesh::render() const
         {
           assert (count);
-          Window::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
-
           vertex_buffer.bind (gl::ARRAY_BUFFER);
           normal_buffer.bind (gl::ARRAY_BUFFER);
           vertex_array_object.bind();

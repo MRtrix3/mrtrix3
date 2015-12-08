@@ -29,6 +29,7 @@
 #include <vector>
 
 #include "connectome/connectome.h"
+#include "math/math.h"
 
 #include "dwi/tractography/connectome/connectome.h"
 #include "dwi/tractography/connectome/mapped_track.h"

@@ -161,7 +161,7 @@ namespace MR
                 subvoxel_pos_dwi[0] = pos.index(0) - 0.5 + os_offset + (i[0] * os_step);
 
                 const auto p_scanner (*voxel2scanner * subvoxel_pos_dwi);
-                if (!interp_anat.scanner (p_scanner)) {
+                if (interp_anat.scanner (p_scanner)) {
                   const Tractography::ACT::Tissues tissues (interp_anat);
                   ++total_count;
                   if (tissues.valid()) {

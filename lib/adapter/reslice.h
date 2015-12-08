@@ -25,6 +25,7 @@
 
 #include "image.h"
 #include "transform.h"
+#include "interp/base.h"
 
 namespace MR
 {
@@ -87,7 +88,7 @@ namespace MR
                    const HeaderType& reference,
                    const transform_type& transform = NoTransform,
                    const std::vector<int>& oversample = AutoOverSample,
-                   const value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
+                   const value_type value_when_out_of_bounds = Interp::Base<value_type>::default_out_of_bounds_value()) :
             interp (original, value_when_out_of_bounds),
             x { 0, 0, 0 },
             dim { reference.size(0), reference.size(1), reference.size(2) },
@@ -159,9 +160,8 @@ namespace MR
                 s[1] = d[1] + y*inc[1];
                 for (int x = 0; x < OS[0]; ++x) {
                   s[0] = d[0] + x*inc[0];
-                  interp.voxel (direct_transform * s);
-                  if (!interp) continue;
-                  else result += interp.value();
+                  if (interp.voxel (direct_transform * s))
+                    result += interp.value();
                 }
               }
             }

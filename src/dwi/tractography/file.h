@@ -224,25 +224,29 @@ namespace MR
 
           //! create a new track file with the specified properties
           WriterUnbuffered (const std::string& file, const Properties& properties) :
-            __WriterBase__<ValueType> (file) {
-              File::OFStream out (name, std::ios::out | std::ios::binary | std::ios::trunc);
+              __WriterBase__<ValueType> (file) {
 
-              const_cast<Properties&> (properties).set_timestamp();
-              const_cast<Properties&> (properties).set_version_info();
+            if (!Path::has_suffix (name, ".tck"))
+              throw Exception ("output track files must use the .tck suffix");
 
-              create (out, properties, "tracks");
-              barrier_addr = out.tellp();
+            File::OFStream out (name, std::ios::out | std::ios::binary | std::ios::trunc);
 
-              vector_type x;
-              format_point (barrier(), x);
-              out.write (reinterpret_cast<char*> (&x[0]), sizeof (x));
-              if (!out.good())
-                throw Exception ("error writing tracks file \"" + name + "\": " + strerror (errno));
+            const_cast<Properties&> (properties).set_timestamp();
+            const_cast<Properties&> (properties).set_version_info();
 
-              auto opt = App::get_options ("tck_weights_out");
-              if (opt.size())
-                set_weights_path (opt[0][0]);
-            }
+            create (out, properties, "tracks");
+            barrier_addr = out.tellp();
+
+            vector_type x;
+            format_point (barrier(), x);
+            out.write (reinterpret_cast<char*> (&x[0]), sizeof (x));
+            if (!out.good())
+              throw Exception ("error writing tracks file \"" + name + "\": " + strerror (errno));
+
+            auto opt = App::get_options ("tck_weights_out");
+            if (opt.size())
+              set_weights_path (opt[0][0]);
+          }
 
           //! append track to file
           bool operator() (const Streamline<ValueType>& tck) {

@@ -56,8 +56,8 @@ void usage ()
 
   ARGUMENTS
   + Argument ("fixel_in", "the input fixel image").type_image_in ()
-  + Argument ("tracks",   "the input track file ").type_file_in ()
-  + Argument ("tsf",      "the output track file").type_file_out ();
+  + Argument ("tracks",   "the input track file ").type_tracks_in ()
+  + Argument ("tsf",      "the output track scalar file").type_file_out ();
 
 
   OPTIONS

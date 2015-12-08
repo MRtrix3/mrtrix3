@@ -23,6 +23,7 @@
 #ifndef __cmdline_option_h__
 #define __cmdline_option_h__
 
+#include <cassert>
 #include <string>
 #include <vector>
 #include <limits>
@@ -57,7 +58,9 @@ namespace MR
       ImageIn,
       ImageOut,
       IntSeq,
-      FloatSeq
+      FloatSeq,
+      TracksIn,
+      TracksOut
     } ArgType;
 
     typedef int ArgFlags;
@@ -130,7 +133,7 @@ namespace MR
             int def;
           } choices;
           struct {
-            int def, min, max;
+            int64_t def, min, max;
           } i;
           struct {
             default_type def, min, max;
@@ -191,7 +194,7 @@ namespace MR
         //! specifies that the argument should be an integer
         /*! if desired, a default value can be specified, along with a range of
          * allowed values. */
-        Argument& type_integer (int min = std::numeric_limits<int>::min(), int def = 0, int max = std::numeric_limits<int>::max()) {
+        Argument& type_integer (int64_t min = std::numeric_limits<int64_t>::min(), int64_t def = 0, int64_t max = std::numeric_limits<int64_t>::max()) {
           type = Integer;
           defaults.i.min = min;
           defaults.i.def = def;
@@ -263,6 +266,20 @@ namespace MR
         //! specifies that the argument should be a sequence of comma-separated floating-point values.
         Argument& type_sequence_float () {
           type = FloatSeq;
+          defaults.text = nullptr;
+          return *this;
+        }
+
+        //! specifies that the argument should be an input tracks file
+        Argument& type_tracks_in () {
+          type = TracksIn;
+          defaults.text = nullptr;
+          return *this;
+        }
+
+        //! specifies that the argument should be an output tracks file
+        Argument& type_tracks_out () {
+          type = TracksOut;
           defaults.text = nullptr;
           return *this;
         }
@@ -399,6 +416,7 @@ namespace MR
         }
 
         OptionGroup& operator+ (const Argument& argument) { 
+          assert (!empty());
           back() + argument;
           return *this;
         }

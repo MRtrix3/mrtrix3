@@ -116,7 +116,7 @@ void usage ()
     "NeuroImage, doi:10.1016/j.neuroimage.2015.06.092";
 
   ARGUMENTS
-  + Argument ("in_tracks",   "the input track file").type_file_in()
+  + Argument ("in_tracks",   "the input track file").type_tracks_in()
   + Argument ("in_fod",      "input image containing the spherical harmonics of the fibre orientation distributions").type_image_in()
   + Argument ("out_weights", "output text file containing the weighting factor for each streamline").type_file_out();
 

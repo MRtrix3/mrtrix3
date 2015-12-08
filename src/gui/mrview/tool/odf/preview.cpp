@@ -20,10 +20,10 @@
 
 */
 
-#include "gui/mrview/tool/odf_preview.h"
+#include "gui/mrview/tool/odf/preview.h"
 #include "gui/dwi/render_frame.h"
 #include "gui/mrview/window.h"
-#include "gui/mrview/tool/odf.h"
+#include "gui/mrview/tool/odf/odf.h"
 #include "gui/mrview/mode/base.h"
 
 namespace MR
@@ -38,12 +38,12 @@ namespace MR
 
 
 
-        ODF::Preview::RenderFrame::RenderFrame (QWidget* parent) :
+        ODF_Preview::RenderFrame::RenderFrame (QWidget* parent) :
             DWI::RenderFrame (parent) {
           setMinimumSize (300, 300);    
         }
 
-        void ODF::Preview::RenderFrame::wheelEvent (QWheelEvent*) {
+        void ODF_Preview::RenderFrame::wheelEvent (QWheelEvent*) {
           //Talk to the hand, 'cause the scroll wheel ain't listening.      
         }
 
@@ -51,7 +51,7 @@ namespace MR
 
 
 
-        ODF::Preview::Preview (ODF* parent) :
+        ODF_Preview::ODF_Preview (ODF* parent) :
             QWidget (&window(), Qt::Tool),
             parent (parent),
             render_frame (new RenderFrame (this))
@@ -99,7 +99,7 @@ namespace MR
 
           render_frame->set_scale (parent->scale->value());
           render_frame->set_color_by_dir (parent->colour_by_direction_box->isChecked());
-          render_frame->set_hide_neg_lobes (parent->hide_negative_lobes_box->isChecked());
+          render_frame->set_hide_neg_values (parent->hide_negative_values_box->isChecked());
           render_frame->set_use_lighting (parent->use_lighting_box->isChecked());
           render_frame->set_lmax (parent->lmax_selector->value());
           lock_orientation_to_image_slot (1);
@@ -112,13 +112,13 @@ namespace MR
 
 
 
-        void ODF::Preview::set (const Eigen::VectorXf& data)
+        void ODF_Preview::set (const Eigen::VectorXf& data)
         {
           render_frame->set (data);
           lock_orientation_to_image_slot (0);
         }
 
-        void ODF::Preview::lock_orientation_to_image_slot (int)
+        void ODF_Preview::lock_orientation_to_image_slot (int)
         {
           if (lock_orientation_to_image_box->isChecked()) {
             const Projection* proj = window().get_current_mode()->get_current_projection();
@@ -127,22 +127,22 @@ namespace MR
           }
         }
 
-        void ODF::Preview::interpolation_slot (int)
+        void ODF_Preview::interpolation_slot (int)
         {
           parent->update_preview();
         }
 
-        void ODF::Preview::show_axes_slot (int)
+        void ODF_Preview::show_axes_slot (int)
         {
           render_frame->set_show_axes (show_axes_box->isChecked());
         }
 
-        void ODF::Preview::level_of_detail_slot (int)
+        void ODF_Preview::level_of_detail_slot (int)
         {
           render_frame->set_LOD (level_of_detail_selector->value());
         }
 
-        void ODF::Preview::lighting_update_slot()
+        void ODF_Preview::lighting_update_slot()
         {
           // Use a dummy call that won't actually change anything, but will call updateGL() (which is protected)
           render_frame->set_LOD (level_of_detail_selector->value());

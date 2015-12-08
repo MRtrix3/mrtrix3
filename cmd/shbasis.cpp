@@ -23,8 +23,6 @@
 
 #include <vector>
 
-#include <gsl/gsl_fit.h>
-
 #include "app.h"
 #include "bitset.h"
 #include "command.h"
@@ -89,22 +87,18 @@ void usage ()
 
 // Perform a linear regression on the power ratio in each order
 // Omit l=2 - tends to be abnormally small due to non-isotropic brain-wide fibre distribution
-// Use this to project the power ratio at either l=0 or l=lmax (depending on the gradient);
-//   this has proven to be a better predictor of SH basis for poor data
-// Also, if the regression has a substantial gradient, warn the user
-// Threshold on gradient will depend on the basis of the image
-//
 std::pair<float, float> get_regression (const std::vector<float>& ratios)
 {
   const size_t n = ratios.size() - 1;
-  double x[n], y[n];
+  Eigen::VectorXf Y (n), b (2);
+  Eigen::MatrixXf A (n, 2);
   for (size_t i = 1; i != ratios.size(); ++i) {
-    x[i-1] = (2*i)+2;
-    y[i-1] = ratios[i];
+    Y[i-1] = ratios[i];
+    A(i-1,0) = 1.0f;
+    A(i-1,1) = (2*i)+2;
   }
-  double c0, c1, cov00, cov01, cov11, sumsq;
-  gsl_fit_linear (x, 1, y, 1, n, &c0, &c1, &cov00, &cov01, &cov11, &sumsq);
-  return std::make_pair (c0, c1);
+  b = (A.transpose() * A).ldlt().solve (A.transpose() * Y);
+  return std::make_pair (b[0], b[1]);
 }
 
 

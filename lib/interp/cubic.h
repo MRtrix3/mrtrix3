@@ -23,7 +23,8 @@
 #ifndef __interp_cubic_h__
 #define __interp_cubic_h__
 
-#include "transform.h"
+#include "types.h"
+#include "interp/base.h"
 #include "math/cubic_spline.h"
 #include "math/least_squares.h"
 
@@ -43,10 +44,10 @@ namespace MR
      * and scanner().
      * For example:
      * \code
-     * auto input = Image<float>::create (Argument[0]);
+     * auto input = Image<float>::create (argument[0]);
      *
      * // create an Interp::Cubic object using input as the parent data set:
-     * Interp::Cubic<decltype(input) > interp (input);
+     * Interp::Cubic<decltype(input)> interp (input);
      *
      * // set the scanner-space position to [ 10.2 3.59 54.1 ]:
      * interp.scanner (10.2, 3.59, 54.1);
@@ -74,43 +75,22 @@ namespace MR
     // which we store in SplineInterpBase
 
     template <class ImageType, class SplineType, Math::SplineProcessingType PType>
-    class SplineInterpBase : public ImageType, public Transform
+    class SplineInterpBase : public Base<ImageType>
     {
       public:
-        typedef typename ImageType::value_type value_type;
+        using typename Base<ImageType>::value_type;
 
-        using ImageType::size;
-        using ImageType::x;
-        using ImageType::ndim;
-        using Transform::set_to_nearest;
-        using Transform::voxelsize;
-        using Transform::scanner2voxel;
-        using Transform::operator!;
-        using Transform::out_of_bounds;
-        using Transform::bounds;
-
-        //! construct a Nearest object to obtain interpolated values using the
-        // parent DataSet class
-        SplineInterpBase (const ImageType& parent, value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
-          ImageType (parent),
-          Transform (parent),
-          out_of_bounds_value (value_when_out_of_bounds),
-          H { SplineType(PType), SplineType(PType), SplineType(PType) }
-        { }
-
-        const value_type out_of_bounds_value;
-
-        FORCE_INLINE ssize_t index (size_t axis) const { return x[axis]; }
-        FORCE_INLINE auto index (size_t axis) -> decltype (Helper::index (*this, axis)) { return { *this, axis }; }
-        FORCE_INLINE void move_index (size_t axis, ssize_t increment) { assert(axis>=3); ImageType::move_index(axis, increment); }
+        SplineInterpBase (const ImageType& parent, value_type value_when_out_of_bounds = Base<ImageType>::default_out_of_bounds_value()) :
+            Base<ImageType> (parent, value_when_out_of_bounds),
+            H { SplineType(PType), SplineType(PType), SplineType(PType) } { }
 
       protected:
         SplineType H[3];
-        Eigen::Vector3d P;
+        Eigen::Vector3 P;
 
-        ssize_t check (ssize_t x, ssize_t dim) const {
+        ssize_t clamp (ssize_t x, ssize_t dim) const {
           if (x < 0) return 0;
-          if (x > dim) return dim;
+          if (x >= dim) return (dim-1);
           return x;
         }
     };
@@ -119,9 +99,6 @@ namespace MR
     template <class ImageType, class SplineType, Math::SplineProcessingType PType>
     class SplineInterp : public SplineInterpBase <ImageType, SplineType, PType>
     {
-      public:
-        typedef typename ImageType::value_type value_type;
-
       private:
         SplineInterp ();
     };
@@ -131,36 +108,27 @@ namespace MR
 
     template <class ImageType, class SplineType>
     class SplineInterp<ImageType, SplineType, Math::SplineProcessingType::Value>:
-    public SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::Value>
+        public SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::Value>
     {
       public:
-        typedef typename ImageType::value_type value_type;
         using SplineBase = SplineInterpBase<ImageType, SplineType, Math::SplineProcessingType::Value>;
 
-        using SplineBase::size;
-        using SplineBase::index;
-        using SplineBase::set_to_nearest;
-        using SplineBase::voxelsize;
-        using SplineBase::scanner2voxel;
-        using SplineBase::out_of_bounds;
-        using SplineBase::out_of_bounds_value;
+        typedef typename SplineBase::value_type value_type;
         using SplineBase::P;
         using SplineBase::H;
-        using SplineBase::check;
+        using SplineBase::clamp;
 
-        SplineInterp (const ImageType& parent, value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
-          SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::Value> (parent, value_when_out_of_bounds)
+        SplineInterp (const ImageType& parent, value_type value_when_out_of_bounds = SplineBase::default_out_of_bounds_value()) :
+            SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::Value> (parent, value_when_out_of_bounds)
         { }
 
         //! Set the current position to <b>voxel space</b> position \a pos
-        /*! This will set the position from which the image intensity values will
-         * be interpolated, assuming that \a pos provides the position as a
-         * (floating-point) voxel coordinate within the dataset. */
+        /*! See file interp/base.h for details. */
         template <class VectorType>
         bool voxel (const VectorType& pos) {
-          Eigen::Vector3d f = set_to_nearest (pos);
-          if (out_of_bounds)
-            return true;
+          Eigen::Vector3 f = Base<ImageType>::intravoxel_offset (pos);
+          if (Base<ImageType>::out_of_bounds)
+            return false;
           P = pos;
           for(size_t i =0; i <3; ++i)
             H[i].set (f[i]);
@@ -177,31 +145,28 @@ namespace MR
             }
           }
 
-          return false;
+          return true;
         }
 
-        //! Set the current position to <b>image space</b> position \a pos
-        /*! This will set the position from which the image intensity values will
-         * be interpolated, assuming that \a pos provides the position as a
-         * coordinate relative to the axes of the dataset, in units of
-         * millimeters. The origin is taken to be the centre of the voxel at [
-         * 0 0 0 ]. */
+        //! Set the current position to <b>voxel space</b> position \a pos
+        /*! See file interp/base.h for details. */
         template <class VectorType>
-        bool image (const VectorType& pos) {
-          return voxel (voxelsize.inverse() * pos.template cast<double>());
-        }
-        //! Set the current position to the <b>scanner space</b> position \a pos
-        /*! This will set the position from which the image intensity values will
-         * be interpolated, assuming that \a pos provides the position as a
-         * scanner space coordinate, in units of millimeters. */
-        template <class VectorType>
-        bool scanner (const VectorType& pos) {
-          return voxel (scanner2voxel * pos.template cast<double>());
+        FORCE_INLINE bool image (const VectorType& pos) {
+          return voxel (Transform::voxelsize.inverse() * pos.template cast<default_type>());
         }
 
+        //! Set the current position to <b>scanner space</b> position \a pos
+        /*! See file interp/base.h for details. */
+        template <class VectorType>
+        FORCE_INLINE bool scanner (const VectorType& pos) {
+          return voxel (Transform::scanner2voxel * pos.template cast<default_type>());
+        }
+
+        //! Read an interpolated value from the current position
+        /*! See file interp/base.h for details. */
         value_type value () {
-          if (out_of_bounds)
-            return out_of_bounds_value;
+          if (Base<ImageType>::out_of_bounds)
+            return Base<ImageType>::out_of_bounds_value;
 
           ssize_t c[] = { ssize_t (std::floor (P[0])-1), ssize_t (std::floor (P[1])-1), ssize_t (std::floor (P[2])-1) };
 
@@ -209,13 +174,12 @@ namespace MR
 
           size_t i(0);
           for (ssize_t z = 0; z < 4; ++z) {
-            ImageType::index(2) = check (c[2] + z, size (2)-1);
+            ImageType::index(2) = clamp (c[2] + z, ImageType::size (2));
             for (ssize_t y = 0; y < 4; ++y) {
-              ImageType::index(1) = check (c[1] + y, size (1)-1);
+              ImageType::index(1) = clamp (c[1] + y, ImageType::size (1));
               for (ssize_t x = 0; x < 4; ++x) {
-                ImageType::index(0) = check (c[0] + x, size (0)-1);
-                coeff_vec[i] = ImageType::value ();
-                i += 1;
+                ImageType::index(0) = clamp (c[0] + x, ImageType::size (0));
+                coeff_vec[i++] = ImageType::value ();
               }
             }
           }
@@ -223,28 +187,28 @@ namespace MR
           return coeff_vec.dot (weights_vec);
         }
 
-        // Collectively interpolates values along axis >= 3
+        //! Read interpolated values from volumes along axis >= 3
+        /*! See file interp/base.h for details. */
         Eigen::Matrix<value_type, Eigen::Dynamic, 1> row (size_t axis) {
-          if (out_of_bounds) {
+          if (Base<ImageType>::out_of_bounds) {
             Eigen::Matrix<value_type, Eigen::Dynamic, 1> out_of_bounds_row (ImageType::size(axis));
             out_of_bounds_row.setOnes();
-            out_of_bounds_row *= out_of_bounds_value;
+            out_of_bounds_row *= Base<ImageType>::out_of_bounds_value;
             return out_of_bounds_row;
           }
 
           ssize_t c[] = { ssize_t (std::floor (P[0])-1), ssize_t (std::floor (P[1])-1), ssize_t (std::floor (P[2])-1) };
 
-          Eigen::Matrix<value_type, Eigen::Dynamic, 64> coeff_matrix ( size(3), 64 );
+          Eigen::Matrix<value_type, Eigen::Dynamic, 64> coeff_matrix ( ImageType::size(3), 64 );
 
           size_t i(0);
           for (ssize_t z = 0; z < 4; ++z) {
-            ImageType::index(2) = check (c[2] + z, size (2)-1);
+            ImageType::index(2) = clamp (c[2] + z, ImageType::size (2));
             for (ssize_t y = 0; y < 4; ++y) {
-              ImageType::index(1) = check (c[1] + y, size (1)-1);
+              ImageType::index(1) = clamp (c[1] + y, ImageType::size (1));
               for (ssize_t x = 0; x < 4; ++x) {
-                ImageType::index(0) = check (c[0] + x, size (0)-1);
-                coeff_matrix.col (i) = ImageType::row (axis);
-                i += 1;
+                ImageType::index(0) = clamp (c[0] + x, ImageType::size (0));
+                coeff_matrix.col (i++) = ImageType::row (axis);
               }
             }
           }
@@ -261,38 +225,28 @@ namespace MR
 
     template <class ImageType, class SplineType>
     class SplineInterp<ImageType, SplineType, Math::SplineProcessingType::Derivative>:
-    public SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::Derivative>
+        public SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::Derivative>
     {
       public:
-        typedef typename ImageType::value_type value_type;
         using SplineBase = SplineInterpBase<ImageType, SplineType, Math::SplineProcessingType::Derivative>;
 
-        using SplineBase::size;
-        using SplineBase::index;
-        using SplineBase::ndim;
-        using SplineBase::set_to_nearest;
-        using SplineBase::voxelsize;
-        using SplineBase::scanner2voxel;
-        using SplineBase::out_of_bounds;
-        using SplineBase::out_of_bounds_value;
+        typedef typename SplineBase::value_type value_type;
         using SplineBase::P;
         using SplineBase::H;
-        using SplineBase::check;
+        using SplineBase::clamp;
 
-        SplineInterp (const ImageType& parent, value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
-          SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::Derivative> (parent, value_when_out_of_bounds),
-          out_of_bounds_vec (value_when_out_of_bounds, value_when_out_of_bounds, value_when_out_of_bounds),
-          wrt_scanner_transform (Transform::scanner2image.linear() * voxelsize.inverse()) { }
+        SplineInterp (const ImageType& parent, value_type value_when_out_of_bounds = SplineBase::default_out_of_bounds_value()) :
+            SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::Derivative> (parent, value_when_out_of_bounds),
+            out_of_bounds_vec (value_when_out_of_bounds, value_when_out_of_bounds, value_when_out_of_bounds),
+            wrt_scanner_transform (Transform::scanner2image.linear() * Transform::voxelsize.inverse()) { }
 
         //! Set the current position to <b>voxel space</b> position \a pos
-        /*! This will set the position from which the image intensity values will
-         * be interpolated, assuming that \a pos provides the position as a
-         * (floating-point) voxel coordinate within the dataset. */
+        /*! See file interp/base.h for details. */
         template <class VectorType>
         bool voxel (const VectorType& pos) {
-          Eigen::Vector3d f = set_to_nearest (pos);
-          if (out_of_bounds)
-            return true;
+          Eigen::Vector3 f = Base<ImageType>::set_to_nearest (pos);
+          if (Base<ImageType>::out_of_bounds)
+            return false;
           P = pos;
           for(size_t i =0; i <3; ++i)
             H[i].set (f[i]);
@@ -309,40 +263,32 @@ namespace MR
                 weights_matrix(i,0) = H[0].deriv_weights[x] * partial_weight;
                 weights_matrix(i,1) = H[0].weights[x] * partial_weight_dy;
                 weights_matrix(i,2) = H[0].weights[x] * partial_weight_dz;
-                i += 1;
+                ++i;
               }
             }
           }
 
 
-          return false;
+          return true;
         }
 
         //! Set the current position to <b>image space</b> position \a pos
-        /*! This will set the position from which the image intensity values will
-         * be interpolated, assuming that \a pos provides the position as a
-         * coordinate relative to the axes of the dataset, in units of
-         * millimeters. The origin is taken to be the centre of the voxel at [
-         * 0 0 0 ]. */
+        /*! See file interp/base.h for details. */
         template <class VectorType>
-        bool image (const VectorType& pos) {
-          return voxel (voxelsize.inverse() * pos.template cast<double>());
+        FORCE_INLINE bool image (const VectorType& pos) {
+          return voxel (Transform::voxelsize.inverse() * pos.template cast<default_type>());
         }
         //! Set the current position to the <b>scanner space</b> position \a pos
-        /*! This will set the position from which the image intensity values will
-         * be interpolated, assuming that \a pos provides the position as a
-         * scanner space coordinate, in units of millimeters. */
+        /*! See file interp/base.h for details. */
         template <class VectorType>
-        bool scanner (const VectorType& pos) {
-          return voxel (scanner2voxel * pos.template cast<double>());
+        FORCE_INLINE bool scanner (const VectorType& pos) {
+          return voxel (Transform::scanner2voxel * pos.template cast<default_type>());
         }
 
         //! Returns the image gradient at the current position
         Eigen::Matrix<value_type, 1, 3> gradient () {
-          if (out_of_bounds)
-            return out_of_bounds_vec;
-
-
+          if (Base<ImageType>::out_of_bounds)
+            return Base<ImageType>::out_of_bounds_vec;
 
           ssize_t c[] = { ssize_t (std::floor (P[0])-1), ssize_t (std::floor (P[1])-1), ssize_t (std::floor (P[2])-1) };
 
@@ -350,13 +296,12 @@ namespace MR
 
           size_t i(0);
           for (ssize_t z = 0; z < 4; ++z) {
-            ImageType::index(2) = check (c[2] + z, size (2)-1);
+            ImageType::index(2) = clamp (c[2] + z, ImageType::size (2));
             for (ssize_t y = 0; y < 4; ++y) {
-              ImageType::index(1) = check (c[1] + y, size (1)-1);
+              ImageType::index(1) = clamp (c[1] + y, ImageType::size (1));
               for (ssize_t x = 0; x < 4; ++x) {
-                ImageType::index(0) = check (c[0] + x, size (0)-1);
-                coeff_vec[i] = ImageType::value ();
-                i += 1;
+                ImageType::index(0) = clamp (c[0] + x, ImageType::size (0));
+                coeff_vec[i++] = ImageType::value ();
               }
             }
           }
@@ -372,28 +317,27 @@ namespace MR
 
         // Collectively interpolates gradients along axis 3
         Eigen::Matrix<value_type, Eigen::Dynamic, 3> gradient_row() {
-          if (out_of_bounds) {
+          if (Base<ImageType>::out_of_bounds) {
             Eigen::Matrix<value_type, Eigen::Dynamic, 3> out_of_bounds_matrix (ImageType::size(3), 3);
             out_of_bounds_matrix.setOnes();
-            out_of_bounds_matrix *= out_of_bounds_value;
+            out_of_bounds_matrix *= Base<ImageType>::out_of_bounds_value;
             return out_of_bounds_matrix;
           }
 
-          assert (ndim() == 4);
+          assert (ImageType::ndim() == 4);
 
           ssize_t c[] = { ssize_t (std::floor (P[0])-1), ssize_t (std::floor (P[1])-1), ssize_t (std::floor (P[2])-1) };
 
-          Eigen::Matrix<value_type, Eigen::Dynamic, 64> coeff_matrix (size(3), 64);
+          Eigen::Matrix<value_type, Eigen::Dynamic, 64> coeff_matrix (ImageType::size(3), 64);
 
           size_t i(0);
           for (ssize_t z = 0; z < 4; ++z) {
-            ImageType::index(2) = check (c[2] + z, size (2)-1);
+            ImageType::index(2) = clamp (c[2] + z, ImageType::size (2));
             for (ssize_t y = 0; y < 4; ++y) {
-              ImageType::index(1) = check (c[1] + y, size (1)-1);
+              ImageType::index(1) = clamp (c[1] + y, ImageType::size (1));
               for (ssize_t x = 0; x < 4; ++x) {
-                ImageType::index(0) = check (c[0] + x, size (0)-1);
-                coeff_matrix.col (i) = ImageType::row (3);
-                i += 1;
+                ImageType::index(0) = clamp (c[0] + x, ImageType::size (0));
+                coeff_matrix.col (i++) = ImageType::row (3);
               }
             }
           }
@@ -417,39 +361,29 @@ namespace MR
     // Specialization of SplineInterp when we're after both interpolated gradients and values
     template <class ImageType, class SplineType>
     class SplineInterp<ImageType, SplineType, Math::SplineProcessingType::ValueAndDerivative>:
-    public SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::ValueAndDerivative>
+        public SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::ValueAndDerivative>
     {
       public:
-        typedef typename ImageType::value_type value_type;
         using SplineBase = SplineInterpBase<ImageType, SplineType, Math::SplineProcessingType::ValueAndDerivative>;
 
-        using SplineBase::size;
-        using SplineBase::index;
-        using SplineBase::ndim;
-        using SplineBase::set_to_nearest;
-        using SplineBase::voxelsize;
-        using SplineBase::scanner2voxel;
-        using SplineBase::out_of_bounds;
-        using SplineBase::out_of_bounds_value;
+        typedef typename SplineBase::value_type value_type;
         using SplineBase::P;
         using SplineBase::H;
-        using SplineBase::check;
+        using SplineBase::clamp;
 
-        SplineInterp (const ImageType& parent, value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
-          SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::ValueAndDerivative> (parent, value_when_out_of_bounds)
+        SplineInterp (const ImageType& parent, value_type value_when_out_of_bounds = SplineBase::default_out_of_bounds_value()) :
+            SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::ValueAndDerivative> (parent, value_when_out_of_bounds)
         { }
 
         //! Set the current position to <b>voxel space</b> position \a pos
-        /*! This will set the position from which the image intensity values will
-         * be interpolated, assuming that \a pos provides the position as a
-         * (floating-point) voxel coordinate within the dataset. */
+        /*! See file interp/base.h for details. */
         template <class VectorType>
         bool voxel (const VectorType& pos) {
-          Eigen::Vector3d f = set_to_nearest (pos);
-          if (out_of_bounds)
-            return true;
+          Eigen::Vector3 f = Base<ImageType>::set_to_nearest (pos);
+          if (Base<ImageType>::out_of_bounds)
+            return false;
           P = pos;
-          for(size_t i =0; i <3; ++i)
+          for (size_t i = 0; i < 3; ++i)
             H[i].set (f[i]);
 
           // Precompute weights
@@ -467,18 +401,17 @@ namespace MR
                 weights_matrix(i,2) = H[0].weights[x] * partial_weight_dz;
                 // Value
                 weights_matrix(i,3) = H[0].weights[x] * partial_weight;
-
-                i += 1;
+                ++i;
               }
             }
           }
 
-          return false;
+          return true;
         }
 
 
         void value_and_gradient (value_type& value, Eigen::Matrix<value_type, 1, 3>& gradient) {
-          if (out_of_bounds)
+          if (Base<ImageType>::out_of_bounds)
             return;
 
           ssize_t c[] = { ssize_t (std::floor (P[0])-1), ssize_t (std::floor (P[1])-1), ssize_t (std::floor (P[2])-1) };
@@ -487,11 +420,11 @@ namespace MR
 
           size_t i(0);
           for (ssize_t z = 0; z < 4; ++z) {
-            ImageType::index(2) = check (c[2] + z, size (2)-1);
+            ImageType::index(2) = clamp (c[2] + z, ImageType::size (2));
             for (ssize_t y = 0; y < 4; ++y) {
-              ImageType::index(1) = check (c[1] + y, size (1)-1);
+              ImageType::index(1) = clamp (c[1] + y, ImageType::size (1));
               for (ssize_t x = 0; x < 4; ++x) {
-                ImageType::index(0) = check (c[0] + x, size (0)-1);
+                ImageType::index(0) = clamp (c[0] + x, ImageType::size (0));
                 coeff_vec[i] = ImageType::value ();
                 i += 1;
               }

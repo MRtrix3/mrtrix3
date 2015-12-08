@@ -20,8 +20,6 @@
 
 */
 
-#include <gsl/gsl_version.h>
-
 #include "mrtrix.h"
 
 namespace MR

@@ -83,9 +83,9 @@ namespace MR
           else if (key == "layout") layout = value;
           else if (key == "datatype") dtype = value;
           else if (key == "scaling") scaling = parse_floats (value);
-          else if (key == "transform") 
+          else if (key == "transform")
             transform.push_back (parse_floats (value));
-          else if (key.size() && value.size()) 
+          else if (key.size() && value.size())
             add_line (H.keyval()[key], value);
         }
 
@@ -122,9 +122,9 @@ namespace MR
 
         if (transform.size()) {
 
-          auto check_transform = [&transform]() { 
+          auto check_transform = [&transform]() {
             if (transform.size() < 3) return false;
-            for (auto row : transform) 
+            for (auto row : transform)
               if (row.size() != 4)
                 return false;
             return true;
@@ -174,17 +174,16 @@ namespace MR
         dt.set_byte_order_native();
         out << "\ndatatype: " << dt.specifier();
 
-        out << "\ntransform: " << H.transform()(0,0) << "," <<  H.transform()(0,1) << "," << H.transform()(0,2) << "," << H.transform()(0,3);
-        out << "\ntransform: " << H.transform()(1,0) << "," <<  H.transform()(1,1) << "," << H.transform()(1,2) << "," << H.transform()(1,3);
-        out << "\ntransform: " << H.transform()(2,0) << "," <<  H.transform()(2,1) << "," << H.transform()(2,2) << "," << H.transform()(2,3);
+        Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", "\ntransform: ", "", "", "\ntransform: ", "");
+        out << H.transform().matrix().topLeftCorner(3,4).format(fmt);
 
         if (H.intensity_offset() != 0.0 || H.intensity_scale() != 1.0)
           out << "\nscaling: " << H.intensity_offset() << "," << H.intensity_scale();
 
-        for (const auto i : H.keyval()) 
+        for (const auto i : H.keyval())
           for (const auto line : split_lines (i.second))
             out << "\n" << i.first << ": " << line;
-        
+
 
         out << "\n";
       }

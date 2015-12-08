@@ -39,9 +39,9 @@ void usage ()
   + "apply a normalisation map to a tracks file.";
 
   ARGUMENTS
-  + Argument ("tracks", "the input track file.").type_file_in()
+  + Argument ("tracks", "the input track file.").type_tracks_in()
   + Argument ("transform", "the image containing the transform.").type_image_in()
-  + Argument ("output", "the output track file").type_file_out();
+  + Argument ("output", "the output track file").type_tracks_out();
 }
 
 
@@ -82,7 +82,7 @@ class Warper
 
     Eigen::Matrix<value_type,3,1> pos (const Eigen::Matrix<value_type,3,1>& x) {
       Eigen::Matrix<value_type,3,1> p;
-      if (!interp.scanner (x)) {
+      if (interp.scanner (x)) {
         interp.index(3) = 0; p[0] = interp.value();
         interp.index(3) = 1; p[1] = interp.value();
         interp.index(3) = 2; p[2] = interp.value();

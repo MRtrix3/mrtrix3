@@ -316,7 +316,7 @@ namespace MR
         {
           std::vector<GLubyte> data (roi->header().size(0) * roi->header().size(1) * roi->header().size(2));
           { 
-            Window::GrabContext context; 
+            MRView::GrabContext context;
             ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
             roi->texture().bind();
             gl::PixelStorei (gl::PACK_ALIGNMENT, 1);

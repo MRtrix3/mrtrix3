@@ -56,7 +56,7 @@ void usage ()
   + "generate a connectome matrix from a streamlines file and a node parcellation image";
 
   ARGUMENTS
-  + Argument ("tracks_in",      "the input track file").type_file_in()
+  + Argument ("tracks_in",      "the input track file").type_tracks_in()
   + Argument ("nodes_in",       "the input node parcellation image").type_image_in()
   + Argument ("connectome_out", "the output .csv file containing edge weights").type_file_out();
 
@@ -91,7 +91,7 @@ void run ()
 
   // First, find out how many segmented nodes there are, so the matrix can be pre-allocated
   // Also check for node volume for all nodes
-  std::vector<uint32_t> node_volumes;
+  std::vector<uint32_t> node_volumes (1, 0);
   node_t max_node_index = 0;
   for (auto i = Loop (node_image) (node_image); i; ++i) {
     if (node_image.value() > max_node_index) {

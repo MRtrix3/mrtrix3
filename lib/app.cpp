@@ -22,9 +22,6 @@
 
 #include <unistd.h>
 
-#include <gsl/gsl_version.h>
-#include <gsl/gsl_errno.h>
-
 #include "app.h"
 #include "debug.h"
 #include "progressbar.h"
@@ -42,14 +39,6 @@
 
 namespace MR
 {
-
-
-  void mrtrix_gsl_error_handler (const char* reason, const char* file, int line, int gsl_errno)
-  {
-    throw Exception (std::string ("GSL error: ") + reason);
-  }
-
-
 
   namespace App
   {
@@ -201,6 +190,10 @@ namespace MR
           return ("int seq");
         case FloatSeq:
           return ("float seq");
+        case TracksIn:
+          return ("tracks in");
+        case TracksOut:
+          return ("tracks out");
         default:
           return ("undefined");
       }
@@ -440,6 +433,12 @@ namespace MR
         case FloatSeq:
           stream << "FSEQ";
           break;
+        case TracksIn:
+          stream << "TRACKSIN";
+          break;
+        case TracksOut:
+          stream << "TRACKSOUT";
+          break;
         default:
           assert (0);
       }
@@ -536,7 +535,7 @@ namespace MR
 #endif
         " version, built " __DATE__ 
         + ( project_version ? std::string(" against MRtrix ") + mrtrix_version : std::string("") ) 
-        + ", using GSL " + gsl_version + "\n"
+        + ", using Eigen " + str(EIGEN_WORLD_VERSION) + "." + str(EIGEN_MAJOR_VERSION) + "." + str(EIGEN_MINOR_VERSION) + "\n"
         "Author(s): " + AUTHOR + "\n" +
         COPYRIGHT + "\n";
 
@@ -865,22 +864,31 @@ namespace MR
       // check for the existence of all specified input files (including optional ones that have been provided)
       // if necessary, also check for pre-existence of any output files with known paths
       //   (if the output is e.g. given as a prefix, the argument should be flagged as type_text())
-        for (const auto& i : argument) {
-        if ((i.arg->type == ArgFileIn) && !Path::exists (std::string(i)))
+      for (const auto& i : argument) {
+        if ((i.arg->type == ArgFileIn || i.arg->type == TracksIn) && !Path::exists (std::string(i)))
           throw Exception ("required input file \"" + str(i) + "\" not found");
-        if (i.arg->type == ArgFileOut)
+        if (i.arg->type == ArgFileOut || i.arg->type == TracksOut)
           check_overwrite (std::string(i));
+        if (i.arg->type == TracksIn && !Path::has_suffix (str(i), ".tck"))
+          throw Exception ("input file " + str(i) + " is not a valid track file");
+        if (i.arg->type == TracksOut && !Path::has_suffix (str(i), ".tck"))
+          throw Exception ("output track file (" + str(i) + ") must use the .tck suffix");
       }
       for (const auto& i : option) {
         for (size_t j = 0; j != i.opt->size(); ++j) {
           const Argument& arg = i.opt->operator [](j);
           const char* const name = i.args[j];
-          if ((arg.type == ArgFileIn) && !Path::exists (name))
+          if ((arg.type == ArgFileIn || arg.type == TracksIn) && !Path::exists (name))
             throw Exception ("input file \"" + str(name) + "\" not found (required for option \"-" + std::string(i.opt->id) + "\")");
-          if (arg.type == ArgFileOut)
+          if (arg.type == ArgFileOut || arg.type == TracksOut)
             check_overwrite (name);
+          if (arg.type == TracksIn && !Path::has_suffix (str(name), ".tck"))
+            throw Exception ("input file " + str(name) + " is not a valid track file");
+          if (arg.type == TracksOut && !Path::has_suffix (str(name), ".tck"))
+            throw Exception ("output track file (" + str(name) + ") must use the .tck suffix");
         }
       }
+
     }
 
 
@@ -911,8 +919,6 @@ namespace MR
 #endif
 
       srand (time (nullptr));
-
-      gsl_set_error_handler (&mrtrix_gsl_error_handler);
     }
 
 
@@ -941,9 +947,61 @@ namespace MR
     int64_t App::ParsedArgument::as_int () const
     {
       if (arg->type == Integer) {
-        const int retval = to<int> (p);
-        const int min = arg->defaults.i.min;
-        const int max = arg->defaults.i.max;
+
+        // Check to see if there are any alpha characters in here
+        // - If a single character at the end, use as integer multiplier
+        //   - Unless there's a dot point before the multiplier; in which case,
+        //     parse the number as a float, multiply, then cast to integer
+        // - If a single 'e' or 'E' in the middle, parse as float and convert to integer
+        size_t alpha_count = 0;
+        bool alpha_is_last = false;
+        bool contains_dotpoint = false;
+        char alpha_char = 0;
+        for (const char* c = p; *c; ++c) {
+          if (std::isalpha (*c)) {
+            ++alpha_count;
+            alpha_is_last = true;
+            alpha_char = *c;
+          } else {
+            alpha_is_last = false;
+          }
+          if (*c == '.')
+            contains_dotpoint = true;
+        }
+        if (alpha_count > 1)
+          throw Exception ("error converting string " + str(p) + " to integer: too many letters");
+        int64_t retval = 0;
+        if (alpha_count) {
+          if (alpha_is_last) {
+            std::string num (p);
+            const char postfix = num.back();
+            num.pop_back();
+            int64_t multiplier = 1.0;
+            switch (postfix) {
+              case 'k': case 'K': multiplier = 1000; break;
+              case 'm': case 'M': multiplier = 1000000; break;
+              case 'b': case 'B': multiplier = 1000000000; break;
+              case 't': case 'T': multiplier = 1000000000000; break;
+              default: throw Exception ("error converting string " + str(p) + " to integer: unexpected postfix \'" + postfix + "\'");
+            }
+            if (contains_dotpoint) {
+              const default_type prefix = to<default_type> (num);
+              retval = std::round (prefix * default_type(multiplier));
+            } else {
+              retval = to<int64_t> (num) * multiplier;
+            }
+          } else if (alpha_char == 'e' || alpha_char == 'E') {
+            const default_type as_float = to<default_type> (p);
+            retval = std::round (as_float);
+          } else {
+            throw Exception ("error converting string " + str(p) + " to integer: unexpected character");
+          }
+        } else {
+          retval = to<int64_t> (p);
+        }
+
+        const int64_t min = arg->defaults.i.min;
+        const int64_t max = arg->defaults.i.max;
         if (retval < min || retval > max) {
           std::string msg ("value supplied for ");
           if (opt) msg += std::string ("option \"") + opt->id;

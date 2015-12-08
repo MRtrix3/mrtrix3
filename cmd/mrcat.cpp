@@ -37,7 +37,7 @@ ARGUMENTS
   + Argument ("image1", "the first input image.")
   .type_image_in()
 
-  + Argument ("image2", "the second input image.")
+  + Argument ("image2", "additional input image(s).")
   .type_image_in()
   .allow_multiple()
 

@@ -60,9 +60,13 @@ namespace MR
             typedef Interp::Linear<Image<float>> Interp;
 
           public:
-            GMWMI_finder (Image<float>& buffer) :
+            GMWMI_finder (const Image<float>& buffer) :
               interp_template (buffer),
               min_vox (std::min (buffer.spacing(0), std::min (buffer.spacing(1), buffer.spacing(2)))) { }
+
+            GMWMI_finder (const Interp& interp) :
+              interp_template (interp),
+              min_vox (std::min (interp.spacing(0), std::min (interp.spacing(1), interp.spacing(2)))) { }
 
             GMWMI_finder (const GMWMI_finder& that) :
               interp_template (that.interp_template),
@@ -84,7 +88,7 @@ namespace MR
 
 
             Tissues get_tissues (const Eigen::Vector3f& p, Interp& interp) const {
-              if (interp.scanner (p))
+              if (!interp.scanner (p))
                 return Tissues ();
               return Tissues (interp);
             }

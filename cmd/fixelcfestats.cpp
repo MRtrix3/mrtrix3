@@ -63,7 +63,7 @@ void usage ()
 
   + Argument ("contrast", "the contrast vector, specified as a single row of weights").type_file_in ()
 
-  + Argument ("tracks", "the tracks used to determine fixel-fixel connectivity").type_file_in ()
+  + Argument ("tracks", "the tracks used to determine fixel-fixel connectivity").type_tracks_in ()
 
   + Argument ("output", "the filename prefix for all output.").type_text();
 

@@ -36,13 +36,10 @@ void usage ()
   + "print out information about track file";
 
   ARGUMENTS
-  + Argument ("tracks", "the input track file.")
-  .allow_multiple()
-  .type_file_in();
+  + Argument ("tracks", "the input track file.").type_tracks_in().allow_multiple();
 
   OPTIONS
-  + Option ("count",
-            "count number of tracks in file explicitly, ignoring the header");
+  + Option ("count", "count number of tracks in file explicitly, ignoring the header");
 
 }
 

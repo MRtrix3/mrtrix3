@@ -192,7 +192,7 @@ namespace MR
         public:
           Dynamic_ACT_additions (const std::string& path) :
             interp_template (Image<float>::open (path)),
-            gmwmi_finder (static_cast<Image<float>&> (interp_template)) { }
+            gmwmi_finder (interp_template) { }
 
           bool check_seed (Eigen::Vector3f&);
 

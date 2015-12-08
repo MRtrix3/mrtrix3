@@ -44,7 +44,7 @@ void usage ()
   "separated), and individual tracks on separate lines."; 
 
   ARGUMENTS
-  + Argument ("tracks",  "the input track file").type_file_in()
+  + Argument ("tracks", "the input track file").type_tracks_in()
   + Argument ("image",  "the image to be sampled").type_image_in()
   + Argument ("values", "the output sampled values").type_file_out();
 
@@ -66,7 +66,7 @@ void usage ()
 
     + Option ("locations", "[only used with -resample] output a new track file "
         "with vertices at the locations resampled by the algorithm.")
-    +   Argument ("file").type_file_out()
+    +   Argument ("file").type_tracks_out()
 
     + Option ("warp", "[only used with -resample] specify an image containing "
         "the warp field to the space in which the resampling is to take "

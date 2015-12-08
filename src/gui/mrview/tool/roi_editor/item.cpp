@@ -84,7 +84,7 @@ namespace MR
           name << "ROI" << std::setfill('0') << std::setw(5) << new_roi_counter++ << ".mif";
           filename = name.str();
 
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           bind();
           allocate();
@@ -95,7 +95,7 @@ namespace MR
 
         void ROI_Item::zero () 
         {
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           bind();
           std::vector<GLubyte> data (header().size(0)*header().size(1));
@@ -108,8 +108,8 @@ namespace MR
 
         void ROI_Item::load (MR::Header& header)
         {
-          Window::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          MRView::GrabContext context;
           bind();
           auto image = header.get_image<bool>();
           std::vector<GLubyte> data (image.size(0)*image.size(1));

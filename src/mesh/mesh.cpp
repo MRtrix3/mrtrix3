@@ -23,6 +23,8 @@
 
 #include "mesh/mesh.h"
 
+#include <ios>
+#include <iostream>
 
 #include <ctime>
 #include <vector>
@@ -636,9 +638,28 @@ namespace MR
       if (line == "STRUCTURED_POINTS" || line == "STRUCTURED_GRID" || line == "UNSTRUCTURED_GRID" || line == "RECTILINEAR_GRID" || line == "FIELD")
         throw Exception ("Unsupported dataset type (" + line + ") in .vtk file");
 
+      if (!is_ascii) {
+        const std::streampos offset = in.tellg();
+        in.close();
+        in.open (path.c_str(), std::ios_base::in | std::ios_base::binary);
+        in.seekg (offset);
+      }
+
       // From here, don't necessarily know which parts of the data will come first
       while (!in.eof()) {
-        std::getline (in, line);
+
+        // Need to read line in either ASCII mode or in raw binary
+        if (is_ascii) {
+          std::getline (in, line);
+        } else {
+          line.clear();
+          char c = 0;
+          do {
+            in.read (&c, sizeof (char));
+            if (isalnum (c) || c == ' ')
+              line.push_back (c);
+          } while (!in.eof() && (isalnum (c) || c == ' '));
+        }
 
         if (line.size()) {
           if (line.substr (0, 6) == "POINTS") {

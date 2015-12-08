@@ -71,7 +71,7 @@ namespace MR
           ImageTypeSource& source,
           ImageTypeDestination& destination,
           WarpType& warp,
-          const typename ImageTypeDestination::value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<typename ImageTypeDestination::value_type>())
+          const typename ImageTypeDestination::value_type value_when_out_of_bounds = Interpolator<ImageTypeSource>::default_out_of_bounds_value())
       {
 
         // reslice warp onto destination grid

@@ -134,8 +134,8 @@ void Matrix::remove_unassigned()
       data   (0, i) = data   (0, i+1);
       counts (0, i) = counts (0, i+1);
     }
-    data  .resize (1, data  .cols() - 1);
-    counts.resize (1, counts.cols() - 1);
+    data  .conservativeResize (1, data  .cols() - 1);
+    counts.conservativeResize (1, counts.cols() - 1);
   } else {
     for (node_t i = 0; i != data.rows() - 1; ++i) {
       for (node_t j = i; j != data.cols() - 1; ++j) {
@@ -143,8 +143,8 @@ void Matrix::remove_unassigned()
         counts (i, j) = counts (i+1, j+1);
       }
     }
-    data  .resize (data  .rows() - 1, data  .cols() - 1);
-    counts.resize (counts.rows() - 1, counts.cols() - 1);
+    data  .conservativeResize (data  .rows() - 1, data  .cols() - 1);
+    counts.conservativeResize (counts.rows() - 1, counts.cols() - 1);
   }
 }
 
@@ -187,8 +187,7 @@ void Matrix::error_check (const std::set<node_t>& missing_nodes)
 
 void Matrix::write (const std::string& path) const
 {
-  File::OFStream stream (path);
-  stream << data;
+  MR::save_matrix (data, path);
 }
 
 void Matrix::write_assignments (const std::string& path) const

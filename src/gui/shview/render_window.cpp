@@ -264,7 +264,7 @@ namespace MR
       }
       void Window::hide_negative_lobes_slot (bool is_checked)
       {
-        render_frame->set_hide_neg_lobes (is_checked);
+        render_frame->set_hide_neg_values (is_checked);
       }
       void Window::colour_by_direction_slot (bool is_checked)
       {

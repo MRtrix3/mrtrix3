@@ -34,7 +34,7 @@ namespace MR
 
 
       Volume::~Volume() {
-        Window::GrabContext context;
+        MRView::GrabContext context;
         _texture.clear();
         vertex_buffer.clear();
         vertex_array_object.clear();
