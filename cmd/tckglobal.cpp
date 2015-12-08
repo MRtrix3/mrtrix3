@@ -128,6 +128,7 @@ void usage ()
 
   + Option ("todi", "filename of the resulting TOD image.")
     + Argument ("tod").type_image_out()
+  + Option ("noapo", "disable spherical convolution of TOD with apodized PSF.")
 
   + Option ("fiso", "filename of the resulting isotropic fractions image.")
     + Argument ("iso").type_image_out()
@@ -162,6 +163,26 @@ void usage ()
 
 
 };
+
+
+template<typename T>
+class __copy_tod {
+  public:
+    __copy_tod (const int lmax, const double weight, const bool apodise) 
+      : w(weight), a(apodise), apo (lmax), SH_out (Math::SH::NforL(lmax)) { }
+
+    void operator() (Image<T>& in, Image<T>& out) {
+      out.row(3) = w * (a ? Math::SH::sconv (SH_out, apo.RH_coefs(), in.row(3)) : in.row(3));
+    }
+
+  private:
+    T w;
+    bool a;
+    Math::SH::aPSF<T> apo;
+    Eigen::Matrix<T, Eigen::Dynamic, 1> SH_out;
+
+};
+
 
 
 
@@ -309,7 +330,8 @@ void run ()
     INFO("Saving TOD image to file");
     header.size(3) = Math::SH::NforL(properties.Lmax);
     auto TOD = Image<float>::create (opt[0][0], header);
-    threaded_copy(Eext->getTOD(), TOD);
+    auto f = __copy_tod<float>(properties.Lmax, properties.weight, !get_options("noapo").size());
+    ThreadedLoop(Eext->getTOD(), 0, 3).run(f, Eext->getTOD(), TOD);
   }
   
   opt = get_options("fiso");
