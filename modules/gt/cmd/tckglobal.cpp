@@ -58,7 +58,17 @@ void usage ()
   + "Multi-Shell Multi-Tissue Global Tractography."
   
   + "This command will reconstruct the global white matter fibre tractogram that best "
-    "explains the input DWI data, using a multi-tissue spherical convolution model.";
+    "explains the input DWI data, using a multi-tissue spherical convolution model."
+  
+  + "Example use: "
+  
+  + " $ tckglobal dwi.mif wmr.txt -riso csfr.txt -riso gmr.txt -mask mask.mif \n"
+    "   -niter 1e8 -todi tod.mif -fiso fiso.mif tracks.tck "
+  
+  + "in which dwi.mif is the input image, wmr.txt is an anisotropic, multi-shell response function for WM, "
+    "and csfr.txt and gmr.txt are isotropic response functions for CSF and GM. The output tractogram is "
+    "saved to tracks.tck; ancillary output images tod.mif and fiso.mif contain the WM ODF and isotropic "
+    "tissue fractions of CSF and GM respectively.";
   
   REFERENCES
   + "Christiaens, D.; Reisert, M.; Dhollander, T.; Sunaert, S.; Suetens, P. & Maes, F. "
@@ -67,13 +77,15 @@ void usage ()
 
   ARGUMENTS
   + Argument ("source", "the image containing the raw DWI data.").type_image_in()
+  
+  + Argument ("response", "the response of a track segment on the DWI signal.").type_file_in()
 
   + Argument ("tracks", "the output file containing the tracks generated.").type_file_out();
 
 
 
   OPTIONS
-  + OptionGroup("General options")
+  + OptionGroup("Input options")
   
   + Option ("grad", "specify the diffusion encoding scheme (required if not supplied in the header).")
     + Argument ("scheme").type_file_in()
@@ -81,19 +93,7 @@ void usage ()
   + Option ("mask", "only reconstruct the tractogram within the specified brain mask image.")
     + Argument ("image").type_image_in()
 
-
-  + OptionGroup("Response functions")
-  
-  + Option ("wmr", "set the response of a single particle on the DWI signal. (required)").required()
-    + Argument ("response").type_file_in()
-
-  + Option ("csfr", "set the response of CSF on the DWI signal.")
-    + Argument ("response").type_file_in()
-  
-  + Option ("gmr", "set the response of GM on the DWI signal.")
-    + Argument ("response").type_file_in()
-
-  + Option ("riso", "set one or more isotropic response functions.").allow_multiple()
+  + Option ("riso", "set one or more isotropic response functions. (multiple allowed)").allow_multiple()
     + Argument ("response").type_file_in()
 
 
@@ -123,6 +123,24 @@ void usage ()
   + Option ("niter", "set the number of iterations of the metropolis hastings optimizer. (default = 10^6)")
     + Argument ("n").type_float(0, 1e6, std::numeric_limits<float>::max())
 
+
+  + OptionGroup("Output options")
+
+  + Option ("todi", "filename of the resulting TOD image.")
+    + Argument ("tod").type_image_out()
+
+  + Option ("fiso", "filename of the resulting isotropic fractions image.")
+    + Argument ("iso").type_image_out()
+
+  + Option ("eext", "filename of the resulting image of the residual external energy.")
+    + Argument ("eext").type_image_out()
+
+  + Option ("etrend", "internal and external energy trend and cooling statistics.")
+    + Argument ("stats").type_file_out()
+
+
+  + OptionGroup("Advanced parameters, if you really know what you're doing")
+  
   + Option ("balance", "balance internal and external energy. (default = 0)\n"
             "Negative values give more weight to the internal energy, positive to the external energy.")
     + Argument ("b").type_float(-100, 0, 100)
@@ -134,27 +152,13 @@ void usage ()
             "and connect probabilities respectively. (default = .25,.05,.25,.10,.35)")
     + Argument ("prob").type_sequence_float()
 
-  + Option ("beta", "set the width of the Hanning interpolation window. (default = 0)")
+  + Option ("beta", "set the width of the Hanning interpolation window. (default = 0)\n"
+            "If used, a mask is required, and this mask must keep at least one voxel distance to the image bounding box.")
     + Argument ("b").type_float(0.0, 0.0, 1.0)
 
   + Option ("lambda", "set the weight of the internal energy directly. (default = 1.0)\n"
             "If provided, any value of -balance will be ignored.")
-    + Argument ("lam").type_float(0.0, 1.0, 1e5)
-
-
-  + OptionGroup("Output options")
-
-  + Option ("todi", "filename of the resulting TOD image. (output)")
-    + Argument ("tod").type_image_out()
-
-  + Option ("fiso", "filename of the resulting isotropic fractions image. (output)")
-    + Argument ("iso").type_image_out()
-
-  + Option ("eext", "filename of the resulting image of the residual external energy. (output)")
-    + Argument ("eext").type_image_out()
-
-  + Option ("etrend", "internal and external energy trend and cooling statistics. (output)")
-    + Argument ("stats").type_file_out();
+    + Argument ("lam").type_float(0.0, 1.0, 1e5);
 
 
 };
@@ -166,18 +170,34 @@ void run ()
 
   using namespace DWI::Tractography::GT;
   
-  // Parse arguments --------------------------------------------------------------------
+  // Inputs -----------------------------------------------------------------------------
   
   auto dwi = Image<float>::open(argument[0]).with_direct_io(Stride::contiguous_along_axis(3));
   
+  Properties properties;
+  properties.resp_WM = load_matrix<float> (argument[1]);
+  double wmscale2 = (properties.resp_WM(0,0)*properties.resp_WM(0,0))/M_4PI;
   
-  // Parse options ----------------------------------------------------------------------
+  Eigen::VectorXf riso;
+  auto opt = get_options("riso");
+  for (auto popt : opt)
+  {
+    riso = load_vector<float>(popt[0]);
+    properties.resp_ISO.push_back(riso);
+  }
+  
+  auto mask = Image<bool>();
+  opt = get_options("mask");
+  if (opt.size()) {
+    mask = Image<bool>::open(opt[0][0]);
+    check_dimensions(dwi, mask, 0, 3);
+  }
+  
+  // Parameters -------------------------------------------------------------------------
   
   Particle::L = get_option_value("length", 1.0);    
+  double cpot = get_option_value("cpot", 1.0);
   
-  double CPot = get_option_value("cpot", 1.0);
-  
-  Properties properties;
   properties.Lmax = get_option_value("lmax", 8);
   properties.p_birth = 0.25;
   properties.p_death = 0.05;
@@ -191,33 +211,6 @@ void run ()
   properties.beta = get_option_value("beta", 0.0);
   properties.ppot = 0.0;
   
-  auto opt = get_options("wmr");
-  properties.resp_WM = load_matrix<float> (opt[0][0]);
-  
-  double wmscale2 = (properties.resp_WM(0,0)*properties.resp_WM(0,0))/M_4PI;
-  
-  Eigen::VectorXf riso;
-  opt = get_options("csfr");
-  if (opt.size())
-  {
-    riso = load_vector<float>(opt[0][0]);
-    properties.resp_ISO.push_back(riso);
-  }
-  
-  opt = get_options("gmr");
-  if (opt.size())
-  {
-    riso = load_vector<float>(opt[0][0]);
-    properties.resp_ISO.push_back(riso);
-  }
-  
-  opt = get_options("riso");
-  for (size_t i = 0; i < opt.size(); i++)
-  {
-    riso = load_vector<float>(opt[i][0]);
-    properties.resp_ISO.push_back(riso);
-  }
-
   double lam = 0.0;
   opt = get_options("balance");
   if (opt.size())
@@ -242,15 +235,6 @@ void run ()
       throw Exception("Specified list of proposal probabilities is invalid.");
     }
   }
-  
-  
-  auto mask = Image<bool>();
-  opt = get_options("mask");
-  if (opt.size()) {
-    mask = Image<bool>::open(opt[0][0]);
-    check_dimensions(dwi, mask, 0, 3);
-  }
-  
   
   double niter = get_option_value("niter", 1e6);
   double t0 = get_option_value("t0", 0.1);
@@ -279,7 +263,7 @@ void run ()
   
   ExternalEnergyComputer* Eext = new ExternalEnergyComputer(stats, dwi, properties);
   InternalEnergyComputer* Eint = new InternalEnergyComputer(stats, pgrid);
-  Eint->setConnPot(CPot);
+  Eint->setConnPot(cpot);
   EnergySumComputer* Esum = new EnergySumComputer(stats, Eint, properties.lam_int, Eext, properties.lam_ext / ( wmscale2 * properties.weight*properties.weight));
   
   MHSampler mhs (dwi, properties, stats, pgrid, Esum, mask);   // All EnergyComputers are recursively destroyed upon destruction of mhs, except for the shared data.
@@ -304,12 +288,10 @@ void run ()
   ftfileprops.comments.push_back(MRTRIX_PROJECT_VERSION);
   ftfileprops.comments.push_back("");
   ftfileprops.comments.push_back("segment length = " + std::to_string((long double) Particle::L));
-  ftfileprops.comments.push_back("segment density = " + std::to_string((long double) properties.density));
   ftfileprops.comments.push_back("segment weight = " + std::to_string((long double) properties.weight));
   ftfileprops.comments.push_back("");
-  ftfileprops.comments.push_back("connection potential = " + std::to_string((long double) CPot));
+  ftfileprops.comments.push_back("connection potential = " + std::to_string((long double) cpot));
   ftfileprops.comments.push_back("particle potential = " + std::to_string((long double) mu));
-  ftfileprops.comments.push_back("balance = " + std::to_string((long double) lam));
   ftfileprops.comments.push_back("");
   ftfileprops.comments.push_back("no. iterations = " + std::to_string((long long int) niter));
   ftfileprops.comments.push_back("T0 = " + std::to_string((long double) t0));
