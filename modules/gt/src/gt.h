@@ -75,7 +75,7 @@ namespace MR {
         {
         public:
           
-          Stats(const double T0, const double T1, const double maxiter) 
+          Stats(const double T0, const double T1, const uint64_t maxiter) 
             : Text(T1), Tint(T0), EextTot(0.0), EintTot(0.0), n_iter(0), n_max(maxiter), 
               progress("running MH sampler", n_max/ITER_BIGSTEP)
           {
@@ -212,7 +212,7 @@ namespace MR {
           unsigned long n_gen[5];
           unsigned long n_acc[5];
           unsigned long n_iter;
-          const unsigned long n_max;
+          const uint64_t n_max;
           
           ProgressBar progress;
           std::ofstream out;

@@ -80,7 +80,7 @@ void usage ()
   
   + Argument ("response", "the response of a track segment on the DWI signal.").type_file_in()
 
-  + Argument ("tracks", "the output file containing the tracks generated.").type_file_out();
+  + Argument ("tracks", "the output file containing the tracks generated.").type_tracks_out();
 
 
 
@@ -100,7 +100,7 @@ void usage ()
   + OptionGroup("Parameters")
   
   + Option ("lmax", "set the maximum harmonic order for the output series. (default = 8)")
-    + Argument ("order").type_integer (2, 8, 30)
+    + Argument ("order").type_integer(2, 8, 30)
 
   + Option ("length", "set the length of the particles (fibre segments). (default = 1.0 mm)")
     + Argument ("size").type_float(1e-6, 1.0, 10.0)
@@ -120,8 +120,8 @@ void usage ()
   + Option ("t1", "set the final temperature of the metropolis hastings optimizer. (default = 0.001)")
     + Argument ("end").type_float(1e-6, 0.001, 1e6)
 
-  + Option ("niter", "set the number of iterations of the metropolis hastings optimizer. (default = 10^6)")
-    + Argument ("n").type_float(0, 1e6, std::numeric_limits<float>::max())
+  + Option ("niter", "set the number of iterations of the metropolis hastings optimizer. (default = 10M)")
+    + Argument ("n").type_integer(0, 10000000, std::numeric_limits<int64_t>::max())
 
 
   + OptionGroup("Output options")
@@ -145,14 +145,14 @@ void usage ()
             "Negative values give more weight to the internal energy, positive to the external energy.")
     + Argument ("b").type_float(-100, 0, 100)
 
-  + Option ("density", "set the desired density of the free Poisson process. (default = 1)")
+  + Option ("density", "set the desired density of the free Poisson process. (default = 1.0)")
     + Argument ("lambda").type_float(0, 1., std::numeric_limits<float>::max())
 
   + Option ("prob", "set the probabilities of generating birth, death, randshift, optshift "
             "and connect probabilities respectively. (default = .25,.05,.25,.10,.35)")
     + Argument ("prob").type_sequence_float()
 
-  + Option ("beta", "set the width of the Hanning interpolation window. (default = 0)\n"
+  + Option ("beta", "set the width of the Hanning interpolation window. (in [0, 1], default = 0)\n"
             "If used, a mask is required, and this mask must keep at least one voxel distance to the image bounding box.")
     + Argument ("b").type_float(0.0, 0.0, 1.0)
 
@@ -236,7 +236,7 @@ void run ()
     }
   }
   
-  double niter = get_option_value("niter", 1e6);
+  uint64_t niter = get_option_value("niter", 10000000);
   double t0 = get_option_value("t0", 0.1);
   double t1 = get_option_value("t1", 0.001);
   
