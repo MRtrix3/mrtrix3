@@ -82,7 +82,7 @@ class Warper
 
     Eigen::Matrix<value_type,3,1> pos (const Eigen::Matrix<value_type,3,1>& x) {
       Eigen::Matrix<value_type,3,1> p;
-      if (!interp.scanner (x)) {
+      if (interp.scanner (x)) {
         interp.index(3) = 0; p[0] = interp.value();
         interp.index(3) = 1; p[1] = interp.value();
         interp.index(3) = 2; p[2] = interp.value();

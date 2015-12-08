@@ -81,8 +81,8 @@ namespace MR
             template <class InterpolatorType>
               inline bool get_data (InterpolatorType& source, const Eigen::Vector3f& position)
               {
-                source.scanner (position);
-                if (!source) return false;
+                if (!source.scanner (position))
+                  return false;
                 for (auto l = Loop (3) (source); l; ++l)
                   values[source.index(3)] = source.value();
                 return !std::isnan (values[0]);

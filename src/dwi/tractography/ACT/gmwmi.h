@@ -84,7 +84,7 @@ namespace MR
 
 
             Tissues get_tissues (const Eigen::Vector3f& p, Interp& interp) const {
-              if (interp.scanner (p))
+              if (!interp.scanner (p))
                 return Tissues ();
               return Tissues (interp);
             }

@@ -518,14 +518,14 @@ namespace MR
 
 
       cfloat Image::trilinear_value (const Eigen::Vector3f& scanner_point) const {
-        if (linear_interp.scanner (scanner_point))
+        if (!linear_interp.scanner (scanner_point))
           return cfloat(NAN, NAN);
         for (size_t n = 3; n < image.ndim(); ++n)
           linear_interp.index (n) = image.index (n);
         return linear_interp.value();
       }
       cfloat Image::nearest_neighbour_value (const Eigen::Vector3f& scanner_point) const {
-        if (nearest_interp.scanner (scanner_point))
+        if (!nearest_interp.scanner (scanner_point))
           return cfloat(NAN, NAN);
         for (size_t n = 3; n < image.ndim(); ++n)
           nearest_interp.index (n) = image.index (n);

@@ -116,7 +116,7 @@ namespace MR
         bool voxel (const VectorType& pos) {
           Eigen::Vector3 f = set_to_nearest (pos.template cast<default_type>());
           if (out_of_bounds)
-            return true;
+            return false;
 
           if (pos[0] < 0.0) {
             f[0] = 0.0;
@@ -161,7 +161,7 @@ namespace MR
           fbbb =      f[0]  *      f[1]  *      f[2];
           if (fbbb < eps) fbbb = 0.0;
 
-          return false;
+          return true;
         }
 
         //! Set the current position to <b>image space</b> position \a pos

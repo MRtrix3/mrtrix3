@@ -110,11 +110,11 @@ namespace MR
         template <class VectorType>
         bool voxel (const VectorType& pos) {
           if ((out_of_bounds = is_out_of_bounds (pos)))
-            return true;
+            return false;
           Sinc_x.set (*this, 0, pos[0]);
           Sinc_y.set (*this, 1, pos[1]);
           Sinc_z.set (*this, 2, pos[2]);
-          return false;
+          return true;
         }
         //! Set the current position to <b>image space</b> position \a pos
         /*! This will set the position from which the image intensity values will

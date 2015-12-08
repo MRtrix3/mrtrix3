@@ -139,8 +139,7 @@ namespace MR
 
             bool fetch_tissue_data (const Eigen::Vector3f& pos)
             {
-              act_image.scanner (pos);
-              if (!act_image) {
+              if (!act_image.scanner (pos)) {
                 tissue_values.reset();
                 return false;
               }

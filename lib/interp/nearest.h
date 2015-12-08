@@ -95,12 +95,12 @@ namespace MR
         bool voxel (const VectorType& pos) {
           set_to_nearest (pos);
           if (out_of_bounds)
-            return true;
+            return false;
 
           index(0) = std::round (pos[0]);
           index(1) = std::round (pos[1]);
           index(2) = std::round (pos[2]);
-          return false;
+          return true;
         }
 
 

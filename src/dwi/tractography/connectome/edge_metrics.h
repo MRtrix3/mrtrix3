@@ -199,7 +199,7 @@ class Metric_meanscalar : public Metric_base {
       double sum = 0.0;
       size_t count = 0.0;
       for (Streamline<>::const_iterator i = tck.begin(); i != tck.end(); ++i) {
-        if (!interp.scanner (*i)) {
+        if (interp.scanner (*i)) {
           sum += interp.value();
           ++count;
         }

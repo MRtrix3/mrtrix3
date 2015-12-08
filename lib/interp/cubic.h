@@ -160,7 +160,7 @@ namespace MR
         bool voxel (const VectorType& pos) {
           Eigen::Vector3d f = set_to_nearest (pos);
           if (out_of_bounds)
-            return true;
+            return false;
           P = pos;
           for(size_t i =0; i <3; ++i)
             H[i].set (f[i]);
@@ -177,7 +177,7 @@ namespace MR
             }
           }
 
-          return false;
+          return true;
         }
 
         //! Set the current position to <b>image space</b> position \a pos
@@ -292,7 +292,7 @@ namespace MR
         bool voxel (const VectorType& pos) {
           Eigen::Vector3d f = set_to_nearest (pos);
           if (out_of_bounds)
-            return true;
+            return false;
           P = pos;
           for(size_t i =0; i <3; ++i)
             H[i].set (f[i]);
@@ -315,7 +315,7 @@ namespace MR
           }
 
 
-          return false;
+          return true;
         }
 
         //! Set the current position to <b>image space</b> position \a pos
@@ -447,7 +447,7 @@ namespace MR
         bool voxel (const VectorType& pos) {
           Eigen::Vector3d f = set_to_nearest (pos);
           if (out_of_bounds)
-            return true;
+            return false;
           P = pos;
           for(size_t i =0; i <3; ++i)
             H[i].set (f[i]);
@@ -473,7 +473,7 @@ namespace MR
             }
           }
 
-          return false;
+          return true;
         }
 
 

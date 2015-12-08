@@ -36,11 +36,11 @@ namespace MR {
 
         const Eigen::Vector3f TWIImagePluginBase::get_last_point_in_fov (const std::vector<Eigen::Vector3f>& tck, const bool end) const
         {
-          size_t index = end ? tck.size() - 1 : 0;
+          int index = end ? tck.size() - 1 : 0;
           const int step = end ? -1 : 1;
-          while (interp.scanner (tck[index])) {
+          while (!interp.scanner (tck[index])) {
             index += step;
-            if (index == tck.size())
+            if (index == -1 || index == tck.size())
               return { NaN, NaN, NaN };
           }
           return tck[index];
@@ -69,7 +69,7 @@ namespace MR {
 
             // The entire length of the track contributes
             for (const auto i : tck) {
-              if (!interp.scanner (i))
+              if (interp.scanner (i))
                 factors.push_back (interp.value());
               else
                 factors.push_back (NaN);
@@ -85,7 +85,7 @@ namespace MR {
         void TWIFODImagePlugin::load_factors (const std::vector<Eigen::Vector3f>& tck, std::vector<float>& factors)
         {
           for (size_t i = 0; i != tck.size(); ++i) {
-            if (!interp.scanner (tck[i])) {
+            if (interp.scanner (tck[i])) {
               // Get the FOD at this (interploated) point
               for (auto l = Loop (3) (interp); l; ++l) 
                 sh_coeffs[interp.index(3)] = interp.value();

@@ -392,12 +392,12 @@ namespace MR
         {
           values.setZero();
           if (interp) {
-            if (image.linear_interp.scanner (pos))
+            if (!image.linear_interp.scanner (pos))
               return;
             for (image.linear_interp.index(3) = 0; image.linear_interp.index(3) < std::min (ssize_t(values.size()), image.linear_interp.size(3)); ++image.linear_interp.index(3))
               values[image.linear_interp.index(3)] = image.linear_interp.value().real();
           } else {
-            if (image.nearest_interp.scanner (pos))
+            if (!image.nearest_interp.scanner (pos))
               return;
             for (image.nearest_interp.index(3) = 0; image.nearest_interp.index(3) < std::min (ssize_t(values.size()), image.nearest_interp.size(3)); ++image.nearest_interp.index(3))
               values[image.nearest_interp.index(3)] = image.nearest_interp.value().real();
