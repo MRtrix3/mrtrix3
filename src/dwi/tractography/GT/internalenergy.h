@@ -28,10 +28,10 @@
 
 #include "math/rng.h"
 
-#include "particle.h"
-#include "gt.h"
-#include "energy.h"
-#include "particlegrid.h"
+#include "dwi/tractography/GT/particle.h"
+#include "dwi/tractography/GT/gt.h"
+#include "dwi/tractography/GT/energy.h"
+#include "dwi/tractography/GT/particlegrid.h"
 
 
 namespace MR {

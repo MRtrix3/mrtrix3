@@ -21,7 +21,7 @@
     
 */
 
-#include "mhsampler.h"
+#include "dwi/tractography/GT/mhsampler.h"
 
 #include "math/math.h"
 

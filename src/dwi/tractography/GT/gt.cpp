@@ -2,7 +2,7 @@
     Copyright 2013 KU Leuven, Dept. Electrical Engineering, Medical Image Computing
     Herestraat 49 box 7003, 3000 Leuven, Belgium
     
-    Written by Daan Christiaens, 04/06/13.
+    Written by Daan Christiaens, 19/03/14.
     
     This file is part of the Global Tractography module for MRtrix.
     
@@ -21,18 +21,22 @@
     
 */
 
-#include "particle.h"
+#include "dwi/tractography/GT/gt.h"
+
 
 namespace MR {
   namespace DWI {
     namespace Tractography {
       namespace GT {
-        
-        // Initialize particle length
-        float Particle::L = 1.;
-        
-        
-        
+
+        std::ostream& operator<< (std::ostream& o, Stats const& stats)
+        {
+          return o << stats.Tint << ", " << stats.EextTot << ", " << stats.EintTot << ", " <<
+                      stats.getAcceptanceRate('b') << ", " << stats.getAcceptanceRate('d') << ", " <<
+                      stats.getAcceptanceRate('r') << ", " << stats.getAcceptanceRate('o') << ", " <<
+                      stats.getAcceptanceRate('c');
+        }
+
       }
     }
   }

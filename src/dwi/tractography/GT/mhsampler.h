@@ -29,11 +29,11 @@
 
 #include "math/rng.h"
 
-#include "gt.h"
-#include "particle.h"
-#include "particlegrid.h"
-#include "energy.h"
-#include "spatiallock.h"
+#include "dwi/tractography/GT/gt.h"
+#include "dwi/tractography/GT/particle.h"
+#include "dwi/tractography/GT/particlegrid.h"
+#include "dwi/tractography/GT/energy.h"
+#include "dwi/tractography/GT/spatiallock.h"
 
 
 namespace MR {

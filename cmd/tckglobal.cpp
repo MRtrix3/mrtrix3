@@ -31,11 +31,11 @@
 #include "thread.h"
 #include "algo/threaded_copy.h"
 
-#include "particlegrid.h"
-#include "gt.h"
-#include "externalenergy.h"
-#include "internalenergy.h"
-#include "mhsampler.h"
+#include "dwi/tractography/GT/particlegrid.h"
+#include "dwi/tractography/GT/gt.h"
+#include "dwi/tractography/GT/externalenergy.h"
+#include "dwi/tractography/GT/internalenergy.h"
+#include "dwi/tractography/GT/mhsampler.h"
 
 
 using namespace MR;
@@ -285,7 +285,6 @@ void run ()
   INFO("Saving tracks to file");
   MR::DWI::Tractography::Properties ftfileprops;
   ftfileprops.comments.push_back("global tractography");
-  ftfileprops.comments.push_back(MRTRIX_PROJECT_VERSION);
   ftfileprops.comments.push_back("");
   ftfileprops.comments.push_back("segment length = " + std::to_string((long double) Particle::L));
   ftfileprops.comments.push_back("segment weight = " + std::to_string((long double) properties.weight));

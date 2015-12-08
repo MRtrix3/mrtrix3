@@ -28,9 +28,9 @@
 #include "transform.h"
 #include "math/constrained_least_squares.h"
 
-#include "particle.h"
-#include "gt.h"
-#include "energy.h"
+#include "dwi/tractography/GT/particle.h"
+#include "dwi/tractography/GT/gt.h"
+#include "dwi/tractography/GT/energy.h"
 
 
 namespace MR {

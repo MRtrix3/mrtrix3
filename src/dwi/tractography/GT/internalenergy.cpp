@@ -21,7 +21,7 @@
     
 */
 
-#include "internalenergy.h"
+#include "dwi/tractography/GT/internalenergy.h"
 
 
 namespace MR {

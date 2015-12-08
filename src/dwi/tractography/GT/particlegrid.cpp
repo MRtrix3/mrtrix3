@@ -21,7 +21,7 @@
     
 */
 
-#include "particlegrid.h"
+#include "dwi/tractography/GT/particlegrid.h"
 
 namespace MR {
   namespace DWI {

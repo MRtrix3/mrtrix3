@@ -31,7 +31,7 @@
 
 #include <mutex>
 
-#include "particle.h"
+#include "dwi/tractography/GT/particle.h"
 
 namespace MR {
   namespace DWI {

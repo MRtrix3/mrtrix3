@@ -26,8 +26,8 @@
 
 #include <vector>
 
-#include "particle.h"
-#include "gt.h"
+#include "dwi/tractography/GT/particle.h"
+#include "dwi/tractography/GT/gt.h"
 
 
 namespace MR {

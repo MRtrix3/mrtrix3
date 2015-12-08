@@ -31,8 +31,8 @@
 #include "dwi/tractography/file.h"
 #include "math/rng.h"
 
-#include "particle.h"
-#include "particlepool.h"
+#include "dwi/tractography/GT/particle.h"
+#include "dwi/tractography/GT/particlepool.h"
 
 
 namespace MR {

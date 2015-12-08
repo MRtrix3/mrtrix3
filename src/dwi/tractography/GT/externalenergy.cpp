@@ -21,14 +21,12 @@
     
 */
 
-#include "externalenergy.h"
+#include "dwi/tractography/GT/externalenergy.h"
 
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
 #include "math/SH.h"
 #include "algo/loop.h"
-
-//#include "math/lsnonneg.h"
 
 
 namespace MR {
