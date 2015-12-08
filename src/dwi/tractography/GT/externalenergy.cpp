@@ -134,6 +134,10 @@ namespace MR {
             e = calcEnergy();
             eext.value() = e;
             dE += e;
+            if (fiso.valid()) {
+              assign_pos_of(dwi, 0, 3).to(fiso);
+              fiso.row(3) = fk.tail(nf).cast<float>();
+            }
           }
           stats.incEextTotal(dE - stats.getEextTotal());
           dE = 0.0;
