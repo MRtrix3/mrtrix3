@@ -297,7 +297,7 @@ void run ()
   ftfileprops.comments.push_back("T0 = " + std::to_string((long double) t0));
   ftfileprops.comments.push_back("T1 = " + std::to_string((long double) t1));
   
-  MR::DWI::Tractography::Writer<float> writer (argument[1], ftfileprops);
+  MR::DWI::Tractography::Writer<float> writer (argument[2], ftfileprops);
   pgrid.exportTracks(writer);
   
   
