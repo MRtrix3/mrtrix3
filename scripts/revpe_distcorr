@@ -15,6 +15,7 @@
 
 
 import os, sys
+from distutils.version import LooseVersion
 import lib.app
 
 from lib.binaryInPath  import binaryInPath
@@ -60,6 +61,9 @@ if not binaryInPath(eddy_cmd):
   eddy_cmd = 'fsl5.0-eddy'
   if not binaryInPath(eddy_cmd):
     errorMessage('Could not find FSL program eddy; please verify FSL install')
+
+with open(os.path.join(fsl_path, 'etc', 'fslversion'), 'r') as f:
+  fsl_version = f.readline().strip()
 
 fsl_suffix = getFSLSuffix()
 
@@ -189,11 +193,13 @@ else:
   runCommand(eddy_cmd + ' --imain=' + series_imain + ' --mask=mask.nii --index=indices.txt --acqp=config.txt --bvecs=bvecs --bvals=bvals --topup=field --out=series_after')
   
   # Convert the resulting volume to the output image, and re-insert the diffusion encoding
-  # Note that currently the script uses the diffusion encoding from the original DWI volumes, i.e. no reorientation of diffusion
-  #   gradient vectors is performed. It should be possible to get the motion parameters from the eddy 
-  #   text file output and modify them manually, or FMRIB may update eddy itself (this is why bvecs / bvals are
-  #   re-imported here)
-  runCommand('mrconvert series_after' + fsl_suffix + ' ' + result_path + stride_option + ' -fslgrad bvecs bvals')
+  # Note that if FSL < 5.0.9, the script uses the diffusion encoding from the original DWI volumes,
+  #   i.e. no reorientation of diffusion gradient vectors is performed.
+  if LooseVersion(fsl_version) >= LooseVersion('5.0.9'):
+    runCommand('mrconvert series_after' + fsl_suffix + ' ' + result_path + stride_option + ' -fslgrad series_after.eddy_rotated_bvecs bvals')
+  else:
+    warnMessage('FSL eddy v' + fsl_version + ' does not rotate the gradient vectors. Update to FSL 5.0.9 or rotate the bvecs file manually.')
+    runCommand('mrconvert series_after' + fsl_suffix + ' ' + result_path + stride_option + ' -fslgrad bvecs bvals')
   
 lib.app.moveFileToDest(result_path, lib.app.args.output)
 lib.app.complete()
