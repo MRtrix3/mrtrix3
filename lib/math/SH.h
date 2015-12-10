@@ -808,6 +808,8 @@ namespace MR
             return sconv (sh, RH);
           }
 
+          inline const Eigen::Matrix<ValueType,Eigen::Dynamic,1>& RH_coefs() const { return RH; }
+          
 
         private:
           const size_t lmax;
