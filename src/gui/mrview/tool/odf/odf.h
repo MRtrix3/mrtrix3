@@ -23,6 +23,7 @@
 #ifndef __gui_mrview_tool_odf_odf_h__
 #define __gui_mrview_tool_odf_odf_h__
 
+#include "gui/color_button.h"
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/adjust_button.h"
 #include "gui/mrview/spin_box.h"
@@ -77,6 +78,7 @@ namespace MR
             void adjust_scale_slot ();
             void colour_by_direction_slot (int unused);
             void hide_negative_values_slot (int unused);
+            void colour_change_slot();
             void use_lighting_slot (int unused);
             void lighting_settings_slot (bool unused);
             void updateGL ();
@@ -99,6 +101,7 @@ namespace MR
              QComboBox *dirs_selector, *shell_selector;
              QCheckBox *use_lighting_box, *hide_negative_values_box, *lock_to_grid_box, *main_grid_box;
              QCheckBox *colour_by_direction_box, *interpolation_box;
+             QColorButton *colour_button;
 
              AdjustButton *scale;
 

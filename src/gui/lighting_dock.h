@@ -34,7 +34,7 @@ namespace MR
       Q_OBJECT
 
       public:
-        LightingSettings (QWidget* parent, GL::Lighting& lighting, bool include_object_color);
+        LightingSettings (QWidget* parent, GL::Lighting& lighting);
         ~LightingSettings () { }
 
       protected:
@@ -42,7 +42,6 @@ namespace MR
         QSlider* elevation_slider, *azimuth_slider;
 
       protected slots:
-        void object_color_slot (const QColor& new_color);
         void ambient_intensity_slot (int value);
         void diffuse_intensity_slot (int value);
         void specular_intensity_slot (int value);
@@ -53,7 +52,7 @@ namespace MR
     class LightingDock : public QDockWidget
     {
       public:
-        LightingDock (const std::string& title, GL::Lighting& lighting, bool include_object_color = true);
+        LightingDock (const std::string& title, GL::Lighting& lighting);
       private:
         LightingSettings* settings;
     };

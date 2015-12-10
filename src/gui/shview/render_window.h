@@ -23,6 +23,7 @@
 #ifndef __gui_dwi_render_window_h__
 #define __gui_dwi_render_window_h__
 
+#include "gui/dwi/render_frame.h"
 #include "gui/opengl/gl.h"
 
 namespace MR
@@ -34,11 +35,22 @@ namespace MR
     namespace DWI
     {
 
-      class RenderFrame;
-
       class Window : public QMainWindow
       {
           Q_OBJECT
+
+          class RenderFrame : public DWI::RenderFrame
+          {
+            public:
+              using DWI::RenderFrame::RenderFrame;
+              void set_colour (const QColor& c) {
+                renderer.set_colour (c);
+                update();
+              }
+              QColor get_colour() const {
+                return renderer.get_colour();
+              }
+          };
 
         public:
           Window (bool is_response_coefs);
@@ -63,13 +75,14 @@ namespace MR
           void screenshot_slot ();
           void lmax_inc_slot ();
           void lmax_dec_slot ();
+          void manual_colour_slot ();
           void advanced_lighting_slot ();
 
         protected:
           RenderFrame* render_frame;
           QDialog* lighting_dialog;
           QActionGroup* lod_group, *lmax_group, *screenshot_OS_group;
-          QAction* response_action;
+          QAction *colour_by_direction_action, *response_action;
 
           std::string name;
           int current;

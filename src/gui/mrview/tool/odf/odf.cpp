@@ -191,6 +191,12 @@ namespace MR
             connect (colour_by_direction_box, SIGNAL (stateChanged(int)), this, SLOT (colour_by_direction_slot(int)));
             box_layout->addWidget (colour_by_direction_box, 5, 2, 1, 2);
 
+            colour_button = new QColorButton;
+            colour_button->setVisible (false);
+            connect (colour_button, SIGNAL (clicked()), this, SLOT (colour_change_slot()));
+            box_layout->addWidget (colour_button, 5, 3, 1, 1);
+
+
             main_grid_box = new QCheckBox ("use main grid");
             main_grid_box->setToolTip (tr ("Show individual ODFs at the spatial resolution of the main image instead of the ODF image's own spatial resolution"));
             main_grid_box->setChecked (false);
@@ -203,7 +209,7 @@ namespace MR
             connect (use_lighting_box, SIGNAL (stateChanged(int)), this, SLOT (use_lighting_slot(int)));
             box_layout->addWidget (use_lighting_box, 6, 2, 1, 2);
 
-            QPushButton *lighting_settings_button = new QPushButton ("ODF colour and lighting...", this);
+            QPushButton *lighting_settings_button = new QPushButton ("ODF lighting...", this);
             connect (lighting_settings_button, SIGNAL(clicked(bool)), this, SLOT (lighting_settings_slot (bool)));
             box_layout->addWidget (lighting_settings_button, 7, 0, 1, 4);
 
@@ -217,6 +223,7 @@ namespace MR
 
             renderer = new DWI::Renderer ((QGLWidget*)Window::main->glarea);
             renderer->initGL();
+            colour_button->setColor (renderer->get_colour());
 
 
             hide_negative_values_slot (0);
@@ -539,6 +546,7 @@ namespace MR
             else if (settings->dixel.dirs)
               preview->render_frame->set_dixels (*(settings->dixel.dirs));
           }
+          preview->render_frame->set_colour (renderer->get_colour());
 
           preview->show();
           update_preview();
@@ -553,7 +561,14 @@ namespace MR
 
 
         void ODF::colour_by_direction_slot (int) 
-        { 
+        {
+          if (colour_by_direction_box->isChecked()) {
+            colour_by_direction_box->setText ("colour by direction");
+            colour_button->setVisible (false);
+          } else {
+            colour_by_direction_box->setText ("colour");
+            colour_button->setVisible (true);
+          }
           ODF_Item* settings = get_image();
           if (!settings)
             return;
@@ -576,6 +591,18 @@ namespace MR
           settings->hide_negative = hide_negative_values_box->isChecked();
           if (preview) 
             preview->render_frame->set_hide_neg_values (hide_negative_values_box->isChecked());
+          updateGL();
+          update_preview();
+        }
+
+
+        void ODF::colour_change_slot()
+        {
+          assert (!colour_by_direction_box->isChecked());
+          const QColor c = colour_button->color();
+          renderer->set_colour (c);
+          if (preview)
+            preview->render_frame->set_colour (c);
           updateGL();
           update_preview();
         }
@@ -761,7 +788,7 @@ namespace MR
         void ODF::lighting_settings_slot (bool)
         {
           if (!lighting_dock) {
-            lighting_dock = new LightingDock("Advanced ODF lighting", *lighting);
+            lighting_dock = new LightingDock("ODF lighting", *lighting);
             window().addDockWidget (Qt::RightDockWidgetArea, lighting_dock);
           }
           lighting_dock->show();

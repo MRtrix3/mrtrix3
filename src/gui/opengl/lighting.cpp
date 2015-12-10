@@ -37,11 +37,6 @@ namespace MR
         //CONF The default colour to use for the background in OpenGL panels, notably
         //CONF the SH viewer.
         File::Config::get_RGB ("BackgroundColor", background_color, 1.0, 1.0, 1.0);
-        //CONF option: ObjectColor
-        //CONF default: 1,1,0 (yellow)
-        //CONF The default colour to use for objects (i.e. SH glyphs) when not
-        //CONF colouring by direction.
-        File::Config::get_RGB ("ObjectColor", object_color, 1.0, 1.0, 0.0);
 
         //CONF option: LightPosition
         //CONF default: 1,1,3 

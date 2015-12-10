@@ -39,6 +39,24 @@ namespace MR
 
 
 
+      Renderer::Renderer (QGLWidget* widget) :
+          mode (mode_t::SH),
+          reverse_ID (0),
+          origin_ID (0),
+          sh (*this),
+          tensor (*this),
+          dixel (*this),
+          context_ (widget)
+      {
+        //CONF option: ObjectColor
+        //CONF default: 1,1,0 (yellow)
+        //CONF The default colour to use for objects (i.e. SH glyphs) when not
+        //CONF colouring by direction.
+        File::Config::get_RGB ("ObjectColor", object_color, 1.0, 1.0, 0.0);
+      }
+
+
+
 
       void Renderer::start (const Projection& projection, const GL::Lighting& lighting, float scale, 
           bool use_lighting, bool colour_by_direction, bool hide_neg_values, bool orthographic)
@@ -62,7 +80,7 @@ namespace MR
         gl::Uniform1f (gl::GetUniformLocation (shader, "specular"), lighting.specular);
         gl::Uniform1f (gl::GetUniformLocation (shader, "shine"), lighting.shine);
         gl::Uniform1f (gl::GetUniformLocation (shader, "scale"), scale);
-        gl::Uniform3fv (gl::GetUniformLocation (shader, "constant_color"), 1, lighting.object_color);
+        gl::Uniform3fv (gl::GetUniformLocation (shader, "constant_color"), 1, object_color);
         reverse_ID = gl::GetUniformLocation (shader, "reverse");
         origin_ID = gl::GetUniformLocation (shader, "origin");
       }

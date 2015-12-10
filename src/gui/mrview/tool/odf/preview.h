@@ -51,6 +51,10 @@ namespace MR
                   scale = sc;
                   update();
                 }
+
+                void set_colour (const QColor& c) {
+                  renderer.set_colour (c);
+                }
                 
               protected:
                 Window& window () const { return *Window::main; }

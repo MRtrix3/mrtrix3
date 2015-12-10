@@ -48,7 +48,7 @@ namespace MR
           }
 
           float ambient, diffuse, specular, shine;
-          float light_color[3], object_color[3], lightpos[3], background_color[3];
+          float light_color[3], lightpos[3], background_color[3];
           bool set_background;
 
           void  set () const;

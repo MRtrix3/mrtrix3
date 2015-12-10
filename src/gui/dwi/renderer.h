@@ -66,14 +66,7 @@ namespace MR
 
           enum class mode_t { SH, TENSOR, DIXEL };
 
-          Renderer (QGLWidget* widget) :
-              mode (mode_t::SH),
-              reverse_ID (0),
-              origin_ID (0),
-              sh (*this),
-              tensor (*this),
-              dixel (*this),
-              context_ (widget) { }
+          Renderer (QGLWidget*);
 
           bool ready () const { return shader; }
 
@@ -103,9 +96,20 @@ namespace MR
             shader.stop();
           }
 
+          QColor get_colour() const {
+            return QColor(object_color[0]*255.0f, object_color[1]*255.0f, object_color[2]*255.0f);
+          }
+
+          void set_colour (const QColor& c) {
+            object_color[0] = c.red()  /255.0f;
+            object_color[1] = c.green()/255.0f;
+            object_color[2] = c.blue() /255.0f;
+          }
+
 
         protected:
           mode_t mode;
+          float object_color[3];
           mutable GLuint reverse_ID, origin_ID;
 
           class Shader : public GL::Shader::Program {

@@ -121,7 +121,7 @@ namespace MR
         hide_negative_lobes_action->setStatusTip (tr ("Hide negative lobes"));
         connect (hide_negative_lobes_action, SIGNAL (triggered (bool)), this, SLOT (hide_negative_lobes_slot (bool)));
 
-        QAction* colour_by_direction_action = new QAction ("&Colour by direction", this);
+        colour_by_direction_action = new QAction ("&Colour by direction", this);
         colour_by_direction_action->setCheckable (true);
         colour_by_direction_action->setChecked (true);
         colour_by_direction_action->setShortcut (tr ("C"));
@@ -142,6 +142,11 @@ namespace MR
         response_action->setStatusTip (tr ("Assume each row of values consists only of\nthe m=0 (axially symmetric) even SH coefficients"));
         connect (response_action, SIGNAL (triggered (bool)), this, SLOT (response_slot (bool)));
 
+        QAction* manual_colour_action = new QAction ("&Manual colour", this);
+        manual_colour_action->setShortcut (tr ("M"));
+        manual_colour_action->setStatusTip (tr ("Modify fixed colour"));
+        connect (manual_colour_action, SIGNAL (triggered (bool)), this, SLOT (manual_colour_slot()));
+
         QAction* advanced_lighting_action = new QAction ("A&dvanced Lighting", this);
         advanced_lighting_action->setShortcut (tr ("D"));
         advanced_lighting_action->setStatusTip (tr ("Modify advanced lighting settings"));
@@ -159,6 +164,7 @@ namespace MR
         QMenu* lmax_menu = settings_menu->addMenu (tr ("&Harmonic order"));
         QMenu* lod_menu = settings_menu->addMenu (tr ("Level of &detail"));
         settings_menu->addSeparator();
+        settings_menu->addAction (manual_colour_action);
         settings_menu->addAction (advanced_lighting_action);
 
         QAction* lmax_inc_action = new QAction ("&Increase", this);
@@ -388,10 +394,21 @@ namespace MR
       }
 
 
+
+      void Window::manual_colour_slot ()
+      {
+        const QColor c = QColorDialog::getColor (render_frame->get_colour(), this);
+        colour_by_direction_action->setChecked (false);
+        render_frame->set_color_by_dir (false);
+        render_frame->set_colour (c);
+      }
+
+
+
       void Window::advanced_lighting_slot ()
       {
         if (!lighting_dialog) {
-          auto settings = new LightingSettings (this, *render_frame->lighting, true);
+          auto settings = new LightingSettings (this, *render_frame->lighting);
           QVBoxLayout* main_layout = new QVBoxLayout;
           main_layout->addWidget (settings);
 

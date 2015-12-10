@@ -2101,7 +2101,7 @@ namespace MR
         void Connectome::lighting_settings_slot()
         {
           if (!lighting_dock)
-            lighting_dock.reset (new LightingDock ("Connectome lighting", lighting, false));
+            lighting_dock.reset (new LightingDock ("Connectome lighting", lighting));
           lighting_dock->show();
         }
         void Connectome::lighting_parameter_slot()
