@@ -88,17 +88,17 @@ namespace MR
            Adapter::Warp<Interpolator, ImageTypeSource, Image<typename WarpType::value_type> > interp (source, warp_resliced, value_when_out_of_bounds);
 
            if (destination.ndim() == 4)
-             ThreadedLoop ("warping \"" + source.name() + "\"...", interp, 0, 3, 1).run (CopyKernel4D(), interp, destination);
+             ThreadedLoop ("warping \"" + source.name() + "\"", interp, 0, 3, 1).run (CopyKernel4D(), interp, destination);
            else
-             threaded_copy_with_progress_message ("warping \"" + source.name() + "\"...", interp, destination);
+             threaded_copy_with_progress_message ("warping \"" + source.name() + "\"", interp, destination);
 
         // no need to reslice warp
         } else {
            Adapter::Warp<Interpolator, ImageTypeSource, Image<typename WarpType::value_type> > interp (source, warp, value_when_out_of_bounds);
            if (destination.ndim() == 4)
-             ThreadedLoop ("warping \"" + source.name() + "\"...", interp, 0, 3, 1).run (CopyKernel4D(), interp, destination);
+             ThreadedLoop ("warping \"" + source.name() + "\"", interp, 0, 3, 1).run (CopyKernel4D(), interp, destination);
            else
-             threaded_copy_with_progress_message ("warping \"" + source.name() + "\"...", interp, destination);
+             threaded_copy_with_progress_message ("warping \"" + source.name() + "\"", interp, destination);
         }
       }
 

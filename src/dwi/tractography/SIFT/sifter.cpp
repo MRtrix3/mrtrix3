@@ -299,7 +299,7 @@ namespace MR
         Tractography::Writer<float> writer (output_path, p);
         track_t tck_counter = 0;
         Tractography::Streamline<> tck;
-        ProgressBar progress ("Writing filtered tracks output file...", contributions.size());
+        ProgressBar progress ("Writing filtered tracks output file", contributions.size());
         Tractography::Streamline<> empty_tck;
         while (reader (tck) && tck_counter < contributions.size()) {
           if (contributions[tck_counter++])

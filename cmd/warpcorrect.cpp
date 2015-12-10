@@ -73,6 +73,6 @@ void run ()
       out.row(3) = in.row(3);
   };
 
-  ThreadedLoop ("correcting warp...", input, 0, 3)
+  ThreadedLoop ("correcting warp", input, 0, 3)
     .run (func, input, output);
 }

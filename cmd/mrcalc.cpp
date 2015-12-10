@@ -667,7 +667,7 @@ void run_operations (const std::vector<StackEntry>& stack)
 
   auto output = Header::create (stack[1].arg, header).get_image<complex_type>();
 
-  auto loop = ThreadedLoop ("computing: " + operation_string(stack[0]) + " ...", output, 0, output.ndim(), 2);
+  auto loop = ThreadedLoop ("computing: " + operation_string(stack[0]), output, 0, output.ndim(), 2);
 
   ThreadFunctor functor (loop.inner_axes, stack[0], output);
   loop.run_outer (functor);

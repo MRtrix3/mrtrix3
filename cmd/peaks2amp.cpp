@@ -53,7 +53,7 @@ void run ()
 
   auto amp = Image<float>::create (argument[1], header);
   
-  auto loop = Loop("converting directions to amplitudes...", 0, 3);
+  auto loop = Loop("converting directions to amplitudes", 0, 3);
 
   for (auto i = loop (dir, amp); i; ++i) {
     Eigen::Vector3f n;

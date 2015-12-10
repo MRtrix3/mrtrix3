@@ -184,6 +184,6 @@ void run ()
   
   Eigen::MatrixXd b = -DWI::grad2bmatrix<double> (grad, opt.size()>0);
 
-  ThreadedLoop("computing tensors...", dwi, 0, 3).run (processor (b, iter, mask, b0, dkt), dwi, dt);
+  ThreadedLoop("computing tensors", dwi, 0, 3).run (processor (b, iter, mask, b0, dkt), dwi, dt);
 }
 

@@ -378,7 +378,7 @@ namespace MR
     * \code
     * float sum = 0.0;
     *
-    * LoopInOrder loop (vox, "averaging...");
+    * LoopInOrder loop (vox, "averaging");
     * for (auto i = loop.run (vox); i; ++i)
     *   sum += vox.value();
     *
@@ -387,7 +387,7 @@ namespace MR
     * \endcode
     * The output would look something like this:
     * \code
-    * myprogram: averaging... 100%
+    * myprogram: [100%] averaging
     * average = 23.42
     * \endcode
     */

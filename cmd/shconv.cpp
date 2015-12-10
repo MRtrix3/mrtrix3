@@ -103,5 +103,5 @@ void run() {
   auto image_out = Image<value_type>::create (argument[2], header);
   
   SConvFunctor sconv (image_in.size(3), mask, responseRH);
-  ThreadedLoop ("performing convolution...", image_in, 0, 3, 2).run (sconv, image_in, image_out);
+  ThreadedLoop ("performing convolution", image_in, 0, 3, 2).run (sconv, image_in, image_out);
 }

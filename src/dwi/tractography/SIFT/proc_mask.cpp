@@ -60,7 +60,7 @@ namespace MR
             auto image = Image<float>::open (opt[0][0]);
             if (!dimensions_match (out_mask, image, 0, 3))
               throw Exception ("Dimensions of processing mask image provided using -proc_mask option must match relevant fixel image");
-            copy_with_progress_message ("Copying processing mask to memory... ", image, out_mask, 0, 3);
+            copy_with_progress_message ("Copying processing mask to memory", image, out_mask, 0, 3);
 
           } else {
             auto opt = App::get_options ("act");
@@ -81,7 +81,7 @@ namespace MR
                 INFO ("5TT image dimensions match fixel image - importing directly");
                 copy (in_5tt, out_5tt);
               } else {
-                auto threaded_loop  = ThreadedLoop ("resampling ACT 5TT image to fixel image space...", in_dwi, 0, 3);
+                auto threaded_loop  = ThreadedLoop ("resampling ACT 5TT image to fixel image space", in_dwi, 0, 3);
                 ResampleFunctor functor (in_dwi, in_5tt, out_5tt);
                 threaded_loop.run (functor);
               }
@@ -96,7 +96,7 @@ namespace MR
               auto f = [] (Image<float>& dwi, Image<float>& mask) {
                 mask.value() = (dwi.value() && std::isfinite ((float) dwi.value())) ? 1.0 : 0.0;
               };
-              ThreadedLoop ("Creating homogeneous processing mask...", in_dwi, 0, 3).run (f, in_dwi, out_mask);
+              ThreadedLoop ("Creating homogeneous processing mask", in_dwi, 0, 3).run (f, in_dwi, out_mask);
 
             }
 

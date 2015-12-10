@@ -195,7 +195,7 @@ namespace MR
           const bool inverse;
         } kernel (vox, axis, inverse);
 
-        ThreadedLoop ("performing in-place FFT...", vox, axes)
+        ThreadedLoop ("performing in-place FFT", vox, axes)
           .run (kernel, vox);
       }
 

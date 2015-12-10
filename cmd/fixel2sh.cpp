@@ -79,7 +79,7 @@ void run ()
   std::vector<default_type> values;
   Eigen::Matrix<default_type, Eigen::Dynamic, 1> apsf_values;
 
-  for (auto l1 = Loop("converting sparse fixel data to SH image... ", fixel) (fixel, sh); l1; ++l1) {
+  for (auto l1 = Loop("converting sparse fixel data to SH image", fixel) (fixel, sh); l1; ++l1) {
     values.assign (N, 0.0);
     for (size_t index = 0; index != fixel.value().size(); ++index) {
       apsf_values = aPSF (apsf_values, fixel.value()[index].dir);

@@ -108,7 +108,7 @@ void run () {
 
   auto adc = Header::create (argument[1], header).get_image<value_type>();
 
-  ThreadedLoop ("computing ADC values...", dwi, 0, 3)
+  ThreadedLoop ("computing ADC values", dwi, 0, 3)
     .run (DWI2ADC (binv, dwi_axis), dwi, adc);
 }
 

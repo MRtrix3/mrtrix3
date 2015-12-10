@@ -91,7 +91,7 @@ void run ()
   DWI::Tractography::Mapping::TrackMapperBase mapper (input_header);
   mapper.set_use_precise_mapping (true);
 
-  ProgressBar progress ("mapping fixel values to streamline points...", num_tracks);
+  ProgressBar progress ("mapping fixel values to streamline points", num_tracks);
   DWI::Tractography::Streamline<float> tck;
 
   Transform transform (input_fixel);

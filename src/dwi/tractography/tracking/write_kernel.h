@@ -74,6 +74,7 @@ namespace MR
 
           ~WriteKernel ()
           {
+            // Use set_text() rather than update() here to force update of the text before progress goes out of scope
             progress.set_text (printf ("%8" PRIu64 " generated, %8" PRIu64 " selected", writer.total_count, writer.count));
             if (seeds) {
               (*seeds) << "\n";

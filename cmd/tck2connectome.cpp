@@ -128,7 +128,7 @@ void run ()
   Tractography::Reader<float> reader (argument[0], properties);
 
   // Initialise classes in preparation for multi-threading
-  Mapping::TrackLoader loader (reader, properties["count"].empty() ? 0 : to<size_t>(properties["count"]), "Constructing connectome... ");
+  Mapping::TrackLoader loader (reader, properties["count"].empty() ? 0 : to<size_t>(properties["count"]), "Constructing connectome");
   Tractography::Connectome::Mapper mapper (*tck2nodes, *metric);
   Tractography::Connectome::Matrix connectome (max_node_index, vector_output);
 

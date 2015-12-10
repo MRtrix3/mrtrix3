@@ -664,7 +664,7 @@ void run ()
   } else if (op == 15 || op == 16 || op == 17) { // split_*
     H_out.set_ndim (4);
     uint32_t max_count = 0;
-    for (auto l = Loop ("determining largest fixel count... ", in) (in); l; ++l)
+    for (auto l = Loop ("determining largest fixel count", in) (in); l; ++l)
       max_count = std::max (max_count, in.value().size());
     if (max_count == 0)
       throw Exception ("fixel image is empty");
@@ -677,7 +677,7 @@ void run ()
   auto opt = get_options ("weighted");
   const bool weighted = opt.size();
 
-  auto loop = ThreadedLoop ("converting sparse fixel data to scalar image... ", in);
+  auto loop = ThreadedLoop ("converting sparse fixel data to scalar image", in);
 
   switch (op) {
     case 0:  loop.run (Mean       (weighted), in, out); break;

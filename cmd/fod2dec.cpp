@@ -278,7 +278,7 @@ void run () {
         w_img = Image<value_type>::scratch(int_hdr,"FOD integral map");
       }
 
-      ThreadedLoop ("computing colours...", fod_img, 0, 3)
+      ThreadedLoop ("computing colours", fod_img, 0, 3)
         .run (DecComputer (DecTransform (Math::SH::LforN(fod_img.size(3)), dirs, thresh), mask_img, w_img), fod_img, dec_img);  
     }
 
@@ -299,7 +299,7 @@ void run () {
     w_img = map_hdr.get_image<value_type>();
 
   if (w_img.valid() || needtolum || needtoslice)
-    ThreadedLoop ("(re)weighting...", out_img, 0, 3, 2)
+    ThreadedLoop ("(re)weighting", out_img, 0, 3, 2)
       .run (DecWeighter (coefs, gamma, w_img), out_img);
 
 }

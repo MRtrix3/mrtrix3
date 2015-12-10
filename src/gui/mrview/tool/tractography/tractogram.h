@@ -31,7 +31,6 @@
 
 namespace MR
 {
-  class ProgressBar;
 
   namespace GUI
   {

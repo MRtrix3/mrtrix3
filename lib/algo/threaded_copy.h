@@ -104,7 +104,7 @@ namespace MR
         const std::vector<size_t>& axes, 
         size_t num_axes_in_thread = 1)
     {
-      threaded_copy_with_progress_message ("copying from \"" + shorten (source.name()) + "\" to \"" + shorten (destination.name()) + "\"...",
+      threaded_copy_with_progress_message ("copying from \"" + shorten (source.name()) + "\" to \"" + shorten (destination.name()) + "\"",
           source, destination, axes, num_axes_in_thread);
     }
 
@@ -116,7 +116,7 @@ namespace MR
         size_t to_axis = std::numeric_limits<size_t>::max(),
         size_t num_axes_in_thread = 1)
     {
-      threaded_copy_with_progress_message ("copying from \"" + shorten (source.name()) + "\" to \"" + shorten (destination.name()) + "\"...",
+      threaded_copy_with_progress_message ("copying from \"" + shorten (source.name()) + "\" to \"" + shorten (destination.name()) + "\"",
           source, destination, from_axis, to_axis, num_axes_in_thread);
     }
 

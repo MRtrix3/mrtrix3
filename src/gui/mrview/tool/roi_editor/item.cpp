@@ -113,7 +113,7 @@ namespace MR
           bind();
           auto image = header.get_image<bool>();
           std::vector<GLubyte> data (image.size(0)*image.size(1));
-          ProgressBar progress ("loading ROI image \"" + header.name() + "\"...");
+          ProgressBar progress ("loading ROI image \"" + header.name() + "\"");
           for (auto outer = MR::Loop(2) (image); outer; ++outer) {
             auto p = data.begin();
             for (auto inner = MR::Loop (0,2) (image); inner; ++inner)

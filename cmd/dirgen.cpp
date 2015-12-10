@@ -174,7 +174,7 @@ void run () {
 
   // optimisation proper:
   {
-    ProgressBar progress ("Optimising directions...");
+    ProgressBar progress ("Optimising directions");
     for (int power = 2; power <= target_power; power *= 2) {
       Energy energy (ndirs, power, bipolar, directions);
 
@@ -195,13 +195,13 @@ void run () {
             + ", grad = " + str (optim.gradient_norm(), 8));
 
         progress.update ([&]() { return "Optimising directions (power " + str(power) 
-            + ", energy: " + str(optim.value(), 8) + ", gradient: " + str(optim.gradient_norm(), 8) + ", iteration " + str(iter) + ")..."; });
+            + ", energy: " + str(optim.value(), 8) + ", gradient: " + str(optim.gradient_norm(), 8) + ", iteration " + str(iter) + ")"; });
       }
 
       directions = optim.state();
 
       progress.set_text ("Optimising directions (power " + str(power) 
-        + ", energy: " + str(optim.value(), 8) + ", gradient: " + str(optim.gradient_norm(), 8) + ", iteration " + str(iter) + ")...");
+        + ", energy: " + str(optim.value(), 8) + ", gradient: " + str(optim.gradient_norm(), 8) + ", iteration " + str(iter) + ")");
     }
   }
 

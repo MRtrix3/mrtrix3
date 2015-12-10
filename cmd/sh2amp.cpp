@@ -121,6 +121,6 @@ void run ()
   auto amp_data = Image<value_type>::create(argument[2], amp_header);
 
   SH2Amp sh2amp (directions, Math::SH::LforN (sh_data.size(3)), get_options("nonnegative").size());
-  ThreadedLoop("computing amplitudes...", sh_data, 0, 3, 2).run(sh2amp, sh_data, amp_data);
+  ThreadedLoop("computing amplitudes", sh_data, 0, 3, 2).run(sh2amp, sh_data, amp_data);
   
 }

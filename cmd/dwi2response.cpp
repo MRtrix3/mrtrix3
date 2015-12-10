@@ -183,7 +183,7 @@ void run ()
     //   use these as the first two coefficients
     default_type sum = 0.0, sq_sum = 0.0;
     size_t count = 0;
-    for (auto l = Loop("initialising response function... ", dwi, 0, 3) (dwi, mask); l; ++l) {
+    for (auto l = Loop("initialising response function", dwi, 0, 3) (dwi, mask); l; ++l) {
       if (mask.value()) {
         for (size_t volume_index = 0; volume_index != shared.dwis.size(); ++volume_index) {
           dwi.index(3) = shared.dwis[volume_index];
@@ -222,7 +222,7 @@ void run ()
   {
     bool iterate = true;
     size_t iter = 0;
-    ProgressBar progress ("optimising response function... ");
+    ProgressBar progress ("optimising response function");
     do {
 
       ++iter;

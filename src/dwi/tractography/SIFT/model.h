@@ -260,7 +260,7 @@ namespace MR
 
         fixels.swap (new_fixels);
 
-        TrackIndexRangeWriter writer (SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks(), "Removing excluded fixels...");
+        TrackIndexRangeWriter writer (SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks(), "Removing excluded fixels");
         FixelRemapper remapper (*this, fixel_index_mapping);
         Thread::run_queue (writer, TrackIndexRange(), Thread::multi (remapper));
 
@@ -308,7 +308,7 @@ namespace MR
         Tractography::Reader<float> reader (tck_file_path, p);
         Tractography::Writer<float> writer (output_path, p);
         Tractography::Streamline<> tck, null_tck;
-        ProgressBar progress ("Writing non-contributing streamlines output file...", contributions.size());
+        ProgressBar progress ("Writing non-contributing streamlines output file", contributions.size());
         track_t tck_counter = 0;
         while (reader (tck) && tck_counter < contributions.size()) {
           if (contributions[tck_counter] && !contributions[tck_counter++]->get_total_contribution())

@@ -89,7 +89,7 @@ void run ()
       std::vector<float > tck;
       size_t count = 0;
       {
-        ProgressBar progress ("counting tracks in file... ");
+        ProgressBar progress ("counting tracks in file");
         while (file (tck)) {
           ++count;
           ++progress;

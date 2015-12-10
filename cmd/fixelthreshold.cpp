@@ -45,7 +45,7 @@ void usage ()
   ARGUMENTS
   + Argument ("fixel_in", "the input fixel image.").type_image_in ()
   + Argument ("threshold", "the input threshold").type_float()
-  + Argument ("fixel_out",   "the output fixel image").type_image_out ();
+  + Argument ("fixel_out", "the output fixel image").type_image_out ();
 
   OPTIONS
   + Option ("crop", "remove fixels that fall below threshold (instead of assigning their value to zero or one)")
@@ -67,7 +67,7 @@ void run ()
   auto opt = get_options("crop");
   const bool invert = get_options("invert").size();
 
-  for (auto i = Loop ("thresholding fixel image...", input) (input, output); i; ++i) {
+  for (auto i = Loop ("thresholding fixel image", input) (input, output); i; ++i) {
     if (opt.size()) {
         size_t fixel_count = 0;
         for (size_t f = 0; f != input.value().size(); ++f) {

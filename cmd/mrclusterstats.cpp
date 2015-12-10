@@ -145,7 +145,7 @@ void run() {
 
   {
     // Load images
-    ProgressBar progress("loading images...", subjects.size());
+    ProgressBar progress("loading images", subjects.size());
     for (size_t subject = 0; subject < subjects.size(); subject++) {
       LogLevelLatch log_level (0);
       auto input_image = Image<float>::open(subjects[subject]).with_direct_io (Stride::contiguous_along_axis (3));
@@ -257,7 +257,7 @@ void run() {
   std::vector<value_type> pvalue_output (num_vox, 0.0);
   Math::Stats::statistic2pvalue (perm_distribution, default_cluster_output, pvalue_output);
   {
-    ProgressBar progress ("generating output...");
+    ProgressBar progress ("generating output");
     for (size_t i = 0; i < num_vox; i++) {
       for (size_t dim = 0; dim < cluster_image.ndim(); dim++)
         tvalue_image.index(dim) = cluster_image.index(dim) = fwe_pvalue_image.index(dim) = uncorrected_pvalue_image.index(dim) = mask_indices[i][dim];
@@ -273,7 +273,7 @@ void run() {
       std::vector<value_type> pvalue_output_neg (num_vox, 0.0);
       Math::Stats::statistic2pvalue (*perm_distribution_neg, *default_cluster_output_neg, pvalue_output_neg);
 
-      ProgressBar progress ("generating negative contrast output...");
+      ProgressBar progress ("generating negative contrast output");
       for (size_t i = 0; i < num_vox; i++) {
         for (size_t dim = 0; dim < cluster_image.ndim(); dim++)
           cluster_image_neg.index(dim) = fwe_pvalue_image_neg.index(dim) = uncorrected_pvalue_image_neg.index(dim) = mask_indices[i][dim];

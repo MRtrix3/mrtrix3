@@ -3867,7 +3867,7 @@ namespace MR
           const size_t num_tracks = to<size_t>(properties["count"]);
           if (num_tracks != num_edges())
             throw Exception ("Track file " + Path::basename (path) + " contains " + str(num_tracks) + " streamlines; connectome expects " + str(num_edges()) + " exemplars");
-          ProgressBar progress ("Importing connection exemplars... ", num_edges());
+          ProgressBar progress ("Importing connection exemplars", num_edges());
           MR::DWI::Tractography::Streamline<float> tck;
           while (reader (tck)) {
             edges[tck.index].load_exemplar (tck);
@@ -3885,7 +3885,7 @@ namespace MR
             get_exemplars();
             if (!have_exemplars) return;
           }
-          ProgressBar progress ("Generating connection streamtubes... ", num_edges());
+          ProgressBar progress ("Generating connection streamtubes", num_edges());
           for (auto i = edges.begin(); i != edges.end(); ++i) {
             i->create_streamtube();
             ++progress;

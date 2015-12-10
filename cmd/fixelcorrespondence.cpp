@@ -69,7 +69,7 @@ void run ()
     angular_threshold = opt[0][0];
   const float angular_threshold_dp = cos (angular_threshold * (Math::pi/180.0));
 
-  for (auto i = Loop ("mapping subject fixels to template fixels...", subject_fixel) (subject_fixel, template_fixel, output_fixel); i; ++i) {
+  for (auto i = Loop ("mapping subject fixels to template fixels", subject_fixel) (subject_fixel, template_fixel, output_fixel); i; ++i) {
     output_fixel.value().set_size (template_fixel.value().size());
     for (size_t t = 0; t != template_fixel.value().size(); ++t) {
       output_fixel.value()[t] = template_fixel.value()[t] ;

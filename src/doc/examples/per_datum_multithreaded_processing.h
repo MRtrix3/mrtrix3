@@ -129,7 +129,7 @@ void run ()
   // to make sure the loop iterates over the input dataset in RAM-contiguous
   // order (increasing stride - the default) since this maximises memory access
   // throughput.
-  Image::ThreadedLoop loop ("computing exponential...", vox_in);
+  Image::ThreadedLoop loop ("computing exponential", vox_in);
 
   // run the loop, invoking the functor ExpFunctor that you constructed with
   // the user-supplied lambda value (or default of 1), using vox_in as the

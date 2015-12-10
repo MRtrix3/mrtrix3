@@ -74,7 +74,7 @@ void run ()
   std::vector<voxel_corner_t> lower_corners, upper_corners;
 
   {
-    for (auto i = Loop ("Importing label image... ", labels) (labels); i; ++i) {
+    for (auto i = Loop ("Importing label image", labels) (labels); i; ++i) {
       const uint32_t index = labels.value();
       if (index) {
 
@@ -98,7 +98,7 @@ void run ()
 
   {
     std::mutex mutex;
-    ProgressBar progress ("Generating meshes from labels... ", lower_corners.size() - 1);
+    ProgressBar progress ("Generating meshes from labels", lower_corners.size() - 1);
     auto loader = [&] (size_t& out) { static size_t i = 1; out = i++; return (out != lower_corners.size()); };
 
     auto worker = [&] (const size_t& in)

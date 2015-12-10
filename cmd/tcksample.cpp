@@ -296,8 +296,8 @@ void run ()
   }
 
   size_t skipped = 0, count = 0;
-  auto progress_message = [&](){ return "sampling streamlines (count: " + str(count) + ", skipped: " + str(skipped) + ")..."; };
-  ProgressBar progress ("sampling streamlines...");
+  auto progress_message = [&](){ return "sampling streamlines (count: " + str(count) + ", skipped: " + str(skipped) + ")"; };
+  ProgressBar progress ("sampling streamlines");
 
   DWI::Tractography::Streamline<value_type> tck;
   while (read (tck)) {

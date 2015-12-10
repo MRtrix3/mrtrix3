@@ -41,9 +41,9 @@ namespace MR
             p.data = new Timer;
           }
           else {
-            if (reinterpret_cast<Timer*>(p.data)->elapsed() > 1.0) 
+            if (reinterpret_cast<Timer*>(p.data)->elapsed() > 1.0)
               QMetaObject::invokeMethod (GUI::App::application, "displayProgressBar", Qt::DirectConnection,
-                  Q_ARG (QString, p.text.c_str()), Q_ARG (int, p.value), Q_ARG(bool, p.multiplier));
+                  Q_ARG (QString, (p.text + p.ellipsis).c_str()), Q_ARG (int, p.value), Q_ARG(bool, p.multiplier));
           }
         }
 

@@ -317,6 +317,6 @@ void run ()
     odfs.push_back(Image<value_type> (Image<value_type>::create (argument[(i+1)*2], header)));
   }
   
-  ThreadedLoop("computing ...", dwi, 0, 3).run (processor(shared, mask, odfs), dwi);
+  ThreadedLoop("computing", dwi, 0, 3).run (processor(shared, mask, odfs), dwi);
 }
 

@@ -54,7 +54,7 @@ namespace MR
       if (is_new)
         memset (addresses[0].get(), 0, files.size() * bytes_per_segment);
       else {
-        ProgressBar progress ("uncompressing image \"" + header.name() + "\"...",
+        ProgressBar progress ("uncompressing image \"" + header.name() + "\"",
             files.size() * bytes_per_segment / BYTES_PER_ZCALL);
         for (size_t n = 0; n < files.size(); n++) {
           File::GZ zf (files[n].name, "rb");
@@ -87,7 +87,7 @@ namespace MR
         assert (addresses[0]);
 
         if (writable) {
-          ProgressBar progress ("compressing image \"" + header.name() + "\"...",
+          ProgressBar progress ("compressing image \"" + header.name() + "\"",
               files.size() * bytes_per_segment / BYTES_PER_ZCALL);
           for (size_t n = 0; n < files.size(); n++) {
             assert (files[n].start == int64_t (lead_in_size));

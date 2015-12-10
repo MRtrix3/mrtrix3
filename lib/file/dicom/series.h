@@ -51,7 +51,7 @@ namespace MR {
           std::string time;
 
           void read () {
-            ProgressBar progress ("reading DICOM series \"" + name + "\"...", size());
+            ProgressBar progress ("reading DICOM series \"" + name + "\"", size());
             for (size_t i = 0; i < size(); i++) {
               (*this)[i]->read(); 
               ++progress;

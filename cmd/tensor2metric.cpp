@@ -350,6 +350,6 @@ void run ()
     vector_img = Image<value_type>::create (opt[0][0], header);
   }
   
-  ThreadedLoop ("computing metrics...", dt_img, 0, 3)
+  ThreadedLoop ("computing metrics", dt_img, 0, 3)
     .run (Processor (mask_img, adc_img, fa_img, ad_img, rd_img, cl_img, cp_img, cs_img, value_img, vector_img, vals, modulate), dt_img);
 }

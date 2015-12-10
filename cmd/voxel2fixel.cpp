@@ -56,7 +56,7 @@ void run ()
   Sparse::Image<FixelMetric> fixel_template (argument[1]);
   Sparse::Image<FixelMetric> output (argument[2], fixel_header);
 
-  for (auto i = Loop ("mapping voxel scalar values to fixels ...", 0, 3)(scalar, fixel_template, output); i; ++i) {
+  for (auto i = Loop ("mapping voxel scalar values to fixels", 0, 3)(scalar, fixel_template, output); i; ++i) {
     output.value().set_size (fixel_template.value().size());
     for (size_t f = 0; f != fixel_template.value().size(); ++f) {
       output.value()[f] = fixel_template.value()[f];

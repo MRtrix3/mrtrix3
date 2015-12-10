@@ -218,7 +218,7 @@ namespace MR
       Adapter::Median3D<decltype(vox_in)> median_adapter (vox_in, extent);
 
       // perform the processing using a simple multi-threaded copy:
-      Image::threaded_copy_with_progress_message ("median filtering...", median_adapter, vox_out);
+      Image::threaded_copy_with_progress_message ("median filtering", median_adapter, vox_out);
 
       // done!
     }

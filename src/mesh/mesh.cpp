@@ -148,7 +148,7 @@ namespace MR
       // For initial segmentation of mesh - identify voxels on the mesh, inside & outside
       enum vox_mesh_t { UNDEFINED, ON_MESH, OUTSIDE, INSIDE };
 
-      ProgressBar progress ("converting mesh to PVE image... ", 7);
+      ProgressBar progress ("converting mesh to PVE image", 7);
 
       // For speed, want the vertex data to be in voxel positions
       // Therefore modify the vertex data in place, but save the original data and set it
@@ -1014,7 +1014,7 @@ namespace MR
         out << "ASCII\n";
       out << "DATASET POLYDATA\n";
 
-      ProgressBar progress ("writing mesh to file... ", vertices.size() + triangles.size() + quads.size());
+      ProgressBar progress ("writing mesh to file", vertices.size() + triangles.size() + quads.size());
       if (binary) {
 
         // FIXME Binary VTK output _still_ not working (crashes ParaView)
@@ -1090,7 +1090,7 @@ namespace MR
       if (quads.size())
           throw Exception ("STL binary file format does not support quads; only triangles");
 
-      ProgressBar progress ("writing mesh to file... ", triangles.size());
+      ProgressBar progress ("writing mesh to file", triangles.size());
 
       if (binary) {
 

@@ -105,7 +105,7 @@ void run () {
   int filter_index = argument[1];
 
   if (filter_index == 0) { // Connected components
-    Filter::ConnectedComponents filter (input_image, std::string("applying connected-component filter to image ") + Path::basename (argument[0]) + "... ");
+    Filter::ConnectedComponents filter (input_image, std::string("applying connected-component filter to image ") + Path::basename (argument[0]));
     auto opt = get_options ("axes");
     std::vector<int> axes;
     if (opt.size()) {
@@ -144,7 +144,7 @@ void run () {
   }
 
   if (filter_index == 1) { // Dilate
-    Filter::Dilate filter (input_image, std::string("applying dilate filter to image ") + Path::basename (argument[0]) + "... ");
+    Filter::Dilate filter (input_image, std::string("applying dilate filter to image ") + Path::basename (argument[0]));
     auto opt = get_options ("npass");
     if (opt.size())
       filter.set_npass (int(opt[0][0]));
@@ -157,7 +157,7 @@ void run () {
   }
 
   if (filter_index == 2) { // Erode
-    Filter::Erode filter (input_image, std::string("applying erode filter to image ") + Path::basename (argument[0]) + "... ");
+    Filter::Erode filter (input_image, std::string("applying erode filter to image ") + Path::basename (argument[0]));
     auto opt = get_options ("npass");
     if (opt.size())
       filter.set_npass (int(opt[0][0]));
@@ -170,7 +170,7 @@ void run () {
   }
 
   if (filter_index == 3) { // Median
-    Filter::Median filter (input_image, std::string("applying median filter to image ") + Path::basename (argument[0]) + "... ");
+    Filter::Median filter (input_image, std::string("applying median filter to image ") + Path::basename (argument[0]));
     auto opt = get_options ("extent");
     if (opt.size())
       filter.set_extent (parse_ints (opt[0][0]));

@@ -144,7 +144,7 @@ void run () {
         filter.set_axes (opt[0][0]);
       filter.set_centre_zero (get_options ("centre_zero").size());
       Stride::set_from_command_line (filter);
-      filter.set_message (std::string("applying FFT filter to image " + std::string(argument[0]) + "..."));
+      filter.set_message (std::string("applying FFT filter to image " + std::string(argument[0])));
 
       if (get_options ("magnitude").size()) {
         auto temp = Image<cdouble>::scratch (filter, "complex FFT result");
@@ -182,7 +182,7 @@ void run () {
       }
       filter.set_stdev (stdev);
       filter.compute_wrt_scanner (get_options ("scanner").size() ? true : false);
-      filter.set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]) + "...");
+      filter.set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]));
       Stride::set_from_command_line (filter);
 
       auto output = Image<float>::create (argument[2], filter);
@@ -199,7 +199,7 @@ void run () {
       auto opt = get_options ("extent");
       if (opt.size())
         filter.set_extent (parse_ints (opt[0][0]));
-      filter.set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]) + "...");
+      filter.set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]));
       Stride::set_from_command_line (filter);
 
       auto output = Image<float>::create (argument[2], filter);
@@ -229,7 +229,7 @@ void run () {
       opt = get_options ("extent");
       if (opt.size())
         filter.set_extent (parse_ints (opt[0][0]));
-      filter.set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]) + "...");
+      filter.set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]));
       Stride::set_from_command_line (filter);
 
       auto output = Image<float>::create (argument[2], filter);

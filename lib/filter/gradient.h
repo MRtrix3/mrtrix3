@@ -120,7 +120,7 @@ namespace MR
 
           auto smoothed = Image<float>::scratch (smoother);
           if (message.size())
-            smoother.set_message ("applying smoothing prior to calculating gradient... ");
+            smoother.set_message ("applying smoothing prior to calculating gradient");
           smoother (in, smoothed);
 
           const size_t num_volumes = (in.ndim() == 3) ? 1 : in.size(3);

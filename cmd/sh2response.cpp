@@ -87,7 +87,7 @@ void run ()
   std::vector<value_type> response (lmax/2 + 1, 0.0);
   size_t count = 0;
 
-  auto loop = Loop ("estimating response function...", SH, 0, 3);
+  auto loop = Loop ("estimating response function", SH, 0, 3);
   for (auto l = loop(mask, SH, dir); l; ++l) {
 
     if (!mask.value()) 

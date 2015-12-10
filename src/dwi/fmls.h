@@ -200,7 +200,7 @@ namespace MR
           FODQueueWriter (const FODImageType& fod_image, const MaskImageType& mask_image = MaskImageType()) :
               fod (fod_image),
               mask (mask_image),
-              loop (Loop("Segmenting FODs... ", 0, 3) (fod)) { }
+              loop (Loop("segmenting FODs", 0, 3) (fod)) { }
 
           bool operator() (SH_coefs& out)
           {

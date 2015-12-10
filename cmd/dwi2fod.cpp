@@ -162,7 +162,7 @@ void run ()
   auto fod = Image<value_type>::create (argument[2], header);
 
   Processor processor (shared, mask);
-  ThreadedLoop ("performing constrained spherical deconvolution...", dwi, 0, 3)
+  ThreadedLoop ("performing constrained spherical deconvolution", dwi, 0, 3)
     .run (processor, dwi, fod);
 }
 

@@ -72,6 +72,6 @@ void run ()
     image.row(3) = (transform.voxel2scanner * voxel_pos).cast<float>();
   };
 
-  ThreadedLoop ("generating identity warp...", warp, 0, 3)
+  ThreadedLoop ("generating identity warp", warp, 0, 3)
     .run (func, warp);
 }

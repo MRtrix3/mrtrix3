@@ -413,7 +413,7 @@ void run ()
     // Feed the input images to the kernel one at a time
     {
       ProgressBar progress (std::string("computing ") + operations[op] + " across " 
-          + str(headers_in.size()) + " images...", num_inputs);
+          + str(headers_in.size()) + " images", num_inputs);
       for (size_t i = 0; i != headers_in.size(); ++i) {
         assert (headers_in[i].is_file_backed());
         kernel->process (headers_in[i]);

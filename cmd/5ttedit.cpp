@@ -164,7 +164,7 @@ void run ()
   opt = get_options ("path"); if (opt.size()) modifier.set_path_mask (opt[0][0]);
   opt = get_options ("none"); if (opt.size()) modifier.set_none_mask (opt[0][0]);
 
-  ThreadedLoop ("Modifying ACT 5TT image... ", in, 0, 3, 2).run (modifier);
+  ThreadedLoop ("Modifying ACT 5TT image", in, 0, 3, 2).run (modifier);
 
 }
 

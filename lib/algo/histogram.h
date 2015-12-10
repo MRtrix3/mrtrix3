@@ -40,7 +40,7 @@ namespace MR
           if (num_buckets < 10)
             throw Exception ("Error initialising histogram: number of buckets must be greater than 10");
 
-          INFO ("Initialising histogram with " + str (num_buckets) + " buckets...");
+          INFO ("Initialising histogram with " + str (num_buckets) + " buckets");
           list.resize (num_buckets);
 
           value_type min, max;
@@ -51,7 +51,7 @@ namespace MR
           for (size_t n = 0; n < list.size(); n++)
             list[n].value = min + step * (n + 0.5);
 
-          for (auto l = Loop("building histogram of \"" + shorten (D.name()) + "\"...", D) (D); l; ++l) {
+          for (auto l = Loop("building histogram of \"" + shorten (D.name()) + "\"", D) (D); l; ++l) {
             const value_type val = D.value();
             if (std::isfinite (val) && val != 0.0) {
               size_t pos = size_t ( (val-min) /step);

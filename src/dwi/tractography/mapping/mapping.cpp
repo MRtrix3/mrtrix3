@@ -87,7 +87,7 @@ namespace MR {
           Eigen::Vector3f max_values (-Inf, -Inf, -Inf);
 
           {
-            ProgressBar progress ("creating new template image...", 0);
+            ProgressBar progress ("creating new template image", 0);
             while (file (tck) && track_counter++ < MAX_TRACKS_READ_FOR_HEADER) {
               for (const auto& i : tck) {
                 min_values[0] = std::min (min_values[0], i[0]);

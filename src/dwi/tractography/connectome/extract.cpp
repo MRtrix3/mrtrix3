@@ -150,7 +150,7 @@ bool WriterExemplars::operator() (const Tractography::Connectome::Streamline_nod
 // TODO Multi-thread
 void WriterExemplars::finalize()
 {
-  ProgressBar progress ("finalizing exemplars...", exemplars.size());
+  ProgressBar progress ("finalizing exemplars", exemplars.size());
   for (std::vector<Exemplar>::iterator i = exemplars.begin(); i != exemplars.end(); ++i) {
     i->finalize (step_size);
     ++progress;

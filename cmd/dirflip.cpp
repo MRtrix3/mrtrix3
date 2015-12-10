@@ -65,7 +65,7 @@ class Shared {
   public:
     Shared (const Eigen::MatrixXd& directions, size_t target_num_permutations) :
       directions (directions), target_num_permutations (target_num_permutations), num_permutations(0),
-      progress ("optimising directions for eddy-currents...", target_num_permutations),
+      progress ("optimising directions for eddy-currents", target_num_permutations),
       best_signs (directions.rows(), 1), best_eddy (std::numeric_limits<value_type>::max()) { }
 
     bool update (value_type eddy, const std::vector<int>& signs) 
@@ -74,7 +74,7 @@ class Shared {
       if (eddy < best_eddy) {
         best_eddy = eddy;
         best_signs = signs;
-        progress.set_text ("optimising directions for eddy-currents (current best configuration: energy = " + str(best_eddy) + ")...");
+        progress.set_text ("optimising directions for eddy-currents (current best configuration: energy = " + str(best_eddy) + ")");
       }
       ++num_permutations;
       ++progress;

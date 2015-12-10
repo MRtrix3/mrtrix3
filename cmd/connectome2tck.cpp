@@ -121,7 +121,7 @@ void run ()
   {
     std::ifstream stream (argument[1]);
     std::string line;
-    ProgressBar progress ("reading streamline assignments file... ");
+    ProgressBar progress ("reading streamline assignments file");
     while (std::getline (stream, line)) {
       std::stringstream line_stream (line);
       std::vector<node_t> nodes;
@@ -225,7 +225,7 @@ void run ()
 
     {
       std::mutex mutex;
-      ProgressBar progress ("generating exemplars for connectome... ", count);
+      ProgressBar progress ("generating exemplars for connectome", count);
       if (assignments_pairs.size()) {
         auto loader = [&] (Tractography::Connectome::Streamline_nodepair& out) { if (!reader (out)) return false; out.set_nodes (assignments_pairs[out.index]); return true; };
         auto worker = [&] (const Tractography::Connectome::Streamline_nodepair& in) { generator (in); std::lock_guard<std::mutex> lock (mutex); ++progress; return true; };
@@ -242,7 +242,7 @@ void run ()
     // Get exemplars to the output file(s), depending on the requested format
     if (file_format == 0) { // One file per edge
       if (exclusive) {
-        ProgressBar progress ("writing exemplars to files... ", nodes.size() * (nodes.size()-1) / 2);
+        ProgressBar progress ("writing exemplars to files", nodes.size() * (nodes.size()-1) / 2);
         for (size_t i = 0; i != nodes.size(); ++i) {
           const node_t one = nodes[i];
           for (size_t j = i+1; j != nodes.size(); ++j) {
@@ -253,7 +253,7 @@ void run ()
         }
       } else {
         // For each node in the list, write one file for an exemplar to every other node
-        ProgressBar progress ("writing exemplars to files... ", nodes.size() * COMs.size());
+        ProgressBar progress ("writing exemplars to files", nodes.size() * COMs.size());
         for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
           for (size_t i = first_node; i != COMs.size(); ++i) {
             generator.write (*n, i, prefix + str(*n) + "-" + str(i) + ".tck", weights_prefix.size() ? (weights_prefix + str(*n) + "-" + str(i) + ".csv") : "");
@@ -262,7 +262,7 @@ void run ()
         }
       }
     } else if (file_format == 1) { // One file per node
-      ProgressBar progress ("writing exemplars to files... ", nodes.size());
+      ProgressBar progress ("writing exemplars to files", nodes.size());
       for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
         generator.write (*n, prefix + str(*n) + ".tck", weights_prefix.size() ? (weights_prefix + str(*n) + ".csv") : "");
         ++progress;
@@ -315,7 +315,7 @@ void run ()
         break;
     }
 
-    ProgressBar progress ("Extracting tracks from connectome... ", count);
+    ProgressBar progress ("Extracting tracks from connectome", count);
     if (assignments_pairs.size()) {
       Tractography::Connectome::Streamline_nodepair tck;
       while (reader (tck)) {

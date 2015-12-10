@@ -116,7 +116,7 @@ class DataLoader
     DataLoader (Image<value_type>& sh_data,
                 Image<bool>* mask_data) :
       sh (sh_data),
-      loop (Loop("estimating peak directions...", 0, 3) (sh)) { }
+      loop (Loop("estimating peak directions", 0, 3) (sh)) { }
 
     bool operator() (Item& item) {
       if (loop) {

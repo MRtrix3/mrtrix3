@@ -154,7 +154,7 @@ void run ()
     check_dimensions (mask, data, 0, 3);
 
     if (hist_stream) {
-      ProgressBar progress ("calibrating histogram...", voxel_count (data));
+      ProgressBar progress ("calibrating histogram", voxel_count (data));
       for (auto i = Volume_loop (data); i; ++i) {
         for (auto j = inner_loop (mask, data); j; ++j) {
           if (mask.value())
@@ -204,7 +204,7 @@ void run ()
   if (!voxels.size()) { // whole data set:
 
     if (hist_stream) {
-      ProgressBar progress ("calibrating histogram...", voxel_count (data));
+      ProgressBar progress ("calibrating histogram", voxel_count (data));
       for (auto i = Volume_loop (data); i; ++i) {
         for (auto j = inner_loop (data); j; ++j) {
           calibrate (complex_type(data.value()).real());
@@ -264,7 +264,7 @@ void run ()
   }
 
   if (hist_stream) {
-    ProgressBar progress ("calibrating histogram...", voxel.size());
+    ProgressBar progress ("calibrating histogram", voxel.size());
     for (auto i = Volume_loop (data); i; ++i) {
       for (size_t i = 0; i < voxel.size(); ++i) {
         data.index(0) = voxel[i][0];

@@ -193,7 +193,7 @@ void run ()
   // create a threaded loop object that will display a progress message, and
   // iterate over buffer_in in order of increasing stride. In this case, only loop
   // over the first 3 axes (see Image::ThreadedLoop documentation for details): 
-  Image::ThreadedLoop loop ("performing matrix multiplication...", buffer_in, 0, 3);
+  Image::ThreadedLoop loop ("performing matrix multiplication", buffer_in, 0, 3);
 
   // run the loop, invoking the functor MathMulFunctor that you constructed:
   loop.run (MathMulFunctor (shared), buffer_in.voxel(), buffer_out.voxel());

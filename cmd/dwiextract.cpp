@@ -100,7 +100,7 @@ void run() {
 
   auto output_image = Image<float>::create (argument[1], header);
 
-  auto outer = Loop ("extracting volumes...", input_image, 0, 3);
+  auto outer = Loop ("extracting volumes", input_image, 0, 3);
 
   if (output_image.ndim() == 4) {
     for (auto i = outer (output_image, input_image); i; ++i) {

@@ -70,6 +70,6 @@ void run () {
       ++P.index(3);
     }
   };
-  ThreadedLoop ("calculating SH power...", SH_data, 0, 3)
+  ThreadedLoop ("calculating SH power", SH_data, 0, 3)
     .run (f, power_data, SH_data);
 }

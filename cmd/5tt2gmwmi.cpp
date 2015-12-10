@@ -155,7 +155,7 @@ void run ()
   }
   auto output = Image<float>::create (argument[1], H);
 
-  ThreadedLoop ("Generating GMWMI seed mask... ", input, 0, 3)
+  ThreadedLoop ("Generating GMWMI seed mask", input, 0, 3)
     .run (Processor (mask), input, output);
 
 }

@@ -127,7 +127,7 @@ void check_and_update (Header& H, const conv_t conversion)
   auto mask = Image<bool>::scratch (header_mask);
   size_t voxel_count = 0;
   {
-    for (auto i = Loop ("Masking image based on DC term...", image, 0, 3) (image, mask); i; ++i) {
+    for (auto i = Loop ("Masking image based on DC term", image, 0, 3) (image, mask); i; ++i) {
       const value_type value = image.value();
       if (value && std::isfinite (value)) {
         mask.value() = true;
@@ -145,7 +145,7 @@ void check_and_update (Header& H, const conv_t conversion)
   // volumes independently, and report ratio for each harmonic order
   std::unique_ptr<ProgressBar> progress;
   if (App::log_level > 0 && App::log_level < 2)
-    progress.reset (new ProgressBar ("Evaluating SH basis of image \"" + H.name() + "\"...", N-1));
+    progress.reset (new ProgressBar ("Evaluating SH basis of image \"" + H.name() + "\"", N-1));
 
   std::vector<float> ratios;
 
@@ -285,7 +285,7 @@ void check_and_update (Header& H, const conv_t conversion)
   // Adjust the image data in-place if necessary
   if (multiplier && (multiplier != 1.0)) {
 
-    ProgressBar progress ("Modifying SH basis of image \"" + H.name() + "\"...", N-1);
+    ProgressBar progress ("Modifying SH basis of image \"" + H.name() + "\"", N-1);
     for (image.index(3) = 1; image.index(3) != ssize_t(N); ++image.index(3)) {
       if (!mzero_terms[image.index(3)]) {
         for (auto i = Loop (image, 0, 3) (image); i; ++i)

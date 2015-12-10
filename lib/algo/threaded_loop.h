@@ -152,7 +152,7 @@ namespace MR
    * ...
    *
    * MyVoxelType vox;
-   * ThreadedLoop ("computing exponential in-place...", vox)
+   * ThreadedLoop ("computing exponential in-place", vox)
    *   .run (my_function, vox);
    * \endcode
    */
@@ -171,7 +171,7 @@ namespace MR
    * ...
    *
    * AnyVoxelType vox;
-   * ThreadedLoop ("computing exponential in-place...", vox)
+   * ThreadedLoop ("computing exponential in-place", vox)
    *   .run (MyFunction(), vox);
    * \endcode
    *
@@ -179,7 +179,7 @@ namespace MR
    * more compactly using C++11 lambda expressions:
    * \code
    * MyVoxelType vox;
-   * ThreadedLoop ("computing exponential in-place...", vox)
+   * ThreadedLoop ("computing exponential in-place", vox)
    *   .run ([](decltype(vox)& v) { v.value() = std::exp(v.value()); }, vox);
    * \endcode
    *
@@ -237,7 +237,7 @@ namespace MR
    * ...
    *
    * double SoS = 0.0;
-   * ThreadedLoop ("computing RMS of \"" + vox.name() + "\"...", vox)
+   * ThreadedLoop ("computing RMS of \"" + vox.name() + "\"", vox)
    *     .run (RMS(SoS), vox);
    *
    * double rms = std::sqrt (SoS / voxel_count (vox));

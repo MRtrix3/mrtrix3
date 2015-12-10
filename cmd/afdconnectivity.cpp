@@ -163,7 +163,7 @@ value_type AFDConnectivity::get (const std::string& path)
   Tractography::Properties properties;
   Tractography::Reader<value_type> reader (path, properties);
   const size_t track_count = (properties.find ("count") == properties.end() ? 0 : to<size_t>(properties["count"]));
-  DWI::Tractography::Mapping::TrackLoader loader (reader, track_count, "summing apparent fibre density within track... ");
+  DWI::Tractography::Mapping::TrackLoader loader (reader, track_count, "summing apparent fibre density within track");
 
   // If WBFT is provided, this is the sum of (volume/length) across streamlines
   // Otherwise, it's a sum of lengths of all streamlines (for later scaling by mean streamline length)

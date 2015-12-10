@@ -355,7 +355,7 @@ namespace MR {
         std::vector<size_t> zeroed (fixels.size(), 0);
 
         {
-          ProgressBar progress ("Generating streamline coefficient statistic images... ", num_tracks());
+          ProgressBar progress ("Generating streamline coefficient statistic images", num_tracks());
           for (SIFT::track_t i = 0; i != num_tracks(); ++i) {
             const double coeff = coefficients[i];
             const SIFT::TrackContribution& this_contribution (*contributions[i]);

@@ -47,7 +47,7 @@ namespace MR
       ProgressInfo (ProgressInfo&& p) = delete; 
 
       FORCE_INLINE ProgressInfo (const std::string& text, size_t target) :
-        value (0), text (text), current_val (0), next_percent (0), next_time (0.0), multiplier (0.0), data (nullptr) { 
+        value (0), text (text), ellipsis ("... "), current_val (0), next_percent (0), next_time (0.0), multiplier (0.0), data (nullptr) {
           set_max (target);
         }
 
@@ -62,6 +62,12 @@ namespace MR
       size_t value;
       //! the text to be shown with the progressbar
       std::string text;
+      //! the ellipsis (three dots) to show at the end of the text (if applicable)
+      /*! If the progress is initialised based on a text string and then updated,
+       * an ellipsis is shown at the end of the message until the progress is
+       * completed. If the text is updated using a functor, then no ellipsis
+       * is shown. */
+      std::string ellipsis;
 
       //! the current absolute value 
       /*! only used when progress is shown as a percentage */
@@ -117,6 +123,7 @@ namespace MR
           if (increment && multiplier) {
             if (++current_val >= next_percent) {
               set_text (text_func());
+              ellipsis.clear();
               value = std::round (current_val / multiplier);
               next_percent = std::ceil ((value+1) * multiplier);
               next_time = time;
@@ -126,6 +133,7 @@ namespace MR
           }
           if (time >= next_time) {
             set_text (text_func());
+            ellipsis.clear();
             if (multiplier)
               next_time = time + BUSY_INTERVAL;
             else {

@@ -50,7 +50,7 @@ namespace MR
       if (!addresses[0])
         throw Exception ("failed to allocate memory for image \"" + header.name() + "\"");
 
-      ProgressBar progress ("reformatting DICOM mosaic images...", slices*files.size());
+      ProgressBar progress ("reformatting DICOM mosaic images", slices*files.size());
       uint8_t* data = addresses[0].get();
       for (size_t n = 0; n < files.size(); n++) {
         File::MMap file (files[n], false, false, m_xdim * m_ydim * header.datatype().bytes());

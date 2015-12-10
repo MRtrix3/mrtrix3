@@ -55,13 +55,13 @@ namespace MR
             __stderr_offset = ftello (stderr);
         else if (__stderr_offset)
           fseeko (stderr, __stderr_offset, SEEK_SET);
-        __print_stderr (text.c_str());
+        __print_stderr ((text + (done ? "\n" : "")).c_str());
         if (done)
           __stderr_offset = 0;
       }
       else {
         __stderr_offset = done ? 0 : 1;
-        __print_stderr (("\r" + text CLEAR_LINE_CODE).c_str());
+        __print_stderr (("\r" + text CLEAR_LINE_CODE + (done ? "\n" : "")).c_str());
       }
     }
 
@@ -69,18 +69,18 @@ namespace MR
     void display_func_cmdline (ProgressInfo& p)
     {
       if (p.multiplier) 
-        __update_progress_cmdline (printf ("%s: [%3zu%%] %s", App::NAME.c_str(), size_t (p.value), p.text.c_str()), false);
+        __update_progress_cmdline (printf ("%s: [%3zu%%] %s%s", App::NAME.c_str(), size_t (p.value), p.text.c_str(), p.ellipsis.c_str()), false);
       else
-        __update_progress_cmdline (printf ("%s: [%s] %s", App::NAME.c_str(), busy[p.value%6], p.text.c_str()), false);
+        __update_progress_cmdline (printf ("%s: [%s] %s%s", App::NAME.c_str(), busy[p.value%6], p.text.c_str(), p.ellipsis.c_str()), false);
     }
 
 
     void done_func_cmdline (ProgressInfo& p)
     {
       if (p.multiplier)
-        __update_progress_cmdline (printf ("%s: [%3u%%] %s\n", App::NAME.c_str(), 100, p.text.c_str()), true);
+        __update_progress_cmdline (printf ("%s: [%3u%%] %s", App::NAME.c_str(), 100, p.text.c_str()), true);
       else
-        __update_progress_cmdline (printf ("%s: [done] %s\n", App::NAME.c_str(), p.text.c_str()), true);
+        __update_progress_cmdline (printf ("%s: [done] %s", App::NAME.c_str(), p.text.c_str()), true);
     }
   }
 

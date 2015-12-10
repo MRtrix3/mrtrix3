@@ -199,7 +199,7 @@ namespace MR
           input_value_type optimal_threshold = 0.0;
           {
             ImageCorrelationCostFunction<ImageType, MaskType> cost_function (input, mask);
-            optimal_threshold = Math::golden_section_search (cost_function, "optimising threshold...", 
+            optimal_threshold = Math::golden_section_search (cost_function, "optimising threshold",
                 min + 0.001*(max-min), (min+max)/2.0 , max-0.001*(max-min));
           }
 

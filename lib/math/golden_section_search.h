@@ -46,7 +46,7 @@ namespace MR
      * Typical usage:
      * \code
      * CostFunction cost_function();
-     * float optimal_value = Math::golden_section_search(cost_function, "optimising...", min_bound, initial_estimate , max_bound);
+     * float optimal_value = Math::golden_section_search(cost_function, "optimising", min_bound, initial_estimate , max_bound);
      *
      * \endcode
      */

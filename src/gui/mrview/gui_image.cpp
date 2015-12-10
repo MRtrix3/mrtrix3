@@ -421,7 +421,7 @@ namespace MR
           const size_t N = ( format == gl::RED ? 1 : 3 );
           std::vector<ValueType> data (N * V.size(0) * V.size(1));
 
-          ProgressBar progress ("loading image data...", V.size(2));
+          ProgressBar progress ("loading image data", V.size(2));
 
           for (size_t n = 3; n < V.ndim(); ++n) 
             V.index (n) = tex_positions[n];
@@ -488,7 +488,7 @@ namespace MR
       {
         std::vector<float> data (2 * image.size (0) * image.size (1));
 
-        ProgressBar progress ("loading image data...", image.size (2));
+        ProgressBar progress ("loading image data", image.size (2));
 
         for (size_t n = 3; n < image.ndim(); ++n)
           image.index (n) = tex_positions[n];

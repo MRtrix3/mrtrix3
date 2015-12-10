@@ -64,7 +64,7 @@ namespace MR
      * CostFunction cost_function();
      * QuadraticLineSearch<double> line_search (-1.0, 1.0);
      * line_search.set_tolerance (0.01);
-     * line_search.set_message ("optimising... ");
+     * line_search.set_message ("optimising");
      * const double optimal_value = line_search (cost_function);
      *
      * \endcode

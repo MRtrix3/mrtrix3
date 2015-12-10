@@ -42,7 +42,7 @@ namespace MR {
         {
 
           public:
-            TrackLoader (Reader<>& file, const size_t to_load = 0, const std::string& msg = "mapping tracks to image...") :
+            TrackLoader (Reader<>& file, const size_t to_load = 0, const std::string& msg = "mapping tracks to image") :
               reader (file),
               tracks_to_load (to_load),
               progress (msg.size() ? new ProgressBar (msg, tracks_to_load) : nullptr) { }

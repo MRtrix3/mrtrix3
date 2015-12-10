@@ -96,7 +96,7 @@ void run ()
       meshes.front().smooth (spatial, influence);
     } else {
       std::mutex mutex;
-      ProgressBar progress ("Applying smoothing filter to multiple meshes... ", meshes.size());
+      ProgressBar progress ("Applying smoothing filter to multiple meshes", meshes.size());
       auto loader = [&] (size_t& out) { static size_t i = 0; out = i++; return (out != meshes.size()); };
       auto worker = [&] (const size_t& in) { meshes[in].smooth (spatial, influence); std::lock_guard<std::mutex> lock (mutex); ++progress; return true; };
       Thread::run_queue (loader, size_t(), Thread::multi (worker));

@@ -131,7 +131,7 @@ void run ()
     if (opt.size())
       dump.reset (new File::OFStream (std::string(opt[0][0]), std::ios_base::out | std::ios_base::trunc));
 
-    ProgressBar progress ("Reading track file... ", header_count);
+    ProgressBar progress ("Reading track file", header_count);
     Streamline<> tck;
     while (reader (tck)) {
       ++count;
