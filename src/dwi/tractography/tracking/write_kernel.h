@@ -60,6 +60,7 @@ namespace MR
                 S (shared),
                 writer (output_file, properties),
                 always_increment (S.properties.seeds.is_finite() || !S.max_num_tracks),
+                warn_on_max_attempts (S.implicit_max_num_attempts),
                 progress (printf ("       0 generated,        0 selected", 0, 0), always_increment ? S.max_num_attempts : S.max_num_tracks)
           {
             const auto seed_output = properties.find ("seed_output");
@@ -76,6 +77,10 @@ namespace MR
           {
             // Use set_text() rather than update() here to force update of the text before progress goes out of scope
             progress.set_text (printf ("%8" PRIu64 " generated, %8" PRIu64 " selected", writer.total_count, writer.count));
+            if (warn_on_max_attempts && writer.total_count == S.max_num_attempts
+                && S.max_num_tracks && writer.count < S.max_num_tracks) {
+              WARN ("less than desired streamline number due to implicit maximum number of attempts; set -maxnum 0 to override");
+            }
             if (seeds) {
               (*seeds) << "\n";
               seeds->close();
@@ -92,7 +97,7 @@ namespace MR
         protected:
           const SharedBase& S;
           Writer<> writer;
-          const bool always_increment;
+          const bool always_increment, warn_on_max_attempts;
           std::unique_ptr<File::OFStream> seeds;
           ProgressBar progress;
       };

@@ -85,6 +85,7 @@ namespace MR
               unidirectional (false),
               rk4 (false),
               stop_on_all_include (false),
+              implicit_max_num_attempts (properties.find ("max_num_attempts") == properties.end()),
               downsampler ()
 #ifdef DEBUG_TERMINATIONS
             , debug_header (properties.find ("act") == properties.end() ? diff_path : properties["act"]),
@@ -223,7 +224,7 @@ namespace MR
             float max_angle, max_angle_rk4, cos_max_angle, cos_max_angle_rk4;
             float step_size, threshold, init_threshold;
             size_t max_seed_attempts;
-            bool unidirectional, rk4, stop_on_all_include;
+            bool unidirectional, rk4, stop_on_all_include, implicit_max_num_attempts;
             Downsampler downsampler;
 
             // Additional members for ACT
