@@ -4,14 +4,16 @@
 # * -verbose prints all commands and all command outputs
 
 args = ''
+author = 'No author specified'
 citationWarning = ''
 cleanup = True
-epilog = ''
 lastFile = ''
 mrtrixQuiet = '-quiet'
 mrtrixNThreads = ''
 numArgs = 0
 parser = ''
+refList = ''
+standardOptions = ''
 tempDir = ''
 verbosity = 1
 workingDir = ''
@@ -37,16 +39,16 @@ class Parser(argparse.ArgumentParser):
 def initCitations(cmdlist):
 
   import lib.citations
-  global epilog, citationWarning
+  global refList, citationWarning
   max_level = 0
   for name in cmdlist:
     entry = [item for item in lib.citations.list if item[0] == name][0]
     if entry:
       max_level = max(max_level, entry[1]);
       # Construct string containing all relevant citations that will be fed to the argument parser epilog
-      if not epilog:
-        epilog = 'Relevant citations for tools / algorithms used in this script:\n\n'
-      epilog += entry[0] + ':\n' + entry[2] + '\n\n'
+      if refList:
+        refList += '\n'
+      refList += entry[0] + ': ' + entry[2] + '\n'
 
   if max_level:
     citationWarning += 'Note that this script makes use of commands / algorithms that have relevant articles for citation'
@@ -59,14 +61,18 @@ def initCitations(cmdlist):
 
 def initParser(desc):
   import argparse
-  global epilog, parser
+  global parser, refList, standardOptions
+  epilog = ''
+  if refList:
+    epilog = 'Relevant citations for tools / algorithms used in this script:\n\n' + refList + '\n'
+  epilog += 'Author:\n' + author + '\n\nCopyright (C) 2008 Brain Research Institute, Melbourne, Australia. This is free software; see the source for copying conditions. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n'
   parser = Parser(description=desc, epilog=epilog, formatter_class=argparse.RawDescriptionHelpFormatter)
-  standard_options = parser.add_argument_group('standard options')
-  standard_options.add_argument('-continue', nargs=2, dest='cont', metavar=('<TempDir>', '<LastFile>'), help='Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file')
-  standard_options.add_argument('-nocleanup', action='store_true', help='Do not delete temporary directory at script completion')
-  standard_options.add_argument('-nthreads', metavar='number', help='Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)')
-  standard_options.add_argument('-tempdir', metavar='/path/to/tmp/', help='Manually specify the path in which to generate the temporary directory')
-  verbosity_group = standard_options.add_mutually_exclusive_group()
+  standardOptions = parser.add_argument_group('standard options')
+  standardOptions.add_argument('-continue', nargs=2, dest='cont', metavar=('<TempDir>', '<LastFile>'), help='Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file')
+  standardOptions.add_argument('-nocleanup', action='store_true', help='Do not delete temporary directory at script completion')
+  standardOptions.add_argument('-nthreads', metavar='number', help='Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)')
+  standardOptions.add_argument('-tempdir', metavar='/path/to/tmp/', help='Manually specify the path in which to generate the temporary directory')
+  verbosity_group = standardOptions.add_mutually_exclusive_group()
   verbosity_group.add_argument('-quiet',   action='store_true', help='Suppress all console output during script execution')
   verbosity_group.add_argument('-verbose', action='store_true', help='Display additional information for every command invoked')
 
@@ -75,9 +81,15 @@ def initParser(desc):
 def initialise():
   import argparse, os, random, string, sys
   from lib.printMessage          import printMessage
+  from lib.printUsageMarkdown    import printUsageMarkdown
   from lib.readMRtrixConfSetting import readMRtrixConfSetting
-  global args, cleanup, lastFile, mrtrixNThreads, mrtrixQuiet, tempDir, verbosity, workingDir
+  global args, author, cleanup, lastFile, mrtrixNThreads, mrtrixQuiet, standardOptions, parser, refList, tempDir, verbosity, workingDir
   global colourClear, colourConsole, colourError, colourPrint, colourWarn
+  
+  if len(sys.argv) == 2 and sys.argv[1] == '__print_usage_markdown__':
+    printUsageMarkdown(parser, standardOptions, refList, author)
+    exit(0)
+  
   workingDir = os.getcwd()
   args = parser.parse_args()
 

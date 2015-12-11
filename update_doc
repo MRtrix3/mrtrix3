@@ -34,6 +34,8 @@ folder=$(mktemp -d)
   
   rm -rf mrtrix3.wiki/commands/list
   mkdir -p mrtrix3.wiki/commands/list
+  rm -rf mrtrix3.wiki/scripts/list
+  mkdir -p mrtrix3.wiki/scripts/list
   
   echo '[[Home]]
 
@@ -47,13 +49,23 @@ folder=$(mktemp -d)
     echo '[['$(basename $n)']]<br>' >> mrtrix3.wiki/commands/_Sidebar.md
   done
 
+  echo '[[Home]]
+
+**Scripts**<br>
+' >> mrtrix3.wiki/scripts/_Sidebar.md
+
+  for n in `find mrtrix3/scripts/ -type f -print0 | xargs -0 grep -l "lib.app.initParser"`; do
+    $n __print_usage_markdown__ > mrtrix3.wiki/scripts/list/$(basename $n).md
+    echo '[['$(basename $n)']]<br>' >> mrtrix3.wiki/scripts/_Sidebar.md
+  done
+
   grep -rn --include=\*.h --include=\*.cpp '^\s*//CONF\b ' mrtrix3 | sed -ne 's/^.*CONF \(.*\)/\1/p' | ./format_config_options > mrtrix3.wiki/DesignPrinciples/List-of-configuration-file-options.md
 
   
   (
     cd mrtrix3.wiki
-    git add commands DesignPrinciples/List-of-configuration-file-options.md
-    git commit -m "automatic update of command documentation"
+    git add commands scripts DesignPrinciples/List-of-configuration-file-options.md
+    git commit -m "automatic update of command and script documentation"
     git push
   )
   
