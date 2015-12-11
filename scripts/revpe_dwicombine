@@ -32,6 +32,7 @@ from lib.printMessage  import printMessage
 from lib.runCommand    import runCommand
 from lib.warnMessage   import warnMessage
 
+lib.app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
 lib.app.initCitations([ 'eddy/topup', 'FSL', 'Skare2010' ])
 lib.app.initParser('Perform EPI distortion & recombination of a pair of image volumes, where the diffusion gradient table is identical between the two series, but the phase-encode direction is reversed')
 lib.app.parser.add_argument('pe_dir',  help='The phase encode direction; can be a signed axis number (e.g. -0, 1, +2) or a code (e.g. AP, LR, IS)')
