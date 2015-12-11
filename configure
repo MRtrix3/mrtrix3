@@ -128,7 +128,7 @@ EIGEN_CFLAGS    Any flags required to compile with Eigen.
                 This may include in particular the path to the
                 include files, if not in a standard location
                 For example:
-                $ EIGEN_CFLAGS="-I/usr/local/include/eigen3" ./configure
+                $ EIGEN_CFLAGS="-isystem /usr/local/include/eigen3" ./configure
 
 ZLIB_CFLAGS     Any flags required to compile with the zlib compression library.
 
@@ -592,7 +592,7 @@ except CompileError:
 Use the ZLIB_CFLAGS environment variable to set the path to
 the zlib include files and to set any required flags
 For example:
-     ZLIB_CFLAGS="-I/usr/local/include" ./configure''')
+     ZLIB_CFLAGS="-isystem /usr/local/include" ./configure''')
 except LinkError:
   error ('''linker error!
 
@@ -622,7 +622,12 @@ if 'EIGEN_CFLAGS' in os.environ.keys():
   eigen_cflags = shlex.split (os.environ['EIGEN_CFLAGS'])
 else:
   try:
-    eigen_cflags = shlex.split (execute ([ 'pkg-config', '--cflags', 'eigen3' ], RuntimeError)[1])
+    eigen_cflags = []
+    for entry in shlex.split (execute ([ 'pkg-config', '--cflags', 'eigen3' ], RuntimeError)[1]):
+      if entry.startswith ('-I'):
+        eigen_cflags += [ '-isystem', entry[2:] ]
+      else:
+        eigen_cflags += [ entry ]
   except:
     log('error running on pkg-config --cflags eigen3\n\n')
 
@@ -645,7 +650,7 @@ except CompileError:
 Use the EIGEN_CFLAGS environment variable to set the path to
 the Eigen3 include files and to set any required flags
 For example:
-     EIGEN_CFLAGS=-I/usr/include/eigen3 ./configure''')
+     EIGEN_CFLAGS="-isystem /usr/include/eigen3" ./configure''')
 except LinkError:
   error ('''linker error!
 
@@ -885,7 +890,12 @@ int main() { Foo f; }
       qt = qt_cflags + qt_defines + qt_includes
       qt_cflags = []
       for entry in qt:
-        if entry[0] != '$' and not entry == '-I.': qt_cflags += [ entry.replace('\"','').replace("'",'') ]
+        if entry[0] != '$' and not entry == '-I.': 
+          entry = entry.replace('\"','').replace("'",'')
+          if entry.startswith('-I'):
+            qt_cflags += [ '-isystem', entry[2:] ]
+          else:
+            qt_cflags += [ entry ]
 
       qt = qt_ldflags + qt_libs
       qt_ldflags = []
@@ -963,7 +973,7 @@ use the MOC environment variable to specify the Qt moc command''')
 if R_module:
 
   report ('Checking for R library: ')
-  R_cflags = [ '-I/usr/include/R' ]
+  R_cflags = [ '-isystem', '/usr/include/R' ]
   if 'R_CFLAGS' in os.environ.keys(): 
     R_cflags = shlex.split (os.environ['R_CFLAGS'])
   else:
@@ -999,7 +1009,7 @@ if R_module:
   
   Use the R_CFLAGS environment variable to set the path to the R include files'
   For example:'
-       R_CFLAGS=-I/usr/local/include/R ./configure''')
+       R_CFLAGS="-isystem /usr/local/include/R" ./configure''')
   except LinkError:
     error ('''linker error!'
   
