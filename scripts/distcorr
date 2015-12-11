@@ -1,16 +1,12 @@
 #!/usr/bin/env python
 
-# Script for performing EPI distortion correction using FSL 5.0 tools eddy / topup / applytopup
+# Script for performing diffusion eddy current / motion correction using FSL eddy
 
-# This script is only for the specific case where a single pair of reversed-phase-encode images have been acquired for estimating the inhomogeneity field, which is to be used subsequently to correct a volume series (DWI / fMRI) that has been acquired using a fixed phase-encode direction.
-
-# Unlike the previous version of this script, this now uses FSL's eddy tool to perform motion & eddy current correction as well as susceptibility distortion correction for DWI. Therefore the input images to this script should be the images as they are received from the scanner i.e. it is no longer necessary to perform DWI motion correction before running this script. However, if it is an fMRI time series that is being processed, eddy is not applicable, so motion correction will need to be applied prior to this script, and this script is only responsible for the susceptibility distortion correction. (Perhaps down the track FMRIB will modify mcflirt to use the field output from topup...?)
+# This script is a light wrapper around FSL's eddy tool, for performing correct of inter-volume motion and eddy current-induced distortions in a diffusion image series in cases where no image information is available for performing inhomogeneity distortion correction (e.g. reversed phase-encode image pair(s) or field map).
 
 # Order of input arguments is:
 # * Phase encode direction: This can be an axis number (0-2), or one of the following: lr, rl, ap, pa, is, si
-# * First image from reverse phase-encode pair
-# * Second image from reverse phase-encode pair
-# * Image series to be corrected; note that this must have the same phase-encode direction as the FIRST image of the reversed phase-encode pair
+# * Name of image series to be corrected
 # * Name of output corrected image series
 
 
@@ -21,6 +17,7 @@ import lib.app
 from lib.binaryInPath  import binaryInPath
 from lib.errorMessage  import errorMessage
 from lib.getFSLSuffix  import getFSLSuffix
+from lib.getFSLVersion import getFSLVersion
 from lib.getHeaderInfo import getHeaderInfo
 from lib.getPEAxis     import getPEAxis
 from lib.printMessage  import printMessage
@@ -28,25 +25,19 @@ from lib.runCommand    import runCommand
 from lib.warnMessage   import warnMessage
 
 lib.app.initCitations([ 'eddy/topup', 'FSL' ])
-lib.app.initParser('Perform motion correction and eddy-current distortion correction of a volume series, using FSL eddy.')
+lib.app.initParser('Perform motion correction and eddy-current distortion correction of a DWI series using FSL eddy.')
 lib.app.parser.add_argument('pe_axis',   help='The phase encode direction / axis; can be an axis number (0, 1 or 2) or a code (e.g. AP, LR, IS)')
 lib.app.parser.add_argument('series',    help='The image series to be corrected')
 lib.app.parser.add_argument('output',    help='The output corrected image series')
 lib.app.initialise()
 
-fsl_path = os.environ.get('FSLDIR', '')
-if not fsl_path:
-  errorMessage('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
-    
 eddy_cmd = 'eddy'
 if not binaryInPath(eddy_cmd):
   eddy_cmd = 'fsl5.0-eddy'
   if not binaryInPath(eddy_cmd):
     errorMessage('Could not find FSL program eddy; please verify FSL install')
 
-with open(os.path.join(fsl_path, 'etc', 'fslversion'), 'r') as f:
-  fsl_version = f.readline().strip()
-
+fsl_version = getFSLVersion()
 fsl_suffix = getFSLSuffix()
 
 # Figure out the phase encode axis
@@ -58,78 +49,59 @@ runCommand('mrconvert ' + lib.app.args.series    + ' ' + os.path.join(lib.app.te
 
 lib.app.gotoTempDir()
 
-# Verify that input images are valid
+# Verify that input image is valid
 series_dim = getHeaderInfo ('series.mif', 'dimensions').split()
-
 if len(series_dim) != 4:
   errorMessage ('Input image should be a 4D volume series')
+grad = getHeaderInfo ('series.mif', 'dwgrad')
+if not grad:
+  errorMessage ('No diffusion gradient encoding found in input file')
 
 # Get the axis strides from the input series, so the output image can be modified to match
 stride = getHeaderInfo ('series.mif', 'stride')
 stride_option = ' -stride ' + stride.replace(' ', ',')
 
-# Test to see if there is any diffusion gradient encoding in the input series
-grad = getHeaderInfo ('series.mif', 'dwgrad')
-
 # Convert the input files as necessary for FSL tools
 runCommand('mrconvert series.mif series_before.nii -stride +1,+2,+3,+4')
-
-series_imain = 'series_before.nii'
 
 # Construct a configuration file
 printMessage('Creating phase-encoding configuration file')
 config_file = open('config.txt', 'w')
 config_line = [ '0', '0', '0', '0.1' ]
+# TODO Would be better to know whether or not this is reversed...
 config_line[PE_axis] = '1'
 config_file.write(' '.join (config_line) + '\n')
 config_file.close()
 
+# Create the diffusion gradient table in FSL format
+# Make sure the strides are identical to the image actually being passed to eddy before exporting the gradient table
+runCommand('mrconvert series.mif - -stride +1,+2,+3,+4 | mrinfo - -export_grad_fsl bvecs bvals')
+    
+# Use the initial corrected image series from applytopup to derive a processing mask for eddy
+runCommand('dwi2mask series.mif - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32')
+  
+# Generate configuration file for eddy - index referring to PE and bandwidth for each volume
+# Every volume has identical acquisition parameters in this particular use case
+num_volumes = int(series_dim[3])
+indices = ''
+for volume in range(0, num_volumes):
+  indices = indices + '1 '
+with open('indices.txt', 'w') as index_file:
+  index_file.write(indices);
+  
+# Run eddy
+runCommand(eddy_cmd + ' --imain=series_before.nii --mask=mask.nii --index=indices.txt --acqp=config.txt --bvecs=bvecs --bvals=bvals --out=series_after')
+
 result_path = 'result' + os.path.splitext(lib.app.args.output)[1]
-
-# Need to split depending on whether DW information is available
-if not grad:
-
-  printMessage('No diffusion gradient encoding found in input file')
-    
+  
+# Convert the resulting volume to the output image, and re-insert the diffusion encoding
+# Note that if FSL < 5.0.9, the script uses the diffusion encoding from the original DWI volumes,
+#   i.e. no reorientation of diffusion gradient vectors is performed.
+if LooseVersion(fsl_version) >= LooseVersion('5.0.9'):
+  runCommand('mrconvert series_after' + fsl_suffix + ' ' + result_path + stride_option + ' -fslgrad series_after.eddy_rotated_bvecs bvals')
 else:
-
-  printMessage('Detected diffusion gradient encoding in input file; running eddy')
-
-  # Create the diffusion gradient table in FSL format
-  # Make sure the strides are identical to the image actually being passed to eddy before exporting the gradient table
-  runCommand('mrconvert series.mif - -stride +1,+2,+3,+4 | mrinfo - -export_grad_fsl bvecs bvals')
-    
-  # Use the initial corrected image series from applytopup to derive a processing mask for eddy
-  runCommand('mrconvert series.mif - | dwi2mask - - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32')
-  
-  # Generate configuration file for eddy - index referring to PE and bandwidth for each volume
-  # In this particular use case, we assume that every volume in the series has the same imaging parameters as the first of the reversed-PE pair
-  # Therefore, every volume has an index of 1
-  
-  # Need to find the number of input volumes
-  # For this, import bvals and count the number of entries
-  bvals_input = open('bvals', 'r')
-  bvals = bvals_input.read()
-  bvals = bvals.strip().split()
-  num_volumes = len(bvals)
-  
-  indices = ''
-  for volume in range(0, num_volumes):
-    indices = indices + '1 '
-  with open('indices.txt', 'w') as index_file:
-    index_file.write(indices);
-  
-  # Run eddy
-  runCommand(eddy_cmd + ' --imain=' + series_imain + ' --mask=mask.nii --index=indices.txt --acqp=config.txt --bvecs=bvecs --bvals=bvals --out=series_after')
-  
-  # Convert the resulting volume to the output image, and re-insert the diffusion encoding
-  # Note that if FSL < 5.0.9, the script uses the diffusion encoding from the original DWI volumes,
-  #   i.e. no reorientation of diffusion gradient vectors is performed.
-  if LooseVersion(fsl_version) >= LooseVersion('5.0.9'):
-    runCommand('mrconvert series_after' + fsl_suffix + ' ' + result_path + stride_option + ' -fslgrad series_after.eddy_rotated_bvecs bvals')
-  else:
-    warnMessage('FSL eddy v' + fsl_version + ' does not rotate the gradient vectors. Update to FSL 5.0.9 or rotate the bvecs file manually.')
-    runCommand('mrconvert series_after' + fsl_suffix + ' ' + result_path + stride_option + ' -fslgrad bvecs bvals')
+  warnMessage('FSL eddy v' + fsl_version + ' does not rotate the gradient vectors. Update to FSL 5.0.9 or rotate the bvecs file manually.')
+  runCommand('mrconvert series_after' + fsl_suffix + ' ' + result_path + stride_option + ' -fslgrad bvecs bvals')
     
 lib.app.moveFileToDest(result_path, lib.app.args.output)
 lib.app.complete()

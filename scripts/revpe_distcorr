@@ -21,6 +21,7 @@ import lib.app
 from lib.binaryInPath  import binaryInPath
 from lib.errorMessage  import errorMessage
 from lib.getFSLSuffix  import getFSLSuffix
+from lib.getFSLVersion import getFSLVersion
 from lib.getHeaderInfo import getHeaderInfo
 from lib.getPEAxis     import getPEAxis
 from lib.printMessage  import printMessage
@@ -62,9 +63,7 @@ if not binaryInPath(eddy_cmd):
   if not binaryInPath(eddy_cmd):
     errorMessage('Could not find FSL program eddy; please verify FSL install')
 
-with open(os.path.join(fsl_path, 'etc', 'fslversion'), 'r') as f:
-  fsl_version = f.readline().strip()
-
+fsl_version = getFSLVersion()
 fsl_suffix = getFSLSuffix()
 
 # Figure out the phase encode axis
