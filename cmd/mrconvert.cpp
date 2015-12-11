@@ -21,8 +21,9 @@
 */
 
 #include "command.h"
-#include "progressbar.h"
+#include "header.h"
 #include "image.h"
+#include "transform.h"
 #include "algo/threaded_copy.h"
 #include "adapter/extract.h"
 #include "adapter/permute_axes.h"
@@ -91,6 +92,29 @@ void usage ()
 
 
 
+void permute_DW_scheme (Header& H, const std::vector<int>& axes)
+{
+  auto in = DWI::get_DW_scheme (H);
+  if (!in.rows())
+    return;
+
+  Transform T (H);
+  Eigen::Matrix3d permute = Eigen::Matrix3d::Zero();
+  for (size_t axis = 0; axis != 3; ++axis)
+    permute(axes[axis], axis) = 1.0;
+  const Eigen::Matrix3d R = T.scanner2voxel.rotation() * permute * T.voxel2scanner.rotation();
+
+  Eigen::MatrixXd out (in.rows(), 4);
+  out.col(3) = in.col(3); // Copy b-values
+  for (int row = 0; row != in.rows(); ++row)
+    out.block<1,3>(row, 0) = in.block<1,3>(row, 0) * R;
+
+  H.set_DW_scheme (out);
+}
+
+
+
+
 template <class ImageType>
 inline std::vector<int> set_header (Header& header, const ImageType& input)
 {
@@ -115,6 +139,7 @@ inline std::vector<int> set_header (Header& header, const ImageType& input)
         throw Exception ("axis supplied to option -axes is out of bounds");
       header.size(i) = axes[i] < 0 ? 1 : input.size (axes[i]);
     }
+    permute_DW_scheme (header, axes);
   } else {
     header.set_ndim (input.ndim());
     axes.assign (input.ndim(), 0);
