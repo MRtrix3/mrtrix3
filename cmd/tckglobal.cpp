@@ -63,11 +63,11 @@ void usage ()
   + "Example use: "
   
   + " $ tckglobal dwi.mif wmr.txt -riso csfr.txt -riso gmr.txt -mask mask.mif \n"
-    "   -niter 1e8 -todi tod.mif -fiso fiso.mif tracks.tck "
+    "   -niter 1e8 -fod fod.mif -fiso fiso.mif tracks.tck "
   
   + "in which dwi.mif is the input image, wmr.txt is an anisotropic, multi-shell response function for WM, "
     "and csfr.txt and gmr.txt are isotropic response functions for CSF and GM. The output tractogram is "
-    "saved to tracks.tck; ancillary output images tod.mif and fiso.mif contain the WM ODF and isotropic "
+    "saved to tracks.tck; ancillary output images fod.mif and fiso.mif contain the WM fODF and isotropic "
     "tissue fractions of CSF and GM respectively.";
   
   REFERENCES
@@ -126,9 +126,9 @@ void usage ()
 
   + OptionGroup("Output options")
 
-  + Option ("todi", "filename of the resulting TOD image.")
-    + Argument ("tod").type_image_out()
-  + Option ("noapo", "disable spherical convolution of TOD with apodized PSF.")
+  + Option ("fod", "filename of the resulting fODF image.")
+    + Argument ("odf").type_image_out()
+  + Option ("noapo", "disable spherical convolution of fODF with apodized PSF.")
 
   + Option ("fiso", "filename of the resulting isotropic fractions image.")
     + Argument ("iso").type_image_out()
@@ -166,9 +166,9 @@ void usage ()
 
 
 template<typename T>
-class __copy_tod {
+class __copy_fod {
   public:
-    __copy_tod (const int lmax, const double weight, const bool apodise) 
+    __copy_fod (const int lmax, const double weight, const bool apodise) 
       : w(weight), a(apodise), apo (lmax), SH_out (Math::SH::NforL(lmax)) { }
 
     void operator() (Image<T>& in, Image<T>& out) {
@@ -265,7 +265,7 @@ void run ()
   properties.ppot = mu * wmscale2 * properties.weight;
   
   opt = get_options("lambda");
-  if (opt.size()) {   // If used, "balance" is completely ignored !
+  if (opt.size()) {
     properties.lam_ext = 1.0;
     properties.lam_int = opt[0][0];
   }
@@ -325,13 +325,13 @@ void run ()
   Header header (dwi);
   header.datatype() = DataType::Float32;
   
-  opt = get_options("todi");
+  opt = get_options("fod");
   if (opt.size()) {
-    INFO("Saving TOD image to file");
+    INFO("Saving fODF image to file");
     header.size(3) = Math::SH::NforL(properties.Lmax);
-    auto TOD = Image<float>::create (opt[0][0], header);
-    auto f = __copy_tod<float>(properties.Lmax, properties.weight, !get_options("noapo").size());
-    ThreadedLoop(Eext->getTOD(), 0, 3).run(f, Eext->getTOD(), TOD);
+    auto fODF = Image<float>::create (opt[0][0], header);
+    auto f = __copy_fod<float>(properties.Lmax, properties.weight, !get_options("noapo").size());
+    ThreadedLoop(Eext->getTOD(), 0, 3).run(f, Eext->getTOD(), fODF);
   }
   
   opt = get_options("fiso");
