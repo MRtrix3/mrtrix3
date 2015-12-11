@@ -16,6 +16,7 @@ from lib.printMessage import printMessage
 from lib.runCommand   import runCommand
 from lib.warnMessage  import warnMessage
 
+lib.app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
 lib.app.initCitations([ 'ACT', 'bet', 'fast', 'first', 'FSL' ])
 lib.app.initParser('Generate a 5TT image suitable for ACT from a T1 image using FSL tools')
 lib.app.parser.add_argument('input',  help='The input T1 image')

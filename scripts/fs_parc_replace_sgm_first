@@ -23,6 +23,7 @@ from lib.errorMessage import errorMessage
 from lib.printMessage import printMessage
 from lib.runCommand   import runCommand
 
+lib.app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
 lib.app.initCitations([ 'first', 'FSL', 'SIFT_followup' ])
 lib.app.initParser('In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST')
 lib.app.parser.add_argument('parc',   help='The input FreeSurfer parcellation image')
