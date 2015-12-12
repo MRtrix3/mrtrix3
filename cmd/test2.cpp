@@ -37,7 +37,7 @@ void run ()
 
 
   Eigen::Matrix<default_type, 3, 1> median;
-  Math::geometric_median3(points, median);
+  Math::median_weiszfeld(points, median);
   VAR(median.transpose());
 
 

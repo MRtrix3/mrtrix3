@@ -279,7 +279,7 @@ namespace MR
 
             for (size_t i = 0; i < n_corners; ++i){
               Eigen::Matrix<ParameterType, 3, 1> median_corner;
-              Math::geometric_median3 (transformed_corner[i], median_corner);
+              Math::median_weiszfeld (transformed_corner[i], median_corner);
               corners_transformed_median.col(i) << median_corner, 1.0;
               corners_4.col(i) << corners.col(i), 1.0;
             }
