@@ -18,6 +18,7 @@
 
 #include <vector>
 
+#include "math/math.h"
 #include "math/rng.h"
 
 #include "dwi/tractography/GT/particle.h"

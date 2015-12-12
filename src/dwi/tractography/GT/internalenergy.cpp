@@ -49,7 +49,7 @@ namespace MR {
           pGrid.pos2xyz(ep, x, y, z);
           
           float tolerance2 = Particle::L * Particle::L;   // distance threshold (particle length), hard coded
-          float costheta = M_SQRT1_2;                     // angular threshold (45 degrees), hard coded
+          float costheta = Math::sqrt1_2;                 // angular threshold (45 degrees), hard coded
           ParticleEnd pe;
           float d1, d2, d, ct;
           
