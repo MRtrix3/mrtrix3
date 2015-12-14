@@ -67,16 +67,36 @@ namespace MR
                     im1_mask (im1_mask),
                     im2_mask (im2_mask),
                     loop_density(1.0),
-                    robust_estimate(false) {
+                    robust_estimate(false),
+                    control_point_exent (10.0, 10.0, 10.0) {
                       im1_image_interp.reset (new Im1ImageInterpolatorType (im1_image));
                       im2_image_interp.reset (new Im2ImageInterpolatorType (im2_image));
                       if (im1_mask.valid())
                         im1_mask_interp.reset (new Im1MaskInterpolatorType (im1_mask));
                       if (im2_mask.valid())
                         im2_mask_interp.reset (new Im1MaskInterpolatorType (im2_mask));
+                      update_control_points();
           }
 
           void set_extent (std::vector<size_t> extent_vector) { extent=std::move(extent_vector); }
+
+          template <class VectorType>
+          void set_control_points_extent(const VectorType& extent) {
+            control_point_exent = extent;
+            update_control_points();
+          }
+
+          void update_control_points () {
+            const Eigen::Vector3 centre = transformation.get_centre();
+            control_points.resize(3, 4);
+            // tetrahedron centred at centre of midspace scaled by control_point_exent
+            control_points <<  1.0, -1.0, -1.0,  1.0,
+                               1.0, -1.0,  1.0, -1.0,
+                               1.0,  1.0, -1.0, -1.0;
+            for (size_t i = 0; i < 3; ++i)
+              control_points.row(i) *= control_point_exent[i];
+            control_points.colwise() += centre;
+          }
 
           const std::vector<size_t>& get_extent() const { return extent; }
 
@@ -92,6 +112,8 @@ namespace MR
           MR::copy_ptr<Im2MaskInterpolatorType> im2_mask_interp;
           default_type loop_density;
           bool robust_estimate;
+          Eigen::Vector3 control_point_exent;
+          Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> control_points;
           std::vector<size_t> extent;
 
           ProcessedImageType processed_image;

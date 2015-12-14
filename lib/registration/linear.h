@@ -303,7 +303,18 @@ namespace MR
               if (robust_estimate) INFO ("using robust estimate");
               parameters.robust_estimate = robust_estimate;
 
-              DEBUG ("neighbourhood kernel extent: " +str(kernel_extent));
+              // set control point coordinates inside +-1/3 of the midway_image size
+              // TODO: probably better to use moments if initialisation via image moments was used
+              {
+                Eigen::Vector3 ext (midway_image_header.spacing(0) / 6.0,
+                                      midway_image_header.spacing(1) / 6.0,
+                                      midway_image_header.spacing(2) / 6.0);
+                for (size_t i = 0; i<3; ++i)
+                  ext(i) *= midway_image_header.size(i) - 0.5;
+                parameters.set_control_points_extent(ext);
+              }
+
+              DEBUG ("neighbourhood kernel extent: " + str(kernel_extent));
               parameters.set_extent (kernel_extent);
 
 
@@ -319,6 +330,7 @@ namespace MR
                 // optim.run (max_iter[level], grad_tolerance, false, step_tolerance, 1e-10, 1e-10, log_stream);
                 optim.run (max_iter[level], 1.0e-30, false, 1.0e-30, 1.0e-30, 1.0e-30, log_stream);
                 parameters.transformation.set_parameter_vector (optim.state());
+                parameters.update_control_points();
 
                 if (log_stream){
                   std::ostream log_os(log_stream);
