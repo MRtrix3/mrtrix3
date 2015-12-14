@@ -93,7 +93,22 @@ namespace MR
     /** @} */
   }
 
+  /** @defgroup elfun Eigen helper functions
+      @{ */
+  //! check if all elements of an Eigen MatrixBase object are finite
+  template<typename Derived>
+  inline bool is_finite(const Eigen::MatrixBase<Derived>& x)
+  {
+     return ( (x - x).array() == (x - x).array()).all();
+  }
 
+  //! check if all elements of an Eigen MatrixBase object are a number
+  template<typename Derived>
+  inline bool is_nan(const Eigen::MatrixBase<Derived>& x)
+  {
+     return ((x.array() == x.array())).all();
+  }
+  /** @} */
 
 
   //! write the matrix \a M to file
