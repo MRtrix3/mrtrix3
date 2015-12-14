@@ -58,6 +58,10 @@ namespace MR
       + Option ("affine_loop_density", "density of gradient descent 1 (batch) to 0.0 (max stochastic) (Default: 1.0)")
         + Argument ("num").type_sequence_float ()
 
+      + Option ("affine_repetitions", "number of repetitions with identical settings for each scale level")
+        + Argument ("num").type_sequence_int ()
+
+
       + Option ("affine_cc", "metric: use cross correlation. default: least squares")
 
       + Option ("affine_robust", "metric: use robust estimator. default: false");
