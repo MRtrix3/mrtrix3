@@ -114,7 +114,7 @@ namespace MR
           sdist += norm;
         }
         dist[i] = sdist;
-        if (denum == 0.0){
+        if (denum == 0.0 or std::isnan(denum)){
           WARN( "Couldn't compute geometric median!" );
           break;
         }
@@ -130,8 +130,6 @@ namespace MR
       // std::cerr << str(dist) << std::endl;
       return convergence;
     }
-
-
   }
 }
 
