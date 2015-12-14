@@ -56,7 +56,7 @@ namespace MR {
 
 #define VEC(variable) { \
   std::cerr << MR::App::NAME << " [" << __FILE__  << ": " << __LINE__ << "]: " << #variable << " = "; \
-  for (ssize_t i=0; i<variable.size(); ++i){std::cerr << str(variable[i]) << " "; } \
+  for (ssize_t i=0; i<variable.size(); ++i){std::cerr << str(variable(i)) << " "; } \
   std::cerr << std::endl; \
 }
 
