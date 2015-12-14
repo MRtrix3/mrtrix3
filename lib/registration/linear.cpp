@@ -55,7 +55,7 @@ namespace MR
       + Option ("affine_smooth_factor", "amount of smoothing before registration (Default: 1.0)")
         + Argument ("num").type_sequence_float ()
 
-      + Option ("affine_sparsity", "sparsity of gradient descent 0 (batch) to 1.0 (max stochastic) (Default: 0.0)")
+      + Option ("affine_loop_density", "density of gradient descent 1 (batch) to 0.0 (max stochastic) (Default: 1.0)")
         + Argument ("num").type_sequence_float ()
 
       + Option ("affine_cc", "metric: use cross correlation. default: least squares")
