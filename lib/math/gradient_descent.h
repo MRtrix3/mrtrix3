@@ -25,6 +25,7 @@
 
 //#define GRADIENT_DESCENT_LOG
 
+
 #include <limits>
 #include <iostream>
 #include <fstream>
@@ -34,6 +35,9 @@
 
 // #include <iterator>
 #include "math/check_gradient.h"
+#ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG
+#include <sys/time.h>
+#endif
 
 namespace MR
 {
@@ -107,6 +111,7 @@ namespace MR
             relative_cost_improvement = std::numeric_limits<value_type>::quiet_NaN();
 
             #ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG
+            timespec ts;
               #ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG_HESSIAN
                 auto hessian = Math::check_function_gradient (func, x, 0.001, true, preconditioner_weights);
                 save_matrix(hessian, "/tmp/gddebug/" "iter_" + str(0) + "_hessian" +".txt");
@@ -114,13 +119,14 @@ namespace MR
               save_matrix(x, "/tmp/gddebug/" "iter_" + str(0) + "_x" +".txt");
               save_matrix(g, "/tmp/gddebug/" "iter_" + str(0) + "_g" +".txt");
               std::ofstream outfile;
-
+              clock_gettime(CLOCK_REALTIME, &ts);
               outfile.open("/tmp/gddebug/log.txt", std::ios::app);
               outfile << "#iteration " << 0 << std::endl;
               outfile << "cost " << str(f) << std::endl;
               outfile << "step_size " << str(dt) << std::endl;
               outfile << "x " << str(x.transpose()) << std::endl;
               outfile << "g " << str(g.transpose()) << std::endl;
+              outfile << "time " << str(ts.tv_sec)+"."+str(ts.tv_nsec) << std::endl;
               #ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG_HESSIAN
                 for (ssize_t row = 0; row < hessian.rows(); ++row) {
                   outfile << "hessian " << str(hessian.row(row)) << std::endl;
@@ -167,12 +173,13 @@ namespace MR
                   #endif
                   save_matrix(x, "/tmp/gddebug/" "iter_" + str(niter) + "_x" +".txt");
                   save_matrix(g, "/tmp/gddebug/" "iter_" + str(niter) + "_g" +".txt");
-
+                  clock_gettime(CLOCK_REALTIME, &ts);
                   outfile << "#iteration " << niter << std::endl;
                   outfile << "cost " << str(f) << std::endl;
                   outfile << "step_size " << str(dt) << std::endl;
                   outfile << "x " << str(x.transpose()) << std::endl;
                   outfile << "g " << str(g.transpose()) << std::endl;
+                  outfile << "time " << str(ts.tv_sec)+"."+str(ts.tv_nsec) << std::endl;
                   #ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG_HESSIAN
                     for (ssize_t row = 0; row < hessian.rows(); ++row) {
                       outfile << "hessian " << str(hessian.row(row)) << std::endl;
