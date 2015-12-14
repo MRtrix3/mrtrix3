@@ -169,7 +169,10 @@ namespace MR
           bool robust_estimate( VectorType& gradient,
                                 std::vector<VectorType>& grad_estimates,
                                 const ParamType& params,
-                                const VectorType& parameter_vector) const {
+                                const VectorType& parameter_vector,
+                                const default_type& weiszfeld_precision,
+                                const size_t& weiszfeld_iterations,
+                                default_type& learning_rate) const {
             DEBUG("robust estimator for this metric is not implemented.");
             for (auto& grad_estimate : grad_estimates ){
               gradient += grad_estimate;

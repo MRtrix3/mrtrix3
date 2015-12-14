@@ -192,7 +192,7 @@ namespace MR
                 auto timer = Timer ();
                 if (params.loop_density < 1.0){
                   // Eigen::Matrix<default_type, Eigen::Dynamic, 1> optimiser_weights = trafo.get_optimiser_weights();
-                  INFO("stochastic gradient descent, density: " + str(params.loop_density));
+                  DEBUG("stochastic gradient descent, density: " + str(params.loop_density));
                   if (params.robust_estimate){
                     DEBUG("robust estimate");
                     size_t n_estimates = 5;
@@ -208,12 +208,17 @@ namespace MR
                       assert (gradient_estimate.isApprox(gradient_estimate));
                       // VAR(gradient_estimate.transpose());
                       loop.run_outer (functor);
-                      INFO("elapsed: (" + str(i) + ") " + str(timer.elapsed()));
+                      DEBUG("elapsed: (" + str(i) + ") " + str(timer.elapsed()));
                       // StochasticThreadedLoop (params.midway_image, 0, 3).run (kernel, params.loop_density / (default_type) n_estimates);
                       grad_estimates[i] = gradient_estimate;
                       // VAR(grad_estimates[i].transpose());
                     }
-                    params.transformation.robust_estimate(gradient, grad_estimates, params, x);
+                    // define weiszfeld median precision and maximum number of iterations
+                    auto m = std::min( {float(params.midway_image.spacing(0)), float(params.midway_image.spacing(1)), float(params.midway_image.spacing(2))} );
+                    default_type precision = 1.0e-6 * m;
+                    //TODO: use actual learning rate
+                    default_type learning_rate = 1.0;
+                    params.transformation.robust_estimate(gradient, grad_estimates, params, x, precision, 1000, learning_rate);
                     // VAR(gradient.transpose());
                   } else {
                     // std::vector<size_t> dimensions(3);
