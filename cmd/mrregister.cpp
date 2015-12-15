@@ -369,14 +369,14 @@ void run ()
 
 
   opt = get_options ("mask2");
-  Image<value_type> mask2_image;
+  Image<value_type> im2_mask;
   if (opt.size ())
-    mask2_image = Image<value_type>::open(opt[0][0]);
+    im2_mask = Image<value_type>::open(opt[0][0]);
 
   opt = get_options ("mask1");
-  Image<value_type> mask1_image;
+  Image<value_type> im1_mask;
   if (opt.size ())
-    mask1_image = Image<value_type>::open(opt[0][0]);
+    im1_mask = Image<value_type>::open(opt[0][0]);
 
   opt = get_options ("rigid_niter");
   std::vector<int> rigid_niter;
@@ -433,17 +433,17 @@ void run ()
   opt = get_options ("affine_init");
   bool init_affine_set = false;
   if (opt.size()) {
-    if(do_syn)
+    if (do_syn)
       throw Exception ("initialise with affine not yet implemented");
     if (init_rigid_set)
       throw Exception ("you cannot initialise registrations with both a rigid and affine transformation");
     if (do_rigid)
       throw Exception ("you cannot initialise a rigid registration with an affine transformation");
     init_affine_set = true;
-    Eigen::Transform<default_type, 3, Eigen::AffineCompact> init_affine = load_transform(opt[0][0]);
+    Eigen::Transform<default_type, 3, Eigen::AffineCompact> init_affine = load_transform (opt[0][0]);
     //TODO // set affine....need to rejig wrt centre
     // CONSOLE(str(init_affine.matrix()));
-    affine.set_transform(init_affine);
+    affine.set_transform (init_affine);
   }
 
   opt = get_options ("syn_init");
@@ -516,17 +516,17 @@ void run ()
       if (rigid_cc)
         throw Exception ("rigid cross correlation not implemted for data with more than 3 dimensions");
       Registration::Metric::MeanSquared4D metric;
-      rigid_registration.run_masked (metric, rigid, im1_image, im2_image, mask1_image, mask2_image);
+      rigid_registration.run_masked (metric, rigid, im1_image, im2_image, im1_mask, im2_mask);
     } else {
       if (rigid_cc){
         std::vector<size_t> extent(3,3);
         rigid_registration.set_extent(extent);
         Registration::Metric::CrossCorrelation metric;
-        rigid_registration.run_masked (metric, rigid, im1_image, im2_image, mask1_image, mask2_image);
+        rigid_registration.run_masked (metric, rigid, im1_image, im2_image, im1_mask, im2_mask);
       }
       else {
         Registration::Metric::MeanSquared metric;
-        rigid_registration.run_masked (metric, rigid, im1_image, im2_image, mask1_image, mask2_image);
+        rigid_registration.run_masked (metric, rigid, im1_image, im2_image, im1_mask, im2_mask);
       }
     }
 
@@ -567,17 +567,17 @@ void run ()
       if (affine_cc)
         throw Exception ("affine cross correlation not implemented for data with more than 3 dimensions");
       Registration::Metric::MeanSquared4D metric;
-      affine_registration.run_masked (metric, affine, im1_image, im2_image, mask1_image, mask2_image);
+      affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
     } else {
       if (affine_cc){
         Registration::Metric::CrossCorrelation metric;
         std::vector<size_t> extent(3,3);
-        affine_registration.set_extent(extent);
-        affine_registration.run_masked (metric, affine, im1_image, im2_image, mask1_image, mask2_image);
+        affine_registration.set_extent (extent);
+        affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
       }
       else {
         Registration::Metric::MeanSquared metric;
-        affine_registration.run_masked (metric, affine, im1_image, im2_image, mask1_image, mask2_image);
+        affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
       }
     }
 
@@ -595,14 +595,27 @@ void run ()
   if (do_syn) {
 
     CONSOLE ("running SyN registration");
+    Registration::SyN syn_registration;
 
-    if (smooth_warp) {
+    if (syn_scale_factors.size())
+      syn_registration.set_scale_factor (syn_scale_factors);
 
+    if (std::isfinite (smooth_warp))
+      syn_registration.set_disp_smoothing (smooth_warp);
+
+    if (std::isfinite (smooth_update))
+      syn_registration.set_update_smoothing (smooth_update);
+
+    // if do rigid
+
+    transform_type im1_affine;
+    transform_type im2_affine;
+    if (do_affine) {
+      im1_affine = affine.get_transform_half();
+      im2_affine = affine.get_transform_half_inverse();
     }
 
-    if (smooth_update) {
-
-    }
+    syn_registration.run_masked<Registration::SyN> (im1_affine, im2_affine, im1_image, im2_image, im1_mask, im2_mask);
 
     if (warp_buffer) {
       //write out warp

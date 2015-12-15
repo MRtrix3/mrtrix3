@@ -25,6 +25,7 @@
 
 #include "algo/threaded_loop.h"
 #include "image.h"
+#include "transform.h"
 
 namespace MR
 {
@@ -51,16 +52,18 @@ namespace MR
       template <class WarpImageType>
         class ComposeDispKernel {
           public:
-            ComposeDispKernel (const transform_type& transform) :
-                                 transform (transform.cast<typename WarpImageType::value_type>()) {}
+            ComposeDispKernel (const transform_type& transform, const WarpImageType& warp_in) :
+                               transform (transform.cast<typename WarpImageType::value_type>(),
+                               image_transform, (warp_in)) {}
 
             void operator() (WarpImageType& warp_in, WarpImageType& warp_out) {
               Eigen::Vector3 voxel ((default_type)warp_in.index(0), (default_type)warp_in.index(1), (default_type)warp_in.index(2));
-              warp_out.row(3) = transform * ((transform.voxel2scanner * voxel).template cast<typename WarpImageType::value_type> () + warp_in.row(3));
+              warp_out.row(3) = transform * ((image_transform.voxel2scanner * voxel).template cast<typename WarpImageType::value_type> () + warp_in.row(3));
             }
 
           protected:
             const Eigen::Transform<typename WarpImageType::value_type, 3, Eigen::AffineCompact> transform;
+            MR::Transform image_transform;
         };
 
 

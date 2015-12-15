@@ -212,7 +212,7 @@ namespace MR
             else if (smooth_factor.size() != scale_factor.size())
               throw Exception ("the smooth factor needs to be defined for each multi-resolution level");
 
-            std::vector<Eigen::Transform<double, 3, Eigen::Projective>> init_transforms;
+            std::vector<Eigen::Transform<double, 3, Eigen::Projective> > init_transforms;
             if (init_type == Transform::Init::mass)
               Transform::Init::initialise_using_image_mass (im1_image, im2_image, transform);
             else if (init_type == Transform::Init::geometric)
@@ -222,12 +222,12 @@ namespace MR
             // transformation file initialisation is done in mrregister.cpp
             // transform.debug();
 
-              // define transfomations that will be applied to the image header when the common space is calculated
+            // define transfomations that will be applied to the image header when the common space is calculated
             {
               Eigen::Transform<double, 3, Eigen::Projective> init_trafo_2 = transform.get_transform_half();
               Eigen::Transform<double, 3, Eigen::Projective> init_trafo_1 = transform.get_transform_half_inverse();
-              init_transforms.push_back(init_trafo_2);
-              init_transforms.push_back(init_trafo_1);
+              init_transforms.push_back (init_trafo_2);
+              init_transforms.push_back (init_trafo_1);
             }
 
             typedef Im1ImageType MidwayImageType;
@@ -261,7 +261,7 @@ namespace MR
             std::vector<Header> headers;
             headers.push_back(im2_image.original_header());
             headers.push_back(im1_image.original_header());
-            auto midway_image_header = compute_minimum_average_header<default_type, Eigen::Transform<default_type, 3, Eigen::Projective>>(headers, im2_res, padding, init_transforms);
+            auto midway_image_header = compute_minimum_average_header<default_type, Eigen::Transform<default_type, 3, Eigen::Projective>> (headers, im2_res, padding, init_transforms);
             auto midway_image = Header::scratch (midway_image_header).get_image<typename Im1ImageType::value_type>();
 
             for (size_t level = 0; level < scale_factor.size(); level++) {
