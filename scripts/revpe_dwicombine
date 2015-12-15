@@ -19,12 +19,13 @@
 # Seems this isn't the only issue remaining in FSL that prevents the use of eddy in image recombination (as of 5.0.7). Therefore this script uses a different volume recombination method, as described in Skare and Bammer, ISMRM 2010
 
 
-import os, sys
+import os
 import lib.app
 
 from lib.binaryInPath  import binaryInPath
 from lib.delFile       import delFile
 from lib.errorMessage  import errorMessage
+from lib.getFSLEddyPath import getFSLEddyPath
 from lib.getFSLSuffix  import getFSLSuffix
 from lib.getHeaderInfo import getHeaderInfo
 from lib.getPEDir      import getPEDir

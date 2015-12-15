@@ -14,12 +14,13 @@
 # * Name of output corrected image series
 
 
-import os, sys
+import os
 from distutils.version import LooseVersion
 import lib.app
 
 from lib.binaryInPath  import binaryInPath
 from lib.errorMessage  import errorMessage
+from lib.getFSLEddyPath import getFSLEddyPath
 from lib.getFSLSuffix  import getFSLSuffix
 from lib.getFSLVersion import getFSLVersion
 from lib.getHeaderInfo import getHeaderInfo
