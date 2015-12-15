@@ -1,0 +1,62 @@
+#!/bin/bash
+
+if [ $# -ne 4 ]; then 
+  echo 'usage: estimate_response dwi.mif mask.mif single-fibre_mask.mif response.mif'
+  echo ''
+  echo '  where:'
+  echo '    dwi.mif         input DWI images'
+  echo '    mask.mif        input brain mask'
+  echo '    sf_mask.mif     output mask of single-fibre voxels, as used in '
+  echo '                      the final response function estimation'
+  echo '    response.txt    output response function coefficients'
+  echo ''
+
+
+else
+  
+  # set fail on error:
+  set -e
+  
+  # start with sharpest possible response function (i.e. SH decomposition of a flat disc):
+  echo "1,-1,1,-1,1" > __init_response.txt
+  mask="$2"
+  response=__init_response.txt
+  sf_mask="$3"
+
+  # preload DWI with optimal stride (should also allow -shell option in due course)
+  dwiextract "$1" __dwi_high_shell.mif -force
+  # compute SH fit to DWI:
+  amp2sh __dwi_high_shell.mif __sh.mif -lmax 8 -force
+  
+  for iter in {1..5}; do
+  
+    # initial estimate of FOD, within brain mask:
+    dwi2fod __dwi_high_shell.mif -mask "$mask" "$response" __fod.mif -force 
+    
+    # extract 2 largest peaks into a 4D image split over volumes:
+    sh2peaks __fod.mif -mask "$mask" -num 2 "__p-[].mif" -force
+    
+    # compute ratio of peak squared amplitudes (admittedly not pretty, but clear enough):
+    # (note this computes the ratio peak1/(peak2+1) to prevent divide-by-zero if peak2 is zero)
+    mrcalc __p-0.mif 2 -pow __p-1.mif 2 -pow __p-2.mif 2 -pow -add -add __p-3.mif 2 -pow __p-4.mif 2 -pow __p-5.mif 2 -pow -add -add 1 -add -div __peak_ratio.mif -force
+    
+    # get mask of 300 voxels with largest peak1/peak2 ratio:
+    mrthreshold __peak_ratio.mif -top 300 "$sf_mask" -force
+    
+    # get mask of 10000 voxels with largest peak1/peak2 ratio to speed up in later iterations:
+    mrthreshold __peak_ratio.mif -top 10000 __mask_refined.mif -force
+  
+    mask=__mask_refined.mif
+    response="$4"
+    
+    # update estimate of response function within that mask, using FOD primary peak orientation:
+    sh2response __sh.mif "$sf_mask" "__p-[0:2].mif" "$response" -force
+    
+  done
+  
+  # clean up:
+  rm -f __dwi_high_shell.mif __init_response.txt __sh.mif __fod.mif __p-?.mif __peak_ratio.mif __mask_refined.mif
+  
+fi
+
+
