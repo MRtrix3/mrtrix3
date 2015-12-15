@@ -306,7 +306,7 @@ namespace MR
     desc += "\n  Voxel size:        ";
     for (i = 0; i < ndim(); i++) {
       if (i) desc += " x ";
-      desc += std::isnan (spacing(i)) ? "?" : str (spacing(i));
+      desc += std::isnan (spacing(i)) ? "?" : str (spacing(i), 6);
     }
     desc += "\n";
 
