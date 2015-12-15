@@ -169,6 +169,17 @@ namespace MR
             .run (NonLinearKernel<FODImageType, WarpImageType>(fod_image.size(3), warp, directions, modulate), fod_image);
       }
 
+      template <class FODImageType, class WarpImageType>
+      void reorient_warp (FODImageType& fod_image,
+                          WarpImageType& warp,
+                          const Eigen::MatrixXd& directions,
+                          const bool modulate = false)
+      {
+        assert (directions.cols() > directions.rows());
+        ThreadedLoop (fod_image, 0, 3)
+            .run (NonLinearKernel<FODImageType, WarpImageType>(fod_image.size(3), warp, directions, modulate), fod_image);
+      }
+
 
     }
   }

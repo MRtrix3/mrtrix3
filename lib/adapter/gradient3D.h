@@ -47,8 +47,8 @@ namespace MR
         {
           Eigen::Matrix<value_type, 3, 1> grad;
           for (size_t i = 0; i < 3; ++i) {
-            Gradient1D::set_axis(i);
-            grad[i] = Gradient1D::value();
+            Gradient1D<ImageType>::set_axis(i);
+            grad[i] = Gradient1D<ImageType>::value();
           }
           if (wrt_scanner)
             grad = transform.image2scanner.linear().template cast<value_type>() * grad;
