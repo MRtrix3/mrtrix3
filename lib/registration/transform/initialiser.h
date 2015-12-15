@@ -317,9 +317,9 @@ namespace MR
 
             Eigen::Vector3 centre = (im1_centre_of_mass + im2_centre_of_mass) / 2.0;
             Eigen::Vector3 translation = im1_centre_of_mass - im2_centre_of_mass;
-            VEC(im1_centre_of_mass);
-            VEC(im2_centre_of_mass);
-            VEC(translation);
+            // VEC(im1_centre_of_mass);
+            // VEC(im2_centre_of_mass);
+            // VEC(translation);
             transform.set_centre (centre);
             transform.set_translation (translation);
         }
