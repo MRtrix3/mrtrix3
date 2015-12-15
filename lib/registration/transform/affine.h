@@ -68,6 +68,9 @@ namespace MR
         }
         for (size_t dim = 0; dim < 3; ++dim)
           transformation_matrix(dim,3) = param_vector[index++];
+        if (transformation_matrix.rows() == 4){
+          transformation_matrix.row(3) << 0.0, 0.0, 0.0, 1.0;
+        }
       }
 
 
@@ -141,6 +144,8 @@ namespace MR
               }
               INFO("affine update parameter cumulative change: " + str(debug));
               VEC(newx);
+              VEC(g);
+              VAR(step_size);
             }
 #endif
             return !(newx.isApprox(x));
@@ -316,18 +321,31 @@ namespace MR
 
             // transform each vertex with each candidate transformation
             // weighting
+            // VectorType sum_candidates (12);
+            // sum_candidates.setZero();
+            // for (size_t j =0; j < n_estimates; ++j){
+            //   sum_candidates += grad_estimates[j];
+            // }
+
             if (this->optimiser_weights.size()){
               assert (this->optimiser_weights.size() == 12);
               for (size_t j =0; j < n_estimates; ++j){
-                grad_estimates[j].array() /= this->optimiser_weights.array();
+                grad_estimates[j].array() *= this->optimiser_weights.array();
               }
             }
+            // let's go to the small angle regime
+            for (size_t j =0; j < n_estimates; ++j){
+              if (grad_estimates[j].head(9).cwiseAbs().maxCoeff() * learning_rate > 0.2){
+                learning_rate = 0.2 / grad_estimates[j].head(9).cwiseAbs().maxCoeff();
+              }
+            }
+
             std::vector<Eigen::Matrix<ParameterType, 3, Eigen::Dynamic>> transformed_vertices(4);
             for (auto& vert : transformed_vertices){
               vert.resize(3, n_estimates);
             }
             transform_type trafo_upd;
-            // adjust learning rate of gradient descent if neccessary
+            // adjust learning rate if neccessary
             size_t max_iter = 10000;
             while (max_iter > 0) {
               bool learning_rate_ok = true;
@@ -372,7 +390,10 @@ namespace MR
             }
             // revert learning rate and multiply by number of estimates to mimic sum of gradients
             // this corresponds to the sum of the projections of the gradient estimates onto the median
-            gradient.array() = x_new.array() * (default_type(n_estimates) / learning_rate);
+            gradient.array() = - x_new.array() * (default_type(n_estimates) / learning_rate);
+            // default_type dot = (gradient/gradient.norm()).dot(sum_candidates/sum_candidates.norm());
+            // INFO("dot: " + str(dot));
+            // gradient = sum_candidates;
             assert(is_finite(gradient));
             return true;
           }
