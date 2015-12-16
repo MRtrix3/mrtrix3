@@ -82,8 +82,8 @@ namespace MR
               eigenvals[i] = eval_idx_vec[i].first;
               eigenvectors.col(i) = evec.col(eval_idx_vec[i].second);
             }
-            VAR(eval.transpose());
-            VAR(eigenvals.transpose());
+            // VAR(eval.transpose());
+            // VAR(eigenvals.transpose());
             return true;
           }
 
@@ -207,8 +207,8 @@ namespace MR
               return;
             }
 
-            VAR(im1_eval.transpose());
-            VAR(im2_eval.transpose());
+            // VAR(im1_eval.transpose());
+            // VAR(im2_eval.transpose());
 
             // TODO decide whether rotation is sensible using covariance eigenvalues
             // Maaref, A., & Aïssa, S. (2007). Eigenvalue distributions of wishart-type random matrices with application to the performance analysis of MIMO MRC systems. IEEE Transactions on Wireless Communications, 6(7), 2678–2689. doi:10.1109/TWC.2007.05990
@@ -275,10 +275,10 @@ namespace MR
             Eigen::Vector3 translation = im1_centre_of_mass - im2_centre_of_mass;
             transform.set_translation (translation);
             // transform.set_matrix (A);
-            MAT(A);
-            MAT(centre.transpose());
-            MAT(translation.transpose());
-            MAT(transform.get_transform().matrix());
+            // MAT(A);
+            // MAT(centre.transpose());
+            // MAT(translation.transpose());
+            // MAT(transform.get_transform().matrix());
             // VAR(timer.elapsed());
         }
 
