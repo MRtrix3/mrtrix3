@@ -61,99 +61,96 @@ namespace MR
 
 
 
-        template <class MetricType, class Im1ImageType, class Im2ImageType, class Im1MaskType, class Im2MaskType>
-          void run_masked (transform_type& im1_affine,
-                           transform_type& im2_affine,
+        template <class MetricType, class TransformType, class Im1ImageType, class Im2ImageType, class Im1MaskType, class Im2MaskType>
+          void run_masked (TransformType linear_transform,
                            Im1ImageType& im1_image,
                            Im2ImageType& im2_image,
                            Im1MaskType& im1_mask,
                            Im2MaskType& im2_mask) {
 
-//            // Get midway (affine average) space (TODO get this from affine if performed first)
-//            Registration::Transform::Affine transform;
-//            std::vector<Eigen::Transform<double, 3, Eigen::Projective> > init_transforms;
-//            Transform::Init::initialise_using_image_moments (im1_image, im2_image, transform);  // TODO ask Max about this
+            transform_type im1_affine = linear_transform.get_transform_half();
+            transform_type im2_affine = linear_transform.get_transform_half_inverse();
 
-//            // define transfomations that will be applied to the image header when the common space is calculated
-//            {
-//              Eigen::Transform<double, 3, Eigen::Projective> init_trafo_2 = transform.get_transform_half();
-//              Eigen::Transform<double, 3, Eigen::Projective> init_trafo_1 = transform.get_transform_half_inverse();
-//              init_transforms.push_back(init_trafo_2);
-//              init_transforms.push_back(init_trafo_1);
-//            }
+            std::vector<Eigen::Transform<double, 3, Eigen::Projective> > init_transforms;
+            // define transfomations that will be applied to the image header when the common space is calculated
+            {
+              Eigen::Transform<double, 3, Eigen::Projective> init_trafo_2 = linear_transform.get_transform_half();
+              Eigen::Transform<double, 3, Eigen::Projective> init_trafo_1 = linear_transform.get_transform_half_inverse();
+              init_transforms.push_back (init_trafo_2);
+              init_transforms.push_back (init_trafo_1);
+            }
 
-//            auto padding = Eigen::Matrix<default_type, 4, 1>(0.0, 0.0, 0.0, 0.0);
-//            default_type im2_res = 1.0;
-//            std::vector<Header> headers;
-//            headers.push_back(im2_image.original_header());
-//            headers.push_back(im1_image.original_header());
-//            auto midway_image_header = compute_minimum_average_header<default_type, Eigen::Transform<default_type, 3, Eigen::Projective>>(headers, im2_res, padding, init_transforms);
-//            auto midway_image = Header::scratch (midway_image_header).get_image<typename Im1ImageType::value_type>();
+            auto padding = Eigen::Matrix<default_type, 4, 1>(0.0, 0.0, 0.0, 0.0);
+            std::vector<Header> headers;
+            headers.push_back (im2_image.original_header());
+            headers.push_back (im1_image.original_header());
+            auto midway_image_header = compute_minimum_average_header<default_type, Eigen::Transform<default_type, 3, Eigen::Projective>>(headers, 1.0, padding, init_transforms);
+            auto midway_image = Header::scratch (midway_image_header).get_image<typename Im1ImageType::value_type>();
 
-//            if (max_iter.size() == 1)
-//              max_iter.resize (scale_factor.size(), max_iter[0]);
-//            else if (max_iter.size() != scale_factor.size())
-//              throw Exception ("the max number of SyN iterations needs to be defined for each multi-resolution level");
+            if (max_iter.size() == 1)
+              max_iter.resize (scale_factor.size(), max_iter[0]);
+            else if (max_iter.size() != scale_factor.size())
+              throw Exception ("the max number of SyN iterations needs to be defined for each multi-resolution level");
 
-//            for (size_t level = 0; level < scale_factor.size(); level++) {
-//                CONSOLE ("SyN: multi-resolution level " + str(level + 1) + ", scale factor: " + str(scale_factor[level]));
+            for (size_t level = 0; level < scale_factor.size(); level++) {
+                CONSOLE ("SyN: multi-resolution level " + str(level + 1) + ", scale factor: " + str(scale_factor[level]));
 
-//                // Resize midway image based on current level
-//                Filter::Resize resize_filter (midway_image);
-//                resize_filter.set_scale_factor (scale_factor[level]);
-//                resize_filter.set_interp_type (1);
-//                auto midway_resized = Image<typename Im1ImageType::value_type>::scratch (resize_filter);
+                // Resize midway image based on current level
+                Filter::Resize resize_filter (midway_image);
+                resize_filter.set_scale_factor (scale_factor[level]);
+                resize_filter.set_interp_type (1);
+                auto midway_resized = Image<typename Im1ImageType::value_type>::scratch (resize_filter);
 
-//                // Smooth input images based on multi-resolution pyramid
-//                Filter::Smooth im1_smooth_filter (im1_image);
-//                im1_smooth_filter.set_stdev (1.0 / (2.0 * scale_factor[level]));
-//                auto im1_smoothed = Image<typename Im1ImageType::value_type>::scratch (im1_smooth_filter);
-//                Filter::Smooth im2_smooth_filter (im2_image);
-//                im2_smooth_filter.set_stdev (1.0 / (2.0 * scale_factor[level]));  // TODO compare this with SyNFOD line489
-//                auto im2_smoothed = Image<typename Im1ImageType::value_type>::scratch (im2_smooth_filter);
-//                {
-//                  LogLevelLatch log_level (0);
-//                  resize_filter (midway_image, midway_resized);
-//                  im1_smooth_filter (im1_image, im1_smoothed);
-//                  im2_smooth_filter (im2_image, im2_smoothed);
-//                }
+                // Smooth input images based on multi-resolution pyramid
+                Filter::Smooth im1_smooth_filter (im1_image);
+                im1_smooth_filter.set_stdev (1.0 / (2.0 * scale_factor[level]));
+                auto im1_smoothed = Image<typename Im1ImageType::value_type>::scratch (im1_smooth_filter);
+                Filter::Smooth im2_smooth_filter (im2_image);
+                im2_smooth_filter.set_stdev (1.0 / (2.0 * scale_factor[level]));  // TODO compare this with SyNFOD line489
+                auto im2_smoothed = Image<typename Im1ImageType::value_type>::scratch (im2_smooth_filter);
+                {
+                  LogLevelLatch log_level (0);
+                  resize_filter (midway_image, midway_resized);
+                  im1_smooth_filter (im1_image, im1_smoothed);
+                  im2_smooth_filter (im2_image, im2_smoothed);
+                }
 
-//                Header field_header (midway_resized);
-//                field_header.set_ndim(4);
-//                field_header.size(3) = 3;
+                Header field_header (midway_resized);
+                field_header.set_ndim(4);
+                field_header.size(3) = 3;
 
-//                //Initialise displacement fields
-//                if (level == 0) {
-//                  im1_disp_field.reset (new Image<float> (Image<float>::scratch (field_header)));
-//                  im1_disp_field_inv.reset (new Image<float> (Image<float>::scratch (field_header)));
-//                  im2_disp_field.reset (new Image<float> (Image<float>::scratch (field_header)));
-//                  im2_disp_field_inv.reset (new Image<float> (Image<float>::scratch (field_header)));
-//                //Upsample displacement fields
-//                } else {
-//                  im1_disp_field = std::move (reslice (*im1_disp_field, field_header));
-//                  im1_disp_field_inv = std::move (reslice (*im1_disp_field_inv, field_header));
-//                  im2_disp_field = std::move (reslice (*im2_disp_field, field_header));
-//                  im2_disp_field_inv = std::move (reslice (*im2_disp_field_inv, field_header));
-//                }
+                //Initialise displacement fields
+                if (level == 0) {
+                  im1_disp_field = std::make_shared<Image<float>>(Image<float>::scratch (field_header));
+                  im1_disp_field_inv = std::make_shared<Image<float>>(Image<float>::scratch (field_header));
+                  im2_disp_field = std::make_shared<Image<float>>(Image<float>::scratch (field_header));
+                  im2_disp_field_inv = std::make_shared<Image<float>>(Image<float>::scratch (field_header));
+                //Upsample displacement fields
+                } else {
+                  im1_disp_field = reslice (*im1_disp_field, field_header);
+                  im1_disp_field_inv = reslice (*im1_disp_field_inv, field_header);
+                  im2_disp_field = reslice (*im2_disp_field, field_header);
+                  im2_disp_field_inv = reslice (*im2_disp_field_inv, field_header);
+                }
 
-//                // Create scratch warped images
-//                Header warped_header (midway_resized);
-//                if (im1_image.ndim() == 4) {
-//                  warped_header.set_ndim(4);
-//                  warped_header.size(3) = im1_image.size(3);
-//                }
+                // Create scratch warped images
+                Header warped_header (midway_resized);
+                if (im1_image.ndim() == 4) {
+                  warped_header.set_ndim(4);
+                  warped_header.size(3) = im1_image.size(3);
+                }
 
-//                // Create scratch for warped images and updated field
-//                auto im1_warped = Image<typename Im1ImageType::value_type>::scratch (warped_header);
-//                auto im2_warped = Image<typename Im1ImageType::value_type>::scratch (warped_header);
-//                auto im1_update_field = Image<float>::scratch (field_header);
-//                auto im2_update_field = Image<float>::scratch (field_header);
+                // Create scratch for warped images and updated field
+                auto im1_warped = Image<typename Im1ImageType::value_type>::scratch (warped_header);
+                auto im2_warped = Image<typename Im1ImageType::value_type>::scratch (warped_header);
+                auto im1_update_field = Image<float>::scratch (field_header);
+                auto im2_update_field = Image<float>::scratch (field_header);
 
-//                //Setup energy curve
-//                //Grad_Step_altered = grad_step.
+                //Setup energy curve
+                //Grad_Step_altered = grad_step.
 
-//                bool converged = false;
-//                while (!converged) {
+                bool converged = false;
+                while (!converged) {
 
 //                  // compose current displacement field with affine
 //                  Image<float> im1_deform_field = Image<float>::scratch (field_header);
@@ -205,9 +202,8 @@ namespace MR
 
                   //track the energy profile to check for convergence.
 
-//                }
-
-//            }
+                }
+             }
           }
 
 
@@ -242,12 +238,15 @@ namespace MR
             disp_smoothing = voxel_fwhm;
           }
 
+//          std::shared_ptr<Image<float> > get_im1_disp_field() {
+//          }
+
 
 
         protected:
 
-          std::unique_ptr<Image<float> > reslice (Image<float>& image, Header& header) {
-            std::unique_ptr<Image<float> > temp (new Image<float> (Image<float>::scratch (header)));
+          std::shared_ptr<Image<float> > reslice (Image<float>& image, Header& header) {
+            std::shared_ptr<Image<float> > temp = std::make_shared<Image<float> > (Image<float>::scratch (header));
             Filter::reslice<Interp::Cubic> (image, *temp);
             return temp;
           }
@@ -260,10 +259,10 @@ namespace MR
           bool fod_reorientation;
           Eigen::MatrixXd aPSF_directions;
 
-          std::unique_ptr<Image<float> > im1_disp_field;
-          std::unique_ptr<Image<float> > im1_disp_field_inv;
-          std::unique_ptr<Image<float> > im2_disp_field;
-          std::unique_ptr<Image<float> > im2_disp_field_inv;
+          std::shared_ptr<Image<float> > im1_disp_field;
+          std::shared_ptr<Image<float> > im1_disp_field_inv;
+          std::shared_ptr<Image<float> > im2_disp_field;
+          std::shared_ptr<Image<float> > im2_disp_field_inv;
 
           std::vector<default_type> gradientDescentParameters;
           std::vector<default_type> energy;

@@ -290,7 +290,6 @@ namespace MR
               {
                 LogLevelLatch log_level (0);
                 midway_resize_filter (midway_image, midway_resized);
-                // TODO check this. Shouldn't we be smoothing then resizing? DR: No, smoothing automatically happens within resize. We can probably remove smoothing when using the bspline cubic gradient interpolator
                 im1_smooth_filter (im1_image, im1__smoothed);
                 im2_smooth_filter (im2_image, im2__smoothed);
               }
@@ -300,15 +299,16 @@ namespace MR
               INFO ("loop density: " + str(loop_density[level]));
               parameters.loop_density = loop_density[level];
 
-              if (robust_estimate) INFO ("using robust estimate");
+              if (robust_estimate)
+                INFO ("using robust estimate");
               parameters.robust_estimate = robust_estimate;
 
               // set control point coordinates inside +-1/3 of the midway_image size
               // TODO: probably better to use moments if initialisation via image moments was used
               {
                 Eigen::Vector3 ext (midway_image_header.spacing(0) / 6.0,
-                                      midway_image_header.spacing(1) / 6.0,
-                                      midway_image_header.spacing(2) / 6.0);
+                                    midway_image_header.spacing(1) / 6.0,
+                                    midway_image_header.spacing(2) / 6.0);
                 for (size_t i = 0; i<3; ++i)
                   ext(i) *= midway_image_header.size(i) - 0.5;
                 parameters.set_control_points_extent(ext);

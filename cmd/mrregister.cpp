@@ -301,20 +301,13 @@ void run ()
   }
 
   opt = get_options ("warp_out");
+  bool output_warps = false;
+  std::string warp_filename;
   std::unique_ptr<Image<value_type> > warp_buffer;
   if (opt.size()) {
     if (!do_syn)
       throw Exception ("SyN warp output requested when no SyN registration is requested");
-    Header warp_header (im2_header);
-    warp_header.set_ndim (5); //TODO decide on format
-    warp_header.size(3) = 3;
-    warp_header.size(4) = 4;
-    warp_header.stride(0) = 2;
-    warp_header.stride(1) = 3;
-    warp_header.stride(2) = 4;
-    warp_header.stride(3) = 1;
-    warp_header.stride(4) = 5;
-    warp_buffer.reset (new Image<value_type> (Image<value_type>::create(std::string (opt[0][0]), warp_header)));
+    warp_filename = std::string (opt[0][0]);
   }
 
   opt = get_options ("rigid_scale");
@@ -604,7 +597,6 @@ void run ()
   }
 
   if (do_syn) {
-
     CONSOLE ("running SyN registration");
     Registration::SyN syn_registration;
 
@@ -617,19 +609,32 @@ void run ()
     if (std::isfinite (smooth_update))
       syn_registration.set_update_smoothing (smooth_update);
 
-    // if do rigid
-
-    transform_type im1_affine;
-    transform_type im2_affine;
     if (do_affine) {
-      im1_affine = affine.get_transform_half();
-      im2_affine = affine.get_transform_half_inverse();
+      syn_registration.run_masked<Registration::SyN> (affine, im1_image, im2_image, im1_mask, im2_mask);
+    } else if (do_rigid) {
+      syn_registration.run_masked<Registration::SyN> (rigid, im1_image, im2_image, im1_mask, im2_mask);
+    } else {
+      Registration::Transform::Affine identity_transform;
+      syn_registration.run_masked<Registration::SyN> (identity_transform, im1_image, im2_image, im1_mask, im2_mask);
     }
 
-    syn_registration.run_masked<Registration::SyN> (im1_affine, im2_affine, im1_image, im2_image, im1_mask, im2_mask);
 
-    if (warp_buffer) {
-      //write out warp
+    if (output_warps) {
+//      if (opt.size()) {
+//        if (!do_syn)
+//          throw Exception ("SyN warp output requested when no SyN registration is requested");
+
+//        Header warp_header (*syn_registration.get_im1_disp_field());
+//        warp_header.set_ndim (5);
+//        warp_header.size(3) = 3;
+//        warp_header.size(4) = 4;
+//        warp_header.stride(0) = 2;
+//        warp_header.stride(1) = 3;
+//        warp_header.stride(2) = 4;
+//        warp_header.stride(3) = 1;
+//        warp_header.stride(4) = 5;
+//        warp_buffer.reset (new Image<value_type> (Image<value_type>::create(std::string (opt[0][0]), warp_header)));
+//      }
     }
 
   }
