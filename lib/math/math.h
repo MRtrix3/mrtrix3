@@ -182,7 +182,7 @@ namespace MR
       File::OFStream out (filename);
       for (decltype(V.size()) i = 0; i < V.size() - 1; i++)
         out << str(V[i], 10) << " ";
-      out << str(V[V.size() - 1], 10);
+      out << str(V[V.size() - 1], 10) << "\n";
     }
 
   //! read the vector data from \a filename
