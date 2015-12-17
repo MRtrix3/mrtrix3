@@ -69,7 +69,11 @@ void usage ()
 
   + Option ("mask",
             "only perform computation within the specified binary brain mask image.")
-  + Argument ("image").type_image_in();
+  + Argument ("image").type_image_in()
+
+  + Option ("null", 
+            "specify value for non-peak directions (default: NaN).")
+  +   Argument ("value").type_float();
 }
 
 
@@ -80,7 +84,7 @@ typedef float value_type;
 class Direction
 {
   public:
-    Direction () : a (NAN) { }
+    Direction () : a (NaN) { }
     Direction (const Direction& d) : a (d.a), v (d.v) { }
     Direction (value_type phi, value_type theta) : a (1.0), v (std::cos (phi) *std::sin (theta), std::sin (phi) *std::sin (theta), std::cos (theta)) { }
     value_type a;
@@ -123,7 +127,7 @@ class DataLoader
           assign_pos_of(sh).to(*mask);
           if (!mask->value()) {
             for (auto l = Loop(3) (sh); l; ++l)
-              item.data[sh.index(3)] = NAN;
+              item.data[sh.index(3)] = NaN;
           }
         } else {
           // iterates over SH coefficients
@@ -156,7 +160,8 @@ class Processor
                int npeaks,
                std::vector<Direction> true_peaks,
                value_type threshold,
-               Image<value_type>* ipeaks_data) :
+               Image<value_type>* ipeaks_data, 
+               value_type value_if_not_peak = NaN) :
       dirs_vox (dirs_data),
       dirs (directions),
       lmax (lmax),
@@ -164,7 +169,8 @@ class Processor
       true_peaks (true_peaks),
       threshold (threshold),
       peaks_out (npeaks),
-      ipeaks_vox (ipeaks_data) { }
+      ipeaks_vox (ipeaks_data),
+      value_if_not_peak (value_if_not_peak) { }
 
     bool operator() (const Item& item) {
 
@@ -174,7 +180,7 @@ class Processor
 
       if (check_input (item)) {
         for (auto l = Loop(3) (dirs_vox); l; ++l)
-          dirs_vox.value() = NAN;
+          dirs_vox.value() = NaN;
         return true;
       }
 
@@ -186,7 +192,7 @@ class Processor
         if (std::isfinite (p.a)) {
           for (size_t j = 0; j < all_peaks.size(); j++) {
             if (std::abs (p.v.dot (all_peaks[j].v)) > DOT_THRESHOLD) {
-              p.a = NAN;
+              p.a = NaN;
               break;
             }
           }
@@ -243,7 +249,8 @@ class Processor
         dirs_vox.value() = peaks_out[n].a*peaks_out[n].v[2];
         dirs_vox.index(3)++;
       }
-      for (; dirs_vox.index(3) < 3*npeaks; dirs_vox.index(3)++) dirs_vox.value() = NAN;
+      for (; dirs_vox.index(3) < 3*npeaks; dirs_vox.index(3)++) 
+        dirs_vox.value() = value_if_not_peak;
 
       return true;
     }
@@ -256,6 +263,7 @@ class Processor
     value_type threshold;
     std::vector<Direction> peaks_out;
     copy_ptr<Image<value_type> > ipeaks_vox;
+    const value_type value_if_not_peak;
 
     bool check_input (const Item& item) {
       if (ipeaks_vox) {
@@ -317,7 +325,9 @@ void run ()
   if (true_peaks.size()) 
     npeaks = true_peaks.size();
 
-  value_type threshold = get_option_value("threshold", -INFINITY);
+  value_type threshold = get_option_value ("threshold", -INFINITY);
+
+  value_type value_if_not_peak = get_option_value ("null", NaN);
 
   auto header = Header(SH_data);
   header.datatype() = DataType::Float32;
@@ -338,7 +348,7 @@ void run ()
 
   DataLoader loader (SH_data, mask_data.get());
   Processor processor (peaks, dirs, Math::SH::LforN (SH_data.size (3)),
-      npeaks, true_peaks, threshold, ipeaks_data.get());
+      npeaks, true_peaks, threshold, ipeaks_data.get(), value_if_not_peak);
 
   Thread::run_queue (loader, Thread::batch (Item()), Thread::multi (processor));
 }
