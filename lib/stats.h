@@ -25,9 +25,7 @@ namespace MR
   namespace Stats
   {
 
-    const char * field_choices[] = { "mean", "median", "std", "min", "max", "count", NULL };
-
-
+    extern const char * field_choices[];
     extern const App::OptionGroup Options;
 
     typedef float value_type;
@@ -179,7 +177,7 @@ namespace MR
 
 
 
-    void print_header (bool is_complex)
+    inline void print_header (bool is_complex)
     {
       int width = is_complex ? 24 : 12;
       std::cout << std::setw(15) << std::right << "volume"

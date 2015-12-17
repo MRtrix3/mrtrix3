@@ -22,6 +22,8 @@ namespace MR
 
     using namespace App;
 
+    const char * field_choices[] = { "mean", "median", "std", "min", "max", "count", NULL };
+
     const OptionGroup Options = OptionGroup ("Statistics options")
     + Option ("output",
         "output only the field specified. Multiple such options can be supplied if required. "
