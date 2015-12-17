@@ -102,24 +102,19 @@ for ((n=1; n<=niter; n++)); do
   rm -f "${peaks}"-?.mif
   sh2peaks "$fod" -mask "$mask" -num 2 -null 0 "${peaks}-[].mif" 
   
-  # compute ratio of peak squared amplitudes (admittedly not pretty, but clear enough):
-  # (note this computes the ratio peak1/(peak2+1) to prevent divide-by-zero if peak2 is zero)
-  rm -f "$peak_ratio"
-  mrcalc "${peaks}-0.mif" 2 -pow "${peaks}-1.mif" 2 -pow "${peaks}-2.mif" 2 -pow -add -add "${peaks}-3.mif" 2 -pow "${peaks}-4.mif" 2 -pow "${peaks}-5.mif" 2 -pow -add -add 1 -add -div "$peak_ratio" -quiet
+  # compute metric of single-fibre-ness (admittedly not pretty, but clear enough):
+  # this computes: sqrt(peak1)*(1-peak2/peak1)^2 
+  mrmath "${peaks}-0.mif" "${peaks}-1.mif" "${peaks}-2.mif" rms "$tmpdir"/peak1.mif -force -quiet
+  mrmath "${peaks}-3.mif" "${peaks}-4.mif" "${peaks}-5.mif" rms "$tmpdir"/peak2.mif -force -quiet
+  mrcalc "$tmpdir"/peak1.mif -sqrt 1 "$tmpdir"/peak2.mif "$tmpdir"/peak1.mif -div -sub 2 -pow -mult "$peak_ratio" -force -quiet
   
-  # get mask of 300 voxels with largest peak1/peak2 ratio:
+  # get mask of 300 voxels with largest metric:
   rm -f "$sf_mask"
   mrthreshold "$peak_ratio" -top 300 "$sf_mask" -quiet
   
   # update estimate of response function within that mask, using FOD primary peak orientation:
   rm -f "$response"
   sh2response "$sh" "$sf_mask" "${peaks}-[0:2].mif" "$response" 
-
-  #for debugging:
-  cp -f "$fod" fod-$n.mif
-  cp -f "$peak_ratio" peak_ratio-$n.mif
-  cp -f "$sf_mask" sf_mask-$n.mif
-  mrconvert "${peaks}-[0:2].mif" peaks-$n.mif -force
 
 
   # refine mask to speed up later iterations:
