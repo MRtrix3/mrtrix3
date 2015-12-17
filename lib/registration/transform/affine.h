@@ -101,7 +101,12 @@ namespace MR
             assert (g.size() == 12);
 
             Eigen::Matrix<ValueType, 12, 1> delta;
-            Eigen::Matrix<ValueType, 4, 4> X, Delta, A, Asqrt, B, Bsqrt, Bsqrtinv, Xnew;
+            Eigen::Matrix<ValueType, 4, 4> X, Delta, G, A, Asqrt, B, Bsqrt, Bsqrtinv, Xnew;
+
+            // enforce updates in the range of small angle updates
+            param_vec2mat_affine(g, G);
+            if (step_size > 0.1 / G.block(0,0,3,3).array().abs().maxCoeff())
+              step_size = 0.1 / G.block(0,0,3,3).array().abs().maxCoeff();
 
             param_vec2mat_affine(x, X);
             // reduce step size if determinant of matrix is negative (happens rarely at first few iterations)
