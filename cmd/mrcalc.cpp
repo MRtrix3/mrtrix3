@@ -323,9 +323,7 @@ inline Chunk& StackEntry::evaluate (ThreadLocalStorage& storage) const
 
 inline void replace (std::string& orig, size_t n, const std::string& value)
 {
-  if (value[0] == '(' && orig[orig.size()-1] == ')') {
-    if (value[value.size()-1] != ')')
-      throw Exception ("fixme: unexpected brackets!");
+  if (orig[0] == '(' && orig[orig.size()-1] == ')') {
     size_t pos = orig.find ("(%"+str(n+1)+")");
     if (pos != orig.npos) {
       orig.replace (pos, 4, value);
