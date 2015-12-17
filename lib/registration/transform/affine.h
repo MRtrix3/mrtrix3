@@ -245,62 +245,6 @@ namespace MR
             return &gradient_descent_updator;
           }
 
-#ifdef USE_OTHER_ROBUST_ESTIMATE
-          template <class ParamType, class VectorType>
-          bool robust_estimate(
-            VectorType& gradient,
-            std::vector<VectorType>& grad_estimates,
-            const ParamType& params,
-            const VectorType& parameter_vector,
-            const default_type& weiszfeld_precision = 1.0e-6,
-            const size_t& weiszfeld_iterations = 1000,
-            default_type& learning_rate = 1.0) const {
-            assert (gradient.size()==12);
-            size_t n_estimates = grad_estimates.size();
-            assert (n_estimates>1);
-            const size_t n_corners = 4;
-            Eigen::Matrix<ParameterType, 3, n_corners> corners;
-            Eigen::Matrix<ParameterType, 4, n_corners> corners_4;
-            Eigen::Matrix<ParameterType, 4, n_corners> corners_transformed_median;
-            corners.col(0) << 1.0,    0, -Math::sqrt1_2;
-            corners.col(1) <<-1.0,    0, -Math::sqrt1_2;
-            corners.col(2) <<   0,  1.0,  Math::sqrt1_2;
-            corners.col(3) <<   0, -1.0,  Math::sqrt1_2;
-            corners *= 10.0;
-
-            std::vector<Eigen::Matrix<ParameterType, 3, Eigen::Dynamic>> transformed_corner(4);
-            for (auto& corner : transformed_corner){
-              corner.resize(3,n_estimates);
-            }
-
-            Eigen::Matrix<ParameterType, 4, 4> X, X_upd;
-            Math::param_vec2mat_affine(parameter_vector, X);
-
-            transform_type trafo_upd;
-            for (size_t j =0; j < n_estimates; ++j){
-              Eigen::Matrix<ParameterType, Eigen::Dynamic, 1> candidate =  parameter_vector - grad_estimates[j];
-              Math::param_vec2mat_affine(candidate, trafo_upd.matrix());
-              for (size_t i = 0; i < n_corners; ++i){
-                transformed_corner[i].col(j) = trafo_upd * corners.col(i);
-              }
-            }
-
-            for (size_t i = 0; i < n_corners; ++i){
-              Eigen::Matrix<ParameterType, 3, 1> median_corner;
-              Math::median_weiszfeld (transformed_corner[i], median_corner, weiszfeld_iterations, weiszfeld_precision);
-              corners_transformed_median.col(i) << median_corner, 1.0;
-              corners_4.col(i) << corners.col(i), 1.0;
-            }
-            Eigen::ColPivHouseholderQR<Eigen::Matrix<ParameterType, 4, n_corners>> dec(corners_4.transpose());
-            Eigen::Matrix<ParameterType,4,4> trafo_median;
-            trafo_median.transpose() = dec.solve(corners_transformed_median.transpose());
-            VectorType x_new;
-            x_new.resize(12);
-            Math::param_mat2vec_affine(trafo_median, x_new);
-            gradient = parameter_vector - x_new;
-            return true;
-          }
-#else
           template <class ParamType, class VectorType>
           bool robust_estimate(
             VectorType& gradient,
@@ -402,7 +346,6 @@ namespace MR
             assert(is_finite(gradient));
             return true;
           }
-#endif
 
         protected:
           UpdateType gradient_descent_updator;
