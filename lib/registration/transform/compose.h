@@ -53,8 +53,8 @@ namespace MR
         class ComposeDispKernel {
           public:
             ComposeDispKernel (const transform_type& transform, const WarpImageType& warp_in) :
-                               transform (transform.cast<typename WarpImageType::value_type>(),
-                               image_transform, (warp_in)) {}
+                               transform (transform.cast<typename WarpImageType::value_type>()),
+                               image_transform (warp_in) {}
 
             void operator() (WarpImageType& warp_in, WarpImageType& warp_out) {
               Eigen::Vector3 voxel ((default_type)warp_in.index(0), (default_type)warp_in.index(1), (default_type)warp_in.index(2));
@@ -78,7 +78,7 @@ namespace MR
       template <class WarpImageType>
       void compose_affine_displacement (const transform_type& transform, WarpImageType& disp_in, WarpImageType& deform_out)
       {
-        ThreadedLoop ("composing linear transform with warp...", disp_in, 0, 3).run (ComposeDispKernel<WarpImageType> (transform), disp_in, deform_out);
+        ThreadedLoop ("composing linear transform with warp...", disp_in, 0, 3).run (ComposeDispKernel<WarpImageType> (transform, disp_in), disp_in, deform_out);
       }
 
     }

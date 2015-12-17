@@ -28,6 +28,7 @@
 #include "transform.h"
 #include "registration/linear.h"
 #include "registration/syn.h"
+#include "registration/metric/syn_demons.h"
 #include "registration/metric/mean_squared.h"
 #include "registration/metric/cross_correlation.h"
 #include "registration/metric/mean_squared_4D.h"
@@ -600,6 +601,9 @@ void run ()
     CONSOLE ("running SyN registration");
     Registration::SyN syn_registration;
 
+    if (syn_niter.size())
+      syn_registration.set_max_iter (syn_niter);
+
     if (syn_scale_factors.size())
       syn_registration.set_scale_factor (syn_scale_factors);
 
@@ -610,12 +614,12 @@ void run ()
       syn_registration.set_update_smoothing (smooth_update);
 
     if (do_affine) {
-      syn_registration.run_masked<Registration::SyN> (affine, im1_image, im2_image, im1_mask, im2_mask);
+      syn_registration.run_masked (affine, im1_image, im2_image, im1_mask, im2_mask);
     } else if (do_rigid) {
-      syn_registration.run_masked<Registration::SyN> (rigid, im1_image, im2_image, im1_mask, im2_mask);
+      syn_registration.run_masked (rigid, im1_image, im2_image, im1_mask, im2_mask);
     } else {
       Registration::Transform::Affine identity_transform;
-      syn_registration.run_masked<Registration::SyN> (identity_transform, im1_image, im2_image, im1_mask, im2_mask);
+      syn_registration.run_masked (identity_transform, im1_image, im2_image, im1_mask, im2_mask);
     }
 
 
