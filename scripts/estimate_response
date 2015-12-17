@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ $# -lt 4 ]; then 
+if [ $# -lt 3 ]; then 
   cat <<EOD
 
  usage: estimate_response [OPTIONS] dwi mask response
@@ -24,9 +24,9 @@ EOD
   exit 1
 fi
 
-niter=3
+niter=5
 
-while [[ $# > 4 ]]; do
+while [[ $# > 3 ]]; do
   case $1 in 
     -niter)
       niter="$2";
@@ -76,7 +76,7 @@ mask="$2"
 [ "x$sf_mask" == "x" ] && sf_mask="$tmpdir/sf_mask.mif"
 
 # start with sharpest possible response function (i.e. SH decomposition of a flat disc):
-echo "1,-1,1,-1,1" > "$response"
+echo "1,-1,1" > "$response"
 
 # preload DWI with optimal stride (should also allow -shell option in due course)
 dwiextract "$1" $shell "$dwi" 
@@ -84,18 +84,23 @@ dwiextract "$1" $shell "$dwi"
 # compute SH fit to DWI:
 amp2sh "$dwi" $lmax "$sh"
 
+# set initial lmax=4:
+current_lmax="-lmax 4"
+
 for ((n=1; n<=niter; n++)); do
 
   echo ''
   echo "### iteration $n ###"
 
-  # initial estimate of FOD, within brain mask:
+  # estimate FOD within mask:
   rm -f "$fod"
-  dwi2fod "$dwi" $lmax -mask "$mask" "$response" "$fod"
+  dwi2fod "$dwi" $current_lmax -mask "$mask" "$response" "$fod" 
+  # make sure lmax is set as per command-line in later iterations:
+  current_lmax="$lmax"
   
   # extract 2 largest peaks into a 4D image split over volumes:
   rm -f "${peaks}"-?.mif
-  sh2peaks "$fod" -mask "$mask" -num 2 "${peaks}-[].mif" 
+  sh2peaks "$fod" -mask "$mask" -num 2 -null 0 "${peaks}-[].mif" 
   
   # compute ratio of peak squared amplitudes (admittedly not pretty, but clear enough):
   # (note this computes the ratio peak1/(peak2+1) to prevent divide-by-zero if peak2 is zero)
@@ -109,6 +114,20 @@ for ((n=1; n<=niter; n++)); do
   # update estimate of response function within that mask, using FOD primary peak orientation:
   rm -f "$response"
   sh2response "$sh" "$sf_mask" "${peaks}-[0:2].mif" "$response" 
+
+  #for debugging:
+  cp -f "$fod" fod-$n.mif
+  cp -f "$peak_ratio" peak_ratio-$n.mif
+  cp -f "$sf_mask" sf_mask-$n.mif
+  mrconvert "${peaks}-[0:2].mif" peaks-$n.mif -force
+
+
+  # refine mask to speed up later iterations:
+  if [ "$mask" == "$2" ]; then
+    mask="$tmpdir/mask.mif" 
+    mrthreshold "$peak_ratio" -top 3000 - | maskfilter - dilate "$mask"
+  fi
+
 
   echo "current response coefficients: [ "$(cat "$response")" ]"
   
