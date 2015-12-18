@@ -121,6 +121,12 @@ namespace MR
             compute_halfspace_transformations();
           }
 
+          Eigen::Matrix<default_type, 4, 1> get_jacobian_vector_wrt_params (const Eigen::Vector3& p) const {
+            throw Exception ("FIXME: get_jacobian_vector_wrt_params not implemented for this metric");
+            Eigen::Matrix<default_type, 4, 1> jac;
+            return jac;
+          }
+
           Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> get_transform () const {
               Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> transform;
               transform.matrix() = trafo.matrix();

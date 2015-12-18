@@ -61,12 +61,12 @@ namespace MR
               DEBUG("im1_grad: " + str(im1_grad));
               DEBUG("im2_grad: " + str(im2_grad));
 #endif
-              for (ssize_t par = 0; par < gradient.size(); par++) {
-                default_type sum = 0.0;
-                for ( size_t dim = 0; dim < 3; dim++)
-                  sum += diff * jacobian (dim, par) * (im1_grad[dim] + im2_grad[dim]);
-                gradient[par] += sum;
-              }
+              auto jacobian_vec = params.transformation.get_jacobian_vector_wrt_params (midway_point);
+              Eigen::Vector3d g = diff * (im1_grad + im2_grad);
+              gradient.segment<4>(0) += g(0) * jacobian_vec;
+              gradient.segment<4>(4) += g(1) * jacobian_vec;
+              gradient.segment<4>(8) += g(2) * jacobian_vec;
+
               return diff * diff;
           }
 
