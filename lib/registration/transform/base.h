@@ -35,6 +35,47 @@ namespace MR
   {
     namespace Transform
     {
+      template <class ValueType>
+      inline void param_mat2vec (const Eigen::Matrix<ValueType, 3, 4, Eigen::RowMajor>& transformation_matrix,
+                                        Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& param_vector) {
+          assert(param_vector.size() == 12);
+          param_vector = Eigen::Map<Eigen::MatrixXd> (transformation_matrix.data(), 12, 1);
+        }
+      template <class ValueType>
+      inline void param_mat2vec (const Eigen::Matrix<ValueType, 4, 4, Eigen::RowMajor>& transformation_matrix,
+                                        Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& param_vector) {
+          assert(param_vector.size() == 12);
+          param_vector = Eigen::Map<Eigen::MatrixXd> ((transformation_matrix.template block<3,4>(0,0)).data(), 12, 1);
+        }
+      template <class ValueType>
+      inline void param_mat2vec (const Eigen::Matrix<ValueType, 3, 4, Eigen::ColMajor>& transformation_matrix,
+                                        Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& param_vector) {
+          assert(param_vector.size() == 12);
+          // create temporary copy of the matrix in row major order and map it's memory as a vector
+          param_vector = Eigen::Map<Eigen::Matrix<ValueType, 12, 1>> (
+                (Eigen::Matrix<default_type, 3, 4, Eigen::RowMajor>(transformation_matrix)).data() );
+        }
+      template <class ValueType>
+      inline void param_mat2vec (const Eigen::Matrix<ValueType, 4, 4, Eigen::ColMajor>& transformation_matrix,
+                                        Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& param_vector) {
+          assert(param_vector.size() == 12);
+          // create temporary copy of the matrix in row major order and map it's memory as a vector
+          param_vector = Eigen::Map<Eigen::Matrix<ValueType, 12, 1>> (
+                (Eigen::Matrix<default_type, 3, 4, Eigen::RowMajor>((transformation_matrix.template block<3,4>(0,0)))).data() );
+        }
+      template <class Derived, class ValueType>
+      inline void param_vec2mat (const Eigen::MatrixBase<Derived>& param_vector,
+                                       Eigen::Matrix<ValueType, 3, 4>& transformation_matrix) {
+          assert(param_vector.size() == 12);
+          transformation_matrix = Eigen::Map<const Eigen::Matrix<ValueType, 3, 4, Eigen::RowMajor> >(&param_vector(0));
+        }
+      template <class Derived, class ValueType>
+      inline void param_vec2mat (const Eigen::MatrixBase<Derived>& param_vector,
+                                       Eigen::Matrix<ValueType, 4, 4>& transformation_matrix) {
+        assert(param_vector.size() == 12);
+        transformation_matrix.template block<3,4>(0,0) = Eigen::Map<const Eigen::Matrix<ValueType, 3, 4, Eigen::RowMajor> >(&param_vector(0));
+        transformation_matrix.row(3) << 0.0, 0.0, 0.0, 1.0;
+      }
 
       /** \addtogroup Transforms
       @{ */
@@ -128,7 +169,7 @@ namespace MR
             return number_of_parameters;
           }
 
-          void set_optimiser_weights (Eigen::Vector3& weights) {
+          void set_optimiser_weights (Eigen::VectorXd& weights) {
             assert(size() == (size_t)optimiser_weights.size());
               optimiser_weights = weights;
           }

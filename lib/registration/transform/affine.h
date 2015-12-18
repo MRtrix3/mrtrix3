@@ -37,43 +37,6 @@ namespace MR
   namespace Math
   {
 
-    //! \addtogroup Optimisation
-    // @{
-    template<class MatrixType = Eigen::Matrix<double, 4, 4>>
-    inline void param_mat2vec_affine (const MatrixType& transformation_matrix,
-                                      Eigen::Matrix<double,
-                                      Eigen::Dynamic, 1>& param_vector) {
-        assert(transformation_matrix.cols()==4);
-        assert(transformation_matrix.rows()>=3);
-        size_t index = 0;
-        assert(param_vector.size() == 12);
-        for (size_t row = 0; row < 3; ++row) {
-          for (size_t col = 0; col < 3; ++col)
-            param_vector[index++] = transformation_matrix (row, col);
-        }
-        for (size_t dim = 0; dim < 3; ++dim)
-          param_vector[index++] = transformation_matrix(dim,3);
-      }
-
-    template<class MatrixType = Eigen::Matrix<double, 4, 4>>
-    inline void param_vec2mat_affine (const Eigen::Matrix<double, Eigen::Dynamic, 1>& param_vector,
-                                     MatrixType& transformation_matrix) {
-        assert(transformation_matrix.cols()==4);
-        assert(transformation_matrix.rows()>=3);
-        size_t index = 0;
-        transformation_matrix.setIdentity();
-        for (size_t row = 0; row < 3; ++row) {
-          for (size_t col = 0; col < 3; ++col)
-            transformation_matrix (row, col) = param_vector[index++];
-        }
-        for (size_t dim = 0; dim < 3; ++dim)
-          transformation_matrix(dim,3) = param_vector[index++];
-        if (transformation_matrix.rows() == 4){
-          transformation_matrix.row(3) << 0.0, 0.0, 0.0, 1.0;
-        }
-      }
-
-
     class AffineLinearNonSymmetricUpdate {
       public:
         template <typename ValueType>
@@ -104,17 +67,17 @@ namespace MR
             Eigen::Matrix<ValueType, 4, 4> X, Delta, G, A, Asqrt, B, Bsqrt, Bsqrtinv, Xnew;
 
             // enforce updates in the range of small angle updates
-            param_vec2mat_affine(g, G);
+            Registration::Transform::param_vec2mat(g, G);
             if (step_size > 0.1 / G.block(0,0,3,3).array().abs().maxCoeff())
               step_size = 0.1 / G.block(0,0,3,3).array().abs().maxCoeff();
 
-            param_vec2mat_affine(x, X);
+            Registration::Transform::param_vec2mat(x, X);
             // reduce step size if determinant of matrix is negative (happens rarely at first few iterations)
             size_t cnt = 0;
             default_type factor = 0.9;
             while (true) {
               delta = g * step_size;
-              param_vec2mat_affine(delta, Delta);
+              Registration::Transform::param_vec2mat(delta, Delta);
 
               A = X - Delta;
               A(3,3) = 1.0;
@@ -140,7 +103,7 @@ namespace MR
             // approximation for symmetry reasons as
             // A and B don't commute
             Xnew = (Asqrt * Bsqrtinv) - ((Asqrt * Bsqrtinv - Bsqrtinv * Asqrt) * 0.5);
-            param_mat2vec_affine(Xnew, newx);
+            Registration::Transform::param_mat2vec(Xnew, newx);
 #ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG
             if (newx.isApprox(x)){
               ValueType debug = 0;
@@ -198,47 +161,35 @@ namespace MR
           typedef int has_robust_estimator;
 
           Affine () : Base (12) {
-            for (size_t i = 0; i < 9; ++i)
-              this->optimiser_weights[i] = 0.0003; // was 0.003 but hessian suggests smaller value should be better
-            for (size_t i = 9; i < 12; ++i)
-              this->optimiser_weights[i] = 1.0;
+            const Eigen::Vector4d weights (0.0003, 0.0003, 0.0003, 1.0);
+            this->optimiser_weights << weights, weights, weights;
           }
 
+          Eigen::Matrix<default_type, 4, 1> get_jacobian_vector_wrt_params (const Eigen::Vector3& p) const {
+            Eigen::Matrix<default_type, 4, 1> jac;
+            jac.head(3) = p - centre;
+            jac(3) = 1.0;
+            return jac;
+          }
 
           Eigen::MatrixXd get_jacobian_wrt_params (const Eigen::Vector3& p) const {
             Eigen::MatrixXd jacobian (3, 12);
             jacobian.setZero();
-            Eigen::Matrix<double, 1, 3> v (p - centre); // const Matrix is slower
-            jacobian.block<1, 3>(0, 0) = v;
-            jacobian (0, 9) = 1.0;
-            jacobian.block<1, 3>(1, 3) = v;
-            jacobian (1, 10) = 1.0;
-            jacobian.block<1, 3>(2, 6) = v;
-            jacobian (2, 11) = 1.0;
+            const auto v = get_jacobian_vector_wrt_params(p);
+            jacobian.block<1, 4>(0, 0) = v;
+            jacobian.block<1, 4>(1, 4) = v;
+            jacobian.block<1, 4>(2, 8) = v;
             return jacobian;
           }
 
-
           void set_parameter_vector (const Eigen::Matrix<ParameterType, Eigen::Dynamic, 1>& param_vector) {
-            size_t index = 0;
-            for (size_t row = 0; row < 3; ++row) {
-              for (size_t col = 0; col < 3; ++col)
-                this->trafo (row, col) = param_vector[index++];
-            }
-            for (size_t dim = 0; dim < 3; ++dim)
-              this->trafo(dim,3) = param_vector[index++];
+            this->trafo.matrix() = Eigen::Map<const Eigen::Matrix<ParameterType, 3, 4, Eigen::RowMajor> >(&param_vector(0));
             this->compute_halfspace_transformations();
           }
 
           void get_parameter_vector (Eigen::Matrix<ParameterType, Eigen::Dynamic, 1>& param_vector) const {
             param_vector.resize (12);
-            size_t index = 0;
-            for (size_t row = 0; row < 3; ++row) {
-              for (size_t col = 0; col < 3; ++col)
-                param_vector[index++] = this->trafo (row, col);
-            }
-            for (size_t dim = 0; dim < 3; ++dim)
-              param_vector[index++] = this->trafo(dim,3);
+            param_mat2vec(this->trafo.matrix(), param_vector);
           }
 
           UpdateType* get_gradient_descent_updator () {
@@ -259,7 +210,7 @@ namespace MR
             assert (n_estimates>1);
 
             Eigen::Matrix<ParameterType, 4, 4> X, X_upd;
-            Math::param_vec2mat_affine(parameter_vector, X);
+            param_vec2mat(parameter_vector, X);
 
             // get tetrahedron
             const size_t n_vertices = 4;
@@ -270,11 +221,6 @@ namespace MR
 
             // transform each vertex with each candidate transformation
             // weighting
-            // VectorType sum_candidates (12);
-            // sum_candidates.setZero();
-            // for (size_t j =0; j < n_estimates; ++j){
-            //   sum_candidates += grad_estimates[j];
-            // }
 
             if (this->optimiser_weights.size()){
               assert (this->optimiser_weights.size() == 12);
@@ -301,7 +247,7 @@ namespace MR
               for (size_t j =0; j < n_estimates; ++j){
                 Eigen::Matrix<ParameterType, Eigen::Dynamic, 1> candidate =  (parameter_vector - learning_rate * grad_estimates[j]);
                 assert(is_finite(candidate));
-                Math::param_vec2mat_affine(candidate, trafo_upd.matrix());
+                param_vec2mat(candidate, trafo_upd.matrix());
                 if (trafo_upd.matrix().block(0,0,3,3).determinant() < 0){
                   learning_rate *= 0.1;
                   learning_rate_ok = false;
@@ -332,7 +278,7 @@ namespace MR
             // undo weighting and convert transformation matrix to gradient update vector
             VectorType x_new;
             x_new.resize(12);
-            Math::param_mat2vec_affine(trafo_median, x_new);
+            param_mat2vec(trafo_median, x_new);
             x_new -= parameter_vector;
             if (this->optimiser_weights.size()){
               x_new.array() /= this->optimiser_weights.array();
@@ -340,9 +286,6 @@ namespace MR
             // revert learning rate and multiply by number of estimates to mimic sum of gradients
             // this corresponds to the sum of the projections of the gradient estimates onto the median
             gradient.array() = - x_new.array() * (default_type(n_estimates) / learning_rate);
-            // default_type dot = (gradient/gradient.norm()).dot(sum_candidates/sum_candidates.norm());
-            // INFO("dot: " + str(dot));
-            // gradient = sum_candidates;
             assert(is_finite(gradient));
             return true;
           }
