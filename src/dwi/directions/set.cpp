@@ -108,7 +108,7 @@ namespace MR {
         class Plane {
           public:
             Plane (const std::vector<Vertex>& vertices, const dir_t one, const dir_t two, const dir_t three) :
-                indices { one, two, three },
+                indices {{ one, two, three }},
                 normal (((vertices[two].dir-vertices[one].dir).cross (vertices[three].dir-vertices[two].dir)).normalized()),
                 dist (std::max ( { vertices[one].dir.dot (normal), vertices[two].dir.dot (normal), vertices[three].dir.dot (normal) } ) ) { }
             bool includes (const dir_t i) const { return (indices[0] == i || indices[1] == i || indices[2] == i); }
