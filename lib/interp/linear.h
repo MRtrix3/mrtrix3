@@ -13,11 +13,14 @@
  * 
  */
 
+
 #ifndef __interp_linear_h__
 #define __interp_linear_h__
 
 #include <complex>
 #include <type_traits>
+
+#include <Eigen/Core>
 
 #include "datatype.h"
 #include "types.h"
@@ -131,22 +134,21 @@ namespace MR
             if (pos[2] > bounds[2]-0.5) f[2] = 0.0;
           }
 
-          faaa = (1.0-f[0]) * (1.0-f[1]) * (1.0-f[2]);
-          if (faaa < eps) faaa = 0.0;
-          faab = (1.0-f[0]) * (1.0-f[1]) *      f[2];
-          if (faab < eps) faab = 0.0;
-          faba = (1.0-f[0]) *      f[1]  * (1.0-f[2]);
-          if (faba < eps) faba = 0.0;
-          fabb = (1.0-f[0]) *      f[1]  *      f[2];
-          if (fabb < eps) fabb = 0.0;
-          fbaa =      f[0]  * (1.0-f[1]) * (1.0-f[2]);
-          if (fbaa < eps) fbaa = 0.0;
-          fbab =      f[0]  * (1.0-f[1])      * f[2];
-          if (fbab < eps) fbab = 0.0;
-          fbba =      f[0]  *      f[1]  * (1.0-f[2]);
-          if (fbba < eps) fbba = 0.0;
-          fbbb =      f[0]  *      f[1]  *      f[2];
-          if (fbbb < eps) fbbb = 0.0;
+          Eigen::Vector3 fn = { 1.0-f[0], 1.0-f[1], 1.0-f[2] };
+
+          Eigen::Matrix<coef_type, 8, 3> v;
+          v << fn[0], fn[1], fn[2],
+               fn[0], fn[1], f[2],
+               fn[0], f[1],  f[2],
+               fn[0], f[1],  fn[2],
+               f[0],  f[1],  fn[2],
+               f[0],  fn[1], fn[2],
+               f[0],  fn[1], f[2],
+               f[0],  f[1],  f[2];
+
+          factors = v.rowwise().prod();
+          for (int i = 0; i != 8; ++i)
+            if (factors[i] < eps) factors[i] = 0.0;
 
           return true;
         }
@@ -169,26 +171,26 @@ namespace MR
         FORCE_INLINE value_type value () {
           if (out_of_bounds)
             return out_of_bounds_value;
-          value_type val = 0.0;
-          if (faaa != zero) val  = faaa * value_type (ImageType::value());
+          Eigen::Matrix<value_type, 8, 1> values = Eigen::Matrix<value_type, 8, 1>::Zero();
+          if (factors[0] != zero) values[0] = value_type (ImageType::value());
           index(2)++;
-          if (faab != zero) val += faab * value_type (ImageType::value());
+          if (factors[1] != zero) values[1] = value_type (ImageType::value());
           index(1)++;
-          if (fabb != zero) val += fabb * value_type (ImageType::value());
+          if (factors[2] != zero) values[2] = value_type (ImageType::value());
           index(2)--;
-          if (faba != zero) val += faba * value_type (ImageType::value());
+          if (factors[3] != zero) values[3] = value_type (ImageType::value());
           index(0)++;
-          if (fbba != zero) val += fbba * value_type (ImageType::value());
+          if (factors[4] != zero) values[4] = value_type (ImageType::value());
           index(1)--;
-          if (fbaa != zero) val += fbaa * value_type (ImageType::value());
+          if (factors[5] != zero) values[5] = value_type (ImageType::value());
           index(2)++;
-          if (fbab != zero) val += fbab * value_type (ImageType::value());
+          if (factors[6] != zero) values[6] = value_type (ImageType::value());
           index(1)++;
-          if (fbbb != zero) val += fbbb * value_type (ImageType::value());
+          if (factors[7] != zero) values[7] = value_type (ImageType::value());
           index(0)--;
           index(1)--;
           index(2)--;
-          return val;
+          return values.dot (factors);
         }
 
         //! Read interpolated values from volumes along axis >= 3
@@ -203,31 +205,30 @@ namespace MR
             return out_of_bounds_row;
           }
 
-          Eigen::Matrix<value_type, Eigen::Dynamic, 1> row (ImageType::size(axis));
-          row.setZero();
-          if (faaa != zero) row  = faaa * ImageType::row(axis);
+          Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> values = Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic>::Zero (ImageType::size (axis), 8);
+          if (factors[0] != zero) values.col(0) = ImageType::row (axis);
           index(2)++;
-          if (faab != zero) row += faab * ImageType::row(axis);
+          if (factors[1] != zero) values.col(1) = ImageType::row (axis);
           index(1)++;
-          if (fabb != zero) row += fabb * ImageType::row(axis);
+          if (factors[2] != zero) values.col(2) = ImageType::row (axis);
           index(2)--;
-          if (faba != zero) row += faba * ImageType::row(axis);
+          if (factors[3] != zero) values.col(3) = ImageType::row (axis);
           index(0)++;
-          if (fbba != zero) row += fbba * ImageType::row(axis);
+          if (factors[4] != zero) values.col(4) = ImageType::row (axis);
           index(1)--;
-          if (fbaa != zero) row += fbaa * ImageType::row(axis);
+          if (factors[5] != zero) values.col(5) = ImageType::row (axis);
           index(2)++;
-          if (fbab != zero) row += fbab * ImageType::row(axis);
+          if (factors[6] != zero) values.col(6) = ImageType::row (axis);
           index(1)++;
-          if (fbbb != zero) row += fbbb * ImageType::row(axis);
+          if (factors[7] != zero) values.col(7) = ImageType::row (axis);
           index(0)--;
           index(1)--;
           index(2)--;
-          return row;
+          return values * factors;
         }
 
       protected:
-        coef_type faaa, faab, faba, fabb, fbaa, fbab, fbba, fbbb;
+        Eigen::Matrix<coef_type, 8, 1> factors;
 
       private:
         const coef_type zero, eps;

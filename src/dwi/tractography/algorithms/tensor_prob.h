@@ -138,41 +138,23 @@ namespace MR
                   auto add_values = [&](float fraction, int sig_index) {
                     get_values (raw_signals[sig_index]);
                     data += fraction * raw_signals[sig_index];
-                    //for (ssize_t i = 0; i < data.size(); ++i)
-                      //data[i] += fraction * raw_signals[sig_index][i];
                   };
 
-                  if (faaa) 
-                    add_values (faaa, 0);
-
+                  if (factors[0]) add_values (factors[0], 0);
                   ++index(2);
-                  if (faab) 
-                    add_values (faab, 1);
-
+                  if (factors[1]) add_values (factors[1], 1);
                   ++index(1);
-                  if (fabb) 
-                    add_values (fabb, 3);
-
+                  if (factors[2]) add_values (factors[2], 3);
                   --index(2);
-                  if (faba) 
-                    add_values (faba, 2);
-
+                  if (factors[3]) add_values (factors[3], 2);
                   ++index(0);
-                  if (fbba) 
-                    add_values (fbba, 6);
-
+                  if (factors[4]) add_values (factors[4], 6);
                   --index(1);
-                  if (fbaa) 
-                    add_values (fbaa, 4);
-
+                  if (factors[5]) add_values (factors[5], 4);
                   ++index(2);
-                  if (fbab) 
-                    add_values (fbab, 5);
-
+                  if (factors[6]) add_values (factors[6], 5);
                   ++index(1);
-                  if (fbbb) 
-                    add_values (fbbb, 7);
-
+                  if (factors[7]) add_values (factors[7], 7);
                   --index(0);
                   --index(1);
                   --index(2);

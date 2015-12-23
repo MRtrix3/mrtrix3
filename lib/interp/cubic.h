@@ -123,7 +123,7 @@ namespace MR
           if (Base<ImageType>::out_of_bounds)
             return false;
           P = pos;
-          for(size_t i =0; i <3; ++i)
+          for(size_t i = 0; i < 3; ++i)
             H[i].set (f[i]);
 
           // Precompute weights
@@ -131,10 +131,8 @@ namespace MR
           for (ssize_t z = 0; z < 4; ++z) {
             for (ssize_t y = 0; y < 4; ++y) {
               value_type partial_weight = H[1].weights[y] * H[2].weights[z];
-              for (ssize_t x = 0; x < 4; ++x) {
-                weights_vec[i] = H[0].weights[x] * partial_weight;
-                i += 1;
-              }
+              for (ssize_t x = 0; x < 4; ++x)
+                weights_vec[i++] = H[0].weights[x] * partial_weight;
             }
           }
 
