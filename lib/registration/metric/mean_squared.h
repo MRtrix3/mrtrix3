@@ -38,7 +38,6 @@ namespace MR
                                      const Eigen::Vector3 im2_point,
                                      const Eigen::Vector3 midway_point,
                                      Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
-              Eigen::MatrixXd jacobian = params.transformation.get_jacobian_wrt_params (midway_point);
 
               typename Params::Im1ValueType im1_value;
               typename Params::Im2ValueType im2_value;
@@ -53,16 +52,9 @@ namespace MR
                 return 0.0;
 
               default_type diff = (default_type) im1_value - (default_type) im2_value;
-#ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG
-              DEBUG("midway_point:" + str(midway_point.transpose()));
-              DEBUG("im1_point:" + str(im1_point.transpose()));
-              DEBUG("im2_point:" + str(im2_point.transpose()));
-              DEBUG("diff: " + str(diff));
-              DEBUG("im1_grad: " + str(im1_grad));
-              DEBUG("im2_grad: " + str(im2_grad));
-#endif
-              auto jacobian_vec = params.transformation.get_jacobian_vector_wrt_params (midway_point);
-              Eigen::Vector3d g = diff * (im1_grad + im2_grad);
+              // Eigen::MatrixXd jacobian = params.transformation.get_jacobian_wrt_params (midway_point);
+              const auto jacobian_vec = params.transformation.get_jacobian_vector_wrt_params (midway_point);
+              const  Eigen::Vector3d g = diff * (im1_grad + im2_grad);
               gradient.segment<4>(0) += g(0) * jacobian_vec;
               gradient.segment<4>(4) += g(1) * jacobian_vec;
               gradient.segment<4>(8) += g(2) * jacobian_vec;
