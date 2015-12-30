@@ -30,9 +30,9 @@
 #include "registration/syn.h"
 #include "registration/metric/syn_demons.h"
 #include "registration/metric/mean_squared.h"
+#include "registration/metric/difference_robust.h"
 #include "registration/metric/cross_correlation.h"
 #include "registration/metric/mean_squared_4D.h"
-#include "registration/metric/least_powers.h"
 #include "registration/transform/affine.h"
 #include "registration/transform/rigid.h"
 #include "dwi/directions/predefined.h"
@@ -361,16 +361,13 @@ void run ()
   }
 
   opt = get_options ("rigid_metric");
-  Registration::LinearMetricType rigid_metric = Registration::L2;
+  Registration::LinearMetricType rigid_metric = Registration::Diff;
   if (opt.size()) {
     switch ((int)opt[0][0]){
       case 0:
-        rigid_metric = Registration::L2;
+        rigid_metric = Registration::Diff;
         break;
       case 1:
-        rigid_metric = Registration::LP;
-        break;
-      case 2:
         rigid_metric = Registration::NCC;
         break;
       default:
@@ -379,16 +376,13 @@ void run ()
   }
 
   opt = get_options ("affine_metric");
-  Registration::LinearMetricType affine_metric = Registration::L2;
+  Registration::LinearMetricType affine_metric = Registration::Diff;
   if (opt.size()) {
     switch ((int)opt[0][0]){
       case 0:
-        affine_metric = Registration::L2;
+        affine_metric = Registration::Diff;
         break;
       case 1:
-        affine_metric = Registration::LP;
-        break;
-      case 2:
         affine_metric = Registration::NCC;
         break;
       default:
@@ -396,7 +390,22 @@ void run ()
     }
   }
 
-  bool affine_robust_estimator = get_options ("affine_robust").size() == 1;
+  opt = get_options ("affine_robust_estimator");
+  Registration::LinearRobustMetricEstimatorType affine_estimator = Registration::L2;
+  if (opt.size()) {
+    switch ((int)opt[0][0]){
+      case 0:
+        affine_estimator = Registration::ForceL2;
+        break;
+      case 1:
+        affine_estimator = Registration::LP;
+        break;
+      default:
+        break;
+    }
+  }
+
+  bool affine_robust_median = get_options ("affine_robust_median").size() == 1;
 
   opt = get_options ("syn_scale");
   std::vector<default_type> syn_scale_factors;
@@ -554,8 +563,6 @@ void run ()
     if (im2_image.ndim() == 4) {
       if (rigid_metric == Registration::NCC)
         throw Exception ("cross correlation metric not implemented for data with more than 3 dimensions");
-      if (rigid_metric == Registration::LP)
-        throw Exception ("least powers metric not implemented for data with more than 3 dimensions");
       Registration::Metric::MeanSquared4D metric;
       rigid_registration.run_masked (metric, rigid, im1_image, im2_image, im1_mask, im2_mask);
     } else {
@@ -563,10 +570,6 @@ void run ()
         std::vector<size_t> extent(3,3);
         rigid_registration.set_extent(extent);
         Registration::Metric::CrossCorrelation metric;
-        rigid_registration.run_masked (metric, rigid, im1_image, im2_image, im1_mask, im2_mask);
-      }
-      else if (rigid_metric == Registration::LP) {
-        Registration::Metric::LeastPowers metric;
         rigid_registration.run_masked (metric, rigid, im1_image, im2_image, im1_mask, im2_mask);
       }
       else {
@@ -592,7 +595,7 @@ void run ()
       affine_registration.set_max_iter (affine_niter);
     if (affine_loop_density.size())
       affine_registration.set_loop_density (affine_loop_density);
-    if (affine_robust_estimator)
+    if (affine_robust_median)
       affine_registration.use_robust_estimate (true);
     if (do_rigid) {
       affine.set_centre (rigid.get_centre());
@@ -611,8 +614,9 @@ void run ()
     if (im2_image.ndim() == 4) {
       if (affine_metric == Registration::NCC)
         throw Exception ("cross correlation metric not implemented for data with more than 3 dimensions");
-      if (affine_metric == Registration::LP)
-        throw Exception ("least powers metric not implemented for data with more than 3 dimensions");
+      if (affine_estimator != Registration::L2) {
+        throw Exception ("robust metric not implemented for data with more than 3 dimensions");
+      }
       Registration::Metric::MeanSquared4D metric;
       affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
     } else {
@@ -622,12 +626,20 @@ void run ()
         affine_registration.set_extent (extent);
         affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
       }
-      else if (affine_metric == Registration::LP) {
-        Registration::Metric::LeastPowers metric;
-        affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
-      } else {
-        Registration::Metric::MeanSquared metric;
-        affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
+      else if (affine_metric == Registration::Diff) {
+        if (affine_estimator == Registration::L2) {
+          Registration::Metric::MeanSquared metric;
+          affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
+        } else if (affine_estimator == Registration::ForceL2) {
+          Registration::Metric::L2 estimator;
+          Registration::Metric::DifferenceRobust<Registration::Metric::L2> metric(estimator);
+          affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
+        } else if (affine_estimator == Registration::LP) {
+          Registration::Metric::LP estimator;
+          Registration::Metric::DifferenceRobust<Registration::Metric::LP> metric(estimator);
+          affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
+        }
+        else throw Exception ("FIXME: estimator selection");
       }
     }
 
