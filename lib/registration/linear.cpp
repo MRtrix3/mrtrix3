@@ -8,6 +8,7 @@ namespace MR
     using namespace App;
 
     const char* initialisation_choices[] = { "mass", "geometric", "moments", "linear", "none", NULL };
+    const char* linear_metric_choices[] = { "l2", "ncc", NULL };
 
     const OptionGroup rigid_options =
       OptionGroup ("Rigid registration options")
@@ -26,7 +27,10 @@ namespace MR
       + Option ("rigid_smooth_factor", "amount of smoothing before registration (Default: 1.0)")
         + Argument ("num").type_sequence_float ()
 
-      + Option ("rigid_cc", "metric: use cross correlation. default: least squares");
+      + Option ("rigid_metric",  "Valid choices are: l2 (ordinary least squares), "
+                                  "ncc (normalised cross-correlation) "
+                                  "Default: ordinary least squares")
+        + Argument ("type").type_choice (linear_metric_choices);
 
 
     const OptionGroup affine_options =
@@ -61,10 +65,12 @@ namespace MR
       + Option ("affine_repetitions", "number of repetitions with identical settings for each scale level")
         + Argument ("num").type_sequence_int ()
 
+      + Option ("affine_metric",  "Valid choices are: l2 (ordinary least squares), "
+                                  "ncc (normalised cross-correlation) "
+                                  "Default: ordinary least squares")
+        + Argument ("type").type_choice (linear_metric_choices)
 
-      + Option ("affine_cc", "metric: use cross correlation. default: least squares")
-
-      + Option ("affine_robust", "metric: use robust estimator. default: false");
+      + Option ("affine_robust", "use robust estimator. default: false");
 
 
     const OptionGroup syn_options =

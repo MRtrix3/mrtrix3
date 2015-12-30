@@ -139,7 +139,7 @@ void run ()
   const auto im2_header = Header::open (argument[1]);
 
   if (im1_header.ndim() != im2_header.ndim())
-    throw Exception ("input images to not have the same number of dimensions");
+    throw Exception ("input images do not have the same number of dimensions");
 
   Image<value_type> im1_image;
   Image<value_type> im2_image;
@@ -335,7 +335,6 @@ void run ()
     affine_repetition_factors = parse_ints (opt[0][0]);
   }
 
-
   opt = get_options ("rigid_smooth_factor");
   std::vector<default_type> rigid_smooth_factor(1,1.0);
   if (opt.size ()) {
@@ -360,8 +359,36 @@ void run ()
     affine_loop_density = parse_floats (opt[0][0]);
   }
 
-  bool rigid_cc = get_options ("rigid_cc").size() == 1;
-  bool affine_cc = get_options ("affine_cc").size() == 1;
+  opt = get_options ("rigid_metric");
+  Registration::LinearMetricType rigid_metric = Registration::L2;
+  if (opt.size()) {
+    switch ((int)opt[0][0]){
+      case 0:
+        rigid_metric = Registration::L2;
+        break;
+      case 1:
+        rigid_metric = Registration::NCC;
+        break;
+      default:
+        break;
+    }
+  }
+
+  opt = get_options ("affine_metric");
+  Registration::LinearMetricType affine_metric = Registration::L2;
+  if (opt.size()) {
+    switch ((int)opt[0][0]){
+      case 0:
+        affine_metric = Registration::L2;
+        break;
+      case 1:
+        affine_metric = Registration::NCC;
+        break;
+      default:
+        break;
+    }
+  }
+
   bool affine_robust_estimator = get_options ("affine_robust").size() == 1;
 
   opt = get_options ("syn_scale");
@@ -518,12 +545,12 @@ void run ()
 
 
     if (im2_image.ndim() == 4) {
-      if (rigid_cc)
-        throw Exception ("rigid cross correlation not implemted for data with more than 3 dimensions");
+      if (rigid_metric == Registration::NCC)
+        throw Exception ("rigid cross correlation not implemented for data with more than 3 dimensions");
       Registration::Metric::MeanSquared4D metric;
       rigid_registration.run_masked (metric, rigid, im1_image, im2_image, im1_mask, im2_mask);
     } else {
-      if (rigid_cc){
+      if (rigid_metric == Registration::NCC){
         std::vector<size_t> extent(3,3);
         rigid_registration.set_extent(extent);
         Registration::Metric::CrossCorrelation metric;
@@ -569,12 +596,12 @@ void run ()
 
 
     if (im2_image.ndim() == 4) {
-      if (affine_cc)
+      if (affine_metric == Registration::NCC)
         throw Exception ("affine cross correlation not implemented for data with more than 3 dimensions");
       Registration::Metric::MeanSquared4D metric;
       affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
     } else {
-      if (affine_cc){
+      if (affine_metric == Registration::NCC){
         Registration::Metric::CrossCorrelation metric;
         std::vector<size_t> extent(3,3);
         affine_registration.set_extent (extent);
