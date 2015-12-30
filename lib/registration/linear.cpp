@@ -72,6 +72,7 @@ namespace MR
         + Argument ("type").type_choice (linear_metric_choices)
 
       + Option ("affine_robust_estimator", "Valid choices are: "
+                                  "l1 (least absolute: |x|), "
                                   "l2 (ordinary least squares), "
                                   "lp (least powers: |x|^1.2), "
                                   "Default: l2")

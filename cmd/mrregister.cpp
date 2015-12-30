@@ -391,13 +391,16 @@ void run ()
   }
 
   opt = get_options ("affine_robust_estimator");
-  Registration::LinearRobustMetricEstimatorType affine_estimator = Registration::L2;
+  Registration::LinearRobustMetricEstimatorType affine_estimator = Registration::None;
   if (opt.size()) {
     switch ((int)opt[0][0]){
       case 0:
-        affine_estimator = Registration::ForceL2;
+        affine_estimator = Registration::L1;
         break;
       case 1:
+        affine_estimator = Registration::L2;
+        break;
+      case 2:
         affine_estimator = Registration::LP;
         break;
       default:
@@ -614,7 +617,7 @@ void run ()
     if (im2_image.ndim() == 4) {
       if (affine_metric == Registration::NCC)
         throw Exception ("cross correlation metric not implemented for data with more than 3 dimensions");
-      if (affine_estimator != Registration::L2) {
+      if (affine_estimator != Registration::None) {
         throw Exception ("robust metric not implemented for data with more than 3 dimensions");
       }
       Registration::Metric::MeanSquared4D metric;
@@ -627,10 +630,14 @@ void run ()
         affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
       }
       else if (affine_metric == Registration::Diff) {
-        if (affine_estimator == Registration::L2) {
+        if (affine_estimator == Registration::None) {
           Registration::Metric::MeanSquared metric;
           affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
-        } else if (affine_estimator == Registration::ForceL2) {
+        } else if (affine_estimator == Registration::L1) {
+          Registration::Metric::L1 estimator;
+          Registration::Metric::DifferenceRobust<Registration::Metric::L1> metric(estimator);
+          affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
+        } else if (affine_estimator == Registration::L2) {
           Registration::Metric::L2 estimator;
           Registration::Metric::DifferenceRobust<Registration::Metric::L2> metric(estimator);
           affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);

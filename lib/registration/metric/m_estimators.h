@@ -25,10 +25,26 @@
 
 namespace MR
 {
+ namespace Math
+ {
+    template <typename T> inline int sgn(T val) {
+      return (T(0) < val) - (val < T(0));
+    }
+ }
   namespace Registration
   {
     namespace Metric
     {
+      class L1 {
+        public:
+          void operator() (const default_type x,
+                           default_type& residual,
+                           default_type& slope) {
+            residual = std::abs(x);
+            slope = Math::sgn(x);
+          }
+      };
+
       class L2 {
         public:
           void operator() (const default_type x,
@@ -39,20 +55,21 @@ namespace MR
           }
       };
 
-
+      // least powers: residual = |x|^power with power between 1 and 2
       class LP {
         public:
-          template <typename T> inline int sgn(T val) {
-              return (T(0) < val) - (val < T(0));
-            }
+          LP (const default_type p) : power(p) {assert (power>=1.0 && power <= 2.0);}
+          LP () : power(1.2) {}
 
           void operator() (const default_type x,
                            default_type& residual,
-                           default_type& slope,
-                           const default_type power = 1.2) {
+                           default_type& slope) {
             residual = std::pow(std::abs(x), power);
-            slope = sgn(x) * std::pow(std::abs(x), power - 1.0);
+            slope = Math::sgn(x) * std::pow(std::abs(x), power - 1.0);
           }
+
+        private:
+          default_type power;
       };
     }
   }

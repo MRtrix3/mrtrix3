@@ -58,10 +58,10 @@ namespace MR
     extern const App::OptionGroup fod_options;
 
     enum LinearMetricType {Diff, NCC};
-    enum LinearRobustMetricEstimatorType {L2, LP, ForceL2};
+    enum LinearRobustMetricEstimatorType {L1, L2, LP, None};
 
     const char* linear_metric_choices[] = { "diff", "ncc", NULL };
-    const char* linear_robust_estimator_choices[] = { "l2", "lp", NULL };
+    const char* linear_robust_estimator_choices[] = { "l1", "l2", "lp", NULL };
 
     class Linear
     {
