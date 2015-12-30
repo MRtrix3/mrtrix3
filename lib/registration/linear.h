@@ -57,7 +57,7 @@ namespace MR
     extern const App::OptionGroup initialisation_options;
     extern const App::OptionGroup fod_options;
 
-    enum LinearMetricType {L2, NCC};
+    enum LinearMetricType {L2, LP, NCC};
 
     class Linear
     {

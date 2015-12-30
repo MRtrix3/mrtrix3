@@ -32,6 +32,7 @@
 #include "registration/metric/mean_squared.h"
 #include "registration/metric/cross_correlation.h"
 #include "registration/metric/mean_squared_4D.h"
+#include "registration/metric/least_powers.h"
 #include "registration/transform/affine.h"
 #include "registration/transform/rigid.h"
 #include "dwi/directions/predefined.h"
@@ -367,6 +368,9 @@ void run ()
         rigid_metric = Registration::L2;
         break;
       case 1:
+        rigid_metric = Registration::LP;
+        break;
+      case 2:
         rigid_metric = Registration::NCC;
         break;
       default:
@@ -382,6 +386,9 @@ void run ()
         affine_metric = Registration::L2;
         break;
       case 1:
+        affine_metric = Registration::LP;
+        break;
+      case 2:
         affine_metric = Registration::NCC;
         break;
       default:
@@ -546,7 +553,9 @@ void run ()
 
     if (im2_image.ndim() == 4) {
       if (rigid_metric == Registration::NCC)
-        throw Exception ("rigid cross correlation not implemented for data with more than 3 dimensions");
+        throw Exception ("cross correlation metric not implemented for data with more than 3 dimensions");
+      if (rigid_metric == Registration::LP)
+        throw Exception ("least powers metric not implemented for data with more than 3 dimensions");
       Registration::Metric::MeanSquared4D metric;
       rigid_registration.run_masked (metric, rigid, im1_image, im2_image, im1_mask, im2_mask);
     } else {
@@ -554,6 +563,10 @@ void run ()
         std::vector<size_t> extent(3,3);
         rigid_registration.set_extent(extent);
         Registration::Metric::CrossCorrelation metric;
+        rigid_registration.run_masked (metric, rigid, im1_image, im2_image, im1_mask, im2_mask);
+      }
+      else if (rigid_metric == Registration::LP) {
+        Registration::Metric::LeastPowers metric;
         rigid_registration.run_masked (metric, rigid, im1_image, im2_image, im1_mask, im2_mask);
       }
       else {
@@ -597,7 +610,9 @@ void run ()
 
     if (im2_image.ndim() == 4) {
       if (affine_metric == Registration::NCC)
-        throw Exception ("affine cross correlation not implemented for data with more than 3 dimensions");
+        throw Exception ("cross correlation metric not implemented for data with more than 3 dimensions");
+      if (affine_metric == Registration::LP)
+        throw Exception ("least powers metric not implemented for data with more than 3 dimensions");
       Registration::Metric::MeanSquared4D metric;
       affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
     } else {
@@ -607,7 +622,10 @@ void run ()
         affine_registration.set_extent (extent);
         affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
       }
-      else {
+      else if (affine_metric == Registration::LP) {
+        Registration::Metric::LeastPowers metric;
+        affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
+      } else {
         Registration::Metric::MeanSquared metric;
         affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
       }

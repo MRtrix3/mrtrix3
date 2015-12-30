@@ -8,7 +8,7 @@ namespace MR
     using namespace App;
 
     const char* initialisation_choices[] = { "mass", "geometric", "moments", "linear", "none", NULL };
-    const char* linear_metric_choices[] = { "l2", "ncc", NULL };
+    const char* linear_metric_choices[] = { "l2", "lp", "ncc", NULL };
 
     const OptionGroup rigid_options =
       OptionGroup ("Rigid registration options")
@@ -28,6 +28,7 @@ namespace MR
         + Argument ("num").type_sequence_float ()
 
       + Option ("rigid_metric",  "Valid choices are: l2 (ordinary least squares), "
+                                  "lp (least powers: |x|^1.2), "
                                   "ncc (normalised cross-correlation) "
                                   "Default: ordinary least squares")
         + Argument ("type").type_choice (linear_metric_choices);
@@ -66,6 +67,7 @@ namespace MR
         + Argument ("num").type_sequence_int ()
 
       + Option ("affine_metric",  "Valid choices are: l2 (ordinary least squares), "
+                                  "lp (least powers: |x|^1.2), "
                                   "ncc (normalised cross-correlation) "
                                   "Default: ordinary least squares")
         + Argument ("type").type_choice (linear_metric_choices)
