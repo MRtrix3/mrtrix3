@@ -204,7 +204,7 @@ namespace MR
             const VectorType& parameter_vector,
             const default_type& weiszfeld_precision = 1.0e-6,
             const size_t& weiszfeld_iterations = 1000,
-            default_type& learning_rate = 1.0) const {
+            default_type learning_rate = 1.0) const {
             assert (gradient.size()==12);
             size_t n_estimates = grad_estimates.size();
             assert (n_estimates>1);
