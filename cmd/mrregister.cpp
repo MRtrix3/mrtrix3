@@ -19,7 +19,7 @@
  along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
  */
-// #define REGISTRATION_GRADIENT_DESCENT_DEBUG
+#define REGISTRATION_GRADIENT_DESCENT_DEBUG
 
 #include "command.h"
 #include "image.h"
@@ -205,20 +205,22 @@ void run ()
     std::vector<Eigen::Transform<double, 3, Eigen::AffineCompact>> void_trafo;
     auto padding = Eigen::Matrix<double, 4, 1>(1.0, 1.0, 1.0, 1.0);
     value_type resolution = 1.0;
-    auto mid_way_image = compute_minimum_average_header<double,Eigen::Transform<double, 3, Eigen::AffineCompact>>(headers, resolution, padding, void_trafo);
+    auto midway_image = compute_minimum_average_header<double,Eigen::Transform<double, 3, Eigen::AffineCompact>>(headers, resolution, padding, void_trafo);
 
-    auto image1_midway_header = mid_way_image;
+    auto image1_midway_header = midway_image;
     image1_midway_header.datatype() = DataType::from_command_line (DataType::Float32);
     image1_midway_header.set_ndim(im1_image.ndim());
     for (size_t dim = 3; dim < im1_image.ndim(); ++dim){
       image1_midway_header.spacing(dim) = im1_image.spacing(dim);
+      image1_midway_header.size(dim) = im1_image.size(dim);
     }
     image1_midway = Image<value_type>::create (opt[0][0], image1_midway_header);
-    auto image2_midway_header = mid_way_image;
+    auto image2_midway_header = midway_image;
     image2_midway_header.datatype() = DataType::from_command_line (DataType::Float32);
     image2_midway_header.set_ndim(im2_image.ndim());
     for (size_t dim = 3; dim < im2_image.ndim(); ++dim){
       image2_midway_header.spacing(dim) = im2_image.spacing(dim);
+      image2_midway_header.size(dim) = im2_image.size(dim);
     }
     image2_midway = Image<value_type>::create (opt[0][1], image2_midway_header);
   }
