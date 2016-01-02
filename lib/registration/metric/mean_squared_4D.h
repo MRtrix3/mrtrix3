@@ -23,6 +23,7 @@
 #ifndef __registration_metric_mean_squared_4D_h__
 #define __registration_metric_mean_squared_4D_h__
 
+#include "math/math.h"
 
 namespace MR
 {
@@ -39,36 +40,32 @@ namespace MR
                                    const Eigen::Vector3 im2_point,
                                    const Eigen::Vector3 midway_point,
                                    Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
-            Eigen::MatrixXd jacobian = params.transformation.get_jacobian_wrt_params (midway_point);
 
-            Eigen::Matrix<typename Params::Im1ValueType, Eigen::Dynamic, 3> im1_grad;
-            Eigen::Matrix<typename Params::Im2ValueType, Eigen::Dynamic, 3> im2_grad;
-            Eigen::Matrix<typename Params::Im1ValueType, Eigen::Dynamic, 1> im1_value;
-            Eigen::Matrix<typename Params::Im2ValueType, Eigen::Dynamic, 1> im2_value;
+            Eigen::Matrix<typename Params::Im1ValueType, Eigen::Dynamic, 3> im1_grad, im2_grad;
+            Eigen::Matrix<typename Params::Im1ValueType, Eigen::Dynamic, 1> im1_values, im2_values, diff_values;
 
+            params.im1_image_interp->value_and_gradient_row (im1_values, im1_grad);
+            if (im1_values.hasNaN())
+              return 0.0;
 
-            params.im1_image_interp->value_and_gradient_row (im1_value, im1_grad);
-            params.im2_image_interp->value_and_gradient_row (im2_value, im2_grad);
-            for (ssize_t i = 0; i < params.im1_image.size(3); ++i) {
-              if (isnan (default_type (im1_value[i])))
-                return 0.0;
-              if (isnan (default_type (im2_value[i])))
-                return 0.0;
+            const ssize_t volumes = im1_values.size();
+            assert (volumes > 1);
+
+            params.im2_image_interp->value_and_gradient_row (im2_values, im2_grad);
+            if (im2_values.hasNaN())
+              return 0.0;
+
+            const auto jacobian_vec = params.transformation.get_jacobian_vector_wrt_params (midway_point);
+            diff_values = im1_values - im2_values;
+
+            for (ssize_t i = 0; i < volumes; ++i) {
+              const Eigen::Vector3d g = diff_values[i] * (im1_grad.row(i) + im2_grad.row(i));
+              gradient.segment<4>(0) += g(0) * jacobian_vec;
+              gradient.segment<4>(4) += g(1) * jacobian_vec;
+              gradient.segment<4>(8) += g(2) * jacobian_vec;
             }
 
-            default_type total_diff = 0.0;
-            for (ssize_t i = 0; i < params.im1_image.size(3); ++i) {
-
-              default_type diff = im1_value[i] - im2_value[i];
-              total_diff += diff * diff;
-              for (ssize_t par = 0; par < gradient.size(); par++) {
-                default_type sum = 0.0;
-                for (size_t dim = 0; dim < 3; dim++)
-                  sum += diff * jacobian (dim, par) * (im1_grad(i, dim) + im2_grad(i, dim));
-                gradient[par] += sum / (default_type)params.im1_image.size(3);
-              }
-            }
-            return total_diff / (default_type)params.im1_image.size(3);
+            return diff_values.squaredNorm() / (default_type)volumes;
         }
       };
     }
