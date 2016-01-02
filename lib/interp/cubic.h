@@ -577,7 +577,7 @@ namespace MR
             gradient.noalias() = grad_and_value.block(0,0,ImageType::size(3),3) * wrt_scanner_transform;
           else
             gradient = grad_and_value.block(0,0,ImageType::size(3),3);
-          value = grad_and_value.block(0,0,ImageType::size(3),1);
+          value = grad_and_value.col(3);
         }
 
 
