@@ -43,6 +43,17 @@ namespace MR
             residual = std::abs(x);
             slope = Math::sgn(x);
           }
+
+          void operator() (const Eigen::Matrix<default_type, Eigen::Dynamic, 1> x,
+                           Eigen::Matrix<default_type, Eigen::Dynamic, 1>& residual,
+                           Eigen::Matrix<default_type, Eigen::Dynamic, 1>& slope) {
+            const ssize_t len = x.size();
+            residual = x.cwiseAbs();
+            slope.resize(len);
+            for (ssize_t i = 0; i < len; ++i){
+              slope[i] = Math::sgn(x[i]);
+            }
+          }
       };
 
       class L2 {
@@ -51,6 +62,13 @@ namespace MR
                            default_type& residual,
                            default_type& slope) {
             residual = x * x;
+            slope = x;
+          }
+
+          void operator() (const Eigen::Matrix<default_type, Eigen::Dynamic, 1> x,
+                           Eigen::Matrix<default_type, Eigen::Dynamic, 1>& residual,
+                           Eigen::Matrix<default_type, Eigen::Dynamic, 1>& slope) {
+            residual = x.cwiseAbs2(); //.squaredNorm(); //.array().square();
             slope = x;
           }
       };
@@ -66,6 +84,17 @@ namespace MR
                            default_type& slope) {
             residual = std::pow(std::abs(x), power);
             slope = Math::sgn(x) * std::pow(std::abs(x), power - 1.0);
+          }
+
+          void operator() (const Eigen::Matrix<default_type, Eigen::Dynamic, 1> x,
+                           Eigen::Matrix<default_type, Eigen::Dynamic, 1>& residual,
+                           Eigen::Matrix<default_type, Eigen::Dynamic, 1>& slope) {
+            residual = x.cwiseAbs().array().pow(power);
+            slope = x.cwiseAbs().array().pow(power -1.0);
+            const ssize_t len = x.size();
+            for (ssize_t i = 0; i < len; ++i){
+              slope[i] *= Math::sgn(x[i]);
+            }
           }
 
         private:
