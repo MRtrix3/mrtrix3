@@ -31,6 +31,7 @@
 #include "registration/metric/syn_demons.h"
 #include "registration/metric/mean_squared.h"
 #include "registration/metric/difference_robust.h"
+#include "registration/metric/difference_robust_4D.h"
 #include "registration/metric/cross_correlation.h"
 #include "registration/metric/mean_squared_4D.h"
 #include "registration/transform/affine.h"
@@ -619,12 +620,25 @@ void run ()
     if (im2_image.ndim() == 4) {
       if (affine_metric == Registration::NCC)
         throw Exception ("cross correlation metric not implemented for data with more than 3 dimensions");
-      if (affine_estimator != Registration::None) {
-        throw Exception ("robust metric not implemented for data with more than 3 dimensions");
-      }
-      Registration::Metric::MeanSquared4D metric;
-      affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
-    } else {
+      else if (affine_metric == Registration::Diff) {
+        if (affine_estimator == Registration::None) {
+          Registration::Metric::MeanSquared4D metric;
+          affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
+        } else if (affine_estimator == Registration::L1) {
+          Registration::Metric::L1 estimator;
+          Registration::Metric::DifferenceRobust4D<Registration::Metric::L1> metric(estimator);
+          affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
+        } else if (affine_estimator == Registration::L2) {
+          Registration::Metric::L2 estimator;
+          Registration::Metric::DifferenceRobust4D<Registration::Metric::L2> metric(estimator);
+          affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
+        } else if (affine_estimator == Registration::LP) {
+          Registration::Metric::LP estimator;
+          Registration::Metric::DifferenceRobust4D<Registration::Metric::LP> metric(estimator);
+          affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
+        } else throw Exception ("FIXME: estimator selection");
+      } else throw Exception ("FIXME: metric selection");
+    } else { // 3D
       if (affine_metric == Registration::NCC){
         Registration::Metric::CrossCorrelation metric;
         std::vector<size_t> extent(3,3);
@@ -647,9 +661,8 @@ void run ()
           Registration::Metric::LP estimator;
           Registration::Metric::DifferenceRobust<Registration::Metric::LP> metric(estimator);
           affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
-        }
-        else throw Exception ("FIXME: estimator selection");
-      }
+        } else throw Exception ("FIXME: estimator selection");
+      } else throw Exception ("FIXME: metric selection");
     }
 
 
