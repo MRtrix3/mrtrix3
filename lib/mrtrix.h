@@ -255,13 +255,13 @@ namespace MR
     if (stream.eof())
       return cfloat (real, 0.0f);
 
-    if (stream.peek() == 'i')
+    if (stream.peek() == 'i' || stream.peek() == 'j')
       return cfloat (0.0f, real);
 
     stream >> imag;
     if (stream.fail()) 
       return cfloat (real, 0.0f);
-    else if (stream.peek() != 'i')
+    else if (stream.peek() != 'i' && stream.peek() != 'j')
       throw Exception ("error converting string \"" + string + "\"");
     return cfloat (real, imag);
   }
@@ -293,13 +293,13 @@ namespace MR
     if (stream.eof())
       return cdouble (real, 0.0);
 
-    if (stream.peek() == 'i') 
+    if (stream.peek() == 'i' || stream.peek() == 'j') 
       return cdouble (0.0, real);
 
     stream >> imag;
     if (stream.fail()) 
       return cdouble (real, 0.0);
-    else if (stream.peek() != 'i')
+    else if (stream.peek() != 'i' && stream.peek() != 'j')
       throw Exception ("error converting string \"" + string + "\"");
     return cdouble (real, imag);
   }
