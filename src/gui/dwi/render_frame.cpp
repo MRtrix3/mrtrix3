@@ -74,7 +74,7 @@ namespace MR
         Eigen::Matrix<float, 3, 3> M = Eigen::Matrix<float, 3, 3>::Zero();
         for (size_t i = 0; i != 3; ++i) {
           for (size_t j = 0; j != 3; ++j)
-            M(i,j) = rotation(i,j);
+            M(i,j) = rotation(j,i);
         }
         orientation = Math::Versorf (M);
         update();
