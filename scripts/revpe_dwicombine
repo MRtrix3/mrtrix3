@@ -28,6 +28,7 @@ from lib.errorMessage  import errorMessage
 from lib.getFSLSuffix  import getFSLSuffix
 from lib.getHeaderInfo import getHeaderInfo
 from lib.getPEAxis     import getPEAxis
+from lib.isWindows     import isWindows
 from lib.printMessage  import printMessage
 from lib.runCommand    import runCommand
 from lib.warnMessage   import warnMessage
@@ -39,6 +40,9 @@ lib.app.parser.add_argument('series1', help='The first input image series')
 lib.app.parser.add_argument('series2', help='The second input image series')
 lib.app.parser.add_argument('output',  help='The output image series')
 lib.app.initialise()
+
+if isWindows():
+  errorMessage('Script cannot run on Windows due to FSL dependency')
 
 fsl_path = os.environ.get('FSLDIR', '')
 if not fsl_path:
