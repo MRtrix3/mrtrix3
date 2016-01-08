@@ -213,21 +213,22 @@ class StackEntry {
       if (search != image_list.end()) {
         DEBUG (std::string ("image \"") + arg + "\" already loaded - re-using exising image");
         image = search->second;
-        return;
       }
-      try {
-        image.reset (new Image<complex_type> (Header::open (arg).get_image<complex_type>()));
-        image_list.insert (std::make_pair (arg, image));
-      }
-      catch (Exception) {
-        std::string a = lowercase (arg);
-        if      (a ==  "nan")  { value =  std::numeric_limits<real_type>::quiet_NaN(); }
-        else if (a == "-nan")  { value = -std::numeric_limits<real_type>::quiet_NaN(); }
-        else if (a ==  "inf")  { value =  std::numeric_limits<real_type>::infinity(); }
-        else if (a == "-inf")  { value = -std::numeric_limits<real_type>::infinity(); }
-        else if (a == "rand")  { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = false; } 
-        else if (a == "randn") { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = true; } 
-        else                   { value =  to<complex_type> (arg); }
+      else {
+        try {
+          image.reset (new Image<complex_type> (Header::open (arg).get_image<complex_type>()));
+          image_list.insert (std::make_pair (arg, image));
+        }
+        catch (Exception) {
+          std::string a = lowercase (arg);
+          if      (a ==  "nan")  { value =  std::numeric_limits<real_type>::quiet_NaN(); }
+          else if (a == "-nan")  { value = -std::numeric_limits<real_type>::quiet_NaN(); }
+          else if (a ==  "inf")  { value =  std::numeric_limits<real_type>::infinity(); }
+          else if (a == "-inf")  { value = -std::numeric_limits<real_type>::infinity(); }
+          else if (a == "rand")  { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = false; } 
+          else if (a == "randn") { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = true; } 
+          else                   { value =  to<complex_type> (arg); }
+        }
       }
       arg = nullptr;
     }
@@ -470,7 +471,7 @@ void unary_operation (const std::string& operation_name, std::vector<StackEntry>
   StackEntry& a (stack[stack.size()-1]);
   a.load();
   if (a.evaluator || a.image) {
-    StackEntry entry (new UnaryEvaluator<Operation> (operation_name, operation, stack.back()));
+    StackEntry entry (new UnaryEvaluator<Operation> (operation_name, operation, a));
     stack.back() = entry;
   }
   else {
@@ -497,7 +498,7 @@ void binary_operation (const std::string& operation_name, std::vector<StackEntry
   a.load();
   b.load();
   if (a.evaluator || a.image || b.evaluator || b.image) {
-    StackEntry entry (new BinaryEvaluator<Operation> (operation_name, operation, stack[stack.size()-2], stack[stack.size()-1]));
+    StackEntry entry (new BinaryEvaluator<Operation> (operation_name, operation, a, b));
     stack.pop_back();
     stack.back() = entry;
   }
@@ -524,7 +525,7 @@ void ternary_operation (const std::string& operation_name, std::vector<StackEntr
   b.load();
   c.load();
   if (a.evaluator || a.image || b.evaluator || b.image || c.evaluator || c.image) {
-    StackEntry entry (new TernaryEvaluator<Operation> (operation_name, operation, stack[stack.size()-3], stack[stack.size()-2], stack[stack.size()-1]));
+    StackEntry entry (new TernaryEvaluator<Operation> (operation_name, operation, a, b, c));
     stack.pop_back();
     stack.pop_back();
     stack.back() = entry;
@@ -642,13 +643,29 @@ class ThreadFunctor {
 
 void run_operations (const std::vector<StackEntry>& stack) 
 {
-  if (!stack[1].arg)
-    throw Exception (std::string ("error opening output image \"") + stack[1].arg + "\"!");
-
   Header header;
   get_header (stack[0], header);
-  if (header.ndim() == 0)
-    throw Exception ("no valid images supplied - cannot produce output image");
+
+  if (header.ndim() == 0) {
+    DEBUG ("no valid images supplied - assuming calculator mode");
+    if (stack.size() != 1) 
+      throw Exception ("too many operands left on stack!");
+
+    assert (!stack[0].evaluator);
+    assert (!stack[0].image);
+
+    print (str (stack[0].value) + "\n");
+    return;
+  }
+
+  if (stack.size() == 1) 
+    throw Exception ("output image not specified");
+
+  if (stack.size() > 2) 
+    throw Exception ("too many operands left on stack!");
+
+  if (!stack[1].arg)
+    throw Exception ("output image not specified");
 
   if (stack[0].is_complex()) {
     header.datatype() = DataType::from_command_line (DataType::CFloat32);
@@ -1096,21 +1113,8 @@ void run () {
 
   }
 
-  //print_stack( stack);
-
-  if (stack.size() == 1) {
-    if (stack[0].evaluator || stack[0].image) 
-      throw Exception ("output image not specified");
-    print (str(stack[0].value) + "\n");
-    return;
-  }
-
-  if (stack.size() == 2) {
-    run_operations (stack);
-    return;
-  }
-
-  throw Exception ("stack is not empty!");
+  stack[0].load();
+  run_operations (stack);
 }
 
 
