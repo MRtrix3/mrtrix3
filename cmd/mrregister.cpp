@@ -542,6 +542,9 @@ void run ()
         init_centre != Registration::Transform::Init::none))
     WARN("affine_init option will be overwritten by centre option. Use -centre linear to use transformation file.");
 
+  opt = get_options ("global_init_search");
+  bool global_init_search = opt.size();
+
   Eigen::MatrixXd directions_az_el;
   opt = get_options ("directions");
   if (opt.size())
@@ -564,6 +567,9 @@ void run ()
       rigid_registration.set_init_type (Registration::Transform::Init::none);
     else
       rigid_registration.set_init_type (init_centre);
+
+    if (global_init_search)
+      rigid_registration.use_global_search(true);
 
 
     if (im2_image.ndim() == 4) {
@@ -615,6 +621,9 @@ void run ()
 
     if (do_reorientation)
       affine_registration.set_directions (directions_cartesian);
+
+    if (global_init_search)
+      affine_registration.use_global_search(true);
 
 
     if (im2_image.ndim() == 4) {

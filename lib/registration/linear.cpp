@@ -121,7 +121,9 @@ namespace MR
       + Option ("centre", "for rigid and affine registration only: Initialise the centre of rotation and initial translation. "
                           "Valid choices are: mass (which uses the image center of mass), geometric (geometric image centre), moments (image moments), linear (from linear transformation file specified via rigid_init or affine_init) or none. "
                           "Default: mass (which may not be suited for multi-modality registration).")
-        + Argument ("type").type_choice (initialisation_choices);
+        + Argument ("type").type_choice (initialisation_choices)
+
+      + Option ("global_init_search", "perform global search" );
 
 
 
