@@ -168,10 +168,10 @@ namespace MR
             for (ssize_t y = 0; y < 2; ++y) {
               value_type partial_weight = y_weights[y] * z_weights[z];
               for (ssize_t x = 0; x < 2; ++x) {
-                weights_vec[i] = x_weights[x] * partial_weight;
+                factors[i] = x_weights[x] * partial_weight;
 
-                if (weights_vec[i] < eps)
-                  weights_vec[i] = 0.0;
+                if (factors[i] < eps)
+                  factors[i] = 0.0;
 
                 ++i;
               }
@@ -215,7 +215,7 @@ namespace MR
             }
           }
 
-          return coeff_vec.dot (weights_vec);
+          return coeff_vec.dot (factors);
         }
 
         //! Read interpolated values from volumes along axis >= 3
@@ -244,11 +244,11 @@ namespace MR
             }
           }
 
-          return coeff_matrix * weights_vec;
+          return coeff_matrix * factors;
         }
 
       protected:
-        Eigen::Matrix<value_type, 8, 1> weights_vec;
+        Eigen::Matrix<value_type, 8, 1> factors;
     };
 
 
