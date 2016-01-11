@@ -13,14 +13,11 @@
  * 
  */
 
-
 #ifndef __interp_linear_h__
 #define __interp_linear_h__
 
 #include <complex>
 #include <type_traits>
-
-#include <Eigen/Core>
 
 #include "datatype.h"
 #include "types.h"
@@ -45,7 +42,7 @@ namespace MR
      * \code
      * auto voxel = image_buffer.voxel();
      *
-     * auto input = Image<float>::create (Argument[0]);
+     * auto input = Image<float>::create (argument[0]);
      *
      * // create an Interp::Linear object using input as the parent data set:
      * Interp::Linear<decltype(input) > interp (input);
@@ -82,73 +79,237 @@ namespace MR
       typedef X type;
     };
 
-    template <class ImageType>
-      class Linear : public Base<ImageType>
+    enum LinearInterpProcessingType
+    {
+      Value = 1,
+      Derivative = 2,
+      ValueAndDerivative = Value | Derivative
+    };
+
+    // To avoid unnecessary computation, we want to partially specialize our template based
+    // on processing type (value/gradient or both), however each specialization has common core logic
+    // which we store in LinearInterpBase
+
+    template <class ImageType, LinearInterpProcessingType PType>
+    class LinearInterpBase : public Base<ImageType>
     {
       public:
-        using typename Base<ImageType>::value_type;
+        typedef typename ImageType::value_type value_type;
+        typedef typename value_type_of<value_type>::type coef_type;
 
         using Base<ImageType>::bounds;
         using Base<ImageType>::index;
         using Base<ImageType>::out_of_bounds;
         using Base<ImageType>::out_of_bounds_value;
 
-        typedef typename value_type_of<value_type>::type coef_type;
-
-        Linear (const ImageType& parent, value_type value_when_out_of_bounds = Base<ImageType>::default_out_of_bounds_value()) :
+        LinearInterpBase (const ImageType& parent, value_type value_when_out_of_bounds = Base<ImageType>::default_out_of_bounds_value()) :
             Base<ImageType> (parent, value_when_out_of_bounds),
             zero (0.0),
             eps (1.0e-6) { }
+
+      protected:
+        const coef_type zero, eps;
+        Eigen::Vector3 P;
+
+        ssize_t clamp (ssize_t x, ssize_t dim) const {
+          if (x < 0) return 0;
+          if (x >= dim) return (dim-1);
+          return x;
+        }
+    };
+
+
+    template <class ImageType, LinearInterpProcessingType PType>
+    class LinearInterp : public LinearInterpBase <ImageType, PType>
+    {
+      private:
+        LinearInterp ();
+    };
+
+
+    // Specialization of LinearInterp when we're only after interpolated values
+
+    template <class ImageType>
+    class LinearInterp<ImageType, LinearInterpProcessingType::Value>:
+        public LinearInterpBase<ImageType, LinearInterpProcessingType::Value>
+    {
+      public:
+        using LinearBase = LinearInterpBase<ImageType, LinearInterpProcessingType::Value>;
+
+        typedef typename LinearBase::value_type value_type;
+        using LinearBase::P;
+        using LinearBase::clamp;
+        using LinearBase::bounds;
+        using LinearBase::eps;
+
+        LinearInterp (const ImageType& parent, value_type value_when_out_of_bounds = Base<ImageType>::default_out_of_bounds_value()) :
+            LinearInterpBase <ImageType, LinearInterpProcessingType::Value> (parent, value_when_out_of_bounds)
+        { }
+
+        //! Set the current position to <b>voxel space</b> position \a pos
+        /*! See file interp/base.h for details. */
+        template <class VectorType>
+        bool voxel (const VectorType& pos) {
+          Eigen::Vector3 f = Base<ImageType>::intravoxel_offset (pos);
+          if (Base<ImageType>::out_of_bounds)
+            return false;
+          P = pos;
+          for (size_t i = 0; i < 3; ++i) {
+            if (pos[i] < 0.0 || pos[i] > bounds[i]-0.5)
+              f[i] = 0.0;
+          }
+
+          value_type x_weights[2] = {1 - f[0], f[0]};
+          value_type y_weights[2] = {1 - f[1], f[1]};
+          value_type z_weights[2] = {1 - f[2], f[2]};
+
+          size_t i(0);
+          for (ssize_t z = 0; z < 2; ++z) {
+            for (ssize_t y = 0; y < 2; ++y) {
+              value_type partial_weight = y_weights[y] * z_weights[z];
+              for (ssize_t x = 0; x < 2; ++x) {
+                weights_vec[i] = x_weights[x] * partial_weight;
+
+                if (weights_vec[i] < eps)
+                  weights_vec[i] = 0.0;
+
+                ++i;
+              }
+            }
+          }
+
+          return true;
+        }
+
+        //! Set the current position to <b>voxel space</b> position \a pos
+        /*! See file interp/base.h for details. */
+        template <class VectorType>
+        FORCE_INLINE bool image (const VectorType& pos) {
+          return voxel (Transform::voxelsize.inverse() * pos.template cast<default_type>());
+        }
+
+        //! Set the current position to <b>scanner space</b> position \a pos
+        /*! See file interp/base.h for details. */
+        template <class VectorType>
+        FORCE_INLINE bool scanner (const VectorType& pos) {
+          return voxel (Transform::scanner2voxel * pos.template cast<default_type>());
+        }
+
+        FORCE_INLINE value_type value () {
+          if (Base<ImageType>::out_of_bounds)
+            return Base<ImageType>::out_of_bounds_value;
+
+          ssize_t c[] = { ssize_t (std::floor (P[0])), ssize_t (std::floor (P[1])), ssize_t (std::floor (P[2])) };
+
+          Eigen::Matrix<value_type, 8, 1> coeff_vec;
+
+          size_t i(0);
+          for (ssize_t z = 0; z < 2; ++z) {
+            ImageType::index(2) = clamp (c[2] + z, ImageType::size (2));
+            for (ssize_t y = 0; y < 2; ++y) {
+              ImageType::index(1) = clamp (c[1] + y, ImageType::size (1));
+              for (ssize_t x = 0; x < 2; ++x) {
+                ImageType::index(0) = clamp (c[0] + x, ImageType::size (0));
+                coeff_vec[i++] = ImageType::value ();
+              }
+            }
+          }
+
+          return coeff_vec.dot (weights_vec);
+        }
+
+        //! Read interpolated values from volumes along axis >= 3
+        /*! See file interp/base.h for details. */
+        Eigen::Matrix<value_type, Eigen::Dynamic, 1> row (size_t axis) {
+          if (Base<ImageType>::out_of_bounds) {
+            Eigen::Matrix<value_type, Eigen::Dynamic, 1> out_of_bounds_row (ImageType::size(axis));
+            out_of_bounds_row.setOnes();
+            out_of_bounds_row *= Base<ImageType>::out_of_bounds_value;
+            return out_of_bounds_row;
+          }
+
+          ssize_t c[] = { ssize_t (std::floor (P[0])), ssize_t (std::floor (P[1])), ssize_t (std::floor (P[2])) };
+
+          Eigen::Matrix<value_type, Eigen::Dynamic, 8> coeff_matrix ( ImageType::size(3), 8 );
+
+          size_t i(0);
+          for (ssize_t z = 0; z < 2; ++z) {
+            ImageType::index(2) = clamp (c[2] + z, ImageType::size (2));
+            for (ssize_t y = 0; y < 2; ++y) {
+              ImageType::index(1) = clamp (c[1] + y, ImageType::size (1));
+              for (ssize_t x = 0; x < 2; ++x) {
+                ImageType::index(0) = clamp (c[0] + x, ImageType::size (0));
+                coeff_matrix.col (i++) = ImageType::row (axis);
+              }
+            }
+          }
+
+          return coeff_matrix * weights_vec;
+        }
+
+      protected:
+        Eigen::Matrix<value_type, 8, 1> weights_vec;
+    };
+
+
+    // Specialization of LinearInterp when we're only after interpolated gradients
+
+    template <class ImageType>
+    class LinearInterp<ImageType, LinearInterpProcessingType::Derivative>:
+        public LinearInterpBase<ImageType, LinearInterpProcessingType::Derivative>
+    {
+      public:
+        using LinearBase = LinearInterpBase<ImageType, LinearInterpProcessingType::Derivative>;
+
+        typedef typename LinearBase::value_type value_type;
+        using LinearBase::P;
+        using LinearBase::clamp;
+        using LinearBase::bounds;
+        using LinearBase::voxelsize;
+
+        LinearInterp (const ImageType& parent, value_type value_when_out_of_bounds = Base<ImageType>::default_out_of_bounds_value()) :
+            LinearInterpBase <ImageType, LinearInterpProcessingType::Derivative> (parent, value_when_out_of_bounds),
+            out_of_bounds_vec (value_when_out_of_bounds, value_when_out_of_bounds, value_when_out_of_bounds),
+            wrt_scanner_transform (Transform::scanner2image.linear() * voxelsize.inverse())
+        { }
 
         //! Set the current position to <b>voxel space</b> position \a pos
         /*! See file interp/base.h for details. */
         template <class VectorType>
         bool voxel (const VectorType& pos) {
           Eigen::Vector3 f = Base<ImageType>::intravoxel_offset (pos.template cast<default_type>());
-          if (out_of_bounds)
+          if (Base<ImageType>::out_of_bounds)
             return false;
-
-          if (pos[0] < 0.0) {
-            f[0] = 0.0;
-            index(0) = 0;
-          }
-          else {
-            index(0) = std::floor (pos[0]);
-            if (pos[0] > bounds[0]-0.5) f[0] = 0.0;
-          }
-          if (pos[1] < 0.0) {
-            f[1] = 0.0;
-            index(1) = 0;
-          }
-          else {
-            index(1) = std::floor (pos[1]);
-            if (pos[1] > bounds[1]-0.5) f[1] = 0.0;
+          P = pos;
+          for (size_t i = 0; i < 3; ++i) {
+            if (pos[i] < 0.0 || pos[i] > bounds[i]-0.5)
+              f[i] = 0.0;
           }
 
-          if (pos[2] < 0.0) {
-            f[2] = 0.0;
-            index(2) = 0;
+          value_type x_weights[2] = {value_type(1 - f[0]), value_type(f[0])};
+          value_type y_weights[2] = {value_type(1 - f[1]), value_type(f[1])};
+          value_type z_weights[2] = {value_type(1 - f[2]), value_type(f[2])};
+
+          // For linear interpolation gradient weighting is independent of direction
+          // i.e. Simply looking at finite difference
+          value_type diff_weights[2] = {-0.5, 0.5};
+
+          size_t i(0);
+          for (ssize_t z = 0; z < 2; ++z) {
+            for (ssize_t y = 0; y < 2; ++y) {
+              value_type partial_weight = y_weights[y] * z_weights[z];
+              value_type partial_weight_dy = diff_weights[y] * z_weights[z];
+              value_type partial_weight_dz = y_weights[y] * diff_weights[z];
+
+              for (ssize_t x = 0; x < 2; ++x) {
+                weights_matrix(i,0) = diff_weights[x] * partial_weight;
+                weights_matrix(i,1) = x_weights[x] * partial_weight_dy;
+                weights_matrix(i,2) = x_weights[x] * partial_weight_dz;
+
+                ++i;
+              }
+            }
           }
-          else {
-            index(2) = std::floor (pos[2]);
-            if (pos[2] > bounds[2]-0.5) f[2] = 0.0;
-          }
-
-          Eigen::Vector3 fn = { 1.0-f[0], 1.0-f[1], 1.0-f[2] };
-
-          Eigen::Matrix<coef_type, 8, 3> v;
-          v << fn[0], fn[1], fn[2],
-               fn[0], fn[1], f[2],
-               fn[0], f[1],  f[2],
-               fn[0], f[1],  fn[2],
-               f[0],  f[1],  fn[2],
-               f[0],  fn[1], fn[2],
-               f[0],  fn[1], f[2],
-               f[0],  f[1],  f[2];
-
-          factors = v.rowwise().prod();
-          for (int i = 0; i != 8; ++i)
-            if (factors[i] < eps) factors[i] = 0.0;
 
           return true;
         }
@@ -159,6 +320,7 @@ namespace MR
         FORCE_INLINE bool image (const VectorType& pos) {
           return voxel (Transform::voxelsize.inverse() * pos.template cast<default_type>());
         }
+
         //! Set the current position to the <b>scanner space</b> position \a pos
         /*! See file interp/base.h for details. */
         template <class VectorType>
@@ -166,77 +328,223 @@ namespace MR
           return voxel (Transform::scanner2voxel * pos.template cast<default_type>());
         }
 
-        //! Read an interpolated image value from the current position.
-        /*! See file interp/base.h for details. */
-        FORCE_INLINE value_type value () {
-          if (out_of_bounds)
-            return out_of_bounds_value;
-          Eigen::Matrix<value_type, 8, 1> values = Eigen::Matrix<value_type, 8, 1>::Zero();
-          if (factors[0] != zero) values[0] = value_type (ImageType::value());
-          index(2)++;
-          if (factors[1] != zero) values[1] = value_type (ImageType::value());
-          index(1)++;
-          if (factors[2] != zero) values[2] = value_type (ImageType::value());
-          index(2)--;
-          if (factors[3] != zero) values[3] = value_type (ImageType::value());
-          index(0)++;
-          if (factors[4] != zero) values[4] = value_type (ImageType::value());
-          index(1)--;
-          if (factors[5] != zero) values[5] = value_type (ImageType::value());
-          index(2)++;
-          if (factors[6] != zero) values[6] = value_type (ImageType::value());
-          index(1)++;
-          if (factors[7] != zero) values[7] = value_type (ImageType::value());
-          index(0)--;
-          index(1)--;
-          index(2)--;
-          return values.dot (factors);
-        }
+        //! Returns the image gradient at the current position
+        FORCE_INLINE Eigen::Matrix<value_type, 1, 3> gradient () {
+          if (Base<ImageType>::out_of_bounds)
+            return out_of_bounds_vec;
 
-        //! Read interpolated values from volumes along axis >= 3
-        /*! See file interp/base.h for details. */
-        Eigen::Matrix<value_type, Eigen::Dynamic, 1> row (size_t axis) {
-          assert (axis > 2);
-          assert (axis < ImageType::ndim());
-          if (out_of_bounds) {
-            Eigen::Matrix<value_type, Eigen::Dynamic, 1> out_of_bounds_row (ImageType::size(axis));
-            out_of_bounds_row.setOnes();
-            out_of_bounds_row *= out_of_bounds_value;
-            return out_of_bounds_row;
+          ssize_t c[] = { ssize_t (std::floor (P[0])), ssize_t (std::floor (P[1])), ssize_t (std::floor (P[2])) };
+
+          Eigen::Matrix<value_type, 1, 8> coeff_vec;
+
+          size_t i(0);
+          for (ssize_t z = 0; z < 2; ++z) {
+            ImageType::index(2) = clamp (c[2] + z, ImageType::size (2));
+            for (ssize_t y = 0; y < 2; ++y) {
+              ImageType::index(1) = clamp (c[1] + y, ImageType::size (1));
+              for (ssize_t x = 0; x < 2; ++x) {
+                ImageType::index(0) = clamp (c[0] + x, ImageType::size (0));
+                coeff_vec[i++] = ImageType::value ();
+              }
+            }
           }
 
-          Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> values = Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic>::Zero (ImageType::size (axis), 8);
-          if (factors[0] != zero) values.col(0) = ImageType::row (axis);
-          index(2)++;
-          if (factors[1] != zero) values.col(1) = ImageType::row (axis);
-          index(1)++;
-          if (factors[2] != zero) values.col(2) = ImageType::row (axis);
-          index(2)--;
-          if (factors[3] != zero) values.col(3) = ImageType::row (axis);
-          index(0)++;
-          if (factors[4] != zero) values.col(4) = ImageType::row (axis);
-          index(1)--;
-          if (factors[5] != zero) values.col(5) = ImageType::row (axis);
-          index(2)++;
-          if (factors[6] != zero) values.col(6) = ImageType::row (axis);
-          index(1)++;
-          if (factors[7] != zero) values.col(7) = ImageType::row (axis);
-          index(0)--;
-          index(1)--;
-          index(2)--;
-          return values * factors;
+          return coeff_vec * weights_matrix;
+        }
+
+        //! Returns the image gradient at the current position, defined with respect to the scanner coordinate frame of reference.
+        Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> gradient_wrt_scanner() {
+          return gradient().template cast<default_type>() * wrt_scanner_transform;
+        }
+
+        // Collectively interpolates gradients along axis 3
+        Eigen::Matrix<value_type, Eigen::Dynamic, 3> gradient_row() {
+          if (Base<ImageType>::out_of_bounds) {
+            Eigen::Matrix<value_type, Eigen::Dynamic, 3> out_of_bounds_matrix (ImageType::size(3), 3);
+            out_of_bounds_matrix.setOnes();
+            out_of_bounds_matrix *= Base<ImageType>::out_of_bounds_value;
+            return out_of_bounds_matrix;
+          }
+
+          assert (ImageType::ndim() == 4);
+
+          ssize_t c[] = { ssize_t (std::floor (P[0])), ssize_t (std::floor (P[1])), ssize_t (std::floor (P[2])) };
+
+          Eigen::Matrix<value_type, Eigen::Dynamic, 8> coeff_matrix (ImageType::size(3), 8);
+
+          size_t i(0);
+          for (ssize_t z = 0; z < 2; ++z) {
+            ImageType::index(2) = clamp (c[2] + z, ImageType::size (2));
+            for (ssize_t y = 0; y < 2; ++y) {
+              ImageType::index(1) = clamp (c[1] + y, ImageType::size (1));
+              for (ssize_t x = 0; x < 2; ++x) {
+                ImageType::index(0) = clamp (c[0] + x, ImageType::size (0));
+                coeff_matrix.col (i++) = ImageType::row (3);
+              }
+            }
+          }
+
+          return coeff_matrix * weights_matrix;
+        }
+
+
+        //! Collectively interpolates gradients along axis 3, defined with respect to the scanner coordinate frame of reference.
+        Eigen::Matrix<default_type, Eigen::Dynamic, 3> gradient_row_wrt_scanner() {
+          return gradient_row().template cast<default_type>() * wrt_scanner_transform;
         }
 
       protected:
-        Eigen::Matrix<coef_type, 8, 1> factors;
-
-      private:
-        const coef_type zero, eps;
-
-
+        const Eigen::Matrix<value_type, 1, 3> out_of_bounds_vec;
+        Eigen::Matrix<value_type, 8, 3> weights_matrix;
+        const Eigen::Matrix<default_type, 3, 3> wrt_scanner_transform;
     };
 
 
+
+    // Specialization of LinearInterp when we're after both interpolated gradients and values
+    template <class ImageType>
+    class LinearInterp<ImageType, LinearInterpProcessingType::ValueAndDerivative>:
+        public LinearInterpBase <ImageType, LinearInterpProcessingType::ValueAndDerivative>
+    {
+      public:
+        using LinearBase = LinearInterpBase<ImageType, LinearInterpProcessingType::ValueAndDerivative>;
+
+        typedef typename LinearBase::value_type value_type;
+        using LinearBase::P;
+        using LinearBase::clamp;
+        using LinearBase::bounds;
+
+        LinearInterp (const ImageType& parent, value_type value_when_out_of_bounds = Base<ImageType>::default_out_of_bounds_value()) :
+          LinearInterpBase <ImageType, LinearInterpProcessingType::ValueAndDerivative> (parent, value_when_out_of_bounds)
+        { }
+
+        //! Set the current position to <b>voxel space</b> position \a pos
+        /*! See file interp/base.h for details. */
+        template <class VectorType>
+        bool voxel (const VectorType& pos) {
+          Eigen::Vector3 f = Base<ImageType>::intravoxel_offset (pos.template cast<default_type>());
+          if (Base<ImageType>::out_of_bounds)
+            return false;
+          P = pos;
+          for (size_t i = 0; i < 3; ++i) {
+            if (pos[i] < 0.0 || pos[i] > bounds[i]-0.5)
+              f[i] = 0.0;
+          }
+
+          value_type x_weights[2] = {1.0 - f[0], f[0]};
+          value_type y_weights[2] = {1.0 - f[1], f[1]};
+          value_type z_weights[2] = {1.0 - f[2], f[2]};
+
+          // For linear interpolation gradient weighting is independent of direction
+          // i.e. Simply looking at finite difference
+          value_type diff_weights[2] = {-0.5, 0.5};
+
+          size_t i(0);
+          for (ssize_t z = 0; z < 2; ++z) {
+            for (ssize_t y = 0; y < 2; ++y) {
+              value_type partial_weight = y_weights[y] * z_weights[z];
+              value_type partial_weight_dy = diff_weights[y] * z_weights[z];
+              value_type partial_weight_dz = y_weights[y] * diff_weights[z];
+
+              for (ssize_t x = 0; x < 2; ++x) {
+                // Gradient
+                weights_matrix(i,0) = diff_weights[x] * partial_weight;
+                weights_matrix(i,1) = x_weights[x] * partial_weight_dy;
+                weights_matrix(i,2) = x_weights[x] * partial_weight_dz;
+                // Value
+                weights_matrix(i,3) = x_weights[x] * partial_weight;
+
+                ++i;
+              }
+            }
+          }
+
+          return true;
+        }
+
+        //! Set the current position to <b>image space</b> position \a pos
+        /*! See file interp/base.h for details. */
+        template <class VectorType>
+        FORCE_INLINE bool image (const VectorType& pos) {
+          return voxel (Transform::voxelsize.inverse() * pos.template cast<default_type>());
+        }
+
+        //! Set the current position to the <b>scanner space</b> position \a pos
+        /*! See file interp/base.h for details. */
+        template <class VectorType>
+        FORCE_INLINE bool scanner (const VectorType& pos) {
+          return voxel (Transform::scanner2voxel * pos.template cast<default_type>());
+        }
+
+
+        void value_and_gradient (value_type& value, Eigen::Matrix<value_type, 1, 3>& gradient) {
+          if (Base<ImageType>::out_of_bounds)
+            return;
+
+          ssize_t c[] = { ssize_t (std::floor (P[0])), ssize_t (std::floor (P[1])), ssize_t (std::floor (P[2])) };
+
+          Eigen::Matrix<value_type, 1, 8> coeff_vec;
+
+          size_t i(0);
+          for (ssize_t z = 0; z < 2; ++z) {
+            ImageType::index(2) = clamp (c[2] + z, ImageType::size (2));
+            for (ssize_t y = 0; y < 2; ++y) {
+              ImageType::index(1) = clamp (c[1] + y, ImageType::size (1));
+              for (ssize_t x = 0; x < 2; ++x) {
+                ImageType::index(0) = clamp (c[0] + x, ImageType::size (0));
+                coeff_vec[i] = ImageType::value ();
+                ++i;
+              }
+            }
+          }
+
+          Eigen::Matrix<value_type, 1, 4> grad_and_value (coeff_vec * weights_matrix);
+
+          gradient = grad_and_value.segment(1,3);
+          value = grad_and_value[3];
+        }
+
+
+
+        // Collectively interpolates gradients and values along axis 3
+        void value_and_gradient_row (Eigen::Matrix<value_type, Eigen::Dynamic, 1>& value, Eigen::Matrix<value_type, Eigen::Dynamic, 3>& gradient)  {
+          if (Base<ImageType>::out_of_bounds) {
+            return Base<ImageType>::out_of_bounds_matrix;
+          }
+
+          assert (ImageType::ndim() == 4);
+
+          ssize_t c[] = { ssize_t (std::floor (P[0])), ssize_t (std::floor (P[1])), ssize_t (std::floor (P[2])) };
+
+          Eigen::Matrix<value_type, Eigen::Dynamic, 8> coeff_matrix (ImageType::size(3), 8);
+
+          size_t i(0);
+          for (ssize_t z = 0; z < 2; ++z) {
+            ImageType::index(2) = clamp (c[2] + z, ImageType::size (2));
+            for (ssize_t y = 0; y < 2; ++y) {
+              ImageType::index(1) = clamp (c[1] + y, ImageType::size (1));
+              for (ssize_t x = 0; x < 2; ++x) {
+                ImageType::index(0) = clamp (c[0] + x, ImageType::size (0));
+                coeff_matrix.col (++i) = ImageType::row (3);
+              }
+            }
+          }
+
+          Eigen::Matrix<value_type, ImageType::size(3), 4> grad_and_value (coeff_matrix * weights_matrix);
+
+          gradient = grad_and_value.block (1, 1, ImageType::size(3), 3);
+          value = grad_and_value.block (1, 3, ImageType::size(3), 1);
+        }
+
+      protected:
+        Eigen::Matrix<value_type, 8, 4> weights_matrix;
+
+    };
+
+    // Template alias for default Linear interpolator
+    // This allows an interface that's consistent with other interpolators that all have one template argument
+    template <typename ImageType>
+    using Linear = LinearInterp<ImageType, LinearInterpProcessingType::Value>;
 
     template <class ImageType, typename... Args>
       inline Linear<ImageType> make_linear (const ImageType& parent, Args&&... args) {
@@ -249,4 +557,3 @@ namespace MR
 }
 
 #endif
-
