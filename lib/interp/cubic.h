@@ -235,7 +235,7 @@ namespace MR
         /*! See file interp/base.h for details. */
         template <class VectorType>
         bool voxel (const VectorType& pos) {
-          Eigen::Vector3 f = Base<ImageType>::set_to_nearest (pos);
+          Eigen::Vector3 f = Base<ImageType>::intravoxel_offset (pos);
           if (Base<ImageType>::out_of_bounds)
             return false;
           P = pos;
@@ -370,7 +370,7 @@ namespace MR
         /*! See file interp/base.h for details. */
         template <class VectorType>
         bool voxel (const VectorType& pos) {
-          Eigen::Vector3 f = Base<ImageType>::set_to_nearest (pos);
+          Eigen::Vector3 f = Base<ImageType>::intravoxel_offset (pos);
           if (Base<ImageType>::out_of_bounds)
             return false;
           P = pos;
