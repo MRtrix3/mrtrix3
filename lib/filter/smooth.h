@@ -116,7 +116,7 @@ namespace MR
               throw Exception ("the Gaussian stdev values cannot be negative");
         }
 
-
+        //! Smooth the input image. Both input and output images can be the same image
         template <class InputImageType, class OutputImageType, typename ValueType = float>
         void operator() (InputImageType& input, OutputImageType& output)
         {

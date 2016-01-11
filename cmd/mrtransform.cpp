@@ -180,9 +180,9 @@ void run ()
 
   // Warp
   opt = get_options ("warp");
-  std::shared_ptr<Image<float> > warp_ptr;
+  std::shared_ptr<Image<default_type> > warp_ptr;
   if (opt.size())
-    warp_ptr = std::make_shared<Image<float> > (Image<float>::open(opt[0][0]));
+    warp_ptr = std::make_shared<Image<default_type> > (Image<default_type>::open(opt[0][0]));
 
   // Inverse
   const bool inverse = get_options ("inverse").size();
@@ -332,9 +332,9 @@ void run ()
       out_of_bounds_value = NAN;
 
     // compose warp with affine
-    std::shared_ptr<Image<float> > warp_composed_ptr;
+    std::shared_ptr<Image<default_type> > warp_composed_ptr;
     if (warp_ptr && linear) {
-      warp_composed_ptr = std::make_shared<Image<float> > (Image<float>::scratch (*warp_ptr));
+      warp_composed_ptr = std::make_shared<Image<default_type> > (Image<default_type>::scratch (*warp_ptr));
       Registration::Transform::compose_affine_deformation (linear_transform, *warp_ptr, *warp_composed_ptr);
     } else {
       warp_composed_ptr = warp_ptr;

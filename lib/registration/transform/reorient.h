@@ -110,16 +110,16 @@ namespace MR
 
 
 
-      template <class FODImageType, class WarpImageType>
+      template <class FODImageType>
       class NonLinearKernel {
 
         public:
-          NonLinearKernel (const ssize_t n_SH, WarpImageType& warp, const Eigen::MatrixXd& directions, const bool modulate) :
-                             n_SH (n_SH),
-                             jacobian_adapter (warp),
-                             directions (directions),
-                             modulate (modulate),
-                             FOD_to_aPSF_transform (Math::pinv(aPSF_weights_to_FOD_transform (n_SH, directions))) {}
+          NonLinearKernel (const ssize_t n_SH, Image<default_type>& warp, const Eigen::MatrixXd& directions, const bool modulate) :
+                           n_SH (n_SH),
+                           jacobian_adapter (warp),
+                           directions (directions),
+                           modulate (modulate),
+                           FOD_to_aPSF_transform (Math::pinv(aPSF_weights_to_FOD_transform (n_SH, directions))) {}
 
 
           void operator() (FODImageType& image) {
@@ -144,12 +144,12 @@ namespace MR
                 transform.noalias() = aPSF_weights_to_FOD_transform (n_SH, transformed_directions) * FOD_to_aPSF_transform;
               }
 
-              image.row(3) = transform.cast<typename WarpImageType::value_type>() * image.row(3);
+              image.row(3) = transform.cast<typename FODImageType::value_type>() * image.row(3);
             }
           }
           protected:
             const ssize_t n_SH;
-            Adapter::Jacobian<WarpImageType> jacobian_adapter;
+            Adapter::Jacobian<Image<default_type> > jacobian_adapter;
             const Eigen::MatrixXd& directions;
             const bool modulate;
             const Eigen::MatrixXd FOD_to_aPSF_transform;
@@ -157,27 +157,27 @@ namespace MR
       };
 
 
-      template <class FODImageType, class WarpImageType>
+      template <class FODImageType>
       void reorient_warp (const std::string progress_message,
                           FODImageType& fod_image,
-                          WarpImageType& warp,
+                          Image<default_type>& warp,
                           const Eigen::MatrixXd& directions,
                           const bool modulate = false)
       {
         assert (directions.cols() > directions.rows());
         ThreadedLoop (progress_message, fod_image, 0, 3)
-            .run (NonLinearKernel<FODImageType, WarpImageType>(fod_image.size(3), warp, directions, modulate), fod_image);
+            .run (NonLinearKernel<FODImageType>(fod_image.size(3), warp, directions, modulate), fod_image);
       }
 
-      template <class FODImageType, class WarpImageType>
+      template <class FODImageType>
       void reorient_warp (FODImageType& fod_image,
-                          WarpImageType& warp,
+                          Image<default_type>& warp,
                           const Eigen::MatrixXd& directions,
                           const bool modulate = false)
       {
         assert (directions.cols() > directions.rows());
         ThreadedLoop (fod_image, 0, 3)
-            .run (NonLinearKernel<FODImageType, WarpImageType>(fod_image.size(3), warp, directions, modulate), fod_image);
+            .run (NonLinearKernel<FODImageType>(fod_image.size(3), warp, directions, modulate), fod_image);
       }
 
 

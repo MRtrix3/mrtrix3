@@ -31,6 +31,7 @@
 #include "registration/transform/compose.h"
 #include "registration/transform/affine.h"
 #include "registration/transform/convert.h"
+#include "registration/transform/field_normaliser.h"
 #include "registration/metric/syn_demons.h"
 #include "image/average_space.h"
 
@@ -148,7 +149,8 @@ namespace MR
                 auto im2_update_field = Image<default_type>::scratch (field_header);
 
                 std::vector<default_type> cost_function_vector;
-                //Grad_Step_altered = grad_step.
+                default_type grad_step_altered = gradient_step;
+                //TODO alter grad step
 
                 bool converged = false;
                 size_t iteration = 0;
@@ -165,7 +167,6 @@ namespace MR
                   Image<default_type> im2_deform_field = Image<default_type>::scratch (field_header);
                   Registration::Transform::compose_affine_displacement (im2_affine, *im2_disp_field, im2_deform_field);
 
-                  // Warp input images
                   INFO ("Warping input images");
                   Filter::warp<Interp::Linear> (im1_smoothed, im1_warped, im1_deform_field, 0.0);
                   Filter::warp<Interp::Linear> (im2_smoothed, im2_warped, im2_deform_field, 0.0);
@@ -175,9 +176,6 @@ namespace MR
                     Registration::Transform::reorient_warp (im2_warped, im2_deform_field, aPSF_directions);
                   }
 
-
-
-                  // Warp masks
                   INFO ("Warping mask images");
                   Im1MaskType im1_mask_warped;
                   if (im1_mask.valid()) {
@@ -196,26 +194,34 @@ namespace MR
                   ThreadedLoop ("computing metric...", midway_resized, 0, 3).run (syn_metric, im1_warped, im2_warped, im1_update_field, im2_update_field);
 
                   cost_function_vector.push_back (global_cost);
-
-                  // TODO make sure the boundary is remains identity
-                  Filter::Smooth update_smooth_filter (im1_update_field);
-                  update_smooth_filter.set_stdev (update_smoothing_mm);
-                  auto im1_update_field_smoothed = Image<default_type>::scratch (im1_update_field);
-                  auto im2_update_field_smoothed = Image<default_type>::scratch (im2_update_field);
-                  {
-                    LogLevelLatch log_level (0);
-                    update_smooth_filter (im1_update_field, im1_update_field_smoothed);
-                    update_smooth_filter (im2_update_field, im2_update_field_smoothed);
-                  }
-
                   CONSOLE ("cost: " + str(global_cost));
 
+                  // TODO make sure the boundary is remains identity (check if this is only needed for neighbourhood metrics)
+                  INFO ("Smoothing update images");
+                  Filter::Smooth update_smooth_filter (im1_update_field);
+                  update_smooth_filter.set_stdev (update_smoothing_mm);
+                  {
+                    LogLevelLatch log_level (0);
+                    update_smooth_filter (im1_update_field, im1_update_field);
+                    update_smooth_filter (im2_update_field, im2_update_field);
+                  }
 
-//                  Normalise im1 and im2 update field
+                  INFO ("Normalising update images");
+                  Transform::normalise_field (im1_update_field);
+                  Transform::normalise_field (im2_update_field);
 
-//                  Compose updated and displacements transforms
+                  INFO ("composing displacement and update fields");
+                  Transform::compose_displacement (*im1_disp_field, im1_update_field, *im1_disp_field, grad_step_altered);
+                  Transform::compose_displacement (*im2_disp_field, im2_update_field, *im2_disp_field, grad_step_altered);
 
-//                  Smooth displacement field
+                  INFO ("Smoothing update images");
+                  Filter::Smooth disp_smooth_filter (*im1_disp_field);
+                  disp_smooth_filter.set_stdev (disp_smoothing_mm);
+                  {
+                    LogLevelLatch log_level (0);
+                    disp_smooth_filter (*im1_disp_field, *im1_disp_field);
+                    disp_smooth_filter (*im2_disp_field, *im2_disp_field);
+                  }
 
 //                  Invert fields x 2
 

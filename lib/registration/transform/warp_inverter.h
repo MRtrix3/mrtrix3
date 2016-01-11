@@ -20,8 +20,8 @@
 
  */
 
-#ifndef __filter_transform_warp_inverter_h__
-#define __filter_transform_warp_inverter_h__
+#ifndef __registration_transform_warp_inverter_h__
+#define __registration_transform_warp_inverter_h__
 
 #include "image.h"
 #include "interp/cubic.h"

@@ -19,7 +19,7 @@
  along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
  */
-#define REGISTRATION_GRADIENT_DESCENT_DEBUG
+//#define REGISTRATION_GRADIENT_DESCENT_DEBUG
 
 #include "command.h"
 #include "image.h"
