@@ -32,6 +32,7 @@
 #include "filter/reslice.h"
 #include "adapter/reslice.h"
 #include "algo/threaded_loop.h"
+#include "algo/copy.h"
 #include "interp/linear.h"
 #include "interp/nearest.h"
 #include "registration/metric/params.h"
@@ -74,42 +75,6 @@ namespace MR
           log_stream = stream;
         }
 
-        template <class MetricType, class TransformType, class Im1ImageType, class Im2ImageType>
-        void run (
-          MetricType& metric,
-          TransformType& transform,
-          Im1ImageType& im1_image,
-          Im2ImageType& im2_image) {
-            typedef Image<float> BogusMaskType;
-            run_masked<MetricType, TransformType, Im1ImageType, Im2ImageType, BogusMaskType, BogusMaskType >
-              (metric, transform, im1_image, im2_image, nullptr, nullptr);
-          }
-
-        template <class MetricType, class TransformType, class Im1ImageType, class Im2ImageType, class Im2MaskType>
-        void run_im2_mask (
-          MetricType& metric,
-          TransformType& transform,
-          Im1ImageType& im1_image,
-          Im2ImageType& im2_image,
-          std::unique_ptr<Im2MaskType>& im2_mask) {
-            typedef Image<float> BogusMaskType;
-            run_masked<MetricType, TransformType, Im1ImageType, Im2ImageType, BogusMaskType, Im2MaskType >
-              (metric, transform, im1_image, im2_image, nullptr, im2_mask);
-          }
-
-
-        template <class MetricType, class TransformType, class Im1ImageType, class Im2ImageType, class Im1MaskType>
-        void run_im1_mask (
-          MetricType& metric,
-          TransformType& transform,
-          Im1ImageType& im1_image,
-          Im2ImageType& im2_image,
-          std::unique_ptr<Im1MaskType>& im1_mask) {
-            typedef Image<float> BogusMaskType;
-            run_masked<MetricType, TransformType, Im1ImageType, Im2ImageType, Im1MaskType, BogusMaskType >
-              (metric, transform, im1_image, im2_image, im1_mask, nullptr);
-          }
-
         template <class MetricType, class TransformType, class Im1ImageType, class Im2ImageType, class Im1MaskType, class Im2MaskType>
         void run_masked (
           MetricType& metric,
@@ -118,6 +83,8 @@ namespace MR
           Im2ImageType& im2_image,
           Im1MaskType& im1_mask,
           Im2MaskType& im2_mask) {
+
+            INFO("running global search");
 
             Filter::Smooth im1_smooth_filter (im1_image);
             im1_smooth_filter.set_stdev(smooth_factor * 1.0 / (2.0 * scale_factor));
@@ -138,14 +105,19 @@ namespace MR
             auto im2_resized = Image<typename Im1ImageType::value_type>::scratch (im2_resize_filter);
 
             {
-              // LogLevelLatch log_level (0);
+              LogLevelLatch log_level (0);
               im1_smooth_filter (im1_image, im1_smoothed);
               im2_smooth_filter (im2_image, im2_smoothed);
               im1_resize_filter (im1_smoothed, im1_resized);
               im2_resize_filter (im2_smoothed, im2_resized);
             }
 
-            // TODO
+            // auto out = Image<float>::create ("/tmp/im1.mif", im1_resized);
+            // copy(im1_resized, out);
+
+            std::vector<TransformType> trafo_p (pool_size);
+            std::vector<TransformType> trafo_f (pool_size);
+            std::vector<default_type> cost_pool (pool_size);
 
             INFO("global search done.");
           }
@@ -163,6 +135,16 @@ namespace MR
         Transform::Init::InitType init_type;
         size_t gd_repetitions;
 
+      private:
+        template <class TransformType>
+        void crossover(const TransformType& P1, const TransformType& P2, TransformType& F) {
+          // TODO
+        }
+
+        template <class TransformType>
+        void mutate(TransformType& T) {
+          // TODO
+        }
     };
   }
 }
