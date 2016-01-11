@@ -94,13 +94,8 @@ namespace MR
     class LinearInterpBase : public Base<ImageType>
     {
       public:
-        typedef typename ImageType::value_type value_type;
+        using typename Base<ImageType>::value_type;
         typedef typename value_type_of<value_type>::type coef_type;
-
-        using Base<ImageType>::bounds;
-        using Base<ImageType>::index;
-        using Base<ImageType>::out_of_bounds;
-        using Base<ImageType>::out_of_bounds_value;
 
         LinearInterpBase (const ImageType& parent, value_type value_when_out_of_bounds = Base<ImageType>::default_out_of_bounds_value()) :
             Base<ImageType> (parent, value_when_out_of_bounds),
@@ -137,6 +132,7 @@ namespace MR
         using LinearBase = LinearInterpBase<ImageType, LinearInterpProcessingType::Value>;
 
         typedef typename LinearBase::value_type value_type;
+        typedef typename LinearBase::coef_type coef_type;
         using LinearBase::P;
         using LinearBase::clamp;
         using LinearBase::bounds;
@@ -159,14 +155,14 @@ namespace MR
               f[i] = 0.0;
           }
 
-          value_type x_weights[2] = {1 - f[0], f[0]};
-          value_type y_weights[2] = {1 - f[1], f[1]};
-          value_type z_weights[2] = {1 - f[2], f[2]};
+          coef_type x_weights[2] = { coef_type(1 - f[0]), coef_type(f[0]) };
+          coef_type y_weights[2] = { coef_type(1 - f[1]), coef_type(f[1]) };
+          coef_type z_weights[2] = { coef_type(1 - f[2]), coef_type(f[2]) };
 
           size_t i(0);
           for (ssize_t z = 0; z < 2; ++z) {
             for (ssize_t y = 0; y < 2; ++y) {
-              value_type partial_weight = y_weights[y] * z_weights[z];
+              coef_type partial_weight = y_weights[y] * z_weights[z];
               for (ssize_t x = 0; x < 2; ++x) {
                 factors[i] = x_weights[x] * partial_weight;
 
@@ -248,7 +244,7 @@ namespace MR
         }
 
       protected:
-        Eigen::Matrix<value_type, 8, 1> factors;
+        Eigen::Matrix<coef_type, 8, 1> factors;
     };
 
 
@@ -262,6 +258,7 @@ namespace MR
         using LinearBase = LinearInterpBase<ImageType, LinearInterpProcessingType::Derivative>;
 
         typedef typename LinearBase::value_type value_type;
+        typedef typename LinearBase::coef_type coef_type;
         using LinearBase::P;
         using LinearBase::clamp;
         using LinearBase::bounds;
@@ -286,20 +283,20 @@ namespace MR
               f[i] = 0.0;
           }
 
-          value_type x_weights[2] = {value_type(1 - f[0]), value_type(f[0])};
-          value_type y_weights[2] = {value_type(1 - f[1]), value_type(f[1])};
-          value_type z_weights[2] = {value_type(1 - f[2]), value_type(f[2])};
+          coef_type x_weights[2] = {coef_type(1 - f[0]), coef_type(f[0])};
+          coef_type y_weights[2] = {coef_type(1 - f[1]), coef_type(f[1])};
+          coef_type z_weights[2] = {coef_type(1 - f[2]), coef_type(f[2])};
 
           // For linear interpolation gradient weighting is independent of direction
           // i.e. Simply looking at finite difference
-          value_type diff_weights[2] = {-0.5, 0.5};
+          coef_type diff_weights[2] = {-0.5, 0.5};
 
           size_t i(0);
           for (ssize_t z = 0; z < 2; ++z) {
             for (ssize_t y = 0; y < 2; ++y) {
-              value_type partial_weight = y_weights[y] * z_weights[z];
-              value_type partial_weight_dy = diff_weights[y] * z_weights[z];
-              value_type partial_weight_dz = y_weights[y] * diff_weights[z];
+              coef_type partial_weight = y_weights[y] * z_weights[z];
+              coef_type partial_weight_dy = diff_weights[y] * z_weights[z];
+              coef_type partial_weight_dz = y_weights[y] * diff_weights[z];
 
               for (ssize_t x = 0; x < 2; ++x) {
                 weights_matrix(i,0) = diff_weights[x] * partial_weight;
@@ -335,7 +332,7 @@ namespace MR
 
           ssize_t c[] = { ssize_t (std::floor (P[0])), ssize_t (std::floor (P[1])), ssize_t (std::floor (P[2])) };
 
-          Eigen::Matrix<value_type, 1, 8> coeff_vec;
+          Eigen::Matrix<coef_type, 1, 8> coeff_vec;
 
           size_t i(0);
           for (ssize_t z = 0; z < 2; ++z) {
@@ -358,9 +355,9 @@ namespace MR
         }
 
         // Collectively interpolates gradients along axis 3
-        Eigen::Matrix<value_type, Eigen::Dynamic, 3> gradient_row() {
+        Eigen::Matrix<coef_type, Eigen::Dynamic, 3> gradient_row() {
           if (Base<ImageType>::out_of_bounds) {
-            Eigen::Matrix<value_type, Eigen::Dynamic, 3> out_of_bounds_matrix (ImageType::size(3), 3);
+            Eigen::Matrix<coef_type, Eigen::Dynamic, 3> out_of_bounds_matrix (ImageType::size(3), 3);
             out_of_bounds_matrix.setOnes();
             out_of_bounds_matrix *= Base<ImageType>::out_of_bounds_value;
             return out_of_bounds_matrix;
@@ -394,8 +391,8 @@ namespace MR
         }
 
       protected:
-        const Eigen::Matrix<value_type, 1, 3> out_of_bounds_vec;
-        Eigen::Matrix<value_type, 8, 3> weights_matrix;
+        const Eigen::Matrix<coef_type, 1, 3> out_of_bounds_vec;
+        Eigen::Matrix<coef_type, 8, 3> weights_matrix;
         const Eigen::Matrix<default_type, 3, 3> wrt_scanner_transform;
     };
 
@@ -410,11 +407,12 @@ namespace MR
         using LinearBase = LinearInterpBase<ImageType, LinearInterpProcessingType::ValueAndDerivative>;
 
         typedef typename LinearBase::value_type value_type;
+        typedef typename LinearBase::coef_type coef_type;
         using LinearBase::P;
         using LinearBase::clamp;
         using LinearBase::bounds;
 
-        LinearInterp (const ImageType& parent, value_type value_when_out_of_bounds = Base<ImageType>::default_out_of_bounds_value()) :
+        LinearInterp (const ImageType& parent, coef_type value_when_out_of_bounds = Base<ImageType>::default_out_of_bounds_value()) :
           LinearInterpBase <ImageType, LinearInterpProcessingType::ValueAndDerivative> (parent, value_when_out_of_bounds)
         { }
 
@@ -431,20 +429,20 @@ namespace MR
               f[i] = 0.0;
           }
 
-          value_type x_weights[2] = {1.0 - f[0], f[0]};
-          value_type y_weights[2] = {1.0 - f[1], f[1]};
-          value_type z_weights[2] = {1.0 - f[2], f[2]};
+          coef_type x_weights[2] = { coef_type(1 - f[0]), coef_type(f[0]) };
+          coef_type y_weights[2] = { coef_type(1 - f[1]), coef_type(f[1]) };
+          coef_type z_weights[2] = { coef_type(1 - f[2]), coef_type(f[2]) };
 
           // For linear interpolation gradient weighting is independent of direction
           // i.e. Simply looking at finite difference
-          value_type diff_weights[2] = {-0.5, 0.5};
+          coef_type diff_weights[2] = {coef_type(-0.5), coef_type(0.5) };
 
           size_t i(0);
           for (ssize_t z = 0; z < 2; ++z) {
             for (ssize_t y = 0; y < 2; ++y) {
-              value_type partial_weight = y_weights[y] * z_weights[z];
-              value_type partial_weight_dy = diff_weights[y] * z_weights[z];
-              value_type partial_weight_dz = y_weights[y] * diff_weights[z];
+              coef_type partial_weight = y_weights[y] * z_weights[z];
+              coef_type partial_weight_dy = diff_weights[y] * z_weights[z];
+              coef_type partial_weight_dz = y_weights[y] * diff_weights[z];
 
               for (ssize_t x = 0; x < 2; ++x) {
                 // Gradient
@@ -477,7 +475,7 @@ namespace MR
         }
 
 
-        void value_and_gradient (value_type& value, Eigen::Matrix<value_type, 1, 3>& gradient) {
+        void value_and_gradient (value_type& value, Eigen::Matrix<coef_type, 1, 3>& gradient) {
           if (Base<ImageType>::out_of_bounds)
             return;
 
