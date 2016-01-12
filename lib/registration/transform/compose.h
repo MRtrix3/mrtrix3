@@ -71,16 +71,17 @@ namespace MR
                                disp1_transform (disp_input1), disp2_interp (disp_input2), step (step) {}
 
             void operator() (Image<default_type>& disp_input1, Image<default_type>& disp_output) {
-              Eigen::Vector3 voxel (disp_input1.index(0), disp_input1.index(1), disp_input1.index(2));
+              Eigen::Vector3 voxel ((default_type)disp_input1.index(0), (default_type)disp_input1.index(1), (default_type)disp_input1.index(2));
               Eigen::Vector3 voxel_position = disp1_transform.voxel2scanner * voxel;
               Eigen::Vector3 original_position = voxel_position + disp_input1.row(3);
-              Eigen::Vector3 new_position (original_position);
               disp2_interp.scanner (original_position);
               if (!disp2_interp) {
+                disp_output.row(3) = original_position - voxel_position;
+              } else {
                 Eigen::Vector3 displacement (disp2_interp.row(3).array() * step);
-                new_position = displacement + original_position;
+                Eigen::Vector3 new_position = displacement + original_position;
+                disp_output.row(3) = new_position - voxel_position;
               }
-              disp_output.row(3) = new_position - voxel_position;
             }
 
           protected:

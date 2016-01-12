@@ -31,7 +31,7 @@
 #include "registration/transform/compose.h"
 #include "registration/transform/affine.h"
 #include "registration/transform/convert.h"
-#include "registration/transform/field_normaliser.h"
+#include "registration/transform/normalise.h"
 #include "registration/metric/syn_demons.h"
 #include "image/average_space.h"
 
@@ -102,6 +102,7 @@ namespace MR
                 Filter::Resize resize_filter (midway_image);
                 resize_filter.set_scale_factor (scale_factor[level]);
                 resize_filter.set_interp_type (1);
+                resize_filter.datatype() = DataType::Float64;
                 auto midway_resized = Image<default_type>::scratch (resize_filter);
 
                 INFO ("Smoothing imput images");
@@ -167,63 +168,71 @@ namespace MR
                   Image<default_type> im2_deform_field = Image<default_type>::scratch (field_header);
                   Registration::Transform::compose_affine_displacement (im2_affine, *im2_disp_field, im2_deform_field);
 
-                  INFO ("Warping input images");
+
+                  INFO ("warping input images");
                   Filter::warp<Interp::Linear> (im1_smoothed, im1_warped, im1_deform_field, 0.0);
                   Filter::warp<Interp::Linear> (im2_smoothed, im2_warped, im2_deform_field, 0.0);
+                  save (im1_warped, std::string("im1_warped_iter" + str(iteration) + ".mif"), false);
+                  save (im2_warped, std::string("im2_warped_iter" + str(iteration) + ".mif"), false);
+
+                  display (im1_warped);
+
+
                   if (fod_reorientation) {
                     INFO ("Reorienting FODs");
                     Registration::Transform::reorient_warp (im1_warped, im1_deform_field, aPSF_directions);
                     Registration::Transform::reorient_warp (im2_warped, im2_deform_field, aPSF_directions);
                   }
 
-                  INFO ("Warping mask images");
+                  INFO ("warping mask images");
                   Im1MaskType im1_mask_warped;
                   if (im1_mask.valid()) {
                     im1_mask_warped = Im1MaskType::scratch (midway_resized);
                     Filter::warp<Interp::Linear> (im1_mask, im1_mask_warped, im1_deform_field, 0.0);
+                    save (im1_mask_warped, std::string("im1_mask_warped_iter" + str(iteration) + ".mif"));
                   }
                   Im1MaskType im2_mask_warped;
                   if (im2_mask.valid()) {
                     im2_mask_warped = Im1MaskType::scratch (midway_resized);
                     Filter::warp<Interp::Linear> (im2_mask, im2_mask_warped, im2_deform_field, 0.0);
+                    save (im2_mask_warped, std::string("im2_mask_warped_iter" + str(iteration) + ".mif"));
                   }
 
                   default_type global_cost = 0.0;
                   size_t global_voxel_count = 0;
                   Metric::SyNDemons<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> syn_metric (global_cost, global_voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped);
-                  ThreadedLoop ("computing metric...", midway_resized, 0, 3).run (syn_metric, im1_warped, im2_warped, im1_update_field, im2_update_field);
-
+                  ThreadedLoop (midway_resized, 0, 3).run (syn_metric, im1_warped, im2_warped, im1_update_field, im2_update_field);
                   cost_function_vector.push_back (global_cost);
-                  CONSOLE ("cost: " + str(global_cost));
+
 
                   // TODO make sure the boundary is remains identity (check if this is only needed for neighbourhood metrics)
-                  INFO ("Smoothing update images");
-                  Filter::Smooth update_smooth_filter (im1_update_field);
-                  update_smooth_filter.set_stdev (update_smoothing_mm);
-                  {
-                    LogLevelLatch log_level (0);
-                    update_smooth_filter (im1_update_field, im1_update_field);
-                    update_smooth_filter (im2_update_field, im2_update_field);
-                  }
+                  INFO ("smoothing update fields");
+                  Filter::Smooth smooth_filter (im1_update_field);
+                  smooth_filter.set_stdev (update_smoothing_mm);
+                  smooth_filter (im1_update_field, im1_update_field);
+                  smooth_filter (im2_update_field, im2_update_field);
 
-                  INFO ("Normalising update images");
-                  Transform::normalise_field (im1_update_field);
-                  Transform::normalise_field (im2_update_field);
+                  INFO ("normalising update images");
+                  Transform::normalise_displacement (im1_update_field);
+                  Transform::normalise_displacement (im2_update_field);
 
                   INFO ("composing displacement and update fields");
                   Transform::compose_displacement (*im1_disp_field, im1_update_field, *im1_disp_field, grad_step_altered);
                   Transform::compose_displacement (*im2_disp_field, im2_update_field, *im2_disp_field, grad_step_altered);
 
-                  INFO ("Smoothing update images");
-                  Filter::Smooth disp_smooth_filter (*im1_disp_field);
-                  disp_smooth_filter.set_stdev (disp_smoothing_mm);
-                  {
-                    LogLevelLatch log_level (0);
-                    disp_smooth_filter (*im1_disp_field, *im1_disp_field);
-                    disp_smooth_filter (*im2_disp_field, *im2_disp_field);
-                  }
+                  save (*im1_disp_field, std::string("disp_iter" + str(iteration) + ".mif"));
+
+                  INFO ("smoothing displacement fields");
+                  smooth_filter.set_stdev (disp_smoothing_mm);
+                  smooth_filter (*im1_disp_field, *im1_disp_field);
+                  smooth_filter (*im2_disp_field, *im2_disp_field);
+
+                  save (*im1_disp_field, std::string("disp_smoothed_iter" + str(iteration) + ".mif"));
+
+                  CONSOLE ("cost: " + str(global_cost));
 
 //                  Invert fields x 2
+
 
                   if (++iteration > max_iter[level])
                     converged = true;
