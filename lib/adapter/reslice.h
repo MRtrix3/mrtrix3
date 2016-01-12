@@ -81,7 +81,7 @@ namespace MR
                    const HeaderType& reference,
                    const transform_type& transform = NoTransform,
                    const std::vector<int>& oversample = AutoOverSample,
-                   const value_type value_when_out_of_bounds = Interp::Base<value_type>::default_out_of_bounds_value()) :
+                   const value_type value_when_out_of_bounds = Interp::Base<ImageType>::default_out_of_bounds_value()) :
             interp (original, value_when_out_of_bounds),
             x { 0, 0, 0 },
             dim { reference.size(0), reference.size(1), reference.size(2) },
