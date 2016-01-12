@@ -416,8 +416,7 @@ namespace MR
               ImageType::index(1) = clamp (c[1] + y, ImageType::size (1));
               for (ssize_t x = 0; x < 4; ++x) {
                 ImageType::index(0) = clamp (c[0] + x, ImageType::size (0));
-                coeff_vec[i] = ImageType::value ();
-                i += 1;
+                coeff_vec[i++] = ImageType::value ();
               }
             }
           }
