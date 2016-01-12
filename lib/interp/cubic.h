@@ -433,10 +433,9 @@ namespace MR
               }
             }
           }
-
           Eigen::Matrix<value_type, 1, 4> grad_and_value (coeff_vec * weights_matrix);
 
-          gradient = grad_and_value.segment(1,3);
+          gradient = grad_and_value.head(3);
           value = grad_and_value[3];
         }
 
