@@ -1,24 +1,17 @@
 /*
-   Copyright 2014 Brain Research Institute, Melbourne, Australia
-
-   Written by Robert E. Smith, 2015.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #include "gui/mrview/tool/connectome/connectome.h"
 
@@ -732,7 +725,7 @@ namespace MR
           edge_colour_fixedcolour_button       ->setFixedHeight (height);
           edge_colour_colourmap_button         ->setFixedHeight (height);
 
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
           cube.generate();
@@ -2101,7 +2094,7 @@ namespace MR
         void Connectome::lighting_settings_slot()
         {
           if (!lighting_dock)
-            lighting_dock.reset (new LightingDock ("Connectome lighting", lighting, false));
+            lighting_dock.reset (new LightingDock ("Connectome lighting", lighting));
           lighting_dock->show();
         }
         void Connectome::lighting_parameter_slot()
@@ -3849,7 +3842,7 @@ namespace MR
           if (meshes.size() != nodes.size())
             throw Exception ("Mesh file contains " + str(meshes.size()) + " objects; expected " + str(nodes.size()));
           have_meshes = false;
-          Window::GrabContext context;
+          MRView::GrabContext context;
           for (node_t i = 1; i <= num_nodes(); ++i)
             nodes[i].assign_mesh (meshes[i]);
           have_meshes = true;
@@ -3867,7 +3860,7 @@ namespace MR
           const size_t num_tracks = to<size_t>(properties["count"]);
           if (num_tracks != num_edges())
             throw Exception ("Track file " + Path::basename (path) + " contains " + str(num_tracks) + " streamlines; connectome expects " + str(num_edges()) + " exemplars");
-          ProgressBar progress ("Importing connection exemplars... ", num_edges());
+          ProgressBar progress ("Importing connection exemplars", num_edges());
           MR::DWI::Tractography::Streamline<float> tck;
           while (reader (tck)) {
             edges[tck.index].load_exemplar (tck);
@@ -3885,7 +3878,7 @@ namespace MR
             get_exemplars();
             if (!have_exemplars) return;
           }
-          ProgressBar progress ("Generating connection streamtubes... ", num_edges());
+          ProgressBar progress ("Generating connection streamtubes", num_edges());
           for (auto i = edges.begin(); i != edges.end(); ++i) {
             i->create_streamtube();
             ++progress;

@@ -1,23 +1,18 @@
 /*
-    Copyright 2014 The Florey Institute of Neuroscience and Mental Health, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-    Written by Thijs Dhollander, 09/10/14.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-*/
 
 #include <sstream>
 
@@ -278,7 +273,7 @@ void run () {
         w_img = Image<value_type>::scratch(int_hdr,"FOD integral map");
       }
 
-      ThreadedLoop ("computing colours...", fod_img, 0, 3)
+      ThreadedLoop ("computing colours", fod_img, 0, 3)
         .run (DecComputer (DecTransform (Math::SH::LforN(fod_img.size(3)), dirs, thresh), mask_img, w_img), fod_img, dec_img);  
     }
 
@@ -299,7 +294,7 @@ void run () {
     w_img = map_hdr.get_image<value_type>();
 
   if (w_img.valid() || needtolum || needtoslice)
-    ThreadedLoop ("(re)weighting...", out_img, 0, 3, 2)
+    ThreadedLoop ("(re)weighting", out_img, 0, 3, 2)
       .run (DecWeighter (coefs, gamma, w_img), out_img);
 
 }

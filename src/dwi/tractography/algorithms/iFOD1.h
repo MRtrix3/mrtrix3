@@ -1,24 +1,17 @@
 /*
-   Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-   Written by J-Donald Tournier and Robert E. Smith, 2011.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #ifndef __dwi_tractography_algorithms_iFOD1_h__
 #define __dwi_tractography_algorithms_iFOD1_h__
@@ -174,17 +167,13 @@ namespace MR
           return EXIT_IMAGE;
 
         float max_val = 0.0;
-        size_t nan_count = 0;
         for (size_t i = 0; i < calibrate_list.size(); ++i) {
           float val = FOD (rotate_direction (dir, calibrate_list[i]));
           if (std::isnan (val))
-            ++nan_count;
+            return EXIT_IMAGE;
           else if (val > max_val)
             max_val = val;
         }
-
-        if (nan_count == calibrate_list.size())
-          return EXIT_IMAGE;
 
         if (max_val <= 0.0)
           return CALIBRATE_FAIL;

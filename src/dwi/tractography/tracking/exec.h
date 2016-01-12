@@ -1,24 +1,17 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert E. Smith and J-Donald Tournier, 2011.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #ifndef __dwi_tractography_tracking_exec_h__
 #define __dwi_tractography_tracking_exec_h__
@@ -233,14 +226,13 @@ namespace MR
             void gen_track_unidir (GeneratedTrack& tck)
             {
 
-              if (S.is_act())
-                method.act().sgm_depth = 0;
-
               term_t termination = CONTINUE;
 
               if (S.is_act() && S.act().backtrack()) {
 
-                size_t revert_step = 0;
+                size_t revert_step = 1;
+                size_t max_size_at_backtrack = tck.size();
+                unsigned int revert_count = 0;
 
                 do {
                   termination = iterate();
@@ -249,12 +241,20 @@ namespace MR
                   if (termination) {
                     apply_priors (termination);
                     if (track_excluded && termination != ENTER_EXCLUDE) {
-                      method.truncate_track (tck, ++revert_step);
-                      if (tck.size() > tck.get_seed_index() + 1) {
+                      if (tck.size() > max_size_at_backtrack) {
+                        max_size_at_backtrack = tck.size();
+                        revert_step = 1;
+                        revert_count = 1;
+                      } else {
+                        if (revert_count++ == ACT_BACKTRACK_ATTEMPTS) {
+                          revert_count = 1;
+                          ++revert_step;
+                        }
+                      }
+                      method.truncate_track (tck, max_size_at_backtrack, revert_step);
+                      if (method.pos.allFinite()) {
                         track_excluded = false;
                         termination = CONTINUE;
-                        method.pos = tck.back();
-                        method.dir = (tck.back() - tck[tck.size() - 2]).normalized();
                       }
                     }
                   } else if (tck.size() >= S.max_num_points) {
@@ -412,6 +412,9 @@ namespace MR
               // If using the Seed_test algorithm (indicated by max_num_points == 2), don't want to execute this check
               if (S.max_num_points == 2)
                 return true;
+              // If the seed was in SGM, need to confirm that one side of the track actually made it to WM
+              if (method.act().seed_in_sgm && !method.act().sgm_seed_to_wm)
+                return false;
               // Used these in the ACT paper, but wasn't entirely happy with the method; can change these #defines to re-enable
               // ACT instead now defaults to a 2-voxel minimum length
               if (!ACT_WM_INT_REQ && !ACT_WM_ABS_REQ)

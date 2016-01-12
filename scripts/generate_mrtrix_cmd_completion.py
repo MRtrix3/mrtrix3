@@ -100,6 +100,8 @@ def parse_commands (commands_dir, completion_path, commands):
 			arg_choices ='`eval ls $1*.{mih,mif,nii,dcm,msf,hdr,mgh,nii.gz,mif.gz} 2> /dev/null | tr "\n" " "`'
 		elif arg_type == 'FILEIN':
 			arg_choices ='`eval ls "$1*" 2> /dev/null | grep -E "$1*\.[^[:space:]]+"`'
+		elif arg_type == 'TRACKSIN':
+			arg_choices ='`eval ls $1*.tck 2> /dev/null | tr "\n" " "`'
 		#elif arg_type in ['FLOAT', 'INT']:
 		else:
 			arg_choices = "__empty__"

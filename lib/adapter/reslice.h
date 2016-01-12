@@ -1,30 +1,24 @@
 /*
-   Copyright 2009 Brain Research Institute, Melbourne, Australia
-
-   Written by J-Donald Tournier, 22/10/09.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see www.mrtrix.org
+ *
+ */
 
 #ifndef __adapter_reslice_h__
 #define __adapter_reslice_h__
 
 #include "image.h"
 #include "transform.h"
+#include "interp/base.h"
 
 namespace MR
 {
@@ -87,7 +81,7 @@ namespace MR
                    const HeaderType& reference,
                    const transform_type& transform = NoTransform,
                    const std::vector<int>& oversample = AutoOverSample,
-                   const value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
+                   const value_type value_when_out_of_bounds = Interp::Base<ImageType>::default_out_of_bounds_value()) :
             interp (original, value_when_out_of_bounds),
             x { 0, 0, 0 },
             dim { reference.size(0), reference.size(1), reference.size(2) },
@@ -159,9 +153,8 @@ namespace MR
                 s[1] = d[1] + y*inc[1];
                 for (int x = 0; x < OS[0]; ++x) {
                   s[0] = d[0] + x*inc[0];
-                  interp.voxel (direct_transform * s);
-                  if (!interp) continue;
-                  else result += interp.value();
+                  if (interp.voxel (direct_transform * s))
+                    result += interp.value();
                 }
               }
             }

@@ -1,24 +1,17 @@
 /*
-   Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-   Written by Robert Smith, 2012.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 
 
@@ -90,7 +83,7 @@ namespace MR
 
           // This is used for creating a `null lobe' i.e. an FOD lobe with zero size, containing all directions not
           //   assigned to any other lobe in the voxel
-          FOD_lobe (const Mask& i) :
+          FOD_lobe (const DWI::Directions::Mask& i) :
               mask (i),
               values (i.size(), 0.0),
               peak_dir_bin (i.size()),
@@ -127,8 +120,8 @@ namespace MR
 
           void finalise()
           {
-            // 4pi == solid angle of sphere in steradians
-            integral *= 4.0 * Math::pi / float(mask.size());
+            // 2pi == solid angle of halfsphere in steradians
+            integral *= 2.0 * Math::pi / float(mask.size());
             // This is calculated as the lobe is built, just needs to be set to unit length
             mean_dir.normalize();
           }
@@ -149,7 +142,7 @@ namespace MR
             integral += that.integral;
           }
 
-          const Mask& get_mask() const { return mask; }
+          const DWI::Directions::Mask& get_mask() const { return mask; }
           const std::vector<float>& get_values() const { return values; }
           dir_t get_peak_dir_bin() const { return peak_dir_bin; }
           float get_peak_value() const { return peak_value; }
@@ -160,7 +153,7 @@ namespace MR
 
 
         private:
-          Mask mask;
+          DWI::Directions::Mask mask;
           std::vector<float> values;
           dir_t peak_dir_bin;
           float peak_value;
@@ -200,7 +193,7 @@ namespace MR
           FODQueueWriter (const FODImageType& fod_image, const MaskImageType& mask_image = MaskImageType()) :
               fod (fod_image),
               mask (mask_image),
-              loop (Loop("Segmenting FODs... ", 0, 3) (fod)) { }
+              loop (Loop("segmenting FODs", 0, 3) (fod)) { }
 
           bool operator() (SH_coefs& out)
           {

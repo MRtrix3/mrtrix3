@@ -1,30 +1,25 @@
 /*
-   Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-   Written by J-Donald Tournier, 27/06/08.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
  */
 
 #ifndef __interp_nearest_h__
 #define __interp_nearest_h__
 
-#include "transform.h"
 #include "datatype.h"
+#include "image_helpers.h"
+#include "types.h"
+#include "interp/base.h"
 
 namespace MR
 {
@@ -68,82 +63,67 @@ namespace MR
      */
 
     template <class ImageType>
-      class Nearest : public ImageType, public Transform
+    class Nearest : public Base<ImageType>
     {
       public:
-        typedef typename ImageType::value_type value_type;
+        using typename Base<ImageType>::value_type;
 
-        using Transform::set_to_nearest;
-        using ImageType::index;
-        using Transform::scanner2voxel;
-        using Transform::operator!;
-        using Transform::out_of_bounds;
-        using Transform::bounds;
+        using Base<ImageType>::index;
+        using Base<ImageType>::out_of_bounds;
+        using Base<ImageType>::out_of_bounds_value;
 
-        //! construct an Nearest object to obtain interpolated values using the
-        // parent DataSet class
-        Nearest (const ImageType& parent, value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
-          ImageType (parent),
-          Transform (parent),
-          out_of_bounds_value (value_when_out_of_bounds) { }
+        Nearest (const ImageType& parent, value_type value_when_out_of_bounds = Base<ImageType>::default_out_of_bounds_value()) :
+            Base<ImageType> (parent, value_when_out_of_bounds) { }
 
         //! Set the current position to <b>voxel space</b> position \a pos
-        /*! This will set the position from which the image intensity values will
-         * be interpolated, assuming that \a pos provides the position as a
-         * (floating-point) voxel coordinate within the dataset. */
+        /*! See file interp/base.h for details. */
         template <class VectorType>
         bool voxel (const VectorType& pos) {
-          set_to_nearest (pos);
+          Base<ImageType>::intravoxel_offset (pos);
           if (out_of_bounds)
-            return true;
-
+            return false;
           index(0) = std::round (pos[0]);
           index(1) = std::round (pos[1]);
           index(2) = std::round (pos[2]);
-          return false;
+          return true;
         }
-
 
         //! Set the current position to <b>image space</b> position \a pos
-        /*! This will set the position from which the image intensity values will
-         * be interpolated, assuming that \a pos provides the position as a
-         * coordinate relative to the axes of the dataset, in units of
-         * millimeters. The origin is taken to be the centre of the voxel at [
-         * 0 0 0 ]. */
+        /*! See file interp/base.h for details. */
         template <class VectorType>
-        bool image (const VectorType& pos) {
-          return voxel (voxelsize.inverse() * pos.template cast<double>());
+        FORCE_INLINE bool image (const VectorType& pos) {
+          return voxel (Transform::voxelsize.inverse() * pos.template cast<default_type>());
         }
+
         //! Set the current position to the <b>scanner space</b> position \a pos
-        /*! This will set the position from which the image intensity values will
-         * be interpolated, assuming that \a pos provides the position as a
-         * scanner space coordinate, in units of millimeters. */
+        /*! See file interp/base.h for details. */
         template <class VectorType>
-        bool scanner (const VectorType& pos) {
-          return voxel (Transform::scanner2voxel * pos.template cast<double>());
+        FORCE_INLINE bool scanner (const VectorType& pos) {
+          return voxel (Transform::scanner2voxel * pos.template cast<default_type>());
         }
 
-        value_type value () const {
-          if (out_of_bounds) {
+        //! Read an interpolated image value from the current position.
+        /*! See file interp/base.h for details. */
+        FORCE_INLINE value_type value () const {
+          if (out_of_bounds)
             return out_of_bounds_value;
-          }
-
           return ImageType::value();
         }
 
-        // Collectively interpolates values along axis >= 3
+        //! Read interpolated values from volumes along axis >= 3
+        /*! See file interp/base.h for details. */
         Eigen::Matrix<value_type, Eigen::Dynamic, 1> row (size_t axis) {
+          assert (axis > 2);
+          assert (axis < ImageType::ndim());
           if (out_of_bounds) {
             Eigen::Matrix<value_type, Eigen::Dynamic, 1> out_of_bounds_row (ImageType::size(axis));
             out_of_bounds_row.setOnes();
             out_of_bounds_row *= out_of_bounds_value;
             return out_of_bounds_row;
           }
-
           return ImageType::row(axis);
         }
 
-        const value_type out_of_bounds_value;
     };
 
 

@@ -1,30 +1,21 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-    Written by J-Donald Tournier, 27/06/08.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-
-    24-10-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * scale plot by SH(0,0) coefficient when normalise option is set
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #include <fstream>
+
+#include <QGLWidget>
 
 #include "app.h"
 #include "gui/dwi/render_frame.h"
@@ -54,16 +45,24 @@ namespace MR
       RenderFrame::RenderFrame (QWidget* parent) :
         GL::Area (parent),
         view_angle (40.0), distance (0.3), line_width (1.0), scale (1.0), 
-        lmax_computed (0), lod_computed (0), recompute_mesh (true), recompute_amplitudes (true), 
-        show_axes (true), hide_neg_lobes (true), color_by_dir (true), use_lighting (true), 
+        lmax_computed (0), lod_computed (0), mode (mode_t::SH), recompute_mesh (true), recompute_amplitudes (true),
+        show_axes (true), hide_neg_values (true), color_by_dir (true), use_lighting (true),
         normalise (false), font (parent->font()), projection (this, font),
         orientation (Math::Versorf::unit()),
-        focus (0.0, 0.0, 0.0), OS (0), OS_x (0), OS_y (0)
+        focus (0.0, 0.0, 0.0), OS (0), OS_x (0), OS_y (0),
+        renderer ((QGLWidget*)this)
       {
         setMinimumSize (128, 128);
         lighting = new GL::Lighting (this);
         lighting->set_background = true;
         connect (lighting, SIGNAL (changed()), this, SLOT (update()));
+      }
+
+      RenderFrame::~RenderFrame()
+      {
+        Context::Grab context (this);
+        axes_VB.clear();
+        axes_VAO.clear();
       }
 
 
@@ -75,7 +74,7 @@ namespace MR
         Eigen::Matrix<float, 3, 3> M = Eigen::Matrix<float, 3, 3>::Zero();
         for (size_t i = 0; i != 3; ++i) {
           for (size_t j = 0; j != 3; ++j)
-            M(i,j) = rotation(i,j);
+            M(i,j) = rotation(j,i);
         }
         orientation = Math::Versorf (M);
         update();
@@ -184,23 +183,40 @@ namespace MR
             if (normalise && std::isfinite (values[0]) && values[0] != 0.0)
               final_scale /= values[0];
 
-            renderer.start (projection, *lighting, final_scale, use_lighting, color_by_dir, hide_neg_lobes);
+            renderer.set_mode (mode);
 
             if (recompute_mesh) {
-              renderer.update_mesh (lod_computed, lmax_computed);
+              switch (mode) {
+                case mode_t::SH:     renderer.sh    .update_mesh (lod_computed, lmax_computed); break;
+                case mode_t::TENSOR: renderer.tensor.update_mesh (lod_computed); break;
+                case mode_t::DIXEL:  renderer.dixel .update_mesh (*dirs); break;
+              }
               recompute_mesh = false;
             }
 
+            renderer.start (projection, *lighting, final_scale, use_lighting, color_by_dir, hide_neg_values);
+
             if (recompute_amplitudes) {
               Eigen::Matrix<float, Eigen::Dynamic, 1> r_del_daz;
-              const size_t nSH = Math::SH::NforL (lmax_computed);
-              if (size_t(values.rows()) < nSH) {
-                Eigen::Matrix<float, Eigen::Dynamic, 1> new_values = Eigen::Matrix<float, Eigen::Dynamic, 1>::Zero (nSH);
-                new_values.topRows (values.rows()) = values;
-                std::swap (values, new_values);
+              size_t nSH = 0;
+              switch (mode) {
+                case mode_t::SH:
+                  nSH = Math::SH::NforL (lmax_computed);
+                  if (size_t(values.rows()) < nSH) {
+                    Eigen::Matrix<float, Eigen::Dynamic, 1> new_values = Eigen::Matrix<float, Eigen::Dynamic, 1>::Zero (nSH);
+                    new_values.topRows (values.rows()) = values;
+                    std::swap (values, new_values);
+                  }
+                  renderer.sh.compute_r_del_daz (r_del_daz, values.topRows (Math::SH::NforL (lmax_computed)));
+                  renderer.sh.set_data (r_del_daz);
+                  break;
+                case mode_t::TENSOR:
+                  renderer.tensor.set_data (values);
+                  break;
+                case mode_t::DIXEL:
+                  renderer.dixel.set_data (values);
+                  break;
               }
-              renderer.compute_r_del_daz (r_del_daz, values.topRows (Math::SH::NforL (lmax_computed)));
-              renderer.set_data (r_del_daz);
               recompute_amplitudes = false;
             }
 

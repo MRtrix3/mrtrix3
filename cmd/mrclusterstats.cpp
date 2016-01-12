@@ -1,23 +1,18 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-    Written by David Raffelt, 07/11/11.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public Licensels
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
  */
+
 
 #include "command.h"
 #include "file/path.h"
@@ -145,7 +140,7 @@ void run() {
 
   {
     // Load images
-    ProgressBar progress("loading images...", subjects.size());
+    ProgressBar progress("loading images", subjects.size());
     for (size_t subject = 0; subject < subjects.size(); subject++) {
       LogLevelLatch log_level (0);
       auto input_image = Image<float>::open(subjects[subject]).with_direct_io (Stride::contiguous_along_axis (3));
@@ -257,7 +252,7 @@ void run() {
   std::vector<value_type> pvalue_output (num_vox, 0.0);
   Math::Stats::statistic2pvalue (perm_distribution, default_cluster_output, pvalue_output);
   {
-    ProgressBar progress ("generating output...");
+    ProgressBar progress ("generating output");
     for (size_t i = 0; i < num_vox; i++) {
       for (size_t dim = 0; dim < cluster_image.ndim(); dim++)
         tvalue_image.index(dim) = cluster_image.index(dim) = fwe_pvalue_image.index(dim) = uncorrected_pvalue_image.index(dim) = mask_indices[i][dim];
@@ -273,7 +268,7 @@ void run() {
       std::vector<value_type> pvalue_output_neg (num_vox, 0.0);
       Math::Stats::statistic2pvalue (*perm_distribution_neg, *default_cluster_output_neg, pvalue_output_neg);
 
-      ProgressBar progress ("generating negative contrast output...");
+      ProgressBar progress ("generating negative contrast output");
       for (size_t i = 0; i < num_vox; i++) {
         for (size_t dim = 0; dim < cluster_image.ndim(); dim++)
           cluster_image_neg.index(dim) = fwe_pvalue_image_neg.index(dim) = uncorrected_pvalue_image_neg.index(dim) = mask_indices[i][dim];

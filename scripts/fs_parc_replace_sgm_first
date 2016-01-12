@@ -20,15 +20,20 @@ import lib.app
 
 from lib.binaryInPath import binaryInPath
 from lib.errorMessage import errorMessage
+from lib.isWindows    import isWindows
 from lib.printMessage import printMessage
 from lib.runCommand   import runCommand
 
+lib.app.initCitations([ 'first', 'FSL', 'SIFT_followup' ])
 lib.app.initParser('In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST')
 lib.app.parser.add_argument('parc',   help='The input FreeSurfer parcellation image')
 lib.app.parser.add_argument('t1',     help='The T1 image to be provided to FIRST')
 lib.app.parser.add_argument('config', help='Either the FreeSurfer lookup table (if the input parcellation image is directly from FreeSurfer), or the connectome configuration file (if the parcellation image has been modified using the labelconfig command)')
 lib.app.parser.add_argument('output', help='The output parcellation image')
 lib.app.initialise()
+
+if isWindows():
+  errorMessage('Script cannot run on Windows due to FSL dependency')
 
 fsl_path = os.environ.get('FSLDIR', '')
 if not fsl_path:

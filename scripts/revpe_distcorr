@@ -22,10 +22,12 @@ from lib.errorMessage  import errorMessage
 from lib.getFSLSuffix  import getFSLSuffix
 from lib.getHeaderInfo import getHeaderInfo
 from lib.getPEAxis     import getPEAxis
+from lib.isWindows     import isWindows
 from lib.printMessage  import printMessage
 from lib.runCommand    import runCommand
 from lib.warnMessage   import warnMessage
 
+lib.app.initCitations([ 'eddy/topup', 'FSL' ])
 lib.app.initParser('Perform EPI distortion correction of a volume series using a reversed phase-encode image pair to estimate the inhomogeneity field')
 lib.app.parser.add_argument('pe_axis',   help='The phase encode direction / axis; can be an axis number (0, 1 or 2) or a code (e.g. AP, LR, IS)')
 lib.app.parser.add_argument('image1of2', help='The first image of the reversed-PE image pair')
@@ -33,6 +35,9 @@ lib.app.parser.add_argument('image2of2', help='The second image of the reversed-
 lib.app.parser.add_argument('series',    help='The image series to be corrected; note that the phase-encode direction of this series should be identical to the FIRST image of the reversed-PE pair')
 lib.app.parser.add_argument('output',    help='The output corrected image series')
 lib.app.initialise()
+
+if isWindows():
+  errorMessage('Script cannot run on Windows due to FSL dependency')
 
 fsl_path = os.environ.get('FSLDIR', '')
 if not fsl_path:

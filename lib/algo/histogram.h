@@ -1,24 +1,17 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-    Written by J-Donald Tournier, 27/06/08.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #ifndef __image_histogram_h__
 #define __image_histogram_h__
@@ -40,7 +33,7 @@ namespace MR
           if (num_buckets < 10)
             throw Exception ("Error initialising histogram: number of buckets must be greater than 10");
 
-          INFO ("Initialising histogram with " + str (num_buckets) + " buckets...");
+          INFO ("Initialising histogram with " + str (num_buckets) + " buckets");
           list.resize (num_buckets);
 
           value_type min, max;
@@ -51,7 +44,7 @@ namespace MR
           for (size_t n = 0; n < list.size(); n++)
             list[n].value = min + step * (n + 0.5);
 
-          for (auto l = Loop("building histogram of \"" + shorten (D.name()) + "\"...", D) (D); l; ++l) {
+          for (auto l = Loop("building histogram of \"" + shorten (D.name()) + "\"", D) (D); l; ++l) {
             const value_type val = D.value();
             if (std::isfinite (val) && val != 0.0) {
               size_t pos = size_t ( (val-min) /step);

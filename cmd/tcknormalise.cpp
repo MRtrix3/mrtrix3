@@ -1,24 +1,18 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-    Written by J-Donald Tournier, 27/06/08.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "command.h"
 #include "progressbar.h"
@@ -39,9 +33,9 @@ void usage ()
   + "apply a normalisation map to a tracks file.";
 
   ARGUMENTS
-  + Argument ("tracks", "the input track file.").type_file_in()
+  + Argument ("tracks", "the input track file.").type_tracks_in()
   + Argument ("transform", "the image containing the transform.").type_image_in()
-  + Argument ("output", "the output track file").type_file_out();
+  + Argument ("output", "the output track file").type_tracks_out();
 }
 
 
@@ -82,7 +76,7 @@ class Warper
 
     Eigen::Matrix<value_type,3,1> pos (const Eigen::Matrix<value_type,3,1>& x) {
       Eigen::Matrix<value_type,3,1> p;
-      if (!interp.scanner (x)) {
+      if (interp.scanner (x)) {
         interp.index(3) = 0; p[0] = interp.value();
         interp.index(3) = 1; p[1] = interp.value();
         interp.index(3) = 2; p[2] = interp.value();
@@ -101,7 +95,7 @@ class Writer
 {
   public:
     Writer (const std::string& file, const Tractography::Properties& properties) :
-      progress ("normalising tracks..."),
+      progress ("normalising tracks"),
       writer (file, properties) { }
 
     bool operator() (const TrackType& item) {

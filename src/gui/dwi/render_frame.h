@@ -1,34 +1,24 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-    Written by J-Donald Tournier, 27/06/08.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-
-    24-10-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * add functions to normalise plot amplitude
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #ifndef __gui_dwi_render_frame_h__
 #define __gui_dwi_render_frame_h__
 
 #include "memory.h"
 #include "types.h"
+#include "dwi/directions/set.h"
 #include "math/versor.h"
 #include "gui/opengl/lighting.h"
 #include "gui/dwi/renderer.h"
@@ -50,8 +40,11 @@ namespace MR
       {
           Q_OBJECT
 
+          typedef Renderer::mode_t mode_t;
+
         public:
           RenderFrame (QWidget* parent);
+          ~RenderFrame();
 
           GL::Lighting* lighting;
 
@@ -63,12 +56,19 @@ namespace MR
 
           void set_rotation (const GL::mat4& rotation);
 
+          void set_mode (mode_t new_mode) {
+            mode = new_mode;
+            if (mode != mode_t::DIXEL && dirs)
+              delete dirs.release();
+            recompute_mesh = recompute_amplitudes = true;
+            update();
+          }
           void set_show_axes (bool yesno = true) {
             show_axes = yesno;
             update();
           }
-          void set_hide_neg_lobes (bool yesno = true) {
-            hide_neg_lobes = yesno;
+          void set_hide_neg_values (bool yesno = true) {
+            hide_neg_values = yesno;
             update();
           }
           void set_color_by_dir (bool yesno = true) {
@@ -84,23 +84,41 @@ namespace MR
             update();
           }
           void set_lmax (int lmax) {
+            assert (mode == mode_t::SH);
             if (lmax != lmax_computed) 
               recompute_mesh = recompute_amplitudes = true;
             lmax_computed = lmax;
             update();
           }
           void set_LOD (int lod) {
+            assert (mode == mode_t::SH || mode == mode_t::TENSOR);
             if (lod != lod_computed) 
               recompute_mesh = recompute_amplitudes = true;
             lod_computed = lod;
+            update();
+          }
+          void set_dixels (const MR::DWI::Directions::Set& directions) {
+            assert (mode == mode_t::DIXEL);
+            if (dirs)
+              delete dirs.release();
+            dirs.reset (new MR::DWI::Directions::Set (directions));
+            recompute_mesh = recompute_amplitudes = true;
+            update();
+          }
+          void clear_dixels() {
+            assert (mode == mode_t::DIXEL);
+            if (dirs)
+              delete dirs.release();
+            recompute_mesh = recompute_amplitudes = true;
             update();
           }
 
           int  get_LOD () const { return lod_computed; }
           int  get_lmax () const { return lmax_computed; }
           float get_scale () const { return scale; }
+          mode_t get_mode() const { return mode; }
           bool get_show_axes () const { return show_axes; }
-          bool get_hide_neg_lobes () const { return hide_neg_lobes; }
+          bool get_hide_neg_lobes () const { return hide_neg_values; }
           bool get_color_by_dir () const { return color_by_dir; }
           bool get_use_lighting () const { return use_lighting; }
           bool get_normalise () const { return normalise; }
@@ -110,7 +128,9 @@ namespace MR
         protected:
           float view_angle, distance, line_width, scale;
           int lmax_computed, lod_computed;
-          bool recompute_mesh, recompute_amplitudes, show_axes, hide_neg_lobes, color_by_dir, use_lighting, normalise;
+          mode_t mode;
+          bool recompute_mesh, recompute_amplitudes, show_axes, hide_neg_values, color_by_dir, use_lighting, normalise;
+          std::unique_ptr<MR::DWI::Directions::Set> dirs;
 
           QPoint last_pos;
           GL::Font font;

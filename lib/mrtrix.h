@@ -1,24 +1,17 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-    Written by J-Donald Tournier, 27/06/08.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 
 #ifndef __mrtrix_h__
@@ -262,13 +255,13 @@ namespace MR
     if (stream.eof())
       return cfloat (real, 0.0f);
 
-    if (stream.peek() == 'i')
+    if (stream.peek() == 'i' || stream.peek() == 'j')
       return cfloat (0.0f, real);
 
     stream >> imag;
     if (stream.fail()) 
       return cfloat (real, 0.0f);
-    else if (stream.peek() != 'i')
+    else if (stream.peek() != 'i' && stream.peek() != 'j')
       throw Exception ("error converting string \"" + string + "\"");
     return cfloat (real, imag);
   }
@@ -300,13 +293,13 @@ namespace MR
     if (stream.eof())
       return cdouble (real, 0.0);
 
-    if (stream.peek() == 'i') 
+    if (stream.peek() == 'i' || stream.peek() == 'j') 
       return cdouble (0.0, real);
 
     stream >> imag;
     if (stream.fail()) 
       return cdouble (real, 0.0);
-    else if (stream.peek() != 'i')
+    else if (stream.peek() != 'i' && stream.peek() != 'j')
       throw Exception ("error converting string \"" + string + "\"");
     return cdouble (real, imag);
   }

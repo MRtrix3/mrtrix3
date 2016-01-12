@@ -1,24 +1,18 @@
 /*
-    Copyright 2014 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-    Written by David Raffelt, 2014
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "command.h"
 #include "progressbar.h"
@@ -69,7 +63,7 @@ void run ()
     angular_threshold = opt[0][0];
   const float angular_threshold_dp = cos (angular_threshold * (Math::pi/180.0));
 
-  for (auto i = Loop ("mapping subject fixels to template fixels...", subject_fixel) (subject_fixel, template_fixel, output_fixel); i; ++i) {
+  for (auto i = Loop ("mapping subject fixels to template fixels", subject_fixel) (subject_fixel, template_fixel, output_fixel); i; ++i) {
     output_fixel.value().set_size (template_fixel.value().size());
     for (size_t t = 0; t != template_fixel.value().size(); ++t) {
       output_fixel.value()[t] = template_fixel.value()[t] ;

@@ -1,23 +1,16 @@
 /*
-    Copyright 2012 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert Smith, 2012.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
  */
 
 
@@ -62,15 +55,17 @@ class Tck2nodes_base {
     NodePair operator() (const Tractography::Streamline<>& tck) const
     {
       assert (pair);
-      const node_t node_one = select_node (tck, false);
-      const node_t node_two = select_node (tck, true);
+      Image<node_t> v (nodes);
+      const node_t node_one = select_node (tck, v, false);
+      const node_t node_two = select_node (tck, v, true);
       return std::make_pair (node_one, node_two);
     }
 
     bool operator() (const Streamline<>& tck, std::vector<node_t>& out) const
     {
       assert (!pair);
-      select_nodes (tck, out);
+      Image<node_t> v (nodes);
+      select_nodes (tck, v, out);
       return true;
     }
 
@@ -78,15 +73,15 @@ class Tck2nodes_base {
 
 
   protected:
-    mutable Image<node_t> nodes;
+    const Image<node_t> nodes;
     std::shared_ptr<Transform> transform;
     const bool pair;
 
-    virtual node_t select_node (const Tractography::Streamline<>& tck, const bool end) const {
+    virtual node_t select_node (const Tractography::Streamline<>& tck, Image<node_t>& v, const bool end) const {
       throw Exception ("Calling empty virtual function Tck2nodes_base::select_node()");
     }
 
-    virtual void select_nodes (const Streamline<>& tck, std::vector<node_t>& out) const {
+    virtual void select_nodes (const Streamline<>& tck, Image<node_t>& v, std::vector<node_t>& out) const {
       throw Exception ("Calling empty virtual function Tck2nodes_base::select_nodes()");
     }
 
@@ -111,19 +106,15 @@ class Tck2nodes_end_voxels : public Tck2nodes_base {
 
   public:
     Tck2nodes_end_voxels (const Image<node_t>& nodes_data) :
-        Tck2nodes_base (nodes_data, true),
-        nearest (nodes) { }
+        Tck2nodes_base (nodes_data, true) { }
 
     Tck2nodes_end_voxels (const Tck2nodes_end_voxels& that) :
-        Tck2nodes_base (that),
-        nearest (nodes) { }
+        Tck2nodes_base (that) { }
 
     ~Tck2nodes_end_voxels() { }
 
   private:
-    mutable Interp::Nearest<decltype(nodes)> nearest;
-
-    node_t select_node (const Tractography::Streamline<float>& tck, const bool end) const override;
+    node_t select_node (const Tractography::Streamline<float>&, Image<node_t>&, const bool) const override;
 
 };
 
@@ -152,7 +143,7 @@ class Tck2nodes_radial : public Tck2nodes_base {
     ~Tck2nodes_radial() { }
 
   private:
-    node_t select_node (const Tractography::Streamline<>& tck, const bool end) const override;
+    node_t select_node (const Tractography::Streamline<>&, Image<node_t>&, const bool) const override;
 
     void initialise_search ();
     std::vector<voxel_type> radial_search;
@@ -184,7 +175,7 @@ class Tck2nodes_revsearch : public Tck2nodes_base
     ~Tck2nodes_revsearch() { }
 
   private:
-    node_t select_node (const Tractography::Streamline<>& tck, const bool end) const override;
+    node_t select_node (const Tractography::Streamline<>&, Image<node_t>&, const bool) const override;
 
     const default_type max_dist;
 
@@ -210,7 +201,7 @@ class Tck2nodes_forwardsearch : public Tck2nodes_base
     ~Tck2nodes_forwardsearch() { }
 
   private:
-    node_t select_node (const Tractography::Streamline<>& tck, const bool end) const override;
+    node_t select_node (const Tractography::Streamline<>&, Image<node_t>&, const bool) const override;
 
     const default_type max_dist;
     const default_type angle_limit;
@@ -236,7 +227,7 @@ class Tck2nodes_all_voxels : public Tck2nodes_base
     ~Tck2nodes_all_voxels() { }
 
   private:
-    void select_nodes (const Streamline<>&, std::vector<node_t>&) const override;
+    void select_nodes (const Streamline<>&, Image<node_t>&, std::vector<node_t>&) const override;
 
 };
 

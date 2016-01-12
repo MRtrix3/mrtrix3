@@ -4,7 +4,9 @@
 # * -verbose prints all commands and all command outputs
 
 args = ''
+citationWarning = ''
 cleanup = True
+epilog = ''
 lastFile = ''
 mrtrixQuiet = '-quiet'
 mrtrixNThreads = ''
@@ -21,10 +23,44 @@ colourPrint = ''
 colourWarn = ''
 
 
+import argparse
+class Parser(argparse.ArgumentParser):
+  def error(self, message):
+    import sys
+    sys.stderr.write('\nError: %s\n\n' % message)
+    self.print_help()
+    sys.exit(2)
+
+
+
+# Based on a list of names of commands used in the script, produce both the help page epilog and the citation warning to print at the commencement of the script
+def initCitations(cmdlist):
+
+  import lib.citations
+  global epilog, citationWarning
+  max_level = 0
+  for name in cmdlist:
+    entry = [item for item in lib.citations.list if item[0] == name][0]
+    if entry:
+      max_level = max(max_level, entry[1]);
+      # Construct string containing all relevant citations that will be fed to the argument parser epilog
+      if not epilog:
+        epilog = 'Relevant citations for tools / algorithms used in this script:\n\n'
+      epilog += entry[0] + ':\n' + entry[2] + '\n\n'
+
+  if max_level:
+    citationWarning += 'Note that this script makes use of commands / algorithms that have relevant articles for citation'
+    if max_level > 1:
+      citationWarning += '; INCLUDING FROM EXTERNAL SOFTWARE PACKAGES'
+    citationWarning += '. Please consult the help page (-help option) for more information.'
+
+
+
+
 def initParser(desc):
   import argparse
-  global parser
-  parser = argparse.ArgumentParser(description=desc, formatter_class=argparse.RawDescriptionHelpFormatter)
+  global epilog, parser
+  parser = Parser(description=desc, epilog=epilog, formatter_class=argparse.RawDescriptionHelpFormatter)
   standard_options = parser.add_argument_group('standard options')
   standard_options.add_argument('-continue', nargs=2, dest='cont', metavar=('<TempDir>', '<LastFile>'), help='Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file')
   standard_options.add_argument('-nocleanup', action='store_true', help='Do not delete temporary directory at script completion')
@@ -33,8 +69,8 @@ def initParser(desc):
   verbosity_group = standard_options.add_mutually_exclusive_group()
   verbosity_group.add_argument('-quiet',   action='store_true', help='Suppress all console output during script execution')
   verbosity_group.add_argument('-verbose', action='store_true', help='Display additional information for every command invoked')
-  
-  
+
+
 
 def initialise():
   import argparse, os, random, string, sys
@@ -44,6 +80,24 @@ def initialise():
   global colourClear, colourConsole, colourError, colourPrint, colourWarn
   workingDir = os.getcwd()
   args = parser.parse_args()
+
+  use_colour = readMRtrixConfSetting('TerminalColor')
+  if use_colour:
+    use_colour = use_colour.lower() in ('yes', 'true', '1')
+  else:
+    use_colour = not sys.platform.startswith('win')
+  if use_colour:
+    colourClear = '\033[0m'
+    colourConsole = '\033[03;34m'
+    colourError = '\033[01;31m'
+    colourPrint = '\033[03;32m'
+    colourWarn = '\033[00;31m'
+
+  if citationWarning:
+    printMessage('')
+    printMessage(citationWarning)
+    printMessage('')
+
   if args.nocleanup:
     cleanup = False
   if args.nthreads:
@@ -80,17 +134,7 @@ def initialise():
       outfile.write(workingDir + '\n')
     with open(os.path.join(tempDir, 'command.txt'), 'w') as outfile:
       outfile.write(' '.join(sys.argv) + '\n')
-  use_colour = readMRtrixConfSetting('TerminalColor')
-  if use_colour:
-    use_colour = use_colour.lower() in ('yes', 'true', '1')
-  else:
-    use_colour = not sys.platform.startswith('win')
-  if use_colour:
-    colourClear = '\033[0m'
-    colourConsole = '\033[03;34m'
-    colourError = '\033[01;31m'
-    colourPrint = '\033[03;32m'
-    colourWarn = '\033[00;31m'
+
 
 
 
@@ -100,8 +144,8 @@ def gotoTempDir():
   if verbosity:
     printMessage('Changing to temporary directory (' + tempDir + ')')
   os.chdir(tempDir)
-  
-  
+
+
 
 def moveFileToDest(local_path, destination):
   import os, shutil
@@ -110,7 +154,7 @@ def moveFileToDest(local_path, destination):
     destination = os.path.abspath(os.path.join(workingDir, destination))
   printMessage('Moving output file from temporary directory to user specified location')
   shutil.move(local_path, destination)
-  
+
 
 
 def complete():

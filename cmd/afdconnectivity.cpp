@@ -1,24 +1,18 @@
 /*
-    Copyright 2013 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-    Written by David Raffelt, 2013
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "command.h"
 #include "memory.h"
@@ -69,13 +63,13 @@ void usage ()
   ARGUMENTS
   + Argument ("image", "the input FOD image.").type_image_in()
 
-  + Argument ("tracks", "the input track file defining the bundle of interest.").type_file_in();
+  + Argument ("tracks", "the input track file defining the bundle of interest.").type_tracks_in();
 
   OPTIONS
   + Option ("wbft", "provide a whole-brain fibre-tracking data set (of which the input track file "
                     "should be a subset), to improve the estimate of fibre bundle volume in the "
                     "presence of partial volume")
-    + Argument ("tracks").type_file_in()
+    + Argument ("tracks").type_tracks_in()
 
   + Option ("afd_map", "output a 3D image containing the AFD estimated for each voxel.")
     + Argument ("image").type_image_out()
@@ -163,7 +157,7 @@ value_type AFDConnectivity::get (const std::string& path)
   Tractography::Properties properties;
   Tractography::Reader<value_type> reader (path, properties);
   const size_t track_count = (properties.find ("count") == properties.end() ? 0 : to<size_t>(properties["count"]));
-  DWI::Tractography::Mapping::TrackLoader loader (reader, track_count, "summing apparent fibre density within track... ");
+  DWI::Tractography::Mapping::TrackLoader loader (reader, track_count, "summing apparent fibre density within track");
 
   // If WBFT is provided, this is the sum of (volume/length) across streamlines
   // Otherwise, it's a sum of lengths of all streamlines (for later scaling by mean streamline length)

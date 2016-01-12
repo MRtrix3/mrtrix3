@@ -154,7 +154,7 @@ namespace MR
                 //TODO alter grad step
 
                 bool converged = false;
-                size_t iteration = 0;
+                ssize_t iteration = 0;
                 default_type update_smoothing_mm = update_smoothing * ((midway_image.spacing(0) + midway_image.spacing(1) + midway_image.spacing(2)) / 3.0);
                 default_type disp_smoothing_mm = disp_smoothing * ((midway_image.spacing(0) + midway_image.spacing(1) + midway_image.spacing(2)) / 3.0);
 

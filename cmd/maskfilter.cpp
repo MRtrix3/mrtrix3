@@ -1,24 +1,18 @@
 /*
-    Copyright 2012 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-    Written by Robert E. Smith, 28/03/2014.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "command.h"
 #include "image.h"
@@ -105,7 +99,7 @@ void run () {
   int filter_index = argument[1];
 
   if (filter_index == 0) { // Connected components
-    Filter::ConnectedComponents filter (input_image, std::string("applying connected-component filter to image ") + Path::basename (argument[0]) + "... ");
+    Filter::ConnectedComponents filter (input_image, std::string("applying connected-component filter to image ") + Path::basename (argument[0]));
     auto opt = get_options ("axes");
     std::vector<int> axes;
     if (opt.size()) {
@@ -144,7 +138,7 @@ void run () {
   }
 
   if (filter_index == 1) { // Dilate
-    Filter::Dilate filter (input_image, std::string("applying dilate filter to image ") + Path::basename (argument[0]) + "... ");
+    Filter::Dilate filter (input_image, std::string("applying dilate filter to image ") + Path::basename (argument[0]));
     auto opt = get_options ("npass");
     if (opt.size())
       filter.set_npass (int(opt[0][0]));
@@ -157,7 +151,7 @@ void run () {
   }
 
   if (filter_index == 2) { // Erode
-    Filter::Erode filter (input_image, std::string("applying erode filter to image ") + Path::basename (argument[0]) + "... ");
+    Filter::Erode filter (input_image, std::string("applying erode filter to image ") + Path::basename (argument[0]));
     auto opt = get_options ("npass");
     if (opt.size())
       filter.set_npass (int(opt[0][0]));
@@ -170,7 +164,7 @@ void run () {
   }
 
   if (filter_index == 3) { // Median
-    Filter::Median filter (input_image, std::string("applying median filter to image ") + Path::basename (argument[0]) + "... ");
+    Filter::Median filter (input_image, std::string("applying median filter to image ") + Path::basename (argument[0]));
     auto opt = get_options ("extent");
     if (opt.size())
       filter.set_extent (parse_ints (opt[0][0]));

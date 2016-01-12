@@ -1,29 +1,21 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-    Written by Robert E. Smith, 06/02/14.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 
 #include <vector>
-
-#include <gsl/gsl_fit.h>
 
 #include "app.h"
 #include "bitset.h"
@@ -89,22 +81,18 @@ void usage ()
 
 // Perform a linear regression on the power ratio in each order
 // Omit l=2 - tends to be abnormally small due to non-isotropic brain-wide fibre distribution
-// Use this to project the power ratio at either l=0 or l=lmax (depending on the gradient);
-//   this has proven to be a better predictor of SH basis for poor data
-// Also, if the regression has a substantial gradient, warn the user
-// Threshold on gradient will depend on the basis of the image
-//
 std::pair<float, float> get_regression (const std::vector<float>& ratios)
 {
   const size_t n = ratios.size() - 1;
-  double x[n], y[n];
+  Eigen::VectorXf Y (n), b (2);
+  Eigen::MatrixXf A (n, 2);
   for (size_t i = 1; i != ratios.size(); ++i) {
-    x[i-1] = (2*i)+2;
-    y[i-1] = ratios[i];
+    Y[i-1] = ratios[i];
+    A(i-1,0) = 1.0f;
+    A(i-1,1) = (2*i)+2;
   }
-  double c0, c1, cov00, cov01, cov11, sumsq;
-  gsl_fit_linear (x, 1, y, 1, n, &c0, &c1, &cov00, &cov01, &cov11, &sumsq);
-  return std::make_pair (c0, c1);
+  b = (A.transpose() * A).ldlt().solve (A.transpose() * Y);
+  return std::make_pair (b[0], b[1]);
 }
 
 
@@ -133,7 +121,7 @@ void check_and_update (Header& H, const conv_t conversion)
   auto mask = Image<bool>::scratch (header_mask);
   size_t voxel_count = 0;
   {
-    for (auto i = Loop ("Masking image based on DC term...", image, 0, 3) (image, mask); i; ++i) {
+    for (auto i = Loop ("Masking image based on DC term", image, 0, 3) (image, mask); i; ++i) {
       const value_type value = image.value();
       if (value && std::isfinite (value)) {
         mask.value() = true;
@@ -151,7 +139,7 @@ void check_and_update (Header& H, const conv_t conversion)
   // volumes independently, and report ratio for each harmonic order
   std::unique_ptr<ProgressBar> progress;
   if (App::log_level > 0 && App::log_level < 2)
-    progress.reset (new ProgressBar ("Evaluating SH basis of image \"" + H.name() + "\"...", N-1));
+    progress.reset (new ProgressBar ("Evaluating SH basis of image \"" + H.name() + "\"", N-1));
 
   std::vector<float> ratios;
 
@@ -291,7 +279,7 @@ void check_and_update (Header& H, const conv_t conversion)
   // Adjust the image data in-place if necessary
   if (multiplier && (multiplier != 1.0)) {
 
-    ProgressBar progress ("Modifying SH basis of image \"" + H.name() + "\"...", N-1);
+    ProgressBar progress ("Modifying SH basis of image \"" + H.name() + "\"", N-1);
     for (image.index(3) = 1; image.index(3) != ssize_t(N); ++image.index(3)) {
       if (!mzero_terms[image.index(3)]) {
         for (auto i = Loop (image, 0, 3) (image); i; ++i)

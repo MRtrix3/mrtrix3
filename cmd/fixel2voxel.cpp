@@ -1,24 +1,18 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-    Written by Robert E. Smith, 2013.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "command.h"
 #include "progressbar.h"
@@ -664,7 +658,7 @@ void run ()
   } else if (op == 15 || op == 16 || op == 17) { // split_*
     H_out.set_ndim (4);
     uint32_t max_count = 0;
-    for (auto l = Loop ("determining largest fixel count... ", in) (in); l; ++l)
+    for (auto l = Loop ("determining largest fixel count", in) (in); l; ++l)
       max_count = std::max (max_count, in.value().size());
     if (max_count == 0)
       throw Exception ("fixel image is empty");
@@ -677,7 +671,7 @@ void run ()
   auto opt = get_options ("weighted");
   const bool weighted = opt.size();
 
-  auto loop = ThreadedLoop ("converting sparse fixel data to scalar image... ", in);
+  auto loop = ThreadedLoop ("converting sparse fixel data to scalar image", in);
 
   switch (op) {
     case 0:  loop.run (Mean       (weighted), in, out); break;

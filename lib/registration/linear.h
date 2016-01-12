@@ -240,9 +240,9 @@ namespace MR
             typedef Im1ImageType ProcessedImageType;
             typedef Image<bool> ProcessedMaskType;
 
-            typedef Interp::SplineInterp<Im1ImageType, Math::UniformBSpline<typename Im1ImageType::value_type>, Math::SplineProcessingType::ValueAndGradient> Im1ImageInterpolatorType;
-            typedef Interp::SplineInterp<Im2ImageType, Math::UniformBSpline<typename Im2ImageType::value_type>, Math::SplineProcessingType::ValueAndGradient> Im2ImageInterpolatorType;
-            typedef Interp::SplineInterp<ProcessedImageType, Math::UniformBSpline<typename ProcessedImageType::value_type>, Math::SplineProcessingType::ValueAndGradient> ProcessedImageInterpolatorType;
+            typedef Interp::SplineInterp<Im1ImageType, Math::UniformBSpline<typename Im1ImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative> Im1ImageInterpolatorType;
+            typedef Interp::SplineInterp<Im2ImageType, Math::UniformBSpline<typename Im2ImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative> Im2ImageInterpolatorType;
+            typedef Interp::SplineInterp<ProcessedImageType, Math::UniformBSpline<typename ProcessedImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative> ProcessedImageInterpolatorType;
 
             typedef Metric::Params<TransformType,
                                    Im1ImageType,

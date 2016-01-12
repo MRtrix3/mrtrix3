@@ -1,23 +1,16 @@
 /*
-   Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-   Written by J-Donald Tournier and Robert E. Smith, 2011.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
  */
 
 #ifndef __dwi_tractography_algorithms_iFOD2_h__
@@ -124,7 +117,7 @@ namespace MR
                   ++num_proc;
                 }
 
-                float internal_step_size() const { return step_size / float(num_samples); }
+                float internal_step_size() const override { return step_size / float(num_samples); }
 
                 size_t lmax, num_samples, max_trials;
                 float sin_max_angle, fod_power;
@@ -237,18 +230,14 @@ end_init:
               Eigen::Vector3f next_pos, next_dir;
 
               float max_val = 0.0;
-              size_t nan_count = 0;
               for (size_t i = 0; i < calibrate_list.size(); ++i) {
                 get_path (calib_positions, calib_tangents, rotate_direction (dir, calibrate_list[i]));
                 float val = path_prob (calib_positions, calib_tangents);
                 if (std::isnan (val))
-                  ++nan_count;
+                  return EXIT_IMAGE;
                 else if (val > max_val)
                   max_val = val;
               }
-
-              if (nan_count == calibrate_list.size())
-                return EXIT_IMAGE;
 
               if (max_val <= 0.0)
                 return CALIBRATE_FAIL;
@@ -288,29 +277,35 @@ end_init:
 
 
             // Restore proper probability from the FOD at the track seed point
-            void reverse_track()
+            void reverse_track() override
             {
               half_log_prob0 = half_log_prob0_seed;
               sample_idx = S.num_samples;
+              MethodBase::reverse_track();
             }
 
 
-            void truncate_track (std::vector<Eigen::Vector3f>& tck, const int revert_step)
+            void truncate_track (GeneratedTrack& tck, const size_t length_to_revert_from, const size_t revert_step)
             {
-              // Need to be able to get an estimate of the tangent at the new endpoint
-              // Removing start of current arc (counts as 1 if it exists) plus 1 arclength for each remaining revert_step
-              const int points_to_remove = (sample_idx ? sample_idx : S.num_samples) + ((revert_step - 1) * S.num_samples);
-              const int new_end_idx = (int)tck.size() - 1 - points_to_remove;
-              if (new_end_idx <= 1) {
+              // OK, if we know length_to_revert_from, we can reconstruct what sample_idx was at that point
+              size_t sample_idx_at_full_length = (length_to_revert_from - tck.get_seed_index()) % S.num_samples;
+              // Unfortunately can't distinguish between sample_idx = 0 and sample_idx = S.num_samples
+              // However the former would result in zero truncation with revert_step = 1...
+              if (!sample_idx_at_full_length)
+                sample_idx_at_full_length = S.num_samples;
+              const size_t points_to_remove = sample_idx_at_full_length + ((revert_step - 1) * S.num_samples);
+              if (tck.get_seed_index() + points_to_remove >= tck.size()) {
                 tck.clear();
                 pos = { NaN, NaN, NaN };
                 dir = { NaN, NaN, NaN };
                 return;
               }
-              dir = (tck[new_end_idx + 1] - tck[new_end_idx - 1]).normalized();
-
-              // Erase the track up to the correct point
-              tck.erase (tck.begin() + new_end_idx + 1, tck.end());
+              const size_t new_size = length_to_revert_from - points_to_remove;
+              if (tck.size() == 2 || new_size == 1)
+                dir = (tck[1] - tck[0]).normalized();
+              else if (new_size != tck.size())
+                dir = (tck[new_size] - tck[new_size - 2]).normalized();
+              tck.resize (new_size);
 
               // Need to get the path probability contribution from the FOD at this point
               pos = tck.back();
@@ -321,7 +316,7 @@ end_init:
               sample_idx = S.num_samples;
 
               // Need to update sgm_depth appropriately, remembering that it is tracked by exec
-              act().sgm_depth = std::max (0, act().sgm_depth - points_to_remove);
+              act().sgm_depth = (act().sgm_depth > points_to_remove) ? act().sgm_depth - points_to_remove : 0;
             }
 
 
@@ -402,7 +397,7 @@ end_init:
             }
 
 
-
+          protected:
             void get_path (std::vector<Eigen::Vector3f>& positions, std::vector<Eigen::Vector3f>& tangents, const Eigen::Vector3f& end_dir) const
             {
               float cos_theta = end_dir.dot (dir);
@@ -442,13 +437,14 @@ end_init:
 
 
 
-
+          private:
             class Calibrate
             {
               public:
                 Calibrate (iFOD2& method) :
                   P (method),
                   fod (P.values),
+                  vox (P.S.vox()),
                   positions (P.S.num_samples),
                   tangents (P.S.num_samples) {
                     Math::SH::delta (fod, Eigen::Vector3f (0.0, 0.0, 1.0), P.S.lmax);
@@ -457,11 +453,12 @@ end_init:
 
                 float operator() (float el)
                 {
+                  P.pos = { 0.0f, 0.0f, 0.0f };
                   P.get_path (positions, tangents, Eigen::Vector3f (std::sin (el), 0.0, std::cos(el)));
 
                   float log_prob = init_log_prob;
                   for (size_t i = 0; i < P.S.num_samples; ++i) {
-                    float prob = Math::SH::value (P.values, tangents[i], P.S.lmax);
+                    float prob = Math::SH::value (P.values, tangents[i], P.S.lmax) * (1.0 - (positions[i][0] / vox));
                     if (prob <= 0.0)
                       return 0.0;
                     prob = std::log (prob);
@@ -477,6 +474,7 @@ end_init:
               private:
                 iFOD2& P;
                 Eigen::VectorXf& fod;
+                const float vox;
                 float init_log_prob;
                 std::vector<Eigen::Vector3f> positions, tangents;
             };
