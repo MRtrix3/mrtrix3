@@ -32,6 +32,8 @@
 #include "math/rng.h"
 #include "math/math.h"
 
+#include "registration/transform/initialiser.h"
+
 #include "registration/transform/global_search.h"
 
 using namespace MR;
@@ -92,6 +94,8 @@ void run() {
 
     MetricType metric;
     TrafoType transform;
+
+    Registration::Transform::Init::initialise_using_image_moments (im1_image, im2_image, transform);
 
     Registration::GlobalSearch transformation_search;
     transformation_search.run_masked(metric, transform, im1_image, im2_image, im1_mask, im2_mask);

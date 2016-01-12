@@ -25,7 +25,13 @@
 
 #include <vector>
 #include <iostream>     // std::streambuf
+#include <Eigen/Geometry>
+#include <Eigen/Eigen>
+
+
+#include "math/math.h"
 #include "image.h"
+#include "debug.h"
 // #include "image/average_space.h"
 // #include "filter/normalise.h"
 #include "filter/resize.h"
@@ -42,7 +48,6 @@
 #include "math/gradient_descent.h"
 #include "math/check_gradient.h"
 #include "math/rng.h"
-#include "math/math.h"
 
 
 namespace MR
@@ -64,8 +69,7 @@ namespace MR
           grad_tolerance(1.0e-6),
           step_tolerance(1.0e-10),
           log_stream(nullptr),
-          init_type (Transform::Init::mass) {
-        }
+          init_type (Transform::Init::mass) { assert(pool_size > 2); }
 
         void set_init_type (Transform::Init::InitType type) {
           init_type = type;
@@ -86,6 +90,17 @@ namespace MR
 
             INFO("running global search");
 
+            typedef typename TransformType::ParameterType ParamType;
+            // typedef Eigen::Transform<default_type, 3, Eigen::AffineProjective> TrafoType;
+            typedef transform_type TrafoType;
+            typedef Eigen::Matrix<default_type, 3, 3> MatType;
+            typedef Eigen::Matrix<default_type, 3, 1> VecType;
+            typedef Eigen::Quaternion<default_type> QuatType;
+
+            typedef Image<float> MidwayImageType;
+            typedef Im1ImageType ProcessedImageType;
+
+            // smooth images
             Filter::Smooth im1_smooth_filter (im1_image);
             im1_smooth_filter.set_stdev(smooth_factor * 1.0 / (2.0 * scale_factor));
             auto im1_smoothed = Image<typename Im1ImageType::value_type>::scratch (im1_smooth_filter);
@@ -93,31 +108,125 @@ namespace MR
             Filter::Smooth im2_smooth_filter (im2_image);
             im2_smooth_filter.set_stdev(smooth_factor * 1.0 / (2.0 * scale_factor)) ;
             auto im2_smoothed = Image<typename Im2ImageType::value_type>::scratch (im2_smooth_filter);
-
-            Filter::Resize im1_resize_filter (im1_image);
-            im1_resize_filter.set_scale_factor (scale_factor);
-            im1_resize_filter.set_interp_type (1);
-            auto im1_resized = Image<typename Im1ImageType::value_type>::scratch (im1_resize_filter);
-
-            Filter::Resize im2_resize_filter (im2_image);
-            im2_resize_filter.set_scale_factor (scale_factor);
-            im2_resize_filter.set_interp_type (1);
-            auto im2_resized = Image<typename Im1ImageType::value_type>::scratch (im2_resize_filter);
-
             {
               LogLevelLatch log_level (0);
               im1_smooth_filter (im1_image, im1_smoothed);
               im2_smooth_filter (im2_image, im2_smoothed);
-              im1_resize_filter (im1_smoothed, im1_resized);
-              im2_resize_filter (im2_smoothed, im2_resized);
             }
+
+            // --------------------------------- evaluate --------------------------
+
+            typedef Interp::SplineInterp<Im1ImageType, Math::UniformBSpline<typename Im1ImageType::value_type>, Math::SplineProcessingType::ValueAndGradient> Im1ImageInterpolatorType;
+            typedef Interp::SplineInterp<Im2ImageType, Math::UniformBSpline<typename Im2ImageType::value_type>, Math::SplineProcessingType::ValueAndGradient> Im2ImageInterpolatorType;
+            typedef Interp::SplineInterp<ProcessedImageType, Math::UniformBSpline<typename ProcessedImageType::value_type>, Math::SplineProcessingType::ValueAndGradient> ProcessedImageInterpolatorType;
+            typedef Image<bool> ProcessedMaskType;
+            typedef Metric::Params<TransformType,
+                                   Im1ImageType,
+                                   Im2ImageType,
+                                   MidwayImageType,
+                                   Im1MaskType,
+                                   Im2MaskType,
+                                   Im1ImageInterpolatorType,
+                                   Im2ImageInterpolatorType,
+                                   Interp::Linear<Im1MaskType>,
+                                   Interp::Linear<Im2MaskType>,
+                                   ProcessedImageType,
+                                   ProcessedImageInterpolatorType,
+                                   ProcessedMaskType,
+                                   Interp::Nearest<ProcessedMaskType>> ParameterClassType;
+
+            // create resized midway image
+            std::vector<Eigen::Transform<double, 3, Eigen::Projective> > init_transforms;
+            {
+              Eigen::Transform<double, 3, Eigen::Projective> init_trafo_2 = transform.get_transform_half();
+              Eigen::Transform<double, 3, Eigen::Projective> init_trafo_1 = transform.get_transform_half_inverse();
+              init_transforms.push_back (init_trafo_2);
+              init_transforms.push_back (init_trafo_1);
+            }
+            auto padding = Eigen::Matrix<default_type, 4, 1>(0.0, 0.0, 0.0, 0.0);
+            default_type im2_res = 1.0;
+            std::vector<Header> headers;
+            headers.push_back(im2_image.original_header());
+            headers.push_back(im1_image.original_header());
+            auto midway_image_header = compute_minimum_average_header<default_type, Eigen::Transform<default_type, 3, Eigen::Projective>> (headers, im2_res, padding, init_transforms);
+            auto midway_image = Header::scratch (midway_image_header).get_image<typename Im1ImageType::value_type>();
+
+            // TODO: there must be a better way to do this without creating an empty image
+            Filter::Resize midway_resize_filter (midway_image);
+            midway_resize_filter.set_scale_factor (scale_factor);
+            midway_resize_filter.set_interp_type (1);
+            auto midway_resized = Image<typename Im1ImageType::value_type>::scratch (midway_resize_filter);
+            {
+              LogLevelLatch log_level (0);
+              midway_resize_filter (midway_image, midway_resized);
+            }
+
+            ParameterClassType parameters (transform, im1_smoothed, im2_smoothed, midway_resized, im1_mask, im2_mask);
+            parameters.loop_density = loop_density;
+            // set control point coordinates inside +-1/3 of the midway_image size
+            // {
+            //   Eigen::Vector3 ext (midway_image_header.spacing(0) / 6.0,
+            //                       midway_image_header.spacing(1) / 6.0,
+            //                       midway_image_header.spacing(2) / 6.0);
+            //   for (size_t i = 0; i<3; ++i)
+            //     ext(i) *= midway_image_header.size(i) - 0.5;
+            //   parameters.set_control_points_extent(ext);
+            // }
+
+            // Metric::Evaluate<MetricType, ParameterClassType> evaluate (metric, parameters);
+
+            Eigen::Matrix<default_type, Eigen::Dynamic, 1> x;
+            Eigen::Matrix<default_type, Eigen::Dynamic, 1> gradient;
+
+            // --------------------------------- evaluate --------------------------
 
             // auto out = Image<float>::create ("/tmp/im1.mif", im1_resized);
             // copy(im1_resized, out);
 
-            std::vector<TransformType> trafo_p (pool_size);
-            std::vector<TransformType> trafo_f (pool_size);
-            std::vector<default_type> cost_pool (pool_size);
+/*            template<typename Scalar, int Dim, int Mode, int Options>
+            template<typename RotationMatrixType, typename ScalingMatrixType>
+            void Transform<Scalar,Dim,Mode,Options>::computeRotationScaling(RotationMatrixType *rotation, ScalingMatrixType *scaling) const
+            {
+              JacobiSVD<LinearMatrixType> svd(linear(), ComputeFullU | ComputeFullV);
+
+              Scalar x = (svd.matrixU() * svd.matrixV().adjoint()).determinant(); // so x has absolute value 1
+              VectorType sv(svd.singularValues());
+              sv.coeffRef(0) *= x;
+              if(scaling) scaling->lazyAssign(svd.matrixV() * sv.asDiagonal() * svd.matrixV().adjoint());
+              if(rotation)
+              {
+                LinearMatrixType m(svd.matrixU());
+                m.col(0) /= x;
+                rotation->lazyAssign(m * svd.matrixV().adjoint());
+              }
+            }*/
+            // Eigen::Scaling(sx, sy, sz)
+            // Eigen::Translation<default_type,3>(tx, ty, tz)
+            // Eigen::Quaternion<default_type> q;
+            // q = AngleAxis<default_type>(angle_in_radian, axis);
+
+            // Eigen::Quaternion<float> q(R);
+            // vector<tuple<int, string>> v;
+
+            // MatType M_start (transform.get_matrix());
+            QuatType q_start(transform.get_matrix());
+            VecType t_start = transform.get_translation();
+            // nonorthonormal_matrix2quaternion(M_start, Q_start);
+
+            // std::cerr << q_start << std::endl;
+
+            std::vector<std::tuple<default_type, QuatType, VecType>> parental;
+            std::vector<std::tuple<default_type, QuatType, VecType>> filial;
+            parental.push_back(std::make_tuple(std::numeric_limits<default_type>::max(), q_start, t_start));
+            for (size_t i = 1; i < pool_size; ++i){
+              QuatType q (q_start);
+              mutate(q);
+              VecType t (t_start);
+              mutate(t);
+              parental.push_back(std::make_tuple(std::numeric_limits<default_type>::max(), q, t));
+            }
+
+            std::sort(std::begin(parental), std::end(parental), TupleCompare<0>());
 
             INFO("global search done.");
           }
@@ -141,10 +250,38 @@ namespace MR
           // TODO
         }
 
-        template <class TransformType>
-        void mutate(TransformType& T) {
-          // TODO
+        template <class ComputeType>
+        void mutate(Eigen::Quaternion<ComputeType>& q, ComputeType angle = 0.2) {
+          Eigen::Matrix<ComputeType,3,1> axis = Eigen::Matrix<ComputeType,3,1>::Random();
+          axis.array() *= (1.0 / axis.norm());
+          Eigen::AngleAxis<ComputeType> aa (angle, axis );
+          q = q * aa;
         }
+
+        template <class ComputeType>
+        void mutate(Eigen::Matrix<ComputeType, 3, 1>& T, ComputeType distance = 50) {
+          Eigen::Matrix<ComputeType,3,1> direction = Eigen::Matrix<ComputeType,3,1>::Random();
+          direction.array() *= (1.0 / direction.norm());
+          T += distance * direction;
+        }
+
+        template <class MatrixType, class QuaternionType = Eigen::Quaternion<default_type>>
+        void nonorthonormal_matrix2quaternion (const MatrixType& matrix, QuaternionType& q) {
+          // http://people.csail.mit.edu/bkph/articles/Nearest_Orthonormal_Matrix.pdf
+          Eigen::JacobiSVD<MatrixType> svd(matrix, Eigen::ComputeFullV);
+          MatrixType M = svd.matrixV().col(0) * svd.matrixV().col(0).transpose() / svd.singularValues()(0) +
+                         svd.matrixV().col(1) * svd.matrixV().col(1).transpose() / svd.singularValues()(1) +
+                         svd.matrixV().col(2) * svd.matrixV().col(2).transpose() / svd.singularValues()(2);
+          q = QuaternionType(MatrixType(matrix * M));
+        }
+
+        template<size_t M, template<typename> class F = std::less>
+        struct TupleCompare {
+          template<typename T>
+          bool operator()(T const &t1, T const &t2) {
+            return F<typename std::tuple_element<M, T>::type>()(std::get<M>(t1), std::get<M>(t2));
+          }
+        };
     };
   }
 }
