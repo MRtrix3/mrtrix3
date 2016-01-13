@@ -346,6 +346,10 @@ namespace MR
         const Eigen::Matrix<value_type, 1, 3> out_of_bounds_vec;
         Eigen::Matrix<value_type, 64, 3> weights_matrix;
         const Eigen::Matrix<default_type, 3, 3> wrt_scanner_transform;
+
+      private:
+        Eigen::Matrix<value_type, Eigen::Dynamic, 1> row() { }
+        value_type value () { }
     };
 
 
