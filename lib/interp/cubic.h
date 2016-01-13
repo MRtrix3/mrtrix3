@@ -279,7 +279,7 @@ namespace MR
         //! Returns the image gradient at the current position
         Eigen::Matrix<value_type, 1, 3> gradient () {
           if (Base<ImageType>::out_of_bounds)
-            return Base<ImageType>::out_of_bounds_vec;
+            return out_of_bounds_vec;
 
           ssize_t c[] = { ssize_t (std::floor (P[0])-1), ssize_t (std::floor (P[1])-1), ssize_t (std::floor (P[2])-1) };
 
