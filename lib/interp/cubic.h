@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 
 #ifndef __interp_cubic_h__
@@ -229,7 +229,15 @@ namespace MR
         SplineInterp (const ImageType& parent, value_type value_when_out_of_bounds = SplineBase::default_out_of_bounds_value()) :
             SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::Derivative> (parent, value_when_out_of_bounds),
             out_of_bounds_vec (value_when_out_of_bounds, value_when_out_of_bounds, value_when_out_of_bounds),
-            wrt_scanner_transform (Transform::scanner2image.linear() * Transform::voxelsize.inverse()) { }
+            wrt_scanner_transform (Transform::scanner2image.linear() * Transform::voxelsize.inverse())
+            {
+              if (ImageType::ndim() == 4) {
+                out_of_bounds_matrix.resize(ImageType::size(3), 3);
+              } else {
+                out_of_bounds_matrix.resize(1, 3);
+              }
+              out_of_bounds_matrix.fill(value_when_out_of_bounds);
+            }
 
         //! Set the current position to <b>voxel space</b> position \a pos
         /*! See file interp/base.h for details. */
@@ -279,7 +287,7 @@ namespace MR
         //! Returns the image gradient at the current position
         Eigen::Matrix<value_type, 1, 3> gradient () {
           if (Base<ImageType>::out_of_bounds)
-            return Base<ImageType>::out_of_bounds_vec;
+            return out_of_bounds_vec;
 
           ssize_t c[] = { ssize_t (std::floor (P[0])-1), ssize_t (std::floor (P[1])-1), ssize_t (std::floor (P[2])-1) };
 
@@ -309,9 +317,6 @@ namespace MR
         // Collectively interpolates gradients along axis 3
         Eigen::Matrix<value_type, Eigen::Dynamic, 3> gradient_row() {
           if (Base<ImageType>::out_of_bounds) {
-            Eigen::Matrix<value_type, Eigen::Dynamic, 3> out_of_bounds_matrix (ImageType::size(3), 3);
-            out_of_bounds_matrix.setOnes();
-            out_of_bounds_matrix *= Base<ImageType>::out_of_bounds_value;
             return out_of_bounds_matrix;
           }
 
@@ -344,8 +349,13 @@ namespace MR
 
       protected:
         const Eigen::Matrix<value_type, 1, 3> out_of_bounds_vec;
+        Eigen::Matrix<value_type, Eigen::Dynamic, 3> out_of_bounds_matrix;
         Eigen::Matrix<value_type, 64, 3> weights_matrix;
         const Eigen::Matrix<default_type, 3, 3> wrt_scanner_transform;
+
+      private:
+        Eigen::Matrix<value_type, Eigen::Dynamic, 1> row() { }
+        value_type value () { }
     };
 
 
@@ -363,8 +373,32 @@ namespace MR
         using SplineBase::clamp;
 
         SplineInterp (const ImageType& parent, value_type value_when_out_of_bounds = SplineBase::default_out_of_bounds_value()) :
-            SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::ValueAndDerivative> (parent, value_when_out_of_bounds)
-        { }
+            SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::ValueAndDerivative> (parent, value_when_out_of_bounds),
+            wrt_scanner_transform (Transform::scanner2image.linear() * Transform::voxelsize.inverse())
+        {
+          if (ImageType::ndim() == 4) {
+            out_of_bounds_vec.resize(ImageType::size(3), 1);
+            out_of_bounds_matrix.resize(ImageType::size(3), 3);
+          } else {
+            out_of_bounds_vec.resize(1, 1);
+            out_of_bounds_matrix.resize(1, 3);
+          }
+          out_of_bounds_vec.fill(value_when_out_of_bounds);
+          out_of_bounds_matrix.fill(value_when_out_of_bounds);
+        }
+
+        //! Set the current position to <b>image space</b> position \a pos
+        /*! See file interp/base.h for details. */
+        template <class VectorType>
+        FORCE_INLINE bool image (const VectorType& pos) {
+          return voxel (Transform::voxelsize.inverse() * pos.template cast<default_type>());
+        }
+        //! Set the current position to the <b>scanner space</b> position \a pos
+        /*! See file interp/base.h for details. */
+        template <class VectorType>
+        FORCE_INLINE bool scanner (const VectorType& pos) {
+          return voxel (Transform::scanner2voxel * pos.template cast<default_type>());
+        }
 
         //! Set the current position to <b>voxel space</b> position \a pos
         /*! See file interp/base.h for details. */
@@ -400,10 +434,12 @@ namespace MR
           return true;
         }
 
-
         void value_and_gradient (value_type& value, Eigen::Matrix<value_type, 1, 3>& gradient) {
-          if (Base<ImageType>::out_of_bounds)
+          if (Base<ImageType>::out_of_bounds){
+            value = out_of_bounds_vec(0);
+            gradient = out_of_bounds_matrix.row(0);
             return;
+          }
 
           ssize_t c[] = { ssize_t (std::floor (P[0])-1), ssize_t (std::floor (P[1])-1), ssize_t (std::floor (P[2])-1) };
 
@@ -426,8 +462,56 @@ namespace MR
           value = grad_and_value[3];
         }
 
+        void value_and_gradient_wrt_scanner (value_type& value, Eigen::Matrix<value_type, 1, 3>& gradient) {
+          value_and_gradient(value, gradient);
+          if (Base<ImageType>::out_of_bounds)
+            return;
+          gradient = (gradient.template cast<default_type>() * wrt_scanner_transform).eval();
+        }
+
+        // Simultaneously get both the image value and gradient in 4D
+        void value_and_gradient_row (Eigen::Matrix<value_type, Eigen::Dynamic, 1>& value, Eigen::Matrix<value_type, Eigen::Dynamic, 3>& gradient) {
+          if (Base<ImageType>::out_of_bounds){
+            value = out_of_bounds_vec;
+            gradient = out_of_bounds_matrix;
+            return;
+          }
+
+          assert (ImageType::ndim() == 4);
+
+          ssize_t c[] = { ssize_t (std::floor (P[0])-1), ssize_t (std::floor (P[1])-1), ssize_t (std::floor (P[2])-1) };
+
+          Eigen::Matrix<value_type, Eigen::Dynamic, 64> coeff_matrix (ImageType::size(3), 64);
+
+          size_t i(0);
+          for (ssize_t z = 0; z < 4; ++z) {
+            ImageType::index(2) = clamp (c[2] + z, ImageType::size (2));
+            for (ssize_t y = 0; y < 4; ++y) {
+              ImageType::index(1) = clamp (c[1] + y, ImageType::size (1));
+              for (ssize_t x = 0; x < 4; ++x) {
+                ImageType::index(0) = clamp (c[0] + x, ImageType::size (0));
+                coeff_matrix.col (i++) = ImageType::row (3);
+              }
+            }
+          }
+          Eigen::Matrix<value_type, Eigen::Dynamic, 4> grad_and_value (coeff_matrix * weights_matrix);
+          gradient = grad_and_value.block(0,0,ImageType::size(3),3);
+          value = grad_and_value.col(3);
+        }
+
+        void value_and_gradient_row_wrt_scanner (Eigen::Matrix<value_type, Eigen::Dynamic, 1>& value, Eigen::Matrix<value_type, Eigen::Dynamic, 3>& gradient) {
+          value_and_gradient_row(value, gradient);
+          if (Base<ImageType>::out_of_bounds){
+            return;
+          }
+          gradient = (gradient.template cast<default_type>() * wrt_scanner_transform).eval();
+        }
+
       protected:
         Eigen::Matrix<value_type, 64, 4> weights_matrix;
+        const Eigen::Matrix<default_type, 3, 3> wrt_scanner_transform;
+        Eigen::Matrix<value_type, Eigen::Dynamic, 1> out_of_bounds_vec;
+        Eigen::Matrix<value_type, Eigen::Dynamic, 3> out_of_bounds_matrix;
     };
 
 
@@ -435,6 +519,9 @@ namespace MR
     // This allows an interface that's consistent with other interpolators that all have one template argument
     template <typename ImageType>
     using Cubic = SplineInterp<ImageType, Math::HermiteSpline<typename ImageType::value_type>, Math::SplineProcessingType::Value>;
+
+    template <typename ImageType>
+    using CubicUniform = SplineInterp<ImageType, Math::UniformBSpline<typename ImageType::value_type>, Math::SplineProcessingType::Value>;
 
 
     template <class ImageType, typename... Args>
