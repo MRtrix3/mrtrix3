@@ -44,10 +44,10 @@ namespace MR
               Eigen::Matrix<typename Params::Im1ValueType, 1, 3> im1_grad;
               Eigen::Matrix<typename Params::Im2ValueType, 1, 3> im2_grad;
 
-              params.im1_image_interp->value_and_gradient (im1_value, im1_grad);
+              params.im1_image_interp->value_and_gradient_wrt_scanner (im1_value, im1_grad);
               if (isnan (default_type (im1_value)))
                 return 0.0;
-              params.im2_image_interp->value_and_gradient (im2_value, im2_grad);
+              params.im2_image_interp->value_and_gradient_wrt_scanner (im2_value, im2_grad);
               if (isnan (default_type (im2_value)))
                 return 0.0;
 

@@ -44,14 +44,14 @@ namespace MR
             Eigen::Matrix<typename Params::Im1ValueType, Eigen::Dynamic, 3> im1_grad, im2_grad;
             Eigen::Matrix<typename Params::Im1ValueType, Eigen::Dynamic, 1> im1_values, im2_values, diff_values;
 
-            params.im1_image_interp->value_and_gradient_row (im1_values, im1_grad);
+            params.im1_image_interp->value_and_gradient_row_wrt_scanner (im1_values, im1_grad);
             if (im1_values.hasNaN())
               return 0.0;
 
             const ssize_t volumes = im1_values.size();
             assert (volumes > 1);
 
-            params.im2_image_interp->value_and_gradient_row (im2_values, im2_grad);
+            params.im2_image_interp->value_and_gradient_row_wrt_scanner (im2_values, im2_grad);
             if (im2_values.hasNaN())
               return 0.0;
 
