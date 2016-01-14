@@ -1,24 +1,17 @@
 /*
-    Copyright 2009 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert E. Smith, 02/10/13.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #include "file/utils.h"
 #include "file/path.h"
@@ -38,7 +31,6 @@ namespace MR
       {
         if (!Path::has_suffix (H.name(), ".mif.gz"))
           return std::unique_ptr<ImageIO::Base>();
-
         File::GZ zf (H.name(), "r");
         std::string first_line = zf.getline();
         if (first_line != "mrtrix image") {
@@ -61,10 +53,10 @@ namespace MR
         write_offset = header.str().size() + size_t(24);
         write_offset += ((4 - (offset % 4)) % 4);
         header << "file: . " << write_offset << "\nEND\n";
-        
-        std::unique_ptr<ImageIO::GZ> io_handler (new ImageIO::GZ (H, offset));
+
+        std::unique_ptr<ImageIO::GZ> io_handler (new ImageIO::GZ (H, write_offset));
         memcpy (io_handler.get()->header(), header.str().c_str(), header.str().size());
-        memset (io_handler.get()->header() + header.str().size(), 0, offset - header.str().size());
+        memset (io_handler.get()->header() + header.str().size(), 0, write_offset - header.str().size());
         io_handler->files.push_back (File::Entry (H.name(), offset));
 
         return std::move (io_handler);

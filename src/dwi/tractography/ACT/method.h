@@ -1,24 +1,17 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert E. Smith, 2012.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #ifndef __dwi_tractography_act_method_h__
 #define __dwi_tractography_act_method_h__
@@ -33,7 +26,6 @@
 
 
 #define GMWMI_NORMAL_PERTURBATION 0.001
-
 
 
 namespace MR
@@ -53,7 +45,12 @@ namespace MR
           public:
             ACT_Method_additions (const SharedBase& shared) :
                 sgm_depth (0),
+                seed_in_sgm (false),
+                sgm_seed_to_wm (false),
                 act_image (shared.act().voxel) { }
+
+            ACT_Method_additions (const ACT_Method_additions&) = delete;
+            ACT_Method_additions() = delete;
 
 
             const Tissues& tissues() const { return tissue_values; }
@@ -72,6 +69,11 @@ namespace MR
                   return ENTER_CGM;
                 ++sgm_depth;
               } else if (sgm_depth) {
+                if (seed_in_sgm && !sgm_seed_to_wm) {
+                  sgm_seed_to_wm = true;
+                  sgm_depth = 0;
+                  return CONTINUE;
+                }
                 return EXIT_SGM;
               }
 
@@ -81,8 +83,18 @@ namespace MR
 
             bool check_seed (const Eigen::Vector3f& pos)
             {
+              sgm_depth = 0;
+
               if (!fetch_tissue_data (pos))
                 return false;
+
+              if (tissues().is_sgm()) {
+                seed_in_sgm = true;
+                sgm_seed_to_wm = false;
+                return true;
+              }
+
+              seed_in_sgm = false;
 
               if ((tissues().is_csf()) || !tissues().get_wm() || ((tissues().get_gm() - tissues().get_wm()) >= GMWMI_ACCURACY))
                 return false;
@@ -94,6 +106,7 @@ namespace MR
             bool seed_is_unidirectional (const Eigen::Vector3f& pos, Eigen::Vector3f& dir)
             {
               // Tissue values should have already been acquired for the seed point when this function is run
+              if (tissues().is_sgm()) return false;
               if ((tissues().get_wm() >= tissues().get_gm()) || (tissues().get_sgm() >= tissues().get_cgm()))
                 return false;
 
@@ -119,8 +132,7 @@ namespace MR
 
             bool fetch_tissue_data (const Eigen::Vector3f& pos)
             {
-              act_image.scanner (pos);
-              if (!act_image) {
+              if (!act_image.scanner (pos)) {
                 tissue_values.reset();
                 return false;
               }
@@ -130,19 +142,17 @@ namespace MR
 
             bool in_pathology() const { return (tissue_values.valid() && tissue_values.is_path()); }
 
+            void reverse_track() { sgm_depth = 0; }
 
-            int sgm_depth;
+
+            size_t sgm_depth;
+            bool seed_in_sgm;
+            bool sgm_seed_to_wm;
 
 
           private:
             Interp::Linear<Image<float>> act_image;
             Tissues tissue_values;
-
-
-            // This class should be copy-constructed by Method using shared as the parameter
-            ACT_Method_additions (const ACT_Method_additions& that) :
-                sgm_depth (0),
-                act_image (that.act_image) { }
 
         };
 

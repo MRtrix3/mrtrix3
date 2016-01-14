@@ -1,28 +1,22 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-    Written by J-Donald Tournier, 27/06/08.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #ifndef __cmdline_option_h__
 #define __cmdline_option_h__
 
+#include <cassert>
 #include <string>
 #include <vector>
 #include <limits>
@@ -57,7 +51,9 @@ namespace MR
       ImageIn,
       ImageOut,
       IntSeq,
-      FloatSeq
+      FloatSeq,
+      TracksIn,
+      TracksOut
     } ArgType;
 
     typedef int ArgFlags;
@@ -130,7 +126,7 @@ namespace MR
             int def;
           } choices;
           struct {
-            int def, min, max;
+            int64_t def, min, max;
           } i;
           struct {
             default_type def, min, max;
@@ -191,7 +187,7 @@ namespace MR
         //! specifies that the argument should be an integer
         /*! if desired, a default value can be specified, along with a range of
          * allowed values. */
-        Argument& type_integer (int min = std::numeric_limits<int>::min(), int def = 0, int max = std::numeric_limits<int>::max()) {
+        Argument& type_integer (int64_t min = std::numeric_limits<int64_t>::min(), int64_t def = 0, int64_t max = std::numeric_limits<int64_t>::max()) {
           type = Integer;
           defaults.i.min = min;
           defaults.i.def = def;
@@ -263,6 +259,20 @@ namespace MR
         //! specifies that the argument should be a sequence of comma-separated floating-point values.
         Argument& type_sequence_float () {
           type = FloatSeq;
+          defaults.text = nullptr;
+          return *this;
+        }
+
+        //! specifies that the argument should be an input tracks file
+        Argument& type_tracks_in () {
+          type = TracksIn;
+          defaults.text = nullptr;
+          return *this;
+        }
+
+        //! specifies that the argument should be an output tracks file
+        Argument& type_tracks_out () {
+          type = TracksOut;
           defaults.text = nullptr;
           return *this;
         }
@@ -399,6 +409,7 @@ namespace MR
         }
 
         OptionGroup& operator+ (const Argument& argument) { 
+          assert (!empty());
           back() + argument;
           return *this;
         }

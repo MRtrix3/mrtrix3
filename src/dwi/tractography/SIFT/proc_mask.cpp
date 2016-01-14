@@ -1,24 +1,17 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert Smith, 2012.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 
 
@@ -60,7 +53,7 @@ namespace MR
             auto image = Image<float>::open (opt[0][0]);
             if (!dimensions_match (out_mask, image, 0, 3))
               throw Exception ("Dimensions of processing mask image provided using -proc_mask option must match relevant fixel image");
-            copy_with_progress_message ("Copying processing mask to memory... ", image, out_mask, 0, 3);
+            copy_with_progress_message ("Copying processing mask to memory", image, out_mask, 0, 3);
 
           } else {
             auto opt = App::get_options ("act");
@@ -81,7 +74,7 @@ namespace MR
                 INFO ("5TT image dimensions match fixel image - importing directly");
                 copy (in_5tt, out_5tt);
               } else {
-                auto threaded_loop  = ThreadedLoop ("resampling ACT 5TT image to fixel image space...", in_dwi, 0, 3);
+                auto threaded_loop  = ThreadedLoop ("resampling ACT 5TT image to fixel image space", in_dwi, 0, 3);
                 ResampleFunctor functor (in_dwi, in_5tt, out_5tt);
                 threaded_loop.run (functor);
               }
@@ -96,7 +89,7 @@ namespace MR
               auto f = [] (Image<float>& dwi, Image<float>& mask) {
                 mask.value() = (dwi.value() && std::isfinite ((float) dwi.value())) ? 1.0 : 0.0;
               };
-              ThreadedLoop ("Creating homogeneous processing mask...", in_dwi, 0, 3).run (f, in_dwi, out_mask);
+              ThreadedLoop ("Creating homogeneous processing mask", in_dwi, 0, 3).run (f, in_dwi, out_mask);
 
             }
 
@@ -161,7 +154,7 @@ namespace MR
                 subvoxel_pos_dwi[0] = pos.index(0) - 0.5 + os_offset + (i[0] * os_step);
 
                 const auto p_scanner (*voxel2scanner * subvoxel_pos_dwi);
-                if (!interp_anat.scanner (p_scanner)) {
+                if (interp_anat.scanner (p_scanner)) {
                   const Tractography::ACT::Tissues tissues (interp_anat);
                   ++total_count;
                   if (tissues.valid()) {

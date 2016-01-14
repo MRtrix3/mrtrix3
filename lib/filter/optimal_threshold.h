@@ -1,23 +1,16 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-    Written by David Raffelt, 8/06/2011
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
  */
 
 #ifndef __filter_optimal_threshold_h__
@@ -199,7 +192,7 @@ namespace MR
           input_value_type optimal_threshold = 0.0;
           {
             ImageCorrelationCostFunction<ImageType, MaskType> cost_function (input, mask);
-            optimal_threshold = Math::golden_section_search (cost_function, "optimising threshold...", 
+            optimal_threshold = Math::golden_section_search (cost_function, "optimising threshold",
                 min + 0.001*(max-min), (min+max)/2.0 , max-0.001*(max-min));
           }
 

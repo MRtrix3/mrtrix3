@@ -53,6 +53,7 @@ namespace MR
           typedef typename ProcessedImageInterpolatorType::value_type ImProcessedValueType;
           typedef ProcessedMaskType ImProcessedMaskType;
           typedef ProcessedMaskInterpolatorType ImProcessedMaskInterpolatorType;
+          typedef ProcessedImageInterpolatorType ImProcessedImageInterpolatorType;
 
           Params (TransformType& transform,
                   Im1ImageType& im1_image,

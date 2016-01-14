@@ -11,12 +11,17 @@ from lib.binaryInPath  import binaryInPath
 from lib.errorMessage  import errorMessage
 from lib.getFSLSuffix  import getFSLSuffix
 from lib.getHeaderInfo import getHeaderInfo
+from lib.isWindows     import isWindows
 from lib.runCommand    import runCommand
 
+lib.app.initCitations([ 'fast', 'FSL' ])
 lib.app.initParser('Perform B1 field inhomogeneity correction for a DWI volume series')
 lib.app.parser.add_argument('input',  help='The input image series to be corrected')
 lib.app.parser.add_argument('output', help='The output corrected image series')
 lib.app.initialise()
+
+if isWindows():
+  errorMessage('Script cannot run on Windows due to FSL dependency')
 
 fsl_path = os.environ.get('FSLDIR', '')
 if not fsl_path:

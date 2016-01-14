@@ -16,7 +16,7 @@ account if you don't already have one.
 
 1. Install dependencies by whichever means your system uses. 
    These include: Python (>=2.6), a C++ compiler, POSIX threads, 
-   GNU Scientific Library (GSL, >= 1.1), zlib, OpenGL (>=3), and Qt (>=4.8).
+   Eigen (>=3), zlib, OpenGL (>=3), and Qt (>=4.8).
 
 2. Clone Git repository and compile: 
 

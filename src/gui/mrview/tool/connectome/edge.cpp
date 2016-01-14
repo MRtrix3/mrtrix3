@@ -1,24 +1,17 @@
 /*
-   Copyright 2014 Brain Research Institute, Melbourne, Australia
-
-   Written by Robert E. Smith, 2015.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #include "gui/mrview/tool/connectome/edge.h"
 
@@ -117,7 +110,7 @@ namespace MR
           data.push_back (parent.get_node_centre (0));
           data.push_back (parent.get_node_centre (1));
 
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
           vertex_buffer.gen();
@@ -143,7 +136,7 @@ namespace MR
 
         Edge::Line::~Line()
         {
-          Window::GrabContext context;
+          MRView::GrabContext context;
           vertex_buffer.clear();
           tangent_buffer.clear();
           vertex_array_object.clear();
@@ -154,7 +147,6 @@ namespace MR
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if (!vertex_buffer || !tangent_buffer || !vertex_array_object)
             return;
-          Window::GrabContext context;
           vertex_buffer.bind (gl::ARRAY_BUFFER);
           tangent_buffer.bind (gl::ARRAY_BUFFER);
           vertex_array_object.bind();
@@ -196,7 +188,7 @@ namespace MR
 
         Edge::Streamline::Streamline (const Exemplar& data)
         {
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           assert (data.tangents.size() == data.vertices.size());
 
@@ -225,7 +217,7 @@ namespace MR
 
         Edge::Streamline::~Streamline()
         {
-          Window::GrabContext context;
+          MRView::GrabContext context;
           vertex_buffer.clear();
           tangent_buffer.clear();
           vertex_array_object.clear();
@@ -255,8 +247,9 @@ namespace MR
         Edge::Streamtube::Streamtube (const Exemplar& data) :
             count (data.vertices.size())
         {
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+
           assert (data.normals.size() == data.vertices.size());
           assert (data.binormals.size() == data.vertices.size());
 
@@ -316,7 +309,7 @@ namespace MR
 
         Edge::Streamtube::~Streamtube()
         {
-          Window::GrabContext context;
+          MRView::GrabContext context;
           vertex_buffer.clear();
           tangent_buffer.clear();
           normal_buffer.clear();

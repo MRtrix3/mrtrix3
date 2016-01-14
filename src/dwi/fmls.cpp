@@ -1,24 +1,17 @@
 /*
-   Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-   Written by Robert Smith, 2012.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 
 
@@ -202,6 +195,7 @@ namespace MR {
               std::sort (adj_lobes.begin(), adj_lobes.end());
               for (size_t j = 1; j != adj_lobes.size(); ++j)
                 out[adj_lobes[0]].merge (out[adj_lobes[j]]);
+              out[adj_lobes[0]].add (i.second, i.first);
               for (auto j = retrospective_assignments.begin(); j != retrospective_assignments.end(); ++j) {
                 bool modified = false;
                 for (size_t k = 1; k != adj_lobes.size(); ++k) {
@@ -276,7 +270,7 @@ namespace MR {
 
           size_t index = 0;
           for (auto i = out.begin(); i != out.end(); ++i, ++index) {
-            const Mask& this_mask (i->get_mask());
+            const DWI::Directions::Mask& this_mask (i->get_mask());
             for (size_t d = 0; d != dirs.size(); ++d) {
               if (this_mask[d])
                 out.lut[d] = index;
@@ -285,7 +279,7 @@ namespace MR {
 
           if (dilate_lookup_table && out.size()) {
 
-            Mask processed (dirs);
+            DWI::Directions::Mask processed (dirs);
             for (std::vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i)
               processed |= i->get_mask();
 
@@ -331,10 +325,9 @@ namespace MR {
         }
 
         if (create_null_lobe) {
-          Mask null_mask (dirs);
+          DWI::Directions::Mask null_mask (dirs, true);
           for (std::vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i)
-            null_mask |= i->get_mask();
-          null_mask = ~null_mask;
+            null_mask &= i->get_mask();
           out.push_back (FOD_lobe (null_mask));
         }
 

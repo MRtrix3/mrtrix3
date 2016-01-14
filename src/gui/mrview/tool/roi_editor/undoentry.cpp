@@ -1,24 +1,17 @@
 /*
-   Copyright 2009 Brain Research Institute, Melbourne, Australia
-
-   Written by J-Donald Tournier, 2014.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #include <limits>
 #include <vector>
@@ -43,7 +36,7 @@ namespace MR
         ROI_UndoEntry::Shared::Shared() :
             count (1)
         {
-          Window::GrabContext context;
+          MRView::GrabContext context;
           GL::Shader::Vertex vertex_shader (
               "layout(location = 0) in ivec3 vertpos;\n"
               "void main() {\n"
@@ -88,7 +81,7 @@ namespace MR
         ROI_UndoEntry::Shared::~Shared()
         {
           assert (!count);
-          Window::GrabContext context;
+          MRView::GrabContext context;
           program.clear();
           vertex_buffer.clear();
           vertex_array_object.clear();
@@ -121,8 +114,9 @@ namespace MR
           else { slice_axes[0] = 0; slice_axes[1] = 1; }
           tex_size = { { size[slice_axes[0]], size[slice_axes[1]] } };
 
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+
           if (!shared)
             shared.reset (new Shared());
           else
@@ -241,7 +235,7 @@ namespace MR
             }
           } while ((v - final_vox).abs().maxCoeff());
 
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
@@ -287,7 +281,7 @@ namespace MR
 
           } } }
 
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
@@ -322,7 +316,7 @@ namespace MR
                     Math::pow2 (roi.header().spacing(2) * (vox[2]-k)) < radius_sq)
                   after[i-from[0] + size[0] * (j-from[1] + size[1] * (k-from[2]))] = value;
 
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
@@ -355,7 +349,7 @@ namespace MR
               for (int i = a[0]; i <= b[0]; ++i)
                 after[i-from[0] + size[0] * (j-from[1] + size[1] * (k-from[2]))] = value;
 
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
@@ -399,7 +393,7 @@ namespace MR
               }
             }
           }
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
@@ -412,7 +406,7 @@ namespace MR
 
         void ROI_UndoEntry::undo (ROI_Item& roi) 
         {
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&before[0]));
@@ -421,7 +415,7 @@ namespace MR
 
         void ROI_UndoEntry::redo (ROI_Item& roi) 
         {
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
@@ -430,7 +424,7 @@ namespace MR
 
         void ROI_UndoEntry::copy (ROI_Item& roi, ROI_UndoEntry& source) 
         {
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           after = source.before;
           roi.texture().bind();

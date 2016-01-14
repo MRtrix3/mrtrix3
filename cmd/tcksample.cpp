@@ -1,24 +1,18 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-    Written by J-Donald Tournier 2014.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "command.h"
 #include "math/math.h"
@@ -44,7 +38,7 @@ void usage ()
   "separated), and individual tracks on separate lines."; 
 
   ARGUMENTS
-  + Argument ("tracks",  "the input track file").type_file_in()
+  + Argument ("tracks", "the input track file").type_tracks_in()
   + Argument ("image",  "the image to be sampled").type_image_in()
   + Argument ("values", "the output sampled values").type_file_out();
 
@@ -66,7 +60,7 @@ void usage ()
 
     + Option ("locations", "[only used with -resample] output a new track file "
         "with vertices at the locations resampled by the algorithm.")
-    +   Argument ("file").type_file_out()
+    +   Argument ("file").type_tracks_out()
 
     + Option ("warp", "[only used with -resample] specify an image containing "
         "the warp field to the space in which the resampling is to take "
@@ -296,8 +290,8 @@ void run ()
   }
 
   size_t skipped = 0, count = 0;
-  auto progress_message = [&](){ return "sampling streamlines (count: " + str(count) + ", skipped: " + str(skipped) + ")..."; };
-  ProgressBar progress ("sampling streamlines...");
+  auto progress_message = [&](){ return "sampling streamlines (count: " + str(count) + ", skipped: " + str(skipped) + ")"; };
+  ProgressBar progress ("sampling streamlines");
 
   DWI::Tractography::Streamline<value_type> tck;
   while (read (tck)) {

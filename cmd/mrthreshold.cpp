@@ -1,24 +1,18 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-    Written by J-Donald Tournier, 27/11/09.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include <map>
 #include <vector>
@@ -171,7 +165,7 @@ void run ()
 
   if (std::isfinite (topNpercent) || std::isfinite (bottomNpercent)) {
     size_t count = 0;
-    for (auto l = Loop("computing voxel count...", in) (in); l; ++l) {
+    for (auto l = Loop("computing voxel count", in) (in); l; ++l) {
       if (ignore_zeroes && in.value() == 0.0) continue;
       ++count;
     }
@@ -188,8 +182,7 @@ void run ()
       const std::string msg = "thresholding \"" + shorten (in.name()) + "\" at " + (
                               std::isnan (percentile) ?
                               (str (topN ? topN : bottomN) + "th " + (topN ? "top" : "bottom") + " voxel") :
-                              (str (percentile*100.0) + "\% percentile")
-                              ) + "...";
+                              (str (percentile*100.0) + "\% percentile"));
 
       if (topN) {
         for (auto l = Loop(in) (in); l; ++l) {
@@ -247,7 +240,7 @@ void run ()
       threshold_value = Filter::estimate_optimal_threshold (in, mask);
     }
 
-    const std::string msg = "thresholding \"" + shorten (in.name()) + "\" at intensity " + str (threshold_value) + "...";
+    const std::string msg = "thresholding \"" + shorten (in.name()) + "\" at intensity " + str (threshold_value);
     for (auto l = Loop(msg, in) (in, out); l; ++l) {
       const float val = in.value();
       out.value() = ( !std::isfinite (val) || val < threshold_value ) ? zero : one;

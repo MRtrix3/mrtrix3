@@ -1,24 +1,17 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert E. Smith, 2011.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #ifndef __dwi_tractography_tracking_method_h__
 #define __dwi_tractography_tracking_method_h__
@@ -81,8 +74,8 @@ namespace MR
             template <class InterpolatorType>
               inline bool get_data (InterpolatorType& source, const Eigen::Vector3f& position)
               {
-                source.scanner (position);
-                if (!source) return false;
+                if (!source.scanner (position))
+                  return false;
                 for (auto l = Loop (3) (source); l; ++l)
                   values[source.index(3)] = source.value();
                 return !std::isnan (values[0]);
@@ -94,18 +87,29 @@ namespace MR
               }
 
 
-            void reverse_track() { }
+            virtual void reverse_track() { if (act_method_additions) act().reverse_track(); }
             bool init() { return false; }
             term_t next() { return term_t(); }
             float get_metric() { return NaN; }
 
 
-            void truncate_track (std::vector< Eigen::Vector3f >& tck, const size_t revert_step)
+            void truncate_track (GeneratedTrack& tck, const size_t length_to_revert_from, const size_t revert_step)
             {
-              for (size_t i = revert_step; i && tck.size(); --i)
-                tck.pop_back();
+              if (tck.get_seed_index() + revert_step >= length_to_revert_from) {
+                tck.clear();
+                pos = { NaN, NaN, NaN };
+                dir = { NaN, NaN, NaN };
+                return;
+              }
+              const size_t new_size = length_to_revert_from - revert_step;
+              if (tck.size() == 2 || new_size == 1)
+                dir = (tck[1] - tck[0]).normalized();
+              else
+                dir = (tck[new_size] - tck[new_size - 2]).normalized();
+              tck.resize (length_to_revert_from - revert_step);
+              pos = tck.back();
               if (S.is_act())
-                act().sgm_depth = std::max (0, act().sgm_depth - int(revert_step));
+                act().sgm_depth = (act().sgm_depth > revert_step) ? act().sgm_depth - revert_step : 0;
             }
 
 

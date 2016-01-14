@@ -19,7 +19,7 @@
  along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
  */
-#define REGISTRATION_GRADIENT_DESCENT_DEBUG
+//#define REGISTRATION_GRADIENT_DESCENT_DEBUG
 
 #include "command.h"
 #include "image.h"
@@ -575,7 +575,7 @@ void run ()
     if (im2_image.ndim() == 4) {
       if (rigid_metric == Registration::NCC)
         throw Exception ("cross correlation metric not implemented for data with more than 3 dimensions");
-      Registration::Metric::MeanSquared4D metric;
+      Registration::Metric::MeanSquared4D<Image<value_type>, Image<value_type>> metric(im1_image, im2_image);
       rigid_registration.run_masked (metric, rigid, im1_image, im2_image, im1_mask, im2_mask);
     } else {
       if (rigid_metric == Registration::NCC){
@@ -631,19 +631,19 @@ void run ()
         throw Exception ("cross correlation metric not implemented for data with more than 3 dimensions");
       else if (affine_metric == Registration::Diff) {
         if (affine_estimator == Registration::None) {
-          Registration::Metric::MeanSquared4D metric;
+          Registration::Metric::MeanSquared4D<Image<value_type>, Image<value_type>> metric(im1_image, im2_image);
           affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
         } else if (affine_estimator == Registration::L1) {
           Registration::Metric::L1 estimator;
-          Registration::Metric::DifferenceRobust4D<Registration::Metric::L1> metric(estimator);
+          Registration::Metric::DifferenceRobust4D<Image<value_type>, Image<value_type>, Registration::Metric::L1> metric(im1_image, im2_image, estimator);
           affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
         } else if (affine_estimator == Registration::L2) {
           Registration::Metric::L2 estimator;
-          Registration::Metric::DifferenceRobust4D<Registration::Metric::L2> metric(estimator);
+          Registration::Metric::DifferenceRobust4D<Image<value_type>, Image<value_type>, Registration::Metric::L2> metric(im1_image, im2_image, estimator);
           affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
         } else if (affine_estimator == Registration::LP) {
           Registration::Metric::LP estimator;
-          Registration::Metric::DifferenceRobust4D<Registration::Metric::LP> metric(estimator);
+          Registration::Metric::DifferenceRobust4D<Image<value_type>, Image<value_type>, Registration::Metric::LP> metric(im1_image, im2_image, estimator);
           affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
         } else throw Exception ("FIXME: estimator selection");
       } else throw Exception ("FIXME: metric selection");

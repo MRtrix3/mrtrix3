@@ -1,24 +1,17 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert E. Smith, 2012.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #ifndef __dwi_tractography_act_gmwmi_h__
 #define __dwi_tractography_act_gmwmi_h__
@@ -60,9 +53,13 @@ namespace MR
             typedef Interp::Linear<Image<float>> Interp;
 
           public:
-            GMWMI_finder (Image<float>& buffer) :
+            GMWMI_finder (const Image<float>& buffer) :
               interp_template (buffer),
               min_vox (std::min (buffer.spacing(0), std::min (buffer.spacing(1), buffer.spacing(2)))) { }
+
+            GMWMI_finder (const Interp& interp) :
+              interp_template (interp),
+              min_vox (std::min (interp.spacing(0), std::min (interp.spacing(1), interp.spacing(2)))) { }
 
             GMWMI_finder (const GMWMI_finder& that) :
               interp_template (that.interp_template),
@@ -84,7 +81,7 @@ namespace MR
 
 
             Tissues get_tissues (const Eigen::Vector3f& p, Interp& interp) const {
-              if (interp.scanner (p))
+              if (!interp.scanner (p))
                 return Tissues ();
               return Tissues (interp);
             }

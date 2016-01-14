@@ -1,23 +1,16 @@
 /*
-   Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-   Written by J-Donald Tournier and Robert E. Smith, 2011.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
  */
 
 #ifndef __dwi_tractography_tracking_shared_h__
@@ -85,6 +78,7 @@ namespace MR
               unidirectional (false),
               rk4 (false),
               stop_on_all_include (false),
+              implicit_max_num_attempts (properties.find ("max_num_attempts") == properties.end()),
               downsampler ()
 #ifdef DEBUG_TERMINATIONS
             , debug_header (properties.find ("act") == properties.end() ? diff_path : properties["act"]),
@@ -223,7 +217,7 @@ namespace MR
             float max_angle, max_angle_rk4, cos_max_angle, cos_max_angle_rk4;
             float step_size, threshold, init_threshold;
             size_t max_seed_attempts;
-            bool unidirectional, rk4, stop_on_all_include;
+            bool unidirectional, rk4, stop_on_all_include, implicit_max_num_attempts;
             Downsampler downsampler;
 
             // Additional members for ACT

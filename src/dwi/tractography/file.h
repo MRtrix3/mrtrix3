@@ -1,23 +1,16 @@
 /*
-   Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-   Written by J-Donald Tournier, 27/06/08.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
  */
 
 #ifndef __dwi_tractography_file_h__
@@ -224,25 +217,29 @@ namespace MR
 
           //! create a new track file with the specified properties
           WriterUnbuffered (const std::string& file, const Properties& properties) :
-            __WriterBase__<ValueType> (file) {
-              File::OFStream out (name, std::ios::out | std::ios::binary | std::ios::trunc);
+              __WriterBase__<ValueType> (file) {
 
-              const_cast<Properties&> (properties).set_timestamp();
-              const_cast<Properties&> (properties).set_version_info();
+            if (!Path::has_suffix (name, ".tck"))
+              throw Exception ("output track files must use the .tck suffix");
 
-              create (out, properties, "tracks");
-              barrier_addr = out.tellp();
+            File::OFStream out (name, std::ios::out | std::ios::binary | std::ios::trunc);
 
-              vector_type x;
-              format_point (barrier(), x);
-              out.write (reinterpret_cast<char*> (&x[0]), sizeof (x));
-              if (!out.good())
-                throw Exception ("error writing tracks file \"" + name + "\": " + strerror (errno));
+            const_cast<Properties&> (properties).set_timestamp();
+            const_cast<Properties&> (properties).set_version_info();
 
-              auto opt = App::get_options ("tck_weights_out");
-              if (opt.size())
-                set_weights_path (opt[0][0]);
-            }
+            create (out, properties, "tracks");
+            barrier_addr = out.tellp();
+
+            vector_type x;
+            format_point (barrier(), x);
+            out.write (reinterpret_cast<char*> (&x[0]), sizeof (x));
+            if (!out.good())
+              throw Exception ("error writing tracks file \"" + name + "\": " + strerror (errno));
+
+            auto opt = App::get_options ("tck_weights_out");
+            if (opt.size())
+              set_weights_path (opt[0][0]);
+          }
 
           //! append track to file
           bool operator() (const Streamline<ValueType>& tck) {

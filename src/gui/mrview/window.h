@@ -1,3 +1,17 @@
+/*
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 #ifndef __gui_mrview_window_h__
 #define __gui_mrview_window_h__
 
@@ -31,8 +45,8 @@ namespace MR
       namespace Tool
       {
         class Base;
+        class ODF;
       }
-
 
 
       class Window : public QMainWindow, ColourMapButtonObserver
@@ -143,10 +157,6 @@ namespace MR
           static void add_commandline_options (MR::App::OptionList& options);
           static Window* main;
 
-          struct GrabContext : public App::GrabContext {
-            GrabContext () : App::GrabContext (main->glarea) { }
-          };
-
         signals:
           void focusChanged ();
           void targetChanged ();
@@ -176,6 +186,8 @@ namespace MR
           void select_mouse_mode_slot (QAction* action);
           void select_tool_slot (QAction* action);
           void select_plane_slot (QAction* action);
+          void zoom_in_slot ();
+          void zoom_out_slot ();
           void invert_scaling_slot ();
           void full_screen_slot ();
           void toggle_annotations_slot ();
@@ -316,7 +328,15 @@ namespace MR
           friend class ImageBase;
           friend class Mode::Base;
           friend class Tool::Base;
+          friend class Tool::ODF;
           friend class Window::GLArea;
+          friend class GrabContext;
+      };
+
+
+      class GrabContext : private Context::Grab {
+        public:
+          GrabContext () : Context::Grab (Window::main->glarea) { }
       };
 
 
@@ -325,6 +345,7 @@ namespace MR
 #else 
 # define ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT
 #endif
+
 
     }
   }

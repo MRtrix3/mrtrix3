@@ -229,7 +229,7 @@ namespace MR
                 typedef typename ParamType::ImProcessedValueType ProcessedImageValueType;
                 typedef typename ParamType::ImProcessedMaskType ProcessedMaskType;
                 typedef typename ParamType::ImProcessedMaskInterpolatorType ProcessedMaskInterpolatorType;
-                typedef Interp::SplineInterp<Image<ProcessedImageValueType>, Math::UniformBSpline<ProcessedImageValueType>, Math::SplineProcessingType::ValueAndGradient> CCInterpType;
+                typedef typename ParamType::ImProcessedImageInterpolatorType CCInterpType;
 
                 // store precomputed values in cc_image:
                 // volumes 0 and 1: normalised intensities of both images (Im1 and Im2)
@@ -324,14 +324,14 @@ namespace MR
 
                 // gradient calculation
                 params.processed_image_interp->index(3) = 0;
-                params.processed_image_interp->value_and_gradient(val1, grad1);
+                params.processed_image_interp->value_and_gradient_wrt_scanner(val1, grad1);
                 if (val1 != val1){
                   // this should not happen as the precompute should have changed the mask
                   WARN("FIXME: val1 is nan");
                   return 0.0;
                 }
                 params.processed_image_interp->index(3) = 1;
-                params.processed_image_interp->value_and_gradient(val2, grad2);
+                params.processed_image_interp->value_and_gradient_wrt_scanner(val2, grad2);
                 if (val2 != val2){
                   // this should not happen as the precompute should have changed the mask
                   WARN("FIXME: val2 is nan");

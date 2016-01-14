@@ -22,13 +22,18 @@ import lib.app
 
 from lib.binaryInPath import binaryInPath
 from lib.errorMessage import errorMessage
+from lib.isWindows    import isWindows
 from lib.printMessage import printMessage
 from lib.runCommand   import runCommand
 
+lib.app.initCitations([ 'ACT' ])
 lib.app.initParser('Generate a 5TT image suitable for ACT from a FreeSurfer segmentation')
 lib.app.parser.add_argument('input',  help='The input image series; this should be one of the \'aseg\' images provided by FreeSurfer')
 lib.app.parser.add_argument('output', help='The output 5TT image')
 lib.app.initialise()
+
+if isWindows():
+  errorMessage('Script cannot run on Windows due to FreeSurfer dependency')
 
 config_file_name = 'FreeSurfer2ACT.txt'
 

@@ -1,3 +1,17 @@
+/*
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 #ifndef __stats_h_
 #define __stats_h_
 
@@ -11,9 +25,7 @@ namespace MR
   namespace Stats
   {
 
-    const char * field_choices[] = { "mean", "median", "std", "min", "max", "count", NULL };
-
-
+    extern const char * field_choices[];
     extern const App::OptionGroup Options;
 
     typedef float value_type;
@@ -165,7 +177,7 @@ namespace MR
 
 
 
-    void print_header (bool is_complex)
+    inline void print_header (bool is_complex)
     {
       int width = is_complex ? 24 : 12;
       std::cout << std::setw(15) << std::right << "volume"

@@ -1,29 +1,22 @@
 /*
-   Copyright 2009 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-   Written by J-Donald Tournier and Robert E. Smith, 2015.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
-
-#include "gui/mrview/tool/odf_preview.h"
+#include "gui/mrview/tool/odf/preview.h"
 #include "gui/dwi/render_frame.h"
 #include "gui/mrview/window.h"
-#include "gui/mrview/tool/odf.h"
+#include "gui/mrview/tool/odf/odf.h"
 #include "gui/mrview/mode/base.h"
 
 namespace MR
@@ -38,12 +31,12 @@ namespace MR
 
 
 
-        ODF::Preview::RenderFrame::RenderFrame (QWidget* parent) :
+        ODF_Preview::RenderFrame::RenderFrame (QWidget* parent) :
             DWI::RenderFrame (parent) {
           setMinimumSize (300, 300);    
         }
 
-        void ODF::Preview::RenderFrame::wheelEvent (QWheelEvent*) {
+        void ODF_Preview::RenderFrame::wheelEvent (QWheelEvent*) {
           //Talk to the hand, 'cause the scroll wheel ain't listening.      
         }
 
@@ -51,7 +44,7 @@ namespace MR
 
 
 
-        ODF::Preview::Preview (ODF* parent) :
+        ODF_Preview::ODF_Preview (ODF* parent) :
             QWidget (&window(), Qt::Tool),
             parent (parent),
             render_frame (new RenderFrame (this))
@@ -99,7 +92,7 @@ namespace MR
 
           render_frame->set_scale (parent->scale->value());
           render_frame->set_color_by_dir (parent->colour_by_direction_box->isChecked());
-          render_frame->set_hide_neg_lobes (parent->hide_negative_lobes_box->isChecked());
+          render_frame->set_hide_neg_values (parent->hide_negative_values_box->isChecked());
           render_frame->set_use_lighting (parent->use_lighting_box->isChecked());
           render_frame->set_lmax (parent->lmax_selector->value());
           lock_orientation_to_image_slot (1);
@@ -112,13 +105,13 @@ namespace MR
 
 
 
-        void ODF::Preview::set (const Eigen::VectorXf& data)
+        void ODF_Preview::set (const Eigen::VectorXf& data)
         {
           render_frame->set (data);
           lock_orientation_to_image_slot (0);
         }
 
-        void ODF::Preview::lock_orientation_to_image_slot (int)
+        void ODF_Preview::lock_orientation_to_image_slot (int)
         {
           if (lock_orientation_to_image_box->isChecked()) {
             const Projection* proj = window().get_current_mode()->get_current_projection();
@@ -127,22 +120,22 @@ namespace MR
           }
         }
 
-        void ODF::Preview::interpolation_slot (int)
+        void ODF_Preview::interpolation_slot (int)
         {
           parent->update_preview();
         }
 
-        void ODF::Preview::show_axes_slot (int)
+        void ODF_Preview::show_axes_slot (int)
         {
           render_frame->set_show_axes (show_axes_box->isChecked());
         }
 
-        void ODF::Preview::level_of_detail_slot (int)
+        void ODF_Preview::level_of_detail_slot (int)
         {
           render_frame->set_LOD (level_of_detail_selector->value());
         }
 
-        void ODF::Preview::lighting_update_slot()
+        void ODF_Preview::lighting_update_slot()
         {
           // Use a dummy call that won't actually change anything, but will call updateGL() (which is protected)
           render_frame->set_LOD (level_of_detail_selector->value());

@@ -1,3 +1,17 @@
+/*
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 #include "app.h"
 #include "timer.h"
 #include "file/config.h"
@@ -442,6 +456,16 @@ namespace MR
           coronal_action->setCheckable (true);
           plane_group->addAction (coronal_action);
           addAction (coronal_action);
+
+          menu->addSeparator();
+
+          action = menu->addAction (tr ("Zoom in"), this, SLOT (zoom_in_slot()));
+          action->setShortcut (tr("Ctrl++"));
+          addAction (action);
+
+          action = menu->addAction (tr ("Zoom out"), this, SLOT (zoom_out_slot()));
+          action->setShortcut (tr("Ctrl+-"));
+          addAction (action);
 
           menu->addSeparator();
 
@@ -961,6 +985,24 @@ namespace MR
         else assert (0);
         glarea->update();
       }
+
+
+
+
+
+      void Window::zoom_in_slot ()
+      {
+        set_FOV (FOV() * std::exp (-0.1));
+        glarea->update();
+      }
+
+      void Window::zoom_out_slot () 
+      {
+        set_FOV (FOV() * std::exp (0.1));
+        glarea->update();
+      }
+
+
 
 
       void Window::reset_view_slot ()
@@ -1484,9 +1526,9 @@ namespace MR
 #if QT_VERSION >= 0x050400
         QPoint delta = event->pixelDelta();
         if (delta.isNull())
-          delta = event->angleDelta() / 120.0;
+          delta = event->angleDelta();
 #else
-        QPoint delta = event->orientation() == Qt::Vertical ? QPoint (0, event->delta() / 120.0) : QPoint (event->delta() / 120.0, 0);
+        QPoint delta = event->orientation() == Qt::Vertical ? QPoint (0, event->delta()) : QPoint (event->delta(), 0);
 #endif
         if (delta.isNull())
           return;
@@ -1500,13 +1542,13 @@ namespace MR
             if (buttons_ == Qt::NoButton) {
 
               if (modifiers_ == Qt::ControlModifier) {
-                set_FOV (FOV() * std::exp (-0.1*delta.y()));
+                set_FOV (FOV() * std::exp (-delta.y()/1200.0));
                 glarea->update();
                 event->accept();
                 return;
               }
 
-              float dx = delta.y();
+              float dx = delta.y()/120.0;
               if (modifiers_ == Qt::ShiftModifier) dx *= 10.0;
               else if (modifiers_ != Qt::NoModifier) 
                 return;
@@ -1522,7 +1564,7 @@ namespace MR
               QAction* action = image_group->checkedAction();
               int N = image_group->actions().size();
               int n = image_group->actions().indexOf (action);
-              image_select_slot (image_group->actions()[(n+N+delta.y())%N]);
+              image_select_slot (image_group->actions()[(n+N+int(std::round(delta.y()/120.0)))%N]);
             }
           }
         }

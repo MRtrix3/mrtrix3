@@ -1,24 +1,17 @@
 /*
-   Copyright 2009 Brain Research Institute, Melbourne, Australia
-
-   Written by J-Donald Tournier, 25/10/09.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #ifndef __dwi_tractography_algorithms_tensor_prob_h__
 #define __dwi_tractography_algorithms_tensor_prob_h__
@@ -90,11 +83,10 @@ namespace MR
             }
 
 
-            void truncate_track (std::vector<Eigen::Vector3f>& tck, const int revert_step) {}
+            void truncate_track (std::vector<Eigen::Vector3f>& tck, const size_t length_to_revert_from, const int revert_step) {}
 
 
           protected:
-
 
             class WildBootstrap {
               public:
@@ -146,41 +138,23 @@ namespace MR
                   auto add_values = [&](float fraction, int sig_index) {
                     get_values (raw_signals[sig_index]);
                     data += fraction * raw_signals[sig_index];
-                    //for (ssize_t i = 0; i < data.size(); ++i)
-                      //data[i] += fraction * raw_signals[sig_index][i];
                   };
 
-                  if (faaa) 
-                    add_values (faaa, 0);
-
+                  if (factors[0]) add_values (factors[0], 0);
                   ++index(2);
-                  if (faab) 
-                    add_values (faab, 1);
-
+                  if (factors[1]) add_values (factors[1], 1);
                   ++index(1);
-                  if (fabb) 
-                    add_values (fabb, 3);
-
+                  if (factors[2]) add_values (factors[2], 3);
                   --index(2);
-                  if (faba) 
-                    add_values (faba, 2);
-
+                  if (factors[3]) add_values (factors[3], 2);
                   ++index(0);
-                  if (fbba) 
-                    add_values (fbba, 6);
-
+                  if (factors[4]) add_values (factors[4], 6);
                   --index(1);
-                  if (fbaa) 
-                    add_values (fbaa, 4);
-
+                  if (factors[5]) add_values (factors[5], 4);
                   ++index(2);
-                  if (fbab) 
-                    add_values (fbab, 5);
-
+                  if (factors[6]) add_values (factors[6], 5);
                   ++index(1);
-                  if (fbbb) 
-                    add_values (fbbb, 7);
-
+                  if (factors[7]) add_values (factors[7], 7);
                   --index(0);
                   --index(1);
                   --index(2);

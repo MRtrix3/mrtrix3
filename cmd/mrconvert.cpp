@@ -1,28 +1,23 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-    Written by J-Donald Tournier, 27/06/08.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "command.h"
-#include "progressbar.h"
+#include "header.h"
 #include "image.h"
+#include "transform.h"
 #include "algo/threaded_copy.h"
 #include "adapter/extract.h"
 #include "adapter/permute_axes.h"
@@ -91,6 +86,29 @@ void usage ()
 
 
 
+void permute_DW_scheme (Header& H, const std::vector<int>& axes)
+{
+  auto in = DWI::get_DW_scheme (H);
+  if (!in.rows())
+    return;
+
+  Transform T (H);
+  Eigen::Matrix3d permute = Eigen::Matrix3d::Zero();
+  for (size_t axis = 0; axis != 3; ++axis)
+    permute(axes[axis], axis) = 1.0;
+  const Eigen::Matrix3d R = T.scanner2voxel.rotation() * permute * T.voxel2scanner.rotation();
+
+  Eigen::MatrixXd out (in.rows(), 4);
+  out.col(3) = in.col(3); // Copy b-values
+  for (int row = 0; row != in.rows(); ++row)
+    out.block<1,3>(row, 0) = in.block<1,3>(row, 0) * R;
+
+  H.set_DW_scheme (out);
+}
+
+
+
+
 template <class ImageType>
 inline std::vector<int> set_header (Header& header, const ImageType& input)
 {
@@ -115,6 +133,7 @@ inline std::vector<int> set_header (Header& header, const ImageType& input)
         throw Exception ("axis supplied to option -axes is out of bounds");
       header.size(i) = axes[i] < 0 ? 1 : input.size (axes[i]);
     }
+    permute_DW_scheme (header, axes);
   } else {
     header.set_ndim (input.ndim());
     axes.assign (input.ndim(), 0);

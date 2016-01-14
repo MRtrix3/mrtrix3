@@ -1,24 +1,17 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-    Written by J-Donald Tournier & David Raffelt 17/12/12
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #include "progressbar.h"
 #include "gui/mrview/tool/tractography/tractogram.h"
@@ -513,7 +506,7 @@ namespace MR
         {
           // Make sure to set graphics context!
           // We're setting up vertex array objects
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
           DWI::Tractography::Reader<float> file (filename, properties);
@@ -546,7 +539,7 @@ namespace MR
             for (size_t i = 0; i < max_sample_stride; ++i)
               buffer.push_back(tck.back());
 
-            sizes.push_back (N - 1);
+            sizes.push_back (N);
             tck_count++;
             if (buffer.size() >= MAX_BUFFER_SIZE)
               load_tracks_onto_GPU (buffer, starts, sizes, tck_count);
@@ -565,7 +558,7 @@ namespace MR
         {
           // Make sure to set graphics context!
           // We're setting up vertex array objects
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
           erase_nontrack_data();
@@ -607,7 +600,7 @@ namespace MR
         {
           // Make sure to set graphics context!
           // We're setting up vertex array objects
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
           erase_nontrack_data();
@@ -692,7 +685,7 @@ namespace MR
         
         void Tractogram::erase_nontrack_data()
         {
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if (colour_buffers.size()) {
             gl::DeleteBuffers (colour_buffers.size(), &colour_buffers[0]);

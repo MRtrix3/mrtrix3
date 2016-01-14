@@ -1,24 +1,17 @@
 /*
-   Copyright 2014 Brain Research Institute, Melbourne, Australia
-
-   Written by David Raffelt 2014.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #include "gui/mrview/tool/fixel.h"
 
@@ -59,7 +52,7 @@ namespace MR
 
         AbstractFixel::~AbstractFixel()
         {
-          Window::GrabContext context;
+          MRView::GrabContext context;
           vertex_buffer.clear();
           direction_buffer.clear();
           vertex_array_object.clear();
@@ -310,7 +303,7 @@ namespace MR
             for (int x = -nx; x <= nx; ++x) {
               Eigen::Vector3f scanner_pos = p + float(x)*x_dir + float(y)*y_dir;
               Eigen::Vector3f voxel_pos = transform.scanner2voxel.cast<float>() * scanner_pos;
-              std::array<int, 3> voxel { (int)std::round (voxel_pos[0]), (int)std::round (voxel_pos[1]), (int)std::round (voxel_pos[2]) };
+              std::array<int, 3> voxel {{ (int)std::round (voxel_pos[0]), (int)std::round (voxel_pos[1]), (int)std::round (voxel_pos[2]) }};
 
               // Find and add point indices that correspond to projected voxel
               const auto &voxel_indices = voxel_to_indices_map[voxel];
@@ -329,6 +322,8 @@ namespace MR
 
           if(!regular_grid_buffer_pos.size())
             return;
+
+          MRView::GrabContext context;
 
           regular_grid_vao.bind();
           regular_grid_vertex_buffer.bind (gl::ARRAY_BUFFER);
@@ -358,7 +353,7 @@ namespace MR
         {
           // Make sure to set graphics context!
           // We're setting up vertex array objects
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
           load_image_buffer ();
@@ -410,7 +405,7 @@ namespace MR
 
           for (auto l = Loop(*fixel_data) (*fixel_data); l; ++l) {
 
-            const std::array<int, 3> voxel { int(fixel_data->index(0)), int(fixel_data->index(1)), int(fixel_data->index(2)) };
+            const std::array<int, 3> voxel {{ int(fixel_data->index(0)), int(fixel_data->index(1)), int(fixel_data->index(2)) }};
             Eigen::Vector3f pos { float(voxel[0]), float(voxel[1]), float(voxel[2]) };
             pos = transform.voxel2scanner.cast<float>() * pos;
 
@@ -470,7 +465,7 @@ namespace MR
 
           for (auto l = Loop(*fixel_data) (*fixel_data); l; ++l) {
 
-            const std::array<int, 3> voxel { int(fixel_data->index(0)), int(fixel_data->index(1)), int(fixel_data->index(2)) };
+            const std::array<int, 3> voxel {{ int(fixel_data->index(0)), int(fixel_data->index(1)), int(fixel_data->index(2)) }};
             Eigen::Vector3f pos { float(voxel[0]), float(voxel[1]), float(voxel[2]) };
             pos = transform.voxel2scanner.cast<float>() * pos;
 
