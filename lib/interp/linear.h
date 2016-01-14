@@ -411,10 +411,22 @@ namespace MR
         using LinearBase::P;
         using LinearBase::clamp;
         using LinearBase::bounds;
+        using LinearBase::voxelsize;
 
         LinearInterp (const ImageType& parent, coef_type value_when_out_of_bounds = Base<ImageType>::default_out_of_bounds_value()) :
-          LinearInterpBase <ImageType, LinearInterpProcessingType::ValueAndDerivative> (parent, value_when_out_of_bounds)
-        { }
+          LinearInterpBase <ImageType, LinearInterpProcessingType::ValueAndDerivative> (parent, value_when_out_of_bounds),
+          wrt_scanner_transform (Transform::scanner2image.linear() * voxelsize.inverse())
+        {
+          if (ImageType::ndim() == 4) {
+            out_of_bounds_vec.resize(ImageType::size(3), 1);
+            out_of_bounds_matrix.resize(ImageType::size(3), 3);
+          } else {
+            out_of_bounds_vec.resize(1, 1);
+            out_of_bounds_matrix.resize(1, 3);
+          }
+          out_of_bounds_vec.fill(value_when_out_of_bounds);
+          out_of_bounds_matrix.fill(value_when_out_of_bounds);
+        }
 
         //! Set the current position to <b>voxel space</b> position \a pos
         /*! See file interp/base.h for details. */
@@ -474,9 +486,13 @@ namespace MR
           return voxel (Transform::scanner2voxel * pos.template cast<default_type>());
         }
 
+
         void value_and_gradient (value_type& value, Eigen::Matrix<coef_type, 1, 3>& gradient) {
-          if (Base<ImageType>::out_of_bounds)
+          if (Base<ImageType>::out_of_bounds){
+            value = out_of_bounds_vec(0);
+            gradient.fill(out_of_bounds_vec(0));
             return;
+          }
 
           ssize_t c[] = { ssize_t (std::floor (P[0])), ssize_t (std::floor (P[1])), ssize_t (std::floor (P[2])) };
 
@@ -497,14 +513,26 @@ namespace MR
 
           Eigen::Matrix<value_type, 1, 4> grad_and_value (coeff_vec * weights_matrix);
 
-          gradient = grad_and_value.segment(1,3);
+          gradient = grad_and_value.head(3);
           value = grad_and_value[3];
+        }
+
+        void value_and_gradient_wrt_scanner (value_type& value, Eigen::Matrix<coef_type, 1, 3>& gradient) {
+          if (Base<ImageType>::out_of_bounds){
+            value = out_of_bounds_vec(0);
+            gradient.fill(out_of_bounds_vec(0));
+            return;
+          }
+          value_and_gradient(value, gradient);
+          gradient = (gradient.template cast<default_type>() * wrt_scanner_transform).eval();
         }
 
         // Collectively interpolates gradients and values along axis 3
         void value_and_gradient_row (Eigen::Matrix<value_type, Eigen::Dynamic, 1>& value, Eigen::Matrix<value_type, Eigen::Dynamic, 3>& gradient)  {
           if (Base<ImageType>::out_of_bounds) {
-            return Base<ImageType>::out_of_bounds_matrix;
+            value = out_of_bounds_vec;
+            gradient = out_of_bounds_matrix;
+            return;
           }
 
           assert (ImageType::ndim() == 4);
@@ -520,19 +548,31 @@ namespace MR
               ImageType::index(1) = clamp (c[1] + y, ImageType::size (1));
               for (ssize_t x = 0; x < 2; ++x) {
                 ImageType::index(0) = clamp (c[0] + x, ImageType::size (0));
-                coeff_matrix.col (++i) = ImageType::row (3);
+                coeff_matrix.col (i++) = ImageType::row (3);
               }
             }
           }
 
-          Eigen::Matrix<value_type, ImageType::size(3), 4> grad_and_value (coeff_matrix * weights_matrix);
+          Eigen::Matrix<value_type, Eigen::Dynamic, 4> grad_and_value (coeff_matrix * weights_matrix);
+          gradient = grad_and_value.block(0, 0, ImageType::size(3), 3);
+          value = grad_and_value.col(3);
+        }
 
-          gradient = grad_and_value.block (1, 1, ImageType::size(3), 3);
-          value = grad_and_value.block (1, 3, ImageType::size(3), 1);
+        void value_and_gradient_row_wrt_scanner (Eigen::Matrix<value_type, Eigen::Dynamic, 1>& value, Eigen::Matrix<value_type, Eigen::Dynamic, 3>& gradient)  {
+          if (Base<ImageType>::out_of_bounds) {
+            value = out_of_bounds_vec;
+            gradient = out_of_bounds_matrix;
+            return;
+          }
+          value_and_gradient_row(value, gradient);
+          gradient = (gradient.template cast<default_type>() * wrt_scanner_transform).eval();
         }
 
       protected:
+        Eigen::Matrix<default_type, 3, 3> wrt_scanner_transform;
         Eigen::Matrix<value_type, 8, 4> weights_matrix;
+        Eigen::Matrix<coef_type, Eigen::Dynamic, 1> out_of_bounds_vec;
+        Eigen::Matrix<coef_type, Eigen::Dynamic, 3> out_of_bounds_matrix;
 
     };
 

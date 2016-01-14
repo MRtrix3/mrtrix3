@@ -113,7 +113,7 @@ void usage ()
         "- FACT: the directions file (each triplet of volumes is the X,Y,Z direction of a fibre population).\n"
         "- iFOD1/2, Nulldist2 & SD_Stream: the SH image resulting from CSD.\n"
         "- Nulldist1 & SeedTest: any image (will not be used).\n"
-        "- TensorDet / TensorProb: the DWI image.\n"
+        "- Tensor_Det / Tensor_Prob: the DWI image.\n"
         ).type_image_in()
 
     + Argument ("tracks", "the output file containing the tracks generated.").type_tracks_out();
