@@ -34,7 +34,7 @@ namespace MR
           stdev (stdev_in),
           axis (axis_in) {
           if (!extent)
-            radius = ceil(2.5 * stdev / spacing(axis));
+            radius = ceil(2 * stdev / spacing(axis));
           else if (extent == 1)
             radius = 0;
           else
