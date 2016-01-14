@@ -212,7 +212,9 @@ namespace MR
                   smooth_filter (im1_update_field, im1_update_field);
                   smooth_filter (im2_update_field, im2_update_field);
 
-                  INFO ("normalising update images");
+                  // TODO Do we only needed if multiple metrics used? Or should we keep this to help make the step size invariant to the magnitude of the input intensities?
+                  // Does it make better sense to normalise on the mean update within a max and not the max vector?
+                  INFO ("normalising update field");
                   Transform::normalise_displacement (im1_update_field);
                   Transform::normalise_displacement (im2_update_field);
 

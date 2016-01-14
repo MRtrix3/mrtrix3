@@ -57,7 +57,7 @@ void run ()
     Math::RNG::Uniform<float> rnd;
     Math::RNG::Normal<float> rndn;
     
-    for (auto i = 0; i < artifacts; ++i){
+    for (size_t i = 0; i < artifacts; ++i){
       for (auto j = 0; j < 3; ++j){
         if (mode%2 == 0){
           in.index(j) =  std::round(float((in.size(j) - 2 * ext))  * rnd() + ext);
