@@ -87,13 +87,13 @@ namespace MR
       // Compose a linear transform and a deformation field. The input and output can be the same image.
       void compose_affine_deformation (const transform_type& transform, Image<default_type>& deform_in, Image<default_type>& deform_out)
       {
-        ThreadedLoop ("composing linear transform with warp...", deform_in, 0, 3).run (ComposeAffineDeformKernel (transform), deform_in, deform_out);
+        ThreadedLoop (deform_in, 0, 3).run (ComposeAffineDeformKernel (transform), deform_in, deform_out);
       }
 
       // Compose a linear transform and a displacement field. The output field is a deformation field. The input and output can be the same image.
       void compose_affine_displacement (const transform_type& transform, Image<default_type>& disp_in, Image<default_type>& deform_out)
       {
-        ThreadedLoop ("composing linear transform with warp...", disp_in, 0, 3).run (ComposeLinearDispKernel (transform, disp_in), disp_in, deform_out);
+        ThreadedLoop (disp_in, 0, 3).run (ComposeLinearDispKernel (transform, disp_in), disp_in, deform_out);
       }
 
       // Compose two displacement fields and output a displacement field. The input and output can be the same image.

@@ -161,22 +161,21 @@ namespace MR
 
                 while (!converged) {
 
-                  CONSOLE ("Iteration: " + str(iteration));
+                  CONSOLE ("iteration: " + str(iteration));
                   // compose current displacement field with affine
                   Image<default_type> im1_deform_field = Image<default_type>::scratch (field_header);
                   Registration::Transform::compose_affine_displacement (im1_affine, *im1_disp_field, im1_deform_field);
                   Image<default_type> im2_deform_field = Image<default_type>::scratch (field_header);
                   Registration::Transform::compose_affine_displacement (im2_affine, *im2_disp_field, im2_deform_field);
 
-
                   INFO ("warping input images");
-                  Filter::warp<Interp::Linear> (im1_smoothed, im1_warped, im1_deform_field, 0.0);
-                  Filter::warp<Interp::Linear> (im2_smoothed, im2_warped, im2_deform_field, 0.0);
+                  {
+                    LogLevelLatch level (0);
+                    Filter::warp<Interp::Linear> (im1_smoothed, im1_warped, im1_deform_field, 0.0);
+                    Filter::warp<Interp::Linear> (im2_smoothed, im2_warped, im2_deform_field, 0.0);
+                  }
                   save (im1_warped, std::string("im1_warped_iter" + str(iteration) + ".mif"), false);
                   save (im2_warped, std::string("im2_warped_iter" + str(iteration) + ".mif"), false);
-
-                  display (im1_warped);
-
 
                   if (fod_reorientation) {
                     INFO ("Reorienting FODs");
@@ -188,14 +187,16 @@ namespace MR
                   Im1MaskType im1_mask_warped;
                   if (im1_mask.valid()) {
                     im1_mask_warped = Im1MaskType::scratch (midway_resized);
+                    LogLevelLatch level (0);
                     Filter::warp<Interp::Linear> (im1_mask, im1_mask_warped, im1_deform_field, 0.0);
-                    save (im1_mask_warped, std::string("im1_mask_warped_iter" + str(iteration) + ".mif"));
+//                    save (im1_mask_warped, std::string("im1_mask_warped_iter" + str(iteration) + ".mif"));
                   }
                   Im1MaskType im2_mask_warped;
                   if (im2_mask.valid()) {
                     im2_mask_warped = Im1MaskType::scratch (midway_resized);
+                    LogLevelLatch level (0);
                     Filter::warp<Interp::Linear> (im2_mask, im2_mask_warped, im2_deform_field, 0.0);
-                    save (im2_mask_warped, std::string("im2_mask_warped_iter" + str(iteration) + ".mif"));
+//                    save (im2_mask_warped, std::string("im2_mask_warped_iter" + str(iteration) + ".mif"));
                   }
 
                   default_type global_cost = 0.0;
@@ -222,16 +223,16 @@ namespace MR
                   Transform::compose_displacement (*im1_disp_field, im1_update_field, *im1_disp_field, grad_step_altered);
                   Transform::compose_displacement (*im2_disp_field, im2_update_field, *im2_disp_field, grad_step_altered);
 
-                  save (*im1_disp_field, std::string("disp_iter" + str(iteration) + ".mif"));
+//                  save (*im1_disp_field, std::string("disp_iter" + str(iteration) + ".mif"));
 
                   INFO ("smoothing displacement fields");
                   smooth_filter.set_stdev (disp_smoothing_mm);
                   smooth_filter (*im1_disp_field, *im1_disp_field);
                   smooth_filter (*im2_disp_field, *im2_disp_field);
 
-                  save (*im1_disp_field, std::string("disp_smoothed_iter" + str(iteration) + ".mif"));
+//                  save (*im1_disp_field, std::string("disp_smoothed_iter" + str(iteration) + ".mif"));
 
-                  CONSOLE ("cost: " + str(global_cost));
+                  CONSOLE ("  cost: " + str(global_cost));
 
 //                  Invert fields x 2
 
