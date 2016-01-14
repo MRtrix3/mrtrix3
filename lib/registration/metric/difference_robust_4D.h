@@ -31,10 +31,18 @@ namespace MR
   {
     namespace Metric
     {
-      template<class Estimator = L2>
+      template<class Im1Type, class Im2Type, class Estimator = L2>
         class DifferenceRobust4D {
           public:
-            DifferenceRobust4D(Estimator est) : estimator(est) {}
+            DifferenceRobust4D(Im1Type im1, Im2Type im2, Estimator est) :
+              volumes(im1.size(3)),
+              estimator(est) {
+              im1_grad.resize(volumes, 3);
+              im2_grad.resize(volumes, 3);
+              im1_values.resize(volumes, 1);
+              im2_values.resize(volumes, 1);
+              diff_values.resize(volumes, 1);
+            };
 
           template <class Params>
             default_type operator() (Params& params,
@@ -43,15 +51,9 @@ namespace MR
                                      const Eigen::Vector3 midway_point,
                                      Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
 
-              Eigen::Matrix<typename Params::Im1ValueType, Eigen::Dynamic, 3> im1_grad, im2_grad;
-              Eigen::Matrix<typename Params::Im1ValueType, Eigen::Dynamic, 1> im1_values, im2_values, diff_values;
-
               params.im1_image_interp->value_and_gradient_row_wrt_scanner (im1_values, im1_grad);
               if (im1_values.hasNaN())
                 return 0.0;
-
-              const ssize_t volumes = im1_values.size();
-              assert (volumes > 1);
 
               params.im2_image_interp->value_and_gradient_row_wrt_scanner (im2_values, im2_grad);
               if (im2_values.hasNaN())
@@ -70,11 +72,16 @@ namespace MR
                 gradient.segment<4>(8) += g(2) * jacobian_vec;
               }
 
-              // MP we could remove the division by volumens to save one division
               return residuals.sum() / (default_type)volumes;
             }
 
-          Estimator estimator;
+          private:
+            ssize_t volumes;
+            Estimator estimator;
+            Eigen::Matrix<typename Im1Type::value_type, Eigen::Dynamic, 3> im1_grad;
+            Eigen::Matrix<typename Im2Type::value_type, Eigen::Dynamic, 3> im2_grad;
+            Eigen::Matrix<typename Im1Type::value_type, Eigen::Dynamic, 1> im1_values, diff_values;
+            Eigen::Matrix<typename Im2Type::value_type, Eigen::Dynamic, 1> im2_values;
         };
     }
   }

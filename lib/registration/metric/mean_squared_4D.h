@@ -31,25 +31,27 @@ namespace MR
   {
     namespace Metric
     {
+      template <class Im1Type, class Im2Type>
       class MeanSquared4D {
         public:
+          MeanSquared4D(Im1Type im1, Im2Type im2): volumes(im1.size(3)) {
+            im1_grad.resize(volumes, 3);
+            im2_grad.resize(volumes, 3);
+            im1_values.resize(volumes, 1);
+            im2_values.resize(volumes, 1);
+            diff_values.resize(volumes, 1);
+          };
 
-        template <class Params>
+          template <class Params>
           default_type operator() (Params& params,
                                    const Eigen::Vector3 im1_point,
                                    const Eigen::Vector3 im2_point,
                                    const Eigen::Vector3 midway_point,
                                    Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
 
-            Eigen::Matrix<typename Params::Im1ValueType, Eigen::Dynamic, 3> im1_grad, im2_grad;
-            Eigen::Matrix<typename Params::Im1ValueType, Eigen::Dynamic, 1> im1_values, im2_values, diff_values;
-
             params.im1_image_interp->value_and_gradient_row_wrt_scanner (im1_values, im1_grad);
             if (im1_values.hasNaN())
               return 0.0;
-
-            const ssize_t volumes = im1_values.size();
-            assert (volumes > 1);
 
             params.im2_image_interp->value_and_gradient_row_wrt_scanner (im2_values, im2_grad);
             if (im2_values.hasNaN())
@@ -67,6 +69,13 @@ namespace MR
 
             return diff_values.squaredNorm() / (default_type)volumes;
         }
+
+        private:
+          ssize_t volumes;
+          Eigen::Matrix<typename Im1Type::value_type, Eigen::Dynamic, 3> im1_grad;
+          Eigen::Matrix<typename Im2Type::value_type, Eigen::Dynamic, 3> im2_grad;
+          Eigen::Matrix<typename Im1Type::value_type, Eigen::Dynamic, 1> im1_values, diff_values;
+          Eigen::Matrix<typename Im2Type::value_type, Eigen::Dynamic, 1> im2_values;
       };
     }
   }
