@@ -240,9 +240,12 @@ namespace MR
             typedef Im1ImageType ProcessedImageType;
             typedef Image<bool> ProcessedMaskType;
 
-            typedef Interp::SplineInterp<Im1ImageType, Math::UniformBSpline<typename Im1ImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative> Im1ImageInterpolatorType;
-            typedef Interp::SplineInterp<Im2ImageType, Math::UniformBSpline<typename Im2ImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative> Im2ImageInterpolatorType;
-            typedef Interp::SplineInterp<ProcessedImageType, Math::UniformBSpline<typename ProcessedImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative> ProcessedImageInterpolatorType;
+            // typedef Interp::SplineInterp<Im1ImageType, Math::UniformBSpline<typename Im1ImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative> Im1ImageInterpolatorType;
+            // typedef Interp::SplineInterp<Im2ImageType, Math::UniformBSpline<typename Im2ImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative> Im2ImageInterpolatorType;
+            // typedef Interp::SplineInterp<ProcessedImageType, Math::UniformBSpline<typename ProcessedImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative> ProcessedImageInterpolatorType;
+            typedef Interp::LinearInterp<Im1ImageType, Interp::LinearInterpProcessingType::ValueAndDerivative> Im1ImageInterpolatorType;
+            typedef Interp::LinearInterp<Im2ImageType, Interp::LinearInterpProcessingType::ValueAndDerivative> Im2ImageInterpolatorType;
+            typedef Interp::LinearInterp<ProcessedImageType, Interp::LinearInterpProcessingType::ValueAndDerivative> ProcessedImageInterpolatorType;
 
             typedef Metric::Params<TransformType,
                                    Im1ImageType,
@@ -277,7 +280,7 @@ namespace MR
                 CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor: " + str(scale_factor[level]) + st);
               }
 
-              // TODO We will still need to resize the 'halfway' template grid.
+              // TODO We will still need to crop the 'halfway' template grid.
 
 
               Filter::Smooth im1_smooth_filter (im1_image);

@@ -229,7 +229,7 @@ namespace MR
                 typedef typename ParamType::ImProcessedValueType ProcessedImageValueType;
                 typedef typename ParamType::ImProcessedMaskType ProcessedMaskType;
                 typedef typename ParamType::ImProcessedMaskInterpolatorType ProcessedMaskInterpolatorType;
-                typedef Interp::SplineInterp<Image<ProcessedImageValueType>, Math::UniformBSpline<ProcessedImageValueType>, Math::SplineProcessingType::ValueAndDerivative> CCInterpType;
+                typedef typename ParamType::ImProcessedImageInterpolatorType CCInterpType;
 
                 // store precomputed values in cc_image:
                 // volumes 0 and 1: normalised intensities of both images (Im1 and Im2)
