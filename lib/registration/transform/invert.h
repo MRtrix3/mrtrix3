@@ -26,7 +26,7 @@
 #include "image.h"
 #include "interp/cubic.h"
 #include "algo/threaded_loop.h"
-#include "convert.h"
+#include "registration/transform/convert.h"
 #include "transform.h"
 
 namespace MR
@@ -80,7 +80,7 @@ namespace MR
             }
 
             Interp::Cubic<Image<default_type> > warped_moving_positions;
-            Transform transform;
+            MR::Transform transform;
             const size_t max_iter;
             default_type error_tolerance;
         };
@@ -93,7 +93,7 @@ namespace MR
           /*! Estimate the inverse of a displacement field
            * Note that the output inv_warp can be passed as either a zero field or an initial estimate
            */
-          void operator() (Image<default_type>& warp, Image<default_type>& inv_warp, bool is_initialised = false, size_t max_iter = 50, default_type error_tolerance = 0.01)
+          void invert (Image<default_type>& warp, Image<default_type>& inv_warp, bool is_initialised = false, size_t max_iter = 50, default_type error_tolerance = 0.01)
           {
             check_dimensions (warp, inv_warp);
 
@@ -109,11 +109,13 @@ namespace MR
 
             auto warped_positions = Image<default_type>::scratch (warp);
 
-            // TODO replace with displacement2deformation (positions, positions);
-            for (auto i = Loop (warp, 0, 3) (warp, warped_positions); i; ++i) {
-              positions_interp.scanner (warp.row(3));
-              warped_positions.row(3) = positions_interp.row(3);
-            }
+            displacement2deformation (positions, warped_positions);
+
+//            // TODO replace with displacement2deformation (positions, positions);
+//            for (auto i = Loop (warp, 0, 3) (warp, warped_positions); i; ++i) {
+//              positions_interp.scanner (warp.row(3));
+//              warped_positions.row(3) = positions_interp.row(3);
+//            }
 
             ThreadedLoop ("inverting warp field...", inv_warp, 0, 3)
               .run (ThreadKernel (warped_positions, inv_warp, max_iter, error_tolerance), inv_warp);

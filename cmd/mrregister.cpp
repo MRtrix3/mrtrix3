@@ -306,9 +306,9 @@ void run ()
   }
 
   opt = get_options ("warp_out");
-  bool output_warps = false;
+  bool output_warp_fields = false;
   std::string warp_filename;
-  std::unique_ptr<Image<value_type> > warp_buffer;
+  std::unique_ptr<Image<float> > output_warps;
   if (opt.size()) {
     if (!do_syn)
       throw Exception ("SyN warp output requested when no SyN registration is requested");
@@ -702,28 +702,40 @@ void run ()
     }
 
 
-    if (output_warps) {
-//      if (opt.size()) {
-//        if (!do_syn)
-//          throw Exception ("SyN warp output requested when no SyN registration is requested");
+    if (output_warp_fields) {
+      Header warp_header (*(syn_registration.get_im1_disp_field()));
+      warp_header.set_ndim (5);
+      warp_header.size(3) = 3;
+      warp_header.size(4) = 4;
+      warp_header.stride(0) = 2;
+      warp_header.stride(1) = 3;
+      warp_header.stride(2) = 4;
+      warp_header.stride(3) = 1;
+      warp_header.stride(4) = 5;
+      output_warps.reset (new Image<float> (Image<float>::create (std::string (opt[0][0]), warp_header)));
 
-//        Header warp_header (*syn_registration.get_im1_disp_field());
-//        warp_header.set_ndim (5);
-//        warp_header.size(3) = 3;
-//        warp_header.size(4) = 4;
-//        warp_header.stride(0) = 2;
-//        warp_header.stride(1) = 3;
-//        warp_header.stride(2) = 4;
-//        warp_header.stride(3) = 1;
-//        warp_header.stride(4) = 5;
-//        warp_buffer.reset (new Image<value_type> (Image<value_type>::create(std::string (opt[0][0]), warp_header)));
-//      }
+      output_warps->index(4) = 0;
+      threaded_copy (*(syn_registration.get_im1_disp_field()), *output_warps, 0, 4);
+      output_warps->index(4) = 1;
+      threaded_copy (*(syn_registration.get_im1_disp_field_inv()), *output_warps, 0, 4);
+      output_warps->index(4) = 2;
+      threaded_copy (*(syn_registration.get_im2_disp_field()), *output_warps, 0, 4);
+      output_warps->index(4) = 3;
+      threaded_copy (*(syn_registration.get_im2_disp_field_inv()), *output_warps, 0, 4);
     }
-
   }
 
+
+
   if (im1_transformed.valid()) {
+    INFO ("Outputting tranformed input images...");
+
     if (do_syn) {
+
+
+
+
+
     } else if (do_affine) {
       Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, affine.get_transform(), Adapter::AutoOverSample, 0.0);
       if (do_reorientation) {

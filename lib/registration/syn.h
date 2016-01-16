@@ -32,6 +32,7 @@
 #include "registration/transform/affine.h"
 #include "registration/transform/convert.h"
 #include "registration/transform/normalise.h"
+#include "registration/transform/invert.h"
 #include "registration/metric/syn_demons.h"
 #include "image/average_space.h"
 
@@ -235,6 +236,10 @@ namespace MR
                   CONSOLE ("  cost: " + str(global_cost));
 
 //                  Invert fields x 2
+                  Transform::invert (*im1_disp_field, *im1_disp_field_inv, (bool)iteration);
+                  display (*im1_disp_field_inv);
+                  save (*im1_disp_field_inv, std::string("disp_inv_smoothed_iter" + str(iteration) + ".mif"));
+//                  Transform::invert (*im2_disp_field, *im2_disp_field_inv, (bool)iteration);
 
 
                   if (++iteration > max_iter[level])
@@ -279,8 +284,21 @@ namespace MR
             disp_smoothing = voxel_fwhm;
           }
 
-//          std::shared_ptr<Image<default_type> > get_im1_disp_field() {
-//          }
+          std::shared_ptr<Image<default_type> > get_im1_disp_field() {
+            return im1_disp_field;
+          }
+
+          std::shared_ptr<Image<default_type> > get_im2_disp_field() {
+            return im2_disp_field;
+          }
+
+          std::shared_ptr<Image<default_type> > get_im1_disp_field_inv() {
+            return im1_disp_field_inv;
+          }
+
+          std::shared_ptr<Image<default_type> > get_im2_disp_field_inv() {
+            return im2_disp_field_inv;
+          }
 
 
 
