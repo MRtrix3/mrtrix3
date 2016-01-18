@@ -123,7 +123,7 @@ else:
 
 # Combine the tissue images into the 5TT format within the script itself
 # Step 1: Run LCC on the WM image
-runCommand('mrthreshold T1_bet_pve_2' + fast_suffix + ' - -abs 0.001 | maskfilter - connected wm_mask.mif -largest')
+runCommand('mrthreshold T1_bet_pve_2' + fast_suffix + ' - -abs 0.001 | maskfilter - connect wm_mask.mif -largest')
 # Step 2: Generate the images in the same fashion as the 5ttgen command
 runCommand('mrconvert T1_bet_pve_0' + fast_suffix + ' csf.mif')
 runCommand('mrcalc 1 csf.mif -sub all_sgms.nii -min sgm.mif')
