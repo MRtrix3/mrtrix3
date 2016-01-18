@@ -100,8 +100,6 @@ void usage ()
 
   + Registration::syn_options
 
-  + Registration::initialisation_options
-
   + Registration::fod_options
 
   + DataType::options();
@@ -150,6 +148,7 @@ void run ()
   bool do_reorientation = true;
   if (opt.size())
     do_reorientation = false;
+  Eigen::MatrixXd directions_cartesian;
 
   if (im2_header.ndim() > 4) {
     throw Exception ("image dimensions larger than 4 are not supported");
@@ -176,6 +175,12 @@ void run ()
             throw Exception ("not enough SH coefficients within input image for desired lmax");
         load_image (argument[0], num_SH, im1_image);
         load_image (argument[1], num_SH, im2_image);
+
+        opt = get_options ("directions");
+        if (opt.size())
+          directions_cartesian = Math::SH::spherical2cartesian (load_matrix (opt[0][0]));
+        else
+          directions_cartesian = Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_60());
     }
     else {
       do_reorientation = false;
@@ -188,6 +193,9 @@ void run ()
     load_image (argument[0], 1, im1_image);
     load_image (argument[1], 1, im2_image);
   }
+
+
+
 
   // Will currently output whatever lmax was used during registration
   opt = get_options ("transformed");
@@ -264,6 +272,19 @@ void run ()
       break;
   }
 
+  opt = get_options ("mask2");
+  Image<value_type> im2_mask;
+  if (opt.size ())
+    im2_mask = Image<value_type>::open(opt[0][0]);
+
+  opt = get_options ("mask1");
+  Image<value_type> im1_mask;
+  if (opt.size ())
+    im1_mask = Image<value_type>::open(opt[0][0]);
+
+
+  // ****** RIGID REGISTRATION OPTIONS *******
+  Registration::Linear rigid_registration;
 
   opt = get_options ("rigid");
   bool output_rigid = false;
@@ -274,6 +295,78 @@ void run ()
     output_rigid = true;
     rigid_filename = std::string (opt[0][0]);
   }
+
+  Registration::Transform::Rigid rigid;
+  opt = get_options ("rigid_init");
+  bool init_rigid_set = false;
+  if (opt.size()) {
+    throw Exception ("initialise with rigid not yet implemented");
+    init_rigid_set = true;
+    transform_type rigid_transform = load_transform (opt[0][0]);
+    rigid.set_transform (rigid_transform);
+    rigid_registration.set_init_type (Registration::Transform::Init::none);
+  }
+
+  opt = get_options ("rigid_centre");
+  if (opt.size()) {
+    if (init_affine_set)
+      throw Exception ("options -rigid_init and -rigid_centre are mutually exclusive");
+    switch ((int)opt[0][0]){
+      case 0:
+        rigid_registration.set_init_type (Registration::Transform::Init::mass);
+        break;
+      case 1:
+        rigid_registration.set_init_type (Registration::Transform::Init::geometric);
+        break;
+      case 2:
+        rigid_registration.set_init_type (Registration::Transform::Init::moments);
+        break;
+      case 3:
+        rigid_registration.set_init_type (Registration::Transform::Init::none);
+        break;
+      default:
+        break;
+    }
+  }
+
+  opt = get_options ("rigid_scale");
+  if (opt.size ()) {
+    if (!do_rigid)
+      throw Exception ("the rigid multi-resolution scale factors were input when no rigid registration is requested");
+    rigid_registration.set_scale_factor (parse_floats (opt[0][0]));
+  }
+
+  opt = get_options ("rigid_niter");
+  if (opt.size ()) {
+    if (!do_rigid)
+      throw Exception ("the number of rigid iterations have been input when no rigid registration is requested");
+    rigid_registration.set_max_iter (parse_ints (opt[0][0]));
+  }
+
+  opt = get_options ("rigid_smooth_factor");
+  if (opt.size ()) {
+    if (!do_rigid)
+      throw Exception ("the rigid smooth factor was input when no rigid registration is requested");
+    rigid_registration.set_smoothing_factor(parse_floats (opt[0][0]));
+  }
+
+  opt = get_options ("rigid_metric");
+  Registration::LinearMetricType rigid_metric = Registration::Diff;
+  if (opt.size()) {
+    switch ((int)opt[0][0]){
+      case 0:
+        rigid_metric = Registration::Diff;
+        break;
+      case 1:
+        rigid_metric = Registration::NCC;
+        break;
+      default:
+        break;
+    }
+  }
+
+  // ****** AFFINE REGISTRATION OPTIONS *******
+  Registration::Linear affine_registration;
 
   opt = get_options ("affine");
   bool output_affine = false;
@@ -305,77 +398,69 @@ void run ()
    affine_2tomid_filename = std::string (opt[0][0]);
   }
 
-  opt = get_options ("warp_out");
-  bool output_warp_fields = false;
-  std::string warp_filename;
-  std::unique_ptr<Image<float> > output_warps;
+  Registration::Transform::Affine affine;
+  opt = get_options ("affine_init");
+  bool init_affine_set = false;
   if (opt.size()) {
-    if (!do_syn)
-      throw Exception ("SyN warp output requested when no SyN registration is requested");
-    warp_filename = std::string (opt[0][0]);
+    if (init_rigid_set)
+      throw Exception ("you cannot initialise registrations with both a rigid and affine transformation");
+    if (do_rigid)
+      throw Exception ("you cannot initialise with -affine_init since a rigid registration is being performed");
+
+    init_affine_set = true;
+    transform_type init_affine = load_transform (opt[0][0]);
+    affine.set_transform (init_affine);
+    affine_registration.set_init_type (Registration::Transform::Init::none);
   }
 
-  opt = get_options ("rigid_scale");
-  std::vector<default_type> rigid_scale_factors;
-  if (opt.size ()) {
-    if (!do_rigid)
-      throw Exception ("the rigid multi-resolution scale factors were input when no rigid registration is requested");
-    rigid_scale_factors = parse_floats (opt[0][0]);
-  }
-
-  opt = get_options ("affine_scale");
-  std::vector<default_type> affine_scale_factors;
-  if (opt.size ()) {
-    if (!do_affine)
-      throw Exception ("the affine multi-resolution scale factors were input when no affine registration is requested");
-    affine_scale_factors = parse_floats (opt[0][0]);
-  }
-
-  opt = get_options ("affine_repetitions");
-  std::vector<int> affine_repetition_factors;
-  if (opt.size ()) {
-    if (!do_affine)
-      throw Exception ("the affine repetition factors were input when no affine registration is requested");
-    affine_repetition_factors = parse_ints (opt[0][0]);
-  }
-
-  opt = get_options ("rigid_smooth_factor");
-  std::vector<default_type> rigid_smooth_factor(1,1.0);
-  if (opt.size ()) {
-    if (!do_rigid)
-      throw Exception ("the rigid smooth factor was input when no rigid registration is requested");
-    rigid_smooth_factor = parse_floats (opt[0][0]);
-  }
-
-  opt = get_options ("affine_smooth_factor");
-  std::vector<default_type> affine_smooth_factor(1,1.0);
-  if (opt.size ()) {
-    if (!do_affine)
-      throw Exception ("the affine smooth factor was input when no affine registration is requested");
-    affine_smooth_factor = parse_floats (opt[0][0]);
-  }
-
-  opt = get_options ("affine_loop_density");
-  std::vector<default_type> affine_loop_density;
-  if (opt.size ()) {
-    if (!do_affine)
-      throw Exception ("the affine sparsity factor was input when no affine registration is requested");
-    affine_loop_density = parse_floats (opt[0][0]);
-  }
-
-  opt = get_options ("rigid_metric");
-  Registration::LinearMetricType rigid_metric = Registration::Diff;
+  opt = get_options ("affine_centre");
   if (opt.size()) {
+    if (init_affine_set)
+      throw Exception ("options -affine_init and -affine_centre are mutually exclusive");
     switch ((int)opt[0][0]){
       case 0:
-        rigid_metric = Registration::Diff;
+        affine_registration.set_init_type (Registration::Transform::Init::mass);
         break;
       case 1:
-        rigid_metric = Registration::NCC;
+        affine_registration.set_init_type (Registration::Transform::Init::geometric);
+        break;
+      case 2:
+        affine_registration.set_init_type (Registration::Transform::Init::moments);
+        break;
+      case 3:
+        affine_registration.set_init_type (Registration::Transform::Init::none);
         break;
       default:
         break;
     }
+  }
+
+  opt = get_options ("affine_scale");
+  if (opt.size ()) {
+    if (!do_affine)
+      throw Exception ("the affine multi-resolution scale factors were input when no affine registration is requested");
+    affine_registration.set_scale_factor (parse_floats (opt[0][0]));
+  }
+
+  opt = get_options ("affine_repetitions");
+  if (opt.size ()) {
+    if (!do_affine)
+      throw Exception ("the affine repetition factors were input when no affine registration is requested");
+    affine_registration.set_gradient_descent_repetitions (parse_ints (opt[0][0]));
+  }
+
+  opt = get_options ("affine_smooth_factor");
+  if (opt.size ()) {
+    if (!do_affine)
+      throw Exception ("the affine smooth factor was input when no affine registration is requested");
+    affine_registration.set_smoothing_factor (parse_floats (opt[0][0]));
+  }
+
+  opt = get_options ("affine_loop_density");
+  if (opt.size ()) {
+    if (!do_affine)
+      throw Exception ("the affine sparsity factor was input when no affine registration is requested");
+    affine_registration.set_loop_density (parse_floats (opt[0][0]));
   }
 
   opt = get_options ("affine_metric");
@@ -411,168 +496,88 @@ void run ()
     }
   }
 
-  bool affine_robust_median = get_options ("affine_robust_median").size() == 1;
-
-  opt = get_options ("syn_scale");
-  std::vector<default_type> syn_scale_factors;
-  if (opt.size ()) {
-    if (!do_syn)
-      throw Exception ("the syn multi-resolution scale factors were input when no syn registration is requested");
-    syn_scale_factors = parse_floats (opt[0][0]);
-  }
-
-
-  opt = get_options ("mask2");
-  Image<value_type> im2_mask;
-  if (opt.size ())
-    im2_mask = Image<value_type>::open(opt[0][0]);
-
-  opt = get_options ("mask1");
-  Image<value_type> im1_mask;
-  if (opt.size ())
-    im1_mask = Image<value_type>::open(opt[0][0]);
-
-  opt = get_options ("rigid_niter");
-  std::vector<int> rigid_niter;
-  if (opt.size ()) {
-    rigid_niter = parse_ints (opt[0][0]);
-    if (!do_rigid)
-      throw Exception ("the number of rigid iterations have been input when no rigid registration is requested");
-  }
+  affine_registration.use_robust_estimate (get_options ("affine_robust_median").size() == 1);
 
   opt = get_options ("affine_niter");
-  std::vector<int> affine_niter;
   if (opt.size ()) {
-    affine_niter = parse_ints (opt[0][0]);
     if (!do_affine)
       throw Exception ("the number of affine iterations have been input when no affine registration is requested");
+    affine_registration.set_max_iter (parse_ints (opt[0][0]));
   }
 
-  opt = get_options ("syn_niter");
-  std::vector<int> syn_niter;
-  if (opt.size ()) {
+
+  // ****** SYN REGISTRATION OPTIONS *******
+  Registration::SyN syn_registration;
+
+  opt = get_options ("syn_warp");
+  bool output_warp_fields = false;
+  std::string warp_filename;
+  std::unique_ptr<Image<float> > output_warps;
+  if (opt.size()) {
     if (!do_syn)
-      throw Exception ("the number of syn iterations have been input when no SyN registration is requested");
-    syn_niter = parse_ints (opt[0][0]);
-  }
-
-  opt = get_options ("smooth_update");
-  value_type smooth_update = NAN;
-  if (opt.size()) {
-    smooth_update = opt[0][0];
-    if (!do_syn)
-      throw Exception ("the warp update field smoothing parameter was input with no SyN registration is requested");
-  }
-
-  opt = get_options ("smooth_warp");
-  value_type smooth_warp = NAN;
-  if (opt.size()) {
-    smooth_warp = opt[0][0];
-    if (!do_syn)
-      throw Exception ("the warp field smoothing parameter was input with no SyN registration is requested");
-  }
-
-  Registration::Transform::Rigid rigid;
-  opt = get_options ("rigid_init");
-  bool init_rigid_set = false;
-  if (opt.size()) {
-    throw Exception ("initialise with rigid not yet implemented");
-    init_rigid_set = true;
-    Eigen::Transform<double, 3, Eigen::AffineCompact> init_rigid = load_transform (opt[0][0]);
-    //TODO // set initial rigid....need to rejig wrt centre. Would be easier to save Versor coefficients and centre of rotation
-    CONSOLE(str(init_rigid.matrix()));
-  }
-
-  Registration::Transform::Affine affine;
-  opt = get_options ("affine_init");
-  bool init_affine_set = false;
-  if (opt.size()) {
-    if (do_syn)
-      throw Exception ("initialise with affine not yet implemented");
-    if (init_rigid_set)
-      throw Exception ("you cannot initialise registrations with both a rigid and affine transformation");
-    if (do_rigid)
-      throw Exception ("you cannot initialise a rigid registration with an affine transformation");
-    init_affine_set = true;
-    Eigen::Transform<default_type, 3, Eigen::AffineCompact> init_affine = load_transform (opt[0][0]);
-    //TODO // set affine....need to rejig wrt centre
-    // CONSOLE(str(init_affine.matrix()));
-    affine.set_transform (init_affine);
+      throw Exception ("SyN warp output requested when no SyN registration is requested");
+    warp_filename = std::string (opt[0][0]);
   }
 
   opt = get_options ("syn_init");
   Image<value_type> init_warp_buffer;
   if (opt.size()) {
-    if (init_rigid_set || init_affine_set)
-      throw Exception ("you cannot initialise registrations with both a warp and a linear transformation "
-                       "(the linear transformation will already be included in the warp)");
-    throw Exception ("initialise with affine not yet implemented");
+    if (!do_syn)
+      throw Exception ("the syn initialisation input when no syn registration is requested");
+    if (init_rigid_set)
+      WARN ("-rigid_init has no effect since -syn_init also contains a linear transform in the image header");
+    if (init_affine_set)
+      WARN ("-affine_init has no effect since -syn_init also contains a linear transform in the image header");
     init_warp_buffer = Image<value_type>::open (opt[0][0]);
   }
 
-  opt = get_options ("centre");
-  Registration::Transform::Init::InitType init_centre = Registration::Transform::Init::mass;
-  if (opt.size()) {
-    switch ((int)opt[0][0]){
-      case 0:
-        init_centre = Registration::Transform::Init::mass;
-        break;
-      case 1:
-        init_centre = Registration::Transform::Init::geometric;
-        break;
-      case 2:
-        init_centre = Registration::Transform::Init::moments;
-        break;
-      case 3:
-        init_centre = Registration::Transform::Init::linear_from_file;
-        break;
-      case 4:
-        init_centre = Registration::Transform::Init::none;
-        break;
-      default:
-        break;
-    }
+  opt = get_options ("syn_scale");
+  if (opt.size ()) {
+    if (!do_syn)
+      throw Exception ("the syn multi-resolution scale factors were input when no syn registration is requested");
+    syn_registration.set_scale_factor (parse_floats (opt[0][0]));
   }
-  if (init_rigid_set and
-      (init_centre != Registration::Transform::Init::linear_from_file and
-        init_centre != Registration::Transform::Init::none))
-    WARN("rigid_init option will be overwritten by centre option. Use -centre linear to use transformation file.");
-  if (init_affine_set and
-    (init_centre != Registration::Transform::Init::linear_from_file and
-        init_centre != Registration::Transform::Init::none))
-    WARN("affine_init option will be overwritten by centre option. Use -centre linear to use transformation file.");
 
-  Eigen::MatrixXd directions_az_el;
-  opt = get_options ("directions");
-  if (opt.size())
-    directions_az_el = load_matrix (opt[0][0]);
-  else
-    directions_az_el = DWI::Directions::electrostatic_repulsion_60();
-  Eigen::MatrixXd directions_cartesian = Math::SH::spherical2cartesian (directions_az_el);
+  opt = get_options ("syn_niter");
+  if (opt.size ()) {
+    if (!do_syn)
+      throw Exception ("the number of syn iterations have been input when no SyN registration is requested");
+    syn_registration.set_max_iter (parse_ints (opt[0][0]));
+  }
+
+  opt = get_options ("syn_update_smooth");
+  if (opt.size()) {
+    if (!do_syn)
+      throw Exception ("the warp update field smoothing parameter was input when no SyN registration is requested");
+    syn_registration.set_update_smoothing (opt[0][0]);
+  }
+
+  opt = get_options ("syn_disp_smooth");
+  if (opt.size()) {
+    if (!do_syn)
+      throw Exception ("the displacement field smoothing parameter was input when no SyN registration is requested");
+    syn_registration.set_disp_smoothing (opt[0][0]);
+  }
+
+  opt = get_options ("syn_grad_step");
+  if (opt.size()) {
+    if (!do_syn)
+      throw Exception ("the initial gradient step size was input when no SyN registration is requested");
+    syn_registration.set_init_grad_step (opt[0][0]);
+  }
 
 
+  // ****** RUN RIGID REGISTRATION *******
   if (do_rigid) {
     CONSOLE ("running rigid registration");
-    Registration::Linear rigid_registration;
-
-    if (rigid_scale_factors.size())
-    rigid_registration.set_scale_factor (rigid_scale_factors);
-    rigid_registration.set_smoothing_factor (rigid_smooth_factor);
-    if (rigid_niter.size())
-      rigid_registration.set_max_iter (rigid_niter);
-    if (init_rigid_set)
-      rigid_registration.set_init_type (Registration::Transform::Init::none);
-    else
-      rigid_registration.set_init_type (init_centre);
-
 
     if (im2_image.ndim() == 4) {
       if (rigid_metric == Registration::NCC)
         throw Exception ("cross correlation metric not implemented for data with more than 3 dimensions");
-      Registration::Metric::MeanSquared4D<Image<value_type>, Image<value_type>> metric(im1_image, im2_image);
+      Registration::Metric::MeanSquared4D<Image<value_type>, Image<value_type>> metric (im1_image, im2_image);
       rigid_registration.run_masked (metric, rigid, im1_image, im2_image, im1_mask, im2_mask);
     } else {
-      if (rigid_metric == Registration::NCC){
+      if (rigid_metric == Registration::NCC) {
         std::vector<size_t> extent(3,3);
         rigid_registration.set_extent(extent);
         Registration::Metric::CrossCorrelation metric;
@@ -588,34 +593,19 @@ void run ()
       save_transform (rigid.get_transform(), rigid_filename);
   }
 
+  // ****** RUN AFFINE REGISTRATION *******
   if (do_affine) {
     CONSOLE ("running affine registration");
-    Registration::Linear affine_registration;
 
-    if (affine_scale_factors.size())
-      affine_registration.set_scale_factor (affine_scale_factors);
-    if (affine_repetition_factors.size())
-      affine_registration.set_gradient_descent_repetitions(affine_repetition_factors);
-    affine_registration.set_smoothing_factor (affine_smooth_factor);
-    if (affine_niter.size())
-      affine_registration.set_max_iter (affine_niter);
-    if (affine_loop_density.size())
-      affine_registration.set_loop_density (affine_loop_density);
-    if (affine_robust_median)
-      affine_registration.use_robust_estimate (true);
     if (do_rigid) {
       affine.set_centre (rigid.get_centre());
       affine.set_translation (rigid.get_translation());
       affine.set_matrix (rigid.get_matrix());
-    }
-    if (do_rigid || init_affine_set)
       affine_registration.set_init_type (Registration::Transform::Init::none);
-    else
-      affine_registration.set_init_type (init_centre);
+    }
 
     if (do_reorientation)
       affine_registration.set_directions (directions_cartesian);
-
 
     if (im2_image.ndim() == 4) {
       if (affine_metric == Registration::NCC)
@@ -676,21 +666,10 @@ void run ()
       save_transform (affine.get_transform_half_inverse(), affine_2tomid_filename);
   }
 
+
+  // ****** RUN SYN REGISTRATION *******
   if (do_syn) {
     CONSOLE ("running SyN registration");
-    Registration::SyN syn_registration;
-
-    if (syn_niter.size())
-      syn_registration.set_max_iter (syn_niter);
-
-    if (syn_scale_factors.size())
-      syn_registration.set_scale_factor (syn_scale_factors);
-
-    if (std::isfinite (smooth_warp))
-      syn_registration.set_disp_smoothing (smooth_warp);
-
-    if (std::isfinite (smooth_update))
-      syn_registration.set_update_smoothing (smooth_update);
 
     if (do_affine) {
       syn_registration.run_masked (affine, im1_image, im2_image, im1_mask, im2_mask);
@@ -700,7 +679,6 @@ void run ()
       Registration::Transform::Affine identity_transform;
       syn_registration.run_masked (identity_transform, im1_image, im2_image, im1_mask, im2_mask);
     }
-
 
     if (output_warp_fields) {
       Header warp_header (*(syn_registration.get_im1_disp_field()));
@@ -734,8 +712,6 @@ void run ()
 
 
 
-
-
     } else if (do_affine) {
       Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, affine.get_transform(), Adapter::AutoOverSample, 0.0);
       if (do_reorientation) {
@@ -750,6 +726,8 @@ void run ()
       }
     }
   }
+
+
   if (image1_midway.valid()) {
     if (do_syn) {
     } else if (do_affine) {

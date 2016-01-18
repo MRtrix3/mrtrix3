@@ -41,6 +41,8 @@ namespace MR
   namespace Registration
   {
 
+    extern const App::OptionGroup syn_options;
+
     class SyN
     {
 
@@ -56,8 +58,6 @@ namespace MR
             scale_factor[0] = 0.5;
             scale_factor[1] = 1;
         }
-
-
 
 
         template <class TransformType, class Im1ImageType, class Im2ImageType, class Im1MaskType, class Im2MaskType>
@@ -112,7 +112,7 @@ namespace MR
                 im1_smooth_filter.set_stdev (1.0 / (2.0 * scale_factor[level]));
                 auto im1_smoothed = Image<default_type>::scratch (im1_smooth_filter);
                 Filter::Smooth im2_smooth_filter (im2_image);
-                im2_smooth_filter.set_stdev (1.0 / (2.0 * scale_factor[level]));  // TODO compare this with SyNFOD line489
+                im2_smooth_filter.set_stdev (1.0 / (2.0 * scale_factor[level]));  // TODO compare this with SyNFOD line 489
                 auto im2_smoothed = Image<default_type>::scratch (im2_smooth_filter);
                 {
                   LogLevelLatch log_level (0);
@@ -152,13 +152,11 @@ namespace MR
 
                 std::vector<default_type> cost_function_vector;
                 default_type grad_step_altered = gradient_step;
-                //TODO alter grad step
 
                 bool converged = false;
                 ssize_t iteration = 0;
                 default_type update_smoothing_mm = update_smoothing * ((midway_image.spacing(0) + midway_image.spacing(1) + midway_image.spacing(2)) / 3.0);
                 default_type disp_smoothing_mm = disp_smoothing * ((midway_image.spacing(0) + midway_image.spacing(1) + midway_image.spacing(2)) / 3.0);
-
 
                 while (!converged) {
 
@@ -175,8 +173,7 @@ namespace MR
                     Filter::warp<Interp::Linear> (im1_smoothed, im1_warped, im1_deform_field, 0.0);
                     Filter::warp<Interp::Linear> (im2_smoothed, im2_warped, im2_deform_field, 0.0);
                   }
-                  save (im1_warped, std::string("im1_warped_iter" + str(iteration) + ".mif"), false);
-                  save (im2_warped, std::string("im2_warped_iter" + str(iteration) + ".mif"), false);
+//                  save (im1_warped, std::string("im1_warped_iter" + str(iteration) + ".mif"), false);
 
                   if (fod_reorientation) {
                     INFO ("Reorienting FODs");
@@ -236,17 +233,21 @@ namespace MR
                   CONSOLE ("  cost: " + str(global_cost));
 
 //                  Invert fields x 2
-                  Transform::invert (*im1_disp_field, *im1_disp_field_inv, (bool)iteration);
-                  display (*im1_disp_field_inv);
-                  save (*im1_disp_field_inv, std::string("disp_inv_smoothed_iter" + str(iteration) + ".mif"));
+//                  Transform::invert (*im1_disp_field, *im1_disp_field_inv, (bool)iteration);
+                  //display (*im1_disp_field_inv);
+//                  save (*im1_disp_field_inv, std::string("disp_inv_smoothed_iter" + str(iteration) + ".mif"));
 //                  Transform::invert (*im2_disp_field, *im2_disp_field_inv, (bool)iteration);
 
+
+                   //TODO alter grad step
+
+                   //check displacement field difference to check for convergence.
 
                   if (++iteration > max_iter[level])
                     converged = true;
 
 
-                  //track the energy profile to check for convergence.
+
 
                 }
              }
@@ -266,6 +267,10 @@ namespace MR
               if (scalefactor[i] < 0)
                 throw Exception ("the multi-resolution scale factor must be positive");
             scale_factor = scalefactor;
+          }
+
+          void set_init_grad_step (const default_type step) {
+            gradient_step = step;
           }
 
           void set_fod_reorientation (const bool do_reorientation) {

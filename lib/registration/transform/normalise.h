@@ -76,6 +76,8 @@ namespace MR
           if (global_max_magnitude == 0)
             return;
 
+          std::cout << global_max_magnitude << std::endl;
+
           auto normaliser = [&global_max_magnitude](Image<default_type>& disp) {
             Eigen::Vector3 vec = disp.row(3);
             disp.row(3) = vec.array() / global_max_magnitude;

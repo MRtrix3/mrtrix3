@@ -128,10 +128,10 @@ namespace MR
           }
 
           Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> get_transform () const {
-              Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> transform;
-              transform.matrix() = trafo.matrix();
-              return transform;
-            }
+            Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> transform;
+            transform.matrix() = trafo.matrix();
+            return transform;
+          }
 
           Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> get_transform_half () const {
             return trafo_half;
@@ -184,36 +184,32 @@ namespace MR
             return optimiser_weights;
           }
 
-          // Eigen::Vector3 get_offset () const {
-          //   return offset;
-          // }
-
           void set_offset (const Eigen::Vector3& offset_in) {
             trafo.translation() = offset_in;
             compute_halfspace_transformations();
           }
 
-          void debug(){
-            INFO("debug():");
-            INFO("parameters of type " + str(DataType::from<ParameterType>().specifier()));
+          void debug() {
+            INFO ("debug():");
+            INFO ("parameters of type " + str(DataType::from<ParameterType>().specifier()));
             Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", "\n", "", "", "", "");
-            INFO("trafo:\n"+str(trafo.matrix().format(fmt)));
-            INFO("trafo.inverse():\n"+str(trafo.inverse().matrix().format(fmt)));
-            INFO("trafo_half:\n"+str(trafo_half.matrix().format(fmt)));
-            INFO("trafo_half_inverse:\n"+str(trafo_half_inverse.matrix().format(fmt)));
-            INFO("centre: "+str(centre.transpose(),12));
+            INFO ("trafo:\n"+str(trafo.matrix().format(fmt)));
+            INFO ("trafo.inverse():\n"+str(trafo.inverse().matrix().format(fmt)));
+            INFO ("trafo_half:\n"+str(trafo_half.matrix().format(fmt)));
+            INFO ("trafo_half_inverse:\n"+str(trafo_half_inverse.matrix().format(fmt)));
+            INFO ("centre: "+str(centre.transpose(),12));
             Eigen::Matrix<ParameterType, 3, 1> in, out, half, half_inverse;
             in << 1.0, 2.0, 3.0;
             transform (out, in);
             transform_half (half, in);
             transform_half_inverse (half_inverse, in);
-            VAR(out.transpose());
-            VAR(half.transpose());
-            VAR(half_inverse.transpose());
+            VAR (out.transpose());
+            VAR (half.transpose());
+            VAR (half_inverse.transpose());
           }
 
           template <class ParamType, class VectorType>
-          bool robust_estimate( VectorType& gradient,
+          bool robust_estimate (VectorType& gradient,
                                 std::vector<VectorType>& grad_estimates,
                                 const ParamType& params,
                                 const VectorType& parameter_vector,
@@ -221,7 +217,7 @@ namespace MR
                                 const size_t& weiszfeld_iterations,
                                 default_type& learning_rate) const {
             DEBUG("robust estimator for this metric is not implemented.");
-            for (auto& grad_estimate : grad_estimates ){
+            for (auto& grad_estimate : grad_estimates) {
               gradient += grad_estimate;
             }
             return true;
@@ -229,32 +225,29 @@ namespace MR
 
 
         protected:
-
           void compute_offset () {
-            Eigen::Vector3 offset = trafo.translation() + centre - trafo.linear() * centre;
-            trafo.translation() = offset;
+            trafo.translation() = trafo.translation() + centre - trafo.linear() * centre;
           }
 
-
-          void compute_halfspace_transformations(){
+          void compute_halfspace_transformations() {
             Eigen::Matrix<ParameterType, 4, 4> tmp;
             tmp.setIdentity();
             tmp.template block<3,4>(0,0) = trafo.matrix();
-            assert((tmp.template block<3,3>(0,0).isApprox(trafo.linear())));
-            assert(tmp.determinant() > 0);
+            assert ((tmp.template block<3,3>(0,0).isApprox (trafo.linear())));
+            assert (tmp.determinant() > 0);
             tmp = tmp.sqrt().eval();
             trafo_half.matrix() = tmp.template block<3,4>(0,0);
             trafo_half_inverse.matrix() = trafo_half.inverse().matrix();
-            assert(trafo.matrix().isApprox((trafo_half*trafo_half).matrix()));
-            assert(trafo.inverse().matrix().isApprox((trafo_half_inverse*trafo_half_inverse).matrix()));
+            assert (trafo.matrix().isApprox ((trafo_half*trafo_half).matrix()));
+            assert (trafo.inverse().matrix().isApprox ((trafo_half_inverse*trafo_half_inverse).matrix()));
             // debug();
-            }
+          }
 
           size_t number_of_parameters;
           // TODO matrix, translation and offset are only here for the rigid class. to be removed
-            Eigen::Matrix<ParameterType, 3, 3> matrix;
-            Eigen::Vector3 translation;
-            Eigen::Vector3 offset;
+          Eigen::Matrix<ParameterType, 3, 3> matrix;
+          Eigen::Vector3 translation;
+          Eigen::Vector3 offset;
           Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo;
           Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo_half;
           Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo_half_inverse;

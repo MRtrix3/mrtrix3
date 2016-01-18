@@ -189,7 +189,7 @@ namespace MR
 
           void get_parameter_vector (Eigen::Matrix<ParameterType, Eigen::Dynamic, 1>& param_vector) const {
             param_vector.resize (12);
-            param_mat2vec(this->trafo.matrix(), param_vector);
+            param_mat2vec (this->trafo.matrix(), param_vector);
           }
 
           UpdateType* get_gradient_descent_updator () {
@@ -197,7 +197,7 @@ namespace MR
           }
 
           template <class ParamType, class VectorType>
-          bool robust_estimate(
+          bool robust_estimate (
             VectorType& gradient,
             std::vector<VectorType>& grad_estimates,
             const ParamType& params,
@@ -210,7 +210,7 @@ namespace MR
             assert (n_estimates>1);
 
             Eigen::Matrix<ParameterType, 4, 4> X, X_upd;
-            param_vec2mat(parameter_vector, X);
+            param_vec2mat (parameter_vector, X);
 
             // get tetrahedron
             const size_t n_vertices = 4;
@@ -237,7 +237,7 @@ namespace MR
 
             std::vector<Eigen::Matrix<ParameterType, 3, Eigen::Dynamic>> transformed_vertices(4);
             for (auto& vert : transformed_vertices){
-              vert.resize(3, n_estimates);
+              vert.resize (3, n_estimates);
             }
             transform_type trafo_upd;
             // adjust learning rate if neccessary
@@ -245,10 +245,10 @@ namespace MR
             while (max_iter > 0) {
               bool learning_rate_ok = true;
               for (size_t j =0; j < n_estimates; ++j){
-                Eigen::Matrix<ParameterType, Eigen::Dynamic, 1> candidate =  (parameter_vector - learning_rate * grad_estimates[j]);
-                assert(is_finite(candidate));
-                param_vec2mat(candidate, trafo_upd.matrix());
-                if (trafo_upd.matrix().block(0,0,3,3).determinant() < 0){
+                Eigen::Matrix<ParameterType, Eigen::Dynamic, 1> candidate = (parameter_vector - learning_rate * grad_estimates[j]);
+                assert (is_finite (candidate));
+                param_vec2mat (candidate, trafo_upd.matrix());
+                if (trafo_upd.matrix().block (0,0,3,3).determinant() < 0){
                   learning_rate *= 0.1;
                   learning_rate_ok = false;
                   break;
@@ -260,7 +260,7 @@ namespace MR
               if (learning_rate_ok) break;
               --max_iter;
             }
-            if (max_iter != 10000) INFO("affine robust estimate learning rate adjusted to " + str(learning_rate));
+            if (max_iter != 10000) INFO ("affine robust estimate learning rate adjusted to " + str (learning_rate));
 
             // compute vertex-wise median
             Eigen::Matrix<ParameterType, 4, n_vertices> vertices_transformed_median;

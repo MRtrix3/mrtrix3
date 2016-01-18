@@ -40,7 +40,7 @@ namespace MR
     {
       namespace Init
       {
-        enum InitType {mass, geometric, moments, linear_from_file, none};
+        enum InitType {mass, geometric, moments, none};
 
         template <class ImageType, class ValueType>
           void get_geometric_centre (const ImageType& image, Eigen::Matrix<ValueType, 3, 1>& centre)

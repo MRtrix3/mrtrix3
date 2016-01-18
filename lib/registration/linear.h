@@ -53,8 +53,6 @@ namespace MR
 
     extern const App::OptionGroup rigid_options;
     extern const App::OptionGroup affine_options;
-    extern const App::OptionGroup syn_options;
-    extern const App::OptionGroup initialisation_options;
     extern const App::OptionGroup fod_options;
 
     enum LinearMetricType {Diff, NCC};
@@ -77,8 +75,8 @@ namespace MR
           kernel_extent(3, 1),
           grad_tolerance(1.0e-6),
           step_tolerance(1.0e-10),
-          log_stream(nullptr),
-          init_type (Transform::Init::mass),
+          log_stream (nullptr),
+          init_type (Transform::Init::moments),
           robust_estimate (false) {
           scale_factor[0] = 0.5;
           scale_factor[1] = 1;
