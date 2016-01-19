@@ -331,19 +331,16 @@ namespace MR
 
           void compute_normg_and_step_unscaled () {
             normg = step_unscaled = g.norm();
-            assert(std::isfinite(normg));
-            if (normg > 0.0){
+            assert (std::isfinite(normg));
+            if (normg > 0.0) {
               if (preconditioner_weights.size()) {
                 value_type g_projected = 0.0;
-                step_unscaled = 0.0;
                 for (ssize_t n = 0; n < g.size(); ++n) {
-                  step_unscaled += std::pow(g[n], 2);
-                  g_projected += preconditioner_weights[n] * std::pow(g[n], 2);
+                  g_projected += preconditioner_weights[n] * std::pow (g[n], 2);
                   g[n] *= preconditioner_weights[n];
                 }
                 normg = g_projected / normg;
-                assert(std::isfinite(normg));
-                step_unscaled = std::sqrt (step_unscaled);
+                assert (std::isfinite(normg));
               }
             }
           }

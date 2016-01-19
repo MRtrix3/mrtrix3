@@ -309,7 +309,7 @@ void run ()
 
   opt = get_options ("rigid_centre");
   if (opt.size()) {
-    if (init_affine_set)
+    if (init_rigid_set)
       throw Exception ("options -rigid_init and -rigid_centre are mutually exclusive");
     switch ((int)opt[0][0]){
       case 0:
