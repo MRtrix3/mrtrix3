@@ -75,7 +75,7 @@ namespace MR
                       if (im1_mask.valid())
                         im1_mask_interp.reset (new Im1MaskInterpolatorType (im1_mask));
                       if (im2_mask.valid())
-                        im2_mask_interp.reset (new Im1MaskInterpolatorType (im2_mask));
+                        im2_mask_interp.reset (new Im2MaskInterpolatorType (im2_mask));
                       update_control_points();
           }
 

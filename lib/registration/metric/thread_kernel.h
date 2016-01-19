@@ -66,18 +66,23 @@ namespace MR
       template <class MetricType, class ParamType>
       class ThreadKernel {
         public:
-          ThreadKernel (const MetricType& metric, const ParamType& parameters, default_type& overall_cost_function, Eigen::VectorXd& overall_gradient) :
+          ThreadKernel (const MetricType& metric, const ParamType& parameters, default_type& overall_cost_function, Eigen::VectorXd& overall_gradient, ssize_t* overall_cnt = nullptr) :
             metric (metric),
             params (parameters),
             cost_function (0.0),
+            cnt (0),
             gradient (overall_gradient.size()),
             overall_cost_function (overall_cost_function),
             overall_gradient (overall_gradient),
+            overall_cnt (overall_cnt),
             transform (params.midway_image) { gradient.setZero(); }
 
           ~ThreadKernel () {
             overall_cost_function += cost_function;
             overall_gradient += gradient;
+            if (overall_cnt) {
+              (*overall_cnt) += cnt;
+            }
           }
 
           template <class U = MetricType>
@@ -121,6 +126,7 @@ namespace MR
               throw Exception ("this is not right");
             }
 #endif
+            ++cnt;
             cost_function += metric (params, im1_point, im2_point, midway_point, gradient);
           }
 
@@ -160,6 +166,7 @@ namespace MR
               params.transformation.transform_half (im1_point, midway_point);
               params.transformation.transform_half_inverse (im2_point, midway_point);
 
+              ++cnt;
               cost_function += metric (params, iter, im1_point, im2_point, midway_point, gradient);
             }
 
@@ -168,9 +175,11 @@ namespace MR
             ParamType params;
 
             default_type cost_function;
+            ssize_t cnt;
             Eigen::VectorXd gradient;
             default_type& overall_cost_function;
             Eigen::VectorXd& overall_gradient;
+            ssize_t* overall_cnt;
             Transform transform;
       };
     }

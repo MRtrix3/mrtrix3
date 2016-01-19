@@ -97,7 +97,7 @@ void run() {
 
     Registration::Transform::Init::initialise_using_image_moments (im1_image, im2_image, transform);
 
-    Registration::GlobalSearch transformation_search;
+    Registration::GlobalSearch::GlobalSearch transformation_search;
     transformation_search.run_masked(metric, transform, im1_image, im2_image, im1_mask, im2_mask);
     transform.debug();
 }

@@ -155,7 +155,7 @@ namespace MR
           grad_tolerance = tolerance;
         }
 
-        void set_gradient_descent_log_stream (std::streambuf* stream) {
+        void set_log_stream (std::streambuf* stream) {
           log_stream = stream;
         }
 
@@ -233,9 +233,14 @@ namespace MR
               Transform::Init::initialise_using_image_moments (im1_image, im2_image, transform);
             // transformation file initialisation is done in mrregister.cpp
             // transform.debug();
-
             if (global_search) {
-              GlobalSearch transformation_search;
+              GlobalSearch::GlobalSearch transformation_search;
+              if (log_stream) {
+                transformation_search.set_log_stream(log_stream);
+              }
+              // std::ofstream outputFile( "/tmp/log.txt" );
+              // transformation_search.set_log_stream(outputFile.rdbuf());
+              // transformation_search.set_log_stream(std::cerr.rdbuf());
               transformation_search.run_masked(metric, transform, im1_image, im2_image, im1_mask, im2_mask);
               transform.debug();
             }
