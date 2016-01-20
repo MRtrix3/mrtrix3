@@ -450,6 +450,8 @@ namespace MR
               }
 
               TrafoType T_init (transform.get_matrix());
+              T_init.translation() = transform.get_translation();
+
               std::vector<Candidate<default_type>> parental, geneology;
               parental.push_back ({T_init, scale_factor, loop_density, max_GD_iter});
               parental.back().run_sgd (metric, transform, im1_smoothed, im2_smoothed, im1_mask, im2_mask);
