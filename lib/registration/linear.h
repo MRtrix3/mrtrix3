@@ -44,7 +44,7 @@
 #include "math/rng.h"
 #include "math/math.h"
 #include <iostream>     // std::streambuf
-
+#include "registration/transform/global_search.h"
 
 namespace MR
 {
@@ -77,7 +77,8 @@ namespace MR
           step_tolerance(1.0e-10),
           log_stream (nullptr),
           init_type (Transform::Init::moments),
-          robust_estimate (false) {
+          robust_estimate (false),
+          global_search (false) {
           scale_factor[0] = 0.5;
           scale_factor[1] = 1;
         }
@@ -135,6 +136,10 @@ namespace MR
           robust_estimate = use;
         }
 
+        void use_global_search (bool use) {
+          global_search = use;
+        }
+
         void set_transform_type (Transform::Init::InitType type) {
           init_type = type;
         }
@@ -147,7 +152,7 @@ namespace MR
           grad_tolerance = tolerance;
         }
 
-        void set_gradient_descent_log_stream (std::streambuf* stream) {
+        void set_log_stream (std::streambuf* stream) {
           log_stream = stream;
         }
 
@@ -225,6 +230,18 @@ namespace MR
               Transform::Init::initialise_using_image_moments (im1_image, im2_image, transform);
             // transformation file initialisation is done in mrregister.cpp
             // transform.debug();
+
+            if (global_search) {
+              GlobalSearch::GlobalSearch transformation_search;
+              if (log_stream) {
+                transformation_search.set_log_stream(log_stream);
+              }
+              std::ofstream outputFile( "/tmp/log.txt" );
+              transformation_search.set_log_stream(outputFile.rdbuf());
+              // transformation_search.set_log_stream(std::cerr.rdbuf());
+              transformation_search.run_masked(metric, transform, im1_image, im2_image, im1_mask, im2_mask);
+              transform.debug();
+            }
 
             // define transfomations that will be applied to the image header when the common space is calculated
             {
@@ -373,6 +390,7 @@ namespace MR
         std::streambuf* log_stream;
         Transform::Init::InitType init_type;
         bool robust_estimate;
+        bool global_search;
         Eigen::MatrixXd directions;
 
     };

@@ -283,6 +283,7 @@ void run ()
     im1_mask = Image<value_type>::open(opt[0][0]);
 
 
+
   // ****** RIGID REGISTRATION OPTIONS *******
   Registration::Linear rigid_registration;
 
@@ -364,6 +365,10 @@ void run ()
         break;
     }
   }
+
+  opt = get_options ("rigid_global_search");
+  if (opt.size())
+      rigid_registration.use_global_search(true);
 
   // ****** AFFINE REGISTRATION OPTIONS *******
   Registration::Linear affine_registration;
@@ -497,6 +502,10 @@ void run ()
   }
 
   affine_registration.use_robust_estimate (get_options ("affine_robust_median").size() == 1);
+
+  opt = get_options ("affine_global_search");
+  if (opt.size())
+      affine_registration.use_global_search(true);
 
   opt = get_options ("affine_niter");
   if (opt.size ()) {

@@ -38,8 +38,9 @@ namespace MR
                                 "lp (least powers: |x|^1.2), "
                                 "ncc (normalised cross-correlation) "
                                  "Default: ordinary least squares")
-        + Argument ("type").type_choice (linear_metric_choices);
+        + Argument ("type").type_choice (linear_metric_choices)
 
+      + Option ("rigid_global_search", "perform global search for most promising starting point. default: false");
 
 
     const OptionGroup affine_options =
@@ -95,7 +96,9 @@ namespace MR
                                   "Default: l2")
         + Argument ("type").type_choice (linear_robust_estimator_choices)
 
-      + Option ("affine_robust_median", "use robust median estimator. default: false");
+      + Option ("affine_robust_median", "use robust median estimator. default: false")
+
+      + Option ("affine_global_search", "perform global search for most promising starting point. default: false");
 
 
 
