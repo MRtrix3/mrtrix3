@@ -86,7 +86,6 @@ namespace MR
             headers.push_back (im2_image.original_header());
             headers.push_back (im1_image.original_header());
             auto midway_image_header = compute_minimum_average_header<default_type, Eigen::Transform<default_type, 3, Eigen::Projective>>(headers, 1.0, padding, init_transforms);
-            auto midway_image = Header::scratch (midway_image_header).get_image<default_type>();
 
             if (max_iter.size() == 1)
               max_iter.resize (scale_factor.size(), max_iter[0]);
@@ -97,18 +96,18 @@ namespace MR
                 CONSOLE ("SyN: multi-resolution level " + str(level + 1) + ", scale factor: " + str(scale_factor[level]));
 
                 INFO ("Resizing midway image based on multi-resolution level");
-                Filter::Resize resize_filter (midway_image);
+                Filter::Resize resize_filter (midway_image_header);
                 resize_filter.set_scale_factor (scale_factor[level]);
                 resize_filter.set_interp_type (1);
                 resize_filter.datatype() = DataType::Float64;
-                midway_image_header = resize_filter;
+                Header midway_image_header_resized = resize_filter;
 
-                default_type update_smoothing_mm = update_smoothing * ((midway_image_header.spacing(0)
-                                                                      + midway_image_header.spacing(1)
-                                                                      + midway_image_header.spacing(2)) / 3.0);
-                default_type disp_smoothing_mm = disp_smoothing * ((midway_image_header.spacing(0)
-                                                                  + midway_image_header.spacing(1)
-                                                                  + midway_image_header.spacing(2)) / 3.0);
+                default_type update_smoothing_mm = update_smoothing * ((midway_image_header_resized.spacing(0)
+                                                                      + midway_image_header_resized.spacing(1)
+                                                                      + midway_image_header_resized.spacing(2)) / 3.0);
+                default_type disp_smoothing_mm = disp_smoothing * ((midway_image_header_resized.spacing(0)
+                                                                  + midway_image_header_resized.spacing(1)
+                                                                  + midway_image_header_resized.spacing(2)) / 3.0);
 
                 INFO ("Smoothing imput images based on multi-resolution pyramid");
                 Filter::Smooth im1_smooth_filter (im1_image);
@@ -126,7 +125,7 @@ namespace MR
                 }
 
                 INFO ("Initialising scratch images");
-                Header warped_header (midway_image_header);
+                Header warped_header (midway_image_header_resized);
                 if (im1_image.ndim() == 4) {
                   warped_header.set_ndim(4);
                   warped_header.size(3) = im1_image.size(3);
@@ -134,24 +133,23 @@ namespace MR
                 auto im1_warped = Image<default_type>::scratch (warped_header);
                 auto im2_warped = Image<default_type>::scratch (warped_header);
 
-                Header field_header (midway_image_header);
+                Header field_header (midway_image_header_resized);
                 field_header.set_ndim(4);
                 field_header.size(3) = 3;
 
+
+                im1_disp_field_new = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+                im2_disp_field_new = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+                im1_update_field = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+                im2_update_field = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+                im1_update_field_new = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+                im2_update_field_new = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
 
                 if (level == 0) {
                   im1_disp_field = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
                   im2_disp_field = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
                   im1_disp_field_inv = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
                   im2_disp_field_inv = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-
-                  im1_disp_field_new = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-                  im2_disp_field_new = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-
-                  im1_update_field = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-                  im2_update_field = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-                  im1_update_field_new = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-                  im2_update_field_new = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
                 } else {
                   INFO ("Upsampling fields");
                   {
@@ -161,12 +159,12 @@ namespace MR
                     im1_disp_field_inv = reslice (*im1_disp_field_inv, field_header);
                     im2_disp_field_inv = reslice (*im2_disp_field_inv, field_header);
 
-                    im1_disp_field_new = reslice (*im1_disp_field_new, field_header);
-                    im2_disp_field_new = reslice (*im2_disp_field_new, field_header);
-                    im1_update_field = reslice (*im1_update_field, field_header);
-                    im2_update_field = reslice (*im2_update_field, field_header);
-                    im1_update_field_new = reslice (*im1_update_field_new, field_header);
-                    im2_update_field_new = reslice (*im2_update_field_new, field_header);
+//                    im1_disp_field_new = reslice (*im1_disp_field_new, field_header);
+//                    im2_disp_field_new = reslice (*im2_disp_field_new, field_header);
+//                    im1_update_field = reslice (*im1_update_field, field_header);
+//                    im2_update_field = reslice (*im2_update_field, field_header);
+//                    im1_update_field_new = reslice (*im1_update_field_new, field_header);
+//                    im2_update_field_new = reslice (*im2_update_field_new, field_header);
                   }
                 }
 
@@ -178,9 +176,10 @@ namespace MR
                 while (!converged) {
                   CONSOLE ("iteration: " + str(iteration));
 
-                  if (iteration) {
+                  if (iteration > 0) {
                     INFO ("smoothing update fields");
                     Filter::Smooth smooth_filter (*im1_update_field);
+                    std::cout << "new" << update_smoothing_mm << std::endl;
                     smooth_filter.set_stdev (update_smoothing_mm);
                     smooth_filter (*im1_update_field, *im1_update_field);
                     smooth_filter (*im2_update_field, *im2_update_field);
@@ -195,10 +194,11 @@ namespace MR
 
                     Image<default_type> im1_deform_field = Image<default_type>::scratch (field_header);
                     Image<default_type> im2_deform_field = Image<default_type>::scratch (field_header);
-                    if (iteration) {
 
+                    if (iteration > 0) {
                       INFO ("updating displacement field field");
                       VAR (grad_step_altered);
+
                       Transform::compose_displacement (*im1_disp_field, *im1_update_field, *im1_disp_field_new, grad_step_altered);
                       Transform::compose_displacement (*im2_disp_field, *im2_update_field, *im2_disp_field_new, grad_step_altered);
 
@@ -225,10 +225,7 @@ namespace MR
                       if (jacobian_det.value() > max) max = jacobian_det.value();
                       if (jacobian_det.value() < min) min = jacobian_det.value();
                     }
-
-
-                    std::cout << "min: " << min << " max " << max << std::endl;
-//                    save (jacobian_det, std::string("im1_jacobian_level_" + str(level) + "_iter" + str(iteration) + ".mif"), false);
+                    CONSOLE ("jacobian min: " +str(min) + " max " + str(max));
 
                     INFO ("warping input images");
                     {
@@ -248,13 +245,13 @@ namespace MR
                     INFO ("warping mask images");
                     Im1MaskType im1_mask_warped;
                     if (im1_mask.valid()) {
-                      im1_mask_warped = Im1MaskType::scratch (midway_image_header);
+                      im1_mask_warped = Im1MaskType::scratch (midway_image_header_resized);
                       LogLevelLatch level (0);
                       Filter::warp<Interp::Linear> (im1_mask, im1_mask_warped, im1_deform_field, 0.0);
                     }
                     Im1MaskType im2_mask_warped;
                     if (im2_mask.valid()) {
-                      im2_mask_warped = Im1MaskType::scratch (midway_image_header);
+                      im2_mask_warped = Im1MaskType::scratch (midway_image_header_resized);
                       LogLevelLatch level (0);
                       Filter::warp<Interp::Linear> (im2_mask, im2_mask_warped, im2_deform_field, 0.0);
                     }
@@ -270,8 +267,10 @@ namespace MR
                     // If cost is lower then keep new displacement fields and gradients
                     if (cost_new < cost) {
                       cost = cost_new;
-                      std::swap (im1_disp_field_new, im1_disp_field);
-                      std::swap (im2_disp_field_new, im2_disp_field);
+                      if (iteration > 0) {
+                        std::swap (im1_disp_field_new, im1_disp_field);
+                        std::swap (im2_disp_field_new, im2_disp_field);
+                      }
                       std::swap (im1_update_field_new, im1_update_field);
                       std::swap (im2_update_field_new, im2_update_field);
 
@@ -298,7 +297,7 @@ namespace MR
 //                      std::swap (im1_update_field_new, im1_update_field);
 //                      std::swap (im2_update_field_new, im2_update_field);
 
-                      if (grad_step_altered < 1e-6) {
+                      if (grad_step_altered < 1e-5) {
                         converged = true;
                         next_step_ok = true;
                       }
