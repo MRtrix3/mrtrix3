@@ -672,12 +672,12 @@ void run ()
     CONSOLE ("running SyN registration");
 
     if (do_affine) {
-      syn_registration.run_masked (affine, im1_image, im2_image, im1_mask, im2_mask);
+      syn_registration.run (affine, im1_image, im2_image, im1_mask, im2_mask);
     } else if (do_rigid) {
-      syn_registration.run_masked (rigid, im1_image, im2_image, im1_mask, im2_mask);
+      syn_registration.run (rigid, im1_image, im2_image, im1_mask, im2_mask);
     } else {
       Registration::Transform::Affine identity_transform;
-      syn_registration.run_masked (identity_transform, im1_image, im2_image, im1_mask, im2_mask);
+      syn_registration.run (identity_transform, im1_image, im2_image, im1_mask, im2_mask);
     }
 
     if (output_warp_fields) {
