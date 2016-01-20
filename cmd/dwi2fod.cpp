@@ -46,7 +46,7 @@ void usage ()
     + Math::SH::encoding_description;
 
   REFERENCES 
-   + "Tournier, J.-D.; Calamante, F. & Connelly, A. "
+   + "Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
    "Robust determination of the fibre orientation distribution in diffusion MRI: "
    "Non-negativity constrained super-resolved spherical deconvolution. "
    "NeuroImage, 2007, 35, 1459-1472";

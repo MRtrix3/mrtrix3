@@ -64,7 +64,7 @@ void usage ()
     "tissue fractions of CSF and GM respectively.";
   
   REFERENCES
-  + "Christiaens, D.; Reisert, M.; Dhollander, T.; Sunaert, S.; Suetens, P. & Maes, F. "
+  + "Christiaens, D.; Reisert, M.; Dhollander, T.; Sunaert, S.; Suetens, P. & Maes, F. " // Internal
     "Global tractography of multi-shell diffusion-weighted imaging data using a multi-tissue model. "
     "NeuroImage, 2015, 123, 89-101";
 

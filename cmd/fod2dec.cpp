@@ -37,17 +37,17 @@ void usage ()
     "This is free software; see the source for copying conditions. "
     "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.";
 
-  REFERENCES
-    + "Dhollander T, Smith RE, Tournier JD, Jeurissen B, Connelly A. "
-      "Time to move on: an FOD-based DEC map to replace DTI's trademark DEC FA. "
-      "Proc Intl Soc Mag Reson Med, 2015, 23, 1027."
-    + "Dhollander T, Raffelt D, Smith RE, Connelly A. "
-      "Panchromatic sharpening of FOD-based DEC maps by structural T1 information. "
-      "Proc Intl Soc Mag Reson Med, 2015, 23, 566.";
-
   DESCRIPTION
     + "Generate FOD-based DEC maps, with optional panchromatic sharpening and/or luminance/perception correction."
     + "By default, the FOD-based DEC is weighted by the integral of the FOD. To weight by another scalar map, use the outputmap option. This option can also be used for panchromatic sharpening, e.g., by supplying a T1 (or other sensible) anatomical volume with a higher spatial resolution.";
+
+  REFERENCES
+    + "Dhollander T, Smith RE, Tournier JD, Jeurissen B, Connelly A. " // Internal
+      "Time to move on: an FOD-based DEC map to replace DTI's trademark DEC FA. "
+      "Proc Intl Soc Mag Reson Med, 2015, 23, 1027."
+    + "Dhollander T, Raffelt D, Smith RE, Connelly A. " // Internal
+      "Panchromatic sharpening of FOD-based DEC maps by structural T1 information. "
+      "Proc Intl Soc Mag Reson Med, 2015, 23, 566.";
 
   ARGUMENTS
     + Argument ("input","The input FOD image (spherical harmonic coefficients).").type_image_in ()

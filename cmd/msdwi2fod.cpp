@@ -63,7 +63,7 @@ void usage ()
   + "Multi-shell, multi-tissue constrained spherical deconvolution.";
   
   REFERENCES 
-  + "Jeurissen, B; Tournier, J-D; Dhollander, T; Connelly, A & Sijbers, J. "
+  + "Jeurissen, B; Tournier, J-D; Dhollander, T; Connelly, A & Sijbers, J. " // Internal
     "Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data "
     "NeuroImage, 2014, 103, 411-426";
 }

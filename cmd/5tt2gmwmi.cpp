@@ -48,8 +48,9 @@ void usage ()
     + "Generate a mask image appropriate for seeding streamlines on the grey matter - white matter interface";
 
   REFERENCES
-    + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
-      "Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. "
+    + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
+      "Anatomically-constrained tractography:"
+      "Improved diffusion MRI streamlines tractography through effective use of anatomical information. "
       "NeuroImage, 2012, 62, 1924-1938";
 
   ARGUMENTS

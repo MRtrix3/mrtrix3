@@ -70,13 +70,13 @@ void usage ()
   + "use a fast-marching level-set method to segment fibre orientation distributions, and save parameters of interest as fixel images";
 
   REFERENCES 
-    + "Reference for the FOD segmentation method:\n"
-    "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+    + "* Reference for the FOD segmentation method:\n"
+    "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
     "SIFT: Spherical-deconvolution informed filtering of tractograms. "
     "NeuroImage, 2013, 67, 298-312 (Appendix 2)"
 
-    + "Reference for Apparent Fibre Density:\n"
-    "Raffelt, D.; Tournier, J.-D.; Rose, S.; Ridgway, G.R.; Henderson, R.; Crozier, S.; Salvado, O.; Connelly, A. "
+    + "* Reference for Apparent Fibre Density:\n"
+    "Raffelt, D.; Tournier, J.-D.; Rose, S.; Ridgway, G.R.; Henderson, R.; Crozier, S.; Salvado, O.; Connelly, A. " // Internal
     "Apparent Fibre Density: a novel measure for the analysis of diffusion-weighted magnetic resonance images."
     "Neuroimage, 2012, 15;59(4), 3976-94.";
 

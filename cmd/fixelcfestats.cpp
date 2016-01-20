@@ -47,6 +47,15 @@ void usage ()
   DESCRIPTION
   + "Fixel-based analysis using connectivity-based fixel enhancement and non-parametric permutation testing.";
 
+  REFERENCES
+  + "Raffelt, D. et al. \n" // Internal
+    "Connectivity-based fixel enhancement: Whole-brain statistical analysis of diffusion MRI measures in the presence of crossing fibres. \n"
+    "NeuroImage, 2015, 15(117):40-55\n"
+
+  + "* If using the -nonstationary option: \n"
+    "Salimi-Khorshidi, G. Smith, S.M. Nichols, T.E. \n"
+    "Adjusting the effect of nonstationarity in cluster-based and TFCE inference. \n"
+    "NeuroImage, 2011, 54(3), 2006-19\n" ;
 
   ARGUMENTS
   + Argument ("input", "a text file listing the file names of the input fixel images").type_file_in ()
@@ -98,14 +107,6 @@ void usage ()
 
   + Option ("nperms_nonstationary", "the number of permutations used when precomputing the empirical statistic image for nonstationary correction (Default: 5000)")
   + Argument ("num").type_integer (1, 5000, 100000);
-
-  REFERENCES + "Raffelt, D. et al. Connectivity-based fixel enhancement: Whole-brain statistical analysis of diffusion MRI measures in the presence of crossing fibres. \n"
-               "Neuroimage, 2015, 15(117):40-55\n" +
-
-               "If using the -nonstationary option: \n"
-               "Salimi-Khorshidi, G. Smith, S.M. Nichols, T.E. Adjusting the effect of nonstationarity in cluster-based and TFCE inference. \n"
-               "Neuroimage, 2011, 54(3), 2006-19\n" ;
-
 }
 
 

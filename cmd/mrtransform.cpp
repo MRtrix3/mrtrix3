@@ -59,15 +59,15 @@ void usage ()
     "transformation applied using the -linear option will be also be applied to the directions.";
 
   REFERENCES 
-    + "If FOD reorientation is being performed:\n"
-    "Raffelt, D.; Tournier, J.-D.; Crozier, S.; Connelly, A. & Salvado, O. "
+    + "* If FOD reorientation is being performed:\n"
+    "Raffelt, D.; Tournier, J.-D.; Crozier, S.; Connelly, A. & Salvado, O. " // Internal
     "Reorientation of fiber orientation distributions using apodized point spread functions. "
     "Magnetic Resonance in Medicine, 2012, 67, 844-855"
 
-    + "If FOD modulation is being performed:\n"
-    "Raffelt, D.; Tournier, J.-D.; Rose, S.; Ridgway, G.R.; Henderson, R.; Crozier, S.; Salvado, O.; Connelly, A.; "
+    + "* If FOD modulation is being performed:\n"
+    "Raffelt, D.; Tournier, J.-D.; Rose, S.; Ridgway, G.R.; Henderson, R.; Crozier, S.; Salvado, O.; Connelly, A.; " // Internal
     "Apparent Fibre Density: a novel measure for the analysis of diffusion-weighted magnetic resonance images. "
-    "Neuroimage, 2012, 15;59(4), 3976-94.";
+    "NeuroImage, 2012, 15;59(4), 3976-94.";
 
   ARGUMENTS
   + Argument ("input", "input image to be transformed.").type_image_in ()

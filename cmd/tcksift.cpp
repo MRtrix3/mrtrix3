@@ -52,7 +52,7 @@ void usage ()
   + "filter a whole-brain fibre-tracking data set such that the streamline densities match the FOD lobe integrals.";
 
   REFERENCES 
-    + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+    + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
     "SIFT: Spherical-deconvolution informed filtering of tractograms. "
     "NeuroImage, 2013, 67, 298-312";
 

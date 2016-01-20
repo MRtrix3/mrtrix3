@@ -34,7 +34,7 @@ void usage ()
   + "the MRtrix image viewer.";
 
   REFERENCES 
-    + "Tournier, J.-D.; Calamante, F. & Connelly, A. "
+    + "Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
     "MRtrix: Diffusion tractography in crossing fiber regions. "
     "Int. J. Imaging Syst. Technol., 2012, 22, 53-66";
 
