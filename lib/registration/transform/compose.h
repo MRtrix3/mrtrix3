@@ -69,7 +69,7 @@ namespace MR
               Eigen::Vector3 original_position = voxel_position + disp_input1.row(3);
               disp2_interp.scanner (original_position);
               if (!disp2_interp) {
-                disp_output.row(3) = original_position - voxel_position;
+                disp_output.row(3) = disp_input1.row(3);
               } else {
                 Eigen::Vector3 displacement (disp2_interp.row(3).array() * step);
                 Eigen::Vector3 new_position = displacement + original_position;

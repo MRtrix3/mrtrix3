@@ -264,7 +264,7 @@ namespace MR
 
               // quadratic minimum:
               value_type step_length = step_unscaled*dt;
-              value_type denom = 2.0 * (normg*step_length + f2 - f);
+              value_type denom = 2.0 * (normg * step_length + f2 - f);
               value_type quadratic_minimum = denom > 0.0 ? normg * step_length / denom : step_up;
 
               if (quadratic_minimum < step_down) quadratic_minimum = step_down;

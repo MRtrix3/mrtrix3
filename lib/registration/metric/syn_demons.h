@@ -76,6 +76,8 @@ namespace MR
             if (im1_image.index(0) == 0 || im1_image.index(0) == im1_image.size(0) - 1 ||
                 im1_image.index(1) == 0 || im1_image.index(1) == im1_image.size(1) - 1 ||
                 im1_image.index(2) == 0 || im1_image.index(2) == im1_image.size(2) - 1) {
+              im1_update.row(3).setZero();
+              im2_update.row(3).setZero();
               return;
             }
 

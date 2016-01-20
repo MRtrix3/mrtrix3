@@ -67,16 +67,14 @@ namespace MR
       /** \addtogroup Registration
         @{ */
 
-      /*! Normalise a field so that the maximum vector magnitude is 1
+      /*! Normalise a field so that the maximum vector magnitude is 1 voxel (in mm)
        */
-      void normalise_displacement (Image<default_type>& disp_field)
+      void normalise_field (Image<default_type>& disp_field)
         {
           default_type global_max_magnitude = 0.0;
           ThreadedLoop (disp_field, 0, 3).run (MaxMagThreadKernel (global_max_magnitude), disp_field);
           if (global_max_magnitude == 0)
             return;
-
-          std::cout << global_max_magnitude << std::endl;
 
           auto normaliser = [&global_max_magnitude](Image<default_type>& disp) {
             Eigen::Vector3 vec = disp.row(3);
@@ -85,6 +83,26 @@ namespace MR
 
           ThreadedLoop (disp_field, 0, 3).run (normaliser, disp_field);
         }
+
+      /*! Normalise two fields so that the maximum vector magnitude (across both fields) is 1 voxel (in mm)
+       */
+      void normalise_field (Image<default_type>& disp_field1, Image<default_type>& disp_field2)
+        {
+          default_type global_max_magnitude = 0.0;
+          ThreadedLoop (disp_field1, 0, 3).run (MaxMagThreadKernel (global_max_magnitude), disp_field1);
+          ThreadedLoop (disp_field1, 0, 3).run (MaxMagThreadKernel (global_max_magnitude), disp_field2);
+          if (global_max_magnitude == 0)
+            return;
+
+          auto normaliser = [&global_max_magnitude](Image<default_type>& disp) {
+            Eigen::Vector3 vec = disp.row(3);
+            disp.row(3) = vec.array() / global_max_magnitude;
+          };
+
+          ThreadedLoop (disp_field1, 0, 3).run (normaliser, disp_field1);
+          ThreadedLoop (disp_field2, 0, 3).run (normaliser, disp_field2);
+        }
+
 
       //! @}
     }

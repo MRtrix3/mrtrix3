@@ -32,6 +32,7 @@
 #include "registration/transform/affine.h"
 #include "registration/transform/convert.h"
 #include "registration/transform/normalise.h"
+#include "registration/transform/norm.h"
 #include "registration/transform/invert.h"
 #include "registration/metric/syn_demons.h"
 #include "image/average_space.h"
@@ -53,12 +54,11 @@ namespace MR
           scale_factor (2),
           update_smoothing (3.0),
           disp_smoothing (0.5),
-          gradient_step (0.2),
+          gradient_step (0.4),
           fod_reorientation (false) {
             scale_factor[0] = 0.5;
             scale_factor[1] = 1;
         }
-
 
         template <class TransformType, class Im1ImageType, class Im2ImageType, class Im1MaskType, class Im2MaskType>
           void run_masked (TransformType linear_transform,
@@ -133,10 +133,13 @@ namespace MR
                   im2_disp_field_inv = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
                 } else {
                   INFO ("Upsampling fields");
-                  im1_disp_field = reslice (*im1_disp_field, field_header);
-                  im1_disp_field_inv = reslice (*im1_disp_field_inv, field_header);
-                  im2_disp_field = reslice (*im2_disp_field, field_header);
-                  im2_disp_field_inv = reslice (*im2_disp_field_inv, field_header);
+                  {
+                    LogLevelLatch level(0);
+                    im1_disp_field = reslice (*im1_disp_field, field_header);
+                    im1_disp_field_inv = reslice (*im1_disp_field_inv, field_header);
+                    im2_disp_field = reslice (*im2_disp_field, field_header);
+                    im2_disp_field_inv = reslice (*im2_disp_field_inv, field_header);
+                  }
                 }
 
                 INFO ("Initalising scratch buffers");
@@ -153,6 +156,9 @@ namespace MR
                 std::vector<default_type> cost_function_vector;
                 default_type grad_step_altered = gradient_step;
 
+                default_type grad_step_up = 1.05;
+                default_type grad_step_down = 0.5;
+
                 bool converged = false;
                 ssize_t iteration = 0;
                 default_type update_smoothing_mm = update_smoothing * ((midway_image.spacing(0) + midway_image.spacing(1) + midway_image.spacing(2)) / 3.0);
@@ -167,13 +173,22 @@ namespace MR
                   Image<default_type> im2_deform_field = Image<default_type>::scratch (field_header);
                   Registration::Transform::compose_affine_displacement (im2_affine, *im2_disp_field, im2_deform_field);
 
+
+                  Adapter::Jacobian<Image<default_type> > jacobian (im1_deform_field);
+                  auto jacobian_det = Image<default_type>::scratch (warped_header);
+                  for (auto i = Loop (0,3) (jacobian, jacobian_det); i; ++i) {
+                    jacobian_det.value() = jacobian.value().determinant();
+                  }
+                  save (jacobian_det, std::string("im1_jacobian_level_" + str(level) + "_iter" + str(iteration) + ".mif"), false);
+
                   INFO ("warping input images");
                   {
                     LogLevelLatch level (0);
                     Filter::warp<Interp::Linear> (im1_smoothed, im1_warped, im1_deform_field, 0.0);
                     Filter::warp<Interp::Linear> (im2_smoothed, im2_warped, im2_deform_field, 0.0);
                   }
-//                  save (im1_warped, std::string("im1_warped_iter" + str(iteration) + ".mif"), false);
+                  save (im1_warped, std::string("im1_warped_level_" + str(level) + "_iter" + str(iteration) + ".mif"), false);
+                  save (im2_warped, std::string("im2_warped_level_" + str(level) + "_iter" + str(iteration) + ".mif"), false);
 
                   if (fod_reorientation) {
                     INFO ("Reorienting FODs");
@@ -187,14 +202,12 @@ namespace MR
                     im1_mask_warped = Im1MaskType::scratch (midway_resized);
                     LogLevelLatch level (0);
                     Filter::warp<Interp::Linear> (im1_mask, im1_mask_warped, im1_deform_field, 0.0);
-//                    save (im1_mask_warped, std::string("im1_mask_warped_iter" + str(iteration) + ".mif"));
                   }
                   Im1MaskType im2_mask_warped;
                   if (im2_mask.valid()) {
                     im2_mask_warped = Im1MaskType::scratch (midway_resized);
                     LogLevelLatch level (0);
                     Filter::warp<Interp::Linear> (im2_mask, im2_mask_warped, im2_deform_field, 0.0);
-//                    save (im2_mask_warped, std::string("im2_mask_warped_iter" + str(iteration) + ".mif"));
                   }
 
                   default_type global_cost = 0.0;
@@ -203,7 +216,7 @@ namespace MR
                   ThreadedLoop (midway_resized, 0, 3).run (syn_metric, im1_warped, im2_warped, im1_update_field, im2_update_field);
                   cost_function_vector.push_back (global_cost);
 
-
+                 save (im1_update_field, std::string("update1_presmooth_iter" + str(iteration) + ".mif"));
                   // TODO make sure the boundary is remains identity (check if this is only needed for neighbourhood metrics)
                   INFO ("smoothing update fields");
                   Filter::Smooth smooth_filter (im1_update_field);
@@ -211,13 +224,22 @@ namespace MR
                   smooth_filter (im1_update_field, im1_update_field);
                   smooth_filter (im2_update_field, im2_update_field);
 
-                  // TODO Do we only needed if multiple metrics used? Or should we keep this to help make the step size invariant to the magnitude of the input intensities?
-                  // Does it make better sense to normalise on the mean update within a max and not the max vector?
-                  INFO ("normalising update field");
-                  Transform::normalise_displacement (im1_update_field);
-                  Transform::normalise_displacement (im2_update_field);
+                  default_type norm_before = (Transform::norm (im1_update_field) + Transform::norm (im2_update_field)) / 2.0;
+
+                  INFO ("normalising update fields");
+                  Transform::normalise_field (im1_update_field, im2_update_field);
+
+                  save (im1_update_field, std::string("update1_iter" + str(iteration) + ".mif"));
+//                  save (im2_update_field, std::string("update2_iter" + str(iteration) + ".mif"));
+
+//                  default_type norm_after = (Transform::norm (im1_update_field) + Transform::norm (im2_update_field)) / 2.0;
+
+//                  std::cout  << "Norm_before " << norm_before << std::endl;
+//                  std::cout  << "Norm_after " << norm_after << std::endl;
+
 
                   INFO ("composing displacement and update fields");
+                  VAR (grad_step_altered);
                   Transform::compose_displacement (*im1_disp_field, im1_update_field, *im1_disp_field, grad_step_altered);
                   Transform::compose_displacement (*im2_disp_field, im2_update_field, *im2_disp_field, grad_step_altered);
 
@@ -231,6 +253,17 @@ namespace MR
 //                  save (*im1_disp_field, std::string("disp_smoothed_iter" + str(iteration) + ".mif"));
 
                   CONSOLE ("  cost: " + str(global_cost));
+
+
+                  if (iteration) {
+                    if (global_cost < cost_function_vector [iteration - 1]) {
+                      grad_step_altered *= grad_step_up;
+                      if (grad_step_altered > gradient_step)
+                        grad_step_altered = gradient_step;
+                    } else {
+                      grad_step_altered *= grad_step_down;
+                    }
+                  }
 
 //                  Invert fields x 2
 //                  Transform::invert (*im1_disp_field, *im1_disp_field_inv, (bool)iteration);
@@ -308,6 +341,11 @@ namespace MR
 
 
         protected:
+
+
+          void update () {
+
+          }
 
           std::shared_ptr<Image<default_type> > reslice (Image<default_type>& image, Header& header) {
             std::shared_ptr<Image<default_type> > temp = std::make_shared<Image<default_type> > (Image<default_type>::scratch (header));
