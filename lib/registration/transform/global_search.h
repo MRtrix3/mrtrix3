@@ -45,6 +45,7 @@
 #include "registration/metric/evaluate.h"
 #include "registration/metric/thread_kernel.h"
 #include "registration/transform/initialiser.h"
+#include "progressbar.h"
 
 
 namespace MR
@@ -389,10 +390,10 @@ namespace MR
       {
         public:
           GlobalSearch () :
-            max_iter (10),
+            max_iter (7),
             max_GD_iter (15),
             scale_factor (0.5),
-            pool_size(10),
+            pool_size(7),
             loop_density (1.0),
             smooth_factor (1.0),
             // grad_tolerance(1.0e-6),
@@ -418,7 +419,7 @@ namespace MR
 
           void set_gradient_descent_loop_density (default_type density) {
             if ((density <= default_type(0.0)) or (density > default_type(1.0)))
-              throw Exception ("gradient descent loop density has to be inside (0, 1]");
+              throw Exception ("gradient descent loop density has to be in the interval (0, 1]");
             loop_density = density;
           }
 
@@ -432,7 +433,7 @@ namespace MR
             Im2MaskType& im2_mask) {
 
             // typedef typename TransformType::ParameterType ParameterType;
-              CONSOLE("performing global search");
+              ProgressBar progress ("performing global search", pool_size * (max_iter+1));
               std::ostream log_os(log_stream? log_stream : std::cerr.rdbuf());
 
               // smooth images,
@@ -465,8 +466,7 @@ namespace MR
                 spatial_extent += spatial_ext_v[0];
                 spatial_extent += spatial_ext_v[1];
                 spatial_extent += spatial_ext_v[2];
-                spatial_extent /= 3.0;
-                INFO("spatial extent: " + str(spatial_extent));
+                spatial_extent /= 3.0; // TODO use vector unstead of mean
               }
 
               while (parental.size() < pool_size){
@@ -475,7 +475,10 @@ namespace MR
                 parental.back().run_sgd (metric, transform, im1_smoothed, im2_smoothed, im1_mask, im2_mask);
                 if (parental.back().get_overlap() == 0 or parental.back().get_cost() == 0.0)
                   parental.pop_back();
-                else if (log_stream) log_os << str(parental.back()) << std::endl;
+                else {
+                  ++progress;
+                  if (log_stream) log_os << str(parental.back()) << std::endl;
+                }
               }
               if (log_stream) log_os.flush();
 
@@ -483,8 +486,7 @@ namespace MR
                 geneology.push_back(p);
               }
 
-
-              // go to next generation: cross parental generation --> filial generation
+              // go to next generation: cross parental generation and randomly rotate and translate the combinations --> filial generation
               for (size_t iter = 0; iter < max_iter; ++iter){
                 std::sort(std::begin(parental), std::end(parental));
 
@@ -498,11 +500,16 @@ namespace MR
                       filial.back().run_sgd (metric, transform, im1_smoothed, im2_smoothed, im1_mask, im2_mask);
                       if (filial.back().get_overlap() == 0)
                         filial.pop_back();
+                      else
+                        ++progress;
+                      if (filial.size() == pool_size) break;
                       p1->crossover_rigid(0.8, *p2, filial);
                       filial.back().mutate_rigid(0.2, 0.05*spatial_extent);
                       filial.back().run_sgd (metric, transform, im1_smoothed, im2_smoothed, im1_mask, im2_mask);
                       if (filial.back().get_overlap() == 0)
                         filial.pop_back();
+                      else
+                        ++progress;
                       ++p1;
                       ++p2;
                 }
@@ -517,7 +524,7 @@ namespace MR
                 if (parental.size() <= 2) break;
               }
 
-              // find specimen with lowest cost but above median overlap:
+              // find specimen with lowest cost but at least median overlap:
               default_type median_overlap;
               std::vector<default_type> overlap_v;
               {
@@ -528,13 +535,12 @@ namespace MR
               }
 
               std::sort(std::begin(geneology), std::end(geneology), lower_cost<default_type>);
-              auto best = std::find_if (geneology.begin(), geneology.end(), [&median_overlap] (Candidate<default_type> const& c) { return c.get_overlap() > median_overlap; });
+              auto best = std::find_if (geneology.begin(), geneology.end(), [&median_overlap] (Candidate<default_type> const& c) { return c.get_overlap() >= median_overlap; });
 
               TrafoType winner = best->get_trafo();
               INFO("global search result: " + str(*best));
               transform.set_transform(winner);
 
-              CONSOLE("global search done.");
             }
 
         protected:

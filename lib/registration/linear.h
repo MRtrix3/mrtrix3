@@ -236,11 +236,11 @@ namespace MR
               if (log_stream) {
                 transformation_search.set_log_stream(log_stream);
               }
-              std::ofstream outputFile( "/tmp/log.txt" );
-              transformation_search.set_log_stream(outputFile.rdbuf());
+              // std::ofstream outputFile( "/tmp/log.txt" );
+              // transformation_search.set_log_stream(outputFile.rdbuf());
               // transformation_search.set_log_stream(std::cerr.rdbuf());
               transformation_search.run_masked(metric, transform, im1_image, im2_image, im1_mask, im2_mask);
-              transform.debug();
+              // transform.debug();
             }
 
             // define transfomations that will be applied to the image header when the common space is calculated
