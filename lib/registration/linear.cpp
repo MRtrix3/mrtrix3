@@ -37,7 +37,7 @@ namespace MR
       + Option ("rigid_metric", "valid choices are: l2 (ordinary least squares), "
                                 "lp (least powers: |x|^1.2), "
                                 "ncc (normalised cross-correlation) "
-                                 "Default: ordinary least squares")
+                                "Default: ordinary least squares")
         + Argument ("type").type_choice (linear_metric_choices)
 
       + Option ("rigid_global_search", "perform global search for most promising starting point. default: false");

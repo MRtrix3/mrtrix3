@@ -148,23 +148,16 @@ namespace MR
                 if (level == 0) {
                   im1_disp_field = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
                   im2_disp_field = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-                  im1_disp_field_inv = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-                  im2_disp_field_inv = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+                  im1_field_inv = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+                  im2_field_inv = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
                 } else {
                   INFO ("Upsampling fields");
                   {
                     LogLevelLatch level(0);
                     im1_disp_field = reslice (*im1_disp_field, field_header);
                     im2_disp_field = reslice (*im2_disp_field, field_header);
-                    im1_disp_field_inv = reslice (*im1_disp_field_inv, field_header);
-                    im2_disp_field_inv = reslice (*im2_disp_field_inv, field_header);
-
-//                    im1_disp_field_new = reslice (*im1_disp_field_new, field_header);
-//                    im2_disp_field_new = reslice (*im2_disp_field_new, field_header);
-//                    im1_update_field = reslice (*im1_update_field, field_header);
-//                    im2_update_field = reslice (*im2_update_field, field_header);
-//                    im1_update_field_new = reslice (*im1_update_field_new, field_header);
-//                    im2_update_field_new = reslice (*im2_update_field_new, field_header);
+                    im1_field_inv = reslice (*im1_field_inv, field_header);
+                    im2_field_inv = reslice (*im2_field_inv, field_header);
                   }
                 }
 
@@ -174,12 +167,10 @@ namespace MR
                 bool converged = false;
 
                 while (!converged) {
-                  CONSOLE ("iteration: " + str(iteration));
 
                   if (iteration > 0) {
                     INFO ("smoothing update fields");
                     Filter::Smooth smooth_filter (*im1_update_field);
-                    std::cout << "new" << update_smoothing_mm << std::endl;
                     smooth_filter.set_stdev (update_smoothing_mm);
                     smooth_filter (*im1_update_field, *im1_update_field);
                     smooth_filter (*im2_update_field, *im2_update_field);
@@ -197,7 +188,6 @@ namespace MR
 
                     if (iteration > 0) {
                       INFO ("updating displacement field field");
-                      VAR (grad_step_altered);
 
                       Transform::compose_displacement (*im1_disp_field, *im1_update_field, *im1_disp_field_new, grad_step_altered);
                       Transform::compose_displacement (*im2_disp_field, *im2_update_field, *im2_disp_field_new, grad_step_altered);
@@ -215,17 +205,20 @@ namespace MR
                       Registration::Transform::compose_affine_displacement (im2_affine, *im2_disp_field, im2_deform_field);
                     }
 
-
-                    Adapter::Jacobian<Image<default_type> > jacobian (im1_deform_field);
-                    auto jacobian_det = Image<default_type>::scratch (warped_header);
-                    default_type max = std::numeric_limits<default_type>::min();
-                    default_type min = std::numeric_limits<default_type>::max();
-                    for (auto i = Loop (0,3) (jacobian, jacobian_det); i; ++i) {
-                      jacobian_det.value() = jacobian.value().determinant();
-                      if (jacobian_det.value() > max) max = jacobian_det.value();
-                      if (jacobian_det.value() < min) min = jacobian_det.value();
+#ifdef DEBUG_OUTPUT
+                      VAR (grad_step_altered);
+                      Adapter::Jacobian<Image<default_type> > jacobian (im1_deform_field);
+                      auto jacobian_det = Image<default_type>::scratch (warped_header);
+                      default_type max = std::numeric_limits<default_type>::min();
+                      default_type min = std::numeric_limits<default_type>::max();
+                      for (auto i = Loop (0,3) (jacobian, jacobian_det); i; ++i) {
+                        jacobian_det.value() = jacobian.value().determinant();
+                        if (jacobian_det.value() > max) max = jacobian_det.value();
+                        if (jacobian_det.value() < min) min = jacobian_det.value();
+                      }
+                      CONSOLE ("jacobian min: " +str(min) + " max " + str(max));
                     }
-                    CONSOLE ("jacobian min: " +str(min) + " max " + str(max));
+#endif
 
                     INFO ("warping input images");
                     {
@@ -233,8 +226,8 @@ namespace MR
                       Filter::warp<Interp::Linear> (im1_smoothed, im1_warped, im1_deform_field, 0.0);
                       Filter::warp<Interp::Linear> (im2_smoothed, im2_warped, im2_deform_field, 0.0);
                     }
-                    save (im1_warped, std::string("im1_warped_level_" + str(level) + "_iter" + str(iteration) + ".mif"), false);
-                    save (im2_warped, std::string("im2_warped_level_" + str(level) + "_iter" + str(iteration) + ".mif"), false);
+//                    save (im1_warped, std::string("im1_warped_level_" + str(level) + "_iter" + str(iteration) + ".mif"), false);
+//                    save (im2_warped, std::string("im2_warped_level_" + str(level) + "_iter" + str(iteration) + ".mif"), false);
 
                     if (fod_reorientation) {
                       INFO ("Reorienting FODs");
@@ -262,7 +255,7 @@ namespace MR
                     Metric::SyNDemons<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> syn_metric (cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped);
                     ThreadedLoop (im1_warped, 0, 3).run (syn_metric, im1_warped, im2_warped, *im1_update_field_new, *im2_update_field_new);
 
-                    //cost_new /= static_cast<default_type>(voxel_count);
+                    cost_new /= static_cast<default_type>(voxel_count);
 
                     // If cost is lower then keep new displacement fields and gradients
                     if (cost_new < cost) {
@@ -278,24 +271,22 @@ namespace MR
                       if (grad_step_altered > gradient_step)  // temporary fix to ensure warp remains diffeomorphic TODO modify update to perform scaling and squaring
                         grad_step_altered = gradient_step;
 
-      //                //Drag the inverse along for the ride
-      //                Transform::invert (*im1_disp_field, *im1_disp_field_inv, (bool)iteration);
-      //                 display (*im1_disp_field_inv);
-      //                save (*im1_disp_field_inv, std::string("disp_inv_smoothed_iter" + str(iteration) + ".mif"));
-      //                Transform::invert (*im2_disp_field, *im2_disp_field_inv, (bool)iteration);
+                      // drag the inverse along for the ride
+                      bool is_initialised = !(iteration == 0 && level == 0);
+                      {
+                        LogLevelLatch level (0);
+                        Transform::invert_displacement_deformation (*im1_disp_field, *im1_field_inv, is_initialised);
+                        Transform::invert_displacement_deformation (*im2_disp_field, *im2_field_inv, is_initialised);
+                      }
+
                       next_step_ok = true;
 
                     // Cost is not lower so reduce the step size and try updating again.
                     } else {
                       grad_step_altered *= 0.5;
 
-                      // DEBUG
-//                      next_step_ok = true;
-//                      cost = cost_new;
-//                      std::swap (im1_disp_field_new, im1_disp_field);
-//                      std::swap (im2_disp_field_new, im2_disp_field);
-//                      std::swap (im1_update_field_new, im1_update_field);
-//                      std::swap (im2_update_field_new, im2_update_field);
+                      // TODO sharpen warp a little by gradually reducing the displacement field smoothing
+                      disp_smoothing_mm *= 0.75;
 
                       if (grad_step_altered < 1e-5) {
                         converged = true;
@@ -304,15 +295,18 @@ namespace MR
                     }
                   }
 
+                  // check displacement field difference to detect convergence.
 
-                   //check displacement field difference to check for convergence.
+                CONSOLE ("iteration: " + str(iteration));
 
-                  if (++iteration > max_iter[level])
+                if (++iteration > max_iter[level])
                     converged = true;
-
-                  CONSOLE ("  cost: " + str(cost));
                 }
              }
+
+            // convert to displacement field ready for output
+            Transform::deformation2displacement (*im1_field_inv, *im1_field_inv);
+            Transform::deformation2displacement (*im2_field_inv, *im2_field_inv);
           }
 
 
@@ -360,11 +354,11 @@ namespace MR
           }
 
           std::shared_ptr<Image<default_type> > get_im1_disp_field_inv() {
-            return im1_disp_field_inv;
+            return im1_field_inv;
           }
 
           std::shared_ptr<Image<default_type> > get_im2_disp_field_inv() {
-            return im2_disp_field_inv;
+            return im2_field_inv;
           }
 
 
@@ -389,8 +383,8 @@ namespace MR
           std::shared_ptr<Image<default_type> > im2_disp_field_new;
           std::shared_ptr<Image<default_type> > im1_disp_field;
           std::shared_ptr<Image<default_type> > im2_disp_field;
-          std::shared_ptr<Image<default_type> > im1_disp_field_inv;
-          std::shared_ptr<Image<default_type> > im2_disp_field_inv;
+          std::shared_ptr<Image<default_type> > im1_field_inv;
+          std::shared_ptr<Image<default_type> > im2_field_inv;
 
           std::shared_ptr<Image<default_type> > im1_update_field;
           std::shared_ptr<Image<default_type> > im2_update_field;

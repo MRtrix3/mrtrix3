@@ -156,41 +156,41 @@ namespace MR
           log_stream = stream;
         }
 
-//        template <class MetricType, class TransformType, class Im1ImageType, class Im2ImageType>
-//        void run (
-//          MetricType& metric,
-//          TransformType& transform,
-//          Im1ImageType& im1_image,
-//          Im2ImageType& im2_image) {
-//            typedef Image<float> BogusMaskType;
-//            run_masked<MetricType, TransformType, Im1ImageType, Im2ImageType, BogusMaskType, BogusMaskType >
-//              (metric, transform, im1_image, im2_image, nullptr, nullptr);
-//          }
+        template <class MetricType, class TransformType, class Im1ImageType, class Im2ImageType>
+        void run (
+          MetricType& metric,
+          TransformType& transform,
+          Im1ImageType& im1_image,
+          Im2ImageType& im2_image) {
+            typedef Image<float> BogusMaskType;
+            run_masked<MetricType, TransformType, Im1ImageType, Im2ImageType, BogusMaskType, BogusMaskType >
+              (metric, transform, im1_image, im2_image, nullptr, nullptr);
+          }
 
-//        template <class MetricType, class TransformType, class Im1ImageType, class Im2ImageType, class Im2MaskType>
-//        void run_im2_mask (
-//          MetricType& metric,
-//          TransformType& transform,
-//          Im1ImageType& im1_image,
-//          Im2ImageType& im2_image,
-//          std::unique_ptr<Im2MaskType>& im2_mask) {
-//            typedef Image<float> BogusMaskType;
-//            run_masked<MetricType, TransformType, Im1ImageType, Im2ImageType, BogusMaskType, Im2MaskType >
-//              (metric, transform, im1_image, im2_image, nullptr, im2_mask);
-//          }
+        template <class MetricType, class TransformType, class Im1ImageType, class Im2ImageType, class Im2MaskType>
+        void run_im2_mask (
+          MetricType& metric,
+          TransformType& transform,
+          Im1ImageType& im1_image,
+          Im2ImageType& im2_image,
+          std::unique_ptr<Im2MaskType>& im2_mask) {
+            typedef Image<float> BogusMaskType;
+            run_masked<MetricType, TransformType, Im1ImageType, Im2ImageType, BogusMaskType, Im2MaskType >
+              (metric, transform, im1_image, im2_image, nullptr, im2_mask);
+          }
 
 
-//        template <class MetricType, class TransformType, class Im1ImageType, class Im2ImageType, class Im1MaskType>
-//        void run_im1_mask (
-//          MetricType& metric,
-//          TransformType& transform,
-//          Im1ImageType& im1_image,
-//          Im2ImageType& im2_image,
-//          std::unique_ptr<Im1MaskType>& im1_mask) {
-//            typedef Image<float> BogusMaskType;
-//            run_masked<MetricType, TransformType, Im1ImageType, Im2ImageType, Im1MaskType, BogusMaskType >
-//              (metric, transform, im1_image, im2_image, im1_mask, nullptr);
-//          }
+        template <class MetricType, class TransformType, class Im1ImageType, class Im2ImageType, class Im1MaskType>
+        void run_im1_mask (
+          MetricType& metric,
+          TransformType& transform,
+          Im1ImageType& im1_image,
+          Im2ImageType& im2_image,
+          std::unique_ptr<Im1MaskType>& im1_mask) {
+            typedef Image<float> BogusMaskType;
+            run_masked<MetricType, TransformType, Im1ImageType, Im2ImageType, Im1MaskType, BogusMaskType >
+              (metric, transform, im1_image, im2_image, im1_mask, nullptr);
+          }
 
         template <class MetricType, class TransformType, class Im1ImageType, class Im2ImageType, class Im1MaskType, class Im2MaskType>
         void run_masked (

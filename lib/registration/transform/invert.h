@@ -41,22 +41,22 @@ namespace MR
         class ThreadKernel {
 
           public:
-            ThreadKernel (Image<default_type> & warped_moving_positions,
-                          Image<default_type> & inv_warp,
+            ThreadKernel (Image<default_type> & deform,
+                          Image<default_type> & inv_deform,
                           const size_t max_iter,
                           const default_type error_tol) :
-                            warped_moving_positions (warped_moving_positions),
-                            transform (inv_warp),
+                            deform (deform),
+                            transform (inv_deform),
                             max_iter (max_iter),
                             error_tolerance (error_tol) {
                               error_tolerance = error_tolerance * error_tolerance; // to avoid a sqrt during update
             }
 
-            void operator() (Image<default_type>& inv_warp)
+            void operator() (Image<default_type>& inv_deform)
             {
-              Eigen::Vector3 voxel ((default_type)inv_warp.index(0), (default_type)inv_warp.index(1), (default_type)inv_warp.index(2));
+              Eigen::Vector3 voxel ((default_type)inv_deform.index(0), (default_type)inv_deform.index(1), (default_type)inv_deform.index(2));
               Eigen::Vector3 truth = transform.voxel2scanner * voxel;
-              Eigen::Vector3 current = inv_warp.row(3);
+              Eigen::Vector3 current = inv_deform.row(3);
 
               size_t iter = 0;
               default_type error = std::numeric_limits<default_type>::max();
@@ -64,22 +64,20 @@ namespace MR
                 error = update (current, truth);
                 ++iter;
               }
-
-              inv_warp.row(3) = current;
+              inv_deform.row(3) = current;
             }
 
           private:
 
-            default_type update (Eigen::Vector3& current, Eigen::Vector3& truth)
+            default_type update (Eigen::Vector3& current, const Eigen::Vector3& truth)
             {
-              warped_moving_positions.scanner (current);
-              Eigen::Vector3 moving_position = warped_moving_positions.row(3);
-              Eigen::Vector3 discrepancy = truth - moving_position;
+              deform.scanner (current);
+              Eigen::Vector3 discrepancy = truth - deform.row(3);
               current += discrepancy;
               return discrepancy.dot (discrepancy);
             }
 
-            Interp::Cubic<Image<default_type> > warped_moving_positions;
+            Interp::Cubic<Image<default_type> > deform;
             MR::Transform transform;
             const size_t max_iter;
             default_type error_tolerance;
@@ -90,36 +88,31 @@ namespace MR
       /** \addtogroup Registration
         @{ */
 
-          /*! Estimate the inverse of a displacement field
+          /*! Estimate the inverse of a deformation field
            * Note that the output inv_warp can be passed as either a zero field or an initial estimate
            */
-          void invert (Image<default_type>& warp, Image<default_type>& inv_warp, bool is_initialised = false, size_t max_iter = 50, default_type error_tolerance = 0.01)
+          void invert_deformation (Image<default_type>& deform, Image<default_type>& inv_deform, bool is_initialised = false, size_t max_iter = 50, default_type error_tolerance = 0.01)
           {
-            check_dimensions (warp, inv_warp);
-
-            // scale by voxel size
-            error_tolerance *= (warp.spacing(0) + warp.spacing(1) + warp.spacing(2)) / 3;
+            check_dimensions (deform, inv_deform);
+            error_tolerance *= (deform.spacing(0) + deform.spacing(1) + deform.spacing(2)) / 3;
 
             if (!is_initialised)
-              displacement2deformation (inv_warp, inv_warp);
+              displacement2deformation (inv_deform, inv_deform);
 
-            auto positions = Image<default_type>::scratch (warp);
-            displacement2deformation (positions, positions);
-            Interp::Cubic<Image<default_type> > positions_interp (positions);
-
-            auto warped_positions = Image<default_type>::scratch (warp);
-
-            displacement2deformation (positions, warped_positions);
-
-//            // TODO replace with displacement2deformation (positions, positions);
-//            for (auto i = Loop (warp, 0, 3) (warp, warped_positions); i; ++i) {
-//              positions_interp.scanner (warp.row(3));
-//              warped_positions.row(3) = positions_interp.row(3);
-//            }
-
-            ThreadedLoop ("inverting warp field...", inv_warp, 0, 3)
-              .run (ThreadKernel (warped_positions, inv_warp, max_iter, error_tolerance), inv_warp);
+            ThreadedLoop ("inverting warp field...", inv_deform, 0, 3)
+              .run (ThreadKernel (deform, inv_deform, max_iter, error_tolerance), inv_deform);
           }
+
+          /*! Estimate the inverse of a displacement field, output the inverse as a deformation field
+           * Note that the output inv_warp can be passed as either a zero field or an initial estimate (as a deformation field)
+           */
+          void invert_displacement_deformation (Image<default_type>& disp, Image<default_type>& inv_deform, bool is_initialised = false, size_t max_iter = 50, default_type error_tolerance = 0.01)
+          {
+            auto deform_field = Image<default_type>::scratch (disp);
+            Transform::displacement2deformation (disp, deform_field);
+
+            invert_deformation (deform_field, inv_deform, is_initialised, max_iter, error_tolerance);
+         }
 
       //! @}
     }

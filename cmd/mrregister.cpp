@@ -54,7 +54,7 @@ void usage ()
   DESCRIPTION
       + "Register two images together using a rigid, affine or a symmetric diffeomorphic (SyN) transformation model."
 
-      + "By default this application will perform an affine, followed by SyN registration. Use the "
+      + "By default this application will perform an affine, followed by SyN registration."
 
       + "FOD registration (with apodised point spread reorientation) will be performed by default if the number of volumes "
         "in the 4th dimension equals the number of coefficients in an antipodally symmetric spherical harmonic series (e.g. 6, 15, 28 etc). "
@@ -301,7 +301,6 @@ void run ()
   opt = get_options ("rigid_init");
   bool init_rigid_set = false;
   if (opt.size()) {
-    throw Exception ("initialise with rigid not yet implemented");
     init_rigid_set = true;
     transform_type rigid_transform = load_transform (opt[0][0]);
     rigid.set_transform (rigid_transform);
@@ -519,9 +518,7 @@ void run ()
   Registration::SyN syn_registration;
 
   opt = get_options ("syn_warp");
-  bool output_warp_fields = false;
   std::string warp_filename;
-  std::unique_ptr<Image<float> > output_warps;
   if (opt.size()) {
     if (!do_syn)
       throw Exception ("SyN warp output requested when no SyN registration is requested");
@@ -689,7 +686,7 @@ void run ()
       syn_registration.run (identity_transform, im1_image, im2_image, im1_mask, im2_mask);
     }
 
-    if (output_warp_fields) {
+    if (warp_filename.size()) {
       Header warp_header (*(syn_registration.get_im1_disp_field()));
       warp_header.set_ndim (5);
       warp_header.size(3) = 3;
@@ -699,16 +696,16 @@ void run ()
       warp_header.stride(2) = 4;
       warp_header.stride(3) = 1;
       warp_header.stride(4) = 5;
-      output_warps.reset (new Image<float> (Image<float>::create (std::string (opt[0][0]), warp_header)));
 
-      output_warps->index(4) = 0;
-      threaded_copy (*(syn_registration.get_im1_disp_field()), *output_warps, 0, 4);
-      output_warps->index(4) = 1;
-      threaded_copy (*(syn_registration.get_im1_disp_field_inv()), *output_warps, 0, 4);
-      output_warps->index(4) = 2;
-      threaded_copy (*(syn_registration.get_im2_disp_field()), *output_warps, 0, 4);
-      output_warps->index(4) = 3;
-      threaded_copy (*(syn_registration.get_im2_disp_field_inv()), *output_warps, 0, 4);
+      auto output_warps = Image<float>::create (warp_filename, warp_header);
+      output_warps.index(4) = 0;
+      threaded_copy (*(syn_registration.get_im1_disp_field()), output_warps, 0, 4);
+      output_warps.index(4) = 1;
+      threaded_copy (*(syn_registration.get_im1_disp_field_inv()), output_warps, 0, 4);
+      output_warps.index(4) = 2;
+      threaded_copy (*(syn_registration.get_im2_disp_field()), output_warps, 0, 4);
+      output_warps.index(4) = 3;
+      threaded_copy (*(syn_registration.get_im2_disp_field_inv()), output_warps, 0, 4);
     }
   }
 
