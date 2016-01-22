@@ -46,7 +46,7 @@
 #include "registration/metric/thread_kernel.h"
 #include "registration/transform/initialiser.h"
 #include "progressbar.h"
-
+#include "file/config.h"
 
 namespace MR
 {
@@ -394,6 +394,8 @@ namespace MR
             max_GD_iter (15),
             scale_factor (0.5),
             pool_size(7),
+            mutation_rad(File::Config::get_float ("reg_mutation_rad", 0.2)),
+            mutation_t_wrt_fov(File::Config::get_float ("reg_mutation_t_wrt_fov", 0.1)),
             loop_density (1.0),
             smooth_factor (1.0),
             // grad_tolerance(1.0e-6),
@@ -411,6 +413,17 @@ namespace MR
           void set_pool_size (size_t& size) {
             if (size < 2) throw Exception ("global search pool size has to be larger than 2");
             pool_size = size;
+          }
+
+          void set_mutation_rotation (default_type& radians) {
+            if ((radians < 0.0) or (radians > Math::pi_2)) throw Exception (
+              "rotation in radians has to be smaller than 2*pi and non-negative");
+            mutation_rad = radians;
+          }
+
+          void set_mutation_translation_wrt_fov (default_type& percent) {
+            if ((percent < 0.0) or (percent > 100.0)) throw Exception ("");
+            mutation_t_wrt_fov = percent;
           }
 
           void set_log_stream (std::streambuf* stream) {
@@ -471,7 +484,7 @@ namespace MR
 
               while (parental.size() < pool_size){
                 parental.push_back ({T_init, scale_factor, loop_density, max_GD_iter});
-                parental.back().mutate_rigid(0.2, 0.1*spatial_extent);
+                parental.back().mutate_rigid(mutation_rad, mutation_t_wrt_fov*spatial_extent);
                 parental.back().run_sgd (metric, transform, im1_smoothed, im2_smoothed, im1_mask, im2_mask);
                 if (parental.back().get_overlap() == 0 or parental.back().get_cost() == 0.0)
                   parental.pop_back();
@@ -496,7 +509,7 @@ namespace MR
                 ++p2;
                 while (filial.size() < pool_size && p2 != std::end(parental)) {
                       p1->crossover_rigid(0.2, *p2, filial);
-                      filial.back().mutate_rigid(0.2, 0.05*spatial_extent);
+                      filial.back().mutate_rigid(mutation_rad, mutation_t_wrt_fov*spatial_extent);
                       filial.back().run_sgd (metric, transform, im1_smoothed, im2_smoothed, im1_mask, im2_mask);
                       if (filial.back().get_overlap() == 0)
                         filial.pop_back();
@@ -548,6 +561,8 @@ namespace MR
           size_t max_GD_iter;
           default_type scale_factor;
           size_t pool_size;
+          default_type mutation_rad;
+          default_type mutation_t_wrt_fov;
           default_type loop_density;
           default_type smooth_factor;
           std::vector<size_t> kernel_extent;
