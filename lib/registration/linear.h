@@ -351,8 +351,8 @@ namespace MR
                   optim (evaluate, *transform.get_gradient_descent_updator());
                 // GradientDescent (Function& function, UpdateFunctor update_functor = LinearUpdate(), value_type step_size_upfactor = 3.0, value_type step_size_downfactor = 0.1)
                 optim.precondition (optimiser_weights);
-                // optim.run (max_iter[level], grad_tolerance, false, step_tolerance, 1e-10, 1e-10, log_stream);
-                optim.run (max_iter[level], 1.0e-30, false, 1.0e-30, 1.0e-30, 1.0e-30, log_stream);
+                optim.run (max_iter[level], grad_tolerance, false, step_tolerance, 1e-10, 1e-10, log_stream);
+                // optim.run (max_iter[level], 1.0e-30, false, 1.0e-30, 1.0e-30, 1.0e-30, log_stream);
                 parameters.transformation.set_parameter_vector (optim.state());
                 parameters.update_control_points();
 
