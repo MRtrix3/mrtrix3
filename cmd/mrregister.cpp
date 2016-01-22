@@ -759,6 +759,7 @@ void run ()
         Registration::Transform::reorient (msg, image2_midway, affine.get_transform_half_inverse(), directions_cartesian);
       }
     } else {
+      Filter::reslice<Interp::Cubic> (im2_image, image2_midway, rigid.get_transform_half_inverse(), Adapter::AutoOverSample, 0.0);
       if (do_reorientation) {
         std::string msg ("reorienting...");
         Registration::Transform::reorient (msg, image2_midway, rigid.get_transform_half_inverse(), directions_cartesian);
