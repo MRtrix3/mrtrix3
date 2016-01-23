@@ -252,7 +252,7 @@ void run ()
   Segmenter fmls (dirs, Math::SH::LforN (H.dim(3)));
   load_fmls_thresholds (fmls);
 
-  Thread::run_queue (writer, SH_coefs(), Thread::multi (fmls), FOD_lobes(), receiver);
+  Thread::run_queue (writer, Thread::batch (SH_coefs()), Thread::multi (fmls), Thread::batch (FOD_lobes()), receiver);
 
 }
 
