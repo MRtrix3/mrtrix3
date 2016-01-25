@@ -22,20 +22,20 @@ namespace MR
         + Argument ("image").type_image_in ()
 
       + Option ("syn_scale", "use a multi-resolution scheme by defining a scale factor for each level "
-                             "using comma separated values (Default: 0.5,1)")
+                             "using comma separated values (Default: 0.25,0.5,1)")
         + Argument ("factor").type_sequence_float ()
 
       + Option ("syn_niter", "the maximum number of iterations. This can be specified either as a single number "
-                             "for all multi-resolution levels, or a single value for each level. (Default: 1000)")
+                             "for all multi-resolution levels, or a single value for each level. (Default: 100)")
         + Argument ("num").type_sequence_int ()
 
-      + Option ("syn_update_smooth", "regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 3 x voxel_size)")
+      + Option ("syn_update_smooth", "regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 1.0 x voxel_size)")
         + Argument ("stdev").type_float ()
 
-      + Option ("syn_disp_smooth", "regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 0.5 x voxel_size)")
+      + Option ("syn_disp_smooth", "regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0 x voxel_size)")
         + Argument ("stdev").type_float ()
 
-      + Option ("syn_grad_step", "the initial gradient step size for SyN registration (Default: 0.2)") //TODO determine appropriate in initial step
+      + Option ("syn_grad_step", "the gradient step size for SyN registration (Default: 1)")
         + Argument ("num").type_float ();
 
   }
