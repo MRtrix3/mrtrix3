@@ -29,10 +29,10 @@ namespace MR
                              "for all multi-resolution levels, or a single value for each level. (Default: 1000)")
         + Argument ("num").type_sequence_int ()
 
-      + Option ("syn_update_smooth", "regularise the gradient update field with Gaussian smoothing (standard deviation in mm, Default 3 x voxel_size)")
+      + Option ("syn_update_smooth", "regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 3 x voxel_size)")
         + Argument ("stdev").type_float ()
 
-      + Option ("syn_disp_smooth", "regularise the displacement field with Gaussian smoothing (standard deviation in mm, Default 0.5 x voxel_size)")
+      + Option ("syn_disp_smooth", "regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 0.5 x voxel_size)")
         + Argument ("stdev").type_float ()
 
       + Option ("syn_grad_step", "the initial gradient step size for SyN registration (Default: 0.2)") //TODO determine appropriate in initial step

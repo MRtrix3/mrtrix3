@@ -93,6 +93,7 @@ namespace MR
               throw Exception ("the max number of SyN iterations needs to be defined for each multi-resolution level");
 
             for (size_t level = 0; level < scale_factor.size(); level++) {
+                std::cout << std::endl;
                 CONSOLE ("SyN: multi-resolution level " + str(level + 1) + ", scale factor: " + str(scale_factor[level]));
 
                 INFO ("Resizing midway image based on multi-resolution level");
@@ -175,8 +176,8 @@ namespace MR
                     smooth_filter (*im1_update_field, *im1_update_field);
                     smooth_filter (*im2_update_field, *im2_update_field);
 
-                    INFO ("normalising update fields");
-                    Transform::normalise_field (*im1_update_field, *im2_update_field);
+//                    INFO ("normalising update fields");
+//                    Transform::normalise_field (*im1_update_field, *im2_update_field);
                   }
 
                   // Perform a displacement field update with back tracking of the step size
@@ -205,20 +206,17 @@ namespace MR
                       Registration::Transform::compose_affine_displacement (im2_affine, *im2_disp_field, im2_deform_field);
                     }
 
-#ifdef DEBUG_OUTPUT
-                      VAR (grad_step_altered);
-                      Adapter::Jacobian<Image<default_type> > jacobian (im1_deform_field);
-                      auto jacobian_det = Image<default_type>::scratch (warped_header);
-                      default_type max = std::numeric_limits<default_type>::min();
-                      default_type min = std::numeric_limits<default_type>::max();
-                      for (auto i = Loop (0,3) (jacobian, jacobian_det); i; ++i) {
-                        jacobian_det.value() = jacobian.value().determinant();
-                        if (jacobian_det.value() > max) max = jacobian_det.value();
-                        if (jacobian_det.value() < min) min = jacobian_det.value();
-                      }
-                      CONSOLE ("jacobian min: " +str(min) + " max " + str(max));
+                    VAR (grad_step_altered);
+                    Adapter::Jacobian<Image<default_type> > jacobian (im1_deform_field);
+                    auto jacobian_det = Image<default_type>::scratch (warped_header);
+                    default_type max = std::numeric_limits<default_type>::min();
+                    default_type min = std::numeric_limits<default_type>::max();
+                    for (auto i = Loop (0,3) (jacobian, jacobian_det); i; ++i) {
+                      jacobian_det.value() = jacobian.value().determinant();
+                      if (jacobian_det.value() > max) max = jacobian_det.value();
+                      if (jacobian_det.value() < min) min = jacobian_det.value();
                     }
-#endif
+                    CONSOLE ("jacobian min: " +str(min) + " max " + str(max));
 
                     INFO ("warping input images");
                     {
@@ -226,8 +224,8 @@ namespace MR
                       Filter::warp<Interp::Linear> (im1_smoothed, im1_warped, im1_deform_field, 0.0);
                       Filter::warp<Interp::Linear> (im2_smoothed, im2_warped, im2_deform_field, 0.0);
                     }
-//                    save (im1_warped, std::string("im1_warped_level_" + str(level) + "_iter" + str(iteration) + ".mif"), false);
-//                    save (im2_warped, std::string("im2_warped_level_" + str(level) + "_iter" + str(iteration) + ".mif"), false);
+                    save (im1_warped, std::string("im1_warped_level_" + str(level+1) + "_iter" + str(iteration) + ".mif"), false);
+                    save (im2_warped, std::string("im2_warped_level_" + str(level+1) + "_iter" + str(iteration) + ".mif"), false);
 
                     if (fod_reorientation) {
                       INFO ("Reorienting FODs");
@@ -255,7 +253,7 @@ namespace MR
                     Metric::SyNDemons<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> syn_metric (cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped);
                     ThreadedLoop (im1_warped, 0, 3).run (syn_metric, im1_warped, im2_warped, *im1_update_field_new, *im2_update_field_new);
 
-                    cost_new /= static_cast<default_type>(voxel_count);
+//                    cost_new /= static_cast<default_type>(voxel_count);
 
                     // If cost is lower then keep new displacement fields and gradients
                     if (cost_new < cost) {
@@ -275,18 +273,29 @@ namespace MR
                       bool is_initialised = !(iteration == 0 && level == 0);
                       {
                         LogLevelLatch level (0);
-                        Transform::invert_displacement_deformation (*im1_disp_field, *im1_field_inv, is_initialised);
-                        Transform::invert_displacement_deformation (*im2_disp_field, *im2_field_inv, is_initialised);
+                        //TODO uncomment
+//                        Transform::invert_displacement_deformation (*im1_disp_field, *im1_field_inv, is_initialised);
+//                        Transform::invert_displacement_deformation (*im2_disp_field, *im2_field_inv, is_initialised);
                       }
 
                       next_step_ok = true;
 
                     // Cost is not lower so reduce the step size and try updating again.
                     } else {
-                      grad_step_altered *= 0.5;
+//                      grad_step_altered *= 0.5;
 
-                      // TODO sharpen warp a little by gradually reducing the displacement field smoothing
-                      disp_smoothing_mm *= 0.75;
+                      // DEBUG
+                      next_step_ok = true;
+                      // drag the inverse along for the ride
+                      bool is_initialised = !(iteration == 0 && level == 0);
+                      {
+                        LogLevelLatch level (0);
+                        Transform::invert_displacement_deformation (*im1_disp_field, *im1_field_inv, is_initialised);
+                        Transform::invert_displacement_deformation (*im2_disp_field, *im2_field_inv, is_initialised);
+                      }
+
+//                      // TODO sharpen warp a little by gradually reducing the displacement field smoothing
+//                      disp_smoothing_mm *= 0.75;
 
                       if (grad_step_altered < 1e-5) {
                         converged = true;
@@ -298,6 +307,7 @@ namespace MR
                   // check displacement field difference to detect convergence.
 
                 CONSOLE ("iteration: " + str(iteration));
+                CONSOLE ("  cost: " + str(cost));
 
                 if (++iteration > max_iter[level])
                     converged = true;
