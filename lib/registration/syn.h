@@ -86,7 +86,7 @@ namespace MR
             std::vector<Header> headers;
             headers.push_back (im2_image.original_header());
             headers.push_back (im1_image.original_header());
-            auto midway_image_header = compute_minimum_average_header<default_type, Eigen::Transform<default_type, 3, Eigen::Projective>>(headers, 1.0, padding, init_transforms);
+            midway_image_header = compute_minimum_average_header<default_type, Eigen::Transform<default_type, 3, Eigen::Projective>>(headers, 1.0, padding, init_transforms);
 
             if (max_iter.size() == 1)
               max_iter.resize (scale_factor.size(), max_iter[0]);
@@ -275,11 +275,12 @@ namespace MR
 
                   // check displacement field difference to detect convergence.
 
-                CONSOLE ("\r  iteration: " + str(iteration) + " cost: " + str(cost));
+                  std::cerr << "\r  iteration: " + str(iteration) + " cost: " + str(cost) << std::flush;
 
-                if (++iteration > max_iter[level])
-                    converged = true;
-                }
+                  if (++iteration > max_iter[level])
+                      converged = true;
+               }
+                std::cerr << std::endl;
              }
 
             // convert to displacement field ready for output
@@ -323,6 +324,7 @@ namespace MR
             disp_smoothing = voxel_fwhm;
           }
 
+          //TODO
           std::shared_ptr<Image<default_type> > get_im1_disp_field() {
             return im1_disp_field_new;
           }
@@ -337,6 +339,10 @@ namespace MR
 
           std::shared_ptr<Image<default_type> > get_im2_disp_field_inv() {
             return im2_field_inv;
+          }
+
+          Header get_midway_header () {
+            return midway_image_header;
           }
 
 
@@ -356,6 +362,8 @@ namespace MR
           default_type gradient_step;
           bool fod_reorientation;
           Eigen::MatrixXd aPSF_directions;
+
+          Header midway_image_header;
 
           std::shared_ptr<Image<default_type> > im1_disp_field_new;
           std::shared_ptr<Image<default_type> > im2_disp_field_new;

@@ -404,9 +404,8 @@ namespace MR
             Filter::reslice<Interp::Cubic> (im1_image, image1_midway, transformation.get_transform_half(), Adapter::AutoOverSample, 0.0);
             Filter::reslice<Interp::Cubic> (im2_image, image2_midway, transformation.get_transform_half_inverse(), Adapter::AutoOverSample, 0.0);
             if (do_reorientation){
-              std::string msg ("reorienting...");
-              Transform::reorient (msg, image1_midway, transformation.get_transform_half(), directions);
-              Transform::reorient (msg, image2_midway, transformation.get_transform_half_inverse(), directions);
+              Transform::reorient ("reorienting...", image1_midway, transformation.get_transform_half(), directions);
+              Transform::reorient ("reorienting...", image2_midway, transformation.get_transform_half_inverse(), directions);
             }
           }
 

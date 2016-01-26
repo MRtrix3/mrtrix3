@@ -694,34 +694,55 @@ void run ()
     INFO ("Outputting tranformed input images...");
 
     if (do_syn) {
-      // TODO
+      Header deform_header (im1_transformed);
+      deform_header.set_ndim(4);
+      deform_header.size(3) = 3;
+      Image<default_type> deform_field = Image<default_type>::scratch (deform_header);
 
+      Registration::Transform::compose_halfway_transforms (affine.get_transform_half_inverse().inverse(),
+                                                           *(syn_registration.get_im2_disp_field_inv()),
+                                                           *(syn_registration.get_im1_disp_field()),
+                                                           affine.get_transform_half(),
+                                                           deform_field);
+
+      Filter::warp<Interp::Cubic> (im1_image, im1_transformed, deform_field, 0.0);
+      if (do_reorientation)
+        Registration::Transform::reorient_warp ("reorienting FODs...", im1_transformed, deform_field, directions_cartesian);
 
     } else if (do_affine) {
       Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, affine.get_transform(), Adapter::AutoOverSample, 0.0);
-      if (do_reorientation) {
-        std::string msg ("reorienting...");
-        Registration::Transform::reorient (msg, im1_transformed, affine.get_transform(), directions_cartesian);
-      }
+      if (do_reorientation)
+        Registration::Transform::reorient ("reorienting FODs...", im1_transformed, affine.get_transform(), directions_cartesian);
     } else {
       Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, rigid.get_transform(), Adapter::AutoOverSample, 0.0);
-      if (do_reorientation) {
-        std::string msg ("reorienting...");
-        Registration::Transform::reorient (msg, im1_transformed, rigid.get_transform(), directions_cartesian);
-      }
+      if (do_reorientation)
+        Registration::Transform::reorient ("reorienting FODs...", im1_transformed, rigid.get_transform(), directions_cartesian);
     }
   }
 
 
   if (!im1_midway_transformed_path.empty() and !im2_midway_transformed_path.empty()) {
     if (do_syn) {
-      // TODO
+      Image<default_type> im1_deform_field = Image<default_type>::scratch (*(syn_registration.get_im1_disp_field()));
+      Registration::Transform::compose_affine_displacement (affine.get_transform_half(), *(syn_registration.get_im1_disp_field()), im1_deform_field);
+      auto im1_midway = Image<default_type>::create (im1_midway_transformed_path, syn_registration.get_midway_header());
 
+      Filter::warp<Interp::Linear> (im1_image, im1_midway, im1_deform_field, 0.0);
+      if (do_reorientation)
+        Registration::Transform::reorient_warp ("reorienting FODs...", im1_midway, im1_deform_field, directions_cartesian);
+
+      Image<default_type> im2_deform_field = Image<default_type>::scratch (*(syn_registration.get_im2_disp_field()));
+      Registration::Transform::compose_affine_displacement (affine.get_transform_half_inverse(), *(syn_registration.get_im2_disp_field()), im2_deform_field);
+      auto im2_midway = Image<default_type>::create (im1_midway_transformed_path, syn_registration.get_midway_header());
+      Filter::warp<Interp::Linear> (im2_image, im2_midway, im2_deform_field, 0.0);
+      if (do_reorientation)
+        Registration::Transform::reorient_warp ("reorienting FODs...", im2_midway, im2_deform_field, directions_cartesian);
 
     } else if (do_affine){
       affine_registration.write_transformed_images (im1_image, im2_image, affine, im1_midway_transformed_path, im2_midway_transformed_path, do_reorientation);
     } else {
       rigid_registration.write_transformed_images (im1_image, im2_image, rigid, im1_midway_transformed_path, im2_midway_transformed_path, do_reorientation);
+
     }
   }
 }
