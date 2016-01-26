@@ -83,6 +83,40 @@ namespace MR
             default_type step;
         };
 
+        class ComposeHalfwayKernel {
+          public:
+            ComposeHalfwayKernel (const transform_type& linear1, Image<default_type>& disp1,
+                                  Image<default_type>& disp2, const transform_type& linear2) :
+                                    linear1 (linear1), disp1_interp (disp1), disp2_interp (disp2), linear2 (linear2) {
+              out_of_bounds.setOnes();
+              out_of_bounds *= NaN;
+            }
+
+            void operator() (Image<default_type>& deform) {
+              Eigen::Vector3 voxel ((default_type)deform.index(0), (default_type)deform.index(1), (default_type)deform.index(2));
+              Eigen::Vector3 position = linear1 * voxel;
+              disp1_interp.scanner (position);
+              if (!disp1_interp) {
+                  deform.row(3) = out_of_bounds;
+                } else {
+                  Eigen::Vector3 midway_position = position + disp1_interp.row(3);
+                  disp2_interp.scanner (midway_position);
+                  if (!disp2_interp) {
+                    deform.row(3) = out_of_bounds;
+                  } else {
+                    deform.row(3) = linear2 * (midway_position + disp2_interp.row(3));
+                  }
+               }
+            }
+
+          protected:
+            const transform_type linear1;
+            Interp::Linear<Image<default_type> > disp1_interp;
+            Interp::Linear<Image<default_type> > disp2_interp;
+            const transform_type linear2;
+            Eigen::Vector3 out_of_bounds;
+        };
+
 
       // Compose a linear transform and a deformation field. The input and output can be the same image.
       void compose_affine_deformation (const transform_type& transform, Image<default_type>& deform_in, Image<default_type>& deform_out)
@@ -100,6 +134,15 @@ namespace MR
       void compose_displacement (Image<default_type>& disp_in1, Image<default_type>& disp_in2, Image<default_type>& disp_out, default_type step = 1.0)
       {
         ThreadedLoop (disp_in1, 0, 3).run (ComposeDispKernel (disp_in1, disp_in2, step), disp_in1, disp_out);
+      }
+
+      // Compose linear1<->displacement1<->[midway space]<->displacement2<->linear2. Output is a deformation field.
+      void compose_halfway_transforms (const transform_type& linear1, Image<default_type>& disp1,
+                                       Image<default_type>& disp2, const transform_type& linear2,
+                                       Image<default_type>& deform_out)
+      {
+        MR::Transform deform_header_transform (deform_out);
+        ThreadedLoop (deform_out, 0, 3).run (ComposeHalfwayKernel (linear1 * deform_header_transform.voxel2scanner, disp1, disp2, linear2), deform_out);
       }
 
     }
