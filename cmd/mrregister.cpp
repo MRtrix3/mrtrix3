@@ -204,34 +204,13 @@ void run ()
     im1_transformed = Image<value_type>::create (opt[0][0], im2_image);
     im1_transformed.original_header().datatype() = DataType::from_command_line (DataType::Float32);
   }
-  opt = get_options ("transformed_midway");
-  Image<value_type> image1_midway;
-  Image<value_type> image2_midway;
-  if (opt.size()){
-    std::vector<Header> headers;
-    headers.push_back(im1_image.original_header());
-    headers.push_back(im2_image.original_header());
-    std::vector<Eigen::Transform<double, 3, Eigen::AffineCompact>> void_trafo;
-    auto padding = Eigen::Matrix<double, 4, 1>(1.0, 1.0, 1.0, 1.0);
-    value_type resolution = 1.0;
-    auto midway_image = compute_minimum_average_header<double,Eigen::Transform<double, 3, Eigen::AffineCompact>>(headers, resolution, padding, void_trafo);
 
-    auto image1_midway_header = midway_image;
-    image1_midway_header.datatype() = DataType::from_command_line (DataType::Float32);
-    image1_midway_header.set_ndim(im1_image.ndim());
-    for (size_t dim = 3; dim < im1_image.ndim(); ++dim){
-      image1_midway_header.spacing(dim) = im1_image.spacing(dim);
-      image1_midway_header.size(dim) = im1_image.size(dim);
-    }
-    image1_midway = Image<value_type>::create (opt[0][0], image1_midway_header);
-    auto image2_midway_header = midway_image;
-    image2_midway_header.datatype() = DataType::from_command_line (DataType::Float32);
-    image2_midway_header.set_ndim(im2_image.ndim());
-    for (size_t dim = 3; dim < im2_image.ndim(); ++dim){
-      image2_midway_header.spacing(dim) = im2_image.spacing(dim);
-      image2_midway_header.size(dim) = im2_image.size(dim);
-    }
-    image2_midway = Image<value_type>::create (opt[0][1], image2_midway_header);
+  std::string im1_midway_transformed_path;
+  std::string im2_midway_transformed_path;
+  opt = get_options ("transformed_midway");
+  if (opt.size()){
+    im1_midway_transformed_path = str(opt[0][0]);
+    im2_midway_transformed_path = str(opt[0][1]);
   }
 
   opt = get_options ("type");
@@ -715,7 +694,7 @@ void run ()
     INFO ("Outputting tranformed input images...");
 
     if (do_syn) {
-
+      // TODO
 
 
     } else if (do_affine) {
@@ -734,36 +713,15 @@ void run ()
   }
 
 
-  if (image1_midway.valid()) {
+  if (!im1_midway_transformed_path.empty() and !im2_midway_transformed_path.empty()) {
     if (do_syn) {
-    } else if (do_affine) {
-      Filter::reslice<Interp::Cubic> (im1_image, image1_midway, affine.get_transform_half(), Adapter::AutoOverSample, 0.0);
-      if (do_reorientation) {
-        std::string msg ("reorienting...");
-        Registration::Transform::reorient (msg, image1_midway, affine.get_transform_half(), directions_cartesian);
-      }
+      // TODO
+
+
+    } else if (do_affine){
+      affine_registration.write_transformed_images (im1_image, im2_image, affine, im1_midway_transformed_path, im2_midway_transformed_path, do_reorientation);
     } else {
-      Filter::reslice<Interp::Cubic> (im1_image, image1_midway, rigid.get_transform_half(), Adapter::AutoOverSample, 0.0);
-      if (do_reorientation) {
-        std::string msg ("reorienting...");
-        Registration::Transform::reorient (msg, image1_midway, rigid.get_transform_half(), directions_cartesian);
-      }
-    }
-  }
-  if (image2_midway.valid()) {
-    if (do_syn) {
-    } else if (do_affine) {
-      Filter::reslice<Interp::Cubic> (im2_image, image2_midway, affine.get_transform_half_inverse(), Adapter::AutoOverSample, 0.0);
-      if (do_reorientation) {
-        std::string msg ("reorienting...");
-        Registration::Transform::reorient (msg, image2_midway, affine.get_transform_half_inverse(), directions_cartesian);
-      }
-    } else {
-      Filter::reslice<Interp::Cubic> (im2_image, image2_midway, rigid.get_transform_half_inverse(), Adapter::AutoOverSample, 0.0);
-      if (do_reorientation) {
-        std::string msg ("reorienting...");
-        Registration::Transform::reorient (msg, image2_midway, rigid.get_transform_half_inverse(), directions_cartesian);
-      }
+      rigid_registration.write_transformed_images (im1_image, im2_image, rigid, im1_midway_transformed_path, im2_midway_transformed_path, do_reorientation);
     }
   }
 }

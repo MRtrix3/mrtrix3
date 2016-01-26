@@ -156,6 +156,10 @@ namespace MR
           log_stream = stream;
         }
 
+        Header get_midway_header () {
+          return Header(midway_image_header);
+        }
+
         template <class MetricType, class TransformType, class Im1ImageType, class Im2ImageType>
         void run (
           MetricType& metric,
@@ -221,7 +225,6 @@ namespace MR
             else if (smooth_factor.size() != scale_factor.size())
               throw Exception ("the smooth factor needs to be defined for each multi-resolution level");
 
-            std::vector<Eigen::Transform<double, 3, Eigen::Projective> > init_transforms;
             if (init_type == Transform::Init::mass)
               Transform::Init::initialise_using_image_mass (im1_image, im2_image, transform);
             else if (init_type == Transform::Init::geometric)
@@ -241,14 +244,6 @@ namespace MR
               // transformation_search.set_log_stream(std::cerr.rdbuf());
               transformation_search.run_masked(metric, transform, im1_image, im2_image, im1_mask, im2_mask);
               // transform.debug();
-            }
-
-            // define transfomations that will be applied to the image header when the common space is calculated
-            {
-              Eigen::Transform<double, 3, Eigen::Projective> init_trafo_2 = transform.get_transform_half();
-              Eigen::Transform<double, 3, Eigen::Projective> init_trafo_1 = transform.get_transform_half_inverse();
-              init_transforms.push_back (init_trafo_2);
-              init_transforms.push_back (init_trafo_1);
             }
 
             typedef Im1ImageType MidwayImageType;
@@ -278,15 +273,11 @@ namespace MR
                                    Interp::Nearest<ProcessedMaskType>> ParamType;
 
             Eigen::Matrix<typename TransformType::ParameterType, Eigen::Dynamic, 1> optimiser_weights = transform.get_optimiser_weights();
+            const Eigen::Matrix<default_type, 4, 1> midspace_padding = Eigen::Matrix<default_type, 4, 1>(1.0, 1.0, 1.0, 1.0);
+            const default_type midspace_voxel_subsampling = 1.0;
 
-            // get midway (affine average) space
-            auto padding = Eigen::Matrix<default_type, 4, 1>(0.0, 0.0, 0.0, 0.0);
-            default_type im2_res = 1.0;
-            std::vector<Header> headers;
-            headers.push_back(im2_image.original_header());
-            headers.push_back(im1_image.original_header());
-            auto midway_image_header = compute_minimum_average_header<default_type, Eigen::Transform<default_type, 3, Eigen::Projective>> (headers, im2_res, padding, init_transforms);
-            auto midway_image = Header::scratch (midway_image_header).get_image<typename Im1ImageType::value_type>();
+            // calculate midway (affine average) space which will be constant for each resolution level
+            midway_image_header = compute_minimum_average_header(im1_image, im2_image, transform, midspace_voxel_subsampling, midspace_padding);
 
             for (size_t level = 0; level < scale_factor.size(); level++) {
               {
@@ -295,7 +286,8 @@ namespace MR
                 CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor: " + str(scale_factor[level]) + st);
               }
 
-              // TODO We will still need to crop the 'halfway' template grid.
+              // TODO: use iterator instead of full blown image
+              auto midway_image = Header::scratch (midway_image_header).get_image<typename Im1ImageType::value_type>();
 
 
               Filter::Smooth im1_smooth_filter (im1_image);
@@ -349,10 +341,8 @@ namespace MR
               for (auto gd_iteration = 0; gd_iteration < gd_repetitions[level]; ++gd_iteration){
                 Math::GradientDescent<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
                   optim (evaluate, *transform.get_gradient_descent_updator());
-                // GradientDescent (Function& function, UpdateFunctor update_functor = LinearUpdate(), value_type step_size_upfactor = 3.0, value_type step_size_downfactor = 0.1)
                 optim.precondition (optimiser_weights);
                 optim.run (max_iter[level], grad_tolerance, false, step_tolerance, 1e-10, 1e-10, log_stream);
-                // optim.run (max_iter[level], 1.0e-30, false, 1.0e-30, 1.0e-30, 1.0e-30, log_stream);
                 parameters.transformation.set_parameter_vector (optim.state());
                 parameters.update_control_points();
 
@@ -364,6 +354,8 @@ namespace MR
                 // VAR(optim.function_evaluations());
                 // Math::check_function_gradient (evaluate, params, 0.0001, true, optimiser_weights);
               }
+              // update midway (affine average) space using the current transformations
+              midway_image_header = compute_minimum_average_header(im1_image, im2_image, parameters.transformation, midspace_voxel_subsampling, midspace_padding);
             }
 #ifdef DEBUGSYMMETRY
               auto t_forw = transform.get_transform_half();
@@ -375,7 +367,47 @@ namespace MR
               t_back = t_back * t_back;
               save_matrix(t_back.matrix(),"/tmp/t_back_squared.txt");
 #endif
-            // TODO: resize midway_image
+          }
+
+        template<class Im1ImageType, class Im2ImageType, class TransformType>
+        void write_transformed_images (
+          const Im1ImageType& im1_image,
+          const Im2ImageType& im2_image,
+          const TransformType& transformation,
+          const std::string& im1_path,
+          const std::string& im2_path,
+          const bool do_reorientation) {
+
+            if (do_reorientation and directions.size()==0)
+              throw Exception ("directions have to be calculated before reorientation");
+
+            Image<typename Im1ImageType::value_type> image1_midway;
+            Image<typename Im2ImageType::value_type> image2_midway;
+
+            Header image1_midway_header(midway_image_header);
+            image1_midway_header.datatype() = DataType::Float64;
+            image1_midway_header.set_ndim(im1_image.ndim());
+            for (size_t dim = 3; dim < im1_image.ndim(); ++dim){
+              image1_midway_header.spacing(dim) = im1_image.spacing(dim);
+              image1_midway_header.size(dim) = im1_image.size(dim);
+            }
+            image1_midway = Image<typename Im1ImageType::value_type>::create (im1_path, image1_midway_header);
+            Header image2_midway_header(midway_image_header);
+            image2_midway_header.datatype() = DataType::Float64;
+            image2_midway_header.set_ndim(im2_image.ndim());
+            for (size_t dim = 3; dim < im2_image.ndim(); ++dim){
+              image2_midway_header.spacing(dim) = im2_image.spacing(dim);
+              image2_midway_header.size(dim) = im2_image.size(dim);
+            }
+            image2_midway = Image<typename Im2ImageType::value_type>::create (im2_path, image2_midway_header);
+
+            Filter::reslice<Interp::Cubic> (im1_image, image1_midway, transformation.get_transform_half(), Adapter::AutoOverSample, 0.0);
+            Filter::reslice<Interp::Cubic> (im2_image, image2_midway, transformation.get_transform_half_inverse(), Adapter::AutoOverSample, 0.0);
+            if (do_reorientation){
+              std::string msg ("reorienting...");
+              Transform::reorient (msg, image1_midway, transformation.get_transform_half(), directions);
+              Transform::reorient (msg, image2_midway, transformation.get_transform_half_inverse(), directions);
+            }
           }
 
       protected:
@@ -393,6 +425,7 @@ namespace MR
         bool global_search;
         Eigen::MatrixXd directions;
 
+        Header midway_image_header;
     };
   }
 }

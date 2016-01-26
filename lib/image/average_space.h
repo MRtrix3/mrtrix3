@@ -26,7 +26,7 @@
 #include "transform.h"
 #include <unsupported/Eigen/MatrixFunctions>
 #include <Eigen/SVD>
-#include <Eigen/Geometry> // Eigen::Translation
+#include <Eigen/Geometry>
 
 
 namespace MR
@@ -231,6 +231,24 @@ namespace MR
     // std::cout << "average voxel to scanner transformation:\n" << average_v2s_trafo.matrix() <<std::endl;
     // std::cout << "average image to scanner transformation:\n" << average_i2s_trafo.matrix() <<std::endl;
     return header_out;
+  }
+
+  template<class ImageType1, class ImageType2, class ComputeType, class TransformationType>
+  Header compute_minimum_average_header (
+    const ImageType1& im1,
+    const ImageType2& im2,
+    const TransformationType& transformation,
+    const ComputeType& voxel_subsampling,
+    const Eigen::Matrix<ComputeType, 4, 1>& padding) {
+      std::vector<Eigen::Transform<ComputeType, 3, Eigen::Projective> > init_transforms;
+      Eigen::Transform<ComputeType, 3, Eigen::Projective> trafo_1 = transformation.get_transform_half_inverse();
+      Eigen::Transform<ComputeType, 3, Eigen::Projective> trafo_2 = transformation.get_transform_half();
+      init_transforms.push_back (trafo_1);
+      init_transforms.push_back (trafo_2);
+      std::vector<Header> headers;
+      headers.push_back(Header(im1));
+      headers.push_back(Header(im2));
+      return compute_minimum_average_header<default_type, Eigen::Transform<default_type, 3, Eigen::Projective>> (headers, voxel_subsampling, padding, init_transforms);
   }
 }
 #endif
