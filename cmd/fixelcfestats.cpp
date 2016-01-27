@@ -48,8 +48,8 @@ void usage ()
   + "Fixel-based analysis using connectivity-based fixel enhancement and non-parametric permutation testing.";
 
   REFERENCES
-  + "Raffelt, D.; Smith, RE.; Ridgway, GR.; Tournier, JD.; Vaughan, DN.; Rose, S.; Henderson, R.; " // Internal
-    "Connelly, A;. Connectivity-based fixel enhancement: Whole-brain statistical analysis of diffusion MRI measures in the presence of crossing fibres. \n"
+  + "Raffelt, D.; Smith, RE.; Ridgway, GR.; Tournier, JD.; Vaughan, DN.; Rose, S.; Henderson, R.; Connelly, A;." // Internal
+    "Connectivity-based fixel enhancement: Whole-brain statistical analysis of diffusion MRI measures in the presence of crossing fibres. \n"
     "Neuroimage, 2015, 15(117):40-55\n"
 
   + "* If using the -nonstationary option: \n"
