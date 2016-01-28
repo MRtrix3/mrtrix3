@@ -84,23 +84,23 @@ namespace MR {
               return 0;
             }
 
-            float get_float () const { 
+            default_type get_float () const {
               const uint8_t* p = start + 84;
               for (uint32_t m = 0; m < nitems; m++) {
                 uint32_t length = Raw::fetch_LE<uint32_t> (p);
                 if (length) 
-                  return to<float> (std::string (reinterpret_cast<const char*> (p)+16, 4*((length+3)/4)));
+                  return to<default_type> (std::string (reinterpret_cast<const char*> (p)+16, 4*((length+3)/4)));
                 p += 16 + 4*((length+3)/4);
               }
               return NAN;
             }
 
-            void get_float (Eigen::Vector3f& v) const { 
+            void get_float (Eigen::Vector3& v) const {
               const uint8_t* p = start + 84;
               for (uint32_t m = 0; m < nitems; m++) {
                 uint32_t length = Raw::fetch_LE<uint32_t> (p);
                 if (length) 
-                  v[m] = to<float> (std::string (reinterpret_cast<const char*> (p)+16, 4*((length+3)/4)));
+                  v[m] = to<default_type> (std::string (reinterpret_cast<const char*> (p)+16, 4*((length+3)/4)));
                 p += 16 + 4*((length+3)/4);
               }
             }

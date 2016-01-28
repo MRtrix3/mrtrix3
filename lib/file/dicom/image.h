@@ -46,8 +46,8 @@ namespace MR {
           }
 
           size_t acq_dim[2], dim[2], series_num, instance, acq, sequence;
-          Eigen::Vector3f position_vector, orientation_x, orientation_y, orientation_z, G;
-          float distance, pixel_size[2], slice_thickness, slice_spacing, scale_slope, scale_intercept, bvalue;
+          Eigen::Vector3 position_vector, orientation_x, orientation_y, orientation_z, G;
+          default_type distance, pixel_size[2], slice_thickness, slice_spacing, scale_slope, scale_intercept, bvalue;
           size_t data, bits_alloc, data_size, frame_offset;
           std::string filename;
           bool DW_scheme_wrt_image;
@@ -78,7 +78,7 @@ namespace MR {
             if (!std::isfinite (orientation_z[0])) 
               orientation_z = orientation_x.cross (orientation_y);
             else {
-              Eigen::Vector3f normal = orientation_x.cross (orientation_y);
+              Eigen::Vector3 normal = orientation_x.cross (orientation_y);
               if (normal.dot (orientation_z) < 0.0)
                 orientation_z = -normal;
               else 
@@ -90,7 +90,7 @@ namespace MR {
           }
 
           static std::vector<size_t> count (const std::vector<Frame*>& frames);
-          static float get_slice_separation (const std::vector<Frame*>& frames, size_t nslices);
+          static default_type get_slice_separation (const std::vector<Frame*>& frames, size_t nslices);
           static std::string get_DW_scheme (const std::vector<Frame*>& frames, size_t nslices, const transform_type& image_transform);
 
           friend std::ostream& operator<< (std::ostream& stream, const Frame& item);
