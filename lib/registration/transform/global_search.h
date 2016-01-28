@@ -219,7 +219,7 @@ namespace MR
               headers.push_back(im1_image.original_header());
               headers.push_back(im2_image.original_header());
               midway_image_header = compute_minimum_average_header<default_type, Eigen::Transform<default_type, 3, Eigen::Projective>> (headers, im_res, padding, init_transforms);
-              auto midway_image = Header::scratch (midway_image_header).get_image<typename Im1ImageType::value_type>();
+              auto midway_image = Header::scratch (midway_image_header).template get_image<typename Im1ImageType::value_type>();
 
               // TODO: there must be a way to do this without creating a scratch image...
               Filter::Resize midway_resize_filter (midway_image);
