@@ -201,7 +201,7 @@ void run ()
   opt = get_options ("transformed");
   Image<value_type> im1_transformed;
   if (opt.size()){
-    im1_transformed = Image<value_type>::create (opt[0][0], im2_image);
+    im1_transformed = Image<default_type>::create (opt[0][0], im2_image);
     im1_transformed.original_header().datatype() = DataType::from_command_line (DataType::Float32);
   }
 
@@ -697,6 +697,7 @@ void run ()
       Header deform_header (im1_transformed);
       deform_header.set_ndim(4);
       deform_header.size(3) = 3;
+      deform_header.datatype() = DataType::Float64;
       Image<default_type> deform_field = Image<default_type>::scratch (deform_header);
 
       Registration::Transform::compose_halfway_transforms (affine.get_transform_half_inverse().inverse(),
@@ -704,7 +705,6 @@ void run ()
                                                            *(syn_registration.get_im1_disp_field()),
                                                            affine.get_transform_half(),
                                                            deform_field);
-
       Filter::warp<Interp::Cubic> (im1_image, im1_transformed, deform_field, 0.0);
       if (do_reorientation)
         Registration::Transform::reorient_warp ("reorienting FODs...", im1_transformed, deform_field, directions_cartesian);
@@ -733,7 +733,7 @@ void run ()
 
       Image<default_type> im2_deform_field = Image<default_type>::scratch (*(syn_registration.get_im2_disp_field()));
       Registration::Transform::compose_affine_displacement (affine.get_transform_half_inverse(), *(syn_registration.get_im2_disp_field()), im2_deform_field);
-      auto im2_midway = Image<default_type>::create (im1_midway_transformed_path, syn_registration.get_midway_header());
+      auto im2_midway = Image<default_type>::create (im2_midway_transformed_path, syn_registration.get_midway_header());
       Filter::warp<Interp::Linear> (im2_image, im2_midway, im2_deform_field, 0.0);
       if (do_reorientation)
         Registration::Transform::reorient_warp ("reorienting FODs...", im2_midway, im2_deform_field, directions_cartesian);
