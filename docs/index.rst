@@ -60,6 +60,10 @@ You should have received a copy of `GNU General Public License`_ along with MRtr
    common_tasks/structural_connectome
    common_tasks/hcp_connectome
 
+.. toctree::
+   :maxdepth: 4
+   :caption: Installation
+
 
 
 
