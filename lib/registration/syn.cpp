@@ -26,10 +26,10 @@ namespace MR
         + Argument ("factor").type_sequence_float ()
 
       + Option ("syn_niter", "the maximum number of iterations. This can be specified either as a single number "
-                             "for all multi-resolution levels, or a single value for each level. (Default: 100)")
+                             "for all multi-resolution levels, or a single value for each level. (Default: 50)")
         + Argument ("num").type_sequence_int ()
 
-      + Option ("syn_update_smooth", "regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 1.0 x voxel_size)")
+      + Option ("syn_update_smooth", "regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 2.0 x voxel_size)")
         + Argument ("stdev").type_float ()
 
       + Option ("syn_disp_smooth", "regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0 x voxel_size)")
