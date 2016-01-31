@@ -48,9 +48,7 @@ namespace MR
                             deform (deform),
                             transform (inv_deform),
                             max_iter (max_iter),
-                            error_tolerance (error_tol) {
-                              error_tolerance = error_tolerance * error_tolerance; // to avoid a sqrt during update
-            }
+                            error_tolerance (error_tol) {}
 
             void operator() (Image<default_type>& inv_deform)
             {
@@ -91,22 +89,22 @@ namespace MR
           /*! Estimate the inverse of a deformation field
            * Note that the output inv_warp can be passed as either a zero field or an initial estimate
            */
-          void invert_deformation (Image<default_type>& deform, Image<default_type>& inv_deform, bool is_initialised = false, size_t max_iter = 50, default_type error_tolerance = 0.01)
+          void invert_deformation (Image<default_type>& deform_field, Image<default_type>& inv_deform_field, bool is_initialised = false, size_t max_iter = 50, default_type error_tolerance = 0.0001)
           {
-            check_dimensions (deform, inv_deform);
-            error_tolerance *= (deform.spacing(0) + deform.spacing(1) + deform.spacing(2)) / 3;
+            check_dimensions (deform_field, inv_deform_field);
+            error_tolerance *= (deform_field.spacing(0) + deform_field.spacing(1) + deform_field.spacing(2)) / 3;
 
             if (!is_initialised)
-              displacement2deformation (inv_deform, inv_deform);
+              displacement2deformation (inv_deform_field, inv_deform_field);
 
-            ThreadedLoop ("inverting warp field...", inv_deform, 0, 3)
-              .run (ThreadKernel (deform, inv_deform, max_iter, error_tolerance), inv_deform);
+            ThreadedLoop ("inverting warp field...", inv_deform_field, 0, 3)
+              .run (ThreadKernel (deform_field, inv_deform_field, max_iter, error_tolerance), inv_deform_field);
           }
 
           /*! Estimate the inverse of a displacement field, output the inverse as a deformation field
            * Note that the output inv_warp can be passed as either a zero field or an initial estimate (as a deformation field)
            */
-          void invert_displacement_deformation (Image<default_type>& disp, Image<default_type>& inv_deform, bool is_initialised = false, size_t max_iter = 50, default_type error_tolerance = 0.01)
+          void invert_displacement_deformation (Image<default_type>& disp, Image<default_type>& inv_deform, bool is_initialised = false, size_t max_iter = 50, default_type error_tolerance = 0.0001)
           {
             auto deform_field = Image<default_type>::scratch (disp);
             Transform::displacement2deformation (disp, deform_field);

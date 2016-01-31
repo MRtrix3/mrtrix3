@@ -87,7 +87,6 @@ namespace MR
 
         // no need to reslice warp
         } else {
-          TRACE;
            Adapter::Warp<Interpolator, ImageTypeSource, Image<typename WarpType::value_type> > interp (source, warp, value_when_out_of_bounds);
            if (destination.ndim() == 4)
              ThreadedLoop ("warping \"" + source.name() + "\"", interp, 0, 3, 1).run (CopyKernel4D(), interp, destination);

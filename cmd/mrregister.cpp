@@ -693,16 +693,11 @@ void run ()
       syn_registration.run (identity_transform, im1_image, im2_image, im1_mask, im2_mask);
     }
 
-    TRACE;
-
     if (warp_filename.size()) {
       Header output_header = syn_registration.get_output_warps_header();
       auto output_warps = Image<float>::create (warp_filename, output_header);
       syn_registration.get_output_warps (output_warps);
     }
-
-        TRACE;
-
   }
 
 
@@ -717,10 +712,10 @@ void run ()
       deform_header.datatype() = DataType::Float64;
       Image<default_type> deform_field = Image<default_type>::scratch (deform_header);
 
-      Registration::Transform::compose_halfway_transforms (affine.get_transform_half_inverse().inverse(),
+      Registration::Transform::compose_halfway_transforms (syn_registration.get_im2_linear().inverse(),
                                                            *(syn_registration.get_im2_disp_field_inv()),
                                                            *(syn_registration.get_im1_disp_field()),
-                                                           affine.get_transform_half(),
+                                                           syn_registration.get_im1_linear(),
                                                            deform_field);
       Filter::warp<Interp::Cubic> (im1_image, im1_transformed, deform_field, 0.0);
       if (do_reorientation)

@@ -54,13 +54,13 @@ namespace MR
           is_initialised (false),
           max_iter (1, 50),
           scale_factor (3),
-          update_smoothing (1.0),
+          update_smoothing (2.0),
           disp_smoothing (1.0),
-          gradient_step (2.0),
+          gradient_step (1.0),
           fod_reorientation (false) {
             scale_factor[0] = 0.25;
             scale_factor[1] = 0.5;
-            scale_factor[2] = 1;
+            scale_factor[2] = 1.0;
         }
 
         template <class TransformType, class Im1ImageType, class Im2ImageType, class Im1MaskType, class Im2MaskType>
@@ -97,7 +97,6 @@ namespace MR
               midway_image_header.set_ndim (im1_image.ndim());
               if (im1_image.ndim() > 3)
                 midway_image_header.size(3) = im1_image.size(3);
-              std::cout << midway_image_header << std::endl;
             }
 
             if (max_iter.size() == 1)
@@ -105,22 +104,16 @@ namespace MR
             else if (max_iter.size() != scale_factor.size())
               throw Exception ("the max number of SyN iterations needs to be defined for each multi-resolution level");
 
-            std::cout << max_iter << std::endl;
-
             for (size_t level = 0; level < scale_factor.size(); level++) {
                 CONSOLE ("SyN: multi-resolution level " + str(level + 1) + ", scale factor: " + str(scale_factor[level]));
 
                 DEBUG ("Resizing midway image based on multi-resolution level");
-                Header midway_image_header_resized;
-                if (scale_factor[level] == 1.0) {
-                  midway_image_header_resized = midway_image_header;
-                } else {
-                  Filter::Resize resize_filter (midway_image_header);
-                  resize_filter.set_scale_factor (scale_factor[level]);
-                  resize_filter.set_interp_type (1);
-                  resize_filter.datatype() = DataType::Float64; // for saving debug output
-                  midway_image_header_resized = resize_filter;
-                }
+
+                Filter::Resize resize_filter (midway_image_header);
+                resize_filter.set_scale_factor (scale_factor[level]);
+                resize_filter.set_interp_type (1);
+                resize_filter.datatype() = DataType::Float64; // for saving debug output
+                Header midway_image_header_resized = resize_filter;
 
                 default_type update_smoothing_mm = update_smoothing * ((midway_image_header_resized.spacing(0)
                                                                       + midway_image_header_resized.spacing(1)
@@ -170,6 +163,8 @@ namespace MR
                     im2_disp_field = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
                     im1_deform_field_inv = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
                     im2_deform_field_inv = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+                    Transform::displacement2deformation (*im1_deform_field_inv, *im1_deform_field_inv);  // init to identity
+                    Transform::displacement2deformation (*im2_deform_field_inv, *im2_deform_field_inv);
                   } else {
                     DEBUG ("Upsampling fields");
                     {
@@ -188,9 +183,6 @@ namespace MR
                 bool converged = false;
 
                 while (!converged) {
-                  INFO ("iteration " + str(iteration));
-
-
                   if (iteration > 1) {
                     DEBUG ("smoothing update fields");
                     Filter::Smooth smooth_filter (*im1_update_field);
@@ -199,109 +191,84 @@ namespace MR
                     smooth_filter (*im2_update_field, *im2_update_field);
                   }
 
-                  bool next_step_ok = false;
-                  while (!next_step_ok) {
 
-                    Image<default_type> im1_deform_field = Image<default_type>::scratch (field_header);
-                    Image<default_type> im2_deform_field = Image<default_type>::scratch (field_header);
+                  Image<default_type> im1_deform_field = Image<default_type>::scratch (field_header);
+                  Image<default_type> im2_deform_field = Image<default_type>::scratch (field_header);
 
+                  if (iteration > 1) {
+                    DEBUG ("updating displacement field field");
+                    Transform::compose_displacement (*im1_disp_field, *im1_update_field, *im1_disp_field_new, grad_step_altered);
+                    Transform::compose_displacement (*im2_disp_field, *im2_update_field, *im2_disp_field_new, grad_step_altered);
+
+                    DEBUG ("smoothing displacement field");
+                    Filter::Smooth smooth_filter (*im1_disp_field_new);
+                    smooth_filter.set_stdev (disp_smoothing_mm);
+                    smooth_filter (*im1_disp_field_new, *im1_disp_field_new);
+                    smooth_filter (*im2_disp_field_new, *im2_disp_field_new);
+
+                    Registration::Transform::compose_linear_displacement (im1_linear, *im1_disp_field_new, im1_deform_field);
+                    Registration::Transform::compose_linear_displacement (im2_linear, *im2_disp_field_new, im2_deform_field);
+                  } else {
+                    Registration::Transform::compose_linear_displacement (im1_linear, *im1_disp_field, im1_deform_field);
+                    Registration::Transform::compose_linear_displacement (im2_linear, *im2_disp_field, im2_deform_field);
+                  }
+
+                  DEBUG ("warping input images");
+                  {
+                    LogLevelLatch level (0);
+                    Filter::warp<Interp::Linear> (im1_smoothed, im1_warped, im1_deform_field, 0.0);
+                    Filter::warp<Interp::Linear> (im2_smoothed, im2_warped, im2_deform_field, 0.0);
+                  }
+                  save (im1_warped, std::string("im1_warped_level_" + str(level+1) + "_iter" + str(iteration) + ".mif"), false);
+                  save (im2_warped, std::string("im2_warped_level_" + str(level+1) + "_iter" + str(iteration) + ".mif"), false);
+
+                  if (fod_reorientation) {
+                    DEBUG ("Reorienting FODs");
+                    Registration::Transform::reorient_warp (im1_warped, im1_deform_field, aPSF_directions);
+                    Registration::Transform::reorient_warp (im2_warped, im2_deform_field, aPSF_directions);
+                  }
+
+                  DEBUG ("warping mask images");
+                  Im1MaskType im1_mask_warped;
+                  if (im1_mask.valid()) {
+                    im1_mask_warped = Im1MaskType::scratch (midway_image_header_resized);
+                    LogLevelLatch level (0);
+                    Filter::warp<Interp::Linear> (im1_mask, im1_mask_warped, im1_deform_field, 0.0);
+                  }
+                  Im1MaskType im2_mask_warped;
+                  if (im2_mask.valid()) {
+                    im2_mask_warped = Im1MaskType::scratch (midway_image_header_resized);
+                    LogLevelLatch level (0);
+                    Filter::warp<Interp::Linear> (im2_mask, im2_mask_warped, im2_deform_field, 0.0);
+                  }
+
+                  DEBUG ("evaluating metric and computing update field");
+                  default_type cost_new = 0.0;
+                  size_t voxel_count = 0;
+                  Metric::SyNDemons<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> syn_metric (cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped);
+                  ThreadedLoop (im1_warped, 0, 3).run (syn_metric, im1_warped, im2_warped, *im1_update_field_new, *im2_update_field_new);
+
+                  cost_new /= static_cast<default_type>(voxel_count);
+
+                  // If cost is lower then keep new displacement fields and gradients
+                  if (cost_new < cost) {
+                    cost = cost_new;
                     if (iteration > 1) {
-                      DEBUG ("updating displacement field field");
-                      Transform::compose_displacement (*im1_disp_field, *im1_update_field, *im1_disp_field_new, grad_step_altered);
-                      Transform::compose_displacement (*im2_disp_field, *im2_update_field, *im2_disp_field_new, grad_step_altered);
-
-                      DEBUG ("smoothing displacement field");
-                      Filter::Smooth smooth_filter (*im1_disp_field_new);
-                      smooth_filter.set_stdev (disp_smoothing_mm);
-                      smooth_filter (*im1_disp_field_new, *im1_disp_field_new);
-                      smooth_filter (*im2_disp_field_new, *im2_disp_field_new);
-
-                      Registration::Transform::compose_linear_displacement (im1_linear, *im1_disp_field_new, im1_deform_field);
-                      Registration::Transform::compose_linear_displacement (im2_linear, *im2_disp_field_new, im2_deform_field);
-                    } else {
-                      Registration::Transform::compose_linear_displacement (im1_linear, *im1_disp_field, im1_deform_field);
-                      Registration::Transform::compose_linear_displacement (im2_linear, *im2_disp_field, im2_deform_field);
+                      std::swap (im1_disp_field_new, im1_disp_field);
+                      std::swap (im2_disp_field_new, im2_disp_field);
                     }
+                    std::swap (im1_update_field_new, im1_update_field);
+                    std::swap (im2_update_field_new, im2_update_field);
 
-//                    Adapter::Jacobian<Image<default_type> > jacobian (im1_deform_field);
-//                    auto jacobian_det = Image<default_type>::scratch (warped_header);
-//                    default_type max = std::numeric_limits<default_type>::min();
-//                    default_type min = std::numeric_limits<default_type>::max();
-//                    for (auto i = Loop (0,3) (jacobian, jacobian_det); i; ++i) {
-//                      jacobian_det.value() = jacobian.value().determinant();
-//                      if (jacobian_det.value() > max) max = jacobian_det.value();
-//                      if (jacobian_det.value() < min) min = jacobian_det.value();
-//                    }
-//                    CONSOLE ("jacobian min: " +str(min) + " max " + str(max));
-
-                    save (im1_warped, std::string("im1_warped_level_" + str(level+1) + "_iter" + str(iteration) + ".mif"), false);
-                    save (im2_warped, std::string("im2_warped_level_" + str(level+1) + "_iter" + str(iteration) + ".mif"), false);
-
-
-                    DEBUG ("warping input images");
+                    // drag the inverse along for the ride
+                    DEBUG ("inverting displacement field");
                     {
                       LogLevelLatch level (0);
-                      Filter::warp<Interp::Linear> (im1_smoothed, im1_warped, im1_deform_field, 0.0);
-                      Filter::warp<Interp::Linear> (im2_smoothed, im2_warped, im2_deform_field, 0.0);
+                      Transform::invert_displacement_deformation (*im1_disp_field, *im1_deform_field_inv, true);
+                      Transform::invert_displacement_deformation (*im2_disp_field, *im2_deform_field_inv, true);
                     }
-                    TRACE;
-                    save (im1_warped, std::string("im1_warped_level_" + str(level+1) + "_iter" + str(iteration) + ".mif"), false);
-                    save (im2_warped, std::string("im2_warped_level_" + str(level+1) + "_iter" + str(iteration) + ".mif"), false);
-
-                    if (fod_reorientation) {
-                      DEBUG ("Reorienting FODs");
-                      Registration::Transform::reorient_warp (im1_warped, im1_deform_field, aPSF_directions);
-                      Registration::Transform::reorient_warp (im2_warped, im2_deform_field, aPSF_directions);
-                    }
-
-                    DEBUG ("warping mask images");
-                    Im1MaskType im1_mask_warped;
-                    if (im1_mask.valid()) {
-                      im1_mask_warped = Im1MaskType::scratch (midway_image_header_resized);
-                      LogLevelLatch level (0);
-                      Filter::warp<Interp::Linear> (im1_mask, im1_mask_warped, im1_deform_field, 0.0);
-                    }
-                    TRACE;
-                    Im1MaskType im2_mask_warped;
-                    if (im2_mask.valid()) {
-                      im2_mask_warped = Im1MaskType::scratch (midway_image_header_resized);
-                      LogLevelLatch level (0);
-                      Filter::warp<Interp::Linear> (im2_mask, im2_mask_warped, im2_deform_field, 0.0);
-                    }
-                    TRACE;
-
-                    // Evaluate metric and compute new gradients
-                    default_type cost_new = 0.0;
-                    size_t voxel_count = 0;
-                    Metric::SyNDemons<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> syn_metric (cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped);
-                    ThreadedLoop (im1_warped, 0, 3).run (syn_metric, im1_warped, im2_warped, *im1_update_field_new, *im2_update_field_new);
-
-                    TRACE;
-                    cost_new /= static_cast<default_type>(voxel_count);
-
-                    // If cost is lower then keep new displacement fields and gradients
-                    if (cost_new < cost) {
-                      TRACE;
-                      cost = cost_new;
-                      if (iteration > 1) {
-                        std::swap (im1_disp_field_new, im1_disp_field);
-                        std::swap (im2_disp_field_new, im2_disp_field);
-                      }
-                      std::swap (im1_update_field_new, im1_update_field);
-                      std::swap (im2_update_field_new, im2_update_field);
-
-                      // drag the inverse along for the ride
-                      bool warp_initialised = !(iteration == 1 && level == 0);
-                      {
-                        LogLevelLatch level (0);
-                        Transform::invert_displacement_deformation (*im1_disp_field, *im1_deform_field_inv, warp_initialised);
-                        Transform::invert_displacement_deformation (*im2_disp_field, *im2_deform_field_inv, warp_initialised);
-                      }
-                      next_step_ok = true;
-                    } else {
-                      converged = true;
-                      next_step_ok = true;
-                    }
+                  } else {
+                    converged = true;
                   }
 
                   // check displacement field difference to detect convergence.
@@ -310,7 +277,9 @@ namespace MR
                   if (++iteration > max_iter[level])
                       converged = true;
                }
-                std::cerr << std::endl;
+               Transform::deformation2displacement (*im1_deform_field_inv, *im1_deform_field_inv);
+               Transform::deformation2displacement (*im2_deform_field_inv, *im2_deform_field_inv); //convert to displacement field for output
+               std::cerr << std::endl;
              }
 
           }
@@ -319,22 +288,26 @@ namespace MR
           void initialise (InputWarpType& input_warps) {
             assert (input_warps.ndim() == 5);
 
+            DEBUG ("reading linear transform from init warp field header");
             parse_linear_transform (input_warps, im1_linear, "linear1");
             parse_linear_transform (input_warps, im2_linear, "linear2");
 
+            DEBUG ("loading initial warp fields");
             midway_image_header = input_warps;
+            Header field_header (input_warps);
+            field_header.set_ndim (4);
+            field_header.size(3) = 3;
 
-            im1_disp_field = std::make_shared<Image<default_type>>(Image<default_type>::scratch (midway_image_header));
-            im2_disp_field = std::make_shared<Image<default_type>>(Image<default_type>::scratch (midway_image_header));
-            im1_deform_field_inv = std::make_shared<Image<default_type>>(Image<default_type>::scratch (midway_image_header));
-            im2_deform_field_inv = std::make_shared<Image<default_type>>(Image<default_type>::scratch (midway_image_header));
+            im1_disp_field = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+            im2_disp_field = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+            im1_deform_field_inv = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+            im2_deform_field_inv = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
 
-            INFO ("loading initial warp fields");
             input_warps.index(4) = 0;
             threaded_copy (input_warps, *im1_disp_field, 0, 4);
             input_warps.index(4) = 1;
             threaded_copy (input_warps, *im1_deform_field_inv, 0, 4);
-            Transform::displacement2deformation (*im1_deform_field_inv, *im1_deform_field_inv);
+
             input_warps.index(4) = 2;
             threaded_copy (input_warps, *im2_disp_field, 0, 4);
             input_warps.index(4) = 3;
@@ -385,11 +358,11 @@ namespace MR
 
           //TODO
           std::shared_ptr<Image<default_type> > get_im1_disp_field() {
-            return im1_disp_field_new;
+            return im1_disp_field;
           }
 
           std::shared_ptr<Image<default_type> > get_im2_disp_field() {
-            return im2_disp_field_new; //TODO check new
+            return im2_disp_field;
           }
 
           std::shared_ptr<Image<default_type> > get_im1_disp_field_inv() {
@@ -397,7 +370,15 @@ namespace MR
           }
 
           std::shared_ptr<Image<default_type> > get_im2_disp_field_inv() {
-            return im2_deform_field_inv; // TODO not disp field
+            return im2_deform_field_inv; // TODO
+          }
+
+          transform_type get_im1_linear() const {
+            return im1_linear;
+          }
+
+          transform_type get_im2_linear() const {
+            return im2_linear; // TODO
           }
 
           Header get_output_warps_header () {
@@ -405,10 +386,10 @@ namespace MR
             output_header.set_ndim (5);
             output_header.size(3) = 3;
             output_header.size(4) = 4;
-            output_header.stride(0) = 2;
-            output_header.stride(1) = 3;
-            output_header.stride(2) = 4;
-            output_header.stride(3) = 1;
+            output_header.stride(0) = 1;
+            output_header.stride(1) = 2;
+            output_header.stride(2) = 3;
+            output_header.stride(3) = 4;
             output_header.stride(4) = 5;
 
             output_header.keyval()["linear1"] = str(im1_linear.matrix());
@@ -421,19 +402,13 @@ namespace MR
           template <class OutputType>
           void get_output_warps (OutputType& output_warps) {
             assert (output_warps.ndim() == 5);
-                TRACE;
             output_warps.index(4) = 0;
             threaded_copy (*im1_disp_field, output_warps, 0, 4);
             output_warps.index(4) = 1;
-                TRACE;
-            Transform::deformation2displacement (*im1_deform_field_inv, *im1_deform_field_inv);
             threaded_copy (*im1_deform_field_inv, output_warps, 0, 4);
             output_warps.index(4) = 2;
-                TRACE;
             threaded_copy (*im2_disp_field, output_warps, 0, 4);
             output_warps.index(4) = 3;
-                TRACE;
-            Transform::deformation2displacement (*im2_deform_field_inv, *im2_deform_field_inv);
             threaded_copy (*im2_deform_field_inv, output_warps, 0, 4);
           }
 
