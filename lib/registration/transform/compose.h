@@ -125,7 +125,7 @@ namespace MR
       }
 
       // Compose a linear transform and a displacement field. The output field is a deformation field. The input and output can be the same image.
-      void compose_affine_displacement (const transform_type& transform, Image<default_type>& disp_in, Image<default_type>& deform_out)
+      void compose_linear_displacement (const transform_type& transform, Image<default_type>& disp_in, Image<default_type>& deform_out)
       {
         ThreadedLoop (disp_in, 0, 3).run (ComposeLinearDispKernel (transform, disp_in), disp_in, deform_out);
       }

@@ -20,8 +20,8 @@
 
  */
 
-#ifndef __registration_metric_syn_demons_h__
-#define __registration_metric_syn_demons_h__
+#ifndef __registration_metric_syn_demons4D_h__
+#define __registration_metric_syn_demons4D_h__
 
 #include "adapter/gradient3D.h"
 
@@ -33,9 +33,9 @@ namespace MR
     {
 
       template <class Im1ImageType, class Im2ImageType, class Im1MaskType, class Im2MaskType>
-      class SyNDemons {
+      class SyNDemons4D {
         public:
-          SyNDemons (default_type& global_energy, size_t& global_voxel_count,
+          SyNDemons4D (default_type& global_energy, size_t& global_voxel_count,
                      const Im1ImageType& im1_image, const Im2ImageType& im2_image, const Im1MaskType im1_mask, const Im2MaskType im2_mask) :
                        global_cost (global_energy),
                        global_voxel_count (global_voxel_count),
@@ -53,7 +53,7 @@ namespace MR
             normaliser /= 3.0;
           }
 
-          ~SyNDemons () {
+          ~SyNDemons4D () {
             global_cost += thread_cost;
             global_voxel_count += thread_voxel_count;
           }
@@ -67,8 +67,8 @@ namespace MR
           }
 
 
-          void operator() (const Im1ImageType& im1_image,
-                           const Im2ImageType& im2_image,
+          void operator() (Im1ImageType& im1_image,
+                           Im2ImageType& im2_image,
                            Image<default_type>& im1_update,
                            Image<default_type>& im2_update) {
 
@@ -103,29 +103,31 @@ namespace MR
               }
             }
 
+            Eigen::Matrix<typename Im1ImageType::value_type, Eigen::Dynamic, 1> speed =  im2_image.row(3) - im1_image.row(3);
+            for (size_t i = 0; i < speed.rows(); ++i) {
+              if (std::abs (speed[i]) < robustness_parameter)
+                speed[i] = 0.0;
+            }
 
-            default_type speed = im2_image.value() - im1_image.value();
-            if (std::abs (speed) < robustness_parameter)
-              speed = 0.0;
-
-            default_type speed_squared = speed * speed;
-            thread_cost += speed_squared;
+            Eigen::Matrix<typename Im1ImageType::value_type, Eigen::Dynamic, 1> speed_squared = speed.array() * speed.array();
+            thread_cost += speed_squared.sum();
             thread_voxel_count++;
 
             assign_pos_of (im1_image, 0, 3).to (im2_gradient);
             assign_pos_of (im2_image, 0, 3).to (im1_gradient);
 
-            Eigen::Matrix<typename Im1ImageType::value_type, 3, 1> grad = (im2_gradient.value() + im1_gradient.value()).array() / 2.0;
-            default_type denominator = speed_squared / normaliser + grad.squaredNorm();
-            if (std::abs (speed) < intensity_difference_threshold || denominator < denominator_threshold) {
-              im2_update.row(3).setZero();
-              im1_update.row(3).setZero();
-            } else {
-              im1_update.row(3) = speed * grad.array() / denominator;
-              im2_update.row(3) = -im1_update.row(3);
-            }
-          }
+            Eigen::Matrix<typename Im1ImageType::value_type, 3, Eigen::Dynamic> grad = (im2_gradient.row(3) + im1_gradient.row(3)).array() / 2.0;
+//            Eigen::Matrix<typename Im1ImageType::value_type, 1, Eigen::Dynamic> denominator = speed_squared.array() / normaliser + grad.colwise().squaredNorm();
 
+//            Eigen::Vector3 total_update = Eigen::Vector3::Zero();
+//            for (size_t i = 0; i < im2_image.size(3); ++i) {
+//              if (!(std::abs (speed[i]) < intensity_difference_threshold || denominator[i] < denominator_threshold))
+//                total_update += speed[i] * (grad.array().col(i) / denominator);
+//            }
+//            total_update = total_update.array() / im2_image.size(3);
+//            im1_update.row(3) = total_update;
+//            im2_update.row(3) = -total_update;
+          }
 
           protected:
             default_type& global_cost;

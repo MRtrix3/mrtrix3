@@ -107,7 +107,7 @@ void usage ()
 
 typedef double value_type;
 
-void load_image (std::string filename, size_t num_vols, Image<value_type>& image) {
+void load_image (const std::string filename, const size_t num_vols, Image<value_type>& image) {
   auto temp_image = Image<value_type>::open (filename);
   auto header = Header::open (filename);
   header.datatype() = DataType::from_command_line (DataType::Float32);
@@ -128,6 +128,7 @@ void load_image (std::string filename, size_t num_vols, Image<value_type>& image
     threaded_copy (temp_image, image);
   }
 }
+
 
 
 void run ()
@@ -201,7 +202,7 @@ void run ()
   opt = get_options ("transformed");
   Image<value_type> im1_transformed;
   if (opt.size()){
-    im1_transformed = Image<value_type>::create (opt[0][0], im2_image);
+    im1_transformed = Image<default_type>::create (opt[0][0], im2_image);
     im1_transformed.original_header().datatype() = DataType::from_command_line (DataType::Float32);
   }
 
@@ -500,34 +501,61 @@ void run ()
   std::string warp_filename;
   if (opt.size()) {
     if (!do_syn)
-      throw Exception ("SyN warp output requested when no SyN registration is requested");
+      throw Exception ("Syn warp output requested when no SyN registration is requested");
     warp_filename = std::string (opt[0][0]);
   }
 
+
   opt = get_options ("syn_init");
-  Image<value_type> init_warp_buffer;
+  bool syn_init = false;
   if (opt.size()) {
+    syn_init = true;
+
     if (!do_syn)
       throw Exception ("the syn initialisation input when no syn registration is requested");
-    if (init_rigid_set)
-      WARN ("-rigid_init has no effect since -syn_init also contains a linear transform in the image header");
+
+    Image<default_type> input_warps = Image<default_type>::open (opt[0][0]);
+    if (input_warps.ndim() != 5)
+      throw Exception ("syn initialisation input is not 5D. Input must be from previous syn output");
+
+    syn_registration.initialise (input_warps);
+
+    if (do_affine) {
+      WARN ("no affine registration will be performed when initialising with syn non-linear warps");
+      do_affine = false;
+    }
+    if (do_rigid) {
+      WARN ("no rigid registration will be performed when initialising with syn non-linear warps");
+      do_rigid = false;
+    }
     if (init_affine_set)
-      WARN ("-affine_init has no effect since -syn_init also contains a linear transform in the image header");
-    init_warp_buffer = Image<value_type>::open (opt[0][0]);
+      WARN ("-affine_init has no effect since the syn init warp also contains the linear transform in the image header");
+    if (init_rigid_set)
+      WARN ("-rigid_init has no effect since the syn init warp also contains the linear transform in the image header");
   }
+
 
   opt = get_options ("syn_scale");
   if (opt.size ()) {
     if (!do_syn)
       throw Exception ("the syn multi-resolution scale factors were input when no syn registration is requested");
-    syn_registration.set_scale_factor (parse_floats (opt[0][0]));
+    std::vector<default_type> scale_factors = parse_floats (opt[0][0]);
+    if (syn_init && (scale_factors.size() > 1)) {
+      WARN ("-syn_scale option ignored since only the full resolution will be performed when initialising with syn warp");
+    } else {
+      syn_registration.set_scale_factor (scale_factors);
+    }
   }
 
   opt = get_options ("syn_niter");
   if (opt.size ()) {
     if (!do_syn)
       throw Exception ("the number of syn iterations have been input when no SyN registration is requested");
-    syn_registration.set_max_iter (parse_ints (opt[0][0]));
+    std::vector<int> iterations_per_level = parse_ints (opt[0][0]);
+    if (syn_init && iterations_per_level.size() > 1)
+      throw Exception ("when initialising the syn registration the max number of iterations can only be defined for a single level");
+    else
+      syn_registration.set_max_iter (iterations_per_level);
   }
 
   opt = get_options ("syn_update_smooth");
@@ -666,25 +694,9 @@ void run ()
     }
 
     if (warp_filename.size()) {
-      Header warp_header (*(syn_registration.get_im1_disp_field()));
-      warp_header.set_ndim (5);
-      warp_header.size(3) = 3;
-      warp_header.size(4) = 4;
-      warp_header.stride(0) = 2;
-      warp_header.stride(1) = 3;
-      warp_header.stride(2) = 4;
-      warp_header.stride(3) = 1;
-      warp_header.stride(4) = 5;
-
-      auto output_warps = Image<float>::create (warp_filename, warp_header);
-      output_warps.index(4) = 0;
-      threaded_copy (*(syn_registration.get_im1_disp_field()), output_warps, 0, 4);
-      output_warps.index(4) = 1;
-      threaded_copy (*(syn_registration.get_im1_disp_field_inv()), output_warps, 0, 4);
-      output_warps.index(4) = 2;
-      threaded_copy (*(syn_registration.get_im2_disp_field()), output_warps, 0, 4);
-      output_warps.index(4) = 3;
-      threaded_copy (*(syn_registration.get_im2_disp_field_inv()), output_warps, 0, 4);
+      Header output_header = syn_registration.get_output_warps_header();
+      auto output_warps = Image<float>::create (warp_filename, output_header);
+      syn_registration.get_output_warps (output_warps);
     }
   }
 
@@ -697,14 +709,14 @@ void run ()
       Header deform_header (im1_transformed);
       deform_header.set_ndim(4);
       deform_header.size(3) = 3;
+      deform_header.datatype() = DataType::Float64;
       Image<default_type> deform_field = Image<default_type>::scratch (deform_header);
 
-      Registration::Transform::compose_halfway_transforms (affine.get_transform_half_inverse().inverse(),
+      Registration::Transform::compose_halfway_transforms (syn_registration.get_im2_linear().inverse(),
                                                            *(syn_registration.get_im2_disp_field_inv()),
                                                            *(syn_registration.get_im1_disp_field()),
-                                                           affine.get_transform_half(),
+                                                           syn_registration.get_im1_linear(),
                                                            deform_field);
-
       Filter::warp<Interp::Cubic> (im1_image, im1_transformed, deform_field, 0.0);
       if (do_reorientation)
         Registration::Transform::reorient_warp ("reorienting FODs...", im1_transformed, deform_field, directions_cartesian);
@@ -724,7 +736,7 @@ void run ()
   if (!im1_midway_transformed_path.empty() and !im2_midway_transformed_path.empty()) {
     if (do_syn) {
       Image<default_type> im1_deform_field = Image<default_type>::scratch (*(syn_registration.get_im1_disp_field()));
-      Registration::Transform::compose_affine_displacement (affine.get_transform_half(), *(syn_registration.get_im1_disp_field()), im1_deform_field);
+      Registration::Transform::compose_linear_displacement (affine.get_transform_half(), *(syn_registration.get_im1_disp_field()), im1_deform_field);
       auto im1_midway = Image<default_type>::create (im1_midway_transformed_path, syn_registration.get_midway_header());
 
       Filter::warp<Interp::Linear> (im1_image, im1_midway, im1_deform_field, 0.0);
@@ -732,8 +744,8 @@ void run ()
         Registration::Transform::reorient_warp ("reorienting FODs...", im1_midway, im1_deform_field, directions_cartesian);
 
       Image<default_type> im2_deform_field = Image<default_type>::scratch (*(syn_registration.get_im2_disp_field()));
-      Registration::Transform::compose_affine_displacement (affine.get_transform_half_inverse(), *(syn_registration.get_im2_disp_field()), im2_deform_field);
-      auto im2_midway = Image<default_type>::create (im1_midway_transformed_path, syn_registration.get_midway_header());
+      Registration::Transform::compose_linear_displacement (affine.get_transform_half_inverse(), *(syn_registration.get_im2_disp_field()), im2_deform_field);
+      auto im2_midway = Image<default_type>::create (im2_midway_transformed_path, syn_registration.get_midway_header());
       Filter::warp<Interp::Linear> (im2_image, im2_midway, im2_deform_field, 0.0);
       if (do_reorientation)
         Registration::Transform::reorient_warp ("reorienting FODs...", im2_midway, im2_deform_field, directions_cartesian);
