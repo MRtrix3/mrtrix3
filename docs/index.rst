@@ -51,8 +51,8 @@ You should have received a copy of `GNU General Public License`_ along with MRtr
 
 
 .. toctree::
-   :maxdepth: 4
-   :caption: Installation
+   :maxdepth: 7
+   :caption: Install
    
    installation/linux_install
    installation/mac_install
@@ -60,7 +60,7 @@ You should have received a copy of `GNU General Public License`_ along with MRtr
    installation/hpc_clusters_install
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 7
    :caption: Getting started
    
    getting_started/design
@@ -73,7 +73,7 @@ You should have received a copy of `GNU General Public License`_ along with MRtr
    getting_started/sparse_image_formats
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 7
    :caption: Common tasks
 
    common_tasks/basic_dwi_processing
