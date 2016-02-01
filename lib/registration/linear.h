@@ -342,7 +342,7 @@ namespace MR
                 Math::GradientDescent<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
                   optim (evaluate, *transform.get_gradient_descent_updator());
                 optim.precondition (optimiser_weights);
-                optim.run (max_iter[level], grad_tolerance, false, step_tolerance, 1e-10, 1e-10, log_stream);
+                optim.run (max_iter[level], grad_tolerance, false, step_tolerance, 1e-10, log_stream);
                 parameters.transformation.set_parameter_vector (optim.state());
                 parameters.update_control_points();
 

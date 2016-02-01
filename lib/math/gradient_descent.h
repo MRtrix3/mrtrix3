@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 
 #ifndef __math_gradient_descent_h__
@@ -88,7 +88,6 @@ namespace MR
                     const value_type grad_tolerance = 1e-6,
                     bool verbose = false,
                     const value_type step_length_tolerance = -1,
-                    const value_type relative_cost_improvement_tolerance = 1e-10,
                     const value_type gradient_criterion_tolerance = 1e-10,
                     std::streambuf* log_stream = nullptr)
           {
@@ -101,7 +100,6 @@ namespace MR
             value_type gradient_tolerance = grad_tolerance * normg;
             gradient_criterion = std::numeric_limits<value_type>::quiet_NaN();
             f0 = std::numeric_limits<value_type>::quiet_NaN();
-            relative_cost_improvement = std::numeric_limits<value_type>::quiet_NaN();
 
             #ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG
             timespec ts;
@@ -131,7 +129,7 @@ namespace MR
               std::ostream log_os(log_stream? log_stream : std::cerr.rdbuf());
               std::string delim = ",";
               if (log_stream){
-                log_os << "'iteration,cost,relative_cost_improvement,gradient_criterion_" +
+                log_os << "'iteration,cost,gradient_criterion_" +
                   str(sliding_cost_window_size) + ",normg,stepsize,grad_stop";
                 for ( ssize_t a = 0 ; a < x.size() ; a++ )
                   log_os << delim + "param_" + str(a+1) ;
@@ -140,7 +138,7 @@ namespace MR
               }
 
               if (log_stream){
-                  log_os << "0" + delim + str(f) + delim + str(relative_cost_improvement) + delim + str(gradient_criterion) + delim + str(normg) + delim
+                  log_os << "0" + delim + str(f)  + delim + str(gradient_criterion) + delim + str(normg) + delim
                     + str(step_unscaled*dt) + delim + str(normg/(gradient_tolerance/grad_tolerance)) + delim;
                   // std::copy(x.begin(),x.end() - 1, std::ostream_iterator<double>(log_os,delim.c_str()));
                   // log_os << str(x[x.size()-1]) + "\n";
@@ -181,7 +179,7 @@ namespace MR
                 #endif
                 #ifdef GRADIENT_DESCENT_LOG
                   if (log_stream){
-                    log_os << str(niter) + delim + str(f) + delim + str(relative_cost_improvement) + delim + str(gradient_criterion) + delim + str(normg) + delim
+                    log_os << str(niter) + delim + str(f) + delim + str(gradient_criterion) + delim + str(normg) + delim
                       + str(step_unscaled*dt) + delim + str(normg/(gradient_tolerance/grad_tolerance)) + delim;
                     // std::copy(x.begin(),x.end() - 1, std::ostream_iterator<double>(log_os,delim.c_str()));
                     // log_os << str(x[x.size()-1]) + "\n";
@@ -207,11 +205,6 @@ namespace MR
               if (step_unscaled*dt < step_length_tolerance){
                 DEBUG ("normg now: " + str(normg) +", normg initial: " + str(gradient_tolerance/grad_tolerance) );
                 INFO ("step_length (" + str(step_unscaled*dt) +") < step_length_tolerance ("+ str(step_length_tolerance) +")" );
-                return;
-              }
-
-              if (relative_cost_improvement < relative_cost_improvement_tolerance){
-                INFO ("relative_cost_improvement (" + str(relative_cost_improvement) +") < relative_cost_improvement_tolerance ("+ str(relative_cost_improvement_tolerance) +")" );
                 return;
               }
 
@@ -273,7 +266,6 @@ namespace MR
 
               if (f2 < f) {
                 dt *= quadratic_minimum;
-                relative_cost_improvement = f/f2-1;
                 if (sliding_cost_window_size > 1){
                   sliding_cost.push_back(f2);
                   if ( sliding_cost.size() > sliding_cost_window_size)
@@ -309,7 +301,6 @@ namespace MR
           Eigen::Matrix<value_type, Eigen::Dynamic, 1> x, x2, g, g2, preconditioner_weights;
           value_type f, dt, normg, step_unscaled;
           int nfeval;
-          value_type relative_cost_improvement;
           value_type gradient_criterion;
           std::deque<value_type> sliding_cost;
           value_type f0;
@@ -336,7 +327,7 @@ namespace MR
               if (preconditioner_weights.size()) {
                 value_type g_projected = 0.0;
                 for (ssize_t n = 0; n < g.size(); ++n) {
-                  g_projected += preconditioner_weights[n] * std::pow (g[n], 2);
+                  g_projected += preconditioner_weights[n] * Math::pow2 (g[n]);
                   g[n] *= preconditioner_weights[n];
                 }
                 normg = g_projected / normg;
