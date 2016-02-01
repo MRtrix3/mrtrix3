@@ -81,7 +81,6 @@ namespace MR
               return;
             }
 
-            // Check if within masks
             typename Im1MaskType::value_type im1_mask_value = 1.0;
             if (im1_mask.valid()) {
               assign_pos_of (im1_image, 0, 3).to (im1_mask);
@@ -105,23 +104,16 @@ namespace MR
             }
 
 
-            // Compute cost
             default_type speed = im2_image.value() - im1_image.value();
-//            default_type im2_speed = -im1_speed;
-            if (std::abs (speed) < robustness_parameter) {
+            if (std::abs (speed) < robustness_parameter)
               speed = 0.0;
-//              im2_speed = 0.0;
-            }
-
 
             default_type speed_squared = speed * speed;
             thread_cost += speed_squared;
             thread_voxel_count++;
 
-            // Compute image 1 update
             assign_pos_of (im1_image, 0, 3).to (im2_gradient);
             assign_pos_of (im2_image, 0, 3).to (im1_gradient);
-
 
             Eigen::Matrix<typename Im1ImageType::value_type, 3, 1> grad = (im2_gradient.value() + im1_gradient.value()).array() / 2.0;
             default_type denominator = speed_squared / normaliser + grad.squaredNorm();
@@ -132,15 +124,6 @@ namespace MR
               im1_update.row(3) = speed * grad.array() / denominator;
               im2_update.row(3) = -im1_update.row(3);
             }
-
-
-//            // Compute image 2 update
-//            Eigen::Matrix<typename Im1ImageType::value_type, 3, 1> im1_grad = im1_gradient.value();
-//            denominator = speed_squared / normaliser + im1_grad.squaredNorm();
-//            if (std::abs (im2_speed) < intensity_difference_threshold || denominator < denominator_threshold)
-//              im2_update.row(3).setZero();
-//            else
-//              im2_update.row(3) = im2_speed * im1_grad.array() / denominator;
           }
 
 
@@ -155,7 +138,7 @@ namespace MR
             const default_type denominator_threshold;
 
             Adapter::Gradient3D<Im1ImageType> im1_gradient;
-            Adapter::Gradient3D<Im2ImageType> im2_gradient; // TODO copy pointer?
+            Adapter::Gradient3D<Im2ImageType> im2_gradient;
             Im1MaskType im1_mask;
             Im2MaskType im2_mask;
 

@@ -35,6 +35,7 @@
 #include "registration/transform/norm.h"
 #include "registration/transform/invert.h"
 #include "registration/metric/syn_demons.h"
+#include "registration/metric/syn_demons4D.h"
 #include "image/average_space.h"
 
 namespace MR
@@ -245,8 +246,14 @@ namespace MR
                   DEBUG ("evaluating metric and computing update field");
                   default_type cost_new = 0.0;
                   size_t voxel_count = 0;
-                  Metric::SyNDemons<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> syn_metric (cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped);
-                  ThreadedLoop (im1_warped, 0, 3).run (syn_metric, im1_warped, im2_warped, *im1_update_field_new, *im2_update_field_new);
+
+                  if (midway_image_header.ndim() == 4) {
+                    Metric::SyNDemons<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> syn_metric (cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped);
+                    ThreadedLoop (im1_warped, 0, 3).run (syn_metric, im1_warped, im2_warped, *im1_update_field_new, *im2_update_field_new);
+                  } else {
+                    Metric::SyNDemons4D<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> syn_metric (cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped);
+                    ThreadedLoop (im1_warped, 0, 3).run (syn_metric, im1_warped, im2_warped, *im1_update_field_new, *im2_update_field_new);
+                  }
 
                   cost_new /= static_cast<default_type>(voxel_count);
 
