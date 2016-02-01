@@ -36,11 +36,11 @@ class Parser(argparse.ArgumentParser):
 # Based on a list of names of commands used in the script, produce both the help page epilog and the citation warning to print at the commencement of the script
 def initCitations(cmdlist):
 
-  import data.citations
+  import lib.citations
   global epilog, citationWarning
   max_level = 0
   for name in cmdlist:
-    entry = [item for item in data.citations.list if item[0] == name][0]
+    entry = [item for item in lib.citations.list if item[0] == name][0]
     if entry:
       max_level = max(max_level, entry[1]);
       # Construct string containing all relevant citations that will be fed to the argument parser epilog
