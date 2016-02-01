@@ -54,11 +54,11 @@ You should have received a copy of `GNU General Public License`_ along with MRtr
    :maxdepth: 4
    :caption: Common tasks
 
-   common_tasks/basic_dwi_processing.md
-   common_tasks/act.md
-   common_tasks/sift.md
-   common_tasks/structural_connectome.md
-   common_tasks/hcp_connectome.md
+   common_tasks/basic_dwi_processing
+   common_tasks/act
+   common_tasks/sift
+   common_tasks/structural_connectome
+   common_tasks/hcp_connectome
 
 .. toctree::
    :maxdepth: 4
