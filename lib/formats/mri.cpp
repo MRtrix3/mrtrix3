@@ -107,11 +107,11 @@ namespace MR
 
       inline size_t type (const uint8_t* pos, bool is_BE)
       {
-        return (Raw::fetch<uint32_t> (pos, is_BE));
+        return (Raw::fetch_<uint32_t> (pos, is_BE));
       }
       inline size_t size (const uint8_t* pos, bool is_BE)
       {
-        return (Raw::fetch<uint32_t> (pos + sizeof (uint32_t), is_BE));
+        return (Raw::fetch_<uint32_t> (pos + sizeof (uint32_t), is_BE));
       }
       inline const uint8_t* data (const uint8_t* pos)
       {
@@ -172,8 +172,8 @@ namespace MR
         throw Exception ("file \"" + H.name() + "\" is not in MRI format (unrecognised magic number)");
 
       bool is_BE = false;
-      if (Raw::fetch<uint16_t> (fmap.address() + sizeof (int32_t), is_BE) == 0x0100U) is_BE = true;
-      else if (Raw::fetch<uint16_t> (fmap.address() + sizeof (uint32_t), is_BE) != 0x0001U)
+      if (Raw::fetch_<uint16_t> (fmap.address() + sizeof (int32_t), is_BE) == 0x0100U) is_BE = true;
+      else if (Raw::fetch_<uint16_t> (fmap.address() + sizeof (uint32_t), is_BE) != 0x0001U)
         throw Exception ("MRI file \"" + H.name() + "\" is badly formed (invalid byte order specifier)");
 
       H.set_ndim (4);
@@ -190,10 +190,10 @@ namespace MR
             data_offset = current + 5 - (uint8_t*) fmap.address();
             break;
           case MRI_DIMENSIONS:
-            H.size(0) = Raw::fetch<uint32_t> (data (current), is_BE);
-            H.size(1) = Raw::fetch<uint32_t> (data (current) + sizeof (uint32_t), is_BE);
-            H.size(2) = Raw::fetch<uint32_t> (data (current) + 2*sizeof (uint32_t), is_BE);
-            H.size(3) = Raw::fetch<uint32_t> (data (current) + 3*sizeof (uint32_t), is_BE);
+            H.size(0) = Raw::fetch_<uint32_t> (data (current), is_BE);
+            H.size(1) = Raw::fetch_<uint32_t> (data (current) + sizeof (uint32_t), is_BE);
+            H.size(2) = Raw::fetch_<uint32_t> (data (current) + 2*sizeof (uint32_t), is_BE);
+            H.size(3) = Raw::fetch_<uint32_t> (data (current) + 3*sizeof (uint32_t), is_BE);
             break;
           case MRI_ORDER:
             c = (char*) data (current);
@@ -208,9 +208,9 @@ namespace MR
             }
             break;
           case MRI_VOXELSIZE:
-            H.spacing(0) = Raw::fetch<float32> (data (current), is_BE);
-            H.spacing(1) = Raw::fetch<float32> (data (current) + sizeof (float32), is_BE);
-            H.spacing(2) = Raw::fetch<float32> (data (current) + 2*sizeof (float32), is_BE);
+            H.spacing(0) = Raw::fetch_<float32> (data (current), is_BE);
+            H.spacing(1) = Raw::fetch_<float32> (data (current) + sizeof (float32), is_BE);
+            H.spacing(2) = Raw::fetch_<float32> (data (current) + 2*sizeof (float32), is_BE);
             break;
           case MRI_COMMENT:
             add_line (H.keyval()["comments"], std::string (reinterpret_cast<const char*> (data (current)), size (current, is_BE)));
@@ -218,7 +218,7 @@ namespace MR
           case MRI_TRANSFORM:
             for (size_t i = 0; i < 3; ++i)
               for (size_t j = 0; j < 4; ++j)
-                H.transform() (i,j) = Raw::fetch<float32> (data (current) + (i*4 + j) *sizeof (float32), is_BE);
+                H.transform() (i,j) = Raw::fetch_<float32> (data (current) + (i*4 + j) *sizeof (float32), is_BE);
             break;
           case MRI_DWSCHEME:
             {
@@ -226,10 +226,10 @@ namespace MR
               const size_t nrows = size (current, is_BE) / (4*sizeof (float32));
               for (size_t i = 0; i < nrows; ++i) 
                 dw_scheme += 
-                  str (Raw::fetch<float32> (data (current) + (i*4 + 0) *sizeof (float32), is_BE)) + "," + 
-                  str (Raw::fetch<float32> (data (current) + (i*4 + 1) *sizeof (float32), is_BE)) + "," + 
-                  str (Raw::fetch<float32> (data (current) + (i*4 + 2) *sizeof (float32), is_BE)) + "," + 
-                  str (Raw::fetch<float32> (data (current) + (i*4 + 3) *sizeof (float32), is_BE)) + "\n";
+                  str (Raw::fetch_<float32> (data (current) + (i*4 + 0) *sizeof (float32), is_BE)) + "," +
+                  str (Raw::fetch_<float32> (data (current) + (i*4 + 1) *sizeof (float32), is_BE)) + "," +
+                  str (Raw::fetch_<float32> (data (current) + (i*4 + 2) *sizeof (float32), is_BE)) + "," +
+                  str (Raw::fetch_<float32> (data (current) + (i*4 + 3) *sizeof (float32), is_BE)) + "\n";
               H.keyval()["dw_scheme"] = dw_scheme;
             }
             break;
