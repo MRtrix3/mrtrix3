@@ -152,7 +152,7 @@ class Processor
 
 void run ()
 {
-  auto dwi = Image<value_type>::open (argument[0]).with_direct_io (Stride::contiguous_along_axis(3));
+  auto dwi = Image<value_type>::open (argument[0]).with_direct_io (3);
 
   auto mask = Image<bool>();
 

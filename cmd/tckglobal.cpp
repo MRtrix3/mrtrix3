@@ -186,7 +186,7 @@ void run ()
   
   // Inputs -----------------------------------------------------------------------------
   
-  auto dwi = Image<float>::open(argument[0]).with_direct_io(Stride::contiguous_along_axis(3));
+  auto dwi = Image<float>::open(argument[0]).with_direct_io(3);
   
   Properties properties;
   properties.resp_WM = load_matrix<float> (argument[1]);

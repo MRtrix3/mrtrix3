@@ -253,7 +253,7 @@ void run () {
     auto dec_img = Image<value_type>();
 
     {
-      auto fod_img = fod_hdr.get_image<value_type>().with_direct_io(Stride::contiguous_along_axis(3, fod_hdr));
+      auto fod_img = fod_hdr.get_image<value_type>().with_direct_io(3);
 
       auto dec_hdr = Header(fod_img);
       dec_hdr.set_ndim(4);

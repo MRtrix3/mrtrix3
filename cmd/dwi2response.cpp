@@ -166,7 +166,7 @@ void run ()
     throw Exception ("Cannot run dwi2response with lmax less than 4");
   shared.lmax = lmax;
 
-  auto dwi = H.get_image<float>().with_direct_io (MR::Stride::contiguous_along_axis (3));
+  auto dwi = H.get_image<float>().with_direct_io (3);
   DWI::Directions::Set directions (1281);
 
   Eigen::Matrix<default_type, Eigen::Dynamic, 1> response = Eigen::Matrix<default_type, Eigen::Dynamic, 1>::Zero (lmax/2+1);
