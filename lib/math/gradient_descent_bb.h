@@ -71,7 +71,7 @@ namespace MR
           value_type gradient_norm () const { return normg; }
           int function_evaluations () const { return nfeval; }
 
-          void be_verbose (const bool& v) { verbose = v; }
+          void be_verbose (bool v) { verbose = v; }
           void precondition (const Eigen::Matrix<value_type, Eigen::Dynamic, 1>& weights) {
             preconditioner_weights = weights;
           }
@@ -95,24 +95,29 @@ namespace MR
 
             for (int niter = 1; niter < max_iterations; niter++) {
               bool retval = iterate (log_os);
-              {
-                INFO ("Gradient descent iteration: " + str(niter) + "; cost: " + str(f));
-             }
+              INFO ("Gradient descent iteration: " + str(niter) + "; cost: " + str(f));
               if (verbose){
                 CONSOLE ("iteration " + str (niter) + ": f = " + str (f) + ", |g| = " + str (normg) + ":");
                 CONSOLE ("  x  = [ " + str(x2.transpose()) + "]");
               }
 
               if (normg < grad_tolerance) {
-                INFO ("normg (" + str(normg) + ") < gradient tolerance (" + str(grad_tolerance) + ")");
-                  return;
+                if (verbose)
+                  CONSOLE ("normg (" + str(normg) + ") < gradient tolerance (" + str(grad_tolerance) + ")");
+                return;
               }
 
               if (!retval){
-                INFO ("unchanged parameters");
+                if (verbose)
+                  CONSOLE ("unchanged parameters");
                 return;
               }
             }
+          }
+
+          void init () {
+            std::ostream dummy (nullptr);
+            init (dummy);
           }
 
           void init (std::ostream& log_os) {
@@ -156,6 +161,11 @@ namespace MR
             }
           }
 
+          bool iterate () {
+            std::ostream dummy (nullptr);
+            return iterate (dummy);
+          }
+
           bool iterate (std::ostream& log_os) {
             assert (std::isfinite (normg));
             if (!update_func (x3, x2, g2, dt))
@@ -180,7 +190,7 @@ namespace MR
           Function& func;
           UpdateFunctor update_func;
           Eigen::Matrix<value_type, Eigen::Dynamic, 1> x1, x2, x3, g1, g2, g3, preconditioner_weights;
-          value_type f, dt, normg, step_unscaled;
+          value_type f, dt, normg;
           size_t nfeval;
           bool verbose;
           std::string delim;
@@ -199,12 +209,13 @@ namespace MR
           }
 
           void compute_normg_and_step () {
-              if (preconditioner_weights.size()) {
-                g2.array() *= preconditioner_weights.array();
-              }
-              normg = g2.norm();
-              assert((g2-g1).norm()>0.0);
-              dt = (x2-x1).norm()/(g2-g1).norm();
+            if (preconditioner_weights.size()) {
+              value_type g_projected = g2.squaredNorm();
+              g2.array() *= preconditioner_weights.array();
+            }
+            normg = g2.norm();
+            assert((g2-g1).norm()>0.0);
+            dt = (x2-x1).norm()/(g2-g1).norm();
           }
       };
     //! @}
