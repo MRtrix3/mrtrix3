@@ -153,6 +153,7 @@ namespace MR
               Xnew = (Asqrt * Bsqrtinv) - ((Asqrt * Bsqrtinv - Bsqrtinv * Asqrt) * 0.5);
             }
 
+
             // MAT(X);
             // MAT(Xnew);
             // MAT(X.inverse());
@@ -160,6 +161,16 @@ namespace MR
             // MAT(Asqrt);
             // MAT(Bsqrtinv);
             Registration::Transform::param_mat2vec(Xnew, newx);
+
+            // stop criterion based on max shift of control points
+            if (control_points.size()) {
+              Diff.row(0) *= recip_spacing(0);
+              Diff.row(1) *= recip_spacing(1);
+              Diff.row(2) *= recip_spacing(2);
+              Diff.colwise() -= stop_len;
+              MAT(Diff);
+              if (Diff.template block<3,4>(0,0).maxCoeff() <= 0.0) { return false; }
+            }
 // #ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG
 //             if (newx.isApprox(x)){
 //               ValueType debug = 0;
@@ -177,16 +188,21 @@ namespace MR
 
           void set_control_points (
             const Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic>& points,
-            const Eigen::Vector3d& coherence_dist) {
+            const Eigen::Vector3d& coherence_dist,
+            const Eigen::Vector3d& stop_length,
+            const Eigen::Vector3d& voxel_spacing ) {
             assert(points.rows() == 4);
             assert(points.cols() == 4);
             control_points = points;
             coherence_distance = coherence_dist;
+            stop_len << stop_length, 0.0;
+            recip_spacing << voxel_spacing.cwiseInverse(), 1.0;
           }
 
         private:
           Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> control_points;
           Eigen::Vector3d coherence_distance;
+          Eigen::Matrix<default_type, 4, 1> stop_len, recip_spacing;
     };
   }
 

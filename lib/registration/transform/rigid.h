@@ -57,18 +57,23 @@ namespace MR
             return !(newx.isApprox(x));
           }
 
-        void set_control_points (
-            const Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic>& points,
-            const Eigen::Vector3d& coherence_dist) {
-            assert(points.rows() == 4);
-            assert(points.cols() == 4);
-            control_points = points;
-            coherence_distance = coherence_dist;
-          }
+      void set_control_points (
+        const Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic>& points,
+        const Eigen::Vector3d& coherence_dist,
+        const Eigen::Vector3d& stop_length,
+        const Eigen::Vector3d& voxel_spacing ) {
+        assert(points.rows() == 4);
+        assert(points.cols() == 4);
+        control_points = points;
+        coherence_distance = coherence_dist;
+        stop_len << stop_length, 0.0;
+        spacing << voxel_spacing, 1.0;
+      }
 
       private:
         Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> control_points;
         Eigen::Vector3d coherence_distance;
+        Eigen::Matrix<default_type, 4, 1> stop_len, spacing;
 
         template<class ValueType>
         void project_linear2rotation(const Eigen::Matrix<ValueType, 3, 3>& linear, Eigen::Matrix<ValueType, 3, 3>& rotation) const
