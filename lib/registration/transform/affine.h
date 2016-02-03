@@ -51,24 +51,6 @@ namespace MR
           }
     };
 
-    // template <class ParameterType>
-    //   class ParameterUpdateCheck {
-    //     public:
-    //       ParameterUpdateCheck (ParameterType& parameters): control_points(parameters.control_points) {}
-
-    //       template <typename ValueType>
-    //         inline bool operator() (const Eigen::Matrix<ValueType, 4, 4>& Mnew,
-    //             const Eigen::Matrix<ValueType, 4, 4>& Mcurrent,
-    //             const Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& g,
-    //             ValueType& step_size) {
-    //           return true;
-    //         }
-
-    //     private:
-    //       // ParameterType& parameters;
-    //       Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> control_points;
-    // };
-
     class AffineUpdate {
       public:
         template <typename ValueType>
@@ -84,8 +66,6 @@ namespace MR
             Eigen::Matrix<ValueType, 4, 4> X, Delta, G, A, Asqrt, B, Bsqrt, Bsqrtinv, Xnew, P, Diff;
             Registration::Transform::param_vec2mat(g, G);
             Registration::Transform::param_vec2mat(x, X);
-
-            VEC(coherence_distance);
 
             // enforce updates in the range of small angles
             if (step_size * G.block(0,0,3,3).array().abs().maxCoeff() > 0.2) {
@@ -129,13 +109,7 @@ namespace MR
 
                 break;
               }
-              if (orig_step_size != step_size) DEBUG("step size changed from " + str(orig_step_size) + " to " + str(step_size));
-
-            // if (step_size > 4.0 / G.block(0,3,3,1).array().abs().maxCoeff()) { // TODO
-            //   INFO("step size: " + str(step_size) + " --> ");
-            //   step_size = 4.0 / G.block(0,3,3,1).array().abs().maxCoeff();
-            //   INFO(str(step_size));
-            // }
+              if (orig_step_size != step_size) { DEBUG("step size changed from " + str(orig_step_size) + " to " + str(step_size)); }
             } else {
               // reduce step size if determinant of matrix becomes negative (happens rarely at first few iterations)
               size_t cnt = 0;
@@ -148,7 +122,7 @@ namespace MR
                   INFO(str(step_size) + " " + str(g * step_size));
                   continue;
                 }
-                if (Delta.block(0,3,3,1).array().abs().maxCoeff() > 10.0){ // TODO: use control points
+                if (Delta.block(0,3,3,1).array().abs().maxCoeff() > 10.0){
                   step_size = 9.0 / G.block(0,3,3,1).array().abs().maxCoeff();
                   INFO(str(step_size) + " " + str(g * step_size));
                   continue;
@@ -179,12 +153,12 @@ namespace MR
               Xnew = (Asqrt * Bsqrtinv) - ((Asqrt * Bsqrtinv - Bsqrtinv * Asqrt) * 0.5);
             }
 
-            MAT(X);
-            MAT(Xnew);
-            MAT(X.inverse());
-            MAT(Delta);
-            MAT(Asqrt);
-            MAT(Bsqrtinv);
+            // MAT(X);
+            // MAT(Xnew);
+            // MAT(X.inverse());
+            // MAT(Delta);
+            // MAT(Asqrt);
+            // MAT(Bsqrtinv);
             Registration::Transform::param_mat2vec(Xnew, newx);
 // #ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG
 //             if (newx.isApprox(x)){
@@ -310,10 +284,8 @@ namespace MR
 
             // get tetrahedron
             const size_t n_vertices = 4;
-            const Eigen::Matrix<ParameterType, 3, n_vertices> vertices = params.control_points;
-            Eigen::Matrix<ParameterType, 4, n_vertices> vertices_4;
-            vertices_4.block(0, 0, 3, n_vertices) = vertices;
-            vertices_4.row(3) << 1.0, 1.0, 1.0, 1.0;
+            const Eigen::Matrix<ParameterType, 4, n_vertices> vertices_4 = params.control_points;
+            const Eigen::Matrix<ParameterType, 3, n_vertices> vertices = vertices_4.template block<3,4>(0,0);
 
             // transform each vertex with each candidate transformation
             // weighting

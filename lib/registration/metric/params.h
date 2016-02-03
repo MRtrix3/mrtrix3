@@ -98,7 +98,6 @@ namespace MR
             for (size_t i = 0; i < 3; ++i)
               control_points.row(i) *= control_point_exent[i];
             control_points.block<3,4>(0,0).colwise() += centre;
-            MAT(control_points);
           }
 
           const std::vector<size_t>& get_extent() const { return extent; }
