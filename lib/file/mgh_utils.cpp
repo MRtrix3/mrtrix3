@@ -31,9 +31,7 @@ namespace MR
       {
         bool is_BE = false;
         if (Raw::fetch_<int32_t> (&MGHH.version, is_BE) != 1) {
-          VAR (Raw::fetch_<int32_t> (&MGHH.version, is_BE));
           is_BE = true;
-          VAR (Raw::fetch_<int32_t> (&MGHH.version, is_BE));
           if (Raw::fetch_<int32_t> (&MGHH.version, is_BE) != 1)
             throw Exception ("image \"" + H.name() + "\" is not in MGH format (version != 1)");
         }
