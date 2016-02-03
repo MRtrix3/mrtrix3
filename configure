@@ -1048,7 +1048,7 @@ else:
 
 if asserts:
   cpp_flags += [ '-D_GLIBCXX_DEBUG=1', '-D_GLIBCXX_DEBUG_PEDANTIC=1' ]
-else:
+elif not debug:
   cpp_flags += [ '-DNDEBUG' ]
 
 
