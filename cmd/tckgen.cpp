@@ -66,12 +66,12 @@ void usage ()
    "Annals of Neurology, 1999, 45, 265-269"
 
    + "* iFOD1 or SD_STREAM:\n"
-   "Tournier, J.-D.; Calamante, F. & Connelly, A. "
+   "Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
    "MRtrix: Diffusion tractography in crossing fiber regions. "
    "Int. J. Imaging Syst. Technol., 2012, 22, 53-66"
 
    + "* iFOD2:\n"
-   "Tournier, J.-D.; Calamante, F. & Connelly, A. "
+   "Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
    "Improved probabilistic streamlines tractography by 2nd order integration over fibre orientation distributions. "
    "Proceedings of the International Society for Magnetic Resonance in Medicine, 2010, 1670"
 
@@ -98,12 +98,12 @@ void usage ()
    "Magnetic Resonance in Medicine, 2000, 44, 625-632"
 
    + "* -act, -backtrack, -seed_gmwmi:\n"
-   "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+   "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
    "Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. "
    "NeuroImage, 2012, 62, 1924-1938"
 
    + "* -seed_dynamic:\n"
-   "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+   "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
    "SIFT2: Enabling dense quantitative assessment of brain white matter connectivity using streamlines tractography. "
    "NeuroImage, 2015, 119, 338-351";
 
@@ -113,7 +113,7 @@ void usage ()
         "- FACT: the directions file (each triplet of volumes is the X,Y,Z direction of a fibre population).\n"
         "- iFOD1/2, Nulldist2 & SD_Stream: the SH image resulting from CSD.\n"
         "- Nulldist1 & SeedTest: any image (will not be used).\n"
-        "- TensorDet / TensorProb: the DWI image.\n"
+        "- Tensor_Det / Tensor_Prob: the DWI image.\n"
         ).type_image_in()
 
     + Argument ("tracks", "the output file containing the tracks generated.").type_tracks_out();

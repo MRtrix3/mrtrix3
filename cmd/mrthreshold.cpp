@@ -40,7 +40,7 @@ void usage ()
     "or using a histogram-based analysis to cut out the background.";
 
   REFERENCES 
-    + "If not using the -abs option:\n"
+    + "* If not using the -abs option:\n"
     "Ridgway, G. R.; Omar, R.; Ourselin, S.; Hill, D. L.; Warren, J. D. & Fox, N. C. "
     "Issues with threshold masking in voxel-based morphometry of atrophied brains. "
     "NeuroImage, 2009, 44, 99-111";

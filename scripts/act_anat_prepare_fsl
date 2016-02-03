@@ -12,6 +12,7 @@ import lib.app
 from lib.binaryInPath import binaryInPath
 from lib.errorMessage import errorMessage
 from lib.getFSLSuffix import getFSLSuffix
+from lib.isWindows    import isWindows
 from lib.printMessage import printMessage
 from lib.runCommand   import runCommand
 from lib.warnMessage  import warnMessage
@@ -21,6 +22,9 @@ lib.app.initParser('Generate a 5TT image suitable for ACT from a T1 image using 
 lib.app.parser.add_argument('input',  help='The input T1 image')
 lib.app.parser.add_argument('output', help='The output 5TT image')
 lib.app.initialise()
+
+if isWindows():
+  errorMessage('Script cannot run on Windows due to FSL dependency')
 
 fsl_path = os.environ.get('FSLDIR', '')
 if not fsl_path:
@@ -119,7 +123,7 @@ else:
 
 # Combine the tissue images into the 5TT format within the script itself
 # Step 1: Run LCC on the WM image
-runCommand('mrthreshold T1_bet_pve_2' + fast_suffix + ' - -abs 0.001 | maskfilter - connected wm_mask.mif -largest')
+runCommand('mrthreshold T1_bet_pve_2' + fast_suffix + ' - -abs 0.001 | maskfilter - connect wm_mask.mif -largest')
 # Step 2: Generate the images in the same fashion as the 5ttgen command
 runCommand('mrconvert T1_bet_pve_0' + fast_suffix + ' csf.mif')
 runCommand('mrcalc 1 csf.mif -sub all_sgms.nii -min sgm.mif')

@@ -832,6 +832,7 @@ namespace MR
           MRView::Image& image (settings->image);
           get_values (values, image, window().focus(), preview->interpolate());
           preview->set (values);
+          preview->lock_orientation_to_image_slot (0);
         }
 
 

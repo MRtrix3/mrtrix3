@@ -46,7 +46,7 @@ void usage ()
     + Math::SH::encoding_description;
 
   REFERENCES 
-   + "Tournier, J.-D.; Calamante, F. & Connelly, A. "
+   + "Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
    "Robust determination of the fibre orientation distribution in diffusion MRI: "
    "Non-negativity constrained super-resolved spherical deconvolution. "
    "NeuroImage, 2007, 35, 1459-1472";
@@ -152,7 +152,7 @@ class Processor
 
 void run ()
 {
-  auto dwi = Image<value_type>::open (argument[0]).with_direct_io (Stride::contiguous_along_axis(3));
+  auto dwi = Image<value_type>::open (argument[0]).with_direct_io (3);
 
   auto mask = Image<bool>();
 

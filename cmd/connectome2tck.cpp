@@ -51,7 +51,7 @@ const char* file_outputs[] = { "per_edge", "per_node", "single", NULL };
 
 const OptionGroup OutputOptions = OptionGroup ("Options for determining the content / format of output files")
 
-    + Option ("nodes", "only select tracks that involve a set of nodes of interest")
+    + Option ("nodes", "only select tracks that involve a set of nodes of interest (provide as a comma-separated list of integers)")
       + Argument ("list").type_sequence_int()
 
     + Option ("exclusive", "only select tracks that exclusively connect nodes from within the list of nodes of interest")

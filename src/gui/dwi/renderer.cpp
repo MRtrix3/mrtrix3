@@ -641,7 +641,7 @@ namespace MR
                     if (I == i) {
 
                       // Invert a direction if required
-                      std::array<Eigen::Vector3f, 3> d { dirs[i], dirs[j], dirs[k] };
+                      std::array<Eigen::Vector3f, 3> d {{ dirs[i], dirs[j], dirs[k] }};
                       const Eigen::Vector3f mean_dir ((d[0]+d[1]+d[2]).normalized());
                       for (size_t v = 0; v != 3; ++v) {
                         if (d[v].dot (mean_dir) < 0.0f)
@@ -650,9 +650,9 @@ namespace MR
                       // Conform to right hand rule
                       const Eigen::Vector3f normal (((d[1]-d[0]).cross (d[2]-d[1])).normalized());
                       if (normal.dot (mean_dir) < 0.0f)
-                        indices_data.push_back ( {GLint(i), GLint(k), GLint(j)} );
+                        indices_data.push_back ( {{GLint(i), GLint(k), GLint(j)}} );
                       else
-                        indices_data.push_back ( {GLint(i), GLint(j), GLint(k)} );
+                        indices_data.push_back ( {{GLint(i), GLint(j), GLint(k)}} );
 
                     }
                   }

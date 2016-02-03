@@ -143,7 +143,7 @@ void run() {
     ProgressBar progress("loading images", subjects.size());
     for (size_t subject = 0; subject < subjects.size(); subject++) {
       LogLevelLatch log_level (0);
-      auto input_image = Image<float>::open(subjects[subject]).with_direct_io (Stride::contiguous_along_axis (3));
+      auto input_image = Image<float>::open(subjects[subject]).with_direct_io (3);
       check_dimensions (input_image, mask_image, 0, 3);
       int index = 0;
       std::vector<std::vector<int> >::iterator it;

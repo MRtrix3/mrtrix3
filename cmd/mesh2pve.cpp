@@ -39,7 +39,7 @@ void usage ()
   + "convert a mesh surface to a partial volume estimation image.";
 
   REFERENCES 
-    + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+    + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
     "Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. "
     "NeuroImage, 2012, 62, 1924-1938";
 

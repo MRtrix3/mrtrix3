@@ -28,6 +28,7 @@ from lib.errorMessage  import errorMessage
 from lib.getFSLSuffix  import getFSLSuffix
 from lib.getHeaderInfo import getHeaderInfo
 from lib.getPEAxis     import getPEAxis
+from lib.isWindows     import isWindows
 from lib.printMessage  import printMessage
 from lib.runCommand    import runCommand
 from lib.warnMessage   import warnMessage
@@ -39,6 +40,9 @@ lib.app.parser.add_argument('series1', help='The first input image series')
 lib.app.parser.add_argument('series2', help='The second input image series')
 lib.app.parser.add_argument('output',  help='The output image series')
 lib.app.initialise()
+
+if isWindows():
+  errorMessage('Script cannot run on Windows due to FSL dependency')
 
 fsl_path = os.environ.get('FSLDIR', '')
 if not fsl_path:
@@ -83,14 +87,14 @@ runCommand('mrconvert ' + lib.app.args.series2 + ' ' + os.path.join(lib.app.temp
 lib.app.gotoTempDir()
 
 # Verify that input images are valid
-DWI1_dim = getHeaderInfo ('dwi1.mif', 'dimensions').split()
-DWI2_dim = getHeaderInfo ('dwi2.mif', 'dimensions').split()
+DWI1_size = getHeaderInfo ('dwi1.mif', 'size').split()
+DWI2_size = getHeaderInfo ('dwi2.mif', 'size').split()
 
-if len(DWI1_dim) != 4:
+if len(DWI1_size) != 4:
   errorMessage ('First input image must be a 4D image')
-if len(DWI2_dim) != 4:
+if len(DWI2_size) != 4:
   errorMessage ('Second input image must be a 4D image')
-if DWI1_dim != DWI1_dim:
+if DWI1_size != DWI1_size:
   errorMessage ('Dimensions of input image file pair do not match')
   
 # Get the axis strides from one of the input images, so the output image can be modified to match
@@ -115,14 +119,14 @@ if PE_axis == 0:
   axis_permute_option = ' -axes 1,0,2,3'
   new_vox = [ orig_vox[1], orig_vox[0], orig_vox[2], orig_vox[3] ]
   vox_permute_option = ' -vox ' + ','.join(new_vox)
-  DWI1_dim = [ DWI1_dim[1], DWI1_dim[0], DWI1_dim[2], DWI1_dim[3] ]
+  DWI1_size = [ DWI1_size[1], DWI1_size[0], DWI1_size[2], DWI1_size[3] ]
   DWI1_permaxes = 'dwi1p.mif'
   DWI2_permaxes = 'dwi2p.mif'
 elif PE_axis == 2:
   axis_permute_option = ' -axes 0,2,1,3'
   new_vox = [ orig_vox[0], orig_vox[2], orig_vox[1], orig_vox[3] ]
   vox_permute_option = ' -vox ' + ','.join(new_vox)
-  DWI1_dim = [ DWI1_dim[0], DWI1_dim[2], DWI1_dim[1], DWI1_dim[3] ]
+  DWI1_size = [ DWI1_size[0], DWI1_size[2], DWI1_size[1], DWI1_size[3] ]
   DWI1_permaxes = 'dwi1p.mif'
   DWI2_permaxes = 'dwi2p.mif'
 
@@ -135,8 +139,8 @@ if axis_permute_option:
 else:
   printMessage ('No axis permutation required; skipping step')
 
-spatial_dims = DWI1_dim[:3]
-num_volumes = DWI1_dim[3]
+spatial_sizes = DWI1_size[:3]
+num_volumes = DWI1_size[3]
 
 # Convert the input files as necessary for FSL tools & later commands
 runCommand('mrinfo ' + DWI1_permaxes + ' -export_grad_mrtrix grad1.b')
@@ -152,16 +156,16 @@ runCommand('mrcat dwi1.nii dwi2.nii dwiall.nii -axis 3')
 runCommand('mrcat dwi1b0.mif dwi2b0.mif - -axis 3 | mrconvert - b0all.nii -stride +1,+2,+3,+4')
 
 # Find out how many b=0 volumes there are
-DWI1_b0_dims = getHeaderInfo ('dwi1b0.mif', 'dimensions').split()
-DWI2_b0_dims = getHeaderInfo ('dwi2b0.mif', 'dimensions').split()
+DWI1_b0_size = getHeaderInfo ('dwi1b0.mif', 'size').split()
+DWI2_b0_size = getHeaderInfo ('dwi2b0.mif', 'size').split()
 delFile('dwi1b0.mif')
 delFile('dwi2b0.mif')
 DWI1_b0_count = int(1)
-if len(DWI1_b0_dims) == 4:
-  DWI1_b0_count = int(DWI1_b0_dims[3])
+if len(DWI1_b0_size) == 4:
+  DWI1_b0_count = int(DWI1_b0_size[3])
 DWI2_b0_count = int(1)
-if len(DWI2_b0_dims) == 4:
-  DWI2_b0_count = int(DWI2_b0_dims[3])
+if len(DWI2_b0_size) == 4:
+  DWI2_b0_count = int(DWI2_b0_size[3])
 DWI2_config_index = str(DWI1_b0_count + 1)
 
 # If no axes need to be cropped, use the original 4D volume with the image pair
@@ -173,7 +177,7 @@ applytopup_imain_two = 'dwi2.nii'
 
 # For any non-even dimensions, crop the first voxel along that dimension
 crop_option = ''
-for axis, axis_dim in enumerate(spatial_dims):
+for axis, axis_dim in enumerate(spatial_sizes):
   if int(axis_dim)%2:
     crop_option += ' -axis ' + str(axis) + ' 1 ' + str(int(axis_dim)-1) 
 

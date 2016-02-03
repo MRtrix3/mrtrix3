@@ -320,7 +320,7 @@ void run ()
 
     const size_t axis = opt[0][0];
 
-    auto image_in = Header::open (argument[0]).get_image<value_type>().with_direct_io (Stride::contiguous_along_axis (axis));
+    auto image_in = Header::open (argument[0]).get_image<value_type>().with_direct_io (axis);
 
     if (axis >= image_in.ndim())
       throw Exception ("Cannot perform operation along axis " + str (axis) + "; image only has " + str(image_in.ndim()) + " axes");

@@ -71,10 +71,10 @@ void usage ()
     "- A 4D image with three 3D volumes per fixel direction: split_dir";
 
   REFERENCES 
-    + "Reference for 'complexity' operation:\n"
+    + "* Reference for 'complexity' operation:\n"
     "Riffert, T. W.; Schreiber, J.; Anwander, A. & Knosche, T. R. "
     "Beyond Fractional Anisotropy: Extraction of bundle-specific structural metrics from crossing fibre models. "
-    "NeuroImage 2014 (in press)";
+    "NeuroImage, 2014 (in press)";
 
   ARGUMENTS
   + Argument ("fixel_in",  "the input sparse fixel image.").type_image_in ()

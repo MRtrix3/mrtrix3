@@ -46,7 +46,7 @@ void usage ()
 }
 
 void run() {
-  auto input_image = Image<float>::open (argument[0]).with_direct_io (Stride::contiguous_along_axis(3));
+  auto input_image = Image<float>::open (argument[0]).with_direct_io (3);
 
   Eigen::MatrixXd grad = DWI::get_valid_DW_scheme (input_image);
 

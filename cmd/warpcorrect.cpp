@@ -47,7 +47,7 @@ typedef float value_type;
 
 void run ()
 {
-  auto input = Image<value_type>::open (argument[0]).with_direct_io (Stride::contiguous_along_axis(3));
+  auto input = Image<value_type>::open (argument[0]).with_direct_io (3);
   if (input.ndim() != 4)
     throw Exception ("input warp is not a 4D image");
 

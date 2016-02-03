@@ -46,7 +46,8 @@ namespace MR
       + Option ("info", "display information messages.")
       + Option ("quiet", "do not display information messages or progress status.")
       + Option ("debug", "display debugging messages.")
-      + Option ("force", "force overwrite of output files.")
+      + Option ("force", "force overwrite of output files. " 
+          "Caution: Using the same file as input and output might cause unexpected behaviour.")
       + Option ("nthreads", "use this number of threads in multi-threaded applications")
       + Argument ("number").type_integer (0, 1, std::numeric_limits<int>::max())
       + Option ("failonwarn", "terminate program if a warning is produced")

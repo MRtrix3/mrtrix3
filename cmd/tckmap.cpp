@@ -162,7 +162,7 @@ DESCRIPTION
 
 REFERENCES 
   + "* For TDI or DEC TDI:\n"
-  "Calamante, F.; Tournier, J.-D.; Jackson, G. D. & Connelly, A. "
+  "Calamante, F.; Tournier, J.-D.; Jackson, G. D. & Connelly, A. " // Internal
   "Track-density imaging (TDI): Super-resolution white matter imaging using whole-brain track-density mapping. "
   "NeuroImage, 2010, 53, 1233-1243"
 
@@ -172,27 +172,27 @@ REFERENCES
   "NeuroImage, 2011, 55, 133-141"
 
   + "* If using -dixel option with TDI contrast only:\n"
-  "Smith, R.E., Tournier, J-D., Calamante, F., Connelly, A. "
+  "Smith, R.E., Tournier, J-D., Calamante, F., Connelly, A. " // Internal
   "A novel paradigm for automated segmentation of very large whole-brain probabilistic tractography data sets. "
   "In proc. ISMRM, 2011, 19, 673"
 
   + "* If using -dixel option with any other contrast:\n"
-  "Pannek, K., Raffelt, D., Salvado, O., Rose, S. "
+  "Pannek, K., Raffelt, D., Salvado, O., Rose, S. " // Internal
   "Incorporating directional information in diffusion tractography derived maps: angular track imaging (ATI). "
   "In Proc. ISMRM, 2012, 20, 1912"
   
   + "* If using -tod option:\n"
-  "Dhollander, T., Emsell, L., Van Hecke, W., Maes, F., Sunaert, S., Suetens, P. "
+  "Dhollander, T., Emsell, L., Van Hecke, W., Maes, F., Sunaert, S., Suetens, P. " // Internal
   "Track Orientation Density Imaging (TODI) and Track Orientation Distribution (TOD) based tractography. "
   "NeuroImage, 2014, 94, 312-336"
 
   + "* If using other contrasts / statistics:\n"
-  "Calamante, F.; Tournier, J.-D.; Smith, R. E. & Connelly, A. "
+  "Calamante, F.; Tournier, J.-D.; Smith, R. E. & Connelly, A. " // Internal
   "A generalised framework for super-resolution track-weighted imaging. "
   "NeuroImage, 2012, 59, 2494-2503"
 
   + "* If using -precise mapping option:\n"
-  "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+  "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
   "SIFT: Spherical-deconvolution informed filtering of tractograms. "
   "NeuroImage, 2013, 67, 298-312 (Appendix 3)";
 

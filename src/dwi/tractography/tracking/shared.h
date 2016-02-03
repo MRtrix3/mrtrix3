@@ -46,15 +46,6 @@ namespace MR
 
 
 
-        namespace {
-          std::vector<ssize_t> strides_by_volume () {
-            std::vector<ssize_t> S (4, 0);
-            S[3] = 1;
-            return S;
-          }
-        }
-
-
 
 
         class SharedBase {
@@ -63,7 +54,7 @@ namespace MR
 
             SharedBase (const std::string& diff_path, Properties& property_set) :
 
-              source (Image<float>::open (diff_path).with_direct_io (strides_by_volume())),
+              source (Image<float>::open (diff_path).with_direct_io (3)),
               properties (property_set),
               init_dir ({ NaN, NaN, NaN }),
               max_num_tracks (1000),

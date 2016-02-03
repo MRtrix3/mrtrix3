@@ -31,13 +31,13 @@ DESCRIPTION
   + "generate a set of uniformly distributed directions using a bipolar electrostatic repulsion model.";
 
 REFERENCES 
-  + "* Jones, D.; Horsfield, M. & Simmons, A. "
+  + "Jones, D.; Horsfield, M. & Simmons, A. "
   "Optimal strategies for measuring diffusion in anisotropic systems by magnetic resonance imaging. "
-  "Magnetic Resonance in Medicine, 42: 515-525 (1999)."
+  "Magnetic Resonance in Medicine, 1999, 42: 515-525"
              
-  + "* Papadakis, N. G.; Murrills, C. D.; Hall, L. D.; Huang, C. L.-H. & Adrian Carpenter, T. "
+  + "Papadakis, N. G.; Murrills, C. D.; Hall, L. D.; Huang, C. L.-H. & Adrian Carpenter, T. "
   "Minimal gradient encoding for robust estimation of diffusion anisotropy. "
-  "Magnetic Resonance Imaging, 18: 671-679 (2000).";
+  "Magnetic Resonance Imaging, 2000, 18: 671-679";
 
 ARGUMENTS
   + Argument ("ndir", "the number of directions to generate.").type_integer (6, 60, std::numeric_limits<int>::max())

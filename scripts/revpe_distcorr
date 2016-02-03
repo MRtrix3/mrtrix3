@@ -22,6 +22,7 @@ from lib.errorMessage  import errorMessage
 from lib.getFSLSuffix  import getFSLSuffix
 from lib.getHeaderInfo import getHeaderInfo
 from lib.getPEAxis     import getPEAxis
+from lib.isWindows     import isWindows
 from lib.printMessage  import printMessage
 from lib.runCommand    import runCommand
 from lib.warnMessage   import warnMessage
@@ -34,6 +35,9 @@ lib.app.parser.add_argument('image2of2', help='The second image of the reversed-
 lib.app.parser.add_argument('series',    help='The image series to be corrected; note that the phase-encode direction of this series should be identical to the FIRST image of the reversed-PE pair')
 lib.app.parser.add_argument('output',    help='The output corrected image series')
 lib.app.initialise()
+
+if isWindows():
+  errorMessage('Script cannot run on Windows due to FSL dependency')
 
 fsl_path = os.environ.get('FSLDIR', '')
 if not fsl_path:
@@ -75,30 +79,30 @@ runCommand('mrconvert ' + lib.app.args.series    + ' ' + os.path.join(lib.app.te
 lib.app.gotoTempDir()
 
 # Verify that input images are valid
-Pair1_dim  = getHeaderInfo ('pair1.mif',  'dimensions').split()
-Pair2_dim  = getHeaderInfo ('pair2.mif',  'dimensions').split()
-series_dim = getHeaderInfo ('series.mif', 'dimensions').split()
+Pair1_size  = getHeaderInfo ('pair1.mif',  'size').split()
+Pair2_size  = getHeaderInfo ('pair2.mif',  'size').split()
+series_size = getHeaderInfo ('series.mif', 'size').split()
 
 # Check the number of b=0 images
 Pair1_bzero_count = 1
-if len(Pair1_dim) == 4:
-  Pair1_bzero_count = int(Pair1_dim[3])
-elif len(Pair1_dim) != 3:
+if len(Pair1_size) == 4:
+  Pair1_bzero_count = int(Pair1_size[3])
+elif len(Pair1_size) != 3:
   errorMessage ('First image of reversed phase-encode pair must be a 3D or 4D image')
 Pair2_bzero_count = 1
-if len(Pair2_dim) == 4:
-  Pair2_bzero_count = int(Pair2_dim[3])
-elif len(Pair2_dim) != 3:
+if len(Pair2_size) == 4:
+  Pair2_bzero_count = int(Pair2_size[3])
+elif len(Pair2_size) != 3:
   errorMessage ('Second image of reversed phase-encode pair must be a 3D or 4D image')
 
 # Do other verifications on inputs
-if Pair1_dim[:3] != Pair2_dim[:3]:
+if Pair1_size[:3] != Pair2_size[:3]:
   errorMessage ('Dimensions of reversed phase-encode image pair do not match')
 if Pair1_bzero_count != Pair2_bzero_count:
   warnMessage ('Inequal number of b=0 volumes in pair; registration may be biased')
-if series_dim[:3] != Pair1_dim[:3]:
+if series_size[:3] != Pair1_size[:3]:
   errorMessage ('Spatial dimensions of volume series does not match reversed-PE pair')
-if len(series_dim) != 4:
+if len(series_size) != 4:
   errorMessage ('Third input image should be a 4D volume series')
 
 # Get the axis strides from the input series, so the output image can be modified to match
@@ -117,11 +121,11 @@ runCommand('mrconvert series.mif series_before.nii -stride +1,+2,+3,+4')
 topup_imain = 'pair.nii'
 series_imain = 'series_before.nii'
 
-# For any non-even dimensions, crop the first voxel along that dimension
+# For any non-even axis sizes, crop the first voxel along that dimension
 crop_option = ''        
-for axis, axis_dim in enumerate(Pair1_dim[:3]):
-  if int(axis_dim)%2:
-    crop_option += ' -axis ' + str(axis) + ' 1 ' + str(int(axis_dim)-1) 
+for axis, axis_size in enumerate(Pair1_size[:3]):
+  if int(axis_size)%2:
+    crop_option += ' -axis ' + str(axis) + ' 1 ' + str(int(axis_size)-1) 
 
 if crop_option:
   warnMessage('Input images contain at least one non-even dimension; cropping images for topup / eddy compatibility') 

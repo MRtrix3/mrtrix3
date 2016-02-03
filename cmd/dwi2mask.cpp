@@ -46,7 +46,7 @@ OPTIONS
 
 
 void run () {
-  auto input = Image<float>::open (argument[0]).with_direct_io (Stride::contiguous_along_axis (3));
+  auto input = Image<float>::open (argument[0]).with_direct_io (3);
   auto grad = DWI::get_DW_scheme (input);
   Filter::DWIBrainMask dwi_brain_mask_filter (input, grad);
   dwi_brain_mask_filter.set_message ("computing dwi brain mask");
