@@ -52,7 +52,7 @@ void run ()
     bool verbose = argument[0].as_bool();
     const size_t dim(4);
     Eigen::Matrix<default_type, Eigen::Dynamic, 1> ev(dim);
-    ev << 1.0,10,100,1000;
+    ev << 1.0,10,100,10000;
     Eigen::Matrix<default_type, Eigen::Dynamic, 1> mu(dim);
     mu << -0.1,0.1,-1,1;
 
