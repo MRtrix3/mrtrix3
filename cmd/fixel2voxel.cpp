@@ -619,13 +619,14 @@ class SplitDir : public OpBase
     bool operator() (in_type& in, out_type& out)
     {
       size_t index;
+      out.index(3) = 0;
       for (index = 0; index != in.value().size(); ++index) {
         for (size_t axis = 0; axis != 3; ++axis) {
-          out.index(3) = (3*index) + axis;
           out.value() = in.value()[index].dir[axis];
+          ++out.index(3);
         }
       }
-      for (++out.index(3); out.index(3) != out.size(3); ++out.index(3))
+      for (; out.index(3) != out.size(3); ++out.index(3))
         out.value() = NAN;
       return true;
     }
