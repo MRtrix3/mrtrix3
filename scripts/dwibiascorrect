@@ -64,10 +64,8 @@ else:
 
 runCommand(fast_cmd + ' -t 2 -o fast -n 3 -b mean_bzero.nii')
 
-result_path = 'result' + os.path.splitext(lib.app.args.output)[1]
-runCommand('mrcalc in.mif fast_bias' + fast_suffix + ' -div ' + result_path)
-
-lib.app.moveFileToDest(result_path, lib.app.args.output)
+runCommand('mrcalc in.mif fast_bias' + fast_suffix + ' -div result.mif')
+runCommand('mrconvert result.mif ' + os.path.join(lib.app.workingDir, lib.app.args.output) + lib.app.mrtrixForce)
 
 lib.app.complete()
 

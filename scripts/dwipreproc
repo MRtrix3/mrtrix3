@@ -30,7 +30,7 @@ rpe_me_group.add_argument('-rpe_none', action='store_true', help='Specify explic
 rpe_me_group.add_argument('-rpe_pair', nargs=2, metavar=('forward', 'reverse'), help='Provide a pair of images to use for inhomogeneity field estimation; note that the FIRST of these two images must have the same phase-encode direction as the input DWIs')
 rpe_me_group.add_argument('-rpe_all', metavar='input_revpe', help='Provide a second DWI series identical to the input series, that has the opposite phase encoding; these will be combined in the output image')
 grad_import = lib.app.parser.add_mutually_exclusive_group()
-grad_import.add_argument('-grad', nargs=1, help='Provide a gradient table in MRtrix format')
+grad_import.add_argument('-grad', help='Provide a gradient table in MRtrix format')
 grad_import.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Provide a gradient table in FSL bvecs/bvals format')
 grad_export = lib.app.parser.add_mutually_exclusive_group()
 grad_export.add_argument('-export_grad_mrtrix', metavar='grad', help='Export the final gradient table in MRtrix format')
@@ -80,6 +80,8 @@ if not binaryInPath(eddy_cmd):
 
 fsl_suffix = getFSLSuffix()
 PE_axis = getPEAxis(lib.app.args.pe_axis)
+
+lib.app.checkOutputFile(lib.app.args.output)
 
 
 # Convert all input images into MRtrix format and store in temprary directory first;
@@ -392,6 +394,6 @@ if lib.app.args.export_grad_mrtrix:
   grad_export_option = ' -export_grad_mrtrix ' + os.path.join(lib.app.workingDir, lib.app.args.export_grad_mrtrix)
 elif lib.app.args.export_grad_fsl:
   grad_export_option = ' -export_grad_fsl ' + os.path.join(lib.app.workingDir, lib.app.args.export_grad_mrtrix[0]) + ' ' + os.path.join(lib.app.workingDir, lib.app.args.export_grad_mrtrix[1])
-runCommand('mrconvert result.mif ' + result_path + grad_export_option)
+runCommand('mrconvert result.mif ' + result_path + grad_export_option + lib.app.mrtrixForce)
 lib.app.complete()
 

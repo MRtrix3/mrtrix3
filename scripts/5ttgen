@@ -20,7 +20,7 @@ from lib.warnMessage  import warnMessage
 
 lib.app.initCitations([ 'ACT', 'bet', 'fast', 'first', 'FSL' ])
 lib.app.initParser('Generate a 5TT image suitable for ACT')
-subparsers = lib.app.parser.add_subparsers(title='Software options', dest='algorithm', description='Select the software / algorithm to be used to derive the 5TT image', help='Additional help available for software options')
+subparsers = lib.app.parser.add_subparsers(title='software options', dest='algorithm', description='Select the software / algorithm to be used to derive the 5TT image', help='Additional help available for software options')
 parser_fsl = subparsers.add_parser('fsl', help='Use FSL tools to generate 5TT image')
 parser_fsl.add_argument('t1', help='Input T1-weighted anatomical image')
 fsl_masking = parser_fsl.add_mutually_exclusive_group()
@@ -33,7 +33,8 @@ lib.app.parser.add_argument('output', help='The output 5TT image')
 lib.app.initialise()
 
 
-result_path = 'result' + os.path.splitext(lib.app.args.output)[1]
+lib.app.checkOutputFile(lib.app.args.output)
+
 
 if lib.app.args.algorithm == 'fsl':
 
@@ -174,11 +175,7 @@ if lib.app.args.algorithm == 'fsl':
   runCommand('mrcat cgm.mif sgm.mif wm.mif csf.mif path.mif - -axis 3 | mrconvert - combined_precrop.mif -stride +2,+3,+4,+1')
 
   # Use mrcrop to reduce file size (improves caching of image data during tracking)
-  root,ext = os.path.splitext(lib.app.args.output)
-  if ext.lower() == '.gz':
-    ext = os.path.splitext(root)[1] + ext
-  result_path = 'result' + ext
-  runCommand('mrmath combined_precrop.mif sum - -axis 3 | mrthreshold - - -abs 0.5 | mrcrop combined_precrop.mif ' + result_path + ' -mask -')
+  runCommand('mrmath combined_precrop.mif sum - -axis 3 | mrthreshold - - -abs 0.5 | mrcrop combined_precrop.mif result.mif -mask -')
 
 
 
@@ -215,7 +212,7 @@ elif lib.app.args.algorithm == 'freesurfer':
   runCommand('mrcalc indices.mif 4 -eq csf.mif')
   runCommand('mrcalc indices.mif 5 -eq path.mif')
 
-  runCommand('mrcat cgm.mif sgm.mif wm.mif csf.mif path.mif - -axis 3 | mrconvert - ' + result_path + ' -datatype float32')
+  runCommand('mrcat cgm.mif sgm.mif wm.mif csf.mif path.mif - -axis 3 | mrconvert - result.mif -datatype float32')
 
 
 else:
@@ -223,6 +220,6 @@ else:
 
 
 # Move the final result image to where it should be
-lib.app.moveFileToDest(result_path, lib.app.args.output)
+runCommand('mrconvert result.mif ' + os.path.join(lib.app.workingDir, lib.app.args.output) + lib.app.mrtrixForce)
 lib.app.complete()
 
