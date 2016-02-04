@@ -168,7 +168,7 @@ namespace MR
               Diff.row(1) *= recip_spacing(1);
               Diff.row(2) *= recip_spacing(2);
               Diff.colwise() -= stop_len;
-              MAT(Diff);
+              // MAT(Diff);
               if (Diff.template block<3,4>(0,0).maxCoeff() <= 0.0) { return false; }
             }
 // #ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG
