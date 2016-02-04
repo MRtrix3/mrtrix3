@@ -20,7 +20,7 @@ from lib.warnMessage  import warnMessage
 
 lib.app.initCitations([ 'ACT', 'bet', 'fast', 'first', 'FSL' ])
 lib.app.initParser('Generate a 5TT image suitable for ACT')
-subparsers = lib.app.parser.add_subparsers(title='Software options', description='Select the software / algorithm to be used to derive the 5TT image', help='Additional help available for software options')
+subparsers = lib.app.parser.add_subparsers(title='Software options', dest='algorithm', description='Select the software / algorithm to be used to derive the 5TT image', help='Additional help available for software options')
 parser_fsl = subparsers.add_parser('fsl', help='Use FSL tools to generate 5TT image')
 parser_fsl.add_argument('t1', help='Input T1-weighted anatomical image')
 fsl_masking = parser_fsl.add_mutually_exclusive_group()
@@ -35,7 +35,7 @@ lib.app.initialise()
 
 result_path = 'result' + os.path.splitext(lib.app.args.output)[1]
 
-if hasattr(lib.app.args, 't1'):
+if lib.app.args.algorithm == 'fsl':
 
   if isWindows():
     errorMessage('Script cannot run in FSL mode on Windows')
@@ -182,7 +182,7 @@ if hasattr(lib.app.args, 't1'):
 
 
 
-if hasattr(lib.app.args, 'aseg'):
+elif lib.app.args.algorithm == 'freesurfer':
 
   config_file_name = 'FreeSurfer2ACT.txt'
   

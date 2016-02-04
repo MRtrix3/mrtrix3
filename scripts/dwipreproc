@@ -32,6 +32,7 @@ rpe_me_group.add_argument('-rpe_all', metavar='input_revpe', help='Provide a sec
 grad_import = lib.app.parser.add_mutually_exclusive_group()
 grad_import.add_argument('-grad', nargs=1, help='Provide a gradient table in MRtrix format')
 grad_import.add_argument('-fslgrad', nargs=2, metavar='bvecs bvals', help='Provide a gradient table in FSL bvecs/bvals format')
+  # TODO If output image format does not contain diffusion encoding, need to also write this to the output somehow
 lib.app.initialise()
 
 
@@ -98,7 +99,7 @@ lib.app.gotoTempDir()
 
 # Get information on the input images, particularly so that their validity can be checked
 series_size = getHeaderInfo('series.mif', 'size').split()
-grad = getHeaderInfo('series.mif', 'dwgrad')
+grad = getHeaderInfo('series.mif', 'dwgrad').split('\n')
 stride = getHeaderInfo('series.mif', 'stride')
 transform = getHeaderInfo('series.mif', 'transform')
 if PE_design == 'Pair':
@@ -114,7 +115,7 @@ if len(series_size) == 4:
 # Perform necessary checks on input images
 if not grad:
   errorMessage('No diffusion gradient table found')
-elif not len(grad)[0] == num_volumes:
+if not len(grad) == num_volumes:
   errorMessage('Number of volumes in gradient table does not match input image')
 
 if PE_design == 'Pair':
@@ -147,9 +148,9 @@ elif PE_design == 'All':
 
 # If no axes need to be cropped, use the original 4D volume with the image pair
 # Otherwise, need to call mrcrop with the appropriate options, and pass the modified images to topup
+series_path = 'series.mif'
 if not PE_design == 'None':
 
-  series_path = 'series.mif'
   pair1_path = 'pair1.mif'
   pair2_path = 'pair1.mif'
   series2_path = 'series2.mif'
@@ -235,10 +236,13 @@ with open('indices.txt', 'w') as index_file:
   index_file.write(' '.join(indices));
 
 
+eddy_in_topup = ''
+
 if PE_design == 'None':
 
   # Generate a processing mask for eddy based on the input series
-  runCommand('dwi2mask series.mif - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32')
+  runCommand('dwi2mask ' + series_path + ' - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32')
+  runCommand('mrconvert ' + series_path + ' - -stride +1,+2,+3,+4 | mrinfo - -export_grad_fsl bvecs bvals')
 
 else:
 
@@ -269,24 +273,24 @@ else:
     # Concatenate the diffusion gradient table twice
     with open('grad.b', 'w') as outfile:
       for line in grad:
-        outfile.write (line)
-      outfile.write('\n')
+        outfile.write (line + '\n')
       for line in grad:
-        outfile.write (line)
-      outfile.write('\n')
+        outfile.write (line + '\n')
     runCommand('mrconvert dwi_post_topup.nii - -grad grad.b | mrinfo - -export_grad_fsl bvecs bvals')
-  
-    
+
+
   # Use the initial corrected image series from applytopup to derive a processing mask for eddy
   runCommand('mrconvert dwi_post_topup' + fsl_suffix + ' -fslgrad bvecs bvals - | dwi2mask - - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32')
-  
-  
+
+  eddy_in_topup = ' --topup=field'
+
+
 # Run eddy
 if PE_design == 'None' or PE_design == 'Pair':
   eddy_in = 'dwi_pre_topup.nii'
 else: # 'All'
   eddy_in = 'dwi_pre_eddy.nii'
-runCommand(eddy_cmd + ' --imain=' + eddy_in + ' --mask=mask.nii --index=indices.txt --acqp=config.txt --bvecs=bvecs --bvals=bvals --topup=field --out=dwi_post_eddy')
+runCommand(eddy_cmd + ' --imain=' + eddy_in + ' --mask=mask.nii --index=indices.txt --acqp=config.txt --bvecs=bvecs --bvals=bvals' + eddy_in_topup + ' --out=dwi_post_eddy')
 
 
 # Get the axis strides from the input series, so the output image can be modified to match
@@ -300,7 +304,7 @@ result_path = 'result' + os.path.splitext(lib.app.args.output)[1]
 # Check to see whether or not eddy has provided a rotated bvecs file;
 #   if it has, import this into the output image
 bvecs_path = 'dwi_post_eddy.eddy_rotated_bvecs'
-if not os.isfile(bvecs_path):
+if not os.path.isfile(bvecs_path):
   warnMessage('eddy has not provided rotated bvecs file; using original gradient table')
   bvecs_path = 'bvecs'
 
@@ -308,7 +312,6 @@ if not os.isfile(bvecs_path):
 if PE_design == 'None' or PE_design == 'Pair':
 
   # Convert the resulting volume to the output image, and re-insert the diffusion encoding
-  # TODO If output image does not contain diffusion encoding, need to also write this to the output somehow
   runCommand('mrconvert dwi_post_eddy' + fsl_suffix + ' ' + result_path + stride_option + ' -fslgrad ' + bvecs_path + ' bvals')
   
 else: # 'All'
@@ -319,31 +322,31 @@ else: # 'All'
   # Particularly if eddy has provided rotated bvecs, since we're combining two volumes into one that
   #   potentially have subject rotation between them (and therefore the sensitisation direction is
   #   not precisely equivalent), the best we can do is take the mean of the two vectors.
-  bvecs = [ ]
+  bvecs = [ [] for axis in range(3) ]
   with open(bvecs_path, 'r') as f:
-    for line in f:
-      bvecs.append(line.split())
-  bvecs_combined_transpose = [ ]
+    for axis, line in enumerate(f):
+      bvecs[axis] = line.split()
+  bvecs_combined_transpose = [ [] for volume in range(num_volumes) ]
   for volume in range(0, num_volumes):
-    bvec_sum = [ bvecs[0][volume] + bvecs[0][volume+num_volumes],
-                 bvecs[1][volume] + bvecs[1][volume+num_volumes],
-                 bvecs[2][volume] + bvecs[2][volume+num_volumes] ]
+    bvec_sum = [ float(bvecs[0][volume]) + float(bvecs[0][volume+num_volumes]),
+                 float(bvecs[1][volume]) + float(bvecs[1][volume+num_volumes]),
+                 float(bvecs[2][volume]) + float(bvecs[2][volume+num_volumes]) ]
     norm2 = bvec_sum[0]*bvec_sum[0] + bvec_sum[1]*bvec_sum[1] + bvec_sum[2]*bvec_sum[2]
     factor = 1.0 / math.sqrt(norm2)
     new_vec = [ bvec_sum[0]*factor, bvec_sum[1]*factor, bvec_sum[2]*factor ]
-    bvecs_combined_transpose.append(new_vec)
+    bvecs_combined_transpose[volume] = new_vec
   with open('bvecs_combined', 'w') as f:
     for axis in range(0, 3):
       axis_data = [ ]
       for volume in range(0, num_volumes):
-        axis_data.append(bvecs_combined_transpose[volume][axis])
-      f.write(' '.join(axis_data))
+        axis_data.append(str(bvecs_combined_transpose[volume][axis]))
+      f.write(' '.join(axis_data) + '\n')
 
   bvals = [ ]
   with open('bvals', 'r') as f:
-    bvals = f.read()
+    bvals = f.read().split()
   bvals = bvals[0:num_volumes]
-  with open('bvals_combined', 'r') as f:
+  with open('bvals_combined', 'w') as f:
     f.write(' '.join(bvals))
     
 
