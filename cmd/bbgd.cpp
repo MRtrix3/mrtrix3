@@ -50,11 +50,11 @@ private:
 void run ()
 {
     bool verbose = argument[0].as_bool();
-    const size_t dim(4);
+    const size_t dim(2);
     Eigen::Matrix<default_type, Eigen::Dynamic, 1> ev(dim);
-    ev << 1.0,10,100,1000;
+    ev << 1.0,10000;
     Eigen::Matrix<default_type, Eigen::Dynamic, 1> mu(dim);
-    mu << -0.1,0.1,-1,1;
+    mu << -0.1,1;
 
     Eigen::Matrix<default_type, Eigen::Dynamic, 1> weights(dim);
     weights = ev;
@@ -65,8 +65,12 @@ void run ()
     Eigen::Matrix<default_type, Eigen::Dynamic, 1> x(dim);
     func.init(x);
     auto optim = GradientDescent<MVN>(func);
+    optim.be_verbose(verbose);
     // optim.precondition (weights);
-    optim.run(100000, 1e-30, verbose, -1, 1e-30);
+    if (verbose)
+        optim.run(100000, 1e-30, std::cout.rdbuf());
+    else
+        optim.run(100000, 1e-30);
     auto optim2 = GradientDescentBB<MVN>(func);
     optim2.be_verbose(verbose);
     // optim2.precondition (weights);

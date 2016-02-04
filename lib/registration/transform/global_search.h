@@ -263,7 +263,7 @@ namespace MR
               optim (evaluate, *transform.get_gradient_descent_updator());
               Eigen::Matrix<typename TransformType::ParameterType, Eigen::Dynamic, 1> optimiser_weights = transform.get_optimiser_weights();
               optim.precondition (optimiser_weights);
-              optim.run (max_GD_iter, 1.0e-30, false, 1.0e-30, 1.0e-30, log_stream);
+              optim.run (max_GD_iter, 1.0e-30, log_stream);
               parameters.transformation.set_parameter_vector (optim.state());
 
               trafo = parameters.transformation.get_transform();

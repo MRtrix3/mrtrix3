@@ -40,6 +40,7 @@
 #include "registration/metric/evaluate.h"
 #include "registration/transform/initialiser.h"
 #include "math/gradient_descent.h"
+#include "math/gradient_descent_bb.h"
 #include "math/check_gradient.h"
 #include "math/rng.h"
 #include "math/math.h"
@@ -332,20 +333,44 @@ namespace MR
 
               DEBUG ("neighbourhood kernel extent: " + str(kernel_extent));
               parameters.set_extent (kernel_extent);
-
+              {
+                Eigen::Vector3d spacing (
+                  midway_image_header.spacing(0),
+                  midway_image_header.spacing(1),
+                  midway_image_header.spacing(2));
+                Eigen::Vector3d coherence(spacing);
+                Eigen::Vector3d stop(spacing);
+                default_type reg_coherence_len = File::Config::get_float ("reg_coherence_len", 3.0); // = 3 stdev blur
+                coherence *= reg_coherence_len * smooth_factor[level] * 1.0 / (2.0 * scale_factor[level]);
+                default_type reg_stop_len = File::Config::get_float ("reg_stop_len", 0.0001);
+                stop.array() *= reg_stop_len;
+                DEBUG("coherence length: " + str(coherence));
+                DEBUG("stop length:      " + str(coherence));
+                transform.get_gradient_descent_updator()->set_control_points(
+                  parameters.control_points, coherence, stop, spacing);
+              }
 
               Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
 //              if (directions.cols())
 //                evaluate.set_directions (directions);
 
-              for (auto gd_iteration = 0; gd_iteration < gd_repetitions[level]; ++gd_iteration){
-                Math::GradientDescent<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
-                  optim (evaluate, *transform.get_gradient_descent_updator());
-                optim.precondition (optimiser_weights);
-                optim.run (max_iter[level], grad_tolerance, false, step_tolerance, 1e-10, log_stream);
-                parameters.transformation.set_parameter_vector (optim.state());
-                parameters.update_control_points();
 
+              for (auto gd_iteration = 0; gd_iteration < gd_repetitions[level]; ++gd_iteration){
+                if (File::Config::get_bool("reg_bbgd", true)) {
+                  Math::GradientDescentBB<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
+                    optim (evaluate, *transform.get_gradient_descent_updator(), true);
+                  optim.precondition (optimiser_weights);
+                  optim.run (max_iter[level], grad_tolerance, std::cout.rdbuf());
+                  parameters.transformation.set_parameter_vector (optim.state());
+                  parameters.update_control_points();
+                } else {
+                  Math::GradientDescent<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
+                    optim (evaluate, *transform.get_gradient_descent_updator(), true);
+                  optim.precondition (optimiser_weights);
+                  optim.run (max_iter[level], grad_tolerance, std::cout.rdbuf());
+                  parameters.transformation.set_parameter_vector (optim.state());
+                  parameters.update_control_points();
+                }
                 if (log_stream){
                   std::ostream log_os(log_stream);
                   log_os << "\n\n"; // two empty lines for gnuplot's index recognition

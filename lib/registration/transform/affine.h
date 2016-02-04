@@ -58,66 +58,151 @@ namespace MR
               const Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& x,
               const Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& g,
               ValueType step_size) {
-            DEBUG("step size: " + str(step_size));
             assert (newx.size() == 12);
             assert (x.size() == 12);
             assert (g.size() == 12);
 
             Eigen::Matrix<ValueType, 12, 1> delta;
-            Eigen::Matrix<ValueType, 4, 4> X, Delta, G, A, Asqrt, B, Bsqrt, Bsqrtinv, Xnew;
-
-            // enforce updates in the range of small angle updates
+            Eigen::Matrix<ValueType, 4, 4> X, Delta, G, A, Asqrt, B, Bsqrt, Bsqrtinv, Xnew, P, Diff;
             Registration::Transform::param_vec2mat(g, G);
-            if (step_size > 0.1 / G.block(0,0,3,3).array().abs().maxCoeff())
-              step_size = 0.1 / G.block(0,0,3,3).array().abs().maxCoeff();
-
             Registration::Transform::param_vec2mat(x, X);
-            // reduce step size if determinant of matrix is negative (happens rarely at first few iterations)
-            size_t cnt = 0;
-            default_type factor = 0.9;
-            while (true) {
-              delta = g * step_size;
-              Registration::Transform::param_vec2mat(delta, Delta);
 
-              A = X - Delta;
-              A(3,3) = 1.0;
-              if (A.determinant() < 0) {
-                step_size *= factor;
-                ++cnt;
-              } else {
+            // enforce updates in the range of small angles
+            if (step_size * G.block(0,0,3,3).array().abs().maxCoeff() > 0.2) {
+              step_size = 0.2 / G.block(0,0,3,3).array().abs().maxCoeff();
+            }
+            // use control points and coherence length as update criterion
+            if (control_points.size()) {
+              P = control_points;
+              const ValueType orig_step_size(step_size);
+              const ValueType step_down_factor(0.5);
+              while (true) {
+                delta = g * step_size;
+                Registration::Transform::param_vec2mat(delta, Delta);
+                if ((X+Delta).determinant() <= 0.0){ step_size *= step_down_factor; continue; }
+                Diff.noalias() = ((X+Delta) * P - X * P).cwiseAbs();
+                if ((Diff.template block<3,1>(0,0) - coherence_distance).maxCoeff() > 0.0) { step_size *= step_down_factor; continue;}
+                if ((Diff.template block<3,1>(0,1) - coherence_distance).maxCoeff() > 0.0) { step_size *= step_down_factor; continue;}
+                if ((Diff.template block<3,1>(0,2) - coherence_distance).maxCoeff() > 0.0) { step_size *= step_down_factor; continue;}
+                if ((Diff.template block<3,1>(0,3) - coherence_distance).maxCoeff() > 0.0) { step_size *= step_down_factor; continue;}
+
+                A = X - Delta;
+                A(3,3) = 1.0;
+                if (A.determinant() <= 0.0){ step_size *= step_down_factor; continue; }
+
+                B = X.inverse() + Delta;
+                B(3,3) = 1.0;
+                if (B.determinant() <= 0.0){ step_size *= step_down_factor; continue; }
+
+                Asqrt = A.sqrt().eval();
+                assert(A.isApprox(Asqrt * Asqrt));
+                Bsqrt = B.sqrt().eval();
+                assert(B.isApprox(Bsqrt * Bsqrt));
+                Bsqrtinv = Bsqrt.inverse().eval();
+
+                Xnew = (Asqrt * Bsqrtinv) - ((Asqrt * Bsqrtinv - Bsqrtinv * Asqrt) * 0.5);
+                Diff.noalias() = ((Xnew) * P - X * P).cwiseAbs();
+                if ((Diff.template block<3,1>(0,0) - coherence_distance).maxCoeff() > 0.0) { step_size *= step_down_factor; continue;}
+                if ((Diff.template block<3,1>(0,1) - coherence_distance).maxCoeff() > 0.0) { step_size *= step_down_factor; continue;}
+                if ((Diff.template block<3,1>(0,2) - coherence_distance).maxCoeff() > 0.0) { step_size *= step_down_factor; continue;}
+                if ((Diff.template block<3,1>(0,3) - coherence_distance).maxCoeff() > 0.0) { step_size *= step_down_factor; continue;}
+
                 break;
               }
-            }
-            if (cnt > 0) INFO("affine: gradient descent step size was too large. Multiplied by factor "
-             + str(std::pow (factor, cnt), 4) + " (now: "+ str(step_size, 4) + ")");
-
-            Asqrt = A.sqrt().eval();
-            assert(A.isApprox(Asqrt * Asqrt));
-            B = X.inverse() + Delta;
-            B(3,3) = 1.0;
-            assert(B.determinant() > 0.0);
-            Bsqrt = B.sqrt().eval();
-            Bsqrtinv = Bsqrt.inverse().eval();
-            assert(B.isApprox(Bsqrt * Bsqrt));
-
-            // approximation for symmetry reasons as
-            // A and B don't commute
-            Xnew = (Asqrt * Bsqrtinv) - ((Asqrt * Bsqrtinv - Bsqrtinv * Asqrt) * 0.5);
-            Registration::Transform::param_mat2vec(Xnew, newx);
-#ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG
-            if (newx.isApprox(x)){
-              ValueType debug = 0;
-              for (ssize_t i=0; i<newx.size(); ++i){
-                debug += std::abs(newx[i]-x[i]);
+              if (orig_step_size != step_size) { DEBUG("step size changed from " + str(orig_step_size) + " to " + str(step_size)); }
+            } else {
+              // reduce step size if determinant of matrix becomes negative (happens rarely at first few iterations)
+              size_t cnt = 0;
+              const default_type factor(0.9);
+              while (true) {
+                delta = g * step_size;
+                Registration::Transform::param_vec2mat(delta, Delta);
+                if (Delta.block(0,0,3,3).array().abs().maxCoeff() > 0.1) {
+                  step_size = 0.09 / G.block(0,0,3,3).array().abs().maxCoeff();
+                  INFO(str(step_size) + " " + str(g * step_size));
+                  continue;
+                }
+                if (Delta.block(0,3,3,1).array().abs().maxCoeff() > 10.0){
+                  step_size = 9.0 / G.block(0,3,3,1).array().abs().maxCoeff();
+                  INFO(str(step_size) + " " + str(g * step_size));
+                  continue;
+                }
+                A = X - Delta;
+                A(3,3) = 1.0;
+                if (A.determinant() < 0) {
+                  step_size *= factor;
+                  ++cnt;
+                } else {
+                  break;
+                }
               }
-              INFO("affine update parameter cumulative change: " + str(debug));
-              VEC(newx);
-              VEC(g);
-              VAR(step_size);
+              if (cnt > 0) INFO("affine: gradient descent step size was too large. Multiplied by factor "
+               + str(std::pow (factor, cnt), 4) + " (now: "+ str(step_size, 4) + ")");
+
+              B = X.inverse() + Delta;
+              B(3,3) = 1.0;
+              assert(B.determinant() > 0.0);
+              Asqrt = A.sqrt().eval();
+              assert(A.isApprox(Asqrt * Asqrt));
+              Bsqrt = B.sqrt().eval();
+              assert(B.isApprox(Bsqrt * Bsqrt));
+              Bsqrtinv = Bsqrt.inverse().eval();
+
+              // approximation for symmetry reasons as
+              // A and B don't commute
+              Xnew = (Asqrt * Bsqrtinv) - ((Asqrt * Bsqrtinv - Bsqrtinv * Asqrt) * 0.5);
             }
-#endif
+
+
+            // MAT(X);
+            // MAT(Xnew);
+            // MAT(X.inverse());
+            // MAT(Delta);
+            // MAT(Asqrt);
+            // MAT(Bsqrtinv);
+            Registration::Transform::param_mat2vec(Xnew, newx);
+
+            // stop criterion based on max shift of control points
+            if (control_points.size()) {
+              Diff.row(0) *= recip_spacing(0);
+              Diff.row(1) *= recip_spacing(1);
+              Diff.row(2) *= recip_spacing(2);
+              Diff.colwise() -= stop_len;
+              MAT(Diff);
+              if (Diff.template block<3,4>(0,0).maxCoeff() <= 0.0) { return false; }
+            }
+// #ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG
+//             if (newx.isApprox(x)){
+//               ValueType debug = 0;
+//               for (ssize_t i=0; i<newx.size(); ++i){
+//                 debug += std::abs(newx[i]-x[i]);
+//               }
+//               INFO("affine update parameter cumulative change: " + str(debug));
+//               VEC(newx);
+//               VEC(g);
+//               VAR(step_size);
+//             }
+// #endif
             return !(newx.isApprox(x));
           }
+
+          void set_control_points (
+            const Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic>& points,
+            const Eigen::Vector3d& coherence_dist,
+            const Eigen::Vector3d& stop_length,
+            const Eigen::Vector3d& voxel_spacing ) {
+            assert(points.rows() == 4);
+            assert(points.cols() == 4);
+            control_points = points;
+            coherence_distance = coherence_dist;
+            stop_len << stop_length, 0.0;
+            recip_spacing << voxel_spacing.cwiseInverse(), 1.0;
+          }
+
+        private:
+          Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> control_points;
+          Eigen::Vector3d coherence_distance;
+          Eigen::Matrix<default_type, 4, 1> stop_len, recip_spacing;
     };
   }
 
@@ -157,6 +242,7 @@ namespace MR
           typedef typename Base::ParameterType ParameterType;
           // typedef Math::AffineLinearNonSymmetricUpdate UpdateType;
           typedef Math::AffineUpdate UpdateType;
+          // typedef Math::ParameterUpdateCheck UpdateCheckType;
           typedef AffineRobustEstimator RobustEstimatorType;
           typedef int has_robust_estimator;
 
@@ -214,10 +300,8 @@ namespace MR
 
             // get tetrahedron
             const size_t n_vertices = 4;
-            const Eigen::Matrix<ParameterType, 3, n_vertices> vertices = params.control_points;
-            Eigen::Matrix<ParameterType, 4, n_vertices> vertices_4;
-            vertices_4.block(0, 0, 3, n_vertices) = vertices;
-            vertices_4.row(3) << 1.0, 1.0, 1.0, 1.0;
+            const Eigen::Matrix<ParameterType, 4, n_vertices> vertices_4 = params.control_points;
+            const Eigen::Matrix<ParameterType, 3, n_vertices> vertices = vertices_4.template block<3,4>(0,0);
 
             // transform each vertex with each candidate transformation
             // weighting
@@ -292,6 +376,7 @@ namespace MR
 
         protected:
           UpdateType gradient_descent_updator;
+          // UpdateCheckType gradient_descent_update_check;
           RobustEstimatorType robust_estimator;
       };
       //! @}
