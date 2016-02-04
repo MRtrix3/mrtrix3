@@ -91,19 +91,21 @@ namespace MR
             }
             init (log_os);
 
-            INFO ("Gradient descent iteration: init; cost: " + str(f));
+            const value_type gradient_tolerance (grad_tolerance * normg);
+
+            DEBUG ("Gradient descent iteration: init; cost: " + str(f));
 
             for (int niter = 1; niter < max_iterations; niter++) {
               bool retval = iterate (log_os);
-              INFO ("Gradient descent iteration: " + str(niter) + "; cost: " + str(f));
+              DEBUG ("Gradient descent iteration: " + str(niter) + "; cost: " + str(f));
               if (verbose){
                 CONSOLE ("iteration " + str (niter) + ": f = " + str (f) + ", |g| = " + str (normg) + ":");
                 CONSOLE ("  x  = [ " + str(x2.transpose()) + "]");
               }
 
-              if (normg < grad_tolerance) {
+              if (normg < gradient_tolerance) {
                 if (verbose)
-                  CONSOLE ("normg (" + str(normg) + ") < gradient tolerance (" + str(grad_tolerance) + ")");
+                  CONSOLE ("normg (" + str(normg) + ") < gradient tolerance (" + str(gradient_tolerance) + ")");
                 return;
               }
 
