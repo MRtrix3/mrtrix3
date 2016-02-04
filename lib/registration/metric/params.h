@@ -89,14 +89,15 @@ namespace MR
 
           void update_control_points () {
             const Eigen::Vector3 centre = transformation.get_centre();
-            control_points.resize(3, 4);
+            control_points.resize(4, 4);
             // tetrahedron centred at centre of midspace scaled by control_point_exent
             control_points <<  1.0, -1.0, -1.0,  1.0,
+                               1.0,  1.0, -1.0, -1.0,
                                1.0, -1.0,  1.0, -1.0,
-                               1.0,  1.0, -1.0, -1.0;
+                               1.0,  1.0,  1.0,  1.0;
             for (size_t i = 0; i < 3; ++i)
               control_points.row(i) *= control_point_exent[i];
-            control_points.colwise() += centre;
+            control_points.block<3,4>(0,0).colwise() += centre;
           }
 
           const std::vector<size_t>& get_extent() const { return extent; }
