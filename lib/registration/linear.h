@@ -358,16 +358,16 @@ namespace MR
               for (auto gd_iteration = 0; gd_iteration < gd_repetitions[level]; ++gd_iteration){
                 if (File::Config::get_bool("reg_bbgd", true)) {
                   Math::GradientDescentBB<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
-                    optim (evaluate, *transform.get_gradient_descent_updator(), true);
+                    optim (evaluate, *transform.get_gradient_descent_updator(), false);
                   optim.precondition (optimiser_weights);
-                  optim.run (max_iter[level], grad_tolerance, std::cout.rdbuf());
+                  optim.run (max_iter[level], grad_tolerance); // std::cout.rdbuf()
                   parameters.transformation.set_parameter_vector (optim.state());
                   parameters.update_control_points();
                 } else {
                   Math::GradientDescent<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
-                    optim (evaluate, *transform.get_gradient_descent_updator(), true);
+                    optim (evaluate, *transform.get_gradient_descent_updator(), false);
                   optim.precondition (optimiser_weights);
-                  optim.run (max_iter[level], grad_tolerance, std::cout.rdbuf());
+                  optim.run (max_iter[level], grad_tolerance); // std::cout.rdbuf()
                   parameters.transformation.set_parameter_vector (optim.state());
                   parameters.update_control_points();
                 }
