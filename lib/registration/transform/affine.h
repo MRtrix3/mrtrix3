@@ -169,7 +169,11 @@ namespace MR
               Diff.row(2) *= recip_spacing(2);
               Diff.colwise() -= stop_len;
               // MAT(Diff);
-              if (Diff.template block<3,4>(0,0).maxCoeff() <= 0.0) { return false; }
+              if (Diff.template block<3,4>(0,0).maxCoeff() <= 0.0) {
+                DEBUG("max control point movement (" + str(Diff.template block<3,4>(0,0).maxCoeff()) +
+                ") smaller than tolerance" );
+                return false;
+              }
             }
 // #ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG
 //             if (newx.isApprox(x)){

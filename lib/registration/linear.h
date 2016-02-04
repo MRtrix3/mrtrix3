@@ -280,6 +280,7 @@ namespace MR
             // calculate midway (affine average) space which will be constant for each resolution level
             midway_image_header = compute_minimum_average_header(im1_image, im2_image, transform, midspace_voxel_subsampling, midspace_padding);
 
+            bool analyse_descent = File::Config::get_bool("reg_analyse_descent", false);
             for (size_t level = 0; level < scale_factor.size(); level++) {
               {
                 std::string st;
@@ -333,7 +334,7 @@ namespace MR
 
               DEBUG ("neighbourhood kernel extent: " + str(kernel_extent));
               parameters.set_extent (kernel_extent);
-              {
+              if (!File::Config::get_bool("reg_nocontrolpoints", false)) {
                 Eigen::Vector3d spacing (
                   midway_image_header.spacing(0),
                   midway_image_header.spacing(1),
@@ -345,7 +346,7 @@ namespace MR
                 default_type reg_stop_len = File::Config::get_float ("reg_stop_len", 0.0001);
                 stop.array() *= reg_stop_len;
                 DEBUG("coherence length: " + str(coherence));
-                DEBUG("stop length:      " + str(coherence));
+                DEBUG("stop length:      " + str(stop));
                 transform.get_gradient_descent_updator()->set_control_points(
                   parameters.control_points, coherence, stop, spacing);
               }
@@ -358,17 +359,27 @@ namespace MR
               for (auto gd_iteration = 0; gd_iteration < gd_repetitions[level]; ++gd_iteration){
                 if (File::Config::get_bool("reg_bbgd", true)) {
                   Math::GradientDescentBB<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
-                    optim (evaluate, *transform.get_gradient_descent_updator(), false);
+                    optim (evaluate, *transform.get_gradient_descent_updator());
+                  optim.be_verbose (analyse_descent);
                   optim.precondition (optimiser_weights);
-                  optim.run (max_iter[level], grad_tolerance); // std::cout.rdbuf()
+                  if (analyse_descent)
+                    optim.run (max_iter[level], grad_tolerance, std::cout.rdbuf());
+                  else
+                    optim.run (max_iter[level], grad_tolerance);
+                  DEBUG("gradient descent ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
                   parameters.transformation.set_parameter_vector (optim.state());
                   parameters.update_control_points();
                 } else {
                   Math::GradientDescent<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
-                    optim (evaluate, *transform.get_gradient_descent_updator(), false);
+                    optim (evaluate, *transform.get_gradient_descent_updator());
+                  optim.be_verbose (analyse_descent);
                   optim.precondition (optimiser_weights);
-                  optim.run (max_iter[level], grad_tolerance); // std::cout.rdbuf()
+                  if (analyse_descent)
+                    optim.run (max_iter[level], grad_tolerance, std::cout.rdbuf());
+                  else
+                    optim.run (max_iter[level], grad_tolerance);
                   parameters.transformation.set_parameter_vector (optim.state());
+                  DEBUG("gradient descent ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
                   parameters.update_control_points();
                 }
                 if (log_stream){
