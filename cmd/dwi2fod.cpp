@@ -49,7 +49,12 @@ void usage ()
    + "Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
    "Robust determination of the fibre orientation distribution in diffusion MRI: "
    "Non-negativity constrained super-resolved spherical deconvolution. "
-   "NeuroImage, 2007, 35, 1459-1472";
+   "NeuroImage, 2007, 35, 1459-1472"
+
+   + "Tournier, J.-D.; Calamante, F., Gadian, D.G. & Connelly, A. " // Internal
+   "Direct estimation of the fiber orientation density function from "
+   "diffusion-weighted MRI data using spherical deconvolution."
+   "NeuroImage, 2004, 23, 1176-1185";
 
   ARGUMENTS
     + Argument ("dwi",
