@@ -31,8 +31,10 @@ rpe_me_group.add_argument('-rpe_pair', nargs=2, metavar=('forward', 'reverse'), 
 rpe_me_group.add_argument('-rpe_all', metavar='input_revpe', help='Provide a second DWI series identical to the input series, that has the opposite phase encoding; these will be combined in the output image')
 grad_import = lib.app.parser.add_mutually_exclusive_group()
 grad_import.add_argument('-grad', nargs=1, help='Provide a gradient table in MRtrix format')
-grad_import.add_argument('-fslgrad', nargs=2, metavar='bvecs bvals', help='Provide a gradient table in FSL bvecs/bvals format')
-  # TODO If output image format does not contain diffusion encoding, need to also write this to the output somehow
+grad_import.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Provide a gradient table in FSL bvecs/bvals format')
+grad_export = lib.app.parser.add_mutually_exclusive_group()
+grad_export.add_argument('-export_grad_mrtrix', metavar='grad', help='Export the final gradient table in MRtrix format')
+grad_export.add_argument('-export_grad_fsl', nargs=2, metavar=('bvecs', 'bvals'), help='Export the final gradient table in FSL bvecs/bvals format')
 lib.app.initialise()
 
 
@@ -297,10 +299,6 @@ runCommand(eddy_cmd + ' --imain=' + eddy_in + ' --mask=mask.nii --index=indices.
 stride_option = ' -stride ' + stride.replace(' ', ',')
 
 
-# Save the resulting file initially to this location
-result_path = 'result' + os.path.splitext(lib.app.args.output)[1]
-
-
 # Check to see whether or not eddy has provided a rotated bvecs file;
 #   if it has, import this into the output image
 bvecs_path = 'dwi_post_eddy.eddy_rotated_bvecs'
@@ -312,7 +310,7 @@ if not os.path.isfile(bvecs_path):
 if PE_design == 'None' or PE_design == 'Pair':
 
   # Convert the resulting volume to the output image, and re-insert the diffusion encoding
-  runCommand('mrconvert dwi_post_eddy' + fsl_suffix + ' ' + result_path + stride_option + ' -fslgrad ' + bvecs_path + ' bvals')
+  runCommand('mrconvert dwi_post_eddy' + fsl_suffix + ' result.mif' + stride_option + ' -fslgrad ' + bvecs_path + ' bvals')
   
 else: # 'All'
 
@@ -383,10 +381,17 @@ else: # 'All'
   runCommand('mrconvert dwi_post_eddy' + fsl_suffix + ' corrected1.mif -coord 3 0:' + str(num_volumes-1) + stride_option)
   runCommand('mrconvert dwi_post_eddy' + fsl_suffix + ' corrected2.mif -coord 3 ' + str(num_volumes) + ':' + str((num_volumes*2)-1) + stride_option)
   delFile('dwi_post_eddy' + fsl_suffix)
-  runCommand('mrcalc corrected1.mif weight1.mif -mult corrected2.mif weight2.mif -mult -add sum_weights.mif -divide 0.0 -max - | mrconvert - ' + result_path + ' -fslgrad bvecs_combined bvals_combined' + stride_option)
+  runCommand('mrcalc corrected1.mif weight1.mif -mult corrected2.mif weight2.mif -mult -add sum_weights.mif -divide 0.0 -max - | mrconvert - result.mif -fslgrad bvecs_combined bvals_combined' + stride_option)
 
 
 # Finish!
-lib.app.moveFileToDest(result_path, lib.app.args.output)
+# Also export the gradient table to the path requested by the user if necessary
+output_path = os.path.join(lib.app.workingDir, lib.app.args.output)
+grad_export_option = ''
+if lib.app.args.export_grad_mrtrix:
+  grad_export_option = ' -export_grad_mrtrix ' + os.path.join(lib.app.workingDir, lib.app.args.export_grad_mrtrix)
+elif lib.app.args.export_grad_fsl:
+  grad_export_option = ' -export_grad_fsl ' + os.path.join(lib.app.workingDir, lib.app.args.export_grad_mrtrix[0]) + ' ' + os.path.join(lib.app.workingDir, lib.app.args.export_grad_mrtrix[1])
+runCommand('mrconvert result.mif ' + result_path + grad_export_option)
 lib.app.complete()
 
