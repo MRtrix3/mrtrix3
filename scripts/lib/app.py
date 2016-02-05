@@ -84,7 +84,7 @@ def initialise():
   global colourClear, colourConsole, colourError, colourPrint, colourWarn
   workingDir = os.getcwd()
   args = parser.parse_args()
-  if args.help:
+  if args.help or len(sys.argv) == 1:
     parser.print_help()
     sys.exit(0)
 
@@ -100,11 +100,6 @@ def initialise():
     colourPrint = '\033[03;32m'
     colourWarn = '\033[00;31m'
 
-  if citationWarning:
-    printMessage('')
-    printMessage(citationWarning)
-    printMessage('')
-
   if args.nocleanup:
     cleanup = False
   if args.nthreads:
@@ -115,6 +110,12 @@ def initialise():
   if args.verbose:
     verbosity = 2
     mrtrixQuiet = ''
+
+  if citationWarning:
+    printMessage('')
+    printMessage(citationWarning)
+    printMessage('')
+
   if args.cont:
     tempDir = os.path.abspath(args.cont[0])
     lastFile = args.cont[1]
@@ -144,6 +145,8 @@ def initialise():
 
 
 
+
+
 def checkOutputFile(path):
   import os
   from lib.errorMessage import errorMessage
@@ -153,10 +156,10 @@ def checkOutputFile(path):
     return
   if os.path.exists(path):
     if args.force:
-      warnMessage('Output file already exists; will be overwritten at script completion')
+      warnMessage('Output file ' + os.path.basename(path) + ' already exists; will be overwritten at script completion')
       mrtrixForce = ' -force'
     else:
-      errorMessage('Output file already exists (use -force to override)')
+      errorMessage('Output file ' + os.path.basename(path) + ' already exists (use -force to override)')
       sys.exit(1)
 
 
