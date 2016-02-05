@@ -1,0 +1,136 @@
+#!/bin/bash
+
+if [ $# -lt 3 ]; then 
+  cat <<EOD
+
+ usage: estimate_response [OPTIONS] dwi mask response
+
+ where:
+
+    dwi         input DWI images
+    mask        input brain mask
+    response    output text file containing response function coefficients
+
+ OPTIONS:
+
+    -niter N        set the number of iterations to use (default: 3)
+    -shell b        set the shell to select from the DWI (default: max)
+    -lmax L         set the maximum harmonic order to use (default: 8).
+    -sf mask        output the final mask of single-fibre voxels 
+    -peaks image    output image of peak orientations
+
+EOD
+
+  exit 1
+fi
+
+niter=5
+
+while [[ $# > 3 ]]; do
+  case $1 in 
+    -niter)
+      niter="$2";
+      shift
+      ;;
+    -shell)
+      shell="-shell $2";
+      shift
+      ;;
+    -lmax)
+      lmax="-lmax $2";
+      shift
+      ;;
+    -sf)
+      sf_mask="$2";
+      shift
+      ;;
+    -peaks)
+      output_peak="$2";
+      shift
+      ;;
+    *)
+      ;;
+  esac
+  shift
+done
+
+
+
+# set fail on error:
+set -e
+
+# import helper functions:
+. "$(dirname "$(which "$0")")"/__mrtrix_bash_helper_functions
+
+tmpdir=$(create_tmpdir)
+echo 'NOTE: temporary files will be placed in "'$tmpdir'"'
+  
+response="$3"
+dwi="$tmpdir"/dwi.mif
+sh="$tmpdir"/sh.mif
+fod="$tmpdir"/fod.mif
+peaks="$tmpdir"/peaks
+peak_ratio="$tmpdir"/peak_ratio.mif
+
+mask="$2"
+[ "x$sf_mask" == "x" ] && sf_mask="$tmpdir/sf_mask.mif"
+
+# start with sharpest possible response function (i.e. SH decomposition of a flat disc):
+echo "1,-1,1" > "$response"
+
+# preload DWI with optimal stride (should also allow -shell option in due course)
+dwiextract "$1" $shell "$dwi" 
+
+# compute SH fit to DWI:
+amp2sh "$dwi" $lmax "$sh"
+
+# set initial lmax=4:
+current_lmax="-lmax 4"
+
+for ((n=1; n<=niter; n++)); do
+
+  echo ''
+  echo "### iteration $n ###"
+
+  # estimate FOD within mask:
+  rm -f "$fod"
+  dwi2fod "$dwi" $current_lmax -mask "$mask" "$response" "$fod" 
+  # make sure lmax is set as per command-line in later iterations:
+  current_lmax="$lmax"
+  
+  # extract 2 largest peaks into a 4D image split over volumes:
+  rm -f "${peaks}"-?.mif
+  sh2peaks "$fod" -mask "$mask" -num 2 -null 0 "${peaks}-[].mif" 
+  
+  # compute metric of single-fibre-ness (admittedly not pretty, but clear enough):
+  # this computes: sqrt(peak1)*(1-peak2/peak1)^2 
+  mrmath "${peaks}-0.mif" "${peaks}-1.mif" "${peaks}-2.mif" rms "$tmpdir"/peak1.mif -force -quiet
+  mrmath "${peaks}-3.mif" "${peaks}-4.mif" "${peaks}-5.mif" rms "$tmpdir"/peak2.mif -force -quiet
+  mrcalc "$tmpdir"/peak1.mif -sqrt 1 "$tmpdir"/peak2.mif "$tmpdir"/peak1.mif -div -sub 2 -pow -mult "$peak_ratio" -force -quiet
+  
+  # get mask of 300 voxels with largest metric:
+  rm -f "$sf_mask"
+  mrthreshold "$peak_ratio" -top 300 "$sf_mask" -quiet
+  
+  # update estimate of response function within that mask, using FOD primary peak orientation:
+  rm -f "$response"
+  sh2response "$sh" "$sf_mask" "${peaks}-[0:2].mif" "$response" 
+
+
+  # refine mask to speed up later iterations:
+  if [ "$mask" == "$2" ]; then
+    mask="$tmpdir/mask.mif" 
+    mrthreshold "$peak_ratio" -top 3000 - | maskfilter - dilate "$mask"
+  fi
+
+
+  echo "current response coefficients: [ "$(cat "$response")" ]"
+  
+done
+
+[ "x$output_peak" != "x" ] && mrconvert "${peaks}-[0:2].mif" "$output_peak" 
+
+# clean up:
+rm -rf "$tmpdir"
+
+

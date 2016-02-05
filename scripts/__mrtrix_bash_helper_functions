@@ -1,0 +1,27 @@
+
+function get_config_parameter ()
+{
+  local value=$([ -f ~/.mrtrix.conf ] && sed -n -e 's/^[[:space:]]*'"$1"':[[:space:]]*//p' < ~/.mrtrix.conf)
+  [ "x$value" == "x" ] && [ -f /etc/mrtrix.conf ] && value=$(sed -n -e 's/^[[:space:]]*'"$1"':[[:space:]]*//p' < /etc/mrtrix.conf)
+  if [ "x$value" == "x" ]; then return 1; else echo "$value"; fi
+}
+
+function get_tmpdir ()
+{
+  local tmpdir=$(get_config_parameter TmpFileDir || 
+  ( [ "x$TMPDIR" != "x" ] && echo "$TMPDIR" ) ||
+  ( [ "x$TMP" != "x" ] && echo "$TMP" ) ||
+  ( [ "x$TEMP" != "x" ] && echo "$TEMP" ) ||
+  ( [ -d /tmp ] && echo /tmp ) ||
+  return 1 )
+  echo "$tmpdir"
+}
+
+
+function create_tmpdir ()
+{
+  tmpdir=$(get_tmpdir) || ( echo "could not find temporary folder location!"; return 1)
+  tmpdir=$(mktemp -d -p "$tmpdir" mrtrix.tmp-XXXXXX)
+  echo "$tmpdir"
+}
+
