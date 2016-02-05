@@ -179,7 +179,7 @@ namespace MR
               void initGL() override;
               void bind() override;
               void set_data (const vector_t& data, int buffer_ID = 0) const override;
-              GLuint num_indices() const { return half_sphere.num_indices; }
+              GLuint num_indices() const override { return half_sphere.num_indices; }
 
               void update_mesh (const size_t LOD);
 
@@ -204,8 +204,8 @@ namespace MR
 
               void initGL() override;
               void bind() override;
-              void set_data (const vector_t&, int buffer_ID = 0) const;
-              GLuint num_indices() const { return index_count; }
+              void set_data (const vector_t&, int buffer_ID = 0) const override;
+              GLuint num_indices() const override { return index_count; }
 
               void update_mesh (const MR::DWI::Directions::Set&);
 
