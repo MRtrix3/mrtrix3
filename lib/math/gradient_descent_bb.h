@@ -61,6 +61,7 @@ namespace MR
             g2 (func.size()),
             g3 (func.size()),
             nfeval (0),
+            niter (0),
             verbose (verbose),
             delim (",") {  }
 
@@ -76,13 +77,13 @@ namespace MR
             preconditioner_weights = weights;
           }
 
-          void run (const int max_iterations = 1000,
+          void run (const size_t max_iterations = 1000,
                     const value_type grad_tolerance = 1e-6,
                     std::streambuf* log_stream = nullptr)
           {
             std::ostream log_os(log_stream? log_stream : nullptr);
             if (log_os){
-              log_os << "'iteration" << delim << "cost" << delim << "stepsize";
+              log_os << "'iteration" << delim << "feval" << delim << "cost" << delim << "stepsize";
               for ( ssize_t a = 0 ; a < x1.size() ; a++ )
                   log_os << delim + "x_" + str(a+1) ;
               for ( ssize_t a = 0 ; a < x1.size() ; a++ )
@@ -95,7 +96,7 @@ namespace MR
 
             DEBUG ("Gradient descent iteration: init; cost: " + str(f));
 
-            for (int niter = 1; niter < max_iterations; niter++) {
+            while (niter < max_iterations) {
               bool retval = iterate (log_os);
               DEBUG ("Gradient descent iteration: " + str(niter) + "; cost: " + str(f));
               if (verbose){
@@ -133,7 +134,7 @@ namespace MR
               CONSOLE ("            x = [ " + str(x1.transpose()) + "]");
             }
             if (log_os) {
-              log_os << nfeval << delim << str(f) << delim << str(dt);
+              log_os << niter << delim << nfeval << delim << str(f) << delim << str(dt);
               for (ssize_t i=0; i< x2.size(); ++i){ log_os << delim << str(x1(i)); }
               for (ssize_t i=0; i< x2.size(); ++i){ log_os << delim << str(g1(i)); }
               log_os << std::endl;
@@ -152,7 +153,7 @@ namespace MR
             assert (std::isfinite (f)); assert (!std::isnan(f));
             assert (std::isfinite(normg)); assert (!std::isnan(normg));
             if (log_os) {
-              log_os << nfeval << delim << str(f) << delim << str(dt);
+              log_os << niter << delim << nfeval << delim << str(f) << delim << str(dt);
               for (ssize_t i=0; i< x2.size(); ++i){ log_os << delim << str(x2(i)); }
               for (ssize_t i=0; i< x2.size(); ++i){ log_os << delim << str(g2(i)); }
               log_os << std::endl;
@@ -178,11 +179,12 @@ namespace MR
             x1.swap(x3);
             g2.swap(g3);
             g1.swap(g3);
+            ++niter;
             if (log_os) {
-              log_os << nfeval << delim << str(f) << delim << str(dt);
+              log_os << niter << delim << nfeval << delim << str(f) << delim << str(dt);
               for (ssize_t i=0; i< x2.size(); ++i){ log_os << delim << str(x2(i)); }
               for (ssize_t i=0; i< x2.size(); ++i){ log_os << delim << str(g2(i)); }
-              log_os << std::endl << std::flush;
+              log_os << std::endl;
             }
             compute_normg_and_step ();
             return true;
@@ -194,6 +196,7 @@ namespace MR
           Eigen::Matrix<value_type, Eigen::Dynamic, 1> x1, x2, x3, g1, g2, g3, preconditioner_weights;
           value_type f, dt, normg;
           size_t nfeval;
+          size_t niter;
           bool verbose;
           std::string delim;
 
