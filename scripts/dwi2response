@@ -7,6 +7,12 @@
 import argparse, math, os, shutil, sys
 import lib.app
 
+import src.dwi2response.fa
+import src.dwi2response.manual
+import src.dwi2response.msmt_5tt
+import src.dwi2response.tax
+import src.dwi2response.tournier
+
 from lib.errorMessage  import errorMessage
 from lib.getHeaderInfo import getHeaderInfo
 from lib.getImageStat  import getImageStat
@@ -22,9 +28,8 @@ lib.app.initParser('Estimate response function(s) for spherical deconvolution')
 base_parser = lib.app.Parser(description='Arguments & options common to all algorithms', add_help=False, formatter_class=argparse.RawDescriptionHelpFormatter)
 
 # Standard input/output arguments
-base_arguments = base_parser.add_argument_group('Positional arguments common to all algorithms')
-base_arguments.add_argument('input',  help='The input DWI')
-
+base_argument = base_parser.add_argument_group('Positional argument common to all algorithms')
+base_argument.add_argument('input',  help='The input DWI')
 
 # General options
 base_options = base_parser.add_argument_group('Options common to all algorithms')
@@ -41,83 +46,36 @@ grad_import_group.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), 
 subparsers = lib.app.parser.add_subparsers(title='algorithm choices', description='Select the algorithm to be used to derive the response function', help='Additional help available for individual algorithms: Use e.g. ' + os.path.basename(sys.argv[0]) + ' fa -help')
 #subparsers.required = True
 
-parser_fa = subparsers.add_parser('fa', parents=[base_parser], help='Use the old FA-threshold heuristic')
-parser_fa_argument = parser_fa.add_argument_group('Positional argument specific to the \'fa\' algorithm')
-parser_fa_argument.add_argument('output', help='The output response function text file')
-parser_fa_options = parser_fa.add_argument_group('Options specific to the \'fa\' algorithm')
-parser_fa_options.add_argument('-erode', type=int, default=3, help='Number of brain mask erosion steps to apply prior to threshold (not used if mask is provided manually)')
-parser_fa_options.add_argument('-threshold', type=float, default=0.7, help='Threshold to apply to the FA image')
-parser_fa.set_defaults(algorithm='fa')
-parser_fa.set_defaults(single_shell=True)
-
-parser_tax = subparsers.add_parser('tax', parents=[base_parser], help='Use the Tax et al. (2014) recursive calibration algorithm')
-parser_tax_argument = parser_tax.add_argument_group('Positional argument specific to the \'tax\' algorithm')
-parser_tax_argument.add_argument('output', help='The output response function text file')
-parser_tax_options = parser_tax.add_argument_group('Options specific to the \'tax\' algorithm')
-parser_tax_options.add_argument('-peak_ratio', type=float, default=0.1, help='Second-to-first-peak amplitude ratio threshold')
-parser_tax_options.add_argument('-max_iters', type=int, default=20, help='Maximum number of iterations')
-parser_tax_options.add_argument('-convergence', type=float, default=0.5, help='Percentile change in any RF coefficient required to continue iterating')
-parser_tax.set_defaults(algorithm='tax')
-parser_tax.set_defaults(single_shell=True)
-
-parser_tournier = subparsers.add_parser('tournier', parents=[base_parser], help='Use the Tournier et al. (2013) iterative RF selection algorithm')
-parser_tournier_argument = parser_fa.add_argument_group('Positional argument specific to the \'tournier\' algorithm')
-parser_tournier_argument.add_argument('output', help='The output response function text file')
-parser_tournier_options = parser_tournier.add_argument_group('Options specific to the \'tournier\' algorithm')
-parser_tournier_options.add_argument('-init_voxels', type=int, default=3000, help='Number of single-fibre voxels to select in first iteration')
-parser_tournier_options.add_argument('-final_voxels', type=int, default=300, help='Number of single-fibre voxels to select in all subsequent iterations')
-parser_tournier_options.add_argument('-max_iters', type=int, default=10, help='Maximum number of iterations')
-parser_tournier.set_defaults(algorithm='tournier')
-parser_tournier.set_defaults(single_shell=True)
-
-parser_msmt_5tt = subparsers.add_parser('msmt_5tt', parents=[base_parser], help='Derive MSMT CSD responses based on a co-registered 5TT image')
-parser_msmt_5tt_arguments = parser_msmt_5tt.add_argument_group('Positional arguments specific to the \'msmt_5tt\' algorithm')
-parser_msmt_5tt_arguments.add_argument('in_5tt', help='Input co-registered 5TT image')
-parser_msmt_5tt_arguments.add_argument('out_gm', help='Output GM response text file')
-parser_msmt_5tt_arguments.add_argument('out_wm', help='Output WM response text file')
-parser_msmt_5tt_arguments.add_argument('out_csf', help='Output CSF response text file')
-parser_msmt_5tt_options = parser_msmt_5tt.add_argument_group('Options specific to the \'msmt_5tt\' algorithm')
-parser_msmt_5tt_options.add_argument('-dirs', help='Manually provide the fibre direction in each voxel (a tensor fit will be used otherwise)')
-parser_msmt_5tt_options.add_argument('-fa', type=float, default=0.2, help='Upper fractional anisotropy threshold for isotropic tissue (i.e. GM and CSF) voxel selection')
-parser_msmt_5tt_options.add_argument('-pvf', type=float, default=0.95, help='Partial volume fraction threshold for tissue voxel selection')
-parser_msmt_5tt_options.add_argument('-wm_algo', metavar='algorithm', default='tax', help='dwi2response algorithm to use for white matter single-fibre voxel selection')
-parser_msmt_5tt.set_defaults(algorithm='msmt_5tt')
-parser_msmt_5tt.set_defaults(single_shell=False)
-
-parser_manual = subparsers.add_parser('manual', parents=[base_parser], help='Derive a response function using an input mask image alone (i.e. pre-selected voxels)')
-parser_manual_arguments = parser_manual.add_argument_group('Positional arguments specific to the \'manual\' algorithm')
-parser_manual_arguments.add_argument('in_voxels', help='Input voxel selection mask')
-parser_manual_arguments.add_argument('output', help='Output response function text file')
-parser_manual_options = parser_manual.add_argument_group('Options specific to the \'manual\' algorithm')
-parser_manual_options.add_argument('-dirs', help='Manually provide the fibre direction in each voxel (a tensor fit will be used otherwise)')
-parser_manual.set_defaults(algorithm='manual')
-parser_manual.set_defaults(single_shell=False)
+src.dwi2response.fa      .initParser(subparsers, base_parser)
+src.dwi2response.manual  .initParser(subparsers, base_parser)
+src.dwi2response.msmt_5tt.initParser(subparsers, base_parser)
+src.dwi2response.tax     .initParser(subparsers, base_parser)
+src.dwi2response.tournier.initParser(subparsers, base_parser)
 
 
 lib.app.initialise()
 
 
-# Check for prior existence of output files
-if lib.app.args.algorithm == 'fa' or lib.app.args.algorithm == 'tax' or lib.app.args.algorithm == 'tournier' or lib.app.args.algorithm == 'manual':
-  lib.app.checkOutputFile(lib.app.args.output)
-elif lib.app.args.algorithm == 'msmt_5tt':
-  lib.app.checkOutputFile(lib.app.args.out_gm)
-  lib.app.checkOutputFile(lib.app.args.out_wm)
-  lib.app.checkOutputFile(lib.app.args.out_csf)
-lib.app.checkOutputFile(lib.app.args.voxels)
-
-lmax_option = ''
-if lib.app.args.lmax and lib.app.args.single_shell:
+# Sanitise some inputs, and get ready for data import
+if lib.app.args.lmax:
   try:
-    lmax_value = int(lib.app.args.lmax)
+    lmax = [ int(x) for x in lib.app.args.shell.split(',') ]
     if lmax_value%2:
       errorMessage('Value of lmax must be even')
   except:
     errorMessage('Parameter lmax must be a number')
-  lmax_option = ' -lmax ' + lib.app.args.lmax
+  if lib.app.args.single_shell and not len(lmax) == 1:
+    errorMessage('Can only specify a single lmax value for single-shell algorithms')
 shell_option = ''
 if lib.app.args.shell:
+  try:
+    shell_values = [ int(x) for x in lib.app.args.shell.split(',') ]
+  except:
+    errorMessage('-shell option should provide a comma-separated list of b-values')
+  if lib.app.args.single_shell and not len(lmax) == 1:
+    errorMessage('Can only specify a single b-value shell for single-shell algorithms')
   shell_option = ' -shell ' + lib.app.args.shell
+
 grad_import_option = ''
 if lib.app.args.grad:
   grad_import_option = ' -grad ' + lib.app.args.grad
@@ -125,23 +83,33 @@ elif lib.app.args.fslgrad:
   grad_import_option = ' -fslgrad ' + lib.app.args.fslgrad[0] + ' ' + lib.app.args.fslgrad[1]
 
 
-# Get input data into the temporary directory
+# Check for prior existence of output files, and grab any input files required by the particular algorithm
+if   lib.app.args.algorithm == 'fa':
+  src.dwi2response.fa      .checkOutputFiles()
+  src.dwi2response.fa      .getInputFiles()
+elif lib.app.args.algorithm == 'manual':
+  src.dwi2response.manual  .checkOutputFiles()
+  src.dwi2response.manual  .getInputFiles()
+elif lib.app.args.algorithm == 'msmt_5tt':
+  src.dwi2response.msmt_5tt.checkOutputFiles()
+  src.dwi2response.msmt_5tt.getInputFiles()
+elif lib.app.args.algorithm == 'tax':
+  src.dwi2response.tax     .checkOutputFiles()
+  src.dwi2response.tax     .getInputFiles()
+elif lib.app.args.algorithm == 'tournier':
+  src.dwi2response.tournier.checkOutputFiles()
+  src.dwi2response.tournier.getInputFiles()
+  
+lib.app.checkOutputFile(lib.app.args.voxels)
+
+
+# Get standard input data into the temporary directory
 if lib.app.args.single_shell or shell_option:
   runCommand('mrconvert ' + lib.app.args.input + ' - -stride 0,0,0,1' + grad_import_option + ' | dwiextract - ' + os.path.join(lib.app.tempDir, 'dwi.mif') + shell_option)
-else: # Don't want to discard b=0 in multi-shell algorithm
+else: # Don't want to discard b=0 in multi-shell algorithms, which dwiextract will do
   runCommand('mrconvert ' + lib.app.args.input + ' ' + os.path.join(lib.app.tempDir, 'dwi.mif') + ' -stride 0,0,0,1')
 if lib.app.args.mask:
-  if lib.app.args.algorithm == 'manual':
-    warnMessage('-mask option is ignored by algorithm \'manual\'')
-  else:
-    runCommand('mrconvert ' + lib.app.args.mask + ' ' + os.path.join(lib.app.tempDir, 'mask.mif') + ' -datatype bit')
-if lib.app.args.algorithm == 'msmt_5tt':
-  runCommand('mrconvert ' + lib.app.args.in_5tt + ' ' + os.path.join(lib.app.tempDir, '5tt.mif'))
-if lib.app.args.algorithm == 'manual':
-  runCommand('mrconvert ' + lib.app.args.in_voxels + ' ' + os.path.join(lib.app.tempDir, 'mask.mif'))
-if (lib.app.args.algorithm == 'msmt_5tt' or lib.app.args.algorithm == 'manual') and lib.app.args.dirs:
-  runCommand('mrconvert ' + lib.app.args.dirs + ' ' + os.path.join(lib.app.tempDir, 'dirs.mif'))
-
+  runCommand('mrconvert ' + lib.app.args.mask + ' ' + os.path.join(lib.app.tempDir, 'mask.mif') + ' -datatype bit')
 
 
 lib.app.gotoTempDir()
@@ -167,308 +135,27 @@ else:
   runCommand('dwi2mask dwi.mif mask.mif')
 
 
-
 # From here, the script splits depending on what estimation algorithm is being used
 
-
-
-if lib.app.args.algorithm == 'fa':
 # Old approach: FA threshold, tensor-based directions
+if lib.app.args.algorithm == 'fa':
+  src.dwi2response.fa.execute()
 
-  if not lib.app.args.mask:
-    runCommand('maskfilter mask.mif erode mask_eroded.mif -npass ' + str(lib.app.args.erode))
-    mask_path = 'mask_eroded.mif'
-  else:
-    mask_path = 'mask.mif'
-  runCommand('dwi2tensor dwi.mif -mask ' + mask_path + ' tensor.mif')
-  runCommand('tensor2metric tensor.mif -fa fa.mif -vector vector.mif -mask ' + mask_path)
-  runCommand('mrthreshold fa.mif voxels.mif -abs ' + str(lib.app.args.threshold))
-  runCommand('amp2sh dwi.mif dwiSH.mif' + shell_option + lmax_option)
-  runCommand('sh2response dwiSH.mif voxels.mif vector.mif response.txt' + lmax_option)
-
-  shutil.copyfile('response.txt', os.path.join(lib.app.workingDir, lib.app.args.output))
-
-
-
-elif lib.app.args.algorithm == 'tax':
-# Tax: Iterative calibration using CSD itself, start with full brain mask, only remove voxels at each iteration
-
-  runCommand('amp2sh dwi.mif dwiSH.mif' + shell_option + lmax_option)
-  convergence_change = 0.01 * lib.app.args.convergence
-
-  for iteration in range(0, lib.app.args.max_iters):
-    prefix = 'iter' + str(iteration) + '_'
-
-    # How to initialise response function?
-    # old dwi2response command used mean & standard deviation of DWI data; however
-    #   this may force the output FODs to lmax=2 at the first iteration
-    # Chantal used a tensor with low FA, but it'd be preferable to get the scaling right
-    # Other option is to do as before, but get the ratio between l=0 and l=2, and
-    #   generate l=4,6,... using that amplitude ratio
-    if iteration == 0:
-      RF_in_path = 'init_RF.txt'
-      mask_in_path = 'mask.mif'
-      runCommand('dwiextract dwi.mif shell.mif')
-      # TODO This can be changed once #71 is implemented (mrstats statistics across volumes)
-      volume_means = [float(x) for x in getImageStat('shell.mif', 'mean', 'mask.mif').split()]
-      mean = sum(volume_means) / float(len(volume_means))
-      volume_stds = [float(x) for x in getImageStat('shell.mif', 'std', 'mask.mif').split()]
-      std = sum(volume_stds) / float(len(volume_stds))
-      # Scale these to reflect the fact that we're moving to the SH basis
-      mean *= math.sqrt(4.0 * math.pi)
-      std  *= math.sqrt(4.0 * math.pi)
-      # Now produce the initial response function
-      # Let's only do it to lmax 4
-      init_RF = [ str(mean), str(-0.5*std), str(0.25*std*std/mean) ]
-      with open('init_RF.txt', 'w') as f:
-        f.write(' '.join(init_RF))
-    else:
-      RF_in_path = 'iter' + str(iteration-1) + '_RF.txt'
-      mask_in_path = 'iter' + str(iteration-1) + '_SF.mif'
-  
-    # Run CSD
-    runCommand('dwi2fod dwi.mif ' + RF_in_path + ' ' + prefix + 'FOD.mif -mask ' + mask_in_path)
-    # Get amplitudes of two largest peaks, and directions of largest
-    runCommand('fod2fixel ' + prefix + 'FOD.mif -peak ' + prefix + 'peaks.msf -mask ' + mask_in_path + ' -fmls_no_thresholds')
-    runCommand('fixel2voxel ' + prefix + 'peaks.msf split_value ' + prefix + 'amps.mif')
-    runCommand('mrconvert ' + prefix + 'amps.mif ' + prefix + 'first_peaks.mif -coord 3 0 -axes 0,1,2')
-    runCommand('mrconvert ' + prefix + 'amps.mif ' + prefix + 'second_peaks.mif -coord 3 1 -axes 0,1,2')
-    runCommand('fixel2voxel ' + prefix + 'peaks.msf split_dir ' + prefix + 'all_dirs.mif')
-    runCommand('mrconvert ' + prefix + 'all_dirs.mif ' + prefix + 'first_dir.mif -coord 3 0:2')
-    # Revise single-fibre voxel selection based on ratio of tallest to second-tallest peak
-    runCommand('mrcalc ' + prefix + 'second_peaks.mif ' + prefix + 'first_peaks.mif -div ' + prefix + 'peak_ratio.mif')
-    runCommand('mrcalc ' + prefix + 'peak_ratio.mif ' + str(lib.app.args.peak_ratio) + ' -lt ' + mask_in_path + ' -mult ' + prefix + 'SF.mif')
-    # Make sure image isn't empty
-    SF_voxel_count = int(getImageStat(prefix + 'SF.mif', 'count', prefix + 'SF.mif'))
-    if not SF_voxel_count:
-      errorMessage('Aborting: All voxels have been excluded from single-fibre selection')
-    # Generate a new response function
-    runCommand('sh2response dwiSH.mif ' + prefix + 'SF.mif ' + prefix + 'first_dir.mif ' + prefix + 'RF.txt' + lmax_option)
-    # Detect convergence
-    # Look for a change > some percentage - don't bother looking at the masks
-    if iteration > 0:
-      old_RF_file = open(RF_in_path, 'r')
-      old_RF = [ float(x) for x in old_RF_file.read().split() ]
-      new_RF_file = open(prefix + 'RF.txt', 'r')
-      new_RF = [ float(x) for x in new_RF_file.read().split() ]
-      reiterate = False
-      for index in range(0, len(old_RF)):
-        mean = 0.5 * (old_RF[index] + new_RF[index])
-        diff = math.fabs(0.5 * (old_RF[index] - new_RF[index]))
-        ratio = diff / mean
-        if ratio > convergence_change:
-          reiterate = True
-      if not reiterate:
-        printMessage('Exiting at iteration ' + str(iteration) + ' with ' + str(SF_voxel_count) + ' SF voxels due to unchanged response function coefficients')
-        shutil.copyfile(prefix + 'RF.txt', 'response.txt')
-        shutil.copyfile(prefix + 'SF.mif', 'voxels.mif')
-        break
-  # Go to the next iteration
-
-  # If we've terminated due to hitting the iteration limiter, we still need to copy the output file(s) to the correct location
-  if not os.path.exists('response.txt'):
-    printMessage('Exiting after maximum ' + str(iteration) + ' iterations with ' + str(SF_voxel_count) + ' SF voxels')
-    shutil.copyfile('iter' + str(lib.app.args.max_iters-1) + '_RF.txt', 'response.txt')
-    shutil.copyfile('iter' + str(lib.app.args.max_iters-1) + '_SF.mif', 'voxels.mif')
-
-  shutil.copyfile('response.txt', os.path.join(lib.app.workingDir, lib.app.args.output))
-
-
-
-elif lib.app.args.algorithm == 'tournier':
-# Tournier: Use [1 -1 1] as initial response, run CSD, select top 3000? voxels, new RF, dilate mask by 1 voxel, run CSD, select top 300? voxels
-
-  if lib.app.args.max_iters < 2:
-    errorMessage('Number of iterations must be at least 2')
-
-  runCommand('amp2sh dwi.mif dwiSH.mif' + shell_option + lmax_option)
-
-  for iteration in range(0, lib.app.args.max_iters):
-    prefix = 'iter' + str(iteration) + '_'
-  
-    if iteration == 0:
-      RF_in_path = 'init_RF.txt'
-      mask_in_path = 'mask.mif'
-      init_RF = '1 -1 1'
-      with open('init_RF.txt', 'w') as f:
-        f.write(init_RF);
-      iter_lmax_option = ' -lmax 4'
-      num_SF_voxels = lib.app.args.init_voxels
-    else:
-      RF_in_path = 'iter' + str(iteration-1) + '_RF.txt'
-      mask_in_path = 'iter' + str(iteration-1) + '_SF_dilated.mif'
-      iter_lmax_option = lmax_option
-      num_SF_voxels = lib.app.args.final_voxels
-
-    # Run CSD
-    runCommand('dwi2fod dwi.mif ' + RF_in_path + ' ' + prefix + 'FOD.mif -mask ' + mask_in_path + iter_lmax_option)
-    # Get amplitudes of two largest peaks, and direction of largest
-    # TODO Speed-test fod2fixel against sh2peaks
-    # TODO Add maximum number of fixels per voxel option to fod2fixel?
-    runCommand('fod2fixel ' + prefix + 'FOD.mif -peak ' + prefix + 'peaks.msf -mask ' + mask_in_path + ' -fmls_no_thresholds')
-    runCommand('fixel2voxel ' + prefix + 'peaks.msf split_value ' + prefix + 'amps.mif')
-    runCommand('mrconvert ' + prefix + 'amps.mif ' + prefix + 'first_peaks.mif -coord 3 0 -axes 0,1,2')
-    runCommand('mrconvert ' + prefix + 'amps.mif ' + prefix + 'second_peaks.mif -coord 3 1 -axes 0,1,2')
-    runCommand('fixel2voxel ' + prefix + 'peaks.msf split_dir ' + prefix + 'all_dirs.mif')
-    runCommand('mrconvert ' + prefix + 'all_dirs.mif ' + prefix + 'first_dir.mif -coord 3 0:2')
-    # Calculate the 'cost function' Donald derived for selecting single-fibre voxels
-    # https://github.com/MRtrix3/mrtrix3/pull/426
-    #  sqrt(|peak1|) * (1 - |peak2| / |peak1|)^2
-    runCommand('mrcalc ' + prefix + 'first_peaks.mif -sqrt 1 ' + prefix + 'second_peaks.mif ' + prefix + 'first_peaks.mif -div -sub 1 ' + prefix + 'second_peaks.mif ' + prefix + 'first_peaks.mif -div -sub -mult -mult ' + prefix + 'CF.mif')
-    # Select the top-ranked voxels
-    runCommand('mrthreshold ' + prefix + 'CF.mif -top ' + str(num_SF_voxels) + ' ' + prefix + 'SF.mif')
-    # Generate a new response function based on this selection
-    runCommand('sh2response dwiSH.mif ' + prefix + 'SF.mif ' + prefix + 'first_dir.mif ' + prefix + 'RF.txt' + iter_lmax_option)
-    # Should we terminate?
-    if iteration > 0:
-      runCommand('mrcalc ' + prefix + 'SF.mif iter' + str(iteration-1) + '_SF.mif -sub ' + prefix + 'SF_diff.mif')
-      max = getImageStat(prefix + 'SF_diff.mif', 'max')
-      if int(max) == 0:
-        printMessage('Convergence of SF voxel selection detected at iteration ' + str(iteration))
-        shutil.copyfile(prefix + 'RF.txt', 'response.txt')
-        shutil.copyfile(prefix + 'SF.mif', 'voxels.mif')
-        break
-
-    # Dilate the initial single-voxel mask; these are the voxels that will be re-tested in the next iteration
-    runCommand('maskfilter ' + prefix + 'SF.mif dilate ' + prefix + 'SF_dilated.mif')
-
-  # Commence the next iteration
-
-  # If terminating due to running out of iterations, still need to put the results in the appropriate location
-  shutil.copyfile(str(lib.app.args.max_iters-1) + '_SF.mif', 'voxels.mif')
-  shutil.copyfile('response.txt', os.path.join(lib.app.workingDir, lib.app.args.output))
-
-
-
-
-elif lib.app.args.algorithm == 'msmt_5tt':
-# Multi-shell (5TT-based): Provide 5TT image, do re-gridding to DWI space, select pure voxels, generate RF, recursively call self to get WM responses?
-# Will have multiple RF file outputs; output path becomes a prefix
-
-  # Ideally want to use the oversampling-based regridding of the 5TT image from the SIFT model, not mrtransform
-  # May need to commit 5ttregrid...
-
-  # Verify input 5tt image
-  sizes = [ int(x) for x in getHeaderInfo('5tt.mif', 'size').split() ]
-  datatype = getHeaderInfo('5tt.mif', 'datatype')
-  if not len(sizes) == 4 or not sizes[3] == 5 or not datatype.startswith('Float'):
-    errorMessage('Imported anatomical image ' + os.path.basename(lib.app.args.in_5tt) + ' is not in the 5TT format')
-
-  # Get shell information
-  shells = [ int(x) for x in getHeaderInfo('dwi.mif', 'shells').split() ]
-  if len(shells) < 3:
-    warnMessage('Less than three b-value shells; response functions will not be applicable in MSMT CSD algorithm')
-
-  # Get lmax information (if provided)
-  wm_lmax = [ ]
-  if lib.app.args.lmax:
-    wm_lmax = [ int(x.strip()) for x in lib.app.args.lmax.split() ]
-    for l in wm_lmax:
-      if l%2:
-        errorMessage('Values for lmax must be even')
-
-  runCommand('dwi2tensor dwi.mif - -mask mask.mif | tensor2metric - -fa fa.mif -vector vector.mif')
-  if not os.path.exists('dirs.mif'):
-    shutil.copy('vector.mif', 'dirs.mif')
-  runCommand('mrtransform 5tt.mif 5tt_regrid.mif -template fa.mif -interp linear')
-
-  # Tissue masks
-  runCommand('mrconvert 5tt_regrid.mif - -coord 3 0 -axes 0,1,2 | mrcalc - ' + str(lib.app.args.pvf) + ' -gt fa.mif ' + str(lib.app.args.fa) + ' -lt -mult gm_mask.mif')
-  runCommand('mrconvert 5tt_regrid.mif - -coord 3 2 -axes 0,1,2 | mrthreshold - wm_mask.mif -abs ' + str(lib.app.args.pvf))
-  runCommand('mrconvert 5tt_regrid.mif - -coord 3 3 -axes 0,1,2 | mrcalc - ' + str(lib.app.args.pvf) + ' -gt fa.mif ' + str(lib.app.args.fa) + ' -lt -mult csf_mask.mif')
-
-  # Revise WM mask to only include single-fibre voxels
-  printMessage('Calling dwi2response recursively to select WM single-fibre voxels using \'' + lib.app.args.wm_algo + '\' algorithm')
-  runCommand('dwi2response -quiet ' + lib.app.args.wm_algo + ' dwi.mif wm_ss_response.txt -mask wm_mask.mif -voxels wm_sf_mask.mif')
-
-  # For each of the three tissues, generate a multi-shell response
-  # Since here we're guaranteeing that GM and CSF will be isotropic in all shells, let's use mrstats rather than sh2response (seems a bit weird passing a directions file to sh2response with lmax=0...)
-
-  gm_responses  = [ ]
-  wm_responses  = [ ]
-  csf_responses = [ ]
-  max_length = 0
-
-  for index, b in enumerate(shells):
-    dwi_path = 'dwi_b' + str(b) + '.mif'
-    runCommand('dwiextract dwi.mif -shell ' + str(b) + ' ' + dwi_path)
-    sizes = getHeaderInfo(dwi_path, 'size').strip()
-    if len(sizes) == 3:
-      mean_path = dwi_path
-    else:
-      mean_path = 'dwi_b' + str(b) + '_mean.mif'
-      runCommand('mrmath ' + dwi_path + ' mean ' + mean_path + ' -axis 3')
-    gm_mean  = float(getImageStat(mean_path, 'mean', 'gm_mask.mif'))
-    csf_mean = float(getImageStat(mean_path, 'mean', 'csf_mask.mif'))
-    gm_responses .append( [ str(gm_mean  * math.sqrt(4.0 * math.pi)) ] )
-    csf_responses.append( [ str(csf_mean * math.sqrt(4.0 * math.pi)) ] )
-    this_b_lmax_option = ''
-    if wm_lmax:
-      this_b_lmax_option = ' -lmax ' + str(wm_lmax[index])
-    runCommand('amp2sh ' + dwi_path + ' - | sh2response - wm_sf_mask.mif dirs.mif wm_response_b' + str(b) + '.txt' + this_b_lmax_option)
-    wm_response = open('wm_response_b' + str(b) + '.txt', 'r').read().split()
-    wm_responses.append(wm_response)
-    max_length = max(max_length, len(wm_response))
-
-  with open('gm.txt', 'w') as f:
-    for line in gm_responses:
-      line += ['0'] * (max_length - len(line))
-      f.write(' '.join(line) + '\n')
-  with open('wm.txt', 'w') as f:
-    for line in wm_responses:
-      line += ['0'] * (max_length - len(line))
-      f.write(' '.join(line) + '\n')
-  with open('csf.txt', 'w') as f:
-    for line in csf_responses:
-      line += ['0'] * (max_length - len(line))
-      f.write(' '.join(line) + '\n')
-
-  shutil.copyfile('gm.txt',  os.path.join(lib.app.workingDir, lib.app.args.out_gm))
-  shutil.copyfile('wm.txt',  os.path.join(lib.app.workingDir, lib.app.args.out_wm))
-  shutil.copyfile('csf.txt', os.path.join(lib.app.workingDir, lib.app.args.out_csf))
-
-  # Generate output 4D binary image with voxel selections
-  runCommand('mrcat gm_mask.mif wm_sf_mask.mif csf_mask.mif voxels.mif -axis 3')
-
-
-
+# (Potentially) Multi-shell, but based on a strict input voxel mask
 elif lib.app.args.algorithm == 'manual':
-# Multi-shell, multi-tissue; but based on a strict input voxel mask, e.g. Ben's current msdwi2response script
+  src.dwi2response.manual.execute()
 
-  # Make sure that this gives the correct result for both single-shell and multi-shell
+# Multi-shell (5TT-based): Provide 5TT image, do re-gridding to DWI space, select pure voxels, generate RF, recursively call self to get WM response
+elif lib.app.args.algorithm == 'msmt_5tt':
+  src.dwi2response.msmt_5tt.execute()
 
-  # Get lmax information (if provided)
-  lmax = [ ]
-  if lib.app.args.lmax:
-    lmax = [ int(x.strip()) for x in lib.app.args.lmax.split() ]
-    for l in lmax:
-      if l%2:
-        errorMessage('Values for lmax must be even')
+# Tax: Iterative calibration using CSD itself, start with full brain mask, only remove voxels at each iteration  
+elif lib.app.args.algorithm == 'tax':
+  src.dwi2response.tax.execute()
 
-  # Get shell information
-  shells = [ int(x) for x in getHeaderInfo('dwi.mif', 'shells').split() ]
-
-  # Do we have directions, or do we need to calculate them?
-  if not os.path.exists('dirs.mif'):
-    runCommand('dwi2tensor dwi.mif - -mask mask.mif | tensor2metric - -vector dirs.mif')
-
-  # Loop over shells
-  response = [ ]
-  max_length = 0
-  for index, b in enumerate(shells):
-    runCommand('dwiextract dwi.mif - -shell ' + str(b) + ' | amp2sh - - | sh2response - mask.mif dirs.mif response_b' + str(b) + '.txt')
-    shell_response = open('response_b' + str(b) + '.txt', 'r').read().split()
-    response.append(shell_response)
-    max_length = max(max_length, len(shell_response))
-
-  with open('response.txt', 'w') as f:
-    for line in response:
-      line += ['0'] * (max_length - len(line))
-      f.write(' '.join(line) + '\n')
-
-  shutil.copyfile('response.txt', os.path.join(lib.app.workingDir, lib.app.args.output))
-  shutil.copyfile('mask.mif', 'voxels.mif')
-
+# Tournier: Use [1 -1 1] as initial response, run CSD, select top 3000? voxels, new RF, dilate mask by 1 voxel, run CSD, select top 300? voxels
+elif lib.app.args.algorithm == 'tournier':
+  src.dwi2response.tournier.execute()
 
 
 # Finalize for all algorithms
