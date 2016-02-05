@@ -8,22 +8,24 @@
 import math, os, sys
 import lib.app
 
-from lib.binaryInPath  import binaryInPath
-from lib.delFile       import delFile
-from lib.errorMessage  import errorMessage
-from lib.getFSLSuffix  import getFSLSuffix
-from lib.getHeaderInfo import getHeaderInfo
-from lib.getPEAxis     import getPEAxis
-from lib.isWindows     import isWindows
-from lib.printMessage  import printMessage
-from lib.runCommand    import runCommand
-from lib.warnMessage   import warnMessage
+from lib.binaryInPath   import binaryInPath
+from lib.delFile        import delFile
+from lib.errorMessage   import errorMessage
+from lib.getFSLEddyPath import getFSLEddyPath
+from lib.getFSLSuffix   import getFSLSuffix
+from lib.getHeaderInfo  import getHeaderInfo
+from lib.getPEDir       import getPEDir
+from lib.isWindows      import isWindows
+from lib.printMessage   import printMessage
+from lib.runCommand     import runCommand
+from lib.warnMessage    import warnMessage
 
 lib.app.initCitations([ 'eddy/topup', 'FSL' ])
 lib.app.initParser('Perform diffusion image pre-processing using FSL tools, including inhomogeneity distortion correction if possible')
-lib.app.parser.add_argument('pe_axis', help='The phase encode direction / axis; can be an axis number (0, 1 or 2) or a code (e.g. AP, LR, IS)')
+lib.app.parser.add_argument('pe_dir', help='The phase encode direction; can be a signed axis number (e.g. -0, 1, +2) or a code (e.g. AP, LR, IS)')
 lib.app.parser.add_argument('input',   help='The input DWI series to be corrected')
 lib.app.parser.add_argument('output',  help='The output corrected image series')
+lib.app.parser.add_argument('-cuda',   help='Use the CUDA version of eddy', action='store_true', default=False)
 rpe_group = lib.app.parser.add_argument_group('Options for passing reversed phase-encode data')
 rpe_me_group = rpe_group.add_mutually_exclusive_group(required=True)
 rpe_me_group.add_argument('-rpe_none', action='store_true', help='Specify explicitly that no reversed phase-encoding image data is provided')
@@ -71,15 +73,10 @@ if not PE_design == 'None':
     applytopup_cmd = 'fsl5.0-applytopup'
     if not binaryInPath(applytopup_cmd):
       errorMessage('Could not find FSL program applytopup; please verify FSL install')
-    
-eddy_cmd = 'eddy'
-if not binaryInPath(eddy_cmd):
-  eddy_cmd = 'fsl5.0-eddy'
-  if not binaryInPath(eddy_cmd):
-    errorMessage('Could not find FSL program eddy; please verify FSL install')
 
+eddy_cmd = getFSLEddyPath(lib.app.args.cuda)
 fsl_suffix = getFSLSuffix()
-PE_axis = getPEAxis(lib.app.args.pe_axis)
+PE_dir = getPEDir(lib.app.args.pe_dir)
 
 lib.app.checkOutputFile(lib.app.args.output)
 
@@ -216,10 +213,16 @@ if PE_design == 'Pair' or PE_design == 'All':
 printMessage('Creating phase-encoding configuration file')
 config_file = open('config.txt', 'w')
 config_line = [ '0', '0', '0', '0.1' ]
-config_line[PE_axis] = '1'
+if PE_dir[1]:
+  config_line[PE_dir[0]] = '-1'
+else:
+  config_line[PE_dir[0]] = '1'
 for lines in range(0, rpe_b0_count[0]):
   config_file.write(' '.join (config_line) + '\n')
-config_line[PE_axis] = '-1'
+if PE_dir[1]:
+  config_line[PE_dir[0]] = '1'
+else:
+  config_line[PE_dir[0]] = '-1'
 for lines in range(0, rpe_b0_count[1]):
   config_file.write(' '.join (config_line) + '\n')
 config_file.close()
