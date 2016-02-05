@@ -28,8 +28,8 @@ base_arguments.add_argument('input',  help='The input DWI')
 
 # General options
 base_options = base_parser.add_argument_group('Options common to all algorithms')
-base_options.add_argument('-shell', help='The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell)')
-base_options.add_argument('-lmax', help='The maximum harmonic degree(s) of response function estimation (single value for single-shell, comma-separated list for multi-shell WM response)')
+base_options.add_argument('-shell', help='The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)')
+base_options.add_argument('-lmax', help='The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)')
 base_options.add_argument('-mask', help='Provide an initial mask for response voxel selection')
 base_options.add_argument('-voxels', help='Output an image showing the final voxel selection(s)')
 grad_import_group = base_options.add_mutually_exclusive_group()
@@ -104,7 +104,7 @@ elif lib.app.args.algorithm == 'msmt_5tt':
 lib.app.checkOutputFile(lib.app.args.voxels)
 
 lmax_option = ''
-if lib.app.args.lmax:
+if lib.app.args.lmax and lib.app.args.single_shell:
   lmax_option = ' -lmax ' + lib.app.args.lmax
 shell_option = ''
 if lib.app.args.shell:
@@ -365,7 +365,7 @@ elif lib.app.args.algorithm == 'msmt_5tt':
   wm_responses  = [ ]
   csf_responses = [ ]
 
-  for b in shells:
+  for index, b in enumerate(shells):
     dwi_path = 'dwi_b' + str(b) + '.mif'
     runCommand('dwiextract dwi.mif -shell ' + str(b) + ' ' + dwi_path)
     sizes = getHeaderInfo(dwi_path, 'size').strip()
@@ -378,7 +378,10 @@ elif lib.app.args.algorithm == 'msmt_5tt':
     csf_mean = float(getImageStat(mean_path, 'mean', 'csf_mask.mif'))
     gm_responses .append( [ str(gm_mean  * math.sqrt(4.0 * math.pi)) ] )
     csf_responses.append( [ str(csf_mean * math.sqrt(4.0 * math.pi)) ] )
-    runCommand('amp2sh ' + dwi_path + ' - | sh2response - wm_sf_mask.mif ev.mif wm_response_b' + str(b) + '.txt')
+    this_b_lmax_option = ''
+    if wm_lmax:
+      this_b_lmax_option = ' -lmax ' + str(wm_lmax[index])
+    runCommand('amp2sh ' + dwi_path + ' - | sh2response - wm_sf_mask.mif ev.mif wm_response_b' + str(b) + '.txt' + this_b_lmax_option)
     wm_response = open('wm_response_b' + str(b) + '.txt', 'r').read().split()
     wm_responses.append(wm_response)
 
