@@ -22,9 +22,11 @@ def getInputFiles():
   import lib.app
   from lib.runCommand  import runCommand
   from lib.warnMessage import warnMessage
-  if os.path.exists('mask.mif'):
+  mask_path = os.path.join(lib.app.tempDir, 'mask.mif')
+  if os.path.exists(mask_path):
     warnMessage('-mask option is ignored by algorithm \'manual\'')
-  runCommand('mrconvert ' + lib.app.args.in_voxels + ' ' + os.path.join(lib.app.tempDir, 'mask.mif'))
+    os.remove(mask_path)
+  runCommand('mrconvert ' + lib.app.args.in_voxels + ' ' + os.path.join(lib.app.tempDir, 'in_voxels.mif'))
   if lib.app.args.dirs:
     runCommand('mrconvert ' + lib.app.args.dirs + ' ' + os.path.join(lib.app.tempDir, 'dirs.mif') + ' -stride 0,0,0,1')
 
@@ -45,13 +47,13 @@ def execute():
 
   # Do we have directions, or do we need to calculate them?
   if not os.path.exists('dirs.mif'):
-    runCommand('dwi2tensor dwi.mif - -mask mask.mif | tensor2metric - -vector dirs.mif')
+    runCommand('dwi2tensor dwi.mif - -mask in_voxels.mif | tensor2metric - -vector dirs.mif')
 
   # Loop over shells
   response = [ ]
   max_length = 0
   for index, b in enumerate(shells):
-    runCommand('dwiextract dwi.mif - -shell ' + str(b) + ' | amp2sh - - | sh2response - mask.mif dirs.mif response_b' + str(b) + '.txt' + lmax_option)
+    runCommand('dwiextract dwi.mif - -shell ' + str(b) + ' | amp2sh - - | sh2response - in_voxels.mif dirs.mif response_b' + str(b) + '.txt' + lmax_option)
     shell_response = open('response_b' + str(b) + '.txt', 'r').read().split()
     response.append(shell_response)
     max_length = max(max_length, len(shell_response))
@@ -62,5 +64,5 @@ def execute():
       f.write(' '.join(line) + '\n')
 
   shutil.copyfile('response.txt', os.path.join(lib.app.workingDir, lib.app.args.output))
-  shutil.copyfile('mask.mif', 'voxels.mif')
+  shutil.copyfile('in_voxels.mif', 'voxels.mif')
 

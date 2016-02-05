@@ -83,7 +83,16 @@ elif lib.app.args.fslgrad:
   grad_import_option = ' -fslgrad ' + lib.app.args.fslgrad[0] + ' ' + lib.app.args.fslgrad[1]
 
 
-# Check for prior existence of output files, and grab any input files required by the particular algorithm
+# Get standard input data into the temporary directory
+if lib.app.args.single_shell or shell_option:
+  runCommand('mrconvert ' + lib.app.args.input + ' - -stride 0,0,0,1' + grad_import_option + ' | dwiextract - ' + os.path.join(lib.app.tempDir, 'dwi.mif') + shell_option)
+else: # Don't want to discard b=0 in multi-shell algorithms, which dwiextract will do
+  runCommand('mrconvert ' + lib.app.args.input + ' ' + os.path.join(lib.app.tempDir, 'dwi.mif') + ' -stride 0,0,0,1')
+if lib.app.args.mask:
+  runCommand('mrconvert ' + lib.app.args.mask + ' ' + os.path.join(lib.app.tempDir, 'mask.mif') + ' -datatype bit')
+
+
+# Check for prior existence of output files, and grab any input files, used by the particular algorithm
 if   lib.app.args.algorithm == 'fa':
   src.dwi2response.fa      .checkOutputFiles()
   src.dwi2response.fa      .getInputFiles()
@@ -101,15 +110,6 @@ elif lib.app.args.algorithm == 'tournier':
   src.dwi2response.tournier.getInputFiles()
   
 lib.app.checkOutputFile(lib.app.args.voxels)
-
-
-# Get standard input data into the temporary directory
-if lib.app.args.single_shell or shell_option:
-  runCommand('mrconvert ' + lib.app.args.input + ' - -stride 0,0,0,1' + grad_import_option + ' | dwiextract - ' + os.path.join(lib.app.tempDir, 'dwi.mif') + shell_option)
-else: # Don't want to discard b=0 in multi-shell algorithms, which dwiextract will do
-  runCommand('mrconvert ' + lib.app.args.input + ' ' + os.path.join(lib.app.tempDir, 'dwi.mif') + ' -stride 0,0,0,1')
-if lib.app.args.mask:
-  runCommand('mrconvert ' + lib.app.args.mask + ' ' + os.path.join(lib.app.tempDir, 'mask.mif') + ' -datatype bit')
 
 
 lib.app.gotoTempDir()
