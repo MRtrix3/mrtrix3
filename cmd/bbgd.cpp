@@ -18,10 +18,14 @@ void usage ()
 
   ARGUMENTS
   + Argument ("verbose", "yesno").type_bool();
+
+  OPTIONS
+  + Option ( "precondition", " " )
+  + Option ( "mvn", " " );
 }
 
 struct MVN {
-    MVN(Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic>& covariance,
+    MVN (Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic>& covariance,
         Eigen::Matrix<default_type, Eigen::Dynamic, 1>& mu):
         S(covariance.inverse()),
         mu(mu),
@@ -47,41 +51,92 @@ private:
     const default_type f;
 };
 
-void run ()
-{
-    bool verbose = argument[0].as_bool();
-    const size_t dim(2);
-    Eigen::Matrix<default_type, Eigen::Dynamic, 1> ev(dim);
-    ev << 1.0,10000;
-    Eigen::Matrix<default_type, Eigen::Dynamic, 1> mu(dim);
-    mu << -0.1,1;
+// f(x) = Sum_i a_i^-1 * (x_i - centre_i)^2 + 1.0
+struct QuadraticProblem {
+    QuadraticProblem (
+        const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& a,
+        const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& centre):
+        a (a.cwiseInverse()),
+        centre (centre) {
+            VEC(a);
+            VEC(centre);
+        }
+    default_type operator() (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x, Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
+      gradient.setZero();
+      Eigen::Matrix<default_type, Eigen::Dynamic, 1> diff = x - centre;
+      gradient = 2.0 * a.array() * diff.array();
+      default_type cost = (a.array() * diff.array().square()).sum() + 1.0;
+      return cost;
+    }
+    typedef default_type value_type;
 
-    Eigen::Matrix<default_type, Eigen::Dynamic, 1> weights(dim);
-    weights = ev;
+    size_t size() const { return centre.size(); }
+    double init (Eigen::VectorXd& x) { x.resize(centre.size()); x.fill(0.0); return 1.0; }
+private:
+    const Eigen::Matrix<default_type, Eigen::Dynamic, 1> a;
+    const Eigen::Matrix<default_type, Eigen::Dynamic, 1> centre;
+};
 
-    Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> cov(dim, dim);
-    cov = Eigen::DiagonalMatrix<default_type, Eigen::Dynamic, Eigen::Dynamic>(ev);
-    auto func = MVN(cov, mu);
-    Eigen::Matrix<default_type, Eigen::Dynamic, 1> x(dim);
+template <class FunType, class OptimType>
+void optimise (FunType func, OptimType& optim, bool verbose, const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& weights) {
+    Eigen::Matrix<default_type, Eigen::Dynamic, 1> x;
     func.init(x);
-    auto optim = GradientDescent<MVN>(func);
     optim.be_verbose(verbose);
-    // optim.precondition (weights);
+    if (weights.size()){
+        INFO("preconditioning");
+        optim.precondition (weights);
+    }
     if (verbose)
         optim.run(100000, 1e-30, std::cout.rdbuf());
     else
         optim.run(100000, 1e-30);
-    auto optim2 = GradientDescentBB<MVN>(func);
-    optim2.be_verbose(verbose);
-    // optim2.precondition (weights);
-    if (verbose)
-        optim2.run(100000, 1e-30, std::cout.rdbuf());
-    else
-        optim2.run(100000, 1e-30);
-    CONSOLE("GradientDescentBB: n = " + str(optim2.function_evaluations()));
-    CONSOLE("GradientDescentBB: f = " + str(optim2.value()));
-    CONSOLE("GradientDescentBB: x = " + str(optim2.state().transpose()));
-    CONSOLE("GradientDescent:   n = " + str(optim.function_evaluations()));
-    CONSOLE("GradientDescent:   f = " + str(optim.value()));
-    CONSOLE("GradientDescent:   x = " + str(optim.state().transpose()));
+}
+
+void run ()
+{
+    bool verbose = argument[0].as_bool();
+    auto opt = get_options ("precondition");
+    bool precondition = opt.size();
+    bool mvn = get_options ("mvn").size();
+
+    const size_t dim(2);
+    Eigen::Matrix<default_type, Eigen::Dynamic, 1> ev(dim);
+    ev << 1.0,30.0;
+    Eigen::Matrix<default_type, Eigen::Dynamic, 1> mu(dim);
+    mu << -10.1,100;
+    Eigen::Matrix<default_type, Eigen::Dynamic, 1> weights;
+    if (precondition){
+        weights = ev;
+        INFO("weights: " + str(weights.transpose()));
+    }
+
+    if (mvn) {
+        Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> cov(dim, dim);
+        cov = Eigen::DiagonalMatrix<default_type, Eigen::Dynamic, Eigen::Dynamic>(ev);
+        auto func = MVN(cov, mu);
+        auto optim = GradientDescent<decltype(func)>(func, Math::LinearUpdate(), 10.0, 0.1);
+        optimise (func, optim, verbose, weights);
+        CONSOLE("GradientDescent:   n = " + str(optim.function_evaluations()));
+        CONSOLE("GradientDescent:   f = " + str(optim.value()));
+        CONSOLE("GradientDescent:   x = " + str(optim.state().transpose()));
+
+        auto optim2 = GradientDescentBB<decltype(func)>(func);
+        optimise (func, optim2, verbose, weights);
+        CONSOLE("GradientDescentBB: n = " + str(optim2.function_evaluations()));
+        CONSOLE("GradientDescentBB: f = " + str(optim2.value()));
+        CONSOLE("GradientDescentBB: x = " + str(optim2.state().transpose()));
+    } else {
+        auto func = QuadraticProblem(ev, mu);
+        auto optim = GradientDescent<decltype(func)>(func, Math::LinearUpdate(), 10.0, 0.1);
+        optimise (func, optim, verbose, weights);
+        CONSOLE("GradientDescent:   n = " + str(optim.function_evaluations()));
+        CONSOLE("GradientDescent:   f = " + str(optim.value()));
+        CONSOLE("GradientDescent:   x = " + str(optim.state().transpose()));
+
+        auto optim2 = GradientDescentBB<decltype(func)>(func);
+        optimise (func, optim2, verbose, weights);
+        CONSOLE("GradientDescentBB: n = " + str(optim2.function_evaluations()));
+        CONSOLE("GradientDescentBB: f = " + str(optim2.value()));
+        CONSOLE("GradientDescentBB: x = " + str(optim2.state().transpose()));
+    }
 }
