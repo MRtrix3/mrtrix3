@@ -4,8 +4,9 @@ def initParser(subparsers, base_parser):
   parser_tournier_argument = parser_tournier.add_argument_group('Positional argument specific to the \'tournier\' algorithm')
   parser_tournier_argument.add_argument('output', help='The output response function text file')
   parser_tournier_options = parser_tournier.add_argument_group('Options specific to the \'tournier\' algorithm')
-  parser_tournier_options.add_argument('-init_voxels', type=int, default=3000, help='Number of single-fibre voxels to select in first iteration')
-  parser_tournier_options.add_argument('-final_voxels', type=int, default=300, help='Number of single-fibre voxels to select in all subsequent iterations')
+  parser_tournier_options.add_argument('-iter_voxels', type=int, default=3000, help='Number of single-fibre voxels to select when preparing for the next iteration')
+  parser_tournier_options.add_argument('-sf_voxels', type=int, default=300, help='Number of single-fibre voxels to use when calculating response function')
+  parser_tournier_options.add_argument('-dilate', type=int, default=1, help='Number of mask dilation steps to apply when deriving voxel mask to test in the next iteration')
   parser_tournier_options.add_argument('-max_iters', type=int, default=10, help='Maximum number of iterations')
   parser_tournier.set_defaults(algorithm='tournier')
   parser_tournier.set_defaults(single_shell=True)
@@ -49,12 +50,10 @@ def execute():
       with open('init_RF.txt', 'w') as f:
         f.write(init_RF);
       iter_lmax_option = ' -lmax 4'
-      num_SF_voxels = lib.app.args.init_voxels
     else:
       RF_in_path = 'iter' + str(iteration-1) + '_RF.txt'
       mask_in_path = 'iter' + str(iteration-1) + '_SF_dilated.mif'
       iter_lmax_option = lmax_option
-      num_SF_voxels = lib.app.args.final_voxels
 
     # Run CSD
     runCommand('dwi2fod dwi.mif ' + RF_in_path + ' ' + prefix + 'FOD.mif -mask ' + mask_in_path + iter_lmax_option)
@@ -70,9 +69,9 @@ def execute():
     # Calculate the 'cost function' Donald derived for selecting single-fibre voxels
     # https://github.com/MRtrix3/mrtrix3/pull/426
     #  sqrt(|peak1|) * (1 - |peak2| / |peak1|)^2
-    runCommand('mrcalc ' + prefix + 'first_peaks.mif -sqrt 1 ' + prefix + 'second_peaks.mif ' + prefix + 'first_peaks.mif -div -sub 1 ' + prefix + 'second_peaks.mif ' + prefix + 'first_peaks.mif -div -sub -mult -mult ' + prefix + 'CF.mif')
+    runCommand('mrcalc ' + prefix + 'first_peaks.mif -sqrt 1 ' + prefix + 'second_peaks.mif ' + prefix + 'first_peaks.mif -div -sub 2 -pow -mult '+ prefix + 'CF.mif')
     # Select the top-ranked voxels
-    runCommand('mrthreshold ' + prefix + 'CF.mif -top ' + str(num_SF_voxels) + ' ' + prefix + 'SF.mif')
+    runCommand('mrthreshold ' + prefix + 'CF.mif -top ' + str(lib.app.args.sf_voxels) + ' ' + prefix + 'SF.mif')
     # Generate a new response function based on this selection
     runCommand('sh2response dwiSH.mif ' + prefix + 'SF.mif ' + prefix + 'first_dir.mif ' + prefix + 'RF.txt' + iter_lmax_option)
     # Should we terminate?
@@ -85,8 +84,9 @@ def execute():
         shutil.copyfile(prefix + 'SF.mif', 'voxels.mif')
         break
 
-    # Dilate the initial single-voxel mask; these are the voxels that will be re-tested in the next iteration
-    runCommand('maskfilter ' + prefix + 'SF.mif dilate ' + prefix + 'SF_dilated.mif')
+    # Select a greater number of top single-fibre voxels, and dilate;
+    #   these are the voxels that will be re-tested in the next iteration
+    runCommand('mrthreshold ' + prefix + 'CF.mif -top ' + str(lib.app.args.iter_voxels) + ' - | maskfilter ' + prefix + 'SF.mif dilate ' + prefix + 'SF_dilated.mif -npass ' + str(lib.app.args.dilate))
 
   # Commence the next iteration
 
