@@ -1,14 +1,14 @@
 def initParser(subparsers, base_parser):
   import argparse
-  parser_tax = subparsers.add_parser('tax', parents=[base_parser], help='Use the Tax et al. (2014) recursive calibration algorithm')
-  parser_tax_argument = parser_tax.add_argument_group('Positional argument specific to the \'tax\' algorithm')
-  parser_tax_argument.add_argument('output', help='The output response function text file')
-  parser_tax_options = parser_tax.add_argument_group('Options specific to the \'tax\' algorithm')
-  parser_tax_options.add_argument('-peak_ratio', type=float, default=0.1, help='Second-to-first-peak amplitude ratio threshold')
-  parser_tax_options.add_argument('-max_iters', type=int, default=20, help='Maximum number of iterations')
-  parser_tax_options.add_argument('-convergence', type=float, default=0.5, help='Percentile change in any RF coefficient required to continue iterating')
-  parser_tax.set_defaults(algorithm='tax')
-  parser_tax.set_defaults(single_shell=True)
+  parser = subparsers.add_parser('tax', parents=[base_parser], help='Use the Tax et al. (2014) recursive calibration algorithm')
+  argument = parser.add_argument_group('Positional argument specific to the \'tax\' algorithm')
+  argument.add_argument('output', help='The output response function text file')
+  options = parser.add_argument_group('Options specific to the \'tax\' algorithm')
+  options.add_argument('-peak_ratio', type=float, default=0.1, help='Second-to-first-peak amplitude ratio threshold')
+  options.add_argument('-max_iters', type=int, default=20, help='Maximum number of iterations')
+  options.add_argument('-convergence', type=float, default=0.5, help='Percentile change in any RF coefficient required to continue iterating')
+  parser.set_defaults(algorithm='tax')
+  parser.set_defaults(single_shell=True)
   
   
   

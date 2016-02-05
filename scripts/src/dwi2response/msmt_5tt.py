@@ -1,18 +1,18 @@
 def initParser(subparsers, base_parser):
   import argparse
-  parser_msmt_5tt = subparsers.add_parser('msmt_5tt', parents=[base_parser], help='Derive MSMT CSD responses based on a co-registered 5TT image')
-  parser_msmt_5tt_arguments = parser_msmt_5tt.add_argument_group('Positional arguments specific to the \'msmt_5tt\' algorithm')
-  parser_msmt_5tt_arguments.add_argument('in_5tt', help='Input co-registered 5TT image')
-  parser_msmt_5tt_arguments.add_argument('out_gm', help='Output GM response text file')
-  parser_msmt_5tt_arguments.add_argument('out_wm', help='Output WM response text file')
-  parser_msmt_5tt_arguments.add_argument('out_csf', help='Output CSF response text file')
-  parser_msmt_5tt_options = parser_msmt_5tt.add_argument_group('Options specific to the \'msmt_5tt\' algorithm')
-  parser_msmt_5tt_options.add_argument('-dirs', help='Manually provide the fibre direction in each voxel (a tensor fit will be used otherwise)')
-  parser_msmt_5tt_options.add_argument('-fa', type=float, default=0.2, help='Upper fractional anisotropy threshold for isotropic tissue (i.e. GM and CSF) voxel selection')
-  parser_msmt_5tt_options.add_argument('-pvf', type=float, default=0.95, help='Partial volume fraction threshold for tissue voxel selection')
-  parser_msmt_5tt_options.add_argument('-wm_algo', metavar='algorithm', default='tax', help='dwi2response algorithm to use for white matter single-fibre voxel selection')
-  parser_msmt_5tt.set_defaults(algorithm='msmt_5tt')
-  parser_msmt_5tt.set_defaults(single_shell=False)
+  parser = subparsers.add_parser('msmt_5tt', parents=[base_parser], help='Derive MSMT CSD responses based on a co-registered 5TT image')
+  arguments = parser.add_argument_group('Positional arguments specific to the \'msmt_5tt\' algorithm')
+  arguments.add_argument('in_5tt', help='Input co-registered 5TT image')
+  arguments.add_argument('out_gm', help='Output GM response text file')
+  arguments.add_argument('out_wm', help='Output WM response text file')
+  arguments.add_argument('out_csf', help='Output CSF response text file')
+  options = parser.add_argument_group('Options specific to the \'msmt_5tt\' algorithm')
+  options.add_argument('-dirs', help='Manually provide the fibre direction in each voxel (a tensor fit will be used otherwise)')
+  options.add_argument('-fa', type=float, default=0.2, help='Upper fractional anisotropy threshold for isotropic tissue (i.e. GM and CSF) voxel selection')
+  options.add_argument('-pvf', type=float, default=0.95, help='Partial volume fraction threshold for tissue voxel selection')
+  options.add_argument('-wm_algo', metavar='algorithm', default='tax', help='dwi2response algorithm to use for white matter single-fibre voxel selection')
+  parser.set_defaults(algorithm='msmt_5tt')
+  parser.set_defaults(single_shell=False)
   
   
   

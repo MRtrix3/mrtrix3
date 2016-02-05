@@ -1,15 +1,15 @@
 def initParser(subparsers, base_parser):
   import argparse
-  parser_tournier = subparsers.add_parser('tournier', parents=[base_parser], help='Use the Tournier et al. (2013) iterative RF selection algorithm')
-  parser_tournier_argument = parser_tournier.add_argument_group('Positional argument specific to the \'tournier\' algorithm')
-  parser_tournier_argument.add_argument('output', help='The output response function text file')
-  parser_tournier_options = parser_tournier.add_argument_group('Options specific to the \'tournier\' algorithm')
-  parser_tournier_options.add_argument('-iter_voxels', type=int, default=3000, help='Number of single-fibre voxels to select when preparing for the next iteration')
-  parser_tournier_options.add_argument('-sf_voxels', type=int, default=300, help='Number of single-fibre voxels to use when calculating response function')
-  parser_tournier_options.add_argument('-dilate', type=int, default=1, help='Number of mask dilation steps to apply when deriving voxel mask to test in the next iteration')
-  parser_tournier_options.add_argument('-max_iters', type=int, default=10, help='Maximum number of iterations')
-  parser_tournier.set_defaults(algorithm='tournier')
-  parser_tournier.set_defaults(single_shell=True)
+  parser = subparsers.add_parser('tournier', parents=[base_parser], help='Use the Tournier et al. (2013) iterative RF selection algorithm')
+  argument = parser.add_argument_group('Positional argument specific to the \'tournier\' algorithm')
+  argument.add_argument('output', help='The output response function text file')
+  options = parser.add_argument_group('Options specific to the \'tournier\' algorithm')
+  options.add_argument('-iter_voxels', type=int, default=3000, help='Number of single-fibre voxels to select when preparing for the next iteration')
+  options.add_argument('-sf_voxels', type=int, default=300, help='Number of single-fibre voxels to use when calculating response function')
+  options.add_argument('-dilate', type=int, default=1, help='Number of mask dilation steps to apply when deriving voxel mask to test in the next iteration')
+  options.add_argument('-max_iters', type=int, default=10, help='Maximum number of iterations')
+  parser.set_defaults(algorithm='tournier')
+  parser.set_defaults(single_shell=True)
   
   
   

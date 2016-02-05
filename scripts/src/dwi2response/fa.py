@@ -1,13 +1,13 @@
 def initParser(subparsers, base_parser):
   import argparse  
-  parser_fa = subparsers.add_parser('fa', parents=[base_parser], help='Use the old FA-threshold heuristic')
-  parser_fa_argument = parser_fa.add_argument_group('Positional argument specific to the \'fa\' algorithm')
-  parser_fa_argument.add_argument('output', help='The output response function text file')
-  parser_fa_options = parser_fa.add_argument_group('Options specific to the \'fa\' algorithm')
-  parser_fa_options.add_argument('-erode', type=int, default=3, help='Number of brain mask erosion steps to apply prior to threshold (not used if mask is provided manually)')
-  parser_fa_options.add_argument('-threshold', type=float, default=0.7, help='Threshold to apply to the FA image')
-  parser_fa.set_defaults(algorithm='fa')
-  parser_fa.set_defaults(single_shell=True)
+  parser = subparsers.add_parser('fa', parents=[base_parser], help='Use the old FA-threshold heuristic')
+  argument = parser.add_argument_group('Positional argument specific to the \'fa\' algorithm')
+  argument.add_argument('output', help='The output response function text file')
+  options = parser.add_argument_group('Options specific to the \'fa\' algorithm')
+  options.add_argument('-erode', type=int, default=3, help='Number of brain mask erosion steps to apply prior to threshold (not used if mask is provided manually)')
+  options.add_argument('-threshold', type=float, default=0.7, help='Threshold to apply to the FA image')
+  parser.set_defaults(algorithm='fa')
+  parser.set_defaults(single_shell=True)
   
   
   

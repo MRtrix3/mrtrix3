@@ -1,13 +1,13 @@
 def initParser(subparsers, base_parser):
   import argparse
-  parser_manual = subparsers.add_parser('manual', parents=[base_parser], help='Derive a response function using an input mask image alone (i.e. pre-selected voxels)')
-  parser_manual_arguments = parser_manual.add_argument_group('Positional arguments specific to the \'manual\' algorithm')
-  parser_manual_arguments.add_argument('in_voxels', help='Input voxel selection mask')
-  parser_manual_arguments.add_argument('output', help='Output response function text file')
-  parser_manual_options = parser_manual.add_argument_group('Options specific to the \'manual\' algorithm')
-  parser_manual_options.add_argument('-dirs', help='Manually provide the fibre direction in each voxel (a tensor fit will be used otherwise)')
-  parser_manual.set_defaults(algorithm='manual')
-  parser_manual.set_defaults(single_shell=False)
+  parser = subparsers.add_parser('manual', parents=[base_parser], help='Derive a response function using an input mask image alone (i.e. pre-selected voxels)')
+  arguments = parser.add_argument_group('Positional arguments specific to the \'manual\' algorithm')
+  arguments.add_argument('in_voxels', help='Input voxel selection mask')
+  arguments.add_argument('output', help='Output response function text file')
+  options = parser.add_argument_group('Options specific to the \'manual\' algorithm')
+  options.add_argument('-dirs', help='Manually provide the fibre direction in each voxel (a tensor fit will be used otherwise)')
+  parser.set_defaults(algorithm='manual')
+  parser.set_defaults(single_shell=False)
   
   
   
