@@ -1,5 +1,5 @@
 # First element: Command / publication name
-# Second element: True if citation is external to MRtrix3 collective
+# Second element: True if citation is external to MRtrix3 contributors
 # Third element: Full citation detail
 
 list = [ ( 'ACT',           False, 'Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. NeuroImage, 2012, 62, 1924-1938'),
@@ -13,4 +13,3 @@ list = [ ( 'ACT',           False, 'Smith, R. E.; Tournier, J.-D.; Calamante, F.
          ( 'Skare2010',     True,  'Skare, S. & Bammer, R. Jacobian weighting of distortion corrected EPI data. Proceedings of the International Society for Magnetic Resonance in Medicine, 2010, 5063'),
          ( 'Tax2014',       True,  'Tax, C. M.; Jeurissen, B.; Vos, S. B.; Viergever, M. A. & Leemans, A. Recursive calibration of the fiber response function for spherical deconvolution of diffusion MRI data. NeuroImage, 2014, 86, 67-80'),
          ( 'Tournier2013',  False, 'Tournier, J.-D.; Calamante, F. & Connelly, A. Determination of the appropriate b value and number of gradient directions for high-angular-resolution diffusion-weighted imaging. NMR Biomedicine, 2013, 26, 1775-1786') ]
-

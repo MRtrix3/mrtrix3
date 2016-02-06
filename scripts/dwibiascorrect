@@ -14,6 +14,7 @@ from lib.getHeaderInfo import getHeaderInfo
 from lib.isWindows     import isWindows
 from lib.runCommand    import runCommand
 
+lib.app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
 lib.app.initCitations([ 'fast', 'FSL' ])
 lib.app.initParser('Perform B1 field inhomogeneity correction for a DWI volume series')
 lib.app.parser.add_argument('input',  help='The input image series to be corrected')

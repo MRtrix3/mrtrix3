@@ -21,6 +21,7 @@ from lib.runCommand    import runCommand
 from lib.warnMessage   import warnMessage
 
 
+lib.app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
 lib.app.initCitations([ 'MSMT_CSD', 'Tax2014', 'Tournier2013' ])
 lib.app.initParser('Estimate response function(s) for spherical deconvolution')
 

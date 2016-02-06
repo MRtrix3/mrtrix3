@@ -20,6 +20,7 @@ from lib.printMessage   import printMessage
 from lib.runCommand     import runCommand
 from lib.warnMessage    import warnMessage
 
+lib.app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
 lib.app.initCitations([ 'eddy/topup', 'FSL' ])
 lib.app.initParser('Perform diffusion image pre-processing using FSL tools, including inhomogeneity distortion correction if possible')
 lib.app.parser.add_argument('pe_dir', help='The phase encode direction; can be a signed axis number (e.g. -0, 1, +2) or a code (e.g. AP, LR, IS)')

@@ -18,6 +18,7 @@ from lib.printMessage import printMessage
 from lib.runCommand   import runCommand
 from lib.warnMessage  import warnMessage
 
+lib.app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
 lib.app.initCitations([ 'ACT', 'bet', 'fast', 'first', 'FSL' ])
 lib.app.initParser('Generate a 5TT image suitable for ACT')
 subparsers = lib.app.parser.add_subparsers(title='software options', dest='algorithm', description='Select the software / algorithm to be used to derive the 5TT image', help='Additional help available for software options')
