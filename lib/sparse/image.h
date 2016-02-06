@@ -121,7 +121,7 @@ namespace MR
         {
           if (!buffer || !buffer->get_io())
             throw Exception ("cannot create sparse image for image with no handler");
-          if (typeid (buffer->get_io()) != typeid (ImageIO::Sparse*))
+          if (typeid (*buffer->get_io()) != typeid (ImageIO::Sparse))
             throw Exception ("cannot create sparse image to access non-sparse data");
           // Use the header information rather than trying to access this from the handler
           std::map<std::string, std::string>::const_iterator name_it = original_header().keyval().find (Sparse::name_key);
