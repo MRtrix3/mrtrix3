@@ -30,7 +30,13 @@ const int default_iter = 2;
 
 void usage ()
 {
-  ARGUMENTS 
+
+  REFERENCES
+  +  "Veraart, J.; Sijbers, J.; Sunaert, S.; Leemans, A. & Jeurissen, B. " // Internal
+     "Weighted linear least squares estimation of diffusion MRI parameters: strengths, limitations, and pitfalls. "
+     "NeuroImage, 2013, 81, 335-346";
+
+  ARGUMENTS
   + Argument ("dwi", "the input dwi image.").type_image_in ()
   + Argument ("dt", "the output dt image.").type_image_out ();
 
@@ -53,11 +59,6 @@ void usage ()
   
   DESCRIPTION
   + "Diffusion (kurtosis) tensor estimation using iteratively reweighted linear least squares estimator.";
-  
-  REFERENCES 
-  + "Veraart, J.; Sijbers, J.; Sunaert, S.; Leemans, A. & Jeurissen, B. " // Internal
-    "Weighted linear least squares estimation of diffusion MRI parameters: strengths, limitations, and pitfalls. "
-    "NeuroImage, 2013, 81, 335-346";
 }
 
 template <class MASKType, class B0Type, class DKTType>
