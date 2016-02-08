@@ -4498,7 +4498,7 @@ a.btn {
 
 .wy-nav-side {
   position: fixed;
-  top: 50px;
+  top: 50px !important;
   bottom: 0;
   left: 0;
   padding-bottom: 2em;
@@ -4616,16 +4616,12 @@ footer span.commit code, footer span.commit .rst-content tt, .rst-content footer
 }
 
 .wy-side-scroll ul {
-  margin-left: 0;
+  margin-left: 0 !important;
 }
 
 .wy-menu .caption {
-  color: #337ab7;
-}
-
-.wy-menu .caption {
-  background-color: #337ab7;
-  border-style: none;
+  background-color: #337ab7 !important;
+  border-style: none !important;
 }
 
 .affix {
@@ -4671,19 +4667,19 @@ footer span.commit code, footer span.commit .rst-content tt, .rst-content footer
   }
 
   .wy-side-scroll {
-    width: auto;
+    width: auto !important;
   }
 
   .wy-side-nav-search {
-    width: auto;
+    width: auto !important;
   }
 
   .wy-menu.wy-menu-vertical {
-    width: auto;
+    width: auto !important;
   }
 
   .wy-nav-content-wrap {
-    margin-left: 0;
+    margin-left: 0 !important;
   }
   .wy-nav-content-wrap .wy-nav-content {
     padding: 1.618em;
