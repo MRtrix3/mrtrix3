@@ -46,9 +46,9 @@ namespace MR
         if (other_tags_offset < fmap.size()) {
 
           // It's memory-mapped, so should be able to use memcpy to do the initial grab
-          size_t total_text_length = fmap.size() - other_tags_offset;
+          const size_t total_text_length = fmap.size() - other_tags_offset;
           char* const tags = new char [total_text_length];
-          memcpy (tags, &MGHO + other_tags_offset, total_text_length);
+          memcpy (tags, fmap.address() + other_tags_offset, total_text_length);
 
           // Extract and separate null-terminated strings
           size_t char_offset = 0;

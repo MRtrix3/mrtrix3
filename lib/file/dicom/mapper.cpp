@@ -89,8 +89,7 @@ namespace MR {
                 *(it++) = list[i+dim[0]*(j+dim[1]*k)];
         }
 
-        float slice_separation = Frame::get_slice_separation (frames, dim[1]);
-
+        default_type slice_separation = Frame::get_slice_separation (frames, dim[1]);
 
         if (series[0]->study->name.size()) 
           add_line (H.keyval()["comments"], std::string ("study: " + series[0]->study->name));

@@ -205,7 +205,7 @@ class Amp2SH {
 
 void run ()
 {
-  auto amp = Image<value_type>::open (argument[0]).with_direct_io (Stride::contiguous_along_axis (3));
+  auto amp = Image<value_type>::open (argument[0]).with_direct_io (3);
   auto header = amp.original_header();
 
   std::vector<size_t> bzeros, dwis;

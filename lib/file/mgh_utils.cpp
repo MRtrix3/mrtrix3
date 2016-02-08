@@ -30,29 +30,29 @@ namespace MR
       bool read_header (Header& H, const mgh_header& MGHH)
       {
         bool is_BE = false;
-        if (Raw::fetch<int32_t> (&MGHH.version, is_BE) != 1) {
+        if (Raw::fetch_<int32_t> (&MGHH.version, is_BE) != 1) {
           is_BE = true;
-          if (Raw::fetch<int32_t> (&MGHH.version, is_BE) != 1)
+          if (Raw::fetch_<int32_t> (&MGHH.version, is_BE) != 1)
             throw Exception ("image \"" + H.name() + "\" is not in MGH format (version != 1)");
         }
 
-        const size_t ndim = (Raw::fetch<int32_t> (&MGHH.nframes, is_BE) > 1) ? 4 : 3;
+        const size_t ndim = (Raw::fetch_<int32_t> (&MGHH.nframes, is_BE) > 1) ? 4 : 3;
         H.set_ndim (ndim);
-        H.size (0) = Raw::fetch<int32_t> (&MGHH.width, is_BE);
-        H.size (1) = Raw::fetch<int32_t> (&MGHH.height, is_BE);
-        H.size (2) = Raw::fetch<int32_t> (&MGHH.depth, is_BE);
+        H.size (0) = Raw::fetch_<int32_t> (&MGHH.width, is_BE);
+        H.size (1) = Raw::fetch_<int32_t> (&MGHH.height, is_BE);
+        H.size (2) = Raw::fetch_<int32_t> (&MGHH.depth, is_BE);
         if (ndim == 4)
-          H.size (3) = Raw::fetch<int32_t> (&MGHH.nframes, is_BE);
+          H.size (3) = Raw::fetch_<int32_t> (&MGHH.nframes, is_BE);
 
-        H.spacing (0) = Raw::fetch<float> (&MGHH.spacing_x, is_BE);
-        H.spacing (1) = Raw::fetch<float> (&MGHH.spacing_y, is_BE);
-        H.spacing (2) = Raw::fetch<float> (&MGHH.spacing_z, is_BE);
+        H.spacing (0) = Raw::fetch_<float> (&MGHH.spacing_x, is_BE);
+        H.spacing (1) = Raw::fetch_<float> (&MGHH.spacing_y, is_BE);
+        H.spacing (2) = Raw::fetch_<float> (&MGHH.spacing_z, is_BE);
 
         for (size_t i = 0; i != ndim; ++i)
           H.stride (i) = i + 1;
 
         DataType dtype;
-        int32_t type = Raw::fetch<int32_t> (&MGHH.type, is_BE);
+        int32_t type = Raw::fetch_<int32_t> (&MGHH.type, is_BE);
         switch (type) {
           case MGH_TYPE_UCHAR: dtype = DataType::UInt8;   break;
           case MGH_TYPE_SHORT: dtype = DataType::Int16;   break;
@@ -71,24 +71,24 @@ namespace MR
 
         transform_type& M (H.transform());
 
-        const int16_t RAS = Raw::fetch<int16_t> (&MGHH.goodRASFlag, is_BE);
+        const int16_t RAS = Raw::fetch_<int16_t> (&MGHH.goodRASFlag, is_BE);
         if (RAS) {
 
-          M(0,0) = Raw::fetch <float> (&MGHH.x_r, is_BE); 
-          M(0,1) = Raw::fetch <float> (&MGHH.y_r, is_BE); 
-          M(0,2) = Raw::fetch <float> (&MGHH.z_r, is_BE);
+          M(0,0) = Raw::fetch_<float> (&MGHH.x_r, is_BE);
+          M(0,1) = Raw::fetch_<float> (&MGHH.y_r, is_BE);
+          M(0,2) = Raw::fetch_<float> (&MGHH.z_r, is_BE);
 
-          M(1,0) = Raw::fetch <float> (&MGHH.x_a, is_BE); 
-          M(1,1) = Raw::fetch <float> (&MGHH.y_a, is_BE); 
-          M(1,2) = Raw::fetch <float> (&MGHH.z_a, is_BE);
+          M(1,0) = Raw::fetch_<float> (&MGHH.x_a, is_BE);
+          M(1,1) = Raw::fetch_<float> (&MGHH.y_a, is_BE);
+          M(1,2) = Raw::fetch_<float> (&MGHH.z_a, is_BE);
 
-          M(2,0) = Raw::fetch <float> (&MGHH.x_s, is_BE); 
-          M(2,1) = Raw::fetch <float> (&MGHH.y_s, is_BE); 
-          M(2,2) = Raw::fetch <float> (&MGHH.z_s, is_BE);
+          M(2,0) = Raw::fetch_<float> (&MGHH.x_s, is_BE);
+          M(2,1) = Raw::fetch_<float> (&MGHH.y_s, is_BE);
+          M(2,2) = Raw::fetch_<float> (&MGHH.z_s, is_BE);
 
-          M(0,3) = Raw::fetch <float> (&MGHH.c_r, is_BE);
-          M(1,3) = Raw::fetch <float> (&MGHH.c_a, is_BE);
-          M(2,3) = Raw::fetch <float> (&MGHH.c_s, is_BE);
+          M(0,3) = Raw::fetch_<float> (&MGHH.c_r, is_BE);
+          M(1,3) = Raw::fetch_<float> (&MGHH.c_a, is_BE);
+          M(2,3) = Raw::fetch_<float> (&MGHH.c_s, is_BE);
 
           for (size_t i = 0; i < 3; ++i) {
             for (size_t j = 0; j < 3; ++j)
@@ -113,14 +113,14 @@ namespace MR
 
       void read_other (Header& H, const mgh_other& MGHO, const bool is_BE) {
 
-        if (Raw::fetch<float> (&MGHO.tr, is_BE) != 0.0f)
-          add_line (H.keyval()["comments"], "TR: "   + str (Raw::fetch<float> (&MGHO.tr, is_BE)) + "ms");
-        if (Raw::fetch<float> (&MGHO.flip_angle, is_BE) != 0.0f)
-          add_line (H.keyval()["comments"], "Flip: " + str (Raw::fetch<float> (&MGHO.flip_angle, is_BE) * 180.0 / Math::pi) + "deg");
-        if (Raw::fetch<float> (&MGHO.te, is_BE) != 0.0f)
-          add_line (H.keyval()["comments"], "TE: "   + str (Raw::fetch<float> (&MGHO.te, is_BE)) + "ms");
-        if (Raw::fetch<float> (&MGHO.ti, is_BE) != 0.0f)
-          add_line (H.keyval()["comments"], "TI: "   + str (Raw::fetch<float> (&MGHO.ti, is_BE)) + "ms");
+        if (Raw::fetch_<float> (&MGHO.tr, is_BE) != 0.0f)
+          add_line (H.keyval()["comments"], "TR: "   + str (Raw::fetch_<float> (&MGHO.tr, is_BE)) + "ms");
+        if (Raw::fetch_<float> (&MGHO.flip_angle, is_BE) != 0.0f)
+          add_line (H.keyval()["comments"], "Flip: " + str (Raw::fetch_<float> (&MGHO.flip_angle, is_BE) * 180.0 / Math::pi) + "deg");
+        if (Raw::fetch_<float> (&MGHO.te, is_BE) != 0.0f)
+          add_line (H.keyval()["comments"], "TE: "   + str (Raw::fetch_<float> (&MGHO.te, is_BE)) + "ms");
+        if (Raw::fetch_<float> (&MGHO.ti, is_BE) != 0.0f)
+          add_line (H.keyval()["comments"], "TI: "   + str (Raw::fetch_<float> (&MGHO.ti, is_BE)) + "ms");
 
         // Ignore FoV field
 

@@ -31,6 +31,8 @@
 namespace MR
 {
 
+  constexpr int SpatiallyContiguous = -1;
+
 
   template <typename ValueType>
     class Image {
@@ -144,6 +146,40 @@ namespace MR
          * \note this invalidate the invoking Image - do not use the original
          * image in subsequent code.*/
         Image with_direct_io (Stride::List with_strides = Stride::List());
+
+        //! return a new Image using direct IO
+        /*! 
+         * this is a convenience function, performing the same function as
+         * with_direct_io(Stride::List). The difference is that the \a axis
+         * argument specifies which axis should be contiguous, or if \a axis is
+         * negative, that the spatial axes should be contiguous (the \c
+         * SpatiallyContiguous constexpr, set to -1, is provided for clarity).
+         * In other words:
+         * \code 
+         * auto image = Image<float>::open (filename).with_direct_io (3);
+         * \endcode
+         * is equivalent to:
+         * \code 
+         * auto header = Header::open (filename);
+         * auto image = header.get_image<float>().with_direct_io (Stride::contiguous_along_axis (3, header));
+         * \endcode
+         * and
+         * \code 
+         * auto image = Image<float>::open (filename).with_direct_io (-1);
+         * // or;
+         * auto image = Image<float>::open (filename).with_direct_io (SpatiallyContiguous);
+         * \endcode
+         * is equivalent to:
+         * \code 
+         * auto header = Header::open (filename);
+         * auto image = header.get_image<float>().with_direct_io (Stride::contiguous_along_spatial_axes (header));
+         * \endcode
+         */
+        Image with_direct_io (int axis) {
+          return with_direct_io ( axis < 0 ?
+              Stride::contiguous_along_spatial_axes (*buffer) :
+              Stride::contiguous_along_axis (axis, *buffer) );
+        }
 
 
         //! return RAM address of current voxel

@@ -287,7 +287,7 @@ extern value_type default_directions [];
 
 void run ()
 {
-  auto SH_data = Image<value_type>::open (argument[0]).with_direct_io (Stride::contiguous_along_axis(3));
+  auto SH_data = Image<value_type>::open (argument[0]).with_direct_io (3);
   Math::SH::check (SH_data);
 
   auto opt = get_options ("mask");

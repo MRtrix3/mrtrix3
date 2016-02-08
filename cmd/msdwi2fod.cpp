@@ -33,7 +33,16 @@ typedef double value_type;
 
 void usage ()
 {
-  ARGUMENTS 
+
+  DESCRIPTION
+  + "Multi-shell, multi-tissue constrained spherical deconvolution.";
+
+  REFERENCES
+  + "Jeurissen, B; Tournier, J-D; Dhollander, T; Connelly, A & Sijbers, J. " // Internal
+    "Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data "
+    "NeuroImage, 2014, 103, 411-426";
+
+  ARGUMENTS
   + Argument ("dwi", "the input dwi image.").type_image_in ()
   + Argument ("response odf",
       "the input tissue response and the output ODF image.").allow_multiple();
@@ -58,14 +67,6 @@ void usage ()
   COPYRIGHT = "Copyright (C) 2015 Vision Lab, University of Antwerp, Belgium. "
     "This is free software; see the source for copying conditions. "
     "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.";
-  
-  DESCRIPTION
-  + "Multi-shell, multi-tissue constrained spherical deconvolution.";
-  
-  REFERENCES 
-  + "Jeurissen, B; Tournier, J-D; Dhollander, T; Connelly, A & Sijbers, J. "
-    "Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data "
-    "NeuroImage, 2014, 103, 411-426";
 }
 
 

@@ -118,7 +118,7 @@ void run ()
 {
   Loader loader (argument[0]);
 
-  auto data = Image<value_type>::open (argument[1]).with_direct_io (Stride::contiguous_along_axis(3));
+  auto data = Image<value_type>::open (argument[1]).with_direct_io (3);
   Warper warper (data);
 
   Writer writer (argument[2], loader.properties);

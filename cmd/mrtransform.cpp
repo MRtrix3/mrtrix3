@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 
 
@@ -62,15 +62,15 @@ void usage ()
     "transformation applied using the -linear option will be also be applied to the directions.";
 
   REFERENCES
-    + "If FOD reorientation is being performed:\n"
-    "Raffelt, D.; Tournier, J.-D.; Crozier, S.; Connelly, A. & Salvado, O. "
+    + "* If FOD reorientation is being performed:\n"
+    "Raffelt, D.; Tournier, J.-D.; Crozier, S.; Connelly, A. & Salvado, O. " // Internal
     "Reorientation of fiber orientation distributions using apodized point spread functions. "
     "Magnetic Resonance in Medicine, 2012, 67, 844-855"
 
-    + "If FOD modulation is being performed:\n"
-    "Raffelt, D.; Tournier, J.-D.; Rose, S.; Ridgway, G.R.; Henderson, R.; Crozier, S.; Salvado, O.; Connelly, A.; "
+    + "* If FOD modulation is being performed:\n"
+    "Raffelt, D.; Tournier, J.-D.; Rose, S.; Ridgway, G.R.; Henderson, R.; Crozier, S.; Salvado, O.; Connelly, A.; " // Internal
     "Apparent Fibre Density: a novel measure for the analysis of diffusion-weighted magnetic resonance images. "
-    "Neuroimage, 2012, 15;59(4), 3976-94.";
+    "NeuroImage, 2012, 15;59(4), 3976-94.";
 
   ARGUMENTS
   + Argument ("input", "input image to be transformed.").type_image_in ()

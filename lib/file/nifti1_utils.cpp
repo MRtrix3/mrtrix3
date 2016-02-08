@@ -74,9 +74,9 @@ namespace MR
       size_t read (Header& H, const nifti_1_header& NH)
       {
         bool is_BE = false;
-        if (Raw::fetch<int32_t> (&NH.sizeof_hdr, is_BE) != 348) {
+        if (Raw::fetch_<int32_t> (&NH.sizeof_hdr, is_BE) != 348) {
           is_BE = true;
-          if (Raw::fetch<int32_t> (&NH.sizeof_hdr, is_BE) != 348)
+          if (Raw::fetch_<int32_t> (&NH.sizeof_hdr, is_BE) != 348)
             throw Exception ("image \"" + H.name() + "\" is not in NIfTI format (sizeof_hdr != 348)");
         }
 
@@ -94,7 +94,7 @@ namespace MR
         }
 
         // data set dimensions:
-        int ndim = Raw::fetch<int16_t> (&NH.dim, is_BE);
+        int ndim = Raw::fetch_<int16_t> (&NH.dim, is_BE);
         if (ndim < 1)
           throw Exception ("too few dimensions specified in NIfTI image \"" + H.name() + "\"");
         if (ndim > 7)
@@ -103,7 +103,7 @@ namespace MR
 
 
         for (int i = 0; i < ndim; i++) {
-          H.size(i) = Raw::fetch<int16_t> (&NH.dim[i+1], is_BE);
+          H.size(i) = Raw::fetch_<int16_t> (&NH.dim[i+1], is_BE);
           if (H.size (i) < 0) {
             INFO ("dimension along axis " + str (i) + " specified as negative in NIfTI image \"" + H.name() + "\" - taking absolute value");
             H.size(i) = std::abs (H.size (i));
@@ -115,7 +115,7 @@ namespace MR
 
         // data type:
         DataType dtype;
-        switch (Raw::fetch<int16_t> (&NH.datatype, is_BE)) {
+        switch (Raw::fetch_<int16_t> (&NH.datatype, is_BE)) {
           case DT_BINARY:
             dtype = DataType::Bit;
             break;
@@ -166,14 +166,14 @@ namespace MR
             dtype.set_flag (DataType::LittleEndian);
         }
 
-        if (Raw::fetch<int16_t> (&NH.bitpix, is_BE) != (int16_t) dtype.bits())
+        if (Raw::fetch_<int16_t> (&NH.bitpix, is_BE) != (int16_t) dtype.bits())
           WARN ("bitpix field does not match data type in NIfTI image \"" + H.name() + "\" - ignored");
 
         H.datatype() = dtype;
 
         // voxel sizes:
         for (int i = 0; i < ndim; i++) {
-          H.spacing(i) = Raw::fetch<float32> (&NH.pixdim[i+1], is_BE);
+          H.spacing(i) = Raw::fetch_<float32> (&NH.pixdim[i+1], is_BE);
           if (H.spacing (i) < 0.0) {
             INFO ("voxel size along axis " + str (i) + " specified as negative in NIfTI image \"" + H.name() + "\" - taking absolute value");
             H.spacing(i) = std::abs (H.spacing (i));
@@ -182,16 +182,16 @@ namespace MR
 
 
         // offset and scale:
-        H.intensity_scale() = Raw::fetch<float32> (&NH.scl_slope, is_BE);
+        H.intensity_scale() = Raw::fetch_<float32> (&NH.scl_slope, is_BE);
         if (std::isfinite (H.intensity_scale()) && H.intensity_scale() != 0.0) {
-          H.intensity_offset() = Raw::fetch<float32> (&NH.scl_inter, is_BE);
+          H.intensity_offset() = Raw::fetch_<float32> (&NH.scl_inter, is_BE);
           if (!std::isfinite (H.intensity_offset()))
             H.intensity_offset() = 0.0;
         }
         else 
           H.reset_intensity_scaling();
 
-        size_t data_offset = (size_t) Raw::fetch<float32> (&NH.vox_offset, is_BE);
+        size_t data_offset = (size_t) Raw::fetch_<float32> (&NH.vox_offset, is_BE);
 
         char descrip[81];
         strncpy (descrip, NH.descrip, 80);
@@ -204,23 +204,23 @@ namespace MR
         }
 
         if (is_nifti) {
-          if (Raw::fetch<int16_t> (&NH.sform_code, is_BE)) {
+          if (Raw::fetch_<int16_t> (&NH.sform_code, is_BE)) {
             auto& M (H.transform());
 
-            M(0,0) = Raw::fetch<float32> (&NH.srow_x[0], is_BE);
-            M(0,1) = Raw::fetch<float32> (&NH.srow_x[1], is_BE);
-            M(0,2) = Raw::fetch<float32> (&NH.srow_x[2], is_BE);
-            M(0,3) = Raw::fetch<float32> (&NH.srow_x[3], is_BE);
+            M(0,0) = Raw::fetch_<float32> (&NH.srow_x[0], is_BE);
+            M(0,1) = Raw::fetch_<float32> (&NH.srow_x[1], is_BE);
+            M(0,2) = Raw::fetch_<float32> (&NH.srow_x[2], is_BE);
+            M(0,3) = Raw::fetch_<float32> (&NH.srow_x[3], is_BE);
 
-            M(1,0) = Raw::fetch<float32> (&NH.srow_y[0], is_BE);
-            M(1,1) = Raw::fetch<float32> (&NH.srow_y[1], is_BE);
-            M(1,2) = Raw::fetch<float32> (&NH.srow_y[2], is_BE);
-            M(1,3) = Raw::fetch<float32> (&NH.srow_y[3], is_BE);
+            M(1,0) = Raw::fetch_<float32> (&NH.srow_y[0], is_BE);
+            M(1,1) = Raw::fetch_<float32> (&NH.srow_y[1], is_BE);
+            M(1,2) = Raw::fetch_<float32> (&NH.srow_y[2], is_BE);
+            M(1,3) = Raw::fetch_<float32> (&NH.srow_y[3], is_BE);
 
-            M(2,0) = Raw::fetch<float32> (&NH.srow_z[0], is_BE);
-            M(2,1) = Raw::fetch<float32> (&NH.srow_z[1], is_BE);
-            M(2,2) = Raw::fetch<float32> (&NH.srow_z[2], is_BE);
-            M(2,3) = Raw::fetch<float32> (&NH.srow_z[3], is_BE);
+            M(2,0) = Raw::fetch_<float32> (&NH.srow_z[0], is_BE);
+            M(2,1) = Raw::fetch_<float32> (&NH.srow_z[1], is_BE);
+            M(2,2) = Raw::fetch_<float32> (&NH.srow_z[2], is_BE);
+            M(2,3) = Raw::fetch_<float32> (&NH.srow_z[3], is_BE);
 
             // get voxel sizes:
             H.spacing(0) = std::sqrt (Math::pow2 (M(0,0)) + Math::pow2 (M(1,0)) + Math::pow2 (M(2,0)));
@@ -240,19 +240,19 @@ namespace MR
             M (1,2) /= H.spacing (2);
             M (2,2) /= H.spacing (2);
           }
-          else if (Raw::fetch<int16_t> (&NH.qform_code, is_BE)) {
+          else if (Raw::fetch_<int16_t> (&NH.qform_code, is_BE)) {
             { // TODO update with Eigen3 Quaternions
-              Eigen::Quaterniond Q (0.0, Raw::fetch<float32> (&NH.quatern_b, is_BE), Raw::fetch<float32> (&NH.quatern_c, is_BE), Raw::fetch<float32> (&NH.quatern_d, is_BE));
+              Eigen::Quaterniond Q (0.0, Raw::fetch_<float32> (&NH.quatern_b, is_BE), Raw::fetch_<float32> (&NH.quatern_c, is_BE), Raw::fetch_<float32> (&NH.quatern_d, is_BE));
               Q.w() = std::sqrt (1.0 - Q.squaredNorm());
               H.transform().matrix().topLeftCorner<3,3>() = Q.matrix();
             }
 
-            H.transform().translation()[0] = Raw::fetch<float32> (&NH.qoffset_x, is_BE);
-            H.transform().translation()[1] = Raw::fetch<float32> (&NH.qoffset_y, is_BE);
-            H.transform().translation()[2] = Raw::fetch<float32> (&NH.qoffset_z, is_BE);
+            H.transform().translation()[0] = Raw::fetch_<float32> (&NH.qoffset_x, is_BE);
+            H.transform().translation()[1] = Raw::fetch_<float32> (&NH.qoffset_y, is_BE);
+            H.transform().translation()[2] = Raw::fetch_<float32> (&NH.qoffset_z, is_BE);
 
             // qfac:
-            float qfac = Raw::fetch<float32> (&NH.pixdim[0], is_BE) >= 0.0 ? 1.0 : -1.0;
+            float qfac = Raw::fetch_<float32> (&NH.pixdim[0], is_BE) >= 0.0 ? 1.0 : -1.0;
             if (qfac < 0.0) 
               H.transform().matrix().topLeftCorner<3,3>().col(2) *= qfac;
           }

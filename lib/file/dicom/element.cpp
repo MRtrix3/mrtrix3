@@ -99,7 +99,7 @@ namespace MR {
 
         is_BE = is_transfer_syntax_BE;
 
-        group = Raw::fetch<uint16_t> (start, is_BE);
+        group = Raw::fetch_<uint16_t> (start, is_BE);
 
         if (group == GROUP_BYTE_ORDER_SWAPPED) {
           if (!is_BE) 
@@ -108,7 +108,7 @@ namespace MR {
           is_BE = false;
           group = GROUP_BYTE_ORDER;
         }
-        element = Raw::fetch<uint16_t> (start+2, is_BE);
+        element = Raw::fetch_<uint16_t> (start+2, is_BE);
 
         return false;
       }
@@ -129,10 +129,10 @@ namespace MR {
           // explicit encoding:
           VR = ByteOrder::BE (*reinterpret_cast<uint16_t*> (start+4));
           if (VR == VR_OB || VR == VR_OW || VR == VR_OF || VR == VR_SQ || VR == VR_UN || VR == VR_UT) {
-            size = Raw::fetch<uint32_t> (start+8, is_BE);
+            size = Raw::fetch_<uint32_t> (start+8, is_BE);
             data += 4;
           }
-          else size = Raw::fetch<uint16_t> (start+6, is_BE);
+          else size = Raw::fetch_<uint16_t> (start+6, is_BE);
 
           // try figuring out VR from dictionary if vendors haven't bothered
           // filling it in...
@@ -154,7 +154,7 @@ namespace MR {
           }
           else 
             VR = get_VR_from_tag_name (name);
-          size = Raw::fetch<uint32_t> (start+4, is_BE);
+          size = Raw::fetch_<uint32_t> (start+4, is_BE);
         }
 
 
@@ -254,10 +254,10 @@ namespace MR {
         std::vector<int32_t> V;
         if (VR == VR_SL) 
           for (const uint8_t* p = data; p < data + size; p += sizeof (int32_t))
-            V.push_back (Raw::fetch<int32_t> (p, is_BE));
+            V.push_back (Raw::fetch_<int32_t> (p, is_BE));
         else if (VR == VR_SS)
           for (const uint8_t* p = data; p < data + size; p += sizeof (int16_t)) 
-            V.push_back (Raw::fetch<int16_t> (p, is_BE));
+            V.push_back (Raw::fetch_<int16_t> (p, is_BE));
         else if (VR == VR_IS) {
           std::vector<std::string> strings (split (std::string (reinterpret_cast<const char*> (data), size), "\\", false));
           V.resize (strings.size());
@@ -278,10 +278,10 @@ namespace MR {
         std::vector<uint32_t> V;
         if (VR == VR_UL) 
           for (const uint8_t* p = data; p < data + size; p += sizeof (uint32_t))
-            V.push_back (Raw::fetch<uint32_t> (p, is_BE));
+            V.push_back (Raw::fetch_<uint32_t> (p, is_BE));
         else if (VR == VR_US)
           for (const uint8_t* p = data; p < data + size; p += sizeof (uint16_t)) 
-            V.push_back (Raw::fetch<uint16_t> (p, is_BE));
+            V.push_back (Raw::fetch_<uint16_t> (p, is_BE));
         else if (VR == VR_IS) {
           std::vector<std::string> strings (split (std::string (reinterpret_cast<const char*> (data), size), "\\", false));
           V.resize (strings.size());
@@ -299,10 +299,10 @@ namespace MR {
         std::vector<double> V;
         if (VR == VR_FD) 
           for (const uint8_t* p = data; p < data + size; p += sizeof (float64))
-            V.push_back (Raw::fetch<float64> (p, is_BE));
+            V.push_back (Raw::fetch_<float64> (p, is_BE));
         else if (VR == VR_FL)
           for (const uint8_t* p = data; p < data + size; p += sizeof (float32)) 
-            V.push_back (Raw::fetch<float32> (p, is_BE));
+            V.push_back (Raw::fetch_<float32> (p, is_BE));
         else if (VR == VR_DS || VR == VR_IS) {
           std::vector<std::string> strings (split (std::string (reinterpret_cast<const char*> (data), size), "\\", false));
           V.resize (strings.size());
@@ -322,7 +322,7 @@ namespace MR {
       { 
         if (VR == VR_AT) {
           std::vector<std::string> strings;
-          strings.push_back (printf ("%02X %02X", Raw::fetch<uint16_t> (data, is_BE), Raw::fetch<uint16_t> (data+2, is_BE)));
+          strings.push_back (printf ("%02X %02X", Raw::fetch_<uint16_t> (data, is_BE), Raw::fetch_<uint16_t> (data+2, is_BE)));
           return strings;
         }
 

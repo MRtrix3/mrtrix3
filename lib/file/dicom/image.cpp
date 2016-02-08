@@ -96,7 +96,7 @@ namespace MR {
                   position_vector[1] = item.get_float()[1];
                   position_vector[2] = item.get_float()[2];
                   return;
-                case 0x0037U: 
+                case 0x0037U:
                   orientation_x[0] = item.get_float()[0];
                   orientation_x[1] = item.get_float()[1];
                   orientation_x[2] = item.get_float()[2];
@@ -386,40 +386,32 @@ namespace MR {
 
 
 
-      float Frame::get_slice_separation (const std::vector<Frame*>& frames, size_t nslices)
+      default_type Frame::get_slice_separation (const std::vector<Frame*>& frames, size_t nslices)
       {
-        bool slicesep_warning_issued = false;
-        bool slicegap_warning_issued = false;
+        default_type max_gap = 0.0;
+        default_type min_separation = std::numeric_limits<default_type>::infinity();
+        default_type max_separation = 0.0;
+        default_type sum_separation = 0.0;
 
         if (nslices < 2) 
           return std::isfinite (frames[0]->slice_spacing) ? 
             frames[0]->slice_spacing : frames[0]->slice_thickness;
 
-        float slice_separation = NAN;
         for (size_t n = 0; n < nslices-1; ++n) {
-          float current_slice_separation = frames[n+1]->distance - frames[n]->distance;
-          if (!std::isfinite (slice_separation)) {
-            slice_separation = current_slice_separation;
-            continue;
-          }
-
-          if (!slicegap_warning_issued) {
-            if (std::abs (current_slice_separation - frames[n]->slice_thickness) > 1e-4) {
-              WARN ("slice gap detected");
-              slicegap_warning_issued = true;
-              slice_separation = current_slice_separation;
-            }
-          }
-
-          if (!slicesep_warning_issued) {
-            if (std::abs (current_slice_separation - slice_separation) > 1e-4) {
-              slicesep_warning_issued = true;
-              WARN ("slice separation is not constant");
-            }
-          }
+          const default_type separation = frames[n+1]->distance - frames[n]->distance;
+          const default_type gap = std::abs (separation - frames[n]->slice_thickness);
+          max_gap = std::max (gap, max_gap);
+          min_separation = std::min (min_separation, separation);
+          max_separation = std::max (max_separation, separation);
+          sum_separation += separation;
         }
 
-        return slice_separation;
+        if (max_gap > 1e-4)
+          WARN ("slice gap detected (maximum gap: " + str(max_gap, 3) + "mm)");
+        if (max_separation - min_separation > 2e-4)
+          WARN ("slice separation is not constant (from " + str(min_separation, 8) + " to " + str(max_separation, 8) + "mm)");
+
+        return (sum_separation / default_type(nslices-1));
       }
 
 
