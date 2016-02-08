@@ -5,7 +5,9 @@ def initParser(subparsers, base_parser):
   argument.add_argument('output', help='The output response function text file')
   options = parser.add_argument_group('Options specific to the \'fa\' algorithm')
   options.add_argument('-erode', type=int, default=3, help='Number of brain mask erosion steps to apply prior to threshold (not used if mask is provided manually)')
-  options.add_argument('-threshold', type=float, default=0.7, help='Threshold to apply to the FA image')
+  thresholds = options.add_mutually_exclusive_group()
+  thresholds.add_argument('-number', type=int, default=300, help='The number of highest-FA voxels to use')
+  thresholds.add_argument('-threshold', type=float, default=0.7, help='Apply a hard FA threshold, rather than selecting the top voxels')
   parser.set_defaults(algorithm='fa')
   parser.set_defaults(single_shell=True)
   
@@ -36,7 +38,10 @@ def execute():
     mask_path = 'mask.mif'
   runCommand('dwi2tensor dwi.mif -mask ' + mask_path + ' tensor.mif')
   runCommand('tensor2metric tensor.mif -fa fa.mif -vector vector.mif -mask ' + mask_path)
-  runCommand('mrthreshold fa.mif voxels.mif -abs ' + str(lib.app.args.threshold))
+  if lib.app.args.threshold:
+    runCommand('mrthreshold fa.mif voxels.mif -abs ' + str(lib.app.args.threshold))
+  else:
+    runCommand('mrthreshold fa.mif voxels.mif -top ' + str(lib.app.args.number))
   runCommand('amp2sh dwi.mif dwiSH.mif' + lmax_option)
   runCommand('sh2response dwiSH.mif voxels.mif vector.mif response.txt' + lmax_option)
 
