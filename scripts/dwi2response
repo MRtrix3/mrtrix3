@@ -22,7 +22,7 @@ from lib.warnMessage   import warnMessage
 
 
 lib.app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
-lib.app.initCitations([ 'MSMT_CSD', 'Tax2014', 'Tournier2013' ])
+lib.app.initCitations([ 'MSMT_CSD', 'SD', 'Tax2014', 'Tournier2013' ])
 lib.app.initParser('Estimate response function(s) for spherical deconvolution')
 
 
@@ -88,7 +88,7 @@ elif lib.app.args.fslgrad:
 if lib.app.args.single_shell or shell_option:
   runCommand('mrconvert ' + lib.app.args.input + ' - -stride 0,0,0,1' + grad_import_option + ' | dwiextract - ' + os.path.join(lib.app.tempDir, 'dwi.mif') + shell_option)
 else: # Don't want to discard b=0 in multi-shell algorithms, which dwiextract will do
-  runCommand('mrconvert ' + lib.app.args.input + ' ' + os.path.join(lib.app.tempDir, 'dwi.mif') + ' -stride 0,0,0,1')
+  runCommand('mrconvert ' + lib.app.args.input + ' ' + os.path.join(lib.app.tempDir, 'dwi.mif') + ' -stride 0,0,0,1' + grad_import_option)
 if lib.app.args.mask:
   runCommand('mrconvert ' + lib.app.args.mask + ' ' + os.path.join(lib.app.tempDir, 'mask.mif') + ' -datatype bit')
 

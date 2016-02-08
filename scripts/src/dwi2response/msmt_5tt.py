@@ -10,7 +10,7 @@ def initParser(subparsers, base_parser):
   options.add_argument('-dirs', help='Manually provide the fibre direction in each voxel (a tensor fit will be used otherwise)')
   options.add_argument('-fa', type=float, default=0.2, help='Upper fractional anisotropy threshold for isotropic tissue (i.e. GM and CSF) voxel selection')
   options.add_argument('-pvf', type=float, default=0.95, help='Partial volume fraction threshold for tissue voxel selection')
-  options.add_argument('-wm_algo', metavar='algorithm', default='tax', help='dwi2response algorithm to use for white matter single-fibre voxel selection')
+  options.add_argument('-wm_algo', metavar='algorithm', default='tournier', help='dwi2response algorithm to use for white matter single-fibre voxel selection')
   parser.set_defaults(algorithm='msmt_5tt')
   parser.set_defaults(single_shell=False)
   
@@ -25,6 +25,7 @@ def checkOutputFiles():
 
 
 def getInputFiles():
+  import os
   import lib.app
   from lib.runCommand import runCommand
   runCommand('mrconvert ' + lib.app.args.in_5tt + ' ' + os.path.join(lib.app.tempDir, '5tt.mif'))
@@ -51,7 +52,7 @@ def execute():
     errorMessage('Imported anatomical image ' + os.path.basename(lib.app.args.in_5tt) + ' is not in the 5TT format')
 
   # Get shell information
-  shells = [ int(x) for x in getHeaderInfo('dwi.mif', 'shells').split() ]
+  shells = [ int(round(float(x))) for x in getHeaderInfo('dwi.mif', 'shells').split() ]
   if len(shells) < 3:
     warnMessage('Less than three b-value shells; response functions will not be applicable in MSMT CSD algorithm')
 

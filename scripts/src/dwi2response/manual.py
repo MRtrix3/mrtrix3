@@ -43,7 +43,7 @@ def execute():
   if lib.app.args.lmax:
     lmax_option = ' -lmax ' + lib.app.args.lmax
   
-  shells = [ int(x) for x in getHeaderInfo('dwi.mif', 'shells').split() ]
+  shells = [ int(round(float(x))) for x in getHeaderInfo('dwi.mif', 'shells').split() ]
 
   # Do we have directions, or do we need to calculate them?
   if not os.path.exists('dirs.mif'):
