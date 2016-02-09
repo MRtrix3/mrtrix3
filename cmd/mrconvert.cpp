@@ -182,7 +182,7 @@ inline void copy_permute (Header& header_in, Header& header_out, const std::vect
 
     auto extract = Adapter::make<Adapter::Extract> (in, pos); 
     const auto axes = set_header (header_out, extract);
-    auto out = Header::create (output_filename, header_out).get_image<T>();
+    auto out = Image<T>::create (output_filename, header_out);
     DWI::export_grad_commandline (out.original_header());
 
     auto perm = Adapter::make <Adapter::PermuteAxes> (extract, axes); 

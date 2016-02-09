@@ -35,6 +35,7 @@ namespace MR
           Base<ImageType> (original),
           extract_axis (axis),
           indices (indices),
+          nsize (indices.size()),
           trans (original.transform()) {
             reset();
 
@@ -43,6 +44,8 @@ namespace MR
               a[extract_axis] = indices[0] * spacing (extract_axis);
               trans.translation() = trans * a;
             }
+
+            this->indices.push_back (indices.back());
           }
 
         void reset () {
@@ -52,7 +55,7 @@ namespace MR
         }
 
         ssize_t size (size_t axis) const {
-          return ( axis == extract_axis ? indices.size() : Base<ImageType>::size (axis) );
+          return ( axis == extract_axis ? nsize : Base<ImageType>::size (axis) );
         }
 
         const transform_type& transform () const { return trans; } 
@@ -61,9 +64,9 @@ namespace MR
         auto index (size_t axis) -> decltype(Helper::index(*this, axis)) { return { *this, axis }; } 
         void move_index (size_t axis, ssize_t increment) {
           if (axis == extract_axis) {
-            ssize_t prev_pos = current_pos < ssize_t (indices.size()) ? indices[current_pos] : 0;
+            ssize_t prev_pos = current_pos < nsize ? indices[current_pos] : 0;
             current_pos += increment;
-            if (current_pos < ssize_t (indices.size())) 
+            if (current_pos < nsize) 
               parent().index(axis) += indices[current_pos] - prev_pos;
             else 
               parent().index(axis) = 0;
@@ -83,7 +86,8 @@ namespace MR
 
       private:
         const size_t extract_axis;
-        const std::vector<int> indices;
+        std::vector<int> indices;
+        const ssize_t nsize;
         transform_type trans;
         ssize_t current_pos;
 
@@ -117,9 +121,14 @@ namespace MR
                 indices[1][0] * spacing (1), 
                 indices[2][0] * spacing (2) 
                 );
+
+            for (auto& idx : this->indices) {
+              sizes.push_back (idx.size());
+              idx.push_back (idx.back());
+            }
           }
 
-        ssize_t size (size_t axis) const { return indices[axis].size(); }
+        ssize_t size (size_t axis) const { return sizes[axis]; }
 
         const transform_type& transform () const { return trans; }
 
@@ -140,7 +149,8 @@ namespace MR
 
       private:
         std::vector<size_t> current_pos;
-        const std::vector<std::vector<int> > indices;
+        std::vector<std::vector<int> > indices;
+        std::vector<ssize_t> sizes;
         transform_type trans;
     };
 
