@@ -55,7 +55,7 @@ namespace MR
             ROI_Item (MR::Header&&);
 
             void zero ();
-            void load (MR::Header&);
+            void load ();
 
             template <class ImageType>
             void save (ImageType&&, GLubyte*);
