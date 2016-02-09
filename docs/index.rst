@@ -63,14 +63,14 @@ You should have received a copy of `GNU General Public License`_ along with MRtr
    :maxdepth: 7
    :caption: Getting started
    
-   getting_started/design
-   getting_started/FAQ
+   getting_started/design_principles
+   getting_started/image_file_formats
    getting_started/commands
    getting_started/scripts
    getting_started/config
    getting_started/data_types
-   getting_started/image_formats
    getting_started/sparse_image_formats
+   getting_started/FAQ
 
 .. toctree::
    :maxdepth: 7

@@ -1,3 +1,5 @@
+.. _mrtrix_config:
+
 MRtrix configuration file
 ======
 
