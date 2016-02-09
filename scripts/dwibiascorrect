@@ -15,58 +15,89 @@ from lib.isWindows     import isWindows
 from lib.runCommand    import runCommand
 
 lib.app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
-lib.app.initCitations([ 'fast', 'FSL' ])
+lib.app.initCitations([ 'fast', 'FSL', 'N4' ])
 lib.app.initParser('Perform B1 field inhomogeneity correction for a DWI volume series')
 lib.app.parser.add_argument('input',  help='The input image series to be corrected')
 lib.app.parser.add_argument('output', help='The output corrected image series')
+algorithms = lib.app.parser.add_mutually_exclusive_group(required=True)
+algorithms.add_argument('-ants', action='store_true', default=False, help='Use ANTS N4 to estimate the inhomogeneity field')
+algorithms.add_argument('-fsl', action='store_true', default=False, help='Use FSL FAST to estimate the inhomogeneity field')
+grad_import_group = lib.app.parser.add_mutually_exclusive_group()
+grad_import_group.add_argument('-grad', help='Pass the diffusion gradient table in MRtrix format')
+grad_import_group.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Pass the diffusion gradient table in FSL bvecs/bvals format')
 lib.app.initialise()
 
-if isWindows():
-  errorMessage('Script cannot run on Windows due to FSL dependency')
+if lib.app.args.fsl:
 
-fsl_path = os.environ.get('FSLDIR', '')
-if not fsl_path:
-  errorMessage('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
+  if isWindows():
+    errorMessage('Script cannot run using FSL on Windows due to FSL dependency')
 
-fast_cmd = 'fast'
-if not binaryInPath(fast_cmd):
-  fast_cmd = 'fsl5.0-fast'
+  fsl_path = os.environ.get('FSLDIR', '')
+  if not fsl_path:
+    errorMessage('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
+
+  fast_cmd = 'fast'
   if not binaryInPath(fast_cmd):
-    errorMessage('Could not find FSL program fast; please verify FSL install')
+    fast_cmd = 'fsl5.0-fast'
+    if not binaryInPath(fast_cmd):
+      errorMessage('Could not find FSL program fast; please verify FSL install')
     
-fsl_suffix = getFSLSuffix()
-if fast_cmd == 'fast':
-  fast_suffix = fsl_suffix
-else:
-  fast_suffix = '.nii.gz'
+  fsl_suffix = getFSLSuffix()
+  if fast_cmd == 'fast':
+    fast_suffix = fsl_suffix
+  else:
+    fast_suffix = '.nii.gz'
 
-runCommand('mrconvert ' + lib.app.args.input + ' ' + os.path.join(lib.app.tempDir, 'in.mif'))
+elif lib.app.args.ants:
+
+  if not binaryInPath('N4BiasFieldCorrection'):
+    errorMessage('Could not find ANTS program N4BiasFieldCorrection; please check installation')
+
+else:
+  errorMessage('No bias field estimation algorithm specified')
+
+grad_import_option = ''
+if lib.app.args.grad:
+  grad_import_option = ' -grad ' + lib.app.args.grad
+elif lib.app.args.fslgrad:
+  grad_import_option = ' -fslgrad ' + lib.app.args.fslgrad[0] + ' ' + lib.app.args.fslgrad[1]
+
+lib.app.checkOutputFile(lib.app.args.output)
+
+runCommand('mrconvert ' + lib.app.args.input + ' ' + os.path.join(lib.app.tempDir, 'in.mif') + grad_import_option)
 
 lib.app.gotoTempDir()
 
 # Make sure it's actually a DWI that's been passed
-dims = getHeaderInfo('in.mif', 'dim').split()
-if len(dims) != 4:
+sizes = getHeaderInfo('in.mif', 'size').split()
+if len(sizes) != 4:
   errorMessage('Input image must be a 4D image')
 DW_scheme = getHeaderInfo('in.mif', 'dwgrad').split('\n')
-if len(DW_scheme) != int(dims[3]):
+if len(DW_scheme) != int(sizes[3]):
   errorMessage('Input image does not contain valid DW gradient scheme')
 
 # Generate a brain mask
-runCommand('dwi2mask in.mif mask.mif')
+runCommand('dwi2mask in.mif - | mrconvert - mask.nii -stride +1,+2,+3')
 
-# Give FSL a compatible image
-runCommand('dwiextract in.mif - -bzero | mrcalc - mask.mif -mult bzeros.mif')
-bzero_dim = getHeaderInfo('bzeros.mif', 'dim')
-if len(bzero_dim) == 4:
+# Make a NiFTI image since this is what the external softwares need
+runCommand('dwiextract in.mif bzeros.mif -bzero')
+bzero_size = getHeaderInfo('bzeros.mif', 'size')
+if len(bzero_size) == 4:
   runCommand('mrmath bzeros.mif mean - -axis 3 | mrconvert - mean_bzero.nii -stride +1,+2,+3')
 else:
   runCommand('mrconvert bzeros.mif mean_bzero.nii -stride +1,+2,+3')
 
-runCommand(fast_cmd + ' -t 2 -o fast -n 3 -b mean_bzero.nii')
+if lib.app.args.fsl:
+  # FAST doesn't accept a mask input; therefore need to explicitly mask the input image
+  runCommand('mrcalc mean_bzero.nii mask.nii -mult mean_bzero_masked.nii')
+  runCommand(fast_cmd + ' -t 2 -o fast -n 3 -b mean_bzero_masked.nii')
+  runCommand('mrcalc in.mif fast_bias' + fast_suffix + ' -div result.mif')
+elif lib.app.args.ants:
+  # Use the brain mask as a weights image rather than a mask; means that voxels at the edge of the mask
+  #   will have a smoothly-varying bias field correction applied, rather than multiplying by 1.0 outside the mask
+  run_command('N4BiasFieldCorrection -d 3 -i mean_bzero.nii -w mask.nii -o [corrected.nii,bias.nii] -s 2 -b [150] -c [200x200,0.0]')
+  runCommand('mrcalc in.mif bias.nii -div result.mif')
 
-runCommand('mrcalc in.mif fast_bias' + fast_suffix + ' -div result.mif')
 runCommand('mrconvert result.mif ' + os.path.join(lib.app.workingDir, lib.app.args.output) + lib.app.mrtrixForce)
-
 lib.app.complete()
 
