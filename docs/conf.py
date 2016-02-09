@@ -145,8 +145,6 @@ todo_include_todos = False
 
 html_static_path = ['_static']
 
-html_style = 'css/theme.css' 
-
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
 # directly to the root of the documentation.

@@ -1,3 +1,5 @@
+.. _linux_install:
+
 =============
 Linux installation
 =============
@@ -111,6 +113,8 @@ Git setup
 
 Set up your git environment as per the `Git instructions
 page <https://help.github.com/articles/set-up-git/#setting-up-git>`__
+
+.. _linux_build:
 
 Build MRtrix3
 -------------
@@ -360,8 +364,7 @@ This will typically lead to MRView crashing with a message such as:
 There are three main reasons for this:
 
 1. **Attempting to run MRView using X11 forwarding.** This will not work
-   without some effort, see `the remote display FAQ
-   entry <Remote-display>`__ for details.
+   without some effort, see :ref:`remote_display` for details.
 
 2. **Your installation genuinely does not support OpenGL 3.3.** In this
    case, the solution will involve figuring out:
