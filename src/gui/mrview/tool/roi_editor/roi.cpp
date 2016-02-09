@@ -836,10 +836,10 @@ namespace MR
           options
             + OptionGroup ("ROI editor tool options")
 
-            + Option ("roi.load", "Loads the specified image on the ROI editor tool.")
+            + Option ("roi.load", "Loads the specified image on the ROI editor tool.").allow_multiple()
             +   Argument ("image").type_image_in()
 
-            + Option ("roi.opacity", "Sets the overlay opacity to floating value [0-1].")
+            + Option ("roi.opacity", "Sets the overlay opacity to floating value [0-1].").allow_multiple()
             +   Argument ("value").type_float (0.0, 1.0, 1.0);
         }
 
