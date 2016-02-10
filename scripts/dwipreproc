@@ -392,12 +392,12 @@ else: # 'All'
 
 # Finish!
 # Also export the gradient table to the path requested by the user if necessary
-output_path = os.path.join(lib.app.workingDir, lib.app.args.output)
 grad_export_option = ''
 if lib.app.args.export_grad_mrtrix:
   grad_export_option = ' -export_grad_mrtrix ' + os.path.join(lib.app.workingDir, lib.app.args.export_grad_mrtrix)
 elif lib.app.args.export_grad_fsl:
   grad_export_option = ' -export_grad_fsl ' + os.path.join(lib.app.workingDir, lib.app.args.export_grad_mrtrix[0]) + ' ' + os.path.join(lib.app.workingDir, lib.app.args.export_grad_mrtrix[1])
-runCommand('mrconvert result.mif ' + result_path + grad_export_option + lib.app.mrtrixForce)
+
+runCommand('mrconvert result.mif ' + os.path.join(lib.app.workingDir, lib.app.args.output) + grad_export_option + lib.app.mrtrixForce)
 lib.app.complete()
 
