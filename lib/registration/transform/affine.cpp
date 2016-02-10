@@ -17,6 +17,8 @@
 #include <iterator>
 #include "registration/transform/affine.h"
 #include "math/gradient_descent.h"
+#include "math/math.h"
+#include "math/median.h"
 
 
 namespace MR
@@ -226,6 +228,100 @@ namespace MR
             param_vector.resize (12);
             param_mat2vec (this->trafo.matrix(), param_vector);
           }
+
+
+          bool Affine::robust_estimate (
+            Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient,
+            std::vector<Eigen::Matrix<default_type, Eigen::Dynamic, 1>>& grad_estimates,
+            const Eigen::Matrix<default_type, 4, 4>& control_points,
+            const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& parameter_vector,
+            const default_type& weiszfeld_precision = 1.0e-6,
+            const size_t& weiszfeld_iterations = 1000,
+            default_type learning_rate = 1.0) const {
+            assert (gradient.size()==12);
+            size_t n_estimates = grad_estimates.size();
+            assert (n_estimates>1);
+
+            Eigen::Matrix<ParameterType, 4, 4> X, X_upd;
+            param_vec2mat (parameter_vector, X);
+
+            // get tetrahedron
+            const size_t n_vertices = 4;
+            // const Eigen::Matrix<ParameterType, 4, n_vertices> vertices_4 = params.control_points;
+            const Eigen::Matrix<ParameterType, 4, n_vertices> vertices_4 = control_points;
+            const Eigen::Matrix<ParameterType, 3, n_vertices> vertices = vertices_4.template block<3,4>(0,0);
+
+            // transform each vertex with each candidate transformation
+            // weighting
+
+            if (this->optimiser_weights.size()){
+              assert (this->optimiser_weights.size() == 12);
+              for (size_t j =0; j < n_estimates; ++j){
+                grad_estimates[j].array() *= this->optimiser_weights.array();
+              }
+            }
+            // let's go to the small angle regime
+            for (size_t j =0; j < n_estimates; ++j){
+              if (grad_estimates[j].head(9).cwiseAbs().maxCoeff() * learning_rate > 0.2){
+                learning_rate = 0.2 / grad_estimates[j].head(9).cwiseAbs().maxCoeff();
+              }
+            }
+
+            std::vector<Eigen::Matrix<ParameterType, 3, Eigen::Dynamic>> transformed_vertices(4);
+            for (auto& vert : transformed_vertices){
+              vert.resize (3, n_estimates);
+            }
+            transform_type trafo_upd;
+            // adjust learning rate if neccessary
+            size_t max_iter = 10000;
+            while (max_iter > 0) {
+              bool learning_rate_ok = true;
+              for (size_t j =0; j < n_estimates; ++j){
+                Eigen::Matrix<ParameterType, Eigen::Dynamic, 1> candidate = (parameter_vector - learning_rate * grad_estimates[j]);
+                assert (is_finite (candidate));
+                param_vec2mat (candidate, trafo_upd.matrix());
+                if (trafo_upd.matrix().block (0,0,3,3).determinant() < 0){
+                  learning_rate *= 0.1;
+                  learning_rate_ok = false;
+                  break;
+                }
+                for (size_t i = 0; i < n_vertices; ++i){
+                  transformed_vertices[i].col(j) = trafo_upd * vertices.col(i);
+                }
+              }
+              if (learning_rate_ok) break;
+              --max_iter;
+            }
+            if (max_iter != 10000) INFO ("affine robust estimate learning rate adjusted to " + str (learning_rate));
+
+            // compute vertex-wise median
+            Eigen::Matrix<ParameterType, 4, n_vertices> vertices_transformed_median;
+            for (size_t i = 0; i < n_vertices; ++i){
+              Eigen::Matrix<ParameterType, 3, 1> median_vertex;
+              Math::median_weiszfeld (transformed_vertices[i], median_vertex, weiszfeld_iterations, weiszfeld_precision);
+              vertices_transformed_median.col(i) << median_vertex, 1.0;
+            }
+
+            // get median transformation from median_vertices = trafo * vertices
+            Eigen::ColPivHouseholderQR<Eigen::Matrix<ParameterType, 4, n_vertices>> dec(vertices_4.transpose());
+            Eigen::Matrix<ParameterType, 4, 4> trafo_median;
+            trafo_median.transpose() = dec.solve(vertices_transformed_median.transpose());
+
+            // undo weighting and convert transformation matrix to gradient update vector
+            Eigen::Matrix<default_type, Eigen::Dynamic, 1> x_new;
+            x_new.resize(12);
+            param_mat2vec(trafo_median, x_new);
+            x_new -= parameter_vector;
+            if (this->optimiser_weights.size()){
+              x_new.array() /= this->optimiser_weights.array();
+            }
+            // revert learning rate and multiply by number of estimates to mimic sum of gradients
+            // this corresponds to the sum of the projections of the gradient estimates onto the median
+            gradient.array() = - x_new.array() * (default_type(n_estimates) / learning_rate);
+            assert(is_finite(gradient));
+            return true;
+          }
+
       //! @}
     }
   }

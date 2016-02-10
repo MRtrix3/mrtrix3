@@ -218,7 +218,7 @@ namespace MR
                     default_type precision = 1.0e-6 * m;
                     //TODO: use actual learning rate
                     default_type learning_rate = 1.0;
-                    params.transformation.robust_estimate(gradient, grad_estimates, params, x, precision, 1000, learning_rate);
+                    params.transformation.robust_estimate(gradient, grad_estimates, params.control_points, x, precision, 1000, learning_rate);
                     // VAR(gradient.transpose());
                   } else {
                     // std::vector<size_t> dimensions(3);
