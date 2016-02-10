@@ -104,7 +104,7 @@ namespace MR
             }
 
             Eigen::Matrix<typename Im1ImageType::value_type, Eigen::Dynamic, 1> speed =  im2_image.row(3) - im1_image.row(3);
-            for (size_t i = 0; i < speed.rows(); ++i) {
+            for (ssize_t i = 0; i < speed.rows(); ++i) {
               if (std::abs (speed[i]) < robustness_parameter)
                 speed[i] = 0.0;
             }
