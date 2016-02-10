@@ -291,6 +291,7 @@ class Evaluator
 inline bool StackEntry::is_complex () const {
   if (image) return image->original_header().datatype().is_complex();
   if (evaluator) return evaluator->is_complex();
+  if (rng) return false;
   return value.imag() != 0.0;
 }
 
@@ -470,7 +471,7 @@ void unary_operation (const std::string& operation_name, std::vector<StackEntry>
     throw Exception ("no operand in stack for operation \"" + operation_name + "\"!");
   StackEntry& a (stack[stack.size()-1]);
   a.load();
-  if (a.evaluator || a.image) {
+  if (a.evaluator || a.image || a.rng) {
     StackEntry entry (new UnaryEvaluator<Operation> (operation_name, operation, a));
     stack.back() = entry;
   }
@@ -497,7 +498,7 @@ void binary_operation (const std::string& operation_name, std::vector<StackEntry
   StackEntry& b (stack[stack.size()-1]);
   a.load();
   b.load();
-  if (a.evaluator || a.image || b.evaluator || b.image) {
+  if (a.evaluator || a.image || a.rng || b.evaluator || b.image || b.rng) {
     StackEntry entry (new BinaryEvaluator<Operation> (operation_name, operation, a, b));
     stack.pop_back();
     stack.back() = entry;
@@ -524,7 +525,7 @@ void ternary_operation (const std::string& operation_name, std::vector<StackEntr
   a.load();
   b.load();
   c.load();
-  if (a.evaluator || a.image || b.evaluator || b.image || c.evaluator || c.image) {
+  if (a.evaluator || a.image || a.rng || b.evaluator || b.image || b.rng || c.evaluator || c.image || c.rng) {
     StackEntry entry (new TernaryEvaluator<Operation> (operation_name, operation, a, b, c));
     stack.pop_back();
     stack.pop_back();
