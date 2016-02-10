@@ -1,23 +1,16 @@
 /*
- Copyright 2012 Brain Research Institute, Melbourne, Australia
-
- Written by David Raffelt, 24/02/2012
-
- This file is part of MRtrix.
-
- MRtrix is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
-
- MRtrix is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see www.mrtrix.org
+ *
  */
 
 #ifndef __registration_transform_global_search_h__
@@ -90,32 +83,32 @@ namespace MR
         class Candidate {
           public:
             Candidate (const TrafoType& T, const default_type& scale, const default_type& density, const size_t& max_GD_iter):
-              trafo(T),
-              q(T.rotation()),
-              translation(T.translation()),
-              cost(std::numeric_limits<ComputeType>::max()),
-              overlap(-1),
-              scale_f(scale),
-              loop_d(density),
-              max_GD_iter(max_GD_iter) {
+              trafo (T),
+              q (T.rotation()),
+              translation (T.translation()),
+              cost (std::numeric_limits<ComputeType>::max()),
+              overlap (-1),
+              scale_f (scale),
+              loop_d (density),
+              max_GD_iter (max_GD_iter) {
                 MatType M(trafo.linear());
                 nonorthonormal_matrix2quaternion(M, q);
               }
 
             Candidate (const QuatType& quat, const VecType& translation, const default_type& scale, const default_type& density, const size_t& max_GD_iter):
-              trafo(quat.matrix()),
-              q(quat),
-              translation(translation),
-              cost(std::numeric_limits<ComputeType>::max()),
-              overlap(-1),
-              scale_f(scale),
-              loop_d(density),
-              max_GD_iter(max_GD_iter) {
+              trafo (quat.matrix()),
+              q (quat),
+              translation (translation),
+              cost (std::numeric_limits<ComputeType>::max()),
+              overlap (-1),
+              scale_f (scale),
+              loop_d (density),
+              max_GD_iter (max_GD_iter) {
               trafo.linear() = quat.matrix();
               trafo.translation() = translation;
             }
 
-            void crossover_affine(const default_type& t, const Candidate<ComputeType>& p, std::vector<Candidate<ComputeType>>& filial) {
+            void crossover_affine (const default_type& t, const Candidate<ComputeType>& p, std::vector<Candidate<ComputeType>>& filial) {
               assert (t > 0);
               assert (t < 1.0);
               Eigen::MatrixXd M1 = trafo.linear();
@@ -146,7 +139,7 @@ namespace MR
               // filial.push_back({T2, scale_f, loop_d, max_GD_iter});
             }
 
-            void crossover_rigid(const default_type& t, const Candidate<ComputeType>& p, std::vector<Candidate<ComputeType>>& filial) {
+            void crossover_rigid (const default_type& t, const Candidate<ComputeType>& p, std::vector<Candidate<ComputeType>>& filial) {
               assert (t > 0);
               assert (t < 1.0);
 
@@ -162,7 +155,7 @@ namespace MR
               // filial.push_back({Qout, t2, scale_f, loop_d, max_GD_iter});
             }
 
-            void mutate_rigid(ComputeType angle = 0.2, ComputeType distance = 30) {
+            void mutate_rigid (ComputeType angle = 0.2, ComputeType distance = 30) {
               mutate(q, angle);
               mutate(translation, distance);
               trafo.linear() = q.matrix();
@@ -183,7 +176,7 @@ namespace MR
                                      ProcessedImageType,
                                      Interp::LinearInterp<ProcessedImageType, Interp::LinearInterpProcessingType::ValueAndDerivative>,
                                      Image<bool>,
-                                     Interp::Nearest<Image<bool>>> init_parameters(MetricType& metric,
+                                     Interp::Nearest<Image<bool>>> init_parameters (MetricType& metric,
               TransformType& transform,
               Im1ImageType& im1_image,
               Im2ImageType& im2_image,
@@ -245,7 +238,7 @@ namespace MR
             }
 
             template <class MetricType, class TransformType, class Im1ImageType, class Im2ImageType, class Im1MaskType, class Im2MaskType>
-            void run_sgd(MetricType& metric,
+            void run_sgd (MetricType& metric,
               TransformType& transform,
               Im1ImageType& im1_image,
               Im2ImageType& im2_image,
@@ -284,7 +277,7 @@ namespace MR
             }
 
             template <class MetricType, class TransformType, class Im1ImageType, class Im2ImageType, class Im1MaskType, class Im2MaskType>
-            void evaluate(MetricType& metric,
+            void evaluate (MetricType& metric,
               TransformType& transform,
               Im1ImageType& im1_image,
               Im2ImageType& im2_image,
@@ -306,27 +299,27 @@ namespace MR
               overlap = cnt;
             }
 
-          ComputeType get_cost() const {
+          ComputeType get_cost () const {
             return cost;
           }
 
-          ComputeType get_overlap() const {
+          ComputeType get_overlap () const {
             return overlap;
           }
 
-          ComputeType get_weighted_cost() const {
+          ComputeType get_weighted_cost () const {
             return cost / std::pow((ComputeType) overlap, 1.2);
           }
 
-          TrafoType get_trafo() const {
+          TrafoType get_trafo () const {
             return trafo;
           }
 
-          QuatType get_quaternion() const {
+          QuatType get_quaternion () const {
             return q;
           }
 
-          VecType get_translation() const {
+          VecType get_translation () const {
             return translation;
           }
 
@@ -339,7 +332,7 @@ namespace MR
             return get_weighted_cost() < a.get_weighted_cost();
           }
 
-          operator std::string() const
+          operator std::string () const
           {
             return str(cost, 10) + " " + str(overlap) + " " +
             str(trafo.matrix().row(0), 5) + " " +
@@ -356,14 +349,14 @@ namespace MR
           Header midway_image_header;
 
           private:
-              void mutate(Eigen::Quaternion<ComputeType>& q, ComputeType angle = 0.2) {
+              void mutate (Eigen::Quaternion<ComputeType>& q, ComputeType angle = 0.2) {
                 Eigen::Matrix<ComputeType,3,1> axis = Eigen::Matrix<ComputeType,3,1>::Random();
                 axis.array() *= (1.0 / axis.norm());
                 Eigen::AngleAxis<ComputeType> aa (angle, axis );
                 q = q * aa;
               }
 
-              void mutate(Eigen::Matrix<ComputeType, 3, 1>& T, ComputeType distance = 30) {
+              void mutate (Eigen::Matrix<ComputeType, 3, 1>& T, ComputeType distance = 30) {
                 Eigen::Matrix<ComputeType,3,1> direction = Eigen::Matrix<ComputeType,3,1>::Random();
                 direction.array() *= (1.0 / direction.norm());
                 T += distance * direction;
@@ -393,14 +386,14 @@ namespace MR
             max_iter (7),
             max_GD_iter (15),
             scale_factor (0.5),
-            pool_size(7),
-            mutation_rad(File::Config::get_float ("reg_mutation_rad", 0.2)),
-            mutation_t_wrt_fov(File::Config::get_float ("reg_mutation_t_wrt_fov", 0.1)),
+            pool_size (7),
+            mutation_rad (File::Config::get_float ("reg_mutation_rad", 0.2)),
+            mutation_t_wrt_fov (File::Config::get_float ("reg_mutation_t_wrt_fov", 0.1)),
             loop_density (1.0),
             smooth_factor (1.0),
             // grad_tolerance(1.0e-6),
             // step_tolerance(1.0e-10),
-            log_stream(nullptr) {  }
+            log_stream (nullptr) {  }
 
           void set_iterations (size_t& iterations) {
             max_iter = iterations;
