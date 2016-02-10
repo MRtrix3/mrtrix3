@@ -198,14 +198,6 @@ namespace MR
             INFO ("trafo_half:\n"+str(trafo_half.matrix().format(fmt)));
             INFO ("trafo_half_inverse:\n"+str(trafo_half_inverse.matrix().format(fmt)));
             INFO ("centre: "+str(centre.transpose(),12));
-            Eigen::Matrix<ParameterType, 3, 1> in, out, half, half_inverse;
-            in << 1.0, 2.0, 3.0;
-            transform (out, in);
-            transform_half (half, in);
-            transform_half_inverse (half_inverse, in);
-            VAR (out.transpose());
-            VAR (half.transpose());
-            VAR (half_inverse.transpose());
           }
 
           template <class ParamType, class VectorType>
