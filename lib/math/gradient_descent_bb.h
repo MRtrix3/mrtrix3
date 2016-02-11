@@ -83,7 +83,7 @@ namespace MR
           {
             std::ostream log_os(log_stream? log_stream : nullptr);
             if (log_os){
-              log_os << "'iteration" << delim << "feval" << delim << "cost" << delim << "stepsize";
+              log_os << "#iteration" << delim << "feval" << delim << "cost" << delim << "stepsize";
               for ( ssize_t a = 0 ; a < x1.size() ; a++ )
                   log_os << delim + "x_" + str(a+1) ;
               for ( ssize_t a = 0 ; a < x1.size() ; a++ )
