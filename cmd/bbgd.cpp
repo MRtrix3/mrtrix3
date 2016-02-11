@@ -44,7 +44,7 @@ struct MVN {
       gradient.setZero();
       if (noise > 0.0) {
         xn = x;
-        for (size_t i=0; i<x.size(); ++i) { xn(i) += noise * rnd(); }
+        for (ssize_t i=0; i<x.size(); ++i) { xn(i) += noise * rnd(); }
         diff = xn-mu;
       } else {
         diff = x-mu;

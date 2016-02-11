@@ -40,7 +40,7 @@ namespace MR
             im1_values.resize(volumes, 1);
             im2_values.resize(volumes, 1);
             diff_values.resize(volumes, 1);
-          };
+          }
 
           template <class Params>
           default_type operator() (Params& params,

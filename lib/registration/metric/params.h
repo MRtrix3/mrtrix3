@@ -87,6 +87,13 @@ namespace MR
             update_control_points();
           }
 
+          void set_im1_iterpolator (Im1ImageType& im1_image) {
+            im1_image_interp.reset (new Im1ImageType (im1_image));
+          }
+          void set_im2_iterpolator (Im1ImageType& im2_image) {
+            im2_image_interp.reset (new Im1ImageType (im2_image));
+          }
+
           void update_control_points () {
             const Eigen::Vector3 centre = transformation.get_centre();
             control_points.resize(4, 4);

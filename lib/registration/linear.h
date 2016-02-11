@@ -243,7 +243,7 @@ namespace MR
               // std::ofstream outputFile( "/tmp/log.txt" );
               // transformation_search.set_log_stream(outputFile.rdbuf());
               // transformation_search.set_log_stream(std::cerr.rdbuf());
-              transformation_search.run_masked(metric, transform, im1_image, im2_image, im1_mask, im2_mask);
+              transformation_search.run_masked (metric, transform, im1_image, im2_image, im1_mask, im2_mask);
               // transform.debug();
             }
 
@@ -291,7 +291,6 @@ namespace MR
               // TODO: use iterator instead of full blown image
               auto midway_image = Header::scratch (midway_image_header).get_image<typename Im1ImageType::value_type>();
 
-
               Filter::Smooth im1_smooth_filter (im1_image);
               im1_smooth_filter.set_stdev(smooth_factor[level] * 1.0 / (2.0 * scale_factor[level]));
               auto im1__smoothed = Image<typename Im1ImageType::value_type>::scratch (im1_smooth_filter);
@@ -304,23 +303,28 @@ namespace MR
               midway_resize_filter.set_scale_factor (scale_factor[level]);
               midway_resize_filter.set_interp_type (1);
               auto midway_resized = Image<typename Im1ImageType::value_type>::scratch (midway_resize_filter);
-
               {
-                LogLevelLatch log_level (0);
+
                 midway_resize_filter (midway_image, midway_resized);
+
+                //LogLevelLatch log_level (0);
+                std::cout << im1_image.original_header() << std::endl;
+                std::cout << smooth_factor[level] * 1.0 / (2.0 * scale_factor[level]) << std::endl;
+                Timer timer;
                 im1_smooth_filter (im1_image, im1__smoothed);
+                std::cout << timer.elapsed() << std::endl;
+                Timer asdf;
                 im2_smooth_filter (im2_image, im2__smoothed);
+                std::cout << asdf.elapsed() << std::endl;
               }
 
-              ParamType parameters (transform, im1__smoothed, im2__smoothed, midway_resized, im1_mask, im2_mask);
 
+              ParamType parameters (transform, im1__smoothed, im2__smoothed, midway_resized, im1_mask, im2_mask);
               INFO ("loop density: " + str(loop_density[level]));
               parameters.loop_density = loop_density[level];
-
               if (robust_estimate)
                 INFO ("using robust estimate");
               parameters.robust_estimate = robust_estimate;
-
               // set control point coordinates inside +-1/3 of the midway_image size
               // TODO: probably better to use moments if initialisation via image moments was used
               {
@@ -331,7 +335,6 @@ namespace MR
                   ext(i) *= midway_image_header.size(i) - 0.5;
                 parameters.set_control_points_extent(ext);
               }
-
               DEBUG ("neighbourhood kernel extent: " + str(kernel_extent));
               parameters.set_extent (kernel_extent);
               if (!File::Config::get_bool("reg_nocontrolpoints", false)) {
@@ -352,8 +355,8 @@ namespace MR
               }
 
               Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
-//              if (directions.cols())
-//                evaluate.set_directions (directions);
+              if (directions.cols())
+                evaluate.set_directions (directions);
 
 
               for (auto gd_iteration = 0; gd_iteration < gd_repetitions[level]; ++gd_iteration){

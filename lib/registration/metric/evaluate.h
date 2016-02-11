@@ -110,16 +110,17 @@ namespace MR
               DEBUG ("  gradient: " + str(gradient.transpose()));
               DEBUG ("  norm(gradient): " + str(gradient.norm()));
               return overall_cost_function;
-              // std::unique_ptr<Image<float> > reoriented_moving; // MP unused
-              // std::unique_ptr<Image<float> > reoriented_template; // MP unused
+              std::shared_ptr<Image<float> > im1_image_reoriented;
+              std::shared_ptr<Image<float> > im2_image_reoriented;
 
-              // TODO I wonder if reorienting within the metric would be quicker since it's only one pass? Means we would need to set current affine to the metric4D before running the thread kernel
-//              if (directions.cols()) {
-//                reoriented_moving.reset (new Image<float> (Image<float>::scratch (params.im1_image)));
-//                Registration::Transform::reorient (params.im1_image, *reoriented_moving, params.transformation.get_matrix(), directions);
-//                params.set_moving_iterpolator (*reoriented_moving);
-//                metric.set_moving_image (*reoriented_moving);
-//              }
+              if (directions.cols()) {
+                //im1_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im1_image));
+                //im2_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im2_image));
+                //Registration::Transform::reorient (params.im1_image, im1_image_reoriented, params.transformation.get_transform_half().matrix(), directions);
+                //Registration::Transform::reorient (params.im2_image, im2_image_reoriented, params.transformation.get_transform_half_inverse().matrix(), directions);
+//                params.set_im1_iterpolator (im1_image_reoriented); // set interpolator or
+//                params.set_im2_iterpolator (im2_image_reoriented);
+              }
             }
 
             // template <class MetricType, class ParamType>
@@ -282,11 +283,16 @@ namespace MR
               return 1.0;
             }
 
+            void set_directions (Eigen::MatrixXd& dir) {
+              directions = dir;
+            }
+
           protected:
               MetricType metric;
               ParamType params;
               std::vector<size_t> extent;
               size_t iteration;
+              Eigen::MatrixXd directions;
 
       };
     }

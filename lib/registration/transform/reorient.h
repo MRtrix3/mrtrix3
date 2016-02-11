@@ -112,7 +112,7 @@ namespace MR
                            jacobian_adapter (warp),
                            directions (directions),
                            modulate (modulate),
-                           FOD_to_aPSF_transform (Math::pinv(aPSF_weights_to_FOD_transform (n_SH, directions))) {}
+                           FOD_to_aPSF_transform (Math::pinv (aPSF_weights_to_FOD_transform (n_SH, directions))) {}
 
 
           void operator() (FODImageType& image) {
