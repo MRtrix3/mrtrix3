@@ -22,14 +22,14 @@ from lib.warnMessage    import warnMessage
 
 lib.app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
 lib.app.initCitations([ 'eddy/topup', 'FSL' ])
-lib.app.initParser('Perform diffusion image pre-processing using FSL tools, including inhomogeneity distortion correction if possible')
+lib.app.initParser('Perform diffusion image pre-processing using FSL\'s eddy tool; including inhomogeneity distortion correction if possible')
 lib.app.parser.add_argument('pe_dir', help='The phase encode direction; can be a signed axis number (e.g. -0, 1, +2) or a code (e.g. AP, LR, IS)')
 lib.app.parser.add_argument('input',   help='The input DWI series to be corrected')
 lib.app.parser.add_argument('output',  help='The output corrected image series')
 lib.app.parser.add_argument('-cuda',   help='Use the CUDA version of eddy', action='store_true', default=False)
 rpe_group = lib.app.parser.add_argument_group('Options for passing reversed phase-encode data')
 rpe_me_group = rpe_group.add_mutually_exclusive_group(required=True)
-rpe_me_group.add_argument('-rpe_none', action='store_true', help='Specify explicitly that no reversed phase-encoding image data is provided')
+rpe_me_group.add_argument('-rpe_none', action='store_true', help='Specify explicitly that no reversed phase-encoding image data is provided; eddy will perform eddy current and motion correction only')
 rpe_me_group.add_argument('-rpe_pair', nargs=2, metavar=('forward', 'reverse'), help='Provide a pair of images to use for inhomogeneity field estimation; note that the FIRST of these two images must have the same phase-encode direction as the input DWIs')
 rpe_me_group.add_argument('-rpe_all', metavar='input_revpe', help='Provide a second DWI series identical to the input series, that has the opposite phase encoding; these will be combined in the output image')
 grad_import = lib.app.parser.add_mutually_exclusive_group()
