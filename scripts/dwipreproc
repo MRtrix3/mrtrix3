@@ -154,7 +154,7 @@ series_path = 'series.mif'
 if not PE_design == 'None':
 
   pair1_path = 'pair1.mif'
-  pair2_path = 'pair1.mif'
+  pair2_path = 'pair2.mif'
   series2_path = 'series2.mif'
 
   # For any non-even axis sizes, crop the first voxel along that dimension
@@ -218,13 +218,13 @@ if PE_dir[1]:
   config_line[PE_dir[0]] = '-1'
 else:
   config_line[PE_dir[0]] = '1'
-for lines in range(0, rpe_b0_count[0]):
+for lines in range(0, int(rpe_b0_count[0])):
   config_file.write(' '.join (config_line) + '\n')
 if PE_dir[1]:
   config_line[PE_dir[0]] = '1'
 else:
   config_line[PE_dir[0]] = '-1'
-for lines in range(0, rpe_b0_count[1]):
+for lines in range(0, int(rpe_b0_count[1])):
   config_file.write(' '.join (config_line) + '\n')
 config_file.close()
 
