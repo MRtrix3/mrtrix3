@@ -100,7 +100,7 @@ namespace MR
             for (unsigned int i = 0; i < 3; i++)
               stdev[i] = std_dev[0];
           } else {
-            if (stdev.size() != 3)
+            if (std_dev.size() != 3)
               throw Exception ("Please supply a single standard deviation value, or three values (one for each spatial dimension)");
             stdev = std_dev;
           }
