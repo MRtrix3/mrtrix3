@@ -130,7 +130,7 @@ namespace MR
             if (stdev[dim] > 0) {
               out = std::make_shared<Image<ValueType> > (Image<ValueType>::scratch (input));
               Adapter::Gaussian1D<Image<ValueType> > gaussian (*in, stdev[dim], dim, extent[dim]);
-              threaded_copy (gaussian, *out);
+              threaded_copy (gaussian, *out, 2);
               in = out;
               if (progress)
                 ++(*progress);
