@@ -17,7 +17,8 @@ def checkOutputFiles():
 def getInputFiles():
   import os
   import lib.app
-  if hasattr(lib.app.args, 'mask'):
+  from lib.runCommand   import runCommand
+  if hasattr(lib.app.args, 'mask') and lib.app.args.mask is not None:
     runCommand('mrconvert ' + lib.app.args.mask + ' ' + os.path.join(lib.app.tempDir, 'mask.mif') + ' -datatype bit -stride +1,+2,+3')
 
 
