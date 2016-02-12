@@ -292,34 +292,34 @@ namespace MR
               auto midway_image = Header::scratch (midway_image_header).get_image<typename Im1ImageType::value_type>();
 
               Filter::Smooth im1_smooth_filter (im1_image);
-              im1_smooth_filter.set_stdev(smooth_factor[level] * 1.0 / (2.0 * scale_factor[level]));
-              auto im1__smoothed = Image<typename Im1ImageType::value_type>::scratch (im1_smooth_filter);
+              std::vector<default_type> stdev(3);
+              for (size_t dim = 0; dim < 3; ++dim)
+                stdev[dim] = smooth_factor[level] * im1_image.spacing(dim) / (2.0 * scale_factor[level]);
+
+              im1_smooth_filter.set_stdev (stdev);
+              auto im1_smoothed = Image<typename Im1ImageType::value_type>::scratch (im1_smooth_filter);
 
               Filter::Smooth im2_smooth_filter (im2_image);
-              im2_smooth_filter.set_stdev(smooth_factor[level] * 1.0 / (2.0 * scale_factor[level])) ;
-              auto im2__smoothed = Image<typename Im2ImageType::value_type>::scratch (im2_smooth_filter);
+              for (size_t dim = 0; dim < 3; ++dim)
+                stdev[dim] = smooth_factor[level] * im2_image.spacing(dim) / (2.0 * scale_factor[level]);
+              im2_smooth_filter.set_stdev (stdev);
+              auto im2_smoothed = Image<typename Im2ImageType::value_type>::scratch (im2_smooth_filter);
 
               Filter::Resize midway_resize_filter (midway_image);
               midway_resize_filter.set_scale_factor (scale_factor[level]);
               midway_resize_filter.set_interp_type (1);
               auto midway_resized = Image<typename Im1ImageType::value_type>::scratch (midway_resize_filter);
               {
-
+                LogLevelLatch log_level (0);
                 midway_resize_filter (midway_image, midway_resized);
-
-                //LogLevelLatch log_level (0);
-                std::cout << im1_image.original_header() << std::endl;
-                std::cout << smooth_factor[level] * 1.0 / (2.0 * scale_factor[level]) << std::endl;
-                Timer timer;
-                im1_smooth_filter (im1_image, im1__smoothed);
-                std::cout << timer.elapsed() << std::endl;
-                Timer asdf;
-                im2_smooth_filter (im2_image, im2__smoothed);
-                std::cout << asdf.elapsed() << std::endl;
               }
+              INFO ("smoothing input images based on scale factor...");
+              im1_smooth_filter (im1_image, im1_smoothed);
+              INFO ("smoothing input images based on scale factor...");
+              im2_smooth_filter (im2_image, im2_smoothed);
 
 
-              ParamType parameters (transform, im1__smoothed, im2__smoothed, midway_resized, im1_mask, im2_mask);
+              ParamType parameters (transform, im1_smoothed, im2_smoothed, midway_resized, im1_mask, im2_mask);
               INFO ("loop density: " + str(loop_density[level]));
               parameters.loop_density = loop_density[level];
               if (robust_estimate)
@@ -443,8 +443,8 @@ namespace MR
             Filter::reslice<Interp::Cubic> (im1_image, image1_midway, transformation.get_transform_half(), Adapter::AutoOverSample, 0.0);
             Filter::reslice<Interp::Cubic> (im2_image, image2_midway, transformation.get_transform_half_inverse(), Adapter::AutoOverSample, 0.0);
             if (do_reorientation){
-              Transform::reorient ("reorienting...", image1_midway, transformation.get_transform_half(), directions);
-              Transform::reorient ("reorienting...", image2_midway, transformation.get_transform_half_inverse(), directions);
+              Transform::reorient ("reorienting...", image1_midway, image1_midway, transformation.get_transform_half(), directions);
+              Transform::reorient ("reorienting...", image2_midway, image2_midway, transformation.get_transform_half_inverse(), directions);
             }
           }
 

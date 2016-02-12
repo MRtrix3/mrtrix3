@@ -234,11 +234,11 @@ namespace MR
                 // store precomputed values in cc_image:
                 // volumes 0 and 1: normalised intensities of both images (Im1 and Im2)
                 // vlumes 2 to 4: neighbourhood dot products Im1.dot(Im2), Im1.dot(Im1), Im2.dot(Im2)
-                auto cc_image_header = Header::scratch(parameters.midway_image.original_header());
+                auto cc_image_header = Header::scratch (parameters.midway_image.original_header());
                 cc_image_header.set_ndim(4);
                 cc_image_header.size(3) = 5;
                 ProcessedMaskType cc_mask;
-                auto cc_mask_header = Header::scratch(parameters.midway_image);
+                auto cc_mask_header = Header::scratch (parameters.midway_image);
 
                 auto cc_image = cc_image_header.template get_image <ProcessedImageValueType>().with_direct_io(Stride::contiguous_along_axis(3));
                 {

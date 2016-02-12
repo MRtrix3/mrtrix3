@@ -83,8 +83,8 @@ namespace MR
       /*! A base linear transformation class
        *
        * This class supports the ability to define the centre of rotation.
-       * This should be set prior to commencing registration based on the centre of the target image.
-       * The translation also should be initialised as moving image centre minus the target image centre.
+       * This should be set prior to commencing registration
+       * The translation also should be initialised as image1 image centre minus the image2 image centre.
        *
        */
       class Base  {

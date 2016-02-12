@@ -88,10 +88,10 @@ namespace MR
           }
 
           void set_im1_iterpolator (Im1ImageType& im1_image) {
-            im1_image_interp.reset (new Im1ImageType (im1_image));
+            im1_image_interp.reset (new Im1ImageInterpolatorType (im1_image));
           }
           void set_im2_iterpolator (Im1ImageType& im2_image) {
-            im2_image_interp.reset (new Im1ImageType (im2_image));
+            im2_image_interp.reset (new Im2ImageInterpolatorType (im2_image));
           }
 
           void update_control_points () {

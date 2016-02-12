@@ -84,7 +84,9 @@ namespace MR
             Evaluate (const MetricType& metric, ParamType& parameters) :
               metric (metric),
               params (parameters),
-              iteration (1) { }
+              iteration (1) {
+              TRACE;
+            }
 
             // template <class U = MetricType>
             // Evaluate (const MetricType& metric, ParamType& parameters, typename metric_requires_precompute<U>::yes = 0) :
@@ -100,7 +102,19 @@ namespace MR
               gradient.setZero();
               params.transformation.set_parameter_vector(x);
 
-              metric.precompute(params);
+              if (directions.cols()) {
+                INFO ("Reorienting FODs...");
+                std::shared_ptr<Image<default_type> > im1_image_reoriented;
+                std::shared_ptr<Image<default_type> > im2_image_reoriented;
+                im1_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im1_image));
+                im2_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im2_image));
+                Registration::Transform::reorient (params.im1_image, *im1_image_reoriented, params.transformation.get_transform_half(), directions);
+                Registration::Transform::reorient (params.im2_image, *im2_image_reoriented, params.transformation.get_transform_half_inverse(), directions);
+                params.set_im1_iterpolator (*im1_image_reoriented);
+                params.set_im2_iterpolator (*im2_image_reoriented);
+              }
+
+              metric.precompute (params);
               {
                 ThreadKernel<MetricType, ParamType> kernel (metric, params, overall_cost_function, gradient);
                   ThreadedLoop (params.midway_image, 0, 3).run (kernel);
@@ -110,17 +124,7 @@ namespace MR
               DEBUG ("  gradient: " + str(gradient.transpose()));
               DEBUG ("  norm(gradient): " + str(gradient.norm()));
               return overall_cost_function;
-              std::shared_ptr<Image<float> > im1_image_reoriented;
-              std::shared_ptr<Image<float> > im2_image_reoriented;
 
-              if (directions.cols()) {
-                //im1_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im1_image));
-                //im2_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im2_image));
-                //Registration::Transform::reorient (params.im1_image, im1_image_reoriented, params.transformation.get_transform_half().matrix(), directions);
-                //Registration::Transform::reorient (params.im2_image, im2_image_reoriented, params.transformation.get_transform_half_inverse().matrix(), directions);
-//                params.set_im1_iterpolator (im1_image_reoriented); // set interpolator or
-//                params.set_im2_iterpolator (im2_image_reoriented);
-              }
             }
 
             // template <class MetricType, class ParamType>
@@ -266,6 +270,20 @@ namespace MR
               default_type overall_cost_function = 0.0;
               gradient.setZero();
               params.transformation.set_parameter_vector(x);
+
+              if (directions.cols()) {
+                INFO ("Reorienting FODs...");
+                std::shared_ptr<Image<default_type> > im1_image_reoriented;
+                std::shared_ptr<Image<default_type> > im2_image_reoriented;
+                im1_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im1_image));
+                im2_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im2_image));
+                // Here we apply the forward transform since we are reorienting in subject space prior to transforming to template space
+                Registration::Transform::reorient (params.im1_image, *im1_image_reoriented, params.transformation.get_transform_half(), directions);
+                Registration::Transform::reorient (params.im2_image, *im2_image_reoriented, params.transformation.get_transform_half_inverse(), directions);
+                params.set_im1_iterpolator (*im1_image_reoriented);
+                params.set_im2_iterpolator (*im2_image_reoriented);
+              }
+
               estimate(params.transformation, metric, params, overall_cost_function, gradient, x);
               DEBUG ("Metric evaluate iteration: " + str(iteration++) + ", cost: " + str(overall_cost_function));
               DEBUG ("  x: " + str(x.transpose()));

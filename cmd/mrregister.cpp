@@ -108,24 +108,20 @@ void usage ()
 typedef double value_type;
 
 void load_image (const std::string filename, const size_t num_vols, Image<value_type>& image) {
-  auto temp_image = Image<value_type>::open (filename);
   auto header = Header::open (filename);
-  header.datatype() = DataType::from_command_line (DataType::Float32);
-  if (num_vols > 1) {
+  if (num_vols > 1 && num_vols != (size_t)header.size(3)) {
+    auto temp_image = Image<value_type>::open (filename).with_direct_io (Stride::contiguous_along_axis (3));
+    header.datatype() = DataType::from_command_line (DataType::Float32);
     header.size(3) = num_vols;
     header.stride(0) = 2;
     header.stride(1) = 3;
     header.stride(2) = 4;
     header.stride(3) = 1;
-  }
-  image = Image<value_type>::scratch (header);
-  if (num_vols > 1) {
-    for (auto i = Loop (image)(image); i; ++i) {
-      assign_pos_of (image).to (temp_image);
-        image.value() = temp_image.value();
-    }
+    image = Image<value_type>::scratch (header);
+    for (auto i = Loop (image)(image, temp_image); i; ++i)
+      image.value() = temp_image.value();
   } else {
-    threaded_copy (temp_image, image);
+    image = Image<value_type>::open (filename).with_direct_io (Stride::contiguous_along_axis (3));
   }
 }
 
@@ -145,8 +141,8 @@ void run ()
   Image<value_type> im1_image;
   Image<value_type> im2_image;
 
-  auto opt = get_options ("noreorientation");
   bool do_reorientation = true;
+  auto opt = get_options ("noreorientation");
   if (opt.size())
     do_reorientation = false;
   Eigen::MatrixXd directions_cartesian;
@@ -180,9 +176,9 @@ void run ()
 
         opt = get_options ("directions");
         if (opt.size())
-          directions_cartesian = Math::SH::spherical2cartesian (load_matrix (opt[0][0]));
+          directions_cartesian = Math::SH::spherical2cartesian (load_matrix (opt[0][0])).transpose();
         else
-          directions_cartesian = Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_60());
+          directions_cartesian = Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_60()).transpose();
     }
     else {
       do_reorientation = false;
@@ -725,12 +721,13 @@ void run ()
 
     } else if (do_affine) {
       Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, affine.get_transform(), Adapter::AutoOverSample, 0.0);
-//      if (do_reorientation)
-//        Registration::Transform::reorient ("reorienting FODs...", im1_transformed, affine.get_transform(), directions_cartesian);
+      if (do_reorientation) {
+        Registration::Transform::reorient ("reorienting FODs...", im1_transformed, im1_transformed, affine.get_transform(), directions_cartesian);
+      }
     } else {
       Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, rigid.get_transform(), Adapter::AutoOverSample, 0.0);
       if (do_reorientation)
-        Registration::Transform::reorient ("reorienting FODs...", im1_transformed, rigid.get_transform(), directions_cartesian);
+        Registration::Transform::reorient ("reorienting FODs...", im1_transformed, im1_transformed, rigid.get_transform(), directions_cartesian);
     }
   }
 

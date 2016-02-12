@@ -368,7 +368,7 @@ void run ()
 
     // only reorient FODs if linear or warp input
     if (fod_reorientation && linear && !warp_ptr)
-      Registration::Transform::reorient ("reorienting", output, linear_transform, directions_cartesian.transpose(), modulate);
+      Registration::Transform::reorient ("reorienting", output, output, linear_transform, directions_cartesian.transpose(), modulate);
     else if (fod_reorientation && warp_ptr)
       Registration::Transform::reorient_warp ("reorienting", output, *warp_composed_ptr, directions_cartesian.transpose(), modulate);
 
@@ -397,7 +397,7 @@ void run ()
       transform_type transform = linear_transform;
       if (replace)
         transform = linear_transform * output_header.transform().inverse();
-      Registration::Transform::reorient ("reorienting", output, transform, directions_cartesian.transpose());
+      Registration::Transform::reorient ("reorienting", output, output, transform, directions_cartesian.transpose());
     }
   }
 }

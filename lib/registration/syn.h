@@ -125,11 +125,16 @@ namespace MR
 
                 DEBUG ("Smoothing imput images based on multi-resolution pyramid");
                 Filter::Smooth im1_smooth_filter (im1_image);
-                im1_smooth_filter.set_stdev (1.0 / (2.0 * scale_factor[level]));
+                std::vector<default_type> stdev(3);
+                for (size_t dim = 0; dim < 3; ++dim)
+                  stdev[dim] = im1_image.spacing(dim) / (2.0 * scale_factor[level]);
+                im1_smooth_filter.set_stdev (stdev);
                 auto im1_smoothed = Image<default_type>::scratch (im1_smooth_filter);
 
                 Filter::Smooth im2_smooth_filter (im2_image);
-                im2_smooth_filter.set_stdev (1.0 / (2.0 * scale_factor[level]));  // TODO compare this with SyNFOD line 489
+                for (size_t dim = 0; dim < 3; ++dim)
+                  stdev[dim] = im2_image.spacing(dim) / (2.0 * scale_factor[level]);
+                im2_smooth_filter.set_stdev (stdev);
                 auto im2_smoothed = Image<default_type>::scratch (im2_smooth_filter);
 
                 {
@@ -220,6 +225,7 @@ namespace MR
                     Filter::warp<Interp::Linear> (im1_smoothed, im1_warped, im1_deform_field, 0.0);
                     Filter::warp<Interp::Linear> (im2_smoothed, im2_warped, im2_deform_field, 0.0);
                   }
+
                   save (im1_warped, std::string("im1_warped_level_" + str(level+1) + "_iter" + str(iteration) + ".mif"), false);
                   save (im2_warped, std::string("im2_warped_level_" + str(level+1) + "_iter" + str(iteration) + ".mif"), false);
 

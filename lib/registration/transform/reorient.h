@@ -64,11 +64,11 @@ namespace MR
             }
           }
 
-          void operator() (FODImageType& image)
+          void operator() (FODImageType& in, FODImageType& out)
           {
-            image.index(3) = 0;
-            if (image.value() > 0.0)  // only reorient voxels that contain a FOD
-              image.row(3) = transform * image.row(3);
+            in.index(3) = 0;
+            if (in.value() > 0.0)  // only reorient voxels that contain a FOD
+              out.row(3) = transform * in.row(3);
           }
 
         protected:
@@ -76,28 +76,38 @@ namespace MR
       };
 
 
+      /*
+      * reorient all FODs in an image with a linear transform.
+      * Note the input image can be the same as the output image
+      */
       template <class FODImageType>
-      void reorient (FODImageType& fod_image,
+      void reorient (FODImageType& input_fod_image,
+                     FODImageType& output_fod_image,
                      const transform_type& transform,
                      const Eigen::MatrixXd& directions,
                      bool modulate = false)
       {
         assert (directions.cols() > directions.rows());
-        ThreadedLoop (fod_image, 0, 3)
-            .run (LinearKernel<FODImageType>(fod_image.size(3), transform, directions, modulate), fod_image);
+        ThreadedLoop (input_fod_image, 0, 3)
+            .run (LinearKernel<FODImageType>(input_fod_image.size(3), transform, directions, modulate), input_fod_image, output_fod_image);
       }
 
 
+      /*
+      * reorient all FODs in an image with a linear transform.
+      * Note the input image can be the same as the output image
+      */
       template <class FODImageType>
       void reorient (const std::string progress_message,
-                     FODImageType& fod_image,
+                     FODImageType& input_fod_image,
+                     FODImageType& output_fod_image,
                      const transform_type& transform,
                      const Eigen::MatrixXd& directions,
                      bool modulate = false)
       {
         assert (directions.cols() > directions.rows());
-        ThreadedLoop (progress_message, fod_image, 0, 3)
-            .run (LinearKernel<FODImageType>(fod_image.size(3), transform, directions, modulate), fod_image);
+        ThreadedLoop (progress_message, input_fod_image, 0, 3)
+            .run (LinearKernel<FODImageType>(input_fod_image.size(3), transform, directions, modulate), input_fod_image, output_fod_image);
       }
 
 
