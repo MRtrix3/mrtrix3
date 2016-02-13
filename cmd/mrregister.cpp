@@ -195,12 +195,13 @@ void run ()
 
 
 
-  // Will currently output whatever lmax was used during registration
+  // Will currently output whatever lmax was used during registration TODO
   opt = get_options ("transformed");
   Image<value_type> im1_transformed;
   if (opt.size()){
-    im1_transformed = Image<default_type>::create (opt[0][0], im2_image);
-    im1_transformed.original_header().datatype() = DataType::from_command_line (DataType::Float32);
+    Header transformed_header (im2_header);
+    transformed_header.datatype() = DataType::from_command_line (DataType::Float32);
+    im1_transformed = Image<value_type>::create (opt[0][0], transformed_header);
   }
 
   std::string im1_midway_transformed_path;
@@ -680,7 +681,8 @@ void run ()
   if (do_syn) {
     CONSOLE ("running SyN registration");
 
-    syn_registration.set_fod_reorientation (do_reorientation);
+    if (do_reorientation)
+      syn_registration.set_aPSF_directions (directions_cartesian);
 
     if (do_affine) {
       syn_registration.run (affine, im1_image, im2_image, im1_mask, im2_mask);
@@ -707,7 +709,6 @@ void run ()
       Header deform_header (im1_transformed);
       deform_header.set_ndim(4);
       deform_header.size(3) = 3;
-      deform_header.datatype() = DataType::Float64;
       Image<default_type> deform_field = Image<default_type>::scratch (deform_header);
 
       Registration::Transform::compose_halfway_transforms (syn_registration.get_im2_linear().inverse(),
@@ -715,9 +716,17 @@ void run ()
                                                            *(syn_registration.get_im1_disp_field()),
                                                            syn_registration.get_im1_linear(),
                                                            deform_field);
-      Filter::warp<Interp::Cubic> (im1_image, im1_transformed, deform_field, 0.0);
-      if (do_reorientation)
-        Registration::Transform::reorient_warp ("reorienting FODs...", im1_transformed, deform_field, directions_cartesian);
+      if (im1_image.ndim() == 3) {
+        Filter::warp<Interp::Cubic> (im1_image, im1_transformed, deform_field, 0.0);
+      } else {
+        //TODO warp input lmax. Use more directions for lmax 8
+        //TODO use higher number directions for output reorientation
+        auto temp_output = Image<default_type>::scratch (im1_transformed);
+        Filter::warp<Interp::Cubic> (im1_image, temp_output, deform_field, 0.0);
+        if (do_reorientation)
+          Registration::Transform::reorient_warp ("reorienting FODs...", temp_output, deform_field, directions_cartesian);
+        threaded_copy (temp_output, im1_transformed);
+      }
 
     } else if (do_affine) {
       Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, affine.get_transform(), Adapter::AutoOverSample, 0.0);
@@ -736,18 +745,38 @@ void run ()
     if (do_syn) {
       Image<default_type> im1_deform_field = Image<default_type>::scratch (*(syn_registration.get_im1_disp_field()));
       Registration::Transform::compose_linear_displacement (affine.get_transform_half(), *(syn_registration.get_im1_disp_field()), im1_deform_field);
-      auto im1_midway = Image<default_type>::create (im1_midway_transformed_path, syn_registration.get_midway_header());
+      Header midway_header (syn_registration.get_midway_header());
+      midway_header.datatype() = DataType::from_command_line (DataType::Float32);
+      midway_header.set_ndim(im1_image.ndim());
+      if (midway_header.ndim() == 4)
+        midway_header.size(3) = im1_image.size(3);
+      auto im1_midway = Image<default_type>::create (im1_midway_transformed_path, midway_header);
 
-      Filter::warp<Interp::Cubic> (im1_image, im1_midway, im1_deform_field, 0.0);
-      if (do_reorientation)
-        Registration::Transform::reorient_warp ("reorienting FODs...", im1_midway, im1_deform_field, directions_cartesian);
+      if (im1_image.ndim() == 3) {
+        Filter::warp<Interp::Cubic> (im1_image, im1_midway, im1_deform_field, 0.0);
+      } else {
+        //TODO warp input lmax. Use more directions for lmax 8
+        auto temp_output = Image<default_type>::scratch (midway_header);
+        Filter::warp<Interp::Cubic> (im1_image, temp_output, im1_deform_field, 0.0);
+        if (do_reorientation)
+          Registration::Transform::reorient_warp ("reorienting FODs...", temp_output, im1_deform_field, directions_cartesian);
+        threaded_copy (temp_output, im1_midway);
+      }
 
       Image<default_type> im2_deform_field = Image<default_type>::scratch (*(syn_registration.get_im2_disp_field()));
       Registration::Transform::compose_linear_displacement (affine.get_transform_half_inverse(), *(syn_registration.get_im2_disp_field()), im2_deform_field);
-      auto im2_midway = Image<default_type>::create (im2_midway_transformed_path, syn_registration.get_midway_header());
-      Filter::warp<Interp::Cubic> (im2_image, im2_midway, im2_deform_field, 0.0);
-      if (do_reorientation)
-        Registration::Transform::reorient_warp ("reorienting FODs...", im2_midway, im2_deform_field, directions_cartesian);
+
+      auto im2_midway = Image<default_type>::create (im2_midway_transformed_path, midway_header);
+
+      if (im2_image.ndim() == 3) {
+        Filter::warp<Interp::Cubic> (im2_image, im2_midway, im2_deform_field, 0.0);
+      } else {
+        auto temp_output = Image<default_type>::scratch (midway_header);
+        Filter::warp<Interp::Cubic> (im2_image, temp_output, im2_deform_field, 0.0);
+        if (do_reorientation)
+          Registration::Transform::reorient_warp ("reorienting FODs...", temp_output, im2_deform_field, directions_cartesian);
+        threaded_copy (temp_output, im2_midway);
+      }
 
     } else if (do_affine){
       affine_registration.write_transformed_images (im1_image, im2_image, affine, im1_midway_transformed_path, im2_midway_transformed_path, do_reorientation);

@@ -61,7 +61,7 @@ namespace MR
           Eigen::Matrix<value_type, 3, Eigen::Dynamic> grad (3, Base<ImageType>::size(row_axis));
           for (size_t i = 0; i < 3; ++i) {
             Gradient1D<ImageType>::set_axis(i);
-            grad.row(i) = Gradient1D<ImageType>::row(row_axis);
+            grad.row(i) = Gradient1D<ImageType>::row (row_axis);
           }
           if (wrt_scanner)
             grad = transform.image2scanner.linear().template cast<value_type>() * grad;

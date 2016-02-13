@@ -130,8 +130,8 @@ void usage ()
         "modulate the FOD during reorientation to preserve the apparent fibre density")
 
     + Option ("directions",
-        "directions defining the number and orientation of the apodised point spread functions used in FOD reorientation"
-        "(Default: 60 directions)")
+        "directions defining the number and orientation of the apodised point spread functions used in FOD reorientation "
+        "(Default: 300 directions)")
     + Argument ("file", "a list of directions [az el] generated using the dirgen command.").type_file_in()
 
     + Option ("noreorientation",

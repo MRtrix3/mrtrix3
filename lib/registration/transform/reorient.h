@@ -147,7 +147,7 @@ namespace MR
                 transform.noalias() = aPSF_weights_to_FOD_transform (n_SH, transformed_directions) * FOD_to_aPSF_transform;
               }
 
-              image.row(3) = transform.cast<typename FODImageType::value_type>() * image.row(3);
+              image.row(3) = transform.cast<typename FODImageType::value_type>() * image.row(3);;
             }
           }
           protected:

@@ -88,10 +88,10 @@ namespace MR
         // no need to reslice warp
         } else {
            Adapter::Warp<Interpolator, ImageTypeSource, Image<typename WarpType::value_type> > interp (source, warp, value_when_out_of_bounds);
-           if (destination.ndim() == 4)
+           if (destination.ndim() == 4 && destination.is_direct_io())
              ThreadedLoop ("warping \"" + source.name() + "\"", interp, 0, 3, 1).run (CopyKernel4D(), interp, destination);
            else
-             threaded_copy_with_progress_message ("warping \"" + source.name() + "\"", interp, destination);
+             threaded_copy_with_progress_message ("warping \"" + source.name() + "\"", interp, destination, 0, destination.ndim(), 2);
         }
       }
 

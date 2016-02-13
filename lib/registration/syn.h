@@ -57,8 +57,7 @@ namespace MR
           scale_factor (3),
           update_smoothing (2.0),
           disp_smoothing (1.0),
-          gradient_step (1.0),
-          fod_reorientation (false) {
+          gradient_step (1.0) {
             scale_factor[0] = 0.25;
             scale_factor[1] = 0.5;
             scale_factor[2] = 1.0;
@@ -90,7 +89,6 @@ namespace MR
               headers.push_back (im2_image.original_header());
               headers.push_back (im1_image.original_header());
               midway_image_header = compute_minimum_average_header<default_type, Eigen::Transform<default_type, 3, Eigen::Projective>>(headers, 1.0, padding, init_transforms);
-
             } else {
               // if initialising only perform optimisation at the full resolution level
               scale_factor.resize (1);
@@ -226,14 +224,14 @@ namespace MR
                     Filter::warp<Interp::Linear> (im2_smoothed, im2_warped, im2_deform_field, 0.0);
                   }
 
-                  save (im1_warped, std::string("im1_warped_level_" + str(level+1) + "_iter" + str(iteration) + ".mif"), false);
-                  save (im2_warped, std::string("im2_warped_level_" + str(level+1) + "_iter" + str(iteration) + ".mif"), false);
-
-                  if (fod_reorientation) {
+                  if (aPSF_directions.cols()) {
                     DEBUG ("Reorienting FODs");
                     Registration::Transform::reorient_warp (im1_warped, im1_deform_field, aPSF_directions);
                     Registration::Transform::reorient_warp (im2_warped, im2_deform_field, aPSF_directions);
                   }
+
+//                  save (im1_warped, std::string("im1_warped_level_" + str(level+1) + "_iter" + str(iteration) + ".mif"), false);
+//                  save (im2_warped, std::string("im2_warped_level_" + str(level+1) + "_iter" + str(iteration) + ".mif"), false);
 
                   DEBUG ("warping mask images");
                   Im1MaskType im1_mask_warped;
@@ -254,10 +252,10 @@ namespace MR
                   size_t voxel_count = 0;
 
                   if (midway_image_header.ndim() == 4) {
-                    Metric::SyNDemons<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> syn_metric (cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped);
+                    Metric::SyNDemons4D<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> syn_metric (cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped);
                     ThreadedLoop (im1_warped, 0, 3).run (syn_metric, im1_warped, im2_warped, *im1_update_field_new, *im2_update_field_new);
                   } else {
-                    Metric::SyNDemons4D<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> syn_metric (cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped);
+                    Metric::SyNDemons<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> syn_metric (cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped);
                     ThreadedLoop (im1_warped, 0, 3).run (syn_metric, im1_warped, im2_warped, *im1_update_field_new, *im2_update_field_new);
                   }
 
@@ -351,10 +349,6 @@ namespace MR
 
           void set_init_grad_step (const default_type step) {
             gradient_step = step;
-          }
-
-          void set_fod_reorientation (const bool do_reorientation) {
-            fod_reorientation = do_reorientation;
           }
 
           void set_aPSF_directions (const Eigen::MatrixXd& dir) {
@@ -464,7 +458,6 @@ namespace MR
           default_type update_smoothing;
           default_type disp_smoothing;
           default_type gradient_step;
-          bool fod_reorientation;
           Eigen::MatrixXd aPSF_directions;
 
           transform_type im1_linear;

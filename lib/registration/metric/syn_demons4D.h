@@ -72,6 +72,8 @@ namespace MR
                            Image<default_type>& im1_update,
                            Image<default_type>& im2_update) {
 
+            assert (im1_image.ndim() == 4 && im2_image.ndim() == 4);
+
             // Check for boundary condition
             if (im1_image.index(0) == 0 || im1_image.index(0) == im1_image.size(0) - 1 ||
                 im1_image.index(1) == 0 || im1_image.index(1) == im1_image.size(1) - 1 ||
