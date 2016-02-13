@@ -85,7 +85,6 @@ namespace MR
               metric (metric),
               params (parameters),
               iteration (1) {
-              TRACE;
             }
 
             // template <class U = MetricType>
@@ -277,7 +276,6 @@ namespace MR
                 std::shared_ptr<Image<default_type> > im2_image_reoriented;
                 im1_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im1_image));
                 im2_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im2_image));
-                // Here we apply the forward transform since we are reorienting in subject space prior to transforming to template space
                 Registration::Transform::reorient (params.im1_image, *im1_image_reoriented, params.transformation.get_transform_half(), directions);
                 Registration::Transform::reorient (params.im2_image, *im2_image_reoriented, params.transformation.get_transform_half_inverse(), directions);
                 params.set_im1_iterpolator (*im1_image_reoriented);
