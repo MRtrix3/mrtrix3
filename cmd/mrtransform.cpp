@@ -118,16 +118,31 @@ void usage ()
 
     + OptionGroup ("Non-linear transformation options")
 
+    // TODO point users to a documentation page describing the warp field format
     + Option ("warp",
+        "warp the input image using a 5D warp file output from mrregister. Any linear transforms in the warp image header "
+        "will also be applied. The -warp option must be used in combination with either the -template option or the -midway option. "
+        "If a -template image is supplied then the full warp will be used. By default the image1 -> image2 transform will be applied, "
+        "however use the -inverse option to apply the image2->image1 transform. Use the -midway transform to warp the input"
+        "image to the midway space (see the -midway help)")
+    + Argument ("image").type_image_in ()
+
+    + Option ("midway",
+        "transform the input image into the midway space. Must be used in combination with -warp. "
+        "Use -midway 1 to warp from image1->midway, or use -midway 2 to warp from image2->midway")
+    +   Argument ("axes").type_integer(1,1,2)
+
+    + Option ("warp_df",
         "apply a non-linear deformation field to warp the input image. If the -template image "
         "is also supplied the warp field will be resliced first to the template image grid. If no -template "
-        "option is supplied then the output image will have the same image grid as the warp.")
+        "option is supplied then the output image will have the same image grid as the warp. This option can be used in "
+        "combination with the -affine option, in which case the affine will be applied first)")
     + Argument ("image").type_image_in ()
 
     + OptionGroup ("Fibre orientation distribution handling options")
 
     + Option ("modulate",
-        "modulate the FOD during reorientation to preserve the apparent fibre density")
+        "modulate FODs during reorientation to preserve the apparent fibre density across fibre bundle widths before and after the transformation")
 
     + Option ("directions",
         "directions defining the number and orientation of the apodised point spread functions used in FOD reorientation "
@@ -172,25 +187,43 @@ void run ()
     linear = true;
   }
 
-  // Warp
+  // Warp TODO add reference to warp format documentation
   opt = get_options ("warp");
   std::shared_ptr<Image<default_type> > warp_ptr;
-  if (opt.size())
+  if (opt.size()) {
     warp_ptr = std::make_shared<Image<default_type> > (Image<default_type>::open(opt[0][0]));
+    if (warp_ptr->ndim() != 5)
+      throw Exception ("the input -warp image must be a 5D file.");
+    if (linear)
+      throw Exception ("the -warp option cannot be applied in combination with -linear since the "
+                       "linear transform is already included in the warp header");
+  }
+
+  // Warp
+  opt = get_options ("warp_df");
+  if (opt.size()) {
+    if (warp_ptr->valid())
+      throw Exception ("only one warp field can be input with either -warp or -warp_df");
+    if (warp_ptr->ndim() != 4)
+      throw Exception ("the input -warp_df file must be a 4D deformation field");
+    warp_ptr = std::make_shared<Image<default_type> > (Image<default_type>::open(opt[0][0]));
+  }
 
   // Inverse
   const bool inverse = get_options ("inverse").size();
   if (inverse) {
     if (!(linear || warp_ptr))
       throw Exception ("no linear or warp transformation provided for option '-inverse'");
+    if (warp_ptr)
+      if (warp_ptr->ndim() == 4)
     linear_transform = linear_transform.inverse();
   }
 
   // Half
   const bool half = get_options ("half").size();
   if (half) {
-    if (!(linear || warp_ptr))
-      throw Exception ("no linear or warp transformation provided for option '-half'");
+    if (!(linear))
+      throw Exception ("no linear transformation provided for option '-half'");
     {
       Eigen::Matrix<default_type, 4, 4> temp;
       temp.row(3) << 0, 0, 0, 1.0;
