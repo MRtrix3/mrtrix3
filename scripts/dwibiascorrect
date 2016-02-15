@@ -92,7 +92,7 @@ else:
 # Make a NiFTI image since this is what the external softwares need
 runCommand('dwiextract in.mif bzeros.mif -bzero')
 bzero_sizes = getHeaderInfo('bzeros.mif', 'size')
-if len(bzero_sizes) == 4:
+if len(bzero_sizes.split()) == 4:
   runCommand('mrmath bzeros.mif mean - -axis 3 | mrconvert - mean_bzero.nii -stride +1,+2,+3')
 else:
   runCommand('mrconvert bzeros.mif mean_bzero.nii -stride +1,+2,+3')
