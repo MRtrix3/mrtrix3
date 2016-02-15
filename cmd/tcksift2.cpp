@@ -126,7 +126,7 @@ void usage ()
   + SIFT2RegularisationOption
   + SIFT2AlgorithmOption;
 
-};
+}
 
 
 

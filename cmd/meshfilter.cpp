@@ -62,7 +62,7 @@ void usage ()
   OPTIONS
   + smooth_option;
 
-};
+}
 
 
 

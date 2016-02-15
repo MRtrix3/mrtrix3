@@ -73,7 +73,7 @@ const OptionGroup TrackWeightsOptions = OptionGroup ("Options for importing / ex
     + Tractography::TrackWeightsInOption
 
     + Option ("prefix_tck_weights_out", "provide a prefix for outputting a text file corresponding to each output file, "
-                                      "each containing only the streamline weights relevant for that track file")
+                                        "each containing only the streamline weights relevant for that track file")
       + Argument ("prefix").type_text();
 
 
@@ -96,7 +96,7 @@ void usage ()
   + OutputOptions
   + TrackWeightsOptions;
 
-};
+}
 
 
 

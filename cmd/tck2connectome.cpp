@@ -73,8 +73,7 @@ void usage ()
   + Option ("vector", "output a vector representing connectivities from a given seed point to target nodes, "
                       "rather than a matrix of node-node connectivities");
 
-
-};
+}
 
 
 

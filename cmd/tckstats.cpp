@@ -59,7 +59,7 @@ void usage ()
 
   + Tractography::TrackWeightsInOption;
 
-};
+}
 
 
 // Store length and weight of each streamline
