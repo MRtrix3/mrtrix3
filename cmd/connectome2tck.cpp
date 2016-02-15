@@ -68,18 +68,21 @@ const OptionGroup OutputOptions = OptionGroup ("Options for determining the cont
                                  "Set this option to generate corresponding outputs containing these streamlines (labelled as node index 0)");
 
 
-const OptionGroup TrackWeightsOptions = OptionGroup ("Options for importing / exporting streamline weights")
-
-    + Tractography::TrackWeightsInOption
-
-    + Option ("prefix_tck_weights_out", "provide a prefix for outputting a text file corresponding to each output file, "
-                                        "each containing only the streamline weights relevant for that track file")
-      + Argument ("prefix").type_text();
-
 
 
 void usage ()
 {
+
+  // Note: Creation of this OptionGroup depends on Tractography::TrackWeightsInOption
+  //   already being defined; therefore, it cannot be defined statically, and
+  //   must be constructed after the command is executed.
+  const OptionGroup TrackWeightsOptions = OptionGroup ("Options for importing / exporting streamline weights")
+      + Tractography::TrackWeightsInOption
+      + Option ("prefix_tck_weights_out", "provide a prefix for outputting a text file corresponding to each output file, "
+                                          "each containing only the streamline weights relevant for that track file")
+        + Argument ("prefix").type_text();
+
+
 
   AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
 
