@@ -31,9 +31,6 @@ namespace MR
                                "for all multi-resolution levels, or a single value for each level. (Default: 1000)")
         + Argument ("num").type_sequence_int ()
 
-      + Option ("rigid_smooth_factor", "amount of smoothing before registration (Default: 1.0)")
-        + Argument ("num").type_sequence_float ()
-
       + Option ("rigid_metric", "valid choices are: l2 (ordinary least squares), "
                                 "lp (least powers: |x|^1.2), "
                                 "ncc (normalised cross-correlation) "
@@ -73,9 +70,6 @@ namespace MR
       + Option ("affine_niter", "the maximum number of iterations. This can be specified either as a single number "
                                 "for all multi-resolution levels, or a single value for each level. (Default: 1000)")
         + Argument ("num").type_sequence_int ()
-
-      + Option ("affine_smooth_factor", "amount of smoothing before registration (Default: 1.0)")
-        + Argument ("num").type_sequence_float ()
 
       + Option ("affine_loop_density", "density of gradient descent 1 (batch) to 0.0 (max stochastic) (Default: 1.0)")
         + Argument ("num").type_sequence_float ()

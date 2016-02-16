@@ -72,7 +72,6 @@ namespace MR
           gd_repetitions (1, 1),
           scale_factor (2),
           loop_density (1, 1.0),
-          smooth_factor (1, 1.0),
           kernel_extent(3, 1),
           grad_tolerance(1.0e-6),
           step_tolerance(1.0e-10),
@@ -104,14 +103,6 @@ namespace MR
               throw Exception ("the scale factor for each multi-resolution level must be between 0 and 1");
           }
           scale_factor = scalefactor;
-        }
-
-        void set_smoothing_factor (const std::vector<default_type>& smoothing_factor) {
-          for (size_t level = 0; level < smoothing_factor.size(); ++level) {
-            if (smoothing_factor[level] < 0)
-              throw Exception ("the smooth factor for each multi-resolution level must be positive");
-          }
-          smooth_factor = smoothing_factor;
         }
 
         void set_extent (const std::vector<size_t> extent) {
@@ -221,11 +212,6 @@ namespace MR
             else if (loop_density.size() != scale_factor.size())
               throw Exception ("the loop density level needs to be defined for each multi-resolution level");
 
-            if (smooth_factor.size() == 1)
-              smooth_factor.resize (scale_factor.size(), smooth_factor[0]);
-            else if (smooth_factor.size() != scale_factor.size())
-              throw Exception ("the smooth factor needs to be defined for each multi-resolution level");
-
             if (init_type == Transform::Init::mass)
               Transform::Init::initialise_using_image_mass (im1_image, im2_image, transform);
             else if (init_type == Transform::Init::geometric)
@@ -294,14 +280,14 @@ namespace MR
               Filter::Smooth im1_smooth_filter (im1_image);
               std::vector<default_type> stdev(3);
               for (size_t dim = 0; dim < 3; ++dim)
-                stdev[dim] = smooth_factor[level] * im1_image.spacing(dim) / (2.0 * scale_factor[level]);
+                stdev[dim] = im1_image.spacing(dim) / (2.0 * scale_factor[level]);
 
               im1_smooth_filter.set_stdev (stdev);
               auto im1_smoothed = Image<typename Im1ImageType::value_type>::scratch (im1_smooth_filter);
 
               Filter::Smooth im2_smooth_filter (im2_image);
               for (size_t dim = 0; dim < 3; ++dim)
-                stdev[dim] = smooth_factor[level] * im2_image.spacing(dim) / (2.0 * scale_factor[level]);
+                stdev[dim] = im2_image.spacing(dim) / (2.0 * scale_factor[level]);
               im2_smooth_filter.set_stdev (stdev);
               auto im2_smoothed = Image<typename Im2ImageType::value_type>::scratch (im2_smooth_filter);
 
@@ -345,7 +331,7 @@ namespace MR
                 Eigen::Vector3d coherence(spacing);
                 Eigen::Vector3d stop(spacing);
                 default_type reg_coherence_len = File::Config::get_float ("reg_coherence_len", 3.0); // = 3 stdev blur
-                coherence *= reg_coherence_len * smooth_factor[level] * 1.0 / (2.0 * scale_factor[level]);
+                coherence *= reg_coherence_len * 1.0 / (2.0 * scale_factor[level]);
                 default_type reg_stop_len = File::Config::get_float ("reg_stop_len", 0.0001);
                 stop.array() *= reg_stop_len;
                 DEBUG("coherence length: " + str(coherence));
@@ -453,7 +439,6 @@ namespace MR
         std::vector<int> gd_repetitions;
         std::vector<default_type> scale_factor;
         std::vector<default_type> loop_density;
-        std::vector<default_type> smooth_factor;
         std::vector<size_t> kernel_extent;
         default_type grad_tolerance;
         default_type step_tolerance;

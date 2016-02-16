@@ -321,13 +321,6 @@ void run ()
     rigid_registration.set_max_iter (parse_ints (opt[0][0]));
   }
 
-  opt = get_options ("rigid_smooth_factor");
-  if (opt.size ()) {
-    if (!do_rigid)
-      throw Exception ("the rigid smooth factor was input when no rigid registration is requested");
-    rigid_registration.set_smoothing_factor(parse_floats (opt[0][0]));
-  }
-
   opt = get_options ("rigid_metric");
   Registration::LinearMetricType rigid_metric = Registration::Diff;
   if (opt.size()) {
@@ -429,13 +422,6 @@ void run ()
     if (!do_affine)
       throw Exception ("the affine repetition factors were input when no affine registration is requested");
     affine_registration.set_gradient_descent_repetitions (parse_ints (opt[0][0]));
-  }
-
-  opt = get_options ("affine_smooth_factor");
-  if (opt.size ()) {
-    if (!do_affine)
-      throw Exception ("the affine smooth factor was input when no affine registration is requested");
-    affine_registration.set_smoothing_factor (parse_floats (opt[0][0]));
   }
 
   opt = get_options ("affine_loop_density");
