@@ -1,3 +1,5 @@
+.. _stuct_connectome_construction:
+
 Structural-connectome construction
 ==================================
 
@@ -32,8 +34,8 @@ In addition, this processing chain design provides flexibility in terms
 of both the source of the parcellation data, and the way in which the
 user wishes to customise the layout of their connectome.
 
-The operation of the ``labelconfig`` command is now demonstrated in `its
-own dedicated page <labelconfig-worked-example>`__.
+Please consult the tutorial :ref:`labelconfig` for a guide on how to use
+the ``labelconfig`` command.
 
 Generating the connectome
 -------------------------
@@ -48,9 +50,7 @@ A factor in structural connectome production commonly overlooked or not
 reported in the literature is the mechanism used to assign streamlines
 to grey matter parcels. If done incorrectly this can have a large
 influence on the resulting connectomes. This is one aspect where
-`Anatomically-Constrained Tractography
-(ACT) <Anatomically-Constrained-Tractography-(ACT)>`__ really shines;
-because streamlines can only terminate precisely at the grey matter -
+:ref:`act` really shines; because streamlines can only terminate precisely at the grey matter -
 white matter interface, within sub-cortical grey matter, or at the
 inferior edge of the image, this assignment becomes relatively trivial.
 The default assignment mechanism is a radial search outwards from the
@@ -63,7 +63,7 @@ SIFT and the structural connectome
 ----------------------------------
 
 If you are generating structural connectomes, you should be using
-[[SIFT]]. Please refer to the relevant page for details.
+:ref:`sift`.
 
 Extracting pathways of interest from a connectome
 -------------------------------------------------
@@ -124,3 +124,5 @@ provided a few assignment mechanisms that you can experiment with - run
 ``tck2connectome -help`` to see the list and parameters for each.
 Alternatively if anyone has a better idea for how this could potentially
 be done, I'd love to hear it.
+
+

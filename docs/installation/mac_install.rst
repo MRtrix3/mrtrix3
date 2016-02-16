@@ -1,5 +1,5 @@
 =============
-MacOSX installation
+MacOS X installation
 =============
 
 We oultine the steps for installing *MRtrix3* for MacOSX. Please consult 

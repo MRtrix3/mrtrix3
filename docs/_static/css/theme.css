@@ -4497,7 +4497,7 @@ a.btn {
 }
 
 .wy-nav-side {
-  position: fixed;
+  position: fixed !important;
   top: 50px !important;
   bottom: 0;
   left: 0;
@@ -4523,7 +4523,7 @@ a.btn {
   width: 320px;
   position: relative;
   overflow-x: hidden;
-  overflow-y: scroll;
+  overflow-y: none !important;
   height: 100%;
 }
 
@@ -4622,6 +4622,7 @@ footer span.commit code, footer span.commit .rst-content tt, .rst-content footer
 .wy-menu .caption {
   background-color: #337ab7 !important;
   border-style: none !important;
+  color: white !important;
 }
 
 .affix {
@@ -5149,6 +5150,32 @@ span[id*='MathJax-Span'] {
   font-style: normal;
   font-weight: 700;
   src: local("Roboto Slab Bold"), local("RobotoSlab-Bold"), url(../fonts/RobotoSlab-Bold.ttf) format("truetype");
+}
+
+
+
+.wy-side-nav-search {
+  background-color: rgb(34, 34, 34) !important;
+  height: 60px !important;
+  width: 100% !important;
+  border-bottom: 1px solid rgb(200, 200, 200); 
+}
+
+.wy-menu-vertical {
+  overflow-x: hidden !important;
+}
+
+
+.icon-home {
+  visibility: hidden !important;
+}
+
+.version {
+  visibility: hidden !important;
+}
+
+#rtd-search-form {
+  width: 200px !important;
 }
 
 /*# sourceMappingURL=theme.css.map */

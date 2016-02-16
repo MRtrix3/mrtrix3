@@ -1,35 +1,5 @@
-======
-Design principles
-======
-
-While *MRtrix3* is primarily intended to be used for the analysis of
-diffusion MRI data, at its fundamental level it is designed as a
-general-purpose library for the analysis of *any* type of MRI data. As such,
-it provides a back-end to simplify a large number of operations, many of
-which will be invisible to the end-user. Specifically, *MRtrix* features
-
--  a `consistent command-line interface <#command-line-usage>`__, with
-   inline documentation for each command
-
--  universal import/export capabilities for a wide range of :ref:`image_file_formats`
-   across all *MRtrix3* applications.
-
--  :ref:`multi_file_image_file_formats` to load multiple images as a 
-   single multi-dimensional dataset
-
--  efficient use of :ref:`unix_pipelines` for complex workflows
-
--  high performance on modern multi-core systems, with multi-threading
-   used extensively throughout *MRtrix3*;
-
--  available on all common modern operating systems (GNU/Linux,
-   MacOSX, Windows);
-
--  a `consistent coordinate system <#coordinate-system>`__, with most
-   operations performed in scanner/world coordinates where possible.
-
 Command-line usage
-------------------
+==============
 
 *MRtrix3* generally follows a relatively standard Unix syntax, namely:
 
@@ -42,7 +12,7 @@ plenty of tutorials online to get you started. There are however a few notable
 features specific to *MRtrix*, which are outlined below.
 
 Using short option names
-''''''''''''''''''''''''
+-------------
 
 Options do not need to be provided in full, as long as the initial part
 of the option provided is sufficient to unambiguously identify it. For
@@ -67,14 +37,16 @@ further:
     mrconvert: [ERROR] several matches possible for option "-d": "-datatype, "-debug"
 
 Ordering of options on the command-line
-'''''''''''''''''''''''''''''''''''''''
+----------------
 
 Options can typically occur anywhere on the command-line, in any order -
 they do not usually need to precede the arguments. However, there are a
 few commands where the order does matter, particularly ``mrcalc``.
 
+.. _number_sequences:
+
 Number sequences and floating-point lists
-'''''''''''''''''''''''''''''''''''''''''
+----------------
 
 Options often expect arguments in the form of *number sequences* or
 *floating-point lists of numbers*. The former consists or a series of
@@ -82,9 +54,9 @@ integers separated by commas or colons (no spaces), with colons
 indicating a range, optionally with an increment (if different from 1).
 For example:
 
--  ``1,4,8`` ⇒ ``[ 1 4 8 ]``
--  ``3,6:12,2`` ⇒ ``[ 3 6 7 8 9 10 11 12 2 ]``
--  ``1:3:10,8:2:0`` ⇒ ``[ 1 4 7 10 8 6 4 2 0 ]``
+-  ``1,4,8`` becomes ``[ 1 4 8 ]``
+-  ``3,6:12,2`` becomes ``[ 3 6 7 8 9 10 11 12 2 ]``
+-  ``1:3:10,8:2:0`` becomes ``[ 1 4 7 10 8 6 4 2 0 ]``
 
 Note that the sign of the increment does not matter, it will always run
 in the direction required.
@@ -183,13 +155,13 @@ This command will execute the following actions:
 How is it implemented?
 '''''''''''''''''''''''''''''''''''''''''
 
-The procedure used in MRtrix to feed data sets down a pipeline is
+The procedure used in *MRtrix* to feed data sets down a pipeline is
 somewhat different from the more traditional use of pipes. Given the
 large amounts of data typically contained in a data set, the 'standard'
 practice of feeding the entire data set through the pipe would be
-prohibitively inefficient. MRtrix applications access the data via
+prohibitively inefficient. *MRtrix* applications access the data via
 memory-mapping (when this is possible), and do not need to explicitly
-copy the data into their own memory space. When using pipes, MRtrix
+copy the data into their own memory space. When using pipes, *MRtrix*
 applications will simply generate a temporary file and feed its filename
 through to the next stage once their processing is done. The next
 program in the pipeline will then simply read this filename and access
@@ -201,12 +173,12 @@ temporary files. By default, these will be created within the ``/tmp``
 folder (on Unix, or the current folder on Windows) with a filename of
 the form ``mrtrix-tmp-XXXXXX.xyz`` (note this can be changed by
 specifying a custom ``TmpFileDir`` and ``TmpFilePrefix`` in the :ref:`mrtrix_config`). 
-If a piped command has failed, and no other MRtrix programs are currently running, these can be safely deleted.
+If a piped command has failed, and no other *MRtrix* programs are currently running, these can be safely deleted.
 
 *Really* advanced pipeline usage
 '''''''''''''''''''''''''''''''''''''''''
 
-As implemented, MRtrix commands treat image file names that start with
+As implemented, *MRtrix* commands treat image file names that start with
 the ``TmpFilePrefix`` (default is ``mrtrix-tmp-``) as temporary. When
 reading the image name from the previous stage in the pipeline, the
 image file name will trivially match this. But this also means that it
@@ -226,7 +198,7 @@ Notice that the name of the temporary file is now printed on the
 terminal, since the command's stdout has not be piped into another
 command, and we specified ``-`` as the second argument. You'll also see
 this file is now present in the ``/tmp`` folder. You can use this file
-by copy/pasting it as an *argument* to another MRtrix command (be
+by copy/pasting it as an *argument* to another *MRtrix* command (be
 careful though, it will be deleted once this command exits):
 
 .. code:: 
@@ -298,28 +270,3 @@ More specifically:
    300 highest-valued voxels, and produce a mask of these voxels, stored
    in ``highFA.mif``.
 
-
-
-Coordinate system
------------------
-
-All MRtrix applications will consistently use the same coordinate
-system, which is identical to the
-`NIfTI <http://nifti.nimh.nih.gov/nifti-1>`__ standard. Note that this
-frame of reference differs from the `DICOM
-standard <https://www.dabsoft.ch/dicom/3/C.7.6.2.1.1/>`__ (typically the
-x & y axis are reversed). The convention followed by MRtrix applications
-is as follows:
-
-+---------------+-----------------------------------------+
-| dimensional   | description                             |
-+===============+=========================================+
-| 0 (x)         | increasing from left to right           |
-+---------------+-----------------------------------------+
-| 1 (y)         | increasing from posterior to anterior   |
-+---------------+-----------------------------------------+
-| 2 (z)         | increasing from inferior to superior    |
-+---------------+-----------------------------------------+
-
-All coordinates or vector components supplied to MRtrix applications
-should be provided with reference to this coordinate system.

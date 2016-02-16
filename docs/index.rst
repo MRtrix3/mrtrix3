@@ -1,8 +1,3 @@
-.. MRtrix documentation master file, created by
-   sphinx-quickstart on Fri Jan 29 15:02:17 2016.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 Welcome to the MRtrix user documentation!
 ==================================
 
@@ -15,75 +10,60 @@ MRtrix provides a set of tools to perform diffusion-weighted MRI white matter tr
 .. _Qt: http://qt-project.org/
 .. _GNU General Public License: http://www.gnu.org/copyleft/gpl.html
 
-Development
-----------------------------------
-
-For those interested in contributing to MRtrix3, or just using it as a base to develop their own applications, please consult the `Doxygen-generated developer documentation`_.
-
-.. _Doxygen-generated developer documentation: http://MRtrix3.github.io/developer-documentation/
-
-Acknowledging this work
-----------------------------------
-
-If you wish to include results generated using the MRtrix package in a publication, please include a line such as the following to acknowledge this work:
-
-* Fibre-tracking was performed using the MRtrix package (J-D Tournier, Brain Research Institute, Melbourne, Australia, https://github.com/MRtrix3/mrtrix3) (Tournier et al. 2012)
-
-Any other relevant references will be listed on the specific application's page.
-
-Warranty
-----------------------------------
-
-The software described in this manual has no warranty, it is provided "as is". It is your responsibility to validate the behavior of the routines and their accuracy using the source code provided, or to purchase support and warranties from commercial redistributors. Consult the `GNU General Public License`_ for further details.
-
-.. _GNU General Public License: http://www.gnu.org/copyleft/gpl.html
-
-License
-----------------------------------
-
-MRtrix is free software: you can redistribute it and/or modify it under the terms of the `GNU General Public License`_ as published by the `Free Software Foundation`_, either version 3 of the License, or (at your option) any later version.
-
-MRtrix is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the `GNU General Public License`_ for more details.
-You should have received a copy of `GNU General Public License`_ along with MRtrix. If not, see `http://www.gnu.org/licenses/`_.
-
-.. _Free Software Foundation: http://www.fsf.org/
-.. _http://www.gnu.org/licenses/: http://www.gnu.org/licenses/
-
 
 .. toctree::
-   :maxdepth: 7
+   :maxdepth: 2
+   :caption: 
+
+.. toctree::
+   :maxdepth: 2
    :caption: Install
-   
+
+   installation/before_install
    installation/linux_install
    installation/mac_install
    installation/windows_install
    installation/hpc_clusters_install
 
 .. toctree::
-   :maxdepth: 7
+   :maxdepth: 2
    :caption: Getting started
    
-   getting_started/design_principles
-   getting_started/image_file_formats
-   getting_started/commands
-   getting_started/scripts
+   getting_started/key_features
    getting_started/config
-   getting_started/data_types
-   getting_started/sparse_image_formats
+   getting_started/image_data
+   getting_started/command_line
+   getting_started/commands_list
+   getting_started/scripts
    getting_started/FAQ
 
 .. toctree::
-   :maxdepth: 7
-   :caption: Common tasks
+   :maxdepth: 2
+   :caption: Workflows
 
-   common_tasks/basic_dwi_processing
-   common_tasks/act
-   common_tasks/sift
-   common_tasks/structural_connectome
-   common_tasks/hcp_connectome
-   common_tasks/advanced_debugging
+   workflows/basic_dwi_processing
+   workflows/act
+   workflows/sift
+   workflows/structural_connectome
+   workflows/global_tractography
 
+.. toctree::
+   :maxdepth: 2
+   :caption: Tutorials
+   
+   tutorials/hcp_demonstration
+   tutorials/labelconfig
+   tutorials/connectome_tool
+   tutorials/advanced_debugging
 
+.. toctree::
+   :maxdepth: 2
+   :caption: Concepts
+  
+   concepts/sh_basis
+   concepts/dixels_fixels
+   concepts/afd_connectivity
+   conecpts/response_function_estimation
 
 
 

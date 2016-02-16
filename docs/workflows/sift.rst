@@ -1,3 +1,5 @@
+.. _sift:
+
 Spherical-deconvolution Informed Filtering of Tractograms (SIFT)
 ================================================================
 

@@ -88,7 +88,7 @@ packages:
    one of the other packages).
 
 .. WARNING::  
-    The compiler included in Ubuntu 12.04 and other older distributions is no longer capable of compiling MRtrix3, as it now
+    The compiler included in Ubuntu 12.04 and other older distributions is no longer capable of compiling *MRtrix3*, as it now
     requires C++11 support. The solution is to use a newer compiler as provided by the `Ubuntu toolchain 
     PPA <https://launchpad.net/~ubuntu-toolchain-r/+archive/ubuntu/test>`__ - follow the link for instructions on how to add the PPA. Once the PPA
     has been added, you'll need to issue a ``sudo apt-get update``, followed
@@ -103,9 +103,9 @@ packages:
 If this *really* doesn't work
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If for whatever reasons you need to install MRtrix3 on a system with
+If for whatever reasons you need to install *MRtrix3* on a system with
 older dependencies, and you are unable to update the software (e.g. you
-want to run MRtrix3 on a centrally-managed HPC cluster), you can as a
+want to run *MRtrix3* on a centrally-managed HPC cluster), you can as a
 last resort use the procedure described in :ref:`linux_standalone`.
 
 Git setup
@@ -234,7 +234,7 @@ First, obtain the code and extract or clone it on a modern distribution
 (Arch, Ubuntu 14.04, Mint 17, ..., potentially with a virtual machine if
 required). Then, from the main mrtrix3 folder:
 
-.. code:: ShellSession
+.. code::
 
     ./build clean
     git pull

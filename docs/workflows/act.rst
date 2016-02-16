@@ -1,3 +1,5 @@
+.. _act:
+
 Anatomically-Constrained Tractography (ACT)
 ====
 
@@ -54,7 +56,7 @@ When the ACT framework is invoked, it expects the tissue information to be provi
 3. CSF
 4. Pathological tissue
 
-The first four of these are described in the ACT NeuroImage paper. The fifth can be optionally used to manually delineate regions of the brain where the architecture of the tissue present is unclear, and therefore the type of anatomical priors to be applied are also unknown. For any streamline entering such a region, _no anatomical priors are applied_ until the streamline either exists that region, or stops due to some other streamlines termination criterion.
+The first four of these are described in the ACT NeuroImage paper. The fifth can be optionally used to manually delineate regions of the brain where the architecture of the tissue present is unclear, and therefore the type of anatomical priors to be applied are also unknown. For any streamline entering such a region, *no anatomical priors are applied* until the streamline either exists that region, or stops due to some other streamlines termination criterion.
 
 The following binaries are provided for working with the 5TT format:
 
