@@ -3,8 +3,8 @@ Troubleshooting
 
 .. _remote_display:
 
-Remote display
------
+Remote display issues
+---------
 
 The GUI components in MRtrix3 (``mrview`` & ``shview``) use the OpenGL
 3.3 API to make full use of modern graphics cards. Unfortunately, X11

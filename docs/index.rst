@@ -1,7 +1,7 @@
 Welcome to the MRtrix user documentation!
 ==================================
 
-MRtrix provides a set of tools to perform diffusion-weighted MRI white matter tractography in the presence of crossing fibres, using Constrained Spherical Deconvolution (`Tournier et al.. 2004`_; `Tournier et al. 2007`_), and a probabilisitic streamlines algorithm (`Tournier et al., 2012`_). These applications have been written from scratch in C++, using the functionality provided by the `GNU Scientific Library`_, and `Qt`_. The software is currently capable of handling DICOM, NIfTI and AnalyseAVW image formats, amongst others. The source code is distributed under the `GNU General Public License`_.
+*MRtrix* provides a set of tools to perform diffusion-weighted MRI white matter tractography in the presence of crossing fibres, using Constrained Spherical Deconvolution (`Tournier et al.. 2004`_; `Tournier et al. 2007`_), and a probabilisitic streamlines algorithm (`Tournier et al., 2012`_). These applications have been written from scratch in C++, using the functionality provided by the `GNU Scientific Library`_, and `Qt`_. The software is currently capable of handling DICOM, NIfTI and AnalyseAVW image formats, amongst others. The source code is distributed under the `GNU General Public License`_.
 
 .. _Tournier et al.. 2004: http://www.ncbi.nlm.nih.gov/pubmed/15528117
 .. _Tournier et al. 2007: http://www.ncbi.nlm.nih.gov/pubmed/17379540

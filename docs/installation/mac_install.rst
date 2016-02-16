@@ -2,14 +2,14 @@
 MacOS X installation
 =============
 
-We oultine the steps for installing *MRtrix3* for MacOSX. Please consult 
+We outline the steps for installing *MRtrix3* on MacOS X. Please consult 
 :ref:`mac_trouble_shooting` if you encounter any issues with the configure, build
 or runtime operations of *MRtrix3*.
 
 Check requirements
 ------------------
 
-To install MRtrix3, you will need the following:
+To install *MRtrix3* , you will need the following:
 
 -  a `C++11 <https://en.wikipedia.org/wiki/C%2B%2B11>`__ compliant
    compiler (`clang <http://clang.llvm.org/>`__ on MacOSX)
@@ -21,14 +21,14 @@ To install MRtrix3, you will need the following:
    important: versions prior to this will *not* work
 
 .. WARNING:: 
-    To run the GUI components of MRtrix3 (``mrview`` & ``shview``), you will also need:
+    To run the GUI components of *MRtrix3*  (``mrview`` & ``shview``), you will also need:
 
-    -  an `OpenGL <https://en.wikipedia.org/wiki/OpenGL>`__ 3.3 compliant graphics card and corresponding software driver - thankfully OpenGL 3.3 is supported across the entire MacOSX range with OS versions >= 10.9.
+    -  an `OpenGL <https://en.wikipedia.org/wiki/OpenGL>`__ 3.3 compliant graphics card and corresponding software driver - thankfully OpenGL 3.3 is supported across the entire MacOS X range with OS versions >= 10.9.
 
 Install Dependencies
 --------------------
 
--  Update MacOSX to version 10.9 (Mavericks) or higher - OpenGL 3.3 will
+-  Update MacOS X to version 10.9 (Mavericks) or higher - OpenGL 3.3 will
    typically not work on older versions
 
 -  Install XCode from the Apple Store
@@ -58,10 +58,10 @@ Git setup
 Set up your git environment as per the `Git instructions
 page <getting-started-with-git>`__
 
-Build MRtrix3
+Build *MRtrix3* 
 -------------
 
-1. Clone the MRtrix3 repository:
+1. Clone the *MRtrix3*  repository:
 
    ::
 
@@ -96,7 +96,7 @@ Build MRtrix3
 
        ./build
 
-Set up MRtrix3
+Set up *MRtrix3* 
 --------------
 
 1. Set your PATH in the shell startup file:
@@ -113,11 +113,11 @@ Set up MRtrix3
 4. You may also want to have a look through the :ref:`mrtrix_config_options` and set anything you think
    might be required on your system.
 
-Keeping MRtrix3 up to date
+Keeping *MRtrix3*  up to date
 --------------------------
 
 1. You can update your installation at any time by opening a Git Bash
-   terminal in the mrtrix3 folder, and typing:
+   terminal in the *MRtrix3*  folder, and typing:
 
    ::
 

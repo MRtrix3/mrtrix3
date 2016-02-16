@@ -4,7 +4,7 @@
 Linux installation
 =============
 
-We oultine the steps for installing *MRtrix3* on a Linux machine. Please consult 
+We outline the steps for installing *MRtrix3* on a Linux machine. Please consult 
 :ref:`linux_trouble_shooting` if you encounter any issues with the configure, build
 or runtime operations of *MRtrix3*.
 
@@ -22,13 +22,13 @@ To install *MRtrix3*, you will need the following:
 -  `Qt <http://www.qt.io/>`__ version >= 4.7 *[GUI components only]*
 
 .. WARNING:: 
-    To run the GUI components of MRtrix3 (``mrview`` &
+    To run the GUI components of *MRtrix3* (``mrview`` &
     ``shview``), you will also need:
 
     -  an `OpenGL <https://en.wikipedia.org/wiki/OpenGL>`__ 3.3 compliant graphics card and corresponding software driver
 
     Note that this implies you *cannot run the GUI components over a remote
-    X11 connection*, since it can't support OpenGL 3.3 rendering - see
+    X11 connection*, since it can't support OpenGL 3.3+ rendering - see
     :ref:`remote_display` for details.
 
 Install Dependencies
@@ -116,10 +116,10 @@ page <https://help.github.com/articles/set-up-git/#setting-up-git>`__
 
 .. _linux_build:
 
-Build MRtrix3
+Build *MRtrix3*
 -------------
 
-1. Clone the MRtrix3 repository:
+1. Clone the *MRtrix3* repository:
 
    ::
 
@@ -147,7 +147,7 @@ Build MRtrix3
 
        ./build
 
-Set up MRtrix3
+Set up *MRtrix3*
 --------------
 
 1. Set your PATH in the shell startup file (amend if you use tcsh or
@@ -165,11 +165,11 @@ Set up MRtrix3
 4. You may also want to have a look through the :ref:`mrtrix_config_options` and set anything you think
    might be required on your system.
 
-Keeping MRtrix3 up to date
+Keeping *MRtrix3* up to date
 --------------------------
 
 1. You can update your installation at any time by opening a terminal in
-   the mrtrix3 folder, and typing:
+   the MRtrix3 folder, and typing:
 
    ::
 
@@ -191,14 +191,14 @@ Keeping MRtrix3 up to date
 Standalone installation on Linux
 -------------------------------------
 
-In some cases, users need to install MRtrix3 on systems running older
+In some cases, users need to install *MRtrix3* on systems running older
 distributions, over which they have little or no control, for example
 centrally-managed HPC clusters. In such cases, there genuinely is no way
-to install the dependencies required to compile and run MRtrix3. There
+to install the dependencies required to compile and run *MRtrix3*. There
 are two ways to address this problem: `static
 executables <#static-build>`__, and the `standalone
-packager <#Standalone-packager>`__. With both approaches, you can
-compile MRtrix3 on a modern distro (within a virtual machine for
+packager <#standalone-packager>`__. With both approaches, you can
+compile *MRtrix3* on a modern distro (within a virtual machine for
 example), package it up, and install it on any Linux system without
 worrying about dependencies.
 
@@ -209,10 +209,10 @@ By default, ``configure`` will cause the build script to generate code
 suitable to run on your current CPU (using the ``-march=native``
 option). This means the executables will likely *not run* on a different
 CPUs with different instruction sets, resulting in 'illegal instruction'
-runtime errors. If you intend to run MRtrix3 on a variety of different
+runtime errors. If you intend to run *MRtrix3* on a variety of different
 systems with a range of CPUs, or you have no idea what the CPU is on
 your target system, it is safest to specify a generic architecture when
-configuring MRtrix3, before invoking ``./build``. For example, assuming
+configuring *MRtrix3*, before invoking ``./build``. For example, assuming
 a 64-bit build is needed:
 
 ::
@@ -232,7 +232,7 @@ static configuration before building the software, as follows.
 
 First, obtain the code and extract or clone it on a modern distribution
 (Arch, Ubuntu 14.04, Mint 17, ..., potentially with a virtual machine if
-required). Then, from the main mrtrix3 folder:
+required). Then, from the main *MRtrix3* folder:
 
 .. code::
 
@@ -258,15 +258,15 @@ Standalone packager
 ^^^^^^^^^^^
 
 In the rare cases where the `static build <#Static-build>`__ procedure
-above doesn't work for you, MRtrix3 now includes the ``package_mrtrix``
+above doesn't work for you, *MRtrix3* now includes the ``package_mrtrix``
 script, which is designed to package an existing and fully-functional
 installation from one system, so that it can be installed as a
 self-contained standalone package on another system. What this means is
-that you can now compile MRtrix3 on a modern distro (within a virtual
+that you can now compile *MRtrix3* on a modern distro (within a virtual
 machine for example), package it up, and install it on any Linux system
 without worrying about dependencies.
 
-**Note:** this is *not* the recommended way to install MRtrix3, and may
+**Note:** this is *not* the recommended way to install *MRtrix3*, and may
 not work for your system. This is provided on a best-effort basis, as a
 convenience for users who genuinely have no alternative.
 
@@ -274,7 +274,7 @@ What it does
 """""
 
 The ``package_mrtrix`` script is included in the top-level folder of the
-MRtrix3 package (if you don't have it, use ``git pull`` to update). In
+*MRtrix3* package (if you don't have it, use ``git pull`` to update). In
 essence, all it does is collate all the dynamic libraries necessary for
 runtime operation into a single folder, which you can then copy over and
 extract onto target systems. For a truly standalone installation, you
@@ -327,7 +327,7 @@ required). Then, from the main ``mrtrix3`` folder:
 
 Then copy the resulting ``_package/mrtrix3`` folder to the desired
 location on the target system (maybe your own home folder). To make the
-MRtrix3 command available on the command-line, the ``bin/`` folder needs
+*MRtrix3* command available on the command-line, the ``bin/`` folder needs
 to be added to your PATH (note this assumes that you're running the BASH
 shell):
 
@@ -378,8 +378,7 @@ There are three main reasons for this:
    -  how to install these drivers - a process that is invariably
       distribution-specific, and beyond the scope of this document. If
       you're having serious issues with this, you should consider asking
-      on the `MRtrix3 Google+ community
-      forum <https://plus.google.com/u/0/communities/111072048088633408015>`__,
+      on the `MRtrix3 community forum <http://community.mrtrix.org/>`__,
       you will often find others have come across similar issues and can
       provide useful advice. If you do, make sure you provide as much
       information as you can (at the very least, your exact
