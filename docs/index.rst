@@ -52,18 +52,18 @@ MRtrix provides a set of tools to perform diffusion-weighted MRI white matter tr
    :caption: Tutorials
    
    tutorials/hcp_demonstration
-   tutorials/labelconfig
    tutorials/connectome_tool
+   tutorials/labelconfig
    tutorials/advanced_debugging
 
 .. toctree::
    :maxdepth: 2
    :caption: Concepts
   
-   concepts/sh_basis
+   concepts/orthonormal_basis
    concepts/dixels_fixels
    concepts/afd_connectivity
-   conecpts/response_function_estimation
+   concepts/response_function_estimation
 
 
 
