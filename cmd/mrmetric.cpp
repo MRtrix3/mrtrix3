@@ -104,11 +104,12 @@ void run ()
   if (dimensions > 4) throw Exception ("images have to be 3D or 4D");
 
   size_t volumes(1);
-  if (dimensions == 4)
+  if (dimensions == 4) {
     volumes = input1.size(3);
     if (input1.size(3) != input2.size(3)){
       throw Exception ("both images have to have the same number of volumes");
     }
+  }
   DEBUG("volumes: " + str(volumes));
 
   int space = 0;  // voxel
