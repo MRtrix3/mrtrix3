@@ -136,7 +136,7 @@ namespace MR
         ThreadedLoop (disp_in1, 0, 3).run (ComposeDispKernel (disp_in1, disp_in2, step), disp_in1, disp_out);
       }
 
-      // Compose linear1<->displacement1<->[midway space]<->displacement2<->linear2. Output is a deformation field.
+      // Compose linear1<->displacement1<->[midway space]<->displacement2<->linear2. Output is a deformation field. TODO
       void compose_halfway_transforms (const transform_type& linear1, Image<default_type>& disp1,
                                        Image<default_type>& disp2, const transform_type& linear2,
                                        Image<default_type>& deform_out)

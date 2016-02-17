@@ -22,7 +22,7 @@ namespace MR
         + Argument ("image").type_image_in ()
 
       + Option ("syn_scale", "use a multi-resolution scheme by defining a scale factor for each level "
-                             "using comma separated values (Default: 0.25,0.5,1)")
+                             "using comma separated values (Default: 0.25,0.5,1.0)")
         + Argument ("factor").type_sequence_float ()
 
       + Option ("syn_niter", "the maximum number of iterations. This can be specified either as a single number "
@@ -35,7 +35,7 @@ namespace MR
       + Option ("syn_disp_smooth", "regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0 x voxel_size)")
         + Argument ("stdev").type_float ()
 
-      + Option ("syn_grad_step", "the gradient step size for SyN registration (Default: 1)")
+      + Option ("syn_grad_step", "the gradient step size for SyN registration (Default: 0.5)")
         + Argument ("num").type_float ();
 
   }

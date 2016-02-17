@@ -680,6 +680,7 @@ void run ()
     }
 
     if (warp_filename.size()) {
+      //TODO add affine parameters to comments too?
       Header output_header = syn_registration.get_output_warps_header();
       auto output_warps = Image<float>::create (warp_filename, output_header);
       syn_registration.get_output_warps (output_warps);
@@ -716,9 +717,8 @@ void run ()
 
     } else if (do_affine) {
       Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, affine.get_transform(), Adapter::AutoOverSample, 0.0);
-      if (do_reorientation) {
+      if (do_reorientation)
         Registration::Transform::reorient ("reorienting FODs...", im1_transformed, im1_transformed, affine.get_transform(), directions_cartesian);
-      }
     } else {
       Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, rigid.get_transform(), Adapter::AutoOverSample, 0.0);
       if (do_reorientation)

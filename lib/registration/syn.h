@@ -31,8 +31,7 @@
 #include "registration/transform/compose.h"
 #include "registration/transform/affine.h"
 #include "registration/transform/convert.h"
-#include "registration/transform/normalise.h"
-#include "registration/transform/norm.h"
+#include "registration/transform/warp_utils.h"
 #include "registration/transform/invert.h"
 #include "registration/metric/syn_demons.h"
 #include "registration/metric/syn_demons4D.h"
@@ -57,7 +56,7 @@ namespace MR
           scale_factor (3),
           update_smoothing (2.0),
           disp_smoothing (1.0),
-          gradient_step (1.0) {
+          gradient_step (0.5) {
             scale_factor[0] = 0.25;
             scale_factor[1] = 0.5;
             scale_factor[2] = 1.0;
@@ -300,8 +299,8 @@ namespace MR
             assert (input_warps.ndim() == 5);
 
             DEBUG ("reading linear transform from init warp field header");
-            parse_linear_transform (input_warps, im1_linear, "linear1");
-            parse_linear_transform (input_warps, im2_linear, "linear2");
+            im1_linear = Registration::Transform::parse_linear_transform (input_warps, "linear1");
+            im2_linear = Registration::Transform::parse_linear_transform (input_warps, "linear2");
 
             DEBUG ("loading initial warp fields");
             midway_image_header = input_warps;
@@ -309,15 +308,16 @@ namespace MR
             field_header.set_ndim (4);
             field_header.size(3) = 3;
 
-            im1_disp_field = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-            im2_disp_field = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-            im1_deform_field_inv = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-            im2_deform_field_inv = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+            im2_disp_field = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
+            im1_deform_field_inv = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
+            im1_disp_field = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
+            im2_deform_field_inv = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
 
             input_warps.index(4) = 0;
             threaded_copy (input_warps, *im1_disp_field, 0, 4);
             input_warps.index(4) = 1;
             threaded_copy (input_warps, *im1_deform_field_inv, 0, 4);
+            Transform::displacement2deformation (*im1_deform_field_inv, *im1_deform_field_inv);
 
             input_warps.index(4) = 2;
             threaded_copy (input_warps, *im2_disp_field, 0, 4);
@@ -337,9 +337,10 @@ namespace MR
 
 
           void set_scale_factor (const std::vector<default_type>& scalefactor) {
-            for (size_t i = 0; i < scalefactor.size(); ++i)
-              if (scalefactor[i] < 0)
-                throw Exception ("the multi-resolution scale factor must be positive");
+            for (size_t level = 0; level < scalefactor.size(); ++level) {
+              if (scalefactor[level] <= 0 || scalefactor[level] > 1)
+                throw Exception ("the non-linear registration scale factor for each multi-resolution level must be between 0 and 1");
+            }
             scale_factor = scalefactor;
           }
 
@@ -409,7 +410,7 @@ namespace MR
             output_header.keyval()["reorientation"] = str(aPSF_directions.cols() > 0);
             output_header.keyval()["gradient_step"] = str(gradient_step);
 
-            //TODO add lmax to output comments, fod based.
+            //TODO add lmax to output comments
             return output_header;
           }
 

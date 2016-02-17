@@ -70,7 +70,7 @@ namespace MR
         Linear () :
           max_iter (1, 500),
           gd_repetitions (1, 1),
-          scale_factor (2),
+          scale_factor (3),
           loop_density (1, 1.0),
           kernel_extent(3, 1),
           grad_tolerance(1.0e-6),
@@ -79,8 +79,9 @@ namespace MR
           init_type (Transform::Init::moments),
           robust_estimate (false),
           global_search (false) {
-          scale_factor[0] = 0.5;
-          scale_factor[1] = 1;
+          scale_factor[0] = 0.25;
+          scale_factor[1] = 0.5;
+          scale_factor[2] = 1.0;
         }
 
         void set_max_iter (const std::vector<int>& maxiter) {
@@ -100,7 +101,7 @@ namespace MR
         void set_scale_factor (const std::vector<default_type>& scalefactor) {
           for (size_t level = 0; level < scalefactor.size(); ++level) {
             if (scalefactor[level] <= 0 || scalefactor[level] > 1)
-              throw Exception ("the scale factor for each multi-resolution level must be between 0 and 1");
+              throw Exception ("the linear registration scale factor for each multi-resolution level must be between 0 and 1");
           }
           scale_factor = scalefactor;
         }

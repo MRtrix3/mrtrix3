@@ -64,7 +64,7 @@ namespace MR
         + Argument ("file").type_file_in ()
 
       + Option ("affine_scale", "use a multi-resolution scheme by defining a scale factor for each level "
-                               "using comma separated values (Default: 0.5,1)")
+                               "using comma separated values (Default: 0.25,0.5,1.0)")
         + Argument ("factor").type_sequence_float ()
 
       + Option ("affine_niter", "the maximum number of iterations. This can be specified either as a single number "
