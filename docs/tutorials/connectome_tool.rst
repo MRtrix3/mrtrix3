@@ -24,7 +24,7 @@ locations of the nodes upon which that connectome is based. So the first
 step is actually to load an image to provide the tool with this
 information, using the "Node image" button at the top of the toolbar.
 The desired image is the output of the ``labelconfig`` command, as
-detailed in the [[structural connectome construction]] tutorial: the
+detailed in the :ref:`stuct_connectome_construction` guide: the
 tool uses this image to localise each parcel in 3D space in preparation
 for visualisation. Alternatively, you can load the relevant parcellation
 image from the command-line when you first run MRView, using the
