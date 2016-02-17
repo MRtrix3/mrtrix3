@@ -96,11 +96,18 @@ void run () {
     ++resize_option_count;
   }
 
+
+  Header output_header (resize_filter);
+  output_header.datatype() = DataType::from_command_line (output_header.datatype());
+
   int interp = 2;
   opt = get_options ("interp");
   if (opt.size()) {
     interp = opt[0][0];
     resize_filter.set_interp_type (interp);
+    if (!output_header.datatype().is_signed() && (interp == 2 || interp == 3))
+      WARN ("using cubic or sinc interpolation when the output data type is not signed "
+            "may cause values to underflow. Change the output data type with -datatype");
   }
 
   if (!resize_option_count)
@@ -108,9 +115,7 @@ void run () {
   if (resize_option_count != 1)
     throw Exception ("only a single method can be used to resize the image (image resolution, voxel size or scale factor)");
 
-  Header header (resize_filter);
-  header.datatype() = DataType::from_command_line (DataType::from<float> ());
-  auto output = Image<float>::create (argument[1], header);
+  auto output = Image<float>::create (argument[1], output_header);
 
   resize_filter (input, output);
 }
