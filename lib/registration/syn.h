@@ -377,7 +377,7 @@ namespace MR
           }
 
           std::shared_ptr<Image<default_type> > get_im2_disp_field_inv() {
-            return im2_deform_field_inv; // TODO
+            return im2_deform_field_inv;
           }
 
           transform_type get_im1_linear() const {
@@ -385,7 +385,7 @@ namespace MR
           }
 
           transform_type get_im2_linear() const {
-            return im2_linear; // TODO
+            return im2_linear;
           }
 
           Header get_output_warps_header () {
@@ -402,7 +402,14 @@ namespace MR
             output_header.keyval()["linear1"] = str(im1_linear.matrix());
             output_header.keyval()["linear2"] = str(im2_linear.matrix());
 
-            //TODO add syn parameters to output comments
+            output_header.keyval()["scale_factors"] = str(scale_factor);
+            output_header.keyval()["max_iterations"] = str(max_iter);
+            output_header.keyval()["update_smooth"] = str(update_smoothing);
+            output_header.keyval()["displacement_smooth"] = str(disp_smoothing);
+            output_header.keyval()["reorientation"] = str(aPSF_directions.cols() > 0);
+            output_header.keyval()["gradient_step"] = str(gradient_step);
+
+            //TODO add lmax to output comments, fod based.
             return output_header;
           }
 
