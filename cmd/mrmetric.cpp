@@ -250,8 +250,8 @@ void run ()
       auto template_header = compute_minimum_average_header<double,Eigen::Transform<double, 3, Eigen::Projective>>(headers, template_res, padding, transform_header_with);
       template_header.set_ndim(input1.ndim());
 
-      output1 = Image<value_type>::scratch(input1.original_header(),"-");
-      output2 = Image<value_type>::scratch(input1.original_header(),"-");
+      output1 = Image<value_type>::scratch(template_header,"-");
+      output2 = Image<value_type>::scratch(template_header,"-");
       output1mask = Header::scratch(template_header,"-").get_image<bool>();
       output2mask = Header::scratch(template_header,"-").get_image<bool>();
       {
