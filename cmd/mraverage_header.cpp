@@ -58,8 +58,6 @@ void run ()
     const size_t num_inputs = argument.size()-1;
     // typedef Eigen::Transform< ComputeType, 3, Eigen::Projective> TransformType;
 
-
-
     auto opt = get_options ("padding");
     const ComputeType p = opt.size() ? ComputeType(opt[0][0]) : PADDING_DEFAULT;
     // VectorType padding = RowVectorType(4);
@@ -76,42 +74,17 @@ void run ()
         headers_in.push_back (Header::open (argument[i]));
         const Header& temp (headers_in[i]);
         if (temp.ndim() < 3)
-            throw Exception ("Please provide 3 dimensional images");
-    }
-
-
-    for(auto temp: headers_in){
-        std::cerr << temp << std::endl;
-        auto trafo = (Eigen::Transform<ComputeType, 3, Eigen::Projective>) Transform(temp).voxel2scanner;
-        std::cerr << trafo.matrix() << std::endl;
-
-        auto bbox = get_bounding_box<ComputeType,decltype(trafo)>(temp, trafo);
-        std::cerr << bbox << std::endl;
-        MAT(bbox);
+            throw Exception ("Please provide 3D or 4D images");
     }
 
     auto trafo = headers_in[0].transform();
     std::vector<decltype(trafo)> transform_header_with;
 
     auto H = compute_minimum_average_header<double,decltype(trafo)>(headers_in, template_res, padding, transform_header_with);
-
-    // std::cerr << H << std::endl;
-    std::cerr << "template header trafo:\n" << H.transform().matrix() << std::endl;
-    std::cerr << "template header voxel2scanner trafo:\n" << Transform(H).voxel2scanner.matrix() << std::endl;
-
-    {
-        std::cerr << "template header bounding box:\n";
-        auto trafo = (Eigen::Transform<ComputeType, 3, Eigen::Projective>) Transform(H).voxel2scanner;
-        auto bbox = get_bounding_box<ComputeType,decltype(trafo)>(H, trafo);
-        MAT(bbox);
-    }
-
     auto out = Header::create(argument[argument.size()-1],H);
-    // auto out = Image<float>::create(argument[argument.size()-1],H);
-    // for (size_t i = 0; i<num_inputs; ++i){
-    //  auto in = headers_in[i].get_image<float>();
-    //  for (auto j = Loop() (in, out); j ;++j){
-    //      out.value() += in.value()/num_inputs;
-    //  }
-    // }
+    INFO("average transformation:");
+    INFO(str(out.transform().matrix()));
+    auto trafo2 = Transform(out);
+    INFO("average voxel to scanner transformation:");
+    INFO(str(trafo2.voxel2scanner.matrix()));
 }
