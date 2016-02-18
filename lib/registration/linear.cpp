@@ -122,6 +122,7 @@ namespace MR
       + Option ("lmax", "explicitly set the lmax to be used in FOD registration. By default FOD registration will "
                         "use lmax 4 SH coefficients")
       + Argument ("num").type_integer ()
+
       + Option ("noreorientation", "turn off FOD reorientation. Reorientation is on by default if the number "
                                    "of volumes in the 4th dimension corresponds to the number of coefficients in an "
                                    "antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc");

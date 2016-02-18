@@ -58,11 +58,20 @@ void usage ()
         "By default the affine transformation will be saved in the warp image header (use mrinfo to view). To save the affine transform "
         "separately as a text file, use the -affine option.";
 
+  REFERENCES
+  + "* If FOD registration is being performed:\n"
+    "Raffelt, D.; Tournier, J.-D.; Fripp, J; Crozier, S.; Connelly, A. & Salvado, O. " // Internal
+    "Symmetric diffeomorphic registration of fibre orientation distributions. "
+    "NeuroImage, 2011, 56(3), 1171-1180"
+
+  + "Raffelt, D.; Tournier, J.-D.; Crozier, S.; Connelly, A. & Salvado, O. " // Internal
+    "Reorientation of fiber orientation distributions using apodized point spread functions. "
+    "Magnetic Resonance in Medicine, 2012, 67, 844-855";
+
 
   ARGUMENTS
     + Argument ("image1", "input image 1 ('moving')").type_image_in ()
     + Argument ("image2", "input image 2 ('template')").type_image_in ();
-
 
   OPTIONS
   + Option ("type", "the registration type. Valid choices are: "
