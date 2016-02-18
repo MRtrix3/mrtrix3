@@ -85,7 +85,10 @@ void usage ()
     + Argument ("image").type_image_in ()
 
     + Option ("nonormalisation",
-        "do not normalise the dissimilarity metric to the number of voxels.");
+        "do not normalise the dissimilarity metric to the number of voxels.")
+
+    + Option ("overlap",
+        "output number of voxels that were used.");
 
 }
 
@@ -328,5 +331,8 @@ void run ()
   if (!nonormalisation)
     sos.array() /= static_cast<value_type>(n_voxels);
   std::cout << str(sos.transpose()) << std::endl;
+
+  if (get_options ("overlap").size())
+    std::cout << str(n_voxels) << std::endl;
 }
 
