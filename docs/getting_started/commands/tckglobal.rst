@@ -141,7 +141,6 @@ data using a multi-tissue model. NeuroImage, 2015, 123, 89-101
 
 --------------
 
-MRtrix new_syntax-1436-ge228c30b, built Feb 17 2016
 
 **Author:** Daan Christiaens (daan.christiaens@kuleuven.be)
 

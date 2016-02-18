@@ -80,7 +80,6 @@ of multi-shell diffusion MRI data NeuroImage, 2014, 103, 411-426
 
 --------------
 
-MRtrix new_syntax-1436-ge228c30b, built Feb 17 2016
 
 **Author:** Ben Jeurissen (ben.jeurissen@uantwerpen.be)
 

@@ -80,7 +80,6 @@ strengths, limitations, and pitfalls. NeuroImage, 2013, 81, 335-346
 
 --------------
 
-MRtrix new_syntax-1436-ge228c30b, built Feb 17 2016
 
 **Author:** Ben Jeurissen (ben.jeurissen@uantwerpen.be)
 
