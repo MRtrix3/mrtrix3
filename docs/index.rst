@@ -34,7 +34,7 @@ Welcome to the MRtrix user documentation!
    getting_started/image_data
    getting_started/command_line
    getting_started/commands_list
-   getting_started/scripts
+   getting_started/scripts_list
    getting_started/FAQ
 
 .. toctree::
