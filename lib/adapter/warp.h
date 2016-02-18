@@ -18,7 +18,6 @@
 
 #include "image.h"
 #include "transform.h"
-#include "registration/transform/compose.h"
 #include "interp/cubic.h"
 
 namespace MR

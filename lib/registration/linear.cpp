@@ -8,6 +8,8 @@ namespace MR
     using namespace App;
 
     const char* initialisation_choices[] = { "mass", "geometric", "moments", "none", NULL };
+    const char* linear_metric_choices[] = { "diff", "ncc", NULL };
+    const char* linear_robust_estimator_choices[] = { "l1", "l2", "lp", NULL };
 
     const OptionGroup rigid_options =
       OptionGroup ("Rigid registration options")

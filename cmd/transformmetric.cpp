@@ -7,7 +7,6 @@
 #include <Eigen/Geometry>
 #include <Eigen/SVD>
 
-// #include "registration/transform/compose.h"
 
 using namespace MR;
 using namespace App;

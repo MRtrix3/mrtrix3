@@ -77,7 +77,7 @@ namespace MR
            header.size(3) = 3;
            Stride::set (header, Stride::contiguous_along_axis (3));
            auto warp_resliced = Image<typename WarpType::value_type>::scratch (header);
-           reslice<Interp::Linear> (warp, warp_resliced);
+           reslice<Interp::Cubic> (warp, warp_resliced);
            Adapter::Warp<Interpolator, ImageTypeSource, Image<typename WarpType::value_type> > interp (source, warp_resliced, value_when_out_of_bounds);
 
            if (destination.ndim() == 4)

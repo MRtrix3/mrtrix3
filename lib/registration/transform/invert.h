@@ -89,7 +89,7 @@ namespace MR
           /*! Estimate the inverse of a deformation field
            * Note that the output inv_warp can be passed as either a zero field or an initial estimate
            */
-          void invert_deformation (Image<default_type>& deform_field, Image<default_type>& inv_deform_field, bool is_initialised = false, size_t max_iter = 50, default_type error_tolerance = 0.0001)
+          FORCE_INLINE void invert_deformation (Image<default_type>& deform_field, Image<default_type>& inv_deform_field, bool is_initialised = false, size_t max_iter = 50, default_type error_tolerance = 0.0001)
           {
             check_dimensions (deform_field, inv_deform_field);
             error_tolerance *= (deform_field.spacing(0) + deform_field.spacing(1) + deform_field.spacing(2)) / 3;
@@ -104,7 +104,7 @@ namespace MR
           /*! Estimate the inverse of a displacement field, output the inverse as a deformation field
            * Note that the output inv_warp can be passed as either a zero field or an initial estimate (as a deformation field)
            */
-          void invert_displacement_deformation (Image<default_type>& disp, Image<default_type>& inv_deform, bool is_initialised = false, size_t max_iter = 50, default_type error_tolerance = 0.0001)
+          FORCE_INLINE void invert_displacement_deformation (Image<default_type>& disp, Image<default_type>& inv_deform, bool is_initialised = false, size_t max_iter = 50, default_type error_tolerance = 0.0001)
           {
             auto deform_field = Image<default_type>::scratch (disp);
             Transform::displacement2deformation (disp, deform_field);
