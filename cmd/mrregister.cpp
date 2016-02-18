@@ -1,25 +1,17 @@
 /*
- Copyright 2012 Brain Research Institute, Melbourne, Australia
-
- Written by David Raffelt, 23/02/2012.
-
- This file is part of MRtrix.
-
- MRtrix is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
-
- MRtrix is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see www.mrtrix.org
+ *
  */
-//#define REGISTRATION_GRADIENT_DESCENT_DEBUG
 
 #include "command.h"
 #include "image.h"
@@ -27,8 +19,8 @@
 #include "interp/cubic.h"
 #include "transform.h"
 #include "registration/linear.h"
-#include "registration/syn.h"
-#include "registration/metric/syn_demons.h"
+#include "registration/nonlinear.h"
+#include "registration/metric/demons.h"
 #include "registration/metric/mean_squared.h"
 #include "registration/metric/difference_robust.h"
 #include "registration/metric/difference_robust_4D.h"
@@ -44,7 +36,7 @@
 using namespace MR;
 using namespace App;
 
-const char* transformation_choices[] = { "rigid", "affine", "syn", "rigid_affine", "rigid_syn", "affine_syn", "rigid_affine_syn", NULL };
+const char* transformation_choices[] = { "rigid", "affine", "nonlinear", "rigid_affine", "rigid_nonlinear", "affine_nonlinear", "rigid_affine_nonlinear", NULL };
 
 
 void usage ()
@@ -52,32 +44,38 @@ void usage ()
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
 
   DESCRIPTION
-      + "Register two images together using a rigid, affine or a symmetric diffeomorphic (SyN) transformation model."
+      + "Register two images together using a rigid, affine or a non-linear transformation model."
 
-      + "By default this application will perform an affine, followed by SyN registration."
+      + "By default this application will perform an affine, followed by non-linear registration."
 
       + "FOD registration (with apodised point spread reorientation) will be performed by default if the number of volumes "
         "in the 4th dimension equals the number of coefficients in an antipodally symmetric spherical harmonic series (e.g. 6, 15, 28 etc). "
         "The -no_reorientation option can be used to force reorientation off if required."
 
-      + "SyN estimates both the warp and it's inverse. These are each split into two warps to achieve a symmetric transformation (i.e "
-        "both the moving and template image are warped towards a 'middle ground'. See Avants (2008) Med Image Anal. 12(1): 26–41.) "
-        "By default this application will save all four warps (so that subsequent registrations can be initialised with the output warps) "
-        "Warps are saved in a single 5D file, with the 5th dimension defining the warp type. (These can be visualised by switching volume "
-        "groups in MRview)."
-
-      + "By default the affine transformation will be saved in the warp image header (use mrinfo to view). To save the affine transform "
+      + "Non-linear registration computes warps to map from both image1->image2 and image2->image1. "
+        "Similar to Avants (2008) Med Image Anal. 12(1): 26–41, both the image1 and image2 are warped towards a 'middle space'. "
+        "Warps are saved in a single 5D file, with the 5th dimension defining the warp type. See here for more details (TODO). "
+        "By default the affine transformation will be saved in the warp image header (use mrinfo to view). To save the affine transform "
         "separately as a text file, use the -affine option.";
+
+  REFERENCES
+  + "* If FOD registration is being performed:\n"
+    "Raffelt, D.; Tournier, J.-D.; Fripp, J; Crozier, S.; Connelly, A. & Salvado, O. " // Internal
+    "Symmetric diffeomorphic registration of fibre orientation distributions. "
+    "NeuroImage, 2011, 56(3), 1171-1180"
+
+  + "Raffelt, D.; Tournier, J.-D.; Crozier, S.; Connelly, A. & Salvado, O. " // Internal
+    "Reorientation of fiber orientation distributions using apodized point spread functions. "
+    "Magnetic Resonance in Medicine, 2012, 67, 844-855";
 
 
   ARGUMENTS
     + Argument ("image1", "input image 1 ('moving')").type_image_in ()
     + Argument ("image2", "input image 2 ('template')").type_image_in ();
 
-
   OPTIONS
   + Option ("type", "the registration type. Valid choices are: "
-                             "rigid, affine, syn, rigid_affine, rigid_syn, affine_syn, rigid_affine_syn (Default: affine_syn)")
+                     "rigid, affine, nonlinear, rigid_affine, rigid_nonlinear, affine_nonlinear, rigid_affine_nonlinear (Default: affine_nonlinear)")
     + Argument ("choice").type_choice (transformation_choices)
 
   + Option ("transformed", "image1 after registration transformed to the space of image2")
@@ -98,7 +96,7 @@ void usage ()
 
   + Registration::affine_options
 
-  + Registration::syn_options
+  + Registration::nonlinear_options
 
   + Registration::fod_options
 
@@ -215,7 +213,7 @@ void run ()
   opt = get_options ("type");
   bool do_rigid  = false;
   bool do_affine = false;
-  bool do_syn = false;
+  bool do_nonlinear = false;
   int registration_type = 5;
   if (opt.size())
     registration_type = opt[0][0];
@@ -227,7 +225,7 @@ void run ()
       do_affine = true;
       break;
     case 2:
-      do_syn = true;
+      do_nonlinear = true;
       break;
     case 3:
       do_rigid = true;
@@ -235,16 +233,16 @@ void run ()
       break;
     case 4:
       do_rigid = true;
-      do_syn = true;
+      do_nonlinear = true;
       break;
     case 5:
       do_affine = true;
-      do_syn = true;
+      do_nonlinear = true;
       break;
     case 6:
       do_rigid = true;
       do_affine = true;
-      do_syn = true;
+      do_nonlinear = true;
       break;
     default:
       break;
@@ -478,89 +476,89 @@ void run ()
   }
 
 
-  // ****** SYN REGISTRATION OPTIONS *******
-  Registration::SyN syn_registration;
+  // ****** NON-LINEAR REGISTRATION OPTIONS *******
+  Registration::NonLinear nonlinear_registration;
 
-  opt = get_options ("syn_warp");
+  opt = get_options ("nl_warp");
   std::string warp_filename;
   if (opt.size()) {
-    if (!do_syn)
-      throw Exception ("Syn warp output requested when no SyN registration is requested");
+    if (!do_nonlinear)
+      throw Exception ("Non-linear warp output requested when no non-linear registration is requested");
     warp_filename = std::string (opt[0][0]);
   }
 
 
-  opt = get_options ("syn_init");
-  bool syn_init = false;
+  opt = get_options ("nl_init");
+  bool nonlinear_init = false;
   if (opt.size()) {
-    syn_init = true;
+    nonlinear_init = true;
 
-    if (!do_syn)
-      throw Exception ("the syn initialisation input when no syn registration is requested");
+    if (!do_nonlinear)
+      throw Exception ("the non linear initialisation input when no non linear registration is requested");
 
     Image<default_type> input_warps = Image<default_type>::open (opt[0][0]);
     if (input_warps.ndim() != 5)
-      throw Exception ("syn initialisation input is not 5D. Input must be from previous syn output");
+      throw Exception ("non-linear initialisation input is not 5D. Input must be from previous non-linear output");
 
-    syn_registration.initialise (input_warps);
+    nonlinear_registration.initialise (input_warps);
 
     if (do_affine) {
-      WARN ("no affine registration will be performed when initialising with syn non-linear warps");
+      WARN ("no affine registration will be performed when initialising with non-linear non-linear warps");
       do_affine = false;
     }
     if (do_rigid) {
-      WARN ("no rigid registration will be performed when initialising with syn non-linear warps");
+      WARN ("no rigid registration will be performed when initialising with non-linear non-linear warps");
       do_rigid = false;
     }
     if (init_affine_set)
-      WARN ("-affine_init has no effect since the syn init warp also contains the linear transform in the image header");
+      WARN ("-affine_init has no effect since the non-linear init warp also contains the linear transform in the image header");
     if (init_rigid_set)
-      WARN ("-rigid_init has no effect since the syn init warp also contains the linear transform in the image header");
+      WARN ("-rigid_init has no effect since the non-linear init warp also contains the linear transform in the image header");
   }
 
 
-  opt = get_options ("syn_scale");
+  opt = get_options ("nl_scale");
   if (opt.size ()) {
-    if (!do_syn)
-      throw Exception ("the syn multi-resolution scale factors were input when no syn registration is requested");
+    if (!do_nonlinear)
+      throw Exception ("the non-linear multi-resolution scale factors were input when no non-linear registration is requested");
     std::vector<default_type> scale_factors = parse_floats (opt[0][0]);
-    if (syn_init && (scale_factors.size() > 1)) {
-      WARN ("-syn_scale option ignored since only the full resolution will be performed when initialising with syn warp");
+    if (nonlinear_init && (scale_factors.size() > 1)) {
+      WARN ("-nl_scale option ignored since only the full resolution will be performed when initialising with non-linear warp");
     } else {
-      syn_registration.set_scale_factor (scale_factors);
+      nonlinear_registration.set_scale_factor (scale_factors);
     }
   }
 
-  opt = get_options ("syn_niter");
+  opt = get_options ("nl_niter");
   if (opt.size ()) {
-    if (!do_syn)
-      throw Exception ("the number of syn iterations have been input when no SyN registration is requested");
+    if (!do_nonlinear)
+      throw Exception ("the number of non-linear iterations have been input when no non-linear registration is requested");
     std::vector<int> iterations_per_level = parse_ints (opt[0][0]);
-    if (syn_init && iterations_per_level.size() > 1)
-      throw Exception ("when initialising the syn registration the max number of iterations can only be defined for a single level");
+    if (nonlinear_init && iterations_per_level.size() > 1)
+      throw Exception ("when initialising the non-linear registration the max number of iterations can only be defined for a single level");
     else
-      syn_registration.set_max_iter (iterations_per_level);
+      nonlinear_registration.set_max_iter (iterations_per_level);
   }
 
-  opt = get_options ("syn_update_smooth");
+  opt = get_options ("nl_update_smooth");
   if (opt.size()) {
-    if (!do_syn)
-      throw Exception ("the warp update field smoothing parameter was input when no SyN registration is requested");
-    syn_registration.set_update_smoothing (opt[0][0]);
+    if (!do_nonlinear)
+      throw Exception ("the warp update field smoothing parameter was input when no non-linear registration is requested");
+    nonlinear_registration.set_update_smoothing (opt[0][0]);
   }
 
-  opt = get_options ("syn_disp_smooth");
+  opt = get_options ("nl_disp_smooth");
   if (opt.size()) {
-    if (!do_syn)
-      throw Exception ("the displacement field smoothing parameter was input when no SyN registration is requested");
-    syn_registration.set_disp_smoothing (opt[0][0]);
+    if (!do_nonlinear)
+      throw Exception ("the displacement field smoothing parameter was input when no non-linear registration is requested");
+    nonlinear_registration.set_disp_smoothing (opt[0][0]);
   }
 
-  opt = get_options ("syn_grad_step");
+  opt = get_options ("nl_grad_step");
   if (opt.size()) {
-    if (!do_syn)
-      throw Exception ("the initial gradient step size was input when no SyN registration is requested");
-    syn_registration.set_init_grad_step (opt[0][0]);
+    if (!do_nonlinear)
+      throw Exception ("the initial gradient step size was input when no non-linear registration is requested");
+    nonlinear_registration.set_init_grad_step (opt[0][0]);
   }
 
 
@@ -663,27 +661,27 @@ void run ()
   }
 
 
-  // ****** RUN SYN REGISTRATION *******
-  if (do_syn) {
-    CONSOLE ("running SyN registration");
+  // ****** RUN NON-LINEAR REGISTRATION *******
+  if (do_nonlinear) {
+    CONSOLE ("running non-linear registration");
 
     if (do_reorientation)
-      syn_registration.set_aPSF_directions (directions_cartesian);
+      nonlinear_registration.set_aPSF_directions (directions_cartesian);
 
     if (do_affine) {
-      syn_registration.run (affine, im1_image, im2_image, im1_mask, im2_mask);
+      nonlinear_registration.run (affine, im1_image, im2_image, im1_mask, im2_mask);
     } else if (do_rigid) {
-      syn_registration.run (rigid, im1_image, im2_image, im1_mask, im2_mask);
+      nonlinear_registration.run (rigid, im1_image, im2_image, im1_mask, im2_mask);
     } else {
       Registration::Transform::Affine identity_transform;
-      syn_registration.run (identity_transform, im1_image, im2_image, im1_mask, im2_mask);
+      nonlinear_registration.run (identity_transform, im1_image, im2_image, im1_mask, im2_mask);
     }
 
     if (warp_filename.size()) {
       //TODO add affine parameters to comments too?
-      Header output_header = syn_registration.get_output_warps_header();
+      Header output_header = nonlinear_registration.get_output_warps_header();
       auto output_warps = Image<float>::create (warp_filename, output_header);
-      syn_registration.get_output_warps (output_warps);
+      nonlinear_registration.get_output_warps (output_warps);
     }
   }
 
@@ -692,16 +690,16 @@ void run ()
   if (im1_transformed.valid()) {
     INFO ("Outputting tranformed input images...");
 
-    if (do_syn) {
+    if (do_nonlinear) {
       Header deform_header (im1_transformed);
       deform_header.set_ndim(4);
       deform_header.size(3) = 3;
       Image<default_type> deform_field = Image<default_type>::scratch (deform_header);
 
-      Registration::Transform::compose_halfway_transforms (syn_registration.get_im2_linear().inverse(),
-                                                           *(syn_registration.get_im2_disp_field_inv()),
-                                                           *(syn_registration.get_im1_disp_field()),
-                                                           syn_registration.get_im1_linear(),
+      Registration::Transform::compose_halfway_transforms (nonlinear_registration.get_im2_linear().inverse(),
+                                                           *(nonlinear_registration.get_im2_disp_field_inv()),
+                                                           *(nonlinear_registration.get_im1_disp_field()),
+                                                           nonlinear_registration.get_im1_linear(),
                                                            deform_field);
       if (im1_image.ndim() == 3) {
         Filter::warp<Interp::Cubic> (im1_image, im1_transformed, deform_field, 0.0);
@@ -728,10 +726,10 @@ void run ()
 
 
   if (!im1_midway_transformed_path.empty() and !im2_midway_transformed_path.empty()) {
-    if (do_syn) {
-      Image<default_type> im1_deform_field = Image<default_type>::scratch (*(syn_registration.get_im1_disp_field()));
-      Registration::Transform::compose_linear_displacement (affine.get_transform_half(), *(syn_registration.get_im1_disp_field()), im1_deform_field);
-      Header midway_header (syn_registration.get_midway_header());
+    if (do_nonlinear) {
+      Image<default_type> im1_deform_field = Image<default_type>::scratch (*(nonlinear_registration.get_im1_disp_field()));
+      Registration::Transform::compose_linear_displacement (affine.get_transform_half(), *(nonlinear_registration.get_im1_disp_field()), im1_deform_field);
+      Header midway_header (nonlinear_registration.get_midway_header());
       midway_header.datatype() = DataType::from_command_line (DataType::Float32);
       midway_header.set_ndim(im1_image.ndim());
       if (midway_header.ndim() == 4)
@@ -749,8 +747,8 @@ void run ()
         threaded_copy (temp_output, im1_midway);
       }
 
-      Image<default_type> im2_deform_field = Image<default_type>::scratch (*(syn_registration.get_im2_disp_field()));
-      Registration::Transform::compose_linear_displacement (affine.get_transform_half_inverse(), *(syn_registration.get_im2_disp_field()), im2_deform_field);
+      Image<default_type> im2_deform_field = Image<default_type>::scratch (*(nonlinear_registration.get_im2_disp_field()));
+      Registration::Transform::compose_linear_displacement (affine.get_transform_half_inverse(), *(nonlinear_registration.get_im2_disp_field()), im2_deform_field);
 
       auto im2_midway = Image<default_type>::create (im2_midway_transformed_path, midway_header);
 

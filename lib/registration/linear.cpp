@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see www.mrtrix.org
+ *
+ */
+
 #include "registration/linear.h"
 
 namespace MR
@@ -8,6 +23,8 @@ namespace MR
     using namespace App;
 
     const char* initialisation_choices[] = { "mass", "geometric", "moments", "none", NULL };
+    const char* linear_metric_choices[] = { "diff", "ncc", NULL };
+    const char* linear_robust_estimator_choices[] = { "l1", "l2", "lp", NULL };
 
     const OptionGroup rigid_options =
       OptionGroup ("Rigid registration options")
@@ -105,6 +122,7 @@ namespace MR
       + Option ("lmax", "explicitly set the lmax to be used in FOD registration. By default FOD registration will "
                         "use lmax 4 SH coefficients")
       + Argument ("num").type_integer ()
+
       + Option ("noreorientation", "turn off FOD reorientation. Reorientation is on by default if the number "
                                    "of volumes in the 4th dimension corresponds to the number of coefficients in an "
                                    "antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc");

@@ -21,15 +21,15 @@ from lib.runCommand     import runCommand
 from lib.warnMessage    import warnMessage
 
 lib.app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
-lib.app.initCitations([ 'eddy/topup', 'FSL' ])
-lib.app.initParser('Perform diffusion image pre-processing using FSL tools, including inhomogeneity distortion correction if possible')
+lib.app.initCitations([ 'eddy', 'FSL', 'Skare2010', 'topup' ])
+lib.app.initParser('Perform diffusion image pre-processing using FSL\'s eddy tool; including inhomogeneity distortion correction using FSL\'s topup tool if possible')
 lib.app.parser.add_argument('pe_dir', help='The phase encode direction; can be a signed axis number (e.g. -0, 1, +2) or a code (e.g. AP, LR, IS)')
 lib.app.parser.add_argument('input',   help='The input DWI series to be corrected')
 lib.app.parser.add_argument('output',  help='The output corrected image series')
 lib.app.parser.add_argument('-cuda',   help='Use the CUDA version of eddy', action='store_true', default=False)
 rpe_group = lib.app.parser.add_argument_group('Options for passing reversed phase-encode data')
 rpe_me_group = rpe_group.add_mutually_exclusive_group(required=True)
-rpe_me_group.add_argument('-rpe_none', action='store_true', help='Specify explicitly that no reversed phase-encoding image data is provided')
+rpe_me_group.add_argument('-rpe_none', action='store_true', help='Specify explicitly that no reversed phase-encoding image data is provided; eddy will perform eddy current and motion correction only')
 rpe_me_group.add_argument('-rpe_pair', nargs=2, metavar=('forward', 'reverse'), help='Provide a pair of images to use for inhomogeneity field estimation; note that the FIRST of these two images must have the same phase-encode direction as the input DWIs')
 rpe_me_group.add_argument('-rpe_all', metavar='input_revpe', help='Provide a second DWI series identical to the input series, that has the opposite phase encoding; these will be combined in the output image')
 grad_import = lib.app.parser.add_mutually_exclusive_group()
@@ -154,7 +154,7 @@ series_path = 'series.mif'
 if not PE_design == 'None':
 
   pair1_path = 'pair1.mif'
-  pair2_path = 'pair1.mif'
+  pair2_path = 'pair2.mif'
   series2_path = 'series2.mif'
 
   # For any non-even axis sizes, crop the first voxel along that dimension
@@ -218,13 +218,13 @@ if PE_dir[1]:
   config_line[PE_dir[0]] = '-1'
 else:
   config_line[PE_dir[0]] = '1'
-for lines in range(0, rpe_b0_count[0]):
+for lines in range(0, int(rpe_b0_count[0])):
   config_file.write(' '.join (config_line) + '\n')
 if PE_dir[1]:
   config_line[PE_dir[0]] = '1'
 else:
   config_line[PE_dir[0]] = '-1'
-for lines in range(0, rpe_b0_count[1]):
+for lines in range(0, int(rpe_b0_count[1])):
   config_file.write(' '.join (config_line) + '\n')
 config_file.close()
 
@@ -392,12 +392,12 @@ else: # 'All'
 
 # Finish!
 # Also export the gradient table to the path requested by the user if necessary
-output_path = os.path.join(lib.app.workingDir, lib.app.args.output)
 grad_export_option = ''
 if lib.app.args.export_grad_mrtrix:
   grad_export_option = ' -export_grad_mrtrix ' + os.path.join(lib.app.workingDir, lib.app.args.export_grad_mrtrix)
 elif lib.app.args.export_grad_fsl:
   grad_export_option = ' -export_grad_fsl ' + os.path.join(lib.app.workingDir, lib.app.args.export_grad_mrtrix[0]) + ' ' + os.path.join(lib.app.workingDir, lib.app.args.export_grad_mrtrix[1])
-runCommand('mrconvert result.mif ' + result_path + grad_export_option + lib.app.mrtrixForce)
+
+runCommand('mrconvert result.mif ' + os.path.join(lib.app.workingDir, lib.app.args.output) + grad_export_option + lib.app.mrtrixForce)
 lib.app.complete()
 

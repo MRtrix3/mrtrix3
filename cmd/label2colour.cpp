@@ -56,7 +56,7 @@ void usage ()
   + Option ("config", "If the input parcellation image was created using labelconfig, provide the connectome config file used so that the node indices are converted correctly")
     + Argument ("file").type_file_in();
 
-};
+}
 
 
 

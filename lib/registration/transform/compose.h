@@ -119,25 +119,25 @@ namespace MR
 
 
       // Compose a linear transform and a deformation field. The input and output can be the same image.
-      void compose_affine_deformation (const transform_type& transform, Image<default_type>& deform_in, Image<default_type>& deform_out)
+      FORCE_INLINE void compose_affine_deformation (const transform_type& transform, Image<default_type>& deform_in, Image<default_type>& deform_out)
       {
         ThreadedLoop (deform_in, 0, 3).run (ComposeAffineDeformKernel (transform), deform_in, deform_out);
       }
 
       // Compose a linear transform and a displacement field. The output field is a deformation field. The input and output can be the same image.
-      void compose_linear_displacement (const transform_type& transform, Image<default_type>& disp_in, Image<default_type>& deform_out)
+      FORCE_INLINE  void compose_linear_displacement (const transform_type& transform, Image<default_type>& disp_in, Image<default_type>& deform_out)
       {
         ThreadedLoop (disp_in, 0, 3).run (ComposeLinearDispKernel (transform, disp_in), disp_in, deform_out);
       }
 
       // Compose two displacement fields and output a displacement field. The input and output can be the same image.
-      void compose_displacement (Image<default_type>& disp_in1, Image<default_type>& disp_in2, Image<default_type>& disp_out, default_type step = 1.0)
+      FORCE_INLINE  void compose_displacement (Image<default_type>& disp_in1, Image<default_type>& disp_in2, Image<default_type>& disp_out, default_type step = 1.0)
       {
         ThreadedLoop (disp_in1, 0, 3).run (ComposeDispKernel (disp_in1, disp_in2, step), disp_in1, disp_out);
       }
 
       // Compose linear1<->displacement1<->[midway space]<->displacement2<->linear2. Output is a deformation field. TODO
-      void compose_halfway_transforms (const transform_type& linear1, Image<default_type>& disp1,
+      FORCE_INLINE void compose_halfway_transforms (const transform_type& linear1, Image<default_type>& disp1,
                                        Image<default_type>& disp2, const transform_type& linear2,
                                        Image<default_type>& deform_out)
       {

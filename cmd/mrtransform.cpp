@@ -31,6 +31,7 @@
 #include "dwi/gradient.h"
 #include "registration/transform/reorient.h"
 #include "registration/transform/warp_utils.h"
+#include "registration/transform/compose.h"
 #include "image/average_space.h"
 #include <unsupported/Eigen/MatrixFunctions>
 
@@ -133,7 +134,7 @@ void usage ()
     + Option ("from",
         "used to define which space the input image is when using the -warp option. "
         "Use -from 1 to warp from image1 or -from 2 to warp from image2")
-    +   Argument ("axes").type_integer(1,1,2)
+    +   Argument ("axes").type_integer (1,1,2)
 
     + Option ("warp_df",
         "apply a non-linear 4D deformation field to warp the input image. Each voxel in the deformation field must define "

@@ -19,10 +19,6 @@
 #include "algo/threaded_loop.h"
 
 
-namespace MR {
-}
-
-
 using namespace MR;
 using namespace App;
 

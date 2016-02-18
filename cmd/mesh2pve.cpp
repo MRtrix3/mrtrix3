@@ -48,7 +48,7 @@ void usage ()
   + Argument ("template", "the template image").type_image_in()
   + Argument ("output",   "the output image").type_image_out();
 
-};
+}
 
 
 

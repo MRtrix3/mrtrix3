@@ -1,23 +1,16 @@
 /*
-    Copyright 2012 Brain Research Institute, Melbourne, Australia
-
-    Written by David Raffelt 19/11/12
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see www.mrtrix.org
+ *
  */
 
 #ifndef __registration_transform_invert_h__
@@ -89,7 +82,7 @@ namespace MR
           /*! Estimate the inverse of a deformation field
            * Note that the output inv_warp can be passed as either a zero field or an initial estimate
            */
-          void invert_deformation (Image<default_type>& deform_field, Image<default_type>& inv_deform_field, bool is_initialised = false, size_t max_iter = 50, default_type error_tolerance = 0.0001)
+          FORCE_INLINE void invert_deformation (Image<default_type>& deform_field, Image<default_type>& inv_deform_field, bool is_initialised = false, size_t max_iter = 50, default_type error_tolerance = 0.0001)
           {
             check_dimensions (deform_field, inv_deform_field);
             error_tolerance *= (deform_field.spacing(0) + deform_field.spacing(1) + deform_field.spacing(2)) / 3;
@@ -104,7 +97,7 @@ namespace MR
           /*! Estimate the inverse of a displacement field, output the inverse as a deformation field
            * Note that the output inv_warp can be passed as either a zero field or an initial estimate (as a deformation field)
            */
-          void invert_displacement_deformation (Image<default_type>& disp, Image<default_type>& inv_deform, bool is_initialised = false, size_t max_iter = 50, default_type error_tolerance = 0.0001)
+          FORCE_INLINE void invert_displacement_deformation (Image<default_type>& disp, Image<default_type>& inv_deform, bool is_initialised = false, size_t max_iter = 50, default_type error_tolerance = 0.0001)
           {
             auto deform_field = Image<default_type>::scratch (disp);
             Transform::displacement2deformation (disp, deform_field);
