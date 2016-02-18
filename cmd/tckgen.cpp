@@ -137,8 +137,7 @@ void usage ()
   
   + DWI::GradImportOptions();
 
-
-};
+}
 
 
 

@@ -70,7 +70,7 @@ void usage ()
     +   Argument ("image").type_image_in();
   
   // TODO add support for SH amplitude along tangent
-};
+}
 
 
 typedef float value_type;

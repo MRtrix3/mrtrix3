@@ -3,14 +3,14 @@ Windows installation
 =============
 
 
-We oultine the steps for installing *MRtrix3* for Windows using `MSYS2 <http://sourceforge.net/p/msys2/wiki/MSYS2%20introduction/>`__. 
+We outline the steps for installing *MRtrix3* for Windows using `MSYS2 <http://sourceforge.net/p/msys2/wiki/MSYS2%20introduction/>`__. 
 Please consult :ref:`windows_trouble_shooting` if you encounter any issues with the configure, build
 or runtime operations of *MRtrix3*.
 
 Check requirements
 ------------------
 
-To install MRtrix3, you will need the following:
+To install *MRtrix3*, you will need the following:
 
 -  a `C++11 <https://en.wikipedia.org/wiki/C%2B%2B11>`__ compliant
    compiler
@@ -24,7 +24,7 @@ To install MRtrix3, you will need the following:
     All of these dependencies are installed below by the MSYS2 package manager.
 
 .. WARNING:: 
-    To run the GUI components of MRtrix3 (``mrview`` & ``shview``), you will also need:
+    To run the GUI components of *MRtrix3* (``mrview`` & ``shview``), you will also need:
 
     -  an `OpenGL <https://en.wikipedia.org/wiki/OpenGL>`__ 3.3 compliant graphics card and corresponding software driver 
 
@@ -50,7 +50,7 @@ Install and update MSYS2
 
        pacman -Su
 
-Install MRtrix3 dependencies
+Install *MRtrix3* dependencies
 ----------------------------
 
 1. From the 'MinGW-w64 Win64 Shell' run:
@@ -59,7 +59,7 @@ Install MRtrix3 dependencies
 
        pacman -S git python pkg-config mingw-w64-x86_64-gcc mingw-w64-x86_64-gsl mingw-w64-x86_64-qt4
 
-Set up git and download MRtrix3 sources
+Set up git and download *MRtrix3* sources
 ---------------------------------------
 
 1. Configure global settings for Git in the 'MinGW-w64 Win64 Shell':
@@ -70,13 +70,13 @@ Set up git and download MRtrix3 sources
        git config --global user.email johndoe@example.com
        git config --global push.default upstream
 
-2. Clone the MRtrix3 repository:
+2. Clone the *MRtrix3* repository:
 
    ::
 
        git clone https://github.com/MRtrix3/mrtrix3.git
 
-Build MRtrix3
+Build *MRtrix3*
 -------------
 
 1. Configure the MRtrix install:
@@ -95,7 +95,7 @@ Build MRtrix3
 
        ./build
 
-Set up MRtrix3
+Set up *MRtrix3*
 --------------
 
 1. Set your PATH in the shell startup file:
@@ -115,11 +115,10 @@ Set up MRtrix3
 
 3. type ``mrview`` to check that everything works
 
-4. You may also want to have a look through the `MRtrix configuration
-   options <MRtrix-configuration-file>`__, and set anything you think
+4. You may also want to have a look through the :ref:`mrtrix_config_options`, and set anything you think
    might be required on your system.
 
-Keeping MRtrix3 up to date
+Keeping *MRtrix3* up to date
 --------------------------
 
 1. You can update your installation at any time by typing:

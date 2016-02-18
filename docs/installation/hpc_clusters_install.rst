@@ -5,7 +5,7 @@ HPC clusters installation
 These instructions outline a few issues specific to high-performance
 computing (HPC) systems.
 
-Installing MRtrix3
+Installing *MRtrix3*
 ------------------
 
 Most HPC clusters will run some flavour of GNU/Linux and hence

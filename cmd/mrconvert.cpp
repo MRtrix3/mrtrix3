@@ -120,9 +120,6 @@ inline std::vector<int> set_header (Header& header, const ImageType& input)
   }
   header.transform() = input.transform();
 
-  if (get_options ("grad").size() || get_options ("fslgrad").size())
-    header.set_DW_scheme (DWI::get_DW_scheme (header));
-
   auto opt = get_options ("axes");
   std::vector<int> axes;
   if (opt.size()) {
@@ -211,6 +208,9 @@ void run ()
   if (header_in.datatype().is_complex() && !header_out.datatype().is_complex())
     WARN ("requested datatype is real but input datatype is complex - imaginary component will be ignored");
 
+  if (get_options ("grad").size() || get_options ("fslgrad").size())
+    header_out.set_DW_scheme (DWI::get_DW_scheme (header_in));
+
   auto opt = get_options ("coord");
   std::vector<std::vector<int>> pos;
   if (opt.size()) {
@@ -222,7 +222,7 @@ void run ()
       if (pos[axis].size())
         throw Exception ("\"coord\" option specified twice for axis " + str (axis));
       pos[axis] = parse_ints (opt[n][1], header_in.size(axis)-1);
-      auto grad = DWI::get_DW_scheme (header_in);
+      auto grad = DWI::get_DW_scheme (header_out);
       if (axis == 3 && grad.rows()) {
         if ((ssize_t)grad.rows() != header_in.size(3)) {
           WARN ("Diffusion encoding of input file does not match number of image volumes; omitting gradient information from output image");

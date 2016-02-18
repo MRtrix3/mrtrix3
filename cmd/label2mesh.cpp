@@ -50,7 +50,7 @@ void usage ()
   + Option ("blocky", "generate 'blocky' meshes with precise delineation of voxel edges, "
                       "rather than the default Marching Cubes approach");
 
-};
+}
 
 
 

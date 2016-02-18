@@ -62,7 +62,7 @@ void usage ()
   + Option ("none", "provide a mask of voxels that should be cleared (i.e. are non-brain); note that this will supersede all other provided masks")
     + Argument ("image").type_image_in();
 
-};
+}
 
 
 

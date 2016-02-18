@@ -70,7 +70,7 @@ void usage ()
   + Option ("path", "image intensity of pathological tissue")
     + Argument ("value").type_float (0.0, VALUE_DEFAULT_PATH, 10.0);
 
-};
+}
 
 
 
