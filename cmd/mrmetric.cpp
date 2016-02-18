@@ -248,12 +248,23 @@ void run ()
       std::vector<Eigen::Transform<double, 3, Eigen::Projective>> transform_header_with;
 
       auto template_header = compute_minimum_average_header<double,Eigen::Transform<double, 3, Eigen::Projective>>(headers, template_res, padding, transform_header_with);
-      template_header.set_ndim(input1.ndim());
 
-      output1 = Image<value_type>::scratch(template_header,"-");
-      output2 = Image<value_type>::scratch(template_header,"-");
       output1mask = Header::scratch(template_header,"-").get_image<bool>();
       output2mask = Header::scratch(template_header,"-").get_image<bool>();
+
+      Header new_header;
+      new_header.set_ndim(input1.ndim());
+      for (ssize_t dim=0; dim < 3; ++dim){
+        new_header.size(dim) = template_header.size(dim);
+        new_header.spacing(dim) = template_header.spacing(dim);
+      }
+      if (dimensions == 4 ){
+        new_header.size(3) = input1.size(3);
+        new_header.spacing(3) = input1.spacing(3);
+      }
+      new_header.transform() = template_header.transform();
+      output1 = Header::scratch (new_header,"-").get_image<value_type>();
+      output2 = Header::scratch (new_header,"-").get_image<value_type>();
       {
         LogLevelLatch log_level (0);
         reslice(interp, input1, output1, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
