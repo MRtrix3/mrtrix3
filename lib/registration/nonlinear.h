@@ -14,8 +14,8 @@
  */
 
 
-#ifndef __registration_syn_h__
-#define __registration_syn_h__
+#ifndef __registration_nonlinear_h__
+#define __registration_nonlinear_h__
 
 #include <vector>
 #include "image.h"
@@ -27,8 +27,8 @@
 #include "registration/transform/convert.h"
 #include "registration/transform/warp_utils.h"
 #include "registration/transform/invert.h"
-#include "registration/metric/syn_demons.h"
-#include "registration/metric/syn_demons4D.h"
+#include "registration/metric/demons.h"
+#include "registration/metric/demons4D.h"
 #include "image/average_space.h"
 
 namespace MR
@@ -36,15 +36,15 @@ namespace MR
   namespace Registration
   {
 
-    extern const App::OptionGroup syn_options;
+    extern const App::OptionGroup nonlinear_options;
 
 
-    class SyN
+    class NonLinear
     {
 
       public:
 
-        SyN ():
+        NonLinear ():
           is_initialised (false),
           max_iter (1, 50),
           scale_factor (3),
@@ -94,10 +94,10 @@ namespace MR
             if (max_iter.size() == 1)
               max_iter.resize (scale_factor.size(), max_iter[0]);
             else if (max_iter.size() != scale_factor.size())
-              throw Exception ("the max number of SyN iterations needs to be defined for each multi-resolution level");
+              throw Exception ("the max number of non-linear iterations needs to be defined for each multi-resolution level");
 
             for (size_t level = 0; level < scale_factor.size(); level++) {
-                CONSOLE ("SyN: multi-resolution level " + str(level + 1) + ", scale factor: " + str(scale_factor[level]));
+                CONSOLE ("non-linear: multi-resolution level " + str(level + 1) + ", scale factor: " + str(scale_factor[level]));
 
                 DEBUG ("Resizing midway image based on multi-resolution level");
 
@@ -245,11 +245,11 @@ namespace MR
                   size_t voxel_count = 0;
 
                   if (midway_image_header.ndim() == 4) {
-                    Metric::SyNDemons4D<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> syn_metric (cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped);
-                    ThreadedLoop (im1_warped, 0, 3).run (syn_metric, im1_warped, im2_warped, *im1_update_field_new, *im2_update_field_new);
+                    Metric::Demons4D<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped);
+                    ThreadedLoop (im1_warped, 0, 3).run (metric, im1_warped, im2_warped, *im1_update_field_new, *im2_update_field_new);
                   } else {
-                    Metric::SyNDemons<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> syn_metric (cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped);
-                    ThreadedLoop (im1_warped, 0, 3).run (syn_metric, im1_warped, im2_warped, *im1_update_field_new, *im2_update_field_new);
+                    Metric::Demons<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped);
+                    ThreadedLoop (im1_warped, 0, 3).run (metric, im1_warped, im2_warped, *im1_update_field_new, *im2_update_field_new);
                   }
 
                   cost_new /= static_cast<default_type>(voxel_count);
@@ -433,25 +433,6 @@ namespace MR
             std::shared_ptr<Image<default_type> > temp = std::make_shared<Image<default_type> > (Image<default_type>::scratch (header));
             Filter::reslice<Interp::Linear> (image, *temp);
             return temp;
-          }
-
-          template <class InputWarpType>
-          void parse_linear_transform (InputWarpType& input_warps, transform_type& linear, std::string name) {
-            const auto it = input_warps.original_header().keyval().find (name);
-            if (it != input_warps.original_header().keyval().end()) {
-              const auto lines = split_lines (it->second);
-              if (lines.size() != 3)
-                throw Exception ("linear transform in initialisation syn warps image headerdoes not contain 3 rows");
-              for (size_t row = 0; row < 3; ++row) {
-                const auto values = MR::split (lines[row], " ");
-                if (values.size() != 4)
-                  throw Exception ("linear transform in initialisation syn warps image header does not contain 4 rows");
-                for (size_t col = 0; col < 4; ++col)
-                  linear (row, col) = std::stod (values[col]);
-              }
-            } else {
-              throw Exception ("no linear transform found in initialisation syn warps image header");
-            }
           }
 
           bool is_initialised;

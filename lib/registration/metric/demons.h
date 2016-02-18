@@ -13,8 +13,8 @@
  *
  */
 
-#ifndef __registration_metric_syn_demons_h__
-#define __registration_metric_syn_demons_h__
+#ifndef __registration_metric_demons_h__
+#define __registration_metric_demons_h__
 
 #include "adapter/gradient3D.h"
 
@@ -26,9 +26,9 @@ namespace MR
     {
 
       template <class Im1ImageType, class Im2ImageType, class Im1MaskType, class Im2MaskType>
-      class SyNDemons {
+      class Demons {
         public:
-          SyNDemons (default_type& global_energy, size_t& global_voxel_count,
+          Demons (default_type& global_energy, size_t& global_voxel_count,
                      const Im1ImageType& im1_image, const Im2ImageType& im2_image, const Im1MaskType im1_mask, const Im2MaskType im2_mask) :
                        global_cost (global_energy),
                        global_voxel_count (global_voxel_count),
@@ -46,7 +46,7 @@ namespace MR
             normaliser /= 3.0;
           }
 
-          ~SyNDemons () {
+          ~Demons () {
             global_cost += thread_cost;
             global_voxel_count += thread_voxel_count;
           }
