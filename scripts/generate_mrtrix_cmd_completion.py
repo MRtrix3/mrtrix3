@@ -227,10 +227,10 @@ _%s()
 
 		if [[ "$array" == "__empty__" ]]; then
 			COMPREPLY=()
-			compopt +o dirnames %s;
+			compopt +o default %s;
 		else
 			mapfile -t COMPREPLY < <( compgen -W "$array" -- "$cur" )
-			compopt -o dirnames %s;
+			compopt -o default %s;
 		fi
 	fi
 }
