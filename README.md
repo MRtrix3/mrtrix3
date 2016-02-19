@@ -17,7 +17,13 @@ account if you don't already have one.
 1. Install dependencies by whichever means your system uses. 
    These include: Python (>=2.6), a C++ compiler, POSIX threads, 
    GNU Scientific Library (GSL, >= 1.1), zlib, OpenGL (>=3), and Qt (>=4.8).
-
+   
+   * CentOS users:
+   ```bash
+      yum install gcc-c++ zlib-devel gsl-devel qt-devel
+      export PATH=$PATH:/usr/lib64/qt4/bin
+   ```
+   
 2. Clone Git repository and compile: 
 
         $ git clone https://github.com/MRtrix3/mrtrix3.git
