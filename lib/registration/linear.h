@@ -204,13 +204,15 @@ namespace MR
               throw Exception ("the loop density level needs to be defined for each multi-resolution level");
 
             if (init_type == Transform::Init::mass)
+              Transform::Init::initialise_using_image_mass (im1_image, im2_image, im1_mask, im2_mask, transform);
+            else if (init_type == Transform::Init::mass_unmasked)
               Transform::Init::initialise_using_image_mass (im1_image, im2_image, transform);
             else if (init_type == Transform::Init::geometric)
               Transform::Init::initialise_using_image_centres (im1_image, im2_image, transform);
             else if (init_type == Transform::Init::moments)
-                Transform::Init::initialise_using_image_moments (im1_image, im2_image, transform);
-            else if (init_type == Transform::Init::moments_masked)
-                Transform::Init::initialise_using_image_moments (im1_image, im2_image, im1_mask, im2_mask, transform);
+              Transform::Init::initialise_using_image_moments (im1_image, im2_image, im1_mask, im2_mask, transform);
+            else if (init_type == Transform::Init::moments_unmasked)
+              Transform::Init::initialise_using_image_moments (im1_image, im2_image, transform);
             // transformation file initialisation is done in mrregister.cpp
             // transform.debug();
 

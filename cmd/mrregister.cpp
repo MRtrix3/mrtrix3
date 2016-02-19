@@ -298,9 +298,12 @@ void run ()
         rigid_registration.set_init_type (Registration::Transform::Init::moments);
         break;
       case 3:
-        rigid_registration.set_init_type (Registration::Transform::Init::moments_masked);
+        rigid_registration.set_init_type (Registration::Transform::Init::mass_unmasked);
         break;
       case 4:
+        rigid_registration.set_init_type (Registration::Transform::Init::moments_unmasked);
+        break;
+      case 5:
         rigid_registration.set_init_type (Registration::Transform::Init::none);
         break;
       default:
@@ -404,6 +407,12 @@ void run ()
         affine_registration.set_init_type (Registration::Transform::Init::moments);
         break;
       case 3:
+        affine_registration.set_init_type (Registration::Transform::Init::mass_unmasked);
+        break;
+      case 4:
+        affine_registration.set_init_type (Registration::Transform::Init::moments_unmasked);
+        break;
+      case 5:
         affine_registration.set_init_type (Registration::Transform::Init::none);
         break;
       default:
