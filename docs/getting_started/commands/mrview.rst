@@ -73,6 +73,8 @@ Window management options
 
 -  **-fullscreen** Start fullscreen.
 
+-  **-nointerpolation** Disable interpolation of the image.
+
 -  **-exit** quit MRView
 
 Debugging options

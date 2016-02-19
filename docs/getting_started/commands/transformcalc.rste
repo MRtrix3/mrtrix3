@@ -1,6 +1,3 @@
-transformcalc
-===========
-
 Synopsis
 --------
 
@@ -22,24 +19,24 @@ interpolate between two transformation files
 Options
 -------
 
--  **-flirt_import input in ref** Convert a transformation matrix
+-  **-flirt\_import input in ref**\ Convert a transformation matrix
    produced by FSL's flirt command into a format usable by MRtrix.
    You'll need to provide as additional arguments the save NIfTI images
    that were passed to flirt with the -in and -ref options.
 
--  **-invert input** invert the input transformation.
+-  **-invert input**\ invert the input transformation.
 
--  **-half input** output the matrix square root of the input
+-  **-half input**\ output the matrix square root of the input
    transformation.
 
--  **-surfer_vox2vox vox2vox mov dst** Convert a transformation matrix
-   produced by freesurfer's robust_register command into a format
+-  **-surfer\_vox2vox vox2vox mov dst**\ Convert a transformation matrix
+   produced by freesurfer's robust\_register command into a format
    usable by MRtrix.
 
--  **-header mov mapmovhdr** Calculate the transformation matrix from
+-  **-header mov mapmovhdr**\ Calculate the transformation matrix from
    an original image and an image with modified header.
 
--  **-interpolate input input2 t** Create interpolated transformation
+-  **-interpolate input input2 t**\ Create interpolated transformation
    matrix between input (t=0) and input2 (t=1). Based on matrix
    decomposition with linear interpolation of translation, rotation and
    stretch described in Shoemake, K., Hill, M., & Duff, T. (1992).
@@ -49,26 +46,27 @@ Options
 Standard options
 ^^^^^^^^^^^^^^^^
 
--  **-info** display information messages.
+-  **-info**\ display information messages.
 
--  **-quiet** do not display information messages or progress status.
+-  **-quiet**\ do not display information messages or progress status.
 
--  **-debug** display debugging messages.
+-  **-debug**\ display debugging messages.
 
--  **-force** force overwrite of output files. Caution: Using the same
+-  **-force**\ force overwrite of output files. Caution: Using the same
    file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded
+-  **-nthreads number**\ use this number of threads in multi-threaded
    applications
 
--  **-failonwarn** terminate program if a warning is produced
+-  **-failonwarn**\ terminate program if a warning is produced
 
--  **-help** display this information page and exit.
+-  **-help**\ display this information page and exit.
 
--  **-version** display version information and exit.
+-  **-version**\ display version information and exit.
 
 --------------
 
+MRtrix new\_syntax-1747-g0b4db20d-dirty, built Feb 19 2016
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com)
 

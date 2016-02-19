@@ -23,6 +23,10 @@ List of MRtrix3 commands
 .......
 
 
+.. include:: commands/bbgd.rst
+.......
+
+
 .. include:: commands/connectome2tck.rst
 .......
 
@@ -159,11 +163,23 @@ List of MRtrix3 commands
 .......
 
 
+.. include:: commands/mrartifacts.rst
+.......
+
+
+.. include:: commands/mraverage_header.rst
+.......
+
+
 .. include:: commands/mrcalc.rst
 .......
 
 
 .. include:: commands/mrcat.rst
+.......
+
+
+.. include:: commands/mrcheckerboardmask.rst
 .......
 
 
@@ -195,7 +211,15 @@ List of MRtrix3 commands
 .......
 
 
+.. include:: commands/mrmetric.rst
+.......
+
+
 .. include:: commands/mrpad.rst
+.......
+
+
+.. include:: commands/mrregister.rst
 .......
 
 
@@ -220,6 +244,10 @@ List of MRtrix3 commands
 
 
 .. include:: commands/msdwi2fod.rst
+.......
+
+
+.. include:: commands/neighbourhooditerator.rst
 .......
 
 
@@ -308,6 +336,10 @@ List of MRtrix3 commands
 
 
 .. include:: commands/transformcalc.rst
+.......
+
+
+.. include:: commands/transformmetric.rst
 .......
 
 

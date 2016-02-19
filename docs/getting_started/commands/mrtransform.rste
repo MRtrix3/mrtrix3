@@ -1,6 +1,3 @@
-mrtransform
-===========
-
 Synopsis
 --------
 
@@ -22,7 +19,7 @@ will modify the image header transform matrix
 FOD reorientation (with apodised point spread functions) will be
 performed by default if the number of volumes in the 4th dimension
 equals the number of coefficients in an antipodally symmetric spherical
-harmonic series (e.g. 6, 15, 28 etc). The -no_reorientation option can
+harmonic series (e.g. 6, 15, 28 etc). The -no\_reorientation option can
 be used to force reorientation off if required.
 
 If a DW scheme is contained in the header (or specified separately), and
@@ -36,21 +33,21 @@ Options
 Affine transformation options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-linear transform** specify a 4x4 linear transform to apply, in
+-  **-linear transform**\ specify a 4x4 linear transform to apply, in
    the form of a 4x4 ascii file. Note the standard 'reverse' convention
    is used, where the transform maps points in the template image to the
    moving image. Note that the reverse convention is still assumed even
    if no -template image is supplied
 
--  **-flip axes** flip the specified axes, provided as a
+-  **-flip axes**\ flip the specified axes, provided as a
    comma-separated list of indices (0:x, 1:y, 2:z).
 
--  **-inverse** apply the inverse transformation
+-  **-inverse**\ apply the inverse transformation
 
--  **-half** apply the matrix square root of the transformation. This
+-  **-half**\ apply the matrix square root of the transformation. This
    can be combined with the inverse option.
 
--  **-replace** replace the linear transform of the original image by
+-  **-replace**\ replace the linear transform of the original image by
    that specified, rather than applying it to the original image. If no
    -linear transform is specified then the header transform is replaced
    with an identity transform.
@@ -58,38 +55,38 @@ Affine transformation options
 Regridding options
 ^^^^^^^^^^^^^^^^^^
 
--  **-template image** reslice the input image to match the specified
+-  **-template image**\ reslice the input image to match the specified
    template image grid.
 
--  **-midway_space** reslice the input image to the midway space.
+-  **-midway\_space**\ reslice the input image to the midway space.
    Requires either the -template or -warp option. If used with -template
    option the image will be resliced onto the grid halfway between the
    input and template. If used with the -warp option the input will be
    warped to the midway space defined by the grid of the input warp
    (i.e. half way between image1 and image2)
 
--  **-interp method** set the interpolation method to use when
+-  **-interp method**\ set the interpolation method to use when
    reslicing (choices: nearest, linear, cubic, sinc. Default: cubic).
 
 Non-linear transformation options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-warp image** warp the input image using a 5D warp file output
+-  **-warp image**\ warp the input image using a 5D warp file output
    from mrregister. Any linear transforms in the warp image header will
    also be applied. The -warp option must be used in combination with
-   either the -template option or the -midway_space option. If a
+   either the -template option or the -midway\_space option. If a
    -template image is supplied then the full warp will be used. By
    default the image1->image2 transform will be applied, however the
    -from 2 option can be used to apply the image2->image1 transform. Use
-   the -midway_space option to warp the inputimage to the midway space.
+   the -midway\_space option to warp the inputimage to the midway space.
    The -from option can also be used to define which warp to use when
    transforming to midway space
 
--  **-from axes** used to define which space the input image is when
+-  **-from axes**\ used to define which space the input image is when
    using the -warp option. Use -from 1 to warp from image1 or -from 2 to
    warp from image2
 
--  **-warp_df image** apply a non-linear 4D deformation field to warp
+-  **-warp\_df image**\ apply a non-linear 4D deformation field to warp
    the input image. Each voxel in the deformation field must define the
    scanner space position that will be used to interpolate the input
    image during warping (i.e. pull-back/reverse warp convention). If the
@@ -102,15 +99,15 @@ Non-linear transformation options
 Fibre orientation distribution handling options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-modulate** modulate FODs during reorientation to preserve the
+-  **-modulate**\ modulate FODs during reorientation to preserve the
    apparent fibre density across fibre bundle widths before and after
    the transformation
 
--  **-directions file** directions defining the number and orientation
+-  **-directions file**\ directions defining the number and orientation
    of the apodised point spread functions used in FOD reorientation
    (Default: 300 directions)
 
--  **-noreorientation** turn off FOD reorientation. Reorientation is on
+-  **-noreorientation**\ turn off FOD reorientation. Reorientation is on
    by default if the number of volumes in the 4th dimension corresponds
    to the number of coefficients in an antipodally symmetric spherical
    harmonic series (i.e. 6, 15, 28, 45, 66 etc
@@ -118,17 +115,17 @@ Fibre orientation distribution handling options
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-grad encoding** specify the diffusion-weighted gradient scheme
+-  **-grad encoding**\ specify the diffusion-weighted gradient scheme
    used in the acquisition. The program will normally attempt to use the
    encoding stored in the image header. This should be supplied as a 4xN
    text file with each line is in the format [ X Y Z b ], where [ X Y Z
    ] describe the direction of the applied gradient, and b gives the
    b-value in units of s/mm^2.
 
--  **-fslgrad bvecs bvals** specify the diffusion-weighted gradient
+-  **-fslgrad bvecs bvals**\ specify the diffusion-weighted gradient
    scheme used in the acquisition in FSL bvecs/bvals format.
 
--  **-bvalue_scaling mode** specifies whether the b-values should be
+-  **-bvalue\_scaling mode**\ specifies whether the b-values should be
    scaled by the square of the corresponding DW gradient norm, as often
    required for multi-shell or DSI DW acquisition schemes. The default
    action can also be set in the MRtrix config file, under the
@@ -138,35 +135,35 @@ DW gradient table import options
 Data type options
 ^^^^^^^^^^^^^^^^^
 
--  **-datatype spec** specify output image data type. Valid choices
+-  **-datatype spec**\ specify output image data type. Valid choices
    are: float32, float32le, float32be, float64, float64le, float64be,
    int64, uint64, int64le, uint64le, int64be, uint64be, int32, uint32,
    int32le, uint32le, int32be, uint32be, int16, uint16, int16le,
    uint16le, int16be, uint16be, cfloat32, cfloat32le, cfloat32be,
    cfloat64, cfloat64le, cfloat64be, int8, uint8, bit.
 
--  **-nan** Use NaN as the out of bounds value (Default: 0.0)
+-  **-nan**\ Use NaN as the out of bounds value (Default: 0.0)
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
--  **-info** display information messages.
+-  **-info**\ display information messages.
 
--  **-quiet** do not display information messages or progress status.
+-  **-quiet**\ do not display information messages or progress status.
 
--  **-debug** display debugging messages.
+-  **-debug**\ display debugging messages.
 
--  **-force** force overwrite of output files. Caution: Using the same
+-  **-force**\ force overwrite of output files. Caution: Using the same
    file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded
+-  **-nthreads number**\ use this number of threads in multi-threaded
    applications
 
--  **-failonwarn** terminate program if a warning is produced
+-  **-failonwarn**\ terminate program if a warning is produced
 
--  **-help** display this information page and exit.
+-  **-help**\ display this information page and exit.
 
--  **-version** display version information and exit.
+-  **-version**\ display version information and exit.
 
 References
 ^^^^^^^^^^
@@ -184,6 +181,7 @@ References
 
 --------------
 
+MRtrix new\_syntax-1747-g0b4db20d-dirty, built Feb 19 2016
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com) & David Raffelt
 (david.raffelt@florey.edu.au)
