@@ -22,7 +22,7 @@ namespace MR
 
     using namespace App;
 
-    const char* initialisation_choices[] = { "mass", "geometric", "moments", "none", NULL };
+    const char* initialisation_choices[] = { "mass", "geometric", "moments", "moments_masked", "none", NULL };
     const char* linear_metric_choices[] = { "diff", "ncc", NULL };
     const char* linear_robust_estimator_choices[] = { "l1", "l2", "lp", NULL };
 
@@ -33,7 +33,9 @@ namespace MR
         + Argument ("file").type_file_out ()
 
       + Option ("rigid_centre", "initialise the centre of rotation and initial translation. "
-                                "Valid choices are: mass (which uses the image center of mass), geometric (geometric image centre), moments (image moments) or none."
+                                "Valid choices are: mass (which uses the image center of mass), "
+                                "geometric (geometric image centre), moments (image moments), "
+                                "moments_masked (use image masks for moments initialisation) or none."
                                 "Default: moments.")
         + Argument ("type").type_choice (initialisation_choices)
 
@@ -73,8 +75,10 @@ namespace MR
         + Argument ("file").type_file_out ()
 
       + Option ("affine_centre", "initialise the centre of rotation and initial translation. "
-                                 "Valid choices are: mass (which uses the image center of mass), geometric (geometric image centre), moments (image moments) or none."
-                                 "Default: moments. Note that if rigid registration is performed first then the affine transform will be initialised with the rigid output.")
+                                "Valid choices are: mass (which uses the image center of mass), "
+                                "geometric (geometric image centre), moments (image moments), "
+                                "moments_masked (use image masks for moments initialisation) or none."
+                                "Default: moments.")
         + Argument ("type").type_choice (initialisation_choices)
 
       + Option ("affine_init", "initialise either the affine, or syn registration with the supplied affine transformation (as a 4x4 matrix). Note that this overrides affine_centre initialisation")

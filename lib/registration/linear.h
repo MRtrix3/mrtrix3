@@ -208,7 +208,9 @@ namespace MR
             else if (init_type == Transform::Init::geometric)
               Transform::Init::initialise_using_image_centres (im1_image, im2_image, transform);
             else if (init_type == Transform::Init::moments)
-              Transform::Init::initialise_using_image_moments (im1_image, im2_image, transform);
+                Transform::Init::initialise_using_image_moments (im1_image, im2_image, transform);
+            else if (init_type == Transform::Init::moments_masked)
+                Transform::Init::initialise_using_image_moments (im1_image, im2_image, im1_mask, im2_mask, transform);
             // transformation file initialisation is done in mrregister.cpp
             // transform.debug();
 

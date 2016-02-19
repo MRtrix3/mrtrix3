@@ -298,6 +298,9 @@ void run ()
         rigid_registration.set_init_type (Registration::Transform::Init::moments);
         break;
       case 3:
+        rigid_registration.set_init_type (Registration::Transform::Init::moments_masked);
+        break;
+      case 4:
         rigid_registration.set_init_type (Registration::Transform::Init::none);
         break;
       default:

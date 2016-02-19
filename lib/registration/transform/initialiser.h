@@ -32,7 +32,7 @@ namespace MR
     {
       namespace Init
       {
-        enum InitType {mass, geometric, moments, none};
+        enum InitType {mass, geometric, moments, moments_masked, none};
 
         template <class ImageType, class ValueType>
           void get_geometric_centre (const ImageType& image, Eigen::Matrix<ValueType, 3, 1>& centre)
@@ -84,18 +84,18 @@ namespace MR
 
               // permute eigenvectors to find maximum sum of (absolute) dot products between the
               // eigenvectors of image 1 and image 2
-              Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> perm(3);
-              perm.setIdentity();
-              Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> bestperm(3);
-              bestperm.setIdentity();
-              default_type bestdotprod = (im2_evec.array() * im1_evec.array()).colwise().sum().abs().sum();
-              while (std::next_permutation(perm.indices().data(), perm.indices().data()+perm.indices().size())) {
-                auto im2_evec_perm = im2_evec * perm; // permute columns
-                default_type dotprod = (im2_evec_perm.array() * im1_evec.array()).colwise().sum().abs().sum();
-                if (dotprod > bestdotprod) bestperm = perm;
-              }
-              im2_evec = (im2_evec * bestperm).eval();
-              im2_eval = (im2_eval * bestperm).eval();
+              // Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> perm(3);
+              // perm.setIdentity();
+              // Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> bestperm(3);
+              // bestperm.setIdentity();
+              // default_type bestdotprod = (im2_evec.array() * im1_evec.array()).colwise().sum().abs().sum();
+              // while (std::next_permutation(perm.indices().data(), perm.indices().data()+perm.indices().size())) {
+              //   auto im2_evec_perm = im2_evec * perm; // permute columns
+              //   default_type dotprod = (im2_evec_perm.array() * im1_evec.array()).colwise().sum().abs().sum();
+              //   if (dotprod > bestdotprod) bestperm = perm;
+              // }
+              // im2_evec = (im2_evec * bestperm).eval();
+              // im2_eval = (im2_eval * bestperm).eval();
 
               // flip eigenvectors to same handedness
               im2_evec.array().rowwise() *= (im2_evec.array() * im1_evec.array()).colwise().sum()
@@ -152,8 +152,9 @@ namespace MR
 
           protected:
             template <class MatrixType>
-            bool get_sorted_eigen_vecs_vals (const MatrixType& mat, Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& eigenvectors, Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& eigenvals)
-            {
+            bool get_sorted_eigen_vecs_vals (const MatrixType& mat,
+              Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& eigenvectors,
+              Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& eigenvals) {
               Eigen::EigenSolver<MatrixType> es(mat);
               if (es.info() != Eigen::Success)
                 return false;
@@ -178,8 +179,7 @@ namespace MR
               return true;
             }
 
-            bool calculate_eigenvectors ( )
-            {
+            bool calculate_eigenvectors ( ) {
               default_type  m000, m100, m010, m001, mu110, mu011, mu101, mu200, mu020, mu002;
               get_geometric_centre(im1, im1_centre);
               get_moments (im1, mask1, im1_centre, m000, m100, m010, m001, mu110, mu011, mu101, mu200, mu020, mu002);
@@ -209,6 +209,7 @@ namespace MR
               return (get_sorted_eigen_vecs_vals (im2_covariance_matrix, im2_evec, im2_eval) and
                     get_sorted_eigen_vecs_vals (im1_covariance_matrix, im1_evec, im1_eval));
             }
+
             template <class ImageType, class MaskType>
             void get_moments (ImageType& image,
                               MaskType& mask,
@@ -233,7 +234,7 @@ namespace MR
                 }
               } else {
                 for (auto i = Loop (0, 3)(image, mask); i; ++i) {
-                  if (mask.value() > 0)
+                  if (mask.value() > 0.0)
                     m000 += image.value();
                 }
               }
@@ -307,8 +308,7 @@ namespace MR
                   class TransformType>
           void initialise_using_image_centres (const Im1ImageType& im1,
                                                const Im2ImageType& im2,
-                                               TransformType& transform)
-          {
+                                               TransformType& transform) {
             CONSOLE ("initialising centre of rotation and translation using geometric centre");
             Eigen::Vector3 im1_centre_scanner;
             get_geometric_centre(im1, im1_centre_scanner);
@@ -331,9 +331,8 @@ namespace MR
                                                Im2ImageType& im2,
                                                Im1MaskType& mask1,
                                                Im2MaskType& mask2,
-                                               TransformType& transform)
-          {
-            CONSOLE ("initialising using image moments");
+                                               TransformType& transform) {
+            CONSOLE ("initialising using image moments with masked images");
             auto init = Transform::Init::MomentsInitialiser<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType,
               decltype(transform), default_type>(im1, im2, mask1, mask2, transform);
             init.run();
@@ -359,8 +358,7 @@ namespace MR
                   class TransformType>
           void initialise_using_image_mass (Im1ImageType& im1,
                                             Im2ImageType& im2,
-                                            TransformType& transform)
-          {
+                                            TransformType& transform) {
             CONSOLE ("initialising centre of rotation and translation using centre of mass");
             Eigen::Matrix<typename TransformType::ParameterType, 3, 1>  im1_centre_of_mass (3);
             im1_centre_of_mass.setZero();
