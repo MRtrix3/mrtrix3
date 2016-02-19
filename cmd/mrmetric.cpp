@@ -341,9 +341,10 @@ void run ()
 
   if (!nonormalisation)
     sos.array() /= static_cast<value_type>(n_voxels);
-  std::cout << str(sos.transpose()) << std::endl;
+  std::cout << str(sos.transpose());
 
   if (get_options ("overlap").size())
-    std::cout << str(n_voxels) << std::endl;
+    std::cout << " " << str(n_voxels);
+  std::cout << std::endl;
 }
 
