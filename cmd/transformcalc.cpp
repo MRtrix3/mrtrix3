@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 
 
@@ -152,7 +152,7 @@ void run ()
   auto flirt_opt = get_options ("flirt_import");
   auto interp_opt = get_options ("interpolate");
   auto invert_opt = get_options ("invert");
-  auto half_opt = get_options ("invert");
+  auto half_opt = get_options ("half");
   auto surfer_vox2vox_opt = get_options ("surfer_vox2vox");
   auto from_header_opt = get_options ("header");
 
