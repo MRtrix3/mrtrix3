@@ -14,6 +14,14 @@
  */
 
 #include "registration/transform/initialiser_helpers.h"
+#include <Eigen/Geometry>
+#include <Eigen/Dense>
+#include <Eigen/Eigenvalues>
+
+#include "algo/loop.h"
+#include "debug.h"
+// #include "timer.h"
+
 
 namespace MR
 {
@@ -187,11 +195,13 @@ namespace MR
 
           Eigen::Vector3 centre = (im1_centre_of_mass + im2_centre_of_mass) / 2.0;
           Eigen::Vector3 translation = im1_centre_of_mass - im2_centre_of_mass;
+          transform.set_centre_without_transform_update (centre);
+          transform.set_translation (translation);
           // VEC(im1_centre_of_mass);
           // VEC(im2_centre_of_mass);
+          // VEC(centre);
           // VEC(translation);
-          transform.set_centre (centre);
-          transform.set_translation (translation);
+          // transform.debug();
         }
 
         void MomentsInitialiser::run () {
@@ -265,7 +275,7 @@ namespace MR
           A = dec.solve(im1_evec_transpose);
           assert((A * im1_evec).isApprox(im2_evec));
           assert(std::abs(A.determinant() - 1.0) < 0.0001);
-          A = A.transpose().eval();
+          A = A.transpose().eval(); // A * im2_evec = im1_evec
 
           // MAT(A);
           // Eigen::Matrix<default_type, 3, 3> A2 (A);
@@ -275,17 +285,23 @@ namespace MR
           // VEC(aa.axis());
           // VAR(aa.angle());
 
-
-          transform.set_matrix (A);
           Eigen::Vector3 centre = (im1_centre_of_mass + im2_centre_of_mass) / 2.0;
-          transform.set_centre (centre);
-          Eigen::Vector3 translation = im1_centre_of_mass - im2_centre_of_mass;
-          transform.set_translation (translation);
-          // transform.set_matrix (A);
+          Eigen::Vector3 offset = im1_centre_of_mass - im2_centre_of_mass;
+          transform.set_centre_without_transform_update (centre);
+
+          Eigen::Translation<default_type, 3> T_offset (offset), T_c2 (im2_centre_of_mass);
+          transform_type T, R0;
+          R0.setIdentity();
+          R0.linear() = A;
+          T = T_c2 * T_offset * R0 * T_c2.inverse();
+          transform.set_transform(T);
+
           // MAT(A);
-          // MAT(centre.transpose());
-          // MAT(translation.transpose());
-          // MAT(transform.get_transform().matrix());
+          // VEC(im1_centre_of_mass);
+          // VEC(im2_centre_of_mass);
+          // VEC(centre);
+          // VEC(offset);
+          // transform.debug();
           // VAR(timer.elapsed());
         }
 

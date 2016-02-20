@@ -341,6 +341,8 @@ namespace MR
 
 
               for (auto gd_iteration = 0; gd_iteration < gd_repetitions[level]; ++gd_iteration){
+                if (max_iter[level] == 0)
+                  continue;
                 if (File::Config::get_bool("reg_bbgd", true)) {
                   Math::GradientDescentBB<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
                     optim (evaluate, *transform.get_gradient_descent_updator());

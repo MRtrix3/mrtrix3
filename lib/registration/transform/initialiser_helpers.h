@@ -16,16 +16,10 @@
 #ifndef __registration_transform_initialiser_helpers_h__
 #define __registration_transform_initialiser_helpers_h__
 
-#include "image.h"
-#include "transform.h"
-#include "registration/transform/base.h"
-
 #include <algorithm>
-#include <Eigen/Geometry>
-#include <Eigen/Dense>
-#include <Eigen/Eigenvalues>
-// #include "timer.h"
-#include "algo/loop.h"
+#include "image.h"
+#include "registration/transform/base.h"
+#include "transform.h"
 
 namespace MR
 {

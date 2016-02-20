@@ -108,10 +108,8 @@ namespace MR
             out = trafo_half_inverse * in;
           }
 
-          template <class TrafoType>
-          void set_transform (TrafoType& transform) {
-            trafo.matrix().template block<3,4>(0,0) = transform.matrix().template block<3,4>(0,0);
-            compute_halfspace_transformations();
+          size_t size() const {
+            return number_of_parameters;
           }
 
           Eigen::Matrix<default_type, 4, 1> get_jacobian_vector_wrt_params (const Eigen::Vector3& p) const {
@@ -134,6 +132,12 @@ namespace MR
             return trafo_half_inverse;
           }
 
+          template <class TrafoType>
+          void set_transform (TrafoType& transform) {
+            trafo.matrix().template block<3,4>(0,0) = transform.matrix().template block<3,4>(0,0);
+            compute_halfspace_transformations();
+          }
+
           void set_matrix (const Eigen::Matrix<ParameterType, 3, 3>& mat) {
             trafo.linear() = mat;
             compute_offset();
@@ -154,6 +158,10 @@ namespace MR
             return trafo.translation();
           }
 
+          void set_centre_without_transform_update (const Eigen::Vector3& centre_in) {
+            centre = centre_in;
+          }
+
           void set_centre (const Eigen::Vector3& centre_in) {
             centre = centre_in;
             compute_offset();
@@ -164,9 +172,6 @@ namespace MR
             return centre;
           }
 
-          size_t size() const {
-            return number_of_parameters;
-          }
 
           void set_optimiser_weights (Eigen::VectorXd& weights) {
             assert(size() == (size_t)optimiser_weights.size());
@@ -211,7 +216,7 @@ namespace MR
 
         protected:
           void compute_offset () {
-            trafo.translation() = trafo.translation() + centre - trafo.linear() * centre;
+            trafo.translation() = (trafo.translation() + centre - trafo.linear() * centre).eval();
           }
 
           void compute_halfspace_transformations() {
