@@ -58,7 +58,11 @@ namespace MR
                                 "Default: ordinary least squares")
         + Argument ("type").type_choice (linear_metric_choices)
 
-      + Option ("rigid_global_search", "perform global search for most promising starting point. default: false");
+      + Option ("rigid_global_search", "perform global search for most promising starting point. default: false")
+
+      + Option ("rigid_lmax", "explicitly set the lmax to be used per scale factor in rigid FOD registration. By default FOD registration will "
+                              "use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.")
+      + Argument ("num").type_sequence_int ();
 
 
     const OptionGroup affine_options =
@@ -117,7 +121,11 @@ namespace MR
 
       + Option ("affine_robust_median", "use robust median estimator. default: false")
 
-      + Option ("affine_global_search", "perform global search for most promising starting point. default: false");
+      + Option ("affine_global_search", "perform global search for most promising starting point. default: false")
+
+      + Option ("affine_lmax", "explicitly set the lmax to be used per scale factor in affine FOD registration. By default FOD registration will "
+                               "use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.")
+      + Argument ("num").type_sequence_int ();
 
 
 
@@ -127,13 +135,10 @@ namespace MR
       + Option ("directions", "the directions used for FOD reorienation using apodised point spread functions (Default: 60 directions)")
       + Argument ("file", "a list of directions [az el] generated using the gendir command.").type_file_in ()
 
-      + Option ("lmax", "explicitly set the lmax to be used in FOD registration. By default FOD registration will "
-                        "use lmax 4 SH coefficients")
-      + Argument ("num").type_integer ()
-
       + Option ("noreorientation", "turn off FOD reorientation. Reorientation is on by default if the number "
                                    "of volumes in the 4th dimension corresponds to the number of coefficients in an "
                                    "antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc");
+
   }
 }
 

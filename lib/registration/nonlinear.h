@@ -50,10 +50,14 @@ namespace MR
           scale_factor (3),
           update_smoothing (2.0),
           disp_smoothing (1.0),
-          gradient_step (0.5) {
+          gradient_step (0.5),
+          fod_lmax (3) {
             scale_factor[0] = 0.25;
             scale_factor[1] = 0.5;
             scale_factor[2] = 1.0;
+            fod_lmax[0] = 0;
+            fod_lmax[1] = 2;
+            fod_lmax[2] = 4;
         }
 
         template <class TransformType, class Im1ImageType, class Im2ImageType, class Im1MaskType, class Im2MaskType>
@@ -94,7 +98,11 @@ namespace MR
             if (max_iter.size() == 1)
               max_iter.resize (scale_factor.size(), max_iter[0]);
             else if (max_iter.size() != scale_factor.size())
-              throw Exception ("the max number of non-linear iterations needs to be defined for each multi-resolution level");
+              throw Exception ("the max number of non-linear iterations needs to be defined for each multi-resolution level (scale_factor)");
+
+            if (aPSF_directions.cols())
+              if (fod_lmax.size() != scale_factor.size())
+                throw Exception ("the lmax needs to be defined for each multi-resolution level (scale factor)");
 
             for (size_t level = 0; level < scale_factor.size(); level++) {
                 CONSOLE ("non-linear: multi-resolution level " + str(level + 1) + ", scale factor: " + str(scale_factor[level]));
@@ -358,6 +366,13 @@ namespace MR
             disp_smoothing = voxel_fwhm;
           }
 
+          void set_lmax (const std::vector<int>& lmax) {
+            for (size_t i = 0; i < lmax.size (); ++i)
+              if (lmax[i] < 0 || lmax[i] % 2)
+                throw Exception ("the input nonlinear lmax must be positive and even");
+            fod_lmax = lmax;
+          }
+
           //TODO
           std::shared_ptr<Image<default_type> > get_im1_disp_field() {
             return im1_disp_field;
@@ -442,6 +457,7 @@ namespace MR
           default_type disp_smoothing;
           default_type gradient_step;
           Eigen::MatrixXd aPSF_directions;
+          std::vector<int> fod_lmax;
 
           transform_type im1_linear;
           transform_type im2_linear;

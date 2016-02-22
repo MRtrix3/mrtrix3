@@ -45,9 +45,10 @@ namespace MR
                 return 0.0;
 
               default_type diff = (default_type) im1_value - (default_type) im2_value;
+
               // Eigen::MatrixXd jacobian = params.transformation.get_jacobian_wrt_params (midway_point);
               const auto jacobian_vec = params.transformation.get_jacobian_vector_wrt_params (midway_point);
-              const  Eigen::Vector3d g = diff * (im1_grad + im2_grad);
+              const Eigen::Vector3d g = diff * (im1_grad + im2_grad);
               gradient.segment<4>(0) += g(0) * jacobian_vec;
               gradient.segment<4>(4) += g(1) * jacobian_vec;
               gradient.segment<4>(8) += g(2) * jacobian_vec;

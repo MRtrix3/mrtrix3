@@ -25,6 +25,7 @@
 #include "filter/resize.h"
 #include "filter/reslice.h"
 #include "adapter/reslice.h"
+#include "adapter/subset.h"
 #include "algo/threaded_loop.h"
 #include "interp/linear.h"
 #include "interp/nearest.h"
@@ -68,10 +69,15 @@ namespace MR
           log_stream (nullptr),
           init_type (Transform::Init::moments),
           robust_estimate (false),
-          global_search (false) {
+          global_search (false),
+          do_reorientation (false),
+          fod_lmax (3){
           scale_factor[0] = 0.25;
           scale_factor[1] = 0.5;
           scale_factor[2] = 1.0;
+          fod_lmax[0] = 0;
+          fod_lmax[1] = 2;
+          fod_lmax[2] = 4;
         }
 
         void set_max_iter (const std::vector<int>& maxiter) {
@@ -128,7 +134,8 @@ namespace MR
         }
 
         void set_directions (Eigen::MatrixXd& dir) {
-          directions = dir;
+          aPSF_directions = dir;
+          do_reorientation = true;
         }
 
         void set_grad_tolerance (const float& tolerance) {
@@ -137,6 +144,13 @@ namespace MR
 
         void set_log_stream (std::streambuf* stream) {
           log_stream = stream;
+        }
+
+        void set_lmax (const std::vector<int>& lmax) {
+          for (size_t i = 0; i < lmax.size (); ++i)
+            if (lmax[i] < 0 || lmax[i] % 2)
+              throw Exception ("the input rigid and affine lmax must be positive and even");
+          fod_lmax = lmax;
         }
 
         Header get_midway_header () {
@@ -191,7 +205,11 @@ namespace MR
             if (max_iter.size() == 1)
               max_iter.resize (scale_factor.size(), max_iter[0]);
             else if (max_iter.size() != scale_factor.size())
-              throw Exception ("the max number of iterations needs to be defined for each multi-resolution level");
+              throw Exception ("the max number of iterations needs to be defined for each multi-resolution level (scale factor)");
+
+            if (do_reorientation)
+              if (fod_lmax.size() != scale_factor.size())
+                throw Exception ("the lmax needs to be defined for each multi-resolution level (scale factor)");
 
             if (gd_repetitions.size() == 1)
               gd_repetitions.resize (scale_factor.size(), gd_repetitions[0]);
@@ -259,20 +277,32 @@ namespace MR
             const default_type midspace_voxel_subsampling = 1.0;
 
             // calculate midway (affine average) space which will be constant for each resolution level
-            midway_image_header = compute_minimum_average_header(im1_image, im2_image, transform, midspace_voxel_subsampling, midspace_padding);
+            midway_image_header = compute_minimum_average_header (im1_image, im2_image, transform, midspace_voxel_subsampling, midspace_padding);
 
-            bool analyse_descent = File::Config::get_bool("reg_analyse_descent", false);
+            bool analyse_descent = File::Config::get_bool ("reg_analyse_descent", false);
             for (size_t level = 0; level < scale_factor.size(); level++) {
               {
                 std::string st;
                 loop_density[level] < 1.0 ? st = ", loop density: " + str(loop_density[level]) : st = "";
-                CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor: " + str(scale_factor[level]) + st);
+                if (do_reorientation) {
+                  CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor " + str(scale_factor[level]) + st + ", lmax " + str(fod_lmax[level]) );
+                } else {
+                  CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor " + str(scale_factor[level]) + st);
+                }
               }
 
               // TODO: use iterator instead of full blown image
               auto midway_image = Header::scratch (midway_image_header).get_image<typename Im1ImageType::value_type>();
 
-              Filter::Smooth im1_smooth_filter (im1_image);
+              std::vector<int> from (im1_image.ndim(), 0);
+              std::vector<int> size (im1_image.ndim());
+              for (size_t dim = 0; dim < im1_image.ndim(); ++dim)
+                size[dim] = im1_image.size(dim);
+              if (im1_image.ndim() == 4 && do_reorientation)
+                size[3] = Math::SH::NforL (fod_lmax[level]);
+              Adapter::Subset<Image<default_type> > im1_subset (im1_image, from, size);
+
+              Filter::Smooth im1_smooth_filter (im1_subset);
               std::vector<default_type> stdev(3);
               for (size_t dim = 0; dim < 3; ++dim)
                 stdev[dim] = im1_image.spacing(dim) / (2.0 * scale_factor[level]);
@@ -280,7 +310,13 @@ namespace MR
               im1_smooth_filter.set_stdev (stdev);
               auto im1_smoothed = Image<typename Im1ImageType::value_type>::scratch (im1_smooth_filter);
 
-              Filter::Smooth im2_smooth_filter (im2_image);
+              for (size_t dim = 0; dim < im2_image.ndim(); ++dim)
+                size[dim] = im2_image.size(dim);
+              if (im2_image.ndim() == 4 && do_reorientation)
+                size[3] = Math::SH::NforL (fod_lmax[level]);
+              Adapter::Subset<Image<default_type> > im2_subset (im2_image, from, size);
+
+              Filter::Smooth im2_smooth_filter (im2_subset);
               for (size_t dim = 0; dim < 3; ++dim)
                 stdev[dim] = im2_image.spacing(dim) / (2.0 * scale_factor[level]);
               im2_smooth_filter.set_stdev (stdev);
@@ -295,10 +331,8 @@ namespace MR
                 midway_resize_filter (midway_image, midway_resized);
               }
               INFO ("smoothing input images based on scale factor...");
-              im1_smooth_filter (im1_image, im1_smoothed);
-              INFO ("smoothing input images based on scale factor...");
-              im2_smooth_filter (im2_image, im2_smoothed);
-
+              im1_smooth_filter (im1_subset, im1_smoothed);
+              im2_smooth_filter (im2_subset, im2_smoothed);
 
               ParamType parameters (transform, im1_smoothed, im2_smoothed, midway_resized, im1_mask, im2_mask);
               INFO ("loop density: " + str(loop_density[level]));
@@ -329,21 +363,21 @@ namespace MR
                 coherence *= reg_coherence_len * 1.0 / (2.0 * scale_factor[level]);
                 default_type reg_stop_len = File::Config::get_float ("reg_stop_len", 0.0001);
                 stop.array() *= reg_stop_len;
-                DEBUG("coherence length: " + str(coherence));
-                DEBUG("stop length:      " + str(stop));
+                DEBUG ("coherence length: " + str(coherence));
+                DEBUG ("stop length:      " + str(stop));
                 transform.get_gradient_descent_updator()->set_control_points(
                   parameters.control_points, coherence, stop, spacing);
               }
 
               Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
-              if (directions.cols())
-                evaluate.set_directions (directions);
+              if (do_reorientation && fod_lmax[level] > 0)
+                evaluate.set_directions (aPSF_directions);
 
 
               for (auto gd_iteration = 0; gd_iteration < gd_repetitions[level]; ++gd_iteration){
                 if (max_iter[level] == 0)
                   continue;
-                if (File::Config::get_bool("reg_bbgd", true)) {
+                if (File::Config::get_bool ("reg_bbgd", true)) {
                   Math::GradientDescentBB<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
                     optim (evaluate, *transform.get_gradient_descent_updator());
                   optim.be_verbose (analyse_descent);
@@ -352,7 +386,7 @@ namespace MR
                     optim.run (max_iter[level], grad_tolerance, std::cout.rdbuf());
                   else
                     optim.run (max_iter[level], grad_tolerance);
-                  DEBUG("gradient descent ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
+                  DEBUG ("gradient descent ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
                   parameters.transformation.set_parameter_vector (optim.state());
                   parameters.update_control_points();
                 } else {
@@ -365,7 +399,7 @@ namespace MR
                   else
                     optim.run (max_iter[level], grad_tolerance);
                   parameters.transformation.set_parameter_vector (optim.state());
-                  DEBUG("gradient descent ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
+                  DEBUG ("gradient descent ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
                   parameters.update_control_points();
                 }
                 if (log_stream){
@@ -400,13 +434,13 @@ namespace MR
           const std::string& im2_path,
           const bool do_reorientation) {
 
-            if (do_reorientation and directions.size()==0)
+            if (do_reorientation and aPSF_directions.size() == 0)
               throw Exception ("directions have to be calculated before reorientation");
 
             Image<typename Im1ImageType::value_type> image1_midway;
             Image<typename Im2ImageType::value_type> image2_midway;
 
-            Header image1_midway_header(midway_image_header);
+            Header image1_midway_header (midway_image_header);
             image1_midway_header.datatype() = DataType::Float64;
             image1_midway_header.set_ndim(im1_image.ndim());
             for (size_t dim = 3; dim < im1_image.ndim(); ++dim){
@@ -414,7 +448,7 @@ namespace MR
               image1_midway_header.size(dim) = im1_image.size(dim);
             }
             image1_midway = Image<typename Im1ImageType::value_type>::create (im1_path, image1_midway_header);
-            Header image2_midway_header(midway_image_header);
+            Header image2_midway_header (midway_image_header);
             image2_midway_header.datatype() = DataType::Float64;
             image2_midway_header.set_ndim(im2_image.ndim());
             for (size_t dim = 3; dim < im2_image.ndim(); ++dim){
@@ -426,8 +460,8 @@ namespace MR
             Filter::reslice<Interp::Cubic> (im1_image, image1_midway, transformation.get_transform_half(), Adapter::AutoOverSample, 0.0);
             Filter::reslice<Interp::Cubic> (im2_image, image2_midway, transformation.get_transform_half_inverse(), Adapter::AutoOverSample, 0.0);
             if (do_reorientation){
-              Transform::reorient ("reorienting...", image1_midway, image1_midway, transformation.get_transform_half(), directions);
-              Transform::reorient ("reorienting...", image2_midway, image2_midway, transformation.get_transform_half_inverse(), directions);
+              Transform::reorient ("reorienting...", image1_midway, image1_midway, transformation.get_transform_half(), aPSF_directions);
+              Transform::reorient ("reorienting...", image2_midway, image2_midway, transformation.get_transform_half_inverse(), aPSF_directions);
             }
           }
 
@@ -443,7 +477,9 @@ namespace MR
         Transform::Init::InitType init_type;
         bool robust_estimate;
         bool global_search;
-        Eigen::MatrixXd directions;
+        bool do_reorientation;
+        Eigen::MatrixXd aPSF_directions;
+        std::vector<int> fod_lmax;
 
         Header midway_image_header;
     };

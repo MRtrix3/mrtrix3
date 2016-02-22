@@ -51,7 +51,11 @@ namespace MR
         + Argument ("stdev").type_float ()
 
       + Option ("nl_grad_step", "the gradient step size for non-linear registration (Default: 0.5)")
-        + Argument ("num").type_float ();
+        + Argument ("num").type_float ()
+
+      + Option ("nl_lmax", "explicitly set the lmax to be used per scale factor in non-linear FOD registration. By default FOD registration will "
+                           "use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.")
+      + Argument ("num").type_sequence_int ();
 
   }
 }

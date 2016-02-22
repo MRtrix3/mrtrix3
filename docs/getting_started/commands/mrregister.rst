@@ -65,7 +65,9 @@ Rigid registration options
 -  **-rigid_centre type** initialise the centre of rotation and
    initial translation. Valid choices are: mass (which uses the image
    center of mass), geometric (geometric image centre), moments (image
-   moments) or none.Default: moments.
+   moments), mass_unmasked (don't use image masks for centre of mass
+   initialisation), moments_unmasked (don't use image masks for moments
+   initialisation) or none.Default: moments.
 
 -  **-rigid_init file** initialise either the rigid, affine, or syn
    registration with the supplied rigid transformation (as a 4x4
@@ -86,6 +88,11 @@ Rigid registration options
 -  **-rigid_global_search** perform global search for most promising
    starting point. default: false
 
+-  **-rigid_lmax num** explicitly set the lmax to be used per scale
+   factor in rigid FOD registration. By default FOD registration will
+   use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively.
+   Note that no reorientation will be performed with lmax = 0.
+
 Affine registration options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -104,9 +111,9 @@ Affine registration options
 -  **-affine_centre type** initialise the centre of rotation and
    initial translation. Valid choices are: mass (which uses the image
    center of mass), geometric (geometric image centre), moments (image
-   moments) or none.Default: moments. Note that if rigid registration is
-   performed first then the affine transform will be initialised with
-   the rigid output.
+   moments), mass_unmasked (don't use image masks for centre of mass
+   initialisation), moments_unmasked (don't use image masks for moments
+   initialisation) or none.Default: moments.
 
 -  **-affine_init file** initialise either the affine, or syn
    registration with the supplied affine transformation (as a 4x4
@@ -138,6 +145,11 @@ Affine registration options
 
 -  **-affine_global_search** perform global search for most promising
    starting point. default: false
+
+-  **-affine_lmax num** explicitly set the lmax to be used per scale
+   factor in affine FOD registration. By default FOD registration will
+   use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively.
+   Note that no reorientation will be performed with lmax = 0.
 
 Non-linear registration options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -178,15 +190,17 @@ Non-linear registration options
 -  **-nl_grad_step num** the gradient step size for non-linear
    registration (Default: 0.5)
 
+-  **-nl_lmax num** explicitly set the lmax to be used per scale
+   factor in non-linear FOD registration. By default FOD registration
+   will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0
+   respectively. Note that no reorientation will be performed with lmax
+   = 0.
+
 FOD registration options
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-directions file** the directions used for FOD reorienation using
    apodised point spread functions (Default: 60 directions)
-
--  **-lmax num** explicitly set the lmax to be used in FOD
-   registration. By default FOD registration will use lmax 4 SH
-   coefficients
 
 -  **-noreorientation** turn off FOD reorientation. Reorientation is on
    by default if the number of volumes in the 4th dimension corresponds
