@@ -1,4 +1,4 @@
-dwiextract
+dwi2response
 ===========
 
 Synopsis
@@ -6,20 +6,18 @@ Synopsis
 
 ::
 
-    dwiextract [ options ]  input output
+    dwi2response [ options ]  dwi_in response_out
 
--  *input*: the input DW image.
--  *output*: the output image (diffusion-weighted volumes by default.
+-  *dwi_in*: the input diffusion-weighted images
+-  *response_out*: the output rotational harmonic coefficients
 
 Description
 -----------
 
-Extract either diffusion-weighted volumes or b=0 volumes from an image containing both
+generate an appropriate response function from the image data for spherical deconvolution
 
 Options
 -------
-
--  **-bzero** output b=0 volumes instead of the diffusion weighted volumes.
 
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -34,6 +32,30 @@ DW Shell selection options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-shell list** specify one or more diffusion-weighted gradient shells to use during processing, as a comma-separated list of the desired approximate b-values. Note that some commands are incompatible with multiple shells, and will throw an error if more than one b-value are provided.
+
+-  **-mask image** provide an initial mask image
+
+-  **-lmax value** specify the maximum harmonic degree of the response function to estimate
+
+-  **-sf image** output a mask highlighting the final selection of single-fibre voxels
+
+-  **-test_all** by default, only those voxels selected as single-fibre in the previous iteration are evaluated. Set this option to re-test all voxels at every iteration (slower).
+
+Options for terminating the optimisation algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-max_iters value** maximum number of iterations per pass (set to zero to disable)
+
+-  **-max_change value** maximum percentile change in any response function coefficient; if no individual coefficient changes by more than this fraction, the algorithm is terminated.
+
+Thresholds for single-fibre voxel selection
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-volume_ratio value** maximal volume ratio between the sum of all other positive lobes in the voxel, and the largest FOD lobe (default = 0.15)
+
+-  **-dispersion_multiplier value** dispersion of FOD lobe must not exceed some threshold as determined by this multiplier and the FOD dispersion in other single-fibre voxels. The threshold is: (mean + (multiplier * (mean - min))); default = 1.0. Criterion is only applied in second pass of RF estimation.
+
+-  **-integral_multiplier value** integral of FOD lobe must not be outside some range as determined by this multiplier and FOD lobe integral in other single-fibre voxels. The range is: (mean +- (multiplier * stdev)); default = 2.0. Criterion is only applied in second pass of RF estimation.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -54,11 +76,16 @@ Standard options
 
 -  **-version** display version information and exit.
 
+References
+^^^^^^^^^^
+
+Tax, C. M.; Jeurissen, B.; Vos, S. B.; Viergever, M. A. & Leemans, A. Recursive calibration of the fiber response function for spherical deconvolution of diffusion MRI data. NeuroImage, 2014, 86, 67-80
+
 --------------
 
 
 
-**Author:** David Raffelt (david.raffelt@florey.edu.au)
+**Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
 

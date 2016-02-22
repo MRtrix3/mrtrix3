@@ -20,12 +20,8 @@ List of MRtrix3 commands
   for n in ../release/bin/*; do
     filepath='getting_started/commands'
     filename=`basename $n`
-    $n __print_usage_markdown__ > $filepath/$filename.md
-    pandoc --from=markdown --to=rst --output=$filepath/$filename.rst $filepath/$filename.md
-    rm $filepath/$filename.md
+    $n __print_usage_rst__ > $filepath/$filename.rst
     sed -ie "1i$filename\n===========\n" $filepath/$filename.rst
-    sed -i '/MRtrix.*built/d' $filepath/$filename.rst
-    sed -i 's/\\//g' $filepath/$filename.rst
     echo "
 .. include:: commands/$filename.rst
 .......
@@ -43,12 +39,8 @@ Scripts for external libraries
   for n in `find ../scripts/ -type f -print0 | xargs -0 grep -l "lib.app.initParser"`; do
     filepath='getting_started/scripts'
     filename=`basename $n`
-    $n __print_usage_markdown__ > $filepath/$filename.md
-    pandoc --from=markdown --to=rst --output=$filepath/$filename.rst $filepath/$filename.md
-    rm $filepath/$filename.md
+    $n __print_usage_rst__ > $filepath/$filename.rst
     sed -ie "1i$filename\n===========\n" $filepath/$filename.rst
-    sed -i 's/\\//g' $filepath/$filename.rst
-    sed -i 's/\*\*-continue \*\*/\*\*-continue\*\*/g' $filepath/$filename.rst
     echo "
 .. include:: scripts/$filename.rst
 .......

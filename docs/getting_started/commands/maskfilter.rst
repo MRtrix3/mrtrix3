@@ -9,8 +9,7 @@ Synopsis
     maskfilter [ options ]  input filter output
 
 -  *input*: the input image.
--  *filter*: the type of filter to be applied (connect, dilate, erode,
-   median)
+-  *filter*: the type of filter to be applied (connect, dilate, erode, median)
 -  *output*: the output image.
 
 Description
@@ -28,9 +27,7 @@ Options
 Options for connected-component filter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-axes axes** specify which axes should be included in the
-   connected components. By default only the first 3 axes are included.
-   The axes should be provided as a comma-separated list of values.
+-  **-axes axes** specify which axes should be included in the connected components. By default only the first 3 axes are included. The axes should be provided as a comma-separated list of values.
 
 -  **-largest** only retain the largest connected component
 
@@ -44,17 +41,12 @@ Options for dilate / erode filters
 Options for median filter
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-extent voxels** specify the extent (width) of kernel size in
-   voxels. This can be specified either as a single value to be used for
-   all axes, or as a comma-separated list of the extent for each axis.
-   The default is 3x3x3.
+-  **-extent voxels** specify the extent (width) of kernel size in voxels. This can be specified either as a single value to be used for all axes, or as a comma-separated list of the extent for each axis. The default is 3x3x3.
 
 Stride options
 ^^^^^^^^^^^^^^
 
--  **-stride spec** specify the strides of the output data in memory,
-   as a comma-separated list. The actual strides produced will depend on
-   whether the output image format can support it.
+-  **-stride spec** specify the strides of the output data in memory, as a comma-separated list. The actual strides produced will depend on whether the output image format can support it.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -65,11 +57,9 @@ Standard options
 
 -  **-debug** display debugging messages.
 
--  **-force** force overwrite of output files. Caution: Using the same
-   file as input and output might cause unexpected behaviour.
+-  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded
-   applications
+-  **-nthreads number** use this number of threads in multi-threaded applications
 
 -  **-failonwarn** terminate program if a warning is produced
 
@@ -80,18 +70,14 @@ Standard options
 --------------
 
 
-**Author:** Robert E. Smith (r.smith@brain.org.au), David Raffelt
-(david.raffelt@florey.edu.au) and J-Donald Tournier
-(jdtournier@gmail.com)
+
+**Author:** Robert E. Smith (r.smith@brain.org.au), David Raffelt (david.raffelt@florey.edu.au) and J-Donald Tournier (jdtournier@gmail.com)
 
 **Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
 
-This Source Code Form is subject to the terms of the Mozilla Public
-License, v. 2.0. If a copy of the MPL was not distributed with this
-file, You can obtain one at http://mozilla.org/MPL/2.0/
+This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-MRtrix is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.
+MRtrix is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 For more details, see www.mrtrix.org
+
