@@ -172,8 +172,9 @@ void run ()
 
   if (im1_image.ndim() > 4) {
     throw Exception ("image dimensions larger than 4 are not supported");
-  }
-  else if (im1_image.ndim() == 4) {
+  } else if (im1_image.ndim() == 3) {
+    do_reorientation = false;
+  } else if (im1_image.ndim() == 4) {
     if (im1_image.size(3) != im2_image.size(3))
       throw Exception ("input images do not have the same number of volumes in the 4th dimension");
     image_lmax = Math::SH::LforN (im1_image.size(3));
