@@ -207,8 +207,7 @@ namespace MR
             else if (max_iter.size() != scale_factor.size())
               throw Exception ("the max number of iterations needs to be defined for each multi-resolution level (scale factor)");
 
-            if (do_reorientation)
-              if (fod_lmax.size() != scale_factor.size())
+            if (do_reorientation and (fod_lmax.size() != scale_factor.size()))
                 throw Exception ("the lmax needs to be defined for each multi-resolution level (scale factor)");
 
             if (gd_repetitions.size() == 1)
