@@ -15,8 +15,7 @@ Synopsis
 Description
 -----------
 
-generate a connectome matrix from a streamlines file and a node
-parcellation image
+generate a connectome matrix from a streamlines file and a node parcellation image
 
 Options
 -------
@@ -24,56 +23,32 @@ Options
 Structural connectome streamline assignment option
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-assignment_end_voxels** use a simple voxel lookup value at each
-   streamline endpoint
+-  **-assignment_end_voxels** use a simple voxel lookup value at each streamline endpoint
 
--  **-assignment_radial_search radius** perform a radial search from
-   each streamline endpoint to locate the nearest node.Argument is the
-   maximum radius in mm; if no node is found within this radius, the
-   streamline endpoint is not assigned to any node.
+-  **-assignment_radial_search radius** perform a radial search from each streamline endpoint to locate the nearest node.Argument is the maximum radius in mm; if no node is found within this radius, the streamline endpoint is not assigned to any node. 
 
--  **-assignment_reverse_search max_dist** traverse from each
-   streamline endpoint inwards along the streamline, in search of the
-   last node traversed by the streamline. Argument is the maximum
-   traversal length in mm (set to 0 to allow search to continue to the
-   streamline midpoint).
+-  **-assignment_reverse_search max_dist** traverse from each streamline endpoint inwards along the streamline, in search of the last node traversed by the streamline. Argument is the maximum traversal length in mm (set to 0 to allow search to continue to the streamline midpoint).
 
--  **-assignment_forward_search max_dist** project the streamline
-   forwards from the endpoint in search of a parcellation node voxel.
-   Argument is the maximum traversal length in mm.
+-  **-assignment_forward_search max_dist** project the streamline forwards from the endpoint in search of a parcellation node voxel. Argument is the maximum traversal length in mm.
 
--  **-assignment_all_voxels** assign the streamline to all nodes it
-   intersects along its length (note that this means a streamline may be
-   assigned to more than two nodes, or indeed none at all)
+-  **-assignment_all_voxels** assign the streamline to all nodes it intersects along its length (note that this means a streamline may be assigned to more than two nodes, or indeed none at all)
 
 Structural connectome metric option
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-metric choice** specify the edge weight metric. Options are:
-   count (default), meanlength, invlength, invnodevolume,
-   invlength_invnodevolume, mean_scalar
+-  **-metric choice** specify the edge weight metric. Options are: count (default), meanlength, invlength, invnodevolume, invlength_invnodevolume, mean_scalar
 
--  **-image path** provide the associated image for the mean_scalar
-   metric
+-  **-image path** provide the associated image for the mean_scalar metric
 
--  **-tck_weights_in path** specify a text scalar file containing the
-   streamline weights
+-  **-tck_weights_in path** specify a text scalar file containing the streamline weights
 
--  **-keep_unassigned** By default, the program discards the
-   information regarding those streamlines that are not successfully
-   assigned to a node pair. Set this option to keep these values (will
-   be the first row/column in the output matrix)
+-  **-keep_unassigned** By default, the program discards the information regarding those streamlines that are not successfully assigned to a node pair. Set this option to keep these values (will be the first row/column in the output matrix)
 
--  **-out_assignments path** output the node assignments of each
-   streamline to a file
+-  **-out_assignments path** output the node assignments of each streamline to a file
 
--  **-zero_diagonal** set all diagonal entries in the matrix to zero
-   (these represent streamlines that connect to the same node at both
-   ends)
+-  **-zero_diagonal** set all diagonal entries in the matrix to zero (these represent streamlines that connect to the same node at both ends)
 
--  **-vector** output a vector representing connectivities from a given
-   seed point to target nodes, rather than a matrix of node-node
-   connectivities
+-  **-vector** output a vector representing connectivities from a given seed point to target nodes, rather than a matrix of node-node connectivities
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -84,11 +59,9 @@ Standard options
 
 -  **-debug** display debugging messages.
 
--  **-force** force overwrite of output files. Caution: Using the same
-   file as input and output might cause unexpected behaviour.
+-  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded
-   applications
+-  **-nthreads number** use this number of threads in multi-threaded applications
 
 -  **-failonwarn** terminate program if a warning is produced
 
@@ -99,16 +72,14 @@ Standard options
 --------------
 
 
+
 **Author:** Robert E. Smith (r.smith@brain.org.au)
 
 **Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
 
-This Source Code Form is subject to the terms of the Mozilla Public
-License, v. 2.0. If a copy of the MPL was not distributed with this
-file, You can obtain one at http://mozilla.org/MPL/2.0/
+This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-MRtrix is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.
+MRtrix is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 For more details, see www.mrtrix.org
+
