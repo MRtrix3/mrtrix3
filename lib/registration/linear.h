@@ -25,7 +25,6 @@
 #include "filter/resize.h"
 #include "filter/reslice.h"
 #include "adapter/reslice.h"
-#include "adapter/subset.h"
 #include "algo/threaded_loop.h"
 #include "interp/linear.h"
 #include "interp/nearest.h"
@@ -40,6 +39,7 @@
 #include "math/math.h"
 #include <iostream>     // std::streambuf
 #include "registration/transform/global_search.h"
+#include "registration/multi_resolution_lmax.h"
 
 namespace MR
 {
@@ -207,9 +207,12 @@ namespace MR
             else if (max_iter.size() != scale_factor.size())
               throw Exception ("the max number of iterations needs to be defined for each multi-resolution level (scale factor)");
 
-            if (do_reorientation)
+            if (do_reorientation) {
               if (fod_lmax.size() != scale_factor.size())
                 throw Exception ("the lmax needs to be defined for each multi-resolution level (scale factor)");
+            } else {
+              fod_lmax.resize (scale_factor.size(), 0);
+            }
 
             if (gd_repetitions.size() == 1)
               gd_repetitions.resize (scale_factor.size(), gd_repetitions[0]);
@@ -293,34 +296,8 @@ namespace MR
 
               // TODO: use iterator instead of full blown image
               auto midway_image = Header::scratch (midway_image_header).get_image<typename Im1ImageType::value_type>();
-
-              std::vector<int> from (im1_image.ndim(), 0);
-              std::vector<int> size (im1_image.ndim());
-              for (size_t dim = 0; dim < im1_image.ndim(); ++dim)
-                size[dim] = im1_image.size(dim);
-              if (im1_image.ndim() == 4 && do_reorientation)
-                size[3] = Math::SH::NforL (fod_lmax[level]);
-              Adapter::Subset<Image<default_type> > im1_subset (im1_image, from, size);
-
-              Filter::Smooth im1_smooth_filter (im1_subset);
-              std::vector<default_type> stdev(3);
-              for (size_t dim = 0; dim < 3; ++dim)
-                stdev[dim] = im1_image.spacing(dim) / (2.0 * scale_factor[level]);
-
-              im1_smooth_filter.set_stdev (stdev);
-              auto im1_smoothed = Image<typename Im1ImageType::value_type>::scratch (im1_smooth_filter);
-
-              for (size_t dim = 0; dim < im2_image.ndim(); ++dim)
-                size[dim] = im2_image.size(dim);
-              if (im2_image.ndim() == 4 && do_reorientation)
-                size[3] = Math::SH::NforL (fod_lmax[level]);
-              Adapter::Subset<Image<default_type> > im2_subset (im2_image, from, size);
-
-              Filter::Smooth im2_smooth_filter (im2_subset);
-              for (size_t dim = 0; dim < 3; ++dim)
-                stdev[dim] = im2_image.spacing(dim) / (2.0 * scale_factor[level]);
-              im2_smooth_filter.set_stdev (stdev);
-              auto im2_smoothed = Image<typename Im2ImageType::value_type>::scratch (im2_smooth_filter);
+              auto im1_smoothed = Registration::multi_resolution_lmax (im1_image, scale_factor[level], do_reorientation, fod_lmax[level]);
+              auto im2_smoothed = Registration::multi_resolution_lmax (im2_image, scale_factor[level], do_reorientation, fod_lmax[level]);
 
               Filter::Resize midway_resize_filter (midway_image);
               midway_resize_filter.set_scale_factor (scale_factor[level]);
@@ -330,9 +307,6 @@ namespace MR
                 LogLevelLatch log_level (0);
                 midway_resize_filter (midway_image, midway_resized);
               }
-              INFO ("smoothing input images based on scale factor...");
-              im1_smooth_filter (im1_subset, im1_smoothed);
-              im2_smooth_filter (im2_subset, im2_smoothed);
 
               ParamType parameters (transform, im1_smoothed, im2_smoothed, midway_resized, im1_mask, im2_mask);
               INFO ("loop density: " + str(loop_density[level]));

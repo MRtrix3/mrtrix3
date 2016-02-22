@@ -719,7 +719,7 @@ void run ()
         auto temp_output = Image<default_type>::scratch (im1_transformed);
         Filter::warp<Interp::Cubic> (im1_image, temp_output, deform_field, 0.0);
         if (do_reorientation)
-          Registration::Transform::reorient_warp ("reorienting FODs...",
+          Registration::Transform::reorient_warp ("reorienting FODs",
                                                   temp_output,
                                                   deform_field,
                                                   Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
@@ -733,7 +733,7 @@ void run ()
         auto temp_output = Image<default_type>::scratch (im1_transformed);
         Filter::reslice<Interp::Cubic> (im1_image, temp_output, affine.get_transform(), Adapter::AutoOverSample, 0.0);
         if (do_reorientation)
-          Registration::Transform::reorient ("reorienting FODs...",
+          Registration::Transform::reorient ("reorienting FODs",
                                              temp_output,
                                              temp_output,
                                              affine.get_transform(),
@@ -747,7 +747,7 @@ void run ()
         auto temp_output = Image<default_type>::scratch (im1_transformed);
         Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, rigid.get_transform(), Adapter::AutoOverSample, 0.0);
         if (do_reorientation)
-          Registration::Transform::reorient ("reorienting FODs...",
+          Registration::Transform::reorient ("reorienting FODs",
                                              temp_output,
                                              temp_output,
                                              rigid.get_transform(),
@@ -776,7 +776,7 @@ void run ()
         auto temp_output = Image<default_type>::scratch (midway_header);
         Filter::warp<Interp::Cubic> (im1_image, temp_output, im1_deform_field, 0.0);
         if (do_reorientation)
-          Registration::Transform::reorient_warp ("reorienting FODs...", temp_output, im1_deform_field, directions_cartesian);
+          Registration::Transform::reorient_warp ("reorienting FODs", temp_output, im1_deform_field, directions_cartesian);
         threaded_copy (temp_output, im1_midway);
       }
 
@@ -791,7 +791,7 @@ void run ()
         auto temp_output = Image<default_type>::scratch (midway_header);
         Filter::warp<Interp::Cubic> (im2_image, temp_output, im2_deform_field, 0.0);
         if (do_reorientation)
-          Registration::Transform::reorient_warp ("reorienting FODs...", temp_output, im2_deform_field, directions_cartesian);
+          Registration::Transform::reorient_warp ("reorienting FODs", temp_output, im2_deform_field, directions_cartesian);
         threaded_copy (temp_output, im2_midway);
       }
 
