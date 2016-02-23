@@ -581,6 +581,8 @@ void run ()
     CONSOLE ("running rigid registration");
 
     if (im2_image.ndim() == 4) {
+      if (do_reorientation)
+        rigid_registration.set_directions (directions_cartesian);
       if (rigid_metric == Registration::NCC)
         throw Exception ("cross correlation metric not implemented for data with more than 3 dimensions");
       Registration::Metric::MeanSquared4D<Image<value_type>, Image<value_type>> metric (im1_image, im2_image);
@@ -613,10 +615,10 @@ void run ()
       affine_registration.set_init_type (Registration::Transform::Init::none);
     }
 
-    if (do_reorientation)
-      affine_registration.set_directions (directions_cartesian);
 
     if (im2_image.ndim() == 4) {
+      if (do_reorientation)
+        affine_registration.set_directions (directions_cartesian);
       if (affine_metric == Registration::NCC)
         throw Exception ("cross correlation metric not implemented for data with more than 3 dimensions");
       else if (affine_metric == Registration::Diff) {
@@ -746,7 +748,7 @@ void run ()
         Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, rigid.get_transform(), Adapter::AutoOverSample, 0.0);
       } else { // write to scratch buffer first since FOD reorientation requires direct IO
         auto temp_output = Image<default_type>::scratch (im1_transformed);
-        Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, rigid.get_transform(), Adapter::AutoOverSample, 0.0);
+        Filter::reslice<Interp::Cubic> (im1_image, temp_output, rigid.get_transform(), Adapter::AutoOverSample, 0.0);
         if (do_reorientation)
           Registration::Transform::reorient ("reorienting FODs",
                                              temp_output,

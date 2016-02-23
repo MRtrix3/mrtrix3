@@ -102,17 +102,14 @@ namespace MR
             else if (max_iter.size() != scale_factor.size())
               throw Exception ("the max number of non-linear iterations needs to be defined for each multi-resolution level (scale_factor)");
 
-            if (do_reorientation) {
-              if (fod_lmax.size() != scale_factor.size())
-                throw Exception ("the lmax needs to be defined for each multi-resolution level (scale factor)");
-            } else {
+            if (do_reorientation and (fod_lmax.size() != scale_factor.size()))
+              throw Exception ("the lmax needs to be defined for each multi-resolution level (scale factor)");
+            else
               fod_lmax.resize (scale_factor.size(), 0);
-            }
-
 
             for (size_t level = 0; level < scale_factor.size(); level++) {
               if (do_reorientation) {
-                CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor " + str(scale_factor[level]) + ", lmax " + str(fod_lmax[level]) );
+                CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor " + str(scale_factor[level]) + ", lmax " + str(fod_lmax[level]));
               } else {
                 CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor " + str(scale_factor[level]));
               }

@@ -79,10 +79,6 @@ List of MRtrix3 commands
 .......
 
 
-.. include:: commands/dwi2response.rst
-.......
-
-
 .. include:: commands/dwi2tensor.rst
 .......
 
