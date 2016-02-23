@@ -69,7 +69,7 @@ Build *MRtrix3*
 
        git clone git@github.com:MRtrix3/mrtrix3.git
 
-2. Make sure the Qt5 tools are in your PATH, and also the GSL ones if
+2. Make sure the Qt5 tools are in your PATH, and also the Eigen ones if
    not in a standard location (edit as appropriate):
 
    ::
