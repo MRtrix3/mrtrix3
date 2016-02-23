@@ -38,7 +38,7 @@ namespace MR
                                 "mass_unmasked (don't use image masks for centre of mass initialisation), "
                                 "moments_unmasked (don't use image masks for moments initialisation) "
                                 "or none."
-                                "Default: moments.")
+                                "Default: mass.")
         + Argument ("type").type_choice (initialisation_choices)
 
       + Option ("rigid_init", "initialise either the rigid, affine, or syn registration with the supplied rigid transformation (as a 4x4 matrix). Note that this overrides rigid_centre initialisation")
@@ -86,7 +86,7 @@ namespace MR
                                 "mass_unmasked (don't use image masks for centre of mass initialisation), "
                                 "moments_unmasked (don't use image masks for moments initialisation) "
                                 "or none."
-                                "Default: moments.")
+                                "Default: mass.")
         + Argument ("type").type_choice (initialisation_choices)
 
       + Option ("affine_init", "initialise either the affine, or syn registration with the supplied affine transformation (as a 4x4 matrix). Note that this overrides affine_centre initialisation")

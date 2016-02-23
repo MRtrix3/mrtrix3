@@ -67,7 +67,7 @@ namespace MR
           grad_tolerance(1.0e-6),
           step_tolerance(1.0e-10),
           log_stream (nullptr),
-          init_type (Transform::Init::moments),
+          init_type (Transform::Init::mass),
           robust_estimate (false),
           global_search (false),
           do_reorientation (false),
@@ -207,12 +207,10 @@ namespace MR
             else if (max_iter.size() != scale_factor.size())
               throw Exception ("the max number of iterations needs to be defined for each multi-resolution level (scale factor)");
 
-            if (do_reorientation) {
-              if (fod_lmax.size() != scale_factor.size())
-                throw Exception ("the lmax needs to be defined for each multi-resolution level (scale factor)");
-            } else {
+            if (do_reorientation and (fod_lmax.size() != scale_factor.size()))
+              throw Exception ("the lmax needs to be defined for each multi-resolution level (scale factor)");
+            else
               fod_lmax.resize (scale_factor.size(), 0);
-            }
 
             if (gd_repetitions.size() == 1)
               gd_repetitions.resize (scale_factor.size(), gd_repetitions[0]);
