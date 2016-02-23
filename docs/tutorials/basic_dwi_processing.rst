@@ -20,11 +20,14 @@ this can be used to correct the susceptibility-induced geometric
 distortions present in the diffusion images, as well as any eddy
 current-induced distortions and inter-volume subject motion. Procedures
 for this correct are not yet implemented in MRtrix, though we do provide
-a script for interfacing with the relevant tools:
+a script for interfacing with the relevant FSL tools:
 
-``revpe_distcorr <A-P image> <P-A image> <DWI series> <Output corrected DWI series>``
+``dwipreproc <Input DWI series> <Output corrected DWI series>``
 
-(see the header of the ``scripts/revpe_distcorr`` file for more details)
+For more details, see the header of the ``scripts/dwipreproc`` file. In
+particular, it is necessary to manually specify what type of reversed
+phase-encoding acquisition has taken place (if any), and provide the
+relevant input images.
 
 DWI brain mask estimation
 ~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -15,8 +15,7 @@ To install *MRtrix3* , you will need the following:
    compiler (`clang <http://clang.llvm.org/>`__ on MacOSX)
 -  `Python <https://www.python.org/>`__ version >= 2.6
 -  The `zlib <http://www.zlib.net/>`__ compression library
--  The `GNU Scientific Library
-   (GSL) <http://www.gnu.org/software/gsl/>`__
+-  `Eigen <http://eigen.tuxfamily.org/>`__ version 3
 -  `Qt <http://www.qt.io/>`__ version >= 5.1 *[GUI components only]* -
    important: versions prior to this will *not* work
 
@@ -33,13 +32,10 @@ Install Dependencies
 
 -  Install XCode from the Apple Store
 
--  Install the GNU Scientific Library - the simplest way is probably via
-   `MacPorts <http://www.macports.org/>`__, although
-   `Homebrew <http://brew.sh/>`__ is another possibility:
-   ``brew install gsl``. Alternatively, you can `download the GSL source
-   code and compile it
-   yourself <http://www.brianomeara.info/tutorials/brownie/gsl>`__, it's
-   a fairly quick process.
+-  Install Eigen - since Eigen is provided as header files only, it's
+    probably easiest to just `download the source code <http://eigen.tuxfamily.org/>`__;
+    installation through `MacPorts <http://www.macports.org/>`__ or
+    `Homebrew <http://brew.sh/>`__ may also be possible though.
 
 -  Download and install `the latest version of
    Qt5 <http://download.qt.io/official_releases/qt/>`__ - you need to
