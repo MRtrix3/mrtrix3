@@ -22,7 +22,7 @@ namespace MR
 
     using namespace App;
 
-    const char* initialisation_choices[] = { "mass", "geometric", "moments", "mass_unmasked", "moments_unmasked", "none", NULL };
+    const char* initialisation_choices[] = { "mass", "geometric", "moments", "mass_unmasked", "moments_unmasked", "fod", "none", NULL };
     const char* linear_metric_choices[] = { "diff", "ncc", NULL };
     const char* linear_robust_estimator_choices[] = { "l1", "l2", "lp", NULL };
 
@@ -36,7 +36,8 @@ namespace MR
                                 "Valid choices are: mass (which uses the image center of mass), "
                                 "geometric (geometric image centre), moments (image moments), "
                                 "mass_unmasked (don't use image masks for centre of mass initialisation), "
-                                "moments_unmasked (don't use image masks for moments initialisation) "
+                                "moments_unmasked (don't use image masks for moments initialisation), "
+                                "fod (aligns FOD images based on their centre of mass and global sum of all fibre orientations) "
                                 "or none."
                                 "Default: mass.")
         + Argument ("type").type_choice (initialisation_choices)
@@ -84,7 +85,8 @@ namespace MR
                                 "Valid choices are: mass (which uses the image center of mass), "
                                 "geometric (geometric image centre), moments (image moments), "
                                 "mass_unmasked (don't use image masks for centre of mass initialisation), "
-                                "moments_unmasked (don't use image masks for moments initialisation) "
+                                "moments_unmasked (don't use image masks for moments initialisation), "
+                                "fod (aligns FOD images based on their centre of mass and global sum of all fibre orientations) "
                                 "or none."
                                 "Default: mass.")
         + Argument ("type").type_choice (initialisation_choices)

@@ -239,7 +239,7 @@ void run ()
     init_rigid_set = true;
     transform_type rigid_transform = load_transform (opt[0][0]);
     rigid.set_transform (rigid_transform);
-    rigid_registration.set_init_type (Registration::Transform::Init::none);
+    rigid_registration.set_init_type (Registration::Transform::Init::set_centre_mass);
   }
 
   opt = get_options ("rigid_centre");
@@ -263,6 +263,9 @@ void run ()
         rigid_registration.set_init_type (Registration::Transform::Init::moments_unmasked);
         break;
       case 5:
+        rigid_registration.set_init_type (Registration::Transform::Init::fod);
+        break;
+      case 6:
         rigid_registration.set_init_type (Registration::Transform::Init::none);
         break;
       default:
@@ -362,7 +365,7 @@ void run ()
     init_affine_set = true;
     transform_type init_affine = load_transform (opt[0][0]);
     affine.set_transform (init_affine);
-    affine_registration.set_init_type (Registration::Transform::Init::none);
+    affine_registration.set_init_type (Registration::Transform::Init::set_centre_mass);
   }
 
   opt = get_options ("affine_centre");
@@ -386,6 +389,9 @@ void run ()
         affine_registration.set_init_type (Registration::Transform::Init::moments_unmasked);
         break;
       case 5:
+        affine_registration.set_init_type (Registration::Transform::Init::fod);
+        break;
+      case 6:
         affine_registration.set_init_type (Registration::Transform::Init::none);
         break;
       default:

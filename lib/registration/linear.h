@@ -232,7 +232,10 @@ namespace MR
               Transform::Init::initialise_using_image_moments (im1_image, im2_image, im1_mask, im2_mask, transform);
             else if (init_type == Transform::Init::moments_unmasked)
               Transform::Init::initialise_using_image_moments (im1_image, im2_image, transform);
-            // transformation file initialisation is done in mrregister.cpp
+            else if (init_type == Transform::Init::fod)
+              Transform::Init::initialise_using_FOD (im1_image, im2_image, im1_mask, im2_mask, transform);
+            else if (init_type == Transform::Init::set_centre_mass)
+              Transform::Init::set_centre_using_image_mass (im1_image, im2_image, im1_mask, im2_mask, transform); // transform is set in mrregister.cpp
             // transform.debug();
 
             if (global_search) {

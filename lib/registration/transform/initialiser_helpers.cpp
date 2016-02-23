@@ -22,6 +22,7 @@
 #include "debug.h"
 // #include "timer.h"
 
+// #define DEBUG_INIT
 
 namespace MR
 {
@@ -74,7 +75,7 @@ namespace MR
           m000 = 0.0; m100 = 0.0; m010 = 0.0; m001 = 0.0; mu110 = 0.0; mu011 = 0.0;
           mu101 = 0.0; mu200 = 0.0; mu020 = 0.0; mu002 = 0.0;
           MR::Transform transform (image);
-          // only use the first volume of a 4D file. This is important for FOD images.
+          // only use the first volume of a 4D file
           if (!mask.valid()) {
             for (auto i = Loop (0, 3)(image); i; ++i) {
               m000 += image.value();
@@ -136,6 +137,37 @@ namespace MR
           }
         }
 
+        void get_centre_of_mass (Image<default_type>& im,
+                                 Image<default_type>& mask,
+                                 Eigen::Vector3& centre_of_mass) {
+          centre_of_mass.setZero();
+          default_type mass (0.0);
+          MR::Transform transform (im);
+          Eigen::Vector3 scanner;
+          Eigen::Vector3 voxel_pos;
+          // only use the first volume of a 4D file
+          // TODO: multi-threaded loop
+          if (!mask.valid()) {
+            for (auto i = Loop (0, 3)(im); i; ++i) {
+              voxel_pos << (default_type)im.index(0), (default_type)im.index(1), (default_type)im.index(2);
+              scanner = transform.voxel2scanner * voxel_pos;
+              mass += im.value();
+              centre_of_mass += scanner * im.value();
+            }
+          } else {
+            for (auto i = Loop (0, 3)(im, mask); i; ++i) {
+              if (mask.value()) {
+                voxel_pos << (default_type)im.index(0), (default_type)im.index(1), (default_type)im.index(2);
+                scanner = transform.voxel2scanner * voxel_pos;
+                mass += im.value();
+                centre_of_mass += scanner * im.value();
+              }
+            }
+          }
+          assert (mass != 0.0);
+          centre_of_mass /= mass;
+        }
+
         void initialise_using_image_mass (Image<default_type>& im1,
                                           Image<default_type>& im2,
                                           Image<default_type>& mask1,
@@ -146,62 +178,89 @@ namespace MR
           } else {
             CONSOLE ("initialising centre of rotation and translation using unmasked centre of mass");
           }
-          Eigen::Matrix<default_type, 3, 1>  im1_centre_of_mass (3);
-          im1_centre_of_mass.setZero();
-          default_type im1_mass = 0.0;
-          MR::Transform im1_transform (im1);
-          // only use the first volume of a 4D file. This is important for FOD images.
-          if (!mask1.valid()) {
-            for (auto i = Loop (0, 3)(im1); i; ++i) {
-              Eigen::Vector3 voxel_pos ((default_type)im1.index(0), (default_type)im1.index(1), (default_type)im1.index(2));
-              Eigen::Vector3 im1_scanner = im1_transform.voxel2scanner * voxel_pos;
-              im1_mass += im1.value();
-              im1_centre_of_mass += im1_scanner * im1.value();
-            }
-          } else {
-            for (auto i = Loop (0, 3)(im1, mask1); i; ++i) {
-              if (mask1.value()) {
-                Eigen::Vector3 voxel_pos ((default_type)im1.index(0), (default_type)im1.index(1), (default_type)im1.index(2));
-                Eigen::Vector3 im1_scanner = im1_transform.voxel2scanner * voxel_pos;
-                im1_mass += im1.value();
-                im1_centre_of_mass += im1_scanner * im1.value();
-              }
-            }
-          }
-          im1_centre_of_mass /= im1_mass;
-
-          Eigen::Matrix<default_type, 3, 1> im2_centre_of_mass (3);
-          im2_centre_of_mass.setZero();
-          default_type im2_mass = 0.0;
-          MR::Transform im2_transform (im2);
-          if (!mask2.valid()) {
-            for (auto i = Loop(0, 3)(im2); i; ++i) {
-              Eigen::Vector3 voxel_pos ((default_type)im2.index(0), (default_type)im2.index(1), (default_type)im2.index(2));
-              Eigen::Vector3 im2_scanner = im2_transform.voxel2scanner * voxel_pos;
-              im2_mass += im2.value();
-              im2_centre_of_mass += im2_scanner * im2.value();
-            }
-          } else {
-            for (auto i = Loop(0, 3)(im2, mask2); i; ++i) {
-              if (mask2.value()) {
-                Eigen::Vector3 voxel_pos ((default_type)im2.index(0), (default_type)im2.index(1), (default_type)im2.index(2));
-                Eigen::Vector3 im2_scanner = im2_transform.voxel2scanner * voxel_pos;
-                im2_mass += im2.value();
-                im2_centre_of_mass += im2_scanner * im2.value();
-              }
-            }
-          }
-          im2_centre_of_mass /= im2_mass;
+          Eigen::Matrix<default_type, 3, 1> im1_centre_of_mass, im2_centre_of_mass;
+          get_centre_of_mass (im1, mask1, im1_centre_of_mass);
+          get_centre_of_mass (im1, mask1, im2_centre_of_mass);
 
           Eigen::Vector3 centre = (im1_centre_of_mass + im2_centre_of_mass) / 2.0;
           Eigen::Vector3 translation = im1_centre_of_mass - im2_centre_of_mass;
           transform.set_centre_without_transform_update (centre);
           transform.set_translation (translation);
-          // VEC(im1_centre_of_mass);
-          // VEC(im2_centre_of_mass);
-          // VEC(centre);
-          // VEC(translation);
-          // transform.debug();
+#ifdef DEBUG_INIT
+          VEC(im1_centre_of_mass);
+          VEC(im2_centre_of_mass);
+          VEC(centre);
+          VEC(translation);
+          transform.debug();
+#endif
+        }
+
+        void MomentsInitialiser::create_moments_images () {
+          std::string f1 = im1.name();
+          std::string f2 = im2.name();
+          size_t found = f1.rfind(".");
+          if (found==std::string::npos)
+            throw Exception ("problem here 1");
+          f1 = f1.substr(0,found).append("_ev.mif");
+
+          found = f2.rfind(".");
+          if (found==std::string::npos)
+            throw Exception ("problem here 2");
+          f2 = f2.substr(0,found).append("_ev.mif");
+
+          Header new_header1, new_header2;
+          new_header1.set_ndim(4);
+          new_header2.set_ndim(4);
+          for (ssize_t dim=0; dim < 3; ++dim){
+            new_header1.size(dim) = im1.size(dim);
+            new_header2.size(dim) = im2.size(dim);
+            new_header1.spacing(dim) = im1.spacing(dim);
+            new_header2.spacing(dim) = im2.spacing(dim);
+          }
+          new_header1.transform() = im1.transform();
+          new_header2.transform() = im2.transform();
+          new_header1.size(3) = 9;
+          new_header2.size(3) = 9;
+          new_header1.spacing(3) = 1;
+          new_header2.spacing(3) = 1;
+
+          // VAR(f1);
+          // VAR(f2);
+
+          Image<default_type> im1_moments = Image<default_type>::create(f1, new_header1);
+          Image<default_type> im2_moments = Image<default_type>::create(f2, new_header2);
+
+          // Transform tra1;
+          MR::Transform T1 (im1);
+          MR::Transform T2 (im2);
+          Eigen::Vector3 c1 = T1.scanner2voxel * im1_centre_of_mass;
+          Eigen::Vector3 c2 = T2.scanner2voxel * im2_centre_of_mass;
+#ifdef DEBUG_INIT
+          VEC(c1)
+          VEC(c2)
+#endif
+          im1_moments.index(0) = std::round(c1[0]);
+          im1_moments.index(1) = std::round(c1[1]);
+          im1_moments.index(2) = std::round(c1[2]);
+          im2_moments.index(0) = std::round(c2[0]);
+          im2_moments.index(1) = std::round(c2[1]);
+          im2_moments.index(2) = std::round(c2[2]);
+          for (ssize_t i=0; i<3; i++) {
+            for (ssize_t j=0; j<3; j++) {
+              im1_moments.value() = im1_evec(j,i);
+              im2_moments.value() = im2_evec(j,i);
+              if (i*j<9) im1_moments.index(3)++;
+              if (i*j<9) im2_moments.index(3)++;
+            }
+          }
+          // im2_moments.value() = 1;
+#ifdef DEBUG_INIT
+          MAT(im1_covariance_matrix);
+          MAT(im2_covariance_matrix);
+#endif
+          // im1_centre_of_mass, im2_centre_of_mass;
+          // im1_covariance_matrix, im2_covariance_matrix;
+          // im1_evec, im2_evec;
         }
 
         void MomentsInitialiser::run () {
@@ -215,6 +274,7 @@ namespace MR
             transform.set_translation (translation);
             return;
           }
+
           assert(im1_evec.col(0).transpose() * im1_evec.col(1) < 0.0001);
           assert(im1_evec.col(1).transpose() * im1_evec.col(2) < 0.0001);
           assert(im1_evec.col(0).transpose() * im1_evec.col(2) < 0.0001);
@@ -251,10 +311,12 @@ namespace MR
             .cwiseQuotient((im2_evec.array() * im1_evec.array()).colwise().sum().abs()).eval();
 
           // CONSOLE("after permutation");
-          // MAT(im1_evec);
-          // VEC(im1_eval);
-          // MAT(im2_evec);
-          // VEC(im2_eval);
+#ifdef DEBUG_INIT
+          MAT(im1_evec);
+          VEC(im1_eval);
+          MAT(im2_evec);
+          VEC(im2_eval);
+#endif
 
           // TODO decide whether rotation matrix is sensible
           // Eigen::EigenSolver<Eigen::Matrix<default_type, 3, 3>> es((Eigen::Matrix<default_type, 3, 3>) A);
@@ -295,14 +357,17 @@ namespace MR
           R0.linear() = A;
           T = T_c2 * T_offset * R0 * T_c2.inverse();
           transform.set_transform(T);
-
-          // MAT(A);
-          // VEC(im1_centre_of_mass);
-          // VEC(im2_centre_of_mass);
-          // VEC(centre);
-          // VEC(offset);
-          // transform.debug();
+#ifdef DEBUG_INIT
+          MAT(A);
+          VEC(centre);
+          VEC(offset);
+          VEC(im1_centre_of_mass);
+          VEC(im2_centre_of_mass);
+          transform.debug();
+#endif
           // VAR(timer.elapsed());
+
+          // MomentsInitialiser::create_moments_images ();
         }
 
         bool MomentsInitialiser::calculate_eigenvectors () {
@@ -335,6 +400,59 @@ namespace MR
             return (get_sorted_eigen_vecs_vals (im2_covariance_matrix, im2_evec, im2_eval) and
                   get_sorted_eigen_vecs_vals (im1_covariance_matrix, im1_evec, im1_eval));
         }
+
+        void FODInitialiser::init (Image<default_type>& im,
+          Image<default_type>& mask,
+          Eigen::Matrix<default_type, Eigen::Dynamic, 1>& sh,
+          Eigen::Matrix<default_type, 3, 1>& centre_of_mass) {
+          // centre of mass is calculated using only the zeroth order
+          // TODO multithread
+          Eigen::Vector3  voxel_pos = Eigen::Vector3::Zero();
+          Eigen::Vector3  scanner = Eigen::Vector3::Zero();
+          MR::Transform im_transform (im);
+          default_type im_mass (0.0);
+
+          size_t cnt (0);
+          if (mask.valid()) {
+            for (auto i = Loop (0, 3)(im, mask); i; ++i) {
+              if (mask.value()) {
+                im_mass += im.value();
+                voxel_pos << (default_type)im.index(0), (default_type)im.index(1), (default_type)im.index(2);
+                scanner = im_transform.voxel2scanner * voxel_pos;
+                centre_of_mass += scanner * im.value();
+                sh += im.row(3).template head(N);
+                ++cnt;
+              }
+            }
+          } else { // no mask
+            for (auto i = Loop (0, 3)(im); i; ++i) {
+              im_mass += im.value();
+              voxel_pos << (default_type)im.index(0), (default_type)im.index(1), (default_type)im.index(2);
+              scanner = im_transform.voxel2scanner * voxel_pos;
+              centre_of_mass += scanner * im.value();
+              sh += im.row(3).template head(N);
+            }
+            cnt = im.size(0) * im.size(1) * im.size(2);
+          }
+          if (cnt == 0) throw Exception ("empty mask");
+          sh /= default_type(cnt);
+          centre_of_mass /= im_mass;
+        }
+
+        void FODInitialiser::run () {
+          FODInitialiser::init (im1, mask1, sh1, im1_centre_of_mass);
+          FODInitialiser::init (im2, mask2, sh2, im2_centre_of_mass);
+          transform.set_centre (0.5*(im1_centre_of_mass + im2_centre_of_mass));
+          transform.set_translation (0.5*(im1_centre_of_mass-im2_centre_of_mass));
+          // TODO: rotation
+#ifdef DEBUG_INIT
+          VEC(im1_centre_of_mass);
+          VEC(im2_centre_of_mass);
+          VEC(sh1);
+          VEC(sh2);
+#endif
+        }
+
       }
     }
   }

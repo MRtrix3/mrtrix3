@@ -95,17 +95,17 @@ namespace MR
 
           template <class OutPointType, class InPointType>
           inline void transform (OutPointType& out, const InPointType& in) const {
-            out = trafo * in;
+            out.noalias() = trafo * in;
           }
 
           template <class OutPointType, class InPointType>
           inline void transform_half (OutPointType& out, const InPointType& in) const {
-            out = trafo_half * in;
+            out.noalias() = trafo_half * in;
           }
 
           template <class OutPointType, class InPointType>
           inline void transform_half_inverse (OutPointType& out, const InPointType& in) const {
-            out = trafo_half_inverse * in;
+            out.noalias() = trafo_half_inverse * in;
           }
 
           size_t size() const {

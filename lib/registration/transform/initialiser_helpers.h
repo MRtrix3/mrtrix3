@@ -20,6 +20,7 @@
 #include "image.h"
 #include "registration/transform/base.h"
 #include "transform.h"
+#include "math/SH.h"
 
 namespace MR
 {
@@ -37,8 +38,12 @@ namespace MR
             centre_voxel[1] = (static_cast<default_type>(image.size(1)) / 2.0) - 1.0;
             centre_voxel[2] = (static_cast<default_type>(image.size(2)) / 2.0) - 1.0;
             MR::Transform transform (image);
-            centre  = transform.voxel2scanner * centre_voxel;
+            centre = transform.voxel2scanner * centre_voxel;
           }
+
+        void get_centre_of_mass (Image<default_type>& im,
+                                 Image<default_type>& mask,
+                                 Eigen::Vector3& centre_of_mass);
 
         bool get_sorted_eigen_vecs_vals (const Eigen::Matrix<default_type, 3, 3>& mat,
           Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic>& eigenvectors,
@@ -58,6 +63,52 @@ namespace MR
                           default_type& mu020,
                           default_type& mu002);
 
+        class FODInitialiser {
+          public:
+            FODInitialiser (Image<default_type>& image1,
+                                Image<default_type>& image2,
+                                Image<default_type>& mask1,
+                                Image<default_type>& mask2,
+                                Registration::Transform::Base& transform,
+                                ssize_t lmax = -1):
+              im1(image1),
+              im2(image2),
+              transform(transform),
+              mask1(mask1),
+              mask2(mask2),
+              lmax (lmax) {
+                assert (im1.ndim() == 4 && im2.ndim() == 4);
+                assert (im1.size(3) == im2.size(3));
+                ssize_t l = Math::SH::LforN(im1.size(3));
+                if (lmax == -1 or lmax > l) lmax = l;
+                N = Math::SH::NforL(lmax);
+                sh1.resize(N);
+                sh1.setZero();
+                sh2.resize(N);
+                sh2.setZero();
+              };
+
+            void run ();
+
+          protected:
+            void init (Image<default_type>& image,
+              Image<default_type>& mask,
+              Eigen::Matrix<default_type, Eigen::Dynamic, 1>& sh,
+              Eigen::Matrix<default_type, 3, 1>& centre_of_mass);
+
+          private:
+            Image<default_type>& im1;
+            Image<default_type>& im2;
+            Registration::Transform::Base& transform;
+            Image<default_type>& mask1;
+            Image<default_type>& mask2;
+            ssize_t lmax, N;
+            Eigen::Matrix<default_type, 3, 1> im1_centre_of_mass, im2_centre_of_mass;
+            Eigen::Matrix<default_type, Eigen::Dynamic, 1> sh1, sh2;
+            // Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> im1_peaks, im2_peaks;
+            // Eigen::Matrix<default_type, Eigen::Dynamic, 1> im1_eval, im2_eval;
+        };
+
         class MomentsInitialiser {
           public:
             MomentsInitialiser (Image<default_type>& image1,
@@ -74,6 +125,7 @@ namespace MR
             void run ();
           protected:
             bool calculate_eigenvectors ();
+            void create_moments_images ();
 
           private:
             Image<default_type>& im1;

@@ -30,8 +30,26 @@ namespace MR
     {
       namespace Init
       {
-        enum InitType {mass, geometric, moments, mass_unmasked, moments_unmasked, none};
+        enum InitType {mass, geometric, moments, mass_unmasked, moments_unmasked, fod, set_centre_mass, none};
 
+          void set_centre_using_image_mass (Image<default_type>& im1,
+                                            Image<default_type>& im2,
+                                            Image<default_type>& mask1,
+                                            Image<default_type>& mask2,
+                                            Registration::Transform::Base& transform) {
+            CONSOLE ("initialising centre of rotation using centre of mass");
+            Eigen::Vector3 im1_centre_mass, im2_centre_mass;
+            Eigen::Vector3 im1_centre_mass_transformed, im2_centre_mass_transformed;
+
+            get_centre_of_mass (im1, mask1, im1_centre_mass);
+            get_centre_of_mass (im2, mask2, im2_centre_mass);
+
+            transform.transform_half_inverse (im1_centre_mass_transformed, im1_centre_mass);
+            transform.transform_half (im2_centre_mass_transformed, im2_centre_mass);
+
+            Eigen::Vector3 centre = (im1_centre_mass + im2_centre_mass) * 0.5;
+            transform.set_centre_without_transform_update (centre);
+          }
 
         template <class Im1ImageType,
                   class Im2ImageType,
@@ -71,6 +89,30 @@ namespace MR
           auto init = Transform::Init::MomentsInitialiser (im1, im2, mask1, mask2, transform);
           init.run();
         }
+
+        void initialise_using_FOD (Image<default_type>& im1,
+                                   Image<default_type>& im2,
+                                   Image<default_type>& mask1,
+                                   Image<default_type>& mask2,
+                                   Registration::Transform::Base& transform,
+                                   ssize_t lmax = -1) {
+          CONSOLE ("initialising using masked images interpreted as FOD");
+          auto init = Transform::Init::FODInitialiser (im1, im2, mask1, mask2, transform, lmax);
+          init.run();
+        }
+
+
+        void initialise_using_FOD (Image<default_type>& im1,
+                                   Image<default_type>& im2,
+                                   Registration::Transform::Base& transform,
+                                   ssize_t lmax = -1) {
+          CONSOLE ("initialising using image moments with unmasked images");
+          Image<default_type> mask1;
+          Image<default_type> mask2;
+          auto init = Transform::Init::FODInitialiser (im1, im2, mask1, mask2, transform, lmax);
+          init.run();
+        }
+
 
         void initialise_using_image_mass (Image<default_type>& im1,
                                           Image<default_type>& im2,
