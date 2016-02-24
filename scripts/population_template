@@ -1,0 +1,197 @@
+#!/usr/bin/env python
+
+# Generates an unbiased group-average template via image registration of images to a midway space.
+
+import os, sys
+import lib.app
+import numpy
+
+from lib.printMessage  import printMessage
+from lib.errorMessage  import errorMessage
+from lib.getHeaderInfo import getHeaderInfo
+from lib.runCommand    import runCommand
+
+
+class Input:
+  def __init__(self, filename, prefix, directory, mask_filename = '', mask_directory = ''):
+    self.filename = filename
+    self.prefix = prefix
+    self.directory = directory
+    self.mask_filename = mask_filename
+    self.mask_directory = mask_directory
+
+
+lib.app.author = 'David Raffelt (david.raffelt@florey.edu.au)'
+lib.app.initParser('Generates an unbiased group-average template from a series of images')
+lib.app.parser.add_argument('input_dir', help='The input directory containing all images used to build the template')
+lib.app.parser.add_argument('template', help='The output template image')
+lib.app.parser.add_argument('-warp_dir', help='An output directory containing warps from each input to the template. if the folder does not exist it will be created')
+lib.app.parser.add_argument('-mask_dir', help='Optionally provide a set of masks inside a single directory, one per input image (with the same file name prefix). Using masks will speed up registration significantly')
+lib.app.parser.add_argument('-noreorientation', action='store_true', help='turn off FOD reorientation. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc')
+lib.app.initialise()
+
+inputDir = lib.app.args.input_dir
+if not os.path.exists(inputDir):
+  errorMessage('input directory not found');
+inFiles = os.listdir(inputDir)
+if len(inFiles) <= 1:
+  printMessage('Not enough images found in input directory. More than one image is needed to generate a population template')
+else:
+  printMessage('Generating a population-average template from ' + str(len(inFiles)) + ' input images')
+
+
+useMasks = False
+if lib.app.args.mask_dir:
+  maskDir = lib.app.args.mask_dir;
+  if not os.path.exists(maskDir):
+    errorMessage('mask directory not found')
+  maskFiles = os.listdir(maskDir)
+  if len(maskFiles) != len(inFiles):
+    errorMessage('the number of images in the mask directory does not equal the number of images in the input directory')
+  maskCommonPostfix = lib.app.getCommonPostfix(maskFiles)
+  useMasks = True
+  maskPrefixes = []
+  for m in maskFiles:
+    maskPrefixes.append(m.split(maskCommonPostfix)[0])
+
+commonPostfix = lib.app.getCommonPostfix(inFiles)
+input = []
+for i in inFiles:
+  prefix = i.split(commonPostfix)[0]
+  if useMasks:
+    if prefix not in maskPrefixes:
+      errorMessage ('no matching mask image was found for input image ' + i)
+    index = maskPrefixes.index(prefix)
+    input.append(Input(i, prefix, lib.app.workingDir + '/' + inputDir + '/', maskFiles[index], lib.app.workingDir + '/' + maskDir + '/'))
+  else:
+    input.append(Input(i, prefix, lib.app.workingDir + '/' + inputDir + '/'))
+
+
+noreorientation = lib.app.args.noreorientation
+
+lib.app.checkOutputFile(lib.app.args.template)
+
+if lib.app.args.warp_dir:
+  lib.app.checkOutputFile(lib.app.args.warp_dir)
+  make_dir(lib.app.args.warp_dir)
+
+lib.app.gotoTempDir()
+
+
+# Make initial template in average space
+input_filenames = []
+for i in input:
+  input_filenames.append (i.directory + i.filename);
+runCommand('mraverage_header ' + ' '.join(input_filenames) + ' average_header.mif')
+
+lib.app.make_dir('input_transformed')
+for i in input:
+  runCommand('mrtransform ' + i.directory + i.filename + ' -interp linear -template average_header.mif input_transformed/' + i.prefix + '.mif')
+runCommand('mrmath input_transformed/* mean initial_template.mif')
+
+current_template = 'initial_template.mif'
+
+
+# Optimise template with linear registration
+lib.app.make_dir('linear_transforms')
+affine_scales = [0.25,0.25,0.5,0.5,0.5,1.0,1.0,1.0,1.0,1.0]
+affine_lmax =   [0,   0,   0,  0,  2,  2,  2,  2,  2,  2]
+#affine_scales = [0.25,0.25,0.5,0.5]
+#affine_lmax =   [0,   0,   0,  0]
+
+if len(affine_scales) != len(affine_lmax):
+  errorMessage('affine_scales and affine_lmax schedules are not equal in length')
+
+for level in range(0, len(affine_scales)):
+  for i in input:
+    if level > 0:
+      initialise = ' -affine_init linear_transforms/' + i.prefix + '.txt'
+    else:
+      initialise = ''
+
+    if useMasks:
+      mask = ' -mask1 ' + i.mask_directory + i.mask_filename
+    else:
+      mask = ''
+
+    runCommand('mrregister ' + i.directory + i.filename + ' ' + current_template +
+               ' -type affine' +
+               ' -affine_scale ' + str(affine_scales[level]) +
+               ' -affine_lmax ' + str(affine_lmax[level]) +
+               ' -affine linear_transforms/' + i.prefix + '.txt' +
+               ' -force' +
+                 initialise +
+                 mask)
+
+  # Here we ensure the template is centered and the volume is the average of all
+  # inputs by forcing the mean jacobian determinant and mean translation to zero
+  averageScaleFactor = 0;
+  averageTranslation = numpy.empty([1, 3])
+  for i in input:
+    transform = numpy.loadtxt('linear_transforms/' + i.prefix + '.txt')
+    averageScaleFactor = averageScaleFactor + numpy.linalg.det(transform[0:3,0:3])
+    averageTranslation = averageTranslation + transform[0:3,3]
+  averageScaleFactor = averageScaleFactor / len(input)
+  averageTranslation = averageTranslation / len(input)
+  scaleTransform = numpy.identity(4)
+  scaleTransform[0:3,0:3] = scaleTransform[0:3,0:3] / numpy.power(averageScaleFactor, 1.0/3.0)
+  for i in input:
+    transform = numpy.loadtxt('linear_transforms/' + i.prefix + '.txt').dot(scaleTransform)
+    transform[0:3,3] = transform[0:3,3] - averageTranslation;
+    numpy.savetxt('linear_transforms/' + i.prefix + '.txt', transform)
+
+  for i in input:
+    runCommand('mrtransform ' + i.directory + i.filename +
+               ' -template ' + current_template +
+               ' -linear linear_transforms/' + i.prefix + '.txt' +
+               ' input_transformed/' + i.prefix + '.mif' +
+               ' -force')
+  runCommand ('mrmath input_transformed/* mean affine_template' + str(level) + '.mif')
+  current_template = 'affine_template' + str(level) + '.mif'
+
+# Optimise the template with non-linear regitration
+lib.app.make_dir('warps')
+nl_scales = [0.2,0.3,0.4,0.5,0.5,0.6,0.7,0.8,0.9,1.0,1.0,1.0,1.0]
+nl_niter =  [5,  5,  5,  5,  5,  5,  5,  5,  5,  10, 10, 15, 20]
+nl_lmax =   [0,  0,  0,  0,  2,  2,  2,  2,  2,  2,  4,  4,  4]
+
+if len(nl_scales) != len(nl_niter) or len(nl_scales) != len(nl_lmax):
+  errorMessage('nl_scales, nl_niter, nl_lmax schedules are not equal in length')
+
+for level in range(0, len(nl_scales)):
+  for i in input:
+    if level > 0:
+      initialise = ' -nl_init warps/' + i.prefix + '.mif'
+      scale = ''
+    else:
+      scale = ' -nl_scale ' + str(nl_scales[level])
+      initialise = ' -affine_init linear_transforms/' + i.prefix + '.txt'
+
+    if useMasks:
+      mask = ' -mask1 ' + i.mask_directory + i.mask_filename
+    else:
+      mask = ''
+
+    runCommand('mrregister ' + i.directory + i.filename + ' ' + current_template +
+               ' -type nonlinear' +
+               ' -nl_niter ' + str(nl_niter[level]) +
+               ' -nl_lmax ' + str(nl_lmax[level]) +
+               ' -nl_warp warps/' + i.prefix + '.mif' +
+               ' -transformed input_transformed/' + i.prefix + '.mif' +
+               ' -force' +
+                 initialise +
+                 scale +
+                 mask)
+
+  runCommand ('mrmath input_transformed/* mean nl_template' + str(level) + '.mif')
+  current_template = 'nl_template' + str(level) + '.mif'
+
+  if level < len(nl_scales) - 1:
+    if (nl_scales[level] < nl_scales[level + 1]):
+      upsample_factor = nl_scales[level + 1] / nl_scales[level]
+      for i in input:
+        runCommand('mrresize warps/' + i.prefix + '.mif -scale ' + str(upsample_factor) + ' tmp.mif')
+        runCommand('mv tmp.mif warps/' + i.prefix + '.mif')
+
+lib.app.complete()
+

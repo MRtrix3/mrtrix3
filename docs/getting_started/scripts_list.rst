@@ -7,6 +7,10 @@ Scripts for external libraries
 .......
 
 
+.. include:: scripts/population_template.rst
+.......
+
+
 .. include:: scripts/dwi2response.rst
 .......
 
