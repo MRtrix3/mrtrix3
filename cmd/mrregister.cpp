@@ -769,18 +769,15 @@ void run ()
 
   if (!im1_midway_transformed_path.empty() and !im2_midway_transformed_path.empty()) {
     if (do_nonlinear) {
-      Header midway_header (nonlinear_registration.get_midway_header());
+      Header midway_header (*(nonlinear_registration.get_im1_disp_field()));
       midway_header.datatype() = DataType::from_command_line (DataType::Float32);
       midway_header.set_ndim (im1_image.ndim());
       if (midway_header.ndim() == 4)
         midway_header.size(3) = im1_image.size(3);
 
-      Header deform_header (nonlinear_registration.get_midway_header());
-      deform_header.set_ndim(4);
-      deform_header.size(3) = 3;
-
-      Image<default_type> im1_deform_field = Image<default_type>::scratch (deform_header);
+      Image<default_type> im1_deform_field = Image<default_type>::scratch (*(nonlinear_registration.get_im1_disp_field()));
       Registration::Transform::compose_linear_displacement (nonlinear_registration.get_im1_linear(), *(nonlinear_registration.get_im1_disp_field()), im1_deform_field);
+
       auto im1_midway = Image<default_type>::create (im1_midway_transformed_path, midway_header);
       if (im1_image.ndim() == 3) {
         Filter::warp<Interp::Cubic> (im1_image, im1_midway, im1_deform_field, 0.0);
@@ -792,7 +789,7 @@ void run ()
         threaded_copy (temp_output, im1_midway);
       }
 
-      Image<default_type> im2_deform_field = Image<default_type>::scratch (deform_header);
+      Image<default_type> im2_deform_field = Image<default_type>::scratch (*(nonlinear_registration.get_im2_disp_field()));
       Registration::Transform::compose_linear_displacement (nonlinear_registration.get_im2_linear(), *(nonlinear_registration.get_im2_disp_field()), im2_deform_field);
       auto im2_midway = Image<default_type>::create (im2_midway_transformed_path, midway_header);
       if (im2_image.ndim() == 3) {
