@@ -99,7 +99,7 @@ namespace MR
             assign_pos_of (im1_image, 0, 3).to (im1_gradient, im2_gradient);
 
             Eigen::Vector3 total_update = Eigen::Vector3::Zero();
-            for (size_t vol = 0; vol < im1_image.size(3); ++vol) {
+            for (ssize_t vol = 0; vol < im1_image.size(3); ++vol) {
               im2_image.index(3) = vol;
               im1_image.index(3) = vol;
               default_type speed = im2_image.value() - im1_image.value();
