@@ -527,7 +527,7 @@ void run ()
     if (!do_nonlinear)
       throw Exception ("the non-linear multi-resolution scale factors were input when no non-linear registration is requested");
     std::vector<default_type> scale_factors = parse_floats (opt[0][0]);
-    if (nonlinear_init && (scale_factors.size() > 1)) {
+    if (nonlinear_init) {
       WARN ("-nl_scale option ignored since only the full resolution will be performed when initialising with non-linear warp");
     } else {
       nonlinear_registration.set_scale_factor (scale_factors);
@@ -770,7 +770,7 @@ void run ()
   if (!im1_midway_transformed_path.empty() and !im2_midway_transformed_path.empty()) {
     if (do_nonlinear) {
       Image<default_type> im1_deform_field = Image<default_type>::scratch (*(nonlinear_registration.get_im1_disp_field()));
-      Registration::Transform::compose_linear_displacement (affine.get_transform_half(), *(nonlinear_registration.get_im1_disp_field()), im1_deform_field);
+      Registration::Transform::compose_linear_displacement (nonlinear_registration.get_im1_linear(), *(nonlinear_registration.get_im1_disp_field()), im1_deform_field);
       Header midway_header (nonlinear_registration.get_midway_header());
       midway_header.datatype() = DataType::from_command_line (DataType::Float32);
       midway_header.set_ndim(im1_image.ndim());
@@ -790,7 +790,7 @@ void run ()
       }
 
       Image<default_type> im2_deform_field = Image<default_type>::scratch (*(nonlinear_registration.get_im2_disp_field()));
-      Registration::Transform::compose_linear_displacement (affine.get_transform_half_inverse(), *(nonlinear_registration.get_im2_disp_field()), im2_deform_field);
+      Registration::Transform::compose_linear_displacement (nonlinear_registration.get_im2_linear(), *(nonlinear_registration.get_im2_disp_field()), im2_deform_field);
 
       auto im2_midway = Image<default_type>::create (im2_midway_transformed_path, midway_header);
 
