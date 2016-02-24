@@ -52,7 +52,7 @@ def execute():
     errorMessage('Imported anatomical image ' + os.path.basename(lib.app.args.in_5tt) + ' is not in the 5TT format')
 
   # Get shell information
-  shells = [ int(round(float(x))) for x in getHeaderInfo('dwi.mif', 'shells').split() ]
+  shells = [ float(x) for x in getHeaderInfo('dwi.mif', 'shells').split() ]
   if len(shells) < 3:
     warnMessage('Less than three b-value shells; response functions will not be applicable in MSMT CSD algorithm')
 
