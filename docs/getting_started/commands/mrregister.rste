@@ -37,7 +37,7 @@ Rigid registration options
 
 -  **-rigid file** the output text file containing the rigid transformation as a 4x4 matrix
 
--  **-rigid_centre type** initialise the centre of rotation and initial translation. Valid choices are: mass (which uses the image center of mass), geometric (geometric image centre), moments (image moments), mass_unmasked (don't use image masks for centre of mass initialisation), moments_unmasked (don't use image masks for moments initialisation) or none.Default: mass.
+-  **-rigid_centre type** initialise the centre of rotation and initial translation. Valid choices are: mass (which uses the image center of mass), geometric (geometric image centre), moments (image moments), mass_unmasked (don't use image masks for centre of mass initialisation), moments_unmasked (don't use image masks for moments initialisation), fod (aligns FOD images based on their centre of mass and global sum of all fibre orientations) or none.Default: mass.
 
 -  **-rigid_init file** initialise either the rigid, affine, or syn registration with the supplied rigid transformation (as a 4x4 matrix). Note that this overrides rigid_centre initialisation
 
@@ -60,7 +60,7 @@ Affine registration options
 
 -  **-affine_1tomidway file** the output text file containing the affine transformation that aligns image1 to image2 in their common midway space as a 4x4 matrix
 
--  **-affine_centre type** initialise the centre of rotation and initial translation. Valid choices are: mass (which uses the image center of mass), geometric (geometric image centre), moments (image moments), mass_unmasked (don't use image masks for centre of mass initialisation), moments_unmasked (don't use image masks for moments initialisation) or none.Default: mass.
+-  **-affine_centre type** initialise the centre of rotation and initial translation. Valid choices are: mass (which uses the image center of mass), geometric (geometric image centre), moments (image moments), mass_unmasked (don't use image masks for centre of mass initialisation), moments_unmasked (don't use image masks for moments initialisation), fod (aligns FOD images based on their centre of mass and global sum of all fibre orientations) or none.Default: mass.
 
 -  **-affine_init file** initialise either the affine, or syn registration with the supplied affine transformation (as a 4x4 matrix). Note that this overrides affine_centre initialisation
 

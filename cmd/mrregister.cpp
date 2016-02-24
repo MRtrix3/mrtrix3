@@ -690,9 +690,9 @@ void run ()
     if (do_reorientation)
       nonlinear_registration.set_aPSF_directions (directions_cartesian);
 
-    if (do_affine) {
+    if (do_affine || init_affine_set) {
       nonlinear_registration.run (affine, im1_image, im2_image, im1_mask, im2_mask);
-    } else if (do_rigid) {
+    } else if (do_rigid || init_rigid_set) {
       nonlinear_registration.run (rigid, im1_image, im2_image, im1_mask, im2_mask);
     } else {
       Registration::Transform::Affine identity_transform;
