@@ -8,57 +8,30 @@ Synopsis
 
     mrcalc [ options ]  operand [ operand ... ]
 
--  *operand*: an input image, intensity value, or the special keywords
-   'rand' (random number between 0 and 1) or 'randn' (random number from
-   unit std.dev. normal distribution).
+-  *operand*: an input image, intensity value, or the special keywords 'rand' (random number between 0 and 1) or 'randn' (random number from unit std.dev. normal distribution).
 
 Description
 -----------
 
 apply generic voxel-wise mathematical operations to images.
 
-This command will only compute per-voxel operations. Use 'mrmath' to
-compute summary statistics across images or along image axes.
+This command will only compute per-voxel operations. Use 'mrmath' to compute summary statistics across images or along image axes.
 
-This command uses a stack-based syntax, with operators (specified using
-options) operating on the top-most entries (i.e. images or values) in
-the stack. Operands (values or images) are pushed onto the stack in the
-order they appear (as arguments) on the command-line, and operands
-(specified as options) operate on and consume the top-most entries in
-the stack, and push their output as a new entry on the stack. For
-example:
-
-::
+This command uses a stack-based syntax, with operators (specified using options) operating on the top-most entries (i.e. images or values) in the stack. Operands (values or images) are pushed onto the stack in the order they appear (as arguments) on the command-line, and operands (specified as options) operate on and consume the top-most entries in the stack, and push their output as a new entry on the stack. For example:
 
     $ mrcalc a.mif 2 -mult r.mif
 
-performs the operation r = 2*a for every voxel a,r in images a.mif and
-r.mif respectively. Similarly:
-
-::
+performs the operation r = 2*a for every voxel a,r in images a.mif and r.mif respectively. Similarly:
 
     $ mrcalc a.mif -neg b.mif -div -exp 9.3 -mult r.mif
 
 performs the operation r = 9.3*exp(-a/b), and:
 
-::
-
     $ mrcalc a.mif b.mif -add c.mif d.mif -mult 4.2 -add -div r.mif
 
 performs r = (a+b)/(c*d+4.2).
 
-As an additional feature, this command will allow images with different
-dimensions to be processed, provided they satisfy the following
-conditions: for each axis, the dimensions match if they are the same
-size, or one of them has size one. In the latter case, the entire image
-will be replicated along that axis. This allows for example a 4D image
-of size [ X Y Z N ] to be added to a 3D image of size [ X Y Z ], as if
-it consisted of N copies of the 3D image along the 4th axis (the missing
-dimension is assumed to have size 1). Another example would a
-single-voxel 4D image of size [ 1 1 1 N ], multiplied by a 3D image of
-size [ X Y Z ], which would allow the creation of a 4D image where each
-volume consists of the 3D image scaled by the corresponding value for
-that volume in the single-voxel image.
+As an additional feature, this command will allow images with different dimensions to be processed, provided they satisfy the following conditions: for each axis, the dimensions match if they are the same size, or one of them has size one. In the latter case, the entire image will be replicated along that axis. This allows for example a 4D image of size [ X Y Z N ] to be added to a 3D image of size [ X Y Z ], as if it consisted of N copies of the 3D image along the 4th axis (the missing dimension is assumed to have size 1). Another example would a single-voxel 4D image of size [ 1 1 1 N ], multiplied by a 3D image of size [ X Y Z ], which would allow the creation of a 4D image where each volume consists of the 3D image scaled by the corresponding value for that volume in the single-voxel image.
 
 Options
 -------
@@ -151,24 +124,17 @@ Binary operators
 
 -  **-neq** not-equal-to operator (true=1, false=0)
 
--  **-complex** create complex number using the last two operands as
-   real,imaginary components
+-  **-complex** create complex number using the last two operands as real,imaginary components
 
 Ternary operators
 ^^^^^^^^^^^^^^^^^
 
--  **-if** if first operand is true (non-zero), return second operand,
-   otherwise return third operand
+-  **-if** if first operand is true (non-zero), return second operand, otherwise return third operand
 
 Data type options
 ^^^^^^^^^^^^^^^^^
 
--  **-datatype spec** specify output image data type. Valid choices
-   are: float32, float32le, float32be, float64, float64le, float64be,
-   int64, uint64, int64le, uint64le, int64be, uint64be, int32, uint32,
-   int32le, uint32le, int32be, uint32be, int16, uint16, int16le,
-   uint16le, int16be, uint16be, cfloat32, cfloat32le, cfloat32be,
-   cfloat64, cfloat64le, cfloat64be, int8, uint8, bit.
+-  **-datatype spec** specify output image data type. Valid choices are: float32, float32le, float32be, float64, float64le, float64be, int64, uint64, int64le, uint64le, int64be, uint64be, int32, uint32, int32le, uint32le, int32be, uint32be, int16, uint16, int16le, uint16le, int16be, uint16be, cfloat32, cfloat32le, cfloat32be, cfloat64, cfloat64le, cfloat64be, int8, uint8, bit.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -179,11 +145,9 @@ Standard options
 
 -  **-debug** display debugging messages.
 
--  **-force** force overwrite of output files. Caution: Using the same
-   file as input and output might cause unexpected behaviour.
+-  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded
-   applications
+-  **-nthreads number** use this number of threads in multi-threaded applications
 
 -  **-failonwarn** terminate program if a warning is produced
 
@@ -194,16 +158,14 @@ Standard options
 --------------
 
 
+
 **Author:** J-Donald Tournier (jdtournier@gmail.com)
 
 **Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
 
-This Source Code Form is subject to the terms of the Mozilla Public
-License, v. 2.0. If a copy of the MPL was not distributed with this
-file, You can obtain one at http://mozilla.org/MPL/2.0/
+This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-MRtrix is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.
+MRtrix is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 For more details, see www.mrtrix.org
+

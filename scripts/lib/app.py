@@ -85,12 +85,17 @@ def initialise():
   import argparse, os, random, string, sys
   from lib.printMessage          import printMessage
   from lib.printUsageMarkdown    import printUsageMarkdown
+  from lib.printUsageRst         import printUsageRst
   from lib.readMRtrixConfSetting import readMRtrixConfSetting
   global args, author, cleanup, lastFile, mrtrixNThreads, mrtrixQuiet, standardOptions, parser, refList, tempDir, verbosity, workingDir
   global colourClear, colourConsole, colourError, colourPrint, colourWarn
   
   if len(sys.argv) == 2 and sys.argv[1] == '__print_usage_markdown__':
     printUsageMarkdown(parser, standardOptions, refList, author)
+    exit(0)
+
+  if len(sys.argv) == 2 and sys.argv[1] == '__print_usage_rst__':
+    printUsageRst(parser, standardOptions, refList, author)
     exit(0)
   
   workingDir = os.getcwd()

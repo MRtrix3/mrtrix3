@@ -16,8 +16,7 @@ To install *MRtrix3*, you will need the following:
    compiler
 -  `Python <https://www.python.org/>`__ version >= 2.6
 -  The `zlib <http://www.zlib.net/>`__ compression library
--  The `GNU Scientific Library
-   (GSL) <http://www.gnu.org/software/gsl/>`__
+-  `Eigen <http://eigen.tuxfamily.org>`__ version 3
 -  `Qt <http://www.qt.io/>`__ version >= 4.7 *[GUI components only]*
 
 .. NOTE::
@@ -57,7 +56,7 @@ Install *MRtrix3* dependencies
 
    ::
 
-       pacman -S git python pkg-config mingw-w64-x86_64-gcc mingw-w64-x86_64-gsl mingw-w64-x86_64-qt4
+       pacman -S git python pkg-config mingw-w64-x86_64-gcc mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt4
 
 Set up git and download *MRtrix3* sources
 ---------------------------------------

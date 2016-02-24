@@ -10,10 +10,6 @@
 import argparse, os, sys
 import lib.app
 
-import src._5ttgen.fsl
-import src._5ttgen.freesurfer
-
-from lib.errorMessage import errorMessage
 from lib.runCommand   import runCommand
 
 lib.app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
@@ -27,27 +23,30 @@ base_parser.add_argument('-nocrop', action='store_true', default=False, help='Do
 
 subparsers = lib.app.parser.add_subparsers(title='software options', description='Select the software / algorithm to be used to derive the 5TT image', help='Additional help available for individual software options: Use e.g. ' + os.path.basename(sys.argv[0]) + ' fsl -help')
 
-src._5ttgen.fsl       .initParser(subparsers, base_parser)
-src._5ttgen.freesurfer.initParser(subparsers, base_parser)
+# Import the command-line settings for all algorithms found in the scripts/src/_5ttgen/ directory
+from src import _5ttgen
+algorithm_list = os.listdir(os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'src', '_5ttgen'))
+for filename in algorithm_list:
+  filename = filename.split('.')
+  if len(filename) == 2 and filename[1] == 'py' and not filename[0] == '__init__':
+    __import__('src._5ttgen', globals(), locals(), [ filename[0] ])
+    algorithm = getattr(_5ttgen, filename[0])
+    algorithm.initParser(subparsers, base_parser)
 
 lib.app.initialise()
 
+# Find out which algorithm the user has requested
+algorithm = getattr(_5ttgen, lib.app.args.algorithm)
+
 lib.app.checkOutputFile(lib.app.args.output)
-src._5ttgen.fsl       .checkOutputFiles()
-src._5ttgen.freesurfer.checkOutputFiles()
+algorithm.checkOutputFiles()
 
 runCommand('mrconvert ' + lib.app.args.input + ' ' + os.path.join(lib.app.tempDir, 'input.mif') + ' -stride +1,+2,+3')
-src._5ttgen.fsl       .getInputFiles()
-src._5ttgen.freesurfer.getInputFiles()
+algorithm.getInputFiles()
 
 lib.app.gotoTempDir()
 
-if lib.app.args.algorithm == 'fsl':
-  src._5ttgen.fsl.execute()
-elif lib.app.args.algorithm == 'freesurfer':
-  src._5ttgen.freesurfer.execute()
-else:
-  errorMessage('No valid software / algorithm selected')
+algorithm.execute()
 
 runCommand('mrconvert result.mif ' + os.path.join(lib.app.workingDir, lib.app.args.output) + lib.app.mrtrixForce)
 lib.app.complete()

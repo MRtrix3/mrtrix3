@@ -671,6 +671,107 @@ namespace MR
 
 
 
+    std::string restructured_text_usage ()
+    {
+      /*
+         help_head (format)
+         + help_syntax (format)
+         + ARGUMENTS.syntax (format)
+         + DESCRIPTION.syntax (format)
+         + OPTIONS.syntax (format)
+         + __standard_options.header (format)
+         + __standard_options.contents (format)
+         + __standard_options.footer (format)
+         + help_tail (format);
+         */
+
+      std::string s = "Synopsis\n--------\n\n::\n\n    "
+        + std::string(NAME) + " [ options ] ";
+
+      // Syntax line:
+      for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
+
+        if (ARGUMENTS[i].flags & Optional)
+          s += "[";
+        s += std::string(" ") + ARGUMENTS[i].id;
+
+        if (ARGUMENTS[i].flags & AllowMultiple) {
+          if (! (ARGUMENTS[i].flags & Optional))
+            s += std::string(" [ ") + ARGUMENTS[i].id;
+          s += " ...";
+        }
+        if (ARGUMENTS[i].flags & (Optional | AllowMultiple))
+          s += " ]";
+      }
+      s += "\n\n";
+
+      auto indent_newlines = [](std::string text) {
+        size_t index = 0;
+        while ((index = text.find("\n", index)) != std::string::npos )
+          text.replace (index, 1, "");
+        return text;
+      };
+
+      // Argument description:
+      for (size_t i = 0; i < ARGUMENTS.size(); ++i)
+        s += std::string("-  *") + ARGUMENTS[i].id + "*: " + indent_newlines (ARGUMENTS[i].desc) + "\n";
+
+
+      s += "\nDescription\n-----------\n\n";
+      for (size_t i = 0; i < DESCRIPTION.size(); ++i)
+        s += indent_newlines (DESCRIPTION[i]) + "\n\n";
+
+
+      std::vector<std::string> group_names;
+      for (size_t i = 0; i < OPTIONS.size(); ++i) {
+        if (std::find (group_names.begin(), group_names.end(), OPTIONS[i].name) == group_names.end())
+          group_names.push_back (OPTIONS[i].name);
+      }
+
+      auto format_option = [&](const Option& opt) {
+        std::string f = std::string ("-  **-") + opt.id;
+        for (size_t a = 0; a < opt.size(); ++a)
+          f += std::string (" ") + opt[a].id;
+        f += std::string("** ") + indent_newlines (opt.desc) + "\n\n";
+        return f;
+      };
+
+      s += "Options\n-------\n\n";
+      for (size_t i = 0; i < group_names.size(); ++i) {
+        size_t n = i;
+        while (OPTIONS[n].name != group_names[i])
+          ++n;
+        if (OPTIONS[n].name != std::string("OPTIONS"))
+          s += OPTIONS[n].name + std::string("\n") + std::string(std::strlen(OPTIONS[n].name), '^') + "\n\n";
+        while (n < OPTIONS.size()) {
+          if (OPTIONS[n].name == group_names[i]) {
+            for (size_t o = 0; o < OPTIONS[n].size(); ++o)
+              s += format_option (OPTIONS[n][o]);
+          }
+          ++n;
+        }
+      }
+
+      s += "Standard options\n^^^^^^^^^^^^^^^^\n\n";
+      for (size_t i = 0; i < __standard_options.size(); ++i)
+        s += format_option (__standard_options[i]);
+
+      if (REFERENCES.size()) {
+        s += std::string ("References\n^^^^^^^^^^\n\n");
+        for (size_t i = 0; i < REFERENCES.size(); ++i)
+          s += indent_newlines (REFERENCES[i]) + "\n\n";
+      }
+      s += std::string("--------------\n\n") +
+        "\n\n**Author:** " + (char*)AUTHOR
+        + "\n\n**Copyright:** " + COPYRIGHT + "\n\n";
+
+      return s;
+    }
+
+
+
+
+
 
     const Option* match_option (const char* arg)
     {
@@ -767,6 +868,10 @@ namespace MR
         }
         if (strcmp (argv[1], "__print_usage_markdown__") == 0) {
           print (markdown_usage ());
+          throw 0;
+        }
+        if (strcmp (argv[1], "__print_usage_rst__") == 0) {
+          print (restructured_text_usage ());
           throw 0;
         }
       }
