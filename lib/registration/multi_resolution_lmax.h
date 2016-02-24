@@ -47,7 +47,7 @@ namespace MR
       smooth_filter.set_stdev (stdev);
       auto smoothed = ImageType::scratch (smooth_filter);
 
-      INFO ("smoothing input images based on scale factor...");
+      DEBUG ("smoothing input image based on scale factor...");
       smooth_filter (subset, smoothed);
       return smoothed;
     }

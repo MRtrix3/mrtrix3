@@ -168,6 +168,7 @@ namespace MR
                           const bool modulate = false)
       {
         assert (directions.cols() > directions.rows());
+        check_dimensions (fod_image, warp, 0, 3);
         ThreadedLoop (progress_message, fod_image, 0, 3)
             .run (NonLinearKernel<FODImageType>(fod_image.size(3), warp, directions, modulate), fod_image);
       }
@@ -179,6 +180,7 @@ namespace MR
                           const bool modulate = false)
       {
         assert (directions.cols() > directions.rows());
+        check_dimensions (fod_image, warp, 0, 3);
         ThreadedLoop (fod_image, 0, 3)
             .run (NonLinearKernel<FODImageType>(fod_image.size(3), warp, directions, modulate), fod_image);
       }
