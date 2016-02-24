@@ -60,8 +60,8 @@ lib.app.initialise()
 # Sanitise some inputs, and get ready for data import
 if lib.app.args.lmax:
   try:
-    lmax = [ int(x) for x in lib.app.args.shell.split(',') ]
-    if lmax_value%2:
+    lmax = [ int(x) for x in lib.app.args.lmax.split(',') ]
+    if any([lmax_value%2 for lmax_value in lmax]):
       errorMessage('Value of lmax must be even')
   except:
     errorMessage('Parameter lmax must be a number')

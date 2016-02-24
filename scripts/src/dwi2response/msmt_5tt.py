@@ -59,7 +59,7 @@ def execute():
   # Get lmax information (if provided)
   wm_lmax = [ ]
   if lib.app.args.lmax:
-    wm_lmax = [ int(x.strip()) for x in lib.app.args.lmax.split() ]
+    wm_lmax = [ int(x.strip()) for x in lib.app.args.lmax.split(',') ]
     for l in wm_lmax:
       if l%2:
         errorMessage('Values for lmax must be even')
