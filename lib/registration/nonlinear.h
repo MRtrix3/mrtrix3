@@ -28,7 +28,6 @@
 #include "registration/transform/warp_utils.h"
 #include "registration/transform/invert.h"
 #include "registration/metric/demons.h"
-#include "registration/metric/demons4D_2.h"
 #include "registration/metric/demons4D.h"
 #include "registration/multi_resolution_lmax.h"
 #include "image/average_space.h"

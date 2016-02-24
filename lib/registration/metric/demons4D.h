@@ -29,17 +29,17 @@ namespace MR
       class Demons4D {
         public:
           Demons4D (default_type& global_energy, size_t& global_voxel_count,
-                    const Im1ImageType& im1_image, const Im2ImageType& im2_image, const Im1MaskType im1_mask, const Im2MaskType im2_mask) :
-                      global_cost (global_energy),
-                      global_voxel_count (global_voxel_count),
-                      thread_cost (0.0),
-                      thread_voxel_count (0),
-                      normaliser (0.0),
-                      robustness_parameter (-1.e12),
-                      intensity_difference_threshold (0.001),
-                      denominator_threshold (1e-9),
-                      im1_gradient (im1_image, true), im2_gradient (im2_image, true),
-                      im1_mask (im1_mask), im2_mask (im2_mask)
+                     const Im1ImageType& im1_image, const Im2ImageType& im2_image, const Im1MaskType im1_mask, const Im2MaskType im2_mask) :
+                       global_cost (global_energy),
+                       global_voxel_count (global_voxel_count),
+                       thread_cost (0.0),
+                       thread_voxel_count (0),
+                       normaliser (0.0),
+                       robustness_parameter (-1.e12),
+                       intensity_difference_threshold (0.001),
+                       denominator_threshold (1e-9),
+                       im1_gradient (im1_image, true), im2_gradient (im2_image, true),
+                       im1_mask (im1_mask), im2_mask (im2_mask)
           {
             for (size_t d = 0; d < 3; ++d)
               normaliser += im1_image.spacing(d) * im2_image.spacing(d);
@@ -65,9 +65,6 @@ namespace MR
                            Image<default_type>& im1_update,
                            Image<default_type>& im2_update) {
 
-            assert (im1_image.ndim() == 4 && im2_image.ndim() == 4);
-
-            // Check for boundary condition
             if (im1_image.index(0) == 0 || im1_image.index(0) == im1_image.size(0) - 1 ||
                 im1_image.index(1) == 0 || im1_image.index(1) == im1_image.size(1) - 1 ||
                 im1_image.index(2) == 0 || im1_image.index(2) == im1_image.size(2) - 1) {
@@ -75,6 +72,7 @@ namespace MR
               im2_update.row(3).setZero();
               return;
             }
+
 
             typename Im1MaskType::value_type im1_mask_value = 1.0;
             if (im1_mask.valid()) {
@@ -98,37 +96,36 @@ namespace MR
               }
             }
 
-            Eigen::Matrix<typename Im1ImageType::value_type, Eigen::Dynamic, 1> speed =  im2_image.row(3) - im1_image.row(3);
-            for (ssize_t i = 0; i < speed.rows(); ++i) {
-              if (std::abs (speed[i]) < robustness_parameter)
-                speed[i] = 0.0;
-            }
-
-            Eigen::Matrix<typename Im1ImageType::value_type, Eigen::Dynamic, 1> speed_squared = speed.array() * speed.array();
-            thread_cost += speed_squared.sum();
-            thread_voxel_count++;
-
-            assign_pos_of (im1_image, 0, 3).to (im2_gradient);
-            assign_pos_of (im2_image, 0, 3).to (im1_gradient);
-
-            Eigen::Matrix<typename Im1ImageType::value_type, 3, Eigen::Dynamic> grad = (im2_gradient.row(3) + im1_gradient.row(3)).array() / 2.0;
-
-            auto tmp = speed_squared / normaliser;
-            Eigen::Matrix<typename Im1ImageType::value_type, 1, Eigen::Dynamic> denominator = tmp + grad.colwise().squaredNorm();
+            assign_pos_of (im1_image, 0, 3).to (im1_gradient, im2_gradient);
 
             Eigen::Vector3 total_update = Eigen::Vector3::Zero();
-            for (size_t i = 0; i < im2_image.size(3); ++i) {
-              if (!(std::abs (speed[i]) < intensity_difference_threshold || denominator[i] < denominator_threshold)) {
-                auto tmp2 = (speed[i] * grad.col(i)) / denominator[i];
-                total_update[0] += tmp2[0];
-                total_update[1] += tmp2[1];
-                total_update[2] += tmp2[2];
+            for (size_t vol = 0; vol < im1_image.size(3); ++vol) {
+              im2_image.index(3) = vol;
+              im1_image.index(3) = vol;
+              default_type speed = im2_image.value() - im1_image.value();
+              if (std::abs (speed) < robustness_parameter)
+                speed = 0.0;
+
+              default_type speed_squared = speed * speed;
+              thread_cost += speed_squared;
+              thread_voxel_count++;
+              im1_gradient.index(3) = vol;
+              im2_gradient.index(3) = vol;
+
+              Eigen::Matrix<typename Im1ImageType::value_type, 3, 1> grad = (im2_gradient.value() + im1_gradient.value()).array() / 2.0;
+              default_type denominator = speed_squared / normaliser + grad.squaredNorm();
+              if (!(std::abs (speed) < intensity_difference_threshold || denominator < denominator_threshold)) {
+                auto tmp = (speed * grad) / denominator;
+                total_update[0] += tmp[0];
+                total_update[1] += tmp[1];
+                total_update[2] += tmp[2];
               }
             }
-            total_update = total_update / im2_image.size(3);
+            total_update = total_update / im1_image.size(3);
             im1_update.row(3) = total_update;
             im2_update.row(3) = -total_update;
           }
+
 
           protected:
             default_type& global_cost;
