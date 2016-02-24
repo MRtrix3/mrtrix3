@@ -79,37 +79,6 @@ namespace MR
           return result;
         }
 
-        /**
-         * @brief returns a row of image gradients, typically used to get gradients simultaneously for all voxels in the 4th dimention.
-         * @param row_axis the image axis to define the row
-         * @return a vector of 1D gradients
-         */
-        Eigen::Matrix<value_type, Eigen::Dynamic, 1> row (size_t row_axis)
-        {
-
-
-          const ssize_t pos = index (axis);
-          result = 0.0;
-
-          Eigen::Matrix<value_type, Eigen::Dynamic, 1> result (Base<ImageType>::size(row_axis));
-          if (pos == 0) {
-            result = Base<ImageType>::row (row_axis);
-            index (axis) = pos + 1;
-            result = derivative_weights[axis] * (Base<ImageType>::row (row_axis) - result);
-          } else if (pos == size(axis) - 1) {
-            result = Base<ImageType>::row (row_axis);
-            index (axis) = pos - 1;
-            result = derivative_weights[axis] * (result - Base<ImageType>::row (row_axis));
-          } else {
-            index (axis) = pos + 1;
-            result = Base<ImageType>::row (row_axis);
-            index (axis) = pos - 1;
-            result = half_derivative_weights[axis] * (result - Base<ImageType>::row (row_axis));
-          }
-          index (axis) = pos;
-
-          return Base<ImageType>::row (row_axis);
-        }
 
         using Base<ImageType>::name;
         using Base<ImageType>::size;
