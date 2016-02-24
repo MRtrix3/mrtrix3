@@ -28,6 +28,7 @@
 #include "registration/transform/warp_utils.h"
 #include "registration/transform/invert.h"
 #include "registration/metric/demons.h"
+#include "registration/metric/demons4D_2.h"
 #include "registration/metric/demons4D.h"
 #include "registration/multi_resolution_lmax.h"
 #include "image/average_space.h"
@@ -92,9 +93,6 @@ namespace MR
               // if initialising only perform optimisation at the full resolution level
               scale_factor.resize (1);
               scale_factor[0] = 1.0;
-              midway_image_header.set_ndim (im1_image.ndim());
-              if (im1_image.ndim() > 3)
-                midway_image_header.size(3) = im1_image.size(3);
             }
 
             if (max_iter.size() == 1)
@@ -108,10 +106,18 @@ namespace MR
               fod_lmax.resize (scale_factor.size(), 0);
 
             for (size_t level = 0; level < scale_factor.size(); level++) {
-              if (do_reorientation) {
-                CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor " + str(scale_factor[level]) + ", lmax " + str(fod_lmax[level]));
+              if (is_initialised) {
+                if (do_reorientation) {
+                  CONSOLE ("scale factor (init warp resolution), lmax " + str(fod_lmax[level]));
+                } else {
+                  CONSOLE ("scale factor (init warp resolution)");
+                }
               } else {
-                CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor " + str(scale_factor[level]));
+                if (do_reorientation) {
+                  CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor " + str(scale_factor[level]) + ", lmax " + str(fod_lmax[level]));
+                } else {
+                  CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor " + str(scale_factor[level]));
+                }
               }
 
               DEBUG ("Resizing midway image based on multi-resolution level");
@@ -123,7 +129,6 @@ namespace MR
 
               Header midway_image_header_resized = resize_filter;
               midway_image_header_resized.set_ndim(3);
-
 
               default_type update_smoothing_mm = update_smoothing * ((midway_image_header_resized.spacing(0)
                                                                     + midway_image_header_resized.spacing(1)
@@ -223,6 +228,8 @@ namespace MR
                   Registration::Transform::reorient_warp (im2_warped, im2_deform_field, aPSF_directions);
                 }
 
+//                save (im1_warped, "im1_warped_level" + str(level) + "_iter" + str(iteration) + ".mif");
+
                 DEBUG ("warping mask images");
                 Im1MaskType im1_mask_warped;
                 if (im1_mask.valid()) {
@@ -241,7 +248,8 @@ namespace MR
                 default_type cost_new = 0.0;
                 size_t voxel_count = 0;
 
-                if (midway_image_header.ndim() == 4) {
+                if (im1_image.ndim() == 4) {
+                  TRACE;
                   Metric::Demons4D<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped);
                   ThreadedLoop (im1_warped, 0, 3).run (metric, im1_warped, im2_warped, *im1_update_field_new, *im2_update_field_new);
                 } else {
@@ -272,15 +280,14 @@ namespace MR
                   converged = true;
                 }
 
-                // check displacement field difference to detect convergence.
-                std::cerr << "\r            iteration: " + str(iteration) + " cost: " + str(cost) << std::flush;
+                if (!converged)
+                  INFO ("  iteration: " + str(iteration) + " cost: " + str(cost));
 
                 if (++iteration > max_iter[level])
-                    converged = true;
+                  converged = true;
              }
              Transform::deformation2displacement (*im1_deform_field_inv, *im1_deform_field_inv);
              Transform::deformation2displacement (*im2_deform_field_inv, *im2_deform_field_inv); //convert to displacement field for output
-             std::cerr << std::endl;
            }
 
           }
@@ -295,23 +302,25 @@ namespace MR
 
             DEBUG ("loading initial warp fields");
             midway_image_header = input_warps;
+            midway_image_header.set_ndim (3);
             Header field_header (input_warps);
             field_header.set_ndim (4);
             field_header.size(3) = 3;
 
-            im2_disp_field = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
-            im1_deform_field_inv = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
             im1_disp_field = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
-            im2_deform_field_inv = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
-
             input_warps.index(4) = 0;
             threaded_copy (input_warps, *im1_disp_field, 0, 4);
+
+            im1_deform_field_inv = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
             input_warps.index(4) = 1;
             threaded_copy (input_warps, *im1_deform_field_inv, 0, 4);
             Transform::displacement2deformation (*im1_deform_field_inv, *im1_deform_field_inv);
 
+            im2_disp_field = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
             input_warps.index(4) = 2;
             threaded_copy (input_warps, *im2_disp_field, 0, 4);
+
+            im2_deform_field_inv = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
             input_warps.index(4) = 3;
             threaded_copy (input_warps, *im2_deform_field_inv, 0, 4);
             Transform::displacement2deformation (*im2_deform_field_inv, *im2_deform_field_inv);

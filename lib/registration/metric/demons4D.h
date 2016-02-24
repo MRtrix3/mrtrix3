@@ -29,17 +29,17 @@ namespace MR
       class Demons4D {
         public:
           Demons4D (default_type& global_energy, size_t& global_voxel_count,
-                     const Im1ImageType& im1_image, const Im2ImageType& im2_image, const Im1MaskType im1_mask, const Im2MaskType im2_mask) :
-                       global_cost (global_energy),
-                       global_voxel_count (global_voxel_count),
-                       thread_cost (0.0),
-                       thread_voxel_count (0),
-                       normaliser (0.0),
-                       robustness_parameter (-1.e12),
-                       intensity_difference_threshold (0.001),
-                       denominator_threshold (1e-9),
-                       im1_gradient (im1_image, true), im2_gradient (im2_image, true),
-                       im1_mask (im1_mask), im2_mask (im2_mask)
+                    const Im1ImageType& im1_image, const Im2ImageType& im2_image, const Im1MaskType im1_mask, const Im2MaskType im2_mask) :
+                      global_cost (global_energy),
+                      global_voxel_count (global_voxel_count),
+                      thread_cost (0.0),
+                      thread_voxel_count (0),
+                      normaliser (0.0),
+                      robustness_parameter (-1.e12),
+                      intensity_difference_threshold (0.001),
+                      denominator_threshold (1e-9),
+                      im1_gradient (im1_image, true), im2_gradient (im2_image, true),
+                      im1_mask (im1_mask), im2_mask (im2_mask)
           {
             for (size_t d = 0; d < 3; ++d)
               normaliser += im1_image.spacing(d) * im2_image.spacing(d);
@@ -112,16 +112,22 @@ namespace MR
             assign_pos_of (im2_image, 0, 3).to (im1_gradient);
 
             Eigen::Matrix<typename Im1ImageType::value_type, 3, Eigen::Dynamic> grad = (im2_gradient.row(3) + im1_gradient.row(3)).array() / 2.0;
-//            Eigen::Matrix<typename Im1ImageType::value_type, 1, Eigen::Dynamic> denominator = speed_squared.array() / normaliser + grad.colwise().squaredNorm();
 
-//            Eigen::Vector3 total_update = Eigen::Vector3::Zero();
-//            for (size_t i = 0; i < im2_image.size(3); ++i) {
-//              if (!(std::abs (speed[i]) < intensity_difference_threshold || denominator[i] < denominator_threshold))
-//                total_update += speed[i] * (grad.array().col(i) / denominator);
-//            }
-//            total_update = total_update.array() / im2_image.size(3);
-//            im1_update.row(3) = total_update;
-//            im2_update.row(3) = -total_update;
+            auto tmp = speed_squared / normaliser;
+            Eigen::Matrix<typename Im1ImageType::value_type, 1, Eigen::Dynamic> denominator = tmp + grad.colwise().squaredNorm();
+
+            Eigen::Vector3 total_update = Eigen::Vector3::Zero();
+            for (size_t i = 0; i < im2_image.size(3); ++i) {
+              if (!(std::abs (speed[i]) < intensity_difference_threshold || denominator[i] < denominator_threshold)) {
+                auto tmp2 = (speed[i] * grad.col(i)) / denominator[i];
+                total_update[0] += tmp2[0];
+                total_update[1] += tmp2[1];
+                total_update[2] += tmp2[2];
+              }
+            }
+            total_update = total_update / im2_image.size(3);
+            im1_update.row(3) = total_update;
+            im2_update.row(3) = -total_update;
           }
 
           protected:
