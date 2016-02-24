@@ -30,14 +30,14 @@ namespace MR
     {
       class L1 {
         public:
-          void operator() (const default_type x,
+          void operator() (const default_type& x,
                            default_type& residual,
                            default_type& slope) {
             residual = std::abs(x);
             slope = Math::sgn(x);
           }
 
-          void operator() (const Eigen::Matrix<default_type, Eigen::Dynamic, 1> x,
+          void operator() (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x,
                            Eigen::Matrix<default_type, Eigen::Dynamic, 1>& residual,
                            Eigen::Matrix<default_type, Eigen::Dynamic, 1>& slope) {
             const ssize_t len = x.size();
@@ -51,14 +51,14 @@ namespace MR
 
       class L2 {
         public:
-          void operator() (const default_type x,
+          void operator() (const default_type& x,
                            default_type& residual,
                            default_type& slope) {
             residual = x * x;
             slope = x;
           }
 
-          void operator() (const Eigen::Matrix<default_type, Eigen::Dynamic, 1> x,
+          void operator() (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x,
                            Eigen::Matrix<default_type, Eigen::Dynamic, 1>& residual,
                            Eigen::Matrix<default_type, Eigen::Dynamic, 1>& slope) {
             residual = x.cwiseAbs2(); //.squaredNorm(); //.array().square();
@@ -72,14 +72,14 @@ namespace MR
           LP (const default_type p) : power(p) {assert (power>=1.0 && power <= 2.0);}
           LP () : power(1.2) {}
 
-          void operator() (const default_type x,
+          void operator() (const default_type& x,
                            default_type& residual,
                            default_type& slope) {
             residual = std::pow(std::abs(x), power);
             slope = Math::sgn(x) * std::pow(std::abs(x), power - 1.0);
           }
 
-          void operator() (const Eigen::Matrix<default_type, Eigen::Dynamic, 1> x,
+          void operator() (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x,
                            Eigen::Matrix<default_type, Eigen::Dynamic, 1>& residual,
                            Eigen::Matrix<default_type, Eigen::Dynamic, 1>& slope) {
             residual = x.cwiseAbs().array().pow(power);
@@ -93,6 +93,7 @@ namespace MR
         private:
           default_type power;
       };
+
     }
   }
 }

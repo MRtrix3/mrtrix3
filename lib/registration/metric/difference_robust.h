@@ -16,7 +16,7 @@
 #ifndef __registration_metric_difference_robust_h__
 #define __registration_metric_difference_robust_h__
 
-#include "registration/metric/m_estimators.h"
+#include "registration/metric/robust_estimators.h"
 
 namespace MR
 {

@@ -27,7 +27,7 @@ namespace MR
       template<class Im1Type, class Im2Type, class Estimator = L2>
         class DifferenceRobust4D {
           public:
-            DifferenceRobust4D(Im1Type im1, Im2Type im2, Estimator est) :
+            DifferenceRobust4D(const Im1Type& im1, const Im2Type& im2, const Estimator& est) :
               volumes(im1.size(3)),
               estimator(est) {
               im1_grad.resize(volumes, 3);
@@ -39,9 +39,9 @@ namespace MR
 
           template <class Params>
             default_type operator() (Params& params,
-                                     const Eigen::Vector3 im1_point,
-                                     const Eigen::Vector3 im2_point,
-                                     const Eigen::Vector3 midway_point,
+                                     const Eigen::Vector3& im1_point,
+                                     const Eigen::Vector3& im2_point,
+                                     const Eigen::Vector3& midway_point,
                                      Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
 
               params.im1_image_interp->value_and_gradient_row_wrt_scanner (im1_values, im1_grad);
