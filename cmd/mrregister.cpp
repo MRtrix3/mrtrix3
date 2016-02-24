@@ -246,31 +246,7 @@ void run ()
   if (opt.size()) {
     if (init_rigid_set)
       throw Exception ("options -rigid_init and -rigid_centre are mutually exclusive");
-    switch ((int)opt[0][0]){
-      case 0:
-        rigid_registration.set_init_type (Registration::Transform::Init::mass);
-        break;
-      case 1:
-        rigid_registration.set_init_type (Registration::Transform::Init::geometric);
-        break;
-      case 2:
-        rigid_registration.set_init_type (Registration::Transform::Init::moments);
-        break;
-      case 3:
-        rigid_registration.set_init_type (Registration::Transform::Init::mass_unmasked);
-        break;
-      case 4:
-        rigid_registration.set_init_type (Registration::Transform::Init::moments_unmasked);
-        break;
-      case 5:
-        rigid_registration.set_init_type (Registration::Transform::Init::fod);
-        break;
-      case 6:
-        rigid_registration.set_init_type (Registration::Transform::Init::none);
-        break;
-      default:
-        break;
-    }
+    set_init_model_from_option (rigid_registration, (int)opt[0][0]);
   }
 
   opt = get_options ("rigid_scale");
@@ -372,31 +348,7 @@ void run ()
   if (opt.size()) {
     if (init_affine_set)
       throw Exception ("options -affine_init and -affine_centre are mutually exclusive");
-    switch ((int)opt[0][0]){
-      case 0:
-        affine_registration.set_init_type (Registration::Transform::Init::mass);
-        break;
-      case 1:
-        affine_registration.set_init_type (Registration::Transform::Init::geometric);
-        break;
-      case 2:
-        affine_registration.set_init_type (Registration::Transform::Init::moments);
-        break;
-      case 3:
-        affine_registration.set_init_type (Registration::Transform::Init::mass_unmasked);
-        break;
-      case 4:
-        affine_registration.set_init_type (Registration::Transform::Init::moments_unmasked);
-        break;
-      case 5:
-        affine_registration.set_init_type (Registration::Transform::Init::fod);
-        break;
-      case 6:
-        affine_registration.set_init_type (Registration::Transform::Init::none);
-        break;
-      default:
-        break;
-    }
+    set_init_model_from_option (affine_registration, (int)opt[0][0]);
   }
 
   opt = get_options ("affine_scale");

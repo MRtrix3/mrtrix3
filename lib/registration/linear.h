@@ -230,6 +230,8 @@ namespace MR
               Transform::Init::initialise_using_image_centres (im1_image, im2_image, transform);
             else if (init_type == Transform::Init::moments)
               Transform::Init::initialise_using_image_moments (im1_image, im2_image, im1_mask, im2_mask, transform);
+            else if (init_type == Transform::Init::moments_use_mask_intensity)
+              Transform::Init::initialise_using_image_moments (im1_image, im2_image, im1_mask, im2_mask, transform, true);
             else if (init_type == Transform::Init::moments_unmasked)
               Transform::Init::initialise_using_image_moments (im1_image, im2_image, transform);
             else if (init_type == Transform::Init::fod)
@@ -458,6 +460,8 @@ namespace MR
 
         Header midway_image_header;
     };
+
+    void set_init_model_from_option (Registration::Linear& registration, const int& option);
   }
 }
 

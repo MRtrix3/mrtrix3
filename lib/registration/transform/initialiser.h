@@ -30,7 +30,7 @@ namespace MR
     {
       namespace Init
       {
-        enum InitType {mass, geometric, moments, mass_unmasked, moments_unmasked, fod, set_centre_mass, none};
+        enum InitType {mass, geometric, moments, mass_unmasked, moments_use_mask_intensity, moments_unmasked, fod, set_centre_mass, none};
 
           void set_centre_using_image_mass (Image<default_type>& im1,
                                             Image<default_type>& im2,
@@ -74,9 +74,16 @@ namespace MR
                                              Image<default_type>& im2,
                                              Image<default_type>& mask1,
                                              Image<default_type>& mask2,
-                                             Registration::Transform::Base& transform) {
-          CONSOLE ("initialising using image moments");
-          auto init = Transform::Init::MomentsInitialiser (im1, im2, mask1, mask2, transform);
+                                             Registration::Transform::Base& transform,
+                                             bool use_mask_values = false) {
+          if (use_mask_values) {
+            if (!(mask1.valid() or mask2.valid()))
+              throw Exception ("cannot run image moments initialisation using mask values without a valid mask");
+            CONSOLE ("initialising using image moments using mask values instead of image values");
+          }
+          else
+            CONSOLE ("initialising using image moments");
+          auto init = Transform::Init::MomentsInitialiser (im1, im2, mask1, mask2, transform, use_mask_values);
           init.run();
         }
 
@@ -86,7 +93,7 @@ namespace MR
           CONSOLE ("initialising using image moments with unmasked images");
           Image<default_type> mask1;
           Image<default_type> mask2;
-          auto init = Transform::Init::MomentsInitialiser (im1, im2, mask1, mask2, transform);
+          auto init = Transform::Init::MomentsInitialiser (im1, im2, mask1, mask2, transform, false);
           init.run();
         }
 

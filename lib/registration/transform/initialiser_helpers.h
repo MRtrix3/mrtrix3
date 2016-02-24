@@ -105,8 +105,6 @@ namespace MR
             ssize_t lmax, N;
             Eigen::Matrix<default_type, 3, 1> im1_centre_of_mass, im2_centre_of_mass;
             Eigen::Matrix<default_type, Eigen::Dynamic, 1> sh1, sh2;
-            // Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> im1_peaks, im2_peaks;
-            // Eigen::Matrix<default_type, Eigen::Dynamic, 1> im1_eval, im2_eval;
         };
 
         class MomentsInitialiser {
@@ -115,16 +113,22 @@ namespace MR
                                 Image<default_type>& image2,
                                 Image<default_type>& mask1,
                                 Image<default_type>& mask2,
-                                Registration::Transform::Base& transform):
+                                Registration::Transform::Base& transform,
+                                bool use_mask_values):
               im1(image1),
               im2(image2),
               transform(transform),
               mask1(mask1),
-              mask2(mask2) {};
+              mask2(mask2),
+              use_mask_values_instead (use_mask_values) {};
 
             void run ();
           protected:
-            bool calculate_eigenvectors ();
+            bool calculate_eigenvectors (
+              Image<default_type>& image_1,
+              Image<default_type>& image_2,
+              Image<default_type>& mask_1,
+              Image<default_type>& mask_2);
             void create_moments_images ();
 
           private:
@@ -133,6 +137,7 @@ namespace MR
             Registration::Transform::Base& transform;
             Image<default_type>& mask1;
             Image<default_type>& mask2;
+            bool use_mask_values_instead;
             Eigen::Vector3 im1_centre, im2_centre;
             Eigen::Matrix<default_type, 3, 1> im1_centre_of_mass, im2_centre_of_mass;
             Eigen::Matrix<default_type, 3, 3> im1_covariance_matrix, im2_covariance_matrix;

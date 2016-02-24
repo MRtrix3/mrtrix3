@@ -176,7 +176,7 @@ namespace MR
           if (mask1.valid() or mask2.valid()) {
             CONSOLE ("initialising centre of rotation and translation using centre of mass");
           } else {
-            CONSOLE ("initialising centre of rotation and translation using unmasked centre of mass");
+            CONSOLE ("initialising centre of rotation and translation using centre of mass of unmasked images");
           }
           Eigen::Matrix<default_type, 3, 1> im1_centre_of_mass, im2_centre_of_mass;
           get_centre_of_mass (im1, mask1, im1_centre_of_mass);
@@ -195,6 +195,7 @@ namespace MR
 #endif
         }
 
+        // for debug only:
         void MomentsInitialiser::create_moments_images () {
           std::string f1 = im1.name();
           std::string f2 = im2.name();
@@ -235,10 +236,8 @@ namespace MR
           MR::Transform T2 (im2);
           Eigen::Vector3 c1 = T1.scanner2voxel * im1_centre_of_mass;
           Eigen::Vector3 c2 = T2.scanner2voxel * im2_centre_of_mass;
-#ifdef DEBUG_INIT
           VEC(c1)
           VEC(c2)
-#endif
           im1_moments.index(0) = std::round(c1[0]);
           im1_moments.index(1) = std::round(c1[1]);
           im1_moments.index(2) = std::round(c1[2]);
@@ -254,10 +253,8 @@ namespace MR
             }
           }
           // im2_moments.value() = 1;
-#ifdef DEBUG_INIT
           MAT(im1_covariance_matrix);
           MAT(im2_covariance_matrix);
-#endif
           // im1_centre_of_mass, im2_centre_of_mass;
           // im1_covariance_matrix, im2_covariance_matrix;
           // im1_evec, im2_evec;
@@ -266,8 +263,15 @@ namespace MR
         void MomentsInitialiser::run () {
           // Timer timer;
           // timer.start();
-          if (!calculate_eigenvectors()) {
-            WARN("Image moments not successful. Using centre of mass.");
+          bool good;
+          if (use_mask_values_instead) {
+            Image<default_type> bogusmask;
+            good = calculate_eigenvectors (mask1, mask2, bogusmask, bogusmask);
+          }
+          else
+            good = calculate_eigenvectors(im1, im2, mask1, mask2);
+          if (!good) {
+            WARN("Image moments not successful. Using centre of mass instead.");
             Eigen::Vector3 centre = (im1_centre_of_mass + im2_centre_of_mass) / 2.0;
             transform.set_centre (centre);
             Eigen::Vector3 translation = im1_centre_of_mass - im2_centre_of_mass;
@@ -370,10 +374,14 @@ namespace MR
           // MomentsInitialiser::create_moments_images ();
         }
 
-        bool MomentsInitialiser::calculate_eigenvectors () {
+        bool MomentsInitialiser::calculate_eigenvectors (
+          Image<default_type>& image_1,
+          Image<default_type>& image_2,
+          Image<default_type>& mask_1,
+          Image<default_type>& mask_2) {
             default_type  m000, m100, m010, m001, mu110, mu011, mu101, mu200, mu020, mu002;
-            get_geometric_centre(im1, im1_centre);
-            get_moments (im1, mask1, im1_centre, m000, m100, m010, m001, mu110, mu011, mu101, mu200, mu020, mu002);
+            get_geometric_centre(image_1, im1_centre);
+            get_moments (image_1, mask_1, im1_centre, m000, m100, m010, m001, mu110, mu011, mu101, mu200, mu020, mu002);
             im1_centre_of_mass << m100 / m000, m010 / m000, m001 / m000;
             im1_covariance_matrix(0, 0) = mu200 / m000;
             im1_covariance_matrix(0, 1) = mu110 / m000;
@@ -385,8 +393,8 @@ namespace MR
             im1_covariance_matrix(2, 1) = im1_covariance_matrix(1, 2);
             im1_covariance_matrix(2, 2) = mu002 / m000;
 
-            get_geometric_centre(im2, im2_centre);
-            get_moments (im2, mask2, im2_centre, m000, m100, m010, m001, mu110, mu011, mu101, mu200, mu020, mu002);
+            get_geometric_centre(image_2, im2_centre);
+            get_moments (image_2, mask_2, im2_centre, m000, m100, m010, m001, mu110, mu011, mu101, mu200, mu020, mu002);
             im2_centre_of_mass << m100 / m000, m010 / m000, m001 / m000;
             im2_covariance_matrix(0, 0) = mu200 / m000;
             im2_covariance_matrix(0, 1) = mu110 / m000;

@@ -22,9 +22,40 @@ namespace MR
 
     using namespace App;
 
-    const char* initialisation_choices[] = { "mass", "geometric", "moments", "mass_unmasked", "moments_unmasked", "fod", "none", NULL };
+    const char* initialisation_choices[] = { "mass", "geometric", "moments", "mass_unmasked", "moments_use_mask_intensity", "moments_unmasked", "fod", "none", NULL };
     const char* linear_metric_choices[] = { "diff", "ncc", NULL };
     const char* linear_robust_estimator_choices[] = { "l1", "l2", "lp", NULL };
+
+    void set_init_model_from_option (Registration::Linear& registration, const int& option) {
+      switch (option){
+        case 0:
+          registration.set_init_type (Registration::Transform::Init::mass);
+          break;
+        case 1:
+          registration.set_init_type (Registration::Transform::Init::geometric);
+          break;
+        case 2:
+          registration.set_init_type (Registration::Transform::Init::moments);
+          break;
+        case 3:
+          registration.set_init_type (Registration::Transform::Init::mass_unmasked);
+          break;
+        case 4:
+          registration.set_init_type (Registration::Transform::Init::moments_use_mask_intensity);
+          break;
+        case 5:
+          registration.set_init_type (Registration::Transform::Init::moments_unmasked);
+          break;
+        case 6:
+          registration.set_init_type (Registration::Transform::Init::fod);
+          break;
+        case 7:
+          registration.set_init_type (Registration::Transform::Init::none);
+          break;
+        default:
+          break;
+      }
+    }
 
     const OptionGroup rigid_options =
       OptionGroup ("Rigid registration options")
