@@ -256,9 +256,11 @@ void run ()
   if (opt.size()) {
     if (warp.valid())
       throw Exception ("only one warp field can be input with either -warp or -warp_df");
-    warp = Image<default_type>::open (opt[0][0]);
+    warp = Image<default_type>::open (opt[0][0]).with_direct_io(Stride::contiguous_along_axis(3));
     if (warp.ndim() != 4)
       throw Exception ("the input -warp_df file must be a 4D deformation field");
+    if (warp.size(3) != 3)
+      throw Exception ("the input -warp_df file must have 3 volumes in the 4th dimension (x,y,z positions)");
   }
 
   // Inverse
