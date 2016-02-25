@@ -261,6 +261,15 @@ void run ()
   std::vector<Eigen::MatrixXd> response;
   for (size_t i = 0; i < (argument.size()-1)/2; i++) {
     Eigen::MatrixXd r = load_matrix<> (argument[i*2+1]);
+    size_t n = 0;
+    for (size_t j = 0; j < size_t(r.rows()); j++) {
+      for (size_t k = 0; k < size_t(r.cols()); k++) {
+        if (r(j,k) && (k + 1 > n)) {
+          n = k + 1;
+        }
+      }
+    }
+    r.conservativeResize(r.rows(),n);
     if (size_t(r.rows()) != nbvals)
       throw Exception ("number of rows in response function text file should match number of shells in dwi");
     response.push_back(r);
