@@ -5,6 +5,7 @@
 import os, sys
 import lib.app
 import numpy
+import math
 
 from lib.printMessage  import printMessage
 from lib.errorMessage  import errorMessage
@@ -25,9 +26,18 @@ lib.app.author = 'David Raffelt (david.raffelt@florey.edu.au)'
 lib.app.initParser('Generates an unbiased group-average template from a series of images')
 lib.app.parser.add_argument('input_dir', help='The input directory containing all images used to build the template')
 lib.app.parser.add_argument('template', help='The output template image')
-lib.app.parser.add_argument('-warp_dir', help='An output directory containing warps from each input to the template. if the folder does not exist it will be created')
 lib.app.parser.add_argument('-mask_dir', help='Optionally provide a set of masks inside a single directory, one per input image (with the same file name prefix). Using masks will speed up registration significantly')
-lib.app.parser.add_argument('-noreorientation', action='store_true', help='turn off FOD reorientation. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc')
+lib.app.parser.add_argument('-warp_dir', help='Output a directory containing warps from each input to the template. If the folder does not exist it will be created')
+lib.app.parser.add_argument('-transformed_dir', help='Output a directory containing the input images transformed to the template. If the folder does not exist it will be created')
+lib.app.parser.add_argument('-affine_scale', help='Specifiy the multi-resolution pyramid used to build the affine template, in the form of a list of scale factors (default: 0.3,0.4,0.5,0.6,0.7,1.0,1.0,1.0,1.0,1.0). This implicitly defines the number of template levels')
+lib.app.parser.add_argument('-affine_lmax', help='Specifiy the lmax used for affine registration for each scale factor, in the form of a list of integers (default: 0,0,0,0,2,2,2,2,2,2). The list must be the same length as the affine_scale factor list')
+lib.app.parser.add_argument('-nl_scale', help='Specifiy the multi-resolution pyramid used to build the non-linear template, in the form of a list of scale factors (default: 0.2,0.3,0.4,0.5,0.5,0.6,0.7,0.8,0.9,1.0,1.0,1.0,1.0,1.0). This implicitly defines the number of template levels')
+lib.app.parser.add_argument('-nl_lmax', help='Specifiy the lmax used for non-linear registration for each scale factor, in the form of a list of integers (default: 0,0,2,2,2,2,2,2,2,2,4,4,4,4). The list must be the same length as the nl_scale factor list')
+lib.app.parser.add_argument('-nl_niter', help='Specifiy the number of registration iterations used for each within each level before updating the template, in the form of a list of integers (default:5,5,5,5,5,5,5,5,5,5,5,10,10,20). The list must be the same length as the nl_scale factor list')
+lib.app.parser.add_argument('-nl_update_smooth', default='2.0', help='Regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 2.0 x voxel_size)')
+lib.app.parser.add_argument('-nl_disp_smooth', default='1.0', help='Regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0 x voxel_size)')
+lib.app.parser.add_argument('-nl_grad_step', default='0.5', help='The gradient step size for non-linear registration (Default: 0.5)')
+lib.app.parser.add_argument('-noreorientation', action='store_true', help='Turn off FOD reorientation. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc')
 lib.app.initialise()
 
 inputDir = lib.app.args.input_dir
@@ -42,6 +52,7 @@ else:
 
 useMasks = False
 if lib.app.args.mask_dir:
+  useMasks = True
   maskDir = lib.app.args.mask_dir;
   if not os.path.exists(maskDir):
     errorMessage('mask directory not found')
@@ -49,7 +60,6 @@ if lib.app.args.mask_dir:
   if len(maskFiles) != len(inFiles):
     errorMessage('the number of images in the mask directory does not equal the number of images in the input directory')
   maskCommonPostfix = lib.app.getCommonPostfix(maskFiles)
-  useMasks = True
   maskPrefixes = []
   for m in maskFiles:
     maskPrefixes.append(m.split(maskCommonPostfix)[0])
@@ -75,8 +85,48 @@ if lib.app.args.warp_dir:
   lib.app.checkOutputFile(lib.app.args.warp_dir)
   make_dir(lib.app.args.warp_dir)
 
-lib.app.gotoTempDir()
+# automatically detect SH series
+do_fod_registration = False
+image_size = [int(x) for x in getHeaderInfo(os.path.join(input[0].directory, input[0].filename), 'size').split(' ')]
+print image_size
+if len(image_size) < 3 or len(image_size) > 4:
+  errorMessage('only 3 and 4 dimensional images can be used to build a template')
+if len(image_size) == 4:
+  val = (math.sqrt (1 + 8 * image_size[3]) - 3.0) / 4.0;
+  if not (val - int(val)) and not noreorientation:
+    printMessage("SH Series detected, performing FOD registration")
+    do_fod_registration = True
 
+affine_scales = [0.3,0.4,0.5,0.6,0.7,1.0,1.0,1.0,1.0,1.0]
+affine_lmax =   [0,  0,  0,  0,  2,  2,  2,  2,  2,  2]
+if lib.app.args.affine_scale:
+  affine_scales = [float(x) for x in lib.app.args.affine_scale.split(',')]
+if lib.app.args.affine_lmax:
+  affine_lmax = [int(x) for x in lib.app.args.affine_lmax.split(',')]
+
+if do_fod_registration:
+  if len(affine_scales) != len(affine_lmax):
+    errorMessage('affine_scales and affine_lmax schedules are not equal in length')
+
+nl_scales = [0.2,0.3,0.4,0.5,0.5,0.6,0.7,0.8,0.9,1.0,1.0,1.0,1.0,1.0]
+nl_niter =  [5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  10, 10, 20]
+nl_lmax =   [0,  0,  2,  2,  2,  2,  2,  2,  2,  2,  4,  4,  4,  4]
+
+if lib.app.args.nl_scale:
+  nl_scales = [float(x) for x in lib.app.args.nl_scale.split(',')]
+if lib.app.args.nl_niter:
+  nl_niter = [int(x) for x in lib.app.args.nl_niter.split(',')]
+if lib.app.args.nl_lmax:
+  nl_lmax = [int(x) for x in lib.app.args.nl_lmax.split(',')]
+
+
+if len(nl_scales) != len(nl_niter):
+  errorMessage('nl_scales and nl_niter schedules are not equal in length')
+
+if do_fod_registration:
+  if len(nl_scales) != len(nl_lmax):
+    errorMessage('nl_scales and nl_lmax schedules are not equal in length')
+lib.app.gotoTempDir()
 
 # Make initial template in average space
 input_filenames = []
@@ -91,37 +141,31 @@ runCommand('mrmath input_transformed/* mean initial_template.mif')
 
 current_template = 'initial_template.mif'
 
-
 # Optimise template with linear registration
 lib.app.make_dir('linear_transforms')
-affine_scales = [0.25,0.25,0.5,0.5,0.5,1.0,1.0,1.0,1.0,1.0]
-affine_lmax =   [0,   0,   0,  0,  2,  2,  2,  2,  2,  2]
-#affine_scales = [0.25,0.25,0.5,0.5]
-#affine_lmax =   [0,   0,   0,  0]
-
-if len(affine_scales) != len(affine_lmax):
-  errorMessage('affine_scales and affine_lmax schedules are not equal in length')
-
 for level in range(0, len(affine_scales)):
   for i in input:
     if level > 0:
       initialise = ' -affine_init linear_transforms/' + i.prefix + '.txt'
     else:
       initialise = ''
-
     if useMasks:
-      mask = ' -mask1 ' + i.mask_directory + i.mask_filename
+      mask = ' -mask1 ' + os.path.join(i.mask_directory, i.mask_filename)
     else:
       mask = ''
+    if do_fod_registration:
+      lmax = ' -affine_lmax ' + str(affine_lmax[level])
+    else:
+      lmax = ''
 
-    runCommand('mrregister ' + i.directory + i.filename + ' ' + current_template +
+    runCommand('mrregister ' + os.path.join(i.directory, i.filename) + ' ' + current_template +
                ' -type affine' +
                ' -affine_scale ' + str(affine_scales[level]) +
-               ' -affine_lmax ' + str(affine_lmax[level]) +
                ' -affine linear_transforms/' + i.prefix + '.txt' +
                ' -force' +
                  initialise +
-                 mask)
+                 mask +
+                 lmax)
 
   # Here we ensure the template is centered and the volume is the average of all
   # inputs by forcing the mean jacobian determinant and mean translation to zero
@@ -141,7 +185,7 @@ for level in range(0, len(affine_scales)):
     numpy.savetxt('linear_transforms/' + i.prefix + '.txt', transform)
 
   for i in input:
-    runCommand('mrtransform ' + i.directory + i.filename +
+    runCommand('mrtransform ' + os.path.join(i.directory, i.filename) +
                ' -template ' + current_template +
                ' -linear linear_transforms/' + i.prefix + '.txt' +
                ' input_transformed/' + i.prefix + '.mif' +
@@ -151,13 +195,6 @@ for level in range(0, len(affine_scales)):
 
 # Optimise the template with non-linear regitration
 lib.app.make_dir('warps')
-nl_scales = [0.2,0.3,0.4,0.5,0.5,0.6,0.7,0.8,0.9,1.0,1.0,1.0,1.0]
-nl_niter =  [5,  5,  5,  5,  5,  5,  5,  5,  5,  10, 10, 15, 20]
-nl_lmax =   [0,  0,  0,  0,  2,  2,  2,  2,  2,  2,  4,  4,  4]
-
-if len(nl_scales) != len(nl_niter) or len(nl_scales) != len(nl_lmax):
-  errorMessage('nl_scales, nl_niter, nl_lmax schedules are not equal in length')
-
 for level in range(0, len(nl_scales)):
   for i in input:
     if level > 0:
@@ -168,20 +205,28 @@ for level in range(0, len(nl_scales)):
       initialise = ' -affine_init linear_transforms/' + i.prefix + '.txt'
 
     if useMasks:
-      mask = ' -mask1 ' + i.mask_directory + i.mask_filename
+      mask = ' -mask1 ' + os.path.join(i.mask_directory, i.mask_filename)
     else:
       mask = ''
+
+      if do_fod_registration:
+        lmax = ' -nl_lmax ' + str(nl_lmax[level])
+      else:
+        lmax = ''
 
     runCommand('mrregister ' + i.directory + i.filename + ' ' + current_template +
                ' -type nonlinear' +
                ' -nl_niter ' + str(nl_niter[level]) +
-               ' -nl_lmax ' + str(nl_lmax[level]) +
                ' -nl_warp warps/' + i.prefix + '.mif' +
                ' -transformed input_transformed/' + i.prefix + '.mif' +
-               ' -force' +
+               ' -nl_update_smooth ' +  lib.app.args.nl_update_smooth +
+               ' -nl_disp_smooth ' +  lib.app.args.nl_disp_smooth +
+               ' -nl_grad_step ' +  lib.app.args.nl_grad_step +
+               ' -force ' +
                  initialise +
                  scale +
-                 mask)
+                 mask +
+                 lmax)
 
   runCommand ('mrmath input_transformed/* mean nl_template' + str(level) + '.mif')
   current_template = 'nl_template' + str(level) + '.mif'
@@ -192,6 +237,14 @@ for level in range(0, len(nl_scales)):
       for i in input:
         runCommand('mrresize warps/' + i.prefix + '.mif -scale ' + str(upsample_factor) + ' tmp.mif')
         runCommand('mv tmp.mif warps/' + i.prefix + '.mif')
+
+runCommand('mrconvert ' + current_template + os.path.join(lib.app.workingDir, lib.app.args.template) + lib.app.mrtrixForce)
+
+if lib.app.args.warps:
+  runCommand('cp -r  warps ' + os.path.join(lib.app.workingDir, lib.app.args.warp_dir) + lib.app.mrtrixForce)
+
+if lib.app.args.warps:
+  runCommand('cp -r  input_transformed ' + os.path.join(lib.app.workingDir, lib.app.args.transformed_dir) + lib.app.mrtrixForce)
 
 lib.app.complete()
 

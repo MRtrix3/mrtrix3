@@ -227,8 +227,6 @@ namespace MR
                   Registration::Transform::reorient_warp (im2_warped, im2_deform_field, aPSF_directions);
                 }
 
-//                save (im1_warped, "im1_warped_level" + str(level) + "_iter" + str(iteration) + ".mif");
-
                 DEBUG ("warping mask images");
                 Im1MaskType im1_mask_warped;
                 if (im1_mask.valid()) {
