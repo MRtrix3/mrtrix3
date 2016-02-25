@@ -17,11 +17,29 @@ Generates an unbiased group-average template from a series of images
 Options
 -------
 
-- **-warp_dir** An output directory containing warps from each input to the template. if the folder does not exist it will be created
-
 - **-mask_dir** Optionally provide a set of masks inside a single directory, one per input image (with the same file name prefix). Using masks will speed up registration significantly
 
-- **-noreorientation** turn off FOD reorientation. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc
+- **-warp_dir** Output a directory containing warps from each input to the template. If the folder does not exist it will be created
+
+- **-transformed_dir** Output a directory containing the input images transformed to the template. If the folder does not exist it will be created
+
+- **-affine_scale** Specifiy the multi-resolution pyramid used to build the affine template, in the form of a list of scale factors (default: 0.3,0.4,0.5,0.6,0.7,1.0,1.0,1.0,1.0,1.0). This implicitly defines the number of template levels
+
+- **-affine_lmax** Specifiy the lmax used for affine registration for each scale factor, in the form of a list of integers (default: 0,0,0,0,2,2,2,2,2,2). The list must be the same length as the affine_scale factor list
+
+- **-nl_scale** Specifiy the multi-resolution pyramid used to build the non-linear template, in the form of a list of scale factors (default: 0.2,0.3,0.4,0.5,0.5,0.6,0.7,0.8,0.9,1.0,1.0,1.0,1.0,1.0). This implicitly defines the number of template levels
+
+- **-nl_lmax** Specifiy the lmax used for non-linear registration for each scale factor, in the form of a list of integers (default: 0,0,2,2,2,2,2,2,2,2,4,4,4,4). The list must be the same length as the nl_scale factor list
+
+- **-nl_niter** Specifiy the number of registration iterations used for each within each level before updating the template, in the form of a list of integers (default:5,5,5,5,5,5,5,5,5,5,5,10,10,20). The list must be the same length as the nl_scale factor list
+
+- **-nl_update_smooth** Regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 2.0 x voxel_size)
+
+- **-nl_disp_smooth** Regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0 x voxel_size)
+
+- **-nl_grad_step** The gradient step size for non-linear registration (Default: 0.5)
+
+- **-noreorientation** Turn off FOD reorientation. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc
 
 Standard options
 ^^^^^^^^^^^^^^^^
