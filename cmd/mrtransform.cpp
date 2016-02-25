@@ -256,9 +256,9 @@ void run ()
   if (opt.size()) {
     if (warp.valid())
       throw Exception ("only one warp field can be input with either -warp or -warp_df");
+    warp = Image<default_type>::open (opt[0][0]);
     if (warp.ndim() != 4)
       throw Exception ("the input -warp_df file must be a 4D deformation field");
-    warp = Image<default_type>::open (opt[0][0]);
   }
 
   // Inverse
