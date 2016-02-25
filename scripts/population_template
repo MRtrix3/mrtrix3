@@ -238,7 +238,7 @@ for level in range(0, len(nl_scales)):
         runCommand('mrresize warps/' + i.prefix + '.mif -scale ' + str(upsample_factor) + ' tmp.mif')
         runCommand('mv tmp.mif warps/' + i.prefix + '.mif')
 
-runCommand('mrconvert ' + current_template + os.path.join(lib.app.workingDir, lib.app.args.template) + lib.app.mrtrixForce)
+runCommand('mrconvert ' + current_template + ' ' + os.path.join(lib.app.workingDir, lib.app.args.template) + lib.app.mrtrixForce)
 
 if lib.app.args.warps:
   runCommand('cp -r  warps ' + os.path.join(lib.app.workingDir, lib.app.args.warp_dir) + lib.app.mrtrixForce)
