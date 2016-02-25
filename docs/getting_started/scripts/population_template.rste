@@ -1,0 +1,63 @@
+Synopsis
+--------
+
+    population_template [ options ] input_dir template
+
+- *input_dir*: The input directory containing all images used to build the template
+- *template*: The output template image
+
+Description
+-----------
+
+Generates an unbiased group-average template from a series of images
+
+Options
+-------
+
+- **-warp_dir** An output directory containing warps from each input to the template. if the folder does not exist it will be created
+
+- **-mask_dir** Optionally provide a set of masks inside a single directory, one per input image (with the same file name prefix). Using masks will speed up registration significantly
+
+- **-noreorientation** turn off FOD reorientation. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc
+
+Standard options
+^^^^^^^^^^^^^^^^
+
+
+- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+
+- **-force** Force overwrite of output files if pre-existing
+
+- **-help** Display help information for the script
+
+- **-nocleanup** Do not delete temporary directory at script completion
+
+- **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
+
+- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+
+- **-quiet** Suppress all console output during script execution
+
+- **-verbose** Display additional information for every command invoked
+
+References
+^^^^^^^^^^
+
+
+
+---
+
+**Author:** David Raffelt (david.raffelt@florey.edu.au)
+
+**Copyright:** 
+Copyright (c) 2008-2016 the MRtrix3 contributors
+
+This Source Code Form is subject to the terms of the Mozilla Public 
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/
+
+MRtrix is distributed in the hope that it will be useful, 
+but WITHOUT ANY WARRANTY; without even the implied warranty of 
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+For more details, see www.mrtrix.org
