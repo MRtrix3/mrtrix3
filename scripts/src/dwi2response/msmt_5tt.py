@@ -42,6 +42,7 @@ def execute():
   from lib.printMessage  import printMessage
   from lib.runCommand    import runCommand
   from lib.warnMessage   import warnMessage
+  from lib.errorMessage  import errorMessage
   
   # Ideally want to use the oversampling-based regridding of the 5TT image from the SIFT model, not mrtransform
   # May need to commit 5ttregrid...
