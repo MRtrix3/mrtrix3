@@ -50,7 +50,8 @@ namespace MR
         Smooth (const HeaderType& in) :
             Base (in),
             extent (3, 0),
-            stdev (3, 0.0)
+            stdev (3, 0.0),
+            zero_boundary (false)
         {
           for (int i = 0; i < 3; i++)
             stdev[i] = in.spacing(i);
@@ -91,6 +92,11 @@ namespace MR
           set_stdev (std::vector<default_type> (3, stdev));
         }
 
+        //! ensure the image boundary remains zero. Used to constrain displacement fields during image registration
+        void set_zero_boundary (bool do_zero_boundary) {
+          zero_boundary = do_zero_boundary;
+        }
+
         //! Set the standard deviation of the Gaussian defined in mm.
         //! This must be set as a single value to be used for the first 3 dimensions
         //! or separate values, one for each dimension. (Default: 1 voxel)
@@ -129,7 +135,7 @@ namespace MR
           for (size_t dim = 0; dim < 3; dim++) {
             if (stdev[dim] > 0) {
               out = std::make_shared<Image<ValueType> > (Image<ValueType>::scratch (input));
-              Adapter::Gaussian1D<Image<ValueType> > gaussian (*in, stdev[dim], dim, extent[dim]);
+              Adapter::Gaussian1D<Image<ValueType> > gaussian (*in, stdev[dim], dim, extent[dim], zero_boundary);
               threaded_copy (gaussian, *out, 0, input.ndim(), 2);
               in = out;
               if (progress)
@@ -142,6 +148,7 @@ namespace MR
       protected:
         std::vector<int> extent;
         std::vector<default_type> stdev;
+        bool zero_boundary;
     };
     //! @}
   }
