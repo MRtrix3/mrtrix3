@@ -13,6 +13,11 @@ Description
 
 In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST
 
+Options
+-------
+
+- **-premasked** Indicate that brain masking has been applied to the T1 input image
+
 Standard options
 ^^^^^^^^^^^^^^^^
 

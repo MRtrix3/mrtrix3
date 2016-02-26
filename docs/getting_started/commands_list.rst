@@ -367,6 +367,10 @@ List of MRtrix3 commands
 .......
 
 
+.. include:: commands/warp2jacobian.rst
+.......
+
+
 .. include:: commands/warpcorrect.rst
 .......
 
