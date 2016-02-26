@@ -97,11 +97,11 @@ def parse_commands (commands_dir, completion_path, commands):
 				else:
 					arg_choices +=  " " + choice
 		elif arg_type == 'IMAGEIN':
-			arg_choices ='`eval ls $1*.{mih,mif,nii,dcm,msf,hdr,mgh,nii.gz,mif.gz} 2> /dev/null | tr "\n" " "`'
+			arg_choices ='`eval ls $1*.{mih,mif,nii,dcm,msf,hdr,mgh,nii.gz,mif.gz} 2> /dev/null | tr "\n" " "``eval ls -d $1*/ 2> /dev/null | tr "\n" " "`'
 		elif arg_type == 'FILEIN':
-			arg_choices ='`eval ls "$1*" 2> /dev/null | grep -E "$1*\.[^[:space:]]+"`'
+			arg_choices ='`eval ls "$1*" 2> /dev/null | grep -E "$1*\.[^[:space:]]+"``eval ls -d $1*/ 2> /dev/null | tr "\n" " "`'
 		elif arg_type == 'TRACKSIN':
-			arg_choices ='`eval ls $1*.tck 2> /dev/null | tr "\n" " "`'
+			arg_choices ='`eval ls $1*.tck 2> /dev/null | tr "\n" " "``eval ls -d $1*/ 2> /dev/null | tr "\n" " "`'
 		#elif arg_type in ['FLOAT', 'INT']:
 		else:
 			arg_choices = "__empty__"
@@ -187,6 +187,9 @@ _%s()
   			word="${COMP_WORDS[$i]}"
 			if [[ "$word" == -* ]]; then
 				option=$(echo $word | sed -E "s/-//g");
+				if [[ ${#option} == 0 ]]; then
+					continue; 
+				fi
 				arg_index=$(( $COMP_CWORD - $i - 1));
 				max_args=$(_%s_${option}_max_num_args);
 				

@@ -7,12 +7,6 @@
 import argparse, math, os, shutil, sys
 import lib.app
 
-import src.dwi2response.fa
-import src.dwi2response.manual
-import src.dwi2response.msmt_5tt
-import src.dwi2response.tax
-import src.dwi2response.tournier
-
 from lib.errorMessage  import errorMessage
 from lib.getHeaderInfo import getHeaderInfo
 from lib.getImageStat  import getImageStat
@@ -47,21 +41,30 @@ grad_import_group.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), 
 subparsers = lib.app.parser.add_subparsers(title='algorithm choices', description='Select the algorithm to be used to derive the response function', help='Additional help available for individual algorithms: Use e.g. ' + os.path.basename(sys.argv[0]) + ' fa -help')
 #subparsers.required = True
 
-src.dwi2response.fa      .initParser(subparsers, base_parser)
-src.dwi2response.manual  .initParser(subparsers, base_parser)
-src.dwi2response.msmt_5tt.initParser(subparsers, base_parser)
-src.dwi2response.tax     .initParser(subparsers, base_parser)
-src.dwi2response.tournier.initParser(subparsers, base_parser)
+
+# Import the command-line settings for all algorithms found in the scripts/src/dwi2response/ directory
+from src import dwi2response
+algorithm_list = os.listdir(os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'src', 'dwi2response'))
+for filename in algorithm_list:
+  filename = filename.split('.')
+  if len(filename) == 2 and filename[1] == 'py' and not filename[0] == '__init__':
+    __import__('src.dwi2response', globals(), locals(), [ filename[0] ])
+    algorithm = getattr(dwi2response, filename[0])
+    algorithm.initParser(subparsers, base_parser)
 
 
 lib.app.initialise()
 
 
+# Find out which algorithm the user has requested
+algorithm = getattr(dwi2response, lib.app.args.algorithm)
+
+
 # Sanitise some inputs, and get ready for data import
 if lib.app.args.lmax:
   try:
-    lmax = [ int(x) for x in lib.app.args.shell.split(',') ]
-    if lmax_value%2:
+    lmax = [ int(x) for x in lib.app.args.lmax.split(',') ]
+    if any([lmax_value%2 for lmax_value in lmax]):
       errorMessage('Value of lmax must be even')
   except:
     errorMessage('Parameter lmax must be a number')
@@ -94,23 +97,9 @@ if lib.app.args.mask:
 
 
 # Check for prior existence of output files, and grab any input files, used by the particular algorithm
-if   lib.app.args.algorithm == 'fa':
-  src.dwi2response.fa      .checkOutputFiles()
-  src.dwi2response.fa      .getInputFiles()
-elif lib.app.args.algorithm == 'manual':
-  src.dwi2response.manual  .checkOutputFiles()
-  src.dwi2response.manual  .getInputFiles()
-elif lib.app.args.algorithm == 'msmt_5tt':
-  src.dwi2response.msmt_5tt.checkOutputFiles()
-  src.dwi2response.msmt_5tt.getInputFiles()
-elif lib.app.args.algorithm == 'tax':
-  src.dwi2response.tax     .checkOutputFiles()
-  src.dwi2response.tax     .getInputFiles()
-elif lib.app.args.algorithm == 'tournier':
-  src.dwi2response.tournier.checkOutputFiles()
-  src.dwi2response.tournier.getInputFiles()
-  
 lib.app.checkOutputFile(lib.app.args.voxels)
+algorithm.checkOutputFiles()
+algorithm.getInputFiles()
 
 
 lib.app.gotoTempDir()
@@ -137,26 +126,7 @@ else:
 
 
 # From here, the script splits depending on what estimation algorithm is being used
-
-# Old approach: FA threshold, tensor-based directions
-if lib.app.args.algorithm == 'fa':
-  src.dwi2response.fa.execute()
-
-# (Potentially) Multi-shell, but based on a strict input voxel mask
-elif lib.app.args.algorithm == 'manual':
-  src.dwi2response.manual.execute()
-
-# Multi-shell (5TT-based): Provide 5TT image, do re-gridding to DWI space, select pure voxels, generate RF, recursively call self to get WM response
-elif lib.app.args.algorithm == 'msmt_5tt':
-  src.dwi2response.msmt_5tt.execute()
-
-# Tax: Iterative calibration using CSD itself, start with full brain mask, only remove voxels at each iteration  
-elif lib.app.args.algorithm == 'tax':
-  src.dwi2response.tax.execute()
-
-# Tournier: Use [1 -1 1] as initial response, run CSD, select top 3000? voxels, new RF, dilate mask by 1 voxel, run CSD, select top 300? voxels
-elif lib.app.args.algorithm == 'tournier':
-  src.dwi2response.tournier.execute()
+algorithm.execute()
 
 
 # Finalize for all algorithms

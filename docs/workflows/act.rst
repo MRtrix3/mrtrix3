@@ -21,7 +21,9 @@ Pre-processing steps
 DWI distortion correction
 ^^^^
 
-For the anatomical information to be incorporated accurately during the tractography reconstruction process, any geometric distortions present in the diffusion images must be corrected. The FSL 5.0 commands ``topup`` and ``eddy`` are effective in performing this correction based on a reversed phase-encode acquisition, though their interfaces can be difficult to figure out. Our current strategy is to acquire a pair of *b=0* images, the first with phase encode A>>P and the second P>>A, followed by the DWI acquisition with phase encode A>>P; the provided script ``revpe_distcorr`` interfaces with FSL to perform the distortion correction in this particular case. For alternative acquisitions, appropriate modification of the ``revpe_distcorr`` script may be an effective way to handle this processing step.
+For the anatomical information to be incorporated accurately during the tractography reconstruction process, any geometric distortions present in the diffusion images must be corrected. The FSL 5.0 commands ``topup`` and ``eddy`` are effective in performing this correction based on a reversed phase-encode acquisition, though their interfaces can be difficult to figure out.
+
+A common strategy is to acquire a pair of *b=0* images, the first with phase encode A>>P and the second P>>A, followed by the DWI acquisition with phase encode A>>P; the provided script ``dwipreproc`` using the ``-rpe_pair`` option interfaces with FSL to perform the distortion correction in this particular case. For alternative acquisitions, see the help page of the ``dwipreproc`` script.
 
 Image registration
 ^^^^
@@ -36,7 +38,7 @@ Because the anatomical image is used to limit the spatial extent of streamlines 
 Tissue segmentation
 ^^^^
 
-So far I have had success with using FSL tools to also perform the anatomical image segmentation; FAST is not perfect, but in most cases it's good enough, and most alternative software I tried provided binary mask images only, which is not ideal. The ``act_anat_prepare_fsl`` script interfaces with FSL to generate the necessary image data from the raw T1 image, using BET, FAST and FIRST. Note that this script automatically crops the inferior quarter of the image, as this was necessary with our T1 data for BET to operate correctly; if your anatomical images do not extent this far inferior, you may need to modify the script. See the '5TT format' section below for more details if you wish to use other segmentation software.
+So far I have had success with using FSL tools to also perform the anatomical image segmentation; FAST is not perfect, but in most cases it's good enough, and most alternative software I tried provided binary mask images only, which is not ideal. The ``5ttgen`` script using the ``fsl`` algorithm interfaces with FSL to generate the necessary image data from the raw T1 image, using BET, FAST and FIRST. Note that this script also crops the resulting image so that it contains no more than the extracted brain (as this reduces the file size and therefore improves memory access performance during tractography); if you want the output image to possess precisely the same dimensions as the input T1 image, you can use the ``-nocrop`` option.
 
 Using ACT
 ----
@@ -60,19 +62,14 @@ The first four of these are described in the ACT NeuroImage paper. The fifth can
 
 The following binaries are provided for working with the 5TT format:
 
-* ``5tt2gmwmi``: Produces a mask image suitable for seeding streamlines from the grey matter - white matter interface (GMWMI). The resulting image should then be provided to the ``tckgen`` command using the ``seed_gmwmi`` option.
+* ``5tt2gmwmi``: Produces a mask image suitable for seeding streamlines from the grey matter - white matter interface (GMWMI). The resulting image should then be provided to the ``tckgen`` command using the ``-seed_gmwmi`` option.
 * ``5tt2vis``: Produces a 3D greyscale image suitable for visualisation purposes.
 * ``5ttedit``: Allows the user to edit the tissue segmentations. Useful for manually correcting tissue segmentations that are known to be erroneous (e.g. dark blobs in the white matter being labelled as grey matter); see the command's help page for more details.
-* ``5ttgen``: A simple worker command that is invoked by the ``act_anat_prepare_fsl`` script. Only likely to be of any use if the user wishes to utilise tissue segmentation results from alternative software.
 
 Alternative tissue segmentation software
 ----
 
-Users who wish to experiment with using tissue segmentations from different software sources are encouraged to do so; if a particular approach is shown to be effective we can add an appropriate script to MRtrix. A second script ``act_anat_prepare_freesurfer`` is also provided to demonstrate how the output of different software can be manipulated to provide the tissue segmentations in the appropriate format. It is however not recommended to actually use this alternative script for patient studies; many midbrain structures are not segmented by FreeSurfer, so the tracking may not behave as desired.
+Users who wish to experiment with using tissue segmentations from different software sources are encouraged to do so; if a particular approach is shown to be effective we can add an appropriate script to MRtrix. The ``5ttgen`` script has a second algorithm, ``freesurfer``, which demonstrates how the output of different software can be manipulated to provide the tissue segmentations in the appropriate format. It is however not recommended to actually use this alternative algorithm for patient studies; many midbrain structures are not segmented by FreeSurfer, so the tracking may not behave as desired.
 
-When producing a 5TT image from some other software source, the following requirements should be adhered to:
+Users who wish to try manipulating the tissue segmentations from some alternative software into the 5TT format may find it most convenient to make a copy of one of the existing algorithms within the ``scripts/src/_5ttgen//`` directory, and modify accordingly. The ``5ttgen`` script will automatically detect the presence of the new algorithm, and make it available at the command-line.
 
-* The image should use a 32-bit floating-point data type, with image intensities (partial volume fractions) ranging from 0.0 to 1.0.
-* The image should be four-dimensional, and the dimension of the fourth axis should be 5.
-* The partial volume images for each tissue type should appear in the order as described earlier. If a particular tissue type is not provided at all (e.g. pathological tissue), the image volume must still be present, but should be zero-filled.
-* For all brain voxels, the sum of partial volume fractions across all tissue types should be 1.0; outside the brain, it should be 0.0. The ``5ttgen`` command may be useful in ensuring that this criterion is upheld.

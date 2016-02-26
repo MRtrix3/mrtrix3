@@ -41,6 +41,8 @@ def execute():
   from lib.getImageStat  import getImageStat
   from lib.printMessage  import printMessage
   from lib.runCommand    import runCommand
+  from lib.warnMessage   import warnMessage
+  from lib.errorMessage  import errorMessage
   
   # Ideally want to use the oversampling-based regridding of the 5TT image from the SIFT model, not mrtransform
   # May need to commit 5ttregrid...
@@ -52,14 +54,16 @@ def execute():
     errorMessage('Imported anatomical image ' + os.path.basename(lib.app.args.in_5tt) + ' is not in the 5TT format')
 
   # Get shell information
-  shells = [ int(round(float(x))) for x in getHeaderInfo('dwi.mif', 'shells').split() ]
+  shells = [ float(x) for x in getHeaderInfo('dwi.mif', 'shells').split() ]
   if len(shells) < 3:
     warnMessage('Less than three b-value shells; response functions will not be applicable in MSMT CSD algorithm')
 
   # Get lmax information (if provided)
   wm_lmax = [ ]
   if lib.app.args.lmax:
-    wm_lmax = [ int(x.strip()) for x in lib.app.args.lmax.split() ]
+    wm_lmax = [ int(x.strip()) for x in lib.app.args.lmax.split(',') ]
+    if not len(wm_lmax) == len(shells):
+      errorMessage('Number of manually-defined lmax\'s (' + str(len(wm_lmax)) + ') does not match number of b-value shells (' + str(len(shells)) + ')')
     for l in wm_lmax:
       if l%2:
         errorMessage('Values for lmax must be even')
@@ -78,6 +82,27 @@ def execute():
   printMessage('Calling dwi2response recursively to select WM single-fibre voxels using \'' + lib.app.args.wm_algo + '\' algorithm')
   runCommand('dwi2response -quiet ' + lib.app.args.wm_algo + ' dwi.mif wm_ss_response.txt -mask wm_mask.mif -voxels wm_sf_mask.mif')
 
+  # Check for empty masks
+  gm_voxels  = int(getImageStat('gm_mask.mif',    'count', 'gm_mask.mif'))
+  wm_voxels  = int(getImageStat('wm_sf_mask.mif', 'count', 'wm_sf_mask.mif'))
+  csf_voxels = int(getImageStat('csf_mask.mif',   'count', 'csf_mask.mif'))
+  empty_masks = [ ]
+  if not gm_voxels:
+    empty_masks.append('GM')
+  if not wm_voxels:
+    empty_masks.append('WM')
+  if not csf_voxels:
+    empty_masks.append('CSF')
+  if empty_masks:
+    message = ','.join(empty_masks)
+    message += ' tissue mask'
+    if len(empty_masks) > 1:
+      message += 's'
+    message += ' empty; cannot estimate response function'
+    if len(empty_masks) > 1:
+      message += 's'
+    errorMessage(message)
+
   # For each of the three tissues, generate a multi-shell response
   # Since here we're guaranteeing that GM and CSF will be isotropic in all shells, let's use mrstats rather than sh2response (seems a bit weird passing a directions file to sh2response with lmax=0...)
 
@@ -87,13 +112,14 @@ def execute():
   max_length = 0
 
   for index, b in enumerate(shells):
-    dwi_path = 'dwi_b' + str(b) + '.mif'
+    int_b = str(int(round(b)))
+    dwi_path = 'dwi_b' + int_b + '.mif'
     runCommand('dwiextract dwi.mif -shell ' + str(b) + ' ' + dwi_path)
     sizes = getHeaderInfo(dwi_path, 'size').strip()
     if len(sizes) == 3:
       mean_path = dwi_path
     else:
-      mean_path = 'dwi_b' + str(b) + '_mean.mif'
+      mean_path = 'dwi_b' + int_b + '_mean.mif'
       runCommand('mrmath ' + dwi_path + ' mean ' + mean_path + ' -axis 3')
     gm_mean  = float(getImageStat(mean_path, 'mean', 'gm_mask.mif'))
     csf_mean = float(getImageStat(mean_path, 'mean', 'csf_mask.mif'))
@@ -102,8 +128,8 @@ def execute():
     this_b_lmax_option = ''
     if wm_lmax:
       this_b_lmax_option = ' -lmax ' + str(wm_lmax[index])
-    runCommand('amp2sh ' + dwi_path + ' - | sh2response - wm_sf_mask.mif dirs.mif wm_response_b' + str(b) + '.txt' + this_b_lmax_option)
-    wm_response = open('wm_response_b' + str(b) + '.txt', 'r').read().split()
+    runCommand('amp2sh ' + dwi_path + ' - | sh2response - wm_sf_mask.mif dirs.mif wm_response_b' + int_b + '.txt' + this_b_lmax_option)
+    wm_response = open('wm_response_b' + int_b + '.txt', 'r').read().split()
     wm_responses.append(wm_response)
     max_length = max(max_length, len(wm_response))
 
