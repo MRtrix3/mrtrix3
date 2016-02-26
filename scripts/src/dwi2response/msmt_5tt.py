@@ -123,8 +123,8 @@ def execute():
       runCommand('mrmath ' + dwi_path + ' mean ' + mean_path + ' -axis 3')
     gm_mean  = float(getImageStat(mean_path, 'mean', 'gm_mask.mif'))
     csf_mean = float(getImageStat(mean_path, 'mean', 'csf_mask.mif'))
-    gm_responses .append( [ str(gm_mean  * math.sqrt(4.0 * math.pi)) ] )
-    csf_responses.append( [ str(csf_mean * math.sqrt(4.0 * math.pi)) ] )
+    gm_responses .append( str(gm_mean  * math.sqrt(4.0 * math.pi)) )
+    csf_responses.append( str(csf_mean * math.sqrt(4.0 * math.pi)) )
     this_b_lmax_option = ''
     if wm_lmax:
       this_b_lmax_option = ' -lmax ' + str(wm_lmax[index])
@@ -135,16 +135,14 @@ def execute():
 
   with open('gm.txt', 'w') as f:
     for line in gm_responses:
-      line += ['0'] * (max_length - len(line))
-      f.write(' '.join(line) + '\n')
+      f.write(line + '\n')
   with open('wm.txt', 'w') as f:
     for line in wm_responses:
       line += ['0'] * (max_length - len(line))
       f.write(' '.join(line) + '\n')
   with open('csf.txt', 'w') as f:
     for line in csf_responses:
-      line += ['0'] * (max_length - len(line))
-      f.write(' '.join(line) + '\n')
+      f.write(line + '\n')
 
   shutil.copyfile('gm.txt',  os.path.join(lib.app.workingDir, lib.app.args.out_gm))
   shutil.copyfile('wm.txt',  os.path.join(lib.app.workingDir, lib.app.args.out_wm))
