@@ -9,7 +9,7 @@ Synopsis
 Description
 -----------
 
-Generates an unbiased group-average template from a series of images
+Generates an unbiased group-average template from a series of images. First a template is optimised with linear registration (rigid or affine, affine is default), then non-linear registration is used to optimise the template further.
 
 Options
 -------
@@ -20,9 +20,11 @@ Options
 
 - **-transformed_dir** Output a directory containing the input images transformed to the template. If the folder does not exist it will be created
 
-- **-affine_scale** Specifiy the multi-resolution pyramid used to build the affine template, in the form of a list of scale factors (default: 0.3,0.4,0.5,0.6,0.7,1.0,1.0,1.0,1.0,1.0). This implicitly defines the number of template levels
+- **-rigid** perform rigid registration instead of affine. This should be used for intra-subject registration in longitudinal analysis
 
-- **-affine_lmax** Specifiy the lmax used for affine registration for each scale factor, in the form of a list of integers (default: 0,0,0,0,2,2,2,2,2,2). The list must be the same length as the affine_scale factor list
+- **-linear_scale** Specifiy the multi-resolution pyramid used to build the rigid or affine template, in the form of a list of scale factors (default: 0.3,0.4,0.5,0.6,0.7,1.0,1.0,1.0,1.0,1.0). This implicitly defines the number of template levels
+
+- **-linear_lmax** Specifiy the lmax used for rigid or affine registration for each scale factor, in the form of a list of integers (default: 0,0,0,0,2,2,2,2,2,2). The list must be the same length as the affine_scale factor list
 
 - **-nl_scale** Specifiy the multi-resolution pyramid used to build the non-linear template, in the form of a list of scale factors (default: 0.2,0.3,0.4,0.5,0.5,0.6,0.7,0.8,0.9,1.0,1.0,1.0,1.0,1.0). This implicitly defines the number of template levels
 
