@@ -17,9 +17,11 @@
 #define __registration_transform_initialiser_helpers_h__
 
 #include <algorithm>
+#include <Eigen/Geometry>
 #include "image.h"
 #include "registration/transform/base.h"
 #include "transform.h"
+#include "math/math.h"
 #include "math/SH.h"
 
 namespace MR

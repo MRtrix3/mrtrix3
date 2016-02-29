@@ -173,7 +173,7 @@ namespace MR
             default_type& overall_cost_function;
             Eigen::VectorXd& overall_gradient;
             ssize_t* overall_cnt;
-            Transform transform;
+            MR::Transform transform;
       };
     }
   }
