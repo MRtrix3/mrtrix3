@@ -32,12 +32,15 @@
 #include "filter/reslice.h"
 #include "adapter/reslice.h"
 #include "interp/linear.h"
+#include "interp/cubic.h"
 #include "interp/nearest.h"
+#include "registration/metric/mean_squared.h"
 #include "registration/metric/params.h"
 #include "registration/metric/cross_correlation.h"
 #include "registration/metric/evaluate.h"
 #include "registration/metric/thread_kernel.h"
 #include "registration/transform/initialiser.h"
+#include "registration/transform/rigid.h"
 #include "progressbar.h"
 #include "file/config.h"
 
@@ -52,6 +55,192 @@ namespace MR
       typedef Eigen::Matrix<default_type, 3, 3> MatType;
       typedef Eigen::Matrix<default_type, 3, 1> VecType;
       typedef Eigen::Quaternion<default_type> QuatType;
+
+        class ExhaustiveRotationSearch {
+          public:
+            ExhaustiveRotationSearch (
+              Image<default_type>& image1,
+              Image<default_type>& image2,
+              Image<default_type>& mask1,
+              Image<default_type>& mask2,
+              Registration::Metric::MeanSquared& metric) :
+            im1(image1),
+            im2(image2),
+            mask1(mask1),
+            mask2(mask2),
+            metric (metric),
+            min_cost (std::numeric_limits<default_type>::max()) { };
+
+            typedef Registration::Metric::MeanSquared MetricType;
+            typedef Metric::Params<Registration::Transform::Rigid,
+                                     Image<default_type>,
+                                     Image<default_type>,
+                                     Image<default_type>,
+                                     Image<default_type>,
+                                     Image<default_type>,
+                                     Interp::LinearInterp<Image<default_type>, Interp::LinearInterpProcessingType::ValueAndDerivative>,
+                                     Interp::LinearInterp<Image<default_type>, Interp::LinearInterpProcessingType::ValueAndDerivative>,
+                                     Interp::Linear<Image<default_type>>,
+                                     Interp::Linear<Image<default_type>>,
+                                     Image<default_type>,
+                                     Interp::LinearInterp<Image<default_type>, Interp::LinearInterpProcessingType::ValueAndDerivative>,
+                                     Image<default_type>,
+                                     Interp::Nearest<Image<default_type>>> ParamType;
+
+            void write_images (const std::string& im1_path, const std::string& im2_path) {
+              Image<default_type> image1_midway;
+              Image<default_type> image2_midway;
+
+              Header image1_midway_header (midway_image_header);
+              image1_midway_header.datatype() = DataType::Float64;
+              image1_midway_header.set_ndim(im1.ndim());
+              for (size_t dim = 3; dim < im1.ndim(); ++dim){
+                image1_midway_header.spacing(dim) = im1.spacing(dim);
+                image1_midway_header.size(dim) = im1.size(dim);
+              }
+              image1_midway = Image<default_type>::create (im1_path, image1_midway_header);
+              Header image2_midway_header (midway_image_header);
+              image2_midway_header.datatype() = DataType::Float64;
+              image2_midway_header.set_ndim(im2.ndim());
+              for (size_t dim = 3; dim < im2.ndim(); ++dim){
+                image2_midway_header.spacing(dim) = im2.spacing(dim);
+                image2_midway_header.size(dim) = im2.size(dim);
+              }
+              image2_midway = Image<default_type>::create (im2_path, image2_midway_header);
+
+              Filter::reslice<Interp::Cubic> (im1, image1_midway, transform.get_transform_half(), Adapter::AutoOverSample, 0.0);
+              Filter::reslice<Interp::Cubic> (im2, image2_midway, transform.get_transform_half_inverse(), Adapter::AutoOverSample, 0.0);
+            }
+
+            transform_type get_best_trafo() const {
+              transform_type best = best_trafo;
+              return best;
+            }
+
+            void run (default_type image_scale_factor = 0.3, size_t iterations = 100) {
+              ParamType parameters = get_parameters (image_scale_factor);
+              Eigen::Matrix<default_type, Eigen::Dynamic, 1> gradient (parameters.transformation.size());
+              size_t iteration (0);
+
+              // parameters.transformation.debug();
+              const Eigen::Vector3d com_offset (parameters.transformation.get_translation());
+              const Eigen::Vector3d centre (parameters.transformation.get_centre());
+              transform_type T, Tc2, To, R0;
+              Tc2.setIdentity();
+              To.setIdentity();
+              R0.setIdentity();
+              To.translation() = com_offset;
+              Tc2.translation() = centre - 0.5 * com_offset;
+              while ( iteration++ < iterations ) {
+                gen_random_quaternion ();
+                R0.linear() = quat.matrix();
+                // MAT(quat.matrix());
+                T = Tc2 * To * R0 * Tc2.inverse();
+                parameters.transformation.set_transform (T);
+                // parameters.transformation.debug();
+                default_type cost (0);
+                ssize_t cnt (0);
+                Metric::ThreadKernel<MetricType, ParamType> kernel (metric, parameters, cost, gradient, &cnt);
+                ThreadedLoop (parameters.midway_image, 0, 3).run (kernel);
+                DEBUG ("rotation search: iteration " + str(iteration) + " cost: " + str(cost) + " cnt: " + str(cnt));
+                // write_images ( "im1_" + str(iteration) + ".mif", "im2_" + str(iteration) + ".mif");
+                if (cnt > 0) {
+                  cost /= cnt;
+                  if ( cost < min_cost ) {
+                    min_cost = cost;
+                    best_quat = quat;
+                    best_trafo = T;
+                    INFO ("rotation search: iteration " + str(iteration) + " cost: " + str(cost));
+                  }
+                }
+              }
+              // parameters.transformation.set_transform (best_trafo);
+              // write_images ( "im1_best.mif", "im2_best.mif");
+            };
+
+          private:
+            ParamType get_parameters (default_type& image_scale_factor) {
+              Registration::Transform::Init::initialise_using_image_mass (im1, im2, mask1, mask2, transform);
+
+              // create resized midway image
+              std::vector<Eigen::Transform<default_type, 3, Eigen::Projective> > init_transforms;
+              {
+                Eigen::Transform<default_type, 3, Eigen::Projective> init_trafo_1 = transform.get_transform_half_inverse();
+                Eigen::Transform<default_type, 3, Eigen::Projective> init_trafo_2 = transform.get_transform_half();
+                init_transforms.push_back (init_trafo_1);
+                init_transforms.push_back (init_trafo_2);
+              }
+              auto padding = Eigen::Matrix<default_type, 4, 1>(0.0, 0.0, 0.0, 0.0);
+              default_type im_res = 1.0;
+              std::vector<Header> headers;
+              headers.push_back(im1.original_header());
+              headers.push_back(im2.original_header());
+              midway_image_header = compute_minimum_average_header<default_type, Eigen::Transform<default_type, 3, Eigen::Projective>> (headers, im_res, padding, init_transforms);
+              midway_image = Header::scratch (midway_image_header).template get_image<default_type>();
+
+              // TODO: there must be a way to do this without creating a scratch image...
+              Filter::Resize midway_resize_filter (midway_image);
+              midway_resize_filter.set_scale_factor (image_scale_factor);
+              midway_resize_filter.set_interp_type (1);
+              midway_resized = Image<default_type>::scratch (midway_resize_filter);
+              {
+                LogLevelLatch log_level (0);
+                midway_resize_filter (midway_image, midway_resized);
+              }
+
+              ParamType parameters (transform, im1, im2, midway_resized, mask1, mask2);
+              parameters.loop_density = 1.0;
+              return parameters;
+            }
+
+            void gen_random_quaternion () {
+              Eigen::Matrix<default_type, 4, 1> v(rndn(), rndn(), rndn(), rndn());
+              v.array() /= v.norm();
+              quat = Eigen::Quaternion<default_type> (v);
+            };
+            // void gen_uniform_rotation_angles_cone (const size_t& n_dir, const default_type& cone_angle_deg) {
+            //   assert (n_dir > 1);
+
+            //   const default_type golden_ratio ((1.0 + std::sqrt (5.0)) / 2.0);
+            //   const default_type golden_angle (2.0 * Math::pi * (1.0 - 1.0 / golden_ratio));
+
+            //   az_el.resize (n_dir,2);
+            //   Eigen::Matrix<default_type, Eigen::Dynamic, 1> idx (n_dir);
+            //   for (size_t i = 0; i < n_dir; ++i)
+            //     idx(i) = i;
+            //   az_el.col(0) = idx * golden_angle;
+
+            //   // el(i) = acos (1-(1-cosd(cone_angle_deg))*i/(n_dir-1) )
+            //   default_type a = (1.0 - std::cos(Math::pi * cone_angle_deg / 180.)) / (default_type (n_dir - 1));
+            //   az_el.col(1).array() = - a * idx.array() + 1.0;
+            //   for (size_t i = 0; i < n_dir; ++i)
+            //     az_el(i, 1) = std::acos (az_el(i, 1));
+            // }
+
+            // Eigen::Quaternion<default_type> RotationSearch::get_quaternion (const size_t& idx) {
+            //   Eigen::Vector3d normal ( -std::cos (az_el(idx,1)), -std::sin (az_el(idx,0)) * std::cos (az_el(idx,0)), 0.0);
+            //   Eigen::AngleAxis<default_type> aa (az_el(idx,1), normal);
+            //   return Eigen::Quaternion<default_type> (aa);
+            // }
+
+            // void to_cartesian (Eigen::Matrix<default_type, Eigen::Dynamic, 3>& xyz) {
+            //   xyz.resize (az_el.rows(), 3);
+            //   auto el_sin = az_el.col(1).sin().eval();
+            //   xyz.col(0) = el_sin.array() * az_el.col(0).cos().array();
+            //   xyz.col(1) = el_sin.array() * az_el.col(0).sin().array();
+            //   xyz.col(2) = az_el.col(1).cos();
+            // }
+
+            Image<default_type> im1, im2, mask1, mask2, midway_image, midway_resized;
+            Registration::Metric::MeanSquared metric;
+            Math::RNG::Normal<default_type> rndn;
+            Eigen::Quaternion<default_type> quat, best_quat;
+            transform_type best_trafo;
+            Header midway_image_header;
+            default_type min_cost;
+            Registration::Transform::Rigid transform;
+            // Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_el;
+          };
 
       template <class MatrixType, class QuaternionType = Eigen::Quaternion<default_type>>
         void nonorthonormal_matrix2quaternion (const MatrixType& matrix, QuaternionType& q) {
@@ -201,10 +390,10 @@ namespace MR
               // create resized midway image
               std::vector<Eigen::Transform<double, 3, Eigen::Projective> > init_transforms;
               {
-                Eigen::Transform<double, 3, Eigen::Projective> init_trafo_2 = transform.get_transform_half();
                 Eigen::Transform<double, 3, Eigen::Projective> init_trafo_1 = transform.get_transform_half_inverse();
-                init_transforms.push_back (init_trafo_2);
+                Eigen::Transform<double, 3, Eigen::Projective> init_trafo_2 = transform.get_transform_half();
                 init_transforms.push_back (init_trafo_1);
+                init_transforms.push_back (init_trafo_2);
               }
               auto padding = Eigen::Matrix<default_type, 4, 1>(0.0, 0.0, 0.0, 0.0);
               default_type im_res = 1.0;
@@ -391,8 +580,6 @@ namespace MR
             mutation_t_wrt_fov (File::Config::get_float ("reg_mutation_t_wrt_fov", 0.1)),
             loop_density (1.0),
             smooth_factor (1.0),
-            // grad_tolerance(1.0e-6),
-            // step_tolerance(1.0e-10),
             log_stream (nullptr) {  }
 
           void set_iterations (size_t& iterations) {
@@ -438,7 +625,6 @@ namespace MR
             Im1MaskType& im1_mask,
             Im2MaskType& im2_mask) {
 
-            // typedef typename TransformType::ParameterType ParameterType;
               ProgressBar progress ("performing global search", pool_size * (max_iter+1));
               std::ostream log_os(log_stream? log_stream : std::cerr.rdbuf());
 
@@ -472,7 +658,7 @@ namespace MR
                 spatial_extent += spatial_ext_v[0];
                 spatial_extent += spatial_ext_v[1];
                 spatial_extent += spatial_ext_v[2];
-                spatial_extent /= 3.0; // TODO use vector unstead of mean
+                spatial_extent /= 3.0; // TODO use vector instead of mean
               }
 
               while (parental.size() < pool_size){
@@ -559,8 +745,6 @@ namespace MR
           default_type loop_density;
           default_type smooth_factor;
           std::vector<size_t> kernel_extent;
-          // default_type grad_tolerance;
-          // default_type step_tolerance;
           std::streambuf* log_stream;
           size_t gd_repetitions;
       };
