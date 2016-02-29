@@ -38,7 +38,6 @@
 #include "math/rng.h"
 #include "math/math.h"
 #include <iostream>     // std::streambuf
-#include "registration/transform/global_search.h"
 #include "registration/multi_resolution_lmax.h"
 
 namespace MR
@@ -238,19 +237,22 @@ namespace MR
               Transform::Init::initialise_using_FOD (im1_image, im2_image, im1_mask, im2_mask, transform);
             else if (init_type == Transform::Init::set_centre_mass)
               Transform::Init::set_centre_using_image_mass (im1_image, im2_image, im1_mask, im2_mask, transform); // transform is set in mrregister.cpp
+            else if (init_type == Transform::Init::mass_rot_search)
+              Transform::Init::initialise_using_rotation_search_around_image_mass (
+                im1_image, im2_image, im1_mask, im2_mask, transform, 0.1, global_search);
             // transform.debug();
 
-            if (global_search) {
-              GlobalSearch::GlobalSearch transformation_search;
-              if (log_stream) {
-                transformation_search.set_log_stream(log_stream);
-              }
-              // std::ofstream outputFile( "/tmp/log.txt" );
-              // transformation_search.set_log_stream(outputFile.rdbuf());
-              // transformation_search.set_log_stream(std::cerr.rdbuf());
-              transformation_search.run_masked (metric, transform, im1_image, im2_image, im1_mask, im2_mask);
-              // transform.debug();
-            }
+            // if (global_search) {
+            //   GlobalSearch::GlobalSearch transformation_search;
+            //   if (log_stream) {
+            //     transformation_search.set_log_stream(log_stream);
+            //   }
+            //   // std::ofstream outputFile( "/tmp/log.txt" );
+            //   // transformation_search.set_log_stream(outputFile.rdbuf());
+            //   // transformation_search.set_log_stream(std::cerr.rdbuf());
+            //   transformation_search.run_masked (metric, transform, im1_image, im2_image, im1_mask, im2_mask);
+            //   // transform.debug();
+            // }
 
             typedef Im1ImageType MidwayImageType;
             typedef Im1ImageType ProcessedImageType;

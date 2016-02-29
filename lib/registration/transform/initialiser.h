@@ -19,7 +19,6 @@
 #include "image.h"
 #include "transform.h"
 #include "registration/transform/base.h"
-
 #include "registration/transform/initialiser_helpers.h"
 
 namespace MR
@@ -30,109 +29,61 @@ namespace MR
     {
       namespace Init
       {
-        enum InitType {mass, geometric, moments, mass_unmasked, moments_use_mask_intensity, moments_unmasked, fod, set_centre_mass, none};
+        enum InitType {mass, geometric, moments, mass_unmasked, moments_use_mask_intensity,
+          moments_unmasked, fod, set_centre_mass, mass_rot_search, none};
 
-          void set_centre_using_image_mass (Image<default_type>& im1,
+          extern void set_centre_using_image_mass (Image<default_type>& im1,
                                             Image<default_type>& im2,
                                             Image<default_type>& mask1,
                                             Image<default_type>& mask2,
-                                            Registration::Transform::Base& transform) {
-            CONSOLE ("initialising centre of rotation using centre of mass");
-            Eigen::Vector3 im1_centre_mass, im2_centre_mass;
-            Eigen::Vector3 im1_centre_mass_transformed, im2_centre_mass_transformed;
+                                            Registration::Transform::Base& transform);
 
-            get_centre_of_mass (im1, mask1, im1_centre_mass);
-            get_centre_of_mass (im2, mask2, im2_centre_mass);
+        extern void initialise_using_image_centres (const Image<default_type>& im1,
+                                               const Image<default_type>& im2,
+                                               Registration::Transform::Base& transform);
 
-            transform.transform_half_inverse (im1_centre_mass_transformed, im1_centre_mass);
-            transform.transform_half (im2_centre_mass_transformed, im2_centre_mass);
-
-            Eigen::Vector3 centre = (im1_centre_mass + im2_centre_mass) * 0.5;
-            transform.set_centre_without_transform_update (centre);
-          }
-
-        template <class Im1ImageType,
-                  class Im2ImageType,
-                  class TransformType>
-          void initialise_using_image_centres (const Im1ImageType& im1,
-                                               const Im2ImageType& im2,
-                                               TransformType& transform) {
-            CONSOLE ("initialising centre of rotation and translation using geometric centre");
-            Eigen::Vector3 im1_centre_scanner;
-            get_geometric_centre (im1, im1_centre_scanner);
-
-            Eigen::Vector3 im2_centre_scanner;
-            get_geometric_centre (im2, im2_centre_scanner);
-
-            Eigen::Vector3 translation = im1_centre_scanner - im2_centre_scanner;
-            Eigen::Vector3 centre = (im1_centre_scanner + im2_centre_scanner) / 2.0;
-            transform.set_centre (centre);
-            transform.set_translation (translation);
-          }
-
-        void initialise_using_image_moments (Image<default_type>& im1,
+        extern void initialise_using_image_moments (Image<default_type>& im1,
                                              Image<default_type>& im2,
                                              Image<default_type>& mask1,
                                              Image<default_type>& mask2,
                                              Registration::Transform::Base& transform,
-                                             bool use_mask_values = false) {
-          if (use_mask_values) {
-            if (!(mask1.valid() or mask2.valid()))
-              throw Exception ("cannot run image moments initialisation using mask values without a valid mask");
-            CONSOLE ("initialising using image moments using mask values instead of image values");
-          }
-          else
-            CONSOLE ("initialising using image moments");
-          auto init = Transform::Init::MomentsInitialiser (im1, im2, mask1, mask2, transform, use_mask_values);
-          init.run();
-        }
+                                             bool use_mask_values = false);
 
-        void initialise_using_image_moments (Image<default_type>& im1,
+        extern void initialise_using_image_moments (Image<default_type>& im1,
                                              Image<default_type>& im2,
-                                             Registration::Transform::Base& transform) {
-          CONSOLE ("initialising using image moments with unmasked images");
-          Image<default_type> mask1;
-          Image<default_type> mask2;
-          auto init = Transform::Init::MomentsInitialiser (im1, im2, mask1, mask2, transform, false);
-          init.run();
-        }
+                                             Registration::Transform::Base& transform);
 
-        void initialise_using_FOD (Image<default_type>& im1,
+        extern void initialise_using_FOD (Image<default_type>& im1,
                                    Image<default_type>& im2,
                                    Image<default_type>& mask1,
                                    Image<default_type>& mask2,
                                    Registration::Transform::Base& transform,
-                                   ssize_t lmax = -1) {
-          CONSOLE ("initialising using masked images interpreted as FOD");
-          auto init = Transform::Init::FODInitialiser (im1, im2, mask1, mask2, transform, lmax);
-          init.run();
-        }
+                                   ssize_t lmax = -1);
 
 
-        void initialise_using_FOD (Image<default_type>& im1,
+        extern void initialise_using_FOD (Image<default_type>& im1,
                                    Image<default_type>& im2,
                                    Registration::Transform::Base& transform,
-                                   ssize_t lmax = -1) {
-          CONSOLE ("initialising using image moments with unmasked images");
-          Image<default_type> mask1;
-          Image<default_type> mask2;
-          auto init = Transform::Init::FODInitialiser (im1, im2, mask1, mask2, transform, lmax);
-          init.run();
-        }
+                                   ssize_t lmax = -1);
 
+        extern void initialise_using_rotation_search_around_image_mass (
+                                          Image<default_type>& im1,
+                                          Image<default_type>& im2,
+                                          Image<default_type>& mask1,
+                                          Image<default_type>& mask2,
+                                          Registration::Transform::Base& transform,
+                                          default_type image_scale = 0.1,
+                                          bool global_search = false);
 
-        void initialise_using_image_mass (Image<default_type>& im1,
+        extern void initialise_using_image_mass (Image<default_type>& im1,
                                           Image<default_type>& im2,
                                           Image<default_type>& mask1,
                                           Image<default_type>& mask2,
                                           Registration::Transform::Base& transform);
 
-        void initialise_using_image_mass (Image<default_type>& im1,
+        extern void initialise_using_image_mass (Image<default_type>& im1,
                                           Image<default_type>& im2,
-                                          Registration::Transform::Base& transform) {
-          Image<default_type> bogus_mask;
-          initialise_using_image_mass (im1, im2, bogus_mask, bogus_mask, transform);
-        }
+                                          Registration::Transform::Base& transform);
       }
     }
   }

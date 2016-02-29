@@ -35,6 +35,7 @@
 #include "interp/cubic.h"
 #include "interp/nearest.h"
 #include "registration/metric/mean_squared.h"
+#include "registration/metric/mean_squared_no_gradient.h"
 #include "registration/metric/params.h"
 #include "registration/metric/cross_correlation.h"
 #include "registration/metric/evaluate.h"
@@ -56,7 +57,7 @@ namespace MR
       typedef Eigen::Matrix<default_type, 3, 1> VecType;
       typedef Eigen::Quaternion<default_type> QuatType;
 
-      template <class MetricType>
+      template <class MetricType = Registration::Metric::MeanSquaredNoGradient>
         class ExhaustiveRotationSearch {
           public:
             ExhaustiveRotationSearch (
@@ -70,7 +71,23 @@ namespace MR
             mask1(mask1),
             mask2(mask2),
             metric (metric),
-            min_cost (std::numeric_limits<default_type>::max()) { };
+            min_cost (std::numeric_limits<default_type>::max()),
+            global_search_iterations (10000),
+            rot_angles (10),
+            local_search_directions (250),
+            idx_angle (0),
+            idx_dir (0) {
+              rot_angles[0] = 0.5;
+              rot_angles[1] = 1.0;
+              rot_angles[2] = 5.0;
+              rot_angles[3] = 10.0;
+              rot_angles[4] = 15.0;
+              rot_angles[5] = 20.0;
+              rot_angles[6] = 25.0;
+              rot_angles[7] = 30.0;
+              rot_angles[8] = 35.0;
+              rot_angles[9] = 40.0;
+            };
 
             typedef Metric::Params<Registration::Transform::Rigid,
                                      Image<default_type>,
@@ -123,14 +140,32 @@ namespace MR
               return c;
             }
 
+            void set_rot_angles (const std::vector<default_type> angles) {
+              assert (angles.size() > 0);
+              for (size_t i=0; i<angles.size(); ++i){
+                if (angles[i] < 0.0 or angles[i] > Math::pi)
+                  throw Exception ("rotation search angle has to be in the range [0...pi]");
+              }
+              rot_angles = angles;
+            }
+
             Eigen::Vector3d get_offset() const {
               Eigen::Vector3d o = offset;
               return o;
             }
 
-            void run (default_type image_scale_factor = 0.1, size_t iterations = 10000, bool global_search = true, bool write_result = false) {
+            void run (
+              default_type image_scale_factor = 0.1,
+              bool global_search = false,
+              bool debug = false) {
+
               std::string what = global_search? "global" : "local";
+              size_t iterations = global_search? global_search_iterations : (rot_angles.size() * local_search_directions);
               ProgressBar progress ("performing " + what + " search for best rotation", iterations);
+              if (!global_search) {
+                gen_uniform_rotation_axes (local_search_directions, 180.0); // full sphere
+                az_el_to_cartesian();
+              }
               ParamType parameters = get_parameters (image_scale_factor);
               Eigen::Matrix<default_type, Eigen::Dynamic, 1> gradient (parameters.transformation.size());
               size_t iteration (0);
@@ -155,12 +190,15 @@ namespace MR
               while ( iteration < iterations ) {
                 ++iteration;
                 ++progress;
-                gen_random_quaternion ();
+                if (global_search) {
+                  gen_random_quaternion ();
+                }
+                else {
+                  gen_local_quaternion ();
+                }
                 R0.linear() = quat.matrix();
-                // MAT(quat.matrix());
                 T = Tc2 * To * R0 * Tc2.inverse();
                 parameters.transformation.set_transform (T);
-                // parameters.transformation.debug();
                 cost = 0;
                 cnt = 0;
                 Metric::ThreadKernel<MetricType, ParamType> kernel (metric, parameters, cost, gradient, &cnt);
@@ -176,7 +214,7 @@ namespace MR
                   }
                 }
               }
-              if (write_result) {
+              if (debug) {
                 parameters.transformation.set_transform (best_trafo);
                 write_images ( "im1_best.mif", "im2_best.mif");
               }
@@ -217,43 +255,60 @@ namespace MR
               return parameters;
             }
 
-            void gen_random_quaternion () {
+            // gen_random_quaternion generates random quaternion (rotation around random direction
+            // by random angle)
+            inline void gen_random_quaternion () {
               Eigen::Matrix<default_type, 4, 1> v(rndn(), rndn(), rndn(), rndn());
               v.array() /= v.norm();
               quat = Eigen::Quaternion<default_type> (v);
             };
-            // void gen_uniform_rotation_angles_cone (const size_t& n_dir, const default_type& cone_angle_deg) {
-            //   assert (n_dir > 1);
 
-            //   const default_type golden_ratio ((1.0 + std::sqrt (5.0)) / 2.0);
-            //   const default_type golden_angle (2.0 * Math::pi * (1.0 - 1.0 / golden_ratio));
+            // gen_uniform_rotation_axes generates roughly uniformly distributed points on sphere
+            // starting on z-axis up to -z-axis (max_cone_angle_deg=180). points are stored as matrix
+            // of azimuth and elevation
+            void gen_uniform_rotation_axes ( const size_t& n_dir, const default_type& max_cone_angle_deg ) {
+              assert (n_dir > 1);
+              assert (max_cone_angle_deg > 0.0);
+              assert (max_cone_angle_deg <= 180.0);
 
-            //   az_el.resize (n_dir,2);
-            //   Eigen::Matrix<default_type, Eigen::Dynamic, 1> idx (n_dir);
-            //   for (size_t i = 0; i < n_dir; ++i)
-            //     idx(i) = i;
-            //   az_el.col(0) = idx * golden_angle;
+              const default_type golden_ratio ((1.0 + std::sqrt (5.0)) / 2.0);
+              const default_type golden_angle (2.0 * Math::pi * (1.0 - 1.0 / golden_ratio));
 
-            //   // el(i) = acos (1-(1-cosd(cone_angle_deg))*i/(n_dir-1) )
-            //   default_type a = (1.0 - std::cos(Math::pi * cone_angle_deg / 180.)) / (default_type (n_dir - 1));
-            //   az_el.col(1).array() = - a * idx.array() + 1.0;
-            //   for (size_t i = 0; i < n_dir; ++i)
-            //     az_el(i, 1) = std::acos (az_el(i, 1));
-            // }
+              az_el.resize (n_dir,2);
+              Eigen::Matrix<default_type, Eigen::Dynamic, 1> idx (n_dir);
+              for (size_t i = 0; i < n_dir; ++i)
+                idx(i) = i;
+              az_el.col(0) = idx * golden_angle;
 
-            // Eigen::Quaternion<default_type> RotationSearch::get_quaternion (const size_t& idx) {
-            //   Eigen::Vector3d normal ( -std::cos (az_el(idx,1)), -std::sin (az_el(idx,0)) * std::cos (az_el(idx,0)), 0.0);
-            //   Eigen::AngleAxis<default_type> aa (az_el(idx,1), normal);
-            //   return Eigen::Quaternion<default_type> (aa);
-            // }
+              // el(i) = acos (1-(1-cosd(max_cone_angle_deg))*i/(n_dir-1) )
+              default_type a = (1.0 - std::cos(Math::pi / 180.0 * default_type (max_cone_angle_deg))) / (default_type (n_dir - 1));
+              az_el.col(1).array() = - a * idx.array() + 1.0;
+              for (size_t i = 0; i < n_dir; ++i)
+                az_el(i, 1) = std::acos (az_el(i, 1));
+            }
 
-            // void to_cartesian (Eigen::Matrix<default_type, Eigen::Dynamic, 3>& xyz) {
-            //   xyz.resize (az_el.rows(), 3);
-            //   auto el_sin = az_el.col(1).sin().eval();
-            //   xyz.col(0) = el_sin.array() * az_el.col(0).cos().array();
-            //   xyz.col(1) = el_sin.array() * az_el.col(0).sin().array();
-            //   xyz.col(2) = az_el.col(1).cos();
-            // }
+            // convert spherical coordinates (az_el) to cartesian coordinates (xyz)
+            inline void az_el_to_cartesian () {
+              xyz.resize (az_el.rows(), 3);
+              Eigen::VectorXd el_sin = az_el.col(1).array().sin();
+              xyz.col(0).array() = el_sin.array() * az_el.col(0).array().cos();
+              xyz.col(1).array() = el_sin.array() * az_el.col(0).array().sin();
+              xyz.col(2).array() = az_el.col(1).array().cos();
+            }
+
+            inline void gen_local_quaternion () {
+              // Eigen::Vector3d normal ( -std::cos (az_el(idx,1)), -std::sin (az_el(idx,0)) * std::cos (az_el(idx,0)), 0.0);
+              // Eigen::AngleAxis<default_type> aa (az_el(idx,1), normal);
+              // Eigen::Vector3d normal ( xyz.row(idx) );
+              // Eigen::AngleAxis<default_type> aa (angle, normal);
+              if (idx_dir == local_search_directions) {
+                idx_dir = 0;
+                ++idx_angle;
+                assert (idx_angle < rot_angles.size());
+              }
+              quat = Eigen::Quaternion<default_type> ( Eigen::AngleAxis<default_type> (rot_angles[idx_angle], xyz.row(idx_dir)) );
+              ++idx_dir;
+            }
 
             Image<default_type> im1, im2, mask1, mask2, midway_image, midway_resized;
             MetricType metric;
@@ -262,9 +317,14 @@ namespace MR
             transform_type best_trafo;
             Header midway_image_header;
             default_type min_cost;
+            size_t global_search_iterations;
+            std::vector<default_type> rot_angles;
+            size_t local_search_directions;
+            size_t idx_angle, idx_dir;
             Eigen::Vector3d centre, offset;
             Registration::Transform::Rigid transform;
-            // Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_el;
+            Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_el;
+            Eigen::Matrix<default_type, Eigen::Dynamic, 3> xyz;
           };
 
       template <class MatrixType, class QuaternionType = Eigen::Quaternion<default_type>>

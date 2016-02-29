@@ -13,15 +13,15 @@
  *
  */
 
-#include "registration/transform/initialiser_helpers.h"
 #include <Eigen/Geometry>
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
+#include "registration/transform/initialiser_helpers.h"
+#include "registration/transform/global_search.h"
 
 #include "algo/loop.h"
 #include "debug.h"
 // #include "timer.h"
-
 // #define DEBUG_INIT
 
 namespace MR
@@ -166,6 +166,22 @@ namespace MR
           }
           assert (mass != 0.0);
           centre_of_mass /= mass;
+        }
+
+        void initialise_using_rotation_search_around_image_mass (
+                                          Image<default_type>& im1,
+                                          Image<default_type>& im2,
+                                          Image<default_type>& mask1,
+                                          Image<default_type>& mask2,
+                                          Registration::Transform::Base& transform,
+                                          default_type image_scale,
+                                          bool global_search) {
+          Registration::Metric::MeanSquaredNoGradient metric;
+          GlobalSearch::ExhaustiveRotationSearch<decltype(metric)> search (im1, im2, mask1, mask2, metric);
+          search.run (image_scale, global_search, false);
+          transform.set_centre_without_transform_update (search.get_centre());
+          transform_type T = search.get_best_trafo();
+          transform.set_transform<transform_type> (T);
         }
 
         void initialise_using_image_mass (Image<default_type>& im1,

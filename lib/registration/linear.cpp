@@ -22,7 +22,8 @@ namespace MR
 
     using namespace App;
 
-    const char* initialisation_choices[] = { "mass", "geometric", "moments", "mass_unmasked", "moments_use_mask_intensity", "moments_unmasked", "fod", "none", NULL };
+    const char* initialisation_choices[] = { "mass", "geometric", "moments", "mass_unmasked",
+      "moments_use_mask_intensity", "moments_unmasked", "fod", "mass_rot_search", "none", NULL };
     const char* linear_metric_choices[] = { "diff", "ncc", NULL };
     const char* linear_robust_estimator_choices[] = { "l1", "l2", "lp", NULL };
 
@@ -52,6 +53,8 @@ namespace MR
         case 7:
           registration.set_init_type (Registration::Transform::Init::none);
           break;
+        case 8:
+          registration.set_init_type (Registration::Transform::Init::mass_rot_search);
         default:
           break;
       }
@@ -68,7 +71,8 @@ namespace MR
                                 "geometric (geometric image centre), moments (image moments), "
                                 "mass_unmasked (don't use image masks for centre of mass initialisation), "
                                 "moments_unmasked (don't use image masks for moments initialisation), "
-                                "fod (aligns FOD images based on their centre of mass and global sum of all fibre orientations) "
+                                "fod (aligns FOD images based on their centre of mass and global sum of all fibre orientations), "
+                                "mass_rot_search (align images based on their centre of mass and search for the best rotation using mean squared residuals) "
                                 "or none."
                                 "Default: mass.")
         + Argument ("type").type_choice (initialisation_choices)
@@ -117,7 +121,8 @@ namespace MR
                                 "geometric (geometric image centre), moments (image moments), "
                                 "mass_unmasked (don't use image masks for centre of mass initialisation), "
                                 "moments_unmasked (don't use image masks for moments initialisation), "
-                                "fod (aligns FOD images based on their centre of mass and global sum of all fibre orientations) "
+                                "fod (aligns FOD images based on their centre of mass and global sum of all fibre orientations), "
+                                "mass_rot_search (align images based on their centre of mass and search for the best rotation using mean squared residuals) "
                                 "or none."
                                 "Default: mass.")
         + Argument ("type").type_choice (initialisation_choices)
