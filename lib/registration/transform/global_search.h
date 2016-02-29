@@ -56,6 +56,7 @@ namespace MR
       typedef Eigen::Matrix<default_type, 3, 1> VecType;
       typedef Eigen::Quaternion<default_type> QuatType;
 
+      template <class MetricType>
         class ExhaustiveRotationSearch {
           public:
             ExhaustiveRotationSearch (
@@ -63,7 +64,7 @@ namespace MR
               Image<default_type>& image2,
               Image<default_type>& mask1,
               Image<default_type>& mask2,
-              Registration::Metric::MeanSquared& metric) :
+              MetricType& metric) :
             im1(image1),
             im2(image2),
             mask1(mask1),
@@ -71,19 +72,19 @@ namespace MR
             metric (metric),
             min_cost (std::numeric_limits<default_type>::max()) { };
 
-            typedef Registration::Metric::MeanSquared MetricType;
             typedef Metric::Params<Registration::Transform::Rigid,
                                      Image<default_type>,
                                      Image<default_type>,
                                      Image<default_type>,
                                      Image<default_type>,
                                      Image<default_type>,
-                                     Interp::LinearInterp<Image<default_type>, Interp::LinearInterpProcessingType::ValueAndDerivative>,
-                                     Interp::LinearInterp<Image<default_type>, Interp::LinearInterpProcessingType::ValueAndDerivative>,
+                                     // use Interp::LinearInterpProcessingType::ValueAndDerivative for metric that calculates gradients
+                                     Interp::LinearInterp<Image<default_type>, Interp::LinearInterpProcessingType::Value>,
+                                     Interp::LinearInterp<Image<default_type>, Interp::LinearInterpProcessingType::Value>,
                                      Interp::Linear<Image<default_type>>,
                                      Interp::Linear<Image<default_type>>,
                                      Image<default_type>,
-                                     Interp::LinearInterp<Image<default_type>, Interp::LinearInterpProcessingType::ValueAndDerivative>,
+                                     Interp::LinearInterp<Image<default_type>, Interp::LinearInterpProcessingType::Value>,
                                      Image<default_type>,
                                      Interp::Nearest<Image<default_type>>> ParamType;
 
@@ -117,29 +118,51 @@ namespace MR
               return best;
             }
 
-            void run (default_type image_scale_factor = 0.3, size_t iterations = 100) {
+            Eigen::Vector3d get_centre() const {
+              Eigen::Vector3d c = centre;
+              return c;
+            }
+
+            Eigen::Vector3d get_offset() const {
+              Eigen::Vector3d o = offset;
+              return o;
+            }
+
+            void run (default_type image_scale_factor = 0.1, size_t iterations = 10000, bool global_search = true, bool write_result = false) {
+              std::string what = global_search? "global" : "local";
+              ProgressBar progress ("performing " + what + " search for best rotation", iterations);
               ParamType parameters = get_parameters (image_scale_factor);
               Eigen::Matrix<default_type, Eigen::Dynamic, 1> gradient (parameters.transformation.size());
               size_t iteration (0);
+              ssize_t cnt (0);
+              default_type cost (0);
+              Metric::ThreadKernel<MetricType, ParamType> kernel (metric, parameters, cost, gradient, &cnt);
+              ThreadedLoop (parameters.midway_image, 0, 3).run (kernel);
+              assert (cnt > 0);
+              cost /= cnt;
+              min_cost = cost;
+              best_trafo = parameters.transformation.get_transform();
 
               // parameters.transformation.debug();
-              const Eigen::Vector3d com_offset (parameters.transformation.get_translation());
-              const Eigen::Vector3d centre (parameters.transformation.get_centre());
+              offset = parameters.transformation.get_translation();
+              centre = parameters.transformation.get_centre();
               transform_type T, Tc2, To, R0;
               Tc2.setIdentity();
               To.setIdentity();
               R0.setIdentity();
-              To.translation() = com_offset;
-              Tc2.translation() = centre - 0.5 * com_offset;
-              while ( iteration++ < iterations ) {
+              To.translation() = offset;
+              Tc2.translation() = centre - 0.5 * offset;
+              while ( iteration < iterations ) {
+                ++iteration;
+                ++progress;
                 gen_random_quaternion ();
                 R0.linear() = quat.matrix();
                 // MAT(quat.matrix());
                 T = Tc2 * To * R0 * Tc2.inverse();
                 parameters.transformation.set_transform (T);
                 // parameters.transformation.debug();
-                default_type cost (0);
-                ssize_t cnt (0);
+                cost = 0;
+                cnt = 0;
                 Metric::ThreadKernel<MetricType, ParamType> kernel (metric, parameters, cost, gradient, &cnt);
                 ThreadedLoop (parameters.midway_image, 0, 3).run (kernel);
                 DEBUG ("rotation search: iteration " + str(iteration) + " cost: " + str(cost) + " cnt: " + str(cnt));
@@ -148,14 +171,15 @@ namespace MR
                   cost /= cnt;
                   if ( cost < min_cost ) {
                     min_cost = cost;
-                    best_quat = quat;
                     best_trafo = T;
                     INFO ("rotation search: iteration " + str(iteration) + " cost: " + str(cost));
                   }
                 }
               }
-              // parameters.transformation.set_transform (best_trafo);
-              // write_images ( "im1_best.mif", "im2_best.mif");
+              if (write_result) {
+                parameters.transformation.set_transform (best_trafo);
+                write_images ( "im1_best.mif", "im2_best.mif");
+              }
             };
 
           private:
@@ -232,12 +256,13 @@ namespace MR
             // }
 
             Image<default_type> im1, im2, mask1, mask2, midway_image, midway_resized;
-            Registration::Metric::MeanSquared metric;
+            MetricType metric;
             Math::RNG::Normal<default_type> rndn;
-            Eigen::Quaternion<default_type> quat, best_quat;
+            Eigen::Quaternion<default_type> quat;
             transform_type best_trafo;
             Header midway_image_header;
             default_type min_cost;
+            Eigen::Vector3d centre, offset;
             Registration::Transform::Rigid transform;
             // Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_el;
           };
