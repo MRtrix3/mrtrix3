@@ -180,7 +180,7 @@ namespace MR
           }
           Eigen::Matrix<default_type, 3, 1> im1_centre_of_mass, im2_centre_of_mass;
           get_centre_of_mass (im1, mask1, im1_centre_of_mass);
-          get_centre_of_mass (im1, mask1, im2_centre_of_mass);
+          get_centre_of_mass (im2, mask2, im2_centre_of_mass);
 
           Eigen::Vector3 centre = (im1_centre_of_mass + im2_centre_of_mass) / 2.0;
           Eigen::Vector3 translation = im1_centre_of_mass - im2_centre_of_mass;
