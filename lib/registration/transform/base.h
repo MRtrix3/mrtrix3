@@ -138,9 +138,22 @@ namespace MR
             compute_halfspace_transformations();
           }
 
-          void set_matrix (const Eigen::Matrix<ParameterType, 3, 3>& mat) {
+          // set_matrix_const_translation updates the 3x3 matrix without updating the translation
+          void set_matrix_const_translation (const Eigen::Matrix<ParameterType, 3, 3>& mat) {
             trafo.linear() = mat;
-            compute_offset();
+            compute_halfspace_transformations();
+          }
+
+          // set_matrix updates the 3x3 matrix and also updates the translation
+          void set_matrix (const Eigen::Matrix<ParameterType, 3, 3>& mat) {
+            transform_type Tc2, To, R0;
+            Tc2.setIdentity();
+            To.setIdentity();
+            R0.setIdentity();
+            To.translation() = offset;
+            Tc2.translation() = centre - 0.5 * offset;
+            R0.linear() = mat;
+            trafo = Tc2 * To * R0 * Tc2.inverse();
             compute_halfspace_transformations();
           }
 
