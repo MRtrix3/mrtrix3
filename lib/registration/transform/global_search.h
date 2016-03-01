@@ -71,7 +71,6 @@ namespace MR
             mask1(mask1),
             mask2(mask2),
             metric (metric),
-            min_cost (std::numeric_limits<default_type>::max()),
             global_search_iterations (10000),
             rot_angles (10),
             local_search_directions (250),
@@ -162,6 +161,10 @@ namespace MR
               std::string what = global_search? "global" : "local";
               size_t iterations = global_search? global_search_iterations : (rot_angles.size() * local_search_directions);
               ProgressBar progress ("performing " + what + " search for best rotation", iterations);
+              overlap_it.resize (iterations);
+              cost_it.resize (iterations);
+              trafo_it.reserve (iterations);
+
               if (!global_search) {
                 gen_uniform_rotation_axes (local_search_directions, 180.0); // full sphere
                 az_el_to_cartesian();
@@ -175,7 +178,7 @@ namespace MR
               ThreadedLoop (parameters.midway_image, 0, 3).run (kernel);
               assert (cnt > 0);
               cost /= cnt;
-              min_cost = cost;
+              // min_cost = cost;
               best_trafo = parameters.transformation.get_transform();
 
               // parameters.transformation.debug();
@@ -199,20 +202,25 @@ namespace MR
                 R0.linear() = quat.matrix();
                 T = Tc2 * To * R0 * Tc2.inverse();
                 parameters.transformation.set_transform (T);
-                cost = 0;
+                cost = 0.0;
                 cnt = 0;
                 Metric::ThreadKernel<MetricType, ParamType> kernel (metric, parameters, cost, gradient, &cnt);
                 ThreadedLoop (parameters.midway_image, 0, 3).run (kernel);
                 DEBUG ("rotation search: iteration " + str(iteration) + " cost: " + str(cost) + " cnt: " + str(cnt));
                 // write_images ( "im1_" + str(iteration) + ".mif", "im2_" + str(iteration) + ".mif");
-                if (cnt > 0) {
-                  cost /= cnt;
-                  if ( cost < min_cost ) {
-                    min_cost = cost;
-                    best_trafo = T;
-                    INFO ("rotation search: iteration " + str(iteration) + " cost: " + str(cost));
-                  }
-                }
+                overlap_it[iteration] = cnt;
+                cost_it[iteration] = cost;
+                trafo_it.push_back (T);
+              }
+              //  best trafo := lowest cost with at least mean overlap
+              {
+                auto max_ = Eigen::MatrixXd::Constant(cost_it.rows(), 1, std::numeric_limits<default_type>::max());
+                default_type mean_overlap = overlap_it.sum()/default_type(iterations);
+                cost_it = (overlap_it.array() > mean_overlap).select(cost_it, max_); // set cost to max if overlap is below mean_overlap
+                std::ptrdiff_t i;
+                min_cost = cost_it.minCoeff(&i);
+                T = trafo_it[i];
+                best_trafo = T;
               }
               if (debug) {
                 parameters.transformation.set_transform (best_trafo);
@@ -222,7 +230,10 @@ namespace MR
 
           private:
             ParamType get_parameters (default_type& image_scale_factor) {
-              Registration::Transform::Init::initialise_using_image_mass (im1, im2, mask1, mask2, transform);
+              {
+                LogLevelLatch log_level (0);
+                Registration::Transform::Init::initialise_using_image_mass (im1, im2, mask1, mask2, transform);
+              }
 
               // create resized midway image
               std::vector<Eigen::Transform<default_type, 3, Eigen::Projective> > init_transforms;
@@ -317,6 +328,8 @@ namespace MR
             transform_type best_trafo;
             Header midway_image_header;
             default_type min_cost;
+            std::vector<default_type> vec_cost;
+            std::vector<size_t> vec_overlap;
             size_t global_search_iterations;
             std::vector<default_type> rot_angles;
             size_t local_search_directions;
@@ -325,6 +338,8 @@ namespace MR
             Registration::Transform::Rigid transform;
             Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_el;
             Eigen::Matrix<default_type, Eigen::Dynamic, 3> xyz;
+            Eigen::Matrix<default_type, Eigen::Dynamic, 1> overlap_it, cost_it;
+            std::vector<transform_type> trafo_it;
           };
 
       template <class MatrixType, class QuaternionType = Eigen::Quaternion<default_type>>
