@@ -67,7 +67,7 @@ namespace MR
       class FOD_lobe {
 
         public:
-          FOD_lobe (const DWI::Directions::Set& dirs, const dir_t seed, const float value) :
+          FOD_lobe (const DWI::Directions::Set& dirs, const dir_t seed, const default_type value) :
               mask (dirs),
               values (dirs.size(), 0.0),
               peak_dir_bin (seed),
@@ -92,9 +92,9 @@ namespace MR
               neg (false) { }
 
 
-          void add (const dir_t bin, const float value)
+          void add (const dir_t bin, const default_type value)
           {
-            assert ((value <= 0.0 && neg) || (value > 0.0 && !neg));
+            assert ((value <= 0.0 && neg) || (value >= 0.0 && !neg));
             mask[bin] = true;
             values[bin] = value;
             const Eigen::Vector3f& dir = mask.get_dirs()[bin];

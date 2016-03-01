@@ -204,6 +204,7 @@ namespace MR
                   DEBUG ("smoothing displacement field");
                   Filter::Smooth smooth_filter (*im1_disp_field_new);
                   smooth_filter.set_stdev (disp_smoothing_mm);
+                  smooth_filter.set_zero_boundary (true);
                   smooth_filter (*im1_disp_field_new, *im1_disp_field_new);
                   smooth_filter (*im2_disp_field_new, *im2_disp_field_new);
 
@@ -226,8 +227,6 @@ namespace MR
                   Registration::Transform::reorient_warp (im1_warped, im1_deform_field, aPSF_directions);
                   Registration::Transform::reorient_warp (im2_warped, im2_deform_field, aPSF_directions);
                 }
-
-//                save (im1_warped, "im1_warped_level" + str(level) + "_iter" + str(iteration) + ".mif");
 
                 DEBUG ("warping mask images");
                 Im1MaskType im1_mask_warped;
@@ -447,6 +446,8 @@ namespace MR
             Filter::reslice<Interp::Linear> (image, *temp);
             return temp;
           }
+
+
 
           bool is_initialised;
           std::vector<int> max_iter;

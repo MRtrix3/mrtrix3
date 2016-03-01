@@ -206,12 +206,12 @@ namespace MR {
                 }
                 if (!modified) {
                   // Compensate for impending deletion of elements from the vector
-                  dir_t bin = j->first;
-                  for (size_t k = 1; k != adj_lobes.size(); ++k) {
-                    if (adj_lobes[k] < bin)
-                      --bin;
+                  uint32_t lobe_index = j->second;
+                  for (size_t k = adj_lobes.size() - 1; k; --k) {
+                    if (adj_lobes[k] < lobe_index)
+                      --lobe_index;
                   }
-                  j->first = bin;
+                  j->second = lobe_index;
                 }
               }
               for (size_t j = adj_lobes.size() - 1; j; --j) {
