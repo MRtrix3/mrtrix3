@@ -366,6 +366,9 @@ namespace MR
                   else
                     optim.run (max_iter[level], grad_tolerance);
                   DEBUG ("gradient descent ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
+                  if (!is_finite(optim.state())) {
+                    throw Exception ("registration failed due to NaN in parameters");
+                  }
                   parameters.transformation.set_parameter_vector (optim.state());
                   parameters.update_control_points();
                 } else {
@@ -377,8 +380,11 @@ namespace MR
                     optim.run (max_iter[level], grad_tolerance, std::cout.rdbuf());
                   else
                     optim.run (max_iter[level], grad_tolerance);
-                  parameters.transformation.set_parameter_vector (optim.state());
                   DEBUG ("gradient descent ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
+                  if (!is_finite(optim.state())) {
+                    throw Exception ("registration failed due to NaN in parameters");
+                  }
+                  parameters.transformation.set_parameter_vector (optim.state());
                   parameters.update_control_points();
                 }
                 if (log_stream){
