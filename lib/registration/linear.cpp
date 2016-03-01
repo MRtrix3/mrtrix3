@@ -23,7 +23,7 @@ namespace MR
     using namespace App;
 
     const char* initialisation_choices[] = { "mass", "geometric", "moments", "mass_unmasked",
-      "moments_use_mask_intensity", "moments_unmasked", "fod", "mass_rot_search", "none", NULL };
+      "moments_use_mask_intensity", "moments_unmasked", "fod", "rot_search", "none", NULL };
     const char* linear_metric_choices[] = { "diff", "ncc", NULL };
     const char* linear_robust_estimator_choices[] = { "l1", "l2", "lp", NULL };
 
@@ -51,10 +51,11 @@ namespace MR
           registration.set_init_type (Registration::Transform::Init::fod);
           break;
         case 7:
-          registration.set_init_type (Registration::Transform::Init::none);
+          registration.set_init_type (Registration::Transform::Init::rot_search);
           break;
         case 8:
-          registration.set_init_type (Registration::Transform::Init::mass_rot_search);
+          registration.set_init_type (Registration::Transform::Init::none);
+          break;
         default:
           break;
       }
@@ -72,7 +73,7 @@ namespace MR
                                 "mass_unmasked (don't use image masks for centre of mass initialisation), "
                                 "moments_unmasked (don't use image masks for moments initialisation), "
                                 "fod (aligns FOD images based on their centre of mass and global sum of all fibre orientations), "
-                                "mass_rot_search (align images based on their centre of mass and search for the best rotation using mean squared residuals) "
+                                "rot_search (align images based on their centre of mass and search for the best rotation using mean squared residuals) "
                                 "or none."
                                 "Default: mass.")
         + Argument ("type").type_choice (initialisation_choices)
@@ -122,7 +123,7 @@ namespace MR
                                 "mass_unmasked (don't use image masks for centre of mass initialisation), "
                                 "moments_unmasked (don't use image masks for moments initialisation), "
                                 "fod (aligns FOD images based on their centre of mass and global sum of all fibre orientations), "
-                                "mass_rot_search (align images based on their centre of mass and search for the best rotation using mean squared residuals) "
+                                "rot_search (align images based on their centre of mass and search for the best rotation using mean squared residuals) "
                                 "or none."
                                 "Default: mass.")
         + Argument ("type").type_choice (initialisation_choices)

@@ -30,7 +30,7 @@ namespace MR
       namespace Init
       {
         enum InitType {mass, geometric, moments, mass_unmasked, moments_use_mask_intensity,
-          moments_unmasked, fod, set_centre_mass, mass_rot_search, none};
+          moments_unmasked, fod, set_centre_mass, rot_search, none};
 
           extern void set_centre_using_image_mass (Image<default_type>& im1,
                                             Image<default_type>& im2,

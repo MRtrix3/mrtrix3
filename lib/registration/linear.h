@@ -237,7 +237,7 @@ namespace MR
               Transform::Init::initialise_using_FOD (im1_image, im2_image, im1_mask, im2_mask, transform);
             else if (init_type == Transform::Init::set_centre_mass)
               Transform::Init::set_centre_using_image_mass (im1_image, im2_image, im1_mask, im2_mask, transform); // transform is set in mrregister.cpp
-            else if (init_type == Transform::Init::mass_rot_search)
+            else if (init_type == Transform::Init::rot_search)
               Transform::Init::initialise_using_rotation_search_around_image_mass (
                 im1_image, im2_image, im1_mask, im2_mask, transform, 0.1, global_search);
             // transform.debug();

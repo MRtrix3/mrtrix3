@@ -176,6 +176,7 @@ namespace MR
                                           Registration::Transform::Base& transform,
                                           default_type image_scale,
                                           bool global_search) {
+          CONSOLE ("initialising centre of rotation and translation using centre of mass. searching for best rotation");
           Registration::Metric::MeanSquaredNoGradient metric;
           GlobalSearch::ExhaustiveRotationSearch<decltype(metric)> search (im1, im2, mask1, mask2, metric);
           search.run (image_scale, global_search, false);
