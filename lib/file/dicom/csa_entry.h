@@ -118,6 +118,7 @@ namespace MR {
                 stream.write (reinterpret_cast<const char*> (next)+16, length);
                 next += size;
               }
+              stream << "\n";
 
               return stream;
             }
