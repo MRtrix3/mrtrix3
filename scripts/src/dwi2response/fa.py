@@ -7,7 +7,7 @@ def initParser(subparsers, base_parser):
   options.add_argument('-erode', type=int, default=3, help='Number of brain mask erosion steps to apply prior to threshold (not used if mask is provided manually)')
   thresholds = options.add_mutually_exclusive_group()
   thresholds.add_argument('-number', type=int, default=300, help='The number of highest-FA voxels to use')
-  thresholds.add_argument('-threshold', type=float, default=0.7, help='Apply a hard FA threshold, rather than selecting the top voxels')
+  thresholds.add_argument('-threshold', type=float, help='Apply a hard FA threshold, rather than selecting the top voxels')
   parser.set_defaults(algorithm='fa')
   parser.set_defaults(single_shell=True)
   
