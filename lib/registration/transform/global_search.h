@@ -72,20 +72,19 @@ namespace MR
             mask2(mask2),
             metric (metric),
             global_search_iterations (10000),
-            rot_angles (10),
+            rot_angles (9),
             local_search_directions (250),
             idx_angle (0),
             idx_dir (0) {
-              rot_angles[0] = 0.5;
-              rot_angles[1] = 1.0;
-              rot_angles[2] = 5.0;
-              rot_angles[3] = 10.0;
-              rot_angles[4] = 15.0;
-              rot_angles[5] = 20.0;
-              rot_angles[6] = 25.0;
-              rot_angles[7] = 30.0;
-              rot_angles[8] = 35.0;
-              rot_angles[9] = 40.0;
+              rot_angles[0] = 2.0;
+              rot_angles[1] = 5.0;
+              rot_angles[2] = 10.0;
+              rot_angles[3] = 15.0;
+              rot_angles[4] = 20.0;
+              rot_angles[5] = 25.0;
+              rot_angles[6] = 30.0;
+              rot_angles[7] = 35.0;
+              rot_angles[8] = 40.0;
             };
 
             typedef Metric::Params<Registration::Transform::Rigid,
@@ -177,21 +176,21 @@ namespace MR
               Metric::ThreadKernel<MetricType, ParamType> kernel (metric, parameters, cost, gradient, &cnt);
               ThreadedLoop (parameters.midway_image, 0, 3).run (kernel);
               assert (cnt > 0);
-              cost /= cnt;
-              // min_cost = cost;
-              best_trafo = parameters.transformation.get_transform();
+              overlap_it[0] = cnt;
+              cost_it[0] = cost / static_cast<default_type>(cnt);
+              transform_type T = parameters.transformation.get_transform();
+              trafo_it.push_back (T);
 
               // parameters.transformation.debug();
               offset = parameters.transformation.get_translation();
               centre = parameters.transformation.get_centre();
-              transform_type T, Tc2, To, R0;
+              transform_type Tc2, To, R0;
               Tc2.setIdentity();
               To.setIdentity();
               R0.setIdentity();
               To.translation() = offset;
               Tc2.translation() = centre - 0.5 * offset;
-              while ( iteration < iterations ) {
-                ++iteration;
+              while ( ++iteration < iterations ) {
                 ++progress;
                 if (global_search) {
                   gen_random_quaternion ();
@@ -209,22 +208,33 @@ namespace MR
                 DEBUG ("rotation search: iteration " + str(iteration) + " cost: " + str(cost) + " cnt: " + str(cnt));
                 // write_images ( "im1_" + str(iteration) + ".mif", "im2_" + str(iteration) + ".mif");
                 overlap_it[iteration] = cnt;
-                cost_it[iteration] = cost;
+                cost_it[iteration] = cost / static_cast<default_type>(cnt);
                 trafo_it.push_back (T);
               }
-              //  best trafo := lowest cost with at least mean overlap
+              if (debug) {
+                save_matrix(cost_it, "/tmp/cost_before.txt");
+                save_matrix(overlap_it, "/tmp/overlap.txt");
+              }
+              //  best trafo := lowest cost per voxel with at least mean overlap
               {
                 auto max_ = Eigen::MatrixXd::Constant(cost_it.rows(), 1, std::numeric_limits<default_type>::max());
-                default_type mean_overlap = overlap_it.sum()/default_type(iterations);
-                cost_it = (overlap_it.array() > mean_overlap).select(cost_it, max_); // set cost to max if overlap is below mean_overlap
+                default_type mean_overlap = static_cast<default_type>(overlap_it.sum()) / static_cast<default_type>(iterations);
+                // reject solutions with less than mean overlap by setting cost to max
+                cost_it = (overlap_it.array() > mean_overlap).select(cost_it, max_);
                 std::ptrdiff_t i;
                 min_cost = cost_it.minCoeff(&i);
                 T = trafo_it[i];
                 best_trafo = T;
               }
               if (debug) {
+                save_matrix(cost_it, "/tmp/cost_after.txt");
+                Eigen::VectorXd t(2);
+                t(0) = cost_it(0);
+                t(1) = min_cost;
+                save_matrix(t, "/tmp/cost_mass_chosen.txt");
+                save_matrix(centre, "/tmp/centre.txt");
                 parameters.transformation.set_transform (best_trafo);
-                write_images ( "im1_best.mif", "im2_best.mif");
+                write_images ( "/tmp/im1_best.mif", "/tmp/im2_best.mif");
               }
             };
 

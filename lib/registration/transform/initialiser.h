@@ -73,7 +73,8 @@ namespace MR
                                           Image<default_type>& mask2,
                                           Registration::Transform::Base& transform,
                                           default_type image_scale = 0.1,
-                                          bool global_search = false);
+                                          bool global_search = false,
+                                          bool debug = false);
 
         extern void initialise_using_image_mass (Image<default_type>& im1,
                                           Image<default_type>& im2,
