@@ -446,7 +446,7 @@ namespace MR
                 voxel_pos << (default_type)im.index(0), (default_type)im.index(1), (default_type)im.index(2);
                 scanner = im_transform.voxel2scanner * voxel_pos;
                 centre_of_mass += scanner * im.value();
-                sh += im.row(3).template head(N);
+                sh += im.row(3).head(N);
                 ++cnt;
               }
             }
@@ -456,7 +456,7 @@ namespace MR
               voxel_pos << (default_type)im.index(0), (default_type)im.index(1), (default_type)im.index(2);
               scanner = im_transform.voxel2scanner * voxel_pos;
               centre_of_mass += scanner * im.value();
-              sh += im.row(3).template head(N);
+              sh += im.row(3).head(N);
             }
             cnt = im.size(0) * im.size(1) * im.size(2);
           }

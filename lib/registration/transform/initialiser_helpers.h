@@ -72,13 +72,13 @@ namespace MR
                                 Image<default_type>& mask1,
                                 Image<default_type>& mask2,
                                 Registration::Transform::Base& transform,
-                                ssize_t lmax = -1):
+                                ssize_t l_max = -1):
               im1(image1),
               im2(image2),
               transform(transform),
               mask1(mask1),
               mask2(mask2),
-              lmax (lmax) {
+              lmax (l_max) {
                 assert (im1.ndim() == 4 && im2.ndim() == 4);
                 assert (im1.size(3) == im2.size(3));
                 ssize_t l = Math::SH::LforN(im1.size(3));
