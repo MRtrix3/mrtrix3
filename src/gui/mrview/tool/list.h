@@ -32,8 +32,8 @@ The second argument is the name of the mode as displayed in the menu.
 The third argument is the text to be shown in the menu tooltip. */
 
 TOOL(View, View options, Adjust view settings)
-TOOL(ROI, ROI editor, View & edit regions of interest)
 TOOL(Overlay, Overlay, Overlay other images over the current image)
+TOOL(ROI, ROI editor, View & edit regions of interest)
 TOOL(Tractography, Tractography, Display tracks over the current image)
 TOOL(ODF, ODF Display, Display orientation density functions)
 TOOL(Vector, Vector Plot, Plot vector images)
