@@ -9,7 +9,7 @@ def initParser(subparsers, base_parser):
   thresholds.add_argument('-number', type=int, default=300, help='The number of highest-FA voxels to use')
   thresholds.add_argument('-threshold', type=float, help='Apply a hard FA threshold, rather than selecting the top voxels')
   parser.set_defaults(algorithm='fa')
-  parser.set_defaults(single_shell=True)
+  parser.set_defaults(single_shell=False)
   
   
   
