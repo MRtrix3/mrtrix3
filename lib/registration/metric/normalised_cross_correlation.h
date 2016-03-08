@@ -13,9 +13,10 @@
  *
  */
 
-#ifndef __image_registration_metric_cross_correlation_h__
-#define __image_registration_metric_cross_correlation_h__
+#ifndef __image_registration_metric_norm_cross_correlation_h__
+#define __image_registration_metric_norm_cross_correlation_h__
 
+#include "transform.h"
 #include "algo/loop.h"
 #include "algo/threaded_loop.h"
 #include "adapter/reslice.h"
@@ -29,7 +30,7 @@ namespace MR
     namespace Metric
     {
       template <typename ImageType1, typename ImageType2>
-      struct CCPrecomputeFunctorMasked_DEBUG {
+      struct NCCPrecomputeFunctorMasked_DEBUG {
         template <typename MaskType, typename ImageType3>
         void operator() (MaskType& mask, ImageType3& out) {
           out.index(0) = mask.index(0);
@@ -74,7 +75,7 @@ namespace MR
           mask.index(2) = out.index(2);
         }
 
-        CCPrecomputeFunctorMasked_DEBUG(const std::vector<size_t>& ext, ImageType1& adapter1, ImageType2& adapter2) :
+        NCCPrecomputeFunctorMasked_DEBUG(const std::vector<size_t>& ext, ImageType1& adapter1, ImageType2& adapter2) :
           extent(ext),
           in1(adapter1),
           in2(adapter2) { /* TODO check dimensions and extent */ }
@@ -86,7 +87,7 @@ namespace MR
       };
 
       template <typename ImageType1, typename ImageType2>
-      struct CCPrecomputeFunctorMasked_Naive {
+      struct NCCPrecomputeFunctorMasked_Naive {
         template <typename MaskType, typename ImageType3>
         void operator() (MaskType& mask, ImageType3& out) {
           if (!mask.value())
@@ -192,7 +193,7 @@ namespace MR
           // out.row(3) << value_in1 - mean1, value_in2 - mean2, in1.value(), in2.value(), v2_2;
         }
 
-        CCPrecomputeFunctorMasked_Naive(const std::vector<size_t>& ext, ImageType1& adapter1, ImageType2& adapter2) :
+        NCCPrecomputeFunctorMasked_Naive (const std::vector<size_t>& ext, ImageType1& adapter1, ImageType2& adapter2) :
           extent(ext),
           in1(adapter1),
           in2(adapter2) { /* TODO check dimensions and extent */ }
@@ -203,7 +204,9 @@ namespace MR
           ImageType2 in2;
       };
 
-      class CrossCorrelation {
+      class NormalisedCrossCorrelation {
+          private:
+            transform_type midway_v2s;
 
           public:
             /** typedef int is_neighbourhood: type_trait to distinguish voxel-wise and neighbourhood based metric types */
@@ -212,22 +215,25 @@ namespace MR
             typedef int requires_precompute;
 
             template <class ParamType>
-              default_type precompute(ParamType& parameters) const {
+              default_type precompute(ParamType& parameters) {
                 INFO("precomputing cross correlation data...");
 
                 typedef decltype(parameters.im1_image) Im1Type;
                 typedef decltype(parameters.im2_image) Im2Type;
                 typedef decltype(parameters.im1_mask) Im1MaskType;
                 typedef decltype(parameters.im2_mask) Im2MaskType;
-                typedef typename ParamType::ImProcessedValueType ProcessedImageValueType;
-                typedef typename ParamType::ImProcessedMaskType ProcessedMaskType;
-                typedef typename ParamType::ImProcessedMaskInterpolatorType ProcessedMaskInterpolatorType;
-                typedef typename ParamType::ImProcessedImageInterpolatorType CCInterpType;
+                typedef typename ParamType::ProcessedValueType ProcessedImageValueType;
+                typedef typename ParamType::ProcessedMaskType ProcessedMaskType;
+                typedef typename ParamType::ProcessedMaskInterpType ProcessedMaskInterpolatorType;
+                typedef typename ParamType::ProcessedImageInterpType CCInterpType;
+
+                Header midway_header (parameters.midway_image.original_header());
+                midway_v2s = MR::Transform (midway_header).voxel2scanner;
 
                 // store precomputed values in cc_image:
                 // volumes 0 and 1: normalised intensities of both images (Im1 and Im2)
                 // vlumes 2 to 4: neighbourhood dot products Im1.dot(Im2), Im1.dot(Im1), Im2.dot(Im2)
-                auto cc_image_header = Header::scratch (parameters.midway_image.original_header());
+                auto cc_image_header = Header::scratch (midway_header);
                 cc_image_header.set_ndim(4);
                 cc_image_header.size(3) = 5;
                 ProcessedMaskType cc_mask;
@@ -270,7 +276,7 @@ namespace MR
                 parameters.processed_mask = cc_mask;
                 parameters.processed_mask_interp.reset (new ProcessedMaskInterpolatorType (parameters.processed_mask));
                 auto loop = ThreadedLoop ("precomputing cross correlation data...", parameters.processed_mask);
-                loop.run (CCPrecomputeFunctorMasked_Naive<decltype(interp1), decltype(interp2)>(extent, interp1, interp2), parameters.processed_mask, cc_image);
+                loop.run (NCCPrecomputeFunctorMasked_Naive<decltype(interp1), decltype(interp2)>(extent, interp1, interp2), parameters.processed_mask, cc_image);
                 parameters.processed_image = cc_image;
                 parameters.processed_image_interp.reset (new CCInterpType (parameters.processed_image));
                 // display<Image<float>>(parameters.processed_image);
@@ -280,20 +286,20 @@ namespace MR
             template <class Params>
               default_type operator() (Params& params,
                                        const Iterator& iter,
-                                       const Eigen::Vector3 im1_point,
-                                       const Eigen::Vector3 im2_point,
-                                       const Eigen::Vector3 midway_point,
                                        Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
-                auto pos = Eigen::Vector3(iter.index(0), iter.index(1), iter.index(2));
-                params.processed_mask.index(0) = iter.index(0);
-                params.processed_mask.index(1) = iter.index(1);
-                params.processed_mask.index(2) = iter.index(2);
-                if (!params.processed_mask.value())
-                  return 0.0;
+                assert (params.processed_image.index(0) == iter.index(0)); // iterates over processed image rather than midway image
+                assert (params.processed_image.index(1) == iter.index(1));
+                assert (params.processed_image.index(2) == iter.index(2));
 
-                params.processed_image.index(0) = iter.index(0);
-                params.processed_image.index(1) = iter.index(1);
-                params.processed_image.index(2) = iter.index(2);
+                if (params.processed_mask.valid()) {
+                  params.processed_mask.index(0) = iter.index(0);
+                  params.processed_mask.index(1) = iter.index(1);
+                  params.processed_mask.index(2) = iter.index(2);
+                  if (!params.processed_mask.value())
+                    return 0.0;
+                }
+
+                const Eigen::Vector3 pos = Eigen::Vector3(default_type(iter.index(0)), default_type(iter.index(0)), default_type(iter.index(0)));
 
                 params.processed_image.index(3) = 2;
                 default_type A = params.processed_image.value();
@@ -350,7 +356,7 @@ namespace MR
                   // params.processed_image.index(3) = 1;
                   // std::cerr << "val2: " << params.processed_image.value() << ", " << val2_scanner << ", " << val2 << std::endl;
                 // }
-
+                const Eigen::Vector3 midway_point = midway_v2s * pos;
                 Eigen::MatrixXd jacobian = params.transformation.get_jacobian_wrt_params (midway_point);
                 for (ssize_t par = 0; par < gradient.size(); par++) {
                   default_type sum = 0.0;

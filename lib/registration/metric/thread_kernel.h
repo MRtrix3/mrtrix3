@@ -79,7 +79,7 @@ namespace MR
           }
 
           template <class U = MetricType>
-          void operator() (const Iterator& iter, typename is_neighbourhood_metric<U>::no = 0) {
+          void operator() (const Iterator& iter, typename is_neighbourhood_metric<U>::no = 0, typename use_processed_image<U>::no = 0) {
             Eigen::Vector3 voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
 
             Eigen::Vector3 midway_point = transform.voxel2scanner * voxel_pos;
@@ -108,24 +108,24 @@ namespace MR
             if (!(*params.im2_image_interp))
               return;
 
-#ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG
-            Eigen::Vector3 also_im1_point;
-            params.transformation.transform (also_im1_point, im2_point);
-            if (!also_im1_point.isApprox(im1_point)){
-              VEC(im1_point.transpose());
-              VEC(also_im1_point.transpose());
-              VEC(im2_point.transpose());
-              VEC((also_im1_point - im1_point).transpose());
-              throw Exception ("this is not right");
-            }
-#endif
             ++cnt;
             cost_function += metric (params, im1_point, im2_point, midway_point, gradient);
           }
 
           template <class U = MetricType>
+          void operator() (const Iterator& iter, typename is_neighbourhood_metric<U>::no = 0, typename use_processed_image<U>::yes = 0) {
+            if (params.processed_mask.valid()) {
+              assign_pos_of (iter, 0, 3).to (params.processed_mask);
+              if (!params.processed_mask.value())
+                return;
+            }
+            ++cnt;
+            cost_function += metric (params, iter, gradient);
+          }
+
+          template <class U = MetricType>
             void operator() (const Iterator& iter, typename is_neighbourhood_metric<U>::yes = 0, typename use_processed_image<U>::no = 0) {
-              throw Exception ("neighbourhood metric without precompute method not implemented");
+              throw Exception ("no neighbourhood metric without precompute implemented");
             }
 
           template <class U = MetricType>
@@ -135,32 +135,16 @@ namespace MR
               Eigen::Vector3 voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
 
               if (params.processed_mask.valid()){
-                // assign_pos_of(iter).to(params.processed_mask);
-                params.processed_mask.index(0) = iter.index(0);
-                params.processed_mask.index(1) = iter.index(1);
-                params.processed_mask.index(2) = iter.index(2);
+                assign_pos_of (iter, 0, 3).to (params.processed_mask);
+                assert(params.processed_mask.index(0) == iter.index(0));
+                assert(params.processed_mask.index(1) == iter.index(1));
+                assert(params.processed_mask.index(2) == iter.index(2));
                 if (!params.processed_mask.value())
                   return;
               }
-              // Eigen::Vector3 voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
-              // if (params.processed_mask_interp){
-                // assign_pos_of(iter).to(*params.processed_mask_interp);
-                // std::cerr << iter << ": mask1" << *params.processed_mask_interp << std::endl;
-                // params.processed_mask_interp->scanner(midway_point);
-                // params.processed_mask_interp->index(0) = voxel_pos[0];
-                // params.processed_mask_interp->index(1) = voxel_pos[1];
-                // params.processed_mask_interp->index(2) = voxel_pos[2];
-                // if (!params.processed_mask_interp->value())
-                  // return;
-              // }
-
-              Eigen::Vector3 midway_point, im1_point, im2_point;
-              midway_point = transform.voxel2scanner * voxel_pos;
-              params.transformation.transform_half (im1_point, midway_point);
-              params.transformation.transform_half_inverse (im2_point, midway_point);
 
               ++cnt;
-              cost_function += metric (params, iter, im1_point, im2_point, midway_point, gradient);
+              cost_function += metric (params, iter, gradient);
             }
 
           protected:

@@ -29,24 +29,27 @@ namespace MR
                 class MidwayImageType,
                 class Im1MaskType,
                 class Im2MaskType,
-                class Im1ImageInterpolatorType,
-                class Im2ImageInterpolatorType,
+                class Im1ImageInterpType,
+                class Im2ImageInterpType,
                 class Im1MaskInterpolatorType,
                 class Im2MaskInterpolatorType,
-                class ProcessedImageType,
-                class ProcessedImageInterpolatorType,
-                class ProcessedMaskType,
+                class ProcImageType,
+                class ProcImageInterpolatorType,
+                class ProcMaskType,
                 class ProcessedMaskInterpolatorType>
       class Params {
         public:
 
           typedef typename TransformType::ParameterType TransformParamType;
-          typedef typename Im1ImageInterpolatorType::value_type Im1ValueType;
-          typedef typename Im2ImageInterpolatorType::value_type Im2ValueType;
-          typedef typename ProcessedImageInterpolatorType::value_type ImProcessedValueType;
-          typedef ProcessedMaskType ImProcessedMaskType;
-          typedef ProcessedMaskInterpolatorType ImProcessedMaskInterpolatorType;
-          typedef ProcessedImageInterpolatorType ImProcessedImageInterpolatorType;
+          typedef typename Im1ImageInterpType::value_type Im1ValueType;
+          typedef typename Im2ImageInterpType::value_type Im2ValueType;
+          typedef Im1ImageInterpType Im1InterpType;
+          typedef Im2ImageInterpType Im2InterpType;
+          typedef typename ProcImageInterpolatorType::value_type ProcessedValueType;
+          typedef ProcImageType ProcessedImageType;
+          typedef ProcMaskType ProcessedMaskType;
+          typedef ProcImageInterpolatorType ProcessedImageInterpType;
+          typedef ProcessedMaskInterpolatorType ProcessedMaskInterpType;
 
           Params (TransformType& transform,
                   Im1ImageType& im1_image,
@@ -63,8 +66,8 @@ namespace MR
                     loop_density(1.0),
                     robust_estimate(false),
                     control_point_exent (10.0, 10.0, 10.0) {
-                      im1_image_interp.reset (new Im1ImageInterpolatorType (im1_image));
-                      im2_image_interp.reset (new Im2ImageInterpolatorType (im2_image));
+                      im1_image_interp.reset (new Im1ImageInterpType (im1_image));
+                      im2_image_interp.reset (new Im2ImageInterpType (im2_image));
                       if (im1_mask.valid())
                         im1_mask_interp.reset (new Im1MaskInterpolatorType (im1_mask));
                       if (im2_mask.valid())
@@ -81,10 +84,10 @@ namespace MR
           }
 
           void set_im1_iterpolator (Im1ImageType& im1_image) {
-            im1_image_interp.reset (new Im1ImageInterpolatorType (im1_image));
+            im1_image_interp.reset (new Im1ImageInterpType (im1_image));
           }
           void set_im2_iterpolator (Im1ImageType& im2_image) {
-            im2_image_interp.reset (new Im2ImageInterpolatorType (im2_image));
+            im2_image_interp.reset (new Im2ImageInterpType (im2_image));
           }
 
           void update_control_points () {
@@ -106,8 +109,8 @@ namespace MR
           Im1ImageType im1_image;
           Im2ImageType im2_image;
           MidwayImageType midway_image;
-          MR::copy_ptr<Im1ImageInterpolatorType> im1_image_interp;
-          MR::copy_ptr<Im2ImageInterpolatorType> im2_image_interp;
+          MR::copy_ptr<Im1ImageInterpType> im1_image_interp;
+          MR::copy_ptr<Im2ImageInterpType> im2_image_interp;
           Im1MaskType im1_mask;
           Im2MaskType im2_mask;
           MR::copy_ptr<Im1MaskInterpolatorType> im1_mask_interp;
@@ -118,9 +121,9 @@ namespace MR
           Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> control_points;
           std::vector<size_t> extent;
 
-          ProcessedImageType processed_image;
-          MR::copy_ptr<ProcessedImageInterpolatorType> processed_image_interp;
-          ProcessedMaskType processed_mask;
+          ProcImageType processed_image;
+          MR::copy_ptr<ProcImageInterpolatorType> processed_image_interp;
+          ProcMaskType processed_mask;
           MR::copy_ptr<ProcessedMaskInterpolatorType> processed_mask_interp;
       };
     }

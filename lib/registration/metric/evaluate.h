@@ -88,6 +88,8 @@ namespace MR
             //     metric.precompute(parameters);
             //     params(parameters); }
 
+
+            //  metric_requires_precompute<U>::yes: operator() loops over processed_image instead of midway_image
             template <class U = MetricType>
             double operator() (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x, Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient, typename metric_requires_precompute<U>::yes = 0) {
               default_type overall_cost_function = 0.0;
@@ -109,14 +111,13 @@ namespace MR
               metric.precompute (params);
               {
                 ThreadKernel<MetricType, ParamType> kernel (metric, params, overall_cost_function, gradient);
-                  ThreadedLoop (params.midway_image, 0, 3).run (kernel);
+                  ThreadedLoop (params.processed_image, 0, 3).run (kernel);
               }
               DEBUG ("Metric evaluate iteration: " + str(iteration++) + ", cost: " +str(overall_cost_function));
               DEBUG ("  x: " + str(x.transpose()));
               DEBUG ("  gradient: " + str(gradient.transpose()));
               DEBUG ("  norm(gradient): " + str(gradient.norm()));
               return overall_cost_function;
-
             }
 
             // template <class MetricType, class ParamType>
@@ -134,7 +135,7 @@ namespace MR
                   metric (metric),
                   params (parameters),
                   cost_function (0.0),
-                  gradient (overall_grad.size()), // BUG: set zero
+                  gradient (overall_grad.size()),
                   overall_cost_function (overall_cost_function),
                   overall_gradient (overall_grad),
                   rng (rng_engine)  {
@@ -142,8 +143,6 @@ namespace MR
                     assert(inner_axes.size() >= 2); }
 
                 ~ThreadFunctor () {
-                  // WARN("~ThreadFunctor");
-                  // VAR(gradient.transpose());
                   overall_cost_function += cost_function;
                   overall_gradient += gradient;
                 }
@@ -157,7 +156,6 @@ namespace MR
                   auto inner_loop = Random_loop<Iterator, std::default_random_engine>(iterator, engine, inner_axes[1], (float) iterator.size(inner_axes[1]) * density);
                   for (auto j = inner_loop; j; ++j)
                     for (auto k = Loop (inner_axes[0]) (iterator); k; ++k){
-                      // cnt += 1;
                       DEBUG(str(iterator));
                       kern(iterator);
                     }

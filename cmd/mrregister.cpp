@@ -24,7 +24,7 @@
 #include "registration/metric/mean_squared.h"
 #include "registration/metric/difference_robust.h"
 #include "registration/metric/difference_robust_4D.h"
-#include "registration/metric/cross_correlation.h"
+#include "registration/metric/normalised_cross_correlation.h"
 #include "registration/metric/mean_squared_4D.h"
 #include "registration/transform/affine.h"
 #include "registration/transform/rigid.h"
@@ -549,7 +549,7 @@ void run ()
       if (rigid_metric == Registration::NCC) {
         std::vector<size_t> extent(3,3);
         rigid_registration.set_extent(extent);
-        Registration::Metric::CrossCorrelation metric;
+        Registration::Metric::NormalisedCrossCorrelation metric;
         rigid_registration.run_masked (metric, rigid, im1_image, im2_image, im1_mask, im2_mask);
       }
       else {
@@ -599,7 +599,7 @@ void run ()
       } else throw Exception ("FIXME: metric selection");
     } else { // 3D
       if (affine_metric == Registration::NCC){
-        Registration::Metric::CrossCorrelation metric;
+        Registration::Metric::NormalisedCrossCorrelation metric;
         std::vector<size_t> extent(3,3);
         affine_registration.set_extent (extent);
         affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);

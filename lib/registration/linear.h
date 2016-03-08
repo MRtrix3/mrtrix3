@@ -29,7 +29,7 @@
 #include "interp/linear.h"
 #include "interp/nearest.h"
 #include "registration/metric/params.h"
-#include "registration/metric/cross_correlation.h"
+#include "registration/metric/normalised_cross_correlation.h"
 #include "registration/metric/evaluate.h"
 #include "registration/transform/initialiser.h"
 #include "math/gradient_descent.h"
