@@ -59,23 +59,25 @@ namespace MR
       template <class MetricType, class ParamType>
       class ThreadKernel {
         public:
-          ThreadKernel (const MetricType& metric, const ParamType& parameters, default_type& overall_cost_function, Eigen::VectorXd& overall_gradient, ssize_t* overall_cnt = nullptr) :
+          ThreadKernel (const MetricType& metric, const ParamType& parameters, Eigen::VectorXd& overall_cost_function, Eigen::VectorXd& overall_gradient, ssize_t* overall_cnt = nullptr) :
             metric (metric),
             params (parameters),
-            cost_function (0.0),
+            cost_function (overall_cost_function.size()),
             cnt (0),
             gradient (overall_gradient.size()),
             overall_cost_function (overall_cost_function),
             overall_gradient (overall_gradient),
             overall_cnt (overall_cnt),
-            transform (params.midway_image) { gradient.setZero(); }
+            transform (params.midway_image) {
+              gradient.setZero();
+              cost_function.setZero();
+            }
 
           ~ThreadKernel () {
             overall_cost_function += cost_function;
             overall_gradient += gradient;
-            if (overall_cnt) {
+            if (overall_cnt)
               (*overall_cnt) += cnt;
-            }
           }
 
           template <class U = MetricType>
@@ -109,7 +111,7 @@ namespace MR
               return;
 
             ++cnt;
-            cost_function += metric (params, im1_point, im2_point, midway_point, gradient);
+            cost_function.array() += metric (params, im1_point, im2_point, midway_point, gradient);
           }
 
           template <class U = MetricType>
@@ -120,7 +122,7 @@ namespace MR
                 return;
             }
             ++cnt;
-            cost_function += metric (params, iter, gradient);
+            cost_function.array() += metric (params, iter, gradient);
           }
 
           template <class U = MetricType>
@@ -144,17 +146,17 @@ namespace MR
               }
 
               ++cnt;
-              cost_function += metric (params, iter, gradient);
+              cost_function.array() += metric (params, iter, gradient);
             }
 
           protected:
             MetricType metric;
             ParamType params;
 
-            default_type cost_function;
+            Eigen::VectorXd cost_function;
             ssize_t cnt;
             Eigen::VectorXd gradient;
-            default_type& overall_cost_function;
+            Eigen::VectorXd& overall_cost_function;
             Eigen::VectorXd& overall_gradient;
             ssize_t* overall_cnt;
             MR::Transform transform;

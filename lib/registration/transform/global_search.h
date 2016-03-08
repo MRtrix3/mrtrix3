@@ -171,12 +171,12 @@ namespace MR
               Eigen::Matrix<default_type, Eigen::Dynamic, 1> gradient (parameters.transformation.size());
               size_t iteration (0);
               ssize_t cnt (0);
-              default_type cost (0);
+              Eigen::VectorXd cost = Eigen::VectorXd::Zero(1,1);
               Metric::ThreadKernel<MetricType, ParamType> kernel (metric, parameters, cost, gradient, &cnt);
               ThreadedLoop (parameters.midway_image, 0, 3).run (kernel);
               assert (cnt > 0);
               overlap_it[0] = cnt;
-              cost_it[0] = cost / static_cast<default_type>(cnt);
+              cost_it[0] = cost(0) / static_cast<default_type>(cnt);
               transform_type T = parameters.transformation.get_transform();
               trafo_it.push_back (T);
 
@@ -200,14 +200,14 @@ namespace MR
                 R0.linear() = quat.matrix();
                 T = Tc2 * To * R0 * Tc2.inverse();
                 parameters.transformation.set_transform (T);
-                cost = 0.0;
+                cost.fill(0);
                 cnt = 0;
                 Metric::ThreadKernel<MetricType, ParamType> kernel (metric, parameters, cost, gradient, &cnt);
                 ThreadedLoop (parameters.midway_image, 0, 3).run (kernel);
                 DEBUG ("rotation search: iteration " + str(iteration) + " cost: " + str(cost) + " cnt: " + str(cnt));
                 // write_images ( "im1_" + str(iteration) + ".mif", "im2_" + str(iteration) + ".mif");
                 overlap_it[iteration] = cnt;
-                cost_it[iteration] = cost / static_cast<default_type>(cnt);
+                cost_it[iteration] = cost(0) / static_cast<default_type>(cnt);
                 trafo_it.push_back (T);
               }
               if (debug) {
@@ -566,11 +566,11 @@ namespace MR
               parameters.loop_density = 1.0;
               Eigen::Matrix<default_type, Eigen::Dynamic, 1> gradient;
               gradient.resize(transform.size());
-              ComputeType c(0.0);
+              Eigen::VectorXd c = Eigen::VectorXd::Zero(1,1);
               ssize_t cnt(0);
               Metric::ThreadKernel<MetricType, ParamType> kernel (metric, parameters, c, gradient, &cnt);
               ThreadedLoop (parameters.midway_image, 0, 3).run (kernel);
-              cost = c;
+              cost = c(0);
               overlap = cnt;
             }
 
@@ -589,11 +589,11 @@ namespace MR
 
               Eigen::Matrix<default_type, Eigen::Dynamic, 1> gradient;
               gradient.resize(transform.size());
-              ComputeType c;
+              Eigen::VectorXd c = Eigen::VectorXd::Zero(1,1);
               ssize_t cnt(0);
               Metric::ThreadKernel<MetricType, ParamType> kernel (metric, parameters, c, gradient, &cnt);
               ThreadedLoop (parameters.midway_image, 0, 3).run (kernel);
-              cost = c;
+              cost = c(0);
               overlap = cnt;
             }
 

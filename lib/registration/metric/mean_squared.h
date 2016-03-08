@@ -147,10 +147,7 @@ namespace MR
 
             ssize_t volumes = params.im1_image_interp->size(3);
 
-            Eigen::Matrix<typename Im1Type::value_type, Eigen::Dynamic, 3> im1_grad (volumes, 3);
-            Eigen::Matrix<typename Im2Type::value_type, Eigen::Dynamic, 3> im2_grad (volumes, 3);
             Eigen::Matrix<typename Im1Type::value_type, Eigen::Dynamic, 1> im1_values (volumes);
-            Eigen::Matrix<typename Im1Type::value_type, Eigen::Dynamic, 1> diff_values (volumes);
             Eigen::Matrix<typename Im2Type::value_type, Eigen::Dynamic, 1> im2_values (volumes);
 
 
@@ -163,6 +160,37 @@ namespace MR
               return 0.0;
 
             return (im1_values - im2_values).squaredNorm() / (default_type)volumes;
+        }
+      };
+
+      template <class Im1Type, class Im2Type>
+      class MeanSquaredVectorNoGradient4D {
+        public:
+          MeanSquaredVectorNoGradient4D ( ) {}
+
+          template <class Params>
+          Eigen::Matrix<default_type, Eigen::Dynamic, 1> operator() (Params& params,
+                                   const Eigen::Vector3& im1_point,
+                                   const Eigen::Vector3& im2_point,
+                                   const Eigen::Vector3& midway_point,
+                                   Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
+
+            ssize_t volumes = params.im1_image_interp->size(3);
+
+            Eigen::Matrix<typename Im1Type::value_type, Eigen::Dynamic, 1> im1_values (volumes);
+            Eigen::Matrix<typename Im2Type::value_type, Eigen::Dynamic, 1> im2_values (volumes);
+
+
+            params.im1_image_interp->row (im1_values);
+            if (im1_values.hasNaN())
+              return Eigen::MatrixXd::Zero (volumes, 1);
+
+            params.im2_image_interp->row (im2_values);
+            if (im2_values.hasNaN())
+              return Eigen::MatrixXd::Zero (volumes, 1);
+
+            Eigen::MatrixXd res = (im1_values - im2_values).array().square();
+            return res;
         }
       };
     }

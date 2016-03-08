@@ -91,8 +91,8 @@ namespace MR
 
             //  metric_requires_precompute<U>::yes: operator() loops over processed_image instead of midway_image
             template <class U = MetricType>
-            double operator() (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x, Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient, typename metric_requires_precompute<U>::yes = 0) {
-              default_type overall_cost_function = 0.0;
+            default_type operator() (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x, Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient, typename metric_requires_precompute<U>::yes = 0) {
+              Eigen::VectorXd overall_cost_function = Eigen::VectorXd::Zero(1,1);
               gradient.setZero();
               params.transformation.set_parameter_vector(x);
 
@@ -113,34 +113,37 @@ namespace MR
                 ThreadKernel<MetricType, ParamType> kernel (metric, params, overall_cost_function, gradient);
                   ThreadedLoop (params.processed_image, 0, 3).run (kernel);
               }
-              DEBUG ("Metric evaluate iteration: " + str(iteration++) + ", cost: " +str(overall_cost_function));
+              DEBUG ("Metric evaluate iteration: " + str(iteration++) + ", cost: " + str(overall_cost_function.transpose()));
               DEBUG ("  x: " + str(x.transpose()));
               DEBUG ("  gradient: " + str(gradient.transpose()));
               DEBUG ("  norm(gradient): " + str(gradient.norm()));
-              return overall_cost_function;
+              return overall_cost_function(0);
             }
 
-            // template <class MetricType, class ParamType>
             struct ThreadFunctor {
               public:
                 ThreadFunctor (
                     const std::vector<size_t>& inner_axes,
                     const default_type density,
-                    const MetricType& metric, const ParamType& parameters,
-                    default_type& overall_cost_function, Eigen::VectorXd& overall_grad,
+                    const MetricType& metric,
+                    const ParamType& parameters,
+                    Eigen::VectorXd& overall_cost_function,
+                    Eigen::VectorXd& overall_grad,
                     Math::RNG& rng_engine) :
-                  // kern (kernel),
                   inner_axes (inner_axes),
                   density (density),
                   metric (metric),
                   params (parameters),
-                  cost_function (0.0),
+                  cost_function (overall_cost_function.size()),
                   gradient (overall_grad.size()),
                   overall_cost_function (overall_cost_function),
                   overall_gradient (overall_grad),
                   rng (rng_engine)  {
                     gradient.setZero();
-                    assert(inner_axes.size() >= 2); }
+                    cost_function.setZero();
+                    assert(inner_axes.size() >= 2);
+                    assert(overall_cost_function.size() == 1);
+                  }
 
                 ~ThreadFunctor () {
                   overall_cost_function += cost_function;
@@ -150,14 +153,14 @@ namespace MR
                 void operator() (const Iterator& iter) {
                   auto engine = std::default_random_engine{static_cast<std::default_random_engine::result_type>(rng.get_seed())};
                   // DEBUG(str(iter));
-                  auto kern = ThreadKernel<MetricType, ParamType> (metric, params, overall_cost_function, gradient);
+                  auto kern = ThreadKernel<MetricType, ParamType> (metric, params, cost_function, gradient);
                   Iterator iterator (iter);
                   assign_pos_of(iter).to(iterator);
                   auto inner_loop = Random_loop<Iterator, std::default_random_engine>(iterator, engine, inner_axes[1], (float) iterator.size(inner_axes[1]) * density);
                   for (auto j = inner_loop; j; ++j)
                     for (auto k = Loop (inner_axes[0]) (iterator); k; ++k){
-                      DEBUG(str(iterator));
-                      kern(iterator);
+                      DEBUG (str(iterator));
+                      kern (iterator);
                     }
                 }
               protected:
@@ -166,9 +169,9 @@ namespace MR
                 default_type density;
                 MetricType metric;
                 ParamType params;
-                default_type cost_function;
+                Eigen::VectorXd cost_function;
                 Eigen::VectorXd gradient;
-                default_type& overall_cost_function;
+                Eigen::VectorXd& overall_cost_function;
                 Eigen::VectorXd& overall_gradient;
                 Math::RNG rng;
                 // ThreadKernel<MetricType, ParamType> kern;
@@ -180,7 +183,7 @@ namespace MR
               estimate (TransformType_&& trafo,
                   const MetricType& metric,
                   const ParamType& params,
-                  default_type& cost,
+                  Eigen::VectorXd& cost,
                   Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient,
                   const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x) {
 
@@ -255,9 +258,9 @@ namespace MR
             //   }
 
             template <class U = MetricType>
-            double operator() (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x, Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient, typename metric_requires_precompute<U>::no = 0) {
+            default_type operator() (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x, Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient, typename metric_requires_precompute<U>::no = 0) {
 
-              default_type overall_cost_function = 0.0;
+              Eigen::VectorXd overall_cost_function = Eigen::VectorXd::Zero(1,1);
               gradient.setZero();
               params.transformation.set_parameter_vector(x);
 
@@ -274,18 +277,18 @@ namespace MR
               }
 
               estimate(params.transformation, metric, params, overall_cost_function, gradient, x);
-              DEBUG ("Metric evaluate iteration: " + str(iteration++) + ", cost: " + str(overall_cost_function));
+              DEBUG ("Metric evaluate iteration: " + str(iteration++) + ", cost: " + str(overall_cost_function.transpose()));
               DEBUG ("  x: " + str(x.transpose()));
               DEBUG ("  gradient: " + str(gradient.transpose()));
               DEBUG ("  norm(gradient): " + str(gradient.norm()));
-              return overall_cost_function;
+              return overall_cost_function(0);
             }
 
             size_t size() {
               return params.transformation.size();
             }
 
-            double init (Eigen::VectorXd& x) {
+            default_type init (Eigen::VectorXd& x) {
               params.transformation.get_parameter_vector(x);
               return 1.0;
             }

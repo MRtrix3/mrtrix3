@@ -47,7 +47,7 @@ namespace MR
                 ImageType2& im2,
                 MaskType1& mask1,
                 MaskType2& mask2,
-                Transform& transform,
+                MR::Transform& transform,
                 default_type& sum_im1,
                 default_type& sum_im2,
                 size_t& overlap):
@@ -173,7 +173,7 @@ namespace MR
               size_t overlap (0);
 
               Header midway_header (parameters.midway_image_header);
-              Transform transform (midway_header);
+              MR::Transform transform (midway_header);
 
               auto cc_mask = Header::scratch (midway_header).template get_image<bool>();
               parameters.processed_mask = cc_mask;
