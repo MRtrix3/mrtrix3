@@ -13,8 +13,8 @@
  *
  */
 
-#ifndef __registration_metric_cross_correlation_no_gradient_h__
-#define __registration_metric_cross_correlation_no_gradient_h__
+#ifndef __registration_metric_cross_correlation_h__
+#define __registration_metric_cross_correlation_h__
 
 #include "transform.h"
 #include "interp/linear.h"
@@ -25,7 +25,7 @@ namespace MR
   {
     namespace Metric
     {
-      class NegCrossCorrelationNoGradient {
+      class CrossCorrelationNoGradient {
 
         private:
           default_type mean1, mean2;

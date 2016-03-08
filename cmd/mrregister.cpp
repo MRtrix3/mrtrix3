@@ -23,7 +23,6 @@
 #include "registration/metric/demons.h"
 #include "registration/metric/mean_squared.h"
 #include "registration/metric/difference_robust.h"
-#include "registration/metric/difference_robust_4D.h"
 #include "registration/metric/normalised_cross_correlation.h"
 #include "registration/transform/affine.h"
 #include "registration/transform/rigid.h"
