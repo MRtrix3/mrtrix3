@@ -25,7 +25,6 @@
 #include "registration/metric/difference_robust.h"
 #include "registration/metric/difference_robust_4D.h"
 #include "registration/metric/normalised_cross_correlation.h"
-#include "registration/metric/mean_squared_4D.h"
 #include "registration/transform/affine.h"
 #include "registration/transform/rigid.h"
 #include "dwi/directions/predefined.h"
@@ -543,7 +542,7 @@ void run ()
         rigid_registration.set_directions (directions_cartesian);
       if (rigid_metric == Registration::NCC)
         throw Exception ("cross correlation metric not implemented for data with more than 3 dimensions");
-      Registration::Metric::MeanSquared4D<Image<value_type>, Image<value_type>> metric (im1_image, im2_image);
+      Registration::Metric::MeanSquared4D<Image<value_type>, Image<value_type>> metric;
       rigid_registration.run_masked (metric, rigid, im1_image, im2_image, im1_mask, im2_mask);
     } else {
       if (rigid_metric == Registration::NCC) {
@@ -581,7 +580,7 @@ void run ()
         throw Exception ("cross correlation metric not implemented for data with more than 3 dimensions");
       else if (affine_metric == Registration::Diff) {
         if (affine_estimator == Registration::None) {
-          Registration::Metric::MeanSquared4D<Image<value_type>, Image<value_type>> metric (im1_image, im2_image);
+          Registration::Metric::MeanSquared4D<Image<value_type>, Image<value_type>> metric;
           affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
         } else if (affine_estimator == Registration::L1) {
           Registration::Metric::L1 estimator;

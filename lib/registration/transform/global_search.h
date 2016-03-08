@@ -35,7 +35,6 @@
 #include "interp/cubic.h"
 #include "interp/nearest.h"
 #include "registration/metric/mean_squared.h"
-#include "registration/metric/mean_squared_no_gradient.h"
 #include "registration/metric/params.h"
 #include "registration/metric/normalised_cross_correlation.h"
 #include "registration/metric/evaluate.h"
