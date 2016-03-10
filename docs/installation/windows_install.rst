@@ -56,7 +56,7 @@ Install *MRtrix3* dependencies
 
    ::
 
-       pacman -S git python pkg-config mingw-w64-x86_64-gcc mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt4
+       pacman -S git python pkg-config mingw-w64-x86_64-gcc mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5
 
 Set up git and download *MRtrix3* sources
 ---------------------------------------
