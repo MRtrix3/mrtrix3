@@ -33,9 +33,9 @@ Install Dependencies
 -  Install XCode from the Apple Store
 
 -  Install Eigen - since Eigen is provided as header files only, it's
-    probably easiest to just `download the source code <http://eigen.tuxfamily.org/>`__;
-    installation through `MacPorts <http://www.macports.org/>`__ or
-    `Homebrew <http://brew.sh/>`__ may also be possible though.
+   probably easiest to just `download the source code <http://eigen.tuxfamily.org/>`__;
+   installation through `MacPorts <http://www.macports.org/>`__ or
+   `Homebrew <http://brew.sh/>`__ may also be possible though.
 
 -  Download and install `the latest version of
    Qt5 <http://download.qt.io/official_releases/qt/>`__ - you need to
