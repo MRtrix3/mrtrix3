@@ -12,9 +12,9 @@ Check requirements
 To install *MRtrix3* , you will need the following:
 
 -  a `C++11 <https://en.wikipedia.org/wiki/C%2B%2B11>`__ compliant
-   compiler (`clang <http://clang.llvm.org/>`__ on MacOSX)
--  `Python <https://www.python.org/>`__ version >= 2.6
--  The `zlib <http://www.zlib.net/>`__ compression library
+   compiler (e.g. `clang <http://clang.llvm.org/>`__ in Xcode)
+-  `Python <https://www.python.org/>`__ version >= 2.6 (already included in MacOS X)
+-  The `zlib <http://www.zlib.net/>`__ compression library (already included in MacOS X)
 -  `Eigen <http://eigen.tuxfamily.org/>`__ version 3
 -  `Qt <http://www.qt.io/>`__ version >= 5.1 *[GUI components only]* -
    important: versions prior to this will *not* work
@@ -33,9 +33,9 @@ Install Dependencies
 -  Install XCode from the Apple Store
 
 -  Install Eigen - since Eigen is provided as header files only, it's
-   probably easiest to just `download the source code <http://eigen.tuxfamily.org/>`__;
-   installation through `MacPorts <http://www.macports.org/>`__ or
-   `Homebrew <http://brew.sh/>`__ may also be possible though.
+   probably easiest to just `download the source code <http://eigen.tuxfamily.org/>`__.
+   Alternatively, install through `MacPorts <http://www.macports.org/>`__ or 
+   `Homebrew <http://brew.sh/>`__ (``brew install eigen``).
 
 -  Download and install `the latest version of
    Qt5 <http://download.qt.io/official_releases/qt/>`__ - you need to
