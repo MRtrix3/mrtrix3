@@ -63,8 +63,8 @@ namespace MR
                     midway_image (midway_image),
                     im1_mask (im1_mask),
                     im2_mask (im2_mask),
-                    loop_density(1.0),
-                    robust_estimate(false),
+                    loop_density (1.0),
+                    robust_estimate (false),
                     control_point_exent (10.0, 10.0, 10.0) {
                       im1_image_interp.reset (new Im1ImageInterpType (im1_image));
                       im2_image_interp.reset (new Im2ImageInterpType (im2_image));

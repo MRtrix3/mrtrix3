@@ -53,13 +53,28 @@ namespace MR
         struct use_processed_image<MetricType, typename Void<typename MetricType::requires_precompute>::type> {
           typedef int yes;
         };
+
+        template <class MetricType, typename U = void>
+        struct cost_is_vector {
+          typedef int no;
+        };
+
+        template <class MetricType>
+        struct cost_is_vector<MetricType, typename Void<typename MetricType::is_vector_type>::type> {
+          typedef int yes;
+        };
       }
       //! \endcond
 
       template <class MetricType, class ParamType>
       class ThreadKernel {
         public:
-          ThreadKernel (const MetricType& metric, const ParamType& parameters, Eigen::VectorXd& overall_cost_function, Eigen::VectorXd& overall_gradient, ssize_t* overall_cnt = nullptr) :
+          ThreadKernel (
+              const MetricType& metric,
+              const ParamType& parameters,
+              Eigen::VectorXd& overall_cost_function,
+              Eigen::VectorXd& overall_gradient,
+              ssize_t* overall_cnt = nullptr):
             metric (metric),
             params (parameters),
             cost_function (overall_cost_function.size()),
@@ -81,7 +96,11 @@ namespace MR
           }
 
           template <class U = MetricType>
-          void operator() (const Iterator& iter, typename is_neighbourhood_metric<U>::no = 0, typename use_processed_image<U>::no = 0) {
+          void operator() (const Iterator& iter,
+              typename is_neighbourhood_metric<U>::no = 0,
+              typename use_processed_image<U>::no = 0,
+              typename cost_is_vector<U>::no = 0) {
+
             Eigen::Vector3 voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
 
             Eigen::Vector3 midway_point = transform.voxel2scanner * voxel_pos;
@@ -111,27 +130,67 @@ namespace MR
               return;
 
             ++cnt;
-            cost_function.array() += metric (params, im1_point, im2_point, midway_point, gradient);
+            cost_function(0) += metric (params, im1_point, im2_point, midway_point, gradient);
           }
 
           template <class U = MetricType>
-          void operator() (const Iterator& iter, typename is_neighbourhood_metric<U>::no = 0, typename use_processed_image<U>::yes = 0) {
+          void operator() (const Iterator& iter,
+              typename is_neighbourhood_metric<U>::no = 0,
+              typename use_processed_image<U>::no = 0,
+              typename cost_is_vector<U>::yes = 0) {
+
+            Eigen::Vector3 voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
+
+            Eigen::Vector3 midway_point = transform.voxel2scanner * voxel_pos;
+
+            Eigen::Vector3 im2_point;
+            params.transformation.transform_half_inverse (im2_point, midway_point);
+            if (params.im2_mask_interp) {
+              params.im2_mask_interp->scanner (im2_point);
+              if (params.im2_mask_interp->value() < 0.5)
+                return;
+            }
+
+            Eigen::Vector3 im1_point;
+            params.transformation.transform_half (im1_point, midway_point);
+            if (params.im1_mask_interp) {
+              params.im1_mask_interp->scanner (im1_point);
+              if (params.im1_mask_interp->value() < 0.5)
+                return;
+            }
+
+            params.im1_image_interp->scanner (im1_point);
+            if (!(*params.im1_image_interp))
+              return;
+
+            params.im2_image_interp->scanner (im2_point);
+            if (!(*params.im2_image_interp))
+              return;
+
+            ++cnt;
+            cost_function.noalias() = cost_function + metric (params, im1_point, im2_point, midway_point, gradient);
+          }
+
+          template <class U = MetricType>
+          void operator() (const Iterator& iter,
+              typename is_neighbourhood_metric<U>::no = 0,
+              typename use_processed_image<U>::yes = 0,
+              typename cost_is_vector<U>::no = 0) {
+
             if (params.processed_mask.valid()) {
               assign_pos_of (iter, 0, 3).to (params.processed_mask);
               if (!params.processed_mask.value())
                 return;
             }
             ++cnt;
-            cost_function.array() += metric (params, iter, gradient);
+            cost_function(0) += metric (params, iter, gradient);
           }
 
           template <class U = MetricType>
-            void operator() (const Iterator& iter, typename is_neighbourhood_metric<U>::yes = 0, typename use_processed_image<U>::no = 0) {
-              throw Exception ("no neighbourhood metric without precompute implemented");
-            }
-
-          template <class U = MetricType>
-            void operator() (const Iterator& iter, typename is_neighbourhood_metric<U>::yes = 0, typename use_processed_image<U>::yes = 0) {
+            void operator() (const Iterator& iter,
+                typename is_neighbourhood_metric<U>::yes = 0,
+                typename use_processed_image<U>::yes = 0,
+                typename cost_is_vector<U>::no = 0) {
               assert(params.processed_image.valid());
 
               Eigen::Vector3 voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
@@ -146,7 +205,7 @@ namespace MR
               }
 
               ++cnt;
-              cost_function.array() += metric (params, iter, gradient);
+              cost_function(0) += metric (params, iter, gradient);
             }
 
           protected:
