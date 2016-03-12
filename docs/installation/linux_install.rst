@@ -153,7 +153,7 @@ Set up *MRtrix3*
 
    ::
 
-       echo PATH=$(pwd)/bin:$(pwd)/scripts:\$PATH >> ~/.bashrc
+       echo PATH=$(pwd)/release/bin:$(pwd)/scripts:\$PATH >> ~/.bashrc
 
 2. Close the terminal and start another one to ensure the startup file
    is read (or just type 'bash')
@@ -248,7 +248,7 @@ Qt <http://doc.qt.io/qt-5/linux-deployment.html#building-qt-statically>`__
 beforehand. Use the ``-nogui`` option to skip installation of GUI
 components, which rely on Qt.
 
-You can then copy the contents of the ``bin/`` folder onto target
+You can then copy the contents of the ``release/bin/`` folder onto target
 systems, make sure their location is listed in the ``PATH``, and start
 using these commands.
 
@@ -331,7 +331,7 @@ shell):
 
 ::
 
-    export PATH=$(pwd)/mrtrix3/bin:$(pwd)/mrtrix3/scripts:$PATH
+    export PATH=$(pwd)/mrtrix3/release/bin:$(pwd)/mrtrix3/scripts:$PATH
 
 The above will only set your PATH for the current session. To make this
 the default for new sessions, you should add the relevant line to your
@@ -339,7 +339,7 @@ the default for new sessions, you should add the relevant line to your
 
 ::
 
-    echo export PATH=$(pwd)/mrtrix3/bin:$(pwd)/mrtrix3/scripts:\$PATH >> ~/.bashrc
+    echo export PATH=$(pwd)/mrtrix3/release/bin:$(pwd)/mrtrix3/scripts:\$PATH >> ~/.bashrc
 
 
 .. _linux_trouble_shooting:

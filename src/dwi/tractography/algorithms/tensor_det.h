@@ -63,11 +63,15 @@ namespace MR
 
           properties["method"] = "TensorDet";
 
-          auto grad = DWI::get_valid_DW_scheme (source);
-
-          auto bmat_double = grad2bmatrix<double> (grad);
-          binv = Math::pinv (bmat_double).cast<float>();
-          bmat = bmat_double.cast<float>();
+          try {
+            auto grad = DWI::get_valid_DW_scheme (source);
+            auto bmat_double = grad2bmatrix<double> (grad);
+            binv = Math::pinv (bmat_double).cast<float>();
+            bmat = bmat_double.cast<float>();
+          } catch (Exception& e) {
+            e.display();
+            throw Exception ("Tensor-based tracking algorithms expect a DWI series as input");
+          }
         }
 
         Eigen::MatrixXf bmat, binv;

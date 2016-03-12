@@ -89,7 +89,7 @@ namespace MR
                 value_type mean = 0;
                 for (std::vector<size_t>::const_iterator v = shell.get_volumes().begin(); v != shell.get_volumes().end(); ++v) {
                   input.index(3) = *v;
-                  mean += input.value();
+                  mean += (input.value() < 0) ? 0 : input.value();
                 }
                 shell_image.value() = mean / value_type(shell.count());
               }

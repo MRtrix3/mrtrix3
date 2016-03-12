@@ -60,6 +60,12 @@ lib.app.initialise()
 algorithm = getattr(dwi2response, lib.app.args.algorithm)
 
 
+# Check for prior existence of output files, and grab any input files, used by the particular algorithm
+lib.app.checkOutputFile(lib.app.args.voxels)
+algorithm.checkOutputFiles()
+algorithm.getInputFiles()
+
+
 # Sanitise some inputs, and get ready for data import
 if lib.app.args.lmax:
   try:
@@ -94,12 +100,6 @@ else: # Don't want to discard b=0 in multi-shell algorithms, which dwiextract wi
   runCommand('mrconvert ' + lib.app.args.input + ' ' + os.path.join(lib.app.tempDir, 'dwi.mif') + ' -stride 0,0,0,1' + grad_import_option)
 if lib.app.args.mask:
   runCommand('mrconvert ' + lib.app.args.mask + ' ' + os.path.join(lib.app.tempDir, 'mask.mif') + ' -datatype bit')
-
-
-# Check for prior existence of output files, and grab any input files, used by the particular algorithm
-lib.app.checkOutputFile(lib.app.args.voxels)
-algorithm.checkOutputFiles()
-algorithm.getInputFiles()
 
 
 lib.app.gotoTempDir()

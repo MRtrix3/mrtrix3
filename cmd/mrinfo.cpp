@@ -199,7 +199,7 @@ void run ()
     if (offset)     std::cout << header.intensity_offset() << "\n";
     if (multiplier) std::cout << header.intensity_scale() << "\n";
     if (transform)  std::cout << header.transform().matrix().format(fmt);
-    if (dwgrad)     std::cout << header.parse_DW_scheme();
+    if (dwgrad)     std::cout << header.parse_DW_scheme() << "\n";
     if (shells || shellcounts)     {
       DWI::Shells dwshells (header.parse_DW_scheme());
       if (shells) {

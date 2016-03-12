@@ -37,8 +37,12 @@ class SDStream : public MethodBase {
             SharedBase (diff_path, property_set),
             lmax (Math::SH::LforN (source.size(3)))
         {
-          if (source.size(3) != int (Math::SH::NforL (Math::SH::LforN (source.size(3))))) 
-            throw Exception ("number of volumes in input data does not match that expected for a SH dataset");
+          try {
+            Math::SH::check (source);
+          } catch (Exception& e) {
+            e.display();
+            throw Exception ("Algorithm SD_STREAM expects as input a spherical harmonic (SH) image");
+          }
 
           if (is_act() && act().backtrack())
             throw Exception ("Backtracking not valid for deterministic algorithms");

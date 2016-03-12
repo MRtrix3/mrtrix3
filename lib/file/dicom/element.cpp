@@ -169,11 +169,13 @@ namespace MR {
         }
         else if (next+size > fmap->address() + fmap->size()) 
           throw Exception ("file \"" + fmap->name() + "\" is too small to contain DICOM elements specified");
-        else if (size%2) 
-          throw Exception ("odd length (" + str (size) + ") used for DICOM tag " + ( tag_name().size() ? tag_name().substr (2) : "" ) 
-              + " (" + str (group) + ", " + str (element) + ") in file \"" + fmap->name() + "");
-        else if (VR != VR_SQ && ( group != GROUP_SEQUENCE || element != ELEMENT_SEQUENCE_ITEM ) ) 
-          next += size;
+        else {
+          if (size%2) 
+            DEBUG ("WARNING: odd length (" + str (size) + ") used for DICOM tag " + ( tag_name().size() ? tag_name().substr (2) : "" ) 
+                + " (" + str (group) + ", " + str (element) + ") in file \"" + fmap->name() + "");
+          if (VR != VR_SQ && ( group != GROUP_SEQUENCE || element != ELEMENT_SEQUENCE_ITEM ) ) 
+            next += size;
+        }
 
 
 

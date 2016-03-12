@@ -58,7 +58,7 @@ structure corresponds to. This is dealt with using a *connectome
 configuration file*. For this example, let's imagine that we're using
 the default MRtrix connectome configuration file for the FreeSurfer
 Desikan-Killiany atlas segmentation: this is provided at
-``src/dwi/tractography/connectomics/example_configs/fs_default.txt``.
+``src/connectome/config/fs_default.txt``.
 Examining this file in detail, we see the following:
 
 ::
@@ -93,7 +93,7 @@ This is what the actual command call looks like:
 
 .. code::
 
-    labelconfig $FREESURFER_HOME/subjects/bert/mri/aparc+aseg.mgz ~/mrtrix3/src/dwi/tractography/connectomics/example_configs/fs_default.txt bert_parcels.mif -lut_freesurfer $FREESURFER_HOME/FreeSurferColorLUT.txt
+    labelconfig $FREESURFER_HOME/subjects/bert/mri/aparc+aseg.mgz ~/mrtrix3/src/connectome/config/fs_default.txt bert_parcels.mif -lut_freesurfer $FREESURFER_HOME/FreeSurferColorLUT.txt
 
 And this is what the resulting image looks like:
 

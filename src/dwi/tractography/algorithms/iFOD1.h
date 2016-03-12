@@ -49,9 +49,12 @@ namespace MR
           max_max_truncation (0.0),
           num_proc (0) {
 
-          if (source.size(3) != int (Math::SH::NforL (Math::SH::LforN (source.size(3))))) 
-            throw Exception ("number of volumes in input data does not match that expected for a SH dataset");
-
+          try {
+            Math::SH::check (source);
+          } catch (Exception& e) {
+            e.display();
+            throw Exception ("Algorithm iFOD1 expects as input a spherical harmonic (SH) image");
+          }
 
           set_step_size (0.1);
           if (rk4) {

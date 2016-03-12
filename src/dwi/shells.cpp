@@ -13,6 +13,8 @@
  * 
  */
 
+#include "debug.h"
+
 #include "math/math.h"
 #include "dwi/shells.h"
 
@@ -114,52 +116,65 @@ namespace MR
             }
             if (!shell_selected) {
 
-              // First, check to see if all non-zero shells have a non-zero standard deviation
-              bool zero_stdev = false;
-              for (std::vector<Shell>::const_iterator s = shells.begin(); s != shells.end(); ++s) {
-                if (!s->is_bzero() && !s->get_stdev()) {
-                  zero_stdev = true;
-                  break;
-                }
-              }
-
+              // Check to see if we can unambiguously select a shell based on b-value integer rounding
               size_t best_shell = 0;
-              default_type best_num_stdevs = std::numeric_limits<default_type>::max();
               bool ambiguous = false;
               for (size_t s = 0; s != shells.size(); ++s) {
-                const default_type num_stdev = std::abs ((*b - shells[s].get_mean()) / (zero_stdev ? std::sqrt (shells[s].get_mean()) : shells[s].get_stdev()));
-                const bool within_range = (num_stdev < (zero_stdev ? 1.0 : 5.0));
-                if (within_range) {
-                  if (!shell_selected) {
-                    best_shell = s;
-                    best_num_stdevs = num_stdev;
+                if (std::abs (*b - shells[s].get_mean()) <= 1.0) {
+                  if (shell_selected) {
+                    ambiguous = true;
                   } else {
-                    // More than one shell plausible; decide whether or not the decision is unambiguous
-                    if (num_stdev < 0.1 * best_num_stdevs) {
-                      best_shell = s;
-                      best_num_stdevs = num_stdev;
-                    } else if (num_stdev < 10.0 * best_num_stdevs) {
-                      ambiguous = true;
-                    } // No need to do anything if the existing selection is significantly better than this shell
+                    best_shell = s;
+                    shell_selected = true;
                   }
                 }
               }
+              if (shell_selected && !ambiguous) {
+                to_retain[best_shell] = true;
+                DEBUG ("User requested b-value " + str(*b) + "; got shell " + str(best_shell) + ": " + str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell].get_stdev()) + " with " + str(shells[best_shell].count()) + " volumes");
+              } else {
 
-              if (ambiguous) {
-                std::string bvalues;
-                for (size_t s = 0; s != shells.size(); ++s) {
-                  if (bvalues.size())
-                    bvalues += ", ";
-                  bvalues += str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev());
+                // First, check to see if all non-zero shells have (effectively) non-zero standard deviation
+                // (If one non-zero shell has negligible standard deviation, assume a Poisson distribution for all shells)
+                bool zero_stdev = false;
+                for (std::vector<Shell>::const_iterator s = shells.begin(); s != shells.end(); ++s) {
+                  if (!s->is_bzero() && s->get_stdev() < 1.0) {
+                    zero_stdev = true;
+                    break;
+                  }
                 }
-                throw Exception ("Unable to robustly select desired shell b=" + str(*b) + " (detected shells are: " + bvalues + ")");
-              }
 
-              WARN ("User requested shell b=" + str(*b) + "; have selected shell " + str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell].get_stdev()));
+                size_t best_shell = 0;
+                default_type best_num_stdevs = std::numeric_limits<default_type>::max();
+                bool ambiguous = false;
+                for (size_t s = 0; s != shells.size(); ++s) {
+                  const default_type stdev = (shells[s].is_bzero() ? 0.5 * bzero_threshold() : (zero_stdev ? std::sqrt (shells[s].get_mean()) : shells[s].get_stdev()));
+                  const default_type num_stdev = std::abs ((*b - shells[s].get_mean()) / stdev);
+                  if (num_stdev < best_num_stdevs) {
+                    ambiguous = (num_stdev >= 0.1 * best_num_stdevs);
+                    best_shell = s;
+                    best_num_stdevs = num_stdev;
+                  } else {
+                    ambiguous = (num_stdev < 10.0 * best_num_stdevs);
+                  }
+                }
 
-              to_retain[best_shell] = true;
+                if (ambiguous) {
+                  std::string bvalues;
+                  for (size_t s = 0; s != shells.size(); ++s) {
+                    if (bvalues.size())
+                      bvalues += ", ";
+                    bvalues += str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev());
+                  }
+                  throw Exception ("Unable to robustly select desired shell b=" + str(*b) + " (detected shells are: " + bvalues + ")");
+                } else {
+                  WARN ("User requested shell b=" + str(*b) + "; have selected shell " + str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell].get_stdev()));
+                  to_retain[best_shell] = true;
+                }
 
-            }
+              } // End checking if the requested b-value is within 1.0 of a shell mean
+
+            } // End checking if the shell can be selected because of lying within the numerical range of a shell
 
           } // End checking to see if requested shell is b=0
 

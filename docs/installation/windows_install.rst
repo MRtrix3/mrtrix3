@@ -56,7 +56,7 @@ Install *MRtrix3* dependencies
 
    ::
 
-       pacman -S git python pkg-config mingw-w64-x86_64-gcc mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt4
+       pacman -S git python pkg-config mingw-w64-x86_64-gcc mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5
 
 Set up git and download *MRtrix3* sources
 ---------------------------------------
@@ -101,7 +101,7 @@ Set up *MRtrix3*
 
    ::
 
-       echo "export PATH=$(pwd)/bin:$(pwd)/lib:$(pwd)/scripts:\$PATH" >> ~/.bashrc
+       echo "export PATH=$(pwd)/release/bin:$(pwd)/release/lib:$(pwd)/scripts:\$PATH" >> ~/.bashrc
 
    Note that although the scripts provided with MRtrix will appear in
    your path, many of these will not work on a Windows installation due
