@@ -1,6 +1,7 @@
 #include "command.h"
 #include "image.h"
 #include "algo/loop.h"
+#include "algo/threaded_loop.h"
 #include "math/math.h"
 
 #include "image/average_space.h"
@@ -10,10 +11,17 @@
 #include "interp/sinc.h"
 #include "filter/reslice.h"
 
+#include "transform.h"
+#include "registration/transform/rigid.h"
+#include "registration/metric/cross_correlation.h"
+#include "registration/metric/mean_squared.h"
+#include "registration/metric/params.h"
+#include "registration/metric/thread_kernel.h"
+
 using namespace MR;
 using namespace App;
 
-const char* interp_choices[] = { "nearest", "linear", "cubic", "sinc", NULL }; // TODO
+const char* interp_choices[] = { "nearest", "linear", "cubic", "sinc", NULL };
 const char* space_choices[] = { "voxel", "image1", "image2", "average", NULL };
 
 template <class ValueType>
@@ -30,7 +38,6 @@ inline void meansquared (const Eigen::Matrix<ValueType,Eigen::Dynamic, 1>& value
   cost.array() += (value1 - value2).array().square();
 }
 
-// TODO: there must be a better way of doing this?
 template <class ImageType1, class ImageType2, class TransformType, class OversampleType, class ValueType>
 void reslice(size_t interp, ImageType1& input, ImageType2& output, const TransformType& trafo = Adapter::NoTransform, const OversampleType& oversample = Adapter::AutoOverSample, const ValueType out_of_bounds_value = 0.f){
   switch(interp){
@@ -55,9 +62,84 @@ void reslice(size_t interp, ImageType1& input, ImageType2& output, const Transfo
   }
 }
 
+template <class InType1, class InType2, class MaskType1, class MaskType2>
+  void evaluate_voxelwise ( InType1& in1,
+                            InType2& in2,
+                            MaskType1& in1mask,
+                            MaskType2& in2mask,
+                            const size_t dimensions,
+                            bool use_mask1,
+                            bool use_mask2,
+                            ssize_t& n_voxels,
+                            Eigen::VectorXd& sos) {
+
+    typedef typename InType1::value_type value_type;
+
+    if (use_mask1 or use_mask2)
+      n_voxels = 0;
+    if (use_mask1 and use_mask2) {
+      if (dimensions == 3) {
+        for (auto i = Loop() (in1, in2, in1mask, in2mask); i ;++i)
+          if (in1mask.value() and in2mask.value()){
+            ++n_voxels;
+            meansquared<value_type>(in1.value(), in2.value(), sos);
+          }
+      } else { // 4D
+        for (auto i = Loop(0, 3) (in1, in2, in1mask, in2mask); i ;++i) {
+          if (in1mask.value() and in2mask.value()){
+            ++n_voxels;
+            meansquared<value_type>(in1.row(3), in2.row(3), sos);
+          }
+        }
+      }
+    } else if (use_mask1) {
+      if (dimensions == 3) {
+        for (auto i = Loop() (in1, in2, in1mask); i ;++i)
+          if (in1mask.value()){
+            ++n_voxels;
+            meansquared<value_type>(in1.value(), in2.value(), sos);
+          }
+      } else { // 4D
+        for (auto i = Loop(0, 3) (in1, in2, in1mask); i ;++i) {
+          if (in1mask.value()){
+            ++n_voxels;
+            meansquared<value_type>(in1.row(3), in2.row(3), sos);
+          }
+        }
+      }
+    } else if (use_mask2) {
+      if (dimensions == 3) {
+        for (auto i = Loop() (in1, in2, in2mask); i ;++i)
+          if (in2mask.value()){
+            ++n_voxels;
+            meansquared<value_type>(in1.value(), in2.value(), sos);
+          }
+      } else { // 4D
+        for (auto i = Loop(0, 3) (in1, in2, in2mask); i ;++i) {
+          if (in2mask.value()){
+            ++n_voxels;
+            meansquared<value_type>(in1.row(3), in2.row(3), sos);
+          }
+        }
+      }
+    } else {
+      if (dimensions == 3) {
+        for (auto i = Loop() (in1, in2); i ;++i)
+          meansquared<value_type>(in1.value(), in2.value(), sos);
+      } else { // 4D
+        for (auto i = Loop(0, 3) (in1, in2); i ;++i)
+          meansquared<value_type>(in1.row(3), in2.row(3), sos);
+      }
+    }
+  }
+
+enum MetricType {MeanSquared, CrossCorrelation};
+
+
+
 void usage ()
 {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
 
   DESCRIPTION
   + "computes a dissimilarity metric between two images. Currently only the mean squared difference is implemented";
@@ -75,7 +157,7 @@ void usage ()
     +   Argument ("iteration method").type_choice (space_choices)
 
     + Option ("interp",
-        "set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc. Default: cubic).")
+        "set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc. Default: linear).")
     + Argument ("method").type_choice (interp_choices)
 
     + Option ("mask1", "mask for image 1")
@@ -97,14 +179,16 @@ typedef Image<bool> MaskType;
 
 void run ()
 {
-  auto input1 = Image<value_type>::open (argument[0]).with_direct_io (Stride::contiguous_along_axis (3));;
-  auto input2 = Image<value_type>::open (argument[1]).with_direct_io (Stride::contiguous_along_axis (3));;
+  auto input1 = Image<value_type>::open (argument[0]).with_direct_io (Stride::contiguous_along_axis (3));
+  auto input2 = Image<value_type>::open (argument[1]).with_direct_io (Stride::contiguous_along_axis (3));
+
+  MetricType metric_type = MetricType::MeanSquared;
 
   const size_t dimensions = input1.ndim();
   if (input1.ndim() != input2.ndim())
     throw Exception ("both images have to have the same number of dimensions");
   DEBUG("dimensions: " + str(dimensions));
-  if (dimensions > 4) throw Exception ("images have to be 3D or 4D");
+  if (dimensions > 4) throw Exception ("images have to be 3 or 4 dimensional");
 
   size_t volumes(1);
   if (dimensions == 4) {
@@ -119,6 +203,11 @@ void run ()
   auto opt = get_options ("space");
   if (opt.size())
     space = opt[0][0];
+
+  int interp = 1;  // linear
+  opt = get_options ("interp");
+  if (opt.size())
+    interp = opt[0][0];
 
   MaskType mask1;
   bool use_mask1 = get_options ("mask1").size()==1;
@@ -141,68 +230,15 @@ void run ()
 
   value_type out_of_bounds_value = 0.0;
 
-  Eigen::Matrix<value_type, Eigen::Dynamic, 1> sos = Eigen::Matrix<value_type, Eigen::Dynamic, 1>::Zero (volumes);
-  if (space==0){
+  Eigen::Matrix<value_type, Eigen::Dynamic, 1> sos = Eigen::Matrix<value_type, Eigen::Dynamic, 1>::Zero (volumes, 1);
+  if (space==0) {
     DEBUG("per-voxel");
     check_dimensions (input1, input2);
-    if (use_mask1 or use_mask2)
-      n_voxels = 0;
-    if (use_mask1 and use_mask2) {
-      if (dimensions == 3) {
-        for (auto i = Loop() (input1, input2, mask1, mask2); i ;++i)
-          if (mask1.value() and mask2.value()){
-            ++n_voxels;
-            meansquared<value_type>(input1.value(), input2.value(), sos);
-          }
-      } else { // 4D
-        for (auto i = Loop(0, 3) (input1, input2, mask1, mask2); i ;++i) {
-          if (mask1.value() and mask2.value()){
-            ++n_voxels;
-            meansquared<value_type>(input1.row(3), input2.row(3), sos);
-          }
-        }
-      }
-    } else if (use_mask1) {
-        if (dimensions == 3) {
-          for (auto i = Loop() (input1, input2, mask1); i ;++i)
-            if (mask1.value()){
-              ++n_voxels;
-              meansquared<value_type>(input1.value(), input2.value(), sos);
-            }
-        } else { // 4D
-          for (auto i = Loop(0, 3) (input1, input2, mask1); i ;++i) {
-            if (mask1.value()){
-              ++n_voxels;
-              meansquared<value_type>(input1.row(3), input2.row(3), sos);
-            }
-          }
-        }
-    } else if (use_mask2){
-      if (dimensions == 3) {
-          for (auto i = Loop() (input1, input2, mask2); i ;++i)
-            if (mask2.value()){
-              ++n_voxels;
-              meansquared<value_type>(input1.value(), input2.value(), sos);
-            }
-        } else { // 4D
-          for (auto i = Loop(0, 3) (input1, input2, mask2); i ;++i) {
-            if (mask2.value()){
-              ++n_voxels;
-              meansquared<value_type>(input1.row(3), input2.row(3), sos);
-            }
-          }
-        }
-    } else {
-      for (auto i = Loop() (input1, input2); i ;++i)
-        meansquared<value_type>(input1.value(), input2.value(), sos);
-    }
+    if (!use_mask1 and !use_mask2)
+      n_voxels = input1.size(0) * input1.size(1) * input1.size(2);
+    evaluate_voxelwise ( input1, input2, mask1, mask2, dimensions, use_mask1, use_mask2, n_voxels, sos );
   } else {
     DEBUG("scanner space");
-    int interp = 2;  // cubic
-    opt = get_options ("interp");
-    if (opt.size())
-      interp = opt[0][0];
-
     auto output1 = Header::scratch(input1.original_header(),"-").get_image<value_type>();
     auto output2 = Header::scratch(input2.original_header(),"-").get_image<value_type>();
 
@@ -210,21 +246,22 @@ void run ()
     MaskType output2mask;
 
     if (space == 1){
-      DEBUG("image 1");
+      DEBUG("space: image 1");
       output1 = input1;
       output1mask = mask1;
       output2 = Header::scratch(input1.original_header(),"-").get_image<value_type>();
       output2mask = Header::scratch(input1.original_header(),"-").get_image<bool>();
       {
         LogLevelLatch log_level (0);
-        reslice(interp,input2, output2, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
+        reslice(interp, input2, output2, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
         if (use_mask2)
           Filter::reslice<Interp::Nearest> (mask2, output2mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
       }
+      evaluate_voxelwise ( output1, output2, output1mask, output2mask, dimensions, use_mask1, use_mask2, n_voxels, sos );
     }
 
     if (space == 2) {
-      DEBUG("image 2");
+      DEBUG("space: image 2");
       output1 = Header::scratch(input2.original_header(),"-").get_image<value_type>();
       output1mask = Header::scratch(input2.original_header(),"-").get_image<bool>();
       output2 = input2;
@@ -236,104 +273,91 @@ void run ()
           Filter::reslice<Interp::Nearest> (mask1, output1mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
       }
       n_voxels = input2.size(0) * input2.size(1) * input2.size(2);
+      evaluate_voxelwise ( output1, output2, output1mask, output2mask, dimensions, use_mask1, use_mask2, n_voxels, sos );
     }
 
     if (space == 3) {
-      DEBUG("average space");
-      std::vector<Header> headers;
-      headers.push_back (input1.original_header());
-      headers.push_back (input2.original_header());
-      default_type template_res = 1.0;
-      auto padding = Eigen::Matrix<default_type, 4, 1>(0, 0, 0, 1.0);
-      std::vector<Eigen::Transform<double, 3, Eigen::Projective>> transform_header_with;
+      DEBUG("space: average space");
 
-      auto template_header = compute_minimum_average_header<double,Eigen::Transform<double, 3, Eigen::Projective>>(headers, template_res, padding, transform_header_with);
+      typedef Image<default_type> ImageType1;
+      typedef Image<default_type> ImageType2;
+      typedef Header ImageTypeM;
 
-      output1mask = Header::scratch(template_header,"-").get_image<bool>();
-      output2mask = Header::scratch(template_header,"-").get_image<bool>();
-
-      Header new_header;
-      new_header.set_ndim(input1.ndim());
-      for (ssize_t dim=0; dim < 3; ++dim){
-        new_header.size(dim) = template_header.size(dim);
-        new_header.spacing(dim) = template_header.spacing(dim);
-      }
-      if (dimensions == 4 ){
-        new_header.size(3) = input1.size(3);
-        new_header.spacing(3) = input1.spacing(3);
-      }
-      new_header.transform() = template_header.transform();
-      output1 = Header::scratch (new_header,"-").get_image<value_type>();
-      output2 = Header::scratch (new_header,"-").get_image<value_type>();
-      {
-        LogLevelLatch log_level (0);
-        reslice(interp, input1, output1, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
-        reslice(interp, input2, output2, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
-        if (use_mask1)
-          Filter::reslice<Interp::Nearest> (mask1, output1mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
-        if (use_mask2)
-          Filter::reslice<Interp::Nearest> (mask2, output2mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
-      }
-      n_voxels = output1.size(0) * output1.size(1) * output1.size(2);
-    }
-
-    if (use_mask1 or use_mask2)
       n_voxels = 0;
-    if (use_mask1 and use_mask2){
-      if (dimensions == 3) {
-        for (auto i = Loop() (output1, output2, output1mask, output2mask); i ;++i)
-          if (output1mask.value() and output2mask.value()){
-            ++n_voxels;
-            meansquared<value_type>(output1.value(), output2.value(), sos);
-          }
-      } else { // 4D
-        for (auto i = Loop(0, 3) (output1, output2, output1mask, output2mask); i ;++i) {
-          if (output1mask.value() and output2mask.value()){
-            ++n_voxels;
-            meansquared<value_type>(output1.row(3), output2.row(3), sos);
-          }
-        }
-      }
-    } else if (use_mask1){
-      if (dimensions == 3) {
-        for (auto i = Loop() (output1, output2, output1mask); i ;++i)
-          if (output1mask.value()){
-            ++n_voxels;
-            meansquared<value_type>(output1.value(), output2.value(), sos);
-          }
-      } else { // 4D
-        for (auto i = Loop(0, 3) (output1, output2, output1mask); i ;++i) {
-          if (output1mask.value()){
-            ++n_voxels;
-            meansquared<value_type>(output1.row(3), output2.row(3), sos);
-          }
-        }
-      }
-    } else if (use_mask2){
-      if (dimensions == 3) {
-        for (auto i = Loop() (output1, output2, output2mask); i ;++i)
-          if (output2mask.value()){
-            ++n_voxels;
-            meansquared<value_type>(output1.value(), output2.value(), sos);
-          }
-      } else { // 4D
-        for (auto i = Loop(0, 3) (output1, output2, output2mask); i ;++i) {
-          if (output2mask.value()){
-            ++n_voxels;
-            meansquared<value_type>(output1.row(3), output2.row(3), sos);
-          }
-        }
-      }
-    } else {
-      if (dimensions == 3) {
-        for (auto i = Loop() (output1, output2); i ;++i)
-          meansquared<value_type>(output1.value(), output2.value(), sos);
-      } else { // 4D
-        for (auto i = Loop(0, 3) (output1, output2); i ;++i)
-          meansquared<value_type>(output1.row(3), output2.row(3), sos);
-      }
-    }
+      std::vector<Header> headers;
+      Registration::Transform::Rigid transform;
+      std::vector<Eigen::Transform<default_type, 3, Eigen::Projective> > init_transforms;
+      Eigen::Matrix<default_type, 4, 1> padding (0.0, 0.0, 0.0, 0.0);
+      headers.push_back(input1.original_header());
+      headers.push_back(input2.original_header());
 
+      Header midway_image_header = compute_minimum_average_header<default_type, Eigen::Transform<default_type, 3, Eigen::Projective>> (headers, 1.0, padding, init_transforms);
+
+      if (interp == 1) {
+        ImageTypeM midway_image (midway_image_header);
+
+        Eigen::VectorXd gradient = Eigen::VectorXd::Zero(1);
+        typedef Registration::Metric::Params <
+                               Registration::Transform::Rigid,
+                               ImageType1,
+                               ImageType2,
+                               ImageTypeM,
+                               MaskType,
+                               MaskType,
+                               Interp::LinearInterp<Image<default_type>, Interp::LinearInterpProcessingType::Value>,
+                               Interp::LinearInterp<Image<default_type>, Interp::LinearInterpProcessingType::Value>,
+                               Interp::Linear<Image<bool>>,
+                               Interp::Linear<Image<bool>>,
+                               Image<default_type>,
+                               Interp::LinearInterp<Image<default_type>, Interp::LinearInterpProcessingType::Value>,
+                               Image<default_type>,
+                               Interp::Nearest<Image<default_type>>
+                               > ParamType;
+        if ( (metric_type == MetricType::MeanSquared) && (dimensions == 3) ) {
+          Registration::Metric::MeanSquaredNoGradient  metric;
+          ParamType parameters (transform, input1, input2, midway_image, mask1, mask2);
+          Registration::Metric::ThreadKernel<decltype(metric), ParamType> kernel
+            (metric, parameters, sos, gradient, &n_voxels);
+          ThreadedLoop (parameters.midway_image, 0, 3).run (kernel);
+        } else if ( (metric_type == MetricType::MeanSquared) && (dimensions == 4) ) {
+          Registration::Metric::MeanSquaredVectorNoGradient4D<ImageType1, ImageType2>
+            metric ( input1, input2 );
+          ParamType parameters (transform, input1, input2, midway_image, mask1, mask2);
+          Registration::Metric::ThreadKernel<decltype(metric), ParamType> kernel
+            (metric, parameters, sos, gradient, &n_voxels);
+          ThreadedLoop (parameters.midway_image, 0, 3).run (kernel);
+        } else { Exception ("Fixme: invalid metric choice "); }
+      } else  { // interp != linear --> reslice and run voxel-wise comparison
+        output1mask = Header::scratch(midway_image_header,"-").get_image<bool>();
+        output2mask = Header::scratch(midway_image_header,"-").get_image<bool>();
+
+        Header new_header;
+        new_header.set_ndim(input1.ndim());
+        for (ssize_t dim=0; dim < 3; ++dim){
+          new_header.size(dim) = midway_image_header.size(dim);
+          new_header.spacing(dim) = midway_image_header.spacing(dim);
+        }
+        if (dimensions == 4 ){
+          new_header.size(3) = input1.size(3);
+          new_header.spacing(3) = input1.spacing(3); // doesn't matter what spacing(3) is
+        }
+        new_header.transform() = midway_image_header.transform();
+        output1 = Header::scratch (new_header,"-").get_image<value_type>();
+        output2 = Header::scratch (new_header,"-").get_image<value_type>();
+        {
+          LogLevelLatch log_level (0);
+          reslice(interp, input1, output1, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
+          reslice(interp, input2, output2, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
+          if (use_mask1)
+            Filter::reslice<Interp::Nearest> (mask1, output1mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
+          if (use_mask2)
+            Filter::reslice<Interp::Nearest> (mask2, output2mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
+        }
+        n_voxels = output1.size(0) * output1.size(1) * output1.size(2);
+        evaluate_voxelwise ( output1, output2, output1mask, output2mask, dimensions, use_mask1, use_mask2, n_voxels, sos );
+      }
+
+    } // "average space"
   }
   DEBUG ("n_voxels:" + str(n_voxels));
   if (n_voxels==0)
