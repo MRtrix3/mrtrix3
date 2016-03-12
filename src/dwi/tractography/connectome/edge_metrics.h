@@ -1,23 +1,16 @@
 /*
-    Copyright 2012 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert Smith, 2012.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
  */
 
 
@@ -28,16 +21,14 @@
 
 #include <vector>
 
-#include "point.h"
-
-#include "image/buffer.h"
-#include "image/loop.h"
-#include "image/voxel.h"
-#include "image/interp/linear.h"
+#include "image.h"
+#include "algo/loop.h"
+#include "interp/linear.h"
 
 #include "connectome/connectome.h"
 
 #include "dwi/tractography/streamline.h"
+#include "dwi/tractography/connectome/connectome.h"
 
 
 
@@ -133,13 +124,11 @@ class Metric_invlength : public Metric_base {
 class Metric_invnodevolume : public Metric_base {
 
   public:
-    Metric_invnodevolume (Image::Buffer<node_t>& in_data) :
-      Metric_base (false)
+    Metric_invnodevolume (Image<node_t>& node_image) :
+        Metric_base (false)
     {
-      auto in = in_data.voxel();
-      Image::Loop loop;
-      for (auto l = Image::Loop() (in); l; ++l) {
-        const node_t node_index = in.value();
+      for (auto l = Loop() (node_image); l; ++l) {
+        const node_t node_index = node_image.value();
         if (node_index >= node_volumes.size())
           node_volumes.resize (node_index + 1, 0);
         node_volumes[node_index]++;
@@ -172,8 +161,8 @@ class Metric_invnodevolume : public Metric_base {
 class Metric_invlength_invnodevolume : public Metric_invnodevolume {
 
   public:
-    Metric_invlength_invnodevolume (Image::Buffer<node_t>& in_data) :
-      Metric_invnodevolume (in_data) { }
+    Metric_invlength_invnodevolume (Image<node_t>& node_image) :
+        Metric_invnodevolume (node_image) { }
 
     double operator() (const Streamline<>& tck, const NodePair& nodes) const override
     {
@@ -193,10 +182,9 @@ class Metric_meanscalar : public Metric_base {
 
   public:
     Metric_meanscalar (const std::string& path) :
-      Metric_base (true),
-      image (path),
-      v (image),
-      interp_template (v) { }
+        Metric_base (true),
+        image (Image<float>::open (path)),
+        interp_template (image) { }
 
     double operator() (const Streamline<>& tck, const NodePair& nodes) const override
     {
@@ -204,7 +192,7 @@ class Metric_meanscalar : public Metric_base {
       double sum = 0.0;
       size_t count = 0.0;
       for (Streamline<>::const_iterator i = tck.begin(); i != tck.end(); ++i) {
-        if (!interp.scanner (*i)) {
+        if (interp.scanner (*i)) {
           sum += interp.value();
           ++count;
         }
@@ -219,9 +207,8 @@ class Metric_meanscalar : public Metric_base {
 
 
   private:
-    Image::Buffer<float> image;
-    const Image::Buffer<float>::voxel_type v;
-    const Image::Interp::Linear< Image::Buffer<float>::voxel_type > interp_template;
+    Image<float> image;
+    const Interp::Linear< Image<float> > interp_template;
 
 };
 

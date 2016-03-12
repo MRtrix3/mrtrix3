@@ -1,31 +1,22 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-    Written by J-Donald Tournier, 27/06/08.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "command.h"
 #include "progressbar.h"
-#include "math/vector.h"
-#include "math/matrix.h"
 #include "math/rng.h"
-#include "point.h"
 #include "dwi/directions/file.h"
 #include "file/ofstream.h"
 
@@ -85,9 +76,9 @@ void run ()
     bvalue[nb] = to<value_type> (argument[current++]);
     std::vector<DirectionSet> d;
     for (size_t i = 0; i < num_subsets; ++i) {
-      auto m = DWI::Directions::load_cartesian<value_type> (argument[current++]);
+      auto m = DWI::Directions::load_cartesian (argument[current++]);
       DirectionSet set;
-      for (size_t r = 0; r < m.rows(); ++r)
+      for (ssize_t r = 0; r < m.rows(); ++r)
         set.push_back ({ { m(r,0), m(r,1), m(r,2) } });
       d.push_back (set);
     }

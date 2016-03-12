@@ -4,6 +4,7 @@ import subprocess, sys, os, platform, tempfile, shutil, shlex, re, copy
 
 
 debug = False
+asserts = False
 profile = False
 nogui = False
 noshared = False
@@ -12,9 +13,12 @@ verbose = False
 R_module = False
 profile_name = None
 sh_basis_def = None
+dev = False
 
 for arg in sys.argv[1:]:
   if '-debug'.startswith (arg): debug = True
+  elif '-dev'.startswith (arg): dev = True
+  elif '-assert'.startswith (arg): asserts = True
   elif '-profile'.startswith (arg): profile = True
   elif '-nogui'.startswith (arg): nogui = True
   elif '-noortho'.startswith (arg): sh_basis_def = '-DUSE_NON_ORTHONORMAL_SH_BASIS'
@@ -34,29 +38,47 @@ for arg in sys.argv[1:]:
     profile_name = arg
   else: 
     print ("""
-usage: [ENV] ./configure [name] [-debug] [-profile] [-nogui] [-noshared]
+usage: [ENV] ./configure [name] [-debug] [-assert] [-profile] [-nogui] [-noshared]
 
 In most cases, a simple invocation should work:
 
    $ ./configure
 
-If a name is provided, the configuration will be written to a different file, 
-which can then be used by the build script. For example:
+By default, this creates a target folder named 'release', and a 'config' file
+within that folder. All intermediate files will be placed within the target
+folder to avoid conflict with any other configurations. If a name is provided,
+the configuration will be written to a different folder, which can then be used
+by the build script. For example:
 
-   $ ./configure testing -debug
+   $ ./configure testing -debug -assert
 
-will generate the file 'config.testing', which can be used with the build
-script as follows:
+will generate the folder 'testing' and a config file with debugging symbols and
+assertions enabled, which can be used with the build script as follows:
 
    $ ./build testing
 
-Note that all intermediate files will be named according to the name of the
-configuration to avoid conflict with any other configuration.
+By default, the build script will compile the 'release' folder. 
+
+Note that naming a target folder does *not* set any compiler flags. These are
+modified by command-line options or environment variables. It is perfectly
+valid to use non-standard options with a default ('release') target folder, or
+standard options in a named target folder. For instance: 
+
+   $ ARCH=x86-84 ./configure -noshared
+
+will produce a 'release' (the default name) target folder with non-default
+compiler options, while:
+
+   $ ./configure normal
+
+will produce a target folder named 'normal' using default compiler settings.
 
 
 OPTIONS:
 
     -debug       enable debugging symbols.
+
+    -assert      enable all assert() and related checks.
 
     -profile     enable profiling.
 
@@ -69,6 +91,8 @@ OPTIONS:
     -static      produce statically-linked executables.
 
     -verbose     enable more informative output.
+
+    -dev         enable the extended development build process
 
 
 ENVIRONMENT VARIABLES:
@@ -85,8 +109,7 @@ CXX             The compiler command to use. The default is "g++" ("clang" on Ma
 CXX_ARGS        The arguments expected by the compiler. The default is:
                 "-c CFLAGS SRC -o OBJECT"
 
-LD              The linker command to use. The default is:
-                "g++" ("clang++" on MacOSX)
+LD              The linker command to use. The default is the same as CXX.
 
 LD_ARGS         The arguments expected by the linker. The default is:
                 "LDFLAGS OBJECTS -o EXECUTABLE"
@@ -105,23 +128,15 @@ LDFLAGS         Any additional flags to the linker.
 
 LDLIB_FLAGS     Any additional flags to the linker to generate a shared library.
 
-GSL_CFLAGS      Any flags required to compile with the GSL.
+EIGEN_CFLAGS    Any flags required to compile with Eigen.
                 This may include in particular the path to the
                 include files, if not in a standard location
                 For example:
-                $ GSL_CFLAGS="-I/usr/local/include" ./configure
-
-GSL_LDFLAGS     Any flags required to link with the GSL.
-                This may include in particular the path to the
-                libraries, if not in a standard location
-                For example:
-                $ GSL_LDFLAGS="-L/usr/local/lib -lgsl -lgslcblas" ./configure
+                $ EIGEN_CFLAGS="-isystem /usr/local/include/eigen3" ./configure
 
 ZLIB_CFLAGS     Any flags required to compile with the zlib compression library.
 
 ZLIB_LDFLAGS    Any flags required to link with the zlib compression library.
-
-CBLAS_LDFLAGS   Any flags required to link with an alternate cblas library.
 
 QMAKE           The command to run to invoke qmake. 
 
@@ -141,7 +156,14 @@ PATH            Set the path to use during the configure process.
   
 
 if not profile_name:
-  profile_name = 'default'
+  profile_name = 'release'
+
+
+try: 
+  os.makedirs (profile_name)
+except OSError:
+  if not os.path.isdir (profile_name):
+    raise
 
 
 global logfile, config_report
@@ -175,6 +197,7 @@ MRtrix build type requested: """)
 if profile: report ('profiling')
 elif debug: report ('debug')
 else: report ('release')
+if asserts: report (' with asserts')
 if nogui: report (' [command-line only]')
 report ('\n\n')
 
@@ -196,11 +219,10 @@ if static:
 ld_lib_args = 'OBJECTS LDLIB_FLAGS -o LIB'.split()
 ld_lib_flags = [ ]
 
+eigen_cflags = []
+
 zlib_cflags = []
 zlib_ldflags = [ '-lz' ]
-
-gsl_cflags = []
-gsl_ldflags = [ '-lgsl', '-lgslcblas' ]
 
 
 class TempFile:
@@ -438,7 +460,7 @@ except:
   error ('''compiler not found!
 
 Use CXX environment variable to set path to compiler, as follows:
-     CXX=/usr/bin/g++-4.2 ./configure''')
+     CXX=/usr/bin/g++-4.8 ./configure''')
 
 try:
   compile ('''
@@ -459,7 +481,7 @@ except CompileError:
   error ('''compiler test failed!
 
 Use CXX environment variable to set path to compiler, as follows:
-     CXX=/usr/bin/g++-4.2 ./configure
+     CXX=/usr/bin/g++-4.8 ./configure
 
 You can also use the CXX_ARGS to set the arguments expected by the 
 compiler, in case this differs from gcc, as follows:
@@ -469,7 +491,7 @@ except (LinkError, RuntimeError):
   error ('''linking error!
 
 Use LD environment variable to set path to compiler, as follows:
-     LD=/usr/bin/g++-4.2 ./configure''')
+     LD=/usr/bin/g++-4.8 ./configure''')
 except:
   raise
 
@@ -574,7 +596,7 @@ except CompileError:
 Use the ZLIB_CFLAGS environment variable to set the path to
 the zlib include files and to set any required flags
 For example:
-     ZLIB_CFLAGS="-I/usr/local/include" ./configure''')
+     ZLIB_CFLAGS="-isystem /usr/local/include" ./configure''')
 except LinkError:
   error ('''linker error!
 
@@ -597,103 +619,54 @@ ld_lib_flags += zlib_ldflags
 
 
 
+# Eigen3 flags:
 
-
-# GSL flags:
-
-report ('Checking for GNU Scientific Library: ')
-if 'GSL_CFLAGS' in os.environ.keys(): 
-  gsl_cflags = shlex.split (os.environ['GSL_CFLAGS'])
+report('checking for Eigen 3 library: ')
+if 'EIGEN_CFLAGS' in os.environ.keys(): 
+  eigen_cflags = shlex.split (os.environ['EIGEN_CFLAGS'])
 else:
-  try: 
-    gsl_cflags = shlex.split (execute ([ 'gsl-config', '--cflags' ], RuntimeError)[1])
-    gsl_cflags = [ c for c in gsl_cflags if c is not 0 ]
+  try:
+    eigen_cflags = []
+    for entry in shlex.split (execute ([ 'pkg-config', '--cflags', 'eigen3' ], RuntimeError)[1]):
+      if entry.startswith ('-I'):
+        eigen_cflags += [ '-isystem', entry[2:] ]
+      else:
+        eigen_cflags += [ entry ]
   except:
-    log ('gsl-config not in PATH - assuming defaults for GSL_CFLAGS\n\n')
-    
-if 'GSL_LDFLAGS' in os.environ.keys(): 
-  gsl_ldflags = shlex.split (os.environ['GSL_LDFLAGS'])
-else:
-  try: 
-    gsl_ldflags = shlex.split (execute ([ 'gsl-config', '--libs' ], RuntimeError)[1])
-    gsl_ldflags = [ c for c in gsl_ldflags if c is not 0 ]
-  except:
-    log ('gsl-config not in PATH - assuming defaults for GSL_LDFLAGS\n\n')
-    
+    log('error running on pkg-config --cflags eigen3\n\n')
 
 try:
-  gsl_version = compile ('''
+  eigen_version = compile ('''
+#include <Eigen/Core>
 #include <iostream>
-#include <gsl/gsl_version.h>
-#include <gsl/gsl_matrix.h>
 
-int main() { 
-  std::cout << gsl_version; 
-  gsl_matrix* M = gsl_matrix_alloc (3,3); 
-  return (M->size1 != 3);
+int main (int argc, char* argv[]) {
+  std::cout << EIGEN_WORLD_VERSION << "." << EIGEN_MAJOR_VERSION << "." << EIGEN_MINOR_VERSION << "\\n";
+  return 0;
 }
-''', cpp_flags + gsl_cflags, ld_flags + gsl_ldflags)
-  report (gsl_version + '\n')
+''', cpp_flags + eigen_cflags, ld_flags)
+
+  cpp_flags += eigen_cflags
+  report (eigen_version + '\n')
 except CompileError:
   error ('''compiler error!
 
-Use the GSL_CFLAGS environment variable to set the path to the GSL include files'
-For example:'
-     GSL_CFLAGS=-I/usr/local/include ./configure''')
+Use the EIGEN_CFLAGS environment variable to set the path to
+the Eigen3 include files and to set any required flags
+For example:
+     EIGEN_CFLAGS="-isystem /usr/include/eigen3" ./configure''')
 except LinkError:
-  error ('''linker error!'
+  error ('''linker error!
 
-Use the GSL_LDFLAGS environment variable to set the path to the GSL libraries'
-and include any required libraries'
-For example:'
-     GSL_LDFLAGS="-L/usr/local/lib -lgsl -lgslcblas" ./configure''')
+This shouldn't happen! Please report this to the MRtrix3 dev team.
+''')
+except RuntimeError:
+  error ('''runtime error!
 
-ld_lib_flags += gsl_ldflags
-
-report ('Checking whether GSL compiles with -DHAVE_INLINE: ')
-try:
-  gsl_version = compile ('''
-#include <gsl/gsl_matrix.h>
-int main() { 
-  gsl_matrix* M = gsl_matrix_alloc (3,3); 
-  gsl_matrix_set(M,0,0,3.14); 
-  return (gsl_matrix_get(M,0,0) != 3.14); 
-}''', cpp_flags + gsl_cflags + [ '-DHAVE_INLINE' ], ld_flags + gsl_ldflags)
-  gsl_cflags += [ '-DHAVE_INLINE' ]
-  report ('yes\n')
+This shouldn't happen! Please report this to the MRtrix3 dev team.
+''')
 except:
-  report ('no\n')
-
-
-
-
-# check for alternate cblas libraries:
-
-if 'CBLAS_LDFLAGS' in os.environ.keys(): 
-  cblas_ldflags = shlex.split (os.environ['CBLAS_LDFLAGS'])
-  flags = gsl_ldflags[:]
-  flags.remove ('-lgslcblas')
-  flags += cblas_ldflags;
-  report ('Checking whether GSL compiles with alternate C BLAS libraries ("' + ' '.join(cblas_ldflags) + '"): ')
-  try:
-    compile ('''
-#include <iostream>
-#include <gsl/gsl_version.h>
-#include <gsl/gsl_matrix.h>
-
-int main() { 
-  std::cout << gsl_version; 
-  gsl_matrix* M = gsl_matrix_alloc (3,3); 
-  return (M->size1 != 3);
-}
-''', cpp_flags + gsl_cflags, ld_flags + flags)
-    report ('yes\n')
-    gsl_ldflags = flags
-  except:
-    error ('''Error compiling and/or linking with alternative C BLAS libraries provided!
-Check whether the information provided by the CBLAS_LDFLAGS environment
-variable is correct.''')
-
+  error ('Eigen3 implementation not found!')
 
 
 
@@ -921,7 +894,12 @@ int main() { Foo f; }
       qt = qt_cflags + qt_defines + qt_includes
       qt_cflags = []
       for entry in qt:
-        if entry[0] != '$' and not entry == '-I.': qt_cflags += [ entry.replace('\"','').replace("'",'') ]
+        if entry[0] != '$' and not entry == '-I.': 
+          entry = entry.replace('\"','').replace("'",'')
+          if entry.startswith('-I'):
+            qt_cflags += [ '-isystem', entry[2:] ]
+          else:
+            qt_cflags += [ entry ]
 
       qt = qt_ldflags + qt_libs
       qt_ldflags = []
@@ -995,12 +973,11 @@ use the MOC environment variable to specify the Qt moc command''')
     if '-W' in qt_cflags: qt_cflags.remove ('-W')
 
 
-
 # output R module:
 if R_module:
 
   report ('Checking for R library: ')
-  R_cflags = [ '-I/usr/include/R' ]
+  R_cflags = [ '-isystem', '/usr/include/R' ]
   if 'R_CFLAGS' in os.environ.keys(): 
     R_cflags = shlex.split (os.environ['R_CFLAGS'])
   else:
@@ -1036,7 +1013,7 @@ if R_module:
   
   Use the R_CFLAGS environment variable to set the path to the R include files'
   For example:'
-       R_CFLAGS=-I/usr/local/include/R ./configure''')
+       R_CFLAGS="-isystem /usr/local/include/R" ./configure''')
   except LinkError:
     error ('''linker error!'
   
@@ -1063,15 +1040,20 @@ if R_module:
 cpp_flags += [ '-Wall' ]
 
 if profile:
-  cpp_flags += [ '-g', '-pg', '-DNDEBUG' ]
+  cpp_flags += [ '-g', '-pg' ]
   ld_flags += [ '-g', '-pg' ]
   ld_lib_flags += [ '-g', '-pg' ]
 elif debug:
-  cpp_flags += [ '-O0', '-g', '-D_GLIBCXX_DEBUG=1', '-D_GLIBCXX_DEBUG_PEDANTIC=1' ]
+  cpp_flags += [ '-O0', '-g' ]
   ld_flags += [ '-g' ]
   ld_lib_flags += [ '-g' ]
 else:
-  cpp_flags += [ '-O2', '-DNDEBUG' ]
+  cpp_flags += [ '-O2' ]
+
+if asserts:
+  cpp_flags += [ '-D_GLIBCXX_DEBUG=1', '-D_GLIBCXX_DEBUG_PEDANTIC=1' ]
+elif not debug:
+  cpp_flags += [ '-DNDEBUG' ]
 
 
 
@@ -1082,8 +1064,7 @@ if sh_basis_def is not None:
 
 
 # write out configuration:
-
-cache_filename = os.path.join (os.path.dirname(sys.argv[0]), 'config.' + profile_name)
+cache_filename = os.path.join (os.path.dirname(sys.argv[0]), profile_name, 'config')
 
 sys.stdout.write ('\nwriting configuration to file \'' + cache_filename + '\': ')
 
@@ -1120,8 +1101,7 @@ else:
   cache.write ('True\n')
   commit ('ld_lib', ld_lib);
   commit ('ld_lib_flags', ld_lib_flags);
-commit ('gsl_cflags', gsl_cflags)
-commit ('gsl_ldflags', gsl_ldflags)
+commit ('eigen_cflags', eigen_cflags)
 
 commit ('moc', moc)
 commit ('rcc', rcc)
@@ -1132,6 +1112,12 @@ if nogui:
   cache.write ('True\n')
 else:
   cache.write ('False\n')
+
+cache.write('dev = ')
+if dev:
+  cache.write('True\n')
+else:
+  cache.write('False\n')
 
 cache.close()
 sys.stdout.write ('ok\n\n')

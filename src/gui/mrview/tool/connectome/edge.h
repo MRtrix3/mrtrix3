@@ -1,30 +1,24 @@
 /*
-   Copyright 2014 Brain Research Institute, Melbourne, Australia
-
-   Written by Robert E. Smith, 2015.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #ifndef __gui_mrview_tool_connectome_edge_h__
 #define __gui_mrview_tool_connectome_edge_h__
 
-#include "point.h"
+#include <memory>
 
+#include "math/math.h"
 #include "connectome/connectome.h"
 #include "dwi/tractography/streamline.h"
 #include "gui/opengl/gl.h"
@@ -48,12 +42,12 @@ namespace MR
           typedef MR::Connectome::node_t node_t;
 
         public:
-          Edge (const node_t, const node_t, const Point<float>&, const Point<float>&);
+          Edge (const node_t, const node_t, const Eigen::Vector3f&, const Eigen::Vector3f&);
           Edge (Edge&&);
-          Edge ();
+          Edge () = delete;
           ~Edge();
 
-          void render_line() const { line.render(); }
+          void render_line() const { assert (line); line->render(); }
 
           void load_exemplar (const MR::DWI::Tractography::Streamline<float>& data) { assert (!exemplar); exemplar.reset (new Exemplar (*this, data)); }
           void clear_exemplar() { if (streamtube) delete streamtube.release(); if (streamline) delete streamline.release(); if (exemplar) delete exemplar.release(); }
@@ -69,16 +63,16 @@ namespace MR
           static void set_streamtube_LOD (const size_t lod) { Streamtube::LOD (lod); }
 
           node_t get_node_index (const size_t i) const { assert (i==0 || i==1); return node_indices[i]; }
-          const Point<float> get_node_centre (const size_t i) const { assert (i==0 || i==1); return node_centres[i]; }
-          Point<float> get_com() const { return (node_centres[0] + node_centres[1]) * 0.5; }
+          const Eigen::Vector3f& get_node_centre (const size_t i) const { assert (i==0 || i==1); return node_centres[i]; }
+          Eigen::Vector3f get_com() const { return (node_centres[0] + node_centres[1]) * 0.5; }
 
           const GLfloat* get_rot_matrix() const { return rot_matrix; }
 
-          const Point<float>& get_dir() const { return dir; }
+          const Eigen::Vector3f& get_dir() const { return dir; }
           void set_size (const float i) { size = i; }
           float get_size() const { return size; }
-          void set_colour (const Point<float>& i) { colour = i; }
-          const Point<float>& get_colour() const { return colour; }
+          void set_colour (const Eigen::Array3f& i) { colour = i; }
+          const Eigen::Array3f& get_colour() const { return colour; }
           void set_alpha (const float i) { alpha = i; }
           float get_alpha() const { return alpha; }
           void set_visible (const bool i) { visible = i; }
@@ -89,16 +83,17 @@ namespace MR
 
         private:
           const node_t node_indices[2];
-          const Point<float> node_centres[2];
-          const Point<float> dir;
+          const Eigen::Vector3f node_centres[2];
+          const Eigen::Vector3f dir;
 
           GLfloat* rot_matrix;
 
           float size;
-          Point<float> colour;
+          Eigen::Array3f colour;
           float alpha;
           bool visible;
 
+          class Line;
           class Exemplar;
           class Streamline;
           class Streamtube;
@@ -112,11 +107,13 @@ namespace MR
                   tangent_buffer (std::move (that.tangent_buffer)),
                   vertex_array_object (std::move (that.vertex_array_object)) { }
               Line () = delete;
+              ~Line();
               void render() const;
             private:
               GL::VertexBuffer vertex_buffer, tangent_buffer;
               GL::VertexArrayObject vertex_array_object;
-          } line;
+          };
+          std::unique_ptr<Line> line;
 
           // Raw data for exemplar; need to hold on to this
           class Exemplar
@@ -131,8 +128,8 @@ namespace MR
                   binormals (std::move (that.binormals)) { }
               Exemplar () = delete;
             private:
-              const Point<float> endpoints[2];
-              std::vector< Point<float> > vertices, tangents, normals, binormals;
+              const Eigen::Vector3f endpoints[2];
+              std::vector<Eigen::Vector3f> vertices, tangents, normals, binormals;
               friend class Streamline;
               friend class Streamtube;
           };
@@ -149,6 +146,7 @@ namespace MR
                   tangent_buffer (std::move (that.tangent_buffer)),
                   vertex_array_object (std::move (that.vertex_array_object)) { that.count = 0; }
               Streamline () = delete;
+              ~Streamline();
               void render() const;
             private:
               // The master thread must assign the VBOs and VAO
@@ -169,6 +167,7 @@ namespace MR
                   tangent_buffer (std::move (that.tangent_buffer)),
                   normal_buffer (std::move (that.normal_buffer)),
                   vertex_array_object (std::move (that.vertex_array_object)) { that.count = 0; }
+              ~Streamtube();
               void render() const;
               static void LOD (const size_t lod) { shared.set_LOD (lod); }
             private:

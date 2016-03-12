@@ -1,32 +1,28 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert Smith, 2013.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
  */
 
 
-#include "image/buffer_sparse.h"
-#include "image/header.h"
+#include "bitset.h"
+#include "header.h"
+#include "image.h"
 
-#include "image/sparse/fixel_metric.h"
-#include "image/sparse/keys.h"
-#include "image/sparse/voxel.h"
+#include "math/math.h"
+
+#include "sparse/fixel_metric.h"
+#include "sparse/image.h"
+#include "sparse/keys.h"
 
 #include "dwi/tractography/SIFT2/coeff_optimiser.h"
 #include "dwi/tractography/SIFT2/fixel_updater.h"
@@ -36,8 +32,7 @@
 
 #include "dwi/tractography/SIFT/track_index_range.h"
 
-#include "bitset.h"
-#include "timer.h"
+
 
 
 
@@ -50,7 +45,7 @@ namespace MR {
 
 
 
-      void TckFactor::set_reg_lambdas (const float lambda_tikhonov, const float lambda_tv)
+      void TckFactor::set_reg_lambdas (const double lambda_tikhonov, const double lambda_tv)
       {
         assert (num_tracks());
         double A = 0.0, sum_PM = 0.0;
@@ -121,7 +116,7 @@ namespace MR {
 
         for (SIFT::track_t track_index = 0; track_index != num_tracks(); ++track_index) {
           const SIFT::TrackContribution& tck_cont (*contributions[track_index]);
-          const float weight = 1.0 / tck_cont.get_total_length();
+          const double weight = 1.0 / tck_cont.get_total_length();
           coefficients[track_index] = std::log (weight);
           for (size_t i = 0; i != tck_cont.dim(); ++i)
             fixels[tck_cont[i].get_fixel_index()] += weight * tck_cont[i].get_length();
@@ -134,7 +129,7 @@ namespace MR {
         const double actual_TD_sum = TD_sum;
         std::ofstream out ("mu.csv", std::ios_base::trunc);
         for (int i = -1000; i != 1000; ++i) {
-          const float factor = std::pow (10.0, double(i) / 1000.0);
+          const double factor = std::pow (10.0, double(i) / 1000.0);
           TD_sum = factor * actual_TD_sum;
           out << str(factor) << "," << str(calc_cost_function()) << "\n";
         }
@@ -189,7 +184,7 @@ namespace MR {
       void TckFactor::estimate_factors()
       {
 
-        coefficients.resize (num_tracks(), 0.0);
+        coefficients = decltype(coefficients)::Zero (num_tracks());
 
         const double init_cf = calc_cost_function();
         double cf_data = init_cf;
@@ -322,18 +317,18 @@ namespace MR {
 
       void TckFactor::output_factors (const std::string& path) const
       {
-        if (coefficients.size() != contributions.size())
+        if (size_t(coefficients.size()) != contributions.size())
           throw Exception ("Cannot output weighting factors if they have not first been estimated!");
-        Math::Vector<float> weights (coefficients.size());
+        decltype(coefficients) weights (coefficients.size());
         for (SIFT::track_t i = 0; i != num_tracks(); ++i)
           weights[i] = std::exp (coefficients[i]);
-        weights.save (path);
+        save_vector (weights, path);
       }
 
 
       void TckFactor::output_coefficients (const std::string& path) const
       {
-        coefficients.save (path);
+        save_vector (coefficients, path);
       }
 
 
@@ -347,20 +342,20 @@ namespace MR {
         if (!coefficients.size())
           return;
 
-        std::vector<float>  mins   (fixels.size(), 100.0);
-        std::vector<float>  stdevs (fixels.size(), 0.0);
-        std::vector<float>  maxs   (fixels.size(), -100.0);
+        std::vector<double> mins   (fixels.size(), 100.0);
+        std::vector<double> stdevs (fixels.size(), 0.0);
+        std::vector<double> maxs   (fixels.size(), -100.0);
         std::vector<size_t> zeroed (fixels.size(), 0);
 
         {
-          ProgressBar progress ("Generating streamline coefficient statistic images... ", num_tracks());
+          ProgressBar progress ("Generating streamline coefficient statistic images", num_tracks());
           for (SIFT::track_t i = 0; i != num_tracks(); ++i) {
-            const float coeff = coefficients[i];
+            const double coeff = coefficients[i];
             const SIFT::TrackContribution& this_contribution (*contributions[i]);
             if (coeff > min_coeff) {
               for (size_t j = 0; j != this_contribution.dim(); ++j) {
                 const size_t fixel_index = this_contribution[j].get_fixel_index();
-                const float mean_coeff = fixels[fixel_index].get_mean_coeff();
+                const double mean_coeff = fixels[fixel_index].get_mean_coeff();
                 mins  [fixel_index] = std::min (mins[fixel_index], coeff);
                 stdevs[fixel_index] += Math::pow2 (coeff - mean_coeff);
                 maxs  [fixel_index] = std::max (maxs[fixel_index], coeff);
@@ -381,67 +376,50 @@ namespace MR {
             maxs[i] = 0.0;
         }
 
-        using Image::Sparse::FixelMetric;
-        Image::Header H_fixel (H);
+        using Sparse::FixelMetric;
+        Header H_fixel (original_header());
         H_fixel.datatype() = DataType::UInt64;
         H_fixel.datatype().set_byte_order_native();
-        H_fixel[Image::Sparse::name_key] = str(typeid(FixelMetric).name());
-        H_fixel[Image::Sparse::size_key] = str(sizeof(FixelMetric));
+        H_fixel.keyval()[Sparse::name_key] = str(typeid(FixelMetric).name());
+        H_fixel.keyval()[Sparse::size_key] = str(sizeof(FixelMetric));
 
-        Image::BufferSparse<FixelMetric> count_image    (prefix + "_count.msf",        H_fixel);
-        Image::BufferSparse<FixelMetric> min_image      (prefix + "_coeff_min.msf",    H_fixel);
-        Image::BufferSparse<FixelMetric> mean_image     (prefix + "_coeff_mean.msf",   H_fixel);
-        Image::BufferSparse<FixelMetric> stdev_image    (prefix + "_coeff_stdev.msf",  H_fixel);
-        Image::BufferSparse<FixelMetric> max_image      (prefix + "_coeff_max.msf",    H_fixel);
-        Image::BufferSparse<FixelMetric> zeroed_image   (prefix + "_coeff_zeroed.msf", H_fixel);
-        Image::BufferSparse<FixelMetric> excluded_image (prefix + "_excluded.msf",     H_fixel);
+        Sparse::Image<FixelMetric> count_image    (prefix + "_count.msf",        H_fixel);
+        Sparse::Image<FixelMetric> min_image      (prefix + "_coeff_min.msf",    H_fixel);
+        Sparse::Image<FixelMetric> mean_image     (prefix + "_coeff_mean.msf",   H_fixel);
+        Sparse::Image<FixelMetric> stdev_image    (prefix + "_coeff_stdev.msf",  H_fixel);
+        Sparse::Image<FixelMetric> max_image      (prefix + "_coeff_max.msf",    H_fixel);
+        Sparse::Image<FixelMetric> zeroed_image   (prefix + "_coeff_zeroed.msf", H_fixel);
+        Sparse::Image<FixelMetric> excluded_image (prefix + "_excluded.msf",     H_fixel);
 
-        Image::BufferSparse<FixelMetric>::voxel_type v_count    (count_image);
-        Image::BufferSparse<FixelMetric>::voxel_type v_min      (min_image);
-        Image::BufferSparse<FixelMetric>::voxel_type v_mean     (mean_image);
-        Image::BufferSparse<FixelMetric>::voxel_type v_stdev    (stdev_image);
-        Image::BufferSparse<FixelMetric>::voxel_type v_max      (max_image);
-        Image::BufferSparse<FixelMetric>::voxel_type v_zeroed   (zeroed_image);
-        Image::BufferSparse<FixelMetric>::voxel_type v_excluded (excluded_image);
-
-        VoxelAccessor v (accessor);
-        Image::LoopInOrder loop (v);
-        for (loop.start (v); loop.ok(); loop.next (v)) {
+        VoxelAccessor v (accessor());
+        for (auto l = Loop(v) (v, count_image, min_image, mean_image, stdev_image, max_image, zeroed_image, excluded_image); l; ++l) {
           if (v.value()) {
 
-            Image::Nav::set_pos (v_count,    v);
-            Image::Nav::set_pos (v_min,      v);
-            Image::Nav::set_pos (v_mean,     v);
-            Image::Nav::set_pos (v_stdev,    v);
-            Image::Nav::set_pos (v_max,      v);
-            Image::Nav::set_pos (v_zeroed,   v);
-            Image::Nav::set_pos (v_excluded, v);
-
-            v_count   .value().set_size ((*v.value()).num_fixels());
-            v_min     .value().set_size ((*v.value()).num_fixels());
-            v_mean    .value().set_size ((*v.value()).num_fixels());
-            v_stdev   .value().set_size ((*v.value()).num_fixels());
-            v_max     .value().set_size ((*v.value()).num_fixels());
-            v_zeroed  .value().set_size ((*v.value()).num_fixels());
-            v_excluded.value().set_size ((*v.value()).num_fixels());
+            count_image   .value().set_size ((*v.value()).num_fixels());
+            min_image     .value().set_size ((*v.value()).num_fixels());
+            mean_image    .value().set_size ((*v.value()).num_fixels());
+            stdev_image   .value().set_size ((*v.value()).num_fixels());
+            max_image     .value().set_size ((*v.value()).num_fixels());
+            zeroed_image  .value().set_size ((*v.value()).num_fixels());
+            excluded_image.value().set_size ((*v.value()).num_fixels());
 
             size_t index = 0;
             for (typename Fixel_map<Fixel>::ConstIterator iter = begin (v); iter; ++iter, ++index) {
               const size_t fixel_index = size_t(iter);
               FixelMetric fixel_metric (iter().get_dir(), iter().get_FOD(), iter().get_count());
-              v_count   .value()[index] = fixel_metric;
+              count_image   .value()[index] = fixel_metric;
               fixel_metric.value = mins[fixel_index];
-              v_min     .value()[index] = fixel_metric;
+              min_image     .value()[index] = fixel_metric;
               fixel_metric.value = iter().get_mean_coeff();
-              v_mean    .value()[index] = fixel_metric;
+              mean_image    .value()[index] = fixel_metric;
               fixel_metric.value = stdevs[fixel_index];
-              v_stdev   .value()[index] = fixel_metric;
+              stdev_image   .value()[index] = fixel_metric;
               fixel_metric.value = maxs[fixel_index];
-              v_max     .value()[index] = fixel_metric;
+              max_image     .value()[index] = fixel_metric;
               fixel_metric.value = zeroed[fixel_index];
-              v_zeroed  .value()[index] = fixel_metric;
+              zeroed_image  .value()[index] = fixel_metric;
               fixel_metric.value = iter().is_excluded() ? 0.0 : 1.0;
-              v_excluded.value()[index] = fixel_metric;
+              excluded_image.value()[index] = fixel_metric;
             }
 
           }

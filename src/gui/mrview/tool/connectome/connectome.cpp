@@ -1,42 +1,31 @@
 /*
-   Copyright 2014 Brain Research Institute, Melbourne, Australia
-
-   Written by Robert E. Smith, 2015.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #include "gui/mrview/tool/connectome/connectome.h"
 
+#include "header.h"
+#include "transform.h"
+
+#include "adapter/subset.h"
+#include "algo/loop.h"
+#include "algo/threaded_loop.h"
 #include "file/path.h"
 #include "gui/dialog/file.h"
 #include "gui/mrview/colourmap.h"
-#include "image/adapter/subset.h"
-#include "image/buffer.h"
-#include "image/header.h"
-#include "image/info.h"
-#include "image/loop.h"
-#include "image/nav.h"
-#include "image/threaded_loop.h"
-#include "image/transform.h"
-
 #include "math/math.h"
 #include "math/rng.h"
-#include "math/versor.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -82,7 +71,7 @@ namespace MR
             node_colour_matrix_operator (node_property_matrix_operator_t::SUM),
             node_size_matrix_operator (node_property_matrix_operator_t::SUM),
             node_alpha_matrix_operator (node_property_matrix_operator_t::SUM),
-            node_fixed_colour (0.5f, 0.5f, 0.5f),
+            node_fixed_colour { 0.5f, 0.5f, 0.5f },
             node_colourmap_index (1),
             node_colourmap_invert (false),
             node_fixed_alpha (1.0f),
@@ -94,7 +83,7 @@ namespace MR
             edge_size (edge_size_t::FIXED),
             edge_alpha (edge_alpha_t::FIXED),
             have_exemplars (false),
-            edge_fixed_colour (0.5f, 0.5f, 0.5f),
+            edge_fixed_colour { 0.5f, 0.5f, 0.5f },
             edge_colourmap_index (1),
             edge_colourmap_invert (false),
             edge_fixed_alpha (1.0f),
@@ -736,7 +725,8 @@ namespace MR
           edge_colour_fixedcolour_button       ->setFixedHeight (height);
           edge_colour_colourmap_button         ->setFixedHeight (height);
 
-          Window::GrabContext context;
+          MRView::GrabContext context;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
           cube.generate();
           cube_VAO.gen();
@@ -772,6 +762,7 @@ namespace MR
           GL_CHECK_ERROR;
 
           enable_all (false);
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
@@ -780,6 +771,7 @@ namespace MR
 
         void Connectome::draw (const Projection& projection, bool /*is_3D*/, int /*axis*/, int /*slice*/)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if (hide_all_button->isChecked()) return;
 
           // If using transparency, only want to draw the close surface;
@@ -806,29 +798,34 @@ namespace MR
             gl::Disable (gl::CULL_FACE);
           else
             gl::Enable (gl::CULL_FACE);
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
         void Connectome::draw_colourbars()
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          if (!buffer) return;
           if (hide_all_button->isChecked()) return;
-          if ((node_colour == node_colour_t::CONNECTOME || node_colour == node_colour_t::VECTOR_FILE || node_colour == node_colour_t::MATRIX_FILE) && show_node_colour_bar)
+          if (((node_colour == node_colour_t::CONNECTOME && matrix_list_model->rowCount()) || node_colour == node_colour_t::VECTOR_FILE || node_colour == node_colour_t::MATRIX_FILE) && show_node_colour_bar)
             window().colourbar_renderer.render (node_colourmap_index, node_colourmap_invert,
-                                              node_colour_lower_button->value(), node_colour_upper_button->value(),
-                                              node_colour_lower_button->value(), node_colour_upper_button->value() - node_colour_lower_button->value(),
-                                              node_fixed_colour);
-          if ((edge_colour == edge_colour_t::CONNECTOME || edge_colour == edge_colour_t::MATRIX_FILE) && show_edge_colour_bar)
+                                                node_colour_lower_button->value(), node_colour_upper_button->value(),
+                                                node_colour_lower_button->value(), node_colour_upper_button->value() - node_colour_lower_button->value(),
+                                                node_fixed_colour);
+          if (((edge_colour == edge_colour_t::CONNECTOME && matrix_list_model->rowCount()) || edge_colour == edge_colour_t::MATRIX_FILE) && show_edge_colour_bar)
             window().colourbar_renderer.render (edge_colourmap_index, edge_colourmap_invert,
-                                              edge_colour_lower_button->value(), edge_colour_upper_button->value(),
-                                              edge_colour_lower_button->value(), edge_colour_upper_button->value() - edge_colour_lower_button->value(),
-                                              edge_fixed_colour);
+                                                edge_colour_lower_button->value(), edge_colour_upper_button->value(),
+                                                edge_colour_lower_button->value(), edge_colour_upper_button->value() - edge_colour_lower_button->value(),
+                                                edge_fixed_colour);
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
         size_t Connectome::visible_number_colourbars()
         {
-          return ((((node_colour == node_colour_t::CONNECTOME || node_colour == node_colour_t::VECTOR_FILE || node_colour == node_colour_t::MATRIX_FILE) && show_node_colour_bar) ? 1 : 0)
-                  + (((edge_colour == edge_colour_t::CONNECTOME || edge_colour == edge_colour_t::MATRIX_FILE) && show_edge_colour_bar) ? 1 : 0));
+          if (!buffer) return 0;
+          return (((((node_colour == node_colour_t::CONNECTOME && matrix_list_model->rowCount()) || node_colour == node_colour_t::VECTOR_FILE || node_colour == node_colour_t::MATRIX_FILE) && show_node_colour_bar) ? 1 : 0)
+                  + ((((edge_colour == edge_colour_t::CONNECTOME && matrix_list_model->rowCount()) || edge_colour == edge_colour_t::MATRIX_FILE) && show_edge_colour_bar) ? 1 : 0));
         }
 
 
@@ -1566,7 +1563,7 @@ namespace MR
         void Connectome::node_fixed_colour_change_slot()
         {
           QColor c = node_colour_fixedcolour_button->color();
-          node_fixed_colour.set (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
+          node_fixed_colour = { c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f };
           node_visibility_warning_icon->setVisible (node_visibility == node_visibility_t::NONE);
           calculate_node_colours();
           window().updateGL();
@@ -1977,7 +1974,7 @@ namespace MR
         void Connectome::edge_colour_change_slot()
         {
           QColor c = edge_colour_fixedcolour_button->color();
-          edge_fixed_colour.set (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
+          edge_fixed_colour = { c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f };
           edge_visibility_warning_icon->setVisible (edge_visibility == edge_visibility_t::NONE);
           calculate_edge_colours();
           window().updateGL();
@@ -2097,7 +2094,7 @@ namespace MR
         void Connectome::lighting_settings_slot()
         {
           if (!lighting_dock)
-            lighting_dock.reset (new LightingDock ("Connectome lighting", lighting, false));
+            lighting_dock.reset (new LightingDock ("Connectome lighting", lighting));
           lighting_dock->show();
         }
         void Connectome::lighting_parameter_slot()
@@ -2283,39 +2280,38 @@ namespace MR
 
         void Connectome::initialise (const std::string& path)
         {
-          MR::Image::Header H (path);
+          MR::Header H = MR::Header::open (path);
           if (!H.datatype().is_integer())
             throw Exception ("Input parcellation image must have an integer datatype; try running mrconvert -datatype uint32");
           if (H.ndim() != 3)
             throw Exception ("Input parcellation image must be a 3D image");
-          voxel_volume = H.vox(0) * H.vox(1) * H.vox(2);
+          voxel_volume = H.spacing(0) * H.spacing(1) * H.spacing(2);
           {
             // Prevent progress dialog from appearing in a multi-threading context
             LogLevelLatch latch (0);
-            buffer.reset (new MR::Image::BufferPreload<node_t> (path));
+            buffer.reset (new MR::Image<node_t> (H.get_image<node_t>().with_direct_io()));
           }
-          auto voxel = buffer->voxel();
-          MR::Image::Transform transform (H);
-          std::vector< Point<float> > node_coms;
+          MR::Transform transform (H);
+          std::vector<Eigen::Vector3f> node_coms;
           std::vector<size_t> node_volumes;
-          std::vector< Point<int> > node_lower_corners, node_upper_corners;
+          std::vector<Eigen::Array3i> node_lower_corners, node_upper_corners;
           size_t max_index = 0;
 
           {
-            MR::Image::LoopInOrder loop (voxel/*, "Importing parcellation image... "*/);
-            for (loop.start (voxel); loop.ok(); loop.next (voxel)) {
-              const node_t node_index = voxel.value();
+            for (auto loop = Loop(*buffer) (*buffer); loop; ++loop) {
+              const node_t node_index = buffer->value();
               if (node_index) {
 
                 if (node_index >= max_index) {
-                  node_coms         .resize (node_index+1, Point<float> (0.0f, 0.0f, 0.0f));
+                  node_coms         .resize (node_index+1, Eigen::Vector3f { 0.0f, 0.0f, 0.0f });
                   node_volumes      .resize (node_index+1, 0);
-                  node_lower_corners.resize (node_index+1, Point<int> (H.dim(0), H.dim(1), H.dim(2)));
-                  node_upper_corners.resize (node_index+1, Point<int> (-1, -1, -1));
+                  node_lower_corners.resize (node_index+1, Eigen::Array3i { int(H.size(0)), int(H.size(1)), int(H.size(2)) });
+                  node_upper_corners.resize (node_index+1, Eigen::Array3i { -1, -1, -1 });
                   max_index = node_index;
                 }
 
-                node_coms   [node_index] += transform.voxel2scanner (voxel);
+                const Eigen::Vector3f voxel { float(buffer->index(0)), float(buffer->index(1)), float(buffer->index(2)) };
+                node_coms   [node_index] += transform.voxel2scanner.cast<float>() * voxel;
                 node_volumes[node_index]++;
 
                 for (size_t axis = 0; axis != 3; ++axis) {
@@ -2337,16 +2333,16 @@ namespace MR
             for (size_t node_index = 1; node_index <= max_index; ++node_index) {
               if (node_volumes[node_index]) {
 
-                MR::Image::Adapter::Subset<decltype(voxel)> subset (voxel, node_lower_corners[node_index], node_upper_corners[node_index] - node_lower_corners[node_index] + Point<int> (1, 1, 1));
+                std::vector<int> from (3), dim (3);
+                for (size_t axis = 0; axis != 3; ++axis) {
+                  from[axis] = node_lower_corners[node_index][axis];
+                  dim[axis] = node_upper_corners[node_index][axis] - node_lower_corners[node_index][axis] + 1;
+                }
+                MR::Adapter::Subset< MR::Image<node_t> > subset (*buffer, from, dim);
+                MR::Image<bool> node_mask (MR::Image<bool>::scratch (subset.original_header(), "Node " + str(node_index) + " mask"));
 
-                std::shared_ptr< MR::Image::BufferScratch<bool> > node_mask (new MR::Image::BufferScratch<bool> (subset.info(), "Node " + str(node_index) + " mask"));
-                auto v_mask = node_mask->voxel();
-
-                auto copy_func = [&] (const decltype(subset)& in, decltype(v_mask)& out) { out.value() = (in.value() == node_index); };
-                MR::Image::ThreadedLoop (subset).run (copy_func, subset, v_mask);
-                //MR::Image::LoopInOrder loop (v_mask);
-                //for (auto i = loop (subset, v_mask); i; ++i)
-                //  v_mask.value() = (subset.value() == node_index);
+                auto copy_func = [&] (const decltype(subset)& in, decltype(node_mask)& out) { out.value() = (in.value() == node_index); };
+                MR::ThreadedLoop (subset).run (copy_func, subset, node_mask);
 
                 nodes.push_back (Node (node_coms[node_index], node_volumes[node_index], pixheight, node_mask));
 
@@ -2367,15 +2363,15 @@ namespace MR
           }
 
           // Construct the node overlay image
-          MR::Image::Info overlay_info (H.info());
-          overlay_info.set_ndim (4);
-          overlay_info.dim (3) = 4; // RGBA
-          overlay_info.stride (0) = 2;
-          overlay_info.stride (1) = 3;
-          overlay_info.stride (2) = 4;
-          overlay_info.stride (3) = 1;
-          overlay_info.sanitise();
-          node_overlay.reset (new NodeOverlay (overlay_info));
+          MR::Header H_overlay (H);
+          H_overlay.set_ndim (4);
+          H_overlay.size (3) = 4; // RGBA
+          H_overlay.stride (0) = 2;
+          H_overlay.stride (1) = 3;
+          H_overlay.stride (2) = 4;
+          H_overlay.stride (3) = 1;
+          H_overlay.sanitise();
+          node_overlay.reset (new NodeOverlay (std::move (H_overlay)));
           update_node_overlay();
 
           selected_nodes.resize (num_nodes()+1);
@@ -2388,7 +2384,7 @@ namespace MR
           std::vector<FileDataVector> data;
           for (size_t i = 0; i < list.size(); ++i) {
             try {
-              Math::Matrix<float> matrix (list[i]);
+              MR::Connectome::matrix_type matrix = MR::load_matrix<default_type> (list[i]);
               MR::Connectome::verify_matrix (matrix, num_nodes());
               FileDataVector temp;
               mat2vec (matrix, temp);
@@ -2439,6 +2435,7 @@ namespace MR
 
         void Connectome::draw_nodes (const Projection& projection)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if (node_visibility != node_visibility_t::NONE) {
 
             if (node_geometry == node_geometry_t::OVERLAY) {
@@ -2507,7 +2504,7 @@ namespace MR
               const GLuint node_size_ID = gl::GetUniformLocation (node_shader, "node_size");
 
               if (node_colour == node_colour_t::VECTOR_FILE && ColourMap::maps[node_colourmap_index].is_colour)
-                gl::Uniform3fv (gl::GetUniformLocation (node_shader, "colourmap_colour"), 1, &node_fixed_colour[0]);
+                gl::Uniform3fv (gl::GetUniformLocation (node_shader, "colourmap_colour"), 1, node_fixed_colour.data());
 
               if (node_geometry == node_geometry_t::SPHERE) {
                 sphere.vertex_buffer.bind (gl::ARRAY_BUFFER);
@@ -2532,7 +2529,7 @@ namespace MR
               }
 
               if (crop_to_slab) {
-                gl::Uniform3fv (gl::GetUniformLocation (node_shader, "screen_normal"), 1, projection.screen_normal());
+                gl::Uniform3fv (gl::GetUniformLocation (node_shader, "screen_normal"), 1, projection.screen_normal().data());
                 if (is_3D) {
                   gl::Uniform1f (gl::GetUniformLocation (node_shader, "slab_thickness"), slab_thickness);
                   gl::Uniform1f (gl::GetUniformLocation (node_shader, "crop_var"), window().focus().dot (projection.screen_normal()) - slab_thickness / 2.0f);
@@ -2548,10 +2545,10 @@ namespace MR
               for (auto it = node_ordering.rbegin(); it != node_ordering.rend(); ++it) {
                 const Node& node (nodes[it->second]);
                 if (node_visibility_given_selection (it->second)) {
-                  gl::Uniform3fv (node_colour_ID, 1, node_colour_given_selection (it->second));
+                  gl::Uniform3fv (node_colour_ID, 1, node_colour_given_selection (it->second).data());
                   if (alpha)
                     gl::Uniform1f (node_alpha_ID, node_alpha_given_selection (it->second) * node_fixed_alpha);
-                  gl::Uniform3fv (node_centre_ID, 1, &node.get_com()[0]);
+                  gl::Uniform3fv (node_centre_ID, 1, node.get_com().data());
                   gl::Uniform1f (node_size_ID, node_size_given_selection (it->second) * node_size_scale_factor);
                   switch (node_geometry) {
                     case node_geometry_t::SPHERE:
@@ -2602,10 +2599,12 @@ namespace MR
 
           }
 
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
         void Connectome::draw_edges (const Projection& projection)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if (edge_visibility != edge_visibility_t::NONE) {
 
             edge_shader.start (*this);
@@ -2659,7 +2658,7 @@ namespace MR
             }
 
             if (crop_to_slab) {
-              gl::Uniform3fv (gl::GetUniformLocation (edge_shader, "screen_normal"), 1, projection.screen_normal());
+              gl::Uniform3fv (gl::GetUniformLocation (edge_shader, "screen_normal"), 1, projection.screen_normal().data());
               if (is_3D) {
                 gl::Uniform1f (gl::GetUniformLocation (edge_shader, "slab_thickness"), slab_thickness);
                 gl::Uniform1f (gl::GetUniformLocation (edge_shader, "crop_var"), window().focus().dot (projection.screen_normal()) - slab_thickness / 2.0f);
@@ -2675,7 +2674,7 @@ namespace MR
               edge_alpha_ID = gl::GetUniformLocation (edge_shader, "edge_alpha");
 
             if ((edge_colour == edge_colour_t::CONNECTOME || edge_colour == edge_colour_t::MATRIX_FILE) && ColourMap::maps[edge_colourmap_index].is_colour)
-              gl::Uniform3fv (gl::GetUniformLocation (edge_shader, "colourmap_colour"), 1, &edge_fixed_colour[0]);
+              gl::Uniform3fv (gl::GetUniformLocation (edge_shader, "colourmap_colour"), 1, edge_fixed_colour.data());
 
             std::map<float, size_t> edge_ordering;
             for (size_t i = 0; i != num_edges(); ++i)
@@ -2684,7 +2683,7 @@ namespace MR
             for (auto it = edge_ordering.rbegin(); it != edge_ordering.rend(); ++it) {
               const Edge& edge (edges[it->second]);
               if (edge_visibility_given_selection (edge)) {
-                gl::Uniform3fv (edge_colour_ID, 1, edge_colour_given_selection (edge));
+                gl::Uniform3fv (edge_colour_ID, 1, edge_colour_given_selection (edge).data());
                 if (alpha)
                   gl::Uniform1f (edge_alpha_ID, edge_alpha_given_selection (edge) * edge_fixed_alpha);
                 switch (edge_geometry) {
@@ -2693,8 +2692,8 @@ namespace MR
                     edge.render_line();
                     break;
                   case edge_geometry_t::CYLINDER:
-                    gl::Uniform3fv       (node_centre_one_ID, 1,        edge.get_node_centre (0));
-                    gl::Uniform3fv       (node_centre_two_ID, 1,        edge.get_node_centre (1));
+                    gl::Uniform3fv       (node_centre_one_ID, 1,        edge.get_node_centre(0).data());
+                    gl::Uniform3fv       (node_centre_two_ID, 1,        edge.get_node_centre(1).data());
                     gl::UniformMatrix3fv (rot_matrix_ID,      1, false, edge.get_rot_matrix());
                     gl::Uniform1f        (radius_ID,                    std::sqrt (edge_size_given_selection (edge) * edge_size_scale_factor / Math::pi));
                     if (alpha) {
@@ -2738,6 +2737,7 @@ namespace MR
 
             edge_shader.stop();
           }
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
@@ -2774,9 +2774,9 @@ namespace MR
           const std::string path = Dialog::File::get_file (this, "Select matrix file to determine " + attribute, "Data files (*.csv)");
           if (path.empty())
             return false;
-          Math::Matrix<float> temp;
+          MR::Connectome::matrix_type temp;
           try {
-            temp.load (path);
+            temp = MR::load_matrix<default_type> (path);
             MR::Connectome::verify_matrix (temp, num_nodes());
           } catch (Exception& e) {
             e.display();
@@ -2924,7 +2924,7 @@ namespace MR
 
           } else if (node_visibility == node_visibility_t::MATRIX_FILE) {
 
-            assert (node_values_from_file_visibility.size() == num_edges());
+            assert (size_t(node_values_from_file_visibility.size()) == num_edges());
 
             if (selected_node_count) {
               const bool invert = node_visibility_threshold_invert_checkbox->isChecked();
@@ -2965,11 +2965,11 @@ namespace MR
 
           } else if (node_colour == node_colour_t::RANDOM) {
 
-            Point<float> rgb;
+            Eigen::Array3f rgb;
             Math::RNG::Uniform<float> rng;
             for (auto i = nodes.begin(); i != nodes.end(); ++i) {
               do {
-                rgb.set (rng(), rng(), rng());
+                rgb = { rng(), rng(), rng() };
               } while (rgb[0] < 0.5 && rgb[1] < 0.5 && rgb[2] < 0.5);
               i->set_colour (rgb);
             }
@@ -2981,7 +2981,7 @@ namespace MR
                 if (lut_mapping[node_index] == lut.end())
                   nodes[node_index].set_colour (node_fixed_colour);
                 else
-                  nodes[node_index].set_colour (Point<float> (lut_mapping[node_index]->second.get_colour()) / 255.0f);
+                  nodes[node_index].set_colour (Eigen::Array3f (lut_mapping[node_index]->second.get_colour().cast<float>()) / 255.0f);
               }
             } else {
               for (auto i = nodes.begin(); i != nodes.end(); ++i)
@@ -3047,7 +3047,7 @@ namespace MR
 
           } else if (node_colour == node_colour_t::MATRIX_FILE) {
 
-            assert (node_values_from_file_colour.size() == num_edges());
+            assert (size_t(node_values_from_file_colour.size()) == num_edges());
             if (selected_node_count) {
               const float lower = node_colour_lower_button->value(), upper = node_colour_upper_button->value();
               for (node_t i = 1; i <= num_nodes(); ++i) {
@@ -3158,7 +3158,7 @@ namespace MR
 
           } else if (node_size == node_size_t::MATRIX_FILE) {
 
-            assert (node_values_from_file_size.size() == num_edges());
+            assert (size_t(node_values_from_file_size.size()) == num_edges());
             if (selected_node_count) {
               const float lower = node_size_lower_button->value(), upper = node_size_upper_button->value();
               const bool invert = node_size_invert_checkbox->isChecked();
@@ -3262,7 +3262,7 @@ namespace MR
 
           } else if (node_alpha == node_alpha_t::MATRIX_FILE) {
 
-            assert (node_values_from_file_alpha.size() == num_edges());
+            assert (size_t(node_values_from_file_alpha.size()) == num_edges());
             if (selected_node_count) {
               const float lower = node_alpha_lower_button->value(), upper = node_alpha_upper_button->value();
               const bool invert = node_alpha_invert_checkbox->isChecked();
@@ -3316,29 +3316,23 @@ namespace MR
           if (node_geometry == node_geometry_t::OVERLAY) {
             assert (buffer);
             assert (node_overlay);
-            auto v_in = buffer->voxel();
-            auto v_out = node_overlay->voxel();
 
-            auto functor = [&] (decltype(v_in)& in, decltype(v_out)& out)
+            auto functor = [&] (decltype(*buffer)& in, decltype(node_overlay->data)& out)
             {
               const node_t node_index = in.value();
               if (node_index) {
                 assert (node_index <= num_nodes());
-                const Point<float>& colour (nodes[node_index].get_colour());
-                for (out[3] = 0; out[3] != 3; ++out[3])
-                  out.value() = colour[int(out[3])];
+                const Eigen::Array3f& colour (nodes[node_index].get_colour());
+                for (out.index(3) = 0; out.index(3) != 3; ++out.index(3))
+                  out.value() = colour[int(out.index(3))];
                 out.value() = nodes[node_index].get_alpha();
               } else {
-                for (out[3] = 0; out[3] != 4; ++out[3])
+                for (out.index(3) = 0; out.index(3) != 4; ++out.index(3))
                   out.value() = 0.0f;
               }
             };
 
-            MR::Image::ThreadedLoop (v_in).run (functor, v_in, v_out);
-            //MR::Image::LoopInOrder loop (v_in);
-            //for (auto i = loop (v_in, v_out); i; ++i)
-            //  functor (v_in, v_out);
-
+            MR::ThreadedLoop (*buffer).run (functor, *buffer, node_overlay->data);
           }
         }
 
@@ -3420,7 +3414,7 @@ namespace MR
           } else if (edge_colour == edge_colour_t::DIRECTION) {
 
             for (auto i = edges.begin(); i != edges.end(); ++i)
-              i->set_colour (Point<float> (std::abs (i->get_dir()[0]), std::abs (i->get_dir()[1]), std::abs (i->get_dir()[2])));
+              i->set_colour (Eigen::Array3f { std::abs (i->get_dir()[0]), std::abs (i->get_dir()[1]), std::abs (i->get_dir()[2]) } );
 
           } else if (edge_colour == edge_colour_t::CONNECTOME) {
 
@@ -3648,7 +3642,7 @@ namespace MR
           }
           return true;
         }
-        Point<float> Connectome::node_colour_given_selection (const node_t index)
+        Eigen::Array3f Connectome::node_colour_given_selection (const node_t index)
         {
           if (selected_nodes[index]) {
             const float fade = node_selection_settings.get_node_selected_colour_fade();
@@ -3712,12 +3706,12 @@ namespace MR
             return false;
           return true;
         }
-        Point<float> Connectome::edge_colour_given_selection (const Edge& edge)
+        Eigen::Array3f Connectome::edge_colour_given_selection (const Edge& edge)
         {
           if (!selected_node_count)
             return edge.get_colour();
           float fade = node_selection_settings.get_edge_other_colour_fade();
-          Point<float> colour = node_selection_settings.get_edge_other_colour();
+          Eigen::Array3f colour = node_selection_settings.get_edge_other_colour();
           if (selected_nodes[edge.get_node_index (0)] || selected_nodes[edge.get_node_index (1)]) {
             fade = node_selection_settings.get_edge_associated_colour_fade();
             colour = node_selection_settings.get_edge_associated_colour();
@@ -3848,7 +3842,7 @@ namespace MR
           if (meshes.size() != nodes.size())
             throw Exception ("Mesh file contains " + str(meshes.size()) + " objects; expected " + str(nodes.size()));
           have_meshes = false;
-          Window::GrabContext context;
+          MRView::GrabContext context;
           for (node_t i = 1; i <= num_nodes(); ++i)
             nodes[i].assign_mesh (meshes[i]);
           have_meshes = true;
@@ -3866,7 +3860,7 @@ namespace MR
           const size_t num_tracks = to<size_t>(properties["count"]);
           if (num_tracks != num_edges())
             throw Exception ("Track file " + Path::basename (path) + " contains " + str(num_tracks) + " streamlines; connectome expects " + str(num_edges()) + " exemplars");
-          ProgressBar progress ("Importing connection exemplars... ", num_edges());
+          ProgressBar progress ("Importing connection exemplars", num_edges());
           MR::DWI::Tractography::Streamline<float> tck;
           while (reader (tck)) {
             edges[tck.index].load_exemplar (tck);
@@ -3884,7 +3878,7 @@ namespace MR
             get_exemplars();
             if (!have_exemplars) return;
           }
-          ProgressBar progress ("Generating connection streamtubes... ", num_edges());
+          ProgressBar progress ("Generating connection streamtubes", num_edges());
           for (auto i = edges.begin(); i != edges.end(); ++i) {
             i->create_streamtube();
             ++progress;

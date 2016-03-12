@@ -1,38 +1,33 @@
 /*
-    Copyright 2014 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-    Written by David Raffelt, 2014
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "command.h"
 #include "progressbar.h"
-#include "image/buffer.h"
-#include "image/buffer_sparse.h"
-#include "image/loop.h"
-#include "image/voxel.h"
-#include "image/sparse/fixel_metric.h"
-#include "image/sparse/voxel.h"
+#include "algo/loop.h"
+
+#include "image.h"
+
+#include "sparse/fixel_metric.h"
+#include "sparse/keys.h"
+#include "sparse/image.h"
 
 using namespace MR;
 using namespace App;
 
-using Image::Sparse::FixelMetric;
+using Sparse::FixelMetric;
 
 void usage ()
 {
@@ -50,27 +45,21 @@ void usage ()
 
 void run ()
 {
-  Image::Header input_header1 (argument[0]);
-  Image::BufferSparse<FixelMetric> input_data1 (input_header1);
-  auto input_vox1 = input_data1.voxel();
+  auto header = Header::open (argument[0]);
+  Sparse::Image<FixelMetric> input1 (argument[0]);
+  Sparse::Image<FixelMetric> input2 (argument[1]);
 
-  Image::Header input_header2 (argument[1]);
-  Image::BufferSparse<FixelMetric> input_data2 (input_header2);
-  auto input_vox2 = input_data2.voxel();
+  check_dimensions (input1, input2);
 
-  Image::check_dimensions(input_header1, input_header2);
+  Sparse::Image<FixelMetric> output (argument[2], header);
 
-  Image::BufferSparse<FixelMetric> output_data (argument[2], input_header1);
-  auto output_vox = output_data.voxel();
-
-  Image::LoopInOrder loop (input_data1, "multiplying fixel images...");
-  for (auto i = loop (input_vox1, input_vox2, output_vox); i; ++i) {
-    if (input_vox1.value().size() != input_vox2.value().size())
+  for (auto i = Loop ("dividing fixel images", input1) (input1, input2, output); i; ++i) {
+    if (input1.value().size() != input2.value().size())
       throw Exception ("the fixel images do not have corresponding fixels in all voxels");
-    output_vox.value().set_size (input_vox1.value().size());
-    for (size_t fixel = 0; fixel != input_vox1.value().size(); ++fixel) {
-      output_vox.value()[fixel] = input_vox1.value()[fixel];
-      output_vox.value()[fixel].value = input_vox1.value()[fixel].value / input_vox2.value()[fixel].value;
+    output.value().set_size (input1.value().size());
+    for (size_t fixel = 0; fixel != input1.value().size(); ++fixel) {
+      output.value()[fixel] = input1.value()[fixel];
+      output.value()[fixel].value = input1.value()[fixel].value / input2.value()[fixel].value;
     }
   }
 }

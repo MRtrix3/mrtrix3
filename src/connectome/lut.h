@@ -1,23 +1,16 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert Smith, 2013.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
  */
 
 
@@ -27,8 +20,6 @@
 
 
 #include "app.h"
-#include "args.h"
-#include "point.h"
 
 #include "connectome/connectome.h"
 
@@ -50,6 +41,8 @@ extern const App::OptionGroup LookupTableOption;
 class Node_map;
 void load_lut_from_cmdline (Node_map&);
 
+typedef Eigen::Array<uint8_t, 3, 1> RGB;
+
 
 
 // Class for storing any useful information regarding a parcellation node that
@@ -60,33 +53,33 @@ class Node_info
   public:
     Node_info (const std::string& n) :
       name (n),
-      colour (Point<uint8_t> (0, 0, 0)),
+      colour (0, 0, 0),
       alpha (255) { }
 
     Node_info (const std::string& n, const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a = 255) :
       name (n),
-      colour (Point<uint8_t> (r, g, b)),
+      colour (r, g, b),
       alpha (a) { }
 
-    Node_info (const std::string& n, const Point<uint8_t>& rgb, const uint8_t a = 255) :
+    Node_info (const std::string& n, const RGB& rgb, const uint8_t a = 255) :
       name (n),
       colour (rgb),
       alpha (a) { }
 
 
-    void set_colour (const uint8_t r, const uint8_t g, const uint8_t b) { colour = Point<uint8_t> (r,g,b); }
-    void set_colour (const Point<uint8_t> rgb) { colour = rgb; }
+    void set_colour (const uint8_t r, const uint8_t g, const uint8_t b) { colour = RGB {r,g,b}; }
+    void set_colour (const RGB& rgb) { colour = rgb; }
     void set_alpha  (const uint8_t a) { alpha = a; }
 
 
-    const std::string&    get_name()   const { return name; }
-    const Point<uint8_t>& get_colour() const { return colour; }
-    uint8_t               get_alpha()  const { return alpha; }
+    const std::string& get_name()   const { return name; }
+    const RGB&         get_colour() const { return colour; }
+    uint8_t            get_alpha()  const { return alpha; }
 
 
   private:
     std::string name;
-    Point<uint8_t> colour;
+    RGB colour;
     uint8_t alpha;
 
 };

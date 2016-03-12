@@ -1,24 +1,17 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert Smith, 2012.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 
 
@@ -47,10 +40,6 @@
 #include "dwi/tractography/SIFT/track_contribution.h"
 #include "dwi/tractography/SIFT/track_index_range.h"
 #include "dwi/tractography/SIFT/types.h"
-
-#include "file/path.h"
-
-#include "image/loop.h"
 
 #include "thread_queue.h"
 
@@ -112,7 +101,6 @@ namespace MR
           using ModelBase<Fixel>::dirs;
           using ModelBase<Fixel>::fixels;
           using ModelBase<Fixel>::FOD_sum;
-          using ModelBase<Fixel>::H;
           using ModelBase<Fixel>::TD_sum;
 
 
@@ -176,7 +164,7 @@ namespace MR
       void Model<Fixel>::map_streamlines (const std::string& path)
       {
         Tractography::Properties properties;
-        Tractography::Reader<float> file (path, properties);
+        Tractography::Reader<> file (path, properties);
 
         const track_t count = (properties.find ("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
         if (!count)
@@ -186,13 +174,13 @@ namespace MR
 
         {
           Mapping::TrackLoader loader (file, count);
-          Mapping::TrackMapperBase mapper (H, dirs);
-          mapper.set_upsample_ratio (Mapping::determine_upsample_ratio (H, properties, 0.1));
+          Mapping::TrackMapperBase mapper (Fixel_map<Fixel>::original_header(), dirs);
+          mapper.set_upsample_ratio (Mapping::determine_upsample_ratio (Fixel_map<Fixel>::original_header(), properties, 0.1));
           mapper.set_use_precise_mapping (true);
           MappedTrackReceiver receiver (*this);
           Thread::run_queue (
               loader,
-              Thread::batch (Tractography::Streamline<float>()),
+              Thread::batch (Tractography::Streamline<>()),
               Thread::multi (mapper),
               Thread::batch (Mapping::SetDixel()),
               Thread::multi (receiver));
@@ -225,26 +213,25 @@ namespace MR
       {
 
         const bool remove_untracked_fixels = App::get_options ("remove_untracked").size();
-        App::Options opt = App::get_options ("fd_thresh");
+        auto opt = App::get_options ("fd_thresh");
         const float min_fibre_density = opt.size() ? float(opt[0][0]) : 0.0;
 
         if (!remove_untracked_fixels && !min_fibre_density)
           return;
 
         std::vector<size_t> fixel_index_mapping (fixels.size(), 0);
-        typename Fixel_map<Fixel>::VoxelAccessor v (accessor);
-        Image::LoopInOrder loop (v);
+        VoxelAccessor v (accessor());
 
         std::vector<Fixel> new_fixels;
         new_fixels.push_back (Fixel());
         FOD_sum = 0.0;
 
-        for (auto l = loop (v); l; ++l) {
+        for (auto l = Loop (v) (v); l; ++l) {
           if (v.value()) {
 
             size_t new_start_index = new_fixels.size();
 
-            for (typename Fixel_map<Fixel>::ConstIterator i = begin(v); i; ++i) {
+            for (typename Fixel_map<Fixel>::Iterator i = begin(v); i; ++i) {
               if ((!remove_untracked_fixels || i().get_TD()) && (i().get_FOD() > min_fibre_density)) {
                 fixel_index_mapping [size_t (i)] = new_fixels.size();
                 new_fixels.push_back (i());
@@ -266,7 +253,7 @@ namespace MR
 
         fixels.swap (new_fixels);
 
-        TrackIndexRangeWriter writer (SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks(), "Removing excluded fixels...");
+        TrackIndexRangeWriter writer (SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks(), "Removing excluded fixels");
         FixelRemapper remapper (*this, fixel_index_mapping);
         Thread::run_queue (writer, TrackIndexRange(), Thread::multi (remapper));
 
@@ -311,10 +298,10 @@ namespace MR
       void Model<Fixel>::output_non_contributing_streamlines (const std::string& output_path) const
       {
         Tractography::Properties p;
-        Tractography::Reader<float> reader (tck_file_path,  p);
+        Tractography::Reader<float> reader (tck_file_path, p);
         Tractography::Writer<float> writer (output_path, p);
-        Tractography::Streamline<float> tck, null_tck;
-        ProgressBar progress ("Writing non-contributing streamlines output file...", contributions.size());
+        Tractography::Streamline<> tck, null_tck;
+        ProgressBar progress ("Writing non-contributing streamlines output file", contributions.size());
         track_t tck_counter = 0;
         while (reader (tck) && tck_counter < contributions.size()) {
           if (contributions[tck_counter] && !contributions[tck_counter++]->get_total_contribution())

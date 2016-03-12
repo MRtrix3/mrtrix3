@@ -1,24 +1,17 @@
 /*
-   Copyright 2009 Brain Research Institute, Melbourne, Australia
-
-   Written by J-Donald Tournier and David Raffelt, 13/11/09.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #include "mrtrix.h"
 #include "gui/mrview/window.h"
@@ -84,9 +77,9 @@ namespace MR
 
             float voxel_size;
             if (window().image()) {
-              voxel_size = (window().image()->voxel().vox(0) +
-                            window().image()->voxel().vox(1) +
-                            window().image()->voxel().vox(2)) / 3;
+              voxel_size = (window().image()->header().spacing(0) +
+                            window().image()->header().spacing(1) +
+                            window().image()->header().spacing(2)) / 3.0f;
             } else {
               voxel_size = 2.5;
             }
@@ -219,11 +212,13 @@ namespace MR
 
         void Tractography::draw (const Projection& transform, bool is_3D, int, int)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           not_3D = !is_3D;
           for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
             if (tractogram_list_model->items[i]->show && !hide_all_button->isChecked())
               dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get())->render (transform);
           }
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
@@ -284,7 +279,8 @@ namespace MR
         }
 
 
-        void Tractography::toggle_shown_slot (const QModelIndex& index, const QModelIndex& index2) {
+        void Tractography::toggle_shown_slot (const QModelIndex& index, const QModelIndex& index2) 
+        {
           if (index.row() == index2.row()) {
             tractogram_list_view->setCurrentIndex(index);
           } else {

@@ -1,36 +1,31 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-    Written by Robert Smith, 2011.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 
 
 #include "command.h"
+#include "image.h"
+#include "image_helpers.h"
+#include "mrtrix.h"
+#include "transform.h"
+
+#include "algo/loop.h"
 #include "file/path.h"
 #include "file/utils.h"
-#include "image/buffer.h"
-#include "image/loop.h"
-#include "image/transform.h"
-#include "image/utils.h"
-#include "image/voxel.h"
-#include "image/interp/nearest.h"
+#include "interp/nearest.h"
 
 #include "connectome/config/config.h"
 #include "connectome/connectome.h"
@@ -110,38 +105,33 @@ void run ()
   }
 
   // Open the input file
-  Image::Buffer<node_t> in_data (argument[0]);
-  auto in = in_data.voxel();
+  auto in = Image<node_t>::open (argument[0]);
 
   // Create a new header for the output file
-  Image::Header H (in_data);
-  H.comments().push_back ("Created by labelconfig");
-  H.comments().push_back ("Basis image: " + Path::basename (argument[0]));
-  H.comments().push_back ("Configuration file: " + Path::basename (argument[1]));
+  Header H (in.original_header());
+  H.datatype() = DataType::from<node_t>();
+  add_line (H.keyval()["comments"], "Created by labelconfig using " + Path::basename (argument[0]) + " and " + Path::basename (argument[1]));
 
   // Create the output file
-  Image::Buffer<node_t> out_data (argument[2], H);
-  auto out = out_data.voxel();
+  auto out = Image<node_t>::create (argument[2], H);
 
-  Image::Loop loop;
   // Fill the output image with data
-  for (auto l = loop (in, out); l; ++l)
+  for (auto l = Loop (in) (in, out); l; ++l)
     out.value() = lookup[in.value()];
 
   // If the spine segment option has been provided, add this retrospectively
-  Options opt = get_options ("spine");
+  auto opt = get_options ("spine");
   if (opt.size()) {
 
-    const ConfigInvLookup::const_iterator find_spine_node_index = config.find (str (SPINE_NODE_NAME));
+    const ConfigInvLookup::const_iterator find_spine_node_index = config.find (std::string (SPINE_NODE_NAME));
     if (find_spine_node_index != config.end()) {
       const node_t spine_node_index = find_spine_node_index->second;
 
-      Image::Buffer<bool> in_spine_data (opt[0][0]);
-      auto in_spine = in_spine_data.voxel();
+      auto in_spine = Image<bool>::open (opt[0][0]);
 
       if (dimensions_match (in_spine, out)) {
 
-        for (auto l = loop (in_spine, out); l; ++l) {
+        for (auto l = Loop (in_spine) (in_spine, out); l; ++l) {
           if (in_spine.value())
             out.value() = spine_node_index;
         }
@@ -151,22 +141,23 @@ void run ()
         WARN ("Spine node is being created from the mask image provided using -spine option using nearest-neighbour interpolation;");
         WARN ("recommend using the parcellation image as the basis for this mask so that interpolation is not required");
 
-        Image::Transform transform (out);
-        Image::Interp::Nearest<decltype(in_spine)> nearest (in_spine);
-        for (auto l = loop (out); l; ++l) {
-          const Point<float> p (transform.voxel2scanner (out));
-          if (!nearest.scanner (p) && nearest.value())
+        Transform transform (out);
+        Interp::Nearest<decltype(in_spine)> nearest (in_spine);
+        for (auto l = Loop (out) (out); l; ++l) {
+          Eigen::Vector3 p (out.index (0), out.index (1), out.index (2));
+          p = transform.voxel2scanner * p;
+          if (nearest.scanner (p) && nearest.value())
             out.value() = spine_node_index;
         }
 
       }
 
     } else {
-      WARN ("Could not add spine node; need to specify \"" + str(SPINE_NODE_NAME) + "\" node in config file");
+      WARN ("Could not add spine node; need to specify \"" + std::string (SPINE_NODE_NAME) + "\" node in config file");
     }
 
   } else if (config.find (SPINE_NODE_NAME) != config.end()) {
-    WARN ("Config file includes \"" + str (SPINE_NODE_NAME) + "\" node, but user has not provided the segmentation using -spine option");
+    WARN ("Config file includes \"" + std::string (SPINE_NODE_NAME) + "\" node, but user has not provided the segmentation using -spine option");
   }
 
 

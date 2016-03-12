@@ -1,27 +1,20 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert E. Smith, 2015.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 
-#include "args.h"
+
 #include "command.h"
 #include "progressbar.h"
 #include "thread_queue.h"
@@ -69,7 +62,7 @@ void usage ()
   OPTIONS
   + smooth_option;
 
-};
+}
 
 
 
@@ -90,16 +83,14 @@ void run ()
   int filter = argument[1];
   if (filter == 0) {
 
-    Options opt = get_options ("smooth_spatial");
-    const float spatial = opt.size() ? opt[0][0] : SMOOTH_SPATIAL_DEFAULT;
-    opt = get_options ("smooth_influence");
-    const float influence = opt.size() ? opt[0][0] : SMOOTH_INFLUENCE_DEFAULT;
+    const float spatial   = get_option_value ("smooth_spatial",  SMOOTH_SPATIAL_DEFAULT);
+    const float influence = get_option_value ("smooth_inluence", SMOOTH_INFLUENCE_DEFAULT);
 
     if (meshes.size() == 1) {
       meshes.front().smooth (spatial, influence);
     } else {
       std::mutex mutex;
-      ProgressBar progress ("Applying smoothing filter to multiple meshes... ", meshes.size());
+      ProgressBar progress ("Applying smoothing filter to multiple meshes", meshes.size());
       auto loader = [&] (size_t& out) { static size_t i = 0; out = i++; return (out != meshes.size()); };
       auto worker = [&] (const size_t& in) { meshes[in].smooth (spatial, influence); std::lock_guard<std::mutex> lock (mutex); ++progress; return true; };
       Thread::run_queue (loader, size_t(), Thread::multi (worker));

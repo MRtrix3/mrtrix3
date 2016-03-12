@@ -1,27 +1,21 @@
 /*
-   Copyright 2009 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-   Written by J-Donald Tournier, 13/11/09.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
-
-#include "math/vector.h"
 #include "gui/mrview/mode/slice.h"
+
+#include "gui/opengl/transformation.h"
 
 namespace MR
 {
@@ -100,6 +94,7 @@ namespace MR
 
         void Slice::paint (Projection& with_projection)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           // set up OpenGL environment:
           gl::Disable (gl::BLEND);
           gl::Disable (gl::DEPTH_TEST);
@@ -107,6 +102,7 @@ namespace MR
           gl::ColorMask (gl::TRUE_, gl::TRUE_, gl::TRUE_, gl::TRUE_);
 
           draw_plane (plane(), slice_shader, with_projection);
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
         void Slice::setup_draw (int axis, Projection& with_projection)
@@ -114,16 +110,17 @@ namespace MR
           // info for projection:
           float fov = FOV() / (float) (with_projection.width()+with_projection.height());
           float depth = 2.0 * std::max (std::max (
-                image()->header().vox(0) * image()->header().dim(0), 
-                image()->header().vox(1) * image()->header().dim(1)), 
-              image()->header().vox(2) * image()->header().dim(2));
+                image()->header().spacing(0) * image()->header().size(0),
+                image()->header().spacing(1) * image()->header().size(1)),
+                image()->header().spacing(2) * image()->header().size(2));
 
           // set up projection & modelview matrices:
           GL::mat4 P = GL::ortho (
               -with_projection.width()*fov, with_projection.width()*fov,
               -with_projection.height()*fov, with_projection.height()*fov,
               -depth, depth);
-          GL::mat4 M = snap_to_image() ? GL::mat4 (image()->interp.image2scanner_matrix()) : GL::mat4 (orientation());
+          GL::mat4 M = snap_to_image() ? GL::mat4 (image()->transform().image2scanner.matrix()) : GL::mat4 (orientation());
+          M = GL::transpose (M);
           GL::mat4 MV = adjust_projection_matrix (M, axis) * GL::translate (-target());
           with_projection.set (MV, P);
         }
@@ -131,6 +128,7 @@ namespace MR
         // Draw without setting up matrices/no crosshairs/no orientation labels
         void Slice::draw_plane_primitive (int axis, Displayable::Shader& shader_program, Projection& with_projection)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           // render image:
           if (visible) {
             if (snap_to_image())
@@ -140,15 +138,18 @@ namespace MR
           }
 
           render_tools (with_projection, false, axis, slice (axis));
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
         void Slice::draw_plane (int axis, Displayable::Shader& shader_program, Projection& with_projection)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           setup_draw (axis, with_projection);
           draw_plane_primitive (axis, shader_program, with_projection);
           draw_crosshairs (with_projection);
           draw_orientation_labels (with_projection);
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 

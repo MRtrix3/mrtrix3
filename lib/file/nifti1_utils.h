@@ -1,50 +1,40 @@
 /*
-    Copyright 2009 Brain Research Institute, Melbourne, Australia
-
-    Written by J-Donald Tournier, 26/08/09.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #ifndef __file_nifti1_utils_h__
 #define __file_nifti1_utils_h__
 
 #include "file/nifti1.h"
-#include "math/matrix.h"
 
 namespace MR
 {
-  namespace Image
-  {
-    class Header;
-  }
+  class Header;
+
   namespace File
   {
     namespace NIfTI
     {
 
-      Math::Matrix<float> adjust_transform (const Image::Header& H, std::vector<size_t>& order);
+      transform_type adjust_transform (const Header& H, std::vector<size_t>& order);
 
-      void check (Image::Header& H, bool single_file);
+      void check (Header& H, bool single_file);
       //! \todo add straight Analyse support
-      size_t read (Image::Header& H, const nifti_1_header& NH);
-      void check (Image::Header& H, bool single_file);
+      size_t read (Header& H, const nifti_1_header& NH);
+      void check (Header& H, bool single_file);
       //! \todo need to double-check new transform handling code
-      void write (nifti_1_header& NH, const Image::Header& H, bool single_file);
+      void write (nifti_1_header& NH, const Header& H, bool single_file);
 
     }
   }

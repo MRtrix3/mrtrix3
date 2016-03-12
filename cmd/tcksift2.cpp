@@ -1,31 +1,24 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert Smith, 2013.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
  */
+
 
 
 #include "command.h"
 #include "exception.h"
-
-#include "image/buffer.h"
-#include "image/header.h"
+#include "image.h"
+#include "header.h"
 
 #include "dwi/directions/set.h"
 
@@ -112,12 +105,12 @@ void usage ()
   + "successor to the SIFT method; instead of removing streamlines, use an EM framework to find an appropriate cross-section multiplier for each streamline";
 
   REFERENCES
-    + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+    + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
     "SIFT2: Enabling dense quantitative assessment of brain white matter connectivity using streamlines tractography. "
-    "NeuroImage, doi:10.1016/j.neuroimage.2015.06.092";
+    "NeuroImage, 2015, doi:10.1016/j.neuroimage.2015.06.092";
 
   ARGUMENTS
-  + Argument ("in_tracks",   "the input track file").type_file_in()
+  + Argument ("in_tracks",   "the input track file").type_tracks_in()
   + Argument ("in_fod",      "input image containing the spherical harmonics of the fibre orientation distributions").type_image_in()
   + Argument ("out_weights", "output text file containing the weighting factor for each streamline").type_file_out();
 
@@ -133,7 +126,7 @@ void usage ()
   + SIFT2RegularisationOption
   + SIFT2AlgorithmOption;
 
-};
+}
 
 
 
@@ -146,7 +139,7 @@ void run ()
   if (get_options("max_factor").size() && get_options("max_coeff").size())
     throw Exception ("Options -max_factor and -max_coeff are mutually exclusive");
 
-  Image::Buffer<float> in_dwi (argument[1]);
+  auto in_dwi = Image<float>::open (argument[1]);
 
   DWI::Directions::FastLookupSet dirs (1281);
 
@@ -164,21 +157,18 @@ void run ()
 
   tckfactor.store_orig_TDs();
 
-  Options opt = get_options ("min_td_frac");
-  const float min_td_frac = opt.size() ? to<float>(opt[0][0]) : SIFT2_MIN_TD_FRAC_DEFAULT;
+  const float min_td_frac = get_option_value ("min_td_frac", SIFT2_MIN_TD_FRAC_DEFAULT);
   tckfactor.remove_excluded_fixels (min_td_frac);
 
   if (output_debug)
     tckfactor.output_all_debug_images ("before");
 
-  opt = get_options ("csv");
+  auto opt = get_options ("csv");
   if (opt.size())
     tckfactor.set_csv_path (opt[0][0]);
 
-  opt = get_options ("reg_tikhonov");
-  const float reg_tikhonov = opt.size() ? float(opt[0][0]) : SIFT2_REGULARISATION_TIKHONOV_DEFAULT;
-  opt = get_options ("reg_tv");
-  const float reg_tv = opt.size() ? float(opt[0][0]) : SIFT2_REGULARISATION_TV_DEFAULT;
+  const float reg_tikhonov = get_option_value ("reg_tikhonov", SIFT2_REGULARISATION_TIKHONOV_DEFAULT);
+  const float reg_tv = get_option_value ("reg_tv", SIFT2_REGULARISATION_TV_DEFAULT);
   tckfactor.set_reg_lambdas (reg_tikhonov, reg_tv);
 
   opt = get_options ("min_iters");

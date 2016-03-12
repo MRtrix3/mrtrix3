@@ -1,24 +1,18 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-    Written by Robert E. Smith, 2012.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 
 #include <sstream>
@@ -26,9 +20,7 @@
 #include <vector>
 
 #include "command.h"
-#include "point.h"
 #include "progressbar.h"
-#include "memory.h"
 
 #include "connectome/connectome.h"
 
@@ -37,16 +29,9 @@
 #include "dwi/tractography/weights.h"
 #include "dwi/tractography/connectome/extract.h"
 #include "dwi/tractography/connectome/streamline.h"
-#include "dwi/tractography/connectome/tck2nodes.h"
 #include "dwi/tractography/mapping/loader.h"
 
-#include "math/matrix.h"
-
-#include "image/buffer.h"
-#include "image/loop.h"
-#include "image/nav.h"
-#include "image/transform.h"
-#include "image/voxel.h"
+#include "image.h"
 
 #include "thread_queue.h"
 
@@ -66,7 +51,7 @@ const char* file_outputs[] = { "per_edge", "per_node", "single", NULL };
 
 const OptionGroup OutputOptions = OptionGroup ("Options for determining the content / format of output files")
 
-    + Option ("nodes", "only select tracks that involve a set of nodes of interest")
+    + Option ("nodes", "only select tracks that involve a set of nodes of interest (provide as a comma-separated list of integers)")
       + Argument ("list").type_sequence_int()
 
     + Option ("exclusive", "only select tracks that exclusively connect nodes from within the list of nodes of interest")
@@ -83,20 +68,23 @@ const OptionGroup OutputOptions = OptionGroup ("Options for determining the cont
                                  "Set this option to generate corresponding outputs containing these streamlines (labelled as node index 0)");
 
 
-const OptionGroup TrackWeightsOptions = OptionGroup ("Options for importing / exporting streamline weights")
-
-    + Tractography::TrackWeightsInOption
-
-    + Option ("prefix_tck_weights_out", "provide a prefix for outputting a text file corresponding to each output file, "
-                                      "each containing only the streamline weights relevant for that track file")
-      + Argument ("prefix").type_text();
-
 
 
 void usage ()
 {
 
-	AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
+  // Note: Creation of this OptionGroup depends on Tractography::TrackWeightsInOption
+  //   already being defined; therefore, it cannot be defined statically, and
+  //   must be constructed after the command is executed.
+  const OptionGroup TrackWeightsOptions = OptionGroup ("Options for importing / exporting streamline weights")
+      + Tractography::TrackWeightsInOption
+      + Option ("prefix_tck_weights_out", "provide a prefix for outputting a text file corresponding to each output file, "
+                                          "each containing only the streamline weights relevant for that track file")
+        + Argument ("prefix").type_text();
+
+
+
+  AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
 
   DESCRIPTION
   + "extract streamlines from a tractogram based on their assignment to parcellated nodes";
@@ -111,7 +99,7 @@ void usage ()
   + OutputOptions
   + TrackWeightsOptions;
 
-};
+}
 
 
 
@@ -130,7 +118,7 @@ void run ()
   {
     std::ifstream stream (argument[1]);
     std::string line;
-    ProgressBar progress ("reading streamline assignments file... ");
+    ProgressBar progress ("reading streamline assignments file");
     while (std::getline (stream, line)) {
       std::stringstream line_stream (line);
       std::vector<node_t> nodes;
@@ -166,7 +154,7 @@ void run ()
   }
 
   const std::string prefix (argument[2]);
-  Options opt = get_options ("prefix_tck_weights_out");
+  auto opt = get_options ("prefix_tck_weights_out");
   const std::string weights_prefix = opt.size() ? std::string (opt[0][0]) : "";
 
   INFO ("Maximum node index is " + str(max_node_index));
@@ -210,26 +198,23 @@ void run ()
 
     // Load the node image, get the centres of mass
     // Generate exemplars - these can _only_ be done per edge, and requires a mutex per edge to multi-thread
-    Image::Buffer<node_t> buffer (opt[0][0]);
-    Image::Buffer<node_t>::voxel_type voxel (buffer);
-    Image::Transform transform (buffer);
-
-    std::vector< Point<float> > COMs (max_node_index+1, Point<float> (0.0, 0.0, 0.0));
+    auto image = Image<node_t>::open (opt[0][0]);
+    std::vector<Eigen::Vector3f> COMs (max_node_index+1, Eigen::Vector3f (0.0f, 0.0f, 0.0f));
     std::vector<size_t> volumes (max_node_index+1, 0);
-    Image::LoopInOrder loop (voxel);
-    for (auto i = loop (voxel); i; ++i) {
-      const node_t index = voxel.value();
+    for (auto i = Loop() (image); i; ++i) {
+      const node_t index = image.value();
       if (index) {
         assert (index <= max_node_index);
-        COMs[index] += Point<float> (voxel[0], voxel[1], voxel[2]);
+        COMs[index] += Eigen::Vector3f (image.index(0), image.index(1), image.index(2));
         ++volumes[index];
       }
     }
+    Transform transform (image);
     for (node_t index = 1; index <= max_node_index; ++index) {
       if (volumes[index])
-        COMs[index] = transform.voxel2scanner (COMs[index] * (1.0f / float(volumes[index])));
+        COMs[index] = (transform.voxel2scanner * (COMs[index] * (1.0f / float(volumes[index]))).cast<default_type>()).cast<float>();
       else
-        COMs[index].invalidate();
+        COMs[index][0] = COMs[index][1] = COMs[index][2] = NAN;
     }
 
     // If user specifies a subset of nodes, only a subset of exemplars need to be calculated
@@ -237,7 +222,7 @@ void run ()
 
     {
       std::mutex mutex;
-      ProgressBar progress ("generating exemplars for connectome... ", count);
+      ProgressBar progress ("generating exemplars for connectome", count);
       if (assignments_pairs.size()) {
         auto loader = [&] (Tractography::Connectome::Streamline_nodepair& out) { if (!reader (out)) return false; out.set_nodes (assignments_pairs[out.index]); return true; };
         auto worker = [&] (const Tractography::Connectome::Streamline_nodepair& in) { generator (in); std::lock_guard<std::mutex> lock (mutex); ++progress; return true; };
@@ -254,7 +239,7 @@ void run ()
     // Get exemplars to the output file(s), depending on the requested format
     if (file_format == 0) { // One file per edge
       if (exclusive) {
-        ProgressBar progress ("writing exemplars to files... ", nodes.size() * (nodes.size()-1) / 2);
+        ProgressBar progress ("writing exemplars to files", nodes.size() * (nodes.size()-1) / 2);
         for (size_t i = 0; i != nodes.size(); ++i) {
           const node_t one = nodes[i];
           for (size_t j = i+1; j != nodes.size(); ++j) {
@@ -265,7 +250,7 @@ void run ()
         }
       } else {
         // For each node in the list, write one file for an exemplar to every other node
-        ProgressBar progress ("writing exemplars to files... ", nodes.size() * COMs.size());
+        ProgressBar progress ("writing exemplars to files", nodes.size() * COMs.size());
         for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
           for (size_t i = first_node; i != COMs.size(); ++i) {
             generator.write (*n, i, prefix + str(*n) + "-" + str(i) + ".tck", weights_prefix.size() ? (weights_prefix + str(*n) + "-" + str(i) + ".csv") : "");
@@ -274,7 +259,7 @@ void run ()
         }
       }
     } else if (file_format == 1) { // One file per node
-      ProgressBar progress ("writing exemplars to files... ", nodes.size());
+      ProgressBar progress ("writing exemplars to files", nodes.size());
       for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
         generator.write (*n, prefix + str(*n) + ".tck", weights_prefix.size() ? (weights_prefix + str(*n) + ".csv") : "");
         ++progress;
@@ -327,7 +312,7 @@ void run ()
         break;
     }
 
-    ProgressBar progress ("Extracting tracks from connectome... ", count);
+    ProgressBar progress ("Extracting tracks from connectome", count);
     if (assignments_pairs.size()) {
       Tractography::Connectome::Streamline_nodepair tck;
       while (reader (tck)) {

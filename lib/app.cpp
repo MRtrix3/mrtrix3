@@ -1,29 +1,19 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-    Written by J-Donald Tournier, 27/06/08.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #include <unistd.h>
-
-#include <gsl/gsl_version.h>
-#include <gsl/gsl_errno.h>
 
 #include "app.h"
 #include "debug.h"
@@ -33,17 +23,15 @@
 
 #define MRTRIX_HELP_COMMAND "less -X"
 
+#define HELP_WIDTH  80
+
+#define HELP_PURPOSE_INDENT 0, 4
+#define HELP_ARG_INDENT 8, 20
+#define HELP_OPTION_INDENT 2, 20
+
 
 namespace MR
 {
-
-
-  void mrtrix_gsl_error_handler (const char* reason, const char* file, int line, int gsl_errno)
-  {
-    throw Exception (std::string ("GSL error: ") + reason);
-  }
-
-
 
   namespace App
   {
@@ -55,21 +43,30 @@ namespace MR
     bool REQUIRES_AT_LEAST_ONE_ARGUMENT = true;
 
     OptionGroup __standard_options = OptionGroup ("Standard options")
-                                     + Option ("info", "display information messages.")
-                                     + Option ("quiet", "do not display information messages or progress status.")
-                                     + Option ("debug", "display debugging messages.")
-                                     + Option ("force", "force overwrite of output files.")
-                                     + Option ("nthreads", "use this number of threads in multi-threaded applications")
-                                       + Argument ("number").type_integer (0, 1, std::numeric_limits<int>::max())
-                                     + Option ("failonwarn", "terminate program if a warning is produced")
-                                     + Option ("help", "display this information page and exit.")
-                                     + Option ("version", "display version information and exit.");
+      + Option ("info", "display information messages.")
+      + Option ("quiet", "do not display information messages or progress status.")
+      + Option ("debug", "display debugging messages.")
+      + Option ("force", "force overwrite of output files. " 
+          "Caution: Using the same file as input and output might cause unexpected behaviour.")
+      + Option ("nthreads", "use this number of threads in multi-threaded applications")
+      + Argument ("number").type_integer (0, 1, std::numeric_limits<int>::max())
+      + Option ("failonwarn", "terminate program if a warning is produced")
+      + Option ("help", "display this information page and exit.")
+      + Option ("version", "display version information and exit.");
 
     const char* AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
     const char* COPYRIGHT =
-      "Copyright (C) 2008 Brain Research Institute, Melbourne, Australia.\n"
-      "This is free software; see the source for copying conditions.\n"
-      "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.";
+       "Copyright (c) 2008-2016 the MRtrix3 contributors"
+       "\n\n"
+       "This Source Code Form is subject to the terms of the Mozilla Public "
+       "License, v. 2.0. If a copy of the MPL was not distributed with this "
+       "file, You can obtain one at http://mozilla.org/MPL/2.0/"
+       "\n\n"
+       "MRtrix is distributed in the hope that it will be useful, "
+       "but WITHOUT ANY WARRANTY; without even the implied warranty of "
+       "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."
+       "\n\n"
+       "For more details, see www.mrtrix.org";
 
 
     std::string NAME;
@@ -80,8 +77,11 @@ namespace MR
     bool stderr_to_file = false;
     bool terminal_use_colour = true;
 
+    const char* project_version = nullptr;
+    const char* build_date = __DATE__;
+
     int argc = 0;
-    char** argv = NULL;
+    char** argv = nullptr;
 
     bool overwrite_files = false;
     void (*check_overwrite_files_func) (const std::string& name) = nullptr;
@@ -98,81 +98,452 @@ namespace MR
       }
 
 
-
-
-      std::string get_help_string (int format) 
+      inline int size (const std::string& text)
       {
-        return
-          help_head (format)
-          + help_syntax (format)
-          + ARGUMENTS.syntax (format)
-          + DESCRIPTION.syntax (format)
-          + OPTIONS.syntax (format)
-          + __standard_options.header (format)
-          + __standard_options.contents (format)
-          + __standard_options.footer (format)
-          + help_tail (format);
+        return text.size() - 2*std::count (text.begin(), text.end(), 0x08U);
+      }
+
+      inline void resize (std::string& text, size_t new_size, char fill)
+      {
+        text.resize (text.size() + new_size - size(text), fill);
       }
 
 
 
-
-      void print_help ()
+      std::string paragraph (
+          const std::string& header,
+          const std::string& text,
+          int header_indent,
+          int indent)
       {
-        File::Config::init ();
+        std::string out, line = std::string (header_indent, ' ') + header + " ";
+        if (size (line) < indent)
+          resize (line, indent, ' ');
 
-        //CONF option: HelpCommand
-        //CONF default: less
-        //CONF the command to use to display each command's help page (leave
-        //CONF empty to send directly to the terminal).
-        const std::string help_display_command = File::Config::get ("HelpCommand", MRTRIX_HELP_COMMAND); 
+        std::vector<std::string> paragraphs = split (text, "\n");
 
-        if (help_display_command.size()) {
-          std::string help_string = get_help_string (1);
-          FILE* file = popen (help_display_command.c_str(), "w");
-          if (!file) {
-            INFO ("error launching help display command \"" + help_display_command + "\": " + strerror (errno));
+        for (size_t n = 0; n < paragraphs.size(); ++n) {
+          size_t i = 0;
+          std::vector<std::string> words = split (paragraphs[n]);
+          while (i < words.size()) {
+            do {
+              line += " " + words[i++];
+              if (i >= words.size())
+                break;
+            }
+            while (size (line) + 1 + size (words[i]) < HELP_WIDTH);
+            out += line + "\n";
+            line = std::string (indent, ' ');
           }
-          else if (fwrite (help_string.c_str(), 1, help_string.size(), file) != help_string.size()) {
-            INFO ("error sending help page to display command \"" + help_display_command + "\": " + strerror (errno));
-          }
-
-          if (pclose (file) == 0)
-            return;
-
-          INFO ("error launching help display command \"" + help_display_command + "\"");
         }
-
-        if (help_display_command.size()) 
-          INFO ("displaying help page using fail-safe output:\n");
-
-        print (get_help_string (0));
+        return out;
       }
 
 
 
-
-
-      std::string version_string ()
+      std::string bold (const std::string& text)
       {
-        std::string version = 
-          "== " + App::NAME + " " + ( project_version ? project_version : mrtrix_version ) + " ==\n" +
-          str(8*sizeof (size_t)) + " bit " 
-#ifdef NDEBUG
-          "release"
-#else
-          "debug"
-#endif
-          " version, built " __DATE__ 
-          + ( project_version ? std::string(" against MRtrix ") + mrtrix_version : std::string("") ) 
-          + ", using GSL " + gsl_version + "\n"
-          "Author(s): " + AUTHOR + "\n" +
-          COPYRIGHT + "\n";
+        std::string retval (3*text.size(), '\0');
+        for (size_t n = 0; n < text.size(); ++n) {
+          retval[3*n] = retval[3*n+2] = text[n];
+          retval[3*n+1] = 0x08U;
+        }
+        return retval;
+      }
 
-        return version;
+
+      std::string underline (const std::string& text)
+      {
+        std::string retval (3*text.size(), '\0');
+        for (size_t n = 0; n < text.size(); ++n) {
+          retval[3*n] = '_';
+          retval[3*n+1] = 0x08U;
+          retval[3*n+2] = text[n];
+        }
+        return retval;
       }
 
     }
+
+
+
+
+
+    const char* argtype_description (ArgType type)
+    {
+      switch (type) {
+        case Integer:
+          return ("integer");
+        case Float:
+          return ("float");
+        case Text:
+          return ("string");
+        case ArgFileIn:
+          return ("file in");
+        case ArgFileOut:
+          return ("file out");
+        case ImageIn:
+          return ("image in");
+        case ImageOut:
+          return ("image out");
+        case Choice:
+          return ("choice");
+        case IntSeq:
+          return ("int seq");
+        case FloatSeq:
+          return ("float seq");
+        case TracksIn:
+          return ("tracks in");
+        case TracksOut:
+          return ("tracks out");
+        default:
+          return ("undefined");
+      }
+    }
+
+
+
+    std::string help_head (int format) 
+    {
+      std::string cmd_version = project_version ? 
+        std::string ("external module, version ") + project_version + "\n\n" : 
+        std::string ("part of the MRtrix package\n\n");
+
+      if (!format) 
+        return std::string (NAME) + ": " + cmd_version;
+
+      std::string mrtrix_version_string = std::string("MRtrix ") + mrtrix_version;
+      std::string date (build_date);
+
+      std::string topline = mrtrix_version_string + 
+        std::string (std::max (1, 40-size(mrtrix_version_string)-size(App::NAME)/2), ' ') 
+        + bold (App::NAME);
+      topline += std::string (80-size(topline)-size(date), ' ') + date;
+
+      return topline + "\n\n     " + bold (NAME) + ": " + cmd_version;
+    }
+
+
+
+
+    std::string help_tail (int format) 
+    {
+      std::string retval;
+      if (!format) 
+        return retval;
+
+      return bold ("AUTHOR") + "\n" 
+        + paragraph ("", AUTHOR, HELP_PURPOSE_INDENT) + "\n"
+        + bold ("COPYRIGHT") + "\n" 
+        + paragraph ("", COPYRIGHT, HELP_PURPOSE_INDENT) + "\n"
+        + [&](){ 
+          if (REFERENCES.size() == 0) return std::string();
+          std::string s = bold ("REFERENCES") + "\n";
+          for (size_t n = 0; n < REFERENCES.size(); ++n) 
+            s += paragraph ("", REFERENCES[n], HELP_PURPOSE_INDENT) + "\n";
+          return s;
+        }();
+    }
+
+
+
+
+
+
+
+    std::string Description::syntax (int format) const
+    {
+      std::string s;
+      if (format) 
+        s += bold ("DESCRIPTION") + "\n\n";
+      for (size_t i = 0; i < size(); ++i) 
+        s += paragraph ("", (*this)[i], HELP_PURPOSE_INDENT) + "\n";
+      return s;
+    }
+
+
+
+
+    std::string help_syntax (int format)
+    {
+      std::string s = "SYNOPSIS";
+      if (format)
+        s = bold (s) + "\n\n     ";
+      else 
+        s += ": ";
+      s += ( format ? underline (NAME) : NAME ) + " [ options ]";
+
+      for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
+
+        if (ARGUMENTS[i].flags & Optional)
+          s += "[";
+        s += std::string(" ") + ARGUMENTS[i].id;
+
+        if (ARGUMENTS[i].flags & AllowMultiple) {
+          if (! (ARGUMENTS[i].flags & Optional))
+            s += std::string(" [ ") + ARGUMENTS[i].id;
+          s += " ...";
+        }
+        if (ARGUMENTS[i].flags & (Optional | AllowMultiple))
+          s += " ]";
+      }
+      return s + "\n\n";
+    }
+
+
+
+
+    std::string Argument::syntax (int format) const
+    {
+      std::string retval = paragraph (( format ? underline (id) : id ), desc, HELP_ARG_INDENT);
+      if (format) 
+        retval += "\n";
+      return retval;
+    }
+
+
+
+
+
+    std::string ArgumentList::syntax (int format) const
+    {
+      std::string s;
+      for (size_t i = 0; i < size(); ++i)
+        s += (*this)[i].syntax (format);
+      return s + "\n";
+    }
+
+
+
+
+
+    std::string Option::syntax (int format) const
+    {
+      std::string opt ("-");
+      opt += id;
+
+      if (format)
+        opt = underline (opt);
+
+      for (size_t i = 0; i < size(); ++i)
+        opt += std::string (" ") + (*this)[i].id;
+
+      if (format) 
+        opt = "  " + opt + "\n" + paragraph ("", desc, HELP_PURPOSE_INDENT);
+      else
+        opt = paragraph (opt, desc, HELP_OPTION_INDENT);
+      if (format) 
+        opt += "\n";
+      return opt;
+    }
+
+
+
+
+    std::string OptionGroup::header (int format) const
+    {
+      return format ? bold (name) + "\n\n" : std::string (name) + ":\n";
+    }
+
+    std::string OptionGroup::contents (int format) const
+    {
+      std::string s;
+      for (size_t i = 0; i < size(); ++i) 
+        s += (*this)[i].syntax (format);
+      return s;
+    }
+
+    std::string OptionGroup::footer (int format)
+    {
+      return format ? "" : "\n";
+    }
+
+
+
+    std::string OptionList::syntax (int format) const
+    {
+      std::vector<std::string> group_names;
+      for (size_t i = 0; i < size(); ++i) {
+        if (std::find (group_names.begin(), group_names.end(), (*this)[i].name) == group_names.end()) 
+          group_names.push_back ((*this)[i].name);
+      }
+
+      std::string s;
+      for (size_t i = 0; i < group_names.size(); ++i) {
+        size_t n = i;
+        while ((*this)[n].name != group_names[i])
+          ++n;
+        s += (*this)[n].header (format);
+        while (n < size()) {
+          if ((*this)[n].name == group_names[i])
+            s += (*this)[n].contents (format);
+          ++n;
+        }
+        s += OptionGroup::footer (format);
+      }
+
+      return s;
+    }
+
+
+
+
+
+
+
+
+    std::string Argument::usage () const
+    {
+      std::ostringstream stream;
+      stream << "ARGUMENT " << id << " "
+        << (flags & Optional ? '1' : '0') << " "
+        << (flags & AllowMultiple ? '1' : '0') << " ";
+
+      switch (type) {
+        case Integer:
+          stream << "INT " << defaults.i.min << " " << defaults.i.max << " " << defaults.i.def;
+          break;
+        case Float:
+          stream << "FLOAT " << defaults.f.min << " " << defaults.f.max << " " << defaults.f.def;
+          break;
+        case Text:
+          stream << "TEXT";
+          if (defaults.text)
+            stream << " " << defaults.text;
+          break;
+        case ArgFileIn:
+          stream << "FILEIN";
+          break;
+        case ArgFileOut:
+          stream << "FILEOUT";
+          break;
+        case Choice:
+          stream << "CHOICE";
+          for (const char* const* p = defaults.choices.list; *p; ++p)
+            stream << " " << *p;
+          stream << " " << defaults.choices.def;
+          break;
+        case ImageIn:
+          stream << "IMAGEIN";
+          break;
+        case ImageOut:
+          stream << "IMAGEOUT";
+          break;
+        case IntSeq:
+          stream << "ISEQ";
+          break;
+        case FloatSeq:
+          stream << "FSEQ";
+          break;
+        case TracksIn:
+          stream << "TRACKSIN";
+          break;
+        case TracksOut:
+          stream << "TRACKSOUT";
+          break;
+        default:
+          assert (0);
+      }
+      stream << "\n";
+      if (desc.size())
+        stream << desc << "\n";
+
+      return stream.str();
+    }
+
+
+
+
+    std::string Option::usage () const
+    {
+      std::ostringstream stream;
+      stream << "OPTION " << id << " "
+        << (flags & Optional ? '1' : '0') << " "
+        << (flags & AllowMultiple ? '1' : '0') << "\n";
+
+      if (desc.size())
+        stream << desc << "\n";
+
+      for (size_t i = 0; i < size(); ++i)
+        stream << (*this)[i].usage ();
+
+      return stream.str();
+    }
+
+
+
+    std::string get_help_string (int format) 
+    {
+      return
+        help_head (format)
+        + help_syntax (format)
+        + ARGUMENTS.syntax (format)
+        + DESCRIPTION.syntax (format)
+        + OPTIONS.syntax (format)
+        + __standard_options.header (format)
+        + __standard_options.contents (format)
+        + __standard_options.footer (format)
+        + help_tail (format);
+    }
+
+
+
+
+    void print_help ()
+    {
+      File::Config::init ();
+
+      //CONF option: HelpCommand
+      //CONF default: less
+      //CONF the command to use to display each command's help page (leave
+      //CONF empty to send directly to the terminal).
+      const std::string help_display_command = File::Config::get ("HelpCommand", MRTRIX_HELP_COMMAND); 
+
+      if (help_display_command.size()) {
+        std::string help_string = get_help_string (1);
+        FILE* file = popen (help_display_command.c_str(), "w");
+        if (!file) {
+          INFO ("error launching help display command \"" + help_display_command + "\": " + strerror (errno));
+        }
+        else if (fwrite (help_string.c_str(), 1, help_string.size(), file) != help_string.size()) {
+          INFO ("error sending help page to display command \"" + help_display_command + "\": " + strerror (errno));
+        }
+
+        if (pclose (file) == 0)
+          return;
+
+        INFO ("error launching help display command \"" + help_display_command + "\"");
+      }
+
+      if (help_display_command.size()) 
+        INFO ("displaying help page using fail-safe output:\n");
+
+      print (get_help_string (0));
+    }
+
+
+
+
+
+    std::string version_string ()
+    {
+      std::string version = 
+        "== " + App::NAME + " " + ( project_version ? project_version : mrtrix_version ) + " ==\n" +
+        str(8*sizeof (size_t)) + " bit " 
+#ifdef NDEBUG
+        "release"
+#else
+        "debug"
+#endif
+        " version, built " __DATE__ 
+        + ( project_version ? std::string(" against MRtrix ") + mrtrix_version : std::string("") ) 
+        + ", using Eigen " + str(EIGEN_WORLD_VERSION) + "." + str(EIGEN_MAJOR_VERSION) + "." + str(EIGEN_MINOR_VERSION) + "\n"
+        "Author(s): " + AUTHOR + "\n" +
+        COPYRIGHT + "\n";
+
+      return version;
+    }
+
 
 
 
@@ -204,18 +575,18 @@ namespace MR
     std::string markdown_usage ()
     {
       /*
-          help_head (format)
-          + help_syntax (format)
-          + ARGUMENTS.syntax (format)
-          + DESCRIPTION.syntax (format)
-          + OPTIONS.syntax (format)
-          + __standard_options.header (format)
-          + __standard_options.contents (format)
-          + __standard_options.footer (format)
-          + help_tail (format);
-*/
+         help_head (format)
+         + help_syntax (format)
+         + ARGUMENTS.syntax (format)
+         + DESCRIPTION.syntax (format)
+         + OPTIONS.syntax (format)
+         + __standard_options.header (format)
+         + __standard_options.contents (format)
+         + __standard_options.footer (format)
+         + help_tail (format);
+         */
       std::string s = "## Synopsis\n\n    "
-          + std::string(NAME) + " [ options ] ";
+        + std::string(NAME) + " [ options ] ";
 
       // Syntax line:
       for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
@@ -244,7 +615,7 @@ namespace MR
       // Argument description:
       for (size_t i = 0; i < ARGUMENTS.size(); ++i) 
         s += std::string("- *") + ARGUMENTS[i].id + "*: " + indent_newlines (ARGUMENTS[i].desc) + "\n";
-      
+
 
       s += "\n## Description\n\n";
       for (size_t i = 0; i < DESCRIPTION.size(); ++i) 
@@ -300,6 +671,107 @@ namespace MR
 
 
 
+    std::string restructured_text_usage ()
+    {
+      /*
+         help_head (format)
+         + help_syntax (format)
+         + ARGUMENTS.syntax (format)
+         + DESCRIPTION.syntax (format)
+         + OPTIONS.syntax (format)
+         + __standard_options.header (format)
+         + __standard_options.contents (format)
+         + __standard_options.footer (format)
+         + help_tail (format);
+         */
+
+      std::string s = "Synopsis\n--------\n\n::\n\n    "
+        + std::string(NAME) + " [ options ] ";
+
+      // Syntax line:
+      for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
+
+        if (ARGUMENTS[i].flags & Optional)
+          s += "[";
+        s += std::string(" ") + ARGUMENTS[i].id;
+
+        if (ARGUMENTS[i].flags & AllowMultiple) {
+          if (! (ARGUMENTS[i].flags & Optional))
+            s += std::string(" [ ") + ARGUMENTS[i].id;
+          s += " ...";
+        }
+        if (ARGUMENTS[i].flags & (Optional | AllowMultiple))
+          s += " ]";
+      }
+      s += "\n\n";
+
+      auto indent_newlines = [](std::string text) {
+        size_t index = 0;
+        while ((index = text.find("\n", index)) != std::string::npos )
+          text.replace (index, 1, "");
+        return text;
+      };
+
+      // Argument description:
+      for (size_t i = 0; i < ARGUMENTS.size(); ++i)
+        s += std::string("-  *") + ARGUMENTS[i].id + "*: " + indent_newlines (ARGUMENTS[i].desc) + "\n";
+
+
+      s += "\nDescription\n-----------\n\n";
+      for (size_t i = 0; i < DESCRIPTION.size(); ++i)
+        s += indent_newlines (DESCRIPTION[i]) + "\n\n";
+
+
+      std::vector<std::string> group_names;
+      for (size_t i = 0; i < OPTIONS.size(); ++i) {
+        if (std::find (group_names.begin(), group_names.end(), OPTIONS[i].name) == group_names.end())
+          group_names.push_back (OPTIONS[i].name);
+      }
+
+      auto format_option = [&](const Option& opt) {
+        std::string f = std::string ("-  **-") + opt.id;
+        for (size_t a = 0; a < opt.size(); ++a)
+          f += std::string (" ") + opt[a].id;
+        f += std::string("** ") + indent_newlines (opt.desc) + "\n\n";
+        return f;
+      };
+
+      s += "Options\n-------\n\n";
+      for (size_t i = 0; i < group_names.size(); ++i) {
+        size_t n = i;
+        while (OPTIONS[n].name != group_names[i])
+          ++n;
+        if (OPTIONS[n].name != std::string("OPTIONS"))
+          s += OPTIONS[n].name + std::string("\n") + std::string(std::strlen(OPTIONS[n].name), '^') + "\n\n";
+        while (n < OPTIONS.size()) {
+          if (OPTIONS[n].name == group_names[i]) {
+            for (size_t o = 0; o < OPTIONS[n].size(); ++o)
+              s += format_option (OPTIONS[n][o]);
+          }
+          ++n;
+        }
+      }
+
+      s += "Standard options\n^^^^^^^^^^^^^^^^\n\n";
+      for (size_t i = 0; i < __standard_options.size(); ++i)
+        s += format_option (__standard_options[i]);
+
+      if (REFERENCES.size()) {
+        s += std::string ("References\n^^^^^^^^^^\n\n");
+        for (size_t i = 0; i < REFERENCES.size(); ++i)
+          s += indent_newlines (REFERENCES[i]) + "\n\n";
+      }
+      s += std::string("--------------\n\n") +
+        "\n\n**Author:** " + (char*)AUTHOR
+        + "\n\n**Copyright:** " + COPYRIGHT + "\n\n";
+
+      return s;
+    }
+
+
+
+
+
 
     const Option* match_option (const char* arg)
     {
@@ -329,12 +801,12 @@ namespace MR
         root = "several matches possible for option \"-" + root + "\": \"-" + candidates[0]->id;
 
         for (size_t i = 1; i < candidates.size(); ++i)
-          root += std::string (", \"-") + candidates[i]->id + "\"";
+          root += std::string ("\", \"-") + candidates[i]->id + "\"";
 
         throw Exception (root);
       }
 
-      return NULL;
+      return nullptr;
     }
 
 
@@ -352,7 +824,7 @@ namespace MR
           n += opt->size();
         }
         else
-          argument.push_back (ParsedArgument (NULL, NULL, argv[n]));
+          argument.push_back (ParsedArgument (nullptr, nullptr, argv[n]));
       }
     }
 
@@ -386,8 +858,8 @@ namespace MR
 
     void parse ()
     {
-       argument.clear();
-       option.clear();
+      argument.clear();
+      option.clear();
 
       if (argc == 2) {
         if (strcmp (argv[1], "__print_full_usage__") == 0) {
@@ -396,6 +868,10 @@ namespace MR
         }
         if (strcmp (argv[1], "__print_usage_markdown__") == 0) {
           print (markdown_usage ());
+          throw 0;
+        }
+        if (strcmp (argv[1], "__print_usage_rst__") == 0) {
+          print (restructured_text_usage ());
           throw 0;
         }
       }
@@ -436,11 +912,11 @@ namespace MR
 
       if (num_optional_arguments && num_args_required > argument.size())
         throw Exception ("expected at least " + str (num_args_required)
-                         + " arguments (" + str (argument.size()) + " supplied)");
+            + " arguments (" + str (argument.size()) + " supplied)");
 
       if (num_optional_arguments == 0 && num_args_required != argument.size())
         throw Exception ("expected exactly " + str (num_args_required)
-                         + " arguments (" + str (argument.size()) + " supplied)");
+            + " arguments (" + str (argument.size()) + " supplied)");
 
       size_t num_extra_arguments = argument.size() - num_args_required;
       size_t num_arg_per_multi = num_optional_arguments ? num_extra_arguments / num_optional_arguments : 0;
@@ -478,7 +954,7 @@ namespace MR
       }
 
       File::Config::init ();
-      
+
       //CONF option: TerminalColor
       //CONF default: 1 (true)
       //CONF A boolean value to indicate whether colours should be used in the terminal.
@@ -495,22 +971,31 @@ namespace MR
       // check for the existence of all specified input files (including optional ones that have been provided)
       // if necessary, also check for pre-existence of any output files with known paths
       //   (if the output is e.g. given as a prefix, the argument should be flagged as type_text())
-      for (std::vector<ParsedArgument>::const_iterator i = argument.begin(); i < argument.end(); i++) {
-        if ((i->arg->type == ArgFileIn) && !Path::exists (std::string(*i)))
-          throw Exception ("required input file \"" + str(*i) + "\" not found");
-        if (i->arg->type == ArgFileOut)
-          check_overwrite (std::string(*i));
+      for (const auto& i : argument) {
+        if ((i.arg->type == ArgFileIn || i.arg->type == TracksIn) && !Path::exists (std::string(i)))
+          throw Exception ("required input file \"" + str(i) + "\" not found");
+        if (i.arg->type == ArgFileOut || i.arg->type == TracksOut)
+          check_overwrite (std::string(i));
+        if (i.arg->type == TracksIn && !Path::has_suffix (str(i), ".tck"))
+          throw Exception ("input file " + str(i) + " is not a valid track file");
+        if (i.arg->type == TracksOut && !Path::has_suffix (str(i), ".tck"))
+          throw Exception ("output track file (" + str(i) + ") must use the .tck suffix");
       }
-      for (std::vector<ParsedOption>::const_iterator i = option.begin(); i != option.end(); ++i) {
-        for (size_t j = 0; j != i->opt->size(); ++j) {
-          const Argument& arg = i->opt->operator [](j);
-          const char* const name = i->args[j];
-          if ((arg.type == ArgFileIn) && !Path::exists (name))
-            throw Exception ("input file \"" + str(name) + "\" not found (required for option \"-" + std::string(i->opt->id) + "\")");
-          if (arg.type == ArgFileOut)
-           check_overwrite (name);
+      for (const auto& i : option) {
+        for (size_t j = 0; j != i.opt->size(); ++j) {
+          const Argument& arg = i.opt->operator [](j);
+          const char* const name = i.args[j];
+          if ((arg.type == ArgFileIn || arg.type == TracksIn) && !Path::exists (name))
+            throw Exception ("input file \"" + str(name) + "\" not found (required for option \"-" + std::string(i.opt->id) + "\")");
+          if (arg.type == ArgFileOut || arg.type == TracksOut)
+            check_overwrite (name);
+          if (arg.type == TracksIn && !Path::has_suffix (str(name), ".tck"))
+            throw Exception ("input file " + str(name) + " is not a valid track file");
+          if (arg.type == TracksOut && !Path::has_suffix (str(name), ".tck"))
+            throw Exception ("output track file (" + str(name) + ") must use the .tck suffix");
         }
       }
+
     }
 
 
@@ -520,8 +1005,8 @@ namespace MR
     {
 #ifdef MRTRIX_WINDOWS
       // force stderr to be unbuffered, and stdout to be line-buffered:
-      setvbuf (stderr, NULL, _IONBF, 0);
-      setvbuf (stdout, NULL, _IOLBF, 0);
+      setvbuf (stderr, nullptr, _IONBF, 0);
+      setvbuf (stdout, nullptr, _IOLBF, 0);
 #endif
 
       try {
@@ -540,9 +1025,7 @@ namespace MR
         NAME.erase (NAME.size()-4);
 #endif
 
-      srand (time (NULL));
-
-      gsl_set_error_handler (&mrtrix_gsl_error_handler);
+      srand (time (nullptr));
     }
 
 
@@ -552,16 +1035,13 @@ namespace MR
 
 
 
-    const Options get_options (const std::string& name)
+    const std::vector<ParsedOption> get_options (const std::string& name)
     {
-      using namespace App;
-      Options matches;
+      std::vector<ParsedOption> matches;
       for (size_t i = 0; i < option.size(); ++i) {
         assert (option[i].opt);
-        if (option[i].opt->is (name)) {
-          matches.opt = option[i].opt;
-          matches.args.push_back (option[i].args);
-        }
+        if (option[i].opt->is (name)) 
+          matches.push_back ({ option[i].opt, option[i].args });
       }
       return matches;
     }
@@ -571,12 +1051,64 @@ namespace MR
 
 
 
-    App::ParsedArgument::operator int () const
+    int64_t App::ParsedArgument::as_int () const
     {
       if (arg->type == Integer) {
-        const int retval = to<int> (p);
-        const int min = arg->defaults.i.min;
-        const int max = arg->defaults.i.max;
+
+        // Check to see if there are any alpha characters in here
+        // - If a single character at the end, use as integer multiplier
+        //   - Unless there's a dot point before the multiplier; in which case,
+        //     parse the number as a float, multiply, then cast to integer
+        // - If a single 'e' or 'E' in the middle, parse as float and convert to integer
+        size_t alpha_count = 0;
+        bool alpha_is_last = false;
+        bool contains_dotpoint = false;
+        char alpha_char = 0;
+        for (const char* c = p; *c; ++c) {
+          if (std::isalpha (*c)) {
+            ++alpha_count;
+            alpha_is_last = true;
+            alpha_char = *c;
+          } else {
+            alpha_is_last = false;
+          }
+          if (*c == '.')
+            contains_dotpoint = true;
+        }
+        if (alpha_count > 1)
+          throw Exception ("error converting string " + str(p) + " to integer: too many letters");
+        int64_t retval = 0;
+        if (alpha_count) {
+          if (alpha_is_last) {
+            std::string num (p);
+            const char postfix = num.back();
+            num.pop_back();
+            int64_t multiplier = 1.0;
+            switch (postfix) {
+              case 'k': case 'K': multiplier = 1000; break;
+              case 'm': case 'M': multiplier = 1000000; break;
+              case 'b': case 'B': multiplier = 1000000000; break;
+              case 't': case 'T': multiplier = 1000000000000; break;
+              default: throw Exception ("error converting string " + str(p) + " to integer: unexpected postfix \'" + postfix + "\'");
+            }
+            if (contains_dotpoint) {
+              const default_type prefix = to<default_type> (num);
+              retval = std::round (prefix * default_type(multiplier));
+            } else {
+              retval = to<int64_t> (num) * multiplier;
+            }
+          } else if (alpha_char == 'e' || alpha_char == 'E') {
+            const default_type as_float = to<default_type> (p);
+            retval = std::round (as_float);
+          } else {
+            throw Exception ("error converting string " + str(p) + " to integer: unexpected character");
+          }
+        } else {
+          retval = to<int64_t> (p);
+        }
+
+        const int64_t min = arg->defaults.i.min;
+        const int64_t max = arg->defaults.i.max;
         if (retval < min || retval > max) {
           std::string msg ("value supplied for ");
           if (opt) msg += std::string ("option \"") + opt->id;
@@ -607,11 +1139,11 @@ namespace MR
 
 
 
-    App::ParsedArgument::operator float () const
+    default_type App::ParsedArgument::as_float () const
     {
-      const float retval = to<float> (p);
-      const float min = arg->defaults.f.min;
-      const float max = arg->defaults.f.max;
+      const default_type retval = to<default_type> (p);
+      const default_type min = arg->defaults.f.min;
+      const default_type max = arg->defaults.f.max;
       if (retval < min || retval > max) {
         std::string msg ("value supplied for ");
         if (opt) msg += std::string ("option \"") + opt->id;
@@ -624,25 +1156,7 @@ namespace MR
     }
 
 
-
-
-    App::ParsedArgument::operator double () const
-    {
-      const double retval = to<double> (p);
-      const double min = arg->defaults.f.min;
-      const double max = arg->defaults.f.max;
-      if (retval < min || retval > max) {
-        std::string msg ("value supplied for ");
-        if (opt) msg += std::string ("option \"") + opt->id;
-        else msg += std::string ("argument \"") + arg->id;
-        msg += "\" is out of bounds (valid range: " + str (min) + " to " + str (max) + ", value supplied: " + str (retval) + ")";
-        throw Exception (msg);
-      }
-
-      return retval;
-    }
   }
-
 }
 
 

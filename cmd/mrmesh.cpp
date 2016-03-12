@@ -1,29 +1,23 @@
 /*
-    Copyright 2012 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-    Written by Robert E. Smith, 09/04/2015.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "command.h"
 
-#include "image/buffer.h"
-#include "image/filter/optimal_threshold.h"
+#include "image.h"
+#include "filter/optimal_threshold.h"
 #include "mesh/mesh.h"
 #include "mesh/vox2mesh.h"
 
@@ -64,21 +58,14 @@ void run ()
 
   if (get_options ("blocky").size()) {
 
-    Image::Buffer<bool> input_data (argument[0]);
-    auto input_voxel = input_data.voxel();
-    Mesh::vox2mesh (input_voxel, mesh);
+    auto input = Image<bool>::open (argument[0]);
+    Mesh::vox2mesh (input, mesh);
 
   } else {
 
-    Image::Buffer<float> input_data (argument[0]);
-    auto input_voxel = input_data.voxel();
-    float threshold;
-    Options opt = get_options ("threshold");
-    if (opt.size())
-      threshold = opt[0][0];
-    else
-      threshold = Image::Filter::estimate_optimal_threshold (input_voxel);
-    Mesh::vox2mesh_mc (input_voxel, threshold, mesh);
+    auto input = Image<float>::open (argument[0]);
+    float threshold = get_option_value ("threshold", Filter::estimate_optimal_threshold (input));
+    Mesh::vox2mesh_mc (input, threshold, mesh);
 
   }
 

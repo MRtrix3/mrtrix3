@@ -1,32 +1,23 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-    Written by J-Donald Tournier, 27/06/08.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
-
-#include <fstream>
 
 #include "command.h"
 #include "progressbar.h"
-#include "get_set.h"
-#include "image/buffer_preload.h"
-#include "image/voxel.h"
+#include "image.h"
+#include "interp/linear.h"
 #include "thread_queue.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -42,9 +33,9 @@ void usage ()
   + "apply a normalisation map to a tracks file.";
 
   ARGUMENTS
-  + Argument ("tracks", "the input track file.").type_file_in()
+  + Argument ("tracks", "the input track file.").type_tracks_in()
   + Argument ("transform", "the image containing the transform.").type_image_in()
-  + Argument ("output", "the output track file").type_file_out();
+  + Argument ("output", "the output track file").type_tracks_out();
 }
 
 
@@ -73,8 +64,8 @@ class Loader
 class Warper
 {
   public:
-    Warper (const Image::BufferPreload<value_type>::voxel_type& warp_voxel) :
-      interp (warp_voxel) { }
+    Warper (const Image<value_type>& warp) :
+      interp (warp) { }
 
     bool operator () (const TrackType& in, TrackType& out) {
       out.resize (in.size());
@@ -83,19 +74,19 @@ class Warper
       return true;
     }
 
-    Point<value_type> pos (const Point<value_type>& x) {
-      Point<value_type> p;
-      if (!interp.scanner (x)) {
-        interp[3] = 0; p[0] = interp.value();
-        interp[3] = 1; p[1] = interp.value();
-        interp[3] = 2; p[2] = interp.value();
+    Eigen::Matrix<value_type,3,1> pos (const Eigen::Matrix<value_type,3,1>& x) {
+      Eigen::Matrix<value_type,3,1> p;
+      if (interp.scanner (x)) {
+        interp.index(3) = 0; p[0] = interp.value();
+        interp.index(3) = 1; p[1] = interp.value();
+        interp.index(3) = 2; p[2] = interp.value();
       }
       return p;
     }
 
 
   protected:
-    Image::Interp::Linear<Image::BufferPreload<value_type>::voxel_type> interp;
+    Interp::Linear< Image<value_type> > interp;
 };
 
 
@@ -104,7 +95,7 @@ class Writer
 {
   public:
     Writer (const std::string& file, const Tractography::Properties& properties) :
-      progress ("normalising tracks..."),
+      progress ("normalising tracks"),
       writer (file, properties) { }
 
     bool operator() (const TrackType& item) {
@@ -127,9 +118,8 @@ void run ()
 {
   Loader loader (argument[0]);
 
-  Image::BufferPreload<value_type> data (argument[1]);
-  auto vox = data.voxel();
-  Warper warper (vox);
+  auto data = Image<value_type>::open (argument[1]).with_direct_io (3);
+  Warper warper (data);
 
   Writer writer (argument[2], loader.properties);
 

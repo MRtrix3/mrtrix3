@@ -1,35 +1,24 @@
 /*
-    Copyright 2009 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-    Written by J-Donald Tournier, 03/12/09.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "command.h"
-#include "image/voxel.h"
-#include "image/buffer.h"
-#include "image/buffer_scratch.h"
+#include "image.h"
 #include "memory.h"
 #include "math/rng.h"
-#include "image/loop.h"
-#include "image/threaded_loop.h"
-#include "image/threaded_copy.h"
-#include "image/stride.h"
+#include "algo/threaded_copy.h"
 
 
 using namespace MR;
@@ -148,11 +137,6 @@ OPTIONS
 typedef float real_type;
 typedef cfloat complex_type;
 
-typedef Image::Buffer<real_type>::voxel_type real_vox_type;
-typedef Image::Buffer<complex_type>::voxel_type complex_vox_type;
-
-
-
 
 /**********************************************************************
   STACK FRAMEWORK:
@@ -171,38 +155,37 @@ class Chunk : public std::vector<complex_type> {
 class ThreadLocalStorageItem {
   public:
     Chunk chunk;
-    copy_ptr<complex_vox_type> vox;
+    copy_ptr<Image<complex_type>> image;
 };
 
 class ThreadLocalStorage : public std::vector<ThreadLocalStorageItem> {
   public:
 
-      void load (Chunk& chunk, complex_vox_type& vox) {
-        for (size_t n = 0; n < vox.ndim(); ++n)
-          if (vox.dim(n) > 1)
-            vox[n] = (*iter)[n];
+      void load (Chunk& chunk, Image<complex_type>& image) {
+        for (size_t n = 0; n < image.ndim(); ++n)
+          if (image.size(n) > 1)
+            image.index(n) = iter->index(n);
 
         size_t n = 0;
-        for (size_t y = 0; y < dim[1]; ++y) {
-          if (axes[1] < vox.ndim()) if (vox.dim(axes[1]) > 1) vox[axes[1]] = y;
-          for (size_t x = 0; x < dim[0]; ++x) {
-            if (axes[0] < vox.ndim()) if (vox.dim(axes[0]) > 1) vox[axes[0]] = x;
-            chunk[n++] = vox.value();
+        for (size_t y = 0; y < size[1]; ++y) {
+          if (axes[1] < image.ndim()) if (image.size (axes[1]) > 1) image.index(axes[1]) = y;
+          for (size_t x = 0; x < size[0]; ++x) {
+            if (axes[0] < image.ndim()) if (image.size (axes[0]) > 1) image.index(axes[0]) = x;
+            chunk[n++] = image.value();
           }
         }
       }
 
     Chunk& next () {
       ThreadLocalStorageItem& item ((*this)[current++]);
-      if (item.vox) load (item.chunk, *item.vox);
+      if (item.image) load (item.chunk, *item.image);
       return item.chunk;
     }
 
-    void reset (const Image::Iterator& current_position) { current = 0; iter = &current_position; }
+    void reset (const Iterator& current_position) { current = 0; iter = &current_position; }
 
-    const Image::Iterator* iter;
-    std::vector<size_t> axes;
-    std::vector<size_t> dim;
+    const Iterator* iter;
+    std::vector<size_t> axes, size;
 
   private:
     size_t current;
@@ -226,44 +209,45 @@ class StackEntry {
     void load () {
       if (!arg) 
         return;
-      auto search = buffer_list.find (arg);
-      if (search != buffer_list.end()) {
-        DEBUG (std::string ("image \"") + arg + "\" already loaded - re-using exising buffer");
-        buffer = search->second;
-        return;
+      auto search = image_list.find (arg);
+      if (search != image_list.end()) {
+        DEBUG (std::string ("image \"") + arg + "\" already loaded - re-using exising image");
+        image = search->second;
       }
-      try {
-        buffer.reset (new Image::Buffer<complex_type> (arg));
-        buffer_list.insert (std::make_pair (arg, buffer));
-      }
-      catch (Exception) {
-        std::string a = lowercase (arg);
-        if      (a ==  "nan")  { value =  std::numeric_limits<real_type>::quiet_NaN(); }
-        else if (a == "-nan")  { value = -std::numeric_limits<real_type>::quiet_NaN(); }
-        else if (a ==  "inf")  { value =  std::numeric_limits<real_type>::infinity(); }
-        else if (a == "-inf")  { value = -std::numeric_limits<real_type>::infinity(); }
-        else if (a == "rand")  { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = false; } 
-        else if (a == "randn") { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = true; } 
-        else                   { value =  to<complex_type> (arg); }
+      else {
+        try {
+          image.reset (new Image<complex_type> (Header::open (arg).get_image<complex_type>()));
+          image_list.insert (std::make_pair (arg, image));
+        }
+        catch (Exception) {
+          std::string a = lowercase (arg);
+          if      (a ==  "nan")  { value =  std::numeric_limits<real_type>::quiet_NaN(); }
+          else if (a == "-nan")  { value = -std::numeric_limits<real_type>::quiet_NaN(); }
+          else if (a ==  "inf")  { value =  std::numeric_limits<real_type>::infinity(); }
+          else if (a == "-inf")  { value = -std::numeric_limits<real_type>::infinity(); }
+          else if (a == "rand")  { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = false; } 
+          else if (a == "randn") { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = true; } 
+          else                   { value =  to<complex_type> (arg); }
+        }
       }
       arg = nullptr;
     }
 
     const char* arg;
     std::shared_ptr<Evaluator> evaluator;
-    std::shared_ptr<Image::Buffer<complex_type> > buffer;
+    std::shared_ptr<Image<complex_type>> image;
     copy_ptr<Math::RNG> rng;
     complex_type value;
     bool rng_gausssian;
 
     bool is_complex () const;
 
-    static std::map<std::string, std::shared_ptr<Image::Buffer<complex_type>>> buffer_list;
+    static std::map<std::string, std::shared_ptr<Image<complex_type>>> image_list;
 
     Chunk& evaluate (ThreadLocalStorage& storage) const;
 };
 
-std::map<std::string, std::shared_ptr<Image::Buffer<complex_type>>> StackEntry::buffer_list;
+std::map<std::string, std::shared_ptr<Image<complex_type>>> StackEntry::image_list;
 
 
 class Evaluator
@@ -305,8 +289,9 @@ class Evaluator
 
 
 inline bool StackEntry::is_complex () const {
-  if (buffer) return buffer->datatype().is_complex();
+  if (image) return image->original_header().datatype().is_complex();
   if (evaluator) return evaluator->is_complex();
+  if (rng) return false;
   return value.imag() != 0.0;
 }
 
@@ -340,9 +325,7 @@ inline Chunk& StackEntry::evaluate (ThreadLocalStorage& storage) const
 
 inline void replace (std::string& orig, size_t n, const std::string& value)
 {
-  if (value[0] == '(' && orig[orig.size()-1] == ')') {
-    if (value[value.size()-1] != ')')
-      throw Exception ("fixme: unexpected brackets!");
+  if (orig[0] == '(' && orig[orig.size()-1] == ')') {
     size_t pos = orig.find ("(%"+str(n+1)+")");
     if (pos != orig.npos) {
       orig.replace (pos, 4, value);
@@ -362,8 +345,8 @@ inline void replace (std::string& orig, size_t n, const std::string& value)
 // later:
 std::string operation_string (const StackEntry& entry) 
 {
-  if (entry.buffer)
-    return entry.buffer->name();
+  if (entry.image)
+    return entry.image->name();
   else if (entry.rng)
     return entry.rng_gausssian ? "randn()" : "rand()";
   else if (entry.evaluator) {
@@ -488,8 +471,8 @@ void unary_operation (const std::string& operation_name, std::vector<StackEntry>
     throw Exception ("no operand in stack for operation \"" + operation_name + "\"!");
   StackEntry& a (stack[stack.size()-1]);
   a.load();
-  if (a.evaluator || a.buffer) {
-    StackEntry entry (new UnaryEvaluator<Operation> (operation_name, operation, stack.back()));
+  if (a.evaluator || a.image || a.rng) {
+    StackEntry entry (new UnaryEvaluator<Operation> (operation_name, operation, a));
     stack.back() = entry;
   }
   else {
@@ -515,8 +498,8 @@ void binary_operation (const std::string& operation_name, std::vector<StackEntry
   StackEntry& b (stack[stack.size()-1]);
   a.load();
   b.load();
-  if (a.evaluator || a.buffer || b.evaluator || b.buffer) {
-    StackEntry entry (new BinaryEvaluator<Operation> (operation_name, operation, stack[stack.size()-2], stack[stack.size()-1]));
+  if (a.evaluator || a.image || a.rng || b.evaluator || b.image || b.rng) {
+    StackEntry entry (new BinaryEvaluator<Operation> (operation_name, operation, a, b));
     stack.pop_back();
     stack.back() = entry;
   }
@@ -542,8 +525,8 @@ void ternary_operation (const std::string& operation_name, std::vector<StackEntr
   a.load();
   b.load();
   c.load();
-  if (a.evaluator || a.buffer || b.evaluator || b.buffer || c.evaluator || c.buffer) {
-    StackEntry entry (new TernaryEvaluator<Operation> (operation_name, operation, stack[stack.size()-3], stack[stack.size()-2], stack[stack.size()-1]));
+  if (a.evaluator || a.image || a.rng || b.evaluator || b.image || b.rng || c.evaluator || c.image || c.rng) {
+    StackEntry entry (new TernaryEvaluator<Operation> (operation_name, operation, a, b, c));
     stack.pop_back();
     stack.pop_back();
     stack.back() = entry;
@@ -566,7 +549,7 @@ void ternary_operation (const std::string& operation_name, std::vector<StackEntr
  **********************************************************************/
 
 
-void get_header (const StackEntry& entry, Image::Header& header) 
+void get_header (const StackEntry& entry, Header& header) 
 {
   if (entry.evaluator) {
     for (size_t n = 0; n < entry.evaluator->operands.size(); ++n)
@@ -574,22 +557,22 @@ void get_header (const StackEntry& entry, Image::Header& header)
     return;
   }
 
-  if (!entry.buffer) 
+  if (!entry.image) 
     return;
 
   if (header.ndim() == 0) {
-    header = *entry.buffer;
+    header = entry.image->original_header();
     return;
   }
 
-  if (header.ndim() < entry.buffer->ndim()) 
-    header.set_ndim (entry.buffer->ndim());
-  for (size_t n = 0; n < std::min (header.ndim(), entry.buffer->ndim()); ++n) {
-    if (header.dim(n) > 1 && entry.buffer->dim(n) > 1 && header.dim(n) != entry.buffer->dim(n))
+  if (header.ndim() < entry.image->ndim()) 
+    header.set_ndim (entry.image->ndim());
+  for (size_t n = 0; n < std::min (header.ndim(), entry.image->ndim()); ++n) {
+    if (header.size(n) > 1 && entry.image->size(n) > 1 && header.size(n) != entry.image->size(n))
       throw Exception ("dimensions of input images do not match - aborting");
-    header.dim(n) = std::max (header.dim(n), entry.buffer->dim(n));
-    if (!std::isfinite (header.vox(n))) 
-      header.vox(n) = entry.buffer->vox(n);
+    header.size(n) = std::max (header.size(n), entry.image->size(n));
+    if (!std::isfinite (header.spacing(n))) 
+      header.spacing(n) = entry.image->spacing(n);
   }
 
 }
@@ -602,16 +585,16 @@ void get_header (const StackEntry& entry, Image::Header& header)
 class ThreadFunctor {
   public:
     ThreadFunctor (
-        const Image::ThreadedLoop& threaded_loop,
+        const std::vector<size_t>& inner_axes,
         const StackEntry& top_of_stack, 
-        Image::Buffer<complex_type>& output_image) :
+        Image<complex_type>& output_image) :
       top_entry (top_of_stack),
-      vox (output_image),
-      loop (threaded_loop.inner_axes()) {
-        storage.axes = loop.axes();
-        storage.dim.push_back (vox.dim(storage.axes[0]));
-        storage.dim.push_back (vox.dim(storage.axes[1]));
-        chunk_size = vox.dim (storage.axes[0]) * vox.dim (storage.axes[1]);
+      image (output_image),
+      loop (Loop (inner_axes)) {
+        storage.axes = loop.axes;
+        storage.size.push_back (image.size(storage.axes[0]));
+        storage.size.push_back (image.size(storage.axes[1]));
+        chunk_size = image.size (storage.axes[0]) * image.size (storage.axes[1]);
         allocate_storage (top_entry);
       }
 
@@ -623,8 +606,8 @@ class ThreadFunctor {
       }
 
       storage.push_back (ThreadLocalStorageItem());
-      if (entry.buffer) {
-        storage.back().vox.reset (new complex_vox_type (*entry.buffer));
+      if (entry.image) {
+        storage.back().image.reset (new Image<complex_type> (*entry.image));
         storage.back().chunk.resize (chunk_size);
         return;
       }
@@ -635,22 +618,22 @@ class ThreadFunctor {
     }
 
 
-    void operator() (const Image::Iterator& iter) {
+    void operator() (const Iterator& iter) {
       storage.reset (iter);
-      Image::voxel_assign (vox, iter);
+      assign_pos_of (iter).to (image);
 
       Chunk& chunk = top_entry.evaluate (storage);
 
-      std::vector<complex_type>::const_iterator value (chunk.begin());
-      for (auto l = loop (vox); l; ++l) 
-        vox.value() = *(value++);
+      auto value = chunk.cbegin();
+      for (auto l = loop (image); l; ++l) 
+        image.value() = *(value++);
     }
 
 
 
     const StackEntry& top_entry;
-    complex_vox_type vox;
-    Image::LoopInOrder loop;
+    Image<complex_type> image;
+    decltype (Loop (std::vector<size_t>())) loop;
     ThreadLocalStorage storage;
     size_t chunk_size;
 };
@@ -661,13 +644,29 @@ class ThreadFunctor {
 
 void run_operations (const std::vector<StackEntry>& stack) 
 {
-  if (!stack[1].arg)
-    throw Exception (std::string ("error opening output image \"") + stack[1].arg + "\"!");
-
-  Image::Header header;
+  Header header;
   get_header (stack[0], header);
-  if (header.ndim() == 0)
-    throw Exception ("no valid images supplied - cannot produce output image");
+
+  if (header.ndim() == 0) {
+    DEBUG ("no valid images supplied - assuming calculator mode");
+    if (stack.size() != 1) 
+      throw Exception ("too many operands left on stack!");
+
+    assert (!stack[0].evaluator);
+    assert (!stack[0].image);
+
+    print (str (stack[0].value) + "\n");
+    return;
+  }
+
+  if (stack.size() == 1) 
+    throw Exception ("output image not specified");
+
+  if (stack.size() > 2) 
+    throw Exception ("too many operands left on stack!");
+
+  if (!stack[1].arg)
+    throw Exception ("output image not specified");
 
   if (stack[0].is_complex()) {
     header.datatype() = DataType::from_command_line (DataType::CFloat32);
@@ -676,11 +675,11 @@ void run_operations (const std::vector<StackEntry>& stack)
   }
   else header.datatype() = DataType::from_command_line (DataType::Float32);
 
-  Image::Buffer<complex_type> output (stack[1].arg, header);
+  auto output = Header::create (stack[1].arg, header).get_image<complex_type>();
 
-  Image::ThreadedLoop loop ("computing: " + operation_string(stack[0]) + " ...", output, 0, output.ndim(), 2);
+  auto loop = ThreadedLoop ("computing: " + operation_string(stack[0]), output, 0, output.ndim(), 2);
 
-  ThreadFunctor functor (loop, stack[0], output);
+  ThreadFunctor functor (loop.inner_axes, stack[0], output);
   loop.run_outer (functor);
 }
 
@@ -1115,21 +1114,8 @@ void run () {
 
   }
 
-  //print_stack( stack);
-
-  if (stack.size() == 1) {
-    if (stack[0].evaluator || stack[0].buffer) 
-      throw Exception ("output image not specified");
-    print (str(stack[0].value) + "\n");
-    return;
-  }
-
-  if (stack.size() == 2) {
-    run_operations (stack);
-    return;
-  }
-
-  throw Exception ("stack is not empty!");
+  stack[0].load();
+  run_operations (stack);
 }
 
 

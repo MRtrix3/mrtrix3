@@ -1,31 +1,26 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-    Written by Robert E. Smith, 2012.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 
 #include <vector>
 #include <set>
 
 #include "command.h"
-#include "memory.h"
+#include "image.h"
+#include "thread_queue.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -36,16 +31,6 @@
 #include "dwi/tractography/connectome/mapper.h"
 #include "dwi/tractography/connectome/matrix.h"
 #include "dwi/tractography/connectome/tck2nodes.h"
-
-
-#include "image/buffer.h"
-#include "image/loop.h"
-#include "image/voxel.h"
-
-#include "thread_queue.h"
-
-
-
 
 
 using namespace MR;
@@ -65,7 +50,7 @@ void usage ()
   + "generate a connectome matrix from a streamlines file and a node parcellation image";
 
   ARGUMENTS
-  + Argument ("tracks_in",      "the input track file").type_file_in()
+  + Argument ("tracks_in",      "the input track file").type_tracks_in()
   + Argument ("nodes_in",       "the input node parcellation image").type_image_in()
   + Argument ("connectome_out", "the output .csv file containing edge weights").type_file_out();
 
@@ -88,29 +73,27 @@ void usage ()
   + Option ("vector", "output a vector representing connectivities from a given seed point to target nodes, "
                       "rather than a matrix of node-node connectivities");
 
-
-};
+}
 
 
 
 void run ()
 {
 
-  Image::Buffer<node_t> nodes_data (argument[1]);
-  auto nodes = nodes_data.voxel();
+  auto node_image = Image<node_t>::open (argument[1]);
 
   // First, find out how many segmented nodes there are, so the matrix can be pre-allocated
+  // Also check for node volume for all nodes
+  std::vector<uint32_t> node_volumes (1, 0);
   node_t max_node_index = 0;
-  Image::LoopInOrder loop (nodes);
-  for (auto i = loop (nodes); i; ++i) {
-    if (nodes.value() > max_node_index)
-      max_node_index = nodes.value();
+  for (auto i = Loop (node_image) (node_image); i; ++i) {
+    if (node_image.value() > max_node_index) {
+      max_node_index = node_image.value();
+      node_volumes.resize (max_node_index + 1, 0);
+    }
+    ++node_volumes[node_image.value()];
   }
 
-  // Check for node volume for all nodes
-  std::vector<uint32_t> node_volumes (max_node_index + 1);
-  for (auto i = loop (nodes); i; ++i) 
-    ++node_volumes[nodes.value()];
   std::set<node_t> missing_nodes;
   for (size_t i = 1; i != node_volumes.size(); ++i) {
     if (!node_volumes[i])
@@ -130,15 +113,15 @@ void run ()
   const bool vector_output = get_options ("vector").size();
 
   // Get the metric & assignment mechanism for connectome construction
-  std::unique_ptr<Metric_base>    metric    (load_metric (nodes_data));
-  std::unique_ptr<Tck2nodes_base> tck2nodes (load_assignment_mode (nodes_data));
+  std::unique_ptr<Metric_base>    metric    (load_metric (node_image));
+  std::unique_ptr<Tck2nodes_base> tck2nodes (load_assignment_mode (node_image));
 
   // Prepare for reading the track data
   Tractography::Properties properties;
   Tractography::Reader<float> reader (argument[0], properties);
 
   // Initialise classes in preparation for multi-threading
-  Mapping::TrackLoader loader (reader, properties["count"].empty() ? 0 : to<size_t>(properties["count"]), "Constructing connectome... ");
+  Mapping::TrackLoader loader (reader, properties["count"].empty() ? 0 : to<size_t>(properties["count"]), "Constructing connectome");
   Tractography::Connectome::Mapper mapper (*tck2nodes, *metric);
   Tractography::Connectome::Matrix connectome (max_node_index, vector_output);
 
@@ -171,7 +154,7 @@ void run ()
     connectome.zero_diagonal();
 
   connectome.write (argument[2]);
-  Options opt = get_options ("out_assignments");
+  auto opt = get_options ("out_assignments");
   if (opt.size())
     connectome.write_assignments (opt[0][0]);
 

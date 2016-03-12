@@ -1,23 +1,16 @@
 /*
-   Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-   Written by Robert E. Smith, 2014.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
  */
 
 #ifndef __dwi_tractography_editing_worker_h__
@@ -26,8 +19,6 @@
 
 #include <string>
 #include <vector>
-
-#include "point.h"
 
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/resample.h"
@@ -66,12 +57,12 @@ namespace MR {
               include_visited (properties.include.size(), false) { }
 
 
-            bool operator() (const Tractography::Streamline<>&, Tractography::Streamline<>&) const;
+            bool operator() (const Streamline<>&, Streamline<>&) const;
 
 
           private:
             const Tractography::Properties& properties;
-            Upsampler<> upsampler;
+            Upsampler upsampler;
             Downsampler downsampler;
             const bool inverse, ends_only;
 
@@ -80,7 +71,7 @@ namespace MR {
               public:
                 Thresholds (Tractography::Properties&);
                 Thresholds (const Thresholds&);
-                bool operator() (const Tractography::Streamline<>&) const;
+                bool operator() (const Streamline<>&) const;
               private:
                 float max_length, min_length;
                 float max_weight, min_weight;

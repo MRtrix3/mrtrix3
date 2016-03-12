@@ -1,23 +1,16 @@
 /*
-   Copyright 2010 Brain Research Institute, Melbourne, Australia
-
-   Written by J-Donald Tournier, 13/11/09.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
  */
 
 #include "file/config.h"
@@ -46,25 +39,25 @@ namespace MR
         const Entry maps[] = {
           Entry ("Gray", 
               "color.rgb = vec3 (amplitude);\n",
-              [] (float amplitude) { return Point<float> (amplitude, amplitude, amplitude); }),
+              [] (float amplitude) { return Eigen::Array3f (amplitude, amplitude, amplitude); }),
 
           Entry ("Hot", 
               "color.rgb = vec3 (2.7213 * amplitude, 2.7213 * amplitude - 1.0, 3.7727 * amplitude - 2.7727);\n",
-              [] (float amplitude) { return Point<float> (std::max (0.0f, std::min (1.0f, 2.7213f * amplitude)),
-                                                          std::max (0.0f, std::min (1.0f, 2.7213f * amplitude - 1.0f)),
-                                                          std::max (0.0f, std::min (1.0f, 3.7727f * amplitude - 2.7727f))); }),
+              [] (float amplitude) { return Eigen::Array3f (std::max (0.0f, std::min (1.0f, 2.7213f * amplitude)),
+                                                            std::max (0.0f, std::min (1.0f, 2.7213f * amplitude - 1.0f)),
+                                                            std::max (0.0f, std::min (1.0f, 3.7727f * amplitude - 2.7727f))); }),
 
           Entry ("Cool",
               "color.rgb = 1.0 - (vec3 (2.7213 * (1.0 - amplitude), 2.7213 * (1.0 - amplitude) - 1.0, 3.7727 * (1.0 - amplitude) - 2.7727));\n",
-              [] (float amplitude) { return Point<float> (std::max (0.0f, std::min (1.0f, 1.0f - (2.7213f * (1.0f - amplitude)))),
-                                                          std::max (0.0f, std::min (1.0f, 1.0f - (2.7213f * (1.0f - amplitude) - 1.0f))),
-                                                          std::max (0.0f, std::min (1.0f, 1.0f - (3.7727f * (1.0f - amplitude) - 2.7727f)))); }),
+              [] (float amplitude) { return Eigen::Array3f (std::max (0.0f, std::min (1.0f, 1.0f - (2.7213f * (1.0f - amplitude)))),
+                                                            std::max (0.0f, std::min (1.0f, 1.0f - (2.7213f * (1.0f - amplitude) - 1.0f))),
+                                                            std::max (0.0f, std::min (1.0f, 1.0f - (3.7727f * (1.0f - amplitude) - 2.7727f)))); }),
 
           Entry ("Jet", 
               "color.rgb = 1.5 - 4.0 * abs (1.0 - amplitude - vec3(0.25, 0.5, 0.75));\n",
-              [] (float amplitude) { return Point<float> (std::max (0.0f, std::min (1.0f, 1.5f - 4.0f * std::abs (1.0f - amplitude - 0.25f))),
-                                                          std::max (0.0f, std::min (1.0f, 1.5f - 4.0f * std::abs (1.0f - amplitude - 0.5f))),
-                                                          std::max (0.0f, std::min (1.0f, 1.5f - 4.0f * std::abs (1.0f - amplitude - 0.75f)))); }),
+              [] (float amplitude) { return Eigen::Array3f (std::max (0.0f, std::min (1.0f, 1.5f - 4.0f * std::abs (1.0f - amplitude - 0.25f))),
+                                                            std::max (0.0f, std::min (1.0f, 1.5f - 4.0f * std::abs (1.0f - amplitude - 0.5f))),
+                                                            std::max (0.0f, std::min (1.0f, 1.5f - 4.0f * std::abs (1.0f - amplitude - 0.75f)))); }),
 
           Entry ("Colour", 
               "color.rgb = amplitude * colourmap_colour;\n",
@@ -217,7 +210,7 @@ namespace MR
         {
           render (object.colourmap, inverted, object.scaling_min (), object.scaling_max (),
                   object.scaling_min (), object.display_range,
-                  Point<float> (object.colour[0] / 255.0f, object.colour[1] / 255.0f, object.colour[2] / 255.0f));
+                  Eigen::Array3f { object.colour[0] / 255.0f, object.colour[1] / 255.0f, object.colour[2] / 255.0f });
         }
 
 
@@ -225,7 +218,7 @@ namespace MR
         void Renderer::render (size_t colourmap, bool inverted,
                                float local_min_value, float local_max_value,
                                float global_min_value, float global_range,
-                               Point<float> colour)
+                               Eigen::Array3f colour)
         {
           if (!current_position) return;
           if (maps[colourmap].special) return;

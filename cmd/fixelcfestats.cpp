@@ -1,39 +1,29 @@
 /*
-    Copyright 2012 Brain Research Institute, Melbourne, Australia
-
-    Written by David Raffelt, 01/10/2012.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
  */
+
 #include "command.h"
 #include "progressbar.h"
 #include "thread_queue.h"
-#include "image/loop.h"
-#include "image/voxel.h"
-#include "image/buffer.h"
-#include "image/buffer_preload.h"
-#include "image/transform.h"
-#include "image/sparse/fixel_metric.h"
-#include "image/sparse/voxel.h"
-#include "math/math.h"
-#include "math/vector.h"
-#include "math/matrix.h"
+#include "algo/loop.h"
+#include "transform.h"
+#include "image.h"
+#include "sparse/fixel_metric.h"
+#include "sparse/keys.h"
+#include "sparse/image.h"
 #include "math/stats/permutation.h"
 #include "math/stats/glm.h"
-#include "timer.h"
 #include "stats/cfe.h"
 #include "stats/permtest.h"
 #include "dwi/tractography/file.h"
@@ -46,7 +36,7 @@
 using namespace MR;
 using namespace App;
 using namespace MR::DWI::Tractography::Mapping;
-using Image::Sparse::FixelMetric;
+using Sparse::FixelMetric;
 
 typedef float value_type;
 
@@ -57,6 +47,15 @@ void usage ()
   DESCRIPTION
   + "Fixel-based analysis using connectivity-based fixel enhancement and non-parametric permutation testing.";
 
+  REFERENCES
+  + "Raffelt, D.; Smith, RE.; Ridgway, GR.; Tournier, JD.; Vaughan, DN.; Rose, S.; Henderson, R.; Connelly, A." // Internal
+    "Connectivity-based fixel enhancement: Whole-brain statistical analysis of diffusion MRI measures in the presence of crossing fibres. \n"
+    "Neuroimage, 2015, 15(117):40-55\n"
+
+  + "* If using the -nonstationary option: \n"
+    "Salimi-Khorshidi, G. Smith, S.M. Nichols, T.E. \n"
+    "Adjusting the effect of nonstationarity in cluster-based and TFCE inference. \n"
+    "NeuroImage, 2011, 54(3), 2006-19\n" ;
 
   ARGUMENTS
   + Argument ("input", "a text file listing the file names of the input fixel images").type_file_in ()
@@ -68,7 +67,7 @@ void usage ()
 
   + Argument ("contrast", "the contrast vector, specified as a single row of weights").type_file_in ()
 
-  + Argument ("tracks", "the tracks used to determine fixel-fixel connectivity").type_file_in ()
+  + Argument ("tracks", "the tracks used to determine fixel-fixel connectivity").type_tracks_in ()
 
   + Argument ("output", "the filename prefix for all output.").type_text();
 
@@ -108,11 +107,6 @@ void usage ()
 
   + Option ("nperms_nonstationary", "the number of permutations used when precomputing the empirical statistic image for nonstationary correction (Default: 5000)")
   + Argument ("num").type_integer (1, 5000, 100000);
-
-  REFERENCES + "If using the -nonstationary option: \n"
-               "Salimi-Khorshidi, G. Smith, S.M. Nichols, T.E. Adjusting the effect of nonstationarity in cluster-based and TFCE inference. \n"
-               "Neuroimage, 2011, 54(3), 2006-19\n" ;
-
 }
 
 
@@ -120,19 +114,17 @@ void usage ()
 template <class VectorType>
 void write_fixel_output (const std::string& filename,
                          const VectorType data,
-                         const Image::Header& header,
-                         Image::BufferSparse<FixelMetric>::voxel_type& mask_vox,
-                         Image::BufferScratch<int32_t>::voxel_type& indexer_vox) {
-  Image::BufferSparse<FixelMetric> output (filename, header);
-  auto output_voxel = output.voxel();
-  Image::LoopInOrder loop (mask_vox);
-  for (loop.start (mask_vox, indexer_vox, output_voxel); loop.ok(); loop.next (mask_vox, indexer_vox, output_voxel)) {
-    output_voxel.value().set_size (mask_vox.value().size());
-    indexer_vox[3] = 0;
+                         const Header& header,
+                         Sparse::Image<FixelMetric>& mask_vox,
+                         Image<int32_t>& indexer_vox) {
+  Sparse::Image<FixelMetric> output (filename, header);
+  for (auto i = Loop (mask_vox)(mask_vox, indexer_vox, output); i; ++i) {
+    output.value().set_size (mask_vox.value().size());
+    indexer_vox.index(3) = 0;
     int32_t index = indexer_vox.value();
     for (size_t f = 0; f != mask_vox.value().size(); ++f, ++index) {
-     output_voxel.value()[f] = mask_vox.value()[f];
-     output_voxel.value()[f].value = data[index];
+     output.value()[f] = mask_vox.value()[f];
+     output.value()[f].value = data[index];
     }
   }
 }
@@ -141,57 +133,24 @@ void write_fixel_output (const std::string& filename,
 
 void run() {
 
-  Options opt = get_options ("negative");
+  auto opt = get_options ("negative");
   bool compute_negative_contrast = opt.size() ? true : false;
 
-  opt = get_options ("cfe_dh");
-  value_type cfe_dh = 0.1;
-  if (opt.size())
-    cfe_dh = opt[0][0];
+  value_type cfe_dh = get_option_value ("cfe_dh", 0.1);
+  value_type cfe_h = get_option_value ("cfe_h", 3.0);
+  value_type cfe_e = get_option_value ("cfe_e", 2.0);
+  value_type cfe_c = get_option_value ("cfe_c", 0.5);
+  int num_perms = get_option_value ("nperms", 5000);
+  value_type angular_threshold = get_option_value ("angle", 30.0);
+  const float angular_threshold_dp = cos (angular_threshold * (M_PI/180.0));
 
-  opt = get_options ("cfe_h");
-  value_type cfe_h = 3.0;
-  if (opt.size())
-    cfe_h = opt[0][0];
-
-  opt = get_options ("cfe_e");
-  value_type cfe_e = 2.0;
-  if (opt.size())
-    cfe_e = opt[0][0];
-
-  opt = get_options ("cfe_c");
-  value_type cfe_c = 0.5;
-  if (opt.size())
-    cfe_c = opt[0][0];
-
-  opt = get_options ("nperms");
-  int num_perms = 5000;
-  if (opt.size())
-    num_perms = opt[0][0];
-
-  value_type angular_threshold = 30.0;
-  opt = get_options ("angle");
-  if (opt.size())
-    angular_threshold = opt[0][0];
-  const float angular_threshold_dp = cos (angular_threshold * (Math::pi/180.0));
-
-  value_type connectivity_threshold = 0.01;
-  opt = get_options ("connectivity");
-  if (opt.size())
-    connectivity_threshold = opt[0][0];
-
-  value_type smooth_std_dev = 10.0 / 2.3548;
-  opt = get_options ("smooth");
-  if (opt.size())
-    smooth_std_dev = value_type(opt[0][0]) / 2.3548;
+  value_type connectivity_threshold = get_option_value ("connectivity", 0.01);
+  value_type smooth_std_dev = get_option_value ("smooth", 10.0) / 2.3548;
 
   bool do_nonstationary_adjustment = get_options ("nonstationary").size();
 
-  opt = get_options ("nperms_nonstationary");
-  int nperms_nonstationary = 5000;
-  if (opt.size())
-    num_perms = opt[0][0];
-
+  int nperms_nonstationary = get_option_value ("nperms_nonstationary", 5000);
+  
   // Read filenames
   std::vector<std::string> filenames;
   {
@@ -210,50 +169,41 @@ void run() {
   }
 
   // Load design matrix:
-  Math::Matrix<value_type> design;
-  design.load (argument[2]);
-  if (design.rows() != filenames.size())
-    throw Exception ("number of subjects does not match number of rows in design matrix");
+  Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> design = load_matrix<value_type> (argument[2]);
+  if (design.rows() != (ssize_t)filenames.size())
+    throw Exception ("number of input files does not match number of rows in design matrix");
 
   // Load contrast matrix:
-  Math::Matrix<value_type> contrast;
-  contrast.load (argument[3]);
+  Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> contrast = load_matrix<value_type> (argument[3]);
+  if (contrast.cols() != design.cols())
+    throw Exception ("the number of contrasts does not equal the number of columns in the design matrix");
 
-  if (contrast.columns() > design.columns())
-    throw Exception ("too many contrasts for design matrix");
-  contrast.resize (contrast.rows(), design.columns());
-
-  Image::Header input_header (argument[1]);
-  Image::BufferSparse<FixelMetric> mask (input_header);
-  auto mask_vox = mask.voxel();
+  auto input_header = Header::open (argument[1]);
+  Sparse::Image<FixelMetric> mask_fixel_image (argument[1]);
 
   // Create an image to store the fixel indices, if we had a fixel scratch buffer this would be cleaner
-  Image::Header index_header (input_header);
+  Header index_header (input_header);
   index_header.set_ndim(4);
-  index_header.dim(3) = 2;
-  Image::BufferScratch<int32_t> fixel_indexer (index_header);
-  auto indexer_vox = fixel_indexer.voxel();
-  Image::LoopInOrder loop4D (indexer_vox);
-  for (loop4D.start (indexer_vox); loop4D.ok(); loop4D.next (indexer_vox))
-    indexer_vox.value() = -1;
+  index_header.size(3) = 2;
+  auto fixel_index_image = Image<int32_t>::scratch (index_header);
+  for (auto i = Loop ()(fixel_index_image);i; ++i)
+    fixel_index_image.value() = -1;
 
-  std::vector<Point<value_type> > positions;
-  std::vector<Point<value_type> > directions;
+  std::vector<Eigen::Vector3> positions;
+  std::vector<Eigen::Vector3f> directions;
 
-  Image::Transform image_transform (indexer_vox);
-  Image::LoopInOrder loop (mask_vox);
-  for (loop.start (mask_vox, indexer_vox); loop.ok(); loop.next (mask_vox, indexer_vox)) {
-    indexer_vox[3] = 0;
-    indexer_vox.value() = directions.size();
+  Transform image_transform (mask_fixel_image);
+  for (auto i = Loop (mask_fixel_image)(mask_fixel_image, fixel_index_image); i; ++i) {
+    fixel_index_image.index(3) = 0;
+    fixel_index_image.value() = directions.size();
     int32_t fixel_count = 0;
-    for (size_t f = 0; f != mask_vox.value().size(); ++f, ++fixel_count) {
-      directions.push_back (mask_vox.value()[f].dir);
-      Point<value_type> pos;
-      image_transform.voxel2scanner (mask_vox, pos);
-      positions.push_back (pos);
+    for (size_t f = 0; f != mask_fixel_image.value().size(); ++f, ++fixel_count) {
+      directions.push_back (mask_fixel_image.value()[f].dir);
+      Eigen::Vector3 pos (mask_fixel_image.index(0), mask_fixel_image.index(1), mask_fixel_image.index(2));
+      positions.push_back (image_transform.voxel2scanner * pos);
     }
-    indexer_vox[3] = 1;
-    indexer_vox.value() = fixel_count;
+    fixel_index_image.index(3) = 1;
+    fixel_index_image.value() = fixel_count;
   }
 
   uint32_t num_fixels = directions.size();
@@ -274,11 +224,11 @@ void run() {
     WARN ("more than 1 million tracks should be used to ensure robust fixel-fixel connectivity");
   {
     typedef DWI::Tractography::Mapping::SetVoxelDir SetVoxelDir;
-    DWI::Tractography::Mapping::TrackLoader loader (track_file, num_tracks, "pre-computing fixel-fixel connectivity...");
+    DWI::Tractography::Mapping::TrackLoader loader (track_file, num_tracks, "pre-computing fixel-fixel connectivity");
     DWI::Tractography::Mapping::TrackMapperBase mapper (input_header);
     mapper.set_upsample_ratio (DWI::Tractography::Mapping::determine_upsample_ratio (input_header, properties, 0.333f));
     mapper.set_use_precise_mapping (true);
-    Stats::CFE::TrackProcessor tract_processor (fixel_indexer, directions, fixel_TDI, connectivity_matrix, angular_threshold);
+    Stats::CFE::TrackProcessor tract_processor (fixel_index_image, directions, fixel_TDI, connectivity_matrix, angular_threshold);
     Thread::run_queue (
         loader,
         Thread::batch (DWI::Tractography::Streamline<float>()),
@@ -296,10 +246,10 @@ void run() {
   value_type gaussian_const1 = 1.0;
   if (smooth_std_dev > 0.0) {
     do_smoothing = true;
-    gaussian_const1 = 1.0 / (smooth_std_dev *  std::sqrt (2.0 * Math::pi));
+    gaussian_const1 = 1.0 / (smooth_std_dev *  std::sqrt (2.0 * M_PI));
   }
   {
-    ProgressBar progress ("normalising and thresholding fixel-fixel connectivity matrix...", num_fixels);
+    ProgressBar progress ("normalising and thresholding fixel-fixel connectivity matrix", num_fixels);
     for (unsigned int fixel = 0; fixel < num_fixels; ++fixel) {
       auto it = connectivity_matrix[fixel].begin();
       while (it != connectivity_matrix[fixel].end()) {
@@ -309,9 +259,9 @@ void run() {
         } else {
           if (do_smoothing) {
             value_type distance = std::sqrt (Math::pow2 (positions[fixel][0] - positions[it->first][0]) +
-                                              Math::pow2 (positions[fixel][1] - positions[it->first][1]) +
-                                              Math::pow2 (positions[fixel][2] - positions[it->first][2]));
-            value_type smoothing_weight = connectivity * gaussian_const1 * std::exp (-Math::pow2 (distance) / gaussian_const2);
+                                             Math::pow2 (positions[fixel][1] - positions[it->first][1]) +
+                                             Math::pow2 (positions[fixel][2] - positions[it->first][2]));
+            value_type smoothing_weight = connectivity * gaussian_const1 * std::exp (-std::pow (distance, 2) / gaussian_const2);
             if (smoothing_weight > connectivity_threshold)
               smoothing_weights[fixel].insert (std::pair<int32_t, value_type> (it->first, smoothing_weight));
           }
@@ -340,35 +290,34 @@ void run() {
   }
 
   // Load input data
-  Math::Matrix<value_type> data (num_fixels, filenames.size());
+  Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> data (num_fixels, filenames.size());
   {
-    ProgressBar progress ("loading input images...", filenames.size());
+    ProgressBar progress ("loading input images", filenames.size());
     for (size_t subject = 0; subject < filenames.size(); subject++) {
       LogLevelLatch log_level (0);
-      Image::BufferSparse<FixelMetric> fixel (filenames[subject]);
-      auto fixel_vox  = fixel.voxel();
-      Image::check_dimensions (fixel, mask, 0, 3);
+      Sparse::Image<FixelMetric> fixel (filenames[subject]);
+      check_dimensions (fixel, mask_fixel_image, 0, 3);
       std::vector<value_type> temp_fixel_data (num_fixels, 0.0);
 
-      for (loop.start (fixel_vox, indexer_vox); loop.ok(); loop.next (fixel_vox, indexer_vox)) {
-         indexer_vox[3] = 0;
-         int32_t index = indexer_vox.value();
-         indexer_vox[3] = 1;
-         int32_t number_fixels = indexer_vox.value();
+      for (auto voxel = Loop(fixel)(fixel, fixel_index_image); voxel; ++voxel) {
+         fixel_index_image.index(3) = 0;
+         int32_t index = fixel_index_image.value();
+         fixel_index_image.index(3) = 1;
+         int32_t number_fixels = fixel_index_image.value();
 
          // for each fixel in the mask, find the corresponding fixel in this subject voxel
          for (int32_t i = index; i < index + number_fixels; ++i) {
            value_type largest_dp = 0.0;
            int index_of_closest_fixel = -1;
-           for (size_t f = 0; f != fixel_vox.value().size(); ++f) {
-             value_type dp = std::abs (directions[i].dot(fixel_vox.value()[f].dir));
+           for (size_t f = 0; f != fixel.value().size(); ++f) {
+             value_type dp = std::abs (directions[i].dot(fixel.value()[f].dir));
              if (dp > largest_dp) {
                largest_dp = dp;
                index_of_closest_fixel = f;
              }
            }
            if (largest_dp > angular_threshold_dp)
-             temp_fixel_data[i] = fixel_vox.value()[index_of_closest_fixel].value;
+             temp_fixel_data[i] = fixel.value()[index_of_closest_fixel].value;
          }
        }
 
@@ -385,43 +334,40 @@ void run() {
   }
 
   {
-    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation...");
-    Math::Matrix<float> temp;
-
-    Math::Stats::GLM::solve_betas (data, design, temp);
-    for (size_t i = 0; i < contrast.columns(); ++i)
-      write_fixel_output (output_prefix + "beta" + str(i) + ".msf", temp.column (i), input_header, mask_vox, indexer_vox);
-
-    Math::Stats::GLM::abs_effect_size (data, design, contrast, temp);
-    write_fixel_output (output_prefix + "abs_effect.msf", temp.column(0), input_header, mask_vox, indexer_vox);
-    Math::Stats::GLM::std_effect_size (data, design, contrast, temp);
-    write_fixel_output (output_prefix + "std_effect.msf", temp.column(0), input_header, mask_vox, indexer_vox);
-    Math::Stats::GLM::stdev (data, design, temp);
-    write_fixel_output (output_prefix + "std_dev.msf", temp.column(0), input_header, mask_vox, indexer_vox);
+    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation");
+    auto temp = Math::Stats::GLM::solve_betas (data, design);
+    for (ssize_t i = 0; i < contrast.cols(); ++i)
+      write_fixel_output (output_prefix + "beta" + str(i) + ".msf", temp.row(i), input_header, mask_fixel_image, fixel_index_image);
+    temp = Math::Stats::GLM::abs_effect_size (data, design, contrast);
+    write_fixel_output (output_prefix + "abs_effect.msf", temp.row(0), input_header, mask_fixel_image, fixel_index_image);
+    temp = Math::Stats::GLM::std_effect_size (data, design, contrast);
+    write_fixel_output (output_prefix + "std_effect.msf", temp.row(0), input_header, mask_fixel_image, fixel_index_image);
+    temp = Math::Stats::GLM::stdev (data, design);
+    write_fixel_output (output_prefix + "std_dev.msf", temp.row(0), input_header, mask_fixel_image, fixel_index_image);
   }
 
   Math::Stats::GLMTTest glm_ttest (data, design, contrast);
   Stats::CFE::Enhancer cfe_integrator (connectivity_matrix, cfe_dh, cfe_e, cfe_h);
   std::shared_ptr<std::vector<double> > empirical_cfe_statistic;
 
-  Image::Header output_header (input_header);
-  output_header.comments().push_back ("num permutations = " + str(num_perms));
-  output_header.comments().push_back ("dh = " + str(cfe_dh));
-  output_header.comments().push_back ("cfe_e = " + str(cfe_e));
-  output_header.comments().push_back ("cfe_h = " + str(cfe_h));
-  output_header.comments().push_back ("cfe_c = " + str(cfe_c));
-  output_header.comments().push_back ("angular threshold = " + str(angular_threshold));
-  output_header.comments().push_back ("connectivity threshold = " + str(connectivity_threshold));
-  output_header.comments().push_back ("smoothing FWHM = " + str(smooth_std_dev));
+  Header output_header (input_header);
+  output_header.keyval()["num permutations"] = str(num_perms);
+  output_header.keyval()["dh"] = str(cfe_dh);
+  output_header.keyval()["cfe_e"] = str(cfe_e);
+  output_header.keyval()["cfe_h"] = str(cfe_h);
+  output_header.keyval()["cfe_c"] = str(cfe_c);
+  output_header.keyval()["angular threshold"] = str(angular_threshold);
+  output_header.keyval()["connectivity threshold"] = str(connectivity_threshold);
+  output_header.keyval()["smoothing FWHM"] = str(smooth_std_dev);
 
   // If performing non-stationarity adjustment we need to pre-compute the empirical CFE statistic
   if (do_nonstationary_adjustment) {
     empirical_cfe_statistic.reset(new std::vector<double> (num_fixels, 0.0));
     Stats::PermTest::precompute_empirical_stat (glm_ttest, cfe_integrator, nperms_nonstationary, *empirical_cfe_statistic);
-    output_header.comments().push_back ("nonstationary adjustment = true");
-    write_fixel_output (output_prefix + "cfe_empirical.msf", *empirical_cfe_statistic, output_header, mask_vox, indexer_vox);
+    output_header.keyval()["nonstationary adjustment"] = str(true);
+    write_fixel_output (output_prefix + "cfe_empirical.msf", *empirical_cfe_statistic, output_header, mask_fixel_image, fixel_index_image);
   } else {
-    output_header.comments().push_back ("nonstationary adjustment = false");
+    output_header.keyval()["nonstationary adjustment"] = str(false);
   }
 
   // Precompute default statistic and CFE statistic
@@ -433,21 +379,21 @@ void run() {
 
   Stats::PermTest::precompute_default_permutation (glm_ttest, cfe_integrator, empirical_cfe_statistic, cfe_output, cfe_output_neg, tvalue_output);
 
-  write_fixel_output (output_prefix + "cfe.msf", cfe_output, output_header, mask_vox, indexer_vox);
-  write_fixel_output (output_prefix + "tvalue.msf", tvalue_output, output_header, mask_vox, indexer_vox);
+  write_fixel_output (output_prefix + "cfe.msf", cfe_output, output_header, mask_fixel_image, fixel_index_image);
+  write_fixel_output (output_prefix + "tvalue.msf", tvalue_output, output_header, mask_fixel_image, fixel_index_image);
   if (compute_negative_contrast)
-    write_fixel_output (output_prefix + "cfe_neg.msf", *cfe_output_neg, output_header, mask_vox, indexer_vox);
+    write_fixel_output (output_prefix + "cfe_neg.msf", *cfe_output_neg, output_header, mask_fixel_image, fixel_index_image);
 
   // Perform permutation testing
   opt = get_options ("notest");
   if (!opt.size()) {
-    Math::Vector<value_type> perm_distribution (num_perms);
-    std::shared_ptr<Math::Vector<value_type> > perm_distribution_neg;
+    Eigen::Matrix<value_type, Eigen::Dynamic, 1> perm_distribution (num_perms);
+    std::shared_ptr<Eigen::Matrix<value_type, Eigen::Dynamic, 1> > perm_distribution_neg;
     std::vector<value_type> uncorrected_pvalues (num_fixels, 0.0);
     std::shared_ptr<std::vector<value_type> > uncorrected_pvalues_neg;
 
     if (compute_negative_contrast) {
-      perm_distribution_neg.reset (new Math::Vector<value_type> (num_perms));
+      perm_distribution_neg.reset (new Eigen::Matrix<value_type, Eigen::Dynamic, 1> (num_perms));
       uncorrected_pvalues_neg.reset (new std::vector<value_type> (num_fixels, 0.0));
     }
 
@@ -456,20 +402,20 @@ void run() {
                                        perm_distribution, perm_distribution_neg,
                                        uncorrected_pvalues, uncorrected_pvalues_neg);
 
-    ProgressBar progress ("outputting final results...");
-    perm_distribution.save (output_prefix + "perm_dist.txt");
+    ProgressBar progress ("outputting final results");
+    save_matrix (perm_distribution, output_prefix + "perm_dist.txt");
 
     std::vector<value_type> pvalue_output (num_fixels, 0.0);
     Math::Stats::statistic2pvalue (perm_distribution, cfe_output, pvalue_output);
-    write_fixel_output (output_prefix + "fwe_pvalue.msf", pvalue_output, output_header, mask_vox, indexer_vox);
-    write_fixel_output (output_prefix + "uncorrected_pvalue.msf", uncorrected_pvalues, output_header, mask_vox, indexer_vox);
+    write_fixel_output (output_prefix + "fwe_pvalue.msf", pvalue_output, output_header, mask_fixel_image, fixel_index_image);
+    write_fixel_output (output_prefix + "uncorrected_pvalue.msf", uncorrected_pvalues, output_header, mask_fixel_image, fixel_index_image);
 
     if (compute_negative_contrast) {
-      (*perm_distribution_neg).save (output_prefix + "perm_dist_neg.txt");
+      save_matrix (*perm_distribution_neg, output_prefix + "perm_dist_neg.txt");
       std::vector<value_type> pvalue_output_neg (num_fixels, 0.0);
       Math::Stats::statistic2pvalue (*perm_distribution_neg, *cfe_output_neg, pvalue_output_neg);
-      write_fixel_output (output_prefix + "fwe_pvalue_neg.msf", pvalue_output_neg, output_header, mask_vox, indexer_vox);
-      write_fixel_output (output_prefix + "uncorrected_pvalue_neg.msf", *uncorrected_pvalues_neg, output_header, mask_vox, indexer_vox);
+      write_fixel_output (output_prefix + "fwe_pvalue_neg.msf", pvalue_output_neg, output_header, mask_fixel_image, fixel_index_image);
+      write_fixel_output (output_prefix + "uncorrected_pvalue_neg.msf", *uncorrected_pvalues_neg, output_header, mask_fixel_image, fixel_index_image);
     }
   }
 }

@@ -1,28 +1,22 @@
 /*
-   Copyright 2014 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-   Written by David Raffelt, 2014
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+#include "gui/mrview/tool/vector.h"
 
 #include "mrtrix.h"
 #include "gui/mrview/window.h"
-#include "gui/mrview/tool/vector.h"
 #include "gui/mrview/tool/fixel.h"
 #include "gui/dialog/file.h"
 #include "gui/mrview/tool/list_model_base.h"
@@ -239,11 +233,13 @@ namespace MR
 
         void Vector::draw (const Projection& transform, bool is_3D, int, int)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           not_3D = !is_3D;
           for (int i = 0; i < fixel_list_model->rowCount(); ++i) {
             if (fixel_list_model->items[i]->show && !hide_all_button->isChecked())
               dynamic_cast<AbstractFixel*>(fixel_list_model->items[i].get())->render (transform);
           }
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
@@ -277,6 +273,7 @@ namespace MR
 
         void Vector::render_fixel_colourbar(const Tool::AbstractFixel& fixel)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           float min_value = fixel.use_discard_lower() ?
                       fixel.scaling_min_thresholded() :
                       fixel.scaling_min();
@@ -286,8 +283,10 @@ namespace MR
                       fixel.scaling_max();
 
           window().colourbar_renderer.render (fixel.colourmap, fixel.scale_inverted(),
-                                     min_value, max_value,
-                                     fixel.scaling_min(), fixel.display_range, fixel.colour);
+                                              min_value, max_value,
+                                              fixel.scaling_min(), fixel.display_range,
+                                              Eigen::Array3f { fixel.colour[0] / 255.0f, fixel.colour[1] / 255.0f, fixel.colour[2] / 255.0f });
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 

@@ -8,8 +8,8 @@ def runCommand(cmd, exitOnError=True):
   global mrtrix_bin_list
   
   if not mrtrix_bin_list:
-    mrtrix_bin_path = os.path.join(os.path.abspath(os.path.dirname(os.path.realpath(sys.argv[0]))), os.pardir, 'bin');
-    mrtrix_bin_list = [ f for f in os.listdir(mrtrix_bin_path) if not "__" in f ]
+    mrtrix_bin_path = os.path.join(os.path.abspath(os.path.dirname(os.path.realpath(sys.argv[0]))), os.pardir, 'release', 'bin');
+    mrtrix_bin_list = os.listdir(mrtrix_bin_path)
     
   if lib.app.lastFile:
     # Check to see if the last file produced is produced by this command;

@@ -1,22 +1,19 @@
 # MRtrix
 
-[![Build Status](https://travis-ci.org/MRtrix3/mrtrix3.svg?branch=master)](https://travis-ci.org/MRtrix3/mrtrix3)
+[![Build Status](https://travis-ci.org/MRtrix3/mrtrix3.svg?branch=updated_syntax)](https://travis-ci.org/MRtrix3/mrtrix3)
 
-The complete documentation for MRtrix will eventually be found on the [wiki](https://github.com/MRtrix3/mrtrix3/wiki),
-including a detailed decription of the installation procedure. The official website for MRtrix is www.mrtrix.org.
+Please visit the [official website for MRtrix](http://www.mrtrix.org) to access the [documentation for MRtrix3](http://mrtrix.readthedocs.org/), including detailed installation instructions. 
 
 ## Getting help 
 
-Support and general discussion is hosted on the [MRtrix3 Google+ Community
-page](https://plus.google.com/u/0/communities/111072048088633408015). Please
-address all MRtrix3-related queries there. You will need to create a Google+
-account if you don't already have one.
+Support and general discussion is hosted on the [MRtrix3 Community Forum](http://community.mrtrix.org/). Please
+address all MRtrix3-related queries there. You can use you GitHub or Google login to post questions. 
 
 ## Quick install
 
 1. Install dependencies by whichever means your system uses. 
    These include: Python (>=2.6), a C++ compiler, POSIX threads, 
-   GNU Scientific Library (GSL, >= 1.1), zlib, OpenGL (>=3), and Qt (>=4.8).
+   Eigen (>=3), zlib, OpenGL (>=3), and Qt (>=4.8 - >=5.1 on MacOSX).
 
 2. Clone Git repository and compile: 
 
@@ -29,11 +26,11 @@ account if you don't already have one.
 
     * Bash shell:
 
-            $ export PATH=/<edit as appropriate>/mrtrix3/bin:$PATH
+            $ export PATH=/<edit as appropriate>/mrtrix3/release/bin:$PATH
  
     * C shell:
 
-            $ setenv PATH /<edit as appropriate>/mrtrix3/bin:$PATH
+            $ setenv PATH /<edit as appropriate>/mrtrix3/release/bin:$PATH
 
 4. Test installation: 
 

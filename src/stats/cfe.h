@@ -1,28 +1,22 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-    Written by David Raffelt and Donald Tournier 23/07/11.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
  */
 #ifndef __stats_cfe_h__
 #define __stats_cfe_h__
 
 #include "math/math.h"
-#include "image/buffer_scratch.h"
+#include "image.h"
 #include "dwi/tractography/mapping/mapper.h"
 
 namespace MR
@@ -55,8 +49,8 @@ namespace MR
       class TrackProcessor {
 
         public:
-          TrackProcessor (Image::BufferScratch<int32_t>& fixel_indexer,
-                          const std::vector<Point<value_type> >& fixel_directions,
+          TrackProcessor (Image<int32_t>& fixel_indexer,
+                          const std::vector<Eigen::Matrix<value_type, 3, 1> >& fixel_directions,
                           std::vector<uint16_t>& fixel_TDI,
                           std::vector<std::map<int32_t, connectivity> >& connectivity_matrix,
                           value_type angular_threshold):
@@ -64,7 +58,7 @@ namespace MR
                           fixel_directions (fixel_directions),
                           fixel_TDI (fixel_TDI),
                           connectivity_matrix (connectivity_matrix) {
-            angular_threshold_dp = cos (angular_threshold * (Math::pi/180.0));
+            angular_threshold_dp = cos (angular_threshold * (M_PI/180.0));
           }
 
           bool operator () (SetVoxelDir& in)
@@ -72,16 +66,16 @@ namespace MR
             // For each voxel tract tangent, assign to a fixel
             std::vector<int32_t> tract_fixel_indices;
             for (SetVoxelDir::const_iterator i = in.begin(); i != in.end(); ++i) {
-              Image::Nav::set_pos (fixel_indexer, *i);
-              fixel_indexer[3] = 0;
+              assign_pos_of (*i).to (fixel_indexer);
+              fixel_indexer.index(3) = 0;
               int32_t first_index = fixel_indexer.value();
               if (first_index >= 0) {
-                fixel_indexer[3] = 1;
+                fixel_indexer.index(3) = 1;
                 int32_t last_index = first_index + fixel_indexer.value();
                 int32_t closest_fixel_index = -1;
                 value_type largest_dp = 0.0;
-                Point<value_type> dir (i->get_dir());
-                dir.normalise();
+                Eigen::Vector3f dir (i->get_dir());
+                dir.normalize();
                 for (int32_t j = first_index; j < last_index; ++j) {
                   value_type dp = std::abs (dir.dot (fixel_directions[j]));
                   if (dp > largest_dp) {
@@ -106,8 +100,8 @@ namespace MR
           }
 
         private:
-          Image::BufferScratch<int32_t>::voxel_type fixel_indexer;
-          const std::vector<Point<value_type> >& fixel_directions;
+          Image<int32_t> fixel_indexer;
+          const std::vector<Eigen::Vector3f>& fixel_directions;
           std::vector<uint16_t>& fixel_TDI;
           std::vector<std::map<int32_t, connectivity> >& connectivity_matrix;
           value_type angular_threshold_dp;

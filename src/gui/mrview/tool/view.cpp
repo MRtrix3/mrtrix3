@@ -1,24 +1,19 @@
 /*
-   Copyright 2009 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-   Written by J-Donald Tournier, 13/11/09.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+#include "gui/mrview/tool/view.h"
 
 #include "mrtrix.h"
 #include "math/math.h"
@@ -26,7 +21,6 @@
 #include "gui/mrview/mode/volume.h"
 #include "gui/mrview/mode/lightbox_gui.h"
 #include "gui/mrview/mode/lightbox.h"
-#include "gui/mrview/tool/view.h"
 #include "gui/mrview/adjust_button.h"
 
 #define FOV_RATE_MULTIPLIER 0.01f
@@ -126,17 +120,17 @@ namespace MR
               emit dataChanged (index, index);
             }
 
-            void reset (QModelIndex& index, const Image::InterpVoxelType& image, int proj) {
+            void reset (QModelIndex& index, const Image& image, int proj) {
               reset (planes[index.row()], image, proj);
             }
 
-            void reset (ClipPlane& p, const Image::InterpVoxelType& image, int proj) {
-              const Math::Matrix<float> M (image.transform());
+            void reset (ClipPlane& p, const Image& image, int proj) {
+              const transform_type& M (image.header().transform());
               p.plane[0] = M (proj, 0);
               p.plane[1] = M (proj, 1);
               p.plane[2] = M (proj, 2);
 
-              Point<> centre = image.voxel2scanner (Point<> (image.dim(0)/2.0f, image.dim(1)/2.0f, image.dim(2)/2.0f));
+              const Eigen::Vector3f centre = image.transform().voxel2scanner.cast<float>() * Eigen::Vector3f { image.header().size(0)/2.0f, image.header().size(1)/2.0f, image.header().size(2)/2.0f };
               p.plane[3] = centre[0]*p.plane[0] + centre[1]*p.plane[1] + centre[2]*p.plane[2];
               p.active = true;
 
@@ -149,7 +143,7 @@ namespace MR
               endRemoveRows();
             }
 
-            void add (const Image::InterpVoxelType& image, int proj) {
+            void add (const Image& image, int proj) {
               ClipPlane p;
               reset (p, image, proj);
               beginInsertRows (QModelIndex(), planes.size(), planes.size() + 1);
@@ -514,17 +508,17 @@ namespace MR
           focus_y->setRate (rate);
           focus_z->setRate (rate);
 
-          size_t dim = image->interp.ndim();
+          size_t dim = image->image.ndim();
           if(dim > 3) {
             volume_box->setVisible(true);
             vol_index->setEnabled(true);
-            vol_index->setMaximum(image->interp.dim(3) - 1);
-            vol_index->setValue(image->interp[3]);
+            vol_index->setMaximum(image->image.size(3) - 1);
+            vol_index->setValue(image->image.index(3));
 
             if(dim > 4) {
               vol_group->setEnabled(true);
-              vol_group->setMaximum(image->interp.dim(4) - 1);
-              vol_group->setValue(image->interp[4]);
+              vol_group->setMaximum(image->image.size(4) - 1);
+              vol_group->setValue(image->image.index(4));
             } else
               vol_group->setEnabled(false);
           } else {
@@ -566,7 +560,7 @@ namespace MR
           focus_y->setValue (focus[1]);
           focus_z->setValue (focus[2]);
 
-          focus = window().image()->interp.scanner2voxel (focus);
+          focus = window().image()->transform().scanner2voxel.cast<float>() * focus;
           voxel_x->setValue (focus[0]);
           voxel_y->setValue (focus[1]);
           voxel_z->setValue (focus[2]);
@@ -587,7 +581,7 @@ namespace MR
         void View::onSetFocus () 
         {
           try {
-            window().set_focus (Point<> (focus_x->value(), focus_y->value(), focus_z->value()));
+            window().set_focus (Eigen::Vector3f { focus_x->value(), focus_y->value(), focus_z->value() } );
             window().updateGL();
           }
           catch (Exception) { }
@@ -599,8 +593,8 @@ namespace MR
         void View::onSetVoxel ()
         {
           try {
-            Point<> focus (voxel_x->value(), voxel_y->value(), voxel_z->value());
-            focus = window().image()->interp.voxel2scanner (focus);
+            Eigen::Vector3f focus { voxel_x->value(), voxel_y->value(), voxel_z->value() };
+            focus = window().image()->transform().voxel2scanner.cast<float>() * focus;
             window().set_focus (focus);
             window().updateGL();
           }
@@ -788,19 +782,19 @@ namespace MR
 
         void View::clip_planes_add_axial_slot () 
         {
-          clip_planes_model->add (window().image()->interp, 2);
+          clip_planes_model->add (*(window().image()), 2);
           window().updateGL();
         }
 
         void View::clip_planes_add_sagittal_slot () 
         {
-          clip_planes_model->add (window().image()->interp, 0);
+          clip_planes_model->add (*(window().image()), 0);
           window().updateGL();
         }
 
         void View::clip_planes_add_coronal_slot () 
         {
-          clip_planes_model->add (window().image()->interp, 1);
+          clip_planes_model->add (*(window().image()), 1);
           window().updateGL();
         }
 
@@ -810,7 +804,7 @@ namespace MR
         {
           QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i) 
-            clip_planes_model->reset (indices[i], window().image()->interp, 2);
+            clip_planes_model->reset (indices[i], *(window().image()), 2);
           window().updateGL();
         }
 
@@ -819,7 +813,7 @@ namespace MR
         {
           QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i) 
-            clip_planes_model->reset (indices[i], window().image()->interp, 0);
+            clip_planes_model->reset (indices[i], *(window().image()), 0);
           window().updateGL();
         }
 
@@ -828,7 +822,7 @@ namespace MR
         {
           QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i) 
-            clip_planes_model->reset (indices[i], window().image()->interp, 1);
+            clip_planes_model->reset (indices[i], *(window().image()), 1);
           window().updateGL();
         }
 

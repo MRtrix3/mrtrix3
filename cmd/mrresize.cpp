@@ -1,29 +1,22 @@
 /*
-    Copyright 2012 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-    Written by David Raffelt, 10/08/2012.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "command.h"
-#include "image/buffer.h"
-#include "image/voxel.h"
-#include "image/filter/resize.h"
+#include "image.h"
+#include "filter/resize.h"
 #include "progressbar.h"
 
 
@@ -68,15 +61,15 @@ void usage ()
 
 void run () {
 
-  Image::Buffer<float> input_data (argument[0]);
-  auto input_vox = input_data.voxel();
 
-  Image::Filter::Resize resize_filter (input_vox);
+  auto input = Image<float>::open (argument[0]);
+
+  Filter::Resize resize_filter (input);
 
   size_t resize_option_count = 0;
 
-  std::vector<float> scale;
-  Options opt = get_options ("scale");
+  std::vector<default_type> scale;
+  auto opt = get_options ("scale");
   if (opt.size()) {
     scale = parse_floats (opt[0][0]);
     if (scale.size() == 1)
@@ -85,7 +78,7 @@ void run () {
     ++resize_option_count;
   }
 
-  std::vector<float> voxel_size;
+  std::vector<default_type> voxel_size;
   opt = get_options ("voxel");
   if (opt.size()) {
     voxel_size = parse_floats (opt[0][0]);
@@ -115,11 +108,9 @@ void run () {
   if (resize_option_count != 1)
     throw Exception ("only a single method can be used to resize the image (image resolution, voxel size or scale factor)");
 
-  Image::Header header (input_data);
-  header.info() = resize_filter.info();
-  header.datatype() = DataType::from_command_line (header.datatype());
-  Image::Buffer<float> output_data (argument[1], header);
-  auto output_vox = output_data.voxel();
+  Header header (resize_filter);
+  header.datatype() = DataType::from_command_line (DataType::from<float> ());
+  auto output = Image<float>::create (argument[1], header);
 
-  resize_filter (input_vox, output_vox);
+  resize_filter (input, output);
 }

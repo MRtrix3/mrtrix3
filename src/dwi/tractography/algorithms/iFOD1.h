@@ -1,29 +1,21 @@
 /*
-   Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-   Written by J-Donald Tournier and Robert E. Smith, 2011.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #ifndef __dwi_tractography_algorithms_iFOD1_h__
 #define __dwi_tractography_algorithms_iFOD1_h__
 
-#include "point.h"
 #include "math/SH.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
@@ -49,7 +41,7 @@ namespace MR
         public:
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
           SharedBase (diff_path, property_set),
-          lmax (Math::SH::LforN (source_buffer.dim(3))),
+          lmax (Math::SH::LforN (source.size(3))),
           max_trials (MAX_TRIALS),
           sin_max_angle (std::sin (max_angle)),
           mean_samples (0.0),
@@ -57,9 +49,12 @@ namespace MR
           max_max_truncation (0.0),
           num_proc (0) {
 
-          if (source_buffer.dim(3) != int (Math::SH::NforL (Math::SH::LforN (source_buffer.dim(3))))) 
-            throw Exception ("number of volumes in input data does not match that expected for a SH dataset");
-
+          try {
+            Math::SH::check (source);
+          } catch (Exception& e) {
+            e.display();
+            throw Exception ("Algorithm iFOD1 expects as input a spherical harmonic (SH) image");
+          }
 
           set_step_size (0.1);
           if (rk4) {
@@ -103,8 +98,8 @@ namespace MR
         }
 
         size_t lmax, max_trials;
-        value_type sin_max_angle;
-        Math::SH::PrecomputedAL<value_type> precomputer;
+        float sin_max_angle;
+        Math::SH::PrecomputedAL<float> precomputer;
 
         private:
         mutable double mean_samples, mean_truncations, max_max_truncation;
@@ -119,7 +114,7 @@ namespace MR
       iFOD1 (const Shared& shared) :
         MethodBase (shared),
         S (shared),
-        source (S.source_voxel),
+        source (S.source),
         mean_sample_num (0),
         num_sample_runs (0),
         num_truncations (0),
@@ -142,13 +137,13 @@ namespace MR
         if (!get_data (source))
           return (false);
 
-        if (!S.init_dir) {
+        if (!S.init_dir.allFinite()) {
 
-          const Point<Tracking::value_type> init_dir (dir);
+          const Eigen::Vector3f init_dir (dir);
 
           for (size_t n = 0; n < S.max_seed_attempts; n++) {
-            dir = init_dir.valid() ? rand_dir (init_dir) : random_direction();
-            value_type val = FOD (dir);
+            dir = init_dir.allFinite() ? rand_dir (init_dir) : random_direction();
+            float val = FOD (dir);
             if (std::isfinite (val))
               if (val > S.init_threshold)
                 return true;
@@ -157,7 +152,7 @@ namespace MR
         } 
         else {
           dir = S.init_dir;
-          value_type val = FOD (dir);
+          float val = FOD (dir);
           if (std::isfinite (val))
             if (val > S.init_threshold)
               return true;
@@ -174,18 +169,14 @@ namespace MR
         if (!get_data (source))
           return EXIT_IMAGE;
 
-        value_type max_val = 0.0;
-        size_t nan_count = 0;
+        float max_val = 0.0;
         for (size_t i = 0; i < calibrate_list.size(); ++i) {
-          value_type val = FOD (rotate_direction (dir, calibrate_list[i]));
+          float val = FOD (rotate_direction (dir, calibrate_list[i]));
           if (std::isnan (val))
-            ++nan_count;
+            return EXIT_IMAGE;
           else if (val > max_val)
             max_val = val;
         }
-
-        if (nan_count == calibrate_list.size())
-          return EXIT_IMAGE;
 
         if (max_val <= 0.0)
           return CALIBRATE_FAIL;
@@ -195,8 +186,8 @@ namespace MR
         num_sample_runs++;
 
         for (size_t n = 0; n < S.max_trials; n++) {
-          Point<value_type> new_dir = rand_dir (dir);
-          value_type val = FOD (new_dir);
+          Eigen::Vector3f new_dir = rand_dir (dir);
+          float val = FOD (new_dir);
 
           if (val > S.threshold) {
 
@@ -207,9 +198,9 @@ namespace MR
                 max_truncation = val/max_val;
             }
 
-            if (uniform_rng() < val/max_val) {
+            if (uniform(*rng) < val/max_val) {
               dir = new_dir;
-              dir.normalise();
+              dir.normalize();
               pos += S.step_size * dir;
               mean_sample_num += n;
               return CONTINUE;
@@ -230,13 +221,13 @@ namespace MR
 
       protected:
       const Shared& S;
-      Interpolator<SourceBufferType::voxel_type>::type source;
-      value_type calibrate_ratio;
+      Interpolator<Image<float>>::type source;
+      float calibrate_ratio;
       size_t mean_sample_num, num_sample_runs, num_truncations;
       float max_truncation;
-      std::vector< Point<value_type> > calibrate_list;
+      std::vector< Eigen::Vector3f > calibrate_list;
 
-      value_type FOD (const Point<value_type>& d) const
+      float FOD (const Eigen::Vector3f& d) const
       {
         return (S.precomputer ?
             S.precomputer.value (values, d) :
@@ -244,7 +235,7 @@ namespace MR
         );
       }
 
-      Point<value_type> rand_dir (const Point<value_type>& d) { return (random_direction (d, S.max_angle, S.sin_max_angle)); }
+      Eigen::Vector3f rand_dir (const Eigen::Vector3f& d) { return (random_direction (d, S.max_angle, S.sin_max_angle)); }
 
 
 
@@ -255,19 +246,19 @@ namespace MR
         public:
           Calibrate (iFOD1& method) :
             P (method),
-            fod (&P.values[0], P.source.dim(3))
+            fod (P.values)
           {
-            Math::SH::delta (fod, Point<value_type> (0.0, 0.0, 1.0), P.S.lmax);
+            Math::SH::delta (fod, Eigen::Vector3f (0.0, 0.0, 1.0), P.S.lmax);
           }
 
-          value_type operator() (value_type el)
+          float operator() (float el)
           {
-            return Math::SH::value (P.values, Point<value_type> (std::sin (el), 0.0, std::cos(el)), P.S.lmax);
+            return Math::SH::value (P.values, Eigen::Vector3f (std::sin (el), 0.0, std::cos(el)), P.S.lmax);
           }
 
         private:
           iFOD1& P;
-          Math::Vector<value_type> fod;
+          Eigen::VectorXf& fod;
       };
 
       friend void calibrate<iFOD1> (iFOD1& method);

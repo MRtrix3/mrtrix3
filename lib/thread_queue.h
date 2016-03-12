@@ -1,23 +1,16 @@
 /*
-   Copyright 2009 Brain Research Institute, Melbourne, Australia
-
-   Written by J-Donald Tournier, 14/10/09.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
  */
 
 
@@ -442,13 +435,13 @@ namespace MR
                   Q.unregister_writer();
                 }
                 //! Push the item onto the queue
-                bool write () {
+                FORCE_INLINE bool write () {
                   return Q.push (p);
                 }
-                T& operator*() const throw ()   {
+                FORCE_INLINE T& operator*() const throw ()   {
                   return *p;
                 }
-                T* operator->() const throw ()  {
+                FORCE_INLINE T* operator->() const throw ()  {
                   return p;
                 }
               private:
@@ -509,16 +502,16 @@ namespace MR
                   Q.unregister_reader();
                 }
                 //! Get next item from the queue
-                bool read () {
+                FORCE_INLINE bool read () {
                   return Q.pop (p);
                 }
-                T& operator*() const throw ()   {
+                FORCE_INLINE T& operator*() const throw ()   {
                   return *p;
                 }
-                T* operator->() const throw ()  {
+                FORCE_INLINE T* operator->() const throw ()  {
                   return p;
                 }
-                bool operator! () const throw () {
+                FORCE_INLINE bool operator! () const throw () {
                   return !p;
                 }
               private:
@@ -590,24 +583,24 @@ namespace MR
           }
         }
 
-        bool empty () const {
+        FORCE_INLINE bool empty () const {
           return (front == back);
         }
-        bool full () const {
+        FORCE_INLINE bool full () const {
           return (inc (back) == front);
         }
-        size_t size () const {
+        FORCE_INLINE size_t size () const {
           return ( (back < front ? back+capacity : back) - front);
         }
 
-        T* get_item () {
+        FORCE_INLINE T* get_item () {
           std::lock_guard<std::mutex> lock (mutex);
           T* item (new T);
           items.push_back (std::unique_ptr<T> (item));
           return item;
         }
 
-        bool push (T*& item) {
+        FORCE_INLINE bool push (T*& item) {
           {
             std::unique_lock<std::mutex> lock (mutex);
             more_space.wait (lock, [this]{ return !(full() && reader_count); });
@@ -627,7 +620,7 @@ namespace MR
           return true;
         }
 
-        bool pop (T*& item) {
+        FORCE_INLINE bool pop (T*& item) {
           {
             std::unique_lock<std::mutex> lock (mutex);
             if (item) 
@@ -643,7 +636,7 @@ namespace MR
           return true;
         }
 
-        T** inc (T** p) const {
+        FORCE_INLINE T** inc (T** p) const {
           ++p;
           if (p >= buffer + capacity) p = buffer;
           return p;
@@ -688,7 +681,7 @@ namespace MR
                     batch_item.write();
                   }
                 }
-                bool write () {
+                FORCE_INLINE bool write () {
                   if (++n >= batch_size) {
                     if (!batch_item.write()) 
                       return false;
@@ -697,10 +690,10 @@ namespace MR
                   }
                   return true;
                 }
-                T& operator*() const throw ()   {
+                FORCE_INLINE T& operator*() const throw ()   {
                   return (*batch_item)[n];
                 }
-                T* operator->() const throw ()  {
+                FORCE_INLINE T* operator->() const throw ()  {
                   return &((*batch_item)[n]);
                 }
               private:
@@ -725,7 +718,7 @@ namespace MR
             {
               public:
                 Item (const Reader& reader) : batch_item (reader.batch_reader), batch_size (reader.batch_size), n (0) { }
-                bool read () {
+                FORCE_INLINE bool read () {
                   if (!batch_item) 
                     return batch_item.read();
 
@@ -736,10 +729,10 @@ namespace MR
                   }
                   return true;
                 }
-                T& operator*() const throw ()   {
+                FORCE_INLINE T& operator*() const throw ()   {
                   return (*batch_item)[n];
                 }
-                T* operator->() const throw ()  {
+                FORCE_INLINE T* operator->() const throw ()  {
                   return &((*batch_item)[n]);
                 }
               private:
@@ -752,7 +745,7 @@ namespace MR
             const size_t batch_size;
         };
 
-        void status () { batch_queue.status(); }
+        FORCE_INLINE void status () { batch_queue.status(); }
 
 
       private:

@@ -1,30 +1,23 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-    Written by David Raffelt, 2014
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 
 #include "command.h"
-#include "image/loop.h"
-#include "image/buffer.h"
-#include "image/voxel.h"
+#include "image.h"
+#include "algo/loop.h"
 
 using namespace MR;
 using namespace App;
@@ -60,21 +53,19 @@ void usage ()
 
 void run ()
 {
+  Header input_header = Header::open (argument[0]);
+  auto input = input_header.get_image<float>();
 
-  Image::Header input_header (argument[0]);
-  Image::Buffer<float> input_data (input_header);
-  auto input_voxel = input_data.voxel();
+  ssize_t bounds[3][2] = { {0, input_header.size (0) - 1},
+                       {0, input_header.size (1) - 1},
+                       {0, input_header.size (2) - 1} };
 
-  int bounds[3][2] = { {0, input_header.dim (0) - 1},
-                       {0, input_header.dim (1) - 1},
-                       {0, input_header.dim (2) - 1} };
+  ssize_t padding[3][2] = { {0, 0}, {0, 0}, {0, 0} };
 
-  int padding[3][2] = { {0, 0}, {0, 0}, {0, 0} };
-
-  Options opt = get_options ("uniform");
+  auto opt = get_options ("uniform");
   if (opt.size()) {
-    int pad = opt[0][0];
-    for (int axis = 0; axis < 3; axis++) {
+    ssize_t pad = opt[0][0];
+    for (size_t axis = 0; axis < 3; axis++) {
       padding[axis][0] = pad;
       padding[axis][1] = pad;
     }
@@ -83,37 +74,35 @@ void run ()
   opt = get_options ("axis");
   for (size_t i = 0; i != opt.size(); ++i) {
     // Manual padding of axis overrides uniform padding
-    const int axis  = opt[i][0];
+    const size_t axis  = opt[i][0];
     padding[axis][0] = opt[i][1];
     padding[axis][1] = opt[i][2];
   }
 
-  Image::Header output_header (input_header);
-  Math::Matrix<float> output_transform (input_header.transform());
-  for (int axis = 0; axis < 3; ++axis) {
-    output_header.dim (axis) = output_header.dim(axis) + padding[axis][0] + padding[axis][1];
-    output_transform (axis, 3) +=	(output_transform (axis, 0) * (bounds[0][0] - padding[0][0]) * input_header.vox (0))
-                                + (output_transform (axis, 1) * (bounds[1][0] - padding[0][0]) * input_header.vox (1))
-                                + (output_transform (axis, 2) * (bounds[2][0] - padding[0][0]) * input_header.vox (2));
+  Header output_header (input_header);
+  auto output_transform = input_header.transform();
+  for (size_t axis = 0; axis < 3; ++axis) {
+    output_header.size (axis) = output_header.size(axis) + padding[axis][0] + padding[axis][1];
+    output_transform (axis, 3) +=	(output_transform (axis, 0) * (bounds[0][0] - padding[0][0]) * input_header.spacing (0))
+                                + (output_transform (axis, 1) * (bounds[1][0] - padding[0][0]) * input_header.spacing (1))
+                                + (output_transform (axis, 2) * (bounds[2][0] - padding[0][0]) * input_header.spacing (2));
   }
   output_header.transform() = output_transform;
-  Image::Buffer<float> output_data (argument[1], output_header);
-  auto output_voxel = output_data.voxel();
+  auto output = Image<float>::create (argument[1], output_header);
 
-  Image::Loop loop ("padding image...");
-  for (loop.start (output_voxel); loop.ok(); loop.next (output_voxel)) {
+  for (auto l = Loop ("padding image... ", output) (output); l; ++l) {
     bool in_bounds = true;
-    for (int axis = 0; axis < 3; ++axis) {
-      input_voxel[axis] = output_voxel[axis] - padding[axis][0];
-      if (input_voxel[axis] < 0 || input_voxel[axis] >= input_header.dim (axis))
+    for (size_t axis = 0; axis < 3; ++axis) {
+      input.index(axis) = output.index(axis) - padding[axis][0];
+      if (input.index(axis) < 0 || input.index(axis) >= input_header.size (axis))
         in_bounds = false;
     }
-    if (input_voxel.ndim() > 3)
-      input_voxel[3] = output_voxel[3];
+    if (input.ndim() > 3)
+      input.index (3) = output.index (3);
     if (in_bounds)
-      output_voxel.value() = input_voxel.value();
+      output.value() = input.value();
     else
-      output_voxel.value() = 0;
+      output.value() = 0;
   }
 
 }

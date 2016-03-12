@@ -1,29 +1,21 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-    Written by Robert E. Smith, 06/02/14.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 
 #include <vector>
-
-#include <gsl/gsl_fit.h>
 
 #include "app.h"
 #include "bitset.h"
@@ -32,12 +24,9 @@
 #include "progressbar.h"
 #include "memory.h"
 
-#include "image/buffer.h"
-#include "image/buffer_scratch.h"
-#include "image/header.h"
-#include "image/loop.h"
-#include "image/utils.h"
-#include "image/voxel.h"
+#include "header.h"
+#include "image.h"
+#include "algo/loop.h"
 
 #include "math/SH.h"
 
@@ -92,22 +81,18 @@ void usage ()
 
 // Perform a linear regression on the power ratio in each order
 // Omit l=2 - tends to be abnormally small due to non-isotropic brain-wide fibre distribution
-// Use this to project the power ratio at either l=0 or l=lmax (depending on the gradient);
-//   this has proven to be a better predictor of SH basis for poor data
-// Also, if the regression has a substantial gradient, warn the user
-// Threshold on gradient will depend on the basis of the image
-//
 std::pair<float, float> get_regression (const std::vector<float>& ratios)
 {
   const size_t n = ratios.size() - 1;
-  double x[n], y[n];
+  Eigen::VectorXf Y (n), b (2);
+  Eigen::MatrixXf A (n, 2);
   for (size_t i = 1; i != ratios.size(); ++i) {
-    x[i-1] = (2*i)+2;
-    y[i-1] = ratios[i];
+    Y[i-1] = ratios[i];
+    A(i-1,0) = 1.0f;
+    A(i-1,1) = (2*i)+2;
   }
-  double c0, c1, cov00, cov01, cov11, sumsq;
-  gsl_fit_linear (x, 1, y, 1, n, &c0, &c1, &cov00, &cov01, &cov11, &sumsq);
-  return std::make_pair (c0, c1);
+  b = (A.transpose() * A).ldlt().solve (A.transpose() * Y);
+  return std::make_pair (b[0], b[1]);
 }
 
 
@@ -115,37 +100,34 @@ std::pair<float, float> get_regression (const std::vector<float>& ratios)
 
 
 template <typename value_type>
-void check_and_update (Image::Header& H, const conv_t conversion)
+void check_and_update (Header& H, const conv_t conversion)
 {
 
-  const size_t lmax = Math::SH::LforN (H.dim(3));
+  const size_t N = H.size(3);
+  const size_t lmax = Math::SH::LforN (N);
 
   // Flag which volumes are m==0 and which are not
-  const ssize_t N = H.dim(3);
   BitSet mzero_terms (N, false);
   for (size_t l = 2; l <= lmax; l += 2)
     mzero_terms[Math::SH::index (l, 0)] = true;
 
   // Open in read-write mode if there's a chance of modification
-  typename Image::Buffer<value_type> buffer (H, (conversion != NONE));
-  auto v = buffer.voxel();
+  auto image = H.get_image<value_type> (true);
 
   // Need to mask out voxels where the DC term is zero
-  Image::Info info_mask (H);
-  info_mask.set_ndim (3);
-  info_mask.datatype() = DataType::Bit;
-  Image::BufferScratch<bool> mask (info_mask);
-  auto v_mask = mask.voxel();
+  Header header_mask (H);
+  header_mask.set_ndim (3);
+  header_mask.datatype() = DataType::Bit;
+  auto mask = Image<bool>::scratch (header_mask);
   size_t voxel_count = 0;
   {
-    Image::LoopInOrder loop (v, "Masking image based on DC term...", 0, 3);
-    for (auto i = loop (v, v_mask); i; ++i) {
-      const value_type value = v.value();
+    for (auto i = Loop ("Masking image based on DC term", image, 0, 3) (image, mask); i; ++i) {
+      const value_type value = image.value();
       if (value && std::isfinite (value)) {
-        v_mask.value() = true;
+        mask.value() = true;
         ++voxel_count;
       } else {
-        v_mask.value() = false;
+        mask.value() = false;
       }
     }
   }
@@ -157,33 +139,32 @@ void check_and_update (Image::Header& H, const conv_t conversion)
   // volumes independently, and report ratio for each harmonic order
   std::unique_ptr<ProgressBar> progress;
   if (App::log_level > 0 && App::log_level < 2)
-    progress.reset (new ProgressBar ("Evaluating SH basis of image \"" + H.name() + "\"...", N-1));
+    progress.reset (new ProgressBar ("Evaluating SH basis of image \"" + H.name() + "\"", N-1));
 
   std::vector<float> ratios;
 
   for (size_t l = 2; l <= lmax; l += 2) {
 
     double mzero_sum = 0.0, mnonzero_sum = 0.0;
-    Image::LoopInOrder loop (v, 0, 3);
-    for (v[3] = ssize_t (Math::SH::NforL(l-2)); v[3] != ssize_t (Math::SH::NforL(l)); ++v[3]) {
+    for (image.index(3) = ssize_t (Math::SH::NforL(l-2)); image.index(3) != ssize_t (Math::SH::NforL(l)); ++image.index(3)) {
       double sum = 0.0;
-      for (auto i = loop (v, v_mask); i; ++i) {
-        if (v_mask.value())
-          sum += Math::pow2 (value_type(v.value()));
+      for (auto i = Loop (image, 0, 3) (image, mask); i; ++i) {
+        if (mask.value())
+          sum += Math::pow2 (value_type(image.value()));
       }
-      if (mzero_terms[v[3]]) {
+      if (mzero_terms[image.index(3)]) {
         mzero_sum += sum;
-        DEBUG ("Volume " + str(v[3]) + ", m==0, sum " + str(sum));
+        DEBUG ("Volume " + str(image.index(3)) + ", m==0, sum " + str(sum));
       } else {
         mnonzero_sum += sum;
-        DEBUG ("Volume " + str(v[3]) + ", m!=0, sum " + str(sum));
+        DEBUG ("Volume " + str(image.index(3)) + ", m!=0, sum " + str(sum));
       }
       if (progress)
       ++*progress;
     }
 
     const double mnonzero_MSoS = mnonzero_sum / (2.0 * l);
-    const float power_ratio = mnonzero_MSoS/mzero_sum;
+    const float power_ratio = mnonzero_MSoS / mzero_sum;
     ratios.push_back (power_ratio);
 
     INFO ("SH order " + str(l) + ", ratio of m!=0 to m==0 power: " + str(power_ratio) +
@@ -298,12 +279,11 @@ void check_and_update (Image::Header& H, const conv_t conversion)
   // Adjust the image data in-place if necessary
   if (multiplier && (multiplier != 1.0)) {
 
-    Image::LoopInOrder loop (v, 0, 3);
-    ProgressBar progress ("Modifying SH basis of image \"" + H.name() + "\"...", N-1);
-    for (v[3] = 1; v[3] != N; ++v[3]) {
-      if (!mzero_terms[v[3]]) {
-        for (auto i = loop (v); i; ++i) 
-          v.value() *= multiplier;
+    ProgressBar progress ("Modifying SH basis of image \"" + H.name() + "\"", N-1);
+    for (image.index(3) = 1; image.index(3) != ssize_t(N); ++image.index(3)) {
+      if (!mzero_terms[image.index(3)]) {
+        for (auto i = Loop (image, 0, 3) (image); i; ++i)
+          image.value() *= multiplier;
       }
       ++progress;
     }
@@ -325,7 +305,7 @@ void check_and_update (Image::Header& H, const conv_t conversion)
 void run ()
 {
   conv_t conversion = NONE;
-  Options opt = get_options ("convert");
+  auto opt = get_options ("convert");
   if (opt.size()) {
     switch (int(opt[0][0])) {
       case 0: conversion = OLD; break;
@@ -346,7 +326,7 @@ void run ()
   for (std::vector<ParsedArgument>::const_iterator i = argument.begin(); i != argument.end(); ++i) {
 
     const std::string path = *i;
-    Image::Header H (path);
+    Header H = Header::open (path);
     try {
       Math::SH::check (H);
     }

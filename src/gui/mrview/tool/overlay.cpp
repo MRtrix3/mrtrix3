@@ -1,30 +1,24 @@
 /*
-   Copyright 2009 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-   Written by J-Donald Tournier, 13/11/09.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+#include "gui/mrview/tool/overlay.h"
 
 #include "mrtrix.h"
-#include "gui/mrview/image.h"
+#include "gui/mrview/gui_image.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/slice.h"
-#include "gui/mrview/tool/overlay.h"
 #include "gui/dialog/file.h"
 #include "gui/mrview/tool/list_model_base.h"
 
@@ -41,7 +35,7 @@ namespace MR
 
         class Overlay::Item : public Image {
           public:
-            Item (const MR::Image::Header& H) : Image (H) { }
+            Item (MR::Header&& H) : Image (std::move (H)) { }
             Mode::Slice::Shader slice_shader; 
         };
 
@@ -52,7 +46,7 @@ namespace MR
             Model (QObject* parent) : 
               ListModelBase (parent) { }
 
-            void add_items (std::vector<std::unique_ptr<MR::Image::Header>>& list);
+            void add_items (std::vector<std::unique_ptr<MR::Header>>& list);
 
             Item* get_image (QModelIndex& index) {
               return dynamic_cast<Item*>(items[index.row()].get());
@@ -60,11 +54,11 @@ namespace MR
         };
 
 
-        void Overlay::Model::add_items (std::vector<std::unique_ptr<MR::Image::Header>>& list)
+        void Overlay::Model::add_items (std::vector<std::unique_ptr<MR::Header>>& list)
         {
           beginInsertRows (QModelIndex(), items.size(), items.size()+list.size());
           for (size_t i = 0; i < list.size(); ++i) {
-            Item* overlay = new Item (*list[i]);
+            Item* overlay = new Item (std::move (*list[i]));
             overlay->set_allowed_features (true, true, false);
             if (!overlay->colourmap) 
               overlay->colourmap = 1;
@@ -200,9 +194,9 @@ namespace MR
           std::vector<std::string> overlay_names = Dialog::File::get_images (this, "Select overlay images to open");
           if (overlay_names.empty())
             return;
-          std::vector<std::unique_ptr<MR::Image::Header>> list;
+          std::vector<std::unique_ptr<MR::Header>> list;
           for (size_t n = 0; n < overlay_names.size(); ++n)
-            list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (overlay_names[n])));
+            list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (overlay_names[n]))));
 
           add_images (list);
         }
@@ -211,7 +205,7 @@ namespace MR
 
 
 
-        void Overlay::add_images (std::vector<std::unique_ptr<MR::Image::Header>>& list) 
+        void Overlay::add_images (std::vector<std::unique_ptr<MR::Header>>& list)
         {
           size_t previous_size = image_list_model->rowCount();
           image_list_model->add_items (list);
@@ -242,6 +236,7 @@ namespace MR
 
         void Overlay::draw (const Projection& projection, bool is_3D, int, int)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if (!is_3D) {
             // set up OpenGL environment:
             gl::Enable (gl::BLEND);
@@ -274,6 +269,7 @@ namespace MR
             gl::Enable (gl::DEPTH_TEST);
             gl::DepthMask (gl::TRUE_);
           }
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
@@ -403,8 +399,9 @@ namespace MR
                         image.scaling_max();
 
             window().colourbar_renderer.render (image.colourmap, image.scale_inverted(),
-                                       min_value, max_value,
-                                       image.scaling_min(), image.display_range, image.colour);
+                                                min_value, max_value,
+                                                image.scaling_min(), image.display_range,
+                                                Eigen::Vector3f { image.colour[0] / 255.0f, image.colour[1] / 255.0f, image.colour[2] / 255.0f });
         }
 
 
@@ -429,8 +426,8 @@ namespace MR
           QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
           if (indices.size() != 1) return;
           Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[0]));
-          if (overlay->info().ndim() < 4) return;
-          overlay->interp[3] = volume_selecter->value();
+          if (overlay->header().ndim() < 4) return;
+          overlay->image.index(3) = volume_selecter->value();
           if (overlay->show)
             updateGL();
         }
@@ -599,10 +596,10 @@ namespace MR
 
           if (indices.size() == 1) {
             Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[0]));
-            if (overlay->info().ndim() == 4 && overlay->info().dim(3) > 1) {
+            if (overlay->header().ndim() == 4 && overlay->header().size(3) > 1) {
               volume_label->setEnabled (true);
-              volume_selecter->setMaximum (overlay->info().dim(3)-1);
-              volume_selecter->setValue (overlay->interp[3]);
+              volume_selecter->setMaximum (overlay->header().size(3)-1);
+              volume_selecter->setValue (overlay->image.index(3));
               volume_selecter->setEnabled (true);
             } else {
               volume_selecter->setMaximum (0);
@@ -656,6 +653,10 @@ namespace MR
             + Option ("overlay.opacity", "Sets the overlay opacity to floating value [0-1].")
             +   Argument ("value").type_float (0.0, 1.0, 1.0)
 
+            + Option ("overlay.interpolation_on", "Enables overlay image interpolation.")
+
+            + Option ("overlay.interpolation_off", "Disables overlay image interpolation.")
+
             + Option ("overlay.colourmap", "Sets the colourmap of the overlay as indexed in the colourmap dropdown menu.")
             +   Argument ("index").type_integer();
             
@@ -664,8 +665,8 @@ namespace MR
         bool Overlay::process_commandline_option (const MR::App::ParsedOption& opt) 
         {
           if (opt.opt->is ("overlay.load")) {
-            std::vector<std::unique_ptr<MR::Image::Header>> list;
-            try { list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (opt[0]))); }
+            std::vector<std::unique_ptr<MR::Header>> list;
+            try { list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (opt[0])))); }
             catch (Exception& e) { e.display(); }
             add_images (list);
             return true;
@@ -678,6 +679,16 @@ namespace MR
             }
             catch (Exception& e) { e.display(); }
             return true;
+          }
+
+          if (opt.opt->is ("overlay.interpolation_on")) {
+            interpolate_check_box->setCheckState (Qt::Checked);
+            interpolate_changed();
+          }
+
+          if (opt.opt->is ("overlay.interpolation_off")) {
+            interpolate_check_box->setCheckState (Qt::Unchecked);
+            interpolate_changed();
           }
 
           if (opt.opt->is ("overlay.colourmap")) {

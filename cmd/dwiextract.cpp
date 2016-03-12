@@ -1,32 +1,24 @@
 /*
-   Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-   Written by David Raffelt, 2012.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
  */
+
 
 #include "command.h"
 #include "progressbar.h"
-#include "image/voxel.h"
+#include "image.h"
 #include "dwi/gradient.h"
-#include "image/loop.h"
-#include "image/buffer.h"
-#include "image/buffer_preload.h"
+#include "algo/loop.h"
 
 
 using namespace MR;
@@ -38,7 +30,7 @@ typedef float value_type;
 void usage ()
 {
 
-  AUTHOR = "David Raffelt (d.raffelt@brain.org.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   DESCRIPTION
     + "Extract either diffusion-weighted volumes or b=0 volumes from an image containing both";
@@ -54,16 +46,15 @@ void usage ()
 }
 
 void run() {
-  Image::BufferPreload<float> data_in (argument[0], Image::Stride::contiguous_along_axis (3));
-  auto voxel_in = data_in.voxel();
+  auto input_image = Image<float>::open (argument[0]).with_direct_io (3);
 
-  Math::Matrix<value_type> grad (DWI::get_valid_DW_scheme<float> (data_in));
+  Eigen::MatrixXd grad = DWI::get_valid_DW_scheme (input_image);
 
   // Want to support non-shell-like data if it's just a straight extraction
   //   of all dwis or all bzeros i.e. don't initialise the Shells class
   std::vector<size_t> volumes;
   bool bzero = get_options ("bzero").size();
-  Options opt = get_options ("shell");
+  auto opt = get_options ("shell");
   if (opt.size()) {
     DWI::Shells shells (grad);
     shells.select_shells (false, false);
@@ -76,53 +67,49 @@ void run() {
     bzero = (shells.count() == 1 && shells[0].is_bzero());
   } else {
     const float bzero_threshold = File::Config::get_float ("BValueThreshold", 10.0);
-    for (size_t row = 0; row != grad.rows(); ++row) {
+    for (ssize_t row = 0; row != grad.rows(); ++row) {
       if ((bzero && (grad (row, 3) < bzero_threshold)) || (!bzero && (grad (row, 3) > bzero_threshold)))
         volumes.push_back (row);
     }
   }
 
-  if (volumes.empty())
-    throw Exception ("No " + str(bzero ? "b=0" : "dwi") + " volumes present");
+  if (volumes.empty()) {
+    auto type = (bzero) ? "b=0" : "dwi";
+    throw Exception ("No " + str(type) + " volumes present");
+  }
 
   std::sort (volumes.begin(), volumes.end());
 
-  Image::Header header (data_in);
+  Header header (input_image);
 
   if (volumes.size() == 1)
     header.set_ndim (3);
   else
-    header.dim (3) = volumes.size();
+    header.size (3) = volumes.size();
 
-  Math::Matrix<value_type> new_grad (volumes.size(), grad.columns());
+  Eigen::MatrixXd new_grad (volumes.size(), grad.cols());
   for (size_t i = 0; i < volumes.size(); i++)
     new_grad.row (i) = grad.row (volumes[i]);
-  header.DW_scheme() = new_grad;
+  header.set_DW_scheme (new_grad);
 
-  Image::Buffer<value_type> data_out (argument[1], header);
-  auto voxel_out = data_out.voxel();
+  auto output_image = Image<float>::create (argument[1], header);
 
-  Image::Loop outer ("extracting volumes...", 0, 3);
+  auto outer = Loop ("extracting volumes", input_image, 0, 3);
 
-  if (voxel_out.ndim() == 4) {
-
-    for (auto i = outer (voxel_out, voxel_in); i; ++i) {
+  if (output_image.ndim() == 4) {
+    for (auto i = outer (output_image, input_image); i; ++i) {
       for (size_t i = 0; i < volumes.size(); i++) {
-        voxel_in[3] = volumes[i];
-        voxel_out[3] = i;
-        voxel_out.value() = voxel_in.value();
+        input_image.index(3) = volumes[i];
+        output_image.index(3) = i;
+        output_image.value() = input_image.value();
       }
     }
 
   } else {
-
     const size_t volume = volumes[0];
-    for (auto i = outer (voxel_out, voxel_in); i; ++i) {
-      voxel_in[3] = volume;
-      voxel_out.value() = voxel_in.value();
+    for (auto i = outer (output_image, input_image); i; ++i) {
+      input_image.index(3) = volume;
+      output_image.value() = input_image.value();
     }
-
   }
-
-
 }

@@ -1,24 +1,17 @@
 /*
-   Copyright 2015 Brain Research Institute, Melbourne, Australia
-
-   Written by Rami Tabbara, 18/02/15.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #include "gui/mrview/mode/lightbox.h"
 
@@ -102,7 +95,7 @@ namespace MR
             const Projection& slice_proj = slices_proj_focusdelta[current_slice_index].first;
             float focus_delta = slices_proj_focusdelta[current_slice_index].second;
 
-            const Point<> slice_focus = move_in_out_displacement(focus_delta, slice_proj);
+            const Eigen::Vector3f slice_focus = move_in_out_displacement(focus_delta, slice_proj);
             set_focus(focus() + slice_focus);
             update_slices_focusdelta();
           }
@@ -119,13 +112,16 @@ namespace MR
 
         void LightBox::draw_plane_primitive (int axis, Displayable::Shader& shader_program, Projection& with_projection)
         {
-          if(visible)
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          if (visible)
             image()->render3D (shader_program, with_projection, with_projection.depth_of (focus()));
           render_tools (with_projection, false, axis, slice (axis));
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
         void LightBox::paint(Projection&)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           // Setup OpenGL environment:
           gl::Disable (gl::BLEND);
           gl::Disable (gl::DEPTH_TEST);
@@ -136,7 +132,7 @@ namespace MR
           GLint w = projection.width(), h = projection.height();
           GLfloat dw = w / (float)n_cols, dh = h / (float)n_rows;
 
-          const Point<> orig_focus = window().focus();
+          const Eigen::Vector3f orig_focus = window().focus();
 
           if(layout_is_dirty)
           {
@@ -159,7 +155,7 @@ namespace MR
               setup_draw(plane(), slice_proj);
 
               float focus_delta = slices_proj_focusdelta[slice_idx].second;
-              Point<> slice_focus = move_in_out_displacement(focus_delta, slice_proj);
+              Eigen::Vector3f slice_focus = move_in_out_displacement(focus_delta, slice_proj);
               set_focus(orig_focus + slice_focus);
 
               draw_plane_primitive(plane(), slice_shader, slice_proj);
@@ -183,10 +179,12 @@ namespace MR
             gl::Disable(gl::DEPTH_TEST);
             draw_grid();
           }
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
         void LightBox::draw_grid()
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if(n_cols < 1 && n_rows < 1)
             return;
 
@@ -195,8 +193,6 @@ namespace MR
           GL::mat4 MV = GL::identity();
           GL::mat4 P = GL::ortho (0, width(), 0, height(), -1.0, 1.0);
           projection.set (MV, P);
-
-          gl::LineWidth (2.0);
 
           if (!frame_VB || !frame_VAO) {
             frame_VB.gen();
@@ -259,6 +255,7 @@ namespace MR
           frame_program.start();
           gl::DrawArrays (gl::LINES, 0, num_points / 2);
           frame_program.stop();
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
         void LightBox::mouse_press_event()
@@ -291,7 +288,7 @@ namespace MR
           if(image())
           {
             const auto& header = image()->header();
-            float slice_inc = std::pow (header.vox(0)*header.vox(1)*header.vox(2), 1.f/3.f);
+            float slice_inc = std::pow (header.spacing(0)*header.spacing(1)*header.spacing(2), 1.f/3.f);
             slice_focus_inc_adjust_rate = slice_inc / 5.f;
 
             set_slice_increment(slice_inc);

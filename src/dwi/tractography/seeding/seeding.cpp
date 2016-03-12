@@ -1,23 +1,16 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert E. Smith, 2012.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
  */
 
 #include "dwi/tractography/properties.h"
@@ -88,7 +81,7 @@ namespace MR
 
         List& list (properties.seeds);
 
-        App::Options opt = get_options ("seed_sphere");
+        auto opt = get_options ("seed_sphere");
         for (size_t i = 0; i < opt.size(); ++i) {
           Sphere* seed = new Sphere (opt[i][0]);
           list.add (seed);
@@ -120,7 +113,7 @@ namespace MR
 
         opt = get_options ("seed_gmwmi");
         if (opt.size()) {
-          App::Options opt_act = get_options ("act");
+          auto opt_act = get_options ("act");
           if (!opt_act.size())
             throw Exception ("Cannot perform GM-WM Interface seeding without ACT segmented tissue image");
           for (size_t i = 0; i < opt.size(); ++i) {

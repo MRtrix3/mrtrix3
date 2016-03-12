@@ -1,24 +1,17 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-    Written by J-Donald Tournier, 27/06/08.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #ifndef __file_dicom_image_h__
 #define __file_dicom_image_h__
@@ -26,8 +19,6 @@
 #include <memory>
 
 #include "datatype.h"
-#include "math/vector.h"
-#include "math/matrix.h"
 #include "file/dicom/element.h"
 
 namespace MR {
@@ -55,9 +46,8 @@ namespace MR {
           }
 
           size_t acq_dim[2], dim[2], series_num, instance, acq, sequence;
-          float position_vector[3], orientation_x[3], orientation_y[3], orientation_z[3], distance;
-          float pixel_size[2], slice_thickness, slice_spacing, scale_slope, scale_intercept;
-          float bvalue, G[3];
+          Eigen::Vector3 position_vector, orientation_x, orientation_y, orientation_z, G;
+          default_type distance, pixel_size[2], slice_thickness, slice_spacing, scale_slope, scale_intercept, bvalue;
           size_t data, bits_alloc, data_size, frame_offset;
           std::string filename;
           bool DW_scheme_wrt_image;
@@ -86,29 +76,22 @@ namespace MR {
           void calc_distance ()
           {
             if (!std::isfinite (orientation_z[0])) 
-              Math::cross (orientation_z, orientation_x, orientation_y);
+              orientation_z = orientation_x.cross (orientation_y);
             else {
-              float normal[3];
-              Math::cross (normal, orientation_x, orientation_y);
-              if (Math::dot (normal, orientation_z) < 0.0) {
-                orientation_z[0] = -normal[0];
-                orientation_z[1] = -normal[1];
-                orientation_z[2] = -normal[2];
-              }
-              else {
-                orientation_z[0] = normal[0];
-                orientation_z[1] = normal[1];
-                orientation_z[2] = normal[2];
-              }
+              Eigen::Vector3 normal = orientation_x.cross (orientation_y);
+              if (normal.dot (orientation_z) < 0.0)
+                orientation_z = -normal;
+              else 
+                orientation_z = normal;
             }
 
-            Math::normalise (orientation_z);
-            distance = Math::dot (orientation_z, position_vector);
+            orientation_z.normalize();
+            distance = orientation_z.dot (position_vector);
           }
 
           static std::vector<size_t> count (const std::vector<Frame*>& frames);
-          static float get_slice_separation (const std::vector<Frame*>& frames, size_t nslices);
-          static Math::Matrix<float> get_DW_scheme (const std::vector<Frame*>& frames, size_t nslices, const Math::Matrix<float>& image_transform);
+          static default_type get_slice_separation (const std::vector<Frame*>& frames, size_t nslices);
+          static std::string get_DW_scheme (const std::vector<Frame*>& frames, size_t nslices, const transform_type& image_transform);
 
           friend std::ostream& operator<< (std::ostream& stream, const Frame& item);
       };

@@ -1,24 +1,17 @@
 /*
-    Copyright 2013 Brain Research Institute, Melbourne, Australia
-
-    Written by B Jeurissen, 12/08/13.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #ifndef __dwi_shells_h__
 #define __dwi_shells_h__
@@ -30,9 +23,6 @@
 
 #include "app.h"
 #include "bitset.h"
-
-#include "math/matrix.h"
-#include "math/vector.h"
 
 #include "file/config.h"
 
@@ -64,12 +54,13 @@ namespace MR
 
   namespace DWI
   {
+    using namespace Eigen;
 
 
     extern const App::OptionGroup ShellOption;
 
-    inline float bzero_threshold () {
-      static const float value = File::Config::get_float ("BZeroThreshold", 10.0);
+    FORCE_INLINE default_type bzero_threshold () {
+      static const default_type value = File::Config::get_float ("BZeroThreshold", 10.0);
       return value;
     }
 
@@ -81,27 +72,15 @@ namespace MR
       public:
 
         Shell() : mean (0.0), stdev (0.0), min (0.0), max (0.0) { }
-
-        Shell (const Math::Matrix<float>& grad, const std::vector<size_t>& indices);
-
-        Shell& operator= (const Shell& rhs)
-        {
-          volumes = rhs.volumes;
-          mean = rhs.mean;
-          stdev = rhs.stdev;
-          min = rhs.min;
-          max = rhs.max;
-          return *this;
-        }
-
+        Shell (const MatrixXd& grad, const std::vector<size_t>& indices);
 
         const std::vector<size_t>& get_volumes() const { return volumes; }
         size_t count() const { return volumes.size(); }
 
-        float get_mean()  const { return mean; }
-        float get_stdev() const { return stdev; }
-        float get_min()   const { return min; }
-        float get_max()   const { return max; }
+        default_type get_mean()  const { return mean; }
+        default_type get_stdev() const { return stdev; }
+        default_type get_min()   const { return min; }
+        default_type get_max()   const { return max; }
 
         bool is_bzero()   const { return (mean < bzero_threshold()); }
 
@@ -118,7 +97,7 @@ namespace MR
 
       protected:
         std::vector<size_t> volumes;
-        float mean, stdev, min, max;
+        default_type mean, stdev, min, max;
 
     };
 
@@ -128,11 +107,8 @@ namespace MR
 
     class Shells
     {
-
       public:
-        Shells (const Math::Matrix<float>& grad) { initialise (grad); }
-        Shells (const Math::Matrix<double>& grad) { Math::Matrix<float> gradF (grad); initialise (gradF); }
-
+        Shells (const MatrixXd& grad);
 
         const Shell& operator[] (const size_t i) const { return shells[i]; }
         const Shell& smallest() const { return shells.front(); }
@@ -140,8 +116,8 @@ namespace MR
         size_t       count()    const { return shells.size(); }
         size_t       volumecount()    const { 
           size_t count = 0;
-          for (std::vector<Shell>::const_iterator it = shells.begin(); it != shells.end(); ++it)
-            count += it->count();
+          for (const auto& it : shells)
+            count += it.count();
           return count;
         }
 
@@ -171,8 +147,8 @@ namespace MR
         friend std::ostream& operator<< (std::ostream& stream, const Shells& S)
         {
           stream << "Total of " << S.count() << " DWI shells:" << std::endl;
-          for (std::vector<Shell>::const_iterator it = S.shells.begin(); it != S.shells.end(); ++it)
-            stream << *it << std::endl;
+          for (const auto& it : S.shells)
+            stream << it << std::endl;
           return stream;
         }
 
@@ -183,13 +159,11 @@ namespace MR
 
       private:
 
-        typedef Math::Vector<float>::View BValueList;
-
-        void initialise (const Math::Matrix<float>&);
+        typedef decltype(std::declval<const MatrixXd>().col(0)) BValueList;
 
         // Functions for current b-value clustering implementation
         size_t clusterBvalues (const BValueList&, std::vector<size_t>&) const;
-        void regionQuery (const BValueList&, const float, std::vector<size_t>&) const;
+        void regionQuery (const BValueList&, const default_type, std::vector<size_t>&) const;
 
 
     };

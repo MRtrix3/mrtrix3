@@ -1,23 +1,16 @@
 /*
-    Copyright 2012 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert Smith, 22/12/2014.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
  */
 
 
@@ -30,13 +23,13 @@ namespace Connectome {
 
 
 Mat2Vec::Mat2Vec (const node_t i) :
-    dim (i)
+    size (i)
 {
-  lookup.assign (dim, std::vector<size_t> (dim, 0));
-  inv_lookup.reserve (dim * (dim+1) / 2);
+  lookup.assign (size, std::vector<size_t> (size, 0));
+  inv_lookup.reserve (size * (size+1) / 2);
   size_t index = 0;
-  for (node_t row = 0; row != dim; ++row) {
-    for (node_t column = row; column != dim; ++column) {
+  for (node_t row = 0; row != size; ++row) {
+    for (node_t column = row; column != size; ++column) {
       lookup[row][column] = lookup[column][row] = index++;
       inv_lookup.push_back (std::make_pair (row, column));
     }
@@ -47,7 +40,7 @@ Mat2Vec::Mat2Vec (const node_t i) :
 
 Mat2Vec& Mat2Vec::operator= (Mat2Vec&& that)
 {
-  dim = that.dim;
+  size = that.size; that.size = 0;
   lookup = std::move (that.lookup);
   inv_lookup = std::move (that.inv_lookup);
   return *this;

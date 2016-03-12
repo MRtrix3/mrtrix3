@@ -1,30 +1,22 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-    Written by J-Donald Tournier, 27/06/08.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #ifndef __data_type_h__
 #define __data_type_h__
 
-#include "args.h"
-#include "mrtrix.h"
+#include "cmdline_option.h"
 
 #ifdef Complex
 # undef Complex
@@ -36,9 +28,13 @@ namespace MR
   class DataType
   {
     public:
-      DataType () : dt (DataType::Native) { }
-      DataType (uint8_t type) : dt (type) { }
-      DataType (const DataType& DT) : dt (DT.dt) { }
+      DataType () noexcept : dt (DataType::Native) { }
+      DataType (uint8_t type) noexcept : dt (type) { }
+      DataType (const DataType&) noexcept = default;
+      DataType (DataType&&) noexcept = default;
+      DataType& operator= (const DataType&) noexcept = default;
+      DataType& operator= (DataType&&) noexcept = default;
+
       bool undefined () const {
         return dt == Undefined;
       }
@@ -56,10 +52,6 @@ namespace MR
       }
       bool operator!= (const DataType DT) const {
         return dt != DT.dt;
-      }
-      const DataType& operator= (const DataType DT) {
-        dt = DT.dt;
-        return *this;
       }
 
       bool is (uint8_t type) const {
@@ -182,31 +174,11 @@ namespace MR
         return stream;
       }
 
-      template <typename ValueType> static inline ValueType default_out_of_bounds_value () {
-        return ValueType(0);
-      }
-
     protected:
       uint8_t dt;
 
   };
 
-  template <> inline float DataType::default_out_of_bounds_value ()
-  {
-    return std::numeric_limits<float>::quiet_NaN();
-  }
-  template <> inline double DataType::default_out_of_bounds_value ()
-  {
-    return std::numeric_limits<double>::quiet_NaN();
-  }
-  template <> inline cfloat DataType::default_out_of_bounds_value ()
-  {
-    return std::numeric_limits<float>::quiet_NaN();
-  }
-  template <> inline cdouble DataType::default_out_of_bounds_value ()
-  {
-    return std::numeric_limits<cdouble>::quiet_NaN();
-  }
 
 
   template <> inline DataType DataType::from<bool> ()

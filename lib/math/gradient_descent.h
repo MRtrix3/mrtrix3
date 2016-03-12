@@ -1,31 +1,22 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-    Written by J-Donald Tournier, 12/01/09.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
  */
 
 #ifndef __math_gradient_descent_h__
 #define __math_gradient_descent_h__
 
 #include <limits>
-
-#include "math/vector.h"
 
 namespace MR
 {
@@ -41,10 +32,10 @@ namespace MR
       class LinearUpdate {
         public:
           template <typename ValueType>
-            inline bool operator() (Math::Vector<ValueType>& newx, const Math::Vector<ValueType>& x, 
-                const Math::Vector<ValueType>& g, ValueType step_size) { 
+            inline bool operator() (Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& newx, const Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& x,
+                const Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& g, ValueType step_size) {
               bool changed = false;
-              for (size_t n = 0; n < x.size(); ++n) {
+              for (ssize_t n = 0; n < x.size(); ++n) {
                 newx[n] = x[n] - step_size * g[n];
                 if (newx[n] != x[n])
                   changed = true;
@@ -74,12 +65,13 @@ namespace MR
 
 
           value_type value () const throw () { return f; }
-          const Vector<value_type>& state () const throw () { return x; }
-          const Vector<value_type>& gradient () const throw ()  { return g; }
+          const Eigen::Matrix<value_type, Eigen::Dynamic, 1>& state () const throw () { return x; }
+          const Eigen::Matrix<value_type, Eigen::Dynamic, 1>& gradient () const throw ()  { return g; }
+          value_type step_size () const { return dt; }
           value_type gradient_norm () const throw () { return normg; }
           int function_evaluations () const throw () { return nfeval; }
 
-          void precondition (const Math::Vector<value_type>& weights) {
+          void precondition (const Eigen::Matrix<value_type, Eigen::Dynamic, 1>& weights) {
             preconditioner_weights = weights;
           }
 
@@ -109,20 +101,26 @@ namespace MR
             nfeval = 0;
             f = evaluate_func (x, g, verbose);
             compute_normg_and_step_unscaled ();
-            dt /= norm(g);
+            assert(std::isfinite(g.norm()));
+            assert(!std::isnan(g.norm()));
+            dt /= g.norm();
             if (verbose) {
               CONSOLE ("initialise: f = " + str (f) + ", |g| = " + str (normg) + ":");
-              CONSOLE ("  x = [ " + str(x) + "]");
+              CONSOLE ("  x = [ " + str(x.transpose()) + "]");
             }
             assert (std::isfinite (f));
+            assert (!std::isnan(f));
             assert (std::isfinite (normg));
+            assert (!std::isnan(normg));
           }
 
 
           bool iterate (bool verbose = false) {
-            assert (normg != 0.0);
+            // assert (normg != 0.0);
+            assert (std::isfinite (normg));
+            
 
-            while (true) {
+            while (normg != 0.0) {
               if (!update_func (x2, x, g, dt))
                 return false;
 
@@ -148,18 +146,24 @@ namespace MR
               if (quadratic_minimum >= 1.0)
                 quadratic_minimum = 0.5;
               dt *= quadratic_minimum;
+
+              if (dt <= 0.0)
+                return false;
             }
+            return false;
           }
 
         protected:
           Function& func;
           UpdateFunctor update_func;
           const value_type step_up, step_down;
-          Vector<value_type> x, x2, g, g2, preconditioner_weights;
+          Eigen::Matrix<value_type, Eigen::Dynamic, 1> x, x2, g, g2, preconditioner_weights;
           value_type f, dt, normg, step_unscaled;
           int nfeval;
 
-          value_type evaluate_func (const Vector<value_type>& newx, Vector<value_type>& newg, bool verbose = false) {
+          value_type evaluate_func (const Eigen::Matrix<value_type, Eigen::Dynamic, 1>& newx,
+                                    Eigen::Matrix<value_type, Eigen::Dynamic, 1>& newg,
+                                    bool verbose = false) {
             nfeval++;
             value_type cost = func (newx, newg);
             if (!std::isfinite (cost))
@@ -171,18 +175,22 @@ namespace MR
 
 
           void compute_normg_and_step_unscaled () {
-            normg = step_unscaled = norm (g);
-            if (preconditioner_weights.size()) {
-              value_type g_projected = 0.0;
-              step_unscaled = 0.0;
-              for (size_t n = 0; n < g.size(); ++n) {
-                step_unscaled += Math::pow2 (g[n]);
-                g_projected += preconditioner_weights[n] * Math::pow2 (g[n]);
-                g[n] *= preconditioner_weights[n];
+            normg = step_unscaled = g.norm();
+            assert(std::isfinite(normg));
+            if (normg > 0.0){
+              if (preconditioner_weights.size()) {
+                value_type g_projected = 0.0;
+                step_unscaled = 0.0;
+                for (ssize_t n = 0; n < g.size(); ++n) {
+                  step_unscaled += std::pow(g[n], 2);
+                  g_projected += preconditioner_weights[n] * std::pow(g[n], 2);
+                  g[n] *= preconditioner_weights[n];
+                }
+                normg = g_projected / normg;
+                assert(std::isfinite(normg));
+                step_unscaled = std::sqrt (step_unscaled);
               }
-              normg = g_projected / normg;
-              step_unscaled = std::sqrt (step_unscaled);
-            }
+            } 
           }
 
       };

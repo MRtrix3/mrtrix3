@@ -1,23 +1,16 @@
 /*
-    Copyright 2013 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert Smith, 2013.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
  */
 
 
@@ -78,7 +71,7 @@ class Selector
 class WriterExemplars
 {
   public:
-    WriterExemplars (const Tractography::Properties&, const std::vector<node_t>&, const bool, const node_t, const std::vector< Point<float> >&);
+    WriterExemplars (const Tractography::Properties&, const std::vector<node_t>&, const bool, const node_t, const std::vector<Eigen::Vector3f>&);
 
     bool operator() (const Tractography::Connectome::Streamline_nodepair&);
     bool operator() (const Tractography::Connectome::Streamline_nodelist&);
@@ -108,7 +101,7 @@ class WriterExtraction
 {
 
   public:
-    WriterExtraction (const Tractography::Properties& p, const std::vector<node_t>& nodes, const bool exclusive);
+    WriterExtraction (const Tractography::Properties&, const std::vector<node_t>&, const bool);
     ~WriterExtraction();
 
     void add (const node_t, const std::string&, const std::string);
@@ -124,12 +117,12 @@ class WriterExtraction
 
 
   private:
-    Tractography::Properties properties;
+    const Tractography::Properties& properties;
     const std::vector<node_t>& node_list;
     const bool exclusive;
     std::vector< Selector > selectors;
     std::vector< Tractography::WriterUnbuffered<float>* > writers;
-    std::vector< Point<float> > empty_tck;
+    Tractography::Streamline<> empty_tck;
 
 };
 

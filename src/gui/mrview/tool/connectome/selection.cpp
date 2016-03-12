@@ -1,24 +1,17 @@
 /*
-   Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-   Written by Robert E. Smith, 2015.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #include "gui/mrview/tool/connectome/selection.h"
 
@@ -37,30 +30,30 @@ namespace MR
       NodeSelectionSettings::NodeSelectionSettings() :
           node_selected_visibility_override (true),
           node_selected_colour_fade (0.75f),
-          node_selected_colour (1.0f, 1.0f, 1.0f),
+          node_selected_colour { 1.0f, 1.0f, 1.0f },
           node_selected_size_multiplier (1.0f),
           node_selected_alpha_multiplier (1.0f),
           edge_selected_visibility_override (false),
           edge_selected_colour_fade (0.5f),
-          edge_selected_colour (0.9f, 0.9f, 1.0f),
+          edge_selected_colour { 0.9f, 0.9f, 1.0f },
           edge_selected_size_multiplier (1.0f),
           edge_selected_alpha_multiplier (1.0f),
           node_associated_colour_fade (0.5f),
-          node_associated_colour (0.0f, 0.0f, 0.0f),
+          node_associated_colour { 0.0f, 0.0f, 0.0f },
           node_associated_size_multiplier (1.0f),
           node_associated_alpha_multiplier (1.0f),
           edge_associated_colour_fade (0.5f),
-          edge_associated_colour (0.0f, 0.0f, 0.0f),
+          edge_associated_colour { 0.0f, 0.0f, 0.0f },
           edge_associated_size_multiplier (1.0f),
           edge_associated_alpha_multiplier (1.0f),
           node_other_visibility_override (false),
           node_other_colour_fade (0.75f),
-          node_other_colour (0.0f, 0.0f, 0.0f),
+          node_other_colour { 0.0f, 0.0f, 0.0f },
           node_other_size_multiplier (1.0f),
           node_other_alpha_multiplier (1.0f),
           edge_other_visibility_override (true),
           edge_other_colour_fade (0.75f),
-          edge_other_colour (0.0f, 0.0f, 0.0f),
+          edge_other_colour { 0.0f, 0.0f, 0.0f },
           edge_other_size_multiplier (1.0f),
           edge_other_alpha_multiplier (1.0f)
       {
@@ -77,7 +70,7 @@ namespace MR
         //CONF option: ConnectomeNodeSelectedColour
         //CONF default: 1.0,1.0,1.0
         //CONF The colour used to highlight those nodes currently selected
-        File::Config::get_RGB ("ConnectomeNodeSelectedColour", node_selected_colour, 1.0f, 1.0f, 1.0f);
+        File::Config::get_RGB ("ConnectomeNodeSelectedColour", node_selected_colour.data(), 1.0f, 1.0f, 1.0f);
         //CONF option: ConnectomeNodeSelectedSizeMultiplier
         //CONF default: 1.0
         //CONF The multiplicative factor to apply to the size of selected nodes
@@ -98,7 +91,7 @@ namespace MR
         //CONF option: ConnectomeEdgeSelectedColour
         //CONF default: 0.9,0.9,1.0
         //CONF The colour used to highlight the edges connected to two currently selected nodes
-        File::Config::get_RGB ("ConnectomeEdgeSelectedColour", edge_selected_colour, 0.9f, 0.9f, 1.0f);
+        File::Config::get_RGB ("ConnectomeEdgeSelectedColour", edge_selected_colour.data(), 0.9f, 0.9f, 1.0f);
         //CONF option: ConnectomeEdgeSelectedSizeMultiplier
         //CONF default: 1.0
         //CONF The multiplicative factor to apply to the size of edges connected to two selected nodes
@@ -117,7 +110,7 @@ namespace MR
         //CONF option: ConnectomeNodeAssociatedColour
         //CONF default: 0.0,0.0,0.0
         //CONF The colour mixed in to those nodes associated with any selected node
-        File::Config::get_RGB ("ConnectomeNodeAssociatedColour", node_associated_colour, 0.0f, 0.0f, 0.0f);
+        File::Config::get_RGB ("ConnectomeNodeAssociatedColour", node_associated_colour.data(), 0.0f, 0.0f, 0.0f);
         //CONF option: ConnectomeNodeAssociatedSizeMultiplier
         //CONF default: 1.0
         //CONF The multiplicative factor to apply to the size of nodes associated with a selected node
@@ -134,7 +127,7 @@ namespace MR
         //CONF option: ConnectomeEdgeAssociatedColour
         //CONF default: 0.0,0.0,0.0
         //CONF The colour mixed in to edges connected to one currently selected node
-        File::Config::get_RGB ("ConnectomeEdgeAssociatedColour", edge_associated_colour, 0.0f, 0.0f, 0.0f);
+        File::Config::get_RGB ("ConnectomeEdgeAssociatedColour", edge_associated_colour.data(), 0.0f, 0.0f, 0.0f);
         //CONF option: ConnectomeEdgeAssociatedSizeMultiplier
         //CONF default: 1.0
         //CONF The multiplicative factor to apply to the size of edges connected to one selected node
@@ -157,7 +150,7 @@ namespace MR
         //CONF option: ConnectomeNodeOtherColour
         //CONF default: 0.0,0.0,0.0
         //CONF The colour mixed in to those nodes currently not selected nor associated with any selected node
-        File::Config::get_RGB ("ConnectomeNodeOtherColour", node_other_colour, 0.0f, 0.0f, 0.0f);
+        File::Config::get_RGB ("ConnectomeNodeOtherColour", node_other_colour.data(), 0.0f, 0.0f, 0.0f);
         //CONF option: ConnectomeNodeOtherSizeMultiplier
         //CONF default: 1.0
         //CONF The multiplicative factor to apply to the size of nodes not currently selected nor associated with a selected node
@@ -178,7 +171,7 @@ namespace MR
         //CONF option: ConnectomeEdgeOtherColour
         //CONF default: 0.0,0.0,0.0
         //CONF The colour mixed in to edges not connected to any currently selected node
-        File::Config::get_RGB ("ConnectomeEdgeOtherColour", edge_other_colour, 0.0f, 0.0f, 0.0f);
+        File::Config::get_RGB ("ConnectomeEdgeOtherColour", edge_other_colour.data(), 0.0f, 0.0f, 0.0f);
         //CONF option: ConnectomeEdgeOtherSizeMultiplier
         //CONF default: 1.0
         //CONF The multiplicative factor to apply to the size of edges not connected to any selected node
@@ -226,7 +219,7 @@ namespace MR
         connect (node_selected_colour_slider, SIGNAL (valueChanged (int)), this, SLOT (node_selected_colour_fade_slot()));
         hbox_layout->addWidget (node_selected_colour_slider);
         node_selected_colour_button = new QColorButton;
-        Point<float> c = settings.get_node_selected_colour();
+        Eigen::Array3f c = settings.get_node_selected_colour();
         c *= 255.0f;
         node_selected_colour_button->setColor (QColor (c[0], c[1], c[2]));
         connect (node_selected_colour_button, SIGNAL (clicked()), this, SLOT (node_selected_colour_slot()));
@@ -519,7 +512,7 @@ namespace MR
       void NodeSelectionSettingsFrame::node_selected_colour_slot()
       {
         const QColor c = node_selected_colour_button->color();
-        data.node_selected_colour = Point<float> (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
+        data.node_selected_colour = { c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f };
         emit data.dataChanged();
       }
       void NodeSelectionSettingsFrame::node_selected_size_slot()
@@ -546,7 +539,7 @@ namespace MR
       void NodeSelectionSettingsFrame::edge_selected_colour_slot()
       {
         const QColor c = edge_selected_colour_button->color();
-        data.edge_selected_colour = Point<float> (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
+        data.edge_selected_colour = { c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f };
         emit data.dataChanged();
       }
       void NodeSelectionSettingsFrame::edge_selected_size_slot()
@@ -570,7 +563,7 @@ namespace MR
       void NodeSelectionSettingsFrame::node_associated_colour_slot()
       {
         const QColor c = node_associated_colour_button->color();
-        data.node_associated_colour = Point<float> (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
+        data.node_associated_colour = { c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f };
         emit data.dataChanged();
       }
       void NodeSelectionSettingsFrame::node_associated_size_slot()
@@ -592,7 +585,7 @@ namespace MR
       void NodeSelectionSettingsFrame::edge_associated_colour_slot()
       {
         const QColor c = edge_associated_colour_button->color();
-        data.edge_associated_colour = Point<float> (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
+        data.edge_associated_colour = { c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f };
         emit data.dataChanged();
       }
       void NodeSelectionSettingsFrame::edge_associated_size_slot()
@@ -613,8 +606,8 @@ namespace MR
         data.node_other_visibility_override = node_other_visibility_checkbox->isChecked();
         node_other_colour_slider->setEnabled (!data.node_other_visibility_override);
         node_other_colour_button->setEnabled (!data.node_other_visibility_override);
-        node_other_size_button->setEnabled (!data.node_other_visibility_override);
-        node_other_alpha_button->setEnabled (!data.node_other_visibility_override);
+        node_other_size_button  ->setEnabled (!data.node_other_visibility_override);
+        node_other_alpha_button ->setEnabled (!data.node_other_visibility_override);
         emit data.dataChanged();
       }
       void NodeSelectionSettingsFrame::node_other_colour_fade_slot()
@@ -625,7 +618,7 @@ namespace MR
       void NodeSelectionSettingsFrame::node_other_colour_slot()
       {
         const QColor c = node_other_colour_button->color();
-        data.node_other_colour = Point<float> (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
+        data.node_other_colour = { c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f };
         emit data.dataChanged();
       }
       void NodeSelectionSettingsFrame::node_other_size_slot()
@@ -644,8 +637,8 @@ namespace MR
         data.edge_other_visibility_override = edge_other_visibility_checkbox->isChecked();
         edge_other_colour_slider->setEnabled (!data.edge_other_visibility_override);
         edge_other_colour_button->setEnabled (!data.edge_other_visibility_override);
-        edge_other_size_button->setEnabled (!data.edge_other_visibility_override);
-        edge_other_alpha_button->setEnabled (!data.edge_other_visibility_override);
+        edge_other_size_button  ->setEnabled (!data.edge_other_visibility_override);
+        edge_other_alpha_button ->setEnabled (!data.edge_other_visibility_override);
         emit data.dataChanged();
       }
       void NodeSelectionSettingsFrame::edge_other_colour_fade_slot()
@@ -656,7 +649,7 @@ namespace MR
       void NodeSelectionSettingsFrame::edge_other_colour_slot()
       {
         const QColor c = edge_other_colour_button->color();
-        data.edge_other_colour = Point<float> (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
+        data.edge_other_colour = { c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f };
         emit data.dataChanged();
       }
       void NodeSelectionSettingsFrame::edge_other_size_slot()

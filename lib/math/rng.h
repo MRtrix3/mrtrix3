@@ -1,24 +1,17 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-    Written by J-Donald Tournier, 27/06/08.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #ifndef __math_rng_h__
 #define __math_rng_h__
@@ -27,6 +20,8 @@
 #ifdef MRTRIX_WINDOWS
 #include <sys/time.h>
 #endif
+
+#include <mutex>
 
 #include "mrtrix.h"
 
@@ -44,6 +39,7 @@ namespace MR
      * variable. The copy constructor will seed itself using 1 + the last seed
      * used - this ensures the seeds are unique across instances in
      * multi-threading. */
+    // TODO consider switch to std::mt19937_64
     class RNG : public std::mt19937
     {
       public:
@@ -52,8 +48,11 @@ namespace MR
         RNG (const RNG&) : std::mt19937 (get_seed()) { }
         template <typename ValueType> class Uniform; 
         template <typename ValueType> class Normal; 
+        template <typename ValueType> class Integer;
 
         static std::mt19937::result_type get_seed () {
+          static std::mutex mutex;
+          std::lock_guard<std::mutex> lock (mutex);
           static std::mt19937::result_type current_seed = get_seed_private();
           return current_seed++;
         }
@@ -94,6 +93,16 @@ namespace MR
           std::normal_distribution<ValueType> dist;
           ValueType operator() () { return dist (rng); }
       };
+
+      template <typename ValueType>
+        class RNG::Integer {
+          public:
+            Integer (const ValueType max) :
+                dist (0, max) { }
+            RNG rng;
+            std::uniform_int_distribution<ValueType> dist;
+            ValueType operator() () { return dist (rng); }
+        };
 
   }
 }

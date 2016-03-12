@@ -1,30 +1,23 @@
 /*
-    Copyright 2012 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert Smith, 2012.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
  */
 
 
 
 #include "connectome/lut.h"
 
-
+#include <fstream>
 
 
 
@@ -67,7 +60,7 @@ const OptionGroup LookupTableOption = OptionGroup ("Options for importing inform
 void load_lut_from_cmdline (Node_map& nodes)
 {
 
-  Options
+  auto
   opt = get_options ("lut_basic");
   if (opt.size())
     nodes.load (opt[0][0], LUT_BASIC);
@@ -131,7 +124,7 @@ void Node_map::parse_line_freesurfer (const std::string& line)
     char name [80];
     sscanf (line.c_str(), "%u %s %u %u %u %u", &index, name, &r, &g, &b, &a);
     if (index != std::numeric_limits<node_t>::max()) {
-      if (maxvalue (r, g, b) > 255)
+      if (std::max ({r, g, b}) > 255)
         throw Exception ("Lookup table is malformed");
       if (find (index) != end())
         throw Exception ("Lookup table contains redundant entries (" + str(index) + ")");

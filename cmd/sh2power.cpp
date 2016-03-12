@@ -1,32 +1,23 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-    Written by J-Donald Tournier, 27/06/08.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "command.h"
-#include "progressbar.h"
-#include "image/voxel.h"
-#include "image/buffer.h"
-#include "math/matrix.h"
+#include "image.h"
 #include "math/SH.h"
-#include "image/loop.h"
+#include "algo/threaded_loop.h"
 
 
 using namespace MR;
@@ -43,28 +34,25 @@ void usage () {
 
 
 void run () {
-  Image::Buffer<float> SH_data (argument[0]);
+  auto SH_data = Image<float>::open(argument[0]);
   Math::SH::check (SH_data);
 
-  Image::Header power_header (SH_data);
+  auto power_header = SH_data.original_header();
 
-  int lmax = Math::SH::LforN (SH_data.dim (3));
+  int lmax = Math::SH::LforN (SH_data.size (3));
   INFO ("calculating spherical harmonic power up to degree " + str (lmax));
 
-  power_header.dim (3) = 1 + lmax/2;
+  power_header.size (3) = 1 + lmax/2;
   power_header.datatype() = DataType::Float32;
 
-  auto SH_vox = SH_data.voxel();
+  auto power_data = Image<float>::create(argument[1], power_header);
 
-  Image::Buffer<float> power_data (argument[1], power_header);
-  auto power_vox = power_data.voxel();
-
-  auto f = [&] (decltype(power_vox)& P, decltype(SH_vox)& SH) {
-    P[3] = 0;
+  auto f = [&] (decltype(power_data)& P, decltype(SH_data)& SH) {
+    P.index(3) = 0;
     for (int l = 0; l <= lmax; l+=2) {
       float power = 0.0;
       for (int m = -l; m <= l; ++m) {
-        SH[3] = Math::SH::index (l, m);
+        SH.index(3) = Math::SH::index (l, m);
         float val = SH.value();
 #ifdef USE_NON_ORTHONORMAL_SH_BASIS
         if (m != 0) 
@@ -73,9 +61,9 @@ void run () {
         power += Math::pow2 (val);
       }
       P.value() = power / float (2*l+1);
-      ++P[3];
+      ++P.index(3);
     }
   };
-  Image::ThreadedLoop ("calculating SH power...", SH_vox, 0, 3)
-    .run (f, power_vox, SH_vox);
+  ThreadedLoop ("calculating SH power", SH_data, 0, 3)
+    .run (f, power_data, SH_data);
 }

@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
+
 #include "gui/gui.h"
 #include "command.h"
 #include "progressbar.h"
@@ -13,13 +28,13 @@ using namespace App;
 
 void usage ()
 {
-  AUTHOR = "J-Donald Tournier (d.tournier@brain.org.au), Dave Raffelt (d.raffelt@brain.org.au) and Robert E. Smith (r.smith@brain.org.au)";
+  AUTHOR = "J-Donald Tournier (d.tournier@brain.org.au), Dave Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (r.smith@brain.org.au)";
 
   DESCRIPTION
   + "the MRtrix image viewer.";
 
   REFERENCES 
-    + "Tournier, J.-D.; Calamante, F. & Connelly, A. "
+    + "Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
     "MRtrix: Diffusion tractography in crossing fiber regions. "
     "Int. J. Imaging Syst. Technol., 2012, 22, 53-66";
 
@@ -51,11 +66,11 @@ void run ()
   window.show();
 
   if (argument.size()) {
-    std::vector<std::unique_ptr<MR::Image::Header>> list;
+    std::vector<std::unique_ptr<MR::Header>> list;
 
     for (size_t n = 0; n < argument.size(); ++n) {
       try {
-        list.push_back (std::unique_ptr<MR::Image::Header> (new Image::Header (argument[n])));
+        list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (argument[n]))));
       }
       catch (Exception& e) {
         e.display();

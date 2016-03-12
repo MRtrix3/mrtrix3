@@ -1,33 +1,24 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-    Written by J-Donald Tournier, 27/06/08.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "command.h"
 #include "progressbar.h"
-#include "math/vector.h"
-#include "math/matrix.h"
 #include "math/rng.h"
 #include "math/SH.h"
 #include "thread.h"
-#include "point.h"
 #include "dwi/directions/file.h"
 
 
@@ -55,18 +46,19 @@ OPTIONS
 
 
 typedef double value_type;
+typedef Eigen::Vector3d vector3_type;
 
 
 
 class Shared {
   public:
-    Shared (const Math::Matrix<value_type>& directions, size_t num_subsets, size_t target_num_permutations) :
+    Shared (const Eigen::MatrixXd& directions, size_t num_subsets, size_t target_num_permutations) :
       directions (directions), subset (num_subsets), 
       best_energy (std::numeric_limits<value_type>::max()),
       target_num_permutations (target_num_permutations),
       num_permutations (0) {
         size_t s = 0;
-        for (size_t n = 0; n < directions.rows(); ++n) {
+        for (ssize_t n = 0; n < directions.rows(); ++n) {
           subset[s++].push_back (n);
           if (s >= num_subsets) s = 0;
         }
@@ -80,11 +72,11 @@ class Shared {
     bool update (value_type energy, const std::vector<std::vector<size_t>>& set) 
     {
       std::lock_guard<std::mutex> lock (mutex);
-      if (!progress) progress.reset (new ProgressBar ("distributing directions...", target_num_permutations));
+      if (!progress) progress.reset (new ProgressBar ("distributing directions", target_num_permutations));
       if (energy < best_energy) {
         best_energy = energy;
         best_subset = set;
-        progress->set_text ("distributing directions (current best configuration: energy = " + str(best_energy) + ")...");
+        progress->set_text ("distributing directions (current best configuration: energy = " + str(best_energy) + ")");
       }
       ++num_permutations;
       ++(*progress);
@@ -94,9 +86,9 @@ class Shared {
 
 
     value_type energy (size_t i, size_t j) const {
-      Point<value_type> a = { directions(i,0), directions(i,1), directions(i,2) };
-      Point<value_type> b = { directions(j,0), directions(j,1), directions(j,2) };
-      return 1.0 / (a-b).norm2() + 1.0 / (a+b).norm2();
+      vector3_type a = { directions(i,0), directions(i,1), directions(i,2) };
+      vector3_type b = { directions(j,0), directions(j,1), directions(j,2) };
+      return 1.0 / (a-b).squaredNorm() + 1.0 / (a+b).squaredNorm();
     }
 
 
@@ -105,7 +97,7 @@ class Shared {
 
 
   protected:
-    const Math::Matrix<value_type>& directions;
+    const Eigen::MatrixXd& directions;
     std::mutex mutex;
     std::vector<std::vector<size_t>> subset, best_subset;
     value_type best_energy;
@@ -174,14 +166,11 @@ class EnergyCalculator {
 
 void run () 
 {
-  Math::Matrix<value_type> directions = DWI::Directions::load_cartesian<value_type> (argument[0]);
+  auto directions = DWI::Directions::load_cartesian (argument[0]);
 
   size_t num_subsets = argument.size() - 1;
 
-  size_t num_permutations = 1e8;
-  Options opt = get_options ("permutations");
-  if (opt.size())
-    num_permutations = opt[0][0];
+  size_t num_permutations = get_option_value ("permutations", 1e8);
 
   std::vector<std::vector<size_t>> best;
   {
@@ -194,7 +183,7 @@ void run ()
 
   bool cartesian = get_options("cartesian").size();
   for (size_t i = 0; i < best.size(); ++i) {
-    Math::Matrix<value_type> output (best[i].size(), 3);
+    Eigen::MatrixXd output (best[i].size(), 3);
     for (size_t n = 0; n < best[i].size(); ++n) 
       output.row(n) = directions.row (best[i][n]);
     DWI::Directions::save (output, argument[i+1], cartesian);

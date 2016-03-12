@@ -1,23 +1,16 @@
 /*
-    Copyright 2013 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert Smith, 2013.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
  */
 
 
@@ -28,7 +21,8 @@
 #include <set>
 #include <vector>
 
-#include "math/matrix.h"
+#include "connectome/connectome.h"
+#include "math/math.h"
 
 #include "dwi/tractography/connectome/connectome.h"
 #include "dwi/tractography/connectome/mapped_track.h"
@@ -47,13 +41,8 @@ class Matrix
 
   public:
     Matrix (const node_t max_node_index, const bool vector_output = false) :
-        data   (vector_output ? 1 : (max_node_index + 1), max_node_index + 1),
-        counts (vector_output ? 1 : (max_node_index + 1), max_node_index + 1)
-    {
-      data = 0.0;
-      counts = 0.0;
-    }
-
+        data   (MR::Connectome::matrix_type::Zero (vector_output ? 1 : (max_node_index + 1), max_node_index + 1)),
+        counts (MR::Connectome::matrix_type::Zero (vector_output ? 1 : (max_node_index + 1), max_node_index + 1)) { }
 
     bool operator() (const Mapped_track_nodepair&);
     bool operator() (const Mapped_track_nodelist&);
@@ -64,14 +53,14 @@ class Matrix
 
     void error_check (const std::set<node_t>&);
 
-    void write (const std::string& path) { data.save (path); }
-    void write_assignments (const std::string&);
+    void write (const std::string&) const;
+    void write_assignments (const std::string&) const;
 
     bool is_vector() const { return (data.rows() == 1); }
 
 
   private:
-    Math::Matrix<double> data, counts;
+    MR::Connectome::matrix_type data, counts;
     std::vector<NodePair> assignments_pairs;
     std::vector< std::vector<node_t> > assignments_lists;
 

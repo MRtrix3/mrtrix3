@@ -1,24 +1,17 @@
 /*
-   Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-   Written by Robert Smith, 2011.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 
 #include "dwi/directions/predefined.h"
@@ -30,7 +23,7 @@ namespace MR {
 
 
 
-      const float electrostatic_repulsion_60_data[] = {
+      const default_type electrostatic_repulsion_60_data[] = {
         2.101909835, 0.5787523099, 
         1.329393935, 0.9997406558, 
         -0.9818393321, 1.566527183, 
@@ -96,7 +89,7 @@ namespace MR {
 
 
 
-      const float electrostatic_repulsion_300_data[] = {
+      const default_type electrostatic_repulsion_300_data[] = {
         2.832910411, 1.21211455, 
         -2.74511538, 1.363952022, 
         -2.204084013, 1.425059005, 
@@ -403,7 +396,7 @@ namespace MR {
 
 
 
-      const float tesselation_129_data[] = {
+      const default_type tesselation_129_data[] = {
         0.00000, 0.00000,
         1.57080, 1.57080,
         0.00000, 1.57080,
@@ -540,7 +533,7 @@ namespace MR {
 
 
 
-      const float tesselation_321_data[] = {
+      const default_type tesselation_321_data[] = {
         0.55357, 1.57080,
         2.58802, 1.57080,
         0.00000, 0.55357,
@@ -867,7 +860,7 @@ namespace MR {
 
 
 
-      const float tesselation_469_data[] = {
+      const default_type tesselation_469_data[] = {
         0.78540, 0.95532,
         -2.35619, 0.95532,
         2.35619, 2.18628,
@@ -1341,7 +1334,7 @@ namespace MR {
 
 
 
-      const float tesselation_513_data[] = {
+      const default_type tesselation_513_data[] = {
         0.00000, 0.00000,
         1.57080, 1.57080,
         0.00000, 1.57080,
@@ -1860,7 +1853,7 @@ namespace MR {
 
 
 
-      const float tesselation_1281_data[] = {
+      const default_type tesselation_1281_data[] = {
         0.55357, 1.57080,
         2.58802, 1.57080,
         0.00000, 0.55357,

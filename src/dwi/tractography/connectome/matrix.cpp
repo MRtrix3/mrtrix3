@@ -1,23 +1,16 @@
 /*
-    Copyright 2013 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert Smith, 2013.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
  */
 
 
@@ -116,7 +109,7 @@ bool Matrix::operator() (const Mapped_track_nodelist& in)
 void Matrix::scale_by_streamline_count()
 {
   for (node_t i = 0; i != counts.rows(); ++i) {
-    for (node_t j = i; j != counts.columns(); ++j) {
+    for (node_t j = i; j != counts.cols(); ++j) {
       if (counts (i, j)) {
         data (i, j) /= counts (i, j);
         counts (i, j) = 1;
@@ -130,21 +123,21 @@ void Matrix::scale_by_streamline_count()
 void Matrix::remove_unassigned()
 {
   if (is_vector()) {
-    for (node_t i = 0; i != data.columns() - 1; ++i) {
+    for (node_t i = 0; i != data.cols() - 1; ++i) {
       data   (0, i) = data   (0, i+1);
       counts (0, i) = counts (0, i+1);
     }
-    data  .resize (1, data  .columns() - 1);
-    counts.resize (1, counts.columns() - 1);
+    data  .conservativeResize (1, data  .cols() - 1);
+    counts.conservativeResize (1, counts.cols() - 1);
   } else {
     for (node_t i = 0; i != data.rows() - 1; ++i) {
-      for (node_t j = i; j != data.columns() - 1; ++j) {
+      for (node_t j = i; j != data.cols() - 1; ++j) {
         data   (i, j) = data   (i+1, j+1);
         counts (i, j) = counts (i+1, j+1);
       }
     }
-    data  .resize (data  .rows() - 1, data  .columns() - 1);
-    counts.resize (counts.rows() - 1, counts.columns() - 1);
+    data  .conservativeResize (data  .rows() - 1, data  .cols() - 1);
+    counts.conservativeResize (counts.rows() - 1, counts.cols() - 1);
   }
 }
 
@@ -161,9 +154,9 @@ void Matrix::zero_diagonal()
 
 void Matrix::error_check (const std::set<node_t>& missing_nodes)
 {
-  std::vector<uint32_t> node_counts (data.columns(), 0);
+  std::vector<uint32_t> node_counts (data.cols(), 0);
   for (node_t i = 0; i != counts.rows(); ++i) {
-    for (node_t j = i; j != counts.columns(); ++j) {
+    for (node_t j = i; j != counts.cols(); ++j) {
       node_counts[i] += counts (i, j);
       node_counts[j] += counts (i, j);
     }
@@ -185,7 +178,12 @@ void Matrix::error_check (const std::set<node_t>& missing_nodes)
 
 
 
-void Matrix::write_assignments (const std::string& path)
+void Matrix::write (const std::string& path) const
+{
+  MR::save_matrix (data, path);
+}
+
+void Matrix::write_assignments (const std::string& path) const
 {
   File::OFStream stream (path);
   for (auto i = assignments_pairs.begin(); i != assignments_pairs.end(); ++i)

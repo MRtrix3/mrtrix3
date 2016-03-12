@@ -1,3 +1,17 @@
+/*
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 #include "dwi/sdeconv/constrained.h"
 
 namespace MR
@@ -48,8 +62,9 @@ namespace MR
       + Argument ("value").type_float (-1.0, 0.0, 10.0)
 
       + Option ("niter",
-                "the maximum number of iterations to perform for each voxel (default = 50).")
-      + Argument ("number").type_integer (1, 50, 1000);
+                "the maximum number of iterations to perform for each voxel (default = 50). "
+                "Use '-niter 0' for a linear unconstrained spherical deconvolution.")
+      + Argument ("number").type_integer (0, 50, 1000);
 
 
   }

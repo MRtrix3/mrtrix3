@@ -1,9 +1,22 @@
+/*
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 #include "app.h"
 #include "timer.h"
 #include "file/config.h"
-#include "image/header.h"
-#include "image/voxel.h"
-#include "image/copy.h"
+#include "header.h"
+#include "algo/copy.h"
 #include "gui/opengl/gl.h"
 #include "gui/opengl/lighting.h"
 #include "gui/dialog/file.h"
@@ -124,11 +137,11 @@ namespace MR
       void Window::GLArea::dropEvent (QDropEvent* event) {
         const QMimeData* mimeData = event->mimeData();
         if (mimeData->hasUrls()) {
-          std::vector<std::unique_ptr<MR::Image::Header>> list;
+          std::vector<std::unique_ptr<MR::Header>> list;
           QList<QUrl> urlList = mimeData->urls();
           for (int i = 0; i < urlList.size() && i < 32; ++i) {
             try {
-              list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (urlList.at (i).path().toUtf8().constData())));
+              list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (urlList.at (i).path().toUtf8().constData()))));
             }
             catch (Exception& e) {
               e.display();
@@ -206,7 +219,9 @@ namespace MR
         MoveModifier (get_modifier ("MRViewMoveModifierKey", Qt::ShiftModifier)),
         RotateModifier (get_modifier ("MRViewRotateModifierKey", Qt::ControlModifier)),
         mouse_action (NoAction),
-        orient (NAN, NAN, NAN, NAN),
+        focal_point { NAN, NAN, NAN },
+        camera_target { NAN, NAN, NAN },
+        orient (),
         field_of_view (100.0),
         anatomical_plane (2),
         colourbar_position (ColourMap::Position::BottomRight),
@@ -390,7 +405,7 @@ namespace MR
           image_interpolate_action = colourmap_menu->addAction (tr ("Interpolate"), this, SLOT (image_interpolate_slot()));
           image_interpolate_action->setShortcut (tr ("I"));
           image_interpolate_action->setCheckable (true);
-          image_interpolate_action->setChecked (true);
+          image_interpolate_action->setChecked (File::Config::get_bool("ImageInterpolation", true));
           addAction (image_interpolate_action);
 
           toolbar->addWidget (colourmap_button);
@@ -707,10 +722,10 @@ namespace MR
         if (image_list.empty())
           return;
 
-        std::vector<std::unique_ptr<MR::Image::Header>> list;
+        std::vector<std::unique_ptr<MR::Header>> list;
         for (size_t n = 0; n < image_list.size(); ++n) {
           try {
-            list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (image_list[n])));
+            list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (image_list[n]))));
           }
           catch (Exception& E) {
             E.display();
@@ -729,8 +744,8 @@ namespace MR
 
 
         try {
-          std::vector<std::unique_ptr<MR::Image::Header>> list;
-          list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (folder)));
+          std::vector<std::unique_ptr<MR::Header>> list;
+          list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (folder))));
           add_images (list);
         }
         catch (Exception& E) {
@@ -741,15 +756,16 @@ namespace MR
 
 
 
-      void Window::add_images (std::vector<std::unique_ptr<MR::Image::Header>>& list)
+      void Window::add_images (std::vector<std::unique_ptr<MR::Header>>& list)
       {
         for (size_t i = 0; i < list.size(); ++i) {
-          QAction* action = new Image (*list[i]);
-          action->setText (shorten (list[i]->name(), 20, 0).c_str());
+          const std::string name = list[i]->name(); // Gets move-constructed out
+          QAction* action = new Image (std::move (*list[i]));
+          action->setText (shorten (name, 20, 0).c_str());
           action->setParent (Window::main);
           action->setCheckable (true);
-          action->setToolTip (list[i]->name().c_str());
-          action->setStatusTip (list[i]->name().c_str());
+          action->setToolTip (name.c_str());
+          action->setStatusTip (name.c_str());
           image_group->addAction (action);
           image_menu->addAction (action);
           connect (action, SIGNAL(scalingChanged()), this, SLOT(on_scaling_changed()));
@@ -768,9 +784,8 @@ namespace MR
           return;
 
         try {
-          MR::Image::Buffer<cfloat> dest (image_name, image()->header());
-          auto src (image()->voxel());
-          MR::Image::copy_with_progress (src, dest.voxel());
+          auto dest = MR::Image<cfloat>::create (image_name, image()->header());
+          MR::copy_with_progress (image()->image, dest);
         }
         catch (Exception& E) {
           E.display();
@@ -1070,7 +1085,7 @@ namespace MR
 
       void Window::image_next_volume_slot () 
       {
-        size_t vol = image()->interp[3]+1;
+        size_t vol = image()->image.index(3)+1;
         set_image_volume (3, vol);
         emit volumeChanged(vol);
       }
@@ -1080,7 +1095,7 @@ namespace MR
 
       void Window::image_previous_volume_slot ()
       {
-        size_t vol = image()->interp[3]-1;
+        size_t vol = image()->image.index(3)-1;
         set_image_volume (3, vol);
         emit volumeChanged(vol);
       }
@@ -1090,7 +1105,7 @@ namespace MR
 
       void Window::image_next_volume_group_slot () 
       {
-        size_t vol = image()->interp[4]+1;
+        size_t vol = image()->image.index(4)+1;
         set_image_volume (4, vol);
         emit volumeGroupChanged(vol);
       }
@@ -1100,7 +1115,7 @@ namespace MR
 
       void Window::image_previous_volume_group_slot ()
       {
-        size_t vol = image()->interp[4]-1;
+        size_t vol = image()->image.index(4)-1;
         set_image_volume (4, vol);
         emit volumeGroupChanged(vol);
       }
@@ -1116,7 +1131,7 @@ namespace MR
         colourmap_button->colourmap_actions[cmap_index]->setChecked (true);
         invert_scale_action->setChecked (image()->scale_inverted());
         mode->image_changed_event();
-        setWindowTitle (image()->interp.name().c_str());
+        setWindowTitle (image()->image.name().c_str());
         set_image_navigation_menu();
         image()->set_allowed_features (
             mode->features & Mode::ShaderThreshold,
@@ -1244,16 +1259,16 @@ namespace MR
         bool show_next_volume_group (false), show_prev_volume_group (false);
         Image* imagep = image();
         if (imagep) {
-          if (imagep->interp.ndim() > 3) {
-            if (imagep->interp[3] > 0) 
+          if (imagep->image.ndim() > 3) {
+            if (imagep->image.index(3) > 0)
               show_prev_volume = true;
-            if (imagep->interp[3] < imagep->interp.dim(3)-1) 
+            if (imagep->image.index(3) < imagep->image.size(3)-1)
               show_next_volume = true;
 
-            if (imagep->interp.ndim() > 4) {
-              if (imagep->interp[4] > 0) 
+            if (imagep->image.ndim() > 4) {
+              if (imagep->image.index(4) > 0)
                 show_prev_volume_group = true;
-              if (imagep->interp[4] < imagep->interp.dim(4)-1) 
+              if (imagep->image.index(4) < imagep->image.size(4)-1)
                 show_next_volume_group = true;
             }
           }
@@ -1270,8 +1285,8 @@ namespace MR
 
       void Window::OpenGL_slot ()
       {
-        Dialog::OpenGL gl (this, glarea->format());
-        gl.exec();
+        Dialog::OpenGL glinfo (this, glarea->format());
+        glinfo.exec();
       }
 
 
@@ -1305,6 +1320,7 @@ namespace MR
 
       void Window::paintGL ()
       {
+        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         GL_CHECK_ERROR;
         gl::ClearColor (background_colour[0], background_colour[1], background_colour[2], 1.0);
 
@@ -1313,7 +1329,9 @@ namespace MR
 
         GL_CHECK_ERROR;
 
+        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         mode->paintGL();
+        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         GL_CHECK_ERROR;
 
         if (show_FPS) {
@@ -1354,11 +1372,13 @@ namespace MR
         glColorMask (true, true, true, true);
 #endif
         GL_CHECK_ERROR;
+        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
       }
 
 
       void Window::initGL ()
       {
+        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         GL::init ();
 
         font.initGL();
@@ -1373,6 +1393,7 @@ namespace MR
 
         if (MR::App::option.size()) 
           QTimer::singleShot (0, this, SLOT (process_commandline_options()));
+        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
       }
 
 
@@ -1652,20 +1673,20 @@ namespace MR
             }
 
             if (opt.opt->is ("focus")) { 
-              std::vector<float> pos = opt[0];
+              std::vector<default_type> pos = parse_floats (opt[0]);
               if (pos.size() != 3) 
                 throw Exception ("-focus option expects a comma-separated list of 3 floating-point values");
-              set_focus (Point<> (pos[0], pos[1], pos[2]));
+              set_focus (Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
               glarea->update();
               continue;
             }
 
             if (opt.opt->is ("voxel")) { 
               if (image()) {
-                std::vector<float> pos = opt[0];
+                std::vector<default_type> pos = parse_floats (opt[0]);
                 if (pos.size() != 3) 
                   throw Exception ("-voxel option expects a comma-separated list of 3 floating-point values");
-                set_focus (image()->interp.voxel2scanner (Point<> (pos[0], pos[1], pos[2])));
+                set_focus (image()->transform().voxel2scanner.cast<float>() *  Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
                 glarea->update();
               }
               continue;
@@ -1701,8 +1722,8 @@ namespace MR
             }
 
             if (opt.opt->is ("load")) { 
-              std::vector<std::unique_ptr<MR::Image::Header>> list; 
-              try { list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (opt[0]))); }
+              std::vector<std::unique_ptr<MR::Header>> list;
+              try { list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (opt[0])))); }
               catch (Exception& e) { e.display(); }
               add_images (list);
               continue;
@@ -1721,9 +1742,19 @@ namespace MR
               continue;
             }
 
+            if (opt.opt->is ("interpolation_on")) {
+              image_interpolate_action->setChecked(true);
+              image_interpolate_slot();
+            }
+
+            if (opt.opt->is ("interpolation_off")) {
+              image_interpolate_action->setChecked(false);
+              image_interpolate_slot();
+            }
+
             if (opt.opt->is ("intensity_range")) { 
               if (image()) {
-                std::vector<float> param = opt[0];
+                std::vector<default_type> param = parse_floats (opt[0]);
                 if (param.size() != 2) 
                   throw Exception ("-intensity_range options expects comma-separated list of two floating-point values");
                 image()->set_windowing (param[0], param[1]);
@@ -1800,6 +1831,10 @@ namespace MR
           +   Argument ("index").type_integer (0)
 
           + Option ("autoscale", "Reset the image scaling to automatically determined range.")
+
+          + Option ("interpolation_on", "Enable the image interpolation.")
+
+          + Option ("interpolation_off", "Disable the image interpolation.")
 
           + Option ("colourmap", "Switch the image colourmap to that specified, as per the colourmap menu.")
           +   Argument ("index").type_integer (0)

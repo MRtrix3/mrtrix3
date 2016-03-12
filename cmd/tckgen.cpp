@@ -1,28 +1,22 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-    Written by Robert E. Smith and J-Donald Tournier, 2011.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 
 #include "command.h"
-#include "image/voxel.h"
+#include "image.h"
 
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/roi.h"
@@ -52,13 +46,13 @@ using namespace App;
 
 
 
-const char* algorithms[] = { "fact", "ifod1", "ifod2", "nulldist", "sd_stream", "seedtest", "tensor_det", "tensor_prob", NULL };
+const char* algorithms[] = { "fact", "ifod1", "ifod2", "nulldist1", "nulldist2", "sd_stream", "seedtest", "tensor_det", "tensor_prob", nullptr };
 
 
 void usage ()
 {
 
-  AUTHOR = "Robert E. Smith (r.smith@brain.org.au) & J-Donald Tournier (jdtournier@gmail.com)";
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) & Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
   + "perform streamlines tractography.";
@@ -72,16 +66,16 @@ void usage ()
    "Annals of Neurology, 1999, 45, 265-269"
 
    + "* iFOD1 or SD_STREAM:\n"
-   "Tournier, J.-D.; Calamante, F. & Connelly, A. "
+   "Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
    "MRtrix: Diffusion tractography in crossing fiber regions. "
    "Int. J. Imaging Syst. Technol., 2012, 22, 53-66"
 
    + "* iFOD2:\n"
-   "Tournier, J.-D.; Calamante, F. & Connelly, A. "
+   "Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
    "Improved probabilistic streamlines tractography by 2nd order integration over fibre orientation distributions. "
    "Proceedings of the International Society for Magnetic Resonance in Medicine, 2010, 1670"
 
-   + "* Nulldist:\n"
+   + "* Nulldist1 / Nulldist2:\n"
    "Morris, D. M.; Embleton, K. V. & Parker, G. J. "
    "Probabilistic fibre tracking: Differentiation of connections from chance events. "
    "NeuroImage, 2008, 42, 1329-1339"
@@ -104,12 +98,12 @@ void usage ()
    "Magnetic Resonance in Medicine, 2000, 44, 625-632"
 
    + "* -act, -backtrack, -seed_gmwmi:\n"
-   "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+   "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
    "Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. "
    "NeuroImage, 2012, 62, 1924-1938"
 
    + "* -seed_dynamic:\n"
-   "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+   "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
    "SIFT2: Enabling dense quantitative assessment of brain white matter connectivity using streamlines tractography. "
    "NeuroImage, 2015, 119, 338-351";
 
@@ -117,12 +111,12 @@ void usage ()
     + Argument ("source",
         "the image containing the source data. The type of data depends on the algorithm used:\n"
         "- FACT: the directions file (each triplet of volumes is the X,Y,Z direction of a fibre population).\n"
-        "- iFOD1/2 & SD_Stream: the SH image resulting from CSD.\n"
-        "- Nulldist & SeedTest: any image (will not be used).\n"
-        "- TensorDet / TensorProb: the DWI image.\n"
+        "- iFOD1/2, Nulldist2 & SD_Stream: the SH image resulting from CSD.\n"
+        "- Nulldist1 & SeedTest: any image (will not be used).\n"
+        "- Tensor_Det / Tensor_Prob: the DWI image.\n"
         ).type_image_in()
 
-    + Argument ("tracks", "the output file containing the tracks generated.").type_file_out();
+    + Argument ("tracks", "the output file containing the tracks generated.").type_tracks_out();
 
 
 
@@ -130,7 +124,7 @@ void usage ()
 
   + Option ("algorithm",
             "specify the tractography algorithm to use. Valid choices are: "
-              "FACT, iFOD1, iFOD2, Nulldist, SD_Stream, Seedtest, Tensor_Det, Tensor_Prob (default: iFOD2).")
+              "FACT, iFOD1, iFOD2, Nulldist1, Nulldist2, SD_Stream, Seedtest, Tensor_Det, Tensor_Prob (default: iFOD2).")
     + Argument ("name").type_choice (algorithms, 2)
 
   + DWI::Tractography::ROIOption
@@ -143,8 +137,7 @@ void usage ()
   
   + DWI::GradImportOptions();
 
-
-};
+}
 
 
 
@@ -158,7 +151,7 @@ void run ()
   Properties properties;
 
   int algorithm = 2; // default = ifod2
-  Options opt = get_options ("algorithm");
+  auto opt = get_options ("algorithm");
   if (opt.size()) algorithm = opt[0][0];
 
   load_rois (properties);
@@ -194,18 +187,21 @@ void run ()
       Exec<iFOD2>      ::run (argument[0], argument[1], properties);
       break;
     case 3:
-      Exec<NullDist>   ::run (argument[0], argument[1], properties);
+      Exec<NullDist1>  ::run (argument[0], argument[1], properties);
       break;
     case 4:
-      Exec<SDStream>   ::run (argument[0], argument[1], properties);
+      Exec<NullDist2>  ::run (argument[0], argument[1], properties);
       break;
     case 5:
-      Exec<Seedtest>   ::run (argument[0], argument[1], properties);
+      Exec<SDStream>   ::run (argument[0], argument[1], properties);
       break;
     case 6:
-      Exec<Tensor_Det> ::run (argument[0], argument[1], properties);
+      Exec<Seedtest>   ::run (argument[0], argument[1], properties);
       break;
     case 7:
+      Exec<Tensor_Det> ::run (argument[0], argument[1], properties);
+      break;
+    case 8:
       Exec<Tensor_Prob>::run (argument[0], argument[1], properties);
       break;
     default:

@@ -1,28 +1,20 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-    Written by J-Donald Tournier, 27/06/08.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #include "file/path.h"
 #include "file/dicom/element.h"
-#include "get_set.h"
 #include "debug.h"
 
 namespace MR {
@@ -107,7 +99,7 @@ namespace MR {
 
         is_BE = is_transfer_syntax_BE;
 
-        group = get<uint16_t> (start, is_BE);
+        group = Raw::fetch_<uint16_t> (start, is_BE);
 
         if (group == GROUP_BYTE_ORDER_SWAPPED) {
           if (!is_BE) 
@@ -116,7 +108,7 @@ namespace MR {
           is_BE = false;
           group = GROUP_BYTE_ORDER;
         }
-        element = get<uint16_t> (start+2, is_BE);
+        element = Raw::fetch_<uint16_t> (start+2, is_BE);
 
         return false;
       }
@@ -137,10 +129,10 @@ namespace MR {
           // explicit encoding:
           VR = ByteOrder::BE (*reinterpret_cast<uint16_t*> (start+4));
           if (VR == VR_OB || VR == VR_OW || VR == VR_OF || VR == VR_SQ || VR == VR_UN || VR == VR_UT) {
-            size = get<uint32_t> (start+8, is_BE);
+            size = Raw::fetch_<uint32_t> (start+8, is_BE);
             data += 4;
           }
-          else size = get<uint16_t> (start+6, is_BE);
+          else size = Raw::fetch_<uint16_t> (start+6, is_BE);
 
           // try figuring out VR from dictionary if vendors haven't bothered
           // filling it in...
@@ -162,7 +154,7 @@ namespace MR {
           }
           else 
             VR = get_VR_from_tag_name (name);
-          size = get<uint32_t> (start+4, is_BE);
+          size = Raw::fetch_<uint32_t> (start+4, is_BE);
         }
 
 
@@ -177,11 +169,13 @@ namespace MR {
         }
         else if (next+size > fmap->address() + fmap->size()) 
           throw Exception ("file \"" + fmap->name() + "\" is too small to contain DICOM elements specified");
-        else if (size%2) 
-          throw Exception ("odd length (" + str (size) + ") used for DICOM tag " + ( tag_name().size() ? tag_name().substr (2) : "" ) 
-              + " (" + str (group) + ", " + str (element) + ") in file \"" + fmap->name() + "");
-        else if (VR != VR_SQ && ( group != GROUP_SEQUENCE || element != ELEMENT_SEQUENCE_ITEM ) ) 
-          next += size;
+        else {
+          if (size%2) 
+            DEBUG ("WARNING: odd length (" + str (size) + ") used for DICOM tag " + ( tag_name().size() ? tag_name().substr (2) : "" ) 
+                + " (" + str (group) + ", " + str (element) + ") in file \"" + fmap->name() + "");
+          if (VR != VR_SQ && ( group != GROUP_SEQUENCE || element != ELEMENT_SEQUENCE_ITEM ) ) 
+            next += size;
+        }
 
 
 
@@ -262,10 +256,10 @@ namespace MR {
         std::vector<int32_t> V;
         if (VR == VR_SL) 
           for (const uint8_t* p = data; p < data + size; p += sizeof (int32_t))
-            V.push_back (get<int32_t> (p, is_BE));
+            V.push_back (Raw::fetch_<int32_t> (p, is_BE));
         else if (VR == VR_SS)
           for (const uint8_t* p = data; p < data + size; p += sizeof (int16_t)) 
-            V.push_back (get<int16_t> (p, is_BE));
+            V.push_back (Raw::fetch_<int16_t> (p, is_BE));
         else if (VR == VR_IS) {
           std::vector<std::string> strings (split (std::string (reinterpret_cast<const char*> (data), size), "\\", false));
           V.resize (strings.size());
@@ -286,10 +280,10 @@ namespace MR {
         std::vector<uint32_t> V;
         if (VR == VR_UL) 
           for (const uint8_t* p = data; p < data + size; p += sizeof (uint32_t))
-            V.push_back (get<uint32_t> (p, is_BE));
+            V.push_back (Raw::fetch_<uint32_t> (p, is_BE));
         else if (VR == VR_US)
           for (const uint8_t* p = data; p < data + size; p += sizeof (uint16_t)) 
-            V.push_back (get<uint16_t> (p, is_BE));
+            V.push_back (Raw::fetch_<uint16_t> (p, is_BE));
         else if (VR == VR_IS) {
           std::vector<std::string> strings (split (std::string (reinterpret_cast<const char*> (data), size), "\\", false));
           V.resize (strings.size());
@@ -307,10 +301,10 @@ namespace MR {
         std::vector<double> V;
         if (VR == VR_FD) 
           for (const uint8_t* p = data; p < data + size; p += sizeof (float64))
-            V.push_back (get<float64> (p, is_BE));
+            V.push_back (Raw::fetch_<float64> (p, is_BE));
         else if (VR == VR_FL)
           for (const uint8_t* p = data; p < data + size; p += sizeof (float32)) 
-            V.push_back (get<float32> (p, is_BE));
+            V.push_back (Raw::fetch_<float32> (p, is_BE));
         else if (VR == VR_DS || VR == VR_IS) {
           std::vector<std::string> strings (split (std::string (reinterpret_cast<const char*> (data), size), "\\", false));
           V.resize (strings.size());
@@ -330,7 +324,7 @@ namespace MR {
       { 
         if (VR == VR_AT) {
           std::vector<std::string> strings;
-          strings.push_back (printf ("%02X %02X", get<uint16_t> (data, is_BE), get<uint16_t> (data+2, is_BE)));
+          strings.push_back (printf ("%02X %02X", Raw::fetch_<uint16_t> (data, is_BE), Raw::fetch_<uint16_t> (data+2, is_BE)));
           return strings;
         }
 

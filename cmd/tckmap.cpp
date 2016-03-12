@@ -1,37 +1,27 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-    Written by Robert E. Smith and J-Donald Tournier, 2011.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include <vector>
 #include <set>
 
 #include "command.h"
-#include "point.h"
 #include "progressbar.h"
 #include "memory.h"
 
-#include "image/buffer_preload.h"
-#include "image/header.h"
-#include "image/voxel.h"
-#include "math/matrix.h"
+#include "image.h"
 #include "thread_queue.h"
 
 #include "dwi/tractography/file.h"
@@ -154,14 +144,6 @@ const OptionGroup MappingOption = OptionGroup ("Options for the streamline-to-vo
 
 
 
-const OptionGroup ExtraOption = OptionGroup ("Additional options for tckmap")
-
-  + Option ("dump",
-      "dump the scratch buffer contents directly to a .mih / .dat file pair or .mif file, "
-      "rather than memory-mapping the output file (this is useful if either the image is "
-      "larger than half the available RAM, or a network file system is in use where writing "
-      "to a memory-mapped output file performs very poorly)");
-
 
 
 
@@ -172,11 +154,15 @@ void usage () {
 AUTHOR = "Robert E. Smith (r.smith@brain.org.au) and J-Donald Tournier (d.tournier@brain.org.au)";
 
 DESCRIPTION
-  + "Use track data as a form of contrast for producing a high-resolution image.";
+  + "Use track data as a form of contrast for producing a high-resolution image."
+
+  + "Note: if you run into limitations with RAM usage, make sure you output the "
+    "results to a .mif file or .mih / .dat file pair - this will avoid the allocation "
+    "of an additional buffer to store the output for write-out.";
 
 REFERENCES 
   + "* For TDI or DEC TDI:\n"
-  "Calamante, F.; Tournier, J.-D.; Jackson, G. D. & Connelly, A. "
+  "Calamante, F.; Tournier, J.-D.; Jackson, G. D. & Connelly, A. " // Internal
   "Track-density imaging (TDI): Super-resolution white matter imaging using whole-brain track-density mapping. "
   "NeuroImage, 2010, 53, 1233-1243"
 
@@ -186,27 +172,27 @@ REFERENCES
   "NeuroImage, 2011, 55, 133-141"
 
   + "* If using -dixel option with TDI contrast only:\n"
-  "Smith, R.E., Tournier, J-D., Calamante, F., Connelly, A. "
+  "Smith, R.E., Tournier, J-D., Calamante, F., Connelly, A. " // Internal
   "A novel paradigm for automated segmentation of very large whole-brain probabilistic tractography data sets. "
   "In proc. ISMRM, 2011, 19, 673"
 
   + "* If using -dixel option with any other contrast:\n"
-  "Pannek, K., Raffelt, D., Salvado, O., Rose, S. "
+  "Pannek, K., Raffelt, D., Salvado, O., Rose, S. " // Internal
   "Incorporating directional information in diffusion tractography derived maps: angular track imaging (ATI). "
   "In Proc. ISMRM, 2012, 20, 1912"
   
   + "* If using -tod option:\n"
-  "Dhollander, T., Emsell, L., Van Hecke, W., Maes, F., Sunaert, S., Suetens, P. "
+  "Dhollander, T., Emsell, L., Van Hecke, W., Maes, F., Sunaert, S., Suetens, P. " // Internal
   "Track Orientation Density Imaging (TODI) and Track Orientation Distribution (TOD) based tractography. "
   "NeuroImage, 2014, 94, 312-336"
 
   + "* If using other contrasts / statistics:\n"
-  "Calamante, F.; Tournier, J.-D.; Smith, R. E. & Connelly, A. "
+  "Calamante, F.; Tournier, J.-D.; Smith, R. E. & Connelly, A. " // Internal
   "A generalised framework for super-resolution track-weighted imaging. "
   "NeuroImage, 2012, 59, 2494-2503"
 
   + "* If using -precise mapping option:\n"
-  "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+  "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
   "SIFT: Spherical-deconvolution informed filtering of tractograms. "
   "NeuroImage, 2013, 67, 298-312 (Appendix 3)";
 
@@ -219,7 +205,6 @@ OPTIONS
   + OutputDimOption
   + TWIOption
   + MappingOption
-  + ExtraOption
   + Tractography::TrackWeightsInOption;
 
 }
@@ -229,9 +214,9 @@ OPTIONS
 
 
 
-MapWriterBase* make_writer (Image::Header& H, const std::string& name, const vox_stat_t stat_vox, const writer_dim dim)
+MapWriterBase* make_writer (Header& H, const std::string& name, const vox_stat_t stat_vox, const writer_dim dim)
 {
-  MapWriterBase* writer = NULL;
+  MapWriterBase* writer = nullptr;
   const uint8_t dt = uint8_t(H.datatype()()) & DataType::Type;
   if (dt == DataType::Bit)
     writer = new MapWriter<bool>     (H, name, stat_vox, dim);
@@ -276,10 +261,7 @@ void run () {
 
   const size_t num_tracks = properties["count"].empty() ? 0 : to<size_t> (properties["count"]);
 
-  std::vector<float> voxel_size;
-  Options opt = get_options("vox");
-  if (opt.size())
-    voxel_size = opt[0][0];
+  std::vector<default_type> voxel_size = get_option_value ("vox", std::vector<default_type>());
 
   if (voxel_size.size() == 1)
     voxel_size.assign (3, voxel_size.front());
@@ -289,14 +271,13 @@ void run () {
   if (!voxel_size.empty())
     INFO ("creating image with voxel dimensions [ " + str(voxel_size[0]) + " " + str(voxel_size[1]) + " " + str(voxel_size[2]) + " ]");
 
-  Image::Header header;
-  opt = get_options ("template");
+  Header header;
+  auto opt = get_options ("template");
   if (opt.size()) {
-    Image::Header template_header (opt[0][0]);
+    auto template_header = Header::open (opt[0][0]);
     header = template_header;
-    header.comments().clear();
-    header.std::map<std::string, std::string>::clear();
-    header["twi_template"] = str(opt[0][0]);
+    header.keyval().clear();
+    header.keyval()["twi_template"] = str(opt[0][0]);
     if (!voxel_size.empty())
       oversample_header (header, voxel_size);
   }
@@ -311,8 +292,8 @@ void run () {
     header.sanitise();
   }
 
-  header.comments().push_back ("track-weighted image");
-  header["tck_source"] = str(argument[0]);
+  add_line (header.keyval()["comments"], "track-weighted image");
+  header.keyval()["tck_source"] = std::string (argument[0]);
 
   opt = get_options ("contrast");
   const contrast_t contrast = opt.size() ? contrast_t(int(opt[0][0])) : TDI;
@@ -344,9 +325,9 @@ void run () {
   if (opt.size()) {
     writer_type = DEC;
     header.set_ndim (4);
-    header.dim(3) = 3;
+    header.size (3) = 3;
     header.sanitise();
-    Image::Stride::set (header, Image::Stride::contiguous_along_axis (3, header));
+    Stride::set (header, Stride::contiguous_along_axis (3, header));
   }
 
   std::unique_ptr<DWI::Directions::FastLookupSet> dirs;
@@ -360,18 +341,18 @@ void run () {
     else
       dirs.reset (new DWI::Directions::FastLookupSet (to<size_t>(opt[0][0])));
     header.set_ndim (4);
-    header.dim(3) = dirs->size();
+    header.size(3) = dirs->size();
     header.sanitise();
-    Image::Stride::set (header, Image::Stride::contiguous_along_axis (3, header));
+    Stride::set (header, Stride::contiguous_along_axis (3, header));
     // Write directions to image header as diffusion encoding
-    Math::Matrix<float> grad (dirs->size(), 4);
+    Eigen::MatrixXd grad (dirs->size(), 4);
     for (size_t row = 0; row != dirs->size(); ++row) {
       grad (row, 0) = ((*dirs)[row])[0];
       grad (row, 1) = ((*dirs)[row])[1];
       grad (row, 2) = ((*dirs)[row])[2];
       grad (row, 3) = 1.0f;
     }
-    header.DW_scheme() = grad;
+    header.set_DW_scheme (grad);
   }
 
   opt = get_options ("tod");
@@ -383,12 +364,12 @@ void run () {
     if (lmax % 2)
       throw Exception ("lmax for TODI must be an even number");
     header.set_ndim (4);
-    header.dim(3) = Math::SH::NforL (lmax);
+    header.size(3) = Math::SH::NforL (lmax);
     header.sanitise();
-    Image::Stride::set (header, Image::Stride::contiguous_along_axis (3, header));
+    Stride::set (header, Stride::contiguous_along_axis (3, header));
   }
 
-  header["twi_dimensionality"] = writer_dims[writer_type];
+  header.keyval()["twi_dimensionality"] = writer_dims[writer_type];
 
 
   // Deal with erroneous statistics & provide appropriate messages
@@ -433,19 +414,19 @@ void run () {
 
   }
 
-  header["twi_contrast"] = contrasts[contrast];
-  header["twi_vox_stat"] = voxel_statistics[stat_vox];
-  header["twi_tck_stat"] = track_statistics[stat_tck];
+  header.keyval()["twi_contrast"] = contrasts[contrast];
+  header.keyval()["twi_vox_stat"] = voxel_statistics[stat_vox];
+  header.keyval()["twi_tck_stat"] = track_statistics[stat_tck];
 
 
   // Figure out how the streamlines will be mapped
   const bool precise = get_options ("precise").size();
-  header["precise_mapping"] = precise ? "1" : "0";
+  header.keyval()["precise_mapping"] = precise ? "1" : "0";
   const bool ends_only = get_options ("ends_only").size();
   if (ends_only) {
     if (precise)
       throw Exception ("Options -precise and -ends_only are mutually exclusive");
-    header["endpoints_only"] = "1";
+    header.keyval()["endpoints_only"] = "1";
   }
 
   size_t upsample_ratio = 1;
@@ -497,17 +478,12 @@ void run () {
   //   (can still affect output image if voxel-wise statistic is mean)
   const bool map_zero = get_options ("map_zero").size();
   if (map_zero)
-    header["map_zero"] = "1";
+    header.keyval()["map_zero"] = "1";
 
-
-  // Raw std::ofstream dump of image data from the internal RAM buffer to file
-  const bool dump = get_options ("dump").size();
-  if (dump && !Path::has_suffix (argument[1], ".mih") && !Path::has_suffix (argument[1], ".mif"))
-    throw Exception ("Option -dump only works when outputting to .mih / .mif image formats");
 
 
   // Produce a useful INFO message
-  std::string msg = str("Generating ") + str(Mapping::writer_dims[writer_type]) + " image with ";
+  std::string msg = std::string("Generating ") + Mapping::writer_dims[writer_type] + " image with ";
   switch (contrast) {
     case TDI:              msg += "density";                    break;
     case LENGTH:           msg += "length";                     break;
@@ -563,7 +539,7 @@ void run () {
   if (writer_type == DIXEL)
     mapper->create_dixel_plugin (*dirs);
   if (writer_type == TOD)
-    mapper->create_tod_plugin (header.dim(3));
+    mapper->create_tod_plugin (header.size(3));
   if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT || contrast == FOD_AMP) {
     opt = get_options ("image");
     if (!opt.size()) {
@@ -573,12 +549,12 @@ void run () {
         throw Exception ("If using 'fod_amp' contrast, must provide the relevant spherical harmonic image using -image option");
     }
     const std::string assoc_image (opt[0][0]);
-    const Image::Header H_assoc_image (assoc_image);
+    const auto H_assoc_image = Header::open (assoc_image);
     if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT)
       mapper->add_scalar_image (assoc_image);
     else
       mapper->add_fod_image (assoc_image);
-    header["twi_assoc_image"] = str(opt[0][0]);
+    header.keyval()["twi_assoc_image"] = assoc_image;
   }
 
   std::unique_ptr<MapWriterBase> writer;
@@ -589,8 +565,6 @@ void run () {
     case DIXEL:     writer.reset (make_writer           (header, argument[1], stat_vox, DIXEL));     break;
     case TOD:       writer.reset (new MapWriter<float>  (header, argument[1], stat_vox, TOD));       break;
   }
-
-  writer->set_direct_dump (dump);
 
   // Finally get to do some number crunching!
   // Complete branch here for Gaussian track-wise statistic; it's a nightmare to manage, so am
@@ -615,6 +589,7 @@ void run () {
     }
   }
 
+  writer->finalise();
 }
 
 

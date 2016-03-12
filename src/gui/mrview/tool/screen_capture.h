@@ -1,32 +1,29 @@
 /*
-   Copyright 2013 Brain Research Institute, Melbourne, Australia
-
-   Written by David Raffelt 10/04/2013
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
 #ifndef __gui_mrview_tool_screen_capture_h__
 #define __gui_mrview_tool_screen_capture_h__
 
+#include <deque>
+
+#include "math/versor.h"
+
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/adjust_button.h"
 #include "gui/mrview/spin_box.h"
-#include <deque>
+
 
 namespace MR
 {
@@ -91,14 +88,14 @@ namespace MR
 
             class CaptureState {
               public:
-                Math::Versor<float> orientation;
-                Point<> focus, target;
+                Math::Versorf orientation;
+                Eigen::Vector3f focus, target;
                 float fov;
                 size_t volume, volume_axis;
                 size_t frame_index;
                 int plane;
-                CaptureState(const Math::Versor<float> &orientation,
-                  const Point<> &focus, const Point<> &target, float fov,
+                CaptureState(const Math::Versorf& orientation,
+                  const Eigen::Vector3f& focus, const Eigen::Vector3f& target, float fov,
                   size_t volume, size_t volume_axis,
                   size_t frame_index, int plane)
                   : orientation(orientation), focus(focus), target(target), fov(fov),

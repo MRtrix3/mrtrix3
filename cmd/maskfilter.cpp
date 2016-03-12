@@ -1,34 +1,26 @@
 /*
-    Copyright 2012 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
 
-    Written by Robert E. Smith, 28/03/2014.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "command.h"
-#include "image/buffer.h"
-#include "image/buffer_preload.h"
-#include "image/voxel.h"
-#include "image/filter/base.h"
-#include "image/filter/connected_components.h"
-#include "image/filter/dilate.h"
-#include "image/filter/erode.h"
-#include "image/filter/median.h"
+#include "image.h"
+#include "filter/base.h"
+#include "filter/connected_components.h"
+#include "filter/dilate.h"
+#include "filter/erode.h"
+#include "filter/median.h"
 
 
 using namespace MR;
@@ -73,7 +65,7 @@ const OptionGroup MedianOption = OptionGroup ("Options for median filter")
 
 void usage ()
 {
-  AUTHOR = "Robert E. Smith (r.smith@brain.org.au), David Raffelt (d.raffelt@brain.org.au) and J-Donald Tournier (jdtournier@gmail.com)";
+  AUTHOR = "Robert E. Smith (r.smith@brain.org.au), David Raffelt (david.raffelt@florey.edu.au) and J-Donald Tournier (jdtournier@gmail.com)";
 
   DESCRIPTION
   + "Perform filtering operations on 3D / 4D mask images."
@@ -85,7 +77,7 @@ void usage ()
 
   ARGUMENTS
   + Argument ("input",  "the input image.").type_image_in ()
-  + Argument ("filter", "the type of filter to be applied").type_choice (filters)
+  + Argument ("filter", "the type of filter to be applied (connect, dilate, erode, median)").type_choice (filters)
   + Argument ("output", "the output image.").type_image_out ();
 
 
@@ -94,27 +86,28 @@ void usage ()
   + DilateErodeOption
   + MedianOption
 
-  + Image::Stride::StrideOption;
+  + Stride::Options;
 }
 
 
+typedef bool value_type;
+
 void run () {
 
-  Image::BufferPreload<bool> input_data (argument[0]);
-  auto input_voxel = input_data.voxel();
+  auto input_image = Image<value_type>::open (argument[0]);
 
   int filter_index = argument[1];
 
   if (filter_index == 0) { // Connected components
-    Image::Filter::ConnectedComponents filter (input_voxel, std::string("applying connected-component filter to image ") + Path::basename (argument[0]) + "... ");
-    Options opt = get_options ("axes");
+    Filter::ConnectedComponents filter (input_image, std::string("applying connected-component filter to image ") + Path::basename (argument[0]));
+    auto opt = get_options ("axes");
     std::vector<int> axes;
     if (opt.size()) {
       axes = opt[0][0];
-      for (size_t d = 0; d < input_data.ndim(); d++)
+      for (size_t d = 0; d < input_image.ndim(); d++)
         filter.set_ignore_dim (d, true);
       for (size_t i = 0; i < axes.size(); i++) {
-        if (axes[i] >= static_cast<int> (input_voxel.ndim()) || axes[i] < 0)
+        if (axes[i] >= static_cast<int> (input_image.ndim()) || axes[i] < 0)
           throw Exception ("axis supplied to option -ignore is out of bounds");
         filter.set_ignore_dim (axes[i], false);
       }
@@ -129,70 +122,57 @@ void run () {
     if (opt.size())
       filter.set_26_connectivity (true);
 
-    Image::Header header;
-    header.info() = filter.info();
-    Image::Stride::set_from_command_line (header);
+    Stride::set_from_command_line (filter);
 
     if (largest_only) {
-      header.datatype() = DataType::Bit;
-      Image::Buffer<bool> output_data (argument[2], header);
-      auto output_voxel = output_data.voxel();
-      filter (input_voxel, output_voxel);
+      filter.datatype() = DataType::UInt8;
+      auto output_image = Image<value_type>::create (argument[2], filter);
+      filter (input_image, output_image);
     } else {
-      header.datatype() = DataType::UInt32;
-      header.datatype().set_byte_order_native();
-      Image::Buffer<uint32_t> output_data (argument[2], header);
-      auto output_voxel = output_data.voxel();
-      filter (input_voxel, output_voxel);
+      filter.datatype() = DataType::UInt32;
+      filter.datatype().set_byte_order_native();
+      auto output_image = Image<uint32_t>::create (argument[2], filter);
+      filter (input_image, output_image);
     }
     return;
   }
 
   if (filter_index == 1) { // Dilate
-    Image::Filter::Dilate filter (input_voxel, std::string("applying dilate filter to image ") + Path::basename (argument[0]) + "... ");
-    Options opt = get_options ("npass");
+    Filter::Dilate filter (input_image, std::string("applying dilate filter to image ") + Path::basename (argument[0]));
+    auto opt = get_options ("npass");
     if (opt.size())
       filter.set_npass (int(opt[0][0]));
 
-    Image::Header header;
-    header.info() = filter.info();
-    Image::Stride::set_from_command_line (header);
+    Stride::set_from_command_line (filter);
 
-    Image::Buffer<bool> output_data (argument[2], header);
-    auto output_voxel = output_data.voxel();
-    filter (input_voxel, output_voxel);
+    auto output_image = Image<value_type>::create (argument[2], filter);
+    filter (input_image, output_image);
     return;
   }
 
   if (filter_index == 2) { // Erode
-    Image::Filter::Erode filter (input_voxel, std::string("applying erode filter to image ") + Path::basename (argument[0]) + "... ");
-    Options opt = get_options ("npass");
+    Filter::Erode filter (input_image, std::string("applying erode filter to image ") + Path::basename (argument[0]));
+    auto opt = get_options ("npass");
     if (opt.size())
       filter.set_npass (int(opt[0][0]));
 
-    Image::Header header;
-    header.info() = filter.info();
-    Image::Stride::set_from_command_line (header);
+    Stride::set_from_command_line (filter);
 
-    Image::Buffer<bool> output_data (argument[2], header);
-    auto output_voxel = output_data.voxel();
-    filter (input_voxel, output_voxel);
+    auto output_image = Image<value_type>::create (argument[2], filter);
+    filter (input_image, output_image);
     return;
   }
 
   if (filter_index == 3) { // Median
-    Image::Filter::Median filter (input_voxel, std::string("applying median filter to image ") + Path::basename (argument[0]) + "... ");
-    Options opt = get_options ("extent");
+    Filter::Median filter (input_image, std::string("applying median filter to image ") + Path::basename (argument[0]));
+    auto opt = get_options ("extent");
     if (opt.size())
       filter.set_extent (parse_ints (opt[0][0]));
 
-    Image::Header header;
-    header.info() = filter.info();
-    Image::Stride::set_from_command_line (header);
+    Stride::set_from_command_line (filter);
 
-    Image::Buffer<bool> output_data (argument[2], header);
-    auto output_voxel = output_data.voxel();
-    filter (input_voxel, output_voxel);
+    auto output_image = Image<value_type>::create (argument[2], filter);
+    filter (input_image, output_image);
     return;
   }
 
