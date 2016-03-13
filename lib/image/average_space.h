@@ -156,19 +156,17 @@ namespace MR
       vox_scaling(i) = 1.0/header_out.spacing(i);
     }
     vox_scaling(3) = 1.0;
-    DEBUG ("vox_scaling: "+ str(vox_scaling.transpose(), 10));
 
     // MatrixType4 mat_avg;
     MatrixType4 mat_avg = MatrixType4::Zero(4, 4);
     Math::matrix_average<MatrixArrayType, MatrixType4> (transformation_matrices, mat_avg, false);
-    DEBUG ("mat_avg: " + str(mat_avg,10));
 
     auto average_v2s_trafo = Eigen::Transform<ComputeType, 3, Eigen::Projective>::Identity();
     average_v2s_trafo.matrix() = mat_avg;
 
     Eigen::Transform<ComputeType, 3, Eigen::Projective> average_s2v_trafo = average_v2s_trafo.inverse(Eigen::Projective);
 
-    DEBUG ("inverse sanity: " + str( (average_v2s_trafo * average_s2v_trafo).matrix().isApprox (MatrixType::Identity (4, 4))));
+    // DEBUG ("inverse sanity: " + str( (average_v2s_trafo * average_s2v_trafo).matrix().isApprox (MatrixType::Identity (4, 4))));
 
     // transform all image corners into inverse average space
     MatrixType bounding_box_corners_inv = bounding_box_corners;

@@ -176,6 +176,7 @@ namespace MR
               typename is_neighbourhood_metric<U>::no = 0,
               typename use_processed_image<U>::yes = 0,
               typename cost_is_vector<U>::no = 0) {
+            assert (params.processed_image.valid());
 
             if (params.processed_mask.valid()) {
               assign_pos_of (iter, 0, 3).to (params.processed_mask);

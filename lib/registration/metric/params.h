@@ -16,6 +16,10 @@
 #ifndef __registration_metric_params_h__
 #define __registration_metric_params_h__
 
+#include "image.h"
+#include "interp/linear.h"
+#include "interp/nearest.h"
+
 namespace MR
 {
   namespace Registration
@@ -33,10 +37,10 @@ namespace MR
                 class Im2ImageInterpType,
                 class Im1MaskInterpolatorType,
                 class Im2MaskInterpolatorType,
-                class ProcImageType,
-                class ProcImageInterpolatorType,
-                class ProcMaskType,
-                class ProcessedMaskInterpolatorType>
+                class ProcImageType = Image<default_type>,
+                class ProcImageInterpolatorType = Interp::Linear<Image<default_type>>,
+                class ProcMaskType = Image<bool>,
+                class ProcessedMaskInterpolatorType = Interp::Nearest<Image<bool>>>
       class Params {
         public:
 
@@ -45,6 +49,8 @@ namespace MR
           typedef typename Im2ImageInterpType::value_type Im2ValueType;
           typedef Im1ImageInterpType Im1InterpType;
           typedef Im2ImageInterpType Im2InterpType;
+          typedef Im1MaskInterpolatorType Mask1InterpolatorType;
+          typedef Im2MaskInterpolatorType Mask2InterpolatorType;
           typedef typename ProcImageInterpolatorType::value_type ProcessedValueType;
           typedef ProcImageType ProcessedImageType;
           typedef ProcMaskType ProcessedMaskType;
