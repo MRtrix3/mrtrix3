@@ -8,15 +8,11 @@ function image = read_mrtrix (filename)
 image.comments = {};
 
 f = fopen (filename, 'r');
-if (f<1) 
-  disp (['error opening ' filename ]);
-  return
-end
+assert(f ~= -1, 'error opening %s', filename);
 L = fgetl(f);
 if ~strncmp(L, 'mrtrix image', 12)
   fclose(f);
-  disp ([filename ' is not in MRtrix format']);
-  return
+  error('%s is not in MRtrix format', filename);
 end
 
 transform = [];
@@ -74,8 +70,7 @@ end
 
 if ~isfield (image, 'dim') || ~exist ('file') || ...
   ~isfield (image, 'layout') || ~isfield (image, 'datatype')
-  disp ('critical entries missing in header - not reading data')
-  return
+  error('critical entries missing in header - not reading data');
 end
 
 layout = split_strings(image.layout, ',');
@@ -104,10 +99,7 @@ else
   end
 end
 
-if (f<1) 
-  disp (['error opening ' filename ]);
-  return
-end
+assert(f ~= -1, 'error opening %s', filename);
 
 fseek (f, offset, -1);
 image.data = fread (f, inf, datatype);
@@ -131,4 +123,3 @@ function S = split_strings (V, delim)
     [R, V] = strtok(V,delim);
     S{end+1} = R;
   end
-

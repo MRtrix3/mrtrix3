@@ -15,8 +15,8 @@ function write_mrtrix (image, filename)
 %    image.transform:       a 4x4 matrix [optional]
 %    image.DW_scheme:       a NDWx4 matrix of gradient directions [optional]
 
-
 fid = fopen (filename, 'w');
+assert(fid ~= -1, 'error opening %s', filename);
 fprintf (fid, 'mrtrix image\ndim: ');
 
 if isstruct(image)
@@ -99,17 +99,17 @@ if isstruct (image) && isfield (image, 'DW_scheme')
    end
 end
 
-if filename(end-3:end) == '.mif'
+if strcmp(filename(end-3:end), '.mif')
   datafile = filename;
   dataoffset = ftell (fid) + 24;
   fprintf (fid, '\nfile: . %d\nEND\n                         ', dataoffset);
-elseif filename(end-3:end) == '.mih'
+elseif strcmp(filename(end-3:end), '.mih')
   datafile = [ filename(end-3:end) '.dat' ];
   dataoffset = 0;
   fprintf (fid, '\nfile: %s %d\nEND\n', datafile, dataoffset);
-else 
-  disp ('unknown file suffix - aborting');
-  return
+else
+  fclose(fid);
+  error('unknown file suffix - aborting');
 end
 
 fclose(fid);
@@ -123,4 +123,3 @@ else
   fwrite (fid, image, precision);
 end
 fclose (fid);
-
