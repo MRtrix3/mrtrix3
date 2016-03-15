@@ -14,6 +14,7 @@
  */
 
 
+#include <unsupported/Eigen/MatrixFunctions>
 #include "command.h"
 #include "progressbar.h"
 #include "image.h"
@@ -25,7 +26,6 @@
 #include "filter/reslice.h"
 #include "filter/warp.h"
 #include "algo/loop.h"
-#include "algo/stochastic_threaded_loop.h"
 #include "algo/copy.h"
 #include "dwi/directions/predefined.h"
 #include "dwi/gradient.h"
@@ -33,7 +33,6 @@
 #include "registration/transform/warp_utils.h"
 #include "registration/transform/compose.h"
 #include "image/average_space.h"
-#include <unsupported/Eigen/MatrixFunctions>
 
 
 

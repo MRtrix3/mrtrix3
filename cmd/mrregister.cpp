@@ -107,9 +107,6 @@ typedef double value_type;
 
 void run ()
 {
-  #ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG
-    std::remove("/tmp/gddebug/log.txt");
-  #endif
 
   Image<value_type> im1_image = Image<value_type>::open (argument[0]).with_direct_io (Stride::contiguous_along_axis (3));
   Image<value_type> im2_image = Image<value_type>::open (argument[1]).with_direct_io (Stride::contiguous_along_axis (3));
@@ -276,6 +273,9 @@ void run ()
     }
   }
 
+  if (rigid_metric == Registration::NCC)
+    throw Exception ("TODO: cross correlation metric not yet implemented");
+
   opt = get_options ("rigid_global_search");
   if (opt.size())
       rigid_registration.use_global_search(true);
@@ -384,6 +384,9 @@ void run ()
         break;
     }
   }
+
+  if (affine_metric == Registration::NCC)
+    throw Exception ("TODO cross correlation metric not yet implemented");
 
   opt = get_options ("affine_robust_estimator");
   Registration::LinearRobustMetricEstimatorType affine_estimator = Registration::None;
@@ -539,8 +542,6 @@ void run ()
     if (im2_image.ndim() == 4) {
       if (do_reorientation)
         rigid_registration.set_directions (directions_cartesian);
-      if (rigid_metric == Registration::NCC)
-        throw Exception ("cross correlation metric not implemented for data with more than 3 dimensions");
       Registration::Metric::MeanSquared4D<Image<value_type>, Image<value_type>> metric;
       rigid_registration.run_masked (metric, rigid, im1_image, im2_image, im1_mask, im2_mask);
     } else {
@@ -575,8 +576,6 @@ void run ()
     if (im2_image.ndim() == 4) {
       if (do_reorientation)
         affine_registration.set_directions (directions_cartesian);
-      if (affine_metric == Registration::NCC)
-        throw Exception ("cross correlation metric not implemented for data with more than 3 dimensions");
       else if (affine_metric == Registration::Diff) {
         if (affine_estimator == Registration::None) {
           Registration::Metric::MeanSquared4D<Image<value_type>, Image<value_type>> metric;

@@ -48,7 +48,6 @@ namespace MR
 
               default_type diff = (default_type) im1_value - (default_type) im2_value;
 
-              // Eigen::MatrixXd jacobian = params.transformation.get_jacobian_wrt_params (midway_point);
               const auto jacobian_vec = params.transformation.get_jacobian_vector_wrt_params (midway_point);
               const Eigen::Vector3d g = diff * (im1_grad + im2_grad);
               gradient.segment<4>(0) += g(0) * jacobian_vec;
@@ -181,7 +180,7 @@ namespace MR
                 im2_values.resize (volumes);
               }
 
-            //type_trait to indicate return type if operator()
+            //type_trait to indicate return type of operator()
             typedef int is_vector_type;
 
             template <class Params>

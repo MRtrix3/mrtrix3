@@ -17,10 +17,7 @@
 #define __registration_transform_rigid_h__
 
 #include "registration/transform/base.h"
-#include "math/gradient_descent.h"
 #include "types.h"
-#include "math/median.h"
-#include <algorithm> // std::min_element
 #include <iterator>
 
 using namespace MR::Math;
@@ -82,75 +79,6 @@ namespace MR
           assert((rotation * rotation.transpose().eval()).isApprox(Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>::Identity(3,3)) && "orthonormal?");
         }
     };
-
-//     class RigidUpdate {
-//       public:
-//         template <typename ValueType>
-//           inline bool operator() (Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& newx,
-//               const Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& x,
-//               const Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& g,
-//               ValueType step_size) {
-//             DEBUG("step size: " + str(step_size));
-//             assert (newx.size() == 12);
-//             assert (x.size() == 12);
-//             assert (g.size() == 12);
-
-//             Eigen::Matrix<ValueType, 12, 1> delta;
-//             Eigen::Matrix<ValueType, 4, 4> X, Delta, G, A, Asqrt, B, Bsqrt, Bsqrtinv, Xnew;
-
-//             // enforce updates in the range of small angle updates
-//             Registration::Transform::param_vec2mat(g, G);
-//             if (step_size > 0.1 / G.block(0,0,3,3).array().abs().maxCoeff())
-//               step_size = 0.1 / G.block(0,0,3,3).array().abs().maxCoeff();
-
-//             Registration::Transform::param_vec2mat(x, X);
-//             // reduce step size if determinant of matrix is negative (happens rarely at first few iterations)
-//             size_t cnt = 0;
-//             default_type factor = 0.9;
-//             while (true) {
-//               delta = g * step_size;
-//               Registration::Transform::param_vec2mat(delta, Delta);
-
-//               A = X - Delta;
-//               A(3,3) = 1.0;
-//               if (A.determinant() < 0) {
-//                 step_size *= factor;
-//                 ++cnt;
-//               } else {
-//                 break;
-//               }
-//             }
-//             if (cnt > 0) INFO("rigid: gradient descent step size was too large. Multiplied by factor "
-//              + str(std::pow (factor, cnt), 4) + " (now: "+ str(step_size, 4) + ")");
-
-//             Asqrt = A.sqrt().eval();
-//             assert(A.isApprox(Asqrt * Asqrt));
-//             B = X.inverse() + Delta;
-//             B(3,3) = 1.0;
-//             assert(B.determinant() > 0.0);
-//             Bsqrt = B.sqrt().eval();
-//             Bsqrtinv = Bsqrt.inverse().eval();
-//             assert(B.isApprox(Bsqrt * Bsqrt));
-
-//             // approximation for symmetry reasons as
-//             // A and B don't commute
-//             Xnew = (Asqrt * Bsqrtinv) - ((Asqrt * Bsqrtinv - Bsqrtinv * Asqrt) * 0.5);
-//             Registration::Transform::param_mat2vec(Xnew, newx);
-// #ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG
-//             if (newx.isApprox(x)){
-//               ValueType debug = 0;
-//               for (ssize_t i=0; i<newx.size(); ++i){
-//                 debug += std::abs(newx[i]-x[i]);
-//               }
-//               INFO("rigid update parameter cumulative change: " + str(debug));
-//               VEC(newx);
-//               VEC(g);
-//               VAR(step_size);
-//             }
-// #endif
-//             return !(newx.isApprox(x));
-//           }
-//     };
   }
 
   namespace Registration
@@ -163,18 +91,12 @@ namespace MR
 
       /*! A 3D rigid transformation class for registration.
        *
-       * This class supports the ability to define the centre of rotation.
-       * This should be set prior to commencing registration based on the centre of the target image.
-       * The translation also should be initialised as moving image centre minus the target image centre.
-       *
        */
       class Rigid : public Base  {
         public:
 
           typedef typename Base::ParameterType ParameterType;
           typedef Math::RigidLinearNonSymmetricUpdate UpdateType;
-          // typedef Math::RigidUpdate UpdateType;
-          // typedef RigidRobustEstimator RobustEstimatorType;
 
           Rigid () : Base (12) {
             const Eigen::Vector4d weights (0.0003, 0.0003, 0.0003, 1.0);

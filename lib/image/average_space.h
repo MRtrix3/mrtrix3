@@ -16,10 +16,10 @@
 #ifndef __image_average_space_h__
 #define __image_average_space_h__
 
-#include "transform.h"
 #include <unsupported/Eigen/MatrixFunctions>
 #include <Eigen/SVD>
 #include <Eigen/Geometry>
+#include "transform.h"
 
 
 namespace MR

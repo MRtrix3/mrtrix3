@@ -16,7 +16,6 @@
 #ifndef __registration_linear_h__
 #define __registration_linear_h__
 
-// #define DEBUGSYMMETRY
 #include <vector>
 
 #include "image.h"
@@ -37,7 +36,7 @@
 #include "math/check_gradient.h"
 #include "math/rng.h"
 #include "math/math.h"
-#include <iostream>     // std::streambuf
+#include <iostream>
 #include "registration/multi_resolution_lmax.h"
 
 namespace MR
@@ -235,8 +234,8 @@ namespace MR
               Transform::Init::initialise_using_image_moments (im1_image, im2_image, transform);
             else if (init_type == Transform::Init::fod)
               Transform::Init::initialise_using_FOD (im1_image, im2_image, im1_mask, im2_mask, transform);
-            else if (init_type == Transform::Init::set_centre_mass)
-              Transform::Init::set_centre_using_image_mass (im1_image, im2_image, im1_mask, im2_mask, transform); // transform is set in mrregister.cpp
+            else if (init_type == Transform::Init::set_centre_mass) // transform is set in mrregister.cpp
+              Transform::Init::set_centre_using_image_mass (im1_image, im2_image, im1_mask, im2_mask, transform);
             else if (init_type == Transform::Init::rot_search) {
               default_type reg_search_scale = File::Config::get_float ("reg_rot_search_scale", 0.2);
               bool debug = File::Config::get_bool ("reg_rot_search_debug", false);
@@ -245,7 +244,6 @@ namespace MR
               Transform::Init::initialise_using_rotation_search_around_image_mass (
                 im1_image, im2_image, im1_mask, im2_mask, transform, reg_search_scale, global_search, debug);
             }
-            // transform.debug();
 
             // if (global_search) {
             //   GlobalSearch::GlobalSearch transformation_search;
@@ -263,12 +261,15 @@ namespace MR
             typedef Im1ImageType ProcessedImageType;
             typedef Image<bool> ProcessedMaskType;
 
+#ifdef REGISTRATION_CUBIC_INTERP
             // typedef Interp::SplineInterp<Im1ImageType, Math::UniformBSpline<typename Im1ImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative> Im1ImageInterpolatorType;
             // typedef Interp::SplineInterp<Im2ImageType, Math::UniformBSpline<typename Im2ImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative> Im2ImageInterpolatorType;
             // typedef Interp::SplineInterp<ProcessedImageType, Math::UniformBSpline<typename ProcessedImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative> ProcessedImageInterpolatorType;
+#else
             typedef Interp::LinearInterp<Im1ImageType, Interp::LinearInterpProcessingType::ValueAndDerivative> Im1ImageInterpolatorType;
             typedef Interp::LinearInterp<Im2ImageType, Interp::LinearInterpProcessingType::ValueAndDerivative> Im2ImageInterpolatorType;
             typedef Interp::LinearInterp<ProcessedImageType, Interp::LinearInterpProcessingType::ValueAndDerivative> ProcessedImageInterpolatorType;
+#endif
 
             typedef Metric::Params<TransformType,
                                    Im1ImageType,
@@ -304,7 +305,7 @@ namespace MR
                 }
               }
 
-              // TODO: use iterator instead of full blown image
+              // TODO: use header instead of full blown image
               auto midway_image = Header::scratch (midway_image_header).get_image<typename Im1ImageType::value_type>();
               auto im1_smoothed = Registration::multi_resolution_lmax (im1_image, scale_factor[level], do_reorientation, fod_lmax[level]);
               auto im2_smoothed = Registration::multi_resolution_lmax (im2_image, scale_factor[level], do_reorientation, fod_lmax[level]);
@@ -325,7 +326,6 @@ namespace MR
                 INFO ("using robust estimate");
               parameters.robust_estimate = robust_estimate;
               // set control point coordinates inside +-1/3 of the midway_image size
-              // TODO: probably better to use moments if initialisation via image moments was used
               {
                 Eigen::Vector3 ext (midway_image_header.spacing(0) / 6.0,
                                     midway_image_header.spacing(1) / 6.0,
@@ -403,16 +403,6 @@ namespace MR
               // update midway (affine average) space using the current transformations
               midway_image_header = compute_minimum_average_header(im1_image, im2_image, parameters.transformation, midspace_voxel_subsampling, midspace_padding);
             }
-#ifdef DEBUGSYMMETRY
-              auto t_forw = transform.get_transform_half();
-              save_matrix(t_forw.matrix(),"/tmp/t_forw.txt");
-              t_forw = t_forw * t_forw;
-              save_matrix(t_forw.matrix(),"/tmp/t_forw_squared.txt");
-              auto t_back = transform.get_transform_half_inverse();
-              save_matrix(t_back.matrix(),"/tmp/t_back.txt");
-              t_back = t_back * t_back;
-              save_matrix(t_back.matrix(),"/tmp/t_back_squared.txt");
-#endif
           }
 
         template<class Im1ImageType, class Im2ImageType, class TransformType>

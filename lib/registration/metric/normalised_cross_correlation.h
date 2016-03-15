@@ -217,6 +217,7 @@ namespace MR
             template <class ParamType>
               default_type precompute(ParamType& parameters) {
                 INFO("precomputing cross correlation data...");
+                throw Exception ("TODO");
 
                 typedef decltype(parameters.im1_image) Im1Type;
                 typedef decltype(parameters.im2_image) Im2Type;

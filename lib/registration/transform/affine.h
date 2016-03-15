@@ -76,18 +76,12 @@ namespace MR
 
       /*! A 3D affine transformation class for registration.
        *
-       * This class supports the ability to define the centre of rotation.
-       * This should be set prior to commencing registration based on the centre of the target image.
-       * The translation also should be initialised as moving image centre minus the target image centre.
-       *
        */
       class Affine : public Base  {
         public:
 
           typedef typename Base::ParameterType ParameterType;
-          // typedef Math::AffineLinearNonSymmetricUpdate UpdateType;
           typedef AffineUpdate UpdateType;
-          // typedef Math::ParameterUpdateCheck UpdateCheckType;
           typedef AffineRobustEstimator RobustEstimatorType;
           typedef int has_robust_estimator;
 
@@ -119,7 +113,6 @@ namespace MR
 
         protected:
           UpdateType gradient_descent_updator;
-          // UpdateCheckType gradient_descent_update_check;
           RobustEstimatorType robust_estimator;
       };
       //! @}

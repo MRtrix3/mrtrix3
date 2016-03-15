@@ -23,12 +23,13 @@ namespace MR
     using namespace App;
 
     const char* initialisation_choices[] = { "mass", "geometric", "moments", "mass_unmasked",
-      "moments_use_mask_intensity", "moments_unmasked", "fod", "rot_search", "none", NULL };
+      "moments_use_mask_intensity", "moments_unmasked", "rot_search", "none", NULL };
     const char* linear_metric_choices[] = { "diff", "ncc", NULL };
     const char* linear_robust_estimator_choices[] = { "l1", "l2", "lp", NULL };
 
     void set_init_model_from_option (Registration::Linear& registration, const int& option) {
-      switch (option){
+      switch (option) {
+        //   registration.set_init_type (Registration::Transform::Init::fod);
         case 0:
           registration.set_init_type (Registration::Transform::Init::mass);
           break;
@@ -48,12 +49,9 @@ namespace MR
           registration.set_init_type (Registration::Transform::Init::moments_unmasked);
           break;
         case 6:
-          registration.set_init_type (Registration::Transform::Init::fod);
-          break;
-        case 7:
           registration.set_init_type (Registration::Transform::Init::rot_search);
           break;
-        case 8:
+        case 7:
           registration.set_init_type (Registration::Transform::Init::none);
           break;
         default:
@@ -72,11 +70,13 @@ namespace MR
                                 "geometric (geometric image centre), moments (image moments), "
                                 "mass_unmasked (don't use image masks for centre of mass initialisation), "
                                 "moments_unmasked (don't use image masks for moments initialisation), "
-                                "fod (aligns FOD images based on their centre of mass and global sum of all fibre orientations), "
+                                // "fod (aligns FOD images based on their centre of mass and global sum of all fibre orientations), "
                                 "rot_search (align images based on their centre of mass and search for the best rotation using mean squared residuals) "
                                 "or none."
                                 "Default: mass.")
         + Argument ("type").type_choice (initialisation_choices)
+
+      + Option ("rigid_global_search", "perform global search for most promising starting point. default: false")
 
       + Option ("rigid_init", "initialise either the rigid, affine, or syn registration with the supplied rigid transformation (as a 4x4 matrix). Note that this overrides rigid_centre initialisation")
         + Argument ("file").type_file_in ()
@@ -95,7 +95,6 @@ namespace MR
                                 "Default: ordinary least squares")
         + Argument ("type").type_choice (linear_metric_choices)
 
-      + Option ("rigid_global_search", "perform global search for most promising starting point. default: false")
 
       + Option ("rigid_lmax", "explicitly set the lmax to be used per scale factor in rigid FOD registration. By default FOD registration will "
                               "use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.")
@@ -122,11 +121,13 @@ namespace MR
                                 "geometric (geometric image centre), moments (image moments), "
                                 "mass_unmasked (don't use image masks for centre of mass initialisation), "
                                 "moments_unmasked (don't use image masks for moments initialisation), "
-                                "fod (aligns FOD images based on their centre of mass and global sum of all fibre orientations), "
+                                // "fod (aligns FOD images based on their centre of mass and global sum of all fibre orientations), "
                                 "rot_search (align images based on their centre of mass and search for the best rotation using mean squared residuals) "
                                 "or none."
                                 "Default: mass.")
         + Argument ("type").type_choice (initialisation_choices)
+
+      + Option ("affine_global_search", "perform global search for most promising starting point. default: false")
 
       + Option ("affine_init", "initialise either the affine, or syn registration with the supplied affine transformation (as a 4x4 matrix). Note that this overrides affine_centre initialisation")
         + Argument ("file").type_file_in ()
@@ -158,9 +159,6 @@ namespace MR
                                   "Default: l2")
         + Argument ("type").type_choice (linear_robust_estimator_choices)
 
-      + Option ("affine_robust_median", "use robust median estimator. default: false")
-
-      + Option ("affine_global_search", "perform global search for most promising starting point. default: false")
 
       + Option ("affine_lmax", "explicitly set the lmax to be used per scale factor in affine FOD registration. By default FOD registration will "
                                "use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.")
