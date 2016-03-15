@@ -221,10 +221,10 @@ for level in range(0, len(nl_scales)):
     else:
       mask = ''
 
-      if do_fod_registration:
-        lmax = ' -nl_lmax ' + str(nl_lmax[level])
-      else:
-        lmax = ''
+    if do_fod_registration:
+      lmax = ' -nl_lmax ' + str(nl_lmax[level])
+    else:
+      lmax = ''
 
     runCommand('mrregister ' + i.directory + i.filename + ' ' + current_template +
                ' -type nonlinear' +
