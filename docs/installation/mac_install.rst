@@ -52,7 +52,7 @@ Git setup
 ---------
 
 Set up your git environment as per the `Git instructions
-page <getting-started-with-git>`__
+page <https://help.github.com/articles/set-up-git/#setting-up-git>`__
 
 Build *MRtrix3* 
 -------------
