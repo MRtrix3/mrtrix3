@@ -151,22 +151,24 @@ for level in range(0, len(linear_scales)):
       mask = ' -mask1 ' + os.path.join(i.mask_directory, i.mask_filename)
     else:
       mask = ''
-    if do_fod_registration:
-      lmax = ' -linear_lmax ' + str(linear_lmax[level])
-    else:
-      lmax = ''
+    lmax = ''
     if dorigid:
       scale = ' -rigid_scale ' + str(linear_scales[level])
       type = ' -type rigid'
       output = ' -rigid linear_transforms/' + i.prefix + '.txt'
       if level > 0:
         initialise = ' -rigid_init linear_transforms/' + i.prefix + '.txt'
+      if do_fod_registration:
+        lmax = ' -rigid_lmax ' + str(linear_lmax[level])
     else:
       scale = ' -affine_scale ' + str(linear_scales[level])
       type = ' -type affine'
       output = ' -affine linear_transforms/' + i.prefix + '.txt'
       if level > 0:
         initialise = ' -affine_init linear_transforms/' + i.prefix + '.txt'
+      if do_fod_registration:
+        lmax = ' -affine_lmax ' + str(linear_lmax[level])
+
 
     runCommand('mrregister ' + os.path.join(i.directory, i.filename) + ' ' + current_template +
                ' -force' +
