@@ -46,7 +46,7 @@ The resulting WM fODFs can be displayed together with the tissue volume fraction
 Per tissue response function estimation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Input response functions for CSF, GM and single fibre WM can be estimated from the data using prior tissue segmentations, as described in [Jeurissen et al. (2014)](#references) using the `dwi2response msmt_5tt` command: 
+Input response functions for CSF, GM and single fibre WM can be estimated from the data using prior tissue segmentations, as described in `Jeurissen et al. (2014) <#references>`__ using the ``dwi2response msmt_5tt`` command: 
 
 ::
 
