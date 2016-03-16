@@ -55,6 +55,7 @@ Welcome to the MRtrix user documentation!
    workflows/sift
    workflows/structural_connectome
    workflows/global_tractography
+   workflows/multi_tissue_csd
 
 .. toctree::
    :maxdepth: 2
