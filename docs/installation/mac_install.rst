@@ -44,7 +44,7 @@ Install Dependencies
     - Make sure Qt5 tools are in your PATH
         (edit as appropriate) ``export PATH=/path/to/Qt5/5.X.X/clang_64/bin:$PATH``
     - Set the CFLAG variable for eigen
-        (edit as appropriate) ``export EIGEN_CFLAGS="-isystem /where/you/extracted/eigen``
+        (edit as appropriate) ``export EIGEN_CFLAGS="-isystem /where/you/extracted/eigen"``
 
 -  Alternatively, if you have `Homebrew <http://brew.sh/>`__ installed
     - Install Eigen3: ``brew install eigen``
