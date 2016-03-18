@@ -64,27 +64,21 @@ namespace MR
               Image<default_type>& image2,
               Image<default_type>& mask1,
               Image<default_type>& mask2,
-              MetricType& metric) :
-            im1(image1),
-            im2(image2),
-            mask1(mask1),
-            mask2(mask2),
+              MetricType& metric,
+              Registration::Transform::Init::LinearInitialisationParams init) :
+            im1 (image1),
+            im2 (image2),
+            mask1 (mask1),
+            mask2 (mask2),
             metric (metric),
-            global_search_iterations (10000),
-            rot_angles (9),
-            local_search_directions (250),
+            init_options (init),
+            global_search_iterations (init.init_rotation.search.global.iterations),
+            rot_angles (init.init_rotation.search.angles),
+            local_search_directions (init.init_rotation.search.directions),
+            image_scale_factor (init.init_rotation.search.scale),
+            global_search (init.init_rotation.search.run_global),
             idx_angle (0),
-            idx_dir (0) {
-              rot_angles[0] = 2.0;
-              rot_angles[1] = 5.0;
-              rot_angles[2] = 10.0;
-              rot_angles[3] = 15.0;
-              rot_angles[4] = 20.0;
-              rot_angles[5] = 25.0;
-              rot_angles[6] = 30.0;
-              rot_angles[7] = 35.0;
-              rot_angles[8] = 40.0;
-            };
+            idx_dir (0) { };
 
             typedef Metric::Params<Registration::Transform::Rigid,
                                      Image<default_type>,
@@ -137,24 +131,12 @@ namespace MR
               return c;
             }
 
-            void set_rot_angles (const std::vector<default_type> angles) {
-              assert (angles.size() > 0);
-              for (size_t i=0; i<angles.size(); ++i){
-                if (angles[i] < 0.0 or angles[i] > Math::pi)
-                  throw Exception ("rotation search angle has to be in the range [0...pi]");
-              }
-              rot_angles = angles;
-            }
-
             Eigen::Vector3d get_offset() const {
               Eigen::Vector3d o = offset;
               return o;
             }
 
-            void run (
-              default_type image_scale_factor = 0.1,
-              bool global_search = false,
-              bool debug = false) {
+            void run ( bool debug = false ) {
 
               std::string what = global_search? "global" : "local";
               size_t iterations = global_search? global_search_iterations : (rot_angles.size() * local_search_directions);
@@ -240,7 +222,7 @@ namespace MR
             ParamType get_parameters (default_type& image_scale_factor) {
               {
                 LogLevelLatch log_level (0);
-                Registration::Transform::Init::initialise_using_image_mass (im1, im2, mask1, mask2, transform);
+                Registration::Transform::Init::initialise_using_image_mass (im1, im2, mask1, mask2, transform, init_options);
               }
 
               // create resized midway image
@@ -328,9 +310,9 @@ namespace MR
               quat = Eigen::Quaternion<default_type> ( Eigen::AngleAxis<default_type> (rot_angles[idx_angle], xyz.row(idx_dir)) );
               ++idx_dir;
             }
-
             Image<default_type> im1, im2, mask1, mask2, midway_image, midway_resized;
             MetricType metric;
+            Registration::Transform::Init::LinearInitialisationParams& init_options;
             Math::RNG::Normal<default_type> rndn;
             Eigen::Quaternion<default_type> quat;
             transform_type best_trafo;
@@ -341,6 +323,8 @@ namespace MR
             size_t global_search_iterations;
             std::vector<default_type> rot_angles;
             size_t local_search_directions;
+            default_type image_scale_factor;
+            bool global_search;
             size_t idx_angle, idx_dir;
             Eigen::Vector3d centre, offset;
             Registration::Transform::Rigid transform;

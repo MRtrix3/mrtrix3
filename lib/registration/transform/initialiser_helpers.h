@@ -116,13 +116,13 @@ namespace MR
                                 Image<default_type>& mask1,
                                 Image<default_type>& mask2,
                                 Registration::Transform::Base& transform,
-                                bool use_mask_values):
+                                bool mask_is_intensity):
               im1(image1),
               im2(image2),
               transform(transform),
               mask1(mask1),
               mask2(mask2),
-              use_mask_values_instead (use_mask_values) {};
+              use_mask_values_instead (mask_is_intensity) {};
 
             void run ();
           protected:

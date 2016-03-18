@@ -168,19 +168,24 @@ namespace MR
           centre_of_mass /= mass;
         }
 
-        void initialise_using_rotation_search_around_image_mass (
+        void initialise_using_rotation_search (
                                           Image<default_type>& im1,
                                           Image<default_type>& im2,
                                           Image<default_type>& mask1,
                                           Image<default_type>& mask2,
                                           Registration::Transform::Base& transform,
-                                          default_type image_scale,
-                                          bool global_search,
-                                          bool debug) {
+                                          Registration::Transform::Init::LinearInitialisationParams& init) {
+
           CONSOLE ("initialising centre of rotation and translation using centre of mass. searching for best rotation");
-          Registration::Metric::MeanSquaredNoGradient metric;
-          GlobalSearch::ExhaustiveRotationSearch<decltype(metric)> search (im1, im2, mask1, mask2, metric);
-          search.run (image_scale, global_search, debug);
+          Registration::Metric::MeanSquaredNoGradient metric; // TODO replace with CrossCorrelationNoGradient
+          Image<default_type> bogus_mask;
+          GlobalSearch::ExhaustiveRotationSearch<decltype(metric)> search (
+            im1, im2,
+            init.init_translation.unmasked1 ? bogus_mask : mask1,
+            init.init_translation.unmasked2 ? bogus_mask : mask2,
+            metric,
+            init);
+          search.run();
           transform.set_centre_without_transform_update (search.get_centre());
           transform_type T = search.get_best_trafo();
           transform.set_transform<transform_type> (T);
@@ -190,15 +195,15 @@ namespace MR
                                           Image<default_type>& im2,
                                           Image<default_type>& mask1,
                                           Image<default_type>& mask2,
-                                          Registration::Transform::Base& transform) {
-          if (mask1.valid() or mask2.valid()) {
-            CONSOLE ("initialising centre of rotation and translation using centre of mass");
-          } else {
-            CONSOLE ("initialising centre of rotation and translation using centre of mass of unmasked images");
-          }
+                                          Registration::Transform::Base& transform,
+                                          Registration::Transform::Init::LinearInitialisationParams& init) {
+
+          CONSOLE ("initialising centre of rotation and translation using centre of mass");
+          Image<default_type> bogus_mask;
           Eigen::Matrix<default_type, 3, 1> im1_centre_of_mass, im2_centre_of_mass;
-          get_centre_of_mass (im1, mask1, im1_centre_of_mass);
-          get_centre_of_mass (im2, mask2, im2_centre_of_mass);
+
+          get_centre_of_mass (im1, init.init_translation.unmasked1 ? bogus_mask : mask1, im1_centre_of_mass);
+          get_centre_of_mass (im2, init.init_translation.unmasked2 ? bogus_mask : mask2, im2_centre_of_mass);
 
           Eigen::Vector3 centre = (im1_centre_of_mass + im2_centre_of_mass) / 2.0;
           Eigen::Vector3 translation = im1_centre_of_mass - im2_centre_of_mass;
@@ -212,7 +217,7 @@ namespace MR
           transform.debug();
 #endif
         }
-
+#ifdef DEBUG_INIT
         // for debug only:
         void MomentsInitialiser::create_moments_images () {
           std::string f1 = im1.name();
@@ -277,6 +282,7 @@ namespace MR
           // im1_covariance_matrix, im2_covariance_matrix;
           // im1_evec, im2_evec;
         }
+#endif
 
         void MomentsInitialiser::run () {
           // Timer timer;

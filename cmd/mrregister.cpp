@@ -94,6 +94,8 @@ void usage ()
 
   + Registration::affine_options
 
+  + Registration::adv_init_options
+
   + Registration::nonlinear_options
 
   + Registration::fod_options
@@ -228,20 +230,27 @@ void run ()
   }
 
   Registration::Transform::Rigid rigid;
-  opt = get_options ("rigid_init");
-  bool init_rigid_set = false;
+  opt = get_options ("rigid_init_matrix");
+  bool init_rigid_matrix_set = false;
   if (opt.size()) {
-    init_rigid_set = true;
+    init_rigid_matrix_set = true;
     transform_type rigid_transform = load_transform (opt[0][0]);
     rigid.set_transform (rigid_transform);
-    rigid_registration.set_init_type (Registration::Transform::Init::set_centre_mass);
+    rigid_registration.set_init_translation_type (Registration::Transform::Init::set_centre_mass);
   }
 
-  opt = get_options ("rigid_centre");
+  opt = get_options ("rigid_init_translation");
   if (opt.size()) {
-    if (init_rigid_set)
-      throw Exception ("options -rigid_init and -rigid_centre are mutually exclusive");
-    set_init_model_from_option (rigid_registration, (int)opt[0][0]);
+    if (init_rigid_matrix_set)
+      throw Exception ("options -rigid_init_matrix and -rigid_init_translation are mutually exclusive");
+    Registration::set_init_translation_model_from_option (rigid_registration, (int)opt[0][0]);
+  }
+
+  opt = get_options ("rigid_init_rotation");
+  if (opt.size()) {
+    if (init_rigid_matrix_set)
+      throw Exception ("options -rigid_init_matrix and -rigid_init_rotation are mutually exclusive");
+    Registration::set_init_rotation_model_from_option (rigid_registration, (int)opt[0][0]);
   }
 
   opt = get_options ("rigid_scale");
@@ -276,9 +285,6 @@ void run ()
   if (rigid_metric == Registration::NCC)
     throw Exception ("TODO: cross correlation metric not yet implemented");
 
-  opt = get_options ("rigid_global_search");
-  if (opt.size())
-      rigid_registration.use_global_search(true);
 
   opt = get_options ("rigid_lmax");
   std::vector<int> rigid_lmax;
@@ -328,25 +334,32 @@ void run ()
   }
 
   Registration::Transform::Affine affine;
-  opt = get_options ("affine_init");
-  bool init_affine_set = false;
+  opt = get_options ("affine_init_matrix");
+  bool init_affine_matrix_set = false;
   if (opt.size()) {
-    if (init_rigid_set)
+    if (init_rigid_matrix_set)
       throw Exception ("you cannot initialise registrations with both a rigid and affine transformation");
     if (do_rigid)
-      throw Exception ("you cannot initialise with -affine_init since a rigid registration is being performed");
+      throw Exception ("you cannot initialise with -affine_init_matrix since a rigid registration is being performed");
 
-    init_affine_set = true;
+    init_affine_matrix_set = true;
     transform_type init_affine = load_transform (opt[0][0]);
     affine.set_transform (init_affine);
-    affine_registration.set_init_type (Registration::Transform::Init::set_centre_mass);
+    affine_registration.set_init_translation_type (Registration::Transform::Init::set_centre_mass);
   }
 
-  opt = get_options ("affine_centre");
+  opt = get_options ("affine_init_translation");
   if (opt.size()) {
-    if (init_affine_set)
-      throw Exception ("options -affine_init and -affine_centre are mutually exclusive");
-    set_init_model_from_option (affine_registration, (int)opt[0][0]);
+    if (init_affine_matrix_set)
+      throw Exception ("options -affine_init_matrix and -affine_init_translation are mutually exclusive");
+    Registration::set_init_translation_model_from_option (affine_registration, (int)opt[0][0]);
+  }
+
+  opt = get_options ("affine_init_rotation");
+  if (opt.size()) {
+    if (init_affine_matrix_set)
+      throw Exception ("options -affine_init_matrix and -affine_init_rotation are mutually exclusive");
+    Registration::set_init_rotation_model_from_option (affine_registration, (int)opt[0][0]);
   }
 
   opt = get_options ("affine_scale");
@@ -406,12 +419,6 @@ void run ()
     }
   }
 
-  affine_registration.use_robust_estimate (get_options ("affine_robust_median").size() == 1);
-
-  opt = get_options ("affine_global_search");
-  if (opt.size())
-      affine_registration.use_global_search(true);
-
   opt = get_options ("affine_niter");
   if (opt.size ()) {
     if (!do_affine)
@@ -434,6 +441,21 @@ void run ()
         throw Exception ("the requested -affine_lmax exceeds the lmax of the input images");
   }
 
+  // ****** LINEAR INITIALISATION OPTIONS *******
+  if (!do_rigid and !do_affine) {
+    for (auto& s: Registration::adv_init_options) {
+      if (get_options(s.id).size()) {
+        std::stringstream msg;
+        msg << "cannot use option -" << s.id << " when no linear registration is requested";
+        throw Exception (msg.str());
+      }
+    }
+  }
+
+  if (do_rigid)
+    Registration::parse_general_init_options (rigid_registration);
+  if (do_affine)
+    Registration::parse_general_init_options (affine_registration);
 
   // ****** NON-LINEAR REGISTRATION OPTIONS *******
   Registration::NonLinear nonlinear_registration;
@@ -468,9 +490,9 @@ void run ()
       WARN ("no rigid registration will be performed when initialising with non-linear non-linear warps");
       do_rigid = false;
     }
-    if (init_affine_set)
+    if (init_affine_matrix_set)
       WARN ("-affine_init has no effect since the non-linear init warp also contains the linear transform in the image header");
-    if (init_rigid_set)
+    if (init_rigid_matrix_set)
       WARN ("-rigid_init has no effect since the non-linear init warp also contains the linear transform in the image header");
   }
 
@@ -569,7 +591,7 @@ void run ()
       affine.set_centre (rigid.get_centre());
       affine.set_translation (rigid.get_translation());
       affine.set_matrix (rigid.get_matrix());
-      affine_registration.set_init_type (Registration::Transform::Init::none);
+      affine_registration.set_init_translation_type (Registration::Transform::Init::none);
     }
 
 
@@ -639,9 +661,9 @@ void run ()
     if (do_reorientation)
       nonlinear_registration.set_aPSF_directions (directions_cartesian);
 
-    if (do_affine || init_affine_set) {
+    if (do_affine || init_affine_matrix_set) {
       nonlinear_registration.run (affine, im1_image, im2_image, im1_mask, im2_mask);
-    } else if (do_rigid || init_rigid_set) {
+    } else if (do_rigid || init_rigid_matrix_set) {
       nonlinear_registration.run (rigid, im1_image, im2_image, im1_mask, im2_mask);
     } else {
       Registration::Transform::Affine identity_transform;

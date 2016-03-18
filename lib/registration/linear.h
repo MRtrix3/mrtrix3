@@ -18,6 +18,7 @@
 
 #include <vector>
 
+#include "app.h"
 #include "image.h"
 #include "image/average_space.h"
 #include "filter/normalise.h"
@@ -33,7 +34,7 @@
 #include "registration/transform/initialiser.h"
 #include "math/gradient_descent.h"
 #include "math/gradient_descent_bb.h"
-#include "math/check_gradient.h"
+// #include "math/check_gradient.h"
 #include "math/rng.h"
 #include "math/math.h"
 #include <iostream>
@@ -44,6 +45,7 @@ namespace MR
   namespace Registration
   {
 
+    extern const App::OptionGroup adv_init_options;
     extern const App::OptionGroup rigid_options;
     extern const App::OptionGroup affine_options;
     extern const App::OptionGroup fod_options;
@@ -56,6 +58,8 @@ namespace MR
 
       public:
 
+        Transform::Init::LinearInitialisationParams init;
+
         Linear () :
           max_iter (1, 500),
           gd_repetitions (1, 1),
@@ -65,11 +69,12 @@ namespace MR
           grad_tolerance(1.0e-6),
           step_tolerance(1.0e-10),
           log_stream (nullptr),
-          init_type (Transform::Init::mass),
+          init_translation_type (Transform::Init::mass),
+          init_rotation_type (Transform::Init::none),
           robust_estimate (false),
-          global_search (false),
           do_reorientation (false),
-          fod_lmax (3){
+          fod_lmax (3),
+          reg_bbgd (File::Config::get_bool ("reg_bbgd", true)) {
           scale_factor[0] = 0.25;
           scale_factor[1] = 0.5;
           scale_factor[2] = 1.0;
@@ -115,20 +120,16 @@ namespace MR
           loop_density = loop_density_;
         }
 
-        void set_init_type (Transform::Init::InitType type) {
-          init_type = type;
+        void set_init_translation_type (Transform::Init::InitType type) {
+          init_translation_type = type;
+        }
+
+        void set_init_rotation_type (Transform::Init::InitType type) {
+          init_rotation_type = type;
         }
 
         void use_robust_estimate (bool use) {
           robust_estimate = use;
-        }
-
-        void use_global_search (bool use) {
-          global_search = use;
-        }
-
-        void set_transform_type (Transform::Init::InitType type) {
-          init_type = type;
         }
 
         void set_directions (Eigen::MatrixXd& dir) {
@@ -220,31 +221,21 @@ namespace MR
             else if (loop_density.size() != scale_factor.size())
               throw Exception ("the loop density level needs to be defined for each multi-resolution level");
 
-            if (init_type == Transform::Init::mass)
-              Transform::Init::initialise_using_image_mass (im1_image, im2_image, im1_mask, im2_mask, transform);
-            else if (init_type == Transform::Init::mass_unmasked)
-              Transform::Init::initialise_using_image_mass (im1_image, im2_image, transform);
-            else if (init_type == Transform::Init::geometric)
-              Transform::Init::initialise_using_image_centres (im1_image, im2_image, transform);
-            else if (init_type == Transform::Init::moments)
-              Transform::Init::initialise_using_image_moments (im1_image, im2_image, im1_mask, im2_mask, transform);
-            else if (init_type == Transform::Init::moments_use_mask_intensity)
-              Transform::Init::initialise_using_image_moments (im1_image, im2_image, im1_mask, im2_mask, transform, true);
-            else if (init_type == Transform::Init::moments_unmasked)
-              Transform::Init::initialise_using_image_moments (im1_image, im2_image, transform);
-            else if (init_type == Transform::Init::fod)
-              Transform::Init::initialise_using_FOD (im1_image, im2_image, im1_mask, im2_mask, transform);
-            else if (init_type == Transform::Init::set_centre_mass) // transform is set in mrregister.cpp
-              Transform::Init::set_centre_using_image_mass (im1_image, im2_image, im1_mask, im2_mask, transform);
-            else if (init_type == Transform::Init::rot_search) {
-              default_type reg_search_scale = File::Config::get_float ("reg_rot_search_scale", 0.2);
-              bool debug = File::Config::get_bool ("reg_rot_search_debug", false);
-              if (debug)
-                INFO("writing rot_search debug output to /tmp/");
-              Transform::Init::initialise_using_rotation_search_around_image_mass (
-                im1_image, im2_image, im1_mask, im2_mask, transform, reg_search_scale, global_search, debug);
+            if (init_translation_type == Transform::Init::mass)
+              Transform::Init::initialise_using_image_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init);
+            else if (init_translation_type == Transform::Init::geometric)
+              Transform::Init::initialise_using_image_centres (im1_image, im2_image, im1_mask, im2_mask, transform, init);
+            else if (init_translation_type == Transform::Init::set_centre_mass) // transform is set in mrregister.cpp
+              Transform::Init::set_centre_using_image_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init);
+
+            if (init_rotation_type == Transform::Init::moments)
+              Transform::Init::initialise_using_image_moments (im1_image, im2_image, im1_mask, im2_mask, transform, init);
+            else if (init_rotation_type == Transform::Init::rot_search) {
+              Transform::Init::initialise_using_rotation_search (
+                im1_image, im2_image, im1_mask, im2_mask, transform, init);
             }
 
+            // TODO global search
             // if (global_search) {
             //   GlobalSearch::GlobalSearch transformation_search;
             //   if (log_stream) {
@@ -253,7 +244,7 @@ namespace MR
             //   // std::ofstream outputFile( "/tmp/log.txt" );
             //   // transformation_search.set_log_stream(outputFile.rdbuf());
             //   // transformation_search.set_log_stream(std::cerr.rdbuf());
-            //   transformation_search.run_masked (metric, transform, im1_image, im2_image, im1_mask, im2_mask);
+            //   transformation_search.run_masked (metric, transform, im1_image, im2_image, im1_mask, im2_mask, init);
             //   // transform.debug();
             // }
 
@@ -322,9 +313,9 @@ namespace MR
               ParamType parameters (transform, im1_smoothed, im2_smoothed, midway_resized, im1_mask, im2_mask);
               INFO ("loop density: " + str(loop_density[level]));
               parameters.loop_density = loop_density[level];
-              if (robust_estimate)
-                INFO ("using robust estimate");
-              parameters.robust_estimate = robust_estimate;
+              // if (robust_estimate)
+              //   INFO ("using robust estimate");
+              // parameters.robust_estimate = robust_estimate; // TODO
               // set control point coordinates inside +-1/3 of the midway_image size
               {
                 Eigen::Vector3 ext (midway_image_header.spacing(0) / 6.0,
@@ -336,22 +327,20 @@ namespace MR
               }
               DEBUG ("neighbourhood kernel extent: " + str(kernel_extent));
               parameters.set_extent (kernel_extent);
-              if (!File::Config::get_bool("reg_nocontrolpoints", false)) {
-                Eigen::Vector3d spacing (
-                  midway_image_header.spacing(0),
-                  midway_image_header.spacing(1),
-                  midway_image_header.spacing(2));
-                Eigen::Vector3d coherence(spacing);
-                Eigen::Vector3d stop(spacing);
-                default_type reg_coherence_len = File::Config::get_float ("reg_coherence_len", 3.0); // = 3 stdev blur
-                coherence *= reg_coherence_len * 1.0 / (2.0 * scale_factor[level]);
-                default_type reg_stop_len = File::Config::get_float ("reg_stop_len", 0.0001);
-                stop.array() *= reg_stop_len;
-                DEBUG ("coherence length: " + str(coherence));
-                DEBUG ("stop length:      " + str(stop));
-                transform.get_gradient_descent_updator()->set_control_points(
-                  parameters.control_points, coherence, stop, spacing);
-              }
+              Eigen::Vector3d spacing (
+                midway_image_header.spacing(0),
+                midway_image_header.spacing(1),
+                midway_image_header.spacing(2));
+              Eigen::Vector3d coherence(spacing);
+              Eigen::Vector3d stop(spacing);
+              default_type reg_coherence_len = File::Config::get_float ("reg_coherence_len", 3.0); // = 3 stdev blur
+              coherence *= reg_coherence_len * 1.0 / (2.0 * scale_factor[level]);
+              default_type reg_stop_len = File::Config::get_float ("reg_stop_len", 0.0001);
+              stop.array() *= reg_stop_len;
+              DEBUG ("coherence length: " + str(coherence));
+              DEBUG ("stop length:      " + str(stop));
+              transform.get_gradient_descent_updator()->set_control_points(
+                parameters.control_points, coherence, stop, spacing);
 
               Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
               if (do_reorientation && fod_lmax[level] > 0)
@@ -361,7 +350,7 @@ namespace MR
               for (auto gd_iteration = 0; gd_iteration < gd_repetitions[level]; ++gd_iteration){
                 if (max_iter[level] == 0)
                   continue;
-                if (File::Config::get_bool ("reg_bbgd", true)) {
+                if (reg_bbgd) {
                   Math::GradientDescentBB<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
                     optim (evaluate, *transform.get_gradient_descent_updator());
                   optim.be_verbose (analyse_descent);
@@ -372,7 +361,7 @@ namespace MR
                     optim.run (max_iter[level], grad_tolerance);
                   DEBUG ("gradient descent ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
                   if (!is_finite(optim.state())) {
-                    throw Exception ("registration failed due to NaN in parameters");
+                    throw Exception ("registration failed: encountered NaN in parameters.");
                   }
                   parameters.transformation.set_parameter_vector (optim.state());
                   parameters.update_control_points();
@@ -454,17 +443,19 @@ namespace MR
         default_type grad_tolerance;
         default_type step_tolerance;
         std::streambuf* log_stream;
-        Transform::Init::InitType init_type;
+        Transform::Init::InitType init_translation_type, init_rotation_type;
         bool robust_estimate;
-        bool global_search;
         bool do_reorientation;
         Eigen::MatrixXd aPSF_directions;
         std::vector<int> fod_lmax;
+        bool reg_bbgd;
 
         Header midway_image_header;
     };
 
-    void set_init_model_from_option (Registration::Linear& registration, const int& option);
+    void set_init_translation_model_from_option (Registration::Linear& registration, const int& option);
+    void set_init_rotation_model_from_option (Registration::Linear& registration, const int& option);
+    void parse_general_init_options (Registration::Linear& registration);
   }
 }
 
