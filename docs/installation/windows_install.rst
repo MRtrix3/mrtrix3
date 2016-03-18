@@ -39,7 +39,7 @@ Install and update MSYS2
 
    ::
 
-       pacman --needed -Sy bash pacman pacman-mirrors msys2-runtime
+       update-core
 
 4. Close 'MinGW-w64 Win64 Shell' and start it again from the start menu.
 
