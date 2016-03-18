@@ -32,7 +32,17 @@ Install Dependencies
 
 -  Install XCode from the Apple Store
 
-- If you want to manually install Eigen3 and Qt5
+-  If you have `Homebrew <http://brew.sh/>`__ installed
+    - Install Eigen3: ``brew install eigen``
+    - Install Qt5: ``brew install qt5``
+    - Add Qt's binaries to your path: ``export PATH=`brew --prefix`/opt/qt5/bin:$PATH``
+   
+- Alternatively, if you have `MacPorts <http://macports.org/>`__ installed
+    - Install Eigen3: ``port install eigen3``
+    - Install Qt5: ``port install qt5``
+    - Add Qt's binaries to your path: ``export PATH=/opt/local/libexec/qt5/bin:$PATH`` 
+
+- As a third option, you could manually install Eigen3 and Qt5
     - Install Eigen3: download and extract the source code from `eigen.tuxfamily.org <http://eigen.tuxfamily.org/>`__ 
     - Install Qt5: download and install the latest version from `<http://download.qt.io/official_releases/qt/>`__ 
         You need to select the file labelled ``qt-opensource-mac-x64-clang-5.X.X.dmg``.
@@ -45,16 +55,6 @@ Install Dependencies
         (edit as appropriate) ``export PATH=/path/to/Qt5/5.X.X/clang_64/bin:$PATH``
     - Set the CFLAG variable for eigen
         (edit as appropriate) ``export EIGEN_CFLAGS="-isystem /where/you/extracted/eigen"``
-
--  Alternatively, if you have `Homebrew <http://brew.sh/>`__ installed
-    - Install Eigen3: ``brew install eigen``
-    - Install Qt5: ``brew install qt5``
-    - Add Qt's binaries to your path: ``export PATH=`brew --prefix`/opt/qt5/bin:$PATH``
-   
-- Alternatively, if you have `MacPorts <http://macports.org/>`__ installed
-    - Install Eigen3: ``port install eigen3``
-    - Install Qt5: ``port install qt5``
-    - Add Qt's binaries to your path: ``export PATH=/opt/local/libexec/qt5/bin:$PATH`` 
 
 Git setup
 ---------
