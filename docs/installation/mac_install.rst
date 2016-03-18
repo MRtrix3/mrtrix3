@@ -27,34 +27,39 @@ To install *MRtrix3* , you will need the following:
 Install Dependencies
 --------------------
 
--  Update MacOS X to version 10.9 (Mavericks) or higher - OpenGL 3.3 will
+1. Update MacOS X to version 10.9 (Mavericks) or higher - OpenGL 3.3 will
    typically not work on older versions
 
--  Install XCode from the Apple Store
+2. Install XCode from the Apple Store
 
--  If you have `Homebrew <http://brew.sh/>`__ installed
-    - Install Eigen3: ``brew install eigen``
-    - Install Qt5: ``brew install qt5``
-    - Add Qt's binaries to your path: ``export PATH=`brew --prefix`/opt/qt5/bin:$PATH``
+3. Install Eigen3 and Qt5. There are several alternatives to do this, depending on your current system setup. The most convenient is 
+   probably to use your favorite package manager (Homebrew or MacPorts), or install one if you haven't already. If you run into trouble, 
+   consult the `community forum <http://community.mrtrix.org>`__.
    
-- Alternatively, if you have `MacPorts <http://macports.org/>`__ installed
-    - Install Eigen3: ``port install eigen3``
-    - Install Qt5: ``port install qt5``
-    - Add Qt's binaries to your path: ``export PATH=/opt/local/libexec/qt5/bin:$PATH`` 
-
-- As a third option, you could manually install Eigen3 and Qt5
-    - Install Eigen3: download and extract the source code from `eigen.tuxfamily.org <http://eigen.tuxfamily.org/>`__ 
-    - Install Qt5: download and install the latest version from `<http://download.qt.io/official_releases/qt/>`__ 
-        You need to select the file labelled ``qt-opensource-mac-x64-clang-5.X.X.dmg``.
-        Note that you need to use at least Qt 5.1, since earlier versions
-        don't support OpenGL 3.3. We advise you to use the latest version
-        (5.5.0 as of the last update). You can choose to install it
-        system-wide or just in your home folder, whichever suits - just
-        remember where you installed it. 
-    - Make sure Qt5 tools are in your PATH
-        (edit as appropriate) ``export PATH=/path/to/Qt5/5.X.X/clang_64/bin:$PATH``
-    - Set the CFLAG variable for eigen
-        (edit as appropriate) ``export EIGEN_CFLAGS="-isystem /where/you/extracted/eigen"``
+   - With `Homebrew <http://brew.sh/>`__:
+       - Install Eigen3: ``brew install eigen``
+       - Install Qt5: ``brew install qt5``
+       - Add Qt's binaries to your path: ``export PATH=`brew --prefix`/opt/qt5/bin:$PATH``
+      
+   - Alternatively, with `MacPorts <http://macports.org/>`__:
+       - Install Eigen3: ``port install eigen3``
+       - Install Qt5: ``port install qt5``
+       - Add Qt's binaries to your path: ``export PATH=/opt/local/libexec/qt5/bin:$PATH`` 
+   
+   - As a last resort, you could manually install Eigen3 and Qt5
+       - Install Eigen3: download and extract the source code from `eigen.tuxfamily.org <http://eigen.tuxfamily.org/>`__ 
+       - Install Qt5: download and install the latest version from `<http://download.qt.io/official_releases/qt/>`__ 
+           You need to select the file labelled ``qt-opensource-mac-x64-clang-5.X.X.dmg``.
+           Note that you need to use at least Qt 5.1, since earlier versions
+           don't support OpenGL 3.3. We advise you to use the latest version
+           (5.5.0 as of the last update). You can choose to install it
+           system-wide or just in your home folder, whichever suits - just
+           remember where you installed it. 
+       - Make sure Qt5 tools are in your PATH
+           (edit as appropriate) ``export PATH=/path/to/Qt5/5.X.X/clang_64/bin:$PATH``
+       - Set the CFLAG variable for eigen
+           (edit as appropriate) ``export EIGEN_CFLAGS="-isystem /where/you/extracted/eigen"``
+           Make sure *not* to include ``/Eigen`` in the path name - use the folder in which it resides instead!
 
 Git setup
 ---------
