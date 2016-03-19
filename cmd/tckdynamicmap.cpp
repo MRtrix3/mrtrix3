@@ -103,10 +103,9 @@ OPTIONS
   + Option ("window_width", "set the full width of the sliding window (in volumes, not time) (must be an odd number)")
     + Argument ("value").type_integer (3, 15, 1e6-1)
 
-  + Option ("zero_outside_fov",
-      "if a streamline exits the image FoV, by default the time series of that "
-      "streamline endpoint will be drawn from the last streamline point within the image "
-      "FoV. Use this option to instead set the TWI factor to zero for such streamlines.")
+  + Option ("backtrack",
+            "if no valid timeseries is found at the streamline endpoint, backtrack along "
+            "the streamline trajectory until a valid timeseries is found")
 
   + Option ("resample",
       "resample the tracks at regular intervals using Hermite interpolation\n"
@@ -128,14 +127,14 @@ class Mapper : public Mapping::TrackMapperBase
     typedef Image::BufferPreload<float>::voxel_type input_voxel_type;
 
   public:
-    Mapper (const Image::Header& header, const size_t upsample_ratio, Image::BufferPreload<float>& input_image, const std::vector<float>& windowing_function, const int timepoint, const bool zero) :
+    Mapper (const Image::Header& header, const size_t upsample_ratio, Image::BufferPreload<float>& input_image, const std::vector<float>& windowing_function, const int timepoint, std::unique_ptr<Image::BufferScratch<bool>>& mask) :
         Mapping::TrackMapperBase (header),
         in (input_image),
         fmri_transform (input_image),
         kernel (windowing_function),
         kernel_centre (kernel.size() / 2),
         sample_centre (timepoint),
-        zero_outside_fov (zero)
+        v_mask (mask ? new Image::BufferScratch<bool>::voxel_type (*mask) : nullptr)
     {
       Mapping::TrackMapperBase::set_upsample_ratio (upsample_ratio);
     }
@@ -146,14 +145,17 @@ class Mapper : public Mapping::TrackMapperBase
     const Image::Transform fmri_transform;
     const std::vector<float>& kernel;
     const int kernel_centre, sample_centre;
-    const bool zero_outside_fov;
+
+    // Build a binary mask of voxels that contain valid time series
+    //   (only used if backtracking is enabled)
+    MR::copy_ptr<Image::BufferScratch<bool>::voxel_type> v_mask;
 
     // This is where the windowed Pearson correlation coefficient for the streamline is determined
     // By overloading this function, the standard mapping functionalities of TrackMapperBase are utilised;
     //   it's only the per-factor streamline that changes
     bool preprocess (const Streamline<>&, SetVoxelExtras&) const override;
 
-    const Point<int> get_last_voxel_in_fov (const std::vector< Point<float> >&, const bool) const;
+    const Point<int> get_end_voxel (const std::vector< Point<float> >&, const bool) const;
 
 };
 
@@ -165,12 +167,12 @@ bool Mapper::preprocess (const Streamline<>& tck, SetVoxelExtras& out) const
   out.factor = 0.0;
 
   input_voxel_type start_voxel (in), end_voxel (in);
-  const Point<int> v_start (get_last_voxel_in_fov (tck, false));
+  const Point<int> v_start (get_end_voxel (tck, false));
   if (v_start == Point<int> (-1, -1, -1))
     return true;
   Image::Nav::set_pos (start_voxel, v_start);
 
-  const Point<int> v_end (get_last_voxel_in_fov (tck, true));
+  const Point<int> v_end (get_end_voxel (tck, true));
   if (v_end == Point<int> (-1, -1, -1))
     return true;
   Image::Nav::set_pos (end_voxel, v_end);
@@ -203,20 +205,36 @@ bool Mapper::preprocess (const Streamline<>& tck, SetVoxelExtras& out) const
   start_variance /= denom;
   end_variance   /= denom;
 
-  out.factor = corr / std::sqrt (start_variance * end_variance);
+  if (start_variance && end_variance)
+    out.factor = corr / std::sqrt (start_variance * end_variance);
   return true;
 
 }
 
 
 
-// Slightly different to get_last_point_in_fov() provided in the TrackMapperTWIImage:
-//   want the last voxel traversed by the streamline before exiting the FoV, rather than the last
-//   point for which a valid tri-linear interpolation can be performed
-const Point<int> Mapper::get_last_voxel_in_fov (const std::vector< Point<float> >& tck, const bool end) const
+// This function selects a voxel position to sample for this streamline endpoint. If backtracking
+//   is enabled, and the endpoint voxel is either outside the FoV or doesn't contain a valid
+//   time series, trace back along the length of the streamline until a voxel with a valid
+//   time series is found.
+const Point<int> Mapper::get_end_voxel (const std::vector< Point<float> >& tck, const bool end) const
 {
   int index = end ? tck.size() - 1 : 0;
-  if (zero_outside_fov) {
+  if (v_mask) {
+
+    // Do backtracking
+    const int step = end ? -1 : 1;
+    for (; index >= 0 && index <= int(tck.size() - 1); index += step) {
+      const Point<float> p = fmri_transform.scanner2voxel (tck[index]);
+      const Point<int> v (std::round (p[0]), std::round (p[1]), std::round (p[2]));
+      // Is this point both within the FoV, and contains a valid time series?
+      if (Image::Nav::within_bounds (in, v) && Image::Nav::get_value_at_pos (*v_mask, v))
+        return v;
+    }
+
+    return Point<int> (-1, -1, -1);
+
+  } else {
 
     const Point<float> p = fmri_transform.scanner2voxel (tck[index]);
     const Point<int> v (std::round (p[0]), std::round (p[1]), std::round (p[2]));
@@ -224,19 +242,8 @@ const Point<int> Mapper::get_last_voxel_in_fov (const std::vector< Point<float> 
       return v;
     return Point<int> (-1, -1, -1);
 
-  } else {
-
-    const int step  = end ? -1 : 1;
-    do {
-      const Point<float> p = fmri_transform.scanner2voxel (tck[index]);
-      const Point<int> v (std::round (p[0]), std::round (p[1]), std::round (p[2]));
-      if (Image::Nav::within_bounds (in, v))
-        return v;
-      index += step;
-    } while (index >= 0 && index < int(tck.size()));
-    return Point<int> (-1, -1, -1);
-
   }
+
 }
 
 
@@ -349,8 +356,6 @@ bool Count_receiver::operator() (const Mapping::SetVoxel& in)
 
 
 
-
-
 void run () {
 
   const std::string tck_path = argument[0];
@@ -419,7 +424,7 @@ void run () {
     resample_factor = opt[0][0];
     INFO ("track interpolation factor manually set to " + str(resample_factor));
   }
-  else if (step_size && finite (step_size)) {
+  else if (step_size && std::isfinite (step_size)) {
     resample_factor = std::ceil (step_size / (minvalue (header.vox(0), header.vox(1), header.vox(2)) * MAX_VOXEL_STEP_RATIO));
     INFO ("track interpolation factor automatically set to " + str(resample_factor));
   }
@@ -478,7 +483,31 @@ void run () {
 
   }
 
-  const bool zero_outside_fov = get_options ("zero_outside_fov").size();
+  // If necessary, generate mask of fMRI voxels with valid timeseries
+  //   (use ptr value as flag for backtracking activation also)
+  std::unique_ptr<Image::BufferScratch<bool>> mask;
+  if (get_options ("backtrack").size()) {
+    Image::Header H_mask (header);
+    H_mask.set_ndim (3);
+    H_mask.datatype() = DataType::Bit;
+    mask.reset (new Image::BufferScratch<bool> (H_mask));
+    Image::BufferScratch<bool>::voxel_type v_mask (*mask);
+    Image::BufferPreload<float>::voxel_type v_in (in_image);
+
+    auto f = [] (Image::BufferPreload<float>::voxel_type& in, Image::BufferScratch<bool>::voxel_type& mask) {
+      for (in[3] = 0; in[3] != in.dim(3); ++in[3]) {
+        if (std::isfinite (in.value()) && in.value()) {
+          mask.value() = true;
+          return true;
+        }
+      }
+      mask.value() = false;
+      return true;
+    };
+
+    Image::ThreadedLoop ("pre-calculating mask of valid time-series voxels...", v_mask)
+        .run (f, v_in, v_mask);
+  }
 
   // TODO Reconsider pre-calculating & storing SetVoxel for each streamline
   // - Faster, but ups RAM requirements, may become prohibitive with super-resolution
@@ -507,7 +536,7 @@ void run () {
       LogLevelLatch latch (0);
       Tractography::Reader<float> tck_file (tck_path, properties);
       Mapping::TrackLoader loader (tck_file);
-      Mapper mapper (H_3d, resample_factor, in_image, window, timepoint, zero_outside_fov);
+      Mapper mapper (H_3d, resample_factor, in_image, window, timepoint, mask);
       Receiver receiver (H_3d, stat_vox);
       Thread::run_queue (loader, Thread::batch (Tractography::Streamline<>()), Thread::multi (mapper), Thread::batch (Mapping::SetVoxel()), receiver);
 

@@ -28,6 +28,7 @@
 
 #include "point.h"
 #include "image/buffer_preload.h"
+#include "image/buffer_scratch.h"
 #include "image/voxel.h"
 #include "image/interp/linear.h"
 #include "math/SH.h"
@@ -86,19 +87,20 @@ class TWIImagePluginBase
         data (new Image::BufferPreload<float> (input_image)),
         voxel (*data),
         interp (voxel),
-        zero_outside_fov (false) { }
+        backtrack (false) { }
 
     TWIImagePluginBase (const TWIImagePluginBase& that) :
         statistic (that.statistic),
         data (that.data),
         voxel (that.voxel),
         interp (voxel),
-        zero_outside_fov (that.zero_outside_fov) { }
+        backtrack (that.backtrack),
+        backtrack_mask (that.backtrack_mask) { }
 
     virtual ~TWIImagePluginBase() { }
 
 
-    void set_zero_outside_fov() { zero_outside_fov = true; }
+    void set_backtrack();
 
     virtual void load_factors (const std::vector< Point<float> >&, std::vector<float>&) const = 0;
 
@@ -114,14 +116,16 @@ class TWIImagePluginBase
     //   in a thread-safe fashion
     mutable Image::Interp::Linear<input_voxel_type> interp;
 
-    // If the streamline endpoint extends beyond the image FoV, but we want the value
-    //   at the endpoint, should we backtrack to the first streamline point that _is_
-    //   within the FoV, or should it provide a value of zero?
-    bool zero_outside_fov;
+    // If the streamline endpoint doesn't contain a valid value, but we want a valid value
+    //   at all endpoints, should we backtrack to the first streamline point that _does_ have
+    //   a valid value, or should it provide a value of zero?
+    // If using ENDS_CORR, pre-calculate a mask of voxels that have valid time series
+    bool backtrack;
+    std::shared_ptr<Image::BufferScratch<bool>> backtrack_mask;
 
     // New helper function; find the last point on the streamline from which valid image information can be read
-    const ssize_t get_last_index_in_fov (const std::vector< Point<float> >&, const bool) const;
-    const Point<float> get_last_point_in_fov (const std::vector< Point<float> >&, const bool) const;
+    const ssize_t get_end_index (const std::vector< Point<float> >&, const bool) const;
+    const Point<float> get_end_point (const std::vector< Point<float> >&, const bool) const;
 
 };
 

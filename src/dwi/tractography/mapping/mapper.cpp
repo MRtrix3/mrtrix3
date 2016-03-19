@@ -185,14 +185,14 @@ void TrackMapperTWI::add_scalar_image (const std::string& path)
   image_plugin = new TWIScalarImagePlugin (path, track_statistic);
 }
 
-void TrackMapperTWI::set_zero_outside_fov()
+void TrackMapperTWI::set_backtrack()
 {
   if (!image_plugin)
-    throw Exception ("Cannot set zero outside FoV if no TWI associated image provided");
+    throw Exception ("Cannot backtrack if no TWI associated image provided");
   if (typeid(image_plugin) != typeid(TWIScalarImagePlugin))
-    throw Exception ("Zeroing outside FoV is only applicable to scalar image TWI plugins");
+    throw Exception ("Backtracking is only applicable to scalar image TWI plugins");
   TWIScalarImagePlugin* ptr = dynamic_cast<TWIScalarImagePlugin*>(image_plugin);
-  ptr->set_zero_outside_fov();
+  ptr->set_backtrack();
 }
 
 void TrackMapperTWI::add_fod_image (const std::string& path)

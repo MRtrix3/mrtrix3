@@ -33,26 +33,74 @@ namespace Mapping {
 
 
 
+void TWIImagePluginBase::set_backtrack()
+{
+  backtrack = true;
+  if (statistic != ENDS_CORR)
+    return;
+  Image::Header H (*data);
+  H.set_ndim (3);
+  H.datatype() = DataType::Bit;
+  backtrack_mask.reset (new Image::BufferScratch<bool> (H));
+  input_voxel_type v_data (voxel);
+  Image::BufferScratch<bool>::voxel_type v_mask (*backtrack_mask);
+  auto f = [] (Image::BufferPreload<float>::voxel_type& in, Image::BufferScratch<bool>::voxel_type& mask) {
+    for (in[3] = 0; in[3] != in.dim(3); ++in[3]) {
+      if (std::isfinite (in.value()) && in.value()) {
+        mask.value() = true;
+        return true;
+      }
+    }
+    mask.value() = false;
+    return true;
+  };
 
-const ssize_t TWIImagePluginBase::get_last_index_in_fov (const std::vector< Point<float> >& tck, const bool end) const
+  Image::ThreadedLoop ("pre-calculating mask of valid time-series voxels...", v_mask)
+      .run (f, v_data, v_mask);
+}
+
+
+
+
+const ssize_t TWIImagePluginBase::get_end_index (const std::vector< Point<float> >& tck, const bool end) const
 {
   ssize_t index = end ? tck.size() - 1 : 0;
-  if (zero_outside_fov) {
+  if (backtrack) {
+
+    const ssize_t step = end ? -1 : 1;
+
+    if (statistic == ENDS_CORR) {
+
+      Image::BufferScratch<bool>::voxel_type v_mask (*backtrack_mask);
+      for (; index >= 0 && index < ssize_t(tck.size()); index += step) {
+        const Point<float> p = interp.scanner2voxel (tck[index]);
+        const Point<int> v (std::round (p[0]), std::round (p[1]), std::round (p[2]));
+        if (Image::Nav::within_bounds (v_mask, v) && Image::Nav::get_value_at_pos (v_mask, v)) {
+          interp.scanner (tck[index]); // For the calling function to get the position
+          return index;
+        }
+      }
+      return -1;
+
+    } else {
+
+      while (interp.scanner (tck[index])) {
+        index += step;
+        if (index == -1 || index == ssize_t(tck.size()))
+          return -1;
+      }
+
+    }
+
+  } else {
     if (interp.scanner (tck[index]))
       return -1;
-  } else {
-    const ssize_t step = end ? -1 : 1;
-    while (interp.scanner (tck[index])) {
-      index += step;
-      if (index == -1 || index == ssize_t(tck.size()))
-        return -1;
-    }
   }
   return index;
 }
-const Point<float> TWIImagePluginBase::get_last_point_in_fov (const std::vector< Point<float> >& tck, const bool end) const
+const Point<float> TWIImagePluginBase::get_end_point (const std::vector< Point<float> >& tck, const bool end) const
 {
-  const ssize_t index = get_last_index_in_fov (tck, end);
+  const ssize_t index = get_end_index (tck, end);
   if (index == -1)
     return Point<float>();
   return tck[index];
@@ -70,7 +118,7 @@ void TWIScalarImagePlugin::load_factors (const std::vector< Point<float> >& tck,
 
     // Only the track endpoints contribute
     for (size_t tck_end_index = 0; tck_end_index != 2; ++tck_end_index) {
-      const Point<float> endpoint = get_last_point_in_fov (tck, tck_end_index);
+      const Point<float> endpoint = get_end_point (tck, tck_end_index);
       if (endpoint.valid())
         factors.push_back (interp.value());
       else
@@ -82,12 +130,16 @@ void TWIScalarImagePlugin::load_factors (const std::vector< Point<float> >& tck,
     // Pearson correlation coefficient between the two endpoints
     factors.assign (1, 0.0f);
     input_voxel_type start (voxel), end (voxel);
-    const Point<float> p_start (get_last_point_in_fov (tck, false));
-    if (!p_start) return;
-    Image::Nav::set_pos (start, interp, 0, 3);
-    const Point<float> p_end (get_last_point_in_fov (tck, true));
-    if (!p_end) return;
-    Image::Nav::set_pos (end, interp, 0, 3);
+    const ssize_t start_index (get_end_index (tck, false));
+    if (start_index < 0) return;
+    Point<float> p = interp.scanner2voxel (tck[start_index]);
+    Point<int> v (std::round (p[0]), std::round (p[1]), std::round (p[2]));
+    Image::Nav::set_pos (start, v, 0, 3);
+    const ssize_t end_index (get_end_index (tck, true));
+    if (end_index < 0) return;
+    p = interp.scanner2voxel (tck[end_index]);
+    v.set (std::round (p[0]), std::round (p[1]), std::round (p[2]));
+    Image::Nav::set_pos (end, v, 0, 3);
 
     double start_sum = 0.0, end_sum = 0.0;
     for (start[3] = end[3] = 0; start[3] != start.dim (3); ++start[3], ++end[3]) {
@@ -107,7 +159,8 @@ void TWIScalarImagePlugin::load_factors (const std::vector< Point<float> >& tck,
     const float start_stdev = std::sqrt (start_sum_variance / double(start.dim(3) - 1));
     const float end_stdev   = std::sqrt (end_sum_variance   / double(end  .dim(3) - 1));
 
-    factors[0] = product_expectation / (start_stdev * end_stdev);
+    if (start_stdev && end_stdev)
+      factors[0] = product_expectation / (start_stdev * end_stdev);
 
   } else {
 
@@ -131,7 +184,7 @@ void TWIFODImagePlugin::load_factors (const std::vector< Point<float> >& tck, st
   if (statistic == ENDS_MAX || statistic == ENDS_MEAN || statistic == ENDS_MIN || statistic == ENDS_PROD) {
 
     for (size_t tck_end_index = 0; tck_end_index != 2; ++tck_end_index) {
-      const ssize_t index = get_last_index_in_fov (tck, tck_end_index);
+      const ssize_t index = get_end_index (tck, tck_end_index);
       if (index == -1) {
         factors.push_back (0.0);
       } else {
