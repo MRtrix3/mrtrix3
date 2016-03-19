@@ -74,7 +74,8 @@ namespace MR
           robust_estimate (false),
           do_reorientation (false),
           fod_lmax (3),
-          reg_bbgd (File::Config::get_bool ("reg_bbgd", true)) {
+          reg_bbgd (File::Config::get_bool ("reg_bbgd", true)),
+          analyse_descent (File::Config::get_bool ("reg_analyse_descent", false)) {
           scale_factor[0] = 0.25;
           scale_factor[1] = 0.5;
           scale_factor[2] = 1.0;
@@ -225,8 +226,10 @@ namespace MR
               Transform::Init::initialise_using_image_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init);
             else if (init_translation_type == Transform::Init::geometric)
               Transform::Init::initialise_using_image_centres (im1_image, im2_image, im1_mask, im2_mask, transform, init);
-            else if (init_translation_type == Transform::Init::set_centre_mass) // transform is set in mrregister.cpp
-              Transform::Init::set_centre_using_image_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init);
+            else if (init_translation_type == Transform::Init::set_centre_mass) // doesn't change translation or linear matrix
+              Transform::Init::set_centre_via_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init);
+            else if (init_translation_type == Transform::Init::set_centre_geometric) // doesn't change translation or linear matrix
+              Transform::Init::set_centre_via_image_centres (im1_image, im2_image, im1_mask, im2_mask, transform, init);
 
             if (init_rotation_type == Transform::Init::moments)
               Transform::Init::initialise_using_image_moments (im1_image, im2_image, im1_mask, im2_mask, transform, init);
@@ -248,7 +251,7 @@ namespace MR
             //   // transform.debug();
             // }
 
-            typedef Im1ImageType MidwayImageType;
+            typedef Header MidwayImageType;
             typedef Im1ImageType ProcessedImageType;
             typedef Image<bool> ProcessedMaskType;
 
@@ -284,7 +287,6 @@ namespace MR
             // calculate midway (affine average) space which will be constant for each resolution level
             midway_image_header = compute_minimum_average_header (im1_image, im2_image, transform, midspace_voxel_subsampling, midspace_padding);
 
-            bool analyse_descent = File::Config::get_bool ("reg_analyse_descent", false);
             for (size_t level = 0; level < scale_factor.size(); level++) {
               {
                 std::string st;
@@ -296,19 +298,12 @@ namespace MR
                 }
               }
 
-              // TODO: use header instead of full blown image
-              auto midway_image = Header::scratch (midway_image_header).get_image<typename Im1ImageType::value_type>();
               auto im1_smoothed = Registration::multi_resolution_lmax (im1_image, scale_factor[level], do_reorientation, fod_lmax[level]);
               auto im2_smoothed = Registration::multi_resolution_lmax (im2_image, scale_factor[level], do_reorientation, fod_lmax[level]);
 
-              Filter::Resize midway_resize_filter (midway_image);
+              Filter::Resize midway_resize_filter (midway_image_header);
               midway_resize_filter.set_scale_factor (scale_factor[level]);
-              midway_resize_filter.set_interp_type (1);
-              auto midway_resized = Image<typename Im1ImageType::value_type>::scratch (midway_resize_filter);
-              {
-                LogLevelLatch log_level (0);
-                midway_resize_filter (midway_image, midway_resized);
-              }
+              Header midway_resized (midway_resize_filter);
 
               ParamType parameters (transform, im1_smoothed, im2_smoothed, midway_resized, im1_mask, im2_mask);
               INFO ("loop density: " + str(loop_density[level]));
@@ -316,6 +311,7 @@ namespace MR
               // if (robust_estimate)
               //   INFO ("using robust estimate");
               // parameters.robust_estimate = robust_estimate; // TODO
+
               // set control point coordinates inside +-1/3 of the midway_image size
               {
                 Eigen::Vector3 ext (midway_image_header.spacing(0) / 6.0,
@@ -448,7 +444,7 @@ namespace MR
         bool do_reorientation;
         Eigen::MatrixXd aPSF_directions;
         std::vector<int> fod_lmax;
-        bool reg_bbgd;
+        const bool reg_bbgd, analyse_descent;
 
         Header midway_image_header;
     };

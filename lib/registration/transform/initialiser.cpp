@@ -24,7 +24,7 @@ namespace MR
     {
       namespace Init
       {
-        void set_centre_using_image_mass (
+        void set_centre_via_mass (
           Image<default_type>& im1,
           Image<default_type>& im2,
           Image<default_type>& mask1,
@@ -38,6 +38,8 @@ namespace MR
 
           Image<default_type> bogus_mask;
 
+          // TODO: add option to use mask instead of image intensities
+
           get_centre_of_mass (im1, init.init_translation.unmasked1 ? bogus_mask : mask1, im1_centre_mass);
           get_centre_of_mass (im2, init.init_translation.unmasked2 ? bogus_mask : mask2, im2_centre_mass);
 
@@ -45,6 +47,27 @@ namespace MR
           transform.transform_half (im2_centre_mass_transformed, im2_centre_mass);
 
           Eigen::Vector3 centre = (im1_centre_mass + im2_centre_mass) * 0.5;
+          DEBUG("centre: " + str(centre.transpose()));
+          transform.set_centre_without_transform_update (centre);
+        }
+
+        void set_centre_via_image_centres (
+          const Image<default_type>& im1,
+          const Image<default_type>& im2,
+          const Image<default_type>& mask1,
+          const Image<default_type>& mask2,
+          Registration::Transform::Base& transform,
+          Registration::Transform::Init::LinearInitialisationParams& init) {
+
+          CONSOLE ("initialising centre of rotation using geometric centre");
+          Eigen::Vector3 im1_centre_scanner;
+          get_geometric_centre (im1, im1_centre_scanner);
+
+          Eigen::Vector3 im2_centre_scanner;
+          get_geometric_centre (im2, im2_centre_scanner);
+
+          Eigen::Vector3 centre = (im1_centre_scanner + im2_centre_scanner) / 2.0;
+          DEBUG("centre: " + str(centre.transpose()));
           transform.set_centre_without_transform_update (centre);
         }
 
@@ -52,8 +75,8 @@ namespace MR
         void initialise_using_image_centres (
           const Image<default_type>& im1,
           const Image<default_type>& im2,
-          Image<default_type>& mask1, // TODO: use centre of masks
-          Image<default_type>& mask2,
+          const Image<default_type>& mask1,
+          const Image<default_type>& mask2,
           Registration::Transform::Base& transform,
           Registration::Transform::Init::LinearInitialisationParams& init) {
 

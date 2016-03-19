@@ -13,8 +13,8 @@
  *
  */
 
-#ifndef __registration_transform_global_search_h__
-#define __registration_transform_global_search_h__
+#ifndef __registration_transform_search_h__
+#define __registration_transform_search_h__
 
 #include <vector>
 #include <iostream>
@@ -48,7 +48,7 @@ namespace MR
 {
   namespace Registration
   {
-    namespace GlobalSearch
+    namespace RotationSearch
     {
 
       typedef transform_type TrafoType;
@@ -65,25 +65,32 @@ namespace MR
               Image<default_type>& mask1,
               Image<default_type>& mask2,
               MetricType& metric,
+              Registration::Transform::Base& linear_transform,
               Registration::Transform::Init::LinearInitialisationParams init) :
             im1 (image1),
             im2 (image2),
             mask1 (mask1),
             mask2 (mask2),
             metric (metric),
+            input_trafo (linear_transform),
             init_options (init),
+            centre (input_trafo.get_centre()),
+            offset (input_trafo.get_translation()),
             global_search_iterations (init.init_rotation.search.global.iterations),
             rot_angles (init.init_rotation.search.angles),
             local_search_directions (init.init_rotation.search.directions),
             image_scale_factor (init.init_rotation.search.scale),
             global_search (init.init_rotation.search.run_global),
             idx_angle (0),
-            idx_dir (0) { };
+            idx_dir (0) {
+              local_trafo.set_centre_without_transform_update (centre);
+              local_trafo.set_translation (offset);
+            };
 
             typedef Metric::Params<Registration::Transform::Rigid,
                                      Image<default_type>,
                                      Image<default_type>,
-                                     Image<default_type>,
+                                     Header,
                                      Image<default_type>,
                                      Image<default_type>,
                                      // use Interp::LinearInterpProcessingType::ValueAndDerivative for metric that calculates gradients
@@ -117,23 +124,8 @@ namespace MR
               }
               image2_midway = Image<default_type>::create (im2_path, image2_midway_header);
 
-              Filter::reslice<Interp::Cubic> (im1, image1_midway, transform.get_transform_half(), Adapter::AutoOverSample, 0.0);
-              Filter::reslice<Interp::Cubic> (im2, image2_midway, transform.get_transform_half_inverse(), Adapter::AutoOverSample, 0.0);
-            }
-
-            transform_type get_best_trafo() const {
-              transform_type best = best_trafo;
-              return best;
-            }
-
-            Eigen::Vector3d get_centre() const {
-              Eigen::Vector3d c = centre;
-              return c;
-            }
-
-            Eigen::Vector3d get_offset() const {
-              Eigen::Vector3d o = offset;
-              return o;
+              Filter::reslice<Interp::Cubic> (im1, image1_midway, local_trafo.get_transform_half(), Adapter::AutoOverSample, 0.0);
+              Filter::reslice<Interp::Cubic> (im2, image2_midway, local_trafo.get_transform_half_inverse(), Adapter::AutoOverSample, 0.0);
             }
 
             void run ( bool debug = false ) {
@@ -149,27 +141,31 @@ namespace MR
                 gen_uniform_rotation_axes (local_search_directions, 180.0); // full sphere
                 az_el_to_cartesian();
               }
-              ParamType parameters = get_parameters (image_scale_factor);
-              Eigen::Matrix<default_type, Eigen::Dynamic, 1> gradient (parameters.transformation.size());
+
               size_t iteration (0);
               ssize_t cnt (0);
+              Eigen::Matrix<default_type, Eigen::Dynamic, 1> gradient (local_trafo.size());
               Eigen::VectorXd cost = Eigen::VectorXd::Zero(1,1);
-              Metric::ThreadKernel<MetricType, ParamType> kernel (metric, parameters, cost, gradient, &cnt);
-              ThreadedLoop (parameters.midway_image, 0, 3).run (kernel);
-              assert (cnt > 0);
-              overlap_it[0] = cnt;
-              cost_it[0] = cost(0) / static_cast<default_type>(cnt);
-              transform_type T = parameters.transformation.get_transform();
-              trafo_it.push_back (T);
+              transform_type T;
+              {
+                ParamType parameters = get_parameters ();
+                Metric::ThreadKernel<MetricType, ParamType> kernel (metric, parameters, cost, gradient, &cnt);
+                ThreadedLoop (parameters.midway_image, 0, 3).run (kernel);
+                assert (cnt > 0);
+                overlap_it[0] = cnt;
+                cost_it[0] = cost(0) / static_cast<default_type>(cnt);
+                T = parameters.transformation.get_transform();
+                trafo_it.push_back (T);
+              }
 
-              offset = parameters.transformation.get_translation();
-              centre = parameters.transformation.get_centre();
               transform_type Tc2, To, R0;
               Tc2.setIdentity();
               To.setIdentity();
               R0.setIdentity();
               To.translation() = offset;
               Tc2.translation() = centre - 0.5 * offset;
+
+
               while ( ++iteration < iterations ) {
                 ++progress;
                 if (global_search) {
@@ -179,8 +175,10 @@ namespace MR
                   gen_local_quaternion ();
                 }
                 R0.linear() = quat.matrix();
-                T = Tc2 * To * R0 * Tc2.inverse();
-                parameters.transformation.set_transform (T);
+                transform_type T = Tc2 * To * R0 * Tc2.inverse();
+                local_trafo.set_transform<decltype(T)>(T);
+                ParamType parameters = get_parameters ();
+                // parameters.transformation.set_transform<decltype(T)>(T);
                 cost.fill(0);
                 cnt = 0;
                 Metric::ThreadKernel<MetricType, ParamType> kernel (metric, parameters, cost, gradient, &cnt);
@@ -216,20 +214,17 @@ namespace MR
               //   parameters.transformation.set_transform (best_trafo);
               //   write_images ( "/tmp/im1_best.mif", "/tmp/im2_best.mif");
               // }
+              input_trafo.set_transform<transform_type> (best_trafo);
+
             };
 
           private:
-            ParamType get_parameters (default_type& image_scale_factor) {
-              {
-                LogLevelLatch log_level (0);
-                Registration::Transform::Init::initialise_using_image_mass (im1, im2, mask1, mask2, transform, init_options);
-              }
-
+            ParamType get_parameters () {
               // create resized midway image
               std::vector<Eigen::Transform<default_type, 3, Eigen::Projective> > init_transforms;
               {
-                Eigen::Transform<default_type, 3, Eigen::Projective> init_trafo_1 = transform.get_transform_half_inverse();
-                Eigen::Transform<default_type, 3, Eigen::Projective> init_trafo_2 = transform.get_transform_half();
+                Eigen::Transform<default_type, 3, Eigen::Projective> init_trafo_1 = local_trafo.get_transform_half_inverse();
+                Eigen::Transform<default_type, 3, Eigen::Projective> init_trafo_2 = local_trafo.get_transform_half();
                 init_transforms.push_back (init_trafo_1);
                 init_transforms.push_back (init_trafo_2);
               }
@@ -239,19 +234,12 @@ namespace MR
               headers.push_back(im1.original_header());
               headers.push_back(im2.original_header());
               midway_image_header = compute_minimum_average_header<default_type, Eigen::Transform<default_type, 3, Eigen::Projective>> (headers, im_res, padding, init_transforms);
-              midway_image = Header::scratch (midway_image_header).template get_image<default_type>();
 
-              // TODO: replace midway image with header
-              Filter::Resize midway_resize_filter (midway_image);
+              Filter::Resize midway_resize_filter (midway_image_header);
               midway_resize_filter.set_scale_factor (image_scale_factor);
-              midway_resize_filter.set_interp_type (1);
-              midway_resized = Image<default_type>::scratch (midway_resize_filter);
-              {
-                LogLevelLatch log_level (0);
-                midway_resize_filter (midway_image, midway_resized);
-              }
+              midway_resized_header = Header (midway_resize_filter);
 
-              ParamType parameters (transform, im1, im2, midway_resized, mask1, mask2);
+              ParamType parameters (local_trafo, im1, im2, midway_resized_header, mask1, mask2);
               parameters.loop_density = 1.0;
               return parameters;
             }
@@ -311,8 +299,12 @@ namespace MR
               ++idx_dir;
             }
             Image<default_type> im1, im2, mask1, mask2, midway_image, midway_resized;
+            Header midway_resized_header;
             MetricType metric;
+            Registration::Transform::Base& input_trafo;
             Registration::Transform::Init::LinearInitialisationParams& init_options;
+            const Eigen::Vector3d centre;
+            const Eigen::Vector3d offset;
             Math::RNG::Normal<default_type> rndn;
             Eigen::Quaternion<default_type> quat;
             transform_type best_trafo;
@@ -326,14 +318,13 @@ namespace MR
             default_type image_scale_factor;
             bool global_search;
             size_t idx_angle, idx_dir;
-            Eigen::Vector3d centre, offset;
-            Registration::Transform::Rigid transform;
+            Registration::Transform::Rigid local_trafo;
             Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_el;
             Eigen::Matrix<default_type, Eigen::Dynamic, 3> xyz;
             Eigen::Matrix<default_type, Eigen::Dynamic, 1> overlap_it, cost_it;
             std::vector<transform_type> trafo_it;
           };
-    } // namespace GlobalSearch
+    } // namespace RotationSearch
   }
 }
 

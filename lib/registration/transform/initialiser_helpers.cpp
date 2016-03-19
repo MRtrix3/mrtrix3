@@ -17,7 +17,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
 #include "registration/transform/initialiser_helpers.h"
-#include "registration/transform/global_search.h"
+#include "registration/transform/search.h"
 
 #include "algo/loop.h"
 #include "debug.h"
@@ -176,19 +176,17 @@ namespace MR
                                           Registration::Transform::Base& transform,
                                           Registration::Transform::Init::LinearInitialisationParams& init) {
 
-          CONSOLE ("initialising centre of rotation and translation using centre of mass. searching for best rotation");
+          CONSOLE ("searching for best rotation");
           Registration::Metric::MeanSquaredNoGradient metric; // TODO replace with CrossCorrelationNoGradient
           Image<default_type> bogus_mask;
-          GlobalSearch::ExhaustiveRotationSearch<decltype(metric)> search (
+          RotationSearch::ExhaustiveRotationSearch<decltype(metric)> search (
             im1, im2,
             init.init_translation.unmasked1 ? bogus_mask : mask1,
             init.init_translation.unmasked2 ? bogus_mask : mask2,
             metric,
+            transform,
             init);
           search.run();
-          transform.set_centre_without_transform_update (search.get_centre());
-          transform_type T = search.get_best_trafo();
-          transform.set_transform<transform_type> (T);
         }
 
         void initialise_using_image_mass (Image<default_type>& im1,
@@ -198,9 +196,11 @@ namespace MR
                                           Registration::Transform::Base& transform,
                                           Registration::Transform::Init::LinearInitialisationParams& init) {
 
-          CONSOLE ("initialising centre of rotation and translation using centre of mass");
+          CONSOLE ("initialising translation and centre of rotation using centre of mass");
           Image<default_type> bogus_mask;
           Eigen::Matrix<default_type, 3, 1> im1_centre_of_mass, im2_centre_of_mass;
+
+          // TODO: add option to use mask instead of image intensities
 
           get_centre_of_mass (im1, init.init_translation.unmasked1 ? bogus_mask : mask1, im1_centre_of_mass);
           get_centre_of_mass (im2, init.init_translation.unmasked2 ? bogus_mask : mask2, im2_centre_of_mass);
@@ -404,7 +404,7 @@ namespace MR
           Image<default_type>& mask_1,
           Image<default_type>& mask_2) {
             default_type  m000, m100, m010, m001, mu110, mu011, mu101, mu200, mu020, mu002;
-            get_geometric_centre(image_1, im1_centre);
+            get_geometric_centre (image_1, im1_centre);
             get_moments (image_1, mask_1, im1_centre, m000, m100, m010, m001, mu110, mu011, mu101, mu200, mu020, mu002);
             im1_centre_of_mass << m100 / m000, m010 / m000, m001 / m000;
             im1_covariance_matrix(0, 0) = mu200 / m000;
@@ -417,7 +417,7 @@ namespace MR
             im1_covariance_matrix(2, 1) = im1_covariance_matrix(1, 2);
             im1_covariance_matrix(2, 2) = mu002 / m000;
 
-            get_geometric_centre(image_2, im2_centre);
+            get_geometric_centre (image_2, im2_centre);
             get_moments (image_2, mask_2, im2_centre, m000, m100, m010, m001, mu110, mu011, mu101, mu200, mu020, mu002);
             im2_centre_of_mass << m100 / m000, m010 / m000, m001 / m000;
             im2_covariance_matrix(0, 0) = mu200 / m000;

@@ -228,7 +228,7 @@ namespace MR
                 typedef typename ParamType::ProcessedMaskInterpType ProcessedMaskInterpolatorType;
                 typedef typename ParamType::ProcessedImageInterpType CCInterpType;
 
-                Header midway_header (parameters.midway_image.original_header());
+                Header midway_header (parameters.midway_image);
                 midway_v2s = MR::Transform (midway_header).voxel2scanner;
 
                 // store precomputed values in cc_image:

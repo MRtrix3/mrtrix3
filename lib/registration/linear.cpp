@@ -113,10 +113,10 @@ namespace MR
       + Option ("init_rotation.unmasked1", "disregard mask1 for the rotation initialisation (affects 'search' and 'moments')")
       + Option ("init_rotation.unmasked2", "disregard mask2 for the rotation initialisation (affects 'search' and 'moments')")
       + Option ("init_rotation.search.angles", "rotation angles for the local search in degrees between 0 and 180. "
-                                  "(Default: 2,5,10,15,20,25,30,35,40)")
+                                  "(Default: 2,5,10,15,20)")
         + Argument ("angles").type_sequence_float ()
-      + Option ("init_rotation.search.scale", "relative size of the images used for the rotation search. (Default: 0.1)")
-        + Argument ("scale").type_float (0.0001, 0.1, 1.0)
+      + Option ("init_rotation.search.scale", "relative size of the images used for the rotation search. (Default: 0.15)")
+        + Argument ("scale").type_float (0.0001, 0.15, 1.0)
       + Option ("init_rotation.search.directions", "number of rotation axis for local search. (Default: 250)")
         + Argument ("num").type_integer (1, 250, 10000)
       + Option ("init_rotation.search.run_global", "perform a global search. (Default: local)")
@@ -129,13 +129,13 @@ namespace MR
       + Option ("rigid", "the output text file containing the rigid transformation as a 4x4 matrix")
         + Argument ("file").type_file_out ()
 
-      // + Option ("rigid_1tomidway", "the output text file containing the affine transformation that "
-      //   "aligns image1 to image2 in their common midway space as a 4x4 matrix")
-      //   + Argument ("file").type_file_out () // TODO
+      + Option ("rigid_1tomidway", "the output text file containing the rigid transformation that "
+        "aligns image1 to image2 in their common midway space as a 4x4 matrix")
+        + Argument ("file").type_file_out ()
 
-      // + Option ("rigid_2tomidway", "the output text file containing the affine transformation that aligns "
-      //   "image2 to image1 in their common midway space as a 4x4 matrix")
-      //   + Argument ("file").type_file_out ()
+      + Option ("rigid_2tomidway", "the output text file containing the rigid transformation that aligns "
+        "image2 to image1 in their common midway space as a 4x4 matrix")
+        + Argument ("file").type_file_out ()
 
       + Option ("rigid_init_translation", "initialise the translation and centre of rotation \n"
                                 "Valid choices are: \n"

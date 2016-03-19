@@ -391,7 +391,7 @@ void run ()
   bool init_affine_matrix_set = false;
   if (opt.size()) {
     if (init_rigid_matrix_set)
-      throw Exception ("you cannot initialise registrations with both a rigid and affine transformation");
+      throw Exception ("you cannot initialise registrations with both rigid and affine transformations");
     if (do_rigid)
       throw Exception ("you cannot initialise with -affine_init_matrix since a rigid registration is being performed");
 
