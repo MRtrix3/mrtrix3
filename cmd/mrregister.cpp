@@ -229,6 +229,26 @@ void run ()
     rigid_filename = std::string (opt[0][0]);
   }
 
+  opt = get_options ("rigid_1tomidway");
+  bool output_rigid_1tomid = false;
+  std::string rigid_1tomid_filename;
+  if (opt.size()) {
+   if (!do_rigid)
+     throw Exception ("midway rigid transformation output requested when no rigid registration is requested");
+   output_rigid_1tomid = true;
+   rigid_1tomid_filename = std::string (opt[0][0]);
+  }
+
+  opt = get_options ("rigid_2tomidway");
+  bool output_rigid_2tomid = false;
+  std::string rigid_2tomid_filename;
+  if (opt.size()) {
+   if (!do_rigid)
+     throw Exception ("midway rigid transformation output requested when no rigid registration is requested");
+   output_rigid_2tomid = true;
+   rigid_2tomid_filename = std::string (opt[0][0]);
+  }
+
   Registration::Transform::Rigid rigid;
   opt = get_options ("rigid_init_matrix");
   bool init_rigid_matrix_set = false;
@@ -260,6 +280,20 @@ void run ()
     rigid_registration.set_scale_factor (parse_floats (opt[0][0]));
   }
 
+  opt = get_options ("rigid_repetitions");
+  if (opt.size ()) {
+    if (!do_rigid)
+      throw Exception ("the rigid repetition factors were input when no rigid registration is requested");
+    rigid_registration.set_gradient_descent_repetitions (parse_ints (opt[0][0]));
+  }
+
+  opt = get_options ("rigid_loop_density");
+  if (opt.size ()) {
+    if (!do_rigid)
+      throw Exception ("the rigid sparsity factor was input when no rigid registration is requested");
+    rigid_registration.set_loop_density (parse_floats (opt[0][0]));
+  }
+
   opt = get_options ("rigid_niter");
   if (opt.size ()) {
     if (!do_rigid)
@@ -285,6 +319,25 @@ void run ()
   if (rigid_metric == Registration::NCC)
     throw Exception ("TODO: cross correlation metric not yet implemented");
 
+  opt = get_options ("rigid_metric.diff.estimator");
+  Registration::LinearRobustMetricEstimatorType rigid_estimator = Registration::None;
+  if (opt.size()) {
+    if (rigid_metric != Registration::Diff)
+      throw Exception ("rigid_metric.diff.estimator set but cost function is not diff.");
+    switch ((int)opt[0][0]) {
+      case 0:
+        rigid_estimator = Registration::L1;
+        break;
+      case 1:
+        rigid_estimator = Registration::L2;
+        break;
+      case 2:
+        rigid_estimator = Registration::LP;
+        break;
+      default:
+        break;
+    }
+  }
 
   opt = get_options ("rigid_lmax");
   std::vector<int> rigid_lmax;
@@ -401,10 +454,12 @@ void run ()
   if (affine_metric == Registration::NCC)
     throw Exception ("TODO cross correlation metric not yet implemented");
 
-  opt = get_options ("affine_robust_estimator");
+  opt = get_options ("affine_metric.diff.estimator");
   Registration::LinearRobustMetricEstimatorType affine_estimator = Registration::None;
   if (opt.size()) {
-    switch ((int)opt[0][0]){
+    if (affine_metric != Registration::Diff)
+      throw Exception ("affine_metric.diff.estimator set but cost function is not diff.");
+    switch ((int)opt[0][0]) {
       case 0:
         affine_estimator = Registration::L1;
         break;
@@ -564,20 +619,57 @@ void run ()
     if (im2_image.ndim() == 4) {
       if (do_reorientation)
         rigid_registration.set_directions (directions_cartesian);
-      Registration::Metric::MeanSquared4D<Image<value_type>, Image<value_type>> metric;
-      rigid_registration.run_masked (metric, rigid, im1_image, im2_image, im1_mask, im2_mask);
-    } else {
-      if (rigid_metric == Registration::NCC) {
-        std::vector<size_t> extent(3,3);
-        rigid_registration.set_extent(extent);
+      // if (rigid_metric == Registration::NCC) // TODO
+      if (rigid_metric == Registration::Diff) {
+        if (rigid_estimator == Registration::None) {
+          Registration::Metric::MeanSquared4D<Image<value_type>, Image<value_type>> metric;
+          rigid_registration.run_masked (metric, rigid, im1_image, im2_image, im1_mask, im2_mask);
+        } else if (rigid_estimator == Registration::L1) {
+          Registration::Metric::L1 estimator;
+          Registration::Metric::DifferenceRobust4D<Image<value_type>, Image<value_type>, Registration::Metric::L1> metric (im1_image, im2_image, estimator);
+          rigid_registration.run_masked (metric, rigid, im1_image, im2_image, im1_mask, im2_mask);
+        } else if (rigid_estimator == Registration::L2) {
+          Registration::Metric::L2 estimator;
+          Registration::Metric::DifferenceRobust4D<Image<value_type>, Image<value_type>, Registration::Metric::L2> metric (im1_image, im2_image, estimator);
+          rigid_registration.run_masked (metric, rigid, im1_image, im2_image, im1_mask, im2_mask);
+        } else if (rigid_estimator == Registration::LP) {
+          Registration::Metric::LP estimator;
+          Registration::Metric::DifferenceRobust4D<Image<value_type>, Image<value_type>, Registration::Metric::LP> metric (im1_image, im2_image, estimator);
+          rigid_registration.run_masked (metric, rigid, im1_image, im2_image, im1_mask, im2_mask);
+        } else throw Exception ("FIXME: estimator selection");
+      } else throw Exception ("FIXME: metric selection");
+    } else { // 3D
+      if (rigid_metric == Registration::NCC){
         Registration::Metric::NormalisedCrossCorrelation metric;
+        std::vector<size_t> extent(3,3);
+        rigid_registration.set_extent (extent);
         rigid_registration.run_masked (metric, rigid, im1_image, im2_image, im1_mask, im2_mask);
       }
-      else {
-        Registration::Metric::MeanSquared metric;
-        rigid_registration.run_masked (metric, rigid, im1_image, im2_image, im1_mask, im2_mask);
-      }
+      else if (rigid_metric == Registration::Diff) {
+        if (rigid_estimator == Registration::None) {
+          Registration::Metric::MeanSquared metric;
+          rigid_registration.run_masked (metric, rigid, im1_image, im2_image, im1_mask, im2_mask);
+        } else if (rigid_estimator == Registration::L1) {
+          Registration::Metric::L1 estimator;
+          Registration::Metric::DifferenceRobust<Registration::Metric::L1> metric(estimator);
+          rigid_registration.run_masked (metric, rigid, im1_image, im2_image, im1_mask, im2_mask);
+        } else if (rigid_estimator == Registration::L2) {
+          Registration::Metric::L2 estimator;
+          Registration::Metric::DifferenceRobust<Registration::Metric::L2> metric(estimator);
+          rigid_registration.run_masked (metric, rigid, im1_image, im2_image, im1_mask, im2_mask);
+        } else if (rigid_estimator == Registration::LP) {
+          Registration::Metric::LP estimator;
+          Registration::Metric::DifferenceRobust<Registration::Metric::LP> metric(estimator);
+          rigid_registration.run_masked (metric, rigid, im1_image, im2_image, im1_mask, im2_mask);
+        } else throw Exception ("FIXME: estimator selection");
+      } else throw Exception ("FIXME: metric selection");
     }
+
+    if (output_rigid_1tomid)
+      save_transform (rigid.get_transform_half(), rigid_1tomid_filename);
+
+    if (output_rigid_2tomid)
+      save_transform (rigid.get_transform_half_inverse(), rigid_2tomid_filename);
 
     if (output_rigid)
       save_transform (rigid.get_transform(), rigid_filename);
@@ -598,7 +690,8 @@ void run ()
     if (im2_image.ndim() == 4) {
       if (do_reorientation)
         affine_registration.set_directions (directions_cartesian);
-      else if (affine_metric == Registration::Diff) {
+      // if (affine_metric == Registration::NCC) // TODO
+      if (affine_metric == Registration::Diff) {
         if (affine_estimator == Registration::None) {
           Registration::Metric::MeanSquared4D<Image<value_type>, Image<value_type>> metric;
           affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);

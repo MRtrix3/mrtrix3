@@ -129,6 +129,14 @@ namespace MR
       + Option ("rigid", "the output text file containing the rigid transformation as a 4x4 matrix")
         + Argument ("file").type_file_out ()
 
+      // + Option ("rigid_1tomidway", "the output text file containing the affine transformation that "
+      //   "aligns image1 to image2 in their common midway space as a 4x4 matrix")
+      //   + Argument ("file").type_file_out () // TODO
+
+      // + Option ("rigid_2tomidway", "the output text file containing the affine transformation that aligns "
+      //   "image2 to image1 in their common midway space as a 4x4 matrix")
+      //   + Argument ("file").type_file_out ()
+
       + Option ("rigid_init_translation", "initialise the translation and centre of rotation \n"
                                 "Valid choices are: \n"
                                 "mass (aligns the centers of mass of both images, default), \n"
@@ -141,7 +149,6 @@ namespace MR
                                 "moments (rotation based on directions of intensity variance with respect to centre of mass), \n"
                                 "none (default).") // TODO  This can be combined with rigid_init_translation.
         + Argument ("type").type_choice (initialisation_rotation_choices)
-
 
       + Option ("rigid_init_matrix", "initialise either the rigid, affine, or syn registration with "
                                 "the supplied rigid transformation (as a 4x4 matrix in scanner coordinates). "
@@ -162,13 +169,18 @@ namespace MR
                                  "Default: diff")
         + Argument ("type").type_choice (linear_metric_choices)
 
-      + Option ("rigid_robust_estimator", "Valid choices are: "
+      + Option ("rigid_metric.diff.estimator", "Valid choices are: "
                                   "l1 (least absolute: |x|), "
                                   "l2 (ordinary least squares), "
                                   "lp (least powers: |x|^1.2), "
                                   "Default: l2")
         + Argument ("type").type_choice (linear_robust_estimator_choices)
 
+      // + Option ("rigid_loop_density", "density of gradient descent 1 (batch) to 0.0 (max stochastic) (Default: 1.0)")
+      //   + Argument ("num").type_sequence_float () // TODO
+
+      // + Option ("rigid_repetitions", " ")
+      //   + Argument ("num").type_sequence_int () // TODO
 
       + Option ("rigid_lmax", "explicitly set the lmax to be used per scale factor in rigid FOD registration. By default FOD registration will "
                               "use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.")
@@ -178,7 +190,15 @@ namespace MR
     const OptionGroup affine_options =
         OptionGroup ("Affine registration options")
 
-      + Option ("rigid", "the output text file containing the affine transformation as a 4x4 matrix")
+      + Option ("affine", "the output text file containing the affine transformation as a 4x4 matrix")
+        + Argument ("file").type_file_out ()
+
+      + Option ("affine_1tomidway", "the output text file containing the affine transformation that "
+        "aligns image1 to image2 in their common midway space as a 4x4 matrix")
+        + Argument ("file").type_file_out ()
+
+      + Option ("affine_2tomidway", "the output text file containing the affine transformation that aligns "
+        "image2 to image1 in their common midway space as a 4x4 matrix")
         + Argument ("file").type_file_out ()
 
       + Option ("affine_init_translation", "initialise the translation and centre of rotation \n"
@@ -214,13 +234,18 @@ namespace MR
                                  "Default: diff")
         + Argument ("type").type_choice (linear_metric_choices)
 
-      + Option ("affine_robust_estimator", "Valid choices are: "
+      + Option ("affine_metric.diff.estimator", "Valid choices are: "
                                   "l1 (least absolute: |x|), "
                                   "l2 (ordinary least squares), "
                                   "lp (least powers: |x|^1.2), "
                                   "Default: l2")
         + Argument ("type").type_choice (linear_robust_estimator_choices)
 
+      // + Option ("affine_loop_density", "density of gradient descent 1 (batch) to 0.0 (max stochastic) (Default: 1.0)")
+      //   + Argument ("num").type_sequence_float () // TODO
+
+      // + Option ("affine_repetitions", " ")
+      //   + Argument ("num").type_sequence_int () // TODO
 
       + Option ("affine_lmax", "explicitly set the lmax to be used per scale factor in affine FOD registration. By default FOD registration will "
                               "use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.")
