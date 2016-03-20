@@ -529,7 +529,7 @@ void run ()
     nonlinear_init = true;
 
     if (!do_nonlinear)
-      throw Exception ("the non linear initialisation input when no non linear registration is requested");
+      throw Exception ("the non linear initialisation option -nl_init cannot be used when no non linear registration is requested");
 
     Image<default_type> input_warps = Image<default_type>::open (opt[0][0]);
     if (input_warps.ndim() != 5)
