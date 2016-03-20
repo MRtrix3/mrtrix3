@@ -7,11 +7,16 @@ import lib.app
 import numpy
 import math
 
+def abspath(*arg):
+  return os.path.abspath(os.path.join(*arg))
+
+def relpath(*arg):
+  return os.path.relpath(os.path.join(*arg),lib.app.workingDir)
+
 from lib.printMessage  import printMessage
 from lib.errorMessage  import errorMessage
 from lib.getHeaderInfo import getHeaderInfo
 from lib.runCommand    import runCommand
-
 
 class Input:
   def __init__(self, filename, prefix, directory, mask_filename = '', mask_directory = ''):
@@ -21,6 +26,9 @@ class Input:
     self.mask_filename = mask_filename
     self.mask_directory = mask_directory
 
+
+# workaround for wrong working dir in runCommand (os.path.realpath(sys.argv[0]))
+runCommand('pwd ')
 
 lib.app.author = 'David Raffelt (david.raffelt@florey.edu.au)'
 lib.app.initParser('Generates an unbiased group-average template from a series of images. First a template is optimised with linear registration (rigid or affine, affine is default), then non-linear registration is used to optimise the template further.')
@@ -41,6 +49,7 @@ lib.app.parser.add_argument('-nl_grad_step', default='0.5', help='The gradient s
 lib.app.parser.add_argument('-noreorientation', action='store_true', help='Turn off FOD reorientation. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc')
 lib.app.initialise()
 
+lib.app.args.input_dir = relpath(lib.app.args.input_dir)
 inputDir = lib.app.args.input_dir
 if not os.path.exists(inputDir):
   errorMessage('input directory not found');
@@ -54,7 +63,8 @@ else:
 useMasks = False
 if lib.app.args.mask_dir:
   useMasks = True
-  maskDir = lib.app.args.mask_dir;
+  lib.app.args.mask_dir = relpath(lib.app.args.mask_dir);
+  maskDir = lib.app.args.mask_dir
   if not os.path.exists(maskDir):
     errorMessage('mask directory not found')
   maskFiles = os.listdir(maskDir)
@@ -81,15 +91,17 @@ for i in inFiles:
 noreorientation = lib.app.args.noreorientation
 dorigid = lib.app.args.rigid
 
+lib.app.args.template = relpath(lib.app.args.template)
 lib.app.checkOutputFile(lib.app.args.template)
 
 if lib.app.args.warp_dir:
+  lib.app.args.warp_dir = relpath(lib.app.args.warp_dir)
   lib.app.checkOutputFile(lib.app.args.warp_dir)
   make_dir(lib.app.args.warp_dir)
 
 # automatically detect SH series
 do_fod_registration = False
-image_size = [int(x) for x in getHeaderInfo(os.path.join(input[0].directory, input[0].filename), 'size').split(' ')]
+image_size = [int(x) for x in getHeaderInfo(relpath(input[0].directory, input[0].filename), 'size').split(' ')]
 if len(image_size) < 3 or len(image_size) > 4:
   errorMessage('only 3 and 4 dimensional images can be used to build a template')
 if len(image_size) == 4:
@@ -132,12 +144,12 @@ lib.app.gotoTempDir()
 # Make initial template in average space
 input_filenames = []
 for i in input:
-  input_filenames.append (i.directory + i.filename);
-runCommand('mraverage_header ' + ' '.join(input_filenames) + ' average_header.mif')
+  input_filenames.append (abspath(i.directory, i.filename));
+runCommand('mraverageheader ' + ' '.join(input_filenames) + ' average_header.mif')
 
 lib.app.make_dir('input_transformed')
 for i in input:
-  runCommand('mrtransform ' + i.directory + i.filename + ' -interp linear -template average_header.mif input_transformed/' + i.prefix + '.mif')
+  runCommand('mrtransform ' + abspath(i.directory, i.filename) + ' -interp linear -template average_header.mif input_transformed/' + i.prefix + '.mif')
 runCommand('mrmath input_transformed/* mean initial_template.mif')
 
 current_template = 'initial_template.mif'
@@ -148,7 +160,7 @@ for level in range(0, len(linear_scales)):
   for i in input:
     initialise = ''
     if useMasks:
-      mask = ' -mask1 ' + os.path.join(i.mask_directory, i.mask_filename)
+      mask = ' -mask1 ' + abspath(i.mask_directory, i.mask_filename)
     else:
       mask = ''
     lmax = ''
@@ -157,7 +169,7 @@ for level in range(0, len(linear_scales)):
       type = ' -type rigid'
       output = ' -rigid linear_transforms/' + i.prefix + '.txt'
       if level > 0:
-        initialise = ' -rigid_init linear_transforms/' + i.prefix + '.txt'
+        initialise = ' -rigid_init_matrix linear_transforms/' + i.prefix + '.txt'
       if do_fod_registration:
         lmax = ' -rigid_lmax ' + str(linear_lmax[level])
     else:
@@ -165,12 +177,12 @@ for level in range(0, len(linear_scales)):
       type = ' -type affine'
       output = ' -affine linear_transforms/' + i.prefix + '.txt'
       if level > 0:
-        initialise = ' -affine_init linear_transforms/' + i.prefix + '.txt'
+        initialise = ' -affine_init_matrix linear_transforms/' + i.prefix + '.txt'
       if do_fod_registration:
         lmax = ' -affine_lmax ' + str(linear_lmax[level])
 
 
-    runCommand('mrregister ' + os.path.join(i.directory, i.filename) + ' ' + current_template +
+    runCommand('mrregister ' + abspath(i.directory, i.filename) + ' ' + current_template +
                ' -force' +
                  initialise +
                  mask +
@@ -197,7 +209,7 @@ for level in range(0, len(linear_scales)):
     numpy.savetxt('linear_transforms/' + i.prefix + '.txt', transform)
 
   for i in input:
-    runCommand('mrtransform ' + os.path.join(i.directory, i.filename) +
+    runCommand('mrtransform ' + abspath(i.directory, i.filename) +
                ' -template ' + current_template +
                ' -linear linear_transforms/' + i.prefix + '.txt' +
                ' input_transformed/' + i.prefix + '.mif' +
@@ -215,12 +227,12 @@ for level in range(0, len(nl_scales)):
     else:
       scale = ' -nl_scale ' + str(nl_scales[level])
       if dorigid:
-        initialise = ' -rigid_init linear_transforms/' + i.prefix + '.txt'
+        initialise = ' -rigid_init_matrix linear_transforms/' + i.prefix + '.txt'
       else:
-        initialise = ' -affine_init linear_transforms/' + i.prefix + '.txt'
+        initialise = ' -affine_init_matrix linear_transforms/' + i.prefix + '.txt'
 
     if useMasks:
-      mask = ' -mask1 ' + os.path.join(i.mask_directory, i.mask_filename)
+      mask = ' -mask1 ' + abspath(i.mask_directory, i.mask_filename)
     else:
       mask = ''
 
@@ -229,7 +241,7 @@ for level in range(0, len(nl_scales)):
     else:
       lmax = ''
 
-    runCommand('mrregister ' + i.directory + i.filename + ' ' + current_template +
+    runCommand('mrregister ' + abspath(i.directory, i.filename) + ' ' + current_template +
                ' -type nonlinear' +
                ' -nl_niter ' + str(nl_niter[level]) +
                ' -nl_warp warps/' + i.prefix + '.mif' +
@@ -255,13 +267,13 @@ for level in range(0, len(nl_scales)):
         runCommand('mrresize warps/' + i.prefix + '.mif -scale ' + str(upsample_factor) + ' tmp.mif')
         runCommand('mv tmp.mif warps/' + i.prefix + '.mif')
 
-runCommand('mrconvert ' + current_template + ' ' + os.path.join(lib.app.workingDir, lib.app.args.template) + lib.app.mrtrixForce)
+runCommand('mrconvert ' + current_template + ' ' + abspath(lib.app.workingDir, lib.app.args.template) + lib.app.mrtrixForce)
 
 if lib.app.args.warp_dir:
-  runCommand('cp -r  warps ' + os.path.join(lib.app.workingDir, lib.app.args.warp_dir) + lib.app.mrtrixForce)
+  runCommand('cp -r  warps ' + abspath(lib.app.workingDir, lib.app.args.warp_dir) + lib.app.mrtrixForce)
 
 if lib.app.args.transformed_dir:
-  runCommand('cp -r  input_transformed ' + os.path.join(lib.app.workingDir, lib.app.args.transformed_dir) + lib.app.mrtrixForce)
+  runCommand('cp -r  input_transformed ' + abspath(lib.app.workingDir, lib.app.args.transformed_dir) + lib.app.mrtrixForce)
 
 lib.app.complete()
 
