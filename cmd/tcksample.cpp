@@ -21,6 +21,7 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/mapping/mapper.h"
+#include "math/median.h"
 
 
 
@@ -60,6 +61,8 @@ void usage ()
   
   // TODO add support for SH amplitude along tangent
 
+  // TODO Detect that output file is TSF, and write to a TSF file. #423
+
 }
 
 
@@ -91,10 +94,44 @@ class Sampler {
         std::pair<size_t, vector_type> values;
         (*this) (tck, values);
 
-        // TODO Compute statistic
-        // Take distance between points into account in integral / mean calculation
+        if (statistic == MIN) {
+          out.second = std::numeric_limits<value_type>::infinity();
+          for (size_t i = 0; i != tck.size(); ++i)
+            out.second = std::min (out.second, values.second[i];
+        } else if (statistic == MAX) {
+          out.second = -std::numeric_limits<value_type>::infinity();
+          for (size_t i = 0; i != tck.size(); ++i)
+            out.second = std::max (out.second, values.second[i];
+        } else if (statistic == MEDIAN) {
+          // Don't bother with a weighted median here
+          out.second = Math::median (values.second);
+        } else {
+
+          // Take distance between points into account in integral / mean calculation
+          //   (Should help down-weight endpoints)
+          vector_type weights (tck.size());
+          for (size_t i = 0; i != tck.size(); ++i) {
+            value_type length = value_type(0);
+            if (i)
+              length += (tck[i] - tck[i-1]).norm();
+            if (i < tck.size() - 1)
+              length += (tck[i+1] - tck[i]).norm();
+            weights[i] = length;
+          }
+          value_type integral = value_type(0), sum_weights = value_type(0);
+          for (size_t i = 0; i != tck.size(); ++i) {
+            integral += values.second[i] * weights[i];
+            sum_weights += weights[i];
+          }
+          if (statistic == INTEGRAL)
+            out.second = (integral / sum_weights) * tck.calc_length();
+          else // MEAN
+            out.second = (integral / sum_weights);
+
+        }
 
       } else {
+
         DWI::Tractography::Mapping::SetVoxel voxels;
         (*mapper) (tck, voxels);
         if (statistic == INTEGRAL) {
@@ -141,19 +178,17 @@ class Sampler {
             prev_value = d.value;
           }
         } else if (statistic == MIN) {
-          value_type min = std::numeric_limits<value_type>::infinity();
+          out.second = std::numeric_limits<value_type>::infinity();
           for (const auto v : voxels) {
             assign_pos_of (v).to (*image);
-            min = std::min (min, value_type (image->value()));
+            out.second = std::min (out.second, value_type (image->value()));
           }
-          out.second = min;
         } else if (statistic == MAX) {
-          value_type max = -std::numeric_limits<value_type>::infinity();
+          out.second = -std::numeric_limits<value_type>::infinity();
           for (const auto v : voxels) {
             assign_pos_of (v).to (*image);
-            max = std::max (max, value_type (image->value()));
+            out.second = std::max (out.second, value_type (image->value()));
           }
-          out.second = max;
         }
       }
       return true;
@@ -241,7 +276,10 @@ class Receiver_NoStatistic : private ReceiverBase
   public:
     Receiver_NoStatistic (const std::string& path, const size_t num_tracks) :
         ReceiverBase (num_tracks),
-        file (path, std::ios_base::trunc) { }
+        file (path, std::ios_base::trunc)
+    {
+      // TODO Test path: if it's a TSF, write in that format rather than ASCII
+    }
     Receiver_NoStatistic (const Receiver_NoStatistic&) = delete;
 
     bool operator() (std::pair<size_t, vector_type>& in)
