@@ -115,7 +115,7 @@ def execute():
     int_b = str(int(round(b)))
     dwi_path = 'dwi_b' + int_b + '.mif'
     runCommand('dwiextract dwi.mif -shell ' + str(b) + ' ' + dwi_path)
-    sizes = getHeaderInfo(dwi_path, 'size').strip()
+    sizes = getHeaderInfo(dwi_path, 'size').split()
     if len(sizes) == 3:
       mean_path = dwi_path
     else:
