@@ -189,7 +189,7 @@ void TrackMapperTWI::set_backtrack()
 {
   if (!image_plugin)
     throw Exception ("Cannot backtrack if no TWI associated image provided");
-  if (typeid(image_plugin) != typeid(TWIScalarImagePlugin))
+  if (typeid(*image_plugin) != typeid(TWIScalarImagePlugin))
     throw Exception ("Backtracking is only applicable to scalar image TWI plugins");
   TWIScalarImagePlugin* ptr = dynamic_cast<TWIScalarImagePlugin*>(image_plugin);
   ptr->set_backtrack();
