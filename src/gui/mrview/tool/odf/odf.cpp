@@ -877,7 +877,7 @@ namespace MR
           options
             + OptionGroup ("ODF tool options")
 
-            + Option ("odf.load", "Loads the specified image on the ODF tool.")
+            + Option ("odf.load", "Loads the specified image on the ODF tool.").allow_multiple()
             +   Argument ("image").type_image_in();
             
         }
