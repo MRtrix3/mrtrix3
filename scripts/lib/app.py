@@ -173,7 +173,7 @@ def checkOutputFile(path):
       warnMessage('Output file ' + os.path.basename(path) + ' already exists; will be overwritten at script completion')
       mrtrixForce = ' -force'
     else:
-      errorMessage('Output file ' + os.path.basename(path) + ' already exists (use -force to override)')
+      errorMessage('Output file ' + path + ' already exists (use -force to override)')
       sys.exit(1)
 
 

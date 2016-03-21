@@ -42,7 +42,7 @@ lib.app.parser.add_argument('-linear_scale', help='Specifiy the multi-resolution
 lib.app.parser.add_argument('-linear_lmax', help='Specifiy the lmax used for rigid or affine registration for each scale factor, in the form of a list of integers (default: 0,0,0,0,2,2,2,2,2,2). The list must be the same length as the affine_scale factor list')
 lib.app.parser.add_argument('-nl_scale', help='Specifiy the multi-resolution pyramid used to build the non-linear template, in the form of a list of scale factors (default: 0.2,0.3,0.4,0.5,0.5,0.6,0.7,0.8,0.9,1.0,1.0,1.0,1.0,1.0). This implicitly defines the number of template levels')
 lib.app.parser.add_argument('-nl_lmax', help='Specifiy the lmax used for non-linear registration for each scale factor, in the form of a list of integers (default: 0,0,2,2,2,2,2,2,2,2,4,4,4,4). The list must be the same length as the nl_scale factor list')
-lib.app.parser.add_argument('-nl_niter', help='Specifiy the number of registration iterations used for each within each level before updating the template, in the form of a list of integers (default:5,5,5,5,5,5,5,5,5,5,5,10,10,20). The list must be the same length as the nl_scale factor list')
+lib.app.parser.add_argument('-nl_niter', help='Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:5,5,5,5,5,5,5,5,5,5,5,10,10,20). The list must be the same length as the nl_scale factor list')
 lib.app.parser.add_argument('-nl_update_smooth', default='2.0', help='Regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 2.0 x voxel_size)')
 lib.app.parser.add_argument('-nl_disp_smooth', default='1.0', help='Regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0 x voxel_size)')
 lib.app.parser.add_argument('-nl_grad_step', default='0.5', help='The gradient step size for non-linear registration (Default: 0.5)')
@@ -97,7 +97,7 @@ lib.app.checkOutputFile(lib.app.args.template)
 if lib.app.args.warp_dir:
   lib.app.args.warp_dir = relpath(lib.app.args.warp_dir)
   lib.app.checkOutputFile(lib.app.args.warp_dir)
-  make_dir(lib.app.args.warp_dir)
+  lib.app.make_dir(lib.app.args.warp_dir)
 
 # automatically detect SH series
 do_fod_registration = False
@@ -124,6 +124,7 @@ if do_fod_registration:
 nl_scales = [0.2,0.3,0.4,0.5,0.5,0.6,0.7,0.8,0.9,1.0,1.0,1.0,1.0,1.0]
 nl_niter =  [5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  10, 10, 20]
 nl_lmax =   [0,  0,  2,  2,  2,  2,  2,  2,  2,  2,  4,  4,  4,  4]
+datatype = ' -datatype float64'
 
 if lib.app.args.nl_scale:
   nl_scales = [float(x) for x in lib.app.args.nl_scale.split(',')]
@@ -149,7 +150,7 @@ runCommand('mraverageheader ' + ' '.join(input_filenames) + ' average_header.mif
 
 lib.app.make_dir('input_transformed')
 for i in input:
-  runCommand('mrtransform ' + abspath(i.directory, i.filename) + ' -interp linear -template average_header.mif input_transformed/' + i.prefix + '.mif')
+  runCommand('mrtransform ' + abspath(i.directory, i.filename) + ' -interp linear -template average_header.mif input_transformed/' + i.prefix + '.mif' + datatype)
 runCommand('mrmath input_transformed/* mean initial_template.mif')
 
 current_template = 'initial_template.mif'
@@ -166,7 +167,7 @@ for level in range(0, len(linear_scales)):
     lmax = ''
     if dorigid:
       scale = ' -rigid_scale ' + str(linear_scales[level])
-      type = ' -type rigid'
+      regtype = ' -type rigid'
       output = ' -rigid linear_transforms/' + i.prefix + '.txt'
       if level > 0:
         initialise = ' -rigid_init_matrix linear_transforms/' + i.prefix + '.txt'
@@ -174,7 +175,7 @@ for level in range(0, len(linear_scales)):
         lmax = ' -rigid_lmax ' + str(linear_lmax[level])
     else:
       scale = ' -affine_scale ' + str(linear_scales[level])
-      type = ' -type affine'
+      regtype = ' -type affine'
       output = ' -affine linear_transforms/' + i.prefix + '.txt'
       if level > 0:
         initialise = ' -affine_init_matrix linear_transforms/' + i.prefix + '.txt'
@@ -188,7 +189,8 @@ for level in range(0, len(linear_scales)):
                  mask +
                  scale +
                  lmax +
-                 type +
+                 regtype +
+                 datatype +
                  output)
 
   # Here we ensure the template is centered and the volume is the average of all
@@ -213,11 +215,12 @@ for level in range(0, len(linear_scales)):
                ' -template ' + current_template +
                ' -linear linear_transforms/' + i.prefix + '.txt' +
                ' input_transformed/' + i.prefix + '.mif' +
+               datatype +
                ' -force')
   runCommand ('mrmath input_transformed/* mean linear_template' + str(level) + '.mif')
   current_template = 'linear_template' + str(level) + '.mif'
 
-# Optimise the template with non-linear regitration
+# Optimise the template with non-linear registration
 lib.app.make_dir('warps')
 for level in range(0, len(nl_scales)):
   for i in input:
@@ -253,6 +256,7 @@ for level in range(0, len(nl_scales)):
                  initialise +
                  scale +
                  mask +
+                 datatype +
                  lmax)
 
   runCommand ('mrmath input_transformed/* mean nl_template' + str(level) + '.mif')
