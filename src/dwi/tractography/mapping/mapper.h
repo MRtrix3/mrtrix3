@@ -354,7 +354,8 @@ namespace MR {
             TrackMapperTWI (const TrackMapperTWI& that) :
               TrackMapperBase       (static_cast<const TrackMapperBase&> (that)),
               contrast              (that.contrast),
-              track_statistic       (that.track_statistic) {
+              track_statistic       (that.track_statistic),
+              vector_data           (that.vector_data) {
                 if (that.image_plugin) {
                   if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT)
                     image_plugin.reset (new TWIScalarImagePlugin (*dynamic_cast<TWIScalarImagePlugin*> (that.image_plugin.get())));
@@ -368,7 +369,7 @@ namespace MR {
 
             void add_scalar_image (const std::string&);
             void add_fod_image    (const std::string&);
-
+            void add_vector_data  (const std::string&);
 
 
           protected:
@@ -381,6 +382,9 @@ namespace MR {
 
             // Member for incorporating additional information from an external image into the TWI process
             std::unique_ptr<TWIImagePluginBase> image_plugin;
+
+            // Member for incorporating contrast from an external vector data file into the TWI process
+            std::shared_ptr<Eigen::VectorXf> vector_data;
 
 
           private:
