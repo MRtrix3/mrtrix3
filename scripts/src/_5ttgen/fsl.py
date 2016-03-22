@@ -109,7 +109,11 @@ def execute():
     # standard_space_roi can sometimes crash; if this happens, try to allow the script to continue
     if mni_mask_dilation:
       runCommand('maskfilter ' + mni_mask_path + ' dilate mni_mask.nii -npass ' + str(mni_mask_dilation))
-      runCommand(ssroi_cmd + ' T1.nii T1_preBET' + fsl_suffix + ' -maskMASK mni_mask.nii -roiFOV', False)
+      if lib.app.args.nocrop:
+        ssroi_roi_option = ' -roiNONE'
+      else:
+        ssroi_roi_option = ' -roiFOV'
+      runCommand(ssroi_cmd + ' T1.nii T1_preBET' + fsl_suffix + ' -maskMASK mni_mask.nii' + ssroi_roi_option, False)
     else:
       runCommand(ssroi_cmd + ' T1.nii T1_preBET' + fsl_suffix + ' -b', False)
 
