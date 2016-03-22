@@ -25,19 +25,16 @@ namespace MR
  This example simply computes the exponential of the intensity for each data point
  in the input dataset, producing a new dataset of the same size.
 
- \code
+\code
 #include "command.h"
-#include "debug.h"
-#include "image/buffer.h"
-#include "image/voxel.h"
-#include "image/loop.h"
+#include "image.h"
+#include "algo/loop.h"
 
 using namespace MR;
 using namespace App;
 
 // commmand-line description and syntax:
 // (used to produce the help page and verify validity of arguments at runtime)
-
 void usage ()
 {
   AUTHOR = "Joe Bloggs (joe.bloggs@acme.org)";
@@ -64,48 +61,39 @@ typedef float value_type;
 // This is where execution proper starts - the equivalent of main(). 
 // The difference is that this is invoked after all command-line parsing has
 // been done.
-
 void run ()
 {
-  // default value for power:
-  value_type power = 2.0;
+  // get power from command-line if supplied, default to 2.0:
+  value_type power = get_option_value ("power", 2.0);
 
-  // check if -power option has been supplied, and update power accordingly
-  // if so:
-  Options opt = get_options ("power");
-  if (opt.size())
-    power = opt[0][0];
-
-  // create a Buffer to access the input data:
-  Image::Buffer<value_type> buffer_in (argument[0]);
+  // Image to access the input data:
+  auto in = Image<value_type>::open (argument[0]);
 
   // get the header of the input data, and modify to suit the output dataset:
-  Image::Header header (buffer_in);
+  Header header (in);
   header.datatype() = DataType::Float32;
 
   // create the output Buffer to store the output data, based on the updated
   // header information:
-  Image::Buffer<value_type> buffer_out (argument[1], header);
-
-  // create the appropriate Voxel objects to access the intensities themselves:
-  auto vox_in = buffer_in.voxel();
-  auto vox_out = buffer_out.voxel();
+  auto out = Image<value_type>::create (argument[1], header);
 
   // create the loop structure. This version will traverse the image data in
   // order of increasing stride of the input dataset, to ensure contiguous
   // voxel values are most likely to be processed consecutively. This helps to
   // ensure maximum performance. 
+  //
   // Note that we haven't specified any axes, so this will process datasets of
   // any dimensionality, whether 3D, 4D or ND:
-  Image::LoopInOrder loop (vox_in);
+  auto loop = Loop (in);
 
   // run the loop:
-  for (auto l = loop (vox_in, vox_out); l; ++l)
-    vox_out.value() = std::pow (vox_in.value(), power);
+  for (auto l = loop (in, out); l; ++l)
+    out.value() = std::pow (in.value(), power);
 
   // That's it! Data write-back is performed by the Image::Buffer destructor,
   // invoked when it goes out of scope at function exit.
 }
+
 \endcode
 
 */

@@ -27,10 +27,8 @@ namespace MR
 
  \code
 #include "command.h"
-#include "debug.h"
-#include "image/buffer.h"
-#include "image/voxel.h"
-#include "image/threaded_loop.h"
+#include "image.h"
+#include "algo/threaded_loop.h"
 
 using namespace MR;
 using namespace App;
@@ -93,48 +91,38 @@ class ExpFunctor {
 
 void run ()
 {
-  // default value for lambda:
-  value_type lambda = 1.0;
+  // get power from command-line if supplied, default to 2.0:
+  value_type lambda = get_option_value ("lambda", 1.0);
 
-  // check if -lambda option has been supplied, and update lambda accordingly
-  // if so:
-  Options opt = get_options ("lambda");
-  if (opt.size())
-    lambda = opt[0][0];
-
-  // create a Buffer to access the input data:
-  Image::Buffer<value_type> buffer_in (argument[0]);
+  // Image to access the input data:
+  auto in = Image<value_type>::open (argument[0]);
 
   // get the header of the input data, and modify to suit the output dataset:
-  Image::Header header (buffer_in);
+  Header header (in);
   header.datatype() = DataType::Float32;
 
   // create the output Buffer to store the output data, based on the updated
   // header information:
-  Image::Buffer<value_type> buffer_out (argument[1], header);
-
-  // create the appropriate Voxel objects to access the intensities themselves:
-  auto vox_in = buffer_in.voxel();
-  auto vox_out = buffer_out.voxel();
+  auto out = Image<value_type>::create (argument[1], header);
 
   // create a threaded loop object that will display a progress message, and
   // iterate over buffer_in in order of increasing stride. It's typically best
   // to make sure the loop iterates over the input dataset in RAM-contiguous
   // order (increasing stride - the default) since this maximises memory access
   // throughput.
-  Image::ThreadedLoop loop ("computing exponential", vox_in);
+  auto loop = ThreadedLoop ("computing exponential", in);
 
   // run the loop, invoking the functor ExpFunctor that you constructed with
   // the user-supplied lambda value (or default of 1), using vox_in as the
   // first argument and vox_out as the second:
-  loop.run (ExpFunctor (lambda), vox_in, vox_out);
+  loop.run (ExpFunctor (lambda), in, out);
 
 
   // note that for simple operations, it is also possible to use lambda
   // functions, avoiding the need to declare a full-blown functor class:
-  loop.run ([&] (decltype(vox_in)& in, decltype(vox_out)& out) {
-        out.value() = std::exp (lambda * in.value());
-        }, vox_in, vox_out);
+  loop.run ([&] (decltype(in)& vin, decltype(out)& vout) {
+        vout.value() = std::exp (lambda * vin.value());
+        }, in, out);
 }
 \endcode
 
