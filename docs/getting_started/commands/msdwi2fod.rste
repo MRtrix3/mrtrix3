@@ -1,33 +1,26 @@
-dwi2tensor
-===========
-
 Synopsis
 --------
 
 ::
 
-    dwi2tensor [ options ]  dwi dt
+    msdwi2fod [ options ]  dwi response odf [ response odf ... ]
 
 -  *dwi*: the input dwi image.
--  *dt*: the output dt image.
+-  *response odf*: the input tissue response and the output ODF image.
 
 Description
 -----------
 
-Diffusion (kurtosis) tensor estimation using iteratively reweighted linear least squares estimator.
+Multi-shell, multi-tissue constrained spherical deconvolution.
 
 Options
 -------
 
 -  **-mask image** only perform computation within the specified binary brain mask image.
 
--  **-b0 image** the output b0 image.
+-  **-lmax order** the lmax values to use per tissue type, as a comma-separated list of even integers.
 
--  **-dkt image** the output dkt image.
-
--  **-iter integer** number of iterative reweightings (default: 2); set to 0 for ordinary linear least squares.
-
--  **-predicted_signal image** the predicted dwi image.
+-  **-directions file** specify the directions over which to apply the non-negativity constraint (by default, the built-in 300 direction set is used). These should be supplied as a text file containing the [ az el ] pairs for the directions.
 
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -60,7 +53,7 @@ Standard options
 References
 ^^^^^^^^^^
 
-Veraart, J.; Sijbers, J.; Sunaert, S.; Leemans, A. & Jeurissen, B. Weighted linear least squares estimation of diffusion MRI parameters: strengths, limitations, and pitfalls. NeuroImage, 2013, 81, 335-346
+Jeurissen, B; Tournier, J-D; Dhollander, T; Connelly, A & Sijbers, J. Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data NeuroImage, 2014, 103, 411-426
 
 --------------
 
@@ -68,11 +61,5 @@ Veraart, J.; Sijbers, J.; Sunaert, S.; Leemans, A. & Jeurissen, B. Weighted line
 
 **Author:** Ben Jeurissen (ben.jeurissen@uantwerpen.be)
 
-**Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
-
-This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/
-
-MRtrix is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-For more details, see www.mrtrix.org
+**Copyright:** Copyright (C) 2015 Vision Lab, University of Antwerp, Belgium. This is free software; see the source for copying conditions. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
