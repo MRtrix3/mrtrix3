@@ -20,7 +20,10 @@
 #include "memory.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/mapping/mapper.h"
+#include "file/ofstream.h"
+#include "file/path.h"
 #include "math/median.h"
 
 
@@ -36,6 +39,8 @@ const char* statistics[] = { "integral", "mean", "median", "min", "max", NULL };
 
 void usage ()
 {
+
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
   + "sample values of an associated image along tracks"
@@ -97,14 +102,18 @@ class Sampler {
         if (statistic == MIN) {
           out.second = std::numeric_limits<value_type>::infinity();
           for (size_t i = 0; i != tck.size(); ++i)
-            out.second = std::min (out.second, values.second[i];
+            out.second = std::min (out.second, values.second[i]);
         } else if (statistic == MAX) {
           out.second = -std::numeric_limits<value_type>::infinity();
           for (size_t i = 0; i != tck.size(); ++i)
-            out.second = std::max (out.second, values.second[i];
+            out.second = std::max (out.second, values.second[i]);
         } else if (statistic == MEDIAN) {
           // Don't bother with a weighted median here
-          out.second = Math::median (values.second);
+          std::vector<value_type> data;
+          data.assign (values.second.data(), values.second.data() + values.second.size());
+          VAR (values.second.size());
+          VAR (data.size());
+          out.second = Math::median (data);
         } else {
 
           // Take distance between points into account in integral / mean calculation
@@ -274,24 +283,32 @@ class Receiver_Statistic : private ReceiverBase
 class Receiver_NoStatistic : private ReceiverBase
 {
   public:
-    Receiver_NoStatistic (const std::string& path, const size_t num_tracks) :
-        ReceiverBase (num_tracks),
-        file (path, std::ios_base::trunc)
+    Receiver_NoStatistic (const std::string& path,
+                          const size_t num_tracks,
+                          const DWI::Tractography::Properties& properties) :
+        ReceiverBase (num_tracks)
     {
-      // TODO Test path: if it's a TSF, write in that format rather than ASCII
+      if (Path::has_suffix (path, ".tsf"))
+        tsf.reset (new DWI::Tractography::ScalarWriter<value_type> (path, properties));
+      else
+        ascii.reset (new File::OFStream (path));
     }
     Receiver_NoStatistic (const Receiver_NoStatistic&) = delete;
 
     bool operator() (std::pair<size_t, vector_type>& in)
     {
       assert (in.first == ReceiverBase::received);
-      file << in.second.transpose() << "\n";
+      if (ascii)
+        (*ascii) << in.second.transpose() << "\n";
+      else
+        (*tsf) (in.second);
       ++(*this);
       return true;
     }
 
   private:
-    std::ofstream file;
+    std::unique_ptr<File::OFStream> ascii;
+    std::unique_ptr<DWI::Tractography::ScalarWriter<value_type>> tsf;
 };
 
 
@@ -315,7 +332,7 @@ void run ()
   Sampler sampler (image, statistic, precise);
 
   if (statistic == stat_tck::NONE) {
-    Receiver_NoStatistic receiver (argument[2], num_tracks);
+    Receiver_NoStatistic receiver (argument[2], num_tracks, properties);
     DWI::Tractography::Streamline<value_type> tck;
     std::pair<size_t, vector_type> values;
     while (reader (tck)) {
