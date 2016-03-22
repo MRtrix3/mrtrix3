@@ -19,7 +19,6 @@
 
 #include <vector>
 
-#include "math/hermite.h"
 #include "dwi/tractography/tracking/generated_track.h"
 
 
@@ -66,14 +65,6 @@ namespace MR {
 
 
 
-
-
-
-
-
-
-
-
       class Downsampler
       {
 
@@ -90,6 +81,29 @@ namespace MR {
 
         private:
           size_t ratio;
+
+      };
+
+
+
+      class Resampler
+      {
+
+        public:
+          Resampler () :
+              step_size (0.0) { }
+
+          Resampler (const float ss) :
+              step_size (ss) { }
+
+          void set_step_size (const float ss) { step_size = ss; }
+          float get_step_size() const { return step_size; }
+          bool valid() const { return step_size; }
+
+          bool operator() (std::vector<Eigen::Vector3f>&) const;
+
+        private:
+          float step_size;
 
       };
 

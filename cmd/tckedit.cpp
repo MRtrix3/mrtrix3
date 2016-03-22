@@ -69,6 +69,7 @@ void usage ()
   + Option ("test_ends_only", "only test the ends of each streamline against the provided include/exclude ROIs")
 
   // TODO Input weights with multiple input files currently not supported
+  + OptionGroup ("Options for handling streamline weights")
   + Tractography::TrackWeightsInOption
   + Tractography::TrackWeightsOutOption;
 
@@ -86,16 +87,23 @@ void usage ()
 
 
 
-void update_output_step_size (Tractography::Properties& properties, const int upsample_ratio, const int downsample_ratio)
+void update_output_step_size (Tractography::Properties& properties, const int upsample_ratio, const int downsample_ratio, const float forced_step_size)
 {
-  if (upsample_ratio == 1 && downsample_ratio == 1)
-    return;
-  float step_size = 0.0;
-  if (properties.find ("output_step_size") == properties.end())
-    step_size = (properties.find ("step_size") == properties.end() ? 0.0 : to<float>(properties["step_size"]));
-  else
-    step_size = to<float>(properties["output_step_size"]);
-  properties["output_step_size"] = str(step_size * float(downsample_ratio) / float(upsample_ratio));
+  if (std::isfinite (forced_step_size)) {
+    properties["output_step_size"] = str(forced_step_size);
+  } else {
+    if (upsample_ratio == 1 && downsample_ratio == 1)
+      return;
+    float step_size = 0.0;
+    if (properties.find ("output_step_size") == properties.end())
+      step_size = (properties.find ("step_size") == properties.end() ? 0.0 : to<float>(properties["step_size"]));
+    else
+      step_size = to<float>(properties["output_step_size"]);
+    properties["output_step_size"] = str(step_size * float(downsample_ratio) / float(upsample_ratio));
+  }
+  auto downsample = properties.find ("downsample_factor");
+  if (downsample != properties.end())
+    properties.erase (downsample);
 }
 
 
@@ -167,6 +175,10 @@ void run ()
   const int upsample   = opt.size() ? int(opt[0][0]) : 1;
   opt = get_options ("downsample");
   const int downsample = opt.size() ? int(opt[0][0]) : 1;
+  opt = get_options ("resample");
+  if (opt.size() && (upsample != 1 || downsample != 1))
+    throw Exception ("Cannot combine -resample with -upsample or -downsample (order is ambiguous)");
+  const float step_size = opt.size() ? float(opt[0][0]) : NaN;
   const bool inverse = get_options ("inverse").size();
   const bool test_ends_only = get_options ("test_ends_only").size();
   const bool out_ends_only = get_options ("out_ends_only").size();
@@ -178,11 +190,11 @@ void run ()
   const size_t skip   = opt.size() ? size_t(opt[0][0]) : 0;
 
   Loader loader (input_file_list);
-  Worker worker (properties, upsample, downsample, inverse, test_ends_only);
+  Worker worker (properties, upsample, downsample, step_size, inverse, test_ends_only);
   // This needs to be run AFTER creation of the Worker class
   // (worker needs to be able to set max & min number of points based on step size in input file,
   //  receiver needs "output_step_size" field to have been updated before file creation)
-  update_output_step_size (properties, upsample, downsample);
+  update_output_step_size (properties, upsample, downsample, step_size);
   Receiver receiver (output_path, properties, number, skip, out_ends_only);
 
   Thread::run_queue (

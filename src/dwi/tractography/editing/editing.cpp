@@ -53,6 +53,9 @@ const OptionGroup ResampleOption = OptionGroup ("Streamline resampling options")
                           "(decreases required storage space)")
     + Argument ("ratio").type_integer (1, 1, 1e6)
 
+  + Option ("resample", "re-sample the streamline to a desired step size (in mm)")
+    + Argument ("step_size").type_float (0.0, 0.0, 1e6)
+
   + Option ("out_ends_only", "only output the two endpoints of each streamline");
 
 

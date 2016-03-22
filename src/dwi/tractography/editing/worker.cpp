@@ -33,12 +33,13 @@ namespace MR {
           out.weight = in.weight;
 
           if (!thresholds (in)) {
-            // Want to test thresholds before wasting time on upsampling; but if -inverse is set,
-            //   still need to apply both the upsampler and downsampler before writing to output
+            // Want to test thresholds before wasting time on resampling; but if -inverse is set,
+            //   still need to apply resampling before writing to output
             if (inverse) {
               std::vector<Eigen::Vector3f> tck (in);
               upsampler (tck);
               downsampler (tck);
+              resampler (tck);
               tck.swap (out);
             }
             return true;
@@ -60,6 +61,7 @@ namespace MR {
                 if (properties.exclude.contains (p)) {
                   if (inverse) {
                     downsampler (tck);
+                    resampler (tck);
                     tck.swap (out);
                   }
                   return true;
@@ -71,6 +73,7 @@ namespace MR {
                 if (properties.exclude.contains (p)) {
                   if (inverse) {
                     downsampler (tck);
+                    resampler (tck);
                     tck.swap (out);
                   }
                   return true;
@@ -83,6 +86,7 @@ namespace MR {
               if (!i) {
                 if (inverse) {
                   downsampler (tck);
+                  resampler (tck);
                   tck.swap (out);
                 }
                 return true;
@@ -113,9 +117,11 @@ namespace MR {
             if (cropped_tracks.empty())
               return true;
 
-            // Apply downsampler independently to each
-            for (auto& i : cropped_tracks)
+            // Apply downsampler / resampler independently to each
+            for (auto& i : cropped_tracks) {
               downsampler (i);
+              resampler (i);
+            }
 
             if (cropped_tracks.size() == 1) {
               cropped_tracks[0].swap (out);
@@ -136,6 +142,7 @@ namespace MR {
 
             if (!inverse) {
               downsampler (tck);
+              resampler (tck);
               tck.swap (out);
             }
             return true;

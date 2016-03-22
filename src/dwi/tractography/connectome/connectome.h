@@ -46,11 +46,7 @@ class Metric;
 
 
 
-extern const char* metrics[];
 extern const char* modes[];
-
-
-
 extern const App::OptionGroup AssignmentOptions;
 Tck2nodes_base* load_assignment_mode (Image<node_t>&);
 

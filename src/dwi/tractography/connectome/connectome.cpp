@@ -30,12 +30,11 @@ namespace Connectome {
 
 
 
-const char* modes[] = { "assignment_end_voxels", "assignment_radial_search", "assignment_reverse_search", "assignment_forward_search", "assignment_all_voxels", NULL };
-
-const char* metrics[] = { "count", "meanlength", "invlength", "invnodevolume", "invlength_invnodevolume", "mean_scalar", NULL };
-
-
 using namespace App;
+
+
+
+const char* modes[] = { "assignment_end_voxels", "assignment_radial_search", "assignment_reverse_search", "assignment_forward_search", "assignment_all_voxels", NULL };
 
 
 
