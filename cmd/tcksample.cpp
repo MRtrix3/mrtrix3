@@ -46,9 +46,9 @@ void usage ()
   + "sample values of an associated image along tracks"
 
   + "By default, the value of the underlying image at each point along the track "
-    "is written to an ASCII file (with all values for each track on the same line). "
-    "Alternatively, some statistic can be taken from the values along each streamline "
-    "and written to a vector file.";
+    "is written to either an ASCII file (with all values for each track on the same "
+    "line), or a track scalar file (.tsf). Alternatively, some statistic can be "
+    "taken from the values along each streamline and written to a vector file.";
 
   ARGUMENTS
   + Argument ("tracks", "the input track file").type_tracks_in()
@@ -65,8 +65,10 @@ void usage ()
                        "(only applicable if some per-streamline statistic is requested)");
   
   // TODO add support for SH amplitude along tangent
-
-  // TODO Detect that output file is TSF, and write to a TSF file. #423
+  // TODO add support for reading from fixel image
+  //   (this would supersede fixel2tsf when used without -precise or -stat_tck options)
+  // TODO add feature to build initial track density image, and subdivide
+  //   image intensities appropriately between streamlines
 
 }
 
@@ -76,8 +78,7 @@ typedef Eigen::VectorXf vector_type;
 
 
 
-
-// TODO Guarantee thread-safety
+// Guarantees thread-safety
 class Sampler {
   public:
     Sampler (Image<value_type>& image, const stat_tck statistic, const bool precise) :
@@ -111,8 +112,6 @@ class Sampler {
           // Don't bother with a weighted median here
           std::vector<value_type> data;
           data.assign (values.second.data(), values.second.data() + values.second.size());
-          VAR (values.second.size());
-          VAR (data.size());
           out.second = Math::median (data);
         } else {
 
@@ -174,6 +173,7 @@ class Sampler {
           for (const auto v : voxels) {
             assign_pos_of (v).to (*image);
             data.push_back (WeightSort (v, image->value()));
+            sum_lengths += v.get_length();
           }
           std::sort (data.begin(), data.end());
           const value_type target_length = 0.5 * sum_lengths;
@@ -322,9 +322,9 @@ void run ()
   auto opt = get_options ("stat_tck");
   const stat_tck statistic = opt.size() ? stat_tck(int(opt[0][0])) : stat_tck::NONE;
   const bool precise = get_options ("precise").size();
-  const size_t num_tracks = properties.find("num_tracks") == properties.end() ?
+  const size_t num_tracks = properties.find("count") == properties.end() ?
                             0 :
-                            to<size_t>(properties["num_tracks"]);
+                            to<size_t>(properties["count"]);
 
   if (statistic == stat_tck::NONE && precise)
     throw Exception ("Precise streamline mapping may only be used with per-streamline statistics");
