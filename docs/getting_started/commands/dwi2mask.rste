@@ -1,33 +1,20 @@
-dwi2tensor
-===========
-
 Synopsis
 --------
 
 ::
 
-    dwi2tensor [ options ]  dwi dt
+    dwi2mask [ options ]  image image
 
--  *dwi*: the input dwi image.
--  *dt*: the output dt image.
+-  *image*: the input DWI image containing volumes that are both diffusion weighted and b=0
+-  *image*: the output whole brain mask image
 
 Description
 -----------
 
-Diffusion (kurtosis) tensor estimation using iteratively reweighted linear least squares estimator.
+Generates an whole brain mask from a DWI image.All diffusion weighted and b=0 volumes are used to obtain a mask that includes both brain tissue and CSF.
 
 Options
 -------
-
--  **-mask image** only perform computation within the specified binary brain mask image.
-
--  **-b0 image** the output b0 image.
-
--  **-dkt image** the output dkt image.
-
--  **-iter integer** number of iterative reweightings (default: 2); set to 0 for ordinary linear least squares.
-
--  **-predicted_signal image** the predicted dwi image.
 
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -57,16 +44,11 @@ Standard options
 
 -  **-version** display version information and exit.
 
-References
-^^^^^^^^^^
-
-Veraart, J.; Sijbers, J.; Sunaert, S.; Leemans, A. & Jeurissen, B. Weighted linear least squares estimation of diffusion MRI parameters: strengths, limitations, and pitfalls. NeuroImage, 2013, 81, 335-346
-
 --------------
 
 
 
-**Author:** Ben Jeurissen (ben.jeurissen@uantwerpen.be)
+**Author:** David Raffelt (david.raffelt@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
 

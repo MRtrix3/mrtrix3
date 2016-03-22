@@ -1,25 +1,13 @@
-labelsgmfix
-===========
-
 Synopsis
 --------
 
-    labelsgmfix [ options ] parc t1 config output
+    5ttgen [ options ] 
 
-- *parc*: The input FreeSurfer parcellation image
-- *t1*: The T1 image to be provided to FIRST
-- *config*: Either the FreeSurfer lookup table (if the input parcellation image is directly from FreeSurfer), or the connectome configuration file (if the parcellation image has been modified using the labelconfig command)
-- *output*: The output parcellation image
 
 Description
 -----------
 
-In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST
-
-Options
--------
-
-- **-premasked** Indicate that brain masking has been applied to the T1 input image
+Generate a 5TT image suitable for ACT
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -44,16 +32,24 @@ Standard options
 References
 ^^^^^^^^^^
 
+ACT:
+Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. NeuroImage, 2012, 62, 1924-1938
+
+
+bet:
+Smith, S. M. Fast robust automated brain extraction. Human Brain Mapping, 2002, 17, 143-155
+
+
+fast:
+Zhang, Y.; Brady, M. & Smith, S. Segmentation of brain MR images through a hidden Markov random field model and the expectation-maximization algorithm. IEEE Transactions on Medical Imaging, 2001, 20, 45-57
+
+
 first:
 Patenaude, B.; Smith, S. M.; Kennedy, D. N. & Jenkinson, M. A Bayesian model of shape and appearance for subcortical brain segmentation. NeuroImage, 2011, 56, 907-922
 
 
 FSL:
 Smith, S. M.; Jenkinson, M.; Woolrich, M. W.; Beckmann, C. F.; Behrens, T. E.; Johansen-Berg, H.; Bannister, P. R.; De Luca, M.; Drobnjak, I.; Flitney, D. E.; Niazy, R. K.; Saunders, J.; Vickers, J.; Zhang, Y.; De Stefano, N.; Brady, J. M. & Matthews, P. M. Advances in functional and structural MR image analysis and implementation as FSL. NeuroImage, 2004, 23, S208-S219
-
-
-SIFT_followup:
-Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. The effects of SIFT on the reproducibility and biological accuracy of the structural connectome. NeuroImage, 2015, 104, 253-265
 
 
 
