@@ -62,19 +62,52 @@ void usage ()
 
   + Option ("precise", "use the precise mechanism for mapping streamlines to voxels "
                        "(obviates the need for trilinear interpolation) "
-                       "(only applicable if some per-streamline statistic is requested)");
+                       "(only applicable if some per-streamline statistic is requested)")
   
   // TODO add support for SH amplitude along tangent
   // TODO add support for reading from fixel image
   //   (this would supersede fixel2tsf when used without -precise or -stat_tck options)
-  // TODO add feature to build initial track density image, and subdivide
-  //   image intensities appropriately between streamlines
+  //   (wait until fixel_twi is merged; should simplify)
+
+  + Option ("use_tdi_fraction", "each streamline is assigned a fraction of the image intensity "
+                                "in each element based on the fraction of the track density "
+                                "contributed by that streamline (this is only appropriate for "
+                                "processing a whole-brain tractogram, only for images for which "
+                                "the quantiative parameter is additive, and only if using the "
+                                "-precise option)");
 
 }
 
 
+
 typedef float value_type;
 typedef Eigen::VectorXf vector_type;
+
+
+
+class TDI : public Image<value_type>
+{
+  public:
+    TDI (const Header& H, const size_t num_tracks) :
+        Image<value_type> (Image<value_type>::scratch (H, "TDI scratch image")),
+        progress ("Generating initial TDI", num_tracks) { }
+
+    bool operator() (const DWI::Tractography::Mapping::SetVoxel& in)
+    {
+      for (const auto v : in) {
+        assign_pos_of (v, 0, 3).to (*this);
+        value() += v.get_length();
+      }
+      ++progress;
+      return true;
+    }
+
+    void done() { progress.done(); }
+
+  protected:
+    ProgressBar progress;
+
+};
 
 
 
@@ -92,11 +125,19 @@ class Sampler {
         mapper->set_use_precise_mapping (true);
     }
 
+    void provide_tdi (TDI& image)
+    {
+      assert (!tdi);
+      assert (mapper);
+      tdi.reset (new TDI (image));
+    }
+
     bool operator() (DWI::Tractography::Streamline<>& tck, std::pair<size_t, value_type>& out)
     {
       assert (statistic != stat_tck::NONE);
       out.first = tck.index;
       if (interp) {
+
         std::pair<size_t, vector_type> values;
         (*this) (tck, values);
 
@@ -146,14 +187,14 @@ class Sampler {
           value_type integral = value_type(0.0);
           for (const auto v : voxels) {
             assign_pos_of (v).to (*image);
-            integral += v.get_length() * image->value();
+            integral += v.get_length() * (image->value() * get_tdi_multiplier (v));
           }
           out.second = integral;
         } else if (statistic == MEAN) {
           value_type integral = value_type(0.0), sum_lengths = value_type (0.0);
           for (const auto v : voxels) {
             assign_pos_of (v).to (*image);
-            integral += v.get_length() * image->value();
+            integral += v.get_length() * (image->value() * get_tdi_multiplier (v));
             sum_lengths += v.get_length();
           }
           out.second = integral / sum_lengths;
@@ -172,7 +213,7 @@ class Sampler {
           value_type sum_lengths = value_type(0.0);
           for (const auto v : voxels) {
             assign_pos_of (v).to (*image);
-            data.push_back (WeightSort (v, image->value()));
+            data.push_back (WeightSort (v, (image->value() * get_tdi_multiplier (v))));
             sum_lengths += v.get_length();
           }
           std::sort (data.begin(), data.end());
@@ -190,13 +231,13 @@ class Sampler {
           out.second = std::numeric_limits<value_type>::infinity();
           for (const auto v : voxels) {
             assign_pos_of (v).to (*image);
-            out.second = std::min (out.second, value_type (image->value()));
+            out.second = std::min (out.second, value_type (image->value() * get_tdi_multiplier (v)));
           }
         } else if (statistic == MAX) {
           out.second = -std::numeric_limits<value_type>::infinity();
           for (const auto v : voxels) {
             assign_pos_of (v).to (*image);
-            out.second = std::max (out.second, value_type (image->value()));
+            out.second = std::max (out.second, value_type (image->value() * get_tdi_multiplier (v)));
           }
         }
       }
@@ -221,7 +262,17 @@ class Sampler {
     MR::copy_ptr<Interp::Linear<Image<value_type>>> interp;
     std::shared_ptr<DWI::Tractography::Mapping::TrackMapperBase> mapper;
     MR::copy_ptr<Image<value_type>> image;
+    MR::copy_ptr<TDI> tdi;
     const stat_tck statistic;
+
+    value_type get_tdi_multiplier (const DWI::Tractography::Mapping::Voxel& v)
+    {
+      if (!tdi)
+        return value_type(1);
+      assign_pos_of (v).to (*tdi);
+      assert (!is_out_of_bounds (*tdi));
+      return v.get_length() / tdi->value();
+    }
 
 };
 
@@ -231,8 +282,8 @@ class ReceiverBase
 {
   public:
     ReceiverBase (const size_t num_tracks) :
-        expected (num_tracks),
         received (0),
+        expected (num_tracks),
         progress ("Sampling values underlying streamlines", num_tracks) { }
     ReceiverBase (const ReceiverBase&) = delete;
     virtual ~ReceiverBase() {
@@ -246,9 +297,10 @@ class ReceiverBase
       ++progress;
     }
 
+    size_t received;
+
   private:
     const size_t expected;
-    size_t received;
     ProgressBar progress;
 
 };
@@ -297,6 +349,7 @@ class Receiver_NoStatistic : private ReceiverBase
 
     bool operator() (std::pair<size_t, vector_type>& in)
     {
+      // Requires preservation of order
       assert (in.first == ReceiverBase::received);
       if (ascii)
         (*ascii) << in.second.transpose() << "\n";
@@ -330,6 +383,22 @@ void run ()
     throw Exception ("Precise streamline mapping may only be used with per-streamline statistics");
 
   Sampler sampler (image, statistic, precise);
+
+  if (get_options ("use_tdi_fraction").size()) {
+    if (!precise)
+      throw Exception ("-use_tdi_fraction option can only be used in conjunction with precise mapping");
+    DWI::Tractography::Reader<value_type> tdi_reader (argument[0], properties);
+    DWI::Tractography::Mapping::TrackMapperBase mapper (image.original_header());
+    mapper.set_use_precise_mapping (true);
+    TDI tdi (image.original_header(), num_tracks);
+    Thread::run_queue (tdi_reader,
+                       Thread::batch (DWI::Tractography::Streamline<value_type>()),
+                       Thread::multi (mapper),
+                       Thread::batch (DWI::Tractography::Mapping::SetVoxel()),
+                       tdi);
+    tdi.done();
+    sampler.provide_tdi (tdi);
+  }
 
   if (statistic == stat_tck::NONE) {
     Receiver_NoStatistic receiver (argument[2], num_tracks, properties);
