@@ -326,7 +326,7 @@ void run ()
       throw Exception ("Cannot perform operation along axis " + str (axis) + "; image only has " + str(image_in.ndim()) + " axes");
 
 
-    Header header_out (image_in.original_header());
+    Header header_out (image_in);
 
     header_out.datatype() = DataType::from_command_line (DataType::Float32);
     header_out.size(axis) = 1;

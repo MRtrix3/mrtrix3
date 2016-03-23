@@ -216,7 +216,9 @@ class StackEntry {
       }
       else {
         try {
-          image.reset (new Image<complex_type> (Header::open (arg).get_image<complex_type>()));
+          auto header = Header::open (arg);
+          image_is_complex = header.datatype().is_complex();
+          image.reset (new Image<complex_type> (header.get_image<complex_type>()));
           image_list.insert (std::make_pair (arg, image));
         }
         catch (Exception) {
@@ -239,6 +241,7 @@ class StackEntry {
     copy_ptr<Math::RNG> rng;
     complex_type value;
     bool rng_gausssian;
+    bool image_is_complex;
 
     bool is_complex () const;
 
@@ -289,7 +292,7 @@ class Evaluator
 
 
 inline bool StackEntry::is_complex () const {
-  if (image) return image->original_header().datatype().is_complex();
+  if (image) return image_is_complex;
   if (evaluator) return evaluator->is_complex();
   if (rng) return false;
   return value.imag() != 0.0;
@@ -561,7 +564,7 @@ void get_header (const StackEntry& entry, Header& header)
     return;
 
   if (header.ndim() == 0) {
-    header = entry.image->original_header();
+    header = *entry.image;
     return;
   }
 

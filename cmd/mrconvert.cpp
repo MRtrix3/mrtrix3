@@ -170,7 +170,7 @@ inline void copy_permute (Header& header_in, Header& header_out, const std::vect
     const auto axes = set_header (header_out, in);
 
     auto out = Header::create (output_filename, header_out).get_image<T>();
-    DWI::export_grad_commandline (out.original_header());
+    DWI::export_grad_commandline (out);
 
     auto perm = Adapter::make <Adapter::PermuteAxes> (in, axes); 
     threaded_copy_with_progress (perm, out, 0, std::numeric_limits<size_t>::max(), 2);
@@ -180,7 +180,7 @@ inline void copy_permute (Header& header_in, Header& header_out, const std::vect
     auto extract = Adapter::make<Adapter::Extract> (in, pos); 
     const auto axes = set_header (header_out, extract);
     auto out = Image<T>::create (output_filename, header_out);
-    DWI::export_grad_commandline (out.original_header());
+    DWI::export_grad_commandline (out);
 
     auto perm = Adapter::make <Adapter::PermuteAxes> (extract, axes); 
     threaded_copy_with_progress (perm, out, 0, std::numeric_limits<size_t>::max(), 2);

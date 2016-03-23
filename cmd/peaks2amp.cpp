@@ -42,7 +42,7 @@ void run ()
 {
   auto dir = Image<float>::open (argument[0]);
 
-  auto header = dir.original_header();
+  Header header (dir);
   header.size(3) = header.size(3)/3;
 
   auto amp = Image<float>::create (argument[1], header);
