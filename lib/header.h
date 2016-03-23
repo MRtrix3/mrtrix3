@@ -77,8 +77,8 @@ namespace MR
       }
 
       //! copy constructor
-      /*! This copies everything over apart from the IO handler and the
-       * intensity scaling. */
+      /*! This copies everything over apart from the IO handler, and resets the
+       * intensity scaling if the datatype is floating-point. */
       Header (const Header& H) :
         axes_ (H.axes_),
         transform_ (H.transform_),
@@ -86,29 +86,33 @@ namespace MR
         keyval_ (H.keyval_),
         format_ (H.format_),
         datatype_ (H.datatype_),
-        offset_ (0.0),
-        scale_ (1.0) {
-          if (datatype().is_integer())
-            set_intensity_scaling (H);
-        }
+        offset_ (datatype().is_integer() ? H.offset_ : 0.0),
+        scale_ (datatype().is_integer() ? H.scale_ : 1.0) { }
 
-      //! \copydoc Header (const Header&)
+      //! copy constructor from type of class other than Header
+      /*! This copies all relevant parameters over from \a original, leaving
+       * the IO unset, and resets the intensity scaling \e regardless of data
+       * type. */ 
       template <class HeaderType>
         Header (const HeaderType& original) :
-          Header (original.original_header()) {
-            name() = original.name();
+          transform_ (original.transform()),
+          name_ (original.name()),
+          keyval_ (original.keyval()),
+          format_ (original.format()),
+          datatype_ (original.datatype()),
+          offset_ (datatype().is_integer() ? original.intensity_offset() : 0.0),
+          scale_ (datatype().is_integer() ? original.intensity_scale() : 1.0) {
             set_ndim (original.ndim());
             for (size_t n = 0; n < original.ndim(); ++n) {
               size(n) = original.size(n);
               stride(n) = original.stride(n);
               spacing(n) = original.spacing(n);
             }
-            transform() = original.transform();
           }
 
       //! assignment operator
-      /*! This copies everything over apart from the IO handler (and the
-       * intensity scaling if the data type is floating-point). */
+      /*! This copies everything over, resets the intensity scaling if the data
+       * type is floating-point, and resets the IO handler. */
       Header& operator= (const Header& H) {
         axes_ = H.axes_;
         transform_ = H.transform_;
@@ -116,27 +120,28 @@ namespace MR
         keyval_ = H.keyval_;
         format_ = H.format_;
         datatype_ = H.datatype_;
-        if (datatype().is_integer())
-          set_intensity_scaling (H);
-        else {
-          offset_ = 0.0;
-          scale_ = 1.0;
-        }
+        offset_ = datatype().is_integer() ? H.offset_ : 0.0;
+        scale_ = datatype().is_integer() ? H.scale_ : 1.0;
         io.reset();
         return *this;
       }
 
-      //! \copydoc operator=(const Header&)
+      //! assignment operator from type of class other than Header
+      /*! This copies all the relevant parameters over from \a original, 
+       * resets the intensity scaling, and resets the IO handler. */
       template <class HeaderType>
         Header& operator= (const HeaderType& original) {
-          *this = original.original_header();
           set_ndim (original.ndim());
-          for (size_t n = 0; n < ndim(); ++n) {
+          for (size_t n = 0; n < original.ndim(); ++n) {
             size(n) = original.size(n);
-            spacing(n) = original.spacing(n);
             stride(n) = original.stride(n);
+            spacing(n) = original.spacing(n);
           }
-          transform() = original.transform();
+          transform_ = original.transform();
+          name_ = original.name();
+          keyval_ = original.keyval();
+          format_ = original.format();
+          datatype_ = original.datatype();
           offset_ = 0.0;
           scale_ = 1.0;
           io.reset();

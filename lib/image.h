@@ -53,7 +53,18 @@ namespace MR
         FORCE_INLINE bool valid () const { return bool(buffer); }
         FORCE_INLINE bool operator! () const { return !valid(); }
 
-        FORCE_INLINE const Header& original_header () const { return *buffer; }
+        //! return the format of the image
+        const char* format () const { return buffer->format(); }
+        //! get the datatype of the data as per the template parameter
+        DataType datatype () const { return DataType::from<Image::value_type>(); }
+
+        //! get the offset applied to raw intensities
+        default_type intensity_offset () const { return buffer->intensity_offset(); }
+        //! get the scaling applied to raw intensities
+        default_type intensity_scale () const { return buffer->intensity_scale(); }
+        //! get generic key/value text attributes
+        const std::map<std::string, std::string>& keyval () const { return buffer->keyval(); }
+
 
         FORCE_INLINE const std::string& name() const { return buffer->name(); }
         FORCE_INLINE const transform_type& transform() const { return buffer->transform(); }
@@ -464,7 +475,7 @@ namespace MR
 
       File::OFStream out (filename, std::ios::out | std::ios::binary);
       out << "mrtrix image\n";
-      Formats::write_mrtrix_header (original_header(), out);
+      Formats::write_mrtrix_header (*buffer, out);
 
       const bool single_file = Path::has_suffix (filename, ".mif");
       std::string data_filename = filename;
@@ -483,7 +494,7 @@ namespace MR
         out.open (data_filename, std::ios::out | std::ios::binary); 
       }
 
-      const int64_t data_size = footprint (original_header());
+      const int64_t data_size = footprint (*buffer);
       out.seekp (offset, out.beg);
       out.write ((const char*) data_pointer, data_size);
       if (!out.good())
