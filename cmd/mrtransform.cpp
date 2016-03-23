@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 
 
@@ -53,12 +53,12 @@ void usage ()
     "of coefficients in an antipodally symmetric spherical harmonic series (e.g. "
     "6, 15, 28 etc). The -no_reorientation option can be used to force "
     "reorientation off if required."
-  
+
   + "If a DW scheme is contained in the header (or specified separately), and "
     "the number of directions matches the number of volumes in the images, any "
     "transformation applied using the -linear option will be also be applied to the directions.";
 
-  REFERENCES 
+  REFERENCES
     + "* If FOD reorientation is being performed:\n"
     "Raffelt, D.; Tournier, J.-D.; Crozier, S.; Connelly, A. & Salvado, O. " // Internal
     "Reorientation of fiber orientation distributions using apodized point spread functions. "
@@ -76,7 +76,7 @@ void usage ()
   OPTIONS
     + OptionGroup ("Affine transformation options")
 
-    + Option ("linear", 
+    + Option ("linear",
         "specify a 4x4 linear transform to apply, in the form "
         "of a 4x4 ascii file. Note the standard 'reverse' convention "
         "is used, where the transform maps points in the template image "
@@ -88,21 +88,21 @@ void usage ()
         "flip the specified axes, provided as a comma-separated list of indices (0:x, 1:y, 2:z).")
     +   Argument ("axes").type_sequence_int()
 
-    + Option ("inverse", 
+    + Option ("inverse",
         "apply the inverse transformation")
 
-    + Option ("replace", 
+    + Option ("replace",
         "replace the linear transform of the original image by that specified, "
         "rather than applying it to the original image. If no -linear transform is specified then "
         "the header transform is replaced with an identity transform.")
 
     + OptionGroup ("Regridding options")
 
-    + Option ("template", 
+    + Option ("template",
         "reslice the input image to match the specified template image grid.")
     + Argument ("image").type_image_in ()
 
-    + Option ("interp", 
+    + Option ("interp",
         "set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc. Default: cubic).")
     + Argument ("method").type_choice (interp_choices)
 
@@ -119,12 +119,12 @@ void usage ()
     + Option ("modulate",
         "modulate the FOD during reorientation to preserve the apparent fibre density")
 
-    + Option ("directions", 
+    + Option ("directions",
         "directions defining the number and orientation of the apodised point spread functions used in FOD reorientation"
         "(Default: 60 directions)")
     + Argument ("file", "a list of directions [az el] generated using the dirgen command.").type_file_in()
 
-    + Option ("noreorientation", 
+    + Option ("noreorientation",
         "turn off FOD reorientation. Reorientation is on by default if the number "
         "of volumes in the 4th dimension corresponds to the number of coefficients in an "
         "antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc")
@@ -133,7 +133,7 @@ void usage ()
 
     + DataType::options ()
 
-    + Option ("nan", 
+    + Option ("nan",
       "Use NaN as the out of bounds value (Default: 0.0)");
 }
 
@@ -300,7 +300,7 @@ void run ()
       warp_composed_ptr = warp_ptr;
     }
 
-    auto output = Image<float>::create (argument[1], output_header);
+    auto output = Image<float>::create (argument[1], output_header).with_direct_io();
 
       switch (interp) {
       case 0:
@@ -353,7 +353,7 @@ void run ()
       output_header.transform() = linear_transform;
     else
       output_header.transform() = linear_transform.inverse() * output_header.transform();
-    auto output = Image<float>::create (argument[1], output_header);
+    auto output = Image<float>::create (argument[1], output_header).with_direct_io();
     copy_with_progress (input, output);
 
     if (fod_reorientation) {
