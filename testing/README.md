@@ -1,32 +1,19 @@
 # Testing
 
-Use this repository to run tests on MRtrix3 commands and ensure that the output
-is consistent with expectation. If you intend to help with development of
-MRtrix3, you will need to set this up to ensure your changes do not introduce
-regressions. 
+Add tests here for MRtrix3 commands to ensure that the output is consistent
+with expectation. If you intend to help with development of MRtrix3, it is
+recommended you run the enclosed tests regularly to ensure your changes do not
+introduce regressions. 
 
-## Setup
+## To run the tests
 
-- clone this repo:
-    
-          git clone https://github.com/MRtrix3/testing.git
-
-    or if you have write access:
-
-          git clone git@github.com:MRtrix3/testing.git
-
-- create a symbolic link to the build script in your main MRtrix3 git clone.
-  For example, if you cloned the testing repo within your main MRtrix3 folder:
-    
-          ln -s ../build
-
-- run the `./run_tests` script:
+Simply run the `./run_tests` script:
 
         ./run_tests
         
-    This will build the testing executables, then run the tests. All activities
-    are logged to the `testing.log` file - take a look in there for details of any
-    failures.
+This will fetch the testing data from a separate dedicated repo, build the
+testing executables, then run the tests. All activities are logged to the
+`testing.log` file - take a look in there for details of any failures.
 
 
 ## Adding tests
@@ -36,18 +23,26 @@ single test, and will be run as a single unit. Use && and || bash constructs if
 needed to create compound commands. Each of these lines should return a zero
 exit code if successful.
 
-You can add test data to the `data/` folder, preferably within its own
+You can add test data to the [test_data
+repo](https://github.com/MRtrix3/test_data), preferably within its own
 subfolder if you don't anticipate these data will be suitable for testing other
 commands. You can test the output of your commands against your expected output
-using the `testing_diff_data` data command. Please keep the size of these data
-small to ensure this repository doesn't grow too large. In general, you really
-don't need large images to verify correct operation...
+using the `testing_diff_data` command (note other commands are available to
+check various types of output). Please keep the size of these data small to
+ensure this repository doesn't grow too large. In general, you really don't
+need large images to verify correct operation...
 
 Note that this script will be invoked directly in the context set up by the
 `run_tests` script, so does not need to be executable, or to set up any
 redirection, or to uses a hash-bang line to specify the interpreter.  Just add
 commands to be run, and if any of them produce a non-zero exit code, this will
-be caught by the `run_tests` script.  All commands will also be logged.
+be caught by the `run_tests` script.  All commands will also be logged. 
+
+The testing will consider each line of the test scripts to correspond to an
+individual test, and report as such. If any of your tests need multiple
+commands, simply list them all on the same line, separated by semicolons or
+other constructs such as `&&` or `||`. Look within existing test scripts for
+examples.
 
 ## Temporary files 
 
