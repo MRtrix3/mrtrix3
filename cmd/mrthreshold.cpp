@@ -85,7 +85,7 @@ void usage ()
 
 void run ()
 {
-  default_type threshold_value (NAN), percentile (NAN), bottomNpercent (NAN), topNpercent (NAN);
+  default_type threshold_value (NaN), percentile (NaN), bottomNpercent (NaN), topNpercent (NaN);
   bool use_histogram = false;
   size_t topN (0), bottomN (0), nopt (0);
 
@@ -159,7 +159,7 @@ void run ()
 
   auto out = Image<float>::create (argument[1], header);
 
-  float zero = use_NaN ? NAN : 0.0;
+  float zero = use_NaN ? NaN : 0.0;
   float one  = 1.0;
   if (invert) std::swap (zero, one);
 
