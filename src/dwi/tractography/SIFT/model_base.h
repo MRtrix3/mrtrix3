@@ -132,8 +132,8 @@ namespace MR
 
           public:
             ModelBase (Image<float>& dwi, const DWI::Directions::FastLookupSet& dirs) :
-                Mapping::Fixel_TD_map<Fixel> (dwi.original_header(), dirs),
-                proc_mask (Image<float>::scratch (Fixel_map<Fixel>::original_header(), "SIFT model processing mask")),
+                Mapping::Fixel_TD_map<Fixel> (dwi, dirs),
+                proc_mask (Image<float>::scratch (accessor(), "SIFT model processing mask")),
                 FOD_sum (0.0),
                 TD_sum (0.0),
                 have_null_lobes (false)
