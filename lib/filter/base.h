@@ -54,10 +54,6 @@ namespace MR
 
         virtual ~Base() { }
 
-        const Header& original_header () const {
-          return *this;
-        }
-
         void set_message (const std::string& s) { message = s; }
 
         template <class InputImageType, class OutputImageType>
