@@ -25,15 +25,15 @@ Options
 
 -  **-threshold value** FOD amplitudes below the threshold value are considered zero.
 
--  **-outputmap image** Weight the computed DEC map by a provided outputmap. If the outputmap has a different grid, the DEC map is first resliced and renormalised. To achieve panchromatic sharpening, provide an image with a higher spatial resolution than the input FOD image; e.g., a T1 anatomical volume. Only the DEC is subject to the mask, so as to allow for partial colouring of the outputmap.Default when this option is *not* provided: integral of input FOD, subject to the same mask/threshold as used for DEC computation.
+-  **-outputmap image** Weight the computed DEC map by a provided outputmap. If the outputmap has a different grid, the DEC map is first resliced and renormalised. To achieve panchromatic sharpening, provide an image with a higher spatial resolution than the input FOD image; e.g., a T1 anatomical volume. Only the DEC is subject to the mask, so as to allow for partial colouring of the outputmap. Default when this option is *not* provided: integral of input FOD, subject to the same mask/threshold as used for DEC computation.
 
 -  **-no-weight** Do not weight the DEC map (reslicing and renormalising still possible by explicitly providing the outputmap option as a template).
 
 -  **-lum** Correct for luminance/perception, using default values Cr,Cg,Cb = 0.3,0.5,0.2 and gamma = 2.2 (*not* correcting is the theoretical equivalent of Cr,Cg,Cb = 1,1,1 and gamma = 2).
 
--  **-lum-coefs values** The coefficients Cr,Cg,Cb to correct for luminance/perception.Note: this implicitly switches on luminance/perception correction, using a default gamma = 2.2 unless specified otherwise.
+-  **-lum-coefs values** The coefficients Cr,Cg,Cb to correct for luminance/perception. Note: this implicitly switches on luminance/perception correction, using a default gamma = 2.2 unless specified otherwise.
 
--  **-lum-gamma value** The gamma value to correct for luminance/perception.Note: this implicitly switches on luminance/perception correction, using a default Cr,Cg,Cb = 0.3,0.5,0.2 unless specified otherwise.
+-  **-lum-gamma value** The gamma value to correct for luminance/perception. Note: this implicitly switches on luminance/perception correction, using a default Cr,Cg,Cb = 0.3,0.5,0.2 unless specified otherwise.
 
 Standard options
 ^^^^^^^^^^^^^^^^
