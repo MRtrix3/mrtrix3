@@ -1,0 +1,1 @@
+peaks2amp sh2peaks/out.mif - | testing_diff_data - peaks2amp/out.mif 1e-4
