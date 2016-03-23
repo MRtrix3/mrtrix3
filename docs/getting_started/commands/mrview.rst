@@ -67,13 +67,6 @@ Debugging options
 
 -  **-fps** Display frames per second, averaged over the last 10 frames. The maximum over the last 3 seconds is also displayed.
 
-ROI editor tool options
-^^^^^^^^^^^^^^^^^^^^^^^
-
--  **-roi.load image** Loads the specified image on the ROI editor tool.
-
--  **-roi.opacity value** Sets the overlay opacity to floating value [0-1].
-
 Overlay tool options
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -86,6 +79,13 @@ Overlay tool options
 -  **-overlay.interpolation_off** Disables overlay image interpolation.
 
 -  **-overlay.colourmap index** Sets the colourmap of the overlay as indexed in the colourmap dropdown menu.
+
+ROI editor tool options
+^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-roi.load image** Loads the specified image on the ROI editor tool.
+
+-  **-roi.opacity value** Sets the overlay opacity to floating value [0-1].
 
 Tractography tool options
 ^^^^^^^^^^^^^^^^^^^^^^^^^

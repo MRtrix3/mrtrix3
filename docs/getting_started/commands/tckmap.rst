@@ -35,7 +35,7 @@ Options for the dimensionality of the output image
 
 -  **-dec** perform track mapping in directionally-encoded colour (DEC) space
 
--  **-dixel path** map streamlines to dixels within each voxel; requires either a number of dixels (references an internal direction set), or a path to a text file containing a set of directions stored as aximuth/elevation pairs
+-  **-dixel path** map streamlines to dixels within each voxel; requires either a number of dixels (references an internal direction set), or a path to a text file containing a set of directions stored as azimuth/elevation pairs
 
 -  **-tod lmax** generate a Track Orientation Distribution (TOD) in each voxel; need to specify the maximum spherical harmonic degree lmax to use when generating Apodised Point Spread Functions
 

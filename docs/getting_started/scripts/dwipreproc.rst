@@ -70,7 +70,7 @@ Skare, S. & Bammer, R. Jacobian weighting of distortion corrected EPI data. Proc
 
 
 topup:
-Andersson, J. L.; Skare, S. & Ashburner, J. How to correct susceptibility distortions in spin-echo echo-planar images: application to diffusion tensor imaging. NeuroImage, 2013, 870-888
+Andersson, J. L.; Skare, S. & Ashburner, J. How to correct susceptibility distortions in spin-echo echo-planar images: application to diffusion tensor imaging. NeuroImage, 2003, 20, 870-888
 
 
 

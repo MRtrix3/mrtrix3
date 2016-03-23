@@ -109,7 +109,7 @@ for struct in structure_map.keys():
 result_path = 'result' + os.path.splitext(lib.app.args.output)[1]
 runCommand('mrmath ' + ' '.join(mask_list) + ' sum - | mrcalc - 1 -gt overlap_mask.nii')
 runCommand('mrcalc overlap_mask.nii 0 parc.mif -if result.mif')
-runCommand('mrconvert result.mif ' + os.path.join(lib.app.workingDir, lib.app.args.output) + lib.app.mrtrixQuiet)
+runCommand('mrconvert result.mif ' + os.path.join(lib.app.workingDir, lib.app.args.output) + lib.app.mrtrixForce)
 
 lib.app.complete()
 

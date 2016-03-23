@@ -524,7 +524,7 @@ void run ()
       output_header.transform() = linear_transform;
     else
       output_header.transform() = linear_transform.inverse() * output_header.transform();
-    auto output = Image<float>::create (argument[1], output_header);
+    auto output = Image<float>::create (argument[1], output_header).with_direct_io();
     copy_with_progress (input, output);
 
     if (fod_reorientation) {

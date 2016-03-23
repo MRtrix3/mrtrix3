@@ -49,26 +49,25 @@ void usage ()
   + Argument ("image").type_image_out()
   + Option ("iter","number of iterative reweightings (default: 2); set to 0 for ordinary linear least squares.")
   + Argument ("integer").type_integer (0, default_iter, 10)
+  + Option ("predicted_signal", "the predicted dwi image.")
+  + Argument ("image").type_image_out()
   + DWI::GradImportOptions();
   
   AUTHOR = "Ben Jeurissen (ben.jeurissen@uantwerpen.be)";
-  
-  COPYRIGHT = "Copyright (C) 2015 Vision Lab, University of Antwerp, Belgium. "
-    "This is free software; see the source for copying conditions. "
-    "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.";
   
   DESCRIPTION
   + "Diffusion (kurtosis) tensor estimation using iteratively reweighted linear least squares estimator.";
 }
 
-template <class MASKType, class B0Type, class DKTType>
+template <class MASKType, class B0Type, class DKTType, class PredictType>
 class Processor
 {
   public:
-    Processor (const Eigen::MatrixXd& b, const int iter, MASKType* mask_image, B0Type* b0_image, DKTType* dkt_image) :
+    Processor (const Eigen::MatrixXd& b, const int iter, MASKType* mask_image, B0Type* b0_image, DKTType* dkt_image, PredictType* predict_image) :
       mask_image (mask_image),
       b0_image (b0_image),
       dkt_image (dkt_image),
+      predict_image (predict_image),
       dwi(b.rows()),
       p(b.cols()),
       w(b.rows()),
@@ -122,12 +121,22 @@ class Processor
             dkt_image->value() = p[dkt_image->index(3)+7]/adc_sq;
           }
         }
+        
+        if (predict_image) {
+          assign_pos_of (dwi_image, 0, 3).to (*predict_image);
+          dwi = (b*p).array().exp();
+          for (auto l = Loop(3)(*predict_image); l; ++l) {
+            predict_image->value() = dwi[predict_image->index(3)];
+          }
+        }
+        
       }
 
   private:
     copy_ptr<MASKType> mask_image;
     copy_ptr<B0Type> b0_image;
     copy_ptr<DKTType> dkt_image;
+    copy_ptr<PredictType> predict_image;
     Eigen::VectorXd dwi;
     Eigen::VectorXd p;
     Eigen::VectorXd w;
@@ -137,9 +146,9 @@ class Processor
     const int maxit;
 };
 
-template <class MASKType, class B0Type, class DKTType> 
-inline Processor<MASKType, B0Type, DKTType> processor (const Eigen::MatrixXd& b, const int& iter, MASKType* mask_image, B0Type* b0_image, DKTType* dkt_image) {
-  return { b, iter, mask_image, b0_image, dkt_image };
+template <class MASKType, class B0Type, class DKTType, class PredictType> 
+inline Processor<MASKType, B0Type, DKTType, PredictType> processor (const Eigen::MatrixXd& b, const int& iter, MASKType* mask_image, B0Type* b0_image, DKTType* dkt_image, PredictType* predict_image) {
+  return { b, iter, mask_image, b0_image, dkt_image, predict_image };
 }
 
 void run ()
@@ -159,6 +168,13 @@ void run ()
   auto header = dwi.original_header();
   header.datatype() = DataType::Float32;
   header.set_ndim (4);
+  
+  Image<value_type>* predict = nullptr;
+  opt = get_options ("predicted_signal");
+  if (opt.size()) {
+    predict = new Image<value_type> (Image<value_type>::create (opt[0][0], header));
+  }
+  
   header.size(3) = 6;
   auto dt = Header::create (argument[1], header).get_image<value_type>();
 
@@ -179,6 +195,6 @@ void run ()
   
   Eigen::MatrixXd b = -DWI::grad2bmatrix<double> (grad, opt.size()>0);
 
-  ThreadedLoop("computing tensors", dwi, 0, 3).run (processor (b, iter, mask, b0, dkt), dwi, dt);
+  ThreadedLoop("computing tensors", dwi, 0, 3).run (processor (b, iter, mask, b0, dkt, predict), dwi, dt);
 }
 

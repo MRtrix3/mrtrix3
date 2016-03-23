@@ -36,33 +36,30 @@ Input response functions
 Input response functions for (single fibre) white matter, grey matter,
 and CSF can be estimated from the data in prior tissue segmentations, as
 described in `Jeurissen et al. (2014) <#references>`__ and `Christiaens
-et al. (2015) <#references>`__. MRtrix provides the script
-``msdwi2response`` for this.
+et al. (2015) <#references>`__.
 
-For example, given T1-data and 4-shell DWI data, the WM fibre response
-function can be obtained with:
-
-::
-
-    dwi2tensor dwi.mif -mask mask.mif - | tensor2metric - -fa fa.mif
-    act_anat_prepare_fsl T1.mif 5tt.mif
-
-    mrconvert 5tt.mif -coord 3 2 wm_pve.mif
-    mrcalc wm_pve.mif 0.95 -ge fa.mif 0.75 -ge -mult wm_sf.mif
-    msdwi2response dwi.mif wm_sf.mif 0,8,8,8 wmr.txt
-
-Similarly, isotropic response functions for GM and CSF can be obtained
-with:
+Obtaining good segmentations of WM, GM and CSF will typically require T1 
+data. While MRtrix doesn't implement segmentation methods itself, it does 
+provide a script that calls the relevant FSL or Freesurfer tools to obtain 
+a tissue segmentation in the appropriate format, for example:
 
 ::
+    
+    5ttgen fsl T1.mif 5tt.mif
 
-    mrconvert 5tt.mif -coord 3 0 gm_pve.mif
-    mrcalc gm_pve.mif 0.95 -ge fa.mif 0.1 -le -mult gm_iso.mif
-    msdwi2response dwi.mif gm_iso.mif 0,0,0,0 gmr.txt
+Note that the T1 image must be aligned with (e.g. registered to) the DWI data. 
+See `this page <http://mrtrix.readthedocs.org/en/latest/workflows/act.html#tissue-segmentation>`__ 
+for more information.
 
-    mrconvert 5tt.mif -coord 3 3 csf_pve.mif
-    mrcalc csf_pve.mif 0.95 -ge fa.mif 0.1 -le -mult csf_iso.mif
-    msdwi2response dwi.mif csf_iso.mif 0,0,0,0 csfr.txt
+Response functions for single-fibre WM, GM, and CSF, can then be 
+estimated using:
+
+::
+    
+    dwi2response msmt_5tt dwi.mif 5tt.mif gm.txt wm.txt csf.txt
+
+For a detailed explanation of different strategies for response function 
+estimation, have a look at `this page <http://mrtrix.readthedocs.org/en/latest/concepts/response_function_estimation.html#msmt-5tt>`__.
 
 Parameters
 ~~~~~~~~~~

@@ -43,7 +43,7 @@ void usage ()
     "ALL of the fibre volume within each fixel selected will contribute to the result. "
     "If the -wbft option is used to provide whole-brain fibre-tracking (of which the pathway of "
     "interest should contain a subset), only the fraction of the fibre volume in each fixel "
-    "estiamted to belong to the pathway of interest will contribute to the result."
+    "estimated to belong to the pathway of interest will contribute to the result."
 
   + "Use -quiet to suppress progress messages and output fibre connectivity value only."
 

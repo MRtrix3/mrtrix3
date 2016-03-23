@@ -30,13 +30,8 @@ namespace MR
 
  \code
 #include "command.h"
-#include "debug.h"
-#include "image/buffer.h"
-#include "image/voxel.h"
-#include "image/loop.h"
-#include "image/threaded_loop.h"
-#include "math/matrix.h"
-#include "math/vector.h"
+#include "image.h"
+#include "algo/threaded_loop.h"
 #include "math/rng.h"
 
 using namespace MR;
@@ -91,22 +86,22 @@ class SharedInfo
     // constructor - i.e. no members are dependent on the type of the input
     // image - again, this means I don't need to worry about the type of the
     // image, the compiler will figure this out at compile-time.
-    template <class InfoType>
-      SharedInfo (const InfoType& info, size_t num_el) :
-        A (num_el, info.dim(3)) {
-          Math::RNG rng;
-          for (size_t i = 0; i < A.rows(); ++i)
-            for (size_t j = 0; j < A.columns(); ++j)
-              A(i,j) = rng.normal();
+    template <class HeaderType>
+      SharedInfo (const HeaderType& header, size_t num_el) :
+        A (num_el, header.size(3)) {
+          Math::RNG::Normal<value_type> rng;
+          for (ssize_t i = 0; i < A.rows(); ++i)
+            for (ssize_t j = 0; j < A.cols(); ++j)
+              A(i,j) = rng();
         }
 
-    Math::Matrix<compute_type> A;
+    Eigen::MatrixXf A;
 };
 
 
 
 
-// This is the functor that will be invoked per-voxel. 
+// ThisThis is the functor that will be invoked per-voxel. 
 // Note that here we pass the SharedInfo by const-reference, and construct a
 // const member reference from it. At this point, the information from the
 // SharedInfo will be accessible during processing, but only for const access
@@ -122,7 +117,7 @@ class MathMulFunctor {
     // are therefore safe to use here with a default copy constructor. 
     MathMulFunctor (const SharedInfo& shared) :
       shared (shared),
-      vec_in (shared.A.columns()), 
+      vec_in (shared.A.cols()), 
       vec_out (shared.A.rows()) { }
 
     // This is the actual operation to be performed. I use a templated
@@ -130,25 +125,25 @@ class MathMulFunctor {
     template <class VoxeltypeIn, class VoxeltypeOut>
       void operator() (VoxeltypeIn& in, VoxeltypeOut& out)
       {
-        Image::Loop loop (3);
+        auto loop = Loop (3);
 
         // read input values into vector:
         for (auto l = loop (in); l; ++l) 
-          vec_in[in[3]] = in.value();
+          vec_in[in.index(3)] = in.value();
 
         // do matrix multiplication:
-        Math::mult (vec_out, shared.A, vec_in);
+        vec_out = shared.A * vec_in;
 
         // write-back to output voxel:
         for (auto l = loop (out); l; ++l) 
-          out.value() = vec_out[out[3]];
+          out.value() = vec_out[out.index(3)];
       }
 
 
 
   protected:
     const SharedInfo& shared;
-    Math::Vector<compute_type> vec_in, vec_out;
+    Eigen::VectorXf vec_in, vec_out;
 };
 
 
@@ -161,35 +156,30 @@ class MathMulFunctor {
 void run ()
 {
   // default value for number of output volumes:
-  size_t nvol = 10;
-
-  // check if -size option has been supplied, and update nvol accordingly:
-  Options opt = get_options ("size");
-  if (opt.size())
-    nvol = opt[0][0];
+  size_t nvol = get_option_value ("size", 10);
 
   // create a Buffer to access the input data:
-  Image::Buffer<value_type> buffer_in (argument[0]);
+  auto in = Image<value_type>::open (argument[0]);
 
   // get the header of the input data, and modify to suit the output dataset:
-  Image::Header header (buffer_in);
+  Header header (in);
   header.datatype() = DataType::Float32;
-  header.dim(3) = nvol;
+  header.size(3) = nvol;
 
   // create the output Buffer to store the output data, based on the updated
   // header information:
-  Image::Buffer<value_type> buffer_out (argument[1], header);
+  auto out = Image<value_type>::create (argument[1], header);
 
   // Create the SharedInfo object:
-  SharedInfo shared (buffer_in, nvol);
+  SharedInfo shared (in, nvol);
 
   // create a threaded loop object that will display a progress message, and
   // iterate over buffer_in in order of increasing stride. In this case, only loop
-  // over the first 3 axes (see Image::ThreadedLoop documentation for details): 
-  Image::ThreadedLoop loop ("performing matrix multiplication", buffer_in, 0, 3);
+  // over the first 3 axes (see ThreadedLoop documentation for details): 
+  auto loop = ThreadedLoop ("performing matrix multiplication", in, 0, 3);
 
   // run the loop, invoking the functor MathMulFunctor that you constructed:
-  loop.run (MathMulFunctor (shared), buffer_in.voxel(), buffer_out.voxel());
+  loop.run (MathMulFunctor (shared), in, out);
 }
 \endcode
 

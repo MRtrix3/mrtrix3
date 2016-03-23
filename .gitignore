@@ -16,6 +16,7 @@
 *.img
 *.hdr
 *.qrc
+*.rste
 icons.cpp
 /config.*
 /configure.log

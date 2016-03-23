@@ -27,6 +27,8 @@ Options
 
 -  **-iter integer** number of iterative reweightings (default: 2); set to 0 for ordinary linear least squares.
 
+-  **-predicted_signal image** the predicted dwi image.
+
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -66,5 +68,11 @@ Veraart, J.; Sijbers, J.; Sunaert, S.; Leemans, A. & Jeurissen, B. Weighted line
 
 **Author:** Ben Jeurissen (ben.jeurissen@uantwerpen.be)
 
-**Copyright:** Copyright (C) 2015 Vision Lab, University of Antwerp, Belgium. This is free software; see the source for copying conditions. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+**Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
+
+This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/
+
+MRtrix is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+For more details, see www.mrtrix.org
 

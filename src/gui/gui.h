@@ -64,6 +64,7 @@ namespace MR
           application = this;
           ::MR::File::Config::init ();
           ::MR::GUI::GL::set_default_context ();
+          QLocale::setDefault(QLocale::c());
 
           new QApplication (cmdline_argc, cmdline_argv);
           ::MR::App::init (cmdline_argc, cmdline_argv); 

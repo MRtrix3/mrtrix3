@@ -32,7 +32,7 @@ namespace MR
           "specify one or more diffusion-weighted gradient shells to use during "
           "processing, as a comma-separated list of the desired approximate b-values. "
           "Note that some commands are incompatible with multiple shells, and "
-          "will throw an error if more than one b-value are provided.")
+          "will throw an error if more than one b-value is provided.")
         + Argument ("list").type_sequence_float();
 
 
