@@ -166,7 +166,6 @@ void usage ()
       "Use NaN as the out of bounds value (Default: 0.0)");
 }
 
-
 void apply_warp (Image<float>& input, Image<float>& output, Image<default_type>& warp, const int interp, const float out_of_bounds_value) {
   switch (interp) {
   case 0:
@@ -380,7 +379,7 @@ void run ()
   if (opt.size()) {
     out_of_bounds_value = NAN;
     if (!warp && !template_header)
-      WARN ("Out of bounds value ignore since the input image will not be regridded");
+      WARN ("Out of bounds value ignored since the input image will not be regridded");
   }
 
   auto input = input_header.get_image<float>().with_direct_io (stride);
@@ -401,7 +400,7 @@ void run ()
       template_header = midway_header;
     }
 
-    auto output = Image<float>::create (argument[1], output_header);
+    auto output = Image<float>::create (argument[1], output_header).with_direct_io();
 
     switch (interp) {
       case 0:
@@ -438,7 +437,7 @@ void run ()
       add_line (output_header.keyval()["comments"], std::string ("resliced using warp image \"" + warp.name() + "\""));
     }
 
-    auto output = Image<float>::create (argument[1], output_header);
+    auto output = Image<float>::create (argument[1], output_header).with_direct_io();
     if (warp.ndim() == 5) {
       Image<default_type> warp_deform;
       Header midway_header (warp);
