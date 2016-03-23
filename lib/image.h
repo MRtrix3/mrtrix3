@@ -107,7 +107,7 @@ namespace MR
         //! get set/set a row of values at the current index position along the specified axis
         FORCE_INLINE Eigen::Map<Eigen::Matrix<value_type, Eigen::Dynamic, 1 >, Eigen::Unaligned, Eigen::InnerStride<> > row (size_t axis)
         {
-          assert (is_direct_io());
+          assert (is_direct_io() && "Image::row() method can only be used on Images loaded using Image::with_direct_io()");
           index (axis) = 0;
           return Eigen::Map<Eigen::Matrix<value_type, Eigen:: Dynamic, 1 >, Eigen::Unaligned, Eigen::InnerStride<> >
                    (address(), size (axis), Eigen::InnerStride<> (stride (axis)));
@@ -197,7 +197,9 @@ namespace MR
         /*! \note this will only work if image access is direct (i.e. for a
          * scratch image, with preloading, or when the data type is native and
          * without scaling. */
-        ValueType* address () const { return data_pointer ? static_cast<ValueType*>(data_pointer) + data_offset : nullptr; }
+        ValueType* address () const { 
+          assert (data_pointer != nullptr && "Image::address() can only be used when image access is via direct RAM access");
+          return data_pointer ? static_cast<ValueType*>(data_pointer) + data_offset : nullptr; }
 
         static Image open (const std::string& image_name, bool read_write_if_existing = false) {
           return Header::open (image_name).get_image<ValueType> (read_write_if_existing);
@@ -322,8 +324,8 @@ namespace MR
   template <typename ValueType>
     Image<ValueType>::Buffer::Buffer (Header& H, bool read_write_if_existing) :
       Header (H) {
-        assert (H.valid()); // IO handler set
-        assert (H.is_file_backed() ? is_data_type<ValueType>::value : true);
+        assert (H.valid() && "IO handler must be set when creating an Image"); 
+        assert ((H.is_file_backed() ? is_data_type<ValueType>::value : true) && "class types cannot be stored on file using the Image class");
 
         acquire_io (H);
         io->set_readwrite_if_existing (read_write_if_existing);
@@ -343,7 +345,7 @@ namespace MR
       if (data_buffer) // already allocated via with_direct_io()
         return data_buffer.get();
 
-      assert (io);
+      assert (io && "data pointer will only be set for valid Images");
       if (!io->is_file_backed()) // this is a scratch image
         return io->segment(0);
 
@@ -361,7 +363,6 @@ namespace MR
   template <typename ValueType>
     Image<ValueType> Header::get_image (bool read_write_if_existing)
     {
-      assert (valid());
       if (!valid())
         throw Exception ("FIXME: don't invoke get_image() with invalid Header!");
       auto buffer = std::make_shared<typename Image<ValueType>::Buffer> (*this, read_write_if_existing);
