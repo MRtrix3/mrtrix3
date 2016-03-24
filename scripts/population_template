@@ -47,7 +47,7 @@ lib.app.parser.add_argument('-nl_update_smooth', default='2.0', help='Regularise
 lib.app.parser.add_argument('-nl_disp_smooth', default='1.0', help='Regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0 x voxel_size)')
 lib.app.parser.add_argument('-nl_grad_step', default='0.5', help='The gradient step size for non-linear registration (Default: 0.5)')
 lib.app.parser.add_argument('-noreorientation', action='store_true', help='Turn off FOD reorientation. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc')
-lib.app.parser.add_argument('-inital_alignment', default='mass', help='Method of alignment to form the initial template. Options are "mass" (default), "geometric" and "none".')
+lib.app.parser.add_argument('-initial_alignment', default='mass', help='Method of alignment to form the initial template. Options are "mass" (default), "geometric" and "none".')
 lib.app.initialise()
 
 lib.app.args.input_dir = relpath(lib.app.args.input_dir)
@@ -60,9 +60,9 @@ if len(inFiles) <= 1:
 else:
   printMessage('Generating a population-average template from ' + str(len(inFiles)) + ' input images')
 
-inital_alignment = lib.app.args.inital_alignment
-if inital_alignment not in ["mass", "geometric", "none"]:
-  errorMessage('inital_alignment must be one of ' + " ".join(["mass", "geometric", "none"]));
+initial_alignment = lib.app.args.initial_alignment
+if initial_alignment not in ["mass", "geometric", "none"]:
+  errorMessage('initial_alignment must be one of ' + " ".join(["mass", "geometric", "none"]));
 
 useMasks = False
 if lib.app.args.mask_dir:
@@ -156,7 +156,7 @@ for i in input:
   input_filenames.append (abspath(i.directory, i.filename));
 runCommand('mraverageheader ' + ' '.join(input_filenames) + ' average_header.mif.gz' ' -mark_centre')
 
-if inital_alignment == 'none':
+if initial_alignment == 'none':
   for i in input:
     runCommand('mrtransform ' + abspath(i.directory, i.filename) + ' -interp linear -template average_header.mif.gz input_transformed/' + i.prefix + '.mif' + datatype)
 else:
@@ -169,17 +169,26 @@ else:
                  mask +
                  ' -rigid_scale 1 ' +
                  ' -rigid_niter 0 ' +
-                 ' -rigid_lmax 0 ' +
                  ' -type rigid ' +
                  ' -noreorientation ' +
-                 ' -rigid_init_translation ' + inital_alignment + ' ' +
+                 ' -rigid_init_translation ' + initial_alignment + ' ' +
                  datatype +
                  output)
+    # translate input images to centre of mass without interpolation
     runCommand('mrtransform ' + abspath(i.directory, i.filename) +
                 ' -linear linear_transforms/' + i.prefix + '.txt' +
-                ' -interp linear -template average_header.mif.gz input_transformed/' + i.prefix + '.mif'
-                + datatype)
-
+                datatype +
+                ' input_transformed/' + i.prefix + '_translated.mif')
+  # update average space to new extent
+  runCommand('mraverageheader ' + ' '.join(['input_transformed/' + i.prefix + '_translated.mif' for i in input]) +
+   ' average_header.mif.gz' ' -force')
+  for i in input:
+    runCommand('mrtransform ' +
+      ' input_transformed/' + i.prefix + '_translated.mif' +
+      ' input_transformed/' + i.prefix + '.mif' +
+      ' -interp linear -template average_header.mif.gz' +
+      datatype)
+    os.remove ('input_transformed/' + i.prefix + '_translated.mif')
 runCommand('mrmath input_transformed/* mean initial_template.mif')
 current_template = 'initial_template.mif'
 
