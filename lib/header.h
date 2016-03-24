@@ -303,10 +303,8 @@ namespace MR
         }
 
       static Header open (const std::string& image_name);
-      template <class HeaderType>
-        static Header create (const std::string& image_name, const HeaderType& template_header);
-      template <class HeaderType>
-        static Header scratch (const HeaderType& template_header, const std::string& label = "scratch image");
+      static Header create (const std::string& image_name, const Header& template_header);
+      static Header scratch (const Header& template_header, const std::string& label = "scratch image");
 
       /*! use to prevent automatic realignment of transform matrix into
        * near-standard (RAS) coordinate system. */
@@ -377,20 +375,6 @@ namespace MR
 
   inline const ssize_t& Header::stride (size_t axis) const { return axes_[axis].stride; }
   inline ssize_t& Header::stride (size_t axis) { return axes_[axis].stride; } 
-
-  template <class HeaderType>
-    inline Header Header::create (const std::string& image_name, const HeaderType& template_header) {
-      return create (image_name, Header (template_header)); 
-    }
-  template <> Header Header::create (const std::string& image_name, const Header& template_header);
-  extern template Header Header::create<Header> (const std::string& image_name, const Header& template_header);
-
-  template <class HeaderType>
-    inline Header Header::scratch (const HeaderType& template_header, const std::string& label) {
-      return scratch (Header (template_header), label);
-    }
-  template<> Header Header::scratch (const Header& template_header, const std::string& label);
-  extern template Header Header::scratch<Header> (const Header& template_header, const std::string& label);
 
   //! @}
 }
