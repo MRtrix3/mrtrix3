@@ -198,8 +198,8 @@ namespace MR
 
                 if (iteration > 1) {
                   DEBUG ("updating displacement field field");
-                  Transform::compose_displacement (*im1_disp_field, *im1_update_field, *im1_disp_field_new, grad_step_altered);
-                  Transform::compose_displacement (*im2_disp_field, *im2_update_field, *im2_disp_field_new, grad_step_altered);
+                  Transform::update_displacement_scaling_and_squaring (*im1_disp_field, *im1_update_field, *im1_disp_field_new, grad_step_altered);
+                  Transform::update_displacement_scaling_and_squaring (*im2_disp_field, *im2_update_field, *im2_disp_field_new, grad_step_altered);
 
                   DEBUG ("smoothing displacement field");
                   Filter::Smooth smooth_filter (*im1_disp_field_new);
@@ -468,7 +468,7 @@ namespace MR
           std::shared_ptr<Image<default_type> > im1_disp_field;  // Internally the warp is a displacement field for smoothing near the boundaries
           std::shared_ptr<Image<default_type> > im2_disp_field;
           std::shared_ptr<Image<default_type> > im1_deform_field_inv;
-          std::shared_ptr<Image<default_type> > im2_deform_field_inv; // Note we store the inverses as deformations since the inverter works on deformations
+          std::shared_ptr<Image<default_type> > im2_deform_field_inv; // Note we store the inverses as deformations since the inverter works on deformations, and we don't need to smooth these
 
           std::shared_ptr<Image<default_type> > im1_update_field;
           std::shared_ptr<Image<default_type> > im2_update_field;

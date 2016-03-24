@@ -1,6 +1,8 @@
 population_template
 ===========
 
+Command: pwd 
+/home/dave/dev/mrtrix3/docs
 Synopsis
 --------
 
@@ -33,7 +35,7 @@ Options
 
 - **-nl_lmax** Specifiy the lmax used for non-linear registration for each scale factor, in the form of a list of integers (default: 0,0,2,2,2,2,2,2,2,2,4,4,4,4). The list must be the same length as the nl_scale factor list
 
-- **-nl_niter** Specifiy the number of registration iterations used for each within each level before updating the template, in the form of a list of integers (default:5,5,5,5,5,5,5,5,5,5,5,10,10,20). The list must be the same length as the nl_scale factor list
+- **-nl_niter** Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:5,5,5,5,5,5,5,5,5,5,5,10,10,20). The list must be the same length as the nl_scale factor list
 
 - **-nl_update_smooth** Regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 2.0 x voxel_size)
 

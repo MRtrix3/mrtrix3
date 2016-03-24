@@ -23,19 +23,7 @@ List of MRtrix3 commands
 .......
 
 
-.. include:: commands/bbgd.rst
-.......
-
-
-.. include:: commands/bogus.rst
-.......
-
-
 .. include:: commands/connectome2tck.rst
-.......
-
-
-.. include:: commands/cubic_interpolator_speed_debug.rst
 .......
 
 
@@ -84,10 +72,6 @@ List of MRtrix3 commands
 
 
 .. include:: commands/dwi2noise.rst
-.......
-
-
-.. include:: commands/dwi2response.rst
 .......
 
 
@@ -159,10 +143,6 @@ List of MRtrix3 commands
 .......
 
 
-.. include:: commands/looptest.rst
-.......
-
-
 .. include:: commands/maskfilter.rst
 .......
 
@@ -179,11 +159,7 @@ List of MRtrix3 commands
 .......
 
 
-.. include:: commands/mrartifacts.rst
-.......
-
-
-.. include:: commands/mraverage_header.rst
+.. include:: commands/mraverageheader.rst
 .......
 
 
@@ -260,10 +236,6 @@ List of MRtrix3 commands
 
 
 .. include:: commands/msdwi2fod.rst
-.......
-
-
-.. include:: commands/neighbourhooditerator.rst
 .......
 
 
@@ -351,19 +323,7 @@ List of MRtrix3 commands
 .......
 
 
-.. include:: commands/test.rst
-.......
-
-
-.. include:: commands/test2.rst
-.......
-
-
 .. include:: commands/transformcalc.rst
-.......
-
-
-.. include:: commands/transformmetric.rst
 .......
 
 
@@ -392,6 +352,10 @@ List of MRtrix3 commands
 
 
 .. include:: commands/warp2jacobian.rst
+.......
+
+
+.. include:: commands/warpconvert.rst
 .......
 
 

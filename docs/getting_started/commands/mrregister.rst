@@ -20,7 +20,7 @@ By default this application will perform an affine, followed by non-linear regis
 
 FOD registration (with apodised point spread reorientation) will be performed by default if the number of volumes in the 4th dimension equals the number of coefficients in an antipodally symmetric spherical harmonic series (e.g. 6, 15, 28 etc). The -no_reorientation option can be used to force reorientation off if required.
 
-Non-linear registration computes warps to map from both image1->image2 and image2->image1. Similar to Avants (2008) Med Image Anal. 12(1): 26–41, both the image1 and image2 are warped towards a 'middle space'. Warps are saved in a single 5D file, with the 5th dimension defining the warp type. See here for more details (TODO). By default the affine transformation will be saved in the warp image header (use mrinfo to view). To save the affine transform separately as a text file, use the -affine option.
+Non-linear registration computes warps to map from both image1->image2 and image2->image1. Similar to Avants (2008) Med Image Anal. 12(1): 26–41, both the image1 and image2 are warped towards a 'middle space'. Warps are saved in a single 5D file, with the 5th dimension defining the warp type.By default the affine transformation will be saved in the warp image header (use mrinfo to view)
 
 Options
 -------
@@ -40,50 +40,71 @@ Rigid registration options
 
 -  **-rigid file** the output text file containing the rigid transformation as a 4x4 matrix
 
--  **-rigid_centre type** initialise the centre of rotation and initial translation. Valid choices are: mass (which uses the image center of mass), geometric (geometric image centre), moments (image moments), mass_unmasked (don't use image masks for centre of mass initialisation), moments_unmasked (don't use image masks for moments initialisation), fod (aligns FOD images based on their centre of mass and global sum of all fibre orientations) or none.Default: mass.
+-  **-rigid_1tomidway file** the output text file containing the rigid transformation that aligns image1 to image2 in their common midway space as a 4x4 matrix
 
--  **-rigid_init file** initialise either the rigid, affine, or syn registration with the supplied rigid transformation (as a 4x4 matrix). Note that this overrides rigid_centre initialisation
+-  **-rigid_2tomidway file** the output text file containing the rigid transformation that aligns image2 to image1 in their common midway space as a 4x4 matrix
 
--  **-rigid_scale factor** use a multi-resolution scheme by defining a scale factor for each level using comma separated values (Default: 0.5,1)
+-  **-rigid_init_translation type** initialise the translation and centre of rotation Valid choices are: mass (aligns the centers of mass of both images, default), geometric (aligns geometric image centres) and none.
+
+-  **-rigid_init_rotation type** initialise the rotation Valid choices are: search (search for the best rotation using mean squared residuals), moments (rotation based on directions of intensity variance with respect to centre of mass), none (default).
+
+-  **-rigid_init_matrix file** initialise either the rigid, affine, or syn registration with the supplied rigid transformation (as a 4x4 matrix in scanner coordinates). Note that this overrides rigid_init_translation and rigid_init_rotation initialisation 
+
+-  **-rigid_scale factor** use a multi-resolution scheme by defining a scale factor for each level using comma separated values (Default: 0.25,0.5,1.0)
 
 -  **-rigid_niter num** the maximum number of iterations. This can be specified either as a single number for all multi-resolution levels, or a single value for each level. (Default: 1000)
 
--  **-rigid_metric type** valid choices are: l2 (ordinary least squares), lp (least powers: |x|^1.2), ncc (normalised cross-correlation) Default: ordinary least squares
+-  **-rigid_metric type** valid choices are: diff (intensity differences), Default: diff
 
--  **-rigid_global_search** perform global search for most promising starting point. default: false
+-  **-rigid_metric.diff.estimator type** Valid choices are: l1 (least absolute: |x|), l2 (ordinary least squares), lp (least powers: |x|^1.2), Default: l2
 
 -  **-rigid_lmax num** explicitly set the lmax to be used per scale factor in rigid FOD registration. By default FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.
 
 Affine registration options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-affine file** the output text file containing the affine transformation that aligns input image 1 to input image 2 as a 4x4 matrix
-
--  **-affine_2tomidway file** the output text file containing the affine transformation that aligns image2 to image1 in their common midway space as a 4x4 matrix
+-  **-affine file** the output text file containing the affine transformation as a 4x4 matrix
 
 -  **-affine_1tomidway file** the output text file containing the affine transformation that aligns image1 to image2 in their common midway space as a 4x4 matrix
 
--  **-affine_centre type** initialise the centre of rotation and initial translation. Valid choices are: mass (which uses the image center of mass), geometric (geometric image centre), moments (image moments), mass_unmasked (don't use image masks for centre of mass initialisation), moments_unmasked (don't use image masks for moments initialisation), fod (aligns FOD images based on their centre of mass and global sum of all fibre orientations) or none.Default: mass.
+-  **-affine_2tomidway file** the output text file containing the affine transformation that aligns image2 to image1 in their common midway space as a 4x4 matrix
 
--  **-affine_init file** initialise either the affine, or syn registration with the supplied affine transformation (as a 4x4 matrix). Note that this overrides affine_centre initialisation
+-  **-affine_init_translation type** initialise the translation and centre of rotation Valid choices are: mass (aligns the centers of mass of both images), geometric (aligns geometric image centres) and none. (Default: mass)
+
+-  **-affine_init_rotation type** initialise the rotation Valid choices are: search (search for the best rotation using mean squared residuals), moments (rotation based on directions of intensity variance with respect to centre of mass), none (Default: none).
+
+-  **-affine_init_matrix file** initialise either the affine, or syn registration with the supplied affine transformation (as a 4x4 matrix in scanner coordinates). Note that this overrides affine_init_translation and affine_init_rotation initialisation 
 
 -  **-affine_scale factor** use a multi-resolution scheme by defining a scale factor for each level using comma separated values (Default: 0.25,0.5,1.0)
 
 -  **-affine_niter num** the maximum number of iterations. This can be specified either as a single number for all multi-resolution levels, or a single value for each level. (Default: 1000)
 
--  **-affine_loop_density num** density of gradient descent 1 (batch) to 0.0 (max stochastic) (Default: 1.0)
+-  **-affine_metric type** valid choices are: diff (intensity differences), Default: diff
 
--  **-affine_repetitions num** number of repetitions with identical settings for each scale level
-
--  **-affine_metric type** valid choices are: diff (intensity differences), ncc (normalised cross-correlation) Default: diff
-
--  **-affine_robust_estimator type** Valid choices are: l1 (least absolute: |x|), l2 (ordinary least squares), lp (least powers: |x|^1.2), Default: l2
-
--  **-affine_robust_median** use robust median estimator. default: false
-
--  **-affine_global_search** perform global search for most promising starting point. default: false
+-  **-affine_metric.diff.estimator type** Valid choices are: l1 (least absolute: |x|), l2 (ordinary least squares), lp (least powers: |x|^1.2), Default: l2
 
 -  **-affine_lmax num** explicitly set the lmax to be used per scale factor in affine FOD registration. By default FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.
+
+Advanced linear transformation initialisation options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-init_translation.unmasked1** disregard mask1 for the translation initialisation (affects 'mass')
+
+-  **-init_translation.unmasked2** disregard mask2 for the translation initialisation (affects 'mass')
+
+-  **-init_rotation.unmasked1** disregard mask1 for the rotation initialisation (affects 'search' and 'moments')
+
+-  **-init_rotation.unmasked2** disregard mask2 for the rotation initialisation (affects 'search' and 'moments')
+
+-  **-init_rotation.search.angles angles** rotation angles for the local search in degrees between 0 and 180. (Default: 2,5,10,15,20)
+
+-  **-init_rotation.search.scale scale** relative size of the images used for the rotation search. (Default: 0.15)
+
+-  **-init_rotation.search.directions num** number of rotation axis for local search. (Default: 250)
+
+-  **-init_rotation.search.run_global** perform a global search. (Default: local)
+
+-  **-init_rotation.search.global.iterations num** number of rotations to investigate (Default: 10000)
 
 Non-linear registration options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

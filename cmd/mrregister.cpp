@@ -50,11 +50,11 @@ void usage ()
         "in the 4th dimension equals the number of coefficients in an antipodally symmetric spherical harmonic series (e.g. 6, 15, 28 etc). "
         "The -no_reorientation option can be used to force reorientation off if required."
 
+      // TODO link to 5D warp file format documentation
       + "Non-linear registration computes warps to map from both image1->image2 and image2->image1. "
         "Similar to Avants (2008) Med Image Anal. 12(1): 26–41, both the image1 and image2 are warped towards a 'middle space'. "
-        "Warps are saved in a single 5D file, with the 5th dimension defining the warp type. See here for more details (TODO). "
-        "By default the affine transformation will be saved in the warp image header (use mrinfo to view). To save the affine transform "
-        "separately as a text file, use the -affine option.";
+        "Warps are saved in a single 5D file, with the 5th dimension defining the warp type."
+        "By default the affine transformation will be saved in the warp image header (use mrinfo to view)";
 
   REFERENCES
   + "* If FOD registration is being performed:\n"
@@ -786,6 +786,7 @@ void run ()
                                                            *(nonlinear_registration.get_im1_disp_field()),
                                                            nonlinear_registration.get_im1_linear(),
                                                            deform_field);
+
       if (im1_image.ndim() == 3) {
         Filter::warp<Interp::Cubic> (im1_image, im1_transformed, deform_field, 0.0);
       } else { // write to scratch buffer first since FOD reorientation requires direct IO
@@ -849,7 +850,8 @@ void run ()
         auto temp_output = Image<default_type>::scratch (midway_header);
         Filter::warp<Interp::Cubic> (im1_image, temp_output, im1_deform_field, 0.0);
         if (do_reorientation)
-          Registration::Transform::reorient_warp ("reorienting FODs", temp_output, im1_deform_field, Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+          Registration::Transform::reorient_warp ("reorienting FODs", temp_output, im1_deform_field,
+                                                  Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
         threaded_copy (temp_output, im1_midway);
       }
 
@@ -862,15 +864,15 @@ void run ()
         auto temp_output = Image<default_type>::scratch (midway_header);
         Filter::warp<Interp::Cubic> (im2_image, temp_output, im2_deform_field, 0.0);
         if (do_reorientation)
-          Registration::Transform::reorient_warp ("reorienting FODs", temp_output, im2_deform_field, Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+          Registration::Transform::reorient_warp ("reorienting FODs", temp_output, im2_deform_field,
+                                                  Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
         threaded_copy (temp_output, im2_midway);
       }
 
-    } else if (do_affine){
+    } else if (do_affine) {
       affine_registration.write_transformed_images (im1_image, im2_image, affine, im1_midway_transformed_path, im2_midway_transformed_path, do_reorientation);
     } else {
       rigid_registration.write_transformed_images (im1_image, im2_image, rigid, im1_midway_transformed_path, im2_midway_transformed_path, do_reorientation);
-
     }
   }
 }
