@@ -16,9 +16,9 @@
 
 #include "command.h"
 #include "image.h"
-#include "registration/transform/warp_utils.h"
-#include "registration/transform/compose.h"
-#include "registration/transform/convert.h"
+#include "registration/warp/utils.h"
+#include "registration/warp/compose.h"
+#include "registration/warp/convert.h"
 #include "adapter/extract.h"
 
 
@@ -104,7 +104,7 @@ void run ()
 
         output = Image<default_type>::create (argument[1], deformation);
         auto displacement = Image<default_type>::scratch (deformation); // create a scratch since deformation2displacement requires direct io
-        Registration::Transform::deformation2displacement (deformation, displacement);
+        Registration::Warp::deformation2displacement (deformation, displacement);
         threaded_copy (displacement, output);
       }
       break;
@@ -126,7 +126,7 @@ void run ()
 
         output = Image<default_type>::create (argument[1], displacement);
         auto deformation = Image<default_type>::scratch (displacement); // create a scratch since deformation2displacement requires direct io
-        Registration::Transform::displacement2deformation (displacement, deformation);
+        Registration::Warp::displacement2deformation (displacement, deformation);
         threaded_copy (deformation, output);
       }
       break;
@@ -154,8 +154,8 @@ void run ()
         auto output = Image<default_type>::create (argument[1], deform_header);
         Image<default_type> warp_deform = Image<default_type>::scratch (deform_header);
 
-        transform_type linear1 = Registration::Transform::parse_linear_transform (warp, "linear1");
-        transform_type linear2 = Registration::Transform::parse_linear_transform (warp, "linear2");
+        transform_type linear1 = Registration::Warp::parse_linear_transform (warp, "linear1");
+        transform_type linear2 = Registration::Warp::parse_linear_transform (warp, "linear2");
 
         std::vector<int> index(1);
         if (from == 1) {
@@ -163,13 +163,13 @@ void run ()
           Adapter::Extract1D<Image<default_type>> displacement1 (warp, 4, index);
           index[0] = 3;
           Adapter::Extract1D<Image<default_type>> displacement2 (warp, 4, index);
-          Registration::Transform::compose_halfway_transforms ("converting warp", linear2.inverse(), displacement2, displacement1, linear1, warp_deform);
+          Registration::Warp::compose_halfway_transforms ("converting warp", linear2.inverse(), displacement2, displacement1, linear1, warp_deform);
         } else {
           index[0] = 1;
           Adapter::Extract1D<Image<default_type>> displacement1 (warp, 4, index);
           index[0] = 2;
           Adapter::Extract1D<Image<default_type>> displacement2 (warp, 4, index);
-          Registration::Transform::compose_halfway_transforms ("converting warp", linear1.inverse(), displacement1, displacement2, linear2, warp_deform);
+          Registration::Warp::compose_halfway_transforms ("converting warp", linear1.inverse(), displacement1, displacement2, linear2, warp_deform);
         }
         threaded_copy (warp_deform, output);
       }

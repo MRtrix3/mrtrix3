@@ -13,15 +13,15 @@
  *
  */
 
-#ifndef __registration_transform_utils_h__
-#define __registration_transform_utils_h__
+#ifndef __registration_warp_utils_h__
+#define __registration_warp_utils_h__
 
 namespace MR
 {
   namespace Registration
   {
 
-    namespace Transform
+    namespace Warp
     {
 
       template <class InputWarpType>

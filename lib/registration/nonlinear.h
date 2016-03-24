@@ -22,11 +22,11 @@
 #include "filter/warp.h"
 #include "filter/resize.h"
 #include "registration/transform/reorient.h"
-#include "registration/transform/compose.h"
 #include "registration/transform/affine.h"
-#include "registration/transform/convert.h"
-#include "registration/transform/warp_utils.h"
-#include "registration/transform/invert.h"
+#include "registration/warp/compose.h"
+#include "registration/warp/convert.h"
+#include "registration/warp/utils.h"
+#include "registration/warp/invert.h"
 #include "registration/metric/demons.h"
 #include "registration/metric/demons4D.h"
 #include "registration/multi_resolution_lmax.h"
@@ -165,8 +165,8 @@ namespace MR
                   im2_disp_field = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
                   im1_deform_field_inv = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
                   im2_deform_field_inv = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-                  Transform::displacement2deformation (*im1_deform_field_inv, *im1_deform_field_inv);  // init to identity
-                  Transform::displacement2deformation (*im2_deform_field_inv, *im2_deform_field_inv);
+                  Warp::displacement2deformation (*im1_deform_field_inv, *im1_deform_field_inv);  // init to identity
+                  Warp::displacement2deformation (*im2_deform_field_inv, *im2_deform_field_inv);
                 } else {
                   DEBUG ("Upsampling fields");
                   {
@@ -198,8 +198,8 @@ namespace MR
 
                 if (iteration > 1) {
                   DEBUG ("updating displacement field field");
-                  Transform::update_displacement_scaling_and_squaring (*im1_disp_field, *im1_update_field, *im1_disp_field_new, grad_step_altered);
-                  Transform::update_displacement_scaling_and_squaring (*im2_disp_field, *im2_update_field, *im2_disp_field_new, grad_step_altered);
+                  Warp::update_displacement_scaling_and_squaring (*im1_disp_field, *im1_update_field, *im1_disp_field_new, grad_step_altered);
+                  Warp::update_displacement_scaling_and_squaring (*im2_disp_field, *im2_update_field, *im2_disp_field_new, grad_step_altered);
 
                   DEBUG ("smoothing displacement field");
                   Filter::Smooth smooth_filter (*im1_disp_field_new);
@@ -208,11 +208,11 @@ namespace MR
                   smooth_filter (*im1_disp_field_new, *im1_disp_field_new);
                   smooth_filter (*im2_disp_field_new, *im2_disp_field_new);
 
-                  Registration::Transform::compose_linear_displacement (im1_linear, *im1_disp_field_new, im1_deform_field);
-                  Registration::Transform::compose_linear_displacement (im2_linear, *im2_disp_field_new, im2_deform_field);
+                  Registration::Warp::compose_linear_displacement (im1_linear, *im1_disp_field_new, im1_deform_field);
+                  Registration::Warp::compose_linear_displacement (im2_linear, *im2_disp_field_new, im2_deform_field);
                 } else {
-                  Registration::Transform::compose_linear_displacement (im1_linear, *im1_disp_field, im1_deform_field);
-                  Registration::Transform::compose_linear_displacement (im2_linear, *im2_disp_field, im2_deform_field);
+                  Registration::Warp::compose_linear_displacement (im1_linear, *im1_disp_field, im1_deform_field);
+                  Registration::Warp::compose_linear_displacement (im2_linear, *im2_disp_field, im2_deform_field);
                 }
 
                 DEBUG ("warping input images");
@@ -270,8 +270,8 @@ namespace MR
                   DEBUG ("inverting displacement field");
                   {
                     LogLevelLatch level (0);
-                    Transform::invert_displacement_deformation (*im1_disp_field, *im1_deform_field_inv, true);
-                    Transform::invert_displacement_deformation (*im2_disp_field, *im2_deform_field_inv, true);
+                    Warp::invert_displacement_deformation (*im1_disp_field, *im1_deform_field_inv, true);
+                    Warp::invert_displacement_deformation (*im2_disp_field, *im2_deform_field_inv, true);
                   }
                 } else {
                   converged = true;
@@ -283,8 +283,8 @@ namespace MR
                 if (++iteration > max_iter[level])
                   converged = true;
              }
-             Transform::deformation2displacement (*im1_deform_field_inv, *im1_deform_field_inv);
-             Transform::deformation2displacement (*im2_deform_field_inv, *im2_deform_field_inv); //convert to displacement field for output
+             Warp::deformation2displacement (*im1_deform_field_inv, *im1_deform_field_inv);
+             Warp::deformation2displacement (*im2_deform_field_inv, *im2_deform_field_inv); //convert to displacement field for output
            }
 
           }
@@ -294,8 +294,8 @@ namespace MR
             assert (input_warps.ndim() == 5);
 
             DEBUG ("reading linear transform from init warp field header");
-            im1_linear = Registration::Transform::parse_linear_transform (input_warps, "linear1");
-            im2_linear = Registration::Transform::parse_linear_transform (input_warps, "linear2");
+            im1_linear = Registration::Warp::parse_linear_transform (input_warps, "linear1");
+            im2_linear = Registration::Warp::parse_linear_transform (input_warps, "linear2");
 
             DEBUG ("loading initial warp fields");
             midway_image_header = input_warps;
@@ -311,7 +311,7 @@ namespace MR
             im1_deform_field_inv = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
             input_warps.index(4) = 1;
             threaded_copy (input_warps, *im1_deform_field_inv, 0, 4);
-            Transform::displacement2deformation (*im1_deform_field_inv, *im1_deform_field_inv);
+            Warp::displacement2deformation (*im1_deform_field_inv, *im1_deform_field_inv);
 
             im2_disp_field = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
             input_warps.index(4) = 2;
@@ -320,7 +320,7 @@ namespace MR
             im2_deform_field_inv = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
             input_warps.index(4) = 3;
             threaded_copy (input_warps, *im2_deform_field_inv, 0, 4);
-            Transform::displacement2deformation (*im2_deform_field_inv, *im2_deform_field_inv);
+            Warp::displacement2deformation (*im2_deform_field_inv, *im2_deform_field_inv);
             is_initialised = true;
           }
 

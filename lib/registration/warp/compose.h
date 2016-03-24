@@ -13,8 +13,8 @@
  *
  */
 
-#ifndef __registration_transform_compose_h__
-#define __registration_transform_compose_h__
+#ifndef __registration_warp_compose_h__
+#define __registration_warp_compose_h__
 
 #include "algo/threaded_loop.h"
 #include "image.h"
@@ -26,12 +26,12 @@ namespace MR
 {
   namespace Registration
   {
-    namespace Transform
+    namespace Warp
     {
 
-        class ComposeAffineDeformKernel {
+        class ComposeLinearDeformKernel {
           public:
-            ComposeAffineDeformKernel (const transform_type& transform) :
+            ComposeLinearDeformKernel (const transform_type& transform) :
                                        transform (transform) {}
 
             void operator() (Image<default_type>& deform_input, Image<default_type>& deform_output) {
@@ -124,10 +124,10 @@ namespace MR
 
 
       // Compose a linear transform and a deformation field. The input and output can be the same image.
-      FORCE_INLINE void compose_affine_deformation (const transform_type& transform, Image<default_type>& deform_in, Image<default_type>& deform_out)
+      FORCE_INLINE void compose_linear_deformation (const transform_type& transform, Image<default_type>& deform_in, Image<default_type>& deform_out)
       {
         check_dimensions (deform_in, deform_out, 0, 3);
-        ThreadedLoop (deform_in, 0, 3).run (ComposeAffineDeformKernel (transform), deform_in, deform_out);
+        ThreadedLoop (deform_in, 0, 3).run (ComposeLinearDeformKernel (transform), deform_in, deform_out);
       }
 
       // Compose a linear transform and a displacement field. The output field is a deformation field. The input and output can be the same image.
@@ -165,7 +165,7 @@ namespace MR
         } else {
           default_type scale_factor = std::pow (2, std::ceil (std::log ((max_norm * step) / (min_vox_size / 2.0)) / std::log (2.0)));
           scale_factor = 32;
-          CONSOLE ("scaling and squaring: " + str(scale_factor));
+//          CONSOLE ("scaling and squaring: " + str(scale_factor));
           std::shared_ptr<Image<default_type>> scaled_update = std::make_shared<Image<default_type> >(Image<default_type>::scratch (update));
           std::shared_ptr<Image<default_type>> composed = std::make_shared<Image<default_type> >(Image<default_type>::scratch (update));
           default_type temp = step / scale_factor; // apply the step size and scale factor at once
@@ -174,29 +174,27 @@ namespace MR
                   scaled_update.row(3) = update.row(3) * temp;
                 }, update, *scaled_update);
 
-          CONSOLE ("composing " + str(std::log2 (scale_factor)) + "times");
+//          CONSOLE ("composing " + str(std::log2 (scale_factor)) + "times");
           for (size_t i = 0; i < std::log2 (scale_factor); ++i) {
             update_displacement (*scaled_update, *scaled_update, *composed);
             std::swap (scaled_update, composed);
           }
-
-          save (*scaled_update, std::string("composed_update.mif"), false);
-
-          Adapter::Jacobian<Image<default_type> > jacobian (*scaled_update);
-          Header header (*scaled_update);
-          header.set_ndim(3);
-          bool is_neg = false;
-          auto jacobian_det = Image<default_type>::scratch (header);
-          Eigen::MatrixXd ident = Eigen::MatrixXd::Identity (3,3);
-          for (auto i = Loop (0,3) (jacobian, jacobian_det); i; ++i) {
-            auto jac_matrix = ident + jacobian.value();
-            jacobian_det.value() = jac_matrix.determinant();
-            if (jacobian_det.value() < 0.0)
-              is_neg = true;
-          }
-          save (jacobian_det, std::string("jacobian.mif"), false);
-          if (is_neg)
-            throw Exception ("negative jacobians in update");
+//          save (*scaled_update, std::string("composed_update.mif"), false);
+//          Adapter::Jacobian<Image<default_type> > jacobian (*scaled_update);
+//          Header header (*scaled_update);
+//          header.set_ndim(3);
+//          bool is_neg = false;
+//          auto jacobian_det = Image<default_type>::scratch (header);
+//          Eigen::MatrixXd ident = Eigen::MatrixXd::Identity (3,3);
+//          for (auto i = Loop (0,3) (jacobian, jacobian_det); i; ++i) {
+//            auto jac_matrix = ident + jacobian.value();
+//            jacobian_det.value() = jac_matrix.determinant();
+//            if (jacobian_det.value() < 0.0)
+//              is_neg = true;
+//          }
+//          save (jacobian_det, std::string("jacobian.mif"), false);
+//          if (is_neg)
+//            throw Exception ("negative jacobians in update");
 
           update_displacement (input, *scaled_update, output);
         }

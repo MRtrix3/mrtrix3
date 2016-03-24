@@ -111,7 +111,7 @@ References
 
 
 
-**Author:** J-Donald Tournier (jdtournier@gmail.com) & David Raffelt (david.raffelt@florey.edu.au)
+**Author:** J-Donald Tournier (jdtournier@gmail.com) & David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk)
 
 **Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
 

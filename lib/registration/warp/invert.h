@@ -13,20 +13,20 @@
  *
  */
 
-#ifndef __registration_transform_invert_h__
-#define __registration_transform_invert_h__
+#ifndef __registration_warp_invert_h__
+#define __registration_warp_invert_h__
 
 #include "image.h"
 #include "interp/cubic.h"
 #include "algo/threaded_loop.h"
-#include "registration/transform/convert.h"
+#include "registration/warp/convert.h"
 #include "transform.h"
 
 namespace MR
 {
   namespace Registration
   {
-    namespace Transform
+    namespace Warp
     {
 
       namespace {
@@ -100,7 +100,7 @@ namespace MR
           FORCE_INLINE void invert_displacement_deformation (Image<default_type>& disp, Image<default_type>& inv_deform, bool is_initialised = false, size_t max_iter = 50, default_type error_tolerance = 0.0001)
           {
             auto deform_field = Image<default_type>::scratch (disp);
-            Transform::displacement2deformation (disp, deform_field);
+            Warp::displacement2deformation (disp, deform_field);
 
             invert_deformation (deform_field, inv_deform, is_initialised, max_iter, error_tolerance);
          }

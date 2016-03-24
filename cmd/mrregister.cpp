@@ -781,7 +781,7 @@ void run ()
       deform_header.set_ndim(4);
       deform_header.size(3) = 3;
       Image<default_type> deform_field = Image<default_type>::scratch (deform_header);
-      Registration::Transform::compose_halfway_transforms (nonlinear_registration.get_im2_linear().inverse(),
+      Registration::Warp::compose_halfway_transforms (nonlinear_registration.get_im2_linear().inverse(),
                                                            *(nonlinear_registration.get_im2_disp_field_inv()),
                                                            *(nonlinear_registration.get_im1_disp_field()),
                                                            nonlinear_registration.get_im1_linear(),
@@ -841,7 +841,7 @@ void run ()
         midway_header.size(3) = im1_image.size(3);
 
       Image<default_type> im1_deform_field = Image<default_type>::scratch (*(nonlinear_registration.get_im1_disp_field()));
-      Registration::Transform::compose_linear_displacement (nonlinear_registration.get_im1_linear(), *(nonlinear_registration.get_im1_disp_field()), im1_deform_field);
+      Registration::Warp::compose_linear_displacement (nonlinear_registration.get_im1_linear(), *(nonlinear_registration.get_im1_disp_field()), im1_deform_field);
 
       auto im1_midway = Image<default_type>::create (im1_midway_transformed_path, midway_header);
       if (im1_image.ndim() == 3) {
@@ -856,7 +856,7 @@ void run ()
       }
 
       Image<default_type> im2_deform_field = Image<default_type>::scratch (*(nonlinear_registration.get_im2_disp_field()));
-      Registration::Transform::compose_linear_displacement (nonlinear_registration.get_im2_linear(), *(nonlinear_registration.get_im2_disp_field()), im2_deform_field);
+      Registration::Warp::compose_linear_displacement (nonlinear_registration.get_im2_linear(), *(nonlinear_registration.get_im2_disp_field()), im2_deform_field);
       auto im2_midway = Image<default_type>::create (im2_midway_transformed_path, midway_header);
       if (im2_image.ndim() == 3) {
         Filter::warp<Interp::Cubic> (im2_image, im2_midway, im2_deform_field, 0.0);

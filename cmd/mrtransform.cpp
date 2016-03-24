@@ -30,8 +30,8 @@
 #include "dwi/directions/predefined.h"
 #include "dwi/gradient.h"
 #include "registration/transform/reorient.h"
-#include "registration/transform/warp_utils.h"
-#include "registration/transform/compose.h"
+#include "registration/warp/utils.h"
+#include "registration/warp/compose.h"
 #include "adapter/extract.h"
 #include "image/average_space.h"
 
@@ -45,7 +45,7 @@ const char* interp_choices[] = { "nearest", "linear", "cubic", "sinc", NULL };
 void usage ()
 {
 
-  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) & David Raffelt (david.raffelt@florey.edu.au)";
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) & David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
 
   DESCRIPTION
   + "apply spatial transformations to an image. "
@@ -451,14 +451,14 @@ void run ()
         transform_type linear;
         std::vector<int> index(1);
         if (from == 1) {
-          linear = Registration::Transform::parse_linear_transform (warp, "linear1");
+          linear = Registration::Warp::parse_linear_transform (warp, "linear1");
           index[0] = 0;
         } else {
-          linear = Registration::Transform::parse_linear_transform (warp, "linear2");
+          linear = Registration::Warp::parse_linear_transform (warp, "linear2");
           index[0] = 2;
         }
         Adapter::Extract1D<Image<default_type>> displacement (warp, 4, index);
-        Registration::Transform::compose_linear_displacement (linear, displacement, warp_deform);
+        Registration::Warp::compose_linear_displacement (linear, displacement, warp_deform);
 
       // Use the full transform to warp from the image image to the template
       } else {
@@ -467,8 +467,8 @@ void run ()
         deform_header.size(3) = 3;
         warp_deform = Image<default_type>::scratch (deform_header);
 
-        transform_type linear1 = Registration::Transform::parse_linear_transform (warp, "linear1");
-        transform_type linear2 = Registration::Transform::parse_linear_transform (warp, "linear2");
+        transform_type linear1 = Registration::Warp::parse_linear_transform (warp, "linear1");
+        transform_type linear2 = Registration::Warp::parse_linear_transform (warp, "linear2");
 
         std::vector<int> index(1);
         if (from == 1) {
@@ -476,13 +476,13 @@ void run ()
           Adapter::Extract1D<Image<default_type>> displacement1 (warp, 4, index);
           index[0] = 3;
           Adapter::Extract1D<Image<default_type>> displacement2 (warp, 4, index);
-          Registration::Transform::compose_halfway_transforms (linear2.inverse(), displacement2, displacement1, linear1, warp_deform);
+          Registration::Warp::compose_halfway_transforms (linear2.inverse(), displacement2, displacement1, linear1, warp_deform);
         } else {
           index[0] = 1;
           Adapter::Extract1D<Image<default_type>> displacement1 (warp, 4, index);
           index[0] = 2;
           Adapter::Extract1D<Image<default_type>> displacement2 (warp, 4, index);
-          Registration::Transform::compose_halfway_transforms (linear1.inverse(), displacement1, displacement2, linear2, warp_deform);
+          Registration::Warp::compose_halfway_transforms (linear1.inverse(), displacement1, displacement2, linear2, warp_deform);
         }
       }
       apply_warp (input, output, warp_deform, interp, out_of_bounds_value);
@@ -492,7 +492,7 @@ void run ()
     // Compose and apply input linear and 4D deformation field
     } else if (warp.ndim() == 4 && linear) {
       auto warp_composed = Image<default_type>::scratch (warp);
-      Registration::Transform::compose_affine_deformation (linear_transform, warp, warp_composed);
+      Registration::Warp::compose_linear_deformation (linear_transform, warp, warp_composed);
       apply_warp (input, output, warp_composed, interp, out_of_bounds_value);
       if (fod_reorientation)
         Registration::Transform::reorient_warp ("reorienting", output, warp_composed, directions_cartesian.transpose(), modulate);
