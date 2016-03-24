@@ -130,8 +130,8 @@ namespace MR
         return *this;
       }
 
-      //! assignment operator from type of class other than Header
-      /*! This copies all the relevant parameters over from \a original, */
+      //! assignment operator from type of class derived from Header
+      /*! This invokes the standard assignment operator=(const Header&). */
       template <class HeaderType, typename std::enable_if<std::is_base_of<Header, HeaderType>::value, void*>::type = nullptr>
         Header& operator= (const HeaderType& original) {
          return operator= (static_cast<const Header&> (original));
