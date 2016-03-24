@@ -74,7 +74,10 @@ namespace MR
   template <class T> inline std::string str (const T& value, int precision = 0)
   {
     std::ostringstream stream;
-    stream.precision (precision ? precision : max_digits<T>::value());
+    if (precision)
+        stream.precision (precision);
+    else if (max_digits<T>::value())
+        stream.precision (max_digits<T>::value());
     stream << value;
     if (stream.fail())
       throw Exception ("error converting value to string");
