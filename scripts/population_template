@@ -47,6 +47,7 @@ lib.app.parser.add_argument('-nl_update_smooth', default='2.0', help='Regularise
 lib.app.parser.add_argument('-nl_disp_smooth', default='1.0', help='Regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0 x voxel_size)')
 lib.app.parser.add_argument('-nl_grad_step', default='0.5', help='The gradient step size for non-linear registration (Default: 0.5)')
 lib.app.parser.add_argument('-noreorientation', action='store_true', help='Turn off FOD reorientation. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc')
+lib.app.parser.add_argument('-inital_alignment', default='mass', help='Method of alignment to form the initial template. Options are "mass" (default), "geometric" and "none".')
 lib.app.initialise()
 
 lib.app.args.input_dir = relpath(lib.app.args.input_dir)
@@ -59,6 +60,9 @@ if len(inFiles) <= 1:
 else:
   printMessage('Generating a population-average template from ' + str(len(inFiles)) + ' input images')
 
+inital_alignment = lib.app.args.inital_alignment
+if inital_alignment not in ["mass", "geometric", "none"]:
+  errorMessage('inital_alignment must be one of ' + " ".join(["mass", "geometric", "none"]));
 
 useMasks = False
 if lib.app.args.mask_dir:
@@ -124,7 +128,7 @@ if do_fod_registration:
 nl_scales = [0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.0,1.0,1.0,1.0]
 nl_niter =  [5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5  ]
 nl_lmax =   [0,  0,  2,  2,  2,  2,  2,  2,  4,  4,  4,  4  ]
-datatype = ' -datatype float64'
+datatype = ' -datatype float32'
 
 if lib.app.args.nl_scale:
   nl_scales = [float(x) for x in lib.app.args.nl_scale.split(',')]
@@ -142,21 +146,45 @@ if do_fod_registration:
     errorMessage('nl_scales and nl_lmax schedules are not equal in length')
 lib.app.gotoTempDir()
 
+lib.app.make_dir('input_transformed')
+lib.app.make_dir('linear_transforms')
+
 # Make initial template in average space
+printMessage('Generating initial template')
 input_filenames = []
 for i in input:
   input_filenames.append (abspath(i.directory, i.filename));
-runCommand('mraverageheader ' + ' '.join(input_filenames) + ' average_header.mif')
+runCommand('mraverageheader ' + ' '.join(input_filenames) + ' average_header.mif.gz' ' -mark_centre')
 
-lib.app.make_dir('input_transformed')
-for i in input:
-  runCommand('mrtransform ' + abspath(i.directory, i.filename) + ' -interp linear -template average_header.mif input_transformed/' + i.prefix + '.mif' + datatype)
+if inital_alignment == 'none':
+  for i in input:
+    runCommand('mrtransform ' + abspath(i.directory, i.filename) + ' -interp linear -template average_header.mif.gz input_transformed/' + i.prefix + '.mif' + datatype)
+else:
+  mask = ''
+  for i in input:
+    if useMasks:
+        mask = ' -mask1 ' + abspath(i.mask_directory, i.mask_filename)
+    output = ' -rigid linear_transforms/' + i.prefix + '.txt'
+    runCommand('mrregister ' + abspath(i.directory, i.filename) + ' average_header.mif.gz' +
+                 mask +
+                 ' -rigid_scale 1 ' +
+                 ' -rigid_niter 0 ' +
+                 ' -rigid_lmax 0 ' +
+                 ' -type rigid ' +
+                 ' -noreorientation ' +
+                 ' -rigid_init_translation ' + inital_alignment + ' ' +
+                 datatype +
+                 output)
+    runCommand('mrtransform ' + abspath(i.directory, i.filename) +
+                ' -linear linear_transforms/' + i.prefix + '.txt' +
+                ' -interp linear -template average_header.mif.gz input_transformed/' + i.prefix + '.mif'
+                + datatype)
+
 runCommand('mrmath input_transformed/* mean initial_template.mif')
-
 current_template = 'initial_template.mif'
 
 # Optimise template with linear registration
-lib.app.make_dir('linear_transforms')
+printMessage('Optimising template with linear registration')
 for level in range(0, len(linear_scales)):
   for i in input:
     initialise = ''
@@ -221,6 +249,7 @@ for level in range(0, len(linear_scales)):
   current_template = 'linear_template' + str(level) + '.mif'
 
 # Optimise the template with non-linear registration
+printMessage('Optimising template with non-linear registration')
 lib.app.make_dir('warps')
 for level in range(0, len(nl_scales)):
   for i in input:
