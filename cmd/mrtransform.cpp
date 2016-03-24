@@ -410,7 +410,8 @@ void run ()
       output_header.transform() = midway_header.transform();
     }
 
-    auto output = Image<float>::scratch (output_header).with_direct_io();
+    auto output = Image<float>::scratch (output_header);
+    auto output_file = Image<float>::create(argument[1], output_header);
 
     switch (interp) {
       case 0:
@@ -430,10 +431,9 @@ void run ()
         break;
     }
 
-    if (fod_reorientation) // TODO MP is regridding taken into account?
+    if (fod_reorientation)
       Registration::Transform::reorient ("reorienting", output, output, linear_transform, directions_cartesian.transpose(), modulate);
 
-    auto output_file = Image<float>::create(argument[1] ,output_header);
     threaded_copy(output, output_file);
 
   } else if (warp.valid()) {
@@ -450,7 +450,9 @@ void run ()
       add_line (output_header.keyval()["comments"], std::string ("resliced using warp image \"" + warp.name() + "\""));
     }
 
-    auto output = Image<float>::scratch (output_header).with_direct_io();
+    auto output = Image<float>::scratch (output_header);
+    auto output_file = Image<float>::create(argument[1], output_header);
+
     if (warp.ndim() == 5) {
       Image<default_type> warp_deform;
 
@@ -480,7 +482,6 @@ void run ()
         Registration::Transform::reorient_warp ("reorienting", output, warp, directions_cartesian.transpose(), modulate);
     }
 
-    auto output_file = Image<float>::create(argument[1] ,output_header);
     threaded_copy(output, output_file);
 
 
