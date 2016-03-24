@@ -32,6 +32,7 @@
 #include "registration/transform/reorient.h"
 #include "registration/transform/warp_utils.h"
 #include "registration/transform/compose.h"
+#include "adapter/extract.h"
 #include "image/average_space.h"
 
 
@@ -111,7 +112,7 @@ void usage ()
 
     + Option ("midway_space",
         "reslice the input image to the midway space. Requires either the -template or -warp option. If "
-        "used with -template option the image will be resliced onto the grid halfway between the input and template. "
+        "used with -template and -linear option the input image will be resliced onto the grid halfway between the input and template. "
         "If used with the -warp option the input will be warped to the midway space defined by the grid of the input warp "
         "(i.e. half way between image1 and image2)")
 
@@ -133,7 +134,7 @@ void usage ()
     + Option ("from",
         "used to define which space the input image is when using the -warp option. "
         "Use -from 1 to warp from image1 or -from 2 to warp from image2")
-    +   Argument ("axes").type_integer (1,1,2)
+    +   Argument ("image").type_integer (1,1,2)
 
     + Option ("warp_df",
         "apply a non-linear 4D deformation field to warp the input image. Each voxel in the deformation field must define "
@@ -448,16 +449,16 @@ void run ()
         warp_deform = Image<default_type>::scratch (midway_header);
 
         transform_type linear;
+        std::vector<int> index(1);
         if (from == 1) {
           linear = Registration::Transform::parse_linear_transform (warp, "linear1");
-          warp.index(4) = 0;
-          threaded_copy (warp, warp_deform, 0, 4);
+          index[0] = 0;
         } else {
           linear = Registration::Transform::parse_linear_transform (warp, "linear2");
-          warp.index(4) = 2;
-          threaded_copy (warp, warp_deform, 0, 4);
+          index[0] = 2;
         }
-        Registration::Transform::compose_linear_displacement (linear, warp_deform, warp_deform);
+        Adapter::Extract1D<Image<default_type>> displacement (warp, 4, index);
+        Registration::Transform::compose_linear_displacement (linear, displacement, warp_deform);
 
       // Use the full transform to warp from the image image to the template
       } else {
@@ -469,20 +470,18 @@ void run ()
         transform_type linear1 = Registration::Transform::parse_linear_transform (warp, "linear1");
         transform_type linear2 = Registration::Transform::parse_linear_transform (warp, "linear2");
 
-        Image<default_type> displacement1 = Image<default_type>::scratch (midway_header);
-        Image<default_type> displacement2 = Image<default_type>::scratch (midway_header);
-
+        std::vector<int> index(1);
         if (from == 1) {
-          warp.index(4) = 0;
-          threaded_copy (warp, displacement1, 0, 4);
-          warp.index(4) = 3;
-          threaded_copy (warp, displacement2, 0, 4);
+          index[0] = 0;
+          Adapter::Extract1D<Image<default_type>> displacement1 (warp, 4, index);
+          index[0] = 3;
+          Adapter::Extract1D<Image<default_type>> displacement2 (warp, 4, index);
           Registration::Transform::compose_halfway_transforms (linear2.inverse(), displacement2, displacement1, linear1, warp_deform);
         } else {
-          warp.index(4) = 1;
-          threaded_copy (warp, displacement1, 0, 4);
-          warp.index(4) = 2;
-          threaded_copy (warp, displacement2, 0, 4);
+          index[0] = 1;
+          Adapter::Extract1D<Image<default_type>> displacement1 (warp, 4, index);
+          index[0] = 2;
+          Adapter::Extract1D<Image<default_type>> displacement2 (warp, 4, index);
           Registration::Transform::compose_halfway_transforms (linear1.inverse(), displacement1, displacement2, linear2, warp_deform);
         }
       }

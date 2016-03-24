@@ -43,7 +43,7 @@ Regridding options
 
 -  **-template image** reslice the input image to match the specified template image grid.
 
--  **-midway_space** reslice the input image to the midway space. Requires either the -template or -warp option. If used with -template option the image will be resliced onto the grid halfway between the input and template. If used with the -warp option the input will be warped to the midway space defined by the grid of the input warp (i.e. half way between image1 and image2)
+-  **-midway_space** reslice the input image to the midway space. Requires either the -template or -warp option. If used with -template and -linear option the input image will be resliced onto the grid halfway between the input and template. If used with the -warp option the input will be warped to the midway space defined by the grid of the input warp (i.e. half way between image1 and image2)
 
 -  **-interp method** set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc. Default: cubic).
 
@@ -52,7 +52,7 @@ Non-linear transformation options
 
 -  **-warp image** warp the input image using a 5D warp file output from mrregister. Any linear transforms in the warp image header will also be applied. The -warp option must be used in combination with either the -template option or the -midway_space option. If a -template image is supplied then the full warp will be used. By default the image1->image2 transform will be applied, however the -from 2 option can be used to apply the image2->image1 transform. Use the -midway_space option to warp the inputimage to the midway space. The -from option can also be used to define which warp to use when transforming to midway space
 
--  **-from axes** used to define which space the input image is when using the -warp option. Use -from 1 to warp from image1 or -from 2 to warp from image2
+-  **-from image** used to define which space the input image is when using the -warp option. Use -from 1 to warp from image1 or -from 2 to warp from image2
 
 -  **-warp_df image** apply a non-linear 4D deformation field to warp the input image. Each voxel in the deformation field must define the scanner space position that will be used to interpolate the input image during warping (i.e. pull-back/reverse warp convention). If the -template image is also supplied the deformation field will be resliced first to the template image grid. If no -template option is supplied then the output image will have the same image grid as the deformation field. This option can be used in combination with the -affine option, in which case the affine will be applied first)
 

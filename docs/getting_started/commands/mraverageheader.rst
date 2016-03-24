@@ -1,4 +1,4 @@
-mrmetric
+mraverageheader
 ===========
 
 Synopsis
@@ -6,32 +6,29 @@ Synopsis
 
 ::
 
-    mrmetric [ options ]  image1 image2
+    mraverageheader [ options ]  input [ input ... ] output
 
--  *image1*: the first input image.
--  *image2*: the second input image.
+-  *input*: the input image(s).
+-  *output*: the output image
 
 Description
 -----------
 
-computes a dissimilarity metric between two images. Currently only the mean squared difference is implemented
+This command calculates the average (unbiased) coordinate space of all input images
 
 Options
 -------
 
--  **-space iteration method** voxel (default): per voxel image1: scanner space of image 1 image2: scanner space of image 2 average: scanner space of the average affine transformation of image 1 and 2 
+-  **-padding value**  boundary box padding in voxels. Default: 0
 
--  **-interp method** set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc. Default: linear).
+-  **-template_res value**  subsampling of template compared to smallest voxel size in any input image. Default: 0.90000000000000002
 
--  **-metric method** define the dissimilarity metric used to calculate the cost. Choices: diff (squared differences), cc (negative cross correlation). Default: diff). cc is only implemented for -space average and -interp linear.
+-  **-mark_centre**  set intensity in central voxel of average space to 1
 
--  **-mask1 image** mask for image 1
+Data type options
+^^^^^^^^^^^^^^^^^
 
--  **-mask2 image** mask for image 2
-
--  **-nonormalisation** do not normalise the dissimilarity metric to the number of voxels.
-
--  **-overlap** output number of voxels that were used.
+-  **-datatype spec** specify output image data type. Valid choices are: float32, float32le, float32be, float64, float64le, float64be, int64, uint64, int64le, uint64le, int64be, uint64be, int32, uint32, int32le, uint32le, int32be, uint32be, int16, uint16, int16le, uint16le, int16be, uint16be, cfloat32, cfloat32le, cfloat32be, cfloat64, cfloat64le, cfloat64be, int8, uint8, bit.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -56,7 +53,7 @@ Standard options
 
 
 
-**Author:** David Raffelt (david.raffelt@florey.edu.au) and Max Pietsch (maximilian.pietsch@kcl.ac.uk)
+**Author:** Maximilian Pietsch (maximilian.pietsch@kcl.ac.uk)
 
 **Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
 

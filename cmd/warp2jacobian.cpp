@@ -34,6 +34,7 @@ void usage ()
   + Argument ("in", "the input deformation field").type_image_in ()
   + Argument ("out", "the output Jacobian matrix image stored in column-major order along the 4th dimension.").type_image_out ();
 
+  // TODO add w.r.t image option
   OPTIONS
   + Option ("determinant", "output the Jacobian determinant instead of the full matrix");
 }
