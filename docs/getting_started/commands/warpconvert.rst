@@ -14,12 +14,12 @@ Synopsis
 Description
 -----------
 
-convert between different representations of a non-linear warp. Where a deformation field is defined as an image where each voxel (containing x,y,z components) defines the corresponding position in the other image (in scanner space coordinates). A displacement field stores the offsets (displacements)(in mm) to the other image from the current voxels position (in scanner space). The 5D warp file is the format output from mrregister, which contains linear transforms, warps and their inverses that map each image to a midway space.
+convert between different representations of a non-linear warp. A deformation field is defined as an image where each voxel defines the corresponding position in the other image (in scanner space coordinates). A displacement field stores the displacements(in mm) to the other image from the each voxel's position (in scanner space). The warp file is the 5D format output from mrregister, which contains linear transforms, warps and their inverses that map each image to a midway space.
 
 Options
 -------
 
--  **-type choice** the conversion type required. Valid choices are: deformation2displacement, displacement2deformation, 5Dwarp2deformation, 5Dwarp2displacement (Default: deformation2displacement)
+-  **-type choice** the conversion type required. Valid choices are: deformation2displacement, displacement2deformation, warp2deformation, warp2displacement (Default: deformation2displacement)
 
 -  **-template image** define a template image when converting a 5Dwarp file (which is defined in the midway space between image 1 & 2). For example to generate the deformation field that maps image1 to image2, then supply image2 as the template image
 

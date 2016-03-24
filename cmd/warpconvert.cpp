@@ -25,8 +25,7 @@
 using namespace MR;
 using namespace App;
 
-
-const char* conversion_type[] = { "deformation2displacement", "displacement2deformation", "5Dwarp2deformation", "5Dwarp2displacement", NULL };
+const char* conversion_type[] = {"deformation2displacement","displacement2deformation","warp2deformation","warp2displacement",NULL};
 
 
 void usage ()
@@ -34,10 +33,10 @@ void usage ()
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   DESCRIPTION
-  + "convert between different representations of a non-linear warp. Where a deformation field is defined as an image where each voxel "
-    "(containing x,y,z components) defines the corresponding position in the other image (in scanner space coordinates). A displacement field "
-    "stores the offsets (displacements)(in mm) to the other image from the current voxels position (in scanner space). The 5D warp file is the "
-    "format output from mrregister, which contains linear transforms, warps and their inverses that map each image to a midway space."; //TODO at link to warp format documentation
+  + "convert between different representations of a non-linear warp. A deformation field is defined as an image where each voxel "
+    "defines the corresponding position in the other image (in scanner space coordinates). A displacement field "
+    "stores the displacements(in mm) to the other image from the each voxel's position (in scanner space). The warp file is the "
+    "5D format output from mrregister, which contains linear transforms, warps and their inverses that map each image to a midway space."; //TODO at link to warp format documentation
 
   ARGUMENTS
   + Argument ("in", "the input warp image.").type_image_in ()
@@ -45,7 +44,7 @@ void usage ()
 
   OPTIONS
   + Option ("type", "the conversion type required. Valid choices are: "
-                    "deformation2displacement, displacement2deformation, 5Dwarp2deformation, 5Dwarp2displacement (Default: deformation2displacement)")
+                    "deformation2displacement, displacement2deformation, warp2deformation, warp2displacement (Default: deformation2displacement)")
   + Argument ("choice").type_choice (conversion_type)
 
   + Option ("template", "define a template image when converting a 5Dwarp file (which is defined in the midway space between image 1 & 2). For example to "
@@ -83,111 +82,71 @@ void run ()
   if (opt.size())
     registration_type = opt[0][0];
 
-  Image<default_type> output;
+  // deformation2displacement
+  if (registration_type == 0) {
+    if (midway_space)
+      WARN ("-midway_space option ignored with deformation2displacement conversion type");
+    if (get_options ("template").size())
+      WARN ("-template option ignored with deformation2displacement conversion type");
+    if (get_options ("from").size())
+      WARN ("-from option ignored with deformation2displacement conversion type");
 
-  switch (registration_type) {
+    auto deformation = Image<default_type>::open (argument[0]).with_direct_io (3);
+    if (deformation.ndim() != 4)
+      throw Exception ("invalid input image. The input deformation field image must be a 4D file.");
+    if (deformation.size(3) != 3)
+      throw Exception ("invalid input image. The input deformation field image must have 3 volumes (x,y,z) in the 4th dimension.");
 
-    case 0: // deformation2displacement
-      {
-        if (midway_space)
-          WARN ("-midway_space option ignored with deformation2displacement conversion type");
-        if (get_options ("template").size())
-          WARN ("-template option ignored with deformation2displacement conversion type");
-        if (get_options ("from").size())
-          WARN ("-from option ignored with deformation2displacement conversion type");
+    Image<default_type> output = Image<default_type>::create (argument[1], deformation);
+    auto displacement = Image<default_type>::scratch (deformation); // create a scratch since deformation2displacement requires direct io
+    Registration::Warp::deformation2displacement (deformation, displacement);
+    threaded_copy (displacement, output);
 
-        auto deformation = Image<default_type>::open (argument[0]).with_direct_io (3);
-        if (deformation.ndim() != 4)
-          throw Exception ("invalid input image. The input deformation field image must be a 4D file.");
-        if (deformation.size(3) != 3)
-          throw Exception ("invalid input image. The input deformation field image must have 3 volumes (x,y,z) in the 4th dimension.");
+  // displacement2deformation
+  } else if (registration_type == 1) {
+    auto displacement = Image<default_type>::open (argument[0]).with_direct_io (3);
+    if (displacement.ndim() != 4)
+      throw Exception ("invalid input image. The input displacement field image must be a 4D file.");
+    if (displacement.size(3) != 3)
+      throw Exception ("invalid input image. The input displacement field image must have 3 volumes (x,y,z) in the 4th dimension.");
 
-        output = Image<default_type>::create (argument[1], deformation);
-        auto displacement = Image<default_type>::scratch (deformation); // create a scratch since deformation2displacement requires direct io
-        Registration::Warp::deformation2displacement (deformation, displacement);
-        threaded_copy (displacement, output);
-      }
-      break;
+    if (midway_space)
+      WARN ("-midway_space option ignored with displacement2deformation conversion type");
+    if (get_options ("template").size())
+      WARN ("-template option ignored with displacement2deformation conversion type");
+    if (get_options ("from").size())
+      WARN ("-from option ignored with displacement2deformation conversion type");
 
-    case 1: // displacement2deformation
-      {
-        auto displacement = Image<default_type>::open (argument[0]).with_direct_io (3);
-        if (displacement.ndim() != 4)
-          throw Exception ("invalid input image. The input displacement field image must be a 4D file.");
-        if (displacement.size(3) != 3)
-          throw Exception ("invalid input image. The input displacement field image must have 3 volumes (x,y,z) in the 4th dimension.");
+    Image<default_type> output = Image<default_type>::create (argument[1], displacement);
+    auto deformation = Image<default_type>::scratch (displacement); // create a scratch since deformation2displacement requires direct io
+    Registration::Warp::displacement2deformation (displacement, deformation);
+    threaded_copy (deformation, output);
 
-        if (midway_space)
-          WARN ("-midway_space option ignored with displacement2deformation conversion type");
-        if (get_options ("template").size())
-          WARN ("-template option ignored with displacement2deformation conversion type");
-        if (get_options ("from").size())
-          WARN ("-from option ignored with displacement2deformation conversion type");
+   // 5Dwarp2deformation & 5Dwarp2displacement
+  } else if (registration_type == 2 || registration_type == 3) {
 
-        output = Image<default_type>::create (argument[1], displacement);
-        auto deformation = Image<default_type>::scratch (displacement); // create a scratch since deformation2displacement requires direct io
-        Registration::Warp::displacement2deformation (displacement, deformation);
-        threaded_copy (deformation, output);
-      }
-      break;
+    auto warp = Image<default_type>::open (argument[0]).with_direct_io (3);
+    if (warp.ndim() != 5)
+      throw Exception ("invalid input image. The input 5D warp field image must be a 5D file.");
+    if (warp.size(3) != 3)
+      throw Exception ("invalid input image. The input 5D warp field image must have 3 volumes (x,y,z) in the 5th dimension.");
+    if (warp.size(4) != 4)
+      throw Exception ("invalid input image. The input 5D warp field image must have 4 volumes in the 4th dimension.");
 
-    case 2: // 5Dwarp2deformation
-    {
-        if (!get_options ("template").size())
-          throw Exception ("-template option required with 5Dwarp2deformation conversion type");
+    Image<default_type> warp_output;
+    if (midway_space) {
+      warp_output = Registration::Warp::compute_midway_deformation (warp, from);
+    } else {
+      if (!get_options ("template").size())
+        throw Exception ("-template option required with 5Dwarp2deformation or 5Dwarp2displacement conversion type");
+      auto template_header = Header::open (argument[1]);
+      warp_output = Registration::Warp::compute_full_deformation (warp, template_header, from);
+    }
 
-        auto template_header = Header::open (argument[1]);
-        auto warp = Image<default_type>::open (argument[0]).with_direct_io (3);
-
-        if (warp.ndim() != 5)
-          throw Exception ("invalid input image. The input 5D warp field image must be a 5D file.");
-        if (warp.size(4) != 3)
-          throw Exception ("invalid input image. The input 5D warp field  image must have 3 volumes (x,y,z) in the 5th dimension.");
-        if (warp.size(3) != 4)
-          throw Exception ("invalid input image. The input 5D warp field  image must have 4 volumes in the 4th dimension.");
-
-        Header deform_header (template_header);
-        deform_header.datatype() = DataType::Float32;
-        deform_header.set_ndim(4);
-        deform_header.size(3) = 3;
-
-        auto output = Image<default_type>::create (argument[1], deform_header);
-        Image<default_type> warp_deform = Image<default_type>::scratch (deform_header);
-
-        transform_type linear1 = Registration::Warp::parse_linear_transform (warp, "linear1");
-        transform_type linear2 = Registration::Warp::parse_linear_transform (warp, "linear2");
-
-        std::vector<int> index(1);
-        if (from == 1) {
-          index[0] = 0;
-          Adapter::Extract1D<Image<default_type>> displacement1 (warp, 4, index);
-          index[0] = 3;
-          Adapter::Extract1D<Image<default_type>> displacement2 (warp, 4, index);
-          Registration::Warp::compose_halfway_transforms ("converting warp", linear2.inverse(), displacement2, displacement1, linear1, warp_deform);
-        } else {
-          index[0] = 1;
-          Adapter::Extract1D<Image<default_type>> displacement1 (warp, 4, index);
-          index[0] = 2;
-          Adapter::Extract1D<Image<default_type>> displacement2 (warp, 4, index);
-          Registration::Warp::compose_halfway_transforms ("converting warp", linear1.inverse(), displacement1, displacement2, linear2, warp_deform);
-        }
-        threaded_copy (warp_deform, output);
-      }
-      break;
-
-    case 3: // 5Dwarp2displacement
-      {
-
-        if (!get_options ("template").size())
-          throw Exception ("-template option required with 5Dwarp2displacement conversion type");
-
-      }
-    break;
-    default:
-    break;
-
+    if (registration_type == 3)
+      Registration::Warp::deformation2displacement (warp_output, warp_output);
+    Image<default_type> output = Image<default_type>::create (argument[1], warp_output);
+    threaded_copy (warp_output, output);
   }
-
-
 
 }

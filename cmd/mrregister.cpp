@@ -781,11 +781,11 @@ void run ()
       deform_header.set_ndim(4);
       deform_header.size(3) = 3;
       Image<default_type> deform_field = Image<default_type>::scratch (deform_header);
-      Registration::Warp::compose_halfway_transforms (nonlinear_registration.get_im2_linear().inverse(),
-                                                           *(nonlinear_registration.get_im2_disp_field_inv()),
-                                                           *(nonlinear_registration.get_im1_disp_field()),
-                                                           nonlinear_registration.get_im1_linear(),
-                                                           deform_field);
+      Registration::Warp::compute_full_deformation (nonlinear_registration.get_im2_linear().inverse(),
+                                                      *(nonlinear_registration.get_im2_disp_field_inv()),
+                                                      *(nonlinear_registration.get_im1_disp_field()),
+                                                      nonlinear_registration.get_im1_linear(),
+                                                      deform_field);
 
       if (im1_image.ndim() == 3) {
         Filter::warp<Interp::Cubic> (im1_image, im1_transformed, deform_field, 0.0);

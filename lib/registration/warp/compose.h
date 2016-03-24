@@ -21,6 +21,8 @@
 #include "transform.h"
 #include "interp/linear.h"
 #include "adapter/jacobian.h" //TODO remove after debug
+#include "registration/warp/utils.h"
+#include "adapter/extract.h"
 
 namespace MR
 {
@@ -202,7 +204,7 @@ namespace MR
 
       // Compose linear1<->displacement1<->[midway space]<->displacement2<->linear2. Output is a deformation field.
       template <class DisplacementField1Type, class DisplacementField2Type, class DeformationFieldType>
-      FORCE_INLINE void compose_halfway_transforms (const transform_type& linear1, DisplacementField1Type& disp1,
+      FORCE_INLINE void compute_full_deformation (const transform_type& linear1, DisplacementField1Type& disp1,
                                                     DisplacementField2Type& disp2, const transform_type& linear2,
                                                     DeformationFieldType& deform_out)
       {
@@ -213,13 +215,61 @@ namespace MR
 
       // Compose linear1<->displacement1<->[midway space]<->displacement2<->linear2. Output is a deformation field.
       template <class DisplacementField1Type, class DisplacementField2Type, class DeformationFieldType>
-      FORCE_INLINE void compose_halfway_transforms (std::string message, const transform_type& linear1, DisplacementField1Type& disp1,
+      FORCE_INLINE void compute_full_deformation (std::string message, const transform_type& linear1, DisplacementField1Type& disp1,
                                                     DisplacementField2Type& disp2, const transform_type& linear2,
                                                     DeformationFieldType& deform_out)
       {
         MR::Transform deform_header_transform (deform_out);
         ComposeHalfwayKernel<DisplacementField1Type, DisplacementField2Type> compose_kernel (linear1 * deform_header_transform.voxel2scanner, disp1, disp2, linear2);
         ThreadedLoop (message, deform_out, 0, 3).run (compose_kernel, deform_out);
+      }
+
+      template <class WarpType>
+      FORCE_INLINE WarpType compute_midway_deformation (WarpType& warp, const int from) {
+        Header midway_header (warp);
+        midway_header.set_ndim(4);
+        midway_header.size(3) = 3;
+        WarpType deformation = WarpType::scratch (midway_header);
+
+        transform_type linear;
+        std::vector<int> index(1);
+        if (from == 1) {
+          linear = Registration::Warp::parse_linear_transform (warp, "linear1");
+          index[0] = 0;
+        } else {
+          linear = Registration::Warp::parse_linear_transform (warp, "linear2");
+          index[0] = 2;
+        }
+        Adapter::Extract1D<WarpType> displacement (warp, 4, index);
+        Registration::Warp::compose_linear_displacement (linear, displacement, deformation);
+        return deformation;
+      }
+
+      template <class WarpType, class TemplateType>
+      FORCE_INLINE WarpType compute_full_deformation (WarpType& warp, TemplateType& template_image, const int from) {
+        Header deform_header (template_image);
+        deform_header.set_ndim(4);
+        deform_header.size(3) = 3;
+        WarpType deform = WarpType::scratch (deform_header);
+
+        transform_type linear1 = Registration::Warp::parse_linear_transform (warp, "linear1");
+        transform_type linear2 = Registration::Warp::parse_linear_transform (warp, "linear2");
+
+        std::vector<int> index(1);
+        if (from == 1) {
+          index[0] = 0;
+          Adapter::Extract1D<Image<default_type>> displacement1 (warp, 4, index);
+          index[0] = 3;
+          Adapter::Extract1D<Image<default_type>> displacement2 (warp, 4, index);
+          Registration::Warp::compute_full_deformation (linear2.inverse(), displacement2, displacement1, linear1, deform);
+        } else {
+          index[0] = 1;
+          Adapter::Extract1D<Image<default_type>> displacement1 (warp, 4, index);
+          index[0] = 2;
+          Adapter::Extract1D<Image<default_type>> displacement2 (warp, 4, index);
+          Registration::Warp::compute_full_deformation (linear1.inverse(), displacement1, displacement2, linear2, deform);
+        }
+        return deform;
       }
 
     }

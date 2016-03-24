@@ -32,7 +32,7 @@
 #include "registration/transform/reorient.h"
 #include "registration/warp/utils.h"
 #include "registration/warp/compose.h"
-#include "adapter/extract.h"
+#include "adapter/extract.h" //TODO remove
 #include "image/average_space.h"
 
 
@@ -236,6 +236,10 @@ void run ()
     warp = Image<default_type>::open (opt[0][0]);
     if (warp.ndim() != 5)
       throw Exception ("the input -warp image must be a 5D file.");
+    if (warp.size(4) != 3)
+      throw Exception ("the input -warp image must have 3 volumes (x,y,z) in the 5th dimension.");
+    if (warp.size(3) != 4)
+      throw Exception ("the input -warp image must have 4 volumes in the 4th dimension.");
     if (linear)
       throw Exception ("the -warp option cannot be applied in combination with -linear since the "
                        "linear transform is already included in the warp header");
@@ -441,49 +445,13 @@ void run ()
     auto output = Image<float>::create (argument[1], output_header).with_direct_io();
     if (warp.ndim() == 5) {
       Image<default_type> warp_deform;
-      Header midway_header (warp);
-      midway_header.set_ndim(4);
-      midway_header.size(3) = 3;
+
       // Warp to the midway space defined by the warp grid
       if (get_options ("midway_space").size()) {
-        warp_deform = Image<default_type>::scratch (midway_header);
-
-        transform_type linear;
-        std::vector<int> index(1);
-        if (from == 1) {
-          linear = Registration::Warp::parse_linear_transform (warp, "linear1");
-          index[0] = 0;
-        } else {
-          linear = Registration::Warp::parse_linear_transform (warp, "linear2");
-          index[0] = 2;
-        }
-        Adapter::Extract1D<Image<default_type>> displacement (warp, 4, index);
-        Registration::Warp::compose_linear_displacement (linear, displacement, warp_deform);
-
+        warp_deform = Registration::Warp::compute_midway_deformation (warp, from);
       // Use the full transform to warp from the image image to the template
       } else {
-        Header deform_header (template_header);
-        deform_header.set_ndim(4);
-        deform_header.size(3) = 3;
-        warp_deform = Image<default_type>::scratch (deform_header);
-
-        transform_type linear1 = Registration::Warp::parse_linear_transform (warp, "linear1");
-        transform_type linear2 = Registration::Warp::parse_linear_transform (warp, "linear2");
-
-        std::vector<int> index(1);
-        if (from == 1) {
-          index[0] = 0;
-          Adapter::Extract1D<Image<default_type>> displacement1 (warp, 4, index);
-          index[0] = 3;
-          Adapter::Extract1D<Image<default_type>> displacement2 (warp, 4, index);
-          Registration::Warp::compose_halfway_transforms (linear2.inverse(), displacement2, displacement1, linear1, warp_deform);
-        } else {
-          index[0] = 1;
-          Adapter::Extract1D<Image<default_type>> displacement1 (warp, 4, index);
-          index[0] = 2;
-          Adapter::Extract1D<Image<default_type>> displacement2 (warp, 4, index);
-          Registration::Warp::compose_halfway_transforms (linear1.inverse(), displacement1, displacement2, linear2, warp_deform);
-        }
+        warp_deform = Registration::Warp::compute_full_deformation (warp, template_header, from);
       }
       apply_warp (input, output, warp_deform, interp, out_of_bounds_value);
       if (fod_reorientation)
