@@ -89,19 +89,23 @@ namespace MR
         offset_ (datatype().is_integer() ? H.offset_ : 0.0),
         scale_ (datatype().is_integer() ? H.scale_ : 1.0) { }
 
+      //! copy constructor from type of class derived from Header
+      /*! This invokes the standard Header(const Header&) copy-constructor. */
+      template <class HeaderType, typename std::enable_if<std::is_base_of<Header, HeaderType>::value, void*>::type = nullptr>
+        Header (const HeaderType& original) :
+          Header (static_cast<const Header&> (original)) { }
+
       //! copy constructor from type of class other than Header
-      /*! This copies all relevant parameters over from \a original, leaving
-       * the IO unset, and resets the intensity scaling \e regardless of data
-       * type. */ 
-      template <class HeaderType>
+      /*! This copies all relevant parameters over from \a original. */ 
+      template <class HeaderType, typename std::enable_if<!std::is_base_of<Header, HeaderType>::value, void*>::type = nullptr>
         Header (const HeaderType& original) :
           transform_ (original.transform()),
           name_ (original.name()),
           keyval_ (original.keyval()),
-          format_ (original.format()),
-          datatype_ (original.datatype()),
-          offset_ (datatype().is_integer() ? original.intensity_offset() : 0.0),
-          scale_ (datatype().is_integer() ? original.intensity_scale() : 1.0) {
+          format_ (nullptr),
+          datatype_ (DataType::from<typename HeaderType::value_type>()),
+          offset_ (0.0),
+          scale_ (1.0) {
             set_ndim (original.ndim());
             for (size_t n = 0; n < original.ndim(); ++n) {
               size(n) = original.size(n);
@@ -127,9 +131,15 @@ namespace MR
       }
 
       //! assignment operator from type of class other than Header
-      /*! This copies all the relevant parameters over from \a original, 
-       * resets the intensity scaling, and resets the IO handler. */
-      template <class HeaderType>
+      /*! This copies all the relevant parameters over from \a original, */
+      template <class HeaderType, typename std::enable_if<std::is_base_of<Header, HeaderType>::value, void*>::type = nullptr>
+        Header& operator= (const HeaderType& original) {
+         return operator= (static_cast<const Header&> (original));
+        }
+
+      //! assignment operator from type of class other than Header
+      /*! This copies all the relevant parameters over from \a original, */
+      template <class HeaderType, typename std::enable_if<!std::is_base_of<Header, HeaderType>::value, void*>::type = nullptr>
         Header& operator= (const HeaderType& original) {
           set_ndim (original.ndim());
           for (size_t n = 0; n < original.ndim(); ++n) {
@@ -140,8 +150,8 @@ namespace MR
           transform_ = original.transform();
           name_ = original.name();
           keyval_ = original.keyval();
-          format_ = original.format();
-          datatype_ = original.datatype();
+          format_ = nullptr;
+          datatype_ = DataType::from<typename HeaderType::value_type>();
           offset_ = 0.0;
           scale_ = 1.0;
           io.reset();

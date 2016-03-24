@@ -53,18 +53,8 @@ namespace MR
         FORCE_INLINE bool valid () const { return bool(buffer); }
         FORCE_INLINE bool operator! () const { return !valid(); }
 
-        //! return the format of the image
-        FORCE_INLINE const char* format () const { return buffer->format(); }
-        //! get the datatype of the data as per the template parameter
-        FORCE_INLINE DataType datatype () const { return DataType::from<Image::value_type>(); }
-
-        //! get the offset applied to raw intensities
-        FORCE_INLINE default_type intensity_offset () const { return buffer->intensity_offset(); }
-        //! get the scaling applied to raw intensities
-        FORCE_INLINE default_type intensity_scale () const { return buffer->intensity_scale(); }
         //! get generic key/value text attributes
         FORCE_INLINE const std::map<std::string, std::string>& keyval () const { return buffer->keyval(); }
-
 
         FORCE_INLINE const std::string& name() const { return buffer->name(); }
         FORCE_INLINE const transform_type& transform() const { return buffer->transform(); }

@@ -52,10 +52,6 @@ namespace MR
           FORCE_INLINE default_type spacing (size_t axis) const { return parent_.spacing (axis); }
           FORCE_INLINE ssize_t stride (size_t axis) const { return parent_.stride (axis); }
           FORCE_INLINE const transform_type& transform () const { return parent_.transform(); }
-          FORCE_INLINE const char* format () const { return parent_.format(); }
-          FORCE_INLINE DataType datatype () const { return parent_.datatype(); }
-          FORCE_INLINE default_type intensity_offset () const { return parent_.intensity_offset(); }
-          FORCE_INLINE default_type intensity_scale () const { return parent_.intensity_scale(); }
           FORCE_INLINE const std::map<std::string, std::string>& keyval () const { return parent_.keyval(); }
 
           FORCE_INLINE ssize_t index (size_t axis) const { return parent_.index (axis); }
