@@ -237,10 +237,10 @@ void run ()
     warp = Image<default_type>::open (opt[0][0]);
     if (warp.ndim() != 5)
       throw Exception ("the input -warp image must be a 5D file.");
-    if (warp.size(4) != 3)
-      throw Exception ("the input -warp image must have 3 volumes (x,y,z) in the 5th dimension.");
-    if (warp.size(3) != 4)
-      throw Exception ("the input -warp image must have 4 volumes in the 4th dimension.");
+    if (warp.size(3) != 3)
+      throw Exception ("the input -warp image must have 3 volumes (x,y,z) in the 4th dimension.");
+    if (warp.size(4) != 4)
+      throw Exception ("the input -warp image must have 4 volumes in the 5th dimension.");
     if (linear)
       throw Exception ("the -warp option cannot be applied in combination with -linear since the "
                        "linear transform is already included in the warp header");

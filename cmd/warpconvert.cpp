@@ -129,9 +129,9 @@ void run ()
     if (warp.ndim() != 5)
       throw Exception ("invalid input image. The input 5D warp field image must be a 5D file.");
     if (warp.size(3) != 3)
-      throw Exception ("invalid input image. The input 5D warp field image must have 3 volumes (x,y,z) in the 5th dimension.");
+      throw Exception ("invalid input image. The input 5D warp field image must have 3 volumes (x,y,z) in the 4th dimension.");
     if (warp.size(4) != 4)
-      throw Exception ("invalid input image. The input 5D warp field image must have 4 volumes in the 4th dimension.");
+      throw Exception ("invalid input image. The input 5D warp field image must have 4 volumes in the 5th dimension.");
 
     Image<default_type> warp_output;
     if (midway_space) {
