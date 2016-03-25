@@ -29,7 +29,7 @@ void usage ()
 
   DESCRIPTION
   + "replaces voxels in a deformation field that point to 0,0,0 with nan,nan,nan. "
-    "This should be used when computing a MRtrix compatible deformation field by "
+    "This can be used when computing a MRtrix compatible deformation field by "
     "converting warps generated from any other registration package.";
 
   ARGUMENTS
@@ -57,10 +57,13 @@ void run ()
                                         std::numeric_limits<value_type>::quiet_NaN());
 
   auto func = [&](Image<value_type>& in, Image<value_type>& out) {
-    if (in.row(3).norm() == 0.0)
-      out.row(3) = nans;
-    else
-      out.row(3) = in.row(3);
+    if (in.row(3).norm() == 0.0) {
+      for (auto l = Loop (3) (out); l; ++l)
+        out.value() = NaN;
+    } else {
+      for (auto l = Loop (3) (in, out); l; ++l)
+        out.value() = in.value();
+    }
   };
 
   ThreadedLoop ("correcting warp", input, 0, 3)
