@@ -1,6 +1,4 @@
 #!/bin/bash
-# Portable resolution of symlinks http://stackoverflow.com/a/24572274/252589
-# readlink -f does not work on Macs
 
 LOGFILE=testing.log
 echo logging to \""$LOGFILE"\" 
@@ -13,25 +11,7 @@ cat > $LOGFILE <<EOD
 EOD
 
 echo -n "fetching test data... "
-if [ -d data ]; then
-  cat >> $LOGFILE <<EOD
-## Updating test data via git pull... 
-
-EOD
-  (
-    cd data
-    git pull
-  ) >> $LOGFILE 2>&1
-
-else 
-  cat >> $LOGFILE <<EOD
-## fetching test data via git clone... 
-
-EOD
-
-  git clone https://github.com/MRtrix3/test_data.git data >> $LOGFILE 2>&1
-
-fi
+git submodule update --init >> $LOGFILE 2>&1
 
 if [ $? != 0 ]; then
   echo ERROR!
@@ -39,6 +19,8 @@ if [ $? != 0 ]; then
 else
   echo OK
 fi
+
+
 
 echo -n "building testing commands... "
 cat >> $LOGFILE <<EOD
@@ -48,7 +30,10 @@ cat >> $LOGFILE <<EOD
 ## building test commands... 
 
 EOD
-../build >> $LOGFILE 2>&1
+(
+  cd testing
+  ../build 
+) >> $LOGFILE 2>&1
 if [ $? != 0 ]; then 
   echo ERROR!
   exit 1
@@ -59,7 +44,7 @@ fi
 
 # generate list of tests to run:
 if [ $# == 0 ]; then
-  for n in tests/*; do
+  for n in testing/tests/*; do
     tests="$tests $(basename $n)"
   done
 else
@@ -84,27 +69,27 @@ for script in $tests; do
 EOD
 
   echo -n 'running "'${script}'"... '
-  rm -f data/tmp*
+  rm -f testing/data/tmp*
   ((ntests=0))
   ((success=0))
   while IFS='' read -r cmd || [[ -n "$cmd" ]]; do
     echo -n '# command: '$cmd >> $LOGFILE 
     (
-      export PATH="$(pwd)/release/bin:$(pwd)/bin:${mrtrix3_folder}/release/bin:${mrtrix3_folder}/bin:$PATH"; 
-      cd data/
+      export PATH="$(pwd)/testing/release/bin:$(pwd)/release/bin:$PATH"; 
+      cd testing/data/
       eval $cmd
-      ) > .__tmp.log 2>&1 
+    ) > .__tmp.log 2>&1 
 
-      if [[ $? -ne 0 ]]; then 
-        echo " [ ERROR ]" >> $LOGFILE
-      else 
-        echo " [ ok ]" >> $LOGFILE
-        ((success++)); 
-      fi
+    if [[ $? -ne 0 ]]; then 
+      echo " [ ERROR ]" >> $LOGFILE
+    else 
+      echo " [ ok ]" >> $LOGFILE
+      ((success++)); 
+    fi
     cat .__tmp.log >> $LOGFILE
     echo "" >> $LOGFILE
     ((ntests++))
-  done < tests/$script
+  done < testing/tests/$script
 
   echo -n $success of $ntests passed
   if [[ $success -lt $ntests ]]; then
