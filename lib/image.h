@@ -441,8 +441,6 @@ namespace MR
         threaded_copy_with_progress_message ("preloading data for \"" + name() + "\"", src, dest); 
       }
 
-      buffer->datatype() = DataType::from<ValueType>();
-
       return Image (buffer, with_strides);
     }
 
