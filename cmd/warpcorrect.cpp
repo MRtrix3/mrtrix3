@@ -52,10 +52,6 @@ void run ()
 
   auto output = Image<value_type>::create (argument[1], input);
 
-  Eigen::Matrix<value_type, 3, 1> nans (std::numeric_limits<value_type>::quiet_NaN(),
-                                        std::numeric_limits<value_type>::quiet_NaN(),
-                                        std::numeric_limits<value_type>::quiet_NaN());
-
   auto func = [&](Image<value_type>& in, Image<value_type>& out) {
     if (in.row(3).norm() == 0.0) {
       for (auto l = Loop (3) (out); l; ++l)
