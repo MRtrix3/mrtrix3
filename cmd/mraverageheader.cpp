@@ -72,7 +72,7 @@ void run ()
     size_t dim (Header::open (argument[0]).ndim());
     if (dim < 3 or dim > 4)
       throw Exception ("Please provide 3D or 4D images");
-    size_t volumes (dim == 3 ? 1 : Header::open (argument[0]).size(3));
+    ssize_t volumes (dim == 3 ? 1 : Header::open (argument[0]).size(3));
 
     for (size_t i = 0; i != num_inputs; ++i) {
         headers_in.push_back (Header::open (argument[i]));
