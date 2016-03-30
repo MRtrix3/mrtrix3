@@ -412,7 +412,7 @@ namespace MR
               image1_midway_header.spacing(dim) = im1_image.spacing(dim);
               image1_midway_header.size(dim) = im1_image.size(dim);
             }
-            image1_midway = Image<typename Im1ImageType::value_type>::create (im1_path, image1_midway_header);
+            image1_midway = Image<typename Im1ImageType::value_type>::create (im1_path, image1_midway_header).with_direct_io();
             Header image2_midway_header (midway_image_header);
             image2_midway_header.datatype() = DataType::Float64;
             image2_midway_header.set_ndim(im2_image.ndim());
@@ -420,7 +420,7 @@ namespace MR
               image2_midway_header.spacing(dim) = im2_image.spacing(dim);
               image2_midway_header.size(dim) = im2_image.size(dim);
             }
-            image2_midway = Image<typename Im2ImageType::value_type>::create (im2_path, image2_midway_header);
+            image2_midway = Image<typename Im2ImageType::value_type>::create (im2_path, image2_midway_header).with_direct_io();
 
             Filter::reslice<Interp::Cubic> (im1_image, image1_midway, transformation.get_transform_half(), Adapter::AutoOverSample, 0.0);
             Filter::reslice<Interp::Cubic> (im2_image, image2_midway, transformation.get_transform_half_inverse(), Adapter::AutoOverSample, 0.0);

@@ -194,7 +194,7 @@ void run ()
   if (opt.size()){
     Header transformed_header (im2_image);
     transformed_header.datatype() = DataType::from_command_line (DataType::Float32);
-    im1_transformed = Image<value_type>::create (opt[0][0], transformed_header);
+    im1_transformed = Image<value_type>::create (opt[0][0], transformed_header).with_direct_io();
   }
 
   std::string im1_midway_transformed_path;
@@ -766,6 +766,7 @@ void run ()
     if (warp_filename.size()) {
       //TODO add affine parameters to comments too?
       Header output_header = nonlinear_registration.get_output_warps_header();
+      output_header.datatype() = DataType::from_command_line (DataType::Float32);
       auto output_warps = Image<float>::create (warp_filename, output_header);
       nonlinear_registration.get_output_warps (output_warps);
     }
@@ -782,52 +783,38 @@ void run ()
       deform_header.size(3) = 3;
       Image<default_type> deform_field = Image<default_type>::scratch (deform_header);
       Registration::Warp::compute_full_deformation (nonlinear_registration.get_im2_linear().inverse(),
-                                                      *(nonlinear_registration.get_im2_disp_field_inv()),
-                                                      *(nonlinear_registration.get_im1_disp_field()),
-                                                      nonlinear_registration.get_im1_linear(),
-                                                      deform_field);
+                                                    *(nonlinear_registration.get_im2_disp_field_inv()),
+                                                    *(nonlinear_registration.get_im1_disp_field()),
+                                                    nonlinear_registration.get_im1_linear(),
+                                                    deform_field);
 
       if (im1_image.ndim() == 3) {
         Filter::warp<Interp::Cubic> (im1_image, im1_transformed, deform_field, 0.0);
       } else { // write to scratch buffer first since FOD reorientation requires direct IO
-        auto temp_output = Image<default_type>::scratch (im1_transformed);
-        Filter::warp<Interp::Cubic> (im1_image, temp_output, deform_field, 0.0);
+        Filter::warp<Interp::Cubic> (im1_image, im1_transformed, deform_field, 0.0);
         if (do_reorientation)
           Registration::Transform::reorient_warp ("reorienting FODs",
-                                                  temp_output,
+                                                  im1_transformed,
                                                   deform_field,
                                                   Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
-        threaded_copy (temp_output, im1_transformed);
       }
 
     } else if (do_affine) {
-      if (im1_image.ndim() == 3) {
-        Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, affine.get_transform(), Adapter::AutoOverSample, 0.0);
-      } else { // write to scratch buffer first since FOD reorientation requires direct IO
-        auto temp_output = Image<default_type>::scratch (im1_transformed);
-        Filter::reslice<Interp::Cubic> (im1_image, temp_output, affine.get_transform(), Adapter::AutoOverSample, 0.0);
-        if (do_reorientation)
-          Registration::Transform::reorient ("reorienting FODs",
-                                             temp_output,
-                                             temp_output,
-                                             affine.get_transform(),
-                                             Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
-        threaded_copy (temp_output, im1_transformed);
-      }
-    } else {
-      if (im1_image.ndim() == 3) {
-        Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, rigid.get_transform(), Adapter::AutoOverSample, 0.0);
-      } else { // write to scratch buffer first since FOD reorientation requires direct IO
-        auto temp_output = Image<default_type>::scratch (im1_transformed);
-        Filter::reslice<Interp::Cubic> (im1_image, temp_output, rigid.get_transform(), Adapter::AutoOverSample, 0.0);
-        if (do_reorientation)
-          Registration::Transform::reorient ("reorienting FODs",
-                                             temp_output,
-                                             temp_output,
-                                             rigid.get_transform(),
-                                             Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
-        threaded_copy (temp_output, im1_transformed);
-      }
+      Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, affine.get_transform(), Adapter::AutoOverSample, 0.0);
+      if (do_reorientation)
+        Registration::Transform::reorient ("reorienting FODs",
+                                           im1_transformed,
+                                           im1_transformed,
+                                           affine.get_transform(),
+                                           Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+    } else { // rigid
+      Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, rigid.get_transform(), Adapter::AutoOverSample, 0.0);
+      if (do_reorientation)
+        Registration::Transform::reorient ("reorienting FODs",
+                                           im1_transformed,
+                                           im1_transformed,
+                                           rigid.get_transform(),
+                                           Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
     }
   }
 
@@ -843,31 +830,19 @@ void run ()
       Image<default_type> im1_deform_field = Image<default_type>::scratch (*(nonlinear_registration.get_im1_disp_field()));
       Registration::Warp::compose_linear_displacement (nonlinear_registration.get_im1_linear(), *(nonlinear_registration.get_im1_disp_field()), im1_deform_field);
 
-      auto im1_midway = Image<default_type>::create (im1_midway_transformed_path, midway_header);
-      if (im1_image.ndim() == 3) {
-        Filter::warp<Interp::Cubic> (im1_image, im1_midway, im1_deform_field, 0.0);
-      } else {
-        auto temp_output = Image<default_type>::scratch (midway_header);
-        Filter::warp<Interp::Cubic> (im1_image, temp_output, im1_deform_field, 0.0);
-        if (do_reorientation)
-          Registration::Transform::reorient_warp ("reorienting FODs", temp_output, im1_deform_field,
-                                                  Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
-        threaded_copy (temp_output, im1_midway);
-      }
+      auto im1_midway = Image<default_type>::create (im1_midway_transformed_path, midway_header).with_direct_io();
+      Filter::warp<Interp::Cubic> (im1_image, im1_midway, im1_deform_field, 0.0);
+      if (do_reorientation)
+        Registration::Transform::reorient_warp ("reorienting FODs", im1_midway, im1_deform_field,
+                                                Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
 
       Image<default_type> im2_deform_field = Image<default_type>::scratch (*(nonlinear_registration.get_im2_disp_field()));
       Registration::Warp::compose_linear_displacement (nonlinear_registration.get_im2_linear(), *(nonlinear_registration.get_im2_disp_field()), im2_deform_field);
-      auto im2_midway = Image<default_type>::create (im2_midway_transformed_path, midway_header);
-      if (im2_image.ndim() == 3) {
-        Filter::warp<Interp::Cubic> (im2_image, im2_midway, im2_deform_field, 0.0);
-      } else {
-        auto temp_output = Image<default_type>::scratch (midway_header);
-        Filter::warp<Interp::Cubic> (im2_image, temp_output, im2_deform_field, 0.0);
-        if (do_reorientation)
-          Registration::Transform::reorient_warp ("reorienting FODs", temp_output, im2_deform_field,
-                                                  Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
-        threaded_copy (temp_output, im2_midway);
-      }
+      auto im2_midway = Image<default_type>::create (im2_midway_transformed_path, midway_header).with_direct_io();
+      Filter::warp<Interp::Cubic> (im2_image, im2_midway, im2_deform_field, 0.0);
+      if (do_reorientation)
+        Registration::Transform::reorient_warp ("reorienting FODs", im2_midway, im2_deform_field,
+                                                Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
 
     } else if (do_affine) {
       affine_registration.write_transformed_images (im1_image, im2_image, affine, im1_midway_transformed_path, im2_midway_transformed_path, do_reorientation);
