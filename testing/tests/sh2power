@@ -1,0 +1,1 @@
+amp2sh dwi.mif - | sh2power - - | testing_diff_data - sh2power/out.mif 0.1

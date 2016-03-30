@@ -1,0 +1,1 @@
+tcksample tracks.tck tcksample/fa.mif tmp.txt -force #&& diff tmp.txt tcksample/out.txt #Compare tmp.txt to out.txt?
