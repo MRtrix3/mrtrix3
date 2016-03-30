@@ -300,8 +300,6 @@ for level in range(0, len(nl_scales)):
   runCommand ('mrmath input_transformed/* mean nl_template' + str(level) + '.mif')
   current_template = 'nl_template' + str(level) + '.mif'
 
-  runCommand ('cp -r warps warps' + str(level))
-
   if level < len(nl_scales) - 1:
     if (nl_scales[level] < nl_scales[level + 1]):
       upsample_factor = nl_scales[level + 1] / nl_scales[level]
