@@ -63,7 +63,9 @@ void run ()
 
   auto func = [&transform](Image<float>& image) {
     Eigen::Vector3 voxel_pos ((float)image.index(0), (float)image.index(1), (float)image.index(2));
-    image.row(3) = (transform.voxel2scanner * voxel_pos).cast<float>();
+    Eigen::Vector3f scanner_pos = (transform.voxel2scanner * voxel_pos).cast<float>();
+    for (auto l = Loop (3) (image); l; ++l) 
+      image.value() = scanner_pos[image.index(3)];
   };
 
   ThreadedLoop ("generating identity warp", warp, 0, 3)
