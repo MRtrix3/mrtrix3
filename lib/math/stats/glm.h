@@ -30,27 +30,22 @@ namespace MR
       namespace GLM {
 
         //! scale contrasts for use in t-test
-        /*! Note each row of the contrast matrix will be treated as an independent contrast. */
+        /*! Note each row of the contrast matrix will be treated as an independent contrast. The number
+         * of elements in each contrast vector must equal the number of columns in the design matrix */
         template <typename ValueType>
           inline Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> scale_contrasts (const Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& contrasts,
                                                                                            const Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& design,
                                                                                            size_t degrees_of_freedom)
           {
-            Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> XtX = Math::pinv ((design.transpose() * design).template cast<double>()).template cast<ValueType>();
-
-            // make sure contrast is a column vector:
+            assert (contrasts.cols() == design.cols());
+            Eigen::Matrix<default_type,Eigen::Dynamic, Eigen::Dynamic> XtX = (design.transpose() * design).template cast<default_type>();
+            Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> pinv_XtX =  ((XtX.transpose() * XtX).fullPivLu().solve (XtX.transpose())).template cast<ValueType>();
             Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> scaled_contrasts (contrasts);
-            if (scaled_contrasts.cols() > 1 && scaled_contrasts.rows() > 1)
-              throw Exception ("too many columns in contrast matrix: this implementation currently only supports univariate GLM");
-            if (scaled_contrasts.rows() > 1)
-              scaled_contrasts.transposeInPlace();
-            scaled_contrasts.resize (scaled_contrasts.rows(), design.cols());
 
             for (size_t n = 0; n < size_t(contrasts.rows()); ++n) {
-              Eigen::Matrix<ValueType, Eigen::Dynamic, 1> pinv_XtX_c = XtX * contrasts.row(n).transpose(); //TODO transpose
-              scaled_contrasts.row(n) *= std::sqrt (ValueType(degrees_of_freedom) / contrasts.row(n).dot(pinv_XtX_c));
+              Eigen::Matrix<ValueType, Eigen::Dynamic, 1> pinv_XtX_c = pinv_XtX * contrasts.row(n).transpose();
+              scaled_contrasts.row(n) *= std::sqrt (ValueType (degrees_of_freedom) / contrasts.row(n).dot (pinv_XtX_c));
             }
-
             return scaled_contrasts;
           }
 
