@@ -40,7 +40,12 @@ namespace MR
  compiled if needed (according to the rules set out below), without any further
  action required. In addition, this script is multi-threaded and will use all
  available CPU cores simultaneously, significantly reducing the time needed to
- build the software on modern multi-core systems.
+ build the software on modern multi-core systems. 
+ 
+ \note on systems with a large number of cores but comparatively small amount 
+ of RAM, the multi-threaded build can run out of memory. In these cases, it may 
+ be necessary to reduce the number of threads used by the build script by setting 
+ the \c NUMBER_OF_PROCESSORS environment variable before invoking \c ./build.
 
  \section build_process_usage Using the MRtrix build process
 
@@ -52,7 +57,7 @@ namespace MR
  in the \c cmd/ folder. For example, if a new application called \c myapp
  is to be written, write the corresponding code in the \c cmd/myapp.cpp
  source file, and the build script will attempt to generate the executable
- \c bin/myapp from it. You may want to consult the section \ref
+ \c release/bin/myapp from it. You may want to consult the section \ref
  command_howto for information on the contents of a command.
  - The \c lib/ folder should contain only code destined to be included into
  the MRtrix shared library. This library is intended to provide more
@@ -107,26 +112,27 @@ namespace MR
  error, without necessarily re-compiling all other associated files. For
  example:
  \verbatim
-  $ ./build bin/mrconvert
-  $ ./build lib/mrtrix.o lib/app.o \endverbatim
+  $ ./build release/bin/mrconvert
+  $ ./build lib/mrtrix.o lib/app.o 
+ \endverbatim
  If no specific targets are given, the default target list will be
  generated, consisting of all applications found in the \c cmd/ folder. For
  example, if the file \c cmd/my_application.cpp exists, then the
- corresponding target \c bin/my_application will be included in the default
+ corresponding target \c release/bin/my_application will be included in the default
  target list.
 
  \par Special target: \e clean
 
  The special target \c "clean" that can be passed to the \c build script to
  remove all system-generated files, including all object files (\c *.o),
- all executables (i.e. all files in the \c bin/ folder), and the MRtrix
+ all executables (i.e. all files in the \c release/bin/ folder), and the MRtrix
  shared library.
 
  \par Resolving dependencies for executables
 
  A target is assumed to correspond to an executable if it resides in the \c
- bin/ folder (the default target list consists of all executables). The
- dependencies for an example executable \c bin/myapp are resolved in the following way:
+ release/bin/ folder (the default target list consists of all executables). The
+ dependencies for an example executable \c release/bin/myapp are resolved in the following way:
  -# the MRtrix library \c lib/mrtrix-X_Y_Z.so is added to the list
  -# the object file \c cmd/myapp.o is added to the list
  -# a list of all local headers included in the source file \c

@@ -21,16 +21,14 @@ namespace MR
 
   /*! \page image_access Accessing image data
 
-    Access to data stored in image files is done via the classes and functions
-    defined in the Image namespace. The corresponding headers are stored in the
-    \c lib/image/ directory.  Most classes and algorithms included in MRtrix to
+    Access to data stored in image files is done via the dedicated classes and functions
+    outlined here. Most classes and algorithms included in MRtrix to
     handle image data have been written using C++ templates to maximise code
     re-use. They have also been written explicitly with multi-threading in
-    mind, and this is reflected some of the design decisions - in particular
-    the separation between an Image::Buffer and the Image::Voxel classes used
-    to access its data. MRtrix also places no restrictions on the
+    mind, and this is reflected in some of the design decisions. 
+    MRtrix also places no restrictions on the
     dimensionality, memory layout or data type of an image - it supports an
-    arbitrary number of directions, any reasonable set of strides to navigate
+    arbitrary number of dimensions, any reasonable set of strides to navigate
     the data array, and almost all data types available, from bitwise to double
     precision complex.
 
@@ -45,43 +43,49 @@ namespace MR
     given at the end to illustrate the use of these classes.
 
 
-    \section image_info_class Image::Info
-
-    The Image::Info is a simple structure containing basic information related to an image. This includes: 
-    - image dimensions
-    - voxel sizes
-    - data strides
-    - data type
-    - transform
-
-    It is used as a base class (or at least template) for all other Image
-    classes, and provides the blueprint for the interface expected by most
-    template functions and algorithms that operate on images.
-
-    In the MRtrix code and documentation, objects that provide an equivalent
-    interface to Image::Info are often referred to as InfoType objects. This
-    terminology is used particularly in naming template arguments. 
-
     \section image_header_class Image::Header
 
-    The Image::Header class extends the Image::Info class with information
-    relevant for actual files as stored on disk. Aside from the information in
-    the Image::Info class, this includes:
+    The Image::Header class contains modifiable information about an Image as 
+    stored on disk - whether this image already exists or is about to be created. 
+    This includes:
+    - image dimensions
+    - image spacing (i.e. voxel sizes)
+    - image strides
+    - data type
     - the format of the image
     - files and byte offsets where the data are stored
     - the DW gradient scheme, if found.
     - any other image header information, such as comments or generic fields
 
+    The Header is designed to be copy-constructible (from another Header or any
+    Image or similar class) so that all copies are completely independent. 
     It is used as-is to retrieve or specify all the relevant information for
-    input and output images, and is used as the base class for some of the
-    Image::Buffer classes.
+    input and output images, and is designed to be instantiated from existing images,
+    modified to suit, and used as a template for the output image. Instantiating a 
+    Header does \e not load the image data - only when an Image is instantiated 
+    (whether directly or from a previously opened Header) is the data actually made 
+    available.
 
-    \section image_buffer_class Image::Buffer
+    \section image_class Image
 
-    The Image::Buffer classes provide an array-like view into the image data.
-    There are 3 flavours of Image::Buffer, each templated based on the data
-    type required by the application. The basic types are:
+    The Image class provides access to the image data, and most of the information 
+    provided by the Header. This includes specifically:
+    - image dimensions
+    - image spacing (i.e. voxel sizes)
+    - image strides
+    - the DW gradient scheme, if found.
+    - generic fields
 
+    The Image class is designed to be lightweight and copy-constructable, so
+    that all copies access the same image data. This is essential for
+    multi-threading, by allowing multiple threads to each have their own
+    instance of an Image, so that they can all concurrently access the image
+    data without affecting each other (although threads do need to ensure they
+    don't write to the same voxel locations concurrently - see \ref
+    multithreading for details).
+
+    FROM HERE.
+    
     \par Image::Buffer&lt;value_type&gt;
     This is the standard way to access image data. It will attempt to access
     the data using memory-mapping where possible, and load the data into RAM
@@ -170,6 +174,17 @@ namespace MR
     provides a template Image::Info structure with the correct settings for the
     output image. Processing is then invoked using the filter's operator()
     method. 
+
+
+   \section interator_class Iterator
+
+    The Itartor class is a simple structure containing basic information related to an image. This includes: 
+    - image dimensions
+    - image indices (current position)
+
+    It is used as a placholder for the looping functions, in cases where the loop 
+    shouldn't operate on an Image directly..
+
 
 
     \section image_loop Image::Loop & Image::ThreadedLoop
