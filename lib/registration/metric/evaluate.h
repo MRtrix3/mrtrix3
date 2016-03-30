@@ -70,7 +70,7 @@ namespace MR
               params.transformation.set_parameter_vector(x);
 
               if (directions.cols()) {
-                INFO ("Reorienting FODs...");
+                DEBUG ("Reorienting FODs...");
                 std::shared_ptr<Image<default_type> > im1_image_reoriented;
                 std::shared_ptr<Image<default_type> > im2_image_reoriented;
                 im1_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im1_image));

@@ -408,14 +408,14 @@ namespace MR
             output_header.keyval()["linear1"] = str(im1_linear.matrix());
             output_header.keyval()["linear2"] = str(im2_linear.matrix());
 
-            output_header.keyval()["scale_factors"] = str(scale_factor);
-            output_header.keyval()["max_iterations"] = str(max_iter);
-            output_header.keyval()["update_smooth"] = str(update_smoothing);
-            output_header.keyval()["displacement_smooth"] = str(disp_smoothing);
-            output_header.keyval()["reorientation"] = str(do_reorientation);
-            output_header.keyval()["gradient_step"] = str(gradient_step);
+            output_header.keyval()["nl_scale"] = str(scale_factor);
+            output_header.keyval()["nl_niter"] = str(max_iter);
+            output_header.keyval()["nl_update_smooth"] = str(update_smoothing);
+            output_header.keyval()["nl_disp_smooth"] = str(disp_smoothing);
+            output_header.keyval()["nl_gradient_step"] = str(gradient_step);
+            output_header.keyval()["fod_reorientation"] = str(do_reorientation);
             if (do_reorientation)
-              output_header.keyval()["fod"] = str(fod_lmax);
+              output_header.keyval()["nl_lmax"] = str(fod_lmax);
 
             return output_header;
           }
