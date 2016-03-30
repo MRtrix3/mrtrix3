@@ -1,0 +1,1 @@
+transformcalc moving2templateFSL.txt tmp.txt -flirt_import moving.mif.gz template.mif.gz --force; testing_diff_matrix tmp.txt transformcalc/out.txt 0.001

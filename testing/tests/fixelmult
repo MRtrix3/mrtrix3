@@ -1,0 +1,1 @@
+fixelmult afd.msf afd.msf tmp.msf --force; testing_diff_fixel tmp.msf fixelmult/out.msf 0
