@@ -28,11 +28,11 @@ using namespace App;
 void usage ()
 {
   DESCRIPTION
-  + "edit transformations."
+  + "edit linear transformation matrices."
 
   + "This command's function is to either convert the transformation matrix provided "
     "by FSL's flirt command to a format usable in MRtrix or to interpolate between "
-    "two transformation files";
+    "two transformation matrices";
 
   ARGUMENTS
   + Argument ("output", "the output transformation matrix.").type_file_out ();
@@ -55,11 +55,11 @@ void usage ()
       "output the matrix square root of the input transformation.")
     + Argument ("input", "input transformation matrix").type_file_in ()
 
-    + Option ("surfer_vox2vox",
-        "Convert a transformation matrix produced by freesurfer's robust_register command into a format usable by MRtrix. ")
-    + Argument ("vox2vox", "input transformation matrix").type_file_in ()
-    + Argument ("mov").type_image_in ()
-    + Argument ("dst").type_image_in ()
+    // + Option ("surfer_vox2vox",
+    //     "Convert a transformation matrix produced by freesurfer's robust_register command into a format usable by MRtrix. ")
+    // + Argument ("vox2vox", "input transformation matrix").type_file_in ()
+    // + Argument ("mov").type_image_in ()
+    // + Argument ("dst").type_image_in ()
 
     + Option ("header",
         "Calculate the transformation matrix from an original image and an image with modified header.")
@@ -153,7 +153,7 @@ void run ()
   auto interp_opt = get_options ("interpolate");
   auto invert_opt = get_options ("invert");
   auto half_opt = get_options ("half");
-  auto surfer_vox2vox_opt = get_options ("surfer_vox2vox");
+  // auto surfer_vox2vox_opt = get_options ("surfer_vox2vox");
   auto from_header_opt = get_options ("header");
 
   size_t options = 0;
@@ -167,17 +167,17 @@ void run ()
     options++;
   if (from_header_opt.size())
     options++;
-  if (surfer_vox2vox_opt.size())
-    options++;
+  // if (surfer_vox2vox_opt.size())
+  //   options++;
   if (options != 1)
     throw Exception ("You must specify one option");
 
-  if(invert_opt.size()){
+  if (invert_opt.size()) {
     transform_type input = load_transform<double> (invert_opt[0][0]);
     save_transform (input.inverse(), argument[0]);
   }
 
-  if(half_opt.size()){
+  if (half_opt.size()) {
     transform_type input = load_transform<double> (half_opt[0][0]);
     Eigen::Matrix<default_type, 4, 4> half;
     half.row(3) << 0, 0, 0, 1.0;
@@ -186,7 +186,7 @@ void run ()
     save_transform (input, argument[0]);
   }
 
-  if(from_header_opt.size()){
+  if (from_header_opt.size()) {
     auto orig_header = Header::open (from_header_opt[0][0]);
     auto modified_header = Header::open (from_header_opt[0][1]);
 
@@ -194,24 +194,24 @@ void run ()
     save_transform (forward_transform.inverse(), argument[0]);
   }
 
-  if(surfer_vox2vox_opt.size()){
-    auto vox2vox = parse_surfer_transform (surfer_vox2vox_opt[0][0]);
+  // if(surfer_vox2vox_opt.size()){
+  //   auto vox2vox = parse_surfer_transform (surfer_vox2vox_opt[0][0]);
 
-    auto src_header = Header::open (surfer_vox2vox_opt[0][1]);
-    auto dest_header = Header::open (surfer_vox2vox_opt[0][2]);
+  //   auto src_header = Header::open (surfer_vox2vox_opt[0][1]);
+  //   auto dest_header = Header::open (surfer_vox2vox_opt[0][2]);
 
-    auto transform_source = Transform(src_header); // .transform();
-    auto transform_dest = Transform(dest_header); //dest_header.transform();
+  //   auto transform_source = Transform(src_header); // .transform();
+  //   auto transform_dest = Transform(dest_header); //dest_header.transform();
 
-    VAR(transform_source.voxel2scanner.matrix());
-    VAR(transform_dest.voxel2scanner.matrix());
-    VAR(vox2vox.matrix());
+  //   VAR(transform_source.voxel2scanner.matrix());
+  //   VAR(transform_dest.voxel2scanner.matrix());
+  //   VAR(vox2vox.matrix());
 
-    auto forward_transform =  transform_source.voxel2scanner *
-      vox2vox.inverse() * transform_dest.voxel2scanner;
-    save_transform (forward_transform.inverse(), argument[0]);
-    throw Exception ("FIXME: surfer_vox2vox not implemented yet");
-  }
+  //   auto forward_transform =  transform_source.voxel2scanner *
+  //     vox2vox.inverse() * transform_dest.voxel2scanner;
+  //   save_transform (forward_transform.inverse(), argument[0]);
+  //   throw Exception ("FIXME: surfer_vox2vox not implemented yet"); // TODO
+  // }
 
   if (flirt_opt.size()) {
     transform_type transform = load_transform<float> (flirt_opt[0][0]);
@@ -229,7 +229,8 @@ void run ()
       WARN ("NAN in transformation.");
     save_transform (forward_transform.inverse(), argument[0]);
   }
-  if(interp_opt.size()) {
+
+  if (interp_opt.size()) {
     transform_type transform1 = load_transform<double> (interp_opt[0][0]);
     transform_type transform2 = load_transform<double> (interp_opt[0][1]);
     transform_type transform_out;
