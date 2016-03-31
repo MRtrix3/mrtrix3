@@ -52,7 +52,12 @@ DWI bias field correction is perfomed by first estimating a correction field fro
 
     dwibiascorrect -ants -mask <Input brain mask> <Input DWI> <Output correction DWI>
     
-5. Computing a group average response function
+    
+5. Global intensity normalisation across subjects
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  
+    
+6. Computing a group average response function
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
