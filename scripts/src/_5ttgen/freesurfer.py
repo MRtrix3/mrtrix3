@@ -35,7 +35,10 @@ def execute():
     if not os.path.isfile(lut_path):
       errorMessage('Could not find FreeSurfer lookup table file\n(Expected location: ' + freesurfer_lut + ')')
 
-  config_file_name = 'FreeSurfer2ACT.txt'
+  if lib.app.args.sgm_amyg_hipp:
+    config_file_name = 'FreeSurfer2ACT_sgm_amyg_hipp.txt'
+  else:
+    config_file_name = 'FreeSurfer2ACT.txt'
   config_path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'data', config_file_name);
   if not os.path.isfile(config_path):
     errorMessage('Could not find config file for converting FreeSurfer parcellation output to tissues\n(Expected location: ' + config_path + ')')
