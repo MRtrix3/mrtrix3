@@ -13,8 +13,8 @@
  * 
  */
 
-#ifndef __image_adapter_median3D_h__
-#define __image_adapter_median3D_h__
+#ifndef __image_adapter_median_h__
+#define __image_adapter_median_h__
 
 #include "math/median.h"
 #include "adapter/base.h"
@@ -26,20 +26,20 @@ namespace MR
 
 
     template <class ImageType>
-      class Median3D : public Base<ImageType> {
+      class Median : public Base<ImageType> {
       public:
-        Median3D (const ImageType& parent) :
+        Median (const ImageType& parent) :
           Base<ImageType> (parent) {
             set_extent (std::vector<int>(1,3));
           }
 
-        Median3D (const ImageType& parent, const std::vector<int>& extent) :
+        Median (const ImageType& parent, const std::vector<int>& extent) :
           Base<ImageType> (parent) {
             set_extent (extent);
           }
 
         typedef typename ImageType::value_type value_type;
-        typedef Median3D voxel_type;
+        typedef Median voxel_type;
 
         void set_extent (const std::vector<int>& ext)
         {
@@ -53,7 +53,7 @@ namespace MR
           else
             extent = ext;
 
-          DEBUG ("median3D adapter for image \"" + name() + "\" initialised with extent " + str(extent));
+          DEBUG ("median adapter for image \"" + name() + "\" initialised with extent " + str(extent));
 
           for (size_t i = 0; i < 3; ++i)
             extent[i] = (extent[i]-1)/2;
