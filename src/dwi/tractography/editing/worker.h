@@ -21,7 +21,6 @@
 #include <vector>
 
 #include "dwi/tractography/properties.h"
-#include "dwi/tractography/resample.h"
 #include "dwi/tractography/streamline.h"
 
 
@@ -38,11 +37,8 @@ namespace MR {
         {
 
           public:
-            Worker (Tractography::Properties& p, const size_t upsample_ratio, const size_t downsample_ratio, const float step_size, const bool inv, const bool end) :
+            Worker (Tractography::Properties& p, const bool inv, const bool end) :
               properties (p),
-              upsampler (upsample_ratio),
-              downsampler (downsample_ratio),
-              resampler (step_size),
               inverse (inv),
               ends_only (end),
               thresholds (p),
@@ -50,23 +46,17 @@ namespace MR {
 
             Worker (const Worker& that) :
               properties (that.properties),
-              upsampler (that.upsampler),
-              downsampler (that.downsampler),
-              resampler (that.resampler),
               inverse (that.inverse),
               ends_only (that.ends_only),
               thresholds (that.thresholds),
               include_visited (properties.include.size(), false) { }
 
 
-            bool operator() (const Streamline<>&, Streamline<>&) const;
+            bool operator() (Streamline<>&, Streamline<>&) const;
 
 
           private:
             const Tractography::Properties& properties;
-            Upsampler upsampler;
-            Downsampler downsampler;
-            Resampler resampler;
             const bool inverse, ends_only;
 
             class Thresholds

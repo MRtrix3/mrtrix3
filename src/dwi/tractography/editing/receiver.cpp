@@ -48,7 +48,7 @@ namespace MR {
               progress.update (display_func);
               return true;
             }
-            output (in);
+            writer (in);
 
           } else {
 
@@ -61,7 +61,7 @@ namespace MR {
               if (p.allFinite()) {
                 temp.push_back (p);
               } else if (temp.size()) {
-                output (temp);
+                writer (in);
                 temp.clear();
               }
             }
@@ -72,20 +72,6 @@ namespace MR {
           progress.update (display_func);
           return (!(number && (count == number)));
 
-        }
-
-
-
-        void Receiver::output (const Streamline<>& in)
-        {
-          if (ends_only) {
-            Streamline<> temp;
-            temp.push_back (in.front());
-            temp.push_back (in.back());
-            writer (temp);
-          } else {
-            writer (in);
-          }
         }
 
 

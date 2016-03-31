@@ -26,7 +26,7 @@
 
 #include "dwi/directions/set.h"
 
-#include "dwi/tractography/resample.h"
+#include "dwi/tractography/resampling/upsampler.h"
 #include "dwi/tractography/streamline.h"
 
 #include "dwi/tractography/mapping/mapper_plugins.h"
@@ -165,7 +165,7 @@ namespace MR {
             inline void add_to_set (SetDixel&   , const Eigen::Vector3i&, const Eigen::Vector3f&, const float) const;
             inline void add_to_set (SetVoxelTOD&, const Eigen::Vector3i&, const Eigen::Vector3f&, const float) const;
 
-            Upsampler upsampler;
+            DWI::Tractography::Resampling::Upsampler upsampler;
 
         };
 

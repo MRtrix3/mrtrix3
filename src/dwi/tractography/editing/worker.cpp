@@ -25,7 +25,7 @@ namespace MR {
 
 
 
-        bool Worker::operator() (const Streamline<>& in, Streamline<>& out) const
+        bool Worker::operator() (Streamline<>& in, Streamline<>& out) const
         {
 
           out.clear();
@@ -33,21 +33,11 @@ namespace MR {
           out.weight = in.weight;
 
           if (!thresholds (in)) {
-            // Want to test thresholds before wasting time on resampling; but if -inverse is set,
-            //   still need to apply resampling before writing to output
-            if (inverse) {
-              std::vector<Eigen::Vector3f> tck (in);
-              upsampler (tck);
-              downsampler (tck);
-              resampler (tck);
-              tck.swap (out);
-            }
+            // Want to test thresholds before wasting time on resampling
+            if (inverse)
+              in.swap (out);
             return true;
           }
-
-          // Upsample track before mapping to ROIs
-          std::vector<Eigen::Vector3f> tck (in);
-          upsampler (tck);
 
           // Assign to ROIs
           if (properties.include.size() || properties.exclude.size()) {
@@ -56,26 +46,20 @@ namespace MR {
 
             if (ends_only) {
               for (size_t i = 0; i != 2; ++i) {
-                const Eigen::Vector3f& p (i ? tck.back() : tck.front());
+                const Eigen::Vector3f& p (i ? in.back() : in.front());
                 properties.include.contains (p, include_visited);
                 if (properties.exclude.contains (p)) {
-                  if (inverse) {
-                    downsampler (tck);
-                    resampler (tck);
-                    tck.swap (out);
-                  }
+                  if (inverse)
+                    in.swap (out);
                   return true;
                 }
               }
             } else {
-              for (const auto& p : tck) {
+              for (const auto& p : in) {
                 properties.include.contains (p, include_visited);
                 if (properties.exclude.contains (p)) {
-                  if (inverse) {
-                    downsampler (tck);
-                    resampler (tck);
-                    tck.swap (out);
-                  }
+                  if (inverse)
+                    in.swap (out);
                   return true;
                 }
               }
@@ -84,11 +68,8 @@ namespace MR {
             // Make sure all of the include regions were visited
             for (const auto& i : include_visited) {
               if (!i) {
-                if (inverse) {
-                  downsampler (tck);
-                  resampler (tck);
-                  tck.swap (out);
-                }
+                if (inverse)
+                  in.swap (out);
                 return true;
               }
             }
@@ -101,7 +82,7 @@ namespace MR {
             std::vector<std::vector<Eigen::Vector3f>> cropped_tracks;
             std::vector<Eigen::Vector3f> temp;
 
-            for (const auto& p : tck) {
+            for (const auto& p : in) {
               const bool contains = properties.mask.contains (p);
               if (contains == inverse) {
                 if (temp.size() >= 2)
@@ -116,12 +97,6 @@ namespace MR {
 
             if (cropped_tracks.empty())
               return true;
-
-            // Apply downsampler / resampler independently to each
-            for (auto& i : cropped_tracks) {
-              downsampler (i);
-              resampler (i);
-            }
 
             if (cropped_tracks.size() == 1) {
               cropped_tracks[0].swap (out);
@@ -140,11 +115,8 @@ namespace MR {
 
           } else {
 
-            if (!inverse) {
-              downsampler (tck);
-              resampler (tck);
-              tck.swap (out);
-            }
+            if (!inverse)
+              in.swap (out);
             return true;
 
           }

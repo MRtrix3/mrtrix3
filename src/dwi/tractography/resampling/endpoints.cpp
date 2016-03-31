@@ -13,33 +13,31 @@
  * 
  */
 
+#include "dwi/tractography/resampling/endpoints.h"
 
-#ifndef __dwi_tractography_editing_editing_h__
-#define __dwi_tractography_editing_editing_h__
-
-#include "app.h"
-
-#include "dwi/tractography/properties.h"
 
 namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Editing {
+  namespace DWI {
+    namespace Tractography {
+      namespace Resampling {
 
 
 
-extern const App::OptionGroup LengthOption;
-extern const App::OptionGroup TruncateOption;
-extern const App::OptionGroup WeightsOption;
+        bool Endpoints::operator() (std::vector<Eigen::Vector3f>& tck) const
+        {
+          std::vector<Eigen::Vector3f> output;
+          output.reserve (2);
+          output.push_back (tck.front());
+          output.push_back (tck.back());
+          std::swap (tck, output);
+          return true;
+        }
 
 
-void load_properties (Tractography::Properties&);
 
-
-
+      }
+    }
+  }
 }
-}
-}
-}
 
-#endif
+
