@@ -956,9 +956,8 @@ namespace MR
      * it should be wrapped in a call to Thread::multi() before being passed
      * to the Thread::run_queue() functions.  The Thread::run_queue() functions
      * will then create additional instances of the relevant functor using its
-     * copy constructor, via the Thread::Array class; care should therefore be
-     * taken to ensure that the functor's copy constructor behaves
-     * appropriately.
+     * copy constructor; care should therefore be taken to ensure that the
+     * functor's copy constructor behaves appropriately.
      *
      * For example, using the code above:
      *
