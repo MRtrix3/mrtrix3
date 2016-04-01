@@ -183,17 +183,17 @@ if not PE_design == 'None':
 
 # Convert the input files as necessary for FSL tools
 if PE_design == 'None':
-  runCommand('mrconvert ' + series_path + ' dwi_pre_topup.nii -stride +1,+2,+3,+4')
+  runCommand('mrconvert ' + series_path + ' dwi_pre_topup.nii -stride -1,+2,+3,+4')
 if PE_design == 'Pair':
-  runCommand('mrconvert ' + series_path + ' dwi_pre_topup.nii -stride +1,+2,+3,+4')
-  runCommand('mrcat ' + pair1_path + ' ' + pair2_path + ' - -axis 3 | mrconvert - topup_in.nii -stride +1,+2,+3,+4')
+  runCommand('mrconvert ' + series_path + ' dwi_pre_topup.nii -stride -1,+2,+3,+4')
+  runCommand('mrcat ' + pair1_path + ' ' + pair2_path + ' - -axis 3 | mrconvert - topup_in.nii -stride -1,+2,+3,+4')
 elif PE_design == 'All':
   runCommand('dwiextract ' + series_path + ' -bzero pair1.mif')
   runCommand('dwiextract ' + series2_path + ' -bzero pair2.mif')
-  runCommand('mrcat pair1.mif pair2.mif - -axis 3 | mrconvert - topup_in.nii -stride +1,+2,+3,+4')
-  runCommand('mrconvert ' + series_path + ' dwi1_pre_topup.nii -stride +1,+2,+3,+4')
+  runCommand('mrcat pair1.mif pair2.mif - -axis 3 | mrconvert - topup_in.nii -stride -1,+2,+3,+4')
+  runCommand('mrconvert ' + series_path + ' dwi1_pre_topup.nii -stride -1,+2,+3,+4')
   delFile(series_path)
-  runCommand('mrconvert ' + series2_path + ' dwi2_pre_topup.nii -stride +1,+2,+3,+4')
+  runCommand('mrconvert ' + series2_path + ' dwi2_pre_topup.nii -stride -1,+2,+3,+4')
   delFile(series2_path)
   runCommand('mrcat dwi1_pre_topup.nii dwi2_pre_topup.nii dwi_pre_eddy.nii -axis 3')
 
@@ -250,7 +250,7 @@ if PE_design == 'None':
 
   # Generate a processing mask for eddy based on the input series
   runCommand('dwi2mask ' + series_path + ' - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32')
-  runCommand('mrconvert ' + series_path + ' - -stride +1,+2,+3,+4 | mrinfo - -export_grad_fsl bvecs bvals')
+  runCommand('mrconvert ' + series_path + ' - -stride -1,+2,+3,+4 | mrinfo - -export_grad_fsl bvecs bvals')
 
 else:
 
@@ -276,7 +276,7 @@ else:
   # Create the diffusion gradient table in FSL format
   # Make sure the strides are identical to the image actually being passed to eddy before exporting the gradient table
   if PE_design == 'Pair':
-    runCommand('mrconvert ' + series_path + ' - -stride +1,+2,+3,+4 | mrinfo - -export_grad_fsl bvecs bvals')
+    runCommand('mrconvert ' + series_path + ' - -stride -1,+2,+3,+4 | mrinfo - -export_grad_fsl bvecs bvals')
   else:
     # Concatenate the diffusion gradient table twice
     with open('grad.b', 'w') as outfile:
@@ -364,7 +364,7 @@ else: # 'All'
   with open( 'transform.txt', 'w' ) as f:
     for line in transform:
       f.write (line)
-  runCommand('mrtransform field_map' + fsl_suffix + ' - -flip 0 -linear transform.txt -replace | mrconvert - field_map_flip.mif' + stride_option)
+  runCommand('mrtransform field_map' + fsl_suffix + ' - -linear transform.txt -replace | mrconvert - field_map_flip.mif' + stride_option)
   delFile('field_map' + fsl_suffix)
 
 
