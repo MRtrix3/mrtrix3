@@ -24,22 +24,32 @@
 #include "mrtrix.h"
 #include "exception.h"
 
-/** \defgroup Thread Multi-threading
+/** \defgroup thread_classes Multi-threading
  * \brief functions to provide support for multi-threading
  *
- * These functions and class provide a simple interface for multi-threading in
- * MRtrix applications. Most of the low-level funtionality is a thin wrapper on
- * top to POSIX threads. There are two classes that are MRtrix-specific: 
- * \ref thread_queue, and \ref image_thread_looping. These two APIs provide
- * simple and convenient ways of multi-threading, and should be sufficient for
- * the vast majority of applications.
+ * These functions and associated classes provide a simple interface for
+ * multi-threading in MRtrix applications. Most of the low-level funtionality
+ * relies on the C++11 `std::thread` API. MRtrix3 builds on this to add three
+ * convenience methods: 
+ * 
+ * - [Thread::run()](@ref Thread::run()) to launch one or more worker threads;
+ *
+ * - [ThreadedLoop()](@ref threaded_loop) to run an operation over all voxels
+ *   in one or more images;
+ *
+ * - [Thread::run_queue()](@ref Thread::run_queue()) to run a pipeline,
+ *   with one or more threads feeding data through to one or more other threads
+ *   (potentially with further stages in the pipeline).
+ *
+ * These APIs provide simple and convenient ways of multi-threading, and should
+ * be sufficient for the vast majority of applications.
  *
  * Please refer to the \ref multithreading page for an overview of
  * multi-threading in MRtrix.
  *
  * \sa Thread::run()
- * \sa ThreadedLoop
- * \sa thread_run_queue
+ * \sa threaded_loop
+ * \sa Thread::run_queue()
  */
 
 namespace MR
@@ -213,7 +223,7 @@ namespace MR
 
 
 
-    /** \addtogroup Thread
+    /** \addtogroup thread_classes
      * @{ */
 
     /** \defgroup thread_basics Basic multi-threading primitives

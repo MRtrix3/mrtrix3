@@ -88,7 +88,7 @@ namespace MR
 
 
 
-    /** \addtogroup Thread
+    /** \addtogroup thread_classes
      * @{ */
 
 
