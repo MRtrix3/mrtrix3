@@ -38,6 +38,8 @@ using namespace DWI::Tractography;
 void usage ()
 {
 
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)";
+
   DESCRIPTION
   + "resample streamlines according to a specified trajectory";
 
