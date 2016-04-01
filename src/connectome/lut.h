@@ -59,6 +59,12 @@ class LUT_node
       colour (r, g, b),
       alpha (a) { }
 
+    LUT_node (const std::string& n, const std::string& sn, const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a = 255) :
+      name (n),
+      short_name (sn),
+      colour (r, g, b),
+      alpha (a) { }
+
     LUT_node (const std::string& n, const RGB& rgb, const uint8_t a = 255) :
       name (n),
       colour (rgb),
@@ -88,7 +94,7 @@ class LUT_node
 
 class LUT : public std::multimap<node_t, LUT_node>
 {
-    enum file_format { LUT_NONE, LUT_BASIC, LUT_FREESURFER, LUT_AAL, LUT_ITKSNAP };
+    enum file_format { LUT_NONE, LUT_BASIC, LUT_FREESURFER, LUT_AAL, LUT_ITKSNAP, LUT_MRTRIX };
   public:
     typedef std::multimap<node_t, LUT_node> map_type;
     LUT () : exclusive (true) { }
@@ -104,6 +110,7 @@ class LUT : public std::multimap<node_t, LUT_node>
     void parse_line_freesurfer (const std::string&);
     void parse_line_aal        (const std::string&);
     void parse_line_itksnap    (const std::string&);
+    void parse_line_mrtrix     (const std::string&);
 
     void check_and_insert (const node_t, const LUT_node&);
 

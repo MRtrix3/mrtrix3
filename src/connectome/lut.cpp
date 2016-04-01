@@ -29,24 +29,6 @@ namespace Connectome {
 
 
 
-// TODO Define MRtrix node lookup table format
-// Needs to include:
-// * Node index
-// * Full-length node name
-// * Abbreviated node name
-// * RGB colour
-// * Not convinced on including an alpha channel - it's never used...
-//   Though I suppose it could be manipulated in the case of custom LUTs for specific visualisations...
-//
-// Seems a shame to have to create a new format just because none of the existing ones
-//   have all the necessary fields...
-//
-// Would theoretically be possible to try to determine what colums correspond to
-//   what data, based on numeric status / length / arrangement etc., but
-//   would probably be over-engineering...
-
-
-
 
 LUT::LUT (const std::string& path) :
     exclusive (true)
@@ -73,6 +55,7 @@ void LUT::load (const std::string& path)
         case LUT_FREESURFER: parse_line_freesurfer (line); break;
         case LUT_AAL:        parse_line_aal        (line); break;
         case LUT_ITKSNAP:    parse_line_itksnap    (line); break;
+        case LUT_MRTRIX:     parse_line_mrtrix     (line); break;
         default: assert (0);
       }
     }
@@ -186,6 +169,18 @@ LUT::file_format LUT::guess_file_format (const std::string& path)
     DEBUG ("LUT file \"" + Path::basename (path) + "\" contains an integer, 3 8-bit integers, a float, two integers, and a string per line: ITKSNAP format");
     return LUT_ITKSNAP;
   }
+  if (columns.size() == 7 &&
+      columns[0].is_integer() &&
+      !columns[1].is_numeric() &&
+      !columns[2].is_numeric() &&
+      columns[1].mean_length() < columns[2].mean_length() &&
+      columns[3].is_8bit() &&
+      columns[4].is_8bit() &&
+      columns[5].is_8bit() &&
+      columns[6].is_8bit()) {
+    DEBUG ("LUT file \"" + Path::basename (path) + "\" contains 1 integer, 2 strings (shortest first), then 4 8-bit integers per line: MRtrix format");
+    return LUT_MRTRIX;
+  }
   throw Exception ("LUT file \"" + Path::basename (path) + "\" in unrecognized format");
   return LUT_NONE;
 }
@@ -247,6 +242,20 @@ void LUT::parse_line_itksnap (const std::string& line)
       last = strname.size() - 1;
     strname = strname.substr (first, last - first + 1);
     check_and_insert (index, LUT_node (strname, r, g, b, uint8_t(a*255.0)));
+  }
+}
+void LUT::parse_line_mrtrix (const std::string& line)
+{
+  node_t index = std::numeric_limits<node_t>::max();
+  node_t r = 256, g = 256, b = 256, a = 255;
+  char short_name[20], name[80];
+  sscanf (line.c_str(), "%u %s %s %u %u %u %u", &index, short_name, name, &r, &g, &b, &a);
+  if (index != std::numeric_limits<node_t>::max()) {
+    if (std::max ({r, g, b}) > 255)
+      throw Exception ("Lookup table is malformed");
+    const std::string strshortname (short_name);
+    const std::string strname (name);
+    check_and_insert (index, LUT_node (strname, strshortname, r, g, b, a));
   }
 }
 
