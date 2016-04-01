@@ -20,6 +20,7 @@ base_parser = lib.app.Parser(description='Arguments & options common to all algo
 base_parser.add_argument('input',  help='The input image (will depend on the algorithm used)')
 base_parser.add_argument('output', help='The output 5TT image')
 base_parser.add_argument('-nocrop', action='store_true', default=False, help='Do NOT crop the resulting 5TT image to reduce its size (keep the same dimensions as the input image)')
+base_parser.add_argument('-sgm_amyg_hipp', action='store_true', default=False, help='Represent the amygdalae and hippocampi as sub-cortical grey matter in the 5TT image')
 
 subparsers = lib.app.parser.add_subparsers(title='software options', description='Select the software / algorithm to be used to derive the 5TT image', help='Additional help available for individual software options: Use e.g. ' + os.path.basename(sys.argv[0]) + ' fsl -help')
 
