@@ -88,10 +88,10 @@ class Processor
         //   (no interpolators should be necessary)
         // Essentially looking for an absolute gradient in (GM - WM) - just do in three axes
         //   - well, not quite; needs to be the minimum of the two
-        float gradient = 0.0;
+        default_type gradient = 0.0;
         for (size_t axis = 0; axis != 3; ++axis) {
           assign_pos_of (output, 0, 3).to (input);
-          float multiplier = 0.5;
+          default_type multiplier = 0.5;
           if (!output.index(axis)) {
             multiplier = 1.0;
           } else {
@@ -107,8 +107,7 @@ class Processor
           const DWI::Tractography::ACT::Tissues pos (input);
           gradient += Math::pow2 (multiplier * std::min (std::abs (pos.get_gm() - neg.get_gm()), std::abs (pos.get_wm() - neg.get_wm())));
         }
-        gradient = std::sqrt (gradient);
-        output.value() = gradient;
+        output.value() = std::max (0.0, std::sqrt (gradient));
         assign_pos_of (output, 0, 3).to (input);
       } else {
         output.value() = 0.0f;
