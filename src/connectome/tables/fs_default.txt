@@ -1,0 +1,94 @@
+# Lookup table for extracting the relevant grey matter parcellations from the default FreeSurfer segmentation (desikan_killiany)
+
+0     Unknown                         0   0   0   0
+
+1     ctx-lh-bankssts                 25  100 40  255
+2     ctx-lh-caudalanteriorcingulate  125 100 160 255
+3     ctx-lh-caudalmiddlefrontal      100 25  0   255
+4     ctx-lh-cuneus                   220 20  100 255
+5     ctx-lh-entorhinal               220 20  10  255
+6     ctx-lh-fusiform                 180 220 140 255
+7     ctx-lh-inferiorparietal         220 60  220 255
+8     ctx-lh-inferiortemporal         180 40  120 255
+9     ctx-lh-isthmuscingulate         140 20  140 255
+10    ctx-lh-lateraloccipital         20  30  140 255
+11    ctx-lh-lateralorbitofrontal     35  75  50  255
+12    ctx-lh-lingual                  225 140 140 255
+13    ctx-lh-medialorbitofrontal      200 35  75  255
+14    ctx-lh-middletemporal           160 100 50  255
+15    ctx-lh-parahippocampal          20  220 60  255
+16    ctx-lh-paracentral              60  220 60  255
+17    ctx-lh-parsopercularis          220 180 140 255
+18    ctx-lh-parsorbitalis            20  100 50  255
+19    ctx-lh-parstriangularis         220 60  20  255
+20    ctx-lh-pericalcarine            120 100 60  255
+21    ctx-lh-postcentral              220 20  20  255
+22    ctx-lh-posteriorcingulate       220 180 220 255
+23    ctx-lh-precentral               60  20  220 255
+24    ctx-lh-precuneus                160 140 180 255
+25    ctx-lh-rostralanteriorcingulate 80  20  140 255
+26    ctx-lh-rostralmiddlefrontal     75  50  125 255
+27    ctx-lh-superiorfrontal          20  220 160 255
+28    ctx-lh-superiorparietal         20  180 140 255
+29    ctx-lh-superiortemporal         140 220 220 255
+30    ctx-lh-supramarginal            80  160 20  255
+31    ctx-lh-frontalpole              100 0   100 255
+32    ctx-lh-temporalpole             70  70  70  255
+33    ctx-lh-transversetemporal       150 150 200 255
+34    ctx-lh-insula                   255 192 32  255
+
+35    Left-Cerebellum-Cortex          230 148 34  255
+
+36    Left-Thalamus-Proper            0   118 14  255
+37    Left-Caudate                    122 186 220 255
+38    Left-Putamen                    236 13  176 255
+39    Left-Pallidum                   12  48  255 255
+40    Left-Hippocampus                220 216 20  255
+41    Left-Amygdala                   103 255 255 255
+42    Left-Accumbens-area             255 165 0   255
+
+43    Right-Thalamus-Proper           0   118 14  255
+44    Right-Caudate                   122 186 220 255
+45    Right-Putamen                   236 13  176 255
+46    Right-Pallidum                  13  48  255 255
+47    Right-Hippocampus               220 216 20  255
+48    Right-Amygdala                  103 255 255 255
+49    Right-Accumbens-area            255 165 0   255
+
+50    ctx-rh-bankssts                 25  100 40  255
+51    ctx-rh-caudalanteriorcingulate  125 100 160 255
+52    ctx-rh-caudalmiddlefrontal      100 25  0   255
+53    ctx-rh-cuneus                   220 20  100 255
+54    ctx-rh-entorhinal               220 20  10  255
+55    ctx-rh-fusiform                 180 220 140 255
+56    ctx-rh-inferiorparietal         220 60  220 255
+57    ctx-rh-inferiortemporal         180 40  120 255
+58    ctx-rh-isthmuscingulate         140 20  140 255
+59    ctx-rh-lateraloccipital         20  30  140 255
+60    ctx-rh-lateralorbitofrontal     35  75  50  255
+61    ctx-rh-lingual                  225 140 140 255
+62    ctx-rh-medialorbitofrontal      200 35  75  255
+63    ctx-rh-middletemporal           160 100 50  255
+64    ctx-rh-parahippocampal          20  220 60  255
+65    ctx-rh-paracentral              60  220 60  255
+66    ctx-rh-parsopercularis          220 180 140 255
+67    ctx-rh-parsorbitalis            20  100 50  255
+68    ctx-rh-parstriangularis         220 60  20  255
+69    ctx-rh-pericalcarine            120 100 60  255
+70    ctx-rh-postcentral              220 20  20  255
+71    ctx-rh-posteriorcingulate       220 180 220 255
+72    ctx-rh-precentral               60  20  220 255
+73    ctx-rh-precuneus                160 140 180 255
+74    ctx-rh-rostralanteriorcingulate 80  20  140 255
+75    ctx-rh-rostralmiddlefrontal     75  50  125 255
+76    ctx-rh-superiorfrontal          20  220 160 255
+77    ctx-rh-superiorparietal         20  180 140 255
+78    ctx-rh-superiortemporal         140 220 220 255
+79    ctx-rh-supramarginal            80  160 20  255
+80    ctx-rh-frontalpole              100 0   100 255
+81    ctx-rh-temporalpole             70  70  70  255
+82    ctx-rh-transversetemporal       150 150 200 255
+83    ctx-rh-insula                   255 192 32  255
+
+84    Right-Cerebellum-Cortex         230 148 34  255
+

@@ -29,7 +29,7 @@ lib.app.initCitations([ 'first', 'FSL', 'SIFT_followup' ])
 lib.app.initParser('In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST')
 lib.app.parser.add_argument('parc',   help='The input FreeSurfer parcellation image')
 lib.app.parser.add_argument('t1',     help='The T1 image to be provided to FIRST')
-lib.app.parser.add_argument('config', help='Either the FreeSurfer lookup table (if the input parcellation image is directly from FreeSurfer), or the connectome configuration file (if the parcellation image has been modified using the labelconfig command)')
+lib.app.parser.add_argument('config', help='The lookup table file that the parcellated image is based on')
 lib.app.parser.add_argument('output', help='The output parcellation image')
 lib.app.parser.add_argument('-premasked', action='store_true', default=False, help='Indicate that brain masking has been applied to the T1 input image')
 lib.app.initialise()
@@ -62,13 +62,14 @@ structure_map = { 'L_Accu':'Left-Accumbens-area',  'R_Accu':'Right-Accumbens-are
                   
 # Import the config file
 # Invert the mapping - go from the structure name to the index
-config = {}
+# TODO This will only work for FreeSurfer format LUT files...
+mapping = {}
 with open(lib.app.args.config) as f:
   for line in f:
     line = line.rstrip()
     if line and line[0]!='#':
        line = line.split()
-       config[line[1]] = line[0] # This can remain as a string
+       mapping[line[1]] = line[0] # This can remain as a string
 
 # Get the parcellation and T1 images into the temporary directory, with conversion of the T1 into the correct format for FSL
 runCommand('mrconvert ' + lib.app.args.parc + ' ' + os.path.join(lib.app.tempDir, 'parc.mif'))
@@ -94,7 +95,7 @@ for struct in structure_map.keys():
   runCommand('meshconvert ' + vtk_in_path + ' transformed.vtk -transform_first2real T1.nii')
   runCommand('mesh2pve transformed.vtk parc.mif - | mrthreshold - ' + image_path + ' -abs 0.5')
   # Replace the node location in the parcellation image with the new mask image
-  node_index = config[structure_map[struct]]
+  node_index = mapping[structure_map[struct]]
   runCommand('mrcalc parc.mif ' + node_index + ' -neq parc.mif -mult parc_old_removed.mif')
   # Can't add images here - may have overlap with existing nodes
   # Instead, set to the desired node index value if the mask is true, or use the existing value in the image otherwise

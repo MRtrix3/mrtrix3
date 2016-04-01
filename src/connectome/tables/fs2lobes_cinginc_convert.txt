@@ -1,23 +1,8 @@
-# Configuration file for MRtrix command labelconfig
-# Extracts the relevant grey matter parcellations from the default
-# FreeSurfer segmentation (desikan_killiany)
-# Segmentations are summarised into lobes and subcortical areas
+# Lookup table for MRtrix command labelconvert
+# Extracts the relevant grey matter parcellations from the default FreeSurfer segmentation (desikan_killiany), but segmentations are summarised into lobes and subcortical areas
 # Cingulate nodes are included in the (approximately) relevant lobes
+# This file is intended to be used for the label conversion process; the corresponding lookup table for interpreting the resulting labels is: fs2lobes_cinginc_labels.txt
 
-# Many-To-One relationship, labels are as follows:
-#  1: LH Frontal lobe
-#  2: LH Parietal lobe
-#  3: LH Occipital lobe
-#  4: LH Temporal lobe
-#  5: LH Cerebellum
-#  6: LH Sub-cortical
-# 
-#  7: RH Sub-cortical
-#  8: RH Cerebellum
-#  9: RH Temporal lobe
-# 10: RH Occipital lobe
-# 11: RH Parietal lobe
-# 12: RH Frontal lobe
 
 0     Unknown
 
