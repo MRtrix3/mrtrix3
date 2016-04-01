@@ -32,6 +32,7 @@ lib.app.parser.add_argument('t1',     help='The T1 image to be provided to FIRST
 lib.app.parser.add_argument('config', help='Either the FreeSurfer lookup table (if the input parcellation image is directly from FreeSurfer), or the connectome configuration file (if the parcellation image has been modified using the labelconfig command)')
 lib.app.parser.add_argument('output', help='The output parcellation image')
 lib.app.parser.add_argument('-premasked', action='store_true', default=False, help='Indicate that brain masking has been applied to the T1 input image')
+lib.app.parser.add_argument('-sgm_amyg_hipp', action='store_true', default=False, help='Consider the amygdalae and hippocampi as sub-cortical grey matter structures, and also replace their estimates with those from FIRST')
 lib.app.initialise()
 
 if isWindows():
@@ -59,6 +60,9 @@ structure_map = { 'L_Accu':'Left-Accumbens-area',  'R_Accu':'Right-Accumbens-are
                   'L_Pall':'Left-Pallidum',        'R_Pall':'Right-Pallidum',
                   'L_Puta':'Left-Putamen',         'R_Puta':'Right-Putamen',
                   'L_Thal':'Left-Thalamus-Proper', 'R_Thal':'Right-Thalamus-Proper' }
+if lib.app.args.sgm_amyg_hipp:
+  structure_map.update({ 'L_Amyg':'Left-Amygdala',    'R_Amyg':'Right-Amygdala',
+                         'L_Hipp':'Left-Hippocampus', 'R_Hipp':'Right-Hippocampus' })
                   
 # Import the config file
 # Invert the mapping - go from the structure name to the index
