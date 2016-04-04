@@ -127,7 +127,6 @@ namespace MR
 
                 bool get (const Eigen::Vector3f& pos, Eigen::VectorXf& data) {
                   scanner (pos);
-
                   if (out_of_bounds) {
                     data.fill (NaN);
                     return false;
@@ -135,29 +134,22 @@ namespace MR
 
                   data.setZero();
 
-                  auto add_values = [&](float fraction, int sig_index) {
-                    get_values (raw_signals[sig_index]);
-                    data += fraction * raw_signals[sig_index];
-                  };
-
-                  if (factors[0]) add_values (factors[0], 0);
-                  ++index(2);
-                  if (factors[1]) add_values (factors[1], 1);
-                  ++index(1);
-                  if (factors[2]) add_values (factors[2], 3);
-                  --index(2);
-                  if (factors[3]) add_values (factors[3], 2);
-                  ++index(0);
-                  if (factors[4]) add_values (factors[4], 6);
-                  --index(1);
-                  if (factors[5]) add_values (factors[5], 4);
-                  ++index(2);
-                  if (factors[6]) add_values (factors[6], 5);
-                  ++index(1);
-                  if (factors[7]) add_values (factors[7], 7);
-                  --index(0);
-                  --index(1);
-                  --index(2);
+                  // Modified to be consistent with the new Interp::Linear implementation
+                  size_t i = 0;
+                  for (ssize_t z = 0; z < 2; ++z) {
+                    index(2) = clamp (P[2]+z, size(2));
+                    for (ssize_t y = 0; y < 2; ++y) {
+                      index(1) = clamp (P[1]+y, size(1));
+                      for (ssize_t x = 0; x < 2; ++x) {
+                        index(0) = clamp (P[0]+x, size(0));
+                        if (factors[i]) {
+                          get_values (raw_signals[i]);
+                          data += factors[i] * raw_signals[i];
+                        }
+                        ++i;
+                      }
+                    }
+                  }
 
                   return !std::isnan (data[0]);
                 }
