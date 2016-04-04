@@ -356,23 +356,21 @@ else: # 'All'
 
   # Derive the weight images
   # To properly get a voxel displacement field, need to scale the field map (which is output in Hz) appropriately
-  # Scaling appears to be correct; however FSL is a bit ambiguous when it comes to image transforms & strides
-  # Looks like topup flips the x-axis on output (both corrected images and field), and erases image transform
-  # Eddy seems to expect this and operates accordingly; but since we're doing things external to FSL and
-  #   voxel-by-voxel, need to do the flip explicitly; also import the transform from the first input image
-  #   for the sake of visualisation
+  # Scaling appears to be correct; however FSL is a bit ambiguous when it comes to image transforms
+  # Looks like topup erases the image transform
+  # Need to import the transform from the first input image for the sake of visualisation
   with open( 'transform.txt', 'w' ) as f:
     for line in transform:
       f.write (line)
-  runCommand('mrtransform field_map' + fsl_suffix + ' - -linear transform.txt -replace | mrconvert - field_map_flip.mif' + stride_option)
+  runCommand('mrtransform field_map' + fsl_suffix + ' - -linear transform.txt -replace | mrconvert - field_map_fix.mif' + stride_option)
   delFile('field_map' + fsl_suffix)
 
 
   # Scaling term for field map is identical to the bandwidth provided in the topup config file
   #   (converts Hz to pixel count; that way a simple image gradient can be used to get the Jacobians)
   # Let mrfilter apply the default 1 voxel size gaussian smoothing filter before calculating the field gradient
-  runCommand('mrcalc field_map_flip.mif 0.1 -mult - | mrfilter - gradient - | mrconvert - field_deriv_pe.mif -coord 3 1 -axes 0,1,2')
-  delFile('field_map_flip.mif')
+  runCommand('mrcalc field_map_fix.mif 0.1 -mult - | mrfilter - gradient - | mrconvert - field_deriv_pe.mif -coord 3 1 -axes 0,1,2')
+  delFile('field_map_fix.mif')
   runCommand('mrcalc 1.0 field_deriv_pe.mif -add 0.0 -max jacobian1.mif')
   runCommand('mrcalc 1.0 field_deriv_pe.mif -sub 0.0 -max jacobian2.mif')
   delFile('field_deriv_pe.mif')
