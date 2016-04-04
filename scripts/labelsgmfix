@@ -7,12 +7,6 @@
 #   FIRST for the sake of Anatomically-Constrained Tractography. This script determines the
 #   node indices that correspond to these structures, and replaces them with estimates
 #   derived from FIRST.
-# This script can be used in one of two ways. Firstly, it can directly change the nodes in
-#   one of FreeSurfer's segmentation outputs, by providing the file FreeSurferColorLUT.txt
-#   as the lookup table file. If such a segmentation has already been processed using
-#   labelconfig, then provide the connectome config file used. These are necessary to
-#   determine which integer values correspond to the sub-cortical grey matter structres
-#   that are being re-defined.
 
 
 import os, sys
@@ -20,6 +14,7 @@ import lib.app
 
 from lib.binaryInPath import binaryInPath
 from lib.errorMessage import errorMessage
+from lib.getImageStat import getImageStat
 from lib.isWindows    import isWindows
 from lib.printMessage import printMessage
 from lib.runCommand   import runCommand
@@ -60,21 +55,6 @@ structure_map = { 'L_Accu':'Left-Accumbens-area',  'R_Accu':'Right-Accumbens-are
                   'L_Puta':'Left-Putamen',         'R_Puta':'Right-Putamen',
                   'L_Thal':'Left-Thalamus-Proper', 'R_Thal':'Right-Thalamus-Proper' }
                   
-# Import the lookup table file
-# Invert the mapping - go from the structure name to the index
-# TODO This will only work for FreeSurfer format LUT files...
-# Rather than duplicating the LUT import functionality, is it possible to
-#   provide a simple lookup table containing only the SGM structures, and
-#   use labelconvert twice to map to this basis in order to do the
-#   modifications?
-mapping = {}
-with open(lib.app.args.lut) as f:
-  for line in f:
-    line = line.rstrip()
-    if line and line[0]!='#':
-       line = line.split()
-       mapping[line[1]] = line[0] # This can remain as a string
-
 # Get the parcellation and T1 images into the temporary directory, with conversion of the T1 into the correct format for FSL
 runCommand('mrconvert ' + lib.app.args.parc + ' ' + os.path.join(lib.app.tempDir, 'parc.mif'))
 runCommand('mrconvert ' + lib.app.args.t1   + ' ' + os.path.join(lib.app.tempDir, 'T1.nii')   + ' -stride +1,+2,+3')
@@ -87,34 +67,63 @@ if lib.app.args.premasked:
   first_input_is_brain_extracted = ' -b'
 runCommand(first_cmd + ' -s ' + ','.join(structure_map.keys()) + ' -i T1.nii' + first_input_is_brain_extracted + ' -o first')
 
+# Generate an empty image that will be used to contruct the new SGM nodes
+runCommand('mrcalc parc.mif 0 -min sgm.mif')
+
+# Read the local connectome LUT file
+# This will map a structure name to an index
+sgm_lut = {}
+sgm_lut_file_name = 'FreeSurferSGM.txt'
+sgm_lut_file_path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'data', sgm_lut_file_name)
+with open(sgm_lut_file_path) as f:
+  for line in f:
+    line = line.rstrip()
+    if line and line[0]!='#':
+      line = line.split()
+      sgm_lut[line[1]] = line[0] # This can remain as a string
+
 # Convert FIRST meshes to node masks
 # In this use case, don't want the PVE images; want to threshold at 0.5
 mask_list = [ ]
-for struct in structure_map.keys():
-  image_path = struct + '_mask.nii'
+for key, value in structure_map.items():
+  image_path = key + '_mask.mif'
   mask_list.append (image_path)
-  vtk_in_path = 'first-' + struct + '_first.vtk'
+  vtk_in_path = 'first-' + key + '_first.vtk'
   if not os.path.exists(vtk_in_path):
     errorMessage('Missing .vtk file for structure ' + struct + '; run_first_all must have failed')
   runCommand('meshconvert ' + vtk_in_path + ' transformed.vtk -transform_first2real T1.nii')
   runCommand('mesh2pve transformed.vtk parc.mif - | mrthreshold - ' + image_path + ' -abs 0.5')
-  # Replace the node location in the parcellation image with the new mask image
-  node_index = mapping[structure_map[struct]]
-  runCommand('mrcalc parc.mif ' + node_index + ' -neq parc.mif -mult parc_old_removed.mif')
-  # Can't add images here - may have overlap with existing nodes
-  # Instead, set to the desired node index value if the mask is true, or use the existing value in the image otherwise
-  runCommand('mrcalc ' + image_path + ' ' + node_index + ' parc_old_removed.mif -if parc_new_inserted.mif')
-  os.remove('transformed.vtk')
-  os.remove('parc.mif')
-  os.remove('parc_old_removed.mif')
-  os.rename('parc_new_inserted.mif', 'parc.mif')
+  if not lib.app.lastFile:
+    os.remove('transformed.vtk')
+  # Add to the SGM image; don't worry about overlap for now
+  node_index = sgm_lut[value]
+  runCommand('mrcalc ' + image_path + ' ' + node_index + ' sgm.mif -if sgm_new.mif')
+  if not lib.app.lastFile:
+    os.remove('sgm.mif')
+    os.rename('sgm_new.mif', 'sgm.mif')
 
-# Detect any overlapping voxels between these masks
-# These will be set to 0 in the final parcellated image
+# Detect any overlapping voxels between the SGM masks, and set to zero
 result_path = 'result' + os.path.splitext(lib.app.args.output)[1]
-runCommand('mrmath ' + ' '.join(mask_list) + ' sum - | mrcalc - 1 -gt overlap_mask.nii')
-runCommand('mrcalc overlap_mask.nii 0 parc.mif -if result.mif')
-runCommand('mrconvert result.mif ' + os.path.join(lib.app.workingDir, lib.app.args.output) + lib.app.mrtrixForce)
+runCommand('mrmath ' + ' '.join(mask_list) + ' sum - | mrcalc - 1 -gt sgm_overlap_mask.mif')
+runCommand('mrcalc sgm_overlap_mask.mif 0 sgm.mif -if sgm_masked.mif')
 
+# Convert the SGM label image to the indices that are required based on the user-provided LUT file
+runCommand('labelconvert sgm_masked.mif ' + sgm_lut_file_path + ' ' + os.path.join(lib.app.workingDir, lib.app.args.lut) + ' sgm_new_labels.mif')
+
+# For each SGM structure:
+# * Figure out what index the structure has been mapped to; this can only be done using mrstats
+# * Strip that index from the parcellation image
+# * Insert the new delineation of that structure
+for struct in structure_map.keys():
+  image_path = struct + '_mask.mif'
+  index = getImageStat('sgm_new_labels.mif', 'median', image_path)
+  runCommand('mrcalc parc.mif ' + index + ' -eq 0 parc.mif -if parc_removed.mif')
+  if not lib.app.lastFile:
+    os.remove('parc.mif')
+    os.rename('parc_removed.mif', 'parc.mif')
+
+# Insert the new delineations of all SGM structures in a single call
+runCommand('mrcalc sgm_new_labels.mif 0.5 -gt sgm_new_labels.mif parc.mif -if result.mif')
+runCommand('mrconvert result.mif ' + os.path.join(lib.app.workingDir, lib.app.args.output) + lib.app.mrtrixForce)
 lib.app.complete()
 
