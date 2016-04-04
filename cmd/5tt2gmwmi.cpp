@@ -141,11 +141,11 @@ void run ()
 
   Header H;
   if (mask.valid()) {
-    H = mask.original_header();
+    H = mask;
     H.datatype() = DataType::Float32;
     H.datatype().set_byte_order_native();
   } else {
-    H = input.original_header();
+    H = input;
     H.set_ndim (3);
   }
   auto output = Image<float>::create (argument[1], H);

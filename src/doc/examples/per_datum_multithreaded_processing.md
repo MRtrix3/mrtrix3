@@ -1,31 +1,10 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
- */
+Running a per-datum operation in a multi-threaded loop     {#example_per_datum_multithreaded_processing}
+======================================================
 
-#error - this file is for documentation purposes only!
-#error - It should NOT be included in other code files.
+This example simply computes the exponential of the intensity for each data point
+in the input dataset, producing a new dataset of the same size.
 
-namespace MR
-{
-
-  /*! 
- \page example_per_datum_multithreaded_processing Running a per-datum operation in a multi-threaded loop
-
- This example simply computes the exponential of the intensity for each data point
- in the input dataset, producing a new dataset of the same size.
-
- \code
+~~~{.cpp}
 #include "command.h"
 #include "image.h"
 #include "algo/threaded_loop.h"
@@ -124,24 +103,18 @@ void run ()
         vout.value() = std::exp (lambda * vin.value());
         }, in, out);
 }
-\endcode
+~~~
 
-It is worth re-iterating that the final run() call on the threaded loop does
+It is worth re-iterating that the final `run()` call on the threaded loop does
 quite a bit of work behind the scenes. The main issue is that it will create
 copies of the functor you provided using its copy-constructor, and call each of
-these copies' operator() method within its own thread. This means you need to
+these copies' `operator()` method within its own thread. This means you need to
 ensure that your functor's copy constructor behaves appropriately - each copy
 must be able to operate independently without affecting any of the other
 copies. Pay special attention to any data accessed via a member pointer or
 reference - by default, these are copy-constructed by value, so that each
 functor still points to the same object - this is fine as long as this object
-is \e never written to. If this what you intended, declare these const to
+is _never_ written to. If this what you intended, declare these `const` to
 minimise the chances of unintentional write access (see next example for
 details).
-
-*/
-
-}
-
-
 

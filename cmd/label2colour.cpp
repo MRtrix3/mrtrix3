@@ -124,7 +124,7 @@ void run ()
   }
 
 
-  Header H = nodes.original_header();
+  Header H (nodes);
   H.set_ndim (4);
   H.size (3) = 3;
   H.datatype() = DataType::UInt8;

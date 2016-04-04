@@ -174,8 +174,8 @@ namespace MR
 
         {
           Mapping::TrackLoader loader (file, count);
-          Mapping::TrackMapperBase mapper (Fixel_map<Fixel>::original_header(), dirs);
-          mapper.set_upsample_ratio (Mapping::determine_upsample_ratio (Fixel_map<Fixel>::original_header(), properties, 0.1));
+          Mapping::TrackMapperBase mapper (accessor(), dirs);
+          mapper.set_upsample_ratio (Mapping::determine_upsample_ratio (accessor(), properties, 0.1));
           mapper.set_use_precise_mapping (true);
           MappedTrackReceiver receiver (*this);
           Thread::run_queue (

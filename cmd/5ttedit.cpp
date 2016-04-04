@@ -146,7 +146,7 @@ void run ()
 
   auto in = Image<float>::open (argument[0]);
   DWI::Tractography::ACT::verify_5TT_image (in);
-  auto out = Image<float>::create (argument[1], in.original_header());
+  auto out = Image<float>::create (argument[1], in);
 
   Modifier modifier (in, out);
 
