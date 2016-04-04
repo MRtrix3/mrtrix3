@@ -21,6 +21,8 @@ Options
 
 - **-premasked** Indicate that brain masking has been applied to the T1 input image
 
+- **-sgm_amyg_hipp** Consider the amygdalae and hippocampi as sub-cortical grey matter structures, and also replace their estimates with those from FIRST
+
 Standard options
 ^^^^^^^^^^^^^^^^
 

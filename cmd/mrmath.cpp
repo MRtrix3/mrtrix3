@@ -119,10 +119,10 @@ class Sum {
 
 class Product {
   public:
-    Product () : product (1.0) { }
+    Product () : product (NAN) { }
     void operator() (value_type val) {
       if (std::isfinite (val))
-        product *= val;
+        product = std::isfinite (product) ? product * val : val;
     }
     value_type result () const {
       return product;
