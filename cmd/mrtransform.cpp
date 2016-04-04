@@ -410,8 +410,7 @@ void run ()
       output_header.transform() = midway_header.transform();
     }
 
-    auto output = Image<float>::scratch (output_header);
-    auto output_file = Image<float>::create(argument[1], output_header);
+    auto output = Image<float>::create(argument[1], output_header).with_direct_io();
 
     switch (interp) {
       case 0:
@@ -434,8 +433,6 @@ void run ()
     if (fod_reorientation)
       Registration::Transform::reorient ("reorienting", output, output, linear_transform, directions_cartesian.transpose(), modulate);
 
-    threaded_copy (output, output_file);
-
   } else if (warp.valid()) {
 
     if (replace)
@@ -450,8 +447,7 @@ void run ()
       add_line (output_header.keyval()["comments"], std::string ("resliced using warp image \"" + warp.name() + "\""));
     }
 
-    auto output = Image<float>::scratch (output_header);
-    auto output_file = Image<float>::create(argument[1], output_header);
+    auto output = Image<float>::create(argument[1], output_header).with_direct_io();
 
     if (warp.ndim() == 5) {
       Image<default_type> warp_deform;
@@ -481,9 +477,6 @@ void run ()
       if (fod_reorientation)
         Registration::Transform::reorient_warp ("reorienting", output, warp, directions_cartesian.transpose(), modulate);
     }
-
-    threaded_copy (output, output_file);
-
 
   // No reslicing required, so just modify the header and do a straight copy of the data
   } else {
