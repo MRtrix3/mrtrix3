@@ -234,7 +234,7 @@ void run ()
   opt = get_options ("warp");
   Image<default_type> warp;
   if (opt.size()) {
-    warp = Image<default_type>::open (opt[0][0]);
+    warp = Image<default_type>::open (opt[0][0]).with_direct_io();
     if (warp.ndim() != 5)
       throw Exception ("the input -warp image must be a 5D file.");
     if (warp.size(3) != 3)
@@ -260,7 +260,7 @@ void run ()
   if (opt.size()) {
     if (warp.valid())
       throw Exception ("only one warp field can be input with either -warp or -warp_df");
-    warp = Image<default_type>::open (opt[0][0]).with_direct_io(Stride::contiguous_along_axis(3));
+    warp = Image<default_type>::open (opt[0][0]).with_direct_io (Stride::contiguous_along_axis(3));
     if (warp.ndim() != 4)
       throw Exception ("the input -warp_df file must be a 4D deformation field");
     if (warp.size(3) != 3)
@@ -434,7 +434,7 @@ void run ()
     if (fod_reorientation)
       Registration::Transform::reorient ("reorienting", output, output, linear_transform, directions_cartesian.transpose(), modulate);
 
-    threaded_copy(output, output_file);
+    threaded_copy (output, output_file);
 
   } else if (warp.valid()) {
 
@@ -482,7 +482,7 @@ void run ()
         Registration::Transform::reorient_warp ("reorienting", output, warp, directions_cartesian.transpose(), modulate);
     }
 
-    threaded_copy(output, output_file);
+    threaded_copy (output, output_file);
 
 
   // No reslicing required, so just modify the header and do a straight copy of the data
