@@ -32,12 +32,12 @@ void usage ()
 
   DESCRIPTION
   + "Obtain angular correpondence by mapping subject fixels to a template fixel mask. "
-    "The subject fixel image must be already in the same space as the template";
+    "It is assumed that the subject image has already been spatially normalised and is aligned with the template.";
 
   ARGUMENTS
   + Argument ("subject", "the input subject fixel image.").type_image_in ()
   + Argument ("template", "the input template fixel image.").type_image_in ()
-  + Argument ("output", "the input fixel image.").type_image_out ();
+  + Argument ("output", "the output fixel image.").type_image_out ();
 
   OPTIONS
   + Option ("angle", "the max angle threshold for computing inter-subject fixel correspondence (Default: 30)")
