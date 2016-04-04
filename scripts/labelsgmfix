@@ -29,7 +29,7 @@ lib.app.initCitations([ 'first', 'FSL', 'SIFT_followup' ])
 lib.app.initParser('In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST')
 lib.app.parser.add_argument('parc',   help='The input FreeSurfer parcellation image')
 lib.app.parser.add_argument('t1',     help='The T1 image to be provided to FIRST')
-lib.app.parser.add_argument('config', help='The lookup table file that the parcellated image is based on')
+lib.app.parser.add_argument('lut',    help='The lookup table file that the parcellated image is based on')
 lib.app.parser.add_argument('output', help='The output parcellation image')
 lib.app.parser.add_argument('-premasked', action='store_true', default=False, help='Indicate that brain masking has been applied to the T1 input image')
 lib.app.initialise()
@@ -60,11 +60,15 @@ structure_map = { 'L_Accu':'Left-Accumbens-area',  'R_Accu':'Right-Accumbens-are
                   'L_Puta':'Left-Putamen',         'R_Puta':'Right-Putamen',
                   'L_Thal':'Left-Thalamus-Proper', 'R_Thal':'Right-Thalamus-Proper' }
                   
-# Import the config file
+# Import the lookup table file
 # Invert the mapping - go from the structure name to the index
 # TODO This will only work for FreeSurfer format LUT files...
+# Rather than duplicating the LUT import functionality, is it possible to
+#   provide a simple lookup table containing only the SGM structures, and
+#   use labelconvert twice to map to this basis in order to do the
+#   modifications?
 mapping = {}
-with open(lib.app.args.config) as f:
+with open(lib.app.args.lut) as f:
   for line in f:
     line = line.rstrip()
     if line and line[0]!='#':

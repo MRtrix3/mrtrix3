@@ -1,4 +1,4 @@
-labelconfig
+labelconvert
 ===========
 
 Synopsis
@@ -6,30 +6,20 @@ Synopsis
 
 ::
 
-    labelconfig [ options ]  path_in config_in image_out
+    labelconvert [ options ]  path_in lut_in lut_out image_out
 
 -  *path_in*: the input image
--  *config_in*: the MRtrix connectome configuration file specifying desired nodes & indices
+-  *lut_in*: the connectome lookup table for the input image
+-  *lut_out*: the target connectome lookup table for the output image
 -  *image_out*: the output image
 
 Description
 -----------
 
-prepare a parcellated image for connectome construction by modifying the image values; typically this involves making the parcellation intensities increment from 1 to coincide with rows and columns of a matrix. The configuration file passed as the second argument specifies the indices that should be assigned to different structures; examples of such configuration files are provided in src//connectome//config//
+convert a connectome node image by from one lookup table to another. Typical usage is to convert a parcellation image provided by some other software, based on the lookup table provided by that software, to conform to a new lookup table, particularly one where the node indices increment from 1, in preparation for connectome construction; examples of such target lookup table files are provided in src//connectome//config//
 
 Options
 -------
-
-Options for importing information from parcellation lookup tables
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
--  **-lut_basic path** get information from a basic lookup table consisting of index / name pairs
-
--  **-lut_freesurfer path** get information from a FreeSurfer lookup table (typically "FreeSurferColorLUT.txt")
-
--  **-lut_aal path** get information from the AAL lookup table (typically "ROI_MNI_V4.txt")
-
--  **-lut_itksnap path** get information from an ITK-SNAP lookup table (this includes the IIT atlas file "LUT_GM.txt")
 
 -  **-spine image** provide a manually-defined segmentation of the base of the spine where the streamlines terminate, so that this can become a node in the connection matrix.
 

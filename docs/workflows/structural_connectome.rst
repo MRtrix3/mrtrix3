@@ -24,9 +24,9 @@ undesirable for connectome construction; it would be preferable for the
 node indices to increase monotonically from 1, so that each integer
 value corresponds to a row/column position in the connectome matrix.
 
-This functionality is provided in the command ``labelconfig``. It takes
+This functionality is provided in the command ``labelconvert``. It takes
 as its input a parcellation image that has been provided by some other
-software package, and re-configures the label indices; this is done so
+software package, and converts the label indices; this is done so
 that the code that actually generates the connectome can be 'dumb and
 blind', i.e. the integer values at the streamline endpoints correspond
 to the row & column of the connectome matrix that should be incremented.
@@ -34,8 +34,8 @@ In addition, this processing chain design provides flexibility in terms
 of both the source of the parcellation data, and the way in which the
 user wishes to customise the layout of their connectome.
 
-Please consult the tutorial :ref:`labelconfig` for a guide on how to use
-the ``labelconfig`` command.
+Please consult the tutorial :ref:`labelconvert` for a guide on how to use
+the ``labelconvert`` command.
 
 Generating the connectome
 -------------------------
@@ -68,12 +68,12 @@ If you are generating structural connectomes, you should be using
 Extracting pathways of interest from a connectome
 -------------------------------------------------
 
-The command ``tcknodeextract`` can be used to extract specific
+The command ``connectome2tck`` can be used to extract specific
 connections of interest from a connectome for further interrogation or
 visualisation. Note that since the resulting connectome matrix does not
 encode precisely which parcellation node pair each streamline was
 assigned to, the streamlines are re-assigned to parcellation nodes as
-part of this command. Run ``tcknodeextract -help`` to see the various
+part of this command. Run ``connectome2tck -help`` to see the various
 ways in which streamlines may be selected from the connectome.
 
 Also: Beware of running this command on systems with distributed network
