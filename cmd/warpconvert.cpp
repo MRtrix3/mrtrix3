@@ -139,7 +139,7 @@ void run ()
     } else {
       if (!get_options ("template").size())
         throw Exception ("-template option required with 5Dwarp2deformation or 5Dwarp2displacement conversion type");
-      auto template_header = Header::open (argument[1]);
+      auto template_header = Header::open (template_filename);
       warp_output = Registration::Warp::compute_full_deformation (warp, template_header, from);
     }
 
