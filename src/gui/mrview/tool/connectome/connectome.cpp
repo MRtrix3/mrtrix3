@@ -2339,7 +2339,7 @@ namespace MR
                   dim[axis] = node_upper_corners[node_index][axis] - node_lower_corners[node_index][axis] + 1;
                 }
                 MR::Adapter::Subset< MR::Image<node_t> > subset (*buffer, from, dim);
-                MR::Image<bool> node_mask (MR::Image<bool>::scratch (subset.original_header(), "Node " + str(node_index) + " mask"));
+                MR::Image<bool> node_mask (MR::Image<bool>::scratch (subset, "Node " + str(node_index) + " mask"));
 
                 auto copy_func = [&] (const decltype(subset)& in, decltype(node_mask)& out) { out.value() = (in.value() == node_index); };
                 MR::ThreadedLoop (subset).run (copy_func, subset, node_mask);

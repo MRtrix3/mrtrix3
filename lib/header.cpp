@@ -135,8 +135,7 @@ namespace MR
 
 
 
-  // specialisation for Header:
-  template<> Header Header::create (const std::string& image_name, const Header& template_header)
+  Header Header::create (const std::string& image_name, const Header& template_header)
   {
     if (image_name.empty())
       throw Exception ("no name supplied to open image!");
@@ -243,17 +242,13 @@ namespace MR
 
     return H;
   }
-  // force instantiation:
-  template Header Header::create<Header> (const std::string& image_name, const Header& template_header);
 
 
 
 
 
 
-
-  // specialisation for Header:
-  template<> Header Header::scratch (const Header& template_header, const std::string& label) 
+  Header Header::scratch (const Header& template_header, const std::string& label) 
   {
     Header H (template_header);
     H.name() = label;
@@ -263,8 +258,6 @@ namespace MR
     H.io = std::move (std::unique_ptr<ImageIO::Scratch> (new ImageIO::Scratch (H))); 
     return H;
   }
-  // force instantiation:
-  template Header Header::scratch<Header> (const Header& template_header, const std::string& label);
 
 
 

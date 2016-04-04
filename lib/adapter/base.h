@@ -42,7 +42,6 @@ namespace MR
           template <class U> 
             const Base& operator= (const U& V) { return parent_ = V; }
 
-          FORCE_INLINE const Header& original_header () const { return parent_.original_header(); }
           FORCE_INLINE ImageType& parent () { return parent_; }
           FORCE_INLINE bool valid () const { return parent_.valid(); }
           FORCE_INLINE bool operator! () const { return !valid(); }
@@ -53,6 +52,7 @@ namespace MR
           FORCE_INLINE default_type spacing (size_t axis) const { return parent_.spacing (axis); }
           FORCE_INLINE ssize_t stride (size_t axis) const { return parent_.stride (axis); }
           FORCE_INLINE const transform_type& transform () const { return parent_.transform(); }
+          FORCE_INLINE const std::map<std::string, std::string>& keyval () const { return parent_.keyval(); }
 
           FORCE_INLINE ssize_t index (size_t axis) const { return parent_.index (axis); }
           FORCE_INLINE auto index (size_t axis) -> decltype(Helper::index(*this, axis)) { return { *this, axis }; }

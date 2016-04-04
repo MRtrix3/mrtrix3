@@ -57,16 +57,15 @@ void run () {
   int axis = get_option_value ("axis", -1);
 
   int num_images = argument.size()-1;
-  std::vector<std::unique_ptr<Image<value_type>>> in (num_images);
-  in[0].reset (new Image<value_type> (Image<value_type>::open (argument[0])));
-  Header header_in (*in[0]);
+  std::vector<Header> in (num_images);
+  in[0] = Header::open (argument[0]);
 
   int ndims = 0;
   int last_dim;
 
   for (int i = 1; i < num_images; i++) {
-    in[i].reset (new Image<value_type> (Image<value_type>::open (argument[i])));
-    for (last_dim = in[i]->ndim()-1; in[i]->size (last_dim) <= 1 && last_dim >= 0; last_dim--);
+    in[i] = Header::open (argument[i]);
+    for (last_dim = in[i].ndim()-1; in[i].size (last_dim) <= 1 && last_dim >= 0; last_dim--);
     if (last_dim > ndims)
       ndims = last_dim;
   }
@@ -77,20 +76,20 @@ void run () {
   for (int i = 0; i < ndims; i++)
     if (i != axis)
       for (int n = 0; n < num_images; n++)
-        if (in[0]->size (i) != in[n]->size (i))
+        if (in[0].size (i) != in[n].size (i))
           throw Exception ("dimensions of input images do not match");
 
   if (axis >= ndims) ndims = axis+1;
 
-  Header header_out (header_in);
+  Header header_out (in[0]);
   header_out.set_ndim (ndims);
 
   for (size_t i = 0; i < header_out.ndim(); i++) {
     if (header_out.size (i) <= 1) {
       for (int n = 0; n < num_images; n++) {
-        if (in[n]->ndim() > i) {
-          header_out.size(i) = in[n]->size (i);
-          header_out.spacing(i) = in[n]->spacing (i);
+        if (in[n].ndim() > i) {
+          header_out.size(i) = in[n].size (i);
+          header_out.spacing(i) = in[n].spacing (i);
           break;
         }
       }
@@ -101,9 +100,9 @@ void run () {
   {
     size_t axis_dim = 0;
     for (int n = 0; n < num_images; n++) {
-      if (in[n]->original_header().datatype().is_complex())
+      if (in[n].datatype().is_complex())
         header_out.datatype() = DataType::CFloat32;
-      axis_dim += in[n]->ndim() > size_t (axis) ? (in[n]->size (axis) > 1 ? in[n]->size (axis) : 1) : 1;
+      axis_dim += in[n].ndim() > size_t (axis) ? (in[n].size (axis) > 1 ? in[n].size (axis) : 1) : 1;
     }
     header_out.size (axis) = axis_dim;
   }
@@ -116,7 +115,7 @@ void run () {
     size_t nrows = 0;
     std::vector<Eigen::MatrixXd> input_grads;
     for (int n = 0; n < num_images; ++n) {
-      auto grad = DWI::get_DW_scheme (in[n]->original_header());
+      auto grad = DWI::get_DW_scheme (in[n]);
       input_grads.push_back (grad);
       if (grad.rows() == 0 || grad.cols() != 4) {
         nrows = 0;
@@ -143,17 +142,18 @@ void run () {
 
 
   for (int i = 0; i < num_images; i++) {
+    auto image_in = in[i].get_image<value_type>();
 
-    auto copy_func = [&axis, &axis_offset](decltype(*in[i])& in, decltype(image_out)& out)
+    auto copy_func = [&axis, &axis_offset](decltype(image_in)& in, decltype(image_out)& out)
     {
       out.index (axis) = axis < int(in.ndim()) ? in.index (axis) + axis_offset : axis_offset;
       out.value() = in.value();
     };
 
-    ThreadedLoop ("concatenating \"" + in[i]->name() + "\"...", *in[i], 0, std::min (in[i]->ndim(), image_out.ndim()))
-      .run (copy_func, *in[i], image_out);
-    if (axis < int(in[i]->ndim()))
-      axis_offset += in[i]->size (axis);
+    ThreadedLoop ("concatenating \"" + image_in.name() + "\"...", image_in, 0, std::min (image_in.ndim(), image_out.ndim()))
+      .run (copy_func, image_in, image_out);
+    if (axis < int(image_in.ndim()))
+      axis_offset += image_in.size (axis);
     else {
       ++axis_offset;
       image_out.index (axis) = axis_offset;

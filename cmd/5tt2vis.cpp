@@ -84,7 +84,7 @@ void run ()
   auto input = Image<float>::open (argument[0]);
   DWI::Tractography::ACT::verify_5TT_image (input);
 
-  Header H (input.original_header());
+  Header H (input);
   H.set_ndim (3);
 
   const float bg_multiplier   = get_option_value ("bg", VALUE_DEFAULT_BG);
