@@ -27,7 +27,7 @@
 #include "math/gradient_descent.h"
 #include "image.h"
 #include "debug.h"
-#include "image/average_space.h"
+#include "math/average_space.h"
 #include "filter/resize.h"
 #include "filter/reslice.h"
 #include "adapter/reslice.h"
@@ -66,7 +66,7 @@ namespace MR
               Image<default_type>& mask2,
               MetricType& metric,
               Registration::Transform::Base& linear_transform,
-              Registration::Transform::Init::LinearInitialisationParams init) :
+              Registration::Transform::Init::LinearInitialisationParams& init) :
             im1 (image1),
             im2 (image2),
             mask1 (mask1),
@@ -229,11 +229,11 @@ namespace MR
                 init_transforms.push_back (init_trafo_2);
               }
               auto padding = Eigen::Matrix<default_type, 4, 1>(0.0, 0.0, 0.0, 0.0);
-              default_type im_res = 1.0;
+              int subsample = 1;
               std::vector<Header> headers;
               headers.push_back(im1.original_header());
               headers.push_back(im2.original_header());
-              midway_image_header = compute_minimum_average_header<default_type, Eigen::Transform<default_type, 3, Eigen::Projective>> (headers, im_res, padding, init_transforms);
+              midway_image_header = compute_minimum_average_header (headers, subsample, padding, init_transforms);
 
               Filter::Resize midway_resize_filter (midway_image_header);
               midway_resize_filter.set_scale_factor (image_scale_factor);

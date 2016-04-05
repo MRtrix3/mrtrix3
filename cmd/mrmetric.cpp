@@ -4,7 +4,7 @@
 #include "algo/threaded_loop.h"
 #include "math/math.h"
 
-#include "image/average_space.h"
+#include "math/average_space.h"
 #include "interp/linear.h"
 #include "interp/nearest.h"
 #include "interp/cubic.h"
@@ -310,7 +310,7 @@ void run ()
       headers.push_back(input1.original_header());
       headers.push_back(input2.original_header());
 
-      Header midway_image_header = compute_minimum_average_header<default_type, Eigen::Transform<default_type, 3, Eigen::Projective>> (headers, 1.0, padding, init_transforms);
+      Header midway_image_header = compute_minimum_average_header (headers, 1, padding, init_transforms);
 
       typedef Interp::LinearInterp<Image<value_type>, Interp::LinearInterpProcessingType::Value> LinearInterpolatorType1;
       typedef Interp::LinearInterp<Image<value_type>, Interp::LinearInterpProcessingType::Value> LinearInterpolatorType2;

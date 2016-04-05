@@ -33,8 +33,7 @@
 #include "registration/transform/reorient.h"
 #include "registration/warp/utils.h"
 #include "registration/warp/compose.h"
-#include "adapter/extract.h" //TODO remove
-#include "image/average_space.h"
+#include "math/average_space.h"
 
 
 
@@ -399,10 +398,10 @@ void run ()
       std::vector<Header> headers;
       headers.push_back(input_header);
       headers.push_back(template_header);
-      std::vector<transform_type> void_trafo;
+      std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>> void_trafo;
       auto padding = Eigen::Matrix<double, 4, 1>(1.0, 1.0, 1.0, 1.0);
-      double resolution = 1.0;
-      auto midway_header = compute_minimum_average_header<double,transform_type> (headers, resolution, padding, void_trafo);
+      int subsampling = 1;
+      auto midway_header = compute_minimum_average_header (headers, subsampling, padding, void_trafo);
       for (size_t i = 0; i < 3; ++i) {
         output_header.size(i) = midway_header.size(i);
         output_header.spacing(i) = midway_header.spacing(i);

@@ -154,7 +154,7 @@ printMessage('Generating initial template')
 input_filenames = []
 for i in input:
   input_filenames.append (abspath(i.directory, i.filename));
-runCommand('mraverageheader ' + ' '.join(input_filenames) + ' average_header.mif.gz' ' -mark_centre')
+runCommand('mraverageheader ' + ' '.join(input_filenames) + ' average_header.mif.gz' ' -fill')
 
 if initial_alignment == 'none':
   for i in input:

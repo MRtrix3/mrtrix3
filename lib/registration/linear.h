@@ -20,7 +20,7 @@
 
 #include "app.h"
 #include "image.h"
-#include "image/average_space.h"
+#include "math/average_space.h"
 #include "filter/normalise.h"
 #include "filter/resize.h"
 #include "filter/reslice.h"
@@ -282,7 +282,7 @@ namespace MR
 
             Eigen::Matrix<typename TransformType::ParameterType, Eigen::Dynamic, 1> optimiser_weights = transform.get_optimiser_weights();
             const Eigen::Matrix<default_type, 4, 1> midspace_padding = Eigen::Matrix<default_type, 4, 1>(1.0, 1.0, 1.0, 1.0);
-            const default_type midspace_voxel_subsampling = 1.0;
+            const int midspace_voxel_subsampling = 1;
 
             // calculate midway (affine average) space which will be constant for each resolution level
             midway_image_header = compute_minimum_average_header (im1_image, im2_image, transform, midspace_voxel_subsampling, midspace_padding);

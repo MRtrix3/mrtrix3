@@ -30,7 +30,7 @@
 #include "registration/metric/demons.h"
 #include "registration/metric/demons4D.h"
 #include "registration/multi_resolution_lmax.h"
-#include "image/average_space.h"
+#include "math/average_space.h"
 
 namespace MR
 {
@@ -87,7 +87,7 @@ namespace MR
               std::vector<Header> headers;
               headers.push_back (im2_image.original_header());
               headers.push_back (im1_image.original_header());
-              midway_image_header = compute_minimum_average_header<default_type, Eigen::Transform<default_type, 3, Eigen::Projective>>(headers, 1.0, padding, init_transforms);
+              midway_image_header = compute_minimum_average_header(headers, 1, padding, init_transforms);
             } else {
               // if initialising only perform optimisation at the full resolution level
               scale_factor.resize (1);

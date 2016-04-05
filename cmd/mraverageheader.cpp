@@ -16,20 +16,19 @@
 #include "command.h"
 #include "debug.h"
 #include "image.h"
-#include "image/average_space.h"
-// #include "registration/transform/initialiser.h"
-// Registration::Transform::Init::LinearInitialisationParams init;
+#include "math/average_space.h"
 #include "registration/transform/initialiser_helpers.h"
 #include "interp/nearest.h"
-
+#include "algo/loop.h"
 
 using namespace MR;
 using namespace App;
 using namespace Registration;
 
 default_type PADDING_DEFAULT     = 0.0;
-default_type TEMPLATE_RESOLUTION = 0.9;
 
+enum RESOLUTION {MAX, MEAN};
+const char* resolution_choices[] = { "max", "mean", nullptr };
 
 void usage ()
 {
@@ -45,9 +44,11 @@ void usage ()
   OPTIONS
   + Option ("padding", " boundary box padding in voxels. Default: " + str(PADDING_DEFAULT))
   +   Argument ("value").type_float (0.0, PADDING_DEFAULT, std::numeric_limits<default_type>::infinity())
-  + Option ("template_res", " subsampling of template compared to smallest voxel size in any input image. Default: " + str(TEMPLATE_RESOLUTION))
-  +   Argument ("value").type_float (default_type(0.0), TEMPLATE_RESOLUTION, default_type(1.0))
-  + Option ("mark_centre", " set intensity in central voxel of average space to 1")
+  + Option ("resolution", " subsampling of template compared to smallest voxel size in any input image. "
+        "Valid options are 'mean': unbiased but loss of resolution for individual images possible, "
+        "and 'max': smallest voxel size of any input image defines the resolution. Default: mean")
+  +   Argument ("type").type_choice (resolution_choices)
+  + Option ("fill", " set the intensity in the first volume of the average space to 1")
   + DataType::options();
 }
 
@@ -62,11 +63,11 @@ void run ()
     auto padding = Eigen::Matrix<default_type, 4, 1>(p, p, p, 1.0);
     INFO("padding in template voxels: " + str(padding.transpose().head<3>()));
 
-    opt = get_options ("template_res");
-    const default_type template_res = opt.size() ? default_type(opt[0][0]) : TEMPLATE_RESOLUTION;
-    INFO("template voxel subsampling: " + str(template_res));
+    opt = get_options ("resolution");
+    const int resolution = opt.size() ? int(opt[0][0]) : 1;
+    INFO("template voxel subsampling: " + str(resolution));
 
-    bool mark_centre = get_options ("mark_centre").size();
+    bool fill = get_options ("fill").size();
 
     std::vector<Header> headers_in;
     size_t dim (Header::open (argument[0]).ndim());
@@ -76,7 +77,7 @@ void run ()
 
     for (size_t i = 0; i != num_inputs; ++i) {
         headers_in.push_back (Header::open (argument[i]));
-        if (mark_centre) {
+        if (fill) {
           if (headers_in.back().ndim() != dim)
             throw Exception ("Images do not have the same dimensionality");
           if (dim == 4 and volumes != headers_in.back().size(3))
@@ -84,17 +85,18 @@ void run ()
         }
     }
 
-    auto trafo = headers_in[0].transform();
-    std::vector<decltype(trafo)> transform_header_with;
-
-    auto H = compute_minimum_average_header<double,decltype(trafo)>(headers_in, template_res, padding, transform_header_with);
-    if (mark_centre) {
+    std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>> transform_header_with;
+    auto H = compute_minimum_average_header (headers_in, resolution, padding, transform_header_with);
+    H.datatype() = DataType::Bit;
+    if (fill) {
       H.set_ndim(dim);
       if (dim == 4)
         H.size(3) = headers_in.back().size(3);
     }
-    auto out = Image<bool>::create(argument[argument.size()-1],H);
-    if (mark_centre) {
+    auto out = Image<bool>::create(argument[argument.size()-1], H);
+    if (fill) {
+      for (auto l = Loop (0,3) (out); l; ++l)
+        out.value() = 1;
       Eigen::Matrix<default_type, 3, 1> centre, vox;
       Registration::Transform::Init::get_geometric_centre (out, centre);
       vox = MR::Transform(out).scanner2voxel * centre;
@@ -102,14 +104,9 @@ void run ()
       for (size_t i = 0; i < 3; ++i)
         vox(i) = std::round (vox(i));
       INFO("centre voxel: " + str(vox.transpose()));
-      out.index(0) = vox(0);
-      out.index(1) = vox(1);
-      out.index(2) = vox(2);
-      out.value() = 1.0;
     }
     INFO("average transformation:");
     INFO(str(out.transform().matrix()));
-    auto trafo2 = MR::Transform(out);
     INFO("average voxel to scanner transformation:");
-    INFO(str(trafo2.voxel2scanner.matrix()));
+    INFO(str(MR::Transform(out).voxel2scanner.matrix()));
 }

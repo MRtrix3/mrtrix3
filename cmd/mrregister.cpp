@@ -28,7 +28,7 @@
 #include "registration/transform/rigid.h"
 #include "dwi/directions/predefined.h"
 #include "math/SH.h"
-#include "image/average_space.h"
+#include "math/average_space.h"
 
 
 using namespace MR;
