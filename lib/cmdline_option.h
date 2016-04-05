@@ -397,6 +397,7 @@ namespace MR
      *   + Option ("option1", ...)
      *   + Option ("option2", ...);
      * }
+     * \endcode
      */  
     class OptionGroup : public std::vector<Option> {
       public:

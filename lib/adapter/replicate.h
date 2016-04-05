@@ -46,10 +46,6 @@ namespace MR
             }
           }
 
-        const Header& original_header() const {
-          return header_;
-        }
-
         size_t ndim () const {
           return header_.ndim();
         }

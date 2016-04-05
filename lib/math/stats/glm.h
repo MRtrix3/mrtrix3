@@ -80,7 +80,7 @@ namespace MR
           /*! Compute a matrix of the beta coefficients
           * @param measurements a matrix storing the measured data for each subject in a column
           * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
-          * @param betas the matrix containing the output effect
+          * @return the matrix containing the output effect
           */
           template <typename ValueType>
             Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> solve_betas (const Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& measurements,
@@ -94,7 +94,7 @@ namespace MR
           * @param measurements a matrix storing the measured data for each subject in a column
           * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
           * @param contrast a matrix defining the group difference
-          * @param effect the matrix containing the output effect
+          * @return the matrix containing the output effect
           */
           template <typename ValueType>
             Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> abs_effect_size (const Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& measurements,
@@ -107,7 +107,7 @@ namespace MR
           /*! Compute the pooled standard deviation
           * @param measurements a matrix storing the measured data for each subject in a column
           * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
-          * @param stdev the matrix containing the output standard deviation size
+          * @return the matrix containing the output standard deviation size
           */
           template <typename ValueType>
             Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> stdev (const Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& measurements,
@@ -124,7 +124,7 @@ namespace MR
           * @param measurements a matrix storing the measured data for each subject in a column
           * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
           * @param contrast a matrix defining the group difference
-          * @param cohens_d the matrix containing the output standardised effect size
+          * @return the matrix containing the output standardised effect size
           */
           template <typename ValueType>
             Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> std_effect_size (const Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& measurements,

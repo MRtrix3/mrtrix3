@@ -30,10 +30,8 @@ namespace MR
       transform_type adjust_transform (const Header& H, std::vector<size_t>& order);
 
       void check (Header& H, bool single_file);
-      //! \todo add straight Analyse support
       size_t read (Header& H, const nifti_1_header& NH);
       void check (Header& H, bool single_file);
-      //! \todo need to double-check new transform handling code
       void write (nifti_1_header& NH, const Header& H, bool single_file);
 
     }

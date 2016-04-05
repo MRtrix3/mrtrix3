@@ -252,8 +252,7 @@ class Processor
 void run ()
 {
   auto dt_img = Image<value_type>::open (argument[0]);
-  auto header = dt_img.original_header();
-  header.datatype() = DataType::Float32;
+  Header header (dt_img);
 
   auto mask_img = Image<bool>();
   auto opt = get_options ("mask");

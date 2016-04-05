@@ -1,31 +1,10 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
- */
+Running a per-datum operation (without multithreading)     {#example_per_datum_processing}
+======================================================
 
-#error - this file is for documentation purposes only!
-#error - It should NOT be included in other code files.
+This example simply computes the exponential of the intensity for each data point
+in the input dataset, producing a new dataset of the same size.
 
-namespace MR
-{
-
-  /*! 
- \page example_per_datum_processing Running a per-datum operation (without multithreading)
-
- This example simply computes the exponential of the intensity for each data point
- in the input dataset, producing a new dataset of the same size.
-
-\code
+~~~{.cpp}
 #include "command.h"
 #include "image.h"
 #include "algo/loop.h"
@@ -90,15 +69,8 @@ void run ()
   for (auto l = loop (in, out); l; ++l)
     out.value() = std::pow (in.value(), power);
 
-  // That's it! Data write-back is performed by the Image::Buffer destructor,
+  // That's it! Data write-back is performed by the Image destructor,
   // invoked when it goes out of scope at function exit.
 }
-
-\endcode
-
-*/
-
-}
-
-
+~~~
 

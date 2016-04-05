@@ -283,13 +283,41 @@ namespace MR
 
   //! a class to loop over arbitrary numbers and orders of axes of a ImageType
   /*! This class can be used to loop over any number of axes of one of more
-   * ImageType, in any specified order, within the same thread of execution
-   * (for multi-threaded applications, see Image::ThreadedLoop). Its use is
-   * essentially identical to that of the Loop class, with the difference
-   * that axes can now be iterated over in any arbitrary order. This is best
-   * illustrated with the following examples.
+   * `ImageType`, in any specified order, within the same thread of execution
+   * (for multi-threaded applications, see ThreadedLoop()). 
    *
-   * \section strideorderloop Looping with smallest stride first
+   * Looping over a single axis   {#loop_single_axis}
+   * ==========================
+   *
+   * To loop over a single axis, use the following syntax:
+   * ~~~{.cpp}
+   * auto loop = Loop (axis);
+   * for (auto l = loop (image); l; ++l) {
+   *   // do something:
+   *   image.value() = ...
+   * }
+   * ~~~
+   *
+   * To clarify the process:
+   *
+   * - the Loop() method returns an opaque structure, in this case destined
+   *   to loop over a single axis, as specified by `axis` (the C++11 `auto`
+   *   keyword is very useful here to hide the internals of the framework).
+   *
+   * - the `operator()` method of the returned object accepts any number of
+   *   `ImageType` objects, each of which will have its position incremented as
+   *   expected at each iteration. 
+   *
+   * - this returns another opaque object that will perfom the looping proper
+   *   (again, the C++11 `auto` keyword is invaluable here). This is assigned
+   *   to a local variable, which can be used to test for completion of the
+   *   loop (via its `operator bool()` method), and to increment the position
+   *   of the `ImageType` objects involved (with its `operator++()` methods). 
+   *
+   *
+   * Looping with smallest stride first   {#loop_smallest_stride}
+   * ==================================
+   *
    * The looping strategy most likely to make most efficient use of the
    * memory infrastructure is one where the innermost loop iterates over the
    * axis with the smallest absolute stride, since voxels along this axis are

@@ -29,8 +29,6 @@
 
 namespace MR
 {
-  /*! \todo add Formats::Folder class to handle both DICOM, GE I-dot
-   * and potentially Siemens Numaris 3 images. */
 
   //! Classes responsible for handling of specific image formats
   namespace Formats
@@ -111,14 +109,6 @@ namespace MR
     extern const Base* handlers[];
 
 
-
-    /*! \fn bool Analyse::read (Header& H) const
-      \todo need to update Analyse format handler to new NIfTI utils
-     * framework. */
-
-    /*! \fn void Analyse::create (Header& H) const
-      \todo need to implement writing in Analyse format (using the new
-     * NIfTI utils framework. */
 
     //! \cond skip
     extern MRtrix mrtrix_handler;
