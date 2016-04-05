@@ -73,7 +73,7 @@ void usage ()
 
   OPTIONS
   + Option ("type", "the registration type. Valid choices are: "
-                     "rigid, affine, nonlinear, rigid_affine, rigid_nonlinear, affine_nonlinear, rigid_affine_nonlinear (Default: affine_nonlinear)")
+                    "rigid, affine, nonlinear, rigid_affine, rigid_nonlinear, affine_nonlinear, rigid_affine_nonlinear (Default: affine_nonlinear)")
     + Argument ("choice").type_choice (transformation_choices)
 
   + Option ("transformed", "image1 after registration transformed to the space of image2")
