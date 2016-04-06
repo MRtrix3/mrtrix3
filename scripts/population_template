@@ -310,10 +310,10 @@ for level in range(0, len(nl_scales)):
 runCommand('mrconvert ' + current_template + ' ' + abspath(lib.app.workingDir, lib.app.args.template) + lib.app.mrtrixForce)
 
 if lib.app.args.warp_dir:
-  runCommand('cp -r  warps ' + abspath(lib.app.workingDir, lib.app.args.warp_dir) + lib.app.mrtrixForce)
+  runCommand('cp -r  warps ' + abspath(lib.app.workingDir, lib.app.args.warp_dir))
 
 if lib.app.args.transformed_dir:
-  runCommand('cp -r  input_transformed ' + abspath(lib.app.workingDir, lib.app.args.transformed_dir) + lib.app.mrtrixForce)
+  runCommand('cp -r  input_transformed ' + abspath(lib.app.workingDir, lib.app.args.transformed_dir))
 
 lib.app.complete()
 
