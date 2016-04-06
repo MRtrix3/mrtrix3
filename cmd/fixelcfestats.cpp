@@ -175,8 +175,11 @@ void run() {
 
   // Load contrast matrix:
   Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> contrast = load_matrix<value_type> (argument[3]);
+
   if (contrast.cols() != design.cols())
     throw Exception ("the number of contrasts does not equal the number of columns in the design matrix");
+  if (contrast.rows() > 1)
+    throw Exception ("only a single contrast vector (defined as a row) is currently supported");
 
   auto input_header = Header::open (argument[1]);
   Sparse::Image<FixelMetric> mask_fixel_image (argument[1]);
@@ -333,6 +336,9 @@ void run() {
     }
   }
 
+  if (!data.allFinite())
+    throw Exception ("input data contains non-finite value(s)");
+
   {
     ProgressBar progress ("outputting beta coefficients, effect size and standard deviation");
     auto temp = Math::Stats::GLM::solve_betas (data, design);
@@ -358,7 +364,7 @@ void run() {
   output_header.keyval()["cfe_c"] = str(cfe_c);
   output_header.keyval()["angular threshold"] = str(angular_threshold);
   output_header.keyval()["connectivity threshold"] = str(connectivity_threshold);
-  output_header.keyval()["smoothing FWHM"] = str(smooth_std_dev);
+  output_header.keyval()["smoothing FWHM"] = str(smooth_std_dev * 2.3548);
 
   // If performing non-stationarity adjustment we need to pre-compute the empirical CFE statistic
   if (do_nonstationary_adjustment) {
