@@ -49,7 +49,139 @@ namespace MR
   //! \endcond
 
   /** \defgroup loop Looping functions
-    @{ */
+   * 
+   * These functions can be used to loop over any number of axes of one of more
+   * `ImageType`, in any specified order, within the same thread of execution
+   * (for multi-threaded applications, see ThreadedLoop()). 
+   *
+   * Looping over a single axis   {#loop_single_axis}
+   * ==========================
+   *
+   * To loop over a single axis, use the following syntax:
+   * ~~~{.cpp}
+   * auto loop = Loop (axis);
+   * for (auto l = loop (image); l; ++l) {
+   *   // do something:
+   *   image.value() = ...
+   * }
+   * ~~~
+   *
+   * To clarify the process:
+   *
+   * - the Loop() method returns an opaque structure, in this case destined
+   *   to loop over a single axis, as specified by `axis` (the C++11 `auto`
+   *   keyword is very useful here to hide the internals of the framework).
+   *
+   * - the `operator()` method of the returned object accepts any number of
+   *   `ImageType` objects, each of which will have its position incremented as
+   *   expected at each iteration. 
+   *
+   * - this returns another opaque object that will perfom the looping proper
+   *   (again, the C++11 `auto` keyword is invaluable here). This is assigned
+   *   to a local variable, which can be used to test for completion of the
+   *   loop (via its `operator bool()` method), and to increment the position
+   *   of the `ImageType` objects involved (with its `operator++()` methods). 
+   *
+   *
+   * Looping with smallest stride first   {#loop_smallest_stride}
+   * ==================================
+   *
+   * The looping strategy most likely to make most efficient use of the
+   * memory infrastructure is one where the innermost loop iterates over the
+   * axis with the smallest absolute stride, since voxels along this axis are
+   * most likely to be adjacent. This is most likely to optimise both
+   * throughput to and from system RAM or disk (which are typically optimised
+   * for bursts of contiguous sections of memory), and CPU cache usage.
+   *
+   * The LoopInOrder class is designed to facilitate this. In the following
+   * example, the ImageType of interest is passed as an argument to the
+   * constructor, so that its strides can be used to compute the nesting
+   * order for the loops over the corresponding axes. Here, we assume that
+   * \a vox is a 3D ImageType (i.e. vox.ndim() == 3) with strides [ 2 -1 3 ]:
+   * \code
+   * float sum = 0.0;
+   * for (auto i = Image::LoopInOrder().run (vox); i; ++i)
+   *   sum += vox.value();
+   * \endcode
+   * This is equivalent to:
+   * \code
+   * float sum = 0.0;
+   * for (vox.index(2) = 0; vox.index(2) < vox.size(2); ++vox.index(2))
+   *   for (vox.index(0) = 0; vox.index(0) < vox.size(0); ++vox.index(0))
+   *     for (vox.index(1) = 0; vox.index(1) < vox.size(1); ++vox.index(1))
+   *       sum += vox.value();
+   * \endcode
+   *
+   * \section restrictedorderloop Looping over a specific range of axes
+   * It is also possible to explicitly specify the range of axes to be looped
+   * over. In the following example, the program will loop over each 3D
+   * volume in the ImageType in turn using the Loop class, and use the
+   * LoopInOrder class to iterate over the axes of each volume to ensure
+   * efficient memory bandwidth use when each volume is being processed.
+   * \code
+   * // define inner loop to iterate over axes 0 to 2
+   * LoopInOrder inner (vox, 0, 3);
+   *
+   * // outer loop iterates over axes 3 and above:
+   * for (auto i = Loop(3).run (vox); i; ++i) {
+   *   float sum = 0.0;
+   *   for (auto j = inner.run (vox); j; ++j) {
+   *     sum += vox.value();
+   *   print ("total = " + str (sum) + "\n");
+   * }
+   * \endcode
+   *
+   * \section arbitraryorderloop Arbitrary order loop
+   * It is also possible to specify the looping order explictly, as in the
+   * following example:
+   * \code
+   * float value = 0.0;
+   * std::vector<size_t> order = { 1, 0, 2 };
+   *
+   * LoopInOrder loop (vox, order);
+   * for (auto i = loop.run (vox); i; ++i) 
+   *   value += std::exp (-vox.value());
+   * \endcode
+   * This will iterate over the axes in the same order as the first example
+   * above, irrespective of the strides of the ImageType.
+   *
+   * \section multiorderloop Looping over multiple ImageType objects:
+   *
+   * As with the Loop class, it is possible to loop over more than one
+   * ImageType of the same dimensions, by passing any additional ImageType
+   * objects to be looped over to the run() member function. For example,
+   * this code snippet will copy the contents of the ImageType \a src into a
+   * ImageType \a dest (assumed to have the same dimensions as \a src),
+   * with the looping order optimised for the \a src ImageType:
+   * \code
+   * LoopInOrder loop (src);
+   * for (auto i = loop.run(src, dest); i; ++i) 
+   *   dest.value() = src.value();
+   * \endcode
+   *
+   * \section progressloopinroder Displaying progress status
+   * As in the Loop class, the LoopInOrder object can also display its
+   * progress as it proceeds, using the appropriate constructor. In the
+   * following example, the program will display its progress as it averages
+   * an ImageType:
+   * \code
+   * float sum = 0.0;
+   *
+   * LoopInOrder loop (vox, "averaging");
+   * for (auto i = loop.run (vox); i; ++i)
+   *   sum += vox.value();
+   *
+   * float average = sum / float (Image::voxel_count (vox));
+   * print ("average = " + str (average) + "\n");
+   * \endcode
+   * The output would look something like this:
+   * \code
+   * myprogram: [100%] averaging
+   * average = 23.42
+   * \endcode
+   *
+   *
+   *@{ */
 
 
   struct LoopAlongSingleAxis {
@@ -279,139 +411,6 @@ namespace MR
       template <class... ImageType>
         FORCE_INLINE Run<ImageType...> operator() (ImageType&... images) const { return { text, axes, std::tie (images...) }; }
     };
-
-
-  //! a class to loop over arbitrary numbers and orders of axes of a ImageType
-  /*! This class can be used to loop over any number of axes of one of more
-   * `ImageType`, in any specified order, within the same thread of execution
-   * (for multi-threaded applications, see ThreadedLoop()). 
-   *
-   * Looping over a single axis   {#loop_single_axis}
-   * ==========================
-   *
-   * To loop over a single axis, use the following syntax:
-   * ~~~{.cpp}
-   * auto loop = Loop (axis);
-   * for (auto l = loop (image); l; ++l) {
-   *   // do something:
-   *   image.value() = ...
-   * }
-   * ~~~
-   *
-   * To clarify the process:
-   *
-   * - the Loop() method returns an opaque structure, in this case destined
-   *   to loop over a single axis, as specified by `axis` (the C++11 `auto`
-   *   keyword is very useful here to hide the internals of the framework).
-   *
-   * - the `operator()` method of the returned object accepts any number of
-   *   `ImageType` objects, each of which will have its position incremented as
-   *   expected at each iteration. 
-   *
-   * - this returns another opaque object that will perfom the looping proper
-   *   (again, the C++11 `auto` keyword is invaluable here). This is assigned
-   *   to a local variable, which can be used to test for completion of the
-   *   loop (via its `operator bool()` method), and to increment the position
-   *   of the `ImageType` objects involved (with its `operator++()` methods). 
-   *
-   *
-   * Looping with smallest stride first   {#loop_smallest_stride}
-   * ==================================
-   *
-   * The looping strategy most likely to make most efficient use of the
-   * memory infrastructure is one where the innermost loop iterates over the
-   * axis with the smallest absolute stride, since voxels along this axis are
-   * most likely to be adjacent. This is most likely to optimise both
-   * throughput to and from system RAM or disk (which are typically optimised
-   * for bursts of contiguous sections of memory), and CPU cache usage.
-   *
-   * The LoopInOrder class is designed to facilitate this. In the following
-   * example, the ImageType of interest is passed as an argument to the
-   * constructor, so that its strides can be used to compute the nesting
-   * order for the loops over the corresponding axes. Here, we assume that
-   * \a vox is a 3D ImageType (i.e. vox.ndim() == 3) with strides [ 2 -1 3 ]:
-   * \code
-   * float sum = 0.0;
-   * for (auto i = Image::LoopInOrder().run (vox); i; ++i)
-   *   sum += vox.value();
-   * \endcode
-   * This is equivalent to:
-   * \code
-   * float sum = 0.0;
-   * for (vox.index(2) = 0; vox.index(2) < vox.size(2); ++vox.index(2))
-   *   for (vox.index(0) = 0; vox.index(0) < vox.size(0); ++vox.index(0))
-   *     for (vox.index(1) = 0; vox.index(1) < vox.size(1); ++vox.index(1))
-   *       sum += vox.value();
-   * \endcode
-   */
-  /* \section restrictedorderloop Looping over a specific range of axes
-   * It is also possible to explicitly specify the range of axes to be looped
-   * over. In the following example, the program will loop over each 3D
-   * volume in the ImageType in turn using the Loop class, and use the
-   * LoopInOrder class to iterate over the axes of each volume to ensure
-   * efficient memory bandwidth use when each volume is being processed.
-   * \code
-   * // define inner loop to iterate over axes 0 to 2
-   * LoopInOrder inner (vox, 0, 3);
-   *
-   * // outer loop iterates over axes 3 and above:
-   * for (auto i = Loop(3).run (vox); i; ++i) {
-   *   float sum = 0.0;
-   *   for (auto j = inner.run (vox); j; ++j) {
-   *     sum += vox.value();
-   *   print ("total = " + str (sum) + "\n");
-   * }
-   * \endcode
-   *
-   * \section arbitraryorderloop Arbitrary order loop
-   * It is also possible to specify the looping order explictly, as in the
-   * following example:
-   * \code
-   * float value = 0.0;
-   * std::vector<size_t> order = { 1, 0, 2 };
-   *
-   * LoopInOrder loop (vox, order);
-   * for (auto i = loop.run (vox); i; ++i) 
-   *   value += std::exp (-vox.value());
-   * \endcode
-   * This will iterate over the axes in the same order as the first example
-   * above, irrespective of the strides of the ImageType.
-   *
-   * \section multiorderloop Looping over multiple ImageType objects:
-   *
-   * As with the Loop class, it is possible to loop over more than one
-   * ImageType of the same dimensions, by passing any additional ImageType
-   * objects to be looped over to the run() member function. For example,
-   * this code snippet will copy the contents of the ImageType \a src into a
-   * ImageType \a dest (assumed to have the same dimensions as \a src),
-   * with the looping order optimised for the \a src ImageType:
-   * \code
-   * LoopInOrder loop (src);
-   * for (auto i = loop.run(src, dest); i; ++i) 
-    *   dest.value() = src.value();
-    * \endcode
-    */
-   /* \section progressloopinroder Displaying progress status
-    * As in the Loop class, the LoopInOrder object can also display its
-    * progress as it proceeds, using the appropriate constructor. In the
-    * following example, the program will display its progress as it averages
-    * a ImageType:
-    * \code
-    * float sum = 0.0;
-    *
-    * LoopInOrder loop (vox, "averaging");
-    * for (auto i = loop.run (vox); i; ++i)
-    *   sum += vox.value();
-    *
-    * float average = sum / float (Image::voxel_count (vox));
-    * print ("average = " + str (average) + "\n");
-    * \endcode
-    * The output would look something like this:
-    * \code
-    * myprogram: [100%] averaging
-    * average = 23.42
-    * \endcode
-    */
 
 
 
