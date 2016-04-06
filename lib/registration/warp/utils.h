@@ -27,8 +27,8 @@ namespace MR
       template <class InputWarpType>
       transform_type parse_linear_transform (InputWarpType& input_warps, std::string name) {
         transform_type linear;
-        const auto it = input_warps.original_header().keyval().find (name);
-        if (it != input_warps.original_header().keyval().end()) {
+        const auto it = input_warps.keyval().find (name);
+        if (it != input_warps.keyval().end()) {
           const auto lines = split_lines (it->second);
           if (lines.size() != 3)
             throw Exception ("linear transform in initialisation syn warps image headerdoes not contain 3 rows");

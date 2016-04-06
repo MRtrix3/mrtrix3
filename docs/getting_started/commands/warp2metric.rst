@@ -1,4 +1,4 @@
-fixelcorrespondence
+warp2metric
 ===========
 
 Synopsis
@@ -6,21 +6,23 @@ Synopsis
 
 ::
 
-    fixelcorrespondence [ options ]  subject template output
+    warp2metric [ options ]  in
 
--  *subject*: the input subject fixel image.
--  *template*: the input template fixel image.
--  *output*: the output fixel image.
+-  *in*: the input deformation field
 
 Description
 -----------
 
-Obtain angular correpondence by mapping subject fixels to a template fixel mask. It is assumed that the subject image has already been spatially normalised and is aligned with the template.
+compute fixel or voxel-wise metrics from a 4D deformation field
 
 Options
 -------
 
--  **-angle value** the max angle threshold for computing inter-subject fixel correspondence (Default: 30)
+-  **-fc template_input output** use an input template fixel image to define fibre orientations and output a fixel image describing the change in fibre cross-section (FC) in the perpendicular plane to the fixel orientation
+
+-  **-jmat output** output a Jacobian matrix image stored in column-major order along the 4th dimension.Note the output jacobian describes the warp gradient w.r.t the scanner space coordinate system
+
+-  **-jdet output** output the Jacobian determinant instead of the full matrix
 
 Standard options
 ^^^^^^^^^^^^^^^^

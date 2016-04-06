@@ -1,4 +1,4 @@
-fixelcorrespondence
+fixelreorient
 ===========
 
 Synopsis
@@ -6,21 +6,19 @@ Synopsis
 
 ::
 
-    fixelcorrespondence [ options ]  subject template output
+    fixelreorient [ options ]  input warp_df output
 
--  *subject*: the input subject fixel image.
--  *template*: the input template fixel image.
+-  *input*: the input fixel image.
+-  *warp_df*: a 4D deformation field used to perform reorientation. Reorientation is performed by applying the Jacobian affine transform in each voxel in the warp, then re-normalising the vector representing the fixel direction
 -  *output*: the output fixel image.
 
 Description
 -----------
 
-Obtain angular correpondence by mapping subject fixels to a template fixel mask. It is assumed that the subject image has already been spatially normalised and is aligned with the template.
+Reorient fixel directions using the local affine transformation (Jacobian matrix) of an input warp.
 
 Options
 -------
-
--  **-angle value** the max angle threshold for computing inter-subject fixel correspondence (Default: 30)
 
 Standard options
 ^^^^^^^^^^^^^^^^

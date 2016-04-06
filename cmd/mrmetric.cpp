@@ -231,14 +231,14 @@ void run ()
   MaskType mask1;
   bool use_mask1 = get_options ("mask1").size()==1;
   if (use_mask1) {
-    mask1 = Image<bool>::open(get_options ("mask1")[0][0]);
+    mask1 = Image<bool>::open (get_options ("mask1")[0][0]);
     if (mask1.ndim() != 3) throw Exception ("mask has to be 3D");
   }
 
   MaskType mask2;
   bool use_mask2 = get_options ("mask2").size()==1;
   if (use_mask2){
-    mask2 = Image<bool>::open(get_options ("mask2")[0][0]);
+    mask2 = Image<bool>::open (get_options ("mask2")[0][0]);
     if (mask2.ndim() != 3) throw Exception ("mask has to be 3D");
   }
 
@@ -255,11 +255,11 @@ void run ()
     check_dimensions (input1, input2);
     if (!use_mask1 and !use_mask2)
       n_voxels = input1.size(0) * input1.size(1) * input1.size(2);
-    evaluate_voxelwise_msq ( input1, input2, mask1, mask2, dimensions, use_mask1, use_mask2, n_voxels, sos );
+    evaluate_voxelwise_msq (input1, input2, mask1, mask2, dimensions, use_mask1, use_mask2, n_voxels, sos);
   } else {
     DEBUG ("scanner space");
-    auto output1 = Header::scratch(input1.original_header(),"-").get_image<value_type>();
-    auto output2 = Header::scratch(input2.original_header(),"-").get_image<value_type>();
+    auto output1 = Header::scratch (input1, "-").get_image<value_type>();
+    auto output2 = Header::scratch (input2, "-").get_image<value_type>();
 
     MaskType output1mask;
     MaskType output2mask;
@@ -268,21 +268,21 @@ void run ()
       INFO ("space: image 1");
       output1 = input1;
       output1mask = mask1;
-      output2 = Header::scratch(input1.original_header(),"-").get_image<value_type>();
-      output2mask = Header::scratch(input1.original_header(),"-").get_image<bool>();
+      output2 = Header::scratch (input1, "-").get_image<value_type>();
+      output2mask = Header::scratch (input1, "-").get_image<bool>();
       {
         LogLevelLatch log_level (0);
         reslice(interp, input2, output2, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
         if (use_mask2)
           Filter::reslice<Interp::Nearest> (mask2, output2mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
       }
-      evaluate_voxelwise_msq ( output1, output2, output1mask, output2mask, dimensions, use_mask1, use_mask2, n_voxels, sos );
+      evaluate_voxelwise_msq (output1, output2, output1mask, output2mask, dimensions, use_mask1, use_mask2, n_voxels, sos);
     }
 
     if (space == 2) {
       INFO ("space: image 2");
-      output1 = Header::scratch(input2.original_header(),"-").get_image<value_type>();
-      output1mask = Header::scratch(input2.original_header(),"-").get_image<bool>();
+      output1 = Header::scratch (input2, "-").get_image<value_type>();
+      output1mask = Header::scratch (input2, "-").get_image<bool>();
       output2 = input2;
       output2mask = mask2;
       {
@@ -292,7 +292,7 @@ void run ()
           Filter::reslice<Interp::Nearest> (mask1, output1mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
       }
       n_voxels = input2.size(0) * input2.size(1) * input2.size(2);
-      evaluate_voxelwise_msq ( output1, output2, output1mask, output2mask, dimensions, use_mask1, use_mask2, n_voxels, sos );
+      evaluate_voxelwise_msq (output1, output2, output1mask, output2mask, dimensions, use_mask1, use_mask2, n_voxels, sos);
     }
 
     if (space == 3) {
@@ -307,8 +307,8 @@ void run ()
       Registration::Transform::Rigid transform;
       std::vector<Eigen::Transform<default_type, 3, Eigen::Projective> > init_transforms;
       Eigen::Matrix<default_type, 4, 1> padding (0.0, 0.0, 0.0, 0.0);
-      headers.push_back(input1.original_header());
-      headers.push_back(input2.original_header());
+      headers.push_back (input1);
+      headers.push_back (input2);
 
       Header midway_image_header = compute_minimum_average_header (headers, 1, padding, init_transforms);
 
@@ -409,8 +409,8 @@ void run ()
       } else { // interp != 1 or 2 --> reslice and run voxel-wise comparison
         if (metric_type != MetricType::MeanSquared)
           throw Exception ("Fixme: invalid metric choice ");
-        output1mask = Header::scratch(midway_image_header,"-").get_image<bool>();
-        output2mask = Header::scratch(midway_image_header,"-").get_image<bool>();
+        output1mask = Header::scratch (midway_image_header, "-").get_image<bool>();
+        output2mask = Header::scratch (midway_image_header, "-").get_image<bool>();
 
         Header new_header;
         new_header.set_ndim(input1.ndim());
@@ -435,7 +435,7 @@ void run ()
             Filter::reslice<Interp::Nearest> (mask2, output2mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
         }
         n_voxels = output1.size(0) * output1.size(1) * output1.size(2);
-        evaluate_voxelwise_msq ( output1, output2, output1mask, output2mask, dimensions, use_mask1, use_mask2, n_voxels, sos );
+        evaluate_voxelwise_msq (output1, output2, output1mask, output2mask, dimensions, use_mask1, use_mask2, n_voxels, sos);
       }
     } // "average space"
   }

@@ -13,9 +13,9 @@ Synopsis
 Description
 -----------
 
-edit transformations.
+edit linear transformation matrices.
 
-This command's function is to either convert the transformation matrix provided by FSL's flirt command to a format usable in MRtrix or to interpolate between two transformation files
+This command's function is to either convert the transformation matrix provided by FSL's flirt command to a format usable in MRtrix or to interpolate between two transformation matrices
 
 Options
 -------
@@ -25,8 +25,6 @@ Options
 -  **-invert input** invert the input transformation.
 
 -  **-half input** output the matrix square root of the input transformation.
-
--  **-surfer_vox2vox vox2vox mov dst** Convert a transformation matrix produced by freesurfer's robust_register command into a format usable by MRtrix. 
 
 -  **-header mov mapmovhdr** Calculate the transformation matrix from an original image and an image with modified header.
 
