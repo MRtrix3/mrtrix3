@@ -58,7 +58,7 @@ namespace MR {
         void get_values (VectorType& values) { 
           if (index(0) < 0 || index(0) >= size(0) ||
               index(1) < 0 || index(1) >= size(1) ||
-              index(2) < 0 || index(2) >= size(2)) 
+              index(2) < 0 || index(2) >= size(2))
             values.setZero();
           else {
             auto p = get_voxel();
@@ -106,7 +106,7 @@ namespace MR {
           if (!data) {
             data = allocate_voxel ();
             ssize_t pos = index(3);
-            for (auto l = Loop(3)(*this); l; ++l) 
+            for (auto l = Loop(3)(*this); l; ++l)
               data[index(3)] = Adapter::Base<ImageType>::value();
             index(3) = pos;
             func (data);
