@@ -13,12 +13,12 @@
  * 
  */
 
-#ifndef __image_filter_median3D_h__
-#define __image_filter_median3D_h__
+#ifndef __image_filter_median_h__
+#define __image_filter_median_h__
 
 #include "image.h"
 #include "algo/threaded_copy.h"
-#include "adapter/median3D.h"
+#include "adapter/median.h"
 #include "filter/base.h"
 
 namespace MR
@@ -86,7 +86,7 @@ namespace MR
 
         template <class InputImageType, class OutputImageType>
         void operator() (InputImageType& in, OutputImageType& out) {
-          Adapter::Median3D<InputImageType> median (in, extent);
+          Adapter::Median<InputImageType> median (in, extent);
           if (message.size())
             threaded_copy_with_progress_message (message, median, out);
           else

@@ -74,9 +74,9 @@ def execute():
   runCommand('mrtransform 5tt.mif 5tt_regrid.mif -template fa.mif -interp linear')
 
   # Tissue masks
-  runCommand('mrconvert 5tt_regrid.mif - -coord 3 0 -axes 0,1,2 | mrcalc - ' + str(lib.app.args.pvf) + ' -gt fa.mif ' + str(lib.app.args.fa) + ' -lt -mult gm_mask.mif')
-  runCommand('mrconvert 5tt_regrid.mif - -coord 3 2 -axes 0,1,2 | mrthreshold - wm_mask.mif -abs ' + str(lib.app.args.pvf))
-  runCommand('mrconvert 5tt_regrid.mif - -coord 3 3 -axes 0,1,2 | mrcalc - ' + str(lib.app.args.pvf) + ' -gt fa.mif ' + str(lib.app.args.fa) + ' -lt -mult csf_mask.mif')
+  runCommand('mrconvert 5tt_regrid.mif - -coord 3 0 -axes 0,1,2 | mrcalc - ' + str(lib.app.args.pvf) + ' -gt fa.mif ' + str(lib.app.args.fa) + ' -lt -mult mask.mif -mult gm_mask.mif')
+  runCommand('mrconvert 5tt_regrid.mif - -coord 3 2 -axes 0,1,2 | mrcalc - ' + str(lib.app.args.pvf) + ' -gt mask.mif -mult wm_mask.mif')
+  runCommand('mrconvert 5tt_regrid.mif - -coord 3 3 -axes 0,1,2 | mrcalc - ' + str(lib.app.args.pvf) + ' -gt fa.mif ' + str(lib.app.args.fa) + ' -lt -mult mask.mif -mult csf_mask.mif')
 
   # Revise WM mask to only include single-fibre voxels
   printMessage('Calling dwi2response recursively to select WM single-fibre voxels using \'' + lib.app.args.wm_algo + '\' algorithm')

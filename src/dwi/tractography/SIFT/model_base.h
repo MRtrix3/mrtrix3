@@ -132,8 +132,8 @@ namespace MR
 
           public:
             ModelBase (Image<float>& dwi, const DWI::Directions::FastLookupSet& dirs) :
-                Mapping::Fixel_TD_map<Fixel> (dwi.original_header(), dirs),
-                proc_mask (Image<float>::scratch (Fixel_map<Fixel>::original_header(), "SIFT model processing mask")),
+                Mapping::Fixel_TD_map<Fixel> (dwi, dirs),
+                proc_mask (Image<float>::scratch (accessor(), "SIFT model processing mask")),
                 FOD_sum (0.0),
                 TD_sum (0.0),
                 have_null_lobes (false)
@@ -243,8 +243,8 @@ namespace MR
             throw Exception ("Cannot map streamlines: track file " + Path::basename(path) + " is empty");
 
           Mapping::TrackLoader loader (file, count);
-          Mapping::TrackMapperBase mapper (Fixel_map<Fixel>::original_header(), dirs);
-          mapper.set_upsample_ratio (Mapping::determine_upsample_ratio (Fixel_map<Fixel>::original_header(), properties, 0.1));
+          Mapping::TrackMapperBase mapper (accessor(), dirs);
+          mapper.set_upsample_ratio (Mapping::determine_upsample_ratio (accessor(), properties, 0.1));
           mapper.set_use_precise_mapping (true);
           Thread::run_queue (
               loader,

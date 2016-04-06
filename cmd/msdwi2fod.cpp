@@ -252,7 +252,7 @@ inline Processor<MASKType, ODFType>  processor (const Shared& shared, MASKType* 
 void run ()
 {
   auto dwi = Header::open (argument[0]).get_image<value_type>();
-  auto grad = DWI::get_valid_DW_scheme (dwi.original_header());
+  auto grad = DWI::get_valid_DW_scheme (dwi);
   
   DWI::Shells shells (grad);
   size_t nbvals = shells.count();
@@ -311,7 +311,7 @@ void run ()
     check_dimensions (dwi, *mask, 0, 3);
   }
   
-  auto header = dwi.original_header();
+  Header header (dwi);
   header.datatype() = DataType::Float32;
   header.set_ndim (4);
   

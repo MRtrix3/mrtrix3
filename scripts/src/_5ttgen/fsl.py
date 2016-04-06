@@ -73,6 +73,8 @@ def execute():
   fsl_suffix = getFSLSuffix()
 
   sgm_structures = [ 'L_Accu', 'R_Accu', 'L_Caud', 'R_Caud', 'L_Pall', 'R_Pall', 'L_Puta', 'R_Puta', 'L_Thal', 'R_Thal' ]
+  if lib.app.args.sgm_amyg_hipp:
+    sgm_structures.extend([ 'L_Amyg', 'R_Amyg', 'L_Hipp', 'R_Hipp' ])
   
   runCommand('mrconvert input.mif T1.nii')  
 

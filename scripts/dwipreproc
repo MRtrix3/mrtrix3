@@ -396,7 +396,7 @@ grad_export_option = ''
 if lib.app.args.export_grad_mrtrix:
   grad_export_option = ' -export_grad_mrtrix ' + os.path.join(lib.app.workingDir, lib.app.args.export_grad_mrtrix)
 elif lib.app.args.export_grad_fsl:
-  grad_export_option = ' -export_grad_fsl ' + os.path.join(lib.app.workingDir, lib.app.args.export_grad_mrtrix[0]) + ' ' + os.path.join(lib.app.workingDir, lib.app.args.export_grad_mrtrix[1])
+  grad_export_option = ' -export_grad_fsl ' + os.path.join(lib.app.workingDir, lib.app.args.export_grad_fsl[0]) + ' ' + os.path.join(lib.app.workingDir, lib.app.args.export_grad_fsl[1])
 
 runCommand('mrconvert result.mif ' + os.path.join(lib.app.workingDir, lib.app.args.output) + grad_export_option + lib.app.mrtrixForce)
 lib.app.complete()
