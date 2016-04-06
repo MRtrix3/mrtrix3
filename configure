@@ -13,9 +13,11 @@ verbose = False
 R_module = False
 profile_name = None
 sh_basis_def = None
+dev = False
 
 for arg in sys.argv[1:]:
   if '-debug'.startswith (arg): debug = True
+  elif '-dev'.startswith (arg): dev = True
   elif '-assert'.startswith (arg): asserts = True
   elif '-profile'.startswith (arg): profile = True
   elif '-nogui'.startswith (arg): nogui = True
@@ -89,6 +91,8 @@ OPTIONS:
     -static      produce statically-linked executables.
 
     -verbose     enable more informative output.
+
+    -dev         enable the extended development build process
 
 
 ENVIRONMENT VARIABLES:
@@ -1108,6 +1112,9 @@ if nogui:
   cache.write ('True\n')
 else:
   cache.write ('False\n')
+
+if dev:
+  cache.write('bash_completion = True\ncommand_doc = True\n')
 
 cache.close()
 sys.stdout.write ('ok\n\n')

@@ -203,7 +203,8 @@ def make_intermediate (name, confname):
 
 
 # parse command-line:
-dev = False
+command_doc = False
+bash_completion = False
 
 for arg in sys.argv[1:]:
   if '-help'.startswith (arg):
@@ -221,11 +222,19 @@ In most cases, a simple invocation is all that is required:
 If no targets are provided, the command will default to building 
 all applications by scanning through the cmd/ folder. 
 
+All intermediate files and the target executables will be located in the target
+config folder (by default: 'release').
+
 The special target 'clean' is used to remove all compiler-generated 
 files, including objects, executables, and shared libraries. 
 
-All intermediate files and the target executables will be located in the target
-config folder (by default: 'release').
+The special target 'bash' is used to update the bash completion script. Note
+that automatic updating of this script can be enabled at the configure stage,
+by running './configure -dev' prior to invoking './build'
+
+The special target 'doc' is used to update the command documentation, so that
+any modifications to the inline documentation in commands can be propagate
+through to the user documentation site.
 
 OPTIONS:
 
@@ -254,8 +263,10 @@ OPTIONS:
   elif arg[0] == '-':
     sys.stderr.write ('unknown command-line option "' + arg + '"\n')
     sys.exit (1)
-  elif arg == 'dev':
-    dev = True
+  elif arg == 'bash':
+    bash_completion = True
+  elif arg == 'doc':
+    command_doc = True
   elif arg == 'clean':
     targets = [ 'clean' ]
   elif os.path.isfile (os.path.join (mrtrix_dir[-1], arg, "config")):
@@ -312,7 +323,7 @@ try:
   log ('reading configuration from "' + config_file + '"...' + os.linesep)
   exec (codecs.open (config_file, mode='r', encoding='utf-8').read())
 except IOError:
-  sys.stderr.write ('''no configuration file found!
+  sys.stderr.write ('no configuration file found for target build "' + config_name + '''"!
 please run "./configure" prior to invoking this script
 
 ''')
@@ -1032,8 +1043,10 @@ if len(todo):
 # generate development-specific files (if needed)
 # i.e. bash completion and user documentation
 
-if dev and stop <= 1:
+if bash_completion and stop <= 1:
   update_bash_completion()
+
+if command_doc and stop <= 1:
   update_user_docs()
 
 sys.exit (stop > 1)
