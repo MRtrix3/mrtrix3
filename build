@@ -141,12 +141,12 @@ cmd_dir = 'cmd'
 lib_dir = 'lib'
 misc_dir = 'src'
 other_dir = '3rd_party'
-doc_dir = 'doc'
-dev_dir = 'dev'
 
 cpp_suffix = '.cpp'
 h_suffix = '.h'
 libname = 'mrtrix'
+
+
 
 
 
@@ -203,6 +203,8 @@ def make_intermediate (name, confname):
 
 
 # parse command-line:
+dev = False
+
 for arg in sys.argv[1:]:
   if '-help'.startswith (arg):
     print ('''
@@ -252,6 +254,8 @@ OPTIONS:
   elif arg[0] == '-':
     sys.stderr.write ('unknown command-line option "' + arg + '"\n')
     sys.exit (1)
+  elif arg == 'dev':
+    dev = True
   elif arg == 'clean':
     targets = [ 'clean' ]
   elif os.path.isfile (os.path.join (mrtrix_dir[-1], arg, "config")):
@@ -278,6 +282,8 @@ if 'clean' in targets:
     folders = [ config_name ]
   else:
     folders = [ f for f in os.listdir('.') if os.path.exists (os.path.join (f, 'config')) ]
+
+  folders += [ 'dev' ]
 
   if '.git' in folders: folders.remove ('.git')
   for f in folders:
@@ -899,25 +905,17 @@ def update_user_docs ():
     if docs_freshness_time >= command_freshness_time:
       return
 
-  sys.exit (execute ('[SH] Generating user documentation (./docs)', [ script_path ], scripts_dir ) )
+  if execute ('[DOC] generating user documentation (./docs)', [ script_path ], scripts_dir):
+    sys.exit (1)
   
+
+
 
 ###########################################################################
 #                            START OF PROGRAM
 ###########################################################################
 
 
-
-if 'clean' in targets:
-  clean_cmd()
-  sys.exit (0)
-
-if doc_dir in targets: 
-  sys.exit (gen_command_html_help());
-    
-if dev_dir in targets: 
-  sys.exit (execute ('[DOC] development', [ 'doxygen' ]))
-    
 if len(targets) == 0: 
   targets = default_targets()
 
@@ -1007,29 +1005,29 @@ log ('TODO list contains ' + str(len(todo)) + ''' items
 
 #for entry in todo.values(): entry.display()
 
-if not len(todo): sys.exit(0)
-
-
-try: num_processors = int(os.environ['NUMBER_OF_PROCESSORS'])
-except:
-  try: num_processors = os.sysconf('SC_NPROCESSORS_ONLN')
-  except: num_processors = 1
+if len(todo): 
   
-log ('''
+  try: num_processors = int(os.environ['NUMBER_OF_PROCESSORS'])
+  except:
+    try: num_processors = os.sysconf('SC_NPROCESSORS_ONLN')
+    except: num_processors = 1
+    
+  log ('''
+  
+  launching ''' + str(num_processors) + ''' threads
+  
+  ''')
+  
+  threads = []
+  for i in range (1, num_processors):
+    t = threading.Thread (target=build_next, args=(i,));
+    t.start()
+    threads.append (t)
+  
+  build_next(0)
+  
+  for t in threads: t.join()
 
-launching ''' + str(num_processors) + ''' threads
-
-''')
-
-threads = []
-for i in range (1, num_processors):
-  t = threading.Thread (target=build_next, args=(i,));
-  t.start()
-  threads.append (t)
-
-build_next(0)
-
-for t in threads: t.join()
 
 # generate development-specific files (if needed)
 # i.e. bash completion and user documentation
