@@ -63,7 +63,7 @@ void run ()
   size_t patchwidth_y = ceil((float) in.size(1) / ntiles);
   size_t patchwidth_z = ceil((float) in.size(2) / ntiles);
 
-  Header header_out (in.original_header());
+  Header header_out (in);
   header_out.datatype() = use_NaN ? DataType::Float32 : DataType::Bit;
   auto out = Image<float>::create (argument[1], header_out);
 

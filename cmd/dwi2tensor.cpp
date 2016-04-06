@@ -154,7 +154,7 @@ inline Processor<MASKType, B0Type, DKTType, PredictType> processor (const Eigen:
 void run ()
 {
   auto dwi = Header::open (argument[0]).get_image<value_type>();
-  auto grad = DWI::get_valid_DW_scheme (dwi.original_header());
+  auto grad = DWI::get_valid_DW_scheme (dwi);
   
   Image<bool>* mask = nullptr;
   auto opt = get_options ("mask");
@@ -165,7 +165,7 @@ void run ()
   
   auto iter = get_option_value ("iter", default_iter);
 
-  auto header = dwi.original_header();
+  Header header (dwi);
   header.datatype() = DataType::Float32;
   header.set_ndim (4);
   
@@ -176,7 +176,7 @@ void run ()
   }
   
   header.size(3) = 6;
-  auto dt = Header::create (argument[1], header).get_image<value_type>();
+  auto dt = Image<value_type>::create (argument[1], header);
 
   Image<value_type>* b0 = nullptr;
   opt = get_options ("b0");

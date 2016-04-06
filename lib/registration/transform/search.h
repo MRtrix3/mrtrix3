@@ -231,8 +231,8 @@ namespace MR
               auto padding = Eigen::Matrix<default_type, 4, 1>(0.0, 0.0, 0.0, 0.0);
               int subsample = 1;
               std::vector<Header> headers;
-              headers.push_back(im1.original_header());
-              headers.push_back(im2.original_header());
+              headers.push_back (im1);
+              headers.push_back (im2);
               midway_image_header = compute_minimum_average_header (headers, subsample, padding, init_transforms);
 
               Filter::Resize midway_resize_filter (midway_image_header);

@@ -45,6 +45,8 @@ Options
 
 - **-noreorientation** Turn off FOD reorientation. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc
 
+- **-initial_alignment** Method of alignment to form the initial template. Options are "mass" (default), "geometric" and "none".
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
@@ -72,7 +74,7 @@ References
 
 ---
 
-**Author:** David Raffelt (david.raffelt@florey.edu.au)
+**Author:** David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk) & Thijs Dhollander thijs.dhollander@florey.edu.au)
 
 **Copyright:** 
 Copyright (c) 2008-2016 the MRtrix3 contributors

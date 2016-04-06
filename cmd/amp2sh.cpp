@@ -206,7 +206,7 @@ class Amp2SH {
 void run ()
 {
   auto amp = Image<value_type>::open (argument[0]).with_direct_io (3);
-  auto header = amp.original_header();
+  Header header (amp);
 
   std::vector<size_t> bzeros, dwis;
   Eigen::MatrixXd dirs;
@@ -229,7 +229,7 @@ void run ()
       }
     } 
     else {
-      auto grad = DWI::get_valid_DW_scheme (amp.original_header());
+      auto grad = DWI::get_valid_DW_scheme (amp);
       DWI::Shells shells (grad);
       shells.select_shells (true, true);
       if (shells.smallest().is_bzero())
@@ -248,7 +248,6 @@ void run ()
 
 
   header.size (3) = sh2amp.cols();
-  header.datatype() = DataType::Float32;
   Stride::set_from_command_line (header);
   auto SH = Image<value_type>::create (argument[1], header);
 

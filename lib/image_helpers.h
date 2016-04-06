@@ -216,7 +216,6 @@ namespace MR
       return { reference, axes };
     }
 
-  //! \copydoc __assign_pos_axes
   template <class ImageType, typename IntType>
     FORCE_INLINE __assign_pos_axes<ImageType, IntType> 
     assign_pos_of (const ImageType& reference, const std::vector<IntType>&& axes) 

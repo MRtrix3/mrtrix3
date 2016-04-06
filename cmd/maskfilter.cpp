@@ -144,6 +144,7 @@ void run () {
       filter.set_npass (int(opt[0][0]));
 
     Stride::set_from_command_line (filter);
+    filter.datatype() = DataType::Bit;
 
     auto output_image = Image<value_type>::create (argument[2], filter);
     filter (input_image, output_image);
@@ -157,6 +158,7 @@ void run () {
       filter.set_npass (int(opt[0][0]));
 
     Stride::set_from_command_line (filter);
+    filter.datatype() = DataType::Bit;
 
     auto output_image = Image<value_type>::create (argument[2], filter);
     filter (input_image, output_image);
@@ -170,6 +172,7 @@ void run () {
       filter.set_extent (parse_ints (opt[0][0]));
 
     Stride::set_from_command_line (filter);
+    filter.datatype() = DataType::Bit;
 
     auto output_image = Image<value_type>::create (argument[2], filter);
     filter (input_image, output_image);

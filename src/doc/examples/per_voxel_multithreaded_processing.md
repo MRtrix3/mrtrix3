@@ -1,34 +1,13 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
- */
+Running a per-voxel operation on a 4D dataset in a multi-threaded loop     {#example_per_voxel_multithreaded_4D_processing}
+======================================================================
 
-#error - this file is for documentation purposes only!
-#error - It should NOT be included in other code files.
+This example computes the matrix multiplication of the vector of intensities
+for each voxel in the input dataset, producing a new dataset of the same size
+for the first 3 (spatial) axes, and with the number of volumes specified by the
+user. In this example, we generate a matrix of random numbers for illustrative
+purposes.
 
-namespace MR
-{
-
-  /*! 
-
- \page example_per_voxel_multithreaded_4D_processing Running a per-voxel operation on a 4D dataset in a multi-threaded loop
-
- This example computes the matrix multiplication of the vector of intensities for each voxel
- in the input dataset, producing a new dataset of the same size for the first 3
- (spatial) axes, and with the number of volumes specified by the user. In this
- example, we generate a matrix of random numbers for illustrative purposes.
-
- \code
+~~~{.cpp}
 #include "command.h"
 #include "image.h"
 #include "algo/threaded_loop.h"
@@ -101,7 +80,7 @@ class SharedInfo
 
 
 
-// ThisThis is the functor that will be invoked per-voxel. 
+// This is the functor that will be invoked per-voxel. 
 // Note that here we pass the SharedInfo by const-reference, and construct a
 // const member reference from it. At this point, the information from the
 // SharedInfo will be accessible during processing, but only for const access
@@ -181,30 +160,24 @@ void run ()
   // run the loop, invoking the functor MathMulFunctor that you constructed:
   loop.run (MathMulFunctor (shared), in, out);
 }
-\endcode
+~~~
 
 A few tips on how to use the above structure:
 
-- Use the SharedInfo class to hold any read-only data needed by each thread
-during execution, and perform all the initialisation required in this class.
-This helps to keep each thread light-weight by minimising both the amount of
-RAM each thread needs, and the amount of work each thread needs to do.
+- Use the `SharedInfo` class to hold any read-only data needed by each thread
+  during execution, and perform all the initialisation required in this class.
+  This helps to keep each thread light-weight by minimising both the amount of
+  RAM each thread needs, and the amount of work each thread needs to do.
 
 - If you need each thread to use data types that imply dynamic allocation (e.g.
   vectors, matrices, etc), declare them as member variables, and if possible
   allocate them once in the constructor. If these are declared in the body of the
-  operator() method, this will probably result in reduced performance due to the
+  `operator()` method, this will probably result in reduced performance due to the
   cost of allocation/deallocation, as well as the synchronisation calls the
   memory management infrastructure will need to make to keep its internal data
   structure in order in a multi-threaded environment. 
 
 - temporary variables that do not imply dynamic allocation can be declared
-within the body of the operator() method, since these will be allocated on the
-stack and don't incur a run-time cost.
-
-*/
-
-}
-
-
+  within the body of the `operator()` method, since these will be allocated on
+  the stack and don't incur a run-time cost.
 

@@ -115,6 +115,10 @@ List of MRtrix3 commands
 .......
 
 
+.. include:: commands/fixelreorient.rst
+.......
+
+
 .. include:: commands/fixelstats.rst
 .......
 
@@ -351,7 +355,7 @@ List of MRtrix3 commands
 .......
 
 
-.. include:: commands/warp2jacobian.rst
+.. include:: commands/warp2metric.rst
 .......
 
 

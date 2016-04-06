@@ -85,7 +85,7 @@ void usage ()
 
 void run ()
 {
-  default_type threshold_value (NAN), percentile (NAN), bottomNpercent (NAN), topNpercent (NAN);
+  default_type threshold_value (NaN), percentile (NaN), bottomNpercent (NaN), topNpercent (NaN);
   bool use_histogram = false;
   size_t topN (0), bottomN (0), nopt (0);
 
@@ -138,9 +138,10 @@ void run ()
   const bool use_NaN = get_options ("nan").size();
   const bool ignore_zeroes = get_options ("ignorezero").size();
 
-  auto in = Image<float>::open (argument[0]);
-  if (in.original_header().datatype().is_complex())
+  auto header = Header::open (argument[0]);
+  if (header.datatype().is_complex())
     throw Exception ("Cannot perform thresholding on complex images");
+  auto in = header.get_image<float>();
 
   if (voxel_count (in) < topN || voxel_count (in) < bottomN)
     throw Exception ("number of voxels at which to threshold exceeds number of voxels in image");
@@ -154,12 +155,11 @@ void run ()
     else topN = std::round (voxel_count (in) * (1.0 - percentile));
   }
 
-  Header header_out (in.original_header());
-  header_out.datatype() = use_NaN ? DataType::Float32 : DataType::Bit;
+  header.datatype() = use_NaN ? DataType::Float32 : DataType::Bit;
 
-  auto out = Image<float>::create (argument[1], header_out);
+  auto out = Image<float>::create (argument[1], header);
 
-  float zero = use_NaN ? NAN : 0.0;
+  float zero = use_NaN ? NaN : 0.0;
   float one  = 1.0;
   if (invert) std::swap (zero, one);
 

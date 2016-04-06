@@ -10,12 +10,12 @@ Synopsis
 
 -  *subject*: the input subject fixel image.
 -  *template*: the input template fixel image.
--  *output*: the input fixel image.
+-  *output*: the output fixel image.
 
 Description
 -----------
 
-Obtain angular correpondence by mapping subject fixels to a template fixel mask. The subject fixel image must be already in the same space as the template
+Obtain angular correpondence by mapping subject fixels to a template fixel mask. It is assumed that the subject image has already been spatially normalised and is aligned with the template.
 
 Options
 -------

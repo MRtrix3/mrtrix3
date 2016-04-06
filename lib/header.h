@@ -77,8 +77,8 @@ namespace MR
       }
 
       //! copy constructor
-      /*! This copies everything over apart from the IO handler and the
-       * intensity scaling. */
+      /*! This copies everything over apart from the IO handler, and resets the
+       * intensity scaling if the datatype is floating-point. */
       Header (const Header& H) :
         axes_ (H.axes_),
         transform_ (H.transform_),
@@ -86,29 +86,37 @@ namespace MR
         keyval_ (H.keyval_),
         format_ (H.format_),
         datatype_ (H.datatype_),
-        offset_ (0.0),
-        scale_ (1.0) {
-          if (datatype().is_integer())
-            set_intensity_scaling (H);
-        }
+        offset_ (datatype().is_integer() ? H.offset_ : 0.0),
+        scale_ (datatype().is_integer() ? H.scale_ : 1.0) { }
 
-      //! \copydoc Header (const Header&)
-      template <class HeaderType>
+      //! copy constructor from type of class derived from Header
+      /*! This invokes the standard Header(const Header&) copy-constructor. */
+      template <class HeaderType, typename std::enable_if<std::is_base_of<Header, HeaderType>::value, void*>::type = nullptr>
         Header (const HeaderType& original) :
-          Header (original.original_header()) {
-            name() = original.name();
+          Header (static_cast<const Header&> (original)) { }
+
+      //! copy constructor from type of class other than Header
+      /*! This copies all relevant parameters over from \a original. */ 
+      template <class HeaderType, typename std::enable_if<!std::is_base_of<Header, HeaderType>::value, void*>::type = nullptr>
+        Header (const HeaderType& original) :
+          transform_ (original.transform()),
+          name_ (original.name()),
+          keyval_ (original.keyval()),
+          format_ (nullptr),
+          datatype_ (DataType::from<typename HeaderType::value_type>()),
+          offset_ (0.0),
+          scale_ (1.0) {
             set_ndim (original.ndim());
             for (size_t n = 0; n < original.ndim(); ++n) {
               size(n) = original.size(n);
               stride(n) = original.stride(n);
               spacing(n) = original.spacing(n);
             }
-            transform() = original.transform();
           }
 
       //! assignment operator
-      /*! This copies everything over apart from the IO handler (and the
-       * intensity scaling if the data type is floating-point). */
+      /*! This copies everything over, resets the intensity scaling if the data
+       * type is floating-point, and resets the IO handler. */
       Header& operator= (const Header& H) {
         axes_ = H.axes_;
         transform_ = H.transform_;
@@ -116,27 +124,34 @@ namespace MR
         keyval_ = H.keyval_;
         format_ = H.format_;
         datatype_ = H.datatype_;
-        if (datatype().is_integer())
-          set_intensity_scaling (H);
-        else {
-          offset_ = 0.0;
-          scale_ = 1.0;
-        }
+        offset_ = datatype().is_integer() ? H.offset_ : 0.0;
+        scale_ = datatype().is_integer() ? H.scale_ : 1.0;
         io.reset();
         return *this;
       }
 
-      //! \copydoc operator=(const Header&)
-      template <class HeaderType>
+      //! assignment operator from type of class derived from Header
+      /*! This invokes the standard assignment operator=(const Header&). */
+      template <class HeaderType, typename std::enable_if<std::is_base_of<Header, HeaderType>::value, void*>::type = nullptr>
         Header& operator= (const HeaderType& original) {
-          *this = original.original_header();
+         return operator= (static_cast<const Header&> (original));
+        }
+
+      //! assignment operator from type of class other than Header
+      /*! This copies all the relevant parameters over from \a original, */
+      template <class HeaderType, typename std::enable_if<!std::is_base_of<Header, HeaderType>::value, void*>::type = nullptr>
+        Header& operator= (const HeaderType& original) {
           set_ndim (original.ndim());
-          for (size_t n = 0; n < ndim(); ++n) {
+          for (size_t n = 0; n < original.ndim(); ++n) {
             size(n) = original.size(n);
-            spacing(n) = original.spacing(n);
             stride(n) = original.stride(n);
+            spacing(n) = original.spacing(n);
           }
-          transform() = original.transform();
+          transform_ = original.transform();
+          name_ = original.name();
+          keyval_ = original.keyval();
+          format_ = nullptr;
+          datatype_ = DataType::from<typename HeaderType::value_type>();
           offset_ = 0.0;
           scale_ = 1.0;
           io.reset();
@@ -298,10 +313,8 @@ namespace MR
         }
 
       static Header open (const std::string& image_name);
-      template <class HeaderType>
-        static Header create (const std::string& image_name, const HeaderType& template_header);
-      template <class HeaderType>
-        static Header scratch (const HeaderType& template_header, const std::string& label = "scratch image");
+      static Header create (const std::string& image_name, const Header& template_header);
+      static Header scratch (const Header& template_header, const std::string& label = "scratch image");
 
       /*! use to prevent automatic realignment of transform matrix into
        * near-standard (RAS) coordinate system. */
@@ -372,20 +385,6 @@ namespace MR
 
   inline const ssize_t& Header::stride (size_t axis) const { return axes_[axis].stride; }
   inline ssize_t& Header::stride (size_t axis) { return axes_[axis].stride; } 
-
-  template <class HeaderType>
-    inline Header Header::create (const std::string& image_name, const HeaderType& template_header) {
-      return create (image_name, Header (template_header)); 
-    }
-  template <> Header Header::create (const std::string& image_name, const Header& template_header);
-  extern template Header Header::create<Header> (const std::string& image_name, const Header& template_header);
-
-  template <class HeaderType>
-    inline Header Header::scratch (const HeaderType& template_header, const std::string& label) {
-      return scratch (Header (template_header), label);
-    }
-  template<> Header Header::scratch (const Header& template_header, const std::string& label);
-  extern template Header Header::scratch<Header> (const Header& template_header, const std::string& label);
 
   //! @}
 }

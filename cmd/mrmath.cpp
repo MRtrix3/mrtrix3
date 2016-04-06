@@ -119,10 +119,10 @@ class Sum {
 
 class Product {
   public:
-    Product () : product (1.0) { }
+    Product () : product (NAN) { }
     void operator() (value_type val) {
       if (std::isfinite (val))
-        product *= val;
+        product = std::isfinite (product) ? product * val : val;
     }
     value_type result () const {
       return product;
@@ -326,7 +326,7 @@ void run ()
       throw Exception ("Cannot perform operation along axis " + str (axis) + "; image only has " + str(image_in.ndim()) + " axes");
 
 
-    Header header_out (image_in.original_header());
+    Header header_out (image_in);
 
     header_out.datatype() = DataType::from_command_line (DataType::Float32);
     header_out.size(axis) = 1;
