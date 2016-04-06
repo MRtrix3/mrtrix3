@@ -265,7 +265,7 @@ OPTIONS:
       sys.stderr.write ('unable to resolve target "' + arg + '"\n')
       sys.exit (1)
     targets.append(arg)
-    if config_name is not None and config_name is not ret[1]:
+    if config_name is not None and config_name != ret[1]:
       sys.stderr.write ('conflicting configurations requested: "' + config_name + '" and "' + ret[1] + '"\n')
       sys.exit (1)
     config_name = ret[1]
