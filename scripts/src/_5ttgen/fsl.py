@@ -88,11 +88,11 @@ def execute():
       runCommand('mrcalc input.mif mask.mif -mult T1_masked.nii')
     else:
       runCommand('mrtransform mask.mif mask_regrid.mif -template input.mif')
-      runCommand('mrcalc input.mif mask_regrid.mif -mult T1_masked.nii')
+      runCommand('mrcalc input.mif mask_regrid.mif -mult T1_masked' + fsl_suffix)
       
   elif lib.app.args.premasked:
   
-    runCommand('mrconvert input.mif T1_masked.nii')
+    runCommand('mrconvert input.mif T1_masked' + fsl_suffix)
     
   else:
 
@@ -146,7 +146,7 @@ def execute():
     if not os.path.exists(vtk_in_path):
       errorMessage('Missing .vtk file for structure ' + struct + '; run_first_all must have failed')
     runCommand('meshconvert ' + vtk_in_path + ' ' + vtk_temp_path + ' -transform_first2real input.mif')
-    runCommand('mesh2pve ' + vtk_temp_path + ' T1_preBET' + fsl_suffix + ' ' + pve_image_path)
+    runCommand('mesh2pve ' + vtk_temp_path + ' T1_masked' + fsl_suffix + ' ' + pve_image_path)
     pve_image_list.append(pve_image_path)
   pve_cat = ' '.join(pve_image_list)
   runCommand('mrmath ' + pve_cat + ' sum - | mrcalc - 1.0 -min all_sgms.nii')
