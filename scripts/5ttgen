@@ -42,7 +42,7 @@ algorithm = getattr(_5ttgen, lib.app.args.algorithm)
 lib.app.checkOutputFile(lib.app.args.output)
 algorithm.checkOutputFiles()
 
-runCommand('mrconvert ' + lib.app.args.input + ' ' + os.path.join(lib.app.tempDir, 'input.mif') + ' -stride +1,+2,+3')
+runCommand('mrconvert ' + lib.app.args.input + ' ' + os.path.join(lib.app.tempDir, 'input.mif') + ' -stride -1,+2,+3')
 algorithm.getInputFiles()
 
 lib.app.gotoTempDir()
