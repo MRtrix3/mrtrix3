@@ -17,6 +17,13 @@
 #include <unistd.h>
 #include <zlib.h>
 
+#ifdef MRTRIX_MACOSX
+# include <sys/param.h>
+# include <sys/mount.h>
+#else
+# include <sys/vfs.h> 
+#endif
+
 #ifdef MRTRIX_WINDOWS
 #include <windows.h>
 #else
@@ -38,7 +45,7 @@ namespace MR
     MMap::MMap (const Entry& entry, bool readwrite, bool preload, int64_t mapped_size) :
       Entry (entry), addr (NULL), first (NULL), msize (mapped_size), readwrite (readwrite)
     {
-      DEBUG (std::string (readwrite ? "creating RAM buffer for" : "memory-mapping" ) + " file \"" + Entry::name + "\"...");
+      DEBUG ("memory-mapping file \"" + Entry::name + "\"...");
 
       struct stat sbuf;
       if (stat (Entry::name.c_str(), &sbuf))
@@ -52,58 +59,81 @@ namespace MR
       else if (start + msize > sbuf.st_size) 
         throw Exception ("file \"" + Entry::name + "\" is smaller than expected");
 
+      bool delayed_writeback = false;
       if (readwrite) {
-        try {
-          first = new uint8_t [msize];
-          if (!first) throw 1;
-        }
-        catch (...) {
-          throw Exception ("error allocating memory to hold mmap buffer contents");
+
+        struct statfs fsbuf;
+        if (statfs (Entry::name.c_str(), &fsbuf)) {
+          DEBUG ("cannot get filesystem information on file \"" + Entry::name + "\": " + strerror (errno));
+          DEBUG ("  defaulting to delayed write-back");
+          delayed_writeback = true;
         }
 
-        if (preload) {
-          CONSOLE ("preloading contents of mapped file \"" + Entry::name + "\"...");
-          std::ifstream in (Entry::name.c_str(), std::ios::in | std::ios::binary);
-          if (!in) 
-            throw Exception ("failed to open file \"" + Entry::name + "\": " + strerror (errno));
-          in.seekg (start, in.beg);
-          in.read ((char*) first, msize);
-          if (!in.good())
-            throw Exception ("error preloading contents of file \"" + Entry::name + "\": " + strerror(errno));
+        if (fsbuf.f_type == 0xff534d42 /* CIFS */|| fsbuf.f_type == 0x6969 /* NFS */ || fsbuf.f_type == 0x65735546 /* FUSE */) {
+          DEBUG ("\"" + Entry::name + "\" appears to reside on a networked filesystem - using delayed write-back");
+          delayed_writeback = true;
         }
-        else 
-          memset (first, 0, msize);
-        DEBUG ("file \"" + Entry::name + "\" held in RAM at " + str ( (void*) first) + ", size " + str (msize));
+
+        if (fsbuf.f_flags & 0x0010 /* ST_SYNCHRONOUS */) {
+          DEBUG ("\"" + Entry::name + "\" resides on a synchronous filesystem - using delayed write-back");
+          delayed_writeback = true;
+        }
+
+        if (delayed_writeback) {
+          try {
+            first = new uint8_t [msize];
+            if (!first) throw 1;
+          }
+          catch (...) {
+            throw Exception ("error allocating memory to hold mmap buffer contents");
+          }
+
+          if (preload) {
+            CONSOLE ("preloading contents of mapped file \"" + Entry::name + "\"...");
+            std::ifstream in (Entry::name.c_str(), std::ios::in | std::ios::binary);
+            if (!in) 
+              throw Exception ("failed to open file \"" + Entry::name + "\": " + strerror (errno));
+            in.seekg (start, in.beg);
+            in.read ((char*) first, msize);
+            if (!in.good())
+              throw Exception ("error preloading contents of file \"" + Entry::name + "\": " + strerror(errno));
+          }
+          else 
+            memset (first, 0, msize);
+          DEBUG ("file \"" + Entry::name + "\" held in RAM at " + str ( (void*) first) + ", size " + str (msize));
+
+          return;
+        }
       }
-      else {
 
-        if ( (fd = open (Entry::name.c_str(), O_RDONLY, 0666)) < 0)
-          throw Exception ("error opening file \"" + Entry::name + "\": " + strerror (errno));
+      // use regular memory-mapping:
 
-        try {
+      if ( (fd = open (Entry::name.c_str(), ( readwrite ? O_RDWR : O_RDONLY ), 0666)) < 0)
+        throw Exception ("error opening file \"" + Entry::name + "\": " + strerror (errno));
+
+      try {
 #ifdef MRTRIX_WINDOWS
-          HANDLE handle = CreateFileMapping ( (HANDLE) _get_osfhandle (fd), NULL,
-              PAGE_READONLY, 0, start + msize, NULL);
-          if (!handle) throw 0;
-          addr = static_cast<uint8_t*> (MapViewOfFile (handle, FILE_MAP_READ, 0, 0, start + msize));
-          if (!addr) throw 0;
-          CloseHandle (handle);
+        HANDLE handle = CreateFileMapping ( (HANDLE) _get_osfhandle (fd), NULL,
+            ( readwrite ? PAGE_READWRITE : PAGE_READONLY ), 0, start + msize, NULL);
+        if (!handle) throw 0;
+        addr = static_cast<uint8_t*> (MapViewOfFile (handle, ( readwrite ? FILE_MAP_ALL_ACCESS : FILE_MAP_READ ), 0, 0, start + msize));
+        if (!addr) throw 0;
+        CloseHandle (handle);
 #else
-          addr = static_cast<uint8_t*> (mmap ( (char*) 0, start + msize,
-                PROT_READ, MAP_PRIVATE, fd, 0));
-          if (addr == MAP_FAILED) throw 0;
+        addr = static_cast<uint8_t*> (mmap ( (char*) 0, start + msize,
+              ( readwrite ? PROT_WRITE | PROT_READ : PROT_READ ), MAP_SHARED, fd, 0));
+        if (addr == MAP_FAILED) throw 0;
 #endif
-        }
-        catch (...) {
-          close (fd);
-          addr = NULL;
-          throw Exception ("memory-mapping failed for file \"" + Entry::name + "\": " + strerror (errno));
-        }
-        first = addr + start;
-
-        DEBUG ("file \"" + Entry::name + "\" mapped at " + str ( (void*) addr) + ", size " + str (msize)
-            + " (read-" + (readwrite ? "write" : "only") + ")");
       }
+      catch (...) {
+        close (fd);
+        addr = NULL;
+        throw Exception ("memory-mapping failed for file \"" + Entry::name + "\": " + strerror (errno));
+      }
+      first = addr + start;
+
+      DEBUG ("file \"" + Entry::name + "\" mapped at " + str ( (void*) addr) + ", size " + str (msize)
+          + " (read-" + (readwrite ? "write" : "only") + ")");
     }
 
 
