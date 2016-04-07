@@ -32,7 +32,9 @@ namespace MR
 {
 
   /*! \defgroup ImageAPI Image access
-   * \brief Classes and functions providing access to image data. */
+   * \brief Classes and functions providing access to image data. 
+   *
+   * See @ref image_access for details. */
   // @{
 
   //! functions and classes related to image data input/output
