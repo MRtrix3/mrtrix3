@@ -278,6 +278,6 @@ of operation. Please refer to the @ref thread_queue for a detailed description.
 There is also a convenience function to simplify the setting up of
 the queue structure, called MR::Thread::run_queue(). This also works with the
 MR::Thread::multi() wrapper where multiple parallel threads are desired. 
-Please refer to the @ref Thread module documentation for details.
+Please refer to the [Thread module documentation[(@ref thread_classes) for details.
 
 
