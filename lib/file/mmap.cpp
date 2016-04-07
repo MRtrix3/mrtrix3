@@ -69,7 +69,7 @@ namespace MR
           delayed_writeback = true;
         }
 
-        if (fsbuf.f_type == 0xff534d42 /* CIFS */|| fsbuf.f_type == 0x6969 /* NFS */ || fsbuf.f_type == 0x65735546 /* FUSE */) {
+        if (fsbuf.f_type == 0xff534d42 /* CIFS */|| fsbuf.f_type == 0x6969 /* NFS */ || fsbuf.f_type == 0x65735546 /* FUSE */ || fsbuf.f_type == 0x517b /* SMB */) {
           DEBUG ("\"" + Entry::name + "\" appears to reside on a networked filesystem - using delayed write-back");
           delayed_writeback = true;
         }
