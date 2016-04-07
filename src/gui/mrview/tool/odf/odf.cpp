@@ -760,8 +760,11 @@ namespace MR
           assert (settings->dixel.dirs);
           assert (renderer);
           renderer->dixel.update_mesh (*(settings->dixel.dirs));
-          if (preview)
+          if (preview) {
             preview->render_frame->set_dixels (*(settings->dixel.dirs));
+            // Values at the focus point change if we're now looking at a different shell
+            update_preview();
+          }
           updateGL();
         }
 
