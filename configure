@@ -1113,11 +1113,8 @@ if nogui:
 else:
   cache.write ('False\n')
 
-cache.write('dev = ')
 if dev:
-  cache.write('True\n')
-else:
-  cache.write('False\n')
+  cache.write('bash_completion = True\ncommand_doc = True\n')
 
 cache.close()
 sys.stdout.write ('ok\n\n')

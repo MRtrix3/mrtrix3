@@ -141,12 +141,12 @@ cmd_dir = 'cmd'
 lib_dir = 'lib'
 misc_dir = 'src'
 other_dir = '3rd_party'
-doc_dir = 'doc'
-dev_dir = 'dev'
 
 cpp_suffix = '.cpp'
 h_suffix = '.h'
 libname = 'mrtrix'
+
+
 
 
 
@@ -203,6 +203,9 @@ def make_intermediate (name, confname):
 
 
 # parse command-line:
+command_doc = False
+bash_completion = False
+
 for arg in sys.argv[1:]:
   if '-help'.startswith (arg):
     print ('''
@@ -219,11 +222,19 @@ In most cases, a simple invocation is all that is required:
 If no targets are provided, the command will default to building 
 all applications by scanning through the cmd/ folder. 
 
+All intermediate files and the target executables will be located in the target
+config folder (by default: 'release').
+
 The special target 'clean' is used to remove all compiler-generated 
 files, including objects, executables, and shared libraries. 
 
-All intermediate files and the target executables will be located in the target
-config folder (by default: 'release').
+The special target 'bash' is used to update the bash completion script. Note
+that automatic updating of this script can be enabled at the configure stage,
+by running './configure -dev' prior to invoking './build'
+
+The special target 'doc' is used to update the command documentation, so that
+any modifications to the inline documentation in commands can be propagate
+through to the user documentation site.
 
 OPTIONS:
 
@@ -252,6 +263,10 @@ OPTIONS:
   elif arg[0] == '-':
     sys.stderr.write ('unknown command-line option "' + arg + '"\n')
     sys.exit (1)
+  elif arg == 'bash':
+    bash_completion = True
+  elif arg == 'doc':
+    command_doc = True
   elif arg == 'clean':
     targets = [ 'clean' ]
   elif os.path.isfile (os.path.join (mrtrix_dir[-1], arg, "config")):
@@ -265,7 +280,7 @@ OPTIONS:
       sys.stderr.write ('unable to resolve target "' + arg + '"\n')
       sys.exit (1)
     targets.append(arg)
-    if config_name is not None and config_name is not ret[1]:
+    if config_name is not None and config_name != ret[1]:
       sys.stderr.write ('conflicting configurations requested: "' + config_name + '" and "' + ret[1] + '"\n')
       sys.exit (1)
     config_name = ret[1]
@@ -278,6 +293,8 @@ if 'clean' in targets:
     folders = [ config_name ]
   else:
     folders = [ f for f in os.listdir('.') if os.path.exists (os.path.join (f, 'config')) ]
+
+  folders += [ 'dev' ]
 
   if '.git' in folders: folders.remove ('.git')
   for f in folders:
@@ -306,7 +323,7 @@ try:
   log ('reading configuration from "' + config_file + '"...' + os.linesep)
   exec (codecs.open (config_file, mode='r', encoding='utf-8').read())
 except IOError:
-  sys.stderr.write ('''no configuration file found!
+  sys.stderr.write ('no configuration file found for target build "' + config_name + '''"!
 please run "./configure" prior to invoking this script
 
 ''')
@@ -796,107 +813,6 @@ def start_html (fid, title, left, up, home, right):
 
 
 
-def gen_command_html_help ():
-  binaries = os.listdir (target_bin_dir)
-  binaries.sort()
-  description = []
-
-  # generate each program's individual page:
-  for n in range (0, len(binaries)):
-    sys.stderr.write ('[DOC] ' + binaries[n] + os.linesep)
-     
-    process = subprocess.Popen ([ binaries[n], '__print_full_usage__' ], stdout=subprocess.PIPE)
-    if process.wait() != 0:
-      sys.stderr.write ('ERROR: unable to execute', binaries[n], ' - aborting' + os.linesep)
-      return 1
-    H = process.stdout.read().decode (errors='ignore')
-    H = H.splitlines()
-
-    with codecs.open (os.path.join (doc_dir, 'commands', binaries[n] + '.html'), mode='w', encoding='utf-8') as fid:
-
-      if n == 0: prev = 'index'
-      else: prev = binaries[n-1]
-
-      if n == len(binaries)-1: next = 'index'
-      else: next = binaries[n+1]
-
-      start_html (fid, binaries[n], prev, 'index', '../index', next)
-      fid.write ('<h2>Description</h2>\n')
-
-      line = 0
-      while not H[line].startswith ('ARGUMENT') and not H[line].startswith('OPTION'):
-        if len(description) <= n: description.append (H[line])
-        fid.write ('<p>\n' + H[line] + '\n</p>\n')
-        line += 1
-  
-      arg = []
-      opt = []
-      while line < len(H)-2:
-        if not H[line].startswith ('ARGUMENT') and not H[line].startswith ('OPTION'):
-          sys.stderr.write ('ERROR: malformed usage for executable "' + binaries[n] + '" - aborting' + os.linesep)
-          return 1
-  
-        if H[line].startswith ('ARGUMENT'):
-          S = H[line].split (None, 5)
-          A = [ S[1], int(S[2]), int(S[3]), S[4], H[line+1], H[line+2] ]
-          if len(opt) > 0: opt[-1].append (A)
-          else: arg.append(A)
-  
-        elif H[line].startswith ('OPTION'):
-          S = H[line].split (None, 4)
-          A = [ S[1], int(S[2]), int(S[3]), H[line+1], H[line+2] ]
-          opt.append (A)
-  
-        line += 3
-  
-      fid.write ('<p class=indented><strong>syntax:</strong> &nbsp; &nbsp; ' + binaries[n] + ' [ options ] ')
-      for A in arg:
-        if A[1] == 0: fid.write ('[ ')
-        fid.write (A[0] + ' ')
-        if A[2] == 1: fid.write ('[ ' + A[0] + ' ... ')
-        if A[1] == 0 or A[2] == 1: fid.write ('] ')
-      fid.write ('</p>\n<h2>Arguments</h2>\n<table class=args>\n')
-  
-
-      for A in arg:
-        fid.write ('<tr><td><b>' + A[0] + '</b>')
-        if A[1] == 0 or A[2] == 1:
-          fid.write (' [ ')
-          if A[1] == 0: 
-            fid.write ('optional')
-            if A[2] == 1: fid.write (', ')
-          if A[2] == 1: fid.write ('multiples allowed')
-          fid.write (' ]')
-        fid.write ('</td>\n<td>' + A[5] + '</td></tr>\n')
-      fid.write ('</table>\n')
-
-      fid.write ('<h2>Options</h2>\n<table class=args>\n')
-      for O in opt:
-        fid.write ('<tr><td><b>-' + O[0] + '</b>')
-        for A in O[5:]: fid.write ('&nbsp;<i>' + A[0] + '</i>')
-        fid.write ('</td>\n<td>' + O[4])
-        if len(O) > 5:
-          fid.write ('\n<table class=opts>\n')
-          for A in O[5:]:
-            fid.write ('<tr><td><i>' + A[0] + '</i></td>\n<td>' + A[5] + '</td></tr>\n')
-          fid.write ('</table>')
-        fid.write ('</td></tr>\n')
-      fid.write ('</table>\n')
-  
-      fid.write ('</body>\n</html>')
-  
-
-  with codecs.open (os.path.join (doc_dir, 'commands', 'index.html'), mode='w', encoding='utf-8') as fid:
-    start_html (fid, 'list of MRtrix commands', '../faq', '../index', '../index', '../appendix/index')
-    fid.write ('<table class=cmdindex width=100%>\n')
-
-    for n in range (0,len(binaries)):
-      fid.write ('<tr><td><a href="' + binaries[n] + '.html">' + binaries[n] + '</a></td><td>' + description[n] + '</td></tr>\n')
-    fid.write ('</table>\n</body>\n</html>')
-
-
-
-
 
 def get_git_version (folder):
   log ('''
@@ -1000,25 +916,17 @@ def update_user_docs ():
     if docs_freshness_time >= command_freshness_time:
       return
 
-  sys.exit (execute ('[SH] Generating user documentation (./docs)', [ script_path ], scripts_dir ) )
+  if execute ('[DOC] generating user documentation (./docs)', [ script_path ], scripts_dir):
+    sys.exit (1)
   
+
+
 
 ###########################################################################
 #                            START OF PROGRAM
 ###########################################################################
 
 
-
-if 'clean' in targets:
-  clean_cmd()
-  sys.exit (0)
-
-if doc_dir in targets: 
-  sys.exit (gen_command_html_help());
-    
-if dev_dir in targets: 
-  sys.exit (execute ('[DOC] development', [ 'doxygen' ]))
-    
 if len(targets) == 0: 
   targets = default_targets()
 
@@ -1108,35 +1016,37 @@ log ('TODO list contains ' + str(len(todo)) + ''' items
 
 #for entry in todo.values(): entry.display()
 
-if not len(todo): sys.exit(0)
-
-
-try: num_processors = int(os.environ['NUMBER_OF_PROCESSORS'])
-except:
-  try: num_processors = os.sysconf('SC_NPROCESSORS_ONLN')
-  except: num_processors = 1
+if len(todo): 
   
-log ('''
+  try: num_processors = int(os.environ['NUMBER_OF_PROCESSORS'])
+  except:
+    try: num_processors = os.sysconf('SC_NPROCESSORS_ONLN')
+    except: num_processors = 1
+    
+  log ('''
+  
+  launching ''' + str(num_processors) + ''' threads
+  
+  ''')
+  
+  threads = []
+  for i in range (1, num_processors):
+    t = threading.Thread (target=build_next, args=(i,));
+    t.start()
+    threads.append (t)
+  
+  build_next(0)
+  
+  for t in threads: t.join()
 
-launching ''' + str(num_processors) + ''' threads
-
-''')
-
-threads = []
-for i in range (1, num_processors):
-  t = threading.Thread (target=build_next, args=(i,));
-  t.start()
-  threads.append (t)
-
-build_next(0)
-
-for t in threads: t.join()
 
 # generate development-specific files (if needed)
 # i.e. bash completion and user documentation
 
-if dev and stop <= 1:
+if bash_completion and stop <= 1:
   update_bash_completion()
+
+if command_doc and stop <= 1:
   update_user_docs()
 
 sys.exit (stop > 1)
