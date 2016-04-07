@@ -109,7 +109,7 @@ namespace MR
              virtual void closeEvent (QCloseEvent* event) override;
 
              ODF_Item* get_image ();
-             void get_values (Eigen::VectorXf& SH, MRView::Image& image, const Eigen::Vector3f& pos, const bool interp);
+             void get_values (Eigen::VectorXf&, ODF_Item&, const Eigen::Vector3f&, const bool);
              void setup_ODFtype_UI (const ODF_Item*);
 
              friend class ODF_Preview;

@@ -333,7 +333,12 @@ namespace MR
             for (int y = -ny; y <= ny; ++y) {
               for (int x = -nx; x <= nx; ++x) {
                 Eigen::Vector3f p = pos + float(x)*x_dir + float(y)*y_dir;
-                get_values (values, settings->image, p, interpolation_box->isChecked());
+
+                // values gets shrunk by the previous get_values() call
+                if (settings->mode == GUI::DWI::Renderer::mode_t::DIXEL && settings->dixel.dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME)
+                  values.resize (settings->image.header().size (3));
+
+                get_values (values, *settings, p, interpolation_box->isChecked());
                 if (!std::isfinite (values[0])) continue;
 
                 switch (settings->mode) {
@@ -346,12 +351,7 @@ namespace MR
                     renderer->tensor.set_data (values);
                     break;
                   case GUI::DWI::Renderer::mode_t::DIXEL:
-                    if (settings->dixel.dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME) {
-                      const Eigen::VectorXf shell_values = settings->dixel.get_shell_data (values);
-                      renderer->dixel.set_data (shell_values);
-                    } else {
-                      renderer->dixel.set_data (values);
-                    }
+                    renderer->dixel.set_data (values);
                     break;
                 }
 
@@ -388,19 +388,24 @@ namespace MR
 
 
 
-        void ODF::get_values (Eigen::VectorXf& values, MRView::Image& image, const Eigen::Vector3f& pos, const bool interp)
+        void ODF::get_values (Eigen::VectorXf& values, ODF_Item& item, const Eigen::Vector3f& pos, const bool interp)
         {
+          MRView::Image& image (item.image);
           values.setZero();
           if (interp) {
-            if (!image.linear_interp.scanner (pos))
-              return;
-            for (image.linear_interp.index(3) = 0; image.linear_interp.index(3) < std::min (ssize_t(values.size()), image.linear_interp.size(3)); ++image.linear_interp.index(3))
-              values[image.linear_interp.index(3)] = image.linear_interp.value().real();
+            if (image.linear_interp.scanner (pos)) {
+              for (image.linear_interp.index(3) = 0; image.linear_interp.index(3) < std::min (ssize_t(values.size()), image.linear_interp.size(3)); ++image.linear_interp.index(3))
+                values[image.linear_interp.index(3)] = image.linear_interp.value().real();
+            }
           } else {
-            if (!image.nearest_interp.scanner (pos))
-              return;
-            for (image.nearest_interp.index(3) = 0; image.nearest_interp.index(3) < std::min (ssize_t(values.size()), image.nearest_interp.size(3)); ++image.nearest_interp.index(3))
-              values[image.nearest_interp.index(3)] = image.nearest_interp.value().real();
+            if (image.nearest_interp.scanner (pos)) {
+              for (image.nearest_interp.index(3) = 0; image.nearest_interp.index(3) < std::min (ssize_t(values.size()), image.nearest_interp.size(3)); ++image.nearest_interp.index(3))
+                values[image.nearest_interp.index(3)] = image.nearest_interp.value().real();
+            }
+          }
+          if (item.mode == GUI::DWI::Renderer::mode_t::DIXEL && item.dixel.dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME) {
+            Eigen::VectorXf shell_values = item.dixel.get_shell_data (values);
+            std::swap (values, shell_values);
           }
         }
 
@@ -431,13 +436,17 @@ namespace MR
           shell_selector->blockSignals (true);
           shell_selector->clear();
           if (image->dixel.shells) {
-            for (size_t i = 0; i != image->dixel.shells->count(); ++i)
-              shell_selector->addItem (QString::fromStdString (str (int (std::round ((*image->dixel.shells)[i].get_mean())))));
+            for (size_t i = 0; i != image->dixel.shells->count(); ++i) {
+              if (!(*image->dixel.shells)[i].is_bzero())
+                shell_selector->addItem (QString::fromStdString (str (int (std::round ((*image->dixel.shells)[i].get_mean())))));
+            }
+            if (image->mode == GUI::DWI::Renderer::mode_t::DIXEL && shell_selector->count() && image->dixel.dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME)
+              shell_selector->setCurrentIndex (image->dixel.shell_index - (image->dixel.shells->smallest().is_bzero() ? 1 : 0));
           }
           shell_selector->blockSignals (false);
-          if (image->mode == GUI::DWI::Renderer::mode_t::DIXEL && shell_selector->count() && image->dixel.dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME)
-            shell_selector->setCurrentIndex (image->dixel.shell_index);
           shell_selector->setEnabled (image->mode == GUI::DWI::Renderer::mode_t::DIXEL && image->dixel.dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME && image->dixel.shells && image->dixel.shells->count() > 1);
+          if (preview)
+            preview->set_lod_enabled (image->mode != GUI::DWI::Renderer::mode_t::DIXEL);
         }
 
 
@@ -460,6 +469,8 @@ namespace MR
           if (settings->mode == GUI::DWI::Renderer::mode_t::DIXEL) {
             assert (settings->dixel.dirs);
             renderer->dixel.update_mesh (*(settings->dixel.dirs));
+            if (preview)
+              preview->render_frame->set_dixels (*(settings->dixel.dirs));
           }
           updateGL();
         }
@@ -534,6 +545,8 @@ namespace MR
             preview->render_frame->set_scale (settings->scale);
             preview->render_frame->set_hide_neg_values (settings->hide_negative);
             preview->render_frame->set_color_by_dir (settings->color_by_direction);
+            preview->set_lod_enabled (settings->mode != GUI::DWI::Renderer::mode_t::DIXEL);
+
             if (settings->mode == GUI::DWI::Renderer::mode_t::SH)
               preview->render_frame->set_lmax (settings->lmax);
             else if (settings->dixel.dirs)
@@ -702,6 +715,8 @@ namespace MR
                 break;
               case 3: // None
                 settings->dixel.set_none();
+                if (preview)
+                  preview->render_frame->clear_dixels();
                 break;
               case 4: // From file
                 const std::string path = Dialog::File::get_file (this, "Select directions file", "Text files (*.txt)");
@@ -713,10 +728,7 @@ namespace MR
                 break;
             }
             shell_selector->setEnabled (dir_type == 0 && settings->dixel.shells && settings->dixel.shells->count() > 1);
-            if (dir_type == 3) {
-              if (preview)
-                preview->render_frame->clear_dixels();
-            } else {
+            if (dir_type != 3) {
               assert (settings->dixel.dirs);
               assert (renderer);
               renderer->dixel.update_mesh (*(settings->dixel.dirs));
@@ -740,7 +752,9 @@ namespace MR
             return;
           assert (settings->mode == GUI::DWI::Renderer::mode_t::DIXEL);
           assert (settings->dixel.dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME);
-          const size_t index = shell_selector->currentIndex();
+          size_t index = shell_selector->currentIndex();
+          if (settings->dixel.shells->smallest().is_bzero())
+            ++index;
           assert (index < settings->dixel.num_DW_shells());
           settings->dixel.set_shell (index);
           assert (settings->dixel.dirs);
@@ -829,9 +843,9 @@ namespace MR
               values.resize (settings->image.header().size (3));
               break;
           }
-          MRView::Image& image (settings->image);
-          get_values (values, image, window().focus(), preview->interpolate());
+          get_values (values, *settings, window().focus(), preview->interpolate());
           preview->set (values);
+          preview->set_lod_enabled (settings->mode != GUI::DWI::Renderer::mode_t::DIXEL);
           preview->lock_orientation_to_image_slot (0);
         }
 
@@ -854,6 +868,7 @@ namespace MR
             preview->render_frame->set_scale (settings->scale);
             preview->render_frame->set_hide_neg_values (settings->hide_negative);
             preview->render_frame->set_color_by_dir (settings->color_by_direction);
+            preview->set_lod_enabled (settings->mode != GUI::DWI::Renderer::mode_t::DIXEL);
             if (settings->mode == GUI::DWI::Renderer::mode_t::SH) {
               preview->render_frame->set_lmax (settings->lmax);
             } else if (settings->mode == GUI::DWI::Renderer::mode_t::DIXEL) {
