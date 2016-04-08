@@ -16,6 +16,7 @@
 
 #include "command.h"
 #include "math/math.h"
+#include "math/average_space.h"
 #include "image.h"
 #include "file/nifti1_utils.h"
 #include "transform.h"
@@ -25,56 +26,53 @@
 using namespace MR;
 using namespace App;
 
+const char* operations[] = {
+  "flirt_import",
+  "invert",
+  "half",
+  "header",
+  "average",
+  "interpolate",
+  NULL
+};
+
+// const char description_flirt_import[] = "flirt_import" + "convert the transformation matrix provided by FSL's flirt command to a format usable in MRtrix";
+
+  // VAR(join(description_flirt_import, ", "));
+  // VAR(join(description_flirt_import, ", ").c_str());
+
 void usage ()
 {
   DESCRIPTION
-  + "edit linear transformation matrices."
+  + "This command's function is to process linear transformation matrices."
 
-  + "This command's function is to either convert the transformation matrix provided "
-    "by FSL's flirt command to a format usable in MRtrix or to interpolate between "
-    "two transformation matrices";
+  + "It allows to perform affine matrix operations or to convert the transformation matrix provided by FSL's flirt command to a format usable in MRtrix"
+  ;
 
   ARGUMENTS
-  + Argument ("output", "the output transformation matrix.").type_file_out ();
-
-
-  OPTIONS
-    + Option ("flirt_import",
-        "Convert a transformation matrix produced by FSL's flirt command into a format usable by MRtrix. "
+  + Argument ("input", "the input for the specified operation").allow_multiple()
+  + Argument ("operation", "the operation to perform, one of: " + join(operations, ", ") + "."
+    + "\n\nflirt_import: "
+    + "Convert a transformation matrix produced by FSL's flirt command into a format usable by MRtrix. "
         "You'll need to provide as additional arguments the save NIfTI images that were passed to flirt "
-        "with the -in and -ref options.")
-    + Argument ("input", "input transformation matrix").type_file_in ()
-    + Argument ("in").type_image_in ()
-    + Argument ("ref").type_image_in ()
+        "with the -in and -ref options:\nmatrix_in in ref flirt_import output"
 
-    + Option ("invert",
-      "invert the input transformation.")
-    + Argument ("input", "input transformation matrix").type_file_in ()
+    + "\n\ninvert: invert the input transformation:\nmatrix_in invert output"
 
-    + Option ("half",
-      "output the matrix square root of the input transformation.")
-    + Argument ("input", "input transformation matrix").type_file_in ()
+    + "\n\nhalf: calculate the matrix square root of the input transformation:\nmatrix_in half output"
 
-    // + Option ("surfer_vox2vox",
-    //     "Convert a transformation matrix produced by freesurfer's robust_register command into a format usable by MRtrix. ")
-    // + Argument ("vox2vox", "input transformation matrix").type_file_in ()
-    // + Argument ("mov").type_image_in ()
-    // + Argument ("dst").type_image_in ()
+    + "\n\nheader: calculate the transformation matrix from an original image and an image with modified header:\nmov mapmovhdr output"
 
-    + Option ("header",
-        "Calculate the transformation matrix from an original image and an image with modified header.")
-    + Argument ("mov").type_image_in ()
-    + Argument ("mapmovhdr").type_image_in ()
+    + "\n\naverage: calculate the average affine matrix of all input matrices:\ninput ... average output"
 
-    + Option ("interpolate",
-        "Create interpolated transformation matrix between input (t=0) and input2 (t=1). "
+    + "\n\ninterpolate: create interpolated transformation matrix between input (t=0) and input2 (t=1). "
         "Based on matrix decomposition with linear interpolation of "
         " translation, rotation and stretch described in "
         " Shoemake, K., Hill, M., & Duff, T. (1992). Matrix Animation and Polar Decomposition. "
-        " Matrix, 92, 258-264. doi:10.1.1.56.1336")
-    + Argument ("input", "input transformation matrix").type_file_in ()
-    + Argument ("input2").type_file_in ()
-    + Argument ("t").type_float ();
+        " Matrix, 92, 258-264. doi:10.1.1.56.1336"
+        "\ninput input2 interpolate output"
+    ).type_choice (operations)
+  + Argument ("output", "the output transformation matrix.").type_file_out ();
 }
 
 
@@ -149,120 +147,121 @@ template <typename T> int sgn(T val) {
 
 void run ()
 {
-  auto flirt_opt = get_options ("flirt_import");
-  auto interp_opt = get_options ("interpolate");
-  auto invert_opt = get_options ("invert");
-  auto half_opt = get_options ("half");
-  // auto surfer_vox2vox_opt = get_options ("surfer_vox2vox");
-  auto from_header_opt = get_options ("header");
+  const size_t num_inputs = argument.size() - 2;
+  const int op = argument[num_inputs];
+  const std::string& output_path = argument.back();
 
-  size_t options = 0;
-  if (flirt_opt.size())
-    options++;
-  if (invert_opt.size())
-    options++;
-  if (half_opt.size())
-    options++;
-  if (interp_opt.size())
-    options++;
-  if (from_header_opt.size())
-    options++;
-  // if (surfer_vox2vox_opt.size())
-  //   options++;
-  if (options != 1)
-    throw Exception ("You must specify one option");
+  switch (op) {
+    case 0: { // flirt_import
+      if (num_inputs != 3)
+        throw Exception ("flirt_import requires 3 inputs");
+      transform_type transform = load_transform<default_type> (argument[0]);
+      auto src_header = Header::open (argument[1]); // -in
+      auto dest_header = Header::open (argument[2]); // -ref
 
-  if (invert_opt.size()) {
-    transform_type input = load_transform<double> (invert_opt[0][0]);
-    save_transform (input.inverse(), argument[0]);
+      if (transform.matrix().topLeftCorner<3,3>().determinant() == float(0.0))
+          WARN ("Transformation matrix determinant is zero.");
+      if (transform.matrix().topLeftCorner<3,3>().determinant() < 0)
+          INFO ("Transformation matrix determinant is negative.");
+
+      transform_type src_flirt_to_scanner = get_flirt_transform (src_header);
+      transform_type dest_flirt_to_scanner = get_flirt_transform (dest_header);
+
+      transform_type forward_transform = dest_flirt_to_scanner * transform * src_flirt_to_scanner.inverse();
+      if (((forward_transform.matrix().array() != forward_transform.matrix().array())).any())
+        WARN ("NAN in transformation.");
+      save_transform (forward_transform.inverse(), output_path);
+      break;
+    }
+    case 1: { // invert
+      if (num_inputs != 1)
+        throw Exception ("invert requires 1 input");
+      transform_type input = load_transform<default_type> (argument[0]);
+      save_transform (input.inverse(), output_path);
+      break;
+    }
+    case 2: { // half
+      if (num_inputs != 1)
+        throw Exception ("half requires 1 input");
+      Eigen::Transform<default_type, 3, Eigen::Projective> input = load_transform<default_type> (argument[0]);
+      transform_type output;
+      Eigen::Matrix<default_type, 4, 4> half = input.matrix().sqrt();
+      output.matrix() = half.topLeftCorner(3,4);
+      save_transform (output, output_path);
+      break;
+    }
+    case 3: { // header
+      if (num_inputs != 2)
+        throw Exception ("header requires 2 inputs");
+      auto orig_header = Header::open (argument[0]);
+      auto modified_header = Header::open (argument[1]);
+
+      transform_type forward_transform = Transform(modified_header).voxel2scanner * Transform(orig_header).voxel2scanner.inverse();
+      save_transform (forward_transform.inverse(), output_path);
+      break;
+    }
+    case 4: { // average
+      if (num_inputs < 2)
+        throw Exception ("average requires at least 2 inputs");
+      transform_type transform_out;
+      Eigen::Transform<default_type, 3, Eigen::Projective> Tin;
+      Eigen::MatrixXd Min;
+      std::vector<Eigen::MatrixXd> matrices;
+      for (size_t i = 0; i < num_inputs; i++) {
+        DEBUG(str(argument[i]));
+        Tin = load_transform<default_type> (argument[i]);
+        matrices.push_back(Tin.matrix());
+      }
+      for (size_t i = 0; i < num_inputs; i++)
+        MAT(matrices[i]);
+
+      Eigen::MatrixXd average_matrix;
+      Math::matrix_average ( matrices, average_matrix);
+      transform_out.matrix() = average_matrix.topLeftCorner(3,4);
+      save_transform (transform_out, output_path);
+      break;
+    }
+    case 5: { // interpolate
+      if (num_inputs != 3)
+        throw Exception ("interpolation requires 3 inputs");
+      transform_type transform1 = load_transform<default_type> (argument[0]);
+      transform_type transform2 = load_transform<default_type> (argument[1]);
+      default_type t = parse_floats(argument[2])[0];
+
+      transform_type transform_out;
+
+      if (t < 0.0 || t > 1.0)
+        throw Exception ("t has to be in the interval [0,1]");
+
+      Eigen::MatrixXd M1 = transform1.linear();
+      Eigen::MatrixXd M2 = transform2.linear();
+      if (sgn(M1.determinant()) != sgn(M2.determinant()))
+        WARN("transformation determinants have different signs");
+
+      Eigen::Matrix3d R1 = transform1.rotation();
+      Eigen::Matrix3d R2 = transform2.rotation();
+      Eigen::Quaterniond Q1(R1);
+      Eigen::Quaterniond Q2(R2);
+      Eigen::Quaterniond Qout;
+
+      // stretch (shear becomes roation and stretch)
+      Eigen::MatrixXd S1 = R1.transpose() * M1;
+      Eigen::MatrixXd S2 = R2.transpose() * M2;
+      if (!M1.isApprox(R1*S1))
+        WARN ("M1 matrix decomposition might have failed");
+      if (!M2.isApprox(R2*S2))
+        WARN ("M2 matrix decomposition might have failed");
+
+      transform_out.translation() = ((1.0 - t) * transform1.translation() + t * transform2.translation());
+      Qout = Q1.slerp(t, Q2);
+      transform_out.linear() = Qout * ((1 - t) * S1 + t * S2);
+      INFO("\n"+str(transform_out.matrix().format(
+        Eigen::IOFormat(Eigen::FullPrecision, 0, ", ", ",\n", "[", "]", "[", "]"))));
+      save_transform (transform_out, output_path);
+      break;
+    }
+    default: assert (0);
   }
 
-  if (half_opt.size()) {
-    transform_type input = load_transform<double> (half_opt[0][0]);
-    Eigen::Matrix<default_type, 4, 4> half;
-    half.row(3) << 0, 0, 0, 1.0;
-    half.topLeftCorner(3,4) = input.matrix().topLeftCorner(3,4);
-    input.matrix() = half.sqrt().topLeftCorner(3,4);
-    save_transform (input, argument[0]);
-  }
 
-  if (from_header_opt.size()) {
-    auto orig_header = Header::open (from_header_opt[0][0]);
-    auto modified_header = Header::open (from_header_opt[0][1]);
-
-    transform_type forward_transform = Transform(modified_header).voxel2scanner * Transform(orig_header).voxel2scanner.inverse();
-    save_transform (forward_transform.inverse(), argument[0]);
-  }
-
-  // if(surfer_vox2vox_opt.size()){
-  //   auto vox2vox = parse_surfer_transform (surfer_vox2vox_opt[0][0]);
-
-  //   auto src_header = Header::open (surfer_vox2vox_opt[0][1]);
-  //   auto dest_header = Header::open (surfer_vox2vox_opt[0][2]);
-
-  //   auto transform_source = Transform(src_header); // .transform();
-  //   auto transform_dest = Transform(dest_header); //dest_header.transform();
-
-  //   VAR(transform_source.voxel2scanner.matrix());
-  //   VAR(transform_dest.voxel2scanner.matrix());
-  //   VAR(vox2vox.matrix());
-
-  //   auto forward_transform =  transform_source.voxel2scanner *
-  //     vox2vox.inverse() * transform_dest.voxel2scanner;
-  //   save_transform (forward_transform.inverse(), argument[0]);
-  //   throw Exception ("FIXME: surfer_vox2vox not implemented yet"); // TODO
-  // }
-
-  if (flirt_opt.size()) {
-    transform_type transform = load_transform<float> (flirt_opt[0][0]);
-    if(transform.matrix().topLeftCorner<3,3>().determinant() == float(0.0))
-        WARN ("Transformation matrix determinant is zero. Replace hex with plain text numbers.");
-
-    auto src_header = Header::open (flirt_opt[0][1]);
-    transform_type src_flirt_to_scanner = get_flirt_transform (src_header);
-
-    auto dest_header = Header::open (flirt_opt[0][2]);
-    transform_type dest_flirt_to_scanner = get_flirt_transform (dest_header);
-
-    transform_type forward_transform = dest_flirt_to_scanner * transform * src_flirt_to_scanner.inverse();
-    if (((forward_transform.matrix().array() != forward_transform.matrix().array())).any())
-      WARN ("NAN in transformation.");
-    save_transform (forward_transform.inverse(), argument[0]);
-  }
-
-  if (interp_opt.size()) {
-    transform_type transform1 = load_transform<double> (interp_opt[0][0]);
-    transform_type transform2 = load_transform<double> (interp_opt[0][1]);
-    transform_type transform_out;
-    double t = interp_opt[0][2];
-    if (t < 0.0 || t > 1.0)
-      throw Exception ("t has to be in the interval [0,1]");
-
-    Eigen::MatrixXd M1 = transform1.linear();
-    Eigen::MatrixXd M2 = transform2.linear();
-    if (sgn(M1.determinant()) != sgn(M2.determinant()))
-      WARN("transformation determinants have different signs");
-
-    // transform1.computeRotationScaling (R1, S1);
-    Eigen::Matrix3d R1 = transform1.rotation(); // SVD based, polar decomposition should be faster [Higham86]
-    Eigen::Matrix3d R2 = transform2.rotation();
-    Eigen::Quaterniond Q1(R1);
-    Eigen::Quaterniond Q2(R2);
-    Eigen::Quaterniond Qout;
-
-    // get stretch (shear becomes roation and stretch)
-    Eigen::MatrixXd S1 = R1.transpose() * M1;
-    Eigen::MatrixXd S2 = R2.transpose() * M2;
-    if (!M1.isApprox(R1*S1))
-      WARN ("M1 matrix decomposition might have failed");
-    if (!M2.isApprox(R2*S2))
-      WARN ("M2 matrix decomposition might have failed");
-
-    transform_out.translation() = ((1.0 - t) * transform1.translation() + t * transform2.translation());
-    Qout = Q1.slerp(t, Q2);
-    transform_out.linear() = Qout * ((1 - t) * S1 + t * S2);
-    INFO("\n"+str(transform_out.matrix().format(
-      Eigen::IOFormat(Eigen::FullPrecision, 0, ", ", ",\n", "[", "]", "[", "]"))));
-    save_transform (transform_out, argument[0]);
-  }
 }
