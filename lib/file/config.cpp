@@ -25,14 +25,8 @@
 #include "file/config.h"
 
 #define MRTRIX_CONFIG_FILE "mrtrix.conf"
-
-#ifdef MRTRIX_WINDOWS
-#define MRTRIX_SYS_CONFIG_FILE "C:\\" MRTRIX_CONFIG_FILE
-#define MRTRIX_USER_CONFIG_FILE MRTRIX_CONFIG_FILE
-#else
 #define MRTRIX_SYS_CONFIG_FILE "/etc/" MRTRIX_CONFIG_FILE
 #define MRTRIX_USER_CONFIG_FILE "." MRTRIX_CONFIG_FILE
-#endif
 
 
 
