@@ -150,8 +150,16 @@ target, *not* a symbolic link. By doing so, the build script is unable
 to identify the location of the MRtrix libraries when trying to compile
 an external module.
 
-My solution was to use a standard Windows command prompt, with
-Administrator priveleges: In the file explorer, go to
+The simplest way around this is simply to invoke the build script of the main
+MRtrix install directly. For example, if compiling an external project called
+``myproject``, residing in a folder alongside the main ``mrtrix3`` folder, the
+build script can be invoked with::
+
+    # current working directory is 'myproject':
+    ../mrtrix3/build
+
+If you really want a symbolic link, one solution is to use a standard Windows
+command prompt, with Administrator priveleges: In the file explorer, go to
 ``C:\Windows\system32``, locate the file ``cmd.exe``, right-click and
 select 'Run as administrator'. Within this prompt, use the ``mklink``
 command (note that the argument order passed to ``mklink`` is reversed
