@@ -30,6 +30,7 @@ const char* operations[] = {
   "flirt_import",
   "invert",
   "half",
+  "rigid",
   "header",
   "average",
   "interpolate",
@@ -60,6 +61,8 @@ void usage ()
     + "\n\ninvert: invert the input transformation:\nmatrix_in invert output"
 
     + "\n\nhalf: calculate the matrix square root of the input transformation:\nmatrix_in half output"
+
+    + "\n\nrigid: calculate the rigid transformation of the affine input transformation:\nmatrix_in rigid output"
 
     + "\n\nheader: calculate the transformation matrix from an original image and an image with modified header:\nmov mapmovhdr header output"
 
@@ -190,7 +193,16 @@ void run ()
       save_transform (output, output_path);
       break;
     }
-    case 3: { // header
+    case 3: { // rigid
+      if (num_inputs != 1)
+        throw Exception ("rigid requires 1 input");
+      transform_type input = load_transform<default_type> (argument[0]);
+      transform_type output (input);
+      output.linear() = input.rotation();
+      save_transform (output, output_path);
+      break;
+    }
+    case 4: { // header
       if (num_inputs != 2)
         throw Exception ("header requires 2 inputs");
       auto orig_header = Header::open (argument[0]);
@@ -200,7 +212,7 @@ void run ()
       save_transform (forward_transform.inverse(), output_path);
       break;
     }
-    case 4: { // average
+    case 5: { // average
       if (num_inputs < 2)
         throw Exception ("average requires at least 2 inputs");
       transform_type transform_out;
@@ -219,7 +231,7 @@ void run ()
       save_transform (transform_out, output_path);
       break;
     }
-    case 5: { // interpolate
+    case 6: { // interpolate
       if (num_inputs != 3)
         throw Exception ("interpolation requires 3 inputs");
       transform_type transform1 = load_transform<default_type> (argument[0]);
