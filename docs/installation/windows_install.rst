@@ -47,7 +47,7 @@ Install and update MSYS2
    .. NOTE::
     Future versions of MSYS2 will drop ``update-core``. If your version came without ``update-core``, it is probably safe to skip this step.
 
-4. Close ithe shell and start **'MinGW-w64 Win64 Shell'**
+4. Close the shell and start **'MinGW-w64 Win64 Shell'**
    
 5. Update the other packages:
 
