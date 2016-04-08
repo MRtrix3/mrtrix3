@@ -20,7 +20,7 @@
 #ifdef MRTRIX_MACOSX
 # include <sys/param.h>
 # include <sys/mount.h>
-#else
+#elif !defined(MRTRIX_WINDOWS)
 # include <sys/vfs.h> 
 #endif
 
@@ -62,6 +62,47 @@ namespace MR
       bool delayed_writeback = false;
       if (readwrite) {
 
+#ifdef MRTRIX_WINDOWS
+        const unsigned int length = 255;
+        char root_path[length];
+        if (GetVolumePathName (Entry::name.c_str(), root_path, length)) { // Returns non-zero on success
+
+          const unsigned int code = GetDriveType (root_path);
+          switch (code) {
+            case 0: // DRIVE_UNKNOWN
+              DEBUG ("cannot get filesystem information on file \"" + Entry::name + "\": " + strerror (errno));
+              DEBUG ("  defaulting to delayed write-back");
+              delayed_writeback = true;
+              break;
+            case 1: // DRIVE_NO_ROOT_DIR:
+              DEBUG ("erroneous root path derived for file \"" + Entry::name + "\": " + strerror (errno));
+              DEBUG ("  defaulting to delayed write-back");
+              delayed_writeback = true;
+              break;
+            case 2: // DRIVE_REMOVABLE
+              DEBUG ("Drive for file \"" + Entry::name + "\" detected as removable; using memory-mapping");
+              break;
+            case 3: // DRIVE_FIXED
+              DEBUG ("Drive for file \"" + Entry::name + "\" detected as fixed; using memory-mapping");
+              break;
+            case 4: // DRIVE_REMOTE
+              DEBUG ("Drive for file \"" + Entry::name + "\" detected as network - using delayed write-back");
+              delayed_writeback = true;
+              break;
+            case 5: // DRIVE_CDROM
+              DEBUG ("Drive for file \"" + Entry::name + "\" detected as CD-ROM - using delayed write-back");
+              delayed_writeback = true;
+              break;
+            case 6: // DRIVE_RAMDISK
+              DEBUG ("Drive for file \"" + Entry::name + "\" detected as RAM - using memory-mapping");
+              break;
+          }
+
+        } else {
+          DEBUG ("unable to query root drive path for file \"" + Entry::name + "\"; using delayed write-back");
+          delayed_writeback = true;
+        }
+#else
         struct statfs fsbuf;
         if (statfs (Entry::name.c_str(), &fsbuf)) {
           DEBUG ("cannot get filesystem information on file \"" + Entry::name + "\": " + strerror (errno));
@@ -78,6 +119,7 @@ namespace MR
           DEBUG ("\"" + Entry::name + "\" resides on a synchronous filesystem - using delayed write-back");
           delayed_writeback = true;
         }
+#endif
 
         if (delayed_writeback) {
           try {
