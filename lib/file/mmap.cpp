@@ -119,11 +119,6 @@ namespace MR
           DEBUG ("\"" + Entry::name + "\" appears to reside on a networked filesystem - using delayed write-back");
           delayed_writeback = true;
         }
-
-        if (fsbuf.f_flags & 0x0010 /* ST_SYNCHRONOUS */) {
-          DEBUG ("\"" + Entry::name + "\" resides on a synchronous filesystem - using delayed write-back");
-          delayed_writeback = true;
-        }
 #endif
 
         if (delayed_writeback) {
