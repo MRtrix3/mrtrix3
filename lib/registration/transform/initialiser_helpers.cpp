@@ -164,7 +164,8 @@ namespace MR
               }
             }
           }
-          assert (mass != 0.0);
+          if (mass == default_type(0.0))
+            throw Exception("centre of mass initialisation not possible for empty image");
           centre_of_mass /= mass;
         }
 
