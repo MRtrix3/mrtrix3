@@ -61,7 +61,7 @@ void usage ()
 
     + "\n\nhalf: calculate the matrix square root of the input transformation:\nmatrix_in half output"
 
-    + "\n\nheader: calculate the transformation matrix from an original image and an image with modified header:\nmov mapmovhdr output"
+    + "\n\nheader: calculate the transformation matrix from an original image and an image with modified header:\nmov mapmovhdr header output"
 
     + "\n\naverage: calculate the average affine matrix of all input matrices:\ninput ... average output"
 
@@ -212,8 +212,6 @@ void run ()
         Tin = load_transform<default_type> (argument[i]);
         matrices.push_back(Tin.matrix());
       }
-      for (size_t i = 0; i < num_inputs; i++)
-        MAT(matrices[i]);
 
       Eigen::MatrixXd average_matrix;
       Math::matrix_average ( matrices, average_matrix);
