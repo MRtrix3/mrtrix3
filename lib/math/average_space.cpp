@@ -22,15 +22,17 @@ namespace MR
    namespace Math
    {
       void matrix_average (std::vector<Eigen::MatrixXd> const &mat_in, Eigen::MatrixXd& mat_avg, bool verbose) {
-        size_t rows = mat_in[0].rows();
-        size_t cols = mat_in[0].cols();
-        size_t N = mat_in.size();
+        const size_t rows = mat_in[0].rows();
+        const size_t cols = mat_in[0].cols();
+        const size_t N = mat_in.size();
+        assert(rows);
+        assert(cols);
         // check input
         for (const auto &mat: mat_in) {
           if (cols != (size_t) mat.cols() or rows != (size_t) mat.rows())
             throw Exception("matrix average cannot be computed for matrices of different size");
         }
-
+        mat_avg.resize(rows, cols);
         mat_avg.setIdentity();
 
         Eigen::MatrixXd mat_s (rows, cols);  // sum
