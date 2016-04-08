@@ -28,7 +28,7 @@ To install *MRtrix3*, you will need the following:
     -  an `OpenGL <https://en.wikipedia.org/wiki/OpenGL>`__ 3.3 compliant graphics card and corresponding software driver 
 
 .. WARNING:: 
-    When following the instructions below, make sure that make use the **'MinGW-w64 Win64 shell'**. 'MSYS2 shell' and 'MinGW-w64 Win32 shell' should be avoided.
+    When following the instructions below, make sure that you use the **'MinGW-w64 Win64 shell'**. 'MSYS2 shell' and 'MinGW-w64 Win32 shell' should be avoided.
 
 Install and update MSYS2
 ------------------------
