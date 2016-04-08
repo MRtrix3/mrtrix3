@@ -27,6 +27,9 @@ To install *MRtrix3*, you will need the following:
 
     -  an `OpenGL <https://en.wikipedia.org/wiki/OpenGL>`__ 3.3 compliant graphics card and corresponding software driver 
 
+.. WARNING:: 
+    When following the instructions below, make sure that make use the **'MinGW-w64 Win64 shell'**. 'MSYS2 shell' and 'MinGW-w64 Win32 shell' should be avoided.
+
 Install and update MSYS2
 ------------------------
 
@@ -35,10 +38,6 @@ Install and update MSYS2
 
 2. Run the program **'MinGW-w64 Win64 Shell'** from the start menu.
 
-   .. WARNING::
-   
-      Avoid running 'MSYS2 shell' or 'MinGW-w64 Win32 shell'.
-
 3. Update the system packages:
 
    ::
@@ -46,14 +45,10 @@ Install and update MSYS2
        update-core
    
    .. NOTE::
-    Future versions of MSYS will drop ``update-core``, making it safe to skip this step.
+    Future versions of MSYS2 will drop ``update-core``. If your version came without ``update-core``, it is probably safe to skip this step.
 
 4. Close ithe shell and start **'MinGW-w64 Win64 Shell'**
    
-   .. WARNING::
-   
-      Avoid running 'MSYS2 shell' or 'MinGW-w64 Win32 shell'.
-
 5. Update the other packages:
 
    ::
@@ -63,7 +58,7 @@ Install and update MSYS2
 Install *MRtrix3* dependencies
 ----------------------------
 
-1. From the 'MinGW-w64 Win64 Shell' run:
+1. From the **'MinGW-w64 Win64 Shell'** run:
 
    ::
 
@@ -72,7 +67,7 @@ Install *MRtrix3* dependencies
 Set up git and download *MRtrix3* sources
 ---------------------------------------
 
-1. Configure global settings for Git in the 'MinGW-w64 Win64 Shell':
+1. Configure global settings for Git in the **'MinGW-w64 Win64 Shell'**:
 
    ::
 
