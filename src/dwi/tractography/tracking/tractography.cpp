@@ -14,6 +14,7 @@
  */
 #include "dwi/tractography/tracking/tractography.h"
 
+
 #define MAX_TRIALS 1000
 
 namespace MR
@@ -134,10 +135,10 @@ namespace MR
         if (opt.size()) properties["max_angle"] = std::string (opt[0][0]);
 
         opt = get_options ("number");
-        if (opt.size()) properties["max_num_tracks"] = str (unsigned int(opt[0][0]));
+        if (opt.size()) properties["max_num_tracks"] = str<unsigned int> (opt[0][0]);
 
         opt = get_options ("maxnum");
-        if (opt.size()) properties["max_num_attempts"] = str (unsigned int (opt[0][0]));
+        if (opt.size()) properties["max_num_attempts"] = str<unsigned int> (opt[0][0]);
 
         opt = get_options ("maxlength");
         if (opt.size()) properties["max_dist"] = std::string (opt[0][0]);
@@ -152,7 +153,7 @@ namespace MR
         if (opt.size()) properties["init_threshold"] = std::string (opt[0][0]);
 
         opt = get_options ("trials");
-        if (opt.size()) properties["max_trials"] = str (unsigned int (opt[0][0]));
+        if (opt.size()) properties["max_trials"] = str<unsigned int> (opt[0][0]);
 
         opt = get_options ("unidirectional");
         if (opt.size()) properties["unidirectional"] = "1";
@@ -167,7 +168,7 @@ namespace MR
         if (opt.size()) properties["fod_power"] = std::string (opt[0][0]);
 
         opt = get_options ("samples");
-        if (opt.size()) properties["samples_per_step"] = str (unsigned int (opt[0][0]));
+        if (opt.size()) properties["samples_per_step"] = str<unsigned int> (opt[0][0]);
 
         opt = get_options ("rk4");
         if (opt.size()) properties["rk4"] = "1";
@@ -181,7 +182,7 @@ namespace MR
         }
 
         opt = get_options ("downsample");
-        if (opt.size()) properties["downsample_factor"] = str (unsigned int (opt[0][0]));
+        if (opt.size()) properties["downsample_factor"] = str<unsigned int> (opt[0][0]);
 
       }
 

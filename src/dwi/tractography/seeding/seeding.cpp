@@ -133,7 +133,7 @@ namespace MR
         }
 
         opt = get_options ("max_seed_attempts");
-        if (opt.size()) properties["max_seed_attempts"] = str (unsigned int (opt[0][0]);)
+        if (opt.size()) properties["max_seed_attempts"] = str<unsigned int> (opt[0][0]);
 
         opt = get_options ("output_seeds");
         if (opt.size()) properties["seed_output"] = std::string (opt[0][0]);
