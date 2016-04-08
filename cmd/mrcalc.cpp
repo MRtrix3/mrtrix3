@@ -194,6 +194,17 @@ class ThreadLocalStorage : public std::vector<ThreadLocalStorageItem> {
 
 
 
+class LoadedImage
+{
+  public:
+    LoadedImage (std::shared_ptr<Image<complex_type>>& i, const bool c) :
+        image (i),
+        image_is_complex (c) { }
+    std::shared_ptr<Image<complex_type>> image;
+    bool image_is_complex;
+};
+
+
 
 
 class StackEntry {
@@ -212,14 +223,15 @@ class StackEntry {
       auto search = image_list.find (arg);
       if (search != image_list.end()) {
         DEBUG (std::string ("image \"") + arg + "\" already loaded - re-using exising image");
-        image = search->second;
+        image = search->second.image;
+        image_is_complex = search->second.image_is_complex;
       }
       else {
         try {
           auto header = Header::open (arg);
           image_is_complex = header.datatype().is_complex();
           image.reset (new Image<complex_type> (header.get_image<complex_type>()));
-          image_list.insert (std::make_pair (arg, image));
+          image_list.insert (std::make_pair (arg, LoadedImage (image, image_is_complex)));
         }
         catch (Exception) {
           std::string a = lowercase (arg);
@@ -245,12 +257,12 @@ class StackEntry {
 
     bool is_complex () const;
 
-    static std::map<std::string, std::shared_ptr<Image<complex_type>>> image_list;
+    static std::map<std::string, LoadedImage> image_list;
 
     Chunk& evaluate (ThreadLocalStorage& storage) const;
 };
 
-std::map<std::string, std::shared_ptr<Image<complex_type>>> StackEntry::image_list;
+std::map<std::string, LoadedImage> StackEntry::image_list;
 
 
 class Evaluator
@@ -486,7 +498,7 @@ void unary_operation (const std::string& operation_name, std::vector<StackEntry>
       throw Exception ("operation \"" + operation_name + "\" not supported for data type supplied");
     }
   }
-};
+}
 
 
 

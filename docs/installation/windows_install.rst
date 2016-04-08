@@ -33,15 +33,26 @@ Install and update MSYS2
 1. Download and install the most recent 64-bit MSYS2 installer from
    http://msys2.github.io/ (msys2-x86\_64-\*.exe).
 
-2. Run the program 'MinGW-w64 Win64 Shell' from the start menu.
+2. Run the program **'MinGW-w64 Win64 Shell'** from the start menu.
+
+   .. WARNING::
+   
+      Avoid running 'MSYS2 shell' or 'MinGW-w64 Win32 shell'.
 
 3. Update the system packages:
 
    ::
 
        update-core
+   
+   .. NOTE::
+    Future versions of MSYS will drop ``update-core``, making it safe to skip this step.
 
-4. Close 'MinGW-w64 Win64 Shell' and start it again from the start menu.
+4. Close the shell and start **'MinGW-w64 Win64 Shell'**
+   
+   .. WARNING::
+   
+      Avoid running 'MSYS2 shell' or 'MinGW-w64 Win32 shell'.
 
 5. Update the other packages:
 

@@ -109,26 +109,26 @@ void load_properties (Tractography::Properties& properties)
   opt = get_options ("maxlength");
   if (opt.size()) {
     if (properties.find ("max_dist") == properties.end()) {
-      properties["max_dist"] = str(opt[0][0]);
+      properties["max_dist"] = str(float (opt[0][0]));
     } else {
       try {
         const float maxlength = std::min (float(opt[0][0]), to<float>(properties["max_dist"]));
         properties["max_dist"] = str(maxlength);
       } catch (...) {
-        properties["max_dist"] = str(opt[0][0]);
+        properties["max_dist"] = str(float (opt[0][0]));
       }
     }
   }
   opt = get_options ("minlength");
   if (opt.size()) {
     if (properties.find ("min_dist") == properties.end()) {
-      properties["min_dist"] = str(opt[0][0]);
+      properties["min_dist"] = str(float (opt[0][0]));
     } else {
       try {
         const float minlength = std::max (float(opt[0][0]), to<float>(properties["min_dist"]));
         properties["min_dist"] = str(minlength);
       } catch (...) {
-        properties["min_dist"] = str(opt[0][0]);
+        properties["min_dist"] = str(float (opt[0][0]));
       }
     }
   }
@@ -146,10 +146,10 @@ void load_properties (Tractography::Properties& properties)
   // Only the thresholds have an influence on Properties
   opt = get_options ("maxweight");
   if (opt.size())
-    properties["max_weight"] = std::string(opt[0][0]);
+    properties["max_weight"] = str (float (opt[0][0]));
   opt = get_options ("minweight");
   if (opt.size())
-    properties["min_weight"] = std::string(opt[0][0]);
+    properties["min_weight"] = str (float (opt[0][0]));
 
 }
 
