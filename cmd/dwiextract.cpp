@@ -19,6 +19,7 @@
 #include "image.h"
 #include "dwi/gradient.h"
 #include "algo/loop.h"
+#include "adapter/extract.h"
 
 
 using namespace MR;
@@ -42,17 +43,19 @@ void usage ()
   OPTIONS
     + Option ("bzero", "output b=0 volumes instead of the diffusion weighted volumes.")
     + DWI::GradImportOptions()
-    + DWI::ShellOption;
+    + DWI::ShellOption
+    + Stride::Options;
 }
 
-void run() {
-  auto input_image = Image<float>::open (argument[0]).with_direct_io (3);
+void run() 
+{
+  auto input_image = Image<float>::open (argument[0]);
 
   Eigen::MatrixXd grad = DWI::get_valid_DW_scheme (input_image);
 
   // Want to support non-shell-like data if it's just a straight extraction
   //   of all dwis or all bzeros i.e. don't initialise the Shells class
-  std::vector<size_t> volumes;
+  std::vector<int> volumes;
   bool bzero = get_options ("bzero").size();
   auto opt = get_options ("shell");
   if (opt.size()) {
@@ -60,8 +63,8 @@ void run() {
     shells.select_shells (false, false);
     for (size_t s = 0; s != shells.count(); ++s) {
       DEBUG ("Including data from shell b=" + str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev()));
-      for (std::vector<size_t>::const_iterator v = shells[s].get_volumes().begin(); v != shells[s].get_volumes().end(); ++v)
-        volumes.push_back (*v);
+      for (const auto v : shells[s].get_volumes()) 
+        volumes.push_back (v);
     }
     // Remove DW information from header if b=0 is the only 'shell' selected
     bzero = (shells.count() == 1 && shells[0].is_bzero());
@@ -81,6 +84,7 @@ void run() {
   std::sort (volumes.begin(), volumes.end());
 
   Header header (input_image);
+  Stride::set_from_command_line (header);
 
   if (volumes.size() == 1)
     header.set_ndim (3);
@@ -94,22 +98,12 @@ void run() {
 
   auto output_image = Image<float>::create (argument[1], header);
 
-  auto outer = Loop ("extracting volumes", input_image, 0, 3);
-
   if (output_image.ndim() == 4) {
-    for (auto i = outer (output_image, input_image); i; ++i) {
-      for (size_t i = 0; i < volumes.size(); i++) {
-        input_image.index(3) = volumes[i];
-        output_image.index(3) = i;
-        output_image.value() = input_image.value();
-      }
-    }
-
-  } else {
-    const size_t volume = volumes[0];
-    for (auto i = outer (output_image, input_image); i; ++i) {
-      input_image.index(3) = volume;
-      output_image.value() = input_image.value();
-    }
+    auto input_volumes = Adapter::make<Adapter::Extract1D> (input_image, 3, volumes);
+    threaded_copy_with_progress_message ("extracting volumes", input_volumes, output_image);
+  }
+  else {
+    input_image.index(3) = volumes[0];
+    threaded_copy_with_progress_message ("extracting volumes", input_image, output_image, 0, 3);
   }
 }
