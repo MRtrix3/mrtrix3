@@ -116,7 +116,7 @@ void run ()
     hist_stream.reset (new File::OFStream (opt[0][0]));
   }
 
-  int nbins = 100;
+  int nbins = DEFAULT_HISTOGRAM_BINS;
   opt = get_options ("bins");
   if (opt.size())
     nbins = opt[0][0];

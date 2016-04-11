@@ -651,7 +651,7 @@ namespace MR
             +   Argument ("image").type_image_in()
 
             + Option ("overlay.opacity", "Sets the overlay opacity to floating value [0-1].")
-            +   Argument ("value").type_float (0.0, 1.0, 1.0)
+            +   Argument ("value").type_float (0.0, 1.0)
 
             + Option ("overlay.interpolation_on", "Enables overlay image interpolation.")
 

@@ -41,14 +41,14 @@ const OptionGroup ConnectOption = OptionGroup ("Options for connected-component 
 
 + Option ("largest", "only retain the largest connected component")
 
-+ Option ("connectivity", "use 26 neighbourhood connectivity (Default: 6)");
++ Option ("connectivity", "use 26-voxel-neighbourhood connectivity (Default: 6)");
 
 
 
 const OptionGroup DilateErodeOption = OptionGroup ("Options for dilate / erode filters")
 
   + Option ("npass", "the number of times to repeatedly apply the filter")
-    + Argument ("value").type_integer (1, 1, 1e6);
+    + Argument ("value").type_integer (1, 1e6);
 
 
 

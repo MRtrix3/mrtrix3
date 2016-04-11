@@ -33,9 +33,9 @@ void usage ()
     + "perform a spherical convolution";
 
   ARGUMENTS
-    + Argument ("SH", "the input spherical harmonics coefficients image.").type_image_in ()
+    + Argument ("SH_in", "the input spherical harmonics coefficients image.").type_image_in ()
     + Argument ("response", "the convolution kernel (response function)").type_file_in ()
-    + Argument ("SH", "the output spherical harmonics coefficients image.").type_image_out ();
+    + Argument ("SH_out", "the output spherical harmonics coefficients image.").type_image_out ();
 
   OPTIONS
     + Option ("mask", "only perform computation within the specified binary brain mask image.")

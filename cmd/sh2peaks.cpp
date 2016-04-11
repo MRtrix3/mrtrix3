@@ -24,6 +24,7 @@
 
 
 #define DOT_THRESHOLD 0.99
+#define DEFAULT_NPEAKS 3
 
 using namespace MR;
 using namespace App;
@@ -43,8 +44,8 @@ void usage ()
   .type_image_out ();
 
   OPTIONS
-  + Option ("num", "the number of peaks to extract (default is 3).")
-  + Argument ("peaks").type_integer (0, 3, std::numeric_limits<int>::max())
+  + Option ("num", "the number of peaks to extract (default: " + str(DEFAULT_NPEAKS) + ").")
+  + Argument ("peaks").type_integer (0)
 
   + Option ("direction",
             "the direction of a peak to estimate. The algorithm will attempt to "
@@ -60,7 +61,7 @@ void usage ()
 
   + Option ("threshold",
             "only peak amplitudes greater than the threshold will be considered.")
-  + Argument ("value").type_float()
+  + Argument ("value").type_float (0.0)
 
   + Option ("seeds",
             "specify a set of directions from which to start the multiple restarts of "
@@ -306,7 +307,7 @@ void run ()
   if (dirs.cols() != 2)
     throw Exception ("expecting 2 columns for search directions matrix");
 
-  int npeaks = get_option_value("num", 3);
+  int npeaks = get_option_value ("num", DEFAULT_NPEAKS);
 
   opt = get_options ("direction");
   std::vector<Direction> true_peaks;

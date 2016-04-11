@@ -20,6 +20,12 @@
 #include "mrtrix.h"
 #include "dwi/tractography/properties.h"
 
+
+#define DEFAULT_TRACTOGRAPHY_MAX_TRIALS 1000
+#define DEFAULT_TRACTOGRAPHY_CUTOFF 0.1
+#define DEFAULT_TRACTOGRAPHY_IFOD2_NSAMPLES 4
+
+
 namespace MR
 {
   namespace App { class OptionGroup; }

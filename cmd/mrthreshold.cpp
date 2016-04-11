@@ -58,21 +58,21 @@ void usage ()
                          "Note that only the first study is used for thresholding.")
 
   + Option ("percentile", "threshold the image at the ith percentile.")
-  + Argument ("value").type_float (0.0, 95.0, 100.0)
+  + Argument ("value").type_float (0.0, 100.0)
 
   + Option ("top", "provide a mask of the N top-valued voxels")
-  + Argument ("N").type_integer (0, 100, std::numeric_limits<int>::max())
+  + Argument ("N").type_integer (0)
 
   + Option ("bottom", "provide a mask of the N bottom-valued voxels")
-  + Argument ("N").type_integer (0, 100, std::numeric_limits<int>::max())
+  + Argument ("N").type_integer (0)
 
   + Option ("invert", "invert output binary mask.")
 
   + Option ("toppercent", "provide a mask of the N%% top-valued voxels")
-  + Argument ("N").type_float (0.0, 10.0, 100.0)
+  + Argument ("N").type_float (0.0, 100.0)
 
   + Option ("bottompercent", "provide a mask of the N%% bottom-valued voxels")
-  + Argument ("N").type_float (0.0, 10.0, 100.0)
+  + Argument ("N").type_float (0.0, 100.0)
 
   + Option ("nan", "use NaN as the output zero value.")
 

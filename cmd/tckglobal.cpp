@@ -35,6 +35,27 @@ using namespace MR;
 using namespace App;
 
 
+#define DEFAULT_LMAX 8
+#define DEFAULT_LENGTH 1.0
+#define DEFAULT_WEIGHT 0.1
+#define DEFAULT_PPOT 0.0
+#define DEFAULT_CPOT 0.5
+#define DEFAULT_T0 0.1
+#define DEFAULT_T1 0.001
+#define DEFAULT_NITER 10000000
+#define DEFAULT_BALANCE 0.0
+#define DEFAULT_DENSITY 1.0
+
+#define DEFAULT_PROB_BIRTH 0.25
+#define DEFAULT_PROB_DEATH 0.05
+#define DEFAULT_PROB_RANDSHIFT 0.25
+#define DEFAULT_PROB_OPTSHIFT 0.10
+#define DEFAULT_PROB_CONNECT 0.35
+
+#define DEFAULT_BETA 0.0
+#define DEFAULT_LAMBDA 1.0
+
+
 
 void usage ()
 {
@@ -92,29 +113,29 @@ void usage ()
 
   + OptionGroup("Parameters")
   
-  + Option ("lmax", "set the maximum harmonic order for the output series. (default = 8)")
-    + Argument ("order").type_integer(2, 8, 30)
+  + Option ("lmax", "set the maximum harmonic order for the output series. (default = " + str(DEFAULT_LMAX) + ")")
+    + Argument ("order").type_integer (2, 30)
 
-  + Option ("length", "set the length of the particles (fibre segments). (default = 1.0 mm)")
-    + Argument ("size").type_float(1e-6, 1.0, 10.0)
+  + Option ("length", "set the length of the particles (fibre segments). (default = " + str(DEFAULT_LENGTH, 2) + "mm)")
+    + Argument ("size").type_float (1e-6)
       
-  + Option ("weight", "set the weight by which particles contribute to the model. (default = 0.1)")
-    + Argument ("w").type_float(1e-6, 0.1, 1.0)
+  + Option ("weight", "set the weight by which particles contribute to the model. (default = " + str(DEFAULT_WEIGHT, 2) + ")")
+    + Argument ("w").type_float(1e-6, 1.0)
 
-  + Option ("ppot", "set the particle potential, i.e., the cost of adding one segment, relative to the particle weight. (default = 5% w)")
-    + Argument ("u").type_float(0.0, 0.05, 1.)
+  + Option ("ppot", "set the particle potential, i.e., the cost of adding one segment, relative to the particle weight. (default = " + str(DEFAULT_PPOT, 2) + ")")
+    + Argument ("u").type_float(0.0, 1.0)
 
-  + Option ("cpot", "set the connection potential, i.e., the energy term that drives two segments together. (default = 0.5)")
-    + Argument ("v").type_float(0, 0.5, 1e6)
+  + Option ("cpot", "set the connection potential, i.e., the energy term that drives two segments together. (default = " + str(DEFAULT_CPOT, 2) + ")")
+    + Argument ("v").type_float(0.0)
 
-  + Option ("t0", "set the initial temperature of the metropolis hastings optimizer. (default = 0.1)")
-    + Argument ("start").type_float(1e-6, 0.1, 1e6)
+  + Option ("t0", "set the initial temperature of the metropolis hastings optimizer. (default = " + str(DEFAULT_T0, 2) + ")")
+    + Argument ("start").type_float(1e-6, 1e6)
 
-  + Option ("t1", "set the final temperature of the metropolis hastings optimizer. (default = 0.001)")
-    + Argument ("end").type_float(1e-6, 0.001, 1e6)
+  + Option ("t1", "set the final temperature of the metropolis hastings optimizer. (default = " + str(DEFAULT_T1, 2) + ")")
+    + Argument ("end").type_float(1e-6, 1e6)
 
-  + Option ("niter", "set the number of iterations of the metropolis hastings optimizer. (default = 10M)")
-    + Argument ("n").type_integer(0, 10000000, std::numeric_limits<int64_t>::max())
+  + Option ("niter", "set the number of iterations of the metropolis hastings optimizer. (default = " + str(DEFAULT_NITER/1000000) + "M)")
+    + Argument ("n").type_integer(0)
 
 
   + OptionGroup("Output options")
@@ -135,27 +156,29 @@ void usage ()
 
   + OptionGroup("Advanced parameters, if you really know what you're doing")
   
-  + Option ("balance", "balance internal and external energy. (default = 0)\n"
+  + Option ("balance", "balance internal and external energy. (default = " + str(DEFAULT_BALANCE, 2) + "\n"
             "Negative values give more weight to the internal energy, positive to the external energy.")
-    + Argument ("b").type_float(-100, 0, 100)
+    + Argument ("b").type_float(-100.0, 100.0)
 
-  + Option ("density", "set the desired density of the free Poisson process. (default = 1.0)")
-    + Argument ("lambda").type_float(0, 1., std::numeric_limits<float>::max())
+  + Option ("density", "set the desired density of the free Poisson process. (default = " + str(DEFAULT_DENSITY, 2) + ")")
+    + Argument ("lambda").type_float(0.0)
 
   + Option ("prob", "set the probabilities of generating birth, death, randshift, optshift "
-            "and connect probabilities respectively. (default = .25,.05,.25,.10,.35)")
+            "and connect probabilities respectively. (default = "
+            + str(DEFAULT_PROB_BIRTH, 2) + "," + str(DEFAULT_PROB_DEATH, 2) + ","
+            + str(DEFAULT_PROB_RANDSHIFT, 2) + "," + str(DEFAULT_PROB_OPTSHIFT, 2) + ","
+            + str(DEFAULT_PROB_CONNECT, 2) + ")")
     + Argument ("prob").type_sequence_float()
 
-  + Option ("beta", "set the width of the Hanning interpolation window. (in [0, 1], default = 0)\n"
+  + Option ("beta", "set the width of the Hanning interpolation window. (in [0, 1], default = " + str(DEFAULT_BETA, 2) + ")\n"
             "If used, a mask is required, and this mask must keep at least one voxel distance to the image bounding box.")
-    + Argument ("b").type_float(0.0, 0.0, 1.0)
+    + Argument ("b").type_float (0.0, 1.0)
 
-  + Option ("lambda", "set the weight of the internal energy directly. (default = 1.0)\n"
+  + Option ("lambda", "set the weight of the internal energy directly. (default = " + str(DEFAULT_LAMBDA, 2) + ")\n"
             "If provided, any value of -balance will be ignored.")
-    + Argument ("lam").type_float(0.0, 1.0, 1e5);
+    + Argument ("lam").type_float(0.0);
 
-
-};
+}
 
 
 template<typename T>
@@ -206,30 +229,28 @@ void run ()
     mask = Image<bool>::open(opt[0][0]);
     check_dimensions(dwi, mask, 0, 3);
   }
-  
+
   // Parameters -------------------------------------------------------------------------
+
+  Particle::L = get_option_value("length", DEFAULT_LENGTH);
+  double cpot = get_option_value("cpot", DEFAULT_CPOT);
+
+  properties.Lmax = get_option_value("lmax", DEFAULT_LMAX);
+  properties.p_birth = DEFAULT_PROB_BIRTH;
+  properties.p_death = DEFAULT_PROB_DEATH;
+  properties.p_shift = DEFAULT_PROB_RANDSHIFT;
+  properties.p_optshift = DEFAULT_PROB_OPTSHIFT;
+  properties.p_connect = DEFAULT_PROB_CONNECT;
+  properties.density = get_option_value("density", DEFAULT_DENSITY);
+  properties.weight = get_option_value("weight", DEFAULT_WEIGHT);
+  properties.lam_ext = 1.0;
+  properties.lam_int = 1.0;
+  properties.beta = get_option_value("beta", DEFAULT_BETA);
   
-  Particle::L = get_option_value("length", 1.0);    
-  double cpot = get_option_value("cpot", 1.0);
-  
-  properties.Lmax = get_option_value("lmax", 8);
-  properties.p_birth = 0.25;
-  properties.p_death = 0.05;
-  properties.p_shift = 0.25;
-  properties.p_optshift = 0.10;
-  properties.p_connect = 0.35;
-  properties.density = get_option_value("density", 1.);
-  properties.weight = get_option_value("weight", 0.1);
-  properties.lam_ext = 1.;
-  properties.lam_int = 1.;
-  properties.beta = get_option_value("beta", 0.0);
-  properties.ppot = 0.0;
-  
-  double lam = 0.0;
   opt = get_options("balance");
   if (opt.size())
   {
-    lam = opt[0][0];
+    double lam = opt[0][0];
     double b = 1.0 / (1.0 + exp(-lam));
     properties.lam_ext = 2*b;
     properties.lam_int = 2*(1-b);
@@ -250,11 +271,11 @@ void run ()
     }
   }
   
-  uint64_t niter = get_option_value("niter", 10000000);
-  double t0 = get_option_value("t0", 0.1);
-  double t1 = get_option_value("t1", 0.001);
+  uint64_t niter = get_option_value("niter", DEFAULT_NITER);
+  double t0 = get_option_value("t0", DEFAULT_T0);
+  double t1 = get_option_value("t1", DEFAULT_T1);
   
-  double mu = get_option_value("ppot", 0.0);
+  double mu = get_option_value("ppot", DEFAULT_PPOT);
   properties.ppot = mu * wmscale2 * properties.weight;
   
   opt = get_options("lambda");

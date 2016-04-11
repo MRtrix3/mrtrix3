@@ -19,6 +19,10 @@
 #include "app.h"
 #include "math/median.h"
 
+
+#define DEFAULT_HISTOGRAM_BINS 100
+
+
 namespace MR
 {
 

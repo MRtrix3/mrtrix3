@@ -20,6 +20,9 @@
 #include "dwi/tractography/scalar_file.h"
 
 
+#define DEFAULT_SMOOTHING 4.0
+
+
 using namespace MR;
 using namespace App;
 
@@ -36,8 +39,8 @@ void usage ()
 
   OPTIONS
   + Option ("stdev", "apply Gaussian smoothing with the specified standard deviation. "
-            "The standard deviation is defined in units of track points (Default: 4)")
-  + Argument ("sigma").type_float();
+            "The standard deviation is defined in units of track points (default: " + str(DEFAULT_SMOOTHING, 2) + ")")
+  + Argument ("sigma").type_float(1e-6);
 }
 
 typedef float value_type;
@@ -49,7 +52,7 @@ void run ()
   DWI::Tractography::ScalarReader<value_type> reader (argument[0], properties);
   DWI::Tractography::ScalarWriter<value_type> writer (argument[1], properties);
 
-  float stdev = get_option_value ("stdev", 4.0);
+  float stdev = get_option_value ("stdev", DEFAULT_SMOOTHING);
   
   std::vector<float> kernel (2 * ceil(2.5 * stdev) + 1, 0);
   float norm_factor = 0.0;

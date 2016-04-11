@@ -47,7 +47,7 @@ void usage ()
 
   + Option ("threshold", "manually set the intensity threshold at which the mesh will be generated "
                          "(if omitted, a threshold will be determined automatically)")
-    + Argument ("value").type_float (-std::numeric_limits<float>::max(), 0.0f, std::numeric_limits<float>::max());
+    + Argument ("value").type_float();
 }
 
 

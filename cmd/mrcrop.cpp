@@ -48,9 +48,9 @@ void usage ()
     + Argument ("image", "the mask image").type_image_in()
 
     + Option   ("axis",  "crop the input image in the provided axis").allow_multiple()
-    + Argument ("index", "the index of the image axis to be cropped").type_integer (0, 0, 2)
-    + Argument ("start", "the first voxel along this axis to be included in the output image").type_integer (0, 0, 1e6)
-    + Argument ("end",   "the last voxel along this axis to be included in the output image").type_integer (0, 1e6, 1e6);
+    + Argument ("index", "the index of the image axis to be cropped").type_integer (0, 2)
+    + Argument ("start", "the first voxel along this axis to be included in the output image").type_integer (0)
+    + Argument ("end",   "the last voxel along this axis to be included in the output image").type_integer (0);
 
 }
 
@@ -102,16 +102,7 @@ void run ()
     // Note that even though only 3 dimensions are cropped when using a mask, the bounds
     // are computed by checking the extent for all dimensions (for example a 4D AFD mask)
     ThreadedLoop (mask).run (BoundsCheck (bounds), mask);
-    /*
-    for (auto i = Image::Loop() (voxel_mask); i; ++i) {
-      if (voxel_mask.value()) {
-        for (size_t axis = 0; axis != 3; ++axis) {
-          bounds[axis][0] = std::min (bounds[axis][0], voxel_mask[axis]);
-          bounds[axis][1] = std::max (bounds[axis][1], voxel_mask[axis]);
-        }
-      }
-    }
-    */
+
     for (size_t axis = 0; axis != 3; ++axis) {
       if (bounds[axis][0] > bounds[axis][1])
         throw Exception ("mask image is empty; can't use to crop image");
@@ -129,10 +120,12 @@ void run ()
     const ssize_t axis  = opt[i][0];
     const ssize_t start = opt[i][1];
     const ssize_t end   = opt[i][2];
+    if (start < 0 || end >= in.size(axis))
+      throw Exception ("Index supplied for axis " + str(axis) + " is out of bounds");
+    if (end < start)
+      throw Exception  ("End index supplied for axis " + str(axis) + " is less than start index");
     bounds[axis][0] = start;
     bounds[axis][1] = end;
-    if (bounds[axis][0] < 0 || bounds[axis][1] >= in.size(axis))
-      throw Exception ("Index supplied for axis " + str(axis) + " is out of bounds.");
   }
 
   std::vector<size_t> from (in.ndim());

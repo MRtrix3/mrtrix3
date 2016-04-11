@@ -28,6 +28,11 @@
 using namespace MR;
 using namespace App;
 
+#define DEFAULT_LUM_CR 0.3
+#define DEFAULT_LUM_CG 0.5
+#define DEFAULT_LUM_CB 0.2
+#define DEFAULT_LUM_GAMMA 2.2
+
 void usage ()
 {
   AUTHOR = "Thijs Dhollander (thijs.dhollander@gmail.com)";
@@ -65,12 +70,12 @@ void usage ()
 
     + Option ("no-weight","Do not weight the DEC map (reslicing and renormalising still possible by explicitly providing the outputmap option as a template).")
 
-    + Option ("lum","Correct for luminance/perception, using default values Cr,Cg,Cb = 0.3,0.5,0.2 and gamma = 2.2 (*not* correcting is the theoretical equivalent of Cr,Cg,Cb = 1,1,1 and gamma = 2).")
+    + Option ("lum","Correct for luminance/perception, using default values Cr,Cg,Cb = " + str(DEFAULT_LUM_CR, 2) + "," + str(DEFAULT_LUM_CG, 2) + "," + str(DEFAULT_LUM_CB, 2) + " and gamma = " + str(DEFAULT_LUM_GAMMA, 2) + " (*not* correcting is the theoretical equivalent of Cr,Cg,Cb = 1,1,1 and gamma = 2).")
 
-    + Option ("lum-coefs","The coefficients Cr,Cg,Cb to correct for luminance/perception. \nNote: this implicitly switches on luminance/perception correction, using a default gamma = 2.2 unless specified otherwise.")
+    + Option ("lum-coefs","The coefficients Cr,Cg,Cb to correct for luminance/perception. \nNote: this implicitly switches on luminance/perception correction, using a default gamma = " + str(DEFAULT_LUM_GAMMA, 2) + " unless specified otherwise.")
     + Argument ("values").type_sequence_float()
 
-    + Option ("lum-gamma","The gamma value to correct for luminance/perception. \nNote: this implicitly switches on luminance/perception correction, using a default Cr,Cg,Cb = 0.3,0.5,0.2 unless specified otherwise.")
+    + Option ("lum-gamma","The gamma value to correct for luminance/perception. \nNote: this implicitly switches on luminance/perception correction, using a default Cr,Cg,Cb = " + str(DEFAULT_LUM_CR, 2) + "," + str(DEFAULT_LUM_CG, 2) + "," + str(DEFAULT_LUM_CB, 2) + " unless specified otherwise.")
     + Argument ("value").type_float();
 }
 
@@ -224,11 +229,11 @@ void run () {
   auto optlg = get_options("lum-gamma");
   if (get_options("lum").size() || optlc.size() || optlg.size()) {
     needtolum = true;
-    coefs << 0.3 , 0.5 , 0.2; gamma = 2.2;
+    coefs << DEFAULT_LUM_CR , DEFAULT_LUM_CG , DEFAULT_LUM_CB; gamma = DEFAULT_LUM_GAMMA;
     if (optlc.size()) {
       auto lc = parse_floats(optlc[0][0]);
       if (lc.size() != 3)
-        throw Exception ("expecting exactly 3 coefficients for the lum-coefs option, provided as a comma-separated list Cr,Cg,Cb ; e.g., 0.3,0.5,0.2");
+        throw Exception ("expecting exactly 3 coefficients for the lum-coefs option, provided as a comma-separated list Cr,Cg,Cb ; e.g., " + str(DEFAULT_LUM_CR, 2) + "," + str(DEFAULT_LUM_CG, 2) + "," + str(DEFAULT_LUM_CB, 2) + "");
       coefs(0) = lc[0]; coefs(1) = lc[1]; coefs(2) = lc[2];
     }
     if (optlg.size())

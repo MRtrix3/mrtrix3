@@ -40,8 +40,8 @@ namespace MR
     + Argument ("file").type_file_out ()
 
     + Option ("bins",
-        "the number of bins to use to generate the histogram (default = 100).")
-    + Argument ("num").type_integer (2, 100, std::numeric_limits<int>::max())
+        "the number of bins to use to generate the histogram (default = " + str(DEFAULT_HISTOGRAM_BINS) + ").")
+    + Argument ("num").type_integer (2)
 
     + Option ("dump",
         "dump the voxel intensities to a text file.")
