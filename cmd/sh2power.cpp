@@ -30,6 +30,10 @@ void usage () {
   ARGUMENTS
     + Argument ("SH", "the input spherical harmonics coefficients image.").type_image_in ()
     + Argument ("power", "the output power image.").type_image_out ();
+  
+  OPTIONS
+    + Option ("full", "output the power of each SH order in a 4-D image.");
+  
 }
 
 
@@ -38,16 +42,21 @@ void run () {
   Math::SH::check (SH_data);
 
   Header power_header (SH_data);
+  
+  bool full = get_options("full").size();
 
   int lmax = Math::SH::LforN (SH_data.size (3));
   INFO ("calculating spherical harmonic power up to degree " + str (lmax));
 
-  power_header.size (3) = 1 + lmax/2;
+  if (full)
+    power_header.size (3) = 1 + lmax/2;
+  else
+    power_header.set_ndim(3);
   power_header.datatype() = DataType::Float32;
 
   auto power_data = Image<float>::create(argument[1], power_header);
 
-  auto f = [&] (decltype(power_data)& P, decltype(SH_data)& SH) {
+  auto f1 = [&] (decltype(power_data)& P, decltype(SH_data)& SH) {
     P.index(3) = 0;
     for (int l = 0; l <= lmax; l+=2) {
       float power = 0.0;
@@ -60,10 +69,31 @@ void run () {
 #endif
         power += Math::pow2 (val);
       }
-      P.value() = power / float (2*l+1);
+      P.value() = power;
       ++P.index(3);
     }
   };
-  ThreadedLoop ("calculating SH power", SH_data, 0, 3)
-    .run (f, power_data, SH_data);
+  
+  auto f2 = [&] (decltype(power_data)& P, decltype(SH_data)& SH) {
+    float power = 0.0;
+    for (int l = 0; l <= lmax; l+=2) {
+      for (int m = -l; m <= l; ++m) {
+        SH.index(3) = Math::SH::index (l, m);
+        float val = SH.value();
+#ifdef USE_NON_ORTHONORMAL_SH_BASIS
+        if (m != 0) 
+          val *= Math::sqrt1_2;
+#endif
+        power += Math::pow2 (val);
+      }
+    }
+    P.value() = power;
+  };
+  
+  auto loop = ThreadedLoop ("calculating SH power", SH_data, 0, 3);
+  if (full)
+    loop.run(f1, power_data, SH_data);
+  else
+    loop.run(f2, power_data, SH_data);
+  
 }
