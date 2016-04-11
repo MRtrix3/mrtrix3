@@ -367,6 +367,8 @@ namespace MR
             gl::DepthMask (gl::FALSE_);
           }
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+
+          update_preview();
         }
 
 
