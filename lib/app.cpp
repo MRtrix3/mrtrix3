@@ -963,13 +963,7 @@ namespace MR
       //CONF option: TerminalColor
       //CONF default: 1 (true)
       //CONF A boolean value to indicate whether colours should be used in the terminal.
-      terminal_use_colour = stderr_to_file ? false : File::Config::get_bool ("TerminalColor", 
-#ifdef MRTRIX_WINDOWS
-          false
-#else
-          true
-#endif
-          ); 
+      terminal_use_colour = stderr_to_file ? false : File::Config::get_bool ("TerminalColor", true);
 
       // check for the existence of all specified input files (including optional ones that have been provided)
       // if necessary, also check for pre-existence of any output files with known paths
