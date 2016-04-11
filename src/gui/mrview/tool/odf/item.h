@@ -22,6 +22,7 @@
 #include "dwi/directions/set.h"
 #include "gui/dwi/renderer.h"
 #include "gui/mrview/gui_image.h"
+#include "gui/mrview/tool/odf/type.h"
 
 namespace MR
 {
@@ -38,14 +39,13 @@ namespace MR
 
 
         class ODF_Item {
-            typedef GUI::DWI::Renderer::mode_t mode_t;
           public:
-            ODF_Item (MR::Header&& H, const float scale, const bool hide_negative, const bool color_by_direction);
+            ODF_Item (MR::Header&& H, const odf_type_t type, const float scale, const bool hide_negative, const bool color_by_direction);
 
             bool valid() const;
 
             MRView::Image image;
-            mode_t mode;
+            odf_type_t odf_type;
             int lmax;
             float scale;
             bool hide_negative, color_by_direction;
@@ -74,7 +74,8 @@ namespace MR
                 size_t shell_index;
                 std::unique_ptr<MR::DWI::Directions::Set> dirs;
 
-            } dixel;
+            };
+            std::unique_ptr<DixelPlugin> dixel;
         };
 
 

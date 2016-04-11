@@ -30,54 +30,44 @@ namespace MR
       {
 
 
-        ODF_Item::ODF_Item (MR::Header&& H, const float scale, const bool hide_negative, const bool color_by_direction) :
+        ODF_Item::ODF_Item (MR::Header&& H, const odf_type_t type, const float scale, const bool hide_negative, const bool color_by_direction) :
             image (std::move (H)),
-            mode (mode_t::SH),
-            lmax (Math::SH::LforN (image.header().size (3))),
+            odf_type (type),
+            lmax (odf_type == odf_type_t::SH ? Math::SH::LforN (image.header().size (3)) : -1),
             scale (scale),
             hide_negative (hide_negative),
             color_by_direction (color_by_direction),
-            dixel (image.header())
+            dixel (odf_type == odf_type_t::DIXEL ? new DixelPlugin (image.header()) : nullptr)
         {
-          // Make an informed guess as to whether or not this is an SH image
-          // If it's not, try to initialise the dixel plugin
-          // Currently, not possible to initialise as a tensor overlay;
-          //   6 volumes is compatible with SH also
-          // One possibility would be to output the S0 intensity as the first volume;
-          //   tensor images would then have 7 volumes
+          // If dixel image is opened, try to intelligently determine the
+          //   appropriate source of direction information
           try {
-            Math::SH::check (image.header());
-            DEBUG ("Image " + image.header().name() + " initialised as SH ODF");
+            if (!dixel->shells)
+              throw Exception ("No shell data");
+            dixel->set_shell (dixel->shells->count() - 1);
+            DEBUG ("Image " + image.header().name() + " initialised as dixel ODF using DW scheme");
           } catch (...) {
-            lmax = -1;
-            mode = mode_t::DIXEL;
             try {
-              if (!dixel.shells)
-                throw Exception ("No shell data");
-              dixel.set_shell (dixel.shells->count() - 1);
-              DEBUG ("Image " + image.header().name() + " initialised as dixel ODF using DW scheme");
+              dixel->set_header();
+              DEBUG ("Image " + image.header().name() + " initialised as dixel ODF using header directions field");
             } catch (...) {
               try {
-                dixel.set_header();
-                DEBUG ("Image " + image.header().name() + " initialised as dixel ODF using header directions field");
+                dixel->set_internal (image.header().size (3));
+                DEBUG ("Image " + image.header().name() + " initialised as dixel ODF using internal direction set");
               } catch (...) {
-                try {
-                  dixel.set_internal (image.header().size (3));
-                  DEBUG ("Image " + image.header().name() + " initialised as dixel ODF using internal direction set");
-                } catch (...) {
-                  DEBUG ("Image " + image.header().name() + " left uninitialised in ODF tool");
-                }
+                DEBUG ("Image " + image.header().name() + " left uninitialised in ODF tool");
               }
             }
           }
         }
 
         bool ODF_Item::valid() const {
-          if (mode == mode_t::SH || mode == mode_t::TENSOR)
+          if (odf_type == odf_type_t::SH || odf_type == odf_type_t::TENSOR)
             return true;
-          if (!dixel.dirs)
+          assert (dixel);
+          if (!dixel->dirs)
             return false;
-          return dixel.dirs->size();
+          return dixel->dirs->size();
         }
 
         ODF_Item::DixelPlugin::DixelPlugin (const MR::Header& H) :
