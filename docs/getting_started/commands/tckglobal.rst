@@ -42,11 +42,11 @@ Parameters
 
 -  **-lmax order** set the maximum harmonic order for the output series. (default = 8)
 
--  **-length size** set the length of the particles (fibre segments). (default = 1.0 mm)
+-  **-length size** set the length of the particles (fibre segments). (default = 1mm)
 
 -  **-weight w** set the weight by which particles contribute to the model. (default = 0.1)
 
--  **-ppot u** set the particle potential, i.e., the cost of adding one segment, relative to the particle weight. (default = 5% w)
+-  **-ppot u** set the particle potential, i.e., the cost of adding one segment, relative to the particle weight. (default = 0.05)
 
 -  **-cpot v** set the connection potential, i.e., the energy term that drives two segments together. (default = 0.5)
 
@@ -72,15 +72,15 @@ Output options
 Advanced parameters, if you really know what you're doing
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-balance b** balance internal and external energy. (default = 0)Negative values give more weight to the internal energy, positive to the external energy.
+-  **-balance b** balance internal and external energy. (default = 0Negative values give more weight to the internal energy, positive to the external energy.
 
--  **-density lambda** set the desired density of the free Poisson process. (default = 1.0)
+-  **-density lambda** set the desired density of the free Poisson process. (default = 1)
 
--  **-prob prob** set the probabilities of generating birth, death, randshift, optshift and connect probabilities respectively. (default = .25,.05,.25,.10,.35)
+-  **-prob prob** set the probabilities of generating birth, death, randshift, optshift and connect probabilities respectively. (default = 0.25,0.05,0.25,0.1,0.35)
 
 -  **-beta b** set the width of the Hanning interpolation window. (in [0, 1], default = 0)If used, a mask is required, and this mask must keep at least one voxel distance to the image bounding box.
 
--  **-lambda lam** set the weight of the internal energy directly. (default = 1.0)If provided, any value of -balance will be ignored.
+-  **-lambda lam** set the weight of the internal energy directly. (default = 1)If provided, any value of -balance will be ignored.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -93,7 +93,7 @@ Standard options
 
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded applications
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
 
 -  **-failonwarn** terminate program if a warning is produced
 

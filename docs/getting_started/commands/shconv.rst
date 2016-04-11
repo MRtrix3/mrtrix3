@@ -6,11 +6,11 @@ Synopsis
 
 ::
 
-    shconv [ options ]  SH response SH
+    shconv [ options ]  SH_in response SH_out
 
--  *SH*: the input spherical harmonics coefficients image.
+-  *SH_in*: the input spherical harmonics coefficients image.
 -  *response*: the convolution kernel (response function)
--  *SH*: the output spherical harmonics coefficients image.
+-  *SH_out*: the output spherical harmonics coefficients image.
 
 Description
 -----------
@@ -38,7 +38,7 @@ Standard options
 
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded applications
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
 
 -  **-failonwarn** terminate program if a warning is produced
 

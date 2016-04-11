@@ -43,7 +43,7 @@ DW Shell selection options
 Spherical deconvolution options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-lmax order** set the maximum harmonic order for the output series. By default, the program will use the highest possible lmax given the number of diffusion-weighted images.
+-  **-lmax order** set the maximum harmonic order for the output series. By default, the program will use the highest possible lmax given the number of diffusion-weighted images, up to a maximum of 8.
 
 -  **-mask image** only perform computation within the specified binary brain mask image.
 
@@ -51,13 +51,13 @@ Spherical deconvolution options
 
 -  **-filter spec** the linear frequency filtering parameters used for the initial linear spherical deconvolution step (default = [ 1 1 1 0 0 ]). These should be  supplied as a text file containing the filtering coefficients for each even harmonic order.
 
--  **-neg_lambda value** the regularisation parameter lambda that controls the strength of the non-negativity constraint (default = 1.0).
+-  **-neg_lambda value** the regularisation parameter lambda that controls the strength of the non-negativity constraint (default = 1).
 
--  **-norm_lambda value** the regularisation parameter lambda that controls the strength of the constraint on the norm of the solution (default = 1.0).
+-  **-norm_lambda value** the regularisation parameter lambda that controls the strength of the constraint on the norm of the solution (default = 1).
 
--  **-threshold value** the threshold below which the amplitude of the FOD is assumed to be zero, expressed as an absolute amplitude (default = 0.0).
+-  **-threshold value** the threshold below which the amplitude of the FOD is assumed to be zero, expressed as an absolute amplitude (default = 0).
 
--  **-niter number** the maximum number of iterations to perform for each voxel (default = 50). Use '-niter 0' for a linear unconstrained spherical deconvolution.
+-  **-niter number** the maximum number of iterations to perform for each voxel (default = 0). Use '-niter 0' for a linear unconstrained spherical deconvolution.
 
 Stride options
 ^^^^^^^^^^^^^^
@@ -75,7 +75,7 @@ Standard options
 
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded applications
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
 
 -  **-failonwarn** terminate program if a warning is produced
 

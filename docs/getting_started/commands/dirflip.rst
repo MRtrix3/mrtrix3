@@ -19,7 +19,7 @@ optimise the polarity of the directions in a scheme with respect to a unipolar e
 Options
 -------
 
--  **-permutations num** number of permutations to try
+-  **-permutations num** number of permutations to try.
 
 -  **-cartesian** Output the directions in Cartesian coordinates [x y z] instead of [az el].
 
@@ -34,7 +34,7 @@ Standard options
 
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded applications
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
 
 -  **-failonwarn** terminate program if a warning is produced
 
