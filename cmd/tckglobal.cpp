@@ -38,7 +38,7 @@ using namespace App;
 #define DEFAULT_LMAX 8
 #define DEFAULT_LENGTH 1.0
 #define DEFAULT_WEIGHT 0.1
-#define DEFAULT_PPOT 0.0
+#define DEFAULT_PPOT 0.05
 #define DEFAULT_CPOT 0.5
 #define DEFAULT_T0 0.1
 #define DEFAULT_T1 0.001
