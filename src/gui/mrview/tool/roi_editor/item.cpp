@@ -60,7 +60,7 @@ namespace MR
           set_allowed_features (false, true, false);
           set_interpolate (false);
           set_use_transparency (true);
-          set_min_max (0.0, 1.0);
+          min_max_set();
           set_windowing (-1.0f, 0.0f);
           alpha = 1.0f;
           colour = preset_colours[current_preset_colour++];
