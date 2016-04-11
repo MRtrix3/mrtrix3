@@ -27,6 +27,9 @@ To install *MRtrix3*, you will need the following:
 
     -  an `OpenGL <https://en.wikipedia.org/wiki/OpenGL>`__ 3.3 compliant graphics card and corresponding software driver 
 
+.. WARNING:: 
+    When following the instructions below, use the **'MinGW-w64 Win64 shell'**; 'MSYS2 shell' and 'MinGW-w64 Win32 shell' should be avoided.
+
 Install and update MSYS2
 ------------------------
 
@@ -35,10 +38,6 @@ Install and update MSYS2
 
 2. Run the program **'MinGW-w64 Win64 Shell'** from the start menu.
 
-   .. WARNING::
-   
-      Avoid running 'MSYS2 shell' or 'MinGW-w64 Win32 shell'.
-
 3. Update the system packages:
 
    ::
@@ -46,14 +45,10 @@ Install and update MSYS2
        update-core
    
    .. NOTE::
-    Future versions of MSYS will drop ``update-core``, making it safe to skip this step.
+    Future versions of MSYS2 will drop ``update-core``. If your version came without ``update-core``, it is probably safe to skip this step.
 
 4. Close the shell and start **'MinGW-w64 Win64 Shell'**
    
-   .. WARNING::
-   
-      Avoid running 'MSYS2 shell' or 'MinGW-w64 Win32 shell'.
-
 5. Update the other packages:
 
    ::
@@ -63,7 +58,7 @@ Install and update MSYS2
 Install *MRtrix3* dependencies
 ----------------------------
 
-1. From the 'MinGW-w64 Win64 Shell' run:
+1. From the **'MinGW-w64 Win64 Shell'** run:
 
    ::
 
@@ -72,7 +67,7 @@ Install *MRtrix3* dependencies
 Set up git and download *MRtrix3* sources
 ---------------------------------------
 
-1. Configure global settings for Git in the 'MinGW-w64 Win64 Shell':
+1. Configure global settings for Git in the **'MinGW-w64 Win64 Shell'**:
 
    ::
 
@@ -112,7 +107,7 @@ Set up *MRtrix3*
 
    ::
 
-       echo "export PATH=$(pwd)/release/bin:$(pwd)/release/lib:$(pwd)/scripts:\$PATH" >> ~/.bashrc
+       echo "export PATH=$(pwd)/release/bin:$(pwd)/scripts:\$PATH" >> ~/.bashrc
 
    Note that although the scripts provided with MRtrix will appear in
    your path, many of these will not work on a Windows installation due
@@ -155,8 +150,16 @@ target, *not* a symbolic link. By doing so, the build script is unable
 to identify the location of the MRtrix libraries when trying to compile
 an external module.
 
-My solution was to use a standard Windows command prompt, with
-Administrator priveleges: In the file explorer, go to
+The simplest way around this is simply to invoke the build script of the main
+MRtrix install directly. For example, if compiling an external project called
+``myproject``, residing in a folder alongside the main ``mrtrix3`` folder, the
+build script can be invoked with::
+
+    # current working directory is 'myproject':
+    ../mrtrix3/build
+
+If you really want a symbolic link, one solution is to use a standard Windows
+command prompt, with Administrator priveleges: In the file explorer, go to
 ``C:\Windows\system32``, locate the file ``cmd.exe``, right-click and
 select 'Run as administrator'. Within this prompt, use the ``mklink``
 command (note that the argument order passed to ``mklink`` is reversed
