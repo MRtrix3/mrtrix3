@@ -32,7 +32,9 @@ lib.app.initParser('Performs a global DWI intensity normalisation on a group of 
 lib.app.parser.add_argument('input_dir', help='The input directory containing all DWI images')
 lib.app.parser.add_argument('mask_dir', help='Input directory containing brain masks, corresponding to one per input image (with the same file name prefix)')
 lib.app.parser.add_argument('output_dir', help='The output directory containing all of the intensity normalised DWI images')
+lib.app.parser.add_argument('fa_template', help='The output population specific FA template, which is threshold to estimate a white matter mask')
 lib.app.parser.add_argument('wm_mask', help='The output white matter mask (in template space), used to estimate the median b=0 white matter value for normalisation')
+
 lib.app.parser.add_argument('-fa_threshold', default='0.4', help='The threshold applied to the Fractional Anisotropy group template used to derive an approximate white matter mask')
 
 
@@ -69,7 +71,8 @@ for i in inFiles:
   index = maskPrefixes.index(prefix)
   input.append(Input(i, prefix, lib.app.workingDir + '/' + inputDir + '/', maskFiles[index], lib.app.workingDir + '/' + maskDir + '/'))
 
-
+lib.app.checkOutputFile (lib.app.args.fa_template)
+lib.app.checkOutputFile (lib.app.args.wm_mask)
 lib.app.checkOutputFile (lib.app.args.output_dir)
 lib.app.make_dir(lib.app.args.output_dir)
 
@@ -85,15 +88,16 @@ for i in input:
   runCommand('dwi2tensor ' + abspath(i.directory, i.filename) + ' -mask ' + abspath(i.mask_directory, i.mask_filename) + ' - | tensor2metric - -fa fa/' + i.prefix + '.mif')
 
 printMessage('Generating FA population template')
-runCommand('population_template fa -mask_dir ' + maskTempDir + ' fa_template.mif -linear_scale 0.25,0.5,1.0,1.0 -nl_scale 0.5,0.75,1.0,1.0 -nl_niter 5,5,5,5 -warp_dir warps')
+runCommand('population_template fa -mask_dir ' + maskTempDir + ' fa_template.mif -linear_scale 0.25,0.5,1.0,1.0 -nl_scale 0.5,0.75,1.0,1.0,1.0 -nl_niter 5,5,5,5,5 -warp_dir warps')
 
 runCommand('mrthreshold fa_template.mif -abs ' +  lib.app.args.fa_threshold + ' template_wm_mask.mif')
 lib.app.make_dir('wm_mask_warped')
 for i in input:
   runCommand('mrtransform template_wm_mask.mif -warp warps/' + i.prefix + '.mif wm_mask_warped/' + i.prefix + '.mif -from 2 -template fa/' + i.prefix + '.mif')
-  runCommand('dwinormalise ' + abspath(i.directory, i.filename) + ' wm_mask_warped/' + i.prefix + '.mif ' + abspath (lib.app.workingDir, lib.app.args.output_dir, i.filename))
+  runCommand('dwinormalise ' + abspath(i.directory, i.filename) + ' wm_mask_warped/' + i.prefix + '.mif ' + abspath (lib.app.workingDir, lib.app.args.output_dir, i.filename) + lib.app.mrtrixForce)
 
 runCommand('mrconvert template_wm_mask.mif ' + abspath(lib.app.workingDir, lib.app.args.wm_mask) + lib.app.mrtrixForce)
+runCommand('mrconvert fa_template.mif ' + abspath(lib.app.workingDir, lib.app.args.fa_template) + lib.app.mrtrixForce)
 
 lib.app.complete()
 
