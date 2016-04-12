@@ -67,10 +67,10 @@ void usage ()
 
   + Option ("use_tdi_fraction",
             "each streamline is assigned a fraction of the image intensity "
-            "in each element based on the fraction of the track density "
+            "in each voxel based on the fraction of the track density "
             "contributed by that streamline (this is only appropriate for "
-            "processing a whole-brain tractogram, and only for images for which "
-            "the quantiative parameter is additive)");
+            "processing a whole-brain tractogram, and images for which the "
+            "quantiative parameter is additive)");
 
   
   // TODO add support for SH amplitude along tangent
@@ -136,7 +136,8 @@ class Sampler {
       value_type sum_lengths = value_type(0);
 
       // Only if _not_ using precise mapping, and _not_ using a pre-calculated TDI
-      //   (in the latter case, the mapper will still be used, just without the precise mapping)
+      //   (in the latter case, the mapper will still be used, just without the precise mapping;
+      //   each traversed voxel will return a length of 1)
       if (interp) {
 
         std::pair<size_t, vector_type> values;
