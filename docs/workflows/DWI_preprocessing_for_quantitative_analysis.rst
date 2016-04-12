@@ -27,7 +27,7 @@ Below is a list of recommended pre-processing steps for quantitative analysis us
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 If you have access to reversed phase-encode spin-echo echo planar imaging data, this can be used to correct the susceptibility-induced geometric distortions present in the diffusion images. Software for EPI distortion correction is not yet implemented in MRtrix, however we do provide a script for interfacing with `Topup <http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/TOPUP>`_, part of the `FSL <http://fsl.fmrib.ox.ac.uk/>`_ package. Note that :code:`dwipreproc` will also run `Eddy <http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/EDDY>`_ (see the next step)::
 
-  dwipreproc <Input DWI series> <Output corrected DWI series> <Phase encode dir>
+  dwipreproc <input_dwi> <output_dwi> <phase_encode_direction>
 
 For more details, see the header of the :code:`scripts/dwipreproc` file. In particular, it is necessary to manually specify what type of reversed phase-encoding acquisition has taken acquired (if any), and provide the relevant input images.
 
@@ -35,30 +35,58 @@ For more details, see the header of the :code:`scripts/dwipreproc` file. In part
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The :code:`dwipreproc` script also interfaces with `FSL <http://fsl.fmrib.ox.ac.uk/>`_'s `Eddy <http://www.ncbi.nlm.nih.gov/pubmed/26481672>`_ for correcting eddy current-induced distortions and subject motion. Note that if you have reversed phase-encode images for EPI correction, the :code:`dwipreproc` script will simultaneously run `Eddy <http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/EDDY>`_ to ensure only a single interpolation is performed. If you don't have reversed phase-encode data, then `Eddy <http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/EDDY>`_ can be run without topup using::
 
-  dwipreproc <Input DWI series> <Output corrected DWI series>
+  dwipreproc <input_dwi> <output_dwi>
 
 
 3. Estimate a brain mask estimation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 A whole-brain mask is required as input to the subsequent bias field correction step. This can be computed with::
 
-  dwi2mask <Input DWI> <Output mask>
+  dwi2mask <input_dwi> <output_mask>
   
   
 4. Bias field correction
 ^^^^^^^^^^^^^^^^^^^^^^^^
 DWI bias field correction is perfomed by first estimating a correction field from the DWI b=0 image, then applying the field to correct all DW volumes. This can be done in a single step using the :code:`dwibiascorrect` script in MRtrix. The script uses bias field correction algorthims available in `ANTS <http://stnava.github.io/ANTs/>`_ or `FSL <http://fsl.fmrib.ox.ac.uk/>`_. In our experience the `N4 algorithm <http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3071855/>`_ in ANTS gives superiour results. To install N4 install the `ANTS <http://stnava.github.io/ANTs/>`_ package, then run perform bias field correction on DW images using::
 
-    dwibiascorrect -ants -mask <Input brain mask> <Input DWI> <Output correction DWI>
+    dwibiascorrect -ants -mask <input_brain_mask> <input_dwi> <output_corrected_dwi>
     
     
 5. Global intensity normalisation across subjects
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   
-The ideal approach is to normalise the median CSF b=0 intensity across all subjects (on the assumption that the CSF T2 is unlikely to be affected by pathology). However, in practise it is difficult to obtain a robust partial-volume-free estimate of the CSF intensity due to the low resolution of most DWI data. This is especially true for young (<50) cohorts with small ventricles.
+The ideal approach is to normalise the median CSF b=0 intensity across all subjects (on the assumption that the CSF T2 is unlikely to be affected by pathology). However, in practise it is difficult to obtain a robust partial-volume-free estimate of the CSF intensity due to the typical low resolution of DW images. For participants less than 50 years old (with reasonably small ventricles), it can be difficult to identify pure CSF voxels at 2-2.5mm resolutions. We therefore recommend performing a global intensity normalisation using the median white matter b=0 intensity. While the white matter intensity may be influenced by pathology-induced T2 changes, our assumption is that such changes will be local to the pathology and therefore only a small influence on the median b=0 value. 
+
+We have included the :code:`dwiintensitynorm` script in MRtrix to perform an automatic global normalisation using the median white matter b=0 value. The script input requires two folders: a folder containing all DW images in the study (in .mif format) and a folder containing the corresponding whole brain mask images (with the same filename prefix). The script runs by first computing Fractional anisotropy maps, registering these to a study-specific template, then thresholding the template FA map to obtain a rough white matter mask. The mask is then transformed back into the space of each subject image and used in the :code:`dwinormalise` command to normalise the input DW images to have the same b=0 white matter median value. All intensity normalised data will be output in a single folder::
+
+    dwiintensitynorm <input_dwi_folder> <input_brain_mask_folder> <output_normalised_dwi_folder> <output_fa_template> <output_template_wm_mask>
+    
+The dwiintensitynorm script also outputs the study specific FA template and white matter mask. It is recommended that you check that the white matter mask is appropriate (i.e. does not contain CSF or voxels external to the brain. Note it only needs to be a rough WM mask). If you feel the white matter mask needs to be larger or smaller you can re-run :code:`dwiintensitynorm` with a different :code:`-fa_threshold` option. 
+
+Keeping the FA template image and white matter mask is also handy if additional subjects are added to the study at a later date. New subjects can be intensity normalised in a single step by `piping <http://userdocs.mrtrix.org/en/latest/getting_started/command_line.html#unix-pipelines>`_ the following commands together::
+
+    dwi2tensor <input_dwi> -mask <input_brain_mask> - | tensor2metric - -fa - | mrregister <fa_template> - -mask2 <input_brain_mask> -nl_scale 0.5,0.75,1.0 -nl_niter 5,5,15 -nl_warp - | mrtransform <input_template_wm_mask> -template <input_dwi> -warp - - | dwinormalise <input_dwi> - <output_normalised_dwi>
+   
+.. NOTE:: The above command may also be useful if you wish to alter the mask then re-apply the intensity normalisation to all subjects in the study. For example you may wish to edit the mask using the ROI tool in :code:`mrview` to remove white matter regions that you hypothesise are affected by the disease (e.g. removing the corticospinal tract in a study of motor neurone disease due to T2 hyperintensity). You also may wish to redifine the mask completely, e.g. in an elderly population (with larger ventricles) it may be appropriate to intensity normalise using the median b=0 CSF. This could be performed by manually masking partial-volume-free CSF voxels, then running the above command with the CSF mask instead of the <input_template_wm_mask>.
+   
+.. WARNING:: We strongly recommend you check that the scale factors applied during intensity normalisation are not influenced by the variable of interest in your study. For example if one group contains global changes in white matter T2 then this may directly influence the intensity normalisation and therefore bias downstream results. To check this we recommend you perform an equivalence test to ensure mean scale factors are the same between groups. To output the scale factor applied for each patient using :code:`mrinfo <output_normalised_dwi> -property dwi_norm_scale_factor`. 
     
 6. Computing a group average response function
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+As described `here <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`_, using the same response function when estimating FOD images for all subjects enables differences in the intra-axonal volume (and therefore DW signal) across subjects to be detected as differences in the FOD amplitude (the AFD). At high b-values (~3000 s/mm2), the shape of the estimated white matter response function is varies little across subjects and therefore choosing any single subjects' estimate response is OK. To estimate a response function from a single subject::
+
+    dwi2response tournier <Input DWI> <Output response text file>
+    
+Alternatively, to ensure the response function is representative of your study population, a group average response function can be computed by first estimating a response function per subject, then averaging with the script::
+
+    average_response <input_response_files (muliple inputs accepted)> <output_group_average_response>
+
+
+
+
+
+
+
 
 
 
