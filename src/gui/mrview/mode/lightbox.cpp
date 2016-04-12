@@ -152,7 +152,7 @@ namespace MR
 
               // We need to setup the modelview/proj matrices before we set the new focus
               // because move_in_out_displacement is reliant on MVP
-              setup_draw(plane(), slice_proj);
+              setup_projection (plane(), slice_proj);
 
               float focus_delta = slices_proj_focusdelta[slice_idx].second;
               Eigen::Vector3f slice_focus = move_in_out_displacement(focus_delta, slice_proj);

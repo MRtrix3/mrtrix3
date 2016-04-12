@@ -20,19 +20,14 @@
 // grep -rn --include=\*.h --include=\*.cpp '^\s*//CONF\b ' . | sed -ne 's/^.*CONF \(.*\)/\1/p'
 
 
+#include "debug.h"
 
 #include "file/path.h"
 #include "file/config.h"
 
 #define MRTRIX_CONFIG_FILE "mrtrix.conf"
-
-#ifdef MRTRIX_WINDOWS
-#define MRTRIX_SYS_CONFIG_FILE "C:\\" MRTRIX_CONFIG_FILE
-#define MRTRIX_USER_CONFIG_FILE MRTRIX_CONFIG_FILE
-#else
 #define MRTRIX_SYS_CONFIG_FILE "/etc/" MRTRIX_CONFIG_FILE
 #define MRTRIX_USER_CONFIG_FILE "." MRTRIX_CONFIG_FILE
-#endif
 
 
 
@@ -54,6 +49,8 @@ namespace MR
           }
         }
         catch (...) { }
+      } else {
+        DEBUG ("No config file found at \"" MRTRIX_SYS_CONFIG_FILE "\"");
       }
 
       std::string path = Path::join (Path::home(), MRTRIX_USER_CONFIG_FILE);
@@ -66,6 +63,8 @@ namespace MR
           }
         }
         catch (...) { }
+      } else {
+        DEBUG ("No config file found at \"" MRTRIX_USER_CONFIG_FILE "\"");
       }
     }
 

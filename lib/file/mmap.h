@@ -33,14 +33,20 @@ namespace MR
       public:
         //! create a new memory-mapping to file in \a entry
         /*! map file in \a entry at the offset in \a entry. By default, the
-         * file will be mapped read-only. If \a readwrite is set to true, a
-         * write-back RAM buffer will be allocated to store the contents of the
-         * file, and written back when the constructor is invoked. 
+         * file will be mapped read-only. If \a readwrite is set to true,
+         * the file will be accessed with read-write permissions, but the
+         * mechanism used depends on whether the file is detected as residing
+         * on a local or a networked filesystem, and whether the filesystem is
+         * mounted with synchronous IO. If the filesystem is \e local and
+         * \e asynchronous, the file is memory-mapped as-is with read-write
+         * permissions. Otherwise, a write-back RAM buffer is allocated to
+         * store the contents of the file, and written back when the
+         * constructor is invoked. 
          *
-         * By default, the contents of a file mapped read-write will be
-         * preloaded into the RAM buffer. If the file has just been created, \a
-         * preload can be set to false to prevent preloading its contents into
-         * the buffer. 
+         * By default, if the file is mapped using the delayed write-back
+         * mechanism, its contents will be preloaded into the RAM buffer. If
+         * the file has just been created, \a preload should be set to \c false to
+         * prevent this, in which case the contents will set to zero.
          *
          * By default, the whole file is mapped. If \a mapped_size is
          * non-zero, then only the region of size \a mapped_size starting from
