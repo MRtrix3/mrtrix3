@@ -105,8 +105,12 @@ namespace MR
             float FOV () const { return window().FOV(); }
             int plane () const { return window().plane(); }
             Math::Versorf orientation () const {
-              if (snap_to_image()) 
-                return Math::Versorf::unit();
+              if (snap_to_image()) {
+                if (image())
+                  return Math::Versorf (image()->header().transform().rotation().cast<float>());
+                else
+                  return Math::Versorf::unit();
+              }
               return window().orientation(); 
             }
 
@@ -127,9 +131,9 @@ namespace MR
             void set_FOV (float value) { window().set_FOV (value); }
             void set_plane (int p) { window().set_plane (p); }
             void set_orientation (const Math::Versorf& V) { window().set_orientation (V); }
-            void reset_orientation () { 
+            void reset_orientation () {
               Math::Versorf orient (Math::Versorf::unit());
-              if (image()) 
+              if (image())
                 orient = Math::Versorf (image()->header().transform().rotation().cast<float>());
               set_orientation (orient);
             }
