@@ -25,14 +25,18 @@ using namespace App;
 
 void usage () {
   DESCRIPTION
-    + "compute the power contained within each harmonic degree.";
+    + "compute the total power of a spherical harmonics image."
+    
+    + "This command computes the sum of squared SH coefficients, "
+      "which is linearly proportional to the mean-squared amplitude "
+      "of the spherical function it represents.";
 
   ARGUMENTS
     + Argument ("SH", "the input spherical harmonics coefficients image.").type_image_in ()
     + Argument ("power", "the output power image.").type_image_out ();
   
   OPTIONS
-    + Option ("full", "output the power of each SH order in a 4-D image.");
+    + Option ("spectrum", "output the power spectrum, i.e., the power contained within each harmonic degree (l=0, 2, 4, ...) as a 4-D image.");
   
 }
 
@@ -43,12 +47,12 @@ void run () {
 
   Header power_header (SH_data);
   
-  bool full = get_options("full").size();
+  bool spectrum = get_options("spectrum").size();
 
   int lmax = Math::SH::LforN (SH_data.size (3));
   INFO ("calculating spherical harmonic power up to degree " + str (lmax));
 
-  if (full)
+  if (spectrum)
     power_header.size (3) = 1 + lmax/2;
   else
     power_header.set_ndim(3);
@@ -91,7 +95,7 @@ void run () {
   };
   
   auto loop = ThreadedLoop ("calculating SH power", SH_data, 0, 3);
-  if (full)
+  if (spectrum)
     loop.run(f1, power_data, SH_data);
   else
     loop.run(f2, power_data, SH_data);
