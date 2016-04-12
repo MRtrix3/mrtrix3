@@ -171,6 +171,10 @@ namespace MR
               }
             }
 
+            void setup_projection (const int, Projection&) const;
+            void setup_projection (const Math::Versorf&, Projection&) const;
+            void setup_projection (const GL::mat4&, Projection&) const;
+
             Math::Versorf get_tilt_rotation () const;
             Math::Versorf get_rotate_rotation () const;
 

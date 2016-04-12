@@ -209,6 +209,34 @@ done_painting:
 
 
 
+        void Base::setup_projection (const int axis, Projection& with_projection) const
+        {
+          const GL::mat4 M = snap_to_image() ? GL::mat4 (image()->transform().image2scanner.matrix()) : GL::mat4 (orientation());
+          setup_projection (adjust_projection_matrix (GL::transpose (M), axis), with_projection);
+        }
+
+        void Base::setup_projection (const Math::Versorf& V, Projection& with_projection) const
+        {
+          setup_projection (adjust_projection_matrix (GL::transpose (GL::mat4 (V))), with_projection);
+        }
+
+        void Base::setup_projection (const GL::mat4& M, Projection& with_projection) const
+        {
+          // info for projection:
+          const int w = with_projection.width(), h = with_projection.height();
+          const float fov = FOV() / (float)(w+h);
+          const float depth = std::sqrt ( Math::pow2 (image()->header().spacing(0) * image()->header().size(0))
+                                        + Math::pow2 (image()->header().spacing(1) * image()->header().size(1))
+                                        + Math::pow2 (image()->header().spacing(2) * image()->header().size(2)));
+          // set up projection & modelview matrices:
+          const GL::mat4 P = GL::ortho (-w*fov, w*fov, -h*fov, h*fov, -depth, depth);
+          const GL::mat4 MV = M * GL::translate (-target());
+          with_projection.set (MV, P);
+        }
+
+
+
+
 
 
         Math::Versorf Base::get_tilt_rotation () const
