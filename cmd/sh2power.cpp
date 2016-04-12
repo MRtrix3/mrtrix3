@@ -28,7 +28,7 @@ void usage () {
     + "compute the total power of a spherical harmonics image."
     
     + "This command computes the sum of squared SH coefficients, "
-      "which is linearly proportional to the mean-squared amplitude "
+      "which equals the mean-squared amplitude "
       "of the spherical function it represents.";
 
   ARGUMENTS
@@ -73,7 +73,7 @@ void run () {
 #endif
         power += Math::pow2 (val);
       }
-      P.value() = power;
+      P.value() = power / (Math::pi * 4);
       ++P.index(3);
     }
   };
@@ -91,7 +91,7 @@ void run () {
         power += Math::pow2 (val);
       }
     }
-    P.value() = power;
+    P.value() = power / (Math::pi * 4);
   };
   
   auto loop = ThreadedLoop ("calculating SH power", SH_data, 0, 3);
