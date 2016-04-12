@@ -329,26 +329,7 @@ namespace MR
         {
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           GL_CHECK_ERROR;
-          // info for projection:
-          int w = width(), h = height();
-          float fov = FOV() / (float) (w+h);
-
-          float depth = std::max<float> ( { float(image()->image.size(0)*image()->image.spacing(0)),
-                                            float(image()->image.size(1)*image()->image.spacing(1)),
-                                            float(image()->image.size(2)*image()->image.spacing(2)) } );
-
-
-          Math::Versorf V = orientation();
-          if (!V) {
-            V = Math::Versorf::unit();
-            set_orientation (V);
-          }
-
-          // set up projection & modelview matrices:
-          GL::mat4 P = GL::ortho (-w*fov, w*fov, -h*fov, h*fov, -depth, depth);
-          GL::mat4 MV = adjust_projection_matrix (GL::transpose (V)) * GL::translate  (-target()[0], -target()[1], -target()[2]);
-          projection.set (MV, P);
-
+          setup_projection (orientation(), projection);
           GL_CHECK_ERROR;
 
 

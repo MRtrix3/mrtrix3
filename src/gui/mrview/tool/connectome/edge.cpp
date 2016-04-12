@@ -62,10 +62,8 @@ namespace MR
             Eigen::Vector3f v = (z_axis.cross (dir)).normalized();
             // Now, a rotation angle
             const float angle = std::acos (z_axis.dot (dir));
-            // Convert to versor representation
-            const Math::Versorf rot (angle, v);
-            // Convert to a matrix
-            const Eigen::MatrixXf matrix (rot.matrix());
+            // Convert to rotation matrix representation
+            const Eigen::Matrix<float, 3, 3> matrix (Math::Versorf (Eigen::AngleAxisf (angle, v)).matrix());
             // Put into the GLfloat array
             rot_matrix[0] = matrix(0,0); rot_matrix[1] = matrix(0,1); rot_matrix[2] = matrix(0,2);
             rot_matrix[3] = matrix(1,0); rot_matrix[4] = matrix(1,1); rot_matrix[5] = matrix(1,2);

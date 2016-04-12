@@ -209,6 +209,34 @@ done_painting:
 
 
 
+        void Base::setup_projection (const int axis, Projection& with_projection) const
+        {
+          const GL::mat4 M = snap_to_image() ? GL::mat4 (image()->transform().image2scanner.matrix()) : GL::mat4 (orientation());
+          setup_projection (adjust_projection_matrix (GL::transpose (M), axis), with_projection);
+        }
+
+        void Base::setup_projection (const Math::Versorf& V, Projection& with_projection) const
+        {
+          setup_projection (adjust_projection_matrix (GL::transpose (GL::mat4 (V))), with_projection);
+        }
+
+        void Base::setup_projection (const GL::mat4& M, Projection& with_projection) const
+        {
+          // info for projection:
+          const int w = with_projection.width(), h = with_projection.height();
+          const float fov = FOV() / (float)(w+h);
+          const float depth = std::sqrt ( Math::pow2 (image()->header().spacing(0) * image()->header().size(0))
+                                        + Math::pow2 (image()->header().spacing(1) * image()->header().size(1))
+                                        + Math::pow2 (image()->header().spacing(2) * image()->header().size(2)));
+          // set up projection & modelview matrices:
+          const GL::mat4 P = GL::ortho (-w*fov, w*fov, -h*fov, h*fov, -depth, depth);
+          const GL::mat4 MV = M * GL::translate (-target());
+          with_projection.set (MV, P);
+        }
+
+
+
+
 
 
         Math::Versorf Base::get_tilt_rotation () const
@@ -227,8 +255,7 @@ done_painting:
           float angle = -ROTATION_INC * std::sqrt (float (Math::pow2 (dpos.x()) + Math::pow2 (dpos.y())));
           if (angle > Math::pi_2)
             angle = Math::pi_2;
-          const Math::Versorf rot (angle, v);
-          return rot;
+          return Math::Versorf (Eigen::AngleAxisf (angle, v));
         }
 
 
@@ -261,8 +288,7 @@ done_painting:
           const Eigen::Vector3f n = x1.cross (x0);
           const float angle = n[2];
           Eigen::Vector3f v = (proj->screen_normal()).normalized();
-          const Math::Versorf rot (angle, v);
-          return rot;
+          return Math::Versorf (Eigen::AngleAxisf (angle, v));
         }
 
 
