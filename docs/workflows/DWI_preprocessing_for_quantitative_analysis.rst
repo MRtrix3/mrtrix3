@@ -11,9 +11,9 @@ Most DWI models derive quantitative measures by using the ratio of the DW signal
 
 To enable robust quantitative comparisons of AFD across subjects (or AFD-derived quantities such as SIFT-filtered tractograms) there are three steps required:
 
-#. **Global intensity normalisation** of the median white matter b=0 intensity across all subjects. This avoids the above noted issues with voxel-wise b=0 normalisation, such as CSF partial volume influencing restricted white matter DW signal (and therefore the AFD).  
+#. **Bias field correction** to eliminate low frequency intensity inhomogeneities across the image.
 
-#. **Bias field correction** to eliminate intensity inhomogeneities
+#. **Global intensity normalisation** by normalising the median CSF or WM b=0 intensity across all subjects (see below for more details). This avoids the above noted issues with voxel-wise b=0 normalisation, such as CSF partial volume influencing restricted white matter DW signal (and therefore the AFD).   
 
 #. **Use the same single fibre response function** in the spherical deconvolution for all subjects. This ensures differences in intra-axonal volume (and therefore DW signal) across subjects are detected as differences in the FOD amplitude (the AFD). See `the AFD paper <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`_ for more details.
 
@@ -55,6 +55,7 @@ DWI bias field correction is perfomed by first estimating a correction field fro
 5. Global intensity normalisation across subjects
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   
+The ideal approach is to normalise the median CSF b=0 intensity across all subjects (on the assumption that the CSF T2 is unlikely to be affected by pathology). However, in practise it is difficult to obtain a robust partial-volume-free estimate of the CSF intensity due to the low resolution of most DWI data. This is especially true for young (<50) cohorts with small ventricles.
     
 6. Computing a group average response function
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
