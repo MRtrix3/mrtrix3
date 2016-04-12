@@ -65,12 +65,12 @@ void usage ()
                        "(obviates the need for trilinear interpolation) "
                        "(only applicable if some per-streamline statistic is requested)")
 
-  + Option ("use_tdi_fraction", "each streamline is assigned a fraction of the image intensity "
-                                "in each element based on the fraction of the track density "
-                                "contributed by that streamline (this is only appropriate for "
-                                "processing a whole-brain tractogram, only for images for which "
-                                "the quantiative parameter is additive, and only if using the "
-                                "-precise option)");
+  + Option ("use_tdi_fraction",
+            "each streamline is assigned a fraction of the image intensity "
+            "in each element based on the fraction of the track density "
+            "contributed by that streamline (this is only appropriate for "
+            "processing a whole-brain tractogram, and only for images for which "
+            "the quantiative parameter is additive)");
 
   
   // TODO add support for SH amplitude along tangent
@@ -117,22 +117,16 @@ class TDI : public Image<value_type>
 // Guarantees thread-safety
 class Sampler {
   public:
-    Sampler (Image<value_type>& image, const stat_tck statistic, const bool precise) :
-        interp (precise ? nullptr : new Interp::Linear<Image<value_type>> (image)),
-        mapper (precise ? new DWI::Tractography::Mapping::TrackMapperBase (image) : nullptr),
-        image  (precise ? new Image<value_type> (image) : nullptr),
+    Sampler (Image<value_type>& image, const stat_tck statistic, const bool precise, std::unique_ptr<TDI>& precalc_tdi) :
+        interp ((!precise && !precalc_tdi) ? new Interp::Linear<Image<value_type>> (image) : nullptr),
+        mapper ((precise || precalc_tdi) ? new DWI::Tractography::Mapping::TrackMapperBase (image) : nullptr),
+        image  ((precise || precalc_tdi) ? new Image<value_type> (image) : nullptr),
+        tdi (precalc_tdi ? new TDI (*precalc_tdi) : nullptr),
         statistic (statistic)
     {
       assert (!(statistic == stat_tck::NONE && precise));
       if (mapper)
-        mapper->set_use_precise_mapping (true);
-    }
-
-    void provide_tdi (TDI& image)
-    {
-      assert (!tdi);
-      assert (mapper);
-      tdi.reset (new TDI (image));
+        mapper->set_use_precise_mapping (precise);
     }
 
     bool operator() (DWI::Tractography::Streamline<>& tck, std::pair<size_t, value_type>& out)
@@ -141,8 +135,8 @@ class Sampler {
       out.first = tck.index;
       value_type sum_lengths = value_type(0);
 
-      // TODO Enabling TDI scaling without precise mapping could be achieved by
-      //   following the other branch? The intra-voxel lengths will all be 1.
+      // Only if _not_ using precise mapping, and _not_ using a pre-calculated TDI
+      //   (in the latter case, the mapper will still be used, just without the precise mapping)
       if (interp) {
 
         std::pair<size_t, vector_type> values;
@@ -389,23 +383,21 @@ void run ()
   if (statistic == stat_tck::NONE && precise)
     throw Exception ("Precise streamline mapping may only be used with per-streamline statistics");
 
-  Sampler sampler (image, statistic, precise);
-
+  std::unique_ptr<TDI> tdi;
   if (get_options ("use_tdi_fraction").size()) {
-    if (!precise)
-      throw Exception ("-use_tdi_fraction option can only be used in conjunction with precise mapping");
     DWI::Tractography::Reader<value_type> tdi_reader (argument[0], properties);
     DWI::Tractography::Mapping::TrackMapperBase mapper (image.original_header());
-    mapper.set_use_precise_mapping (true);
-    TDI tdi (image.original_header(), num_tracks);
+    mapper.set_use_precise_mapping (precise);
+    tdi.reset (new TDI (image.original_header(), num_tracks));
     Thread::run_queue (tdi_reader,
                        Thread::batch (DWI::Tractography::Streamline<value_type>()),
                        Thread::multi (mapper),
                        Thread::batch (DWI::Tractography::Mapping::SetVoxel()),
-                       tdi);
-    tdi.done();
-    sampler.provide_tdi (tdi);
+                       *tdi);
+    tdi->done();
   }
+
+  Sampler sampler (image, statistic, precise, tdi);
 
   if (statistic == stat_tck::NONE) {
     Receiver_NoStatistic receiver (argument[2], num_tracks, properties);
