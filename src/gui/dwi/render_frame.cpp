@@ -295,7 +295,7 @@ namespace MR
             const Eigen::Vector3f v = x.cross (z).normalized();
             float angle = ROTATION_INC * std::sqrt (float (Math::pow2 (dx) + Math::pow2 (dy)));
             if (angle > Math::pi_2) angle = Math::pi_2;
-            const Math::Versorf rot (angle, v);
+            const Math::Versorf rot (Eigen::AngleAxisf (angle, v));
             orientation = rot * orientation;
             update();
           }

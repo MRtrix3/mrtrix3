@@ -227,8 +227,7 @@ done_painting:
           float angle = -ROTATION_INC * std::sqrt (float (Math::pow2 (dpos.x()) + Math::pow2 (dpos.y())));
           if (angle > Math::pi_2)
             angle = Math::pi_2;
-          const Math::Versorf rot (angle, v);
-          return rot;
+          return Math::Versorf (Eigen::AngleAxisf (angle, v));
         }
 
 
@@ -261,8 +260,7 @@ done_painting:
           const Eigen::Vector3f n = x1.cross (x0);
           const float angle = n[2];
           Eigen::Vector3f v = (proj->screen_normal()).normalized();
-          const Math::Versorf rot (angle, v);
-          return rot;
+          return Math::Versorf (Eigen::AngleAxisf (angle, v));
         }
 
 

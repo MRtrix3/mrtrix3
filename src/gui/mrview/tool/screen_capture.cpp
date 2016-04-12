@@ -13,6 +13,8 @@
  * 
  */
 
+#include <Eigen/Geometry>
+
 #include "mrtrix.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/base.h"
@@ -347,7 +349,7 @@ namespace MR
             Math::Versorf orientation (win.orientation());
             Eigen::Vector3f axis { rotation_axis_x->value(), rotation_axis_y->value(), rotation_axis_z->value() };
             axis.normalize();
-            Math::Versorf rotation (radians, axis);
+            const Math::Versorf rotation (Eigen::AngleAxisf (radians, axis));
 
             switch (rotation_type) {
               case RotationType::World:
