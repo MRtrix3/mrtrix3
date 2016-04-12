@@ -58,9 +58,8 @@ void run () {
 
   auto input = Image<float>::open (argument[0]);
   auto mask = Image<bool>::open (argument[1]);
-  auto output = Image<float>::create (argument[2], input);
-
   check_dimensions (input, mask, 0, 3);
+
 
   auto grad = DWI::get_DW_scheme (input);
   DWI::Shells grad_shells (grad);
@@ -71,7 +70,6 @@ void run () {
       bzeros = grad_shells[s].get_volumes();
     }
   }
-
 
   std::vector<float> bzero_mask_values;
   float intensity = get_option_value ("intensity", 1000);
@@ -92,6 +90,12 @@ void run () {
   std::sort (bzero_mask_values.rbegin(), bzero_mask_values.rend());
   float percentile_value = bzero_mask_values[round(float(bzero_mask_values.size()) * float(percentile) / 100.0)];
   float scale_factor = intensity / percentile_value;
+
+  Header output_header (input);
+  output_header.keyval()["dwi_norm_scale_factor"] = str(scale_factor);
+  output_header.keyval()["dwi_norm_percentile"] = str(percentile);
+  auto output = Image<float>::create (argument[2], output_header);
+
   for (auto i = Loop ("normalising image intensities", input) (input, output); i; ++i)
     output.value() = input.value() * scale_factor;
 }
