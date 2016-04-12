@@ -177,7 +177,7 @@ namespace MR
 
         std::string cmap_name = ColourMap::maps[colourmap].name;
 
-        const bool windowing_reset_required = (display_range < 0.0f);
+        const bool windowing_reset_required = (!std::isfinite (display_range) || (display_range < 0.0f));
 
         if (cmap_name == "RGB") {
 
