@@ -80,10 +80,14 @@ namespace MR
           const MR::Transform& transform() const { return linear_interp; }
           const std::vector<std::string>& comments() const { return _comments; }
 
+          void reset_windowing (const int, const bool);
+
         protected:
           mutable MR::Interp::Linear <MR::Image<cfloat>> linear_interp;
           mutable MR::Interp::Nearest<MR::Image<cfloat>> nearest_interp;
           friend class Tool::ODF;
+
+          std::array<float, 3> slice_min, slice_max;
 
         private:
           bool volume_unchanged ();

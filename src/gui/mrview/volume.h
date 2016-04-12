@@ -95,9 +95,7 @@ namespace MR
           MR::Header& header () { return _header; }
           const MR::Transform& transform () const { return _transform; }
 
-          void set_min_max (float min, float max) {
-            value_min = min;
-            value_max = max;
+          void min_max_set() {
             update_levels();
             if (std::isnan (display_midpoint) || std::isnan (display_range))
               reset_windowing();

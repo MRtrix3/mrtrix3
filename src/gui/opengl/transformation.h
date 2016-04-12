@@ -236,8 +236,8 @@ namespace MR
         mat4 m;
         m.zero();
         m(0,0) = x;
-        m(1,1) = z;
-        m(2,2) = y;
+        m(1,1) = y;
+        m(2,2) = z;
         m(3,3) = 1.0f;
         return m;
       }

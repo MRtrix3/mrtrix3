@@ -57,7 +57,6 @@ namespace MR
             virtual bool process_commandline_option (const MR::App::ParsedOption& opt) override;
 
           private slots:
-            void onWindowChange ();
             void onPreviewClosed ();
             void image_open_slot ();
             void image_close_slot ();
@@ -105,7 +104,6 @@ namespace MR
              
              void add_images (std::vector<std::string>& list);
 
-             virtual void showEvent (QShowEvent* event) override;
              virtual void closeEvent (QCloseEvent* event) override;
 
              ODF_Item* get_image ();
