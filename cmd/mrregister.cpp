@@ -52,9 +52,11 @@ void usage ()
 
       // TODO link to 5D warp file format documentation
       + "Non-linear registration computes warps to map from both image1->image2 and image2->image1. "
-        "Similar to Avants (2008) Med Image Anal. 12(1): 26–41, both the image1 and image2 are warped towards a 'middle space'. "
-        "Warps are saved in a single 5D file, with the 5th dimension defining the warp type."
-        "By default the affine transformation will be saved in the warp image header (use mrinfo to view)";
+        "Similar to Avants (2008) Med Image Anal. 12(1): 26–41, registration is performed by matching both the image1 and image2 in a 'midway space'. "
+        "Warps can be saved as two deformation fields that map directly between image1->image2 and image2->image1, or if using -nl_warp_mid as a single 5D file "
+        "that stores all 4 warps image1->mid->image2, and image2->mid->image1. The 5D warp format stores x,y,z displacements in the 4th dimension, and uses the 5th dimension "
+        "to index the 4 warps. The affine transforms estimated (to midway space) are also stored as comments in the image header. The 5D warp file can be used to reinitialise "
+        "subsequent registrations, in addition to transforming images to midway space (e.g. for intra-subject alignment in a 2-time-point longitudinal analysis).";
 
   REFERENCES
   + "* If FOD registration is being performed:\n"
@@ -513,13 +515,23 @@ void run ()
     Registration::parse_general_init_options (affine_registration);
 
   // ****** NON-LINEAR REGISTRATION OPTIONS *******
-  Registration::NonLinear nonlinear_registration;
+  Registration::NonLinear nl_registration;
   opt = get_options ("nl_warp");
-  std::string warp_filename;
+  std::string warp1_filename;
+  std::string warp2_filename;
   if (opt.size()) {
     if (!do_nonlinear)
       throw Exception ("Non-linear warp output requested when no non-linear registration is requested");
-    warp_filename = std::string (opt[0][0]);
+    warp1_filename = std::string (opt[0][0]);
+    warp2_filename = std::string (opt[0][1]);
+  }
+
+  opt = get_options ("nl_warp_mid");
+  std::string warp_mid_filename;
+  if (opt.size()) {
+    if (!do_nonlinear)
+      throw Exception ("Non-linear warp output requested when no non-linear registration is requested");
+    warp_mid_filename = std::string (opt[0][0]);
   }
 
 
@@ -535,7 +547,7 @@ void run ()
     if (input_warps.ndim() != 5)
       throw Exception ("non-linear initialisation input is not 5D. Input must be from previous non-linear output");
 
-    nonlinear_registration.initialise (input_warps);
+    nl_registration.initialise (input_warps);
 
     if (do_affine) {
       WARN ("no affine registration will be performed when initialising with non-linear non-linear warps");
@@ -560,7 +572,7 @@ void run ()
     if (nonlinear_init) {
       WARN ("-nl_scale option ignored since only the full resolution will be performed when initialising with non-linear warp");
     } else {
-      nonlinear_registration.set_scale_factor (scale_factors);
+      nl_registration.set_scale_factor (scale_factors);
     }
   }
 
@@ -572,28 +584,28 @@ void run ()
     if (nonlinear_init && iterations_per_level.size() > 1)
       throw Exception ("when initialising the non-linear registration the max number of iterations can only be defined for a single level");
     else
-      nonlinear_registration.set_max_iter (iterations_per_level);
+      nl_registration.set_max_iter (iterations_per_level);
   }
 
   opt = get_options ("nl_update_smooth");
   if (opt.size()) {
     if (!do_nonlinear)
       throw Exception ("the warp update field smoothing parameter was input when no non-linear registration is requested");
-    nonlinear_registration.set_update_smoothing (opt[0][0]);
+    nl_registration.set_update_smoothing (opt[0][0]);
   }
 
   opt = get_options ("nl_disp_smooth");
   if (opt.size()) {
     if (!do_nonlinear)
       throw Exception ("the displacement field smoothing parameter was input when no non-linear registration is requested");
-    nonlinear_registration.set_disp_smoothing (opt[0][0]);
+    nl_registration.set_disp_smoothing (opt[0][0]);
   }
 
   opt = get_options ("nl_grad_step");
   if (opt.size()) {
     if (!do_nonlinear)
       throw Exception ("the initial gradient step size was input when no non-linear registration is requested");
-    nonlinear_registration.set_init_grad_step (opt[0][0]);
+    nl_registration.set_init_grad_step (opt[0][0]);
   }
 
   opt = get_options ("nl_lmax");
@@ -604,7 +616,7 @@ void run ()
     if (im1_image.ndim() < 4)
       throw Exception ("-nl_lmax option is not valid with 3D images");
     nl_lmax = parse_ints (opt[0][0]);
-    nonlinear_registration.set_lmax (nl_lmax);
+    nl_registration.set_lmax (nl_lmax);
     for (size_t i = 0; i < (nl_lmax).size (); ++i)
       if ((nl_lmax)[i] > image_lmax)
         throw Exception ("the requested -nl_lmax exceeds the lmax of the input images");
@@ -752,23 +764,51 @@ void run ()
     CONSOLE ("running non-linear registration");
 
     if (do_reorientation)
-      nonlinear_registration.set_aPSF_directions (directions_cartesian);
+      nl_registration.set_aPSF_directions (directions_cartesian);
 
     if (do_affine || init_affine_matrix_set) {
-      nonlinear_registration.run (affine, im1_image, im2_image, im1_mask, im2_mask);
+      nl_registration.run (affine, im1_image, im2_image, im1_mask, im2_mask);
     } else if (do_rigid || init_rigid_matrix_set) {
-      nonlinear_registration.run (rigid, im1_image, im2_image, im1_mask, im2_mask);
+      nl_registration.run (rigid, im1_image, im2_image, im1_mask, im2_mask);
     } else {
       Registration::Transform::Affine identity_transform;
-      nonlinear_registration.run (identity_transform, im1_image, im2_image, im1_mask, im2_mask);
+      nl_registration.run (identity_transform, im1_image, im2_image, im1_mask, im2_mask);
     }
 
-    if (warp_filename.size()) {
+    if (warp_mid_filename.size()) {
       //TODO add affine parameters to comments too?
-      Header output_header = nonlinear_registration.get_output_warps_header();
+      Header output_header = nl_registration.get_output_warps_header();
+      nl_registration.write_params_to_header (output_header);
+      nl_registration.write_linear_to_header (output_header);
       output_header.datatype() = DataType::from_command_line (DataType::Float32);
-      auto output_warps = Image<float>::create (warp_filename, output_header);
-      nonlinear_registration.get_output_warps (output_warps);
+      auto output_warps = Image<float>::create (warp_mid_filename, output_header);
+      nl_registration.get_output_warps (output_warps);
+    }
+
+    if (warp1_filename.size()) {
+      Header output_header (im2_image);
+      output_header.set_ndim(4);
+      output_header.size(3) =3;
+      nl_registration.write_params_to_header (output_header);
+      output_header.datatype() = DataType::from_command_line (DataType::Float32);
+      auto warp1 = Image<default_type>::create (warp1_filename, output_header).with_direct_io();
+      Registration::Warp::compute_full_deformation (nl_registration.get_im2_linear().inverse(),
+                                                    *(nl_registration.get_im2_disp_field_inv()),
+                                                    *(nl_registration.get_im1_disp_field()),
+                                                    nl_registration.get_im1_linear(), warp1);
+    }
+
+    if (warp2_filename.size()) {
+      Header output_header (im1_image);
+      output_header.set_ndim(4);
+      output_header.size(3) = 3;
+      nl_registration.write_params_to_header (output_header);
+      output_header.datatype() = DataType::from_command_line (DataType::Float32);
+      auto warp2 = Image<default_type>::create (warp2_filename, output_header).with_direct_io();
+      Registration::Warp::compute_full_deformation (nl_registration.get_im1_linear().inverse(),
+                                                    *(nl_registration.get_im1_disp_field_inv()),
+                                                    *(nl_registration.get_im2_disp_field()),
+                                                    nl_registration.get_im2_linear(), warp2);
     }
   }
 
@@ -782,10 +822,10 @@ void run ()
       deform_header.set_ndim(4);
       deform_header.size(3) = 3;
       Image<default_type> deform_field = Image<default_type>::scratch (deform_header);
-      Registration::Warp::compute_full_deformation (nonlinear_registration.get_im2_linear().inverse(),
-                                                    *(nonlinear_registration.get_im2_disp_field_inv()),
-                                                    *(nonlinear_registration.get_im1_disp_field()),
-                                                    nonlinear_registration.get_im1_linear(),
+      Registration::Warp::compute_full_deformation (nl_registration.get_im2_linear().inverse(),
+                                                    *(nl_registration.get_im2_disp_field_inv()),
+                                                    *(nl_registration.get_im1_disp_field()),
+                                                    nl_registration.get_im1_linear(),
                                                     deform_field);
 
       if (im1_image.ndim() == 3) {
@@ -821,14 +861,14 @@ void run ()
 
   if (!im1_midway_transformed_path.empty() and !im2_midway_transformed_path.empty()) {
     if (do_nonlinear) {
-      Header midway_header (*(nonlinear_registration.get_im1_disp_field()));
+      Header midway_header (*nl_registration.get_im1_disp_field());
       midway_header.datatype() = DataType::from_command_line (DataType::Float32);
       midway_header.set_ndim (im1_image.ndim());
       if (midway_header.ndim() == 4)
         midway_header.size(3) = im1_image.size(3);
 
-      Image<default_type> im1_deform_field = Image<default_type>::scratch (*(nonlinear_registration.get_im1_disp_field()));
-      Registration::Warp::compose_linear_displacement (nonlinear_registration.get_im1_linear(), *(nonlinear_registration.get_im1_disp_field()), im1_deform_field);
+      Image<default_type> im1_deform_field = Image<default_type>::scratch (*(nl_registration.get_im1_disp_field()));
+      Registration::Warp::compose_linear_displacement (nl_registration.get_im1_linear(), *(nl_registration.get_im1_disp_field()), im1_deform_field);
 
       auto im1_midway = Image<default_type>::create (im1_midway_transformed_path, midway_header).with_direct_io();
       Filter::warp<Interp::Cubic> (im1_image, im1_midway, im1_deform_field, 0.0);
@@ -836,8 +876,8 @@ void run ()
         Registration::Transform::reorient_warp ("reorienting FODs", im1_midway, im1_deform_field,
                                                 Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
 
-      Image<default_type> im2_deform_field = Image<default_type>::scratch (*(nonlinear_registration.get_im2_disp_field()));
-      Registration::Warp::compose_linear_displacement (nonlinear_registration.get_im2_linear(), *(nonlinear_registration.get_im2_disp_field()), im2_deform_field);
+      Image<default_type> im2_deform_field = Image<default_type>::scratch (*(nl_registration.get_im2_disp_field()));
+      Registration::Warp::compose_linear_displacement (nl_registration.get_im2_linear(), *(nl_registration.get_im2_disp_field()), im2_deform_field);
       auto im2_midway = Image<default_type>::create (im2_midway_transformed_path, midway_header).with_direct_io();
       Filter::warp<Interp::Cubic> (im2_image, im2_midway, im2_deform_field, 0.0);
       if (do_reorientation)

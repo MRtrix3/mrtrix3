@@ -205,8 +205,8 @@ namespace MR
       // Compose linear1<->displacement1<->[midway space]<->displacement2<->linear2. Output is a deformation field.
       template <class DisplacementField1Type, class DisplacementField2Type, class DeformationFieldType>
       FORCE_INLINE void compute_full_deformation (const transform_type& linear1, DisplacementField1Type& disp1,
-                                                    DisplacementField2Type& disp2, const transform_type& linear2,
-                                                    DeformationFieldType& deform_out)
+                                                  DisplacementField2Type& disp2, const transform_type& linear2,
+                                                  DeformationFieldType& deform_out)
       {
         MR::Transform deform_header_transform (deform_out);
         ComposeHalfwayKernel<DisplacementField1Type, DisplacementField2Type> compose_kernel (linear1 * deform_header_transform.voxel2scanner, disp1, disp2, linear2);
@@ -216,8 +216,8 @@ namespace MR
       // Compose linear1<->displacement1<->[midway space]<->displacement2<->linear2. Output is a deformation field.
       template <class DisplacementField1Type, class DisplacementField2Type, class DeformationFieldType>
       FORCE_INLINE void compute_full_deformation (std::string message, const transform_type& linear1, DisplacementField1Type& disp1,
-                                                    DisplacementField2Type& disp2, const transform_type& linear2,
-                                                    DeformationFieldType& deform_out)
+                                                  DisplacementField2Type& disp2, const transform_type& linear2,
+                                                  DeformationFieldType& deform_out)
       {
         MR::Transform deform_header_transform (deform_out);
         ComposeHalfwayKernel<DisplacementField1Type, DisplacementField2Type> compose_kernel (linear1 * deform_header_transform.voxel2scanner, disp1, disp2, linear2);

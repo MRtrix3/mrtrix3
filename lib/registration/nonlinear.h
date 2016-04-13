@@ -369,7 +369,6 @@ namespace MR
             fod_lmax = lmax;
           }
 
-          //TODO
           std::shared_ptr<Image<default_type> > get_im1_disp_field() {
             return im1_disp_field;
           }
@@ -394,7 +393,7 @@ namespace MR
             return im2_linear;
           }
 
-          Header get_output_warps_header () {
+          Header get_output_warps_header () const {
             Header output_header (*im1_disp_field);
             output_header.set_ndim (5);
             output_header.size(3) = 3;
@@ -404,10 +403,15 @@ namespace MR
             output_header.stride(2) = 3;
             output_header.stride(3) = 4;
             output_header.stride(4) = 5;
+            return output_header;
+          }
 
+          void write_linear_to_header (Header& output_header) const {
             output_header.keyval()["linear1"] = str(im1_linear.matrix());
             output_header.keyval()["linear2"] = str(im2_linear.matrix());
+          }
 
+          void write_params_to_header (Header& output_header) const {
             output_header.keyval()["nl_scale"] = str(scale_factor);
             output_header.keyval()["nl_niter"] = str(max_iter);
             output_header.keyval()["nl_update_smooth"] = str(update_smoothing);
@@ -416,8 +420,6 @@ namespace MR
             output_header.keyval()["fod_reorientation"] = str(do_reorientation);
             if (do_reorientation)
               output_header.keyval()["nl_lmax"] = str(fod_lmax);
-
-            return output_header;
           }
 
           template <class OutputType>

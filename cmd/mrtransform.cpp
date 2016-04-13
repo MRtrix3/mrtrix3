@@ -123,26 +123,26 @@ void usage ()
     + OptionGroup ("Non-linear transformation options")
 
     // TODO point users to a documentation page describing the warp field format
-    + Option ("warp",
+      + Option ("warp",
+          "apply a non-linear 4D deformation field to warp the input image. Each voxel in the deformation field must define "
+          "the scanner space position that will be used to interpolate the input image during warping (i.e. pull-back/reverse warp convention). "
+          "If the -template image is also supplied the deformation field will be resliced first to the template image grid. If no -template "
+          "option is supplied then the output image will have the same image grid as the deformation field. This option can be used in "
+          "combination with the -affine option, in which case the affine will be applied first)")
+      + Argument ("image").type_image_in ()
+
+    + Option ("warp_mid",
         "warp the input image using a 5D warp file output from mrregister. Any linear transforms in the warp image header "
         "will also be applied. The -warp option must be used in combination with either the -template option or the -midway_space option. "
         "If a -template image is supplied then the full warp will be used. By default the image1->image2 transform will be applied, "
-        "however the -from 2 option can be used to apply the image2->image1 transform. Use the -midway_space option to warp the input"
+        "however the -from 2 option can be used to apply the image2->image1 transform. Use the -midway_space option to warp the input "
         "image to the midway space. The -from option can also be used to define which warp to use when transforming to midway space")
     + Argument ("image").type_image_in ()
 
     + Option ("from",
-        "used to define which space the input image is when using the -warp option. "
+        "used to define which space the input image is when using the -warp_mid option. "
         "Use -from 1 to warp from image1 or -from 2 to warp from image2")
     +   Argument ("image").type_integer (1,1,2)
-
-    + Option ("warp_df",
-        "apply a non-linear 4D deformation field to warp the input image. Each voxel in the deformation field must define "
-        "the scanner space position that will be used to interpolate the input image during warping (i.e. pull-back/reverse warp convention). "
-        "If the -template image is also supplied the deformation field will be resliced first to the template image grid. If no -template "
-        "option is supplied then the output image will have the same image grid as the deformation field. This option can be used in "
-        "combination with the -affine option, in which case the affine will be applied first)")
-    + Argument ("image").type_image_in ()
 
     + OptionGroup ("Fibre orientation distribution handling options")
 
@@ -230,18 +230,18 @@ void run ()
 
   // Warp 5D warp
   // TODO add reference to warp format documentation
-  opt = get_options ("warp");
+  opt = get_options ("warp_mid");
   Image<default_type> warp;
   if (opt.size()) {
     warp = Image<default_type>::open (opt[0][0]).with_direct_io();
     if (warp.ndim() != 5)
-      throw Exception ("the input -warp image must be a 5D file.");
+      throw Exception ("the input -warp_mid image must be a 5D file.");
     if (warp.size(3) != 3)
-      throw Exception ("the input -warp image must have 3 volumes (x,y,z) in the 4th dimension.");
+      throw Exception ("the input -warp_mid image must have 3 volumes (x,y,z) in the 4th dimension.");
     if (warp.size(4) != 4)
-      throw Exception ("the input -warp image must have 4 volumes in the 5th dimension.");
+      throw Exception ("the input -warp_mid image must have 4 volumes in the 5th dimension.");
     if (linear)
-      throw Exception ("the -warp option cannot be applied in combination with -linear since the "
+      throw Exception ("the -warp_mid option cannot be applied in combination with -linear since the "
                        "linear transform is already included in the warp header");
   }
 
@@ -255,15 +255,15 @@ void run ()
   }
 
   // Warp deformation field
-  opt = get_options ("warp_df");
+  opt = get_options ("warp");
   if (opt.size()) {
     if (warp.valid())
-      throw Exception ("only one warp field can be input with either -warp or -warp_df");
+      throw Exception ("only one warp field can be input with either -warp or -warp_mid");
     warp = Image<default_type>::open (opt[0][0]).with_direct_io (Stride::contiguous_along_axis(3));
     if (warp.ndim() != 4)
-      throw Exception ("the input -warp_df file must be a 4D deformation field");
+      throw Exception ("the input -warp file must be a 4D deformation field");
     if (warp.size(3) != 3)
-      throw Exception ("the input -warp_df file must have 3 volumes in the 4th dimension (x,y,z positions)");
+      throw Exception ("the input -warp file must have 3 volumes in the 4th dimension (x,y,z positions)");
   }
 
   // Inverse
