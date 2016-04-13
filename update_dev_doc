@@ -7,7 +7,8 @@ set -e
 
 (
   cd mrtrix3-dev-doc 
-  rm -rf *
+  git pull
+  git rm -rf *
   cp -r ../devdoc/* .
   git add .
   git commit -a -m "automatic update of dev doc"
