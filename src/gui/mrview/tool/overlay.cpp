@@ -372,9 +372,9 @@ namespace MR
         void Overlay::reset_colourmap(const ColourMapButton&)
         {
             QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
-            Image* overlay = nullptr;
+            Displayable* overlay = nullptr;
             for (size_t i = 0, N = indices.size(); i < N; ++i) {
-              overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
+              overlay = dynamic_cast<Displayable*> (image_list_model->get_image (indices[i]));
               overlay->reset_windowing();
             }
 

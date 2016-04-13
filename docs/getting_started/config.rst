@@ -13,23 +13,14 @@ For all available configurable options, please refer to the :ref:`mrtrix_config_
 Location
 ^^^^^^^^
 
-*MRtrix* applications will attempt to read configuration information from
-a number of possible locations. In particular, one can specify both
-a system-wide configuration file or a user-specific configuration
-file, with the exact platform-specific location outlined below:
-
-+---------------------------------------+------------------------+------------------------------------------------------+
-| platform                              | system                 | user                                                 |
-+=======================================+========================+======================================================+
-| Unix (including GNU/Linux & MacOSX)   | ``/etc/mrtrix.conf``   | ``$HOME/.mrtrix.conf``                               |
-+---------------------------------------+------------------------+------------------------------------------------------+
-| Windows                               | ``C:\mrtrix.conf``     | ``$HOME\mrtrix.conf``\  (e.g. C:and Settings.conf)   |
-+---------------------------------------+------------------------+------------------------------------------------------+
-
-If both a system and user-specific configuration file is found, a given *MRtrix* command
-will aggregate the specified parameters of the two configuration files, with user-specified configuration
-options taking precedence in the case of a conflict. In the case that a particular configuration parameter 
-is not defined, *MRtrix* will resort to hard-coded defaults.
+*MRtrix* applications will attempt to read configuration information from a two
+locations. The system-wide configuration file ``/etc/mrtrix.conf`` is read
+first if present, followed by the user-specific configuration
+``~/.mrtrix.conf``.  If both system and user-specific configuration files
+exist, the parameters specified in the two configuration files will be
+aggregated, with user-specified configuration options taking precedence in the
+case of a conflict. In the case that a particular configuration parameter is
+not defined, *MRtrix* will resort to hard-coded defaults.
 
 
 Format

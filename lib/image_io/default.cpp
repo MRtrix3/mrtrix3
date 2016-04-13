@@ -77,7 +77,6 @@ namespace MR
 
     void Default::map_files (const Header& header)
     {
-      DEBUG ("mapping image \"" + header.name() + "\"...");
       mmaps.resize (files.size());
       addresses.resize (mmaps.size());
       for (size_t n = 0; n < files.size(); n++) {

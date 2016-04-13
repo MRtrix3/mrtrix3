@@ -17,6 +17,7 @@
 #define __dwi_tractography_seeding_seeding_h__
 
 
+#include "mrtrix.h"
 #include "dwi/tractography/seeding/basic.h"
 #include "dwi/tractography/seeding/dynamic.h"
 #include "dwi/tractography/seeding/gmwmi.h"

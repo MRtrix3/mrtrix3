@@ -334,8 +334,13 @@ environ = os.environ.copy()
 environ.update ({ 'PATH': PATH })
 
 target_bin_dir = os.path.join (mrtrix_dir[0], config_name, bin_dir);
-target_lib_dir = os.path.join (mrtrix_dir[-1], config_name, lib_dir)
 lib_dir = os.path.join (mrtrix_dir[-1], lib_dir)
+
+system = platform.system().lower()
+if system.startswith('mingw') or system.startswith('msys'):
+  target_lib_dir = target_bin_dir
+else:
+  target_lib_dir = os.path.join (mrtrix_dir[-1], config_name, lib_dir)
 
 
 if ld_enabled and len(runpath):
@@ -577,7 +582,7 @@ def default_targets():
   return targets
 
 def is_executable (target):
-  return os.path.normpath (split_path (split_intermediate (target)[2])[0]) == os.path.normpath (bin_dir) and not is_moc (target)
+  return os.path.normpath (split_path (split_intermediate (target)[2])[0]) == os.path.normpath (bin_dir) and not is_moc (target) and not is_library (target)
 
 def is_library (target):
   return target.endswith (lib_suffix) and split_path(target)[-1].startswith (lib_prefix)
