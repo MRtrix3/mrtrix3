@@ -58,6 +58,7 @@ namespace MR
             ODF_Preview (ODF*);
             void set (const Eigen::VectorXf&);
             bool interpolate() const { return interpolation_box->isChecked(); }
+            void set_lod_enabled (const bool i) { level_of_detail_selector->setEnabled (i); }
             Window& window () const { return *Window::main; }
           private slots:
             void lock_orientation_to_image_slot (int);
