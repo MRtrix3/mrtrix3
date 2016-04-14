@@ -32,18 +32,21 @@ namespace MR {
 
         + App::Option ("fmls_ratio_integral_to_neg",
             "threshold the ratio between the integral of a positive FOD lobe, and the integral of the largest negative lobe. "
-            "Any lobe that fails to exceed the integral dictated by this ratio will be discarded.")
-        + App::Argument ("value").type_float (0.0, FMLS_RATIO_TO_NEGATIVE_LOBE_INTEGRAL_DEFAULT, 1e6)
+            "Any lobe that fails to exceed the integral dictated by this ratio will be discarded. "
+            "Default: " + str(FMLS_RATIO_TO_NEGATIVE_LOBE_INTEGRAL_DEFAULT, 2) + ".")
+        + App::Argument ("value").type_float (0.0, 1e6)
 
         + App::Option ("fmls_ratio_peak_to_mean_neg",
             "threshold the ratio between the peak amplitude of a positive FOD lobe, and the mean peak amplitude of all negative lobes. "
-            "Any lobe that fails to exceed the peak amplitude dictated by this ratio will be discarded.")
-        + App::Argument ("value").type_float (0.0, FMLS_RATIO_TO_NEGATIVE_LOBE_MEAN_PEAK_DEFAULT, 1e6)
+            "Any lobe that fails to exceed the peak amplitude dictated by this ratio will be discarded. "
+            "Default: " + str(FMLS_RATIO_TO_NEGATIVE_LOBE_MEAN_PEAK_DEFAULT, 2) + ".")
+        + App::Argument ("value").type_float (0.0, 1e6)
 
         + App::Option ("fmls_peak_value",
             "threshold the raw peak amplitude of positive FOD lobes. "
-            "Any lobe for which the peak amplitude is smaller than this threshold will be discarded.")
-        + App::Argument ("value").type_float (0.0, FMLS_PEAK_VALUE_THRESHOLD, 1e6)
+            "Any lobe for which the peak amplitude is smaller than this threshold will be discarded. "
+            "Default: " + str(FMLS_PEAK_VALUE_THRESHOLD, 2) + ".")
+        + App::Argument ("value").type_float (0.0, 1e6)
 
         + App::Option ("fmls_no_thresholds",
             "disable all FOD lobe thresholding; every lobe with a positive FOD amplitude will be retained.")
@@ -51,8 +54,9 @@ namespace MR {
         + App::Option ("fmls_peak_ratio_to_merge",
             "specify the amplitude ratio between a sample and the smallest peak amplitude of the adjoining lobes, above which the lobes will be merged. "
             "This is the relative amplitude between the smallest of two adjoining lobes, and the 'bridge' between the two lobes. "
-            "A value of 1.0 will never merge two peaks into a single lobe; a value of 0.0 will always merge lobes unless they are bisected by a zero crossing.")
-        + App::Argument ("value").type_float (0.0, FMLS_RATIO_TO_PEAK_VALUE_DEFAULT, 1.0);
+            "A value of 1.0 will never merge two peaks into a single lobe; a value of 0.0 will always merge lobes unless they are bisected by a zero crossing. "
+            "Default: " + str(FMLS_RATIO_TO_PEAK_VALUE_DEFAULT, 2) + ".")
+        + App::Argument ("value").type_float (0.0, 1.0);
 
 
 

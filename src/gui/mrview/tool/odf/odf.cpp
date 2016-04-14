@@ -44,8 +44,7 @@ namespace MR
           preview (nullptr),
           renderer (nullptr),
           lighting_dock (nullptr),
-          lmax (0),
-          level_of_detail (0) {
+          lmax (0) {
             lighting = new GL::Lighting (this);
 
             VBoxLayout *main_box = new VBoxLayout (this);
@@ -55,9 +54,21 @@ namespace MR
             layout->setSpacing (0);
 
             QPushButton* button = new QPushButton (this);
-            button->setToolTip (tr ("Open ODF image"));
-            button->setIcon (QIcon (":/open.svg"));
-            connect (button, SIGNAL (clicked()), this, SLOT (image_open_slot ()));
+            button->setToolTip (tr ("Open SH image"));
+            button->setIcon (QIcon (":/odf_sh.svg"));
+            connect (button, SIGNAL (clicked()), this, SLOT (sh_open_slot ()));
+            layout->addWidget (button, 1);
+
+            button = new QPushButton (this);
+            button->setToolTip (tr ("Open Tensor image"));
+            button->setIcon (QIcon (":/odf_tensor.svg"));
+            connect (button, SIGNAL (clicked()), this, SLOT (tensor_open_slot ()));
+            layout->addWidget (button, 1);
+
+            button = new QPushButton (this);
+            button->setToolTip (tr ("Open Dixel image"));
+            button->setIcon (QIcon (":/odf_dixel.svg"));
+            connect (button, SIGNAL (clicked()), this, SLOT (dixel_open_slot ()));
             layout->addWidget (button, 1);
 
             button = new QPushButton (this);
@@ -90,7 +101,6 @@ namespace MR
 
             show_preview_button = new QPushButton ("Inspect ODF at focus",this);
             show_preview_button->setToolTip (tr ("Inspect ODF at focus<br>(opens separate window)"));
-            show_preview_button->setIcon (QIcon (":/odf_preview.svg"));
             connect (show_preview_button, SIGNAL (clicked()), this, SLOT (show_preview_slot ()));
             main_box->addWidget (show_preview_button, 1);
             
@@ -100,42 +110,32 @@ namespace MR
             GridLayout* box_layout = new GridLayout;
             group_box->setLayout (box_layout);
 
-            QLabel* label = new QLabel ("data type");
-            label->setAlignment (Qt::AlignHCenter);
-            box_layout->addWidget (label, 0, 0);
-            type_selector = new QComboBox (this);
-            type_selector->addItem ("SH");
-            type_selector->addItem ("tensor");
-            type_selector->addItem ("amps");
-            connect (type_selector, SIGNAL (currentIndexChanged(int)), this, SLOT(mode_change_slot()));
-            box_layout->addWidget (type_selector, 0, 1);
-
             level_of_detail_label = new QLabel ("detail");
             level_of_detail_label->setAlignment (Qt::AlignHCenter);
-            box_layout->addWidget (level_of_detail_label, 1, 0);
+            box_layout->addWidget (level_of_detail_label, 0, 0);
             level_of_detail_selector = new SpinBox (this);
             level_of_detail_selector->setMinimum (1);
             level_of_detail_selector->setMaximum (6);
             level_of_detail_selector->setSingleStep (1);
             level_of_detail_selector->setValue (3);
             connect (level_of_detail_selector, SIGNAL (valueChanged(int)), this, SLOT(updateGL()));
-            box_layout->addWidget (level_of_detail_selector, 1, 1);
+            box_layout->addWidget (level_of_detail_selector, 0, 1);
 
             lmax_label = new QLabel ("lmax");
             lmax_label->setAlignment (Qt::AlignHCenter);
-            box_layout->addWidget (lmax_label, 1, 2);
+            box_layout->addWidget (lmax_label, 0, 2);
             lmax_selector = new SpinBox (this);
             lmax_selector->setMinimum (2);
             lmax_selector->setMaximum (16);
             lmax_selector->setSingleStep (2);
             lmax_selector->setValue (8);
             connect (lmax_selector, SIGNAL (valueChanged(int)), this, SLOT(lmax_slot(int)));
-            box_layout->addWidget (lmax_selector, 1, 3);
+            box_layout->addWidget (lmax_selector, 0, 3);
 
             dirs_label = new QLabel ("directions");
             dirs_label->setAlignment (Qt::AlignHCenter);
             dirs_label->setVisible (false);
-            box_layout->addWidget (dirs_label, 2, 0);
+            box_layout->addWidget (dirs_label, 1, 0);
             dirs_selector = new QComboBox (this);
             dirs_selector->addItem ("DW scheme");
             dirs_selector->addItem ("Header");
@@ -144,67 +144,67 @@ namespace MR
             dirs_selector->addItem ("From file");
             dirs_selector->setVisible (false);
             connect (dirs_selector, SIGNAL (currentIndexChanged(int)), this, SLOT(dirs_slot()));
-            box_layout->addWidget (dirs_selector, 2, 1);
+            box_layout->addWidget (dirs_selector, 1, 1);
 
             shell_label = new QLabel ("shell");
             shell_label->setAlignment (Qt::AlignHCenter);
             shell_label->setVisible (false);
-            box_layout->addWidget (shell_label, 2, 2);
+            box_layout->addWidget (shell_label, 1, 2);
             shell_selector = new QComboBox (this);
             shell_selector->setVisible (false);
             connect (shell_selector, SIGNAL (currentIndexChanged(int)), this, SLOT(shell_slot()));
-            box_layout->addWidget (shell_selector, 2, 3);
+            box_layout->addWidget (shell_selector, 1, 3);
 
-            label = new QLabel ("scale");
+            QLabel* label = new QLabel ("scale");
             label->setAlignment (Qt::AlignHCenter);
-            box_layout->addWidget (label, 3, 0);
+            box_layout->addWidget (label, 2, 0);
             scale = new AdjustButton (this, 1.0);
             scale->setValue (1.0);
             scale->setMin (0.0);
             connect (scale, SIGNAL (valueChanged()), this, SLOT (adjust_scale_slot()));
-            box_layout->addWidget (scale, 3, 1, 1, 3);
+            box_layout->addWidget (scale, 2, 1, 1, 3);
             
             interpolation_box = new QCheckBox ("interpolation");
             interpolation_box->setChecked (true);
             connect (interpolation_box, SIGNAL (stateChanged(int)), this, SLOT (updateGL()));
-            box_layout->addWidget (interpolation_box, 4, 0, 1, 2);
+            box_layout->addWidget (interpolation_box, 3, 0, 1, 2);
 
             hide_negative_values_box = new QCheckBox ("hide negative values");
             hide_negative_values_box->setChecked (true);
             connect (hide_negative_values_box, SIGNAL (stateChanged(int)), this, SLOT (hide_negative_values_slot(int)));
-            box_layout->addWidget (hide_negative_values_box, 4, 2, 1, 2);
+            box_layout->addWidget (hide_negative_values_box, 3, 2, 1, 2);
 
             lock_to_grid_box = new QCheckBox ("lock to grid");
             lock_to_grid_box->setChecked (true);
             connect (lock_to_grid_box, SIGNAL (stateChanged(int)), this, SLOT (updateGL()));
-            box_layout->addWidget (lock_to_grid_box, 5, 0, 1, 2);
+            box_layout->addWidget (lock_to_grid_box, 4, 0, 1, 2);
 
             colour_by_direction_box = new QCheckBox ("colour by direction");
             colour_by_direction_box->setChecked (true);
             connect (colour_by_direction_box, SIGNAL (stateChanged(int)), this, SLOT (colour_by_direction_slot(int)));
-            box_layout->addWidget (colour_by_direction_box, 5, 2, 1, 2);
+            box_layout->addWidget (colour_by_direction_box, 4, 2, 1, 2);
 
             colour_button = new QColorButton;
             colour_button->setVisible (false);
             connect (colour_button, SIGNAL (clicked()), this, SLOT (colour_change_slot()));
-            box_layout->addWidget (colour_button, 5, 3, 1, 1);
+            box_layout->addWidget (colour_button, 4, 3, 1, 1);
 
 
             main_grid_box = new QCheckBox ("use main grid");
             main_grid_box->setToolTip (tr ("Show individual ODFs at the spatial resolution of the main image instead of the ODF image's own spatial resolution"));
             main_grid_box->setChecked (false);
             connect (main_grid_box, SIGNAL (stateChanged(int)), this, SLOT (updateGL()));
-            box_layout->addWidget (main_grid_box, 6, 0, 1, 2);
+            box_layout->addWidget (main_grid_box, 5, 0, 1, 2);
 
             use_lighting_box = new QCheckBox ("use lighting");
             use_lighting_box->setCheckable (true);
             use_lighting_box->setChecked (true);
             connect (use_lighting_box, SIGNAL (stateChanged(int)), this, SLOT (use_lighting_slot(int)));
-            box_layout->addWidget (use_lighting_box, 6, 2, 1, 2);
+            box_layout->addWidget (use_lighting_box, 5, 2, 1, 2);
 
             QPushButton *lighting_settings_button = new QPushButton ("ODF lighting...", this);
             connect (lighting_settings_button, SIGNAL(clicked(bool)), this, SLOT (lighting_settings_slot (bool)));
-            box_layout->addWidget (lighting_settings_button, 7, 0, 1, 4);
+            box_layout->addWidget (lighting_settings_button, 6, 0, 1, 4);
 
 
             connect (image_list_view->selectionModel(),
@@ -257,27 +257,24 @@ namespace MR
           if (!settings)
             return;
 
-          if (settings->mode == GUI::DWI::Renderer::mode_t::DIXEL && settings->dixel.dir_type == ODF_Item::DixelPlugin::dir_t::NONE)
+          if (settings->odf_type == odf_type_t::DIXEL && settings->dixel->dir_type == ODF_Item::DixelPlugin::dir_t::NONE)
             return;
 
           MRView::Image& image (main_grid_box->isChecked() ? *window().image() : settings->image);
 
           if (!hide_all_button->isChecked()) {
 
-            if (settings->mode == GUI::DWI::Renderer::mode_t::SH) {
-              if (lmax != settings->lmax || level_of_detail != level_of_detail_selector->value()) {
+            if (settings->odf_type == odf_type_t::SH) {
+              if (lmax != settings->lmax || renderer->sh.get_LOD() != level_of_detail_selector->value()) {
                 lmax = settings->lmax;
-                level_of_detail = level_of_detail_selector->value();
-                renderer->sh.update_mesh (level_of_detail, lmax);
+                renderer->sh.update_mesh (level_of_detail_selector->value(), lmax);
               }
-            } else if (settings->mode == GUI::DWI::Renderer::mode_t::TENSOR) {
-              if (level_of_detail != level_of_detail_selector->value()) {
-                level_of_detail = level_of_detail_selector->value();
-                renderer->tensor.update_mesh (level_of_detail);
-              }
+            } else if (settings->odf_type == odf_type_t::TENSOR) {
+              if (renderer->tensor.get_LOD() != level_of_detail_selector->value())
+                renderer->tensor.update_mesh (level_of_detail_selector->value());
             }
 
-            renderer->set_mode (settings->mode);
+            renderer->set_mode (settings->odf_type);
 
             renderer->start (projection, *lighting, settings->scale, 
                 use_lighting_box->isChecked(), settings->color_by_direction, settings->hide_negative, true);
@@ -317,14 +314,14 @@ namespace MR
             const int ny = std::ceil (y_width.norm() / y_dir.norm());
 
             Eigen::VectorXf values;
-            switch (settings->mode) {
-              case GUI::DWI::Renderer::mode_t::SH:
+            switch (settings->odf_type) {
+              case odf_type_t::SH:
                 values.resize (Math::SH::NforL (settings->lmax));
                 break;
-              case GUI::DWI::Renderer::mode_t::TENSOR:
+              case odf_type_t::TENSOR:
                 values.resize (6);
                 break;
-              case GUI::DWI::Renderer::mode_t::DIXEL:
+              case odf_type_t::DIXEL:
                 values.resize (settings->image.header().size (3));
                 break;
             }
@@ -336,18 +333,18 @@ namespace MR
                 get_values (values, settings->image, p, interpolation_box->isChecked());
                 if (!std::isfinite (values[0])) continue;
 
-                switch (settings->mode) {
-                  case GUI::DWI::Renderer::mode_t::SH:
+                switch (settings->odf_type) {
+                  case odf_type_t::SH:
                     if (values[0] == 0.0) continue;
                     renderer->sh.compute_r_del_daz (r_del_daz, values.topRows (Math::SH::NforL (lmax)));
                     renderer->sh.set_data (r_del_daz);
                     break;
-                  case GUI::DWI::Renderer::mode_t::TENSOR:
+                  case odf_type_t::TENSOR:
                     renderer->tensor.set_data (values);
                     break;
-                  case GUI::DWI::Renderer::mode_t::DIXEL:
-                    if (settings->dixel.dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME) {
-                      const Eigen::VectorXf shell_values = settings->dixel.get_shell_data (values);
+                  case odf_type_t::DIXEL:
+                    if (settings->dixel->dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME) {
+                      const Eigen::VectorXf shell_values = settings->dixel->get_shell_data (values);
                       renderer->dixel.set_data (shell_values);
                     } else {
                       renderer->dixel.set_data (values);
@@ -412,44 +409,38 @@ namespace MR
         void ODF::setup_ODFtype_UI (const ODF_Item* image)
         {
           assert (image);
-          type_selector->blockSignals (true);
-          type_selector->setCurrentIndex (image->mode == GUI::DWI::Renderer::mode_t::SH ? 0 :
-                                         (image->mode == GUI::DWI::Renderer::mode_t::TENSOR ? 1 : 2));
-          type_selector->blockSignals (false);
-          lmax_label->setVisible (image->mode == GUI::DWI::Renderer::mode_t::SH);
-          lmax_selector->setVisible (image->mode == GUI::DWI::Renderer::mode_t::SH);
-          type_selector->blockSignals (true);
-          if (image->mode == GUI::DWI::Renderer::mode_t::SH)
+          lmax_label->setVisible (image->odf_type == odf_type_t::SH);
+          lmax_selector->setVisible (image->odf_type == odf_type_t::SH);
+          if (image->odf_type == odf_type_t::SH)
             lmax_selector->setValue (image->lmax);
-          type_selector->blockSignals (false);
-          level_of_detail_label->setVisible (image->mode == GUI::DWI::Renderer::mode_t::SH || image->mode == GUI::DWI::Renderer::mode_t::TENSOR);
-          level_of_detail_selector->setVisible (image->mode == GUI::DWI::Renderer::mode_t::SH || image->mode == GUI::DWI::Renderer::mode_t::TENSOR);
-          dirs_label->setVisible (image->mode == GUI::DWI::Renderer::mode_t::DIXEL);
-          shell_label->setVisible (image->mode == GUI::DWI::Renderer::mode_t::DIXEL);
-          dirs_selector->setVisible (image->mode == GUI::DWI::Renderer::mode_t::DIXEL);
-          if (image->mode == GUI::DWI::Renderer::mode_t::DIXEL)
-            dirs_selector->setCurrentIndex (image->dixel.dir_type);
-          shell_selector->setVisible (image->mode == GUI::DWI::Renderer::mode_t::DIXEL);
+          level_of_detail_label->setVisible (image->odf_type == odf_type_t::SH || image->odf_type == odf_type_t::TENSOR);
+          level_of_detail_selector->setVisible (image->odf_type == odf_type_t::SH || image->odf_type == odf_type_t::TENSOR);
+          dirs_label->setVisible (image->odf_type == odf_type_t::DIXEL);
+          shell_label->setVisible (image->odf_type == odf_type_t::DIXEL);
+          dirs_selector->setVisible (image->odf_type == odf_type_t::DIXEL);
+          if (image->odf_type == odf_type_t::DIXEL)
+            dirs_selector->setCurrentIndex (image->dixel->dir_type);
+          shell_selector->setVisible (image->odf_type == odf_type_t::DIXEL);
           shell_selector->blockSignals (true);
           shell_selector->clear();
-          if (image->dixel.shells) {
-            for (size_t i = 0; i != image->dixel.shells->count(); ++i)
-              shell_selector->addItem (QString::fromStdString (str (int (std::round ((*image->dixel.shells)[i].get_mean())))));
+          if (image->odf_type == odf_type_t::DIXEL && image->dixel->shells) {
+            for (size_t i = 0; i != image->dixel->shells->count(); ++i)
+              shell_selector->addItem (QString::fromStdString (str (int (std::round ((*image->dixel->shells)[i].get_mean())))));
           }
           shell_selector->blockSignals (false);
-          if (image->mode == GUI::DWI::Renderer::mode_t::DIXEL && shell_selector->count() && image->dixel.dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME)
-            shell_selector->setCurrentIndex (image->dixel.shell_index);
-          shell_selector->setEnabled (image->mode == GUI::DWI::Renderer::mode_t::DIXEL && image->dixel.dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME && image->dixel.shells && image->dixel.shells->count() > 1);
+          if (image->odf_type == odf_type_t::DIXEL && shell_selector->count() && image->dixel->dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME)
+            shell_selector->setCurrentIndex (image->dixel->shell_index);
+          shell_selector->setEnabled (image->odf_type == odf_type_t::DIXEL && image->dixel->dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME && image->dixel->shells && image->dixel->shells->count() > 1);
         }
 
 
 
 
 
-        void ODF::add_images (std::vector<std::string>& list)
+        void ODF::add_images (std::vector<std::string>& list, const odf_type_t mode)
         {
           size_t previous_size = image_list_model->rowCount();
-          if (!image_list_model->add_items (list,
+          if (!image_list_model->add_items (list, mode,
                                             colour_by_direction_box->isChecked(),
                                             hide_negative_values_box->isChecked(),
                                             scale->value()))
@@ -459,10 +450,8 @@ namespace MR
           ODF_Item* settings = get_image();
           setup_ODFtype_UI (settings);
           assert (renderer);
-          if (settings->mode == GUI::DWI::Renderer::mode_t::DIXEL) {
-            assert (settings->dixel.dirs);
-            renderer->dixel.update_mesh (*(settings->dixel.dirs));
-          }
+          if (settings->odf_type == odf_type_t::DIXEL && settings->dixel->dirs)
+            renderer->dixel.update_mesh (*(settings->dixel->dirs));
           updateGL();
         }
 
@@ -486,13 +475,31 @@ namespace MR
 
 
 
-        void ODF::image_open_slot ()
+        void ODF::sh_open_slot ()
         {
-          std::vector<std::string> list = Dialog::File::get_images (&window(), "Select overlay images to open");
+          std::vector<std::string> list = Dialog::File::get_images (&window(), "Select SH-based ODF images to open");
           if (list.empty())
             return;
 
-          add_images (list);
+          add_images (list, odf_type_t::SH);
+        }
+
+        void ODF::tensor_open_slot ()
+        {
+          std::vector<std::string> list = Dialog::File::get_images (&window(), "Select tensor images to open");
+          if (list.empty())
+            return;
+
+          add_images (list, odf_type_t::TENSOR);
+        }
+
+        void ODF::dixel_open_slot ()
+        {
+          std::vector<std::string> list = Dialog::File::get_images (&window(), "Select dixel-based ODF images to open");
+          if (list.empty())
+            return;
+
+          add_images (list, odf_type_t::DIXEL);
         }
 
 
@@ -518,14 +525,14 @@ namespace MR
 
           ODF_Item* settings = get_image();
           if (settings) {
-            preview->render_frame->set_mode (settings->mode);
+            preview->render_frame->set_mode (settings->odf_type);
             preview->render_frame->set_scale (settings->scale);
             preview->render_frame->set_hide_neg_values (settings->hide_negative);
             preview->render_frame->set_color_by_dir (settings->color_by_direction);
-            if (settings->mode == GUI::DWI::Renderer::mode_t::SH)
+            if (settings->odf_type == odf_type_t::SH)
               preview->render_frame->set_lmax (settings->lmax);
-            else if (settings->dixel.dirs)
-              preview->render_frame->set_dixels (*(settings->dixel.dirs));
+            else if (settings->odf_type == odf_type_t::DIXEL && settings->dixel->dirs)
+              preview->render_frame->set_dixels (*(settings->dixel->dirs));
           }
           preview->render_frame->set_colour (renderer->get_colour());
 
@@ -592,70 +599,12 @@ namespace MR
 
 
 
-        void ODF::mode_change_slot ()
-        {
-          ODF_Item* settings = get_image();
-          if (!settings)
-            return;
-          const GUI::DWI::Renderer::mode_t mode = (!type_selector->currentIndex() ? GUI::DWI::Renderer::mode_t::SH :
-                                                  (type_selector->currentIndex() == 1 ? GUI::DWI::Renderer::mode_t::TENSOR : GUI::DWI::Renderer::mode_t::DIXEL));
-          if (settings->mode == mode)
-            return;
-
-          auto reset_GUI = [&] (const GUI::DWI::Renderer::mode_t mode) {
-            switch (mode) {
-              case GUI::DWI::Renderer::mode_t::SH:     type_selector->setCurrentIndex (0); break;
-              case GUI::DWI::Renderer::mode_t::TENSOR: type_selector->setCurrentIndex (1); break;
-              case GUI::DWI::Renderer::mode_t::DIXEL:  type_selector->setCurrentIndex (2); break;
-            }
-          };
-
-          // Mode change combobox is now always enabled;
-          // Need to detect bad selections here and act accordingly
-          switch (mode) {
-
-            case GUI::DWI::Renderer::mode_t::SH:
-              try {
-                Math::SH::check (settings->image.header());
-              } catch (Exception& e) {
-                e.display();
-                reset_GUI (settings->mode);
-                return;
-              }
-              renderer->sh.update_mesh (level_of_detail, lmax);
-              break;
-
-            case GUI::DWI::Renderer::mode_t::TENSOR:
-              if (settings->image.header().size(3) != 6) {
-                Exception e ("Cannot use image " + settings->image.header().name() + " as tensor overlay; must have 6 volumes");
-                e.display();
-                reset_GUI (settings->mode);
-                return;
-              }
-              renderer->tensor.update_mesh (level_of_detail);
-              break;
-
-            case GUI::DWI::Renderer::mode_t::DIXEL:
-              break;
-
-          }
-
-          settings->mode = mode;
-          setup_ODFtype_UI (settings);
-          if (preview)
-            preview->render_frame->set_mode (mode);
-          updateGL();
-          update_preview();
-        }
-
-
-
         void ODF::lmax_slot (int) 
         { 
           ODF_Item* settings = get_image();
           if (!settings)
             return;
-          assert (settings->mode == GUI::DWI::Renderer::mode_t::SH);
+          assert (settings->odf_type == odf_type_t::SH);
           settings->lmax = lmax_selector->value();
           if (preview) 
             preview->render_frame->set_lmax (lmax_selector->value());
@@ -669,51 +618,51 @@ namespace MR
           ODF_Item* settings = get_image();
           if (!settings)
             return;
-          assert (settings->mode == GUI::DWI::Renderer::mode_t::DIXEL);
+          assert (settings->odf_type == odf_type_t::DIXEL);
           const size_t dir_type = dirs_selector->currentIndex();
-          if (dir_type == settings->dixel.dir_type)
+          if (dir_type == settings->dixel->dir_type)
             return;
           try {
             switch (dir_type) {
               case 0: // DW scheme
-                if (!settings->dixel.num_DW_shells())
+                if (!settings->dixel->num_DW_shells())
                   throw Exception ("Cannot draw orientation information from DW scheme: no such scheme stored in header");
-                settings->dixel.set_shell (settings->dixel.shell_index);
+                settings->dixel->set_shell (settings->dixel->shell_index);
                 break;
               case 1: // Header
-                if (!settings->dixel.header_dirs.rows())
+                if (!settings->dixel->header_dirs.rows())
                   throw Exception ("Cannot draw orientation information from header: no such data exist");
-                settings->dixel.set_header();
+                settings->dixel->set_header();
                 break;
               case 2: // Internal
-                settings->dixel.set_internal (settings->image.header().size (3));
+                settings->dixel->set_internal (settings->image.header().size (3));
                 break;
               case 3: // None
-                settings->dixel.set_none();
+                settings->dixel->set_none();
                 break;
               case 4: // From file
                 const std::string path = Dialog::File::get_file (this, "Select directions file", "Text files (*.txt)");
                 if (!path.size()) {
-                  dirs_selector->setCurrentIndex (settings->dixel.dir_type);
+                  dirs_selector->setCurrentIndex (settings->dixel->dir_type);
                   return;
                 }
-                settings->dixel.set_from_file (path);
+                settings->dixel->set_from_file (path);
                 break;
             }
-            shell_selector->setEnabled (dir_type == 0 && settings->dixel.shells && settings->dixel.shells->count() > 1);
+            shell_selector->setEnabled (dir_type == 0 && settings->dixel->shells && settings->dixel->shells->count() > 1);
             if (dir_type == 3) {
               if (preview)
                 preview->render_frame->clear_dixels();
             } else {
-              assert (settings->dixel.dirs);
+              assert (settings->dixel->dirs);
               assert (renderer);
-              renderer->dixel.update_mesh (*(settings->dixel.dirs));
+              renderer->dixel.update_mesh (*(settings->dixel->dirs));
               if (preview)
-                preview->render_frame->set_dixels (*(settings->dixel.dirs));
+                preview->render_frame->set_dixels (*(settings->dixel->dirs));
             }
           } catch (Exception& e) {
             e.display();
-            dirs_selector->setCurrentIndex (settings->dixel.dir_type);
+            dirs_selector->setCurrentIndex (settings->dixel->dir_type);
           }
 
           updateGL();
@@ -726,16 +675,16 @@ namespace MR
           ODF_Item* settings = get_image();
           if (!settings)
             return;
-          assert (settings->mode == GUI::DWI::Renderer::mode_t::DIXEL);
-          assert (settings->dixel.dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME);
+          assert (settings->odf_type == odf_type_t::DIXEL);
+          assert (settings->dixel->dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME);
           const size_t index = shell_selector->currentIndex();
-          assert (index < settings->dixel.num_DW_shells());
-          settings->dixel.set_shell (index);
-          assert (settings->dixel.dirs);
+          assert (index < settings->dixel->num_DW_shells());
+          settings->dixel->set_shell (index);
+          assert (settings->dixel->dirs);
           assert (renderer);
-          renderer->dixel.update_mesh (*(settings->dixel.dirs));
+          renderer->dixel.update_mesh (*(settings->dixel->dirs));
           if (preview)
-            preview->render_frame->set_dixels (*(settings->dixel.dirs));
+            preview->render_frame->set_dixels (*(settings->dixel->dirs));
           updateGL();
         }
 
@@ -806,14 +755,14 @@ namespace MR
           if (!settings)
             return;
           Eigen::VectorXf values;
-          switch (settings->mode) {
-            case GUI::DWI::Renderer::mode_t::SH:
+          switch (settings->odf_type) {
+            case odf_type_t::SH:
               values.resize (Math::SH::NforL (lmax_selector->value()));
               break;
-            case GUI::DWI::Renderer::mode_t::TENSOR:
+            case odf_type_t::TENSOR:
               values.resize (6);
               break;
-            case GUI::DWI::Renderer::mode_t::DIXEL:
+            case odf_type_t::DIXEL:
               values.resize (settings->image.header().size (3));
               break;
           }
@@ -830,22 +779,34 @@ namespace MR
           ODF_Item* settings = get_image();
           if (!settings)
             return;
-          if (settings->mode == GUI::DWI::Renderer::mode_t::DIXEL && settings->dixel.dirs)
-            renderer->dixel.update_mesh (*(settings->dixel.dirs));
+          switch (settings->odf_type) {
+            case odf_type_t::SH:
+              if (renderer->sh.get_LOD())
+                level_of_detail_selector->setValue (renderer->sh.get_LOD());
+              break;
+            case odf_type_t::TENSOR:
+              if (renderer->tensor.get_LOD())
+                level_of_detail_selector->setValue (renderer->tensor.get_LOD());
+              break;
+            case odf_type_t::DIXEL:
+              if (settings->dixel->dirs)
+                renderer->dixel.update_mesh (*(settings->dixel->dirs));
+              break;
+          }
           setup_ODFtype_UI (settings);
           scale->setValue (settings->scale);
           hide_negative_values_box->setChecked (settings->hide_negative);
           colour_by_direction_box->setChecked (settings->color_by_direction);
           if (preview) {
-            preview->render_frame->set_mode (settings->mode);
+            preview->render_frame->set_mode (settings->odf_type);
             preview->render_frame->set_scale (settings->scale);
             preview->render_frame->set_hide_neg_values (settings->hide_negative);
             preview->render_frame->set_color_by_dir (settings->color_by_direction);
-            if (settings->mode == GUI::DWI::Renderer::mode_t::SH) {
+            if (settings->odf_type == odf_type_t::SH) {
               preview->render_frame->set_lmax (settings->lmax);
-            } else if (settings->mode == GUI::DWI::Renderer::mode_t::DIXEL) {
-              if (settings->dixel.dirs)
-                preview->render_frame->set_dixels (*(settings->dixel.dirs));
+            } else if (settings->odf_type == odf_type_t::DIXEL) {
+              if (settings->dixel->dirs)
+                preview->render_frame->set_dixels (*(settings->dixel->dirs));
               else
                 preview->render_frame->clear_dixels();
             }
@@ -864,7 +825,13 @@ namespace MR
           options
             + OptionGroup ("ODF tool options")
 
-            + Option ("odf.load", "Loads the specified image on the ODF tool.")
+            + Option ("odf.load_sh", "Loads the specified SH-based ODF image on the ODF tool.")
+            +   Argument ("image").type_image_in()
+
+            + Option ("odf.load_tensor", "Loads the specified tensor image on the ODF tool.")
+            +   Argument ("image").type_image_in()
+
+            + Option ("odf.load_dixel", "Loads the specified dixel-based image on the ODF tool.")
             +   Argument ("image").type_image_in();
             
         }
@@ -875,10 +842,32 @@ namespace MR
 
         bool ODF::process_commandline_option (const MR::App::ParsedOption& opt) 
         {
-          if (opt.opt->is ("odf.load")) {
+          if (opt.opt->is ("odf.load_sh")) {
             try {
               std::vector<std::string> list (1, opt[0]);
-              add_images (list);
+              add_images (list, odf_type_t::SH);
+            }
+            catch (Exception& e) {
+              e.display();
+            }
+            return true;
+          }
+
+          if (opt.opt->is ("odf.load_tensor")) {
+            try {
+              std::vector<std::string> list (1, opt[0]);
+              add_images (list, odf_type_t::TENSOR);
+            }
+            catch (Exception& e) {
+              e.display();
+            }
+            return true;
+          }
+
+          if (opt.opt->is ("odf.load_dixel")) {
+            try {
+              std::vector<std::string> list (1, opt[0]);
+              add_images (list, odf_type_t::DIXEL);
             }
             catch (Exception& e) {
               e.display();

@@ -50,7 +50,7 @@ namespace MR
               "multi-shell or DSI DW acquisition schemes. The default action can "
               "also be set in the MRtrix config file, under the BValueScaling entry. "
               "Valid choices are yes/no, true/false, 0/1 (default: true).")
-          +   Argument ("mode").type_bool (true);
+          +   Argument ("mode").type_bool();
 
       return group;
     }

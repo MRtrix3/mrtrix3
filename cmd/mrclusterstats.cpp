@@ -32,6 +32,13 @@ using namespace MR;
 using namespace App;
 
 
+#define DEFAULT_PERMUTATIONS 5000
+#define DEFAULT_TFCE_DH 0.1
+#define DEFAULT_TFCE_H 2.0
+#define DEFAULT_TFCE_E 0.5
+#define DEFAULT_PERMUTATIONS_NONSTATIONARITY 5000
+
+
 void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
@@ -66,28 +73,28 @@ void usage ()
   + Option ("negative", "automatically test the negative (opposite) contrast. By computing the opposite contrast simultaneously "
                         "the computation time is reduced.")
 
-  + Option ("nperms", "the number of permutations (default = 5000).")
-  +   Argument ("num").type_integer (1, 5000, 100000)
+  + Option ("nperms", "the number of permutations (default = " + str(DEFAULT_PERMUTATIONS) + ").")
+  +   Argument ("num").type_integer (1)
 
   + Option ("threshold", "the cluster-forming threshold to use for a standard cluster-based analysis. "
       "This disables TFCE, which is the default otherwise.")
-  +   Argument ("value").type_float (1.0e-6, 3.0, 1.0e6)
+  +   Argument ("value").type_float (1.0e-6)
 
-  + Option ("tfce_dh", "the height increment used in the TFCE integration (default = 0.1)")
-  +   Argument ("value").type_float (0.001, 0.1, 100000)
+  + Option ("tfce_dh", "the height increment used in the TFCE integration (default = " + str(DEFAULT_TFCE_DH, 2) + ")")
+  +   Argument ("value").type_float (0.001, 1.0)
 
-  + Option ("tfce_e", "TFCE height parameter (default = 2)")
-  +   Argument ("value").type_float (0.001, 2.0, 100000)
+  + Option ("tfce_e", "TFCE extent parameter (default = " + str(DEFAULT_TFCE_E, 2) + ")")
+  +   Argument ("value").type_float (0.001, 100.0)
 
-  + Option ("tfce_h", "TFCE extent parameter (default = 0.5)")
-  +   Argument ("value").type_float (0.001, 0.5, 100000)
+  + Option ("tfce_h", "TFCE height parameter (default = " + str(DEFAULT_TFCE_H, 2) + ")")
+  +   Argument ("value").type_float (0.001, 100.0)
 
-  + Option ("connectivity", "use 26 neighbourhood connectivity (Default: 6)")
+  + Option ("connectivity", "use 26-voxel-neighbourhood connectivity (Default: 6)")
 
   + Option ("nonstationary", "perform non-stationarity correction (currently only implemented with tfce)")
 
-  + Option ("nperms_nonstationary", "the number of permutations used when precomputing the empirical statistic image for nonstationary correction (Default: 5000)")
-  +   Argument ("num").type_integer (1, 5000, 100000);
+  + Option ("nperms_nonstationary", "the number of permutations used when precomputing the empirical statistic image for nonstationary correction (Default: " + str(DEFAULT_PERMUTATIONS_NONSTATIONARITY) + ")")
+  +   Argument ("num").type_integer (1);
 
 }
 
@@ -98,11 +105,11 @@ typedef Stats::TFCE::value_type value_type;
 void run() {
 
   value_type cluster_forming_threshold = get_option_value ("threshold", NAN);
-  value_type tfce_dh = get_option_value ("tfce_dh", 0.1);
-  value_type tfce_H = get_option_value ("tfce_h", 2.0);
-  value_type tfce_E = get_option_value ("tfce_e", 0.5);
-  int num_perms = get_option_value ("nperms", 5000);
-  int nperms_nonstationary = get_option_value ("nperms_nonstationary", 5000);
+  value_type tfce_dh = get_option_value ("tfce_dh", DEFAULT_TFCE_DH);
+  value_type tfce_H = get_option_value ("tfce_h", DEFAULT_TFCE_H);
+  value_type tfce_E = get_option_value ("tfce_e", DEFAULT_TFCE_E);
+  int num_perms = get_option_value ("nperms", DEFAULT_PERMUTATIONS);
+  int nperms_nonstationary = get_option_value ("nperms_nonstationary", DEFAULT_PERMUTATIONS_NONSTATIONARITY);
   
   bool do_26_connectivity = get_options("connectivity").size();
   bool do_nonstationary_adjustment = get_options ("nonstationary").size();

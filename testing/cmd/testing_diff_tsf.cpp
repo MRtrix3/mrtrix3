@@ -36,7 +36,7 @@ void usage ()
   ARGUMENTS
   + Argument ("tsf1", "a track scalar file.").type_file_in ()
   + Argument ("tsg2", "another track scalar file.").type_file_in ()
-  + Argument ("tolerance", "the maximum distance to consider acceptable").type_float (0.0, 0.0);
+  + Argument ("tolerance", "the maximum distance to consider acceptable").type_float (0.0);
 }
 
 typedef float value_type;

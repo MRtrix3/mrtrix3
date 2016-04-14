@@ -52,23 +52,23 @@ void usage ()
 
   OPTIONS
 
-  + Option ("bg",   "image intensity of background")
-    + Argument ("value").type_float (0.0, VALUE_DEFAULT_BG,   1.0)
+  + Option ("bg",   "image intensity of background (default: " + str(VALUE_DEFAULT_BG, 2) + ")")
+    + Argument ("value").type_float (0.0, 1.0)
 
-  + Option ("cgm",  "image intensity of cortical grey matter")
-    + Argument ("value").type_float (0.0, VALUE_DEFAULT_CGM,  1.0)
+  + Option ("cgm",  "image intensity of cortical grey matter (default: " + str(VALUE_DEFAULT_CGM, 2) + ")")
+    + Argument ("value").type_float (0.0, 1.0)
 
-  + Option ("sgm",  "image intensity of sub-cortical grey matter")
-    + Argument ("value").type_float (0.0, VALUE_DEFAULT_SGM,  1.0)
+  + Option ("sgm",  "image intensity of sub-cortical grey matter (default: " + str(VALUE_DEFAULT_SGM, 2) + ")")
+    + Argument ("value").type_float (0.0, 1.0)
 
-  + Option ("wm",   "image intensity of white matter")
-    + Argument ("value").type_float (0.0, VALUE_DEFAULT_WM,   1.0)
+  + Option ("wm",   "image intensity of white matter (default: " + str(VALUE_DEFAULT_WM, 2) + ")")
+    + Argument ("value").type_float (0.0, 1.0)
 
-  + Option ("csf",  "image intensity of CSF")
-    + Argument ("value").type_float (0.0, VALUE_DEFAULT_CSF,  1.0)
+  + Option ("csf",  "image intensity of CSF (default: " + str(VALUE_DEFAULT_CSF, 2) + ")")
+    + Argument ("value").type_float (0.0, 1.0)
 
-  + Option ("path", "image intensity of pathological tissue")
-    + Argument ("value").type_float (0.0, VALUE_DEFAULT_PATH, 10.0);
+  + Option ("path", "image intensity of pathological tissue (default: " + str(VALUE_DEFAULT_PATH, 2) + ")")
+    + Argument ("value").type_float (0.0, 10.0);
 
 }
 
@@ -87,11 +87,11 @@ void run ()
   Header H (input);
   H.set_ndim (3);
 
-  const float bg_multiplier   = get_option_value ("bg", VALUE_DEFAULT_BG);
-  const float cgm_multiplier  = get_option_value ("cgm", VALUE_DEFAULT_CGM);
-  const float sgm_multiplier  = get_option_value ("sgm", VALUE_DEFAULT_SGM);
-  const float wm_multiplier   = get_option_value ("wm", VALUE_DEFAULT_WM);
-  const float csf_multiplier  = get_option_value ("csf", VALUE_DEFAULT_CSF);
+  const float bg_multiplier   = get_option_value ("bg",   VALUE_DEFAULT_BG);
+  const float cgm_multiplier  = get_option_value ("cgm",  VALUE_DEFAULT_CGM);
+  const float sgm_multiplier  = get_option_value ("sgm",  VALUE_DEFAULT_SGM);
+  const float wm_multiplier   = get_option_value ("wm",   VALUE_DEFAULT_WM);
+  const float csf_multiplier  = get_option_value ("csf",  VALUE_DEFAULT_CSF);
   const float path_multiplier = get_option_value ("path", VALUE_DEFAULT_PATH);
 
   auto output = Image<float>::create (argument[1], H);

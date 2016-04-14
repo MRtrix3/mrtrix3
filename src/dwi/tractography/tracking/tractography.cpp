@@ -15,8 +15,6 @@
 #include "dwi/tractography/tracking/tractography.h"
 
 
-#define MAX_TRIALS 1000
-
 namespace MR
 {
   namespace DWI
@@ -32,48 +30,48 @@ namespace MR
 
       + Option ("step",
             "set the step size of the algorithm in mm (default is 0.1 x voxelsize; for iFOD2: 0.5 x voxelsize).")
-          + Argument ("size").type_float (0.0, 0.0, INFINITY)
+          + Argument ("size").type_float (0.0)
 
       + Option ("angle",
             "set the maximum angle between successive steps (default is 90deg x stepsize / voxelsize).")
-          + Argument ("theta").type_float (0.0, 90.0, 90.0)
+          + Argument ("theta").type_float (0.0)
 
       + Option ("number",
             "set the desired number of tracks. The program will continue to "
             "generate tracks until this number of tracks have been selected "
             "and written to the output file; set to 0 to ignore limit.")
-          + Argument ("tracks").type_integer (0, 0, std::numeric_limits<int>::max())
+          + Argument ("tracks").type_integer (0)
 
       + Option ("maxnum",
             "set the maximum number of tracks to generate. The program will "
             "not generate more tracks than this number, even if the desired "
             "number of tracks hasn't yet been reached (default is 100 x number); "
             "set to 0 to ignore limit.")
-          + Argument ("tracks").type_integer (0, 0, INT_MAX)
+          + Argument ("tracks").type_integer (0)
 
       + Option ("maxlength",
             "set the maximum length of any track in mm (default is 100 x voxelsize).")
-          + Argument ("value").type_float (0.0, 0.0, INFINITY)
+          + Argument ("value").type_float (0.0)
 
       + Option ("minlength",
             "set the minimum length of any track in mm "
             "(default is 5 x voxelsize without ACT, 2 x voxelsize with ACT).")
-          + Argument ("value").type_float (0.0, 0.0, INFINITY)
+          + Argument ("value").type_float (0.0)
 
       + Option ("cutoff",
             "set the FA or FOD amplitude cutoff for terminating tracks "
-            "(default is 0.1).")
-          + Argument ("value").type_float (0.0, 0.1, INFINITY)
+            "(default is " + str(DEFAULT_TRACTOGRAPHY_CUTOFF, 2) + ").")
+          + Argument ("value").type_float (0.0)
 
       + Option ("initcutoff",
-            "set the minimum FA or FOD amplitude for initiating tracks (default "
-            "is the same as the normal cutoff).")
-          + Argument ("value").type_float (0.0, 0.1, INFINITY)
+            "set the minimum FA or FOD amplitude for initiating tracks "
+            "(default is the same as the normal cutoff).")
+          + Argument ("value").type_float (0.0)
 
       + Option ("trials",
             "set the maximum number of sampling trials at each point (only "
             "used for probabilistic tracking).")
-          + Argument ("number").type_integer (1, MAX_TRIALS, std::numeric_limits<int>::max())
+          + Argument ("number").type_integer (1)
 
       + Option ("unidirectional",
             "track from the seed point in one direction only (default is to "
@@ -90,12 +88,12 @@ namespace MR
 
       + Option ("power",
             "raise the FOD to the power specified (default is 1/nsamples).")
-          + Argument ("value").type_float (1e-6, 1.0, 1e6)
+          + Argument ("value").type_float (0.0)
 
       + Option ("samples",
             "set the number of FOD samples to take per step for the 2nd order "
-            "(iFOD2) method (Default: 4).")
-          + Argument ("number").type_integer (2, 4, 100)
+            "(iFOD2) method (Default: " + str(DEFAULT_TRACTOGRAPHY_IFOD2_NSAMPLES) + ").")
+          + Argument ("number").type_integer (2, 100)
 
       + Option ("rk4", "use 4th-order Runge-Kutta integration "
                        "(slower, but eliminates curvature overshoot in 1st-order deterministic methods)")
@@ -103,8 +101,8 @@ namespace MR
       + Option ("stop", "stop propagating a streamline once it has traversed all include regions")
 
       + Option ("downsample", "downsample the generated streamlines to reduce output file size "
-                              "(default is (samples-1) for iFOD2, 1 for all other algorithms)")
-          + Argument ("factor").type_integer (1, 1, 100);
+                              "(default is (samples-1) for iFOD2, no downsampling for all other algorithms)")
+          + Argument ("factor").type_integer (2);
 
 
 
