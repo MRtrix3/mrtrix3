@@ -199,15 +199,15 @@ elif PE_design == 'All':
 
 
 # Calculate how many b=0 volumes are present in each phase-encode direction
-rpe_b0_count = [ 1, 0 ]
+rpe_b0_count = [ 1, 0 ] # Always contains integers, _not_ strings
 if PE_design == 'Pair' or PE_design == 'All':
   rpe_b0_count[1] = 1
   temp = getHeaderInfo(pair1_path, 'size').split()  
   if len(temp) == 4:
-    rpe_b0_count[0] = temp[3]
+    rpe_b0_count[0] = int(temp[3])
   temp = getHeaderInfo(pair2_path, 'size').split()
   if len(temp) == 4:
-    rpe_b0_count[1] = temp[3]
+    rpe_b0_count[1] = int(temp[3])
 
 
 # Construct a topup/eddy configuration file
@@ -218,13 +218,13 @@ if PE_dir[1]:
   config_line[PE_dir[0]] = '-1'
 else:
   config_line[PE_dir[0]] = '1'
-for lines in range(0, int(rpe_b0_count[0])):
+for lines in range(0, rpe_b0_count[0]):
   config_file.write(' '.join (config_line) + '\n')
 if PE_dir[1]:
   config_line[PE_dir[0]] = '1'
 else:
   config_line[PE_dir[0]] = '-1'
-for lines in range(0, int(rpe_b0_count[1])):
+for lines in range(0, rpe_b0_count[1]):
   config_file.write(' '.join (config_line) + '\n')
 config_file.close()
 
@@ -249,7 +249,7 @@ eddy_in_topup = ''
 if PE_design == 'None':
 
   # Generate a processing mask for eddy based on the input series
-  runCommand('dwi2mask ' + series_path + ' - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32')
+  runCommand('dwi2mask ' + series_path + ' - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32 -stride +1,+2,+3')
   runCommand('mrconvert ' + series_path + ' - -stride +1,+2,+3,+4 | mrinfo - -export_grad_fsl bvecs bvals')
 
 else:
@@ -266,9 +266,9 @@ else:
     delFile('dwi1_pre_topup.nii')
     runCommand(applytopup_cmd + ' --imain=dwi2_pre_topup.nii --datain=config.txt --inindex=' + str(rpe_b0_count[0]+1) + ' --topup=field --out=dwi2_post_topup' + fsl_suffix + ' --method=jac --interp=trilinear')
     delFile('dwi2_pre_topup.nii')
-    runCommand('mrcat dwi1_post_topup' + fsl_suffix + ' dwi2_post_topup' + fsl_suffix + ' dwi_post_topup.nii -axis 3')
-    delFile('dwi1_post_topup.nii')
-    delFile('dwi2_post_topup.nii')
+    runCommand('mrcat dwi1_post_topup' + fsl_suffix + ' dwi2_post_topup' + fsl_suffix + ' dwi_post_topup' + fsl_suffix + ' -axis 3')
+    delFile('dwi1_post_topup' + fsl_suffix)
+    delFile('dwi2_post_topup' + fsl_suffix)
     
     
   # Create the diffusion encoding table in bvecs / bvals format;
@@ -284,11 +284,11 @@ else:
         outfile.write (line + '\n')
       for line in grad:
         outfile.write (line + '\n')
-    runCommand('mrconvert dwi_post_topup.nii - -grad grad.b | mrinfo - -export_grad_fsl bvecs bvals')
+    runCommand('mrconvert dwi_post_topup' + fsl_suffix + ' - -grad grad.b | mrinfo - -export_grad_fsl bvecs bvals')
 
 
   # Use the initial corrected image series from applytopup to derive a processing mask for eddy
-  runCommand('mrconvert dwi_post_topup' + fsl_suffix + ' -fslgrad bvecs bvals - | dwi2mask - - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32')
+  runCommand('mrconvert dwi_post_topup' + fsl_suffix + ' -fslgrad bvecs bvals - | dwi2mask - - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32 -stride +1,+2,+3')
 
   eddy_in_topup = ' --topup=field'
 
@@ -336,8 +336,12 @@ else: # 'All'
                  float(bvecs[1][volume]) + float(bvecs[1][volume+num_volumes]),
                  float(bvecs[2][volume]) + float(bvecs[2][volume+num_volumes]) ]
     norm2 = bvec_sum[0]*bvec_sum[0] + bvec_sum[1]*bvec_sum[1] + bvec_sum[2]*bvec_sum[2]
-    factor = 1.0 / math.sqrt(norm2)
-    new_vec = [ bvec_sum[0]*factor, bvec_sum[1]*factor, bvec_sum[2]*factor ]
+    # Occasionally a bzero volume can have a zero vector
+    if norm2:
+      factor = 1.0 / math.sqrt(norm2)
+      new_vec = [ bvec_sum[0]*factor, bvec_sum[1]*factor, bvec_sum[2]*factor ]
+    else:
+      new_vec = [ 0.0, 0.0, 0.0 ]
     bvecs_combined_transpose[volume] = new_vec
   with open('bvecs_combined', 'w') as f:
     for axis in range(0, 3):
