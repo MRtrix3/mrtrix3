@@ -364,6 +364,8 @@ namespace MR
             gl::DepthMask (gl::FALSE_);
           }
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+
+          update_preview();
         }
 
 
@@ -455,26 +457,12 @@ namespace MR
 
 
 
-        void ODF::showEvent (QShowEvent*)
-        {
-          connect (&window(), SIGNAL (focusChanged()), this, SLOT (onWindowChange()));
-          connect (&window(), SIGNAL (targetChanged()), this, SLOT (onWindowChange()));
-          connect (&window(), SIGNAL (orientationChanged()), this, SLOT (onWindowChange()));
-          connect (&window(), SIGNAL (planeChanged()), this, SLOT (onWindowChange()));
-          onWindowChange();
-        }
-
         void ODF::closeEvent (QCloseEvent*) {
           window().disconnect (this);
         }
 
 
 
-
-        void ODF::onWindowChange ()
-        {
-          update_preview();
-        }
 
 
 
@@ -781,7 +769,6 @@ namespace MR
           MRView::Image& image (settings->image);
           get_values (values, image, window().focus(), preview->interpolate());
           preview->set (values);
-          preview->lock_orientation_to_image_slot (0);
         }
 
 

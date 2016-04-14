@@ -123,7 +123,9 @@ namespace MR
           ImageBase (std::move (image_header)),
           image (header().get_image<cfloat>()),
           linear_interp (image),
-          nearest_interp (image)
+          nearest_interp (image),
+          slice_min { NaN, NaN, NaN },
+          slice_max { NaN, NaN, NaN }
       {
         set_colourmap (guess_colourmap());
         const std::map<std::string, std::string>::const_iterator i = header().keyval().find ("comments");
@@ -175,6 +177,8 @@ namespace MR
 
         std::string cmap_name = ColourMap::maps[colourmap].name;
 
+        const bool windowing_reset_required = (!std::isfinite (display_range) || (display_range < 0.0f));
+
         if (cmap_name == "RGB") {
 
           data.resize (3*xsize*ysize, 0.0f);
@@ -184,8 +188,8 @@ namespace MR
           if (tex_positions[plane] >= 0 && tex_positions[plane] < header().size (plane)) {
             // copy data:
             image.index (plane) = slice;
-            value_min = std::numeric_limits<float>::infinity();
-            value_max = -std::numeric_limits<float>::infinity();
+            slice_min[plane] = std::numeric_limits<float>::infinity();
+            slice_max[plane] = -std::numeric_limits<float>::infinity();
 
             for (size_t n = 0; n < 3; ++n) {
               if (image.ndim() > 3) {
@@ -199,8 +203,8 @@ namespace MR
                   float mag = std::abs (val.real());
                   data[3*(image.index(x)+image.index(y)*xsize) + n] = mag;
                   if (std::isfinite (mag)) {
-                    if (mag < value_min) value_min = mag;
-                    if (mag > value_max) value_max = mag;
+                    slice_min[plane] = std::min (slice_min[plane], mag);
+                    slice_max[plane] = std::max (slice_max[plane], mag);
                   }
                 }
               }
@@ -208,6 +212,10 @@ namespace MR
               if (image.ndim() <= 3)
                 break;
             }
+            if (!std::isfinite (value_min) || slice_min[plane] < value_min)
+              value_min = slice_min[plane];
+            if (!std::isfinite (value_max) || slice_max[plane] > value_max)
+              value_max = slice_max[plane];
             if (image.ndim() > 3)
               image.index (3) = tex_positions[3];
           }
@@ -225,8 +233,8 @@ namespace MR
           else {
             // copy data:
             image.index (plane) = slice;
-            value_min = std::numeric_limits<float>::infinity();
-            value_max = -std::numeric_limits<float>::infinity();
+            slice_min[plane] = 0.0f;
+            slice_max[plane] = -std::numeric_limits<float>::infinity();
             for (image.index (y) = 0; image.index (y) < ysize; ++image.index (y)) {
               for (image.index (x) = 0; image.index (x) < xsize; ++image.index (x)) {
                 cfloat val = image.value();
@@ -235,12 +243,12 @@ namespace MR
                 data[idx+1] = val.imag();
                 float mag = std::abs (val);
                 if (std::isfinite (mag)) 
-                  if (mag > value_max) 
-                    value_max = mag;
+                  slice_max[plane] = std::max (slice_max[plane], mag);
               }
             }
+            if (!std::isfinite (value_max) || slice_max[plane] > value_max)
+              value_max = slice_max[plane];
           }
-          value_min = 0.0;
 
         }
         else {
@@ -255,26 +263,32 @@ namespace MR
           else {
             // copy data:
             image.index (plane) = slice;
-            value_min = std::numeric_limits<float>::infinity();
-            value_max = -std::numeric_limits<float>::infinity();
+            slice_min[plane] = std::numeric_limits<float>::infinity();
+            slice_max[plane] = -std::numeric_limits<float>::infinity();
             for (image.index(y) = 0; image.index(y) < ysize; ++image.index(y)) {
               for (image.index(x) = 0; image.index(x) < xsize; ++image.index(x)) {
                 cfloat val = image.value();
                 data[image.index(x)+image.index(y)*xsize] = val.real();
                 if (std::isfinite (val.real())) {
-                  if (val.real() < value_min) value_min = val.real();
-                  if (val.real() > value_max) value_max = val.real();
+                  slice_min[plane] = std::min (slice_min[plane], val.real());
+                  slice_max[plane] = std::max (slice_max[plane], val.real());
                 }
               }
             }
+            if (!std::isfinite (value_min) || slice_min[plane] < value_min)
+              value_min = slice_min[plane];
+            if (!std::isfinite (value_max) || slice_max[plane] > value_max)
+              value_max = slice_max[plane];
           }
 
         }
 
-        if ((value_max - value_min) < 2.0*std::numeric_limits<float>::epsilon()) 
-          value_min = value_max - 1.0;
+        if ((slice_max[plane] - slice_min[plane]) < 2.0*std::numeric_limits<float>::epsilon())
+          slice_max[plane] = slice_min[plane] - 1.0;
 
-        set_min_max (value_min, value_max);
+        min_max_set();
+        if (windowing_reset_required)
+          set_windowing (slice_min[plane], slice_max[plane]);
 
         gl::TexImage3D (gl::TEXTURE_3D, 0, internal_format, xsize, ysize, 1, 0, format, type, reinterpret_cast<void*> (&data[0]));
       }
@@ -378,7 +392,7 @@ namespace MR
         else 
           copy_texture_3D_complex();
 
-        set_min_max (value_min, value_max);
+        min_max_set ();
       }
 
       // required to shut up clang's compiler warnings about std::abs() when
@@ -419,6 +433,9 @@ namespace MR
           for (size_t n = 3; n < V.ndim(); ++n) 
             V.index (n) = tex_positions[n];
 
+          value_min = std::numeric_limits<float>::infinity();
+          value_max = -std::numeric_limits<float>::infinity();
+
           for (V.index(2) = 0; V.index(2) < V.size(2); ++V.index(2)) {
 
             if (format == gl::RED) {
@@ -428,8 +445,8 @@ namespace MR
                 for (V.index(0) = 0; V.index(0) < V.size(0); ++V.index(0)) {
                   ValueType val = *p = V.value();
                   if (std::isfinite (val)) {
-                    if (val < value_min) value_min = val;
-                    if (val > value_max) value_max = val;
+                    value_min = std::min (value_min, float(val));
+                    value_max = std::max (value_max, float(val));
                   }
                   ++p;
                 }
@@ -452,8 +469,8 @@ namespace MR
                   for (V.index(0) = 0; V.index(0) < V.size(0); ++V.index(0)) {
                     ValueType val = *p = abs_if_signed (ValueType (V.value()));
                     if (std::isfinite (val)) {
-                      if (val < value_min) value_min = val;
-                      if (val > value_max) value_max = val;
+                      value_min = std::min (value_min, float(val));
+                      value_max = std::max (value_max, float(val));
                     }
 #ifndef NDEBUG
                     if (std::distance (p, data.end()) > 3)
@@ -486,6 +503,9 @@ namespace MR
         for (size_t n = 3; n < image.ndim(); ++n)
           image.index (n) = tex_positions[n];
 
+        value_min = std::numeric_limits<float>::infinity();
+        value_max = -std::numeric_limits<float>::infinity();
+
         for (image.index(2) = 0; image.index(2) < image.size(2); ++image.index(2)) {
           auto p = data.begin();
 
@@ -496,8 +516,8 @@ namespace MR
               *(p++) = val.imag();
               float mag = std::abs (val);
               if (std::isfinite (mag)) {
-                if (mag < value_min) value_min = mag;
-                if (mag > value_max) value_max = mag;
+                value_min = std::min (value_min, mag);
+                value_max = std::max (value_max, mag);
               }
             }
           }
@@ -523,6 +543,16 @@ namespace MR
         for (size_t n = 3; n < image.ndim(); ++n)
           nearest_interp.index (n) = image.index (n);
         return nearest_interp.value();
+      }
+
+
+
+      void Image::reset_windowing (const int plane, const bool axis_locked)
+      {
+        if (axis_locked)
+          set_windowing (slice_min[plane], slice_max[plane]);
+        else
+          set_windowing (value_min, value_max);
       }
 
 

@@ -28,12 +28,11 @@
 #include "types.h"
 #include "exception.h"
 
+#define HOME_ENV "HOME"
 #ifdef MRTRIX_WINDOWS
 #define PATH_SEPARATOR "\\/"
-#define HOME_ENV "USERPROFILE"
 #else
 #define PATH_SEPARATOR "/"
-#define HOME_ENV "HOME"
 #endif
 
 

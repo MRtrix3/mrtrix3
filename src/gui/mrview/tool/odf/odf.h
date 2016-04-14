@@ -58,7 +58,6 @@ namespace MR
             virtual bool process_commandline_option (const MR::App::ParsedOption& opt) override;
 
           private slots:
-            void onWindowChange ();
             void onPreviewClosed ();
             void sh_open_slot ();
             void tensor_open_slot ();
@@ -106,7 +105,6 @@ namespace MR
              
              void add_images (std::vector<std::string>& list, const odf_type_t mode);
 
-             virtual void showEvent (QShowEvent* event) override;
              virtual void closeEvent (QCloseEvent* event) override;
 
              ODF_Item* get_image ();
