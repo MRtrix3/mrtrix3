@@ -46,7 +46,7 @@ Population template creation is the most time consuming step in a fixel-based an
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Register the FOD image from all subjects to the FOD template image::
 
-    mrregister <input_fod_image> -mask1 <input_subject_mask> <input_fod_template_image> -warp <subject2template_warp> <template2subject_warp>
+    mrregister <input_fod_image> -mask1 <input_subject_mask> <input_fod_template_image> -nl_warp <subject2template_warp> <template2subject_warp>
 
 
 6. Compute the intersection of all subject masks in template space
