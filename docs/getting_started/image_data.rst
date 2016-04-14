@@ -1,5 +1,5 @@
 Images and other data
-=====================
+#####################
 
 *MRtrix3* provides a flexible data input/output back-end in the shared
 library, which is used across all applications. This means that all
