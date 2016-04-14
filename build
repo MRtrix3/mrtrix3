@@ -536,9 +536,11 @@ class Entry:
       for line in fd:
         if line.startswith ('//RCC:'):
           for entry in line[6:].strip().split():
-            self.deps = self.deps.union (glob.glob (os.path.join (mrtrix_dir[-1], 'icons', entry)))
+            self.deps = self.deps.union (glob.glob (os.path.normpath (os.path.join (mrtrix_dir[-1], 'icons', entry))))
     self.deps.add (config_file)
-    self.cmd = [ rcc, os.path.join ('icons', os.path.basename (os.path.dirname(self.name)) + '.qrc'), '-o', self.name ]
+    qrc_file = os.path.normpath (os.path.join (mrtrix_dir[-1], 'icons', os.path.basename (os.path.dirname(self.name)) + '.qrc'))
+    self.deps.add (qrc_file)
+    self.cmd = [ rcc, qrc_file, '-o', self.name ]
 
 
   def need_rebuild (self):
