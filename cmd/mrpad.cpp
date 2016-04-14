@@ -40,14 +40,14 @@ void usage ()
   OPTIONS
   + Option   ("uniform",
               "pad the input image by a uniform number of voxels on all sides (in 3D)")
-  + Argument ("number").type_integer (0, 0, 1e6)
+  + Argument ("number").type_integer (0)
 
   + Option   ("axis",
               "pad the input image along the provided axis (defined by index). Lower and upper define "
               "the number of voxels to add to the lower and upper bounds of the axis").allow_multiple()
-  + Argument ("index").type_integer (0, 0, 2)
-  + Argument ("lower").type_integer (0, 0, 1e6)
-  + Argument ("upper").type_integer (0, 1e6, 1e6);
+  + Argument ("index").type_integer (0, 2)
+  + Argument ("lower").type_integer (0)
+  + Argument ("upper").type_integer (0);
 }
 
 

@@ -43,7 +43,7 @@ void usage ()
   ARGUMENTS
   + Argument ("dir1", "directions file").type_file_in ()
   + Argument ("dir2", "another directions file.").type_file_in ()
-  + Argument ("tolerance", "the amount of difference to consider acceptable").type_float (0.0, 0.0);
+  + Argument ("tolerance", "the amount of difference to consider acceptable").type_float (0.0);
 }
 
 

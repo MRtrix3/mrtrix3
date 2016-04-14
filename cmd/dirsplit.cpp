@@ -21,6 +21,7 @@
 #include "thread.h"
 #include "dwi/directions/file.h"
 
+#define DEFAULT_PERMUTATIONS 1e8
 
 
 using namespace MR;
@@ -39,7 +40,7 @@ ARGUMENTS
 
 OPTIONS
   + Option ("permutations", "number of permutations to try")
-  +   Argument ("num").type_integer (1, 1e8)
+  +   Argument ("num").type_integer (1)
 
   + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z] instead of [az el].");
 }
@@ -170,7 +171,7 @@ void run ()
 
   size_t num_subsets = argument.size() - 1;
 
-  size_t num_permutations = get_option_value ("permutations", 1e8);
+  size_t num_permutations = get_option_value ("permutations", DEFAULT_PERMUTATIONS);
 
   std::vector<std::vector<size_t>> best;
   {

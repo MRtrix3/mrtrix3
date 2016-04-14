@@ -61,8 +61,8 @@ void usage ()
   + Option ("lmax",
             "set the maximum harmonic order for the output series. By default, the "
             "program will use the highest possible lmax given the number of "
-            "diffusion-weighted images.")
-  +   Argument ("order").type_integer (0, 8, 30)
+            "diffusion-weighted images, up to a maximum of 8.")
+  +   Argument ("order").type_integer (0, 30)
 
   + Option ("normalise", "normalise the DW signal to the b=0 image")
 

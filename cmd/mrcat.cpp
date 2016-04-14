@@ -44,7 +44,7 @@ OPTIONS
   "the program will use the last non-singleton, non-spatial axis of any of "
   "the input images - in other words axis 3 or whichever axis (greater than 3) "
   "of the input images has size greater than one.")
-  + Argument ("axis").type_integer (0, std::numeric_limits<int>::max(), std::numeric_limits<int>::max())
+  + Argument ("axis").type_integer (0)
 
   + DataType::options();
 }

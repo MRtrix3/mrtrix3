@@ -41,7 +41,7 @@ void usage ()
   ARGUMENTS
   + Argument ("in1", "a mesh file.").type_file_in ()
   + Argument ("in2", "another mesh file.").type_file_in ()
-  + Argument ("tolerance", "the maximum distance to consider acceptable").type_float (0.0, 0.0);
+  + Argument ("tolerance", "the maximum distance to consider acceptable").type_float (0.0);
 }
 
 

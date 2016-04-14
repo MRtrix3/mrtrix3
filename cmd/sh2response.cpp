@@ -54,7 +54,7 @@ void usage () {
   OPTIONS
 
     + Option ("lmax", "specify the maximum harmonic degree of the response function to estimate")
-      + Argument ("value").type_integer (0, 8, 20);
+      + Argument ("value").type_integer (0, 20);
 }
 
 
@@ -74,8 +74,10 @@ void run ()
 
   check_dimensions (SH, mask, 0, 3);
   check_dimensions (SH, dir, 0, 3);
-  if (dir.ndim() < 4 || dir.size(3) < 3)
-    throw Exception ("input direction image \"" + std::string (argument[2]) + "\" does not have expected dimensions");
+  if (dir.ndim() != 4)
+    throw Exception ("input direction image \"" + std::string (argument[2]) + "\" must be a 4D image");
+  if (dir.size(3) != 3)
+    throw Exception ("input direction image \"" + std::string (argument[2]) + "\" must contain precisely 3 volumes");
 
   Eigen::VectorXd delta;
   std::vector<value_type> response (lmax/2 + 1, 0.0);

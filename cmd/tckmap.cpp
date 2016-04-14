@@ -85,7 +85,7 @@ const OptionGroup OutputDimOption = OptionGroup ("Options for the dimensionality
     + Option ("tod",
         "generate a Track Orientation Distribution (TOD) in each voxel; need to specify the maximum "
         "spherical harmonic degree lmax to use when generating Apodised Point Spread Functions")
-      + Argument ("lmax").type_integer (2, 16, 20);
+      + Argument ("lmax").type_integer (2, 20);
 
 
 
@@ -118,7 +118,7 @@ const OptionGroup TWIOption = OptionGroup ("Options for the TWI image contrast p
   + Option ("fwhm_tck",
       "when using gaussian-smoothed per-track statistic, specify the "
       "desired full-width half-maximum of the Gaussian smoothing kernel (in mm)")
-    + Argument ("value").type_float (1e-6, 10.0, 1e6)
+    + Argument ("value").type_float (1e-6)
 
   + Option ("map_zero",
       "if a streamline has zero contribution based on the contrast & statistic, typically it is not mapped; "
@@ -133,7 +133,7 @@ const OptionGroup MappingOption = OptionGroup ("Options for the streamline-to-vo
   + Option ("upsample",
       "upsample the tracks by some ratio using Hermite interpolation before mappping\n"
       "(If omitted, an appropriate ratio will be determined automatically)")
-    + Argument ("factor").type_integer (1, 1, std::numeric_limits<int>::max())
+    + Argument ("factor").type_integer (1)
 
   + Option ("precise",
       "use a more precise streamline mapping strategy, that accurately quantifies the length through each voxel "

@@ -82,7 +82,7 @@ namespace MR
      *   + Argument ("parameter",
      *        "the parameter to use during processing. Allowed values are "
      *        "between 0 and 10 (default = 1).")
-     *     .type_float (0.0, 1.0, 10.0)
+     *     .type_float (0.0, 10.0)
      *
      *   + Argument ("output", "the output image")
      *     .type_image_out();
@@ -105,9 +105,7 @@ namespace MR
          * and description. If default arguments are used, the object corresponds
          * to the end-of-list specifier, as detailed in \ref command_line_parsing. */
         Argument (const char* name = nullptr, std::string description = std::string()) :
-          id (name), desc (description), type (Text), flags (None) {
-            defaults.text = nullptr;
-          }
+          id (name), desc (description), type (Text), flags (None) { }
 
         //! the argument name
         const char* id;
@@ -120,18 +118,14 @@ namespace MR
 
         //! a structure to store the various parameters of the Argument
         union {
-          const char* text;
+          const char* const* choices;
           struct {
-            const char* const* list;
-            int def;
-          } choices;
-          struct {
-            int64_t def, min, max;
+            int64_t min, max;
           } i;
           struct {
-            default_type def, min, max;
+            default_type min, max;
           } f;
-        } defaults;
+        } limits;
 
 
         operator bool () const {
@@ -161,119 +155,112 @@ namespace MR
           return *this;
         }
 
-        //! specifies that the argument should be a text string
-        /*! If desired, a default string can be specified using the \a
-         * default_text argument. */
-        Argument& type_text (const char* default_text = nullptr) {
+        //! specifies that the argument should be a text string */
+        Argument& type_text () {
           type = Text;
-          defaults.text = default_text;
+          limits.choices = nullptr;
           return *this;
         }
 
         //! specifies that the argument should be an input image
         Argument& type_image_in () {
           type = ImageIn;
-          defaults.text = nullptr;
+          limits.choices = nullptr;
           return *this;
         }
 
         //! specifies that the argument should be an output image
         Argument& type_image_out () {
           type = ImageOut;
-          defaults.text = nullptr;
+          limits.choices = nullptr;
           return *this;
         }
 
         //! specifies that the argument should be an integer
-        /*! if desired, a default value can be specified, along with a range of
-         * allowed values. */
-        Argument& type_integer (int64_t min = std::numeric_limits<int64_t>::min(), int64_t def = 0, int64_t max = std::numeric_limits<int64_t>::max()) {
+        /*! if desired, a range of allowed values can be specified. */
+        Argument& type_integer (const int64_t min = std::numeric_limits<int64_t>::min(), const int64_t max = std::numeric_limits<int64_t>::max()) {
           type = Integer;
-          defaults.i.min = min;
-          defaults.i.def = def;
-          defaults.i.max = max;
+          limits.i.min = min;
+          limits.i.max = max;
+          limits.choices = nullptr;
           return *this;
         }
 
         //! specifies that the argument should be a boolean
-        /*! Valid responses are 0,no,false or any non-zero integer, yes, true. 
-         * If desired, a default value can be specified. */
-        Argument& type_bool (bool def = false) {
+        /*! Valid responses are 0,no,false or any non-zero integer, yes, true. */
+        Argument& type_bool () {
           type = Boolean;
-          defaults.i.def = def;
+          limits.choices = nullptr;
           return *this;
         }
 
         //! specifies that the argument should be a floating-point value
-        /*! if desired, a default value can be specified, along with a range of
-         * allowed values. */
-        Argument& type_float (default_type min = -std::numeric_limits<float>::infinity(), 
-            default_type def = 0.0, default_type max = std::numeric_limits<default_type>::infinity()) {
+        /*! if desired, a range of allowed values can be specified. */
+        Argument& type_float (const default_type min = -std::numeric_limits<default_type>::infinity(),
+                              const default_type max = std::numeric_limits<default_type>::infinity()) {
           type = Float;
-          defaults.f.min = min;
-          defaults.f.def = def;
-          defaults.f.max = max;
+          limits.f.min = min;
+          limits.f.max = max;
+          limits.choices = nullptr;
           return *this;
         }
 
         //! specifies that the argument should be selected from a predefined list
         /*! The list of allowed values must be specified as a nullptr-terminated
-         * list of C strings.  If desired, a default value can be specified,
-         * in the form of an index into the list. Here is an example usage:
+         * list of C strings. Here is an example usage:
          * \code
          * const char* mode_list [] = { "standard", "pedantic", "approx", nullptr };
          *
          * ARGUMENTS
          *   + Argument ("mode", "the mode of operation")
-         *     .type_choice (mode_list, 0);
+         *     .type_choice (mode_list);
          * \endcode
          * \note Each string in the list must be supplied in \b lowercase. */
-        Argument& type_choice (const char* const* choices, int default_index = -1) {
+        Argument& type_choice (const char* const* choices) {
           type = Choice;
-          defaults.choices.list = choices;
-          defaults.choices.def = default_index;
+          limits.choices = choices;
           return *this;
         }
 
         //! specifies that the argument should be an input file
         Argument& type_file_in () {
           type = ArgFileIn;
-          defaults.text = nullptr;
+          limits.choices = nullptr;
           return *this;
         }
 
         //! specifies that the argument should be an output file
         Argument& type_file_out () {
           type = ArgFileOut;
-          defaults.text = nullptr;
+          limits.choices = nullptr;
           return *this;
         }
 
         //! specifies that the argument should be a sequence of comma-separated integer values
         Argument& type_sequence_int () {
           type = IntSeq;
-          defaults.text = nullptr;
+          limits.choices = nullptr;
           return *this;
         }
 
         //! specifies that the argument should be a sequence of comma-separated floating-point values.
         Argument& type_sequence_float () {
           type = FloatSeq;
-          defaults.text = nullptr;
+          limits.choices = nullptr;
           return *this;
         }
 
         //! specifies that the argument should be an input tracks file
         Argument& type_tracks_in () {
           type = TracksIn;
-          defaults.text = nullptr;
+          limits.choices = nullptr;
           return *this;
         }
 
         //! specifies that the argument should be an output tracks file
         Argument& type_tracks_out () {
           type = TracksOut;
-          defaults.text = nullptr;
+          limits.choices = nullptr;
           return *this;
         }
 

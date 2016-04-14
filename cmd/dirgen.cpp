@@ -21,6 +21,9 @@
 #include "math/check_gradient.h"
 #include "dwi/directions/file.h"
 
+#define DEFAULT_POWER 2
+#define DEFAULT_NITER 10000
+
 
 using namespace MR;
 using namespace App;
@@ -40,15 +43,15 @@ REFERENCES
   "Magnetic Resonance Imaging, 2000, 18: 671-679";
 
 ARGUMENTS
-  + Argument ("ndir", "the number of directions to generate.").type_integer (6, 60, std::numeric_limits<int>::max())
+  + Argument ("ndir", "the number of directions to generate.").type_integer (6, std::numeric_limits<int>::max())
   + Argument ("dirs", "the text file to write the directions to, as [ az el ] pairs.").type_file_out();
 
 OPTIONS
-  + Option ("power", "specify exponent to use for repulsion power law (default: 2). This must be a power of 2 (i.e. 2, 4, 8, 16, ...).")
-  +   Argument ("exp").type_integer (2, 2, std::numeric_limits<int>::max())
+  + Option ("power", "specify exponent to use for repulsion power law (default: " + str(DEFAULT_POWER) + "). This must be a power of 2 (i.e. 2, 4, 8, 16, ...).")
+  +   Argument ("exp").type_integer (2, std::numeric_limits<int>::max())
 
-  + Option ("niter", "specify the maximum number of iterations to perform (default: 10000).")
-  +   Argument ("num").type_integer (1, 10000, std::numeric_limits<int>::max())
+  + Option ("niter", "specify the maximum number of iterations to perform (default: " + str(DEFAULT_NITER) + ").")
+  +   Argument ("num").type_integer (1, std::numeric_limits<int>::max())
 
   + Option ("unipolar", "optimise assuming a unipolar electrostatic repulsion model rather than the bipolar model normally assumed in DWI")
 
@@ -148,8 +151,8 @@ class Energy {
 
 
 void run () {
-  size_t niter = get_option_value ("niter", 10000);
-  int target_power = get_option_value ("power", 2);
+  size_t niter = get_option_value ("niter", DEFAULT_NITER);
+  int target_power = get_option_value ("power", DEFAULT_POWER);
   bool bipolar = !(get_options ("unipolar").size());
   int ndirs = to<int> (argument[0]);
 

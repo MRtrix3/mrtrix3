@@ -125,7 +125,7 @@ void usage ()
   + Option ("algorithm",
             "specify the tractography algorithm to use. Valid choices are: "
               "FACT, iFOD1, iFOD2, Nulldist1, Nulldist2, SD_Stream, Seedtest, Tensor_Det, Tensor_Prob (default: iFOD2).")
-    + Argument ("name").type_choice (algorithms, 2)
+    + Argument ("name").type_choice (algorithms)
 
   + DWI::Tractography::ROIOption
 

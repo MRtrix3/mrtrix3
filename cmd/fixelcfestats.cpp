@@ -40,6 +40,16 @@ using Sparse::FixelMetric;
 
 typedef float value_type;
 
+#define DEFAULT_PERMUTATIONS 5000
+#define DEFAULT_CFE_DH 0.1
+#define DEFAULT_CFE_E 2.0
+#define DEFAULT_CFE_H 3.0
+#define DEFAULT_CFE_C 0.5
+#define DEFAULT_ANGLE_THRESHOLD 30.0
+#define DEFAULT_CONNECTIVITY_THRESHOLD 0.01
+#define DEFAULT_SMOOTHING_STD 10.0
+#define DEFAULT_PERMUTATIONS_NONSTATIONARITY 5000
+
 void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
@@ -79,34 +89,34 @@ void usage ()
   + Option ("negative", "automatically test the negative (opposite) contrast. By computing the opposite contrast simultaneously "
                         "the computation time is reduced.")
 
-  + Option ("nperms", "the number of permutations (default: 5000).")
-  + Argument ("num").type_integer (1, 5000, 100000)
+  + Option ("nperms", "the number of permutations (default: " + str(DEFAULT_PERMUTATIONS) + ").")
+  + Argument ("num").type_integer (1)
 
-  + Option ("cfe_dh", "the height increment used in the cfe integration (default: 0.1)")
-  + Argument ("value").type_float (0.001, 0.1, 100000)
+  + Option ("cfe_dh", "the height increment used in the cfe integration (default: " + str(DEFAULT_CFE_DH, 2) + ")")
+  + Argument ("value").type_float (0.001, 1.0)
 
-  + Option ("cfe_e", "cfe extent exponent (default: 2.0)")
-  + Argument ("value").type_float (0.0, 2.0, 100000)
+  + Option ("cfe_e", "cfe extent exponent (default: " + str(DEFAULT_CFE_E, 2) + ")")
+  + Argument ("value").type_float (0.0, 100.0)
 
-  + Option ("cfe_h", "cfe height exponent (default: 3.0)")
-  + Argument ("value").type_float (0.0, 3.0, 100000)
+  + Option ("cfe_h", "cfe height exponent (default: " + str(DEFAULT_CFE_H, 2) + ")")
+  + Argument ("value").type_float (0.0, 100.0)
 
-  + Option ("cfe_c", "cfe connectivity exponent (default: 0.5)")
-  + Argument ("value").type_float (0.0, 0.5, 100000)
+  + Option ("cfe_c", "cfe connectivity exponent (default: " + str(DEFAULT_CFE_C, 2) + ")")
+  + Argument ("value").type_float (0.0, 100.0)
 
-  + Option ("angle", "the max angle threshold for computing inter-subject fixel correspondence (Default: 30)")
-  + Argument ("value").type_float (0.0, 30, 90)
+  + Option ("angle", "the max angle threshold for computing inter-subject fixel correspondence (Default: " + str(DEFAULT_ANGLE_THRESHOLD, 2) + " degrees)")
+  + Argument ("value").type_float (0.0, 90.0)
 
-  + Option ("connectivity", "a threshold to define the required fraction of shared connections to be included in the neighbourhood (default: 1%)")
-  + Argument ("threshold").type_float (0.001, 0.01, 1.0)
+  + Option ("connectivity", "a threshold to define the required fraction of shared connections to be included in the neighbourhood (default: " + str(DEFAULT_CONNECTIVITY_THRESHOLD, 2) + ")")
+  + Argument ("threshold").type_float (0.0, 1.0)
 
-  + Option ("smooth", "smooth the fixel value along the fibre tracts using a Gaussian kernel with the supplied FWHM (default: 10mm)")
-  + Argument ("FWHM").type_float (0.0, 10.0, 200.0)
+  + Option ("smooth", "smooth the fixel value along the fibre tracts using a Gaussian kernel with the supplied FWHM (default: " + str(DEFAULT_SMOOTHING_STD, 2) + "mm)")
+  + Argument ("FWHM").type_float (0.0, 200.0)
 
   + Option ("nonstationary", "do adjustment for non-stationarity")
 
-  + Option ("nperms_nonstationary", "the number of permutations used when precomputing the empirical statistic image for nonstationary correction (Default: 5000)")
-  + Argument ("num").type_integer (1, 5000, 100000);
+  + Option ("nperms_nonstationary", "the number of permutations used when precomputing the empirical statistic image for nonstationary correction (Default: " + str(DEFAULT_PERMUTATIONS_NONSTATIONARITY) + ")")
+  + Argument ("num").type_integer (1);
 }
 
 
@@ -136,20 +146,20 @@ void run() {
   auto opt = get_options ("negative");
   bool compute_negative_contrast = opt.size() ? true : false;
 
-  value_type cfe_dh = get_option_value ("cfe_dh", 0.1);
-  value_type cfe_h = get_option_value ("cfe_h", 3.0);
-  value_type cfe_e = get_option_value ("cfe_e", 2.0);
-  value_type cfe_c = get_option_value ("cfe_c", 0.5);
-  int num_perms = get_option_value ("nperms", 5000);
-  value_type angular_threshold = get_option_value ("angle", 30.0);
+  value_type cfe_dh = get_option_value ("cfe_dh", DEFAULT_CFE_DH);
+  value_type cfe_h = get_option_value ("cfe_h", DEFAULT_CFE_H);
+  value_type cfe_e = get_option_value ("cfe_e", DEFAULT_CFE_E);
+  value_type cfe_c = get_option_value ("cfe_c", DEFAULT_CFE_C);
+  int num_perms = get_option_value ("nperms", DEFAULT_PERMUTATIONS);
+  value_type angular_threshold = get_option_value ("angle", DEFAULT_ANGLE_THRESHOLD);
   const float angular_threshold_dp = cos (angular_threshold * (M_PI/180.0));
 
-  value_type connectivity_threshold = get_option_value ("connectivity", 0.01);
-  value_type smooth_std_dev = get_option_value ("smooth", 10.0) / 2.3548;
+  value_type connectivity_threshold = get_option_value ("connectivity", DEFAULT_CONNECTIVITY_THRESHOLD);
+  value_type smooth_std_dev = get_option_value ("smooth", DEFAULT_SMOOTHING_STD) / 2.3548;
 
   bool do_nonstationary_adjustment = get_options ("nonstationary").size();
 
-  int nperms_nonstationary = get_option_value ("nperms_nonstationary", 5000);
+  int nperms_nonstationary = get_option_value ("nperms_nonstationary", DEFAULT_PERMUTATIONS_NONSTATIONARITY);
   
   // Read filenames
   std::vector<std::string> filenames;

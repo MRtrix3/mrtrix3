@@ -31,15 +31,15 @@ Options
 
 -  **-cfe_dh value** the height increment used in the cfe integration (default: 0.1)
 
--  **-cfe_e value** cfe extent exponent (default: 2.0)
+-  **-cfe_e value** cfe extent exponent (default: 2)
 
--  **-cfe_h value** cfe height exponent (default: 3.0)
+-  **-cfe_h value** cfe height exponent (default: 3)
 
 -  **-cfe_c value** cfe connectivity exponent (default: 0.5)
 
--  **-angle value** the max angle threshold for computing inter-subject fixel correspondence (Default: 30)
+-  **-angle value** the max angle threshold for computing inter-subject fixel correspondence (Default: 30 degrees)
 
--  **-connectivity threshold** a threshold to define the required fraction of shared connections to be included in the neighbourhood (default: 1%)
+-  **-connectivity threshold** a threshold to define the required fraction of shared connections to be included in the neighbourhood (default: 0.01)
 
 -  **-smooth FWHM** smooth the fixel value along the fibre tracts using a Gaussian kernel with the supplied FWHM (default: 10mm)
 
@@ -58,7 +58,7 @@ Standard options
 
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded applications
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
 
 -  **-failonwarn** terminate program if a warning is produced
 

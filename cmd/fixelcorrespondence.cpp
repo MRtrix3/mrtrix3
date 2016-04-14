@@ -26,6 +26,8 @@ using namespace App;
 
 using Sparse::FixelMetric;
 
+#define DEFAULT_ANGLE_THRESHOLD 30.0
+
 void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
@@ -40,8 +42,8 @@ void usage ()
   + Argument ("output", "the input fixel image.").type_image_out ();
 
   OPTIONS
-  + Option ("angle", "the max angle threshold for computing inter-subject fixel correspondence (Default: 30)")
-  + Argument ("value").type_float (0.0, 30, 90);
+  + Option ("angle", "the max angle threshold for computing inter-subject fixel correspondence (Default: " + str(DEFAULT_ANGLE_THRESHOLD, 2) + " degrees)")
+  + Argument ("value").type_float (0.0, 90.0);
 }
 
 
@@ -57,10 +59,7 @@ void run ()
 
   Sparse::Image<FixelMetric> output_fixel (argument[2], template_header);
 
-  float angular_threshold = 30.0;
-  auto opt = get_options ("angle");
-  if (opt.size())
-    angular_threshold = opt[0][0];
+  const float angular_threshold = get_option_value ("angle", DEFAULT_ANGLE_THRESHOLD);
   const float angular_threshold_dp = cos (angular_threshold * (Math::pi/180.0));
 
   for (auto i = Loop ("mapping subject fixels to template fixels", subject_fixel) (subject_fixel, template_fixel, output_fixel); i; ++i) {

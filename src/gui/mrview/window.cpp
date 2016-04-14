@@ -1822,7 +1822,7 @@ namespace MR
           +   Argument ("x,y,z").type_sequence_float()
 
           + Option ("plane", "Set the viewing plane, according to the mappping 0: sagittal; 1: coronal; 2: axial.")
-          +   Argument ("index").type_integer (0,0,3)
+          +   Argument ("index").type_integer (0,2)
 
           + Option ("lock", "Set whether view is locked to image axes (0: no, 1: yes).")
           +   Argument ("yesno").type_bool()

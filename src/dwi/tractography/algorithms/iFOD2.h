@@ -21,6 +21,7 @@
 #include "math/SH.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
+#include "dwi/tractography/tracking/tractography.h"
 #include "dwi/tractography/tracking/types.h"
 #include "dwi/tractography/algorithms/calibrator.h"
 
@@ -46,8 +47,8 @@ namespace MR
                 Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
                   SharedBase (diff_path, property_set),
                   lmax (Math::SH::LforN (source.size(3))),
-                  num_samples (4),
-                  max_trials (MAX_TRIALS),
+                  num_samples (DEFAULT_TRACTOGRAPHY_IFOD2_NSAMPLES),
+                  max_trials (DEFAULT_TRACTOGRAPHY_MAX_TRIALS),
                   sin_max_angle (std::sin (max_angle)),
                   mean_samples (0.0),
                   mean_truncations (0.0),

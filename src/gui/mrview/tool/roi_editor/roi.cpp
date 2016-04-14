@@ -863,7 +863,7 @@ namespace MR
             +   Argument ("image").type_image_in()
 
             + Option ("roi.opacity", "Sets the overlay opacity to floating value [0-1].").allow_multiple()
-            +   Argument ("value").type_float (0.0, 1.0, 1.0);
+            +   Argument ("value").type_float (0.0, 1.0);
         }
 
 
