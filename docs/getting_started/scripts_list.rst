@@ -3,7 +3,7 @@
 Scripts for external libraries
 ################
 
-.. include:: scripts/labelsgmfix.rst
+.. include:: scripts/dwipreproc.rst
 .......
 
 
@@ -15,7 +15,7 @@ Scripts for external libraries
 .......
 
 
-.. include:: scripts/dwipreproc.rst
+.. include:: scripts/labelsgmfix.rst
 .......
 
 
