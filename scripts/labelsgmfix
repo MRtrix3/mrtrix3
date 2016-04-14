@@ -76,7 +76,7 @@ with open(lib.app.args.config) as f:
 
 # Get the parcellation and T1 images into the temporary directory, with conversion of the T1 into the correct format for FSL
 runCommand('mrconvert ' + lib.app.args.parc + ' ' + os.path.join(lib.app.tempDir, 'parc.mif'))
-runCommand('mrconvert ' + lib.app.args.t1   + ' ' + os.path.join(lib.app.tempDir, 'T1.nii')   + ' -stride +1,+2,+3')
+runCommand('mrconvert ' + lib.app.args.t1   + ' ' + os.path.join(lib.app.tempDir, 'T1.nii') + ' -stride -1,+2,+3')
 
 lib.app.gotoTempDir()
 
@@ -90,7 +90,7 @@ runCommand(first_cmd + ' -s ' + ','.join(structure_map.keys()) + ' -i T1.nii' + 
 # In this use case, don't want the PVE images; want to threshold at 0.5
 mask_list = [ ]
 for struct in structure_map.keys():
-  image_path = struct + '_mask.nii'
+  image_path = struct + '_mask.mif'
   mask_list.append (image_path)
   vtk_in_path = 'first-' + struct + '_first.vtk'
   if not os.path.exists(vtk_in_path):
@@ -111,8 +111,8 @@ for struct in structure_map.keys():
 # Detect any overlapping voxels between these masks
 # These will be set to 0 in the final parcellated image
 result_path = 'result' + os.path.splitext(lib.app.args.output)[1]
-runCommand('mrmath ' + ' '.join(mask_list) + ' sum - | mrcalc - 1 -gt overlap_mask.nii')
-runCommand('mrcalc overlap_mask.nii 0 parc.mif -if result.mif')
+runCommand('mrmath ' + ' '.join(mask_list) + ' sum - | mrcalc - 1 -gt overlap_mask.mif')
+runCommand('mrcalc overlap_mask.mif 0 parc.mif -if result.mif')
 runCommand('mrconvert result.mif ' + os.path.join(lib.app.workingDir, lib.app.args.output) + lib.app.mrtrixForce)
 
 lib.app.complete()

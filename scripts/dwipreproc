@@ -249,7 +249,7 @@ eddy_in_topup = ''
 if PE_design == 'None':
 
   # Generate a processing mask for eddy based on the input series
-  runCommand('dwi2mask ' + series_path + ' - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32')
+  runCommand('dwi2mask ' + series_path + ' - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32 -stride -1,+2,+3')
   runCommand('mrconvert ' + series_path + ' - -stride -1,+2,+3,+4 | mrinfo - -export_grad_fsl bvecs bvals')
 
 else:
