@@ -39,6 +39,9 @@ namespace MR
             color_by_direction (color_by_direction),
             dixel (odf_type == odf_type_t::DIXEL ? new DixelPlugin (image.header()) : nullptr)
         {
+          if (!dixel)
+            return;
+
           // If dixel image is opened, try to intelligently determine the
           //   appropriate source of direction information
           try {
