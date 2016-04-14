@@ -21,7 +21,7 @@
 #include "math/check_gradient.h"
 #include "dwi/directions/file.h"
 
-#define DEFAULT_POWER 2.0
+#define DEFAULT_POWER 2
 #define DEFAULT_NITER 10000
 
 
