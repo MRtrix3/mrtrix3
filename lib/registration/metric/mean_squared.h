@@ -40,10 +40,10 @@ namespace MR
               Eigen::Matrix<typename Params::Im2ValueType, 1, 3> im2_grad;
 
               params.im1_image_interp->value_and_gradient_wrt_scanner (im1_value, im1_grad);
-              if (isnan (default_type (im1_value)))
+              if (std::isnan (default_type (im1_value)))
                 return 0.0;
               params.im2_image_interp->value_and_gradient_wrt_scanner (im2_value, im2_grad);
-              if (isnan (default_type (im2_value)))
+              if (std::isnan (default_type (im2_value)))
                 return 0.0;
 
               default_type diff = (default_type) im1_value - (default_type) im2_value;
@@ -71,10 +71,10 @@ namespace MR
               typename Params::Im2ValueType im2_value;
 
               im1_value = params.im1_image_interp->value ();
-              if (isnan (default_type (im1_value)))
+              if (std::isnan (default_type (im1_value)))
                 return 0.0;
               im2_value = params.im2_image_interp->value ();
-              if (isnan (default_type (im2_value)))
+              if (std::isnan (default_type (im2_value)))
                 return 0.0;
 
               default_type diff = (default_type) im1_value - (default_type) im2_value;
