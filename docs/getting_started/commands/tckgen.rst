@@ -65,7 +65,7 @@ Streamlines tractography options
 
 -  **-stop** stop propagating a streamline once it has traversed all include regions
 
--  **-downsample factor** downsample the generated streamlines to reduce output file size (default is (samples-1) for iFOD2, 1 for all other algorithms)
+-  **-downsample factor** downsample the generated streamlines to reduce output file size (default is (samples-1) for iFOD2, no downsampling for all other algorithms)
 
 Anatomically-Constrained Tractography options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -117,7 +117,7 @@ Standard options
 
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded applications
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
 
 -  **-failonwarn** terminate program if a warning is produced
 

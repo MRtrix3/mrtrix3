@@ -46,7 +46,7 @@ void usage ()
   + Option ("coord",
             "extract data from the input image only at the coordinates specified.")
   .allow_multiple()
-  + Argument ("axis").type_integer (0, 0, std::numeric_limits<int>::max())
+  + Argument ("axis").type_integer (0)
   + Argument ("coord").type_sequence_int()
 
   + Option ("vox",

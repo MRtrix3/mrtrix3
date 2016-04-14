@@ -20,7 +20,7 @@ Obtain angular correpondence by mapping subject fixels to a template fixel mask.
 Options
 -------
 
--  **-angle value** the max angle threshold for computing inter-subject fixel correspondence (Default: 30)
+-  **-angle value** the max angle threshold for computing inter-subject fixel correspondence (Default: 30 degrees)
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -33,7 +33,7 @@ Standard options
 
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded applications
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
 
 -  **-failonwarn** terminate program if a warning is produced
 

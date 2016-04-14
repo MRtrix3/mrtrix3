@@ -410,12 +410,13 @@ namespace MR
         gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 3*sizeof(GLfloat), (void*)0);
       }
 
-      void Renderer::SH::update_mesh (const size_t LOD, const int lmax)
+      void Renderer::SH::update_mesh (const size_t lod, const int lmax)
       {
         INFO ("updating ODF SH renderer transform...");
         QApplication::setOverrideCursor (Qt::BusyCursor);
         {
           Renderer::GrabContext context (parent.context_);
+          LOD = lod;
           half_sphere.LOD (LOD);
         }
         update_transform (half_sphere.vertices, lmax);
@@ -525,12 +526,13 @@ namespace MR
         half_sphere.index_buffer.bind();
       }
 
-      void Renderer::Tensor::update_mesh (const size_t LOD)
+      void Renderer::Tensor::update_mesh (const size_t lod)
       {
         INFO ("updating tensor renderer...");
         QApplication::setOverrideCursor (Qt::BusyCursor);
         {
           Renderer::GrabContext context (parent.context_);
+          LOD = lod;
           half_sphere.LOD (LOD);
         }
         QApplication::restoreOverrideCursor();

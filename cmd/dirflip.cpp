@@ -22,6 +22,7 @@
 #include "thread.h"
 #include "dwi/directions/file.h"
 
+#define DEFAULT_PERMUTATIONS 1e8
 
 
 using namespace MR;
@@ -42,8 +43,8 @@ void usage () {
 
 
   OPTIONS
-    + Option ("permutations", "number of permutations to try")
-    +   Argument ("num").type_integer (1, 1e8)
+    + Option ("permutations", "number of permutations to try.")
+    +   Argument ("num").type_integer (1)
 
     + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z] instead of [az el].");
 }
@@ -152,7 +153,7 @@ void run ()
 {
   auto directions = DWI::Directions::load_cartesian (argument[0]);
 
-  size_t num_permutations = get_option_value ("permutations", 1e8);
+  size_t num_permutations = get_option_value ("permutations", DEFAULT_PERMUTATIONS);
 
   Shared eddy_shared (directions, num_permutations);
   Thread::run (Thread::multi (Processor (eddy_shared)), "eval thread");

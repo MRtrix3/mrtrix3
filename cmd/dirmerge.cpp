@@ -34,7 +34,7 @@ DESCRIPTION
     "in such a way as to maintain near-optimality upon truncation.";
 
 ARGUMENTS
-  + Argument ("subsets", "the number of subsets (phase-encode directions) per b-value").type_integer(1,4,10000)
+  + Argument ("subsets", "the number of subsets (phase-encode directions) per b-value").type_integer(1,10000)
   + Argument ("bvalue files", "the b-value and sets of corresponding files, in order").type_text().allow_multiple()
   + Argument ("out", "the output directions file, with each row listing "
       "the X Y Z gradient directions, the b-value, and an index representing "

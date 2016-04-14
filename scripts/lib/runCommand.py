@@ -37,7 +37,7 @@ def runCommand(cmd, exitOnError=True):
     cmd = ' '.join(cmdsplit)
     
   if lib.app.verbosity:
-    sys.stdout.write(lib.app.colourConsole + 'Command: ' + lib.app.colourClear + cmd + '\n')
+    sys.stdout.write(lib.app.colourConsole + 'Command:' + lib.app.colourClear + ' ' + cmd + '\n')
     sys.stdout.flush()
 
   if (os.system(cmd)):

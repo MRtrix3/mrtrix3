@@ -55,7 +55,7 @@ void usage ()
   ARGUMENTS
   + Argument ("data1", "a fixel image.").type_image_in ()
   + Argument ("data2", "another fixel image.").type_image_in ()
-  + Argument ("tolerance", "the amount of signal difference to consider acceptable").type_float (0.0, 0.0);
+  + Argument ("tolerance", "the amount of signal difference to consider acceptable").type_float (0.0);
 }
 
 

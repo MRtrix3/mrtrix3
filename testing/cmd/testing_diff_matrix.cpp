@@ -48,7 +48,7 @@ void usage ()
   ARGUMENTS
   + Argument ("matrix1", "a matrix file.").type_image_in ()
   + Argument ("matrix2", "another matrix file.").type_image_in ()
-  + Argument ("tolerance", "the amount of signal difference to consider acceptable").type_float (0.0, 0.0);
+  + Argument ("tolerance", "the amount of signal difference to consider acceptable").type_float (0.0);
 }
 
 

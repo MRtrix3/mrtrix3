@@ -19,17 +19,17 @@ generate an image for visualisation purposes from an ACT 5TT segmented anatomica
 Options
 -------
 
--  **-bg value** image intensity of background
+-  **-bg value** image intensity of background (default: 0)
 
--  **-cgm value** image intensity of cortical grey matter
+-  **-cgm value** image intensity of cortical grey matter (default: 0.5)
 
--  **-sgm value** image intensity of sub-cortical grey matter
+-  **-sgm value** image intensity of sub-cortical grey matter (default: 0.75)
 
--  **-wm value** image intensity of white matter
+-  **-wm value** image intensity of white matter (default: 1)
 
--  **-csf value** image intensity of CSF
+-  **-csf value** image intensity of CSF (default: 0.15)
 
--  **-path value** image intensity of pathological tissue
+-  **-path value** image intensity of pathological tissue (default: 2)
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -42,7 +42,7 @@ Standard options
 
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded applications
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
 
 -  **-failonwarn** terminate program if a warning is produced
 

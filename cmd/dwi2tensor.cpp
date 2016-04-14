@@ -26,7 +26,8 @@ using namespace App;
 using namespace std;
 
 typedef float value_type;
-const int default_iter = 2;
+
+#define DEFAULT_NITER 2
 
 void usage ()
 {
@@ -47,8 +48,8 @@ void usage ()
   + Argument ("image").type_image_out()
   + Option ("dkt", "the output dkt image.")
   + Argument ("image").type_image_out()
-  + Option ("iter","number of iterative reweightings (default: 2); set to 0 for ordinary linear least squares.")
-  + Argument ("integer").type_integer (0, default_iter, 10)
+  + Option ("iter","number of iterative reweightings (default: " + str(DEFAULT_NITER) + "); set to 0 for ordinary linear least squares.")
+  + Argument ("integer").type_integer (0, 10)
   + Option ("predicted_signal", "the predicted dwi image.")
   + Argument ("image").type_image_out()
   + DWI::GradImportOptions();
@@ -163,7 +164,7 @@ void run ()
     check_dimensions (dwi, *mask, 0, 3);
   }
   
-  auto iter = get_option_value ("iter", default_iter);
+  auto iter = get_option_value ("iter", DEFAULT_NITER);
 
   Header header (dwi);
   header.datatype() = DataType::Float32;

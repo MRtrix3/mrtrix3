@@ -43,12 +43,12 @@ namespace MR
 
       + Option ("seed_random_per_voxel", "seed a fixed number of streamlines per voxel in a mask image; random placement of seeds in each voxel").allow_multiple()
         + Argument ("image").type_image_in()
-        + Argument ("num_per_voxel").type_integer (1, 1, std::numeric_limits<int>::max())
+        + Argument ("num_per_voxel").type_integer (1)
 
       + Option ("seed_grid_per_voxel", "seed a fixed number of streamlines per voxel in a mask image; place seeds on a 3D mesh grid "
                                        "(grid_size argument is per axis; so a grid_size of 3 results in 27 seeds per voxel)").allow_multiple()
         + Argument ("image").type_image_in()
-        + Argument ("grid_size").type_integer (1, 1, std::numeric_limits<int>::max())
+        + Argument ("grid_size").type_integer (1)
 
       + Option ("seed_rejection", "seed from an image using rejection sampling (higher values = more probable to seed from)").allow_multiple()
         + Argument ("image").type_image_in()
@@ -64,7 +64,7 @@ namespace MR
 
       + Option ("max_seed_attempts", "set the maximum number of times that the tracking algorithm should "
                                      "attempt to find an appropriate tracking direction from a given seed point")
-        + Argument ("count").type_integer (1, 1, 1e6)
+        + Argument ("count").type_integer (1)
 
 
       + Option ("output_seeds", "output the seed location of all successful streamlines to a file")

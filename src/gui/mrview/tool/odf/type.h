@@ -13,35 +13,32 @@
  * 
  */
 
-#ifndef __dwi_tractography_tracking_tractography_h__
-#define __dwi_tractography_tracking_tractography_h__
-
-#include "app.h"
-#include "mrtrix.h"
-#include "dwi/tractography/properties.h"
+#ifndef __gui_mrview_tool_odf_type_h__
+#define __gui_mrview_tool_odf_type_h__
 
 
-#define DEFAULT_TRACTOGRAPHY_MAX_TRIALS 1000
-#define DEFAULT_TRACTOGRAPHY_CUTOFF 0.1
-#define DEFAULT_TRACTOGRAPHY_IFOD2_NSAMPLES 4
+#include "gui/dwi/renderer.h"
 
 
 namespace MR
 {
-  namespace App { class OptionGroup; }
 
-  namespace DWI
+  class Header;
+
+  namespace GUI
   {
-
-    namespace Tractography
+    namespace MRView
     {
-
-      namespace Tracking
+      namespace Tool
       {
 
-        extern const App::OptionGroup TrackOption;
 
-        void load_streamline_properties (Properties&);
+
+        // TODO Remove
+        typedef GUI::DWI::Renderer::mode_t odf_type_t;
+
+
+
 
       }
     }
@@ -49,4 +46,8 @@ namespace MR
 }
 
 #endif
+
+
+
+
 

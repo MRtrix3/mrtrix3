@@ -63,7 +63,7 @@ void usage ()
 
   OPTIONS
   + Option ("axis", "perform operation along a specified axis of a single input image")
-  +   Argument ("index").type_integer()
+    + Argument ("index").type_integer (0)
 
   + DataType::options();
 }

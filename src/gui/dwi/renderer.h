@@ -137,7 +137,7 @@ namespace MR
           class SH : public ModeBase
           {
             public:
-              SH (Renderer& parent) : ModeBase (parent) { }
+              SH (Renderer& parent) : ModeBase (parent), LOD (0) { }
               ~SH();
 
               void initGL() override;
@@ -145,7 +145,7 @@ namespace MR
               void set_data (const vector_t& r_del_daz, int buffer_ID = 0) const override;
               GLuint num_indices() const override { return half_sphere.num_indices; }
 
-              void update_mesh (const size_t LOD, const int lmax);
+              void update_mesh (const size_t, const int);
 
               void compute_r_del_daz (matrix_t& r_del_daz, const matrix_t& SH) const {
                 if (!SH.rows() || !SH.cols()) return;
@@ -159,7 +159,10 @@ namespace MR
                 r_del_daz.noalias() = transform * SH;
               }
 
+              int get_LOD() const { return LOD; }
+
             private:
+              int LOD;
               matrix_t transform;
               Shapes::HalfSphere half_sphere;
               GL::VertexBuffer surface_buffer;
@@ -173,7 +176,7 @@ namespace MR
           class Tensor : public ModeBase
           {
             public:
-              Tensor (Renderer& parent) : ModeBase (parent) { }
+              Tensor (Renderer& parent) : ModeBase (parent), LOD (0) { }
               ~Tensor();
 
               void initGL() override;
@@ -181,9 +184,12 @@ namespace MR
               void set_data (const vector_t& data, int buffer_ID = 0) const override;
               GLuint num_indices() const override { return half_sphere.num_indices; }
 
-              void update_mesh (const size_t LOD);
+              void update_mesh (const size_t);
+
+              int get_LOD() const { return LOD; }
 
             private:
+              int LOD;
               Shapes::HalfSphere half_sphere;
               GL::VertexArrayObject VAO;
 

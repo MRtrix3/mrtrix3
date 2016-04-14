@@ -49,7 +49,7 @@ void usage ()
         "resampling the tracks at 'num' equidistant and comparable locations "
         "along the tracks between 'start' and 'end' (specified as "
           "comma-separated 3-vectors in scanner coordinates)")
-    +   Argument ("num").type_integer (2, 10)
+    +   Argument ("num").type_integer (2)
     +   Argument ("start").type_sequence_float()
     +   Argument ("end").type_sequence_float()
 

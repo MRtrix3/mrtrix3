@@ -26,8 +26,8 @@ namespace MR
       + Option ("lmax",
                 "set the maximum harmonic order for the output series. By default, the "
                 "program will use the highest possible lmax given the number of "
-                "diffusion-weighted images.")
-      + Argument ("order").type_integer (2, 8, 30)
+                "diffusion-weighted images, up to a maximum of 8.")
+      + Argument ("order").type_integer (2, 30)
 
       + Option ("mask",
                 "only perform computation within the specified binary brain mask image.")
@@ -48,23 +48,23 @@ namespace MR
 
       + Option ("neg_lambda",
                 "the regularisation parameter lambda that controls the strength of the "
-                "non-negativity constraint (default = 1.0).")
-      + Argument ("value").type_float (0.0, 1.0, 1.0e12)
+                "non-negativity constraint (default = " + str(DEFAULT_CSD_NEG_LAMBDA, 2) + ").")
+      + Argument ("value").type_float (0.0)
 
       + Option ("norm_lambda",
                 "the regularisation parameter lambda that controls the strength of the "
-                "constraint on the norm of the solution (default = 1.0).")
-      + Argument ("value").type_float (0.0, 1.0, 1.0e12)
+                "constraint on the norm of the solution (default = " + str(DEFAULT_CSD_NORM_LAMBDA, 2) + ").")
+      + Argument ("value").type_float (0.0)
 
       + Option ("threshold",
                 "the threshold below which the amplitude of the FOD is assumed to be zero, "
-                "expressed as an absolute amplitude (default = 0.0).")
-      + Argument ("value").type_float (-1.0, 0.0, 10.0)
+                "expressed as an absolute amplitude (default = " + str(DEFAULT_CSD_THRESHOLD, 2) + ").")
+      + Argument ("value").type_float (-1.0, 10.0)
 
       + Option ("niter",
-                "the maximum number of iterations to perform for each voxel (default = 50). "
+                "the maximum number of iterations to perform for each voxel (default = " + str(DEFAULT_CSD_NITER) + "). "
                 "Use '-niter 0' for a linear unconstrained spherical deconvolution.")
-      + Argument ("number").type_integer (0, 50, 1000);
+      + Argument ("number").type_integer (0, 1000);
 
 
   }
