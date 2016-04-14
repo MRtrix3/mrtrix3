@@ -111,17 +111,16 @@ namespace MR
         std::string getline () {
           assert (gz);
           std::string string;
-          char buf[64];
+          int c = 0;
           do {
-            buf[0] = 0;
-            char* status = gzgets (gz, buf, 64);
-            if (!status) {
+            c = gzgetc (gz);
+            if (c < 0) {
               if (eof()) break;
               throw Exception ("error reading from file \"" + filename + "\": " + error());
             }
-            string += buf;
+            string += char (c);
           }
-          while (strlen (buf) >= 63);
+          while (c != '\n');
           if (string.size() && (string[string.size()-1] == 015 || string[string.size()-1] == '\n'))
             string.resize (string.size()-1);
           return (string);
