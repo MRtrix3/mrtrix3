@@ -65,6 +65,7 @@ namespace MR
             void interpolation_slot (int);
             void show_axes_slot (int);
             void level_of_detail_slot (int);
+            void lighting_update_slot();
           protected:
             ODF* parent;
             RenderFrame* render_frame;

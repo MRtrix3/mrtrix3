@@ -135,6 +135,12 @@ namespace MR
           render_frame->set_LOD (level_of_detail_selector->value());
         }
 
+        void ODF_Preview::lighting_update_slot()
+        {
+          // Just force a redraw - preferably something compatible with all ODF modes
+          render_frame->set_show_axes (show_axes_box->isChecked());
+        }
+
 
 
 

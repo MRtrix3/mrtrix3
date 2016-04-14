@@ -531,8 +531,10 @@ namespace MR
 
         void ODF::show_preview_slot ()
         {
-          if (!preview)
+          if (!preview) {
             preview = new ODF_Preview (this);
+            connect (lighting, SIGNAL (changed()), preview, SLOT (lighting_update_slot()));
+          }
 
           ODF_Item* settings = get_image();
           if (settings) {
