@@ -233,6 +233,33 @@ that they support. The :ref:`_mrtrix_image_formats` are the only formats to
 support arbitrary combinations.
 
 
+.. NOTE::
+  There is an interaction between strides and the image transform: if the
+  transform matrix corresponds to a 90° rotation, this can be viewed as
+  changing the *strides* without affecting the transform. Relative to the
+  anatomical labels typically used to refer to the ordering (e.g. RAS, LAS,
+  etc), the order of storage has been changed by such a large rotation. For
+  example, if a RAS image is modified such that its transform rotates the
+  images axes by 90° around the *y* axis, this in effect implies that voxels
+  are now ordered IAR. 
+
+  The *MRtrix3* back-end will interpret such large rotations as affecting the
+  strides, so that when the strides are ``1,2,3``, the order of storage will
+  always be left->right, posterior->anterior, inferior->superior *relative to
+  the scanner axes*. Note that this also implies that the transform matrix will
+  always be modified as necessary to bring it close to the standard coordinate
+  system, so that the first image axis is close to the $x$ axis, etc. This
+  allows *MRtrix3* applications to operate on images in the knowledge that
+  these axes are always anatomically as expected, without worrying about the
+  details of *how* this information was actually stored on file. 
+  
+  It is important to bear this in mind when interpreting for output of
+  :ref:`mrinfo` for example, since this produces the strides and transform *as
+  interpreted by MRtrix3*, rather than those actually stored on file - although
+  the two representations should be strictly equivalent. If you need to inspect
+  the information as stored on file, use :ref:`mrinfo`'s ``-norealign`` option. 
+
+
 .. _supported_image_formats:
 
 Supported image formats
