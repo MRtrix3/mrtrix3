@@ -158,18 +158,18 @@ namespace MR
         }
 
         source +=
-          "out float amplitude;\n"
+          "out float amplitude"+VSout+";\n"
           "void main () {\n";
 
         if (mode_ == mode_t::SH) {
           source +=
-          "  amplitude = r_del_daz[0];\n";
+          "  amplitude"+VSout+" = r_del_daz[0];\n";
         } else if (mode_ == mode_t::TENSOR) {
           source +=
-          "  amplitude = 1.0 / dot (vertex, inv_tensor * vertex);\n";
+          "  amplitude"+VSout+" = 1.0 / dot (vertex, inv_tensor * vertex);\n";
         } else if (mode_ == mode_t::DIXEL) {
           source +=
-          "  amplitude = value;\n";
+          "  amplitude"+VSout+" = value;\n";
         }
 
         if (use_lighting_ && (mode_ == mode_t::SH || mode_ == mode_t::TENSOR)) {
@@ -212,7 +212,7 @@ namespace MR
 
         if (mode_ == mode_t::SH || mode_ == mode_t::TENSOR) {
           source +=
-          "  vec3 pos = vertex * amplitude * scale;\n"
+          "  vec3 pos = vertex * amplitude"+VSout+" * scale;\n"
           "  if (reverse != 0)\n"
           "    pos = -pos;\n";
           if (orthographic_) {
@@ -227,7 +227,7 @@ namespace MR
         } else if (mode_ == mode_t::DIXEL) {
           source +=
           "  vert_dir = vertex;\n"
-          "  vert_pos = vertex * amplitude;\n"
+          "  vert_pos = vertex * amplitude"+VSout+";\n"
           "  if (reverse != 0) {\n"
           "     vert_dir = -vert_dir;\n"
           "     vert_pos = -vert_pos;\n"
@@ -254,6 +254,8 @@ namespace MR
             "in vec3 position_GSin[], color_GSin[];\n"
             "flat out vec3 face_normal;\n"
             "out vec3 position_GSout, color_GSout;\n"
+            "in float amplitude_GSin[];\n"
+            "out float amplitude_GSout;\n"
             "void main() {\n"
             "  vec3 mean_dir = normalize (vert_dir[0] + vert_dir[1] + vert_dir[2]);\n"
             "  vec3 vertices[3];\n"
@@ -287,6 +289,7 @@ namespace MR
             }
             source +=
             "  color_GSout = color_GSin["+v+"];\n"
+            "  amplitude_GSout = amplitude_GSin["+v+"];\n"
             "  EmitVertex();\n";
           }
           source +=
@@ -305,7 +308,7 @@ namespace MR
         source +=
           "uniform float ambient, diffuse, specular, shine;\n"
           "uniform vec3 light_pos;\n"
-          "in float amplitude;\n"
+          "in float amplitude"+FSin+";\n"
           "in vec3 position"+FSin+", color"+FSin+";\n";
 
         if (mode_ == mode_t::SH || mode_ == mode_t::TENSOR) {
@@ -319,7 +322,7 @@ namespace MR
         source +=
           "out vec3 final_color;\n"
           "void main() {\n"
-          "  if (amplitude < 0.0) {\n";
+          "  if (amplitude"+FSin+" < 0.0) {\n";
 
         if (hide_neg_values_) {
           source +=
@@ -342,7 +345,7 @@ namespace MR
           "  vec3 norm = face_normal;\n";
           }
           source +=
-          "  if (amplitude < 0.0)\n"
+          "  if (amplitude"+FSin+" < 0.0)\n"
           "    norm = -norm;\n"
           "  final_color *= ambient + diffuse * clamp (dot (norm, light_pos), 0, 1);\n"
           "  final_color += specular * pow (clamp (dot (reflect (-light_pos, norm), normalize(position"+FSin+")), 0, 1), shine);\n";
