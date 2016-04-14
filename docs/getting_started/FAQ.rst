@@ -118,6 +118,46 @@ this to work, all OpenGL commands need to be prefixed with ``vglrun``
 has been reported to work well with MRtrix3.
 
 
+Unusual symbols on terminal
+---------------------------
+
+When running MRtrix commands on certain terminal emulators, you may see
+unusual characters appearing in the terminal output, that look something
+like the following:
+
+.. code::
+
+    $ mrinfo fa.mif -debug
+    mrinfo: ←[00;32m[INFO] opening image "fa.mif"...←[0m
+    mrinfo: ←[00;34m[DEBUG] reading key/value file "fa.mif"...←[0m
+    mrinfo: ←[01;31m[ERROR] failed to open key/value file "fa.mif": No such file or directory←[0m
+
+MRtrix uses VT100 terminal control codes to add colour to the terminal
+output, and to clear the terminal line of text when updating the text
+displayed during certain processes. Some terminal emulators may not
+have support for these codes, in which case unwanted characters and
+symbols may instead be displayed.
+
+There are two possible solutions:
+
+1. Use a different terminal emulator. In particular, earlier instructions
+for installing MRtrix3 on Windows involved the use of the terminal provided
+with Git for Windows; this is known to not support VT100 codes. The
+current recommendation for `MRtrix3 Windows installation <windows-install>`__
+is based on
+`MSYS2 <http://sourceforge.net/p/msys2/wiki/MSYS2%20introduction/>`__;
+the **'MinGW-w64 Win64 Shell'** provided in this installation is known to
+support VT100 codes.
+
+2. Terminal colouring can be disabled using the MRtrix
+`configuration file <config>`. Add the following line to either the
+system-wide or user config file to disable these advanced terminal features:
+
+.. code::
+
+    TerminalColor: 0
+
+
 Processing of HCP data
 ------------------------
 

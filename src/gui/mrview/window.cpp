@@ -951,7 +951,7 @@ namespace MR
       {
         Image* imagep = image();
         if (imagep) {
-          imagep->reset_windowing();
+          imagep->reset_windowing (anatomical_plane, snap_to_image_action->isChecked());
           on_scaling_changed();
           glarea->update();
         }

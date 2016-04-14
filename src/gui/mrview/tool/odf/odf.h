@@ -18,6 +18,7 @@
 
 #include "gui/color_button.h"
 #include "gui/mrview/tool/base.h"
+#include "gui/mrview/tool/odf/type.h"
 #include "gui/mrview/adjust_button.h"
 #include "gui/mrview/spin_box.h"
 
@@ -57,14 +58,14 @@ namespace MR
             virtual bool process_commandline_option (const MR::App::ParsedOption& opt) override;
 
           private slots:
-            void onWindowChange ();
             void onPreviewClosed ();
-            void image_open_slot ();
+            void sh_open_slot ();
+            void tensor_open_slot ();
+            void dixel_open_slot ();
             void image_close_slot ();
             void show_preview_slot ();
             void hide_all_slot ();
             void selection_changed_slot (const QItemSelection &, const QItemSelection &);
-            void mode_change_slot();
             void lmax_slot (int);
             void dirs_slot();
             void shell_slot();
@@ -87,7 +88,6 @@ namespace MR
              ODF_Model* image_list_model;
              QListView* image_list_view;
              QPushButton *show_preview_button, *hide_all_button;
-             QComboBox *type_selector;
              QLabel *lmax_label, *level_of_detail_label;
              SpinBox *lmax_selector, *level_of_detail_selector;
              QLabel *dirs_label, *shell_label;
@@ -101,15 +101,14 @@ namespace MR
              LightingDock *lighting_dock;
              GL::Lighting* lighting;
 
-             int lmax, level_of_detail;
+             int lmax;
              
-             void add_images (std::vector<std::string>& list);
+             void add_images (std::vector<std::string>& list, const odf_type_t mode);
 
-             virtual void showEvent (QShowEvent* event) override;
              virtual void closeEvent (QCloseEvent* event) override;
 
              ODF_Item* get_image ();
-             void get_values (Eigen::VectorXf& SH, MRView::Image& image, const Eigen::Vector3f& pos, const bool interp);
+             void get_values (Eigen::VectorXf&, MRView::Image&, const Eigen::Vector3f&, const bool);
              void setup_ODFtype_UI (const ODF_Item*);
 
              friend class ODF_Preview;

@@ -27,11 +27,31 @@ namespace MR
       {
 
 
-        size_t ODF_Model::add_items (const std::vector<std::string>& list, bool colour_by_direction, bool hide_negative_lobes, float scale) {
+        size_t ODF_Model::add_items (const std::vector<std::string>& list,
+                                     const odf_type_t type,
+                                     const bool colour_by_direction,
+                                     const bool hide_negative_lobes,
+                                     const float scale)
+        {
           std::vector<std::unique_ptr<MR::Header>> hlist;
           for (size_t i = 0; i < list.size(); ++i) {
             try {
               std::unique_ptr<MR::Header> header (new MR::Header (MR::Header::open (list[i])));
+              switch (type) {
+                case odf_type_t::SH:
+                  Math::SH::check (*header);
+                  break;
+                case odf_type_t::TENSOR:
+                  if (header->ndim() != 4)
+                    throw Exception ("Image \"" + Path::basename (header->name()) + "\" is not 4D; not a tensor image");
+                  if (header->size(3) != 6)
+                    throw Exception ("Image \"" + Path::basename (header->name()) + "\" does not contain 6 volumes; not a tensor image");
+                  break;
+                case odf_type_t::DIXEL:
+                  if (header->ndim() != 4)
+                    throw Exception ("Image \"" + Path::basename (header->name()) + "\" is not 4D; cannot contain direction amplitudes");
+                  break;
+              }
               hlist.push_back (std::move (header));
             }
             catch (Exception& E) {
@@ -42,7 +62,7 @@ namespace MR
           if (hlist.size()) {
             beginInsertRows (QModelIndex(), items.size(), items.size()+hlist.size());
             for (size_t i = 0; i < hlist.size(); ++i)
-              items.push_back (std::unique_ptr<ODF_Item> (new ODF_Item (std::move (*hlist[i]), scale, hide_negative_lobes, colour_by_direction)));
+              items.push_back (std::unique_ptr<ODF_Item> (new ODF_Item (std::move (*hlist[i]), type, scale, hide_negative_lobes, colour_by_direction)));
             endInsertRows();
           }
 

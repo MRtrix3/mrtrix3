@@ -93,7 +93,11 @@ Tractography tool options
 ODF tool options
 ^^^^^^^^^^^^^^^^
 
--  **-odf.load image** Loads the specified image on the ODF tool.
+-  **-odf.load_sh image** Loads the specified SH-based ODF image on the ODF tool.
+
+-  **-odf.load_tensor image** Loads the specified tensor image on the ODF tool.
+
+-  **-odf.load_dixel image** Loads the specified dixel-based image on the ODF tool.
 
 Vector plot tool options
 ^^^^^^^^^^^^^^^^^^^^^^^^
