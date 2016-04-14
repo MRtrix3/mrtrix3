@@ -11,7 +11,10 @@ This tutorial explains how to perform fixel-based analysis using MRtrix commands
 
 Fixel-based analysis steps
 ---------------------------
-Below is a list of steps for fixel-based analysis using FOD images. Note that for all MRtrix scripts and commands, additional information on the command usage and available command-line options can be found by invoking the command with the :code:`-help` option. 
+
+.. WARNING:: The following steps and commands are pre-release only. It is likely that some command and option names will change over the next few months, however the overall process will remain the same. We recommend you don't update MRtrix half way through a study. 
+
+Note that for all MRtrix scripts and commands, additional information on the command usage and available command-line options can be found by invoking the command with the :code:`-help` option. 
 
 1. Upsampling DW images
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -42,6 +45,7 @@ Population template creation is the most time consuming step in a fixel-based an
 5. Register all subject FOD images to the FOD template
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Register the FOD image from all subjects to the FOD template image::
+
     mrregister <input_fod_image> -mask1 <input_subject_mask> <input_fod_template_image> -warp <subject2template_warp> <template2subject_warp>
 
 
@@ -76,25 +80,80 @@ Generate a analysis voxel mask from the fixel mask. The median filter in this st
 
     fixel2voxel <analysis_fixel_mask.msf> count - | mrthreshold - - -abs 0.5 | mrfilter - median <output_analysis_voxel_mask>
 
-Recompute the fixel mask using the analysis voxel mask. Using the mask allows us to use a lower AFD threshold than possible in the steps above, to ensure we have included fixels with low AFD inside white matter
- 
- .. code:: bash
+Recompute the fixel mask using the analysis voxel mask. Using the mask allows us to use a lower AFD threshold than possible in the steps above, to ensure we have included fixels with low AFD inside white matter::
  
     fod2fixel -mask <input_analysis_voxel_mask> <input_fod_template_image> -peak <output_temp.msf>
     fixelthreshold <input_temp.msf> -crop 0.2 <output_analysis_fixel_mask.msf> -force
     rm <temp.msf>
+    
+.. NOTE:: We recommend having no more than 500,000 fixels in the analysis_fixel_mask (you can check this with :code:`fixelstats`), otherwise downstream statistical analysis (using :code:`fixelcfestats`) will run out of RAM). A mask with 500,000 fixels will require a PC with 128GB of RAM for the statistical analysis step.
 
 8. Transform FOD images to template space
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Note that here we transform FOD images into template space without FOD reorientation. Reorientation will be performed in a seperate subsequent step:: 
+Note that here we transform FOD images into template space *without* FOD reorientation. Reorientation will be performed in a seperate subsequent step:: 
 
     mrtransform <input_subject_fod_image> -warp <subject2template_warp> -noreorientation <output_warped_fod_image>
 
-9. Segment FOD images to estimate fixels and their AFD integral
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Here we segment each FOD lobe to identify the number and orientation of fixels in each voxel. The output also contains the AFD value per fixel estimated as the FOD lobe integral (see `here <http://www.sciencedirect.com/science/article/pii/S1053811912011615>`_ for details on FOD segmentation)::
+9. Segment FOD images to estimate fixels and their fibre density (FD)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Here we segment each FOD lobe to identify the number and orientation of fixels in each voxel. The output also contains the apparent fibre density (AFD) value per fixel estimated as the FOD lobe integral (see `here <http://www.sciencedirect.com/science/article/pii/S1053811912011615>`_ for details on FOD segmentation). Note that in the following steps we will use the shortened acronym FD (paper under review) instead of AFD ::
 
-    fod2fixel <input_warped_fod_image> -mask ../2S3Tcsd8_voxel_analysis_mask.mif -afd <output_fd.msf>
+    fod2fixel <input_warped_fod_image> -mask <input_analysis_voxel_mask> -afd <output_fd.msf>
+    
+.. NOTE:: If you would like to perform fixel-based analysis of metrics derived from other diffusion MRI models (e.g. CHARMED), replace steps 8 & 9. For example, in step 8 you can warp pre-prepocessed DW images (also without any reorientation). In step 9 you could then estimate your DWI model of choice. 
+    
+    
+10. Reorient fixel orientations
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Here we reorient the direction of all fixels based on Jacobian (local affine transform) at each voxel in the warp::
+
+    fixelreorient <input_afd.msf> <subject2template_warp> <output_afd_reoriented.msf>
+    
+11. Assign subject fixels to template fixels
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+In step 8 we have obtained spatial correspondence between the subject and template. In step 10 we correct fixel orientations and improve angular correspondence by reorienting fixel directions based on the warp. Here, for each fixel in the template fixel analysis mask, we identify the corresponding fixel in each voxel of the subject image and assign the afd value of the subject fixel to the corresponding fixel in template space. If no fixel exists in the subject that corresponds to the template fixel then it is assigned a value of zero. See `this paper <http://www.ncbi.nlm.nih.gov/pubmed/26004503>`_ for more information::
+
+    fixelcorrespondence <input_afd_reoriented.msf> <input_analysis_fixel_mask.msf> <output_fd.msf>
+    
+12. Compute fibre cross-section (FC) metric
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Apparent fibre density, and other related measures that are influenced by the quantity of retricted water, only permit the investigation of group differences in the number of axons that manefest as a change to *within-voxel* density. However, depending on the disease type and stage, changes to the number of axons may also manefest as macroscopic differences in brain morphology. This step computes a fixel-based metric related to morphological differences in fibre cross-section, where information is derived entirely from the warps generated during registration (paper under review):: 
+
+    warp2metric <subject2template_warp> -fc <input_analysis_fixel_mask.msf> <output_fc.msf>
+    
+The FC files will be used in the next step. However, for group statistical analysis of FC we recommend taking the log (FC) to ensure data are centred about zero and normally distributed::
+
+    fixellog <input_fc.msf> <output_log_fc.msf>
+
+13. Compute a combined measure of fibre density and cross-section (FDC)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To account for changes to both within-voxel fibre density and macroscopic atrophy, fibre density and fibre cross-section must be combined (a measure we call fibre density & cross-section, FDC). This enables a more complete picture of group differences in white matter. Note that as discussed in our future work (under review), group differences in FD or FC alone must be interepreted with care in crossing-fibre regions. However group differences in FDC are more directly interpretable. To generate the combined measure we 'modulate' the FD by FC::
+
+    fixelmult <input_fd.msf> <input_fc.msf> <output_fdc.msf>
+    
+14. Perform whole-brain fibre tractography on the FOD template
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Statistical analysis using `connectivity-based fixel enhancement <http://www.ncbi.nlm.nih.gov/pubmed/26004503>`_ exploits connectivity information derived from probabilistic fibre tractography. To generate a whole-brain tractogram from the FOD template::
+    
+    tckgen -angle 22.5 -maxlen 250 -minlen 10 -power 1.0 <input_fod_template_image> -seed_image <input_analysis_voxel_mask> -mask <input_analysis_voxel_mask> -number 20000000 <output_tracks_20_million.tck>
+    
+15. Reduce biases in tractogram densities
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Perform SIFT to reduce tractography biases in the whole-brain tractogram::
+
+    tcksift <input_tracks_20_million.tck> <input_fod_template_image> <output_tracks_2_million_sift.tck> -term_number 2000000
+    
+16. Perform statistical analysis of FD, FC, and FDC
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ You will need to perform a separate analysis for FD, FC and FDC. Statistics is performed using `connectivity-based fixel enhancement <http://www.ncbi.nlm.nih.gov/pubmed/26004503>`_ as follows::
+ 
+     fixelcfestats <input_files> <input_analysis_fixel.msf> <input_design_matrix.txt> <output_contrast_matrix.txt> <input_tracks_2_million_sift.tck> <output_prefix>
+  
+Where the input files.txt is a text file containing the file path and name of each input fixel file on a separate line. The line ordering should correspond to the lines in the design_matrix.txt. Note that for correlation analysis, a column of 1's will not be automatically included (as per FSL randomise). Note that fixelcfestats currently only accepts a single contrast. However if the opposite (negative) contrast is also required (i.e. a two-tailed test), then use the :code:`-neg` option. 
+
+
+
+
 
 
 
