@@ -1,10 +1,106 @@
 Images and other data
-=========
+=====================
+
+*MRtrix3* provides a flexible data input/output back-end in the shared
+library, which is used across all applications. This means that all
+applications in *MRtrix3* can read or write images in all the supported
+formats - there is no need to explicitly convert the data to a given
+format prior to processing.
+
+However, some specialised applications may expect additional information
+to be present in the input image. The MRtrix .mif/.mih formats are both
+capable of storing such additional information data in their header, and
+will hence always be supported for such applications. Most image formats
+however cannot carry additional information in their header (or at
+least, not easily) - this is in fact one of the main motivations for the
+development of the *MRtrix* image formats. In such cases, it would be
+necessary to use *MRtrix* format images. Alternatively, it may be
+necessary to provide the additional information using command-line
+arguments (this is the case particularly for the DW gradient table, when
+providing DWI data in NIfTI format for instance).
+
+Image file formats are recognised by their file extension. One exception
+to this is DICOM: if the filename corresponds to a folder, it is assumed
+to contain DICOM data, and the entire folder will be scanned recursively
+for DICOM images.
+
+It is also important to note that the name given as an argument will not
+necessarily correspond to an actual file name on disk: in many cases,
+images may be split over several files. What matters is that the text
+string provided as the *image specifier* is sufficient to unambiguously
+identify the full image.
+
+.. _image_coord_system:
+
+Coordinate system
+'''''''''''''''''
+
+All *MRtrix* applications will consistently use the same coordinate
+system, which is identical to the
+`NIfTI <http://nifti.nimh.nih.gov/nifti-1>`__ standard. Note that this
+frame of reference differs from the `DICOM
+standard <https://www.dabsoft.ch/dicom/3/C.7.6.2.1.1/>`__ (typically the
+x & y axis are reversed). The convention followed by *MRtrix* applications
+is as follows:
+
++---------------+-----------------------------------------+
+| dimensional   | description                             |
++===============+=========================================+
+| 0 (x)         | increasing from left to right           |
++---------------+-----------------------------------------+
+| 1 (y)         | increasing from posterior to anterior   |
++---------------+-----------------------------------------+
+| 2 (z)         | increasing from inferior to superior    |
++---------------+-----------------------------------------+
+
+All coordinates or vector components supplied to MRtrix applications
+should be provided with reference to this coordinate system.
+
+
+
+.. _multi_file_image_file_formats:
+
+Multi-file numbered image support
+'''''''''''''''''''''''''''''''''
+
+It is possible to access a numbered series of images as a single
+multi-dimensional dataset, using a syntax specific to *MRtrix*. For example:
+
+.. code::
+
+    mrinfo MRI-volume-[].nii.gz
+
+will collate all images that match the pattern
+``MRI-volume-<number>.nii.gz``, sort them in ascending numerical order,
+and access them as a single dataset with dimensionality one larger than
+that contained in the images. In other words, assuming there are 10
+``MRI-volume-0.nii.gz`` to ``MRI-volume-9.nii.gz``, and each volume is a
+3D image, the result will be a 4D dataset with 10 volumes.
+
+Note that this isn't limited to one level of numbering:
+
+.. code::
+
+    mrconvert data-[]-[].nii combined.mif
+
+will collate all images that match the ``data-number-number.nii``
+pattern and generate a single dataset with dimensionality two larger
+than its constituents.
+
+Finally, it is also possible to explicitly request specific numbers,
+using a :ref:`number_sequences`
+within the square brackets:
+
+.. code:: 
+
+    mrconvert data-[10:20].nii combined.mif
+
+
 
 .. _data_types:
 
 Data types
-------
+''''''''''
 
 *MRtrix* applications can read and write data in any of the common data
 types. Moreover the *MRtrix* image file format can be used to store images in any
@@ -13,7 +109,7 @@ these data types. When a data type is requested that isn't supported by
 the image format, a hopefully suitable alternative data type will be
 used instead.
 
-Below is a list of the supported data type and their specifiers for use
+Below is a list of the supported data types and their specifiers for use
 on the command-line. Note that *MRtrix* is not sensitive to the case of
 the specifier: ``uint16le`` will work just as well as ``UInt16LE``.
 
@@ -75,113 +171,77 @@ the specifier: ``uint16le`` will work just as well as ``UInt16LE``.
 | CFloat64BE   | complex 64-bit (double) floating-point (big-endian)           |
 +--------------+---------------------------------------------------------------+
 
-.. _image_file_formats:
+.. _strides:
 
-Working with image data
------
+Strides
+'''''''
 
-*MRtrix3* provides a flexible data input/output backend in the shared
-library, which is used across all applications. This means that all
-applications in *MRtrix3* can read or write images in all the supported
-formats - there is no need to explicitly convert the data to a given
-format prior to processing.
+A file is simply a linear array of values. Image data on the other hand are
+multidimensional arrays. The image values can therefore be ordered on file
+in many different ways. For example, we could start from the voxel at the left
+posterior inferior corner of the image, and store intensity values in order of
+traversal towards the *right*. Once the other end of the image is reached, we
+repeat the process for the row of values *anterior* to the last one, and repeat
+until the end of the slice. At this point, we store the slice *superior* to the
+last one, until the whole image has been stored. This ordering scheme is
+what is typically used in the NIfTI standard, and is commonly referred to as
+RAS (right anterior posterior), referring to the direction of traversal of each
+axis in turn. This scheme is also often referred to as *neurological*, although
+this term is in general much more ambiguous. 
 
-However, some specialised applications may expect additional information
-to be present in the input image. The MRtrix .mif/.mih formats are both
-capable of storing such additional information data in their header, and
-will hence always be supported for such applications. Most image formats
-however cannot carry additional information in their header (or at
-least, not easily) - this is in fact one of the main motivations for the
-development of the *MRtrix* image formats. In such cases, it would be
-necessary to use *MRtrix* format images. Alternatively, it may be
-necessary to provide the additional information using command-line
-arguments (this is the case particularly for the DW gradient table, when
-providing DWI data in NIfTI format for instance).
+However, this is only a convention, and many other combinations are possible.
+For instance, it is possible to start from the *right* posterior inferior
+corner, and raster through along the *left* direction, then store the next row
+along the anterior direction, and finally the next slice in the superior
+direction. This scheme is what is normally used in the now deprecated Analyse
+format, and is commonly referred to as RAS or *radiological*. 
 
-Image file formats are recognised by their file extension. One exception
-to this is DICOM: if the filename corresponds to a folder, it is assumed
-to contain DICOM data, and the entire folder will be scanned recursively
-for DICOM images.
+Of course, there are many more possibilities. For instance, sagittal DICOM
+images will typically be stored using a PIR (posterior inferior right) order,
+since each sagittal slice is stored in order, etc. *MRtrix3* applications are
+agnostic to the order of storage, and can handle any such images provided the
+format is clear about what the order is. 
 
-It is also important to note that the name given as an argument will not
-necessarily correspond to an actual file name on disk: in many cases,
-images may be split over several files. What matters is that the text
-string provided as the *image specifier* is sufficient to unambiguously
-identify the full image.
+In *MRtrix3*, the order of storage is defined by their *strides*. These refer
+to the number of voxels between a given voxel and the next voxel along a given
+dimension. For instance, in a 128×128×128 image stored using RAS ordering, the
+strides would be ``1,128,16384``: the next voxel along the *x* axis is just one
+voxel away, while the next voxel along the *y* axis is 128 values away (i.e. a
+whole row of *x* values), and so on. In contrast, if stored in LAS order, the
+strides would be ``-1,128,16384``, indicating that the next voxel along the *x*
+axis would actually be stored one value *before* the current one.
 
-.. _image_coord_system:
+To simplify the specification of these strides, *MRtrix3* typically expects and
+provides *symbolic* strides. For example, the RAS strides above would be
+expressed as ``1,2,3``, since this is sufficient to deduce the actual strides once
+the image dimensions are known. Likewise, LAS would correspond to strides of
+``-1,2,3``, PIR to ``-2,-3,1``, etc. This has the advantage that the
+specification of the strides is then independent of the image dimensions. 
 
-Coordinate system
-'''''''''
+Using strides to specify ordering also allows the specification to
+generalise to arbitrary dimensions. For example, it is fairly common for
+*MRtrix3* applications to request their output for 4D images to be written with
+strides ``2,3,4,1`` (if the image format supports it): this corresponds to a
+volume-contiguous order, whereby the values for all volumes of a given voxel
+are written next to each other on file; this often has performance advantages
+for applications that need to process all values for a given voxel
+concurrently (as is often the case in diffusion MRI), by allowing the hardware
+to make better use of resources (tractography is one such example).
 
-All *MRtrix* applications will consistently use the same coordinate
-system, which is identical to the
-`NIfTI <http://nifti.nimh.nih.gov/nifti-1>`__ standard. Note that this
-frame of reference differs from the `DICOM
-standard <https://www.dabsoft.ch/dicom/3/C.7.6.2.1.1/>`__ (typically the
-x & y axis are reversed). The convention followed by *MRtrix* applications
-is as follows:
-
-+---------------+-----------------------------------------+
-| dimensional   | description                             |
-+===============+=========================================+
-| 0 (x)         | increasing from left to right           |
-+---------------+-----------------------------------------+
-| 1 (y)         | increasing from posterior to anterior   |
-+---------------+-----------------------------------------+
-| 2 (z)         | increasing from inferior to superior    |
-+---------------+-----------------------------------------+
-
-All coordinates or vector components supplied to MRtrix applications
-should be provided with reference to this coordinate system.
-
-.. _multi_file_image_file_formats:
-
-Multi-file numbered image support
-'''''''''''''''''''''''''''''''''
-
-For instance, it is possible to access a numbered series of images as a
-single multi-dimensional dataset, using a syntax specific to *MRtrix*. For
-example:
-
-.. code::
-
-    mrinfo MRI-volume-[].nii.gz
-
-will collate all images that match the pattern
-``MRI-volume-<number>.nii.gz``, sort them in ascending numerical order,
-and access them as a single dataset with dimensionality one larger than
-that contained in the images. In other words, assuming there are 10
-``MRI-volume-0.nii.gz`` to ``MRI-volume-9.nii.gz``, and each volume is a
-3D image, the result will be a 4D dataset with 10 volumes.
-
-Note that this isn't limited to one level of numbering:
-
-.. code::
-
-    mrconvert data-[]-[].nii combined.mif
-
-will collate all images that match the ``data-number-number.nii``
-pattern and generate a single dataset with dimensionality two larger
-than its constituents.
-
-Finally, it is also possible to explicitly request specific numbers,
-using a :ref:`number_sequences`
-within the square brackets:
-
-.. code:: 
-
-    mrconvert data-[10:20].nii combined.mif
-
-Supported native image formats
----------
-
-.. WARNING:: 
-   Need to add!
+The different formats supported by *MRtrix3* differ in the range of strides
+that they support. The :ref:`_mrtrix_image_formats` are the only formats to
+support arbitrary combinations.
 
 
-MRtrix image formats (``.mih/.mif``)
----------
+.. _supported_image_formats:
+
+Supported image formats
+=======================
+
+.. _mrtrix_image_formats:
+
+MRtrix image formats (``.mih / .mif``)
+------------------------------------
 
 These MRtrix-specific image formats are closely related. They consist of
 a text header, with data stored in binary format, either within the same
@@ -203,12 +263,30 @@ Note that *MRtrix* now includes *MatLab* functions to read and write MRtrix
 image files, and to load MRtrix tracks files. These are located in the
 ``matlab`` subfolder.
 
+Compressed MRtrix image format (``.mif.gz``)
+''''''''''''''''''''''''''''''''''''''''''''
+
+*MRtrix3* also supports the compressed version of the single-file ``.mif``
+format, both for reading and writing. 
+
+.. NOTE::
+  While this can reduce file sizes, it does incur a runtime cost when reading or
+  writing the image (a process that can often take longer than the operation to
+  be performed), and will require the entire image to be loaded uncompressed into
+  RAM (*MRtrix3* can otherwise make use of 
+  `memory-mapping <https://en.wikipedia.org/wiki/Memory-mapped_file>`__ to keep RAM
+  requirements to a minimum). For large files, these costs can become
+  considerable; you may find that *MRtrix3* can process a large uncompressed
+  image, yet run out of RAM when presented with the equivalent compressed
+  version (in such cases, you can try using ``gunzip`` to uncompress the file
+  manually before invoking the relevant *MRtrix3* command). 
+
 Header structure
-''''''''''
+''''''''''''''''
 
 The header is the first (and possibly only) data stored in the file, as
 ASCII-encoded text (although other encodings such as UTF8 may work
-equally well). Lines should be separated by unix-style newlines
+equally well). Lines should be separated by Unix-style newlines
 (line-feed, '', ASCII 0x0A), although MRtrix will also accept DOS-type
 newlines.
 
@@ -306,8 +384,11 @@ example: ``dim: 192,256,256`` specifies a 192×256×256 image.
    offset + scale \* value\_read. For example: ``scaling: -1,2``.
    Default is ``0,1`` (no modification).
 
-MRtrix sparse image formats (``.msh/.msf``)
--------
+
+.. _mrtrix_sparse_format:
+
+MRtrix sparse image formats (``.msh / .msf``)
+-------------------------------------------
 
 These new image formats are designed for applications where the number
 of discrete elements within a voxel may vary between voxels. The most
@@ -333,7 +414,7 @@ location within the sparse image field, where the sparse data relevant
 for that image element can be found.
 
 Additional image header features
-''''''''
+''''''''''''''''''''''''''''''''
 
 These image formats have some features within the image header that
 differ from the standard MRtrix image formats:
@@ -360,10 +441,10 @@ differ from the standard MRtrix image formats:
    start of the file to the start of the sparse data field; in the .msh
    format, a second associated data file with the extension .sdat is
    generated on image creation, and the path to this file is defined in
-   the hedaer.
+   the header.
 
 Sparse data storage
-'''''''''''
+'''''''''''''''''''
 
 Within the sparse data field, there is no delimiting information or
 identifying features; the image format relies on the integers stored in
@@ -378,8 +459,103 @@ no endianness conversion can be performed on this data; data is read and
 written using a straight memory copy.
 
 
+
+.. _dicom_format:
+
+DICOM (folder or ``.dcm``)
+----------------
+
+DICOM format is only supported for reading. *MRtrix3* applications will assume
+an image is in DICOM format if the image specifier provided corresponds to a
+folder or ends with the ``.dcm`` extension. For a folder, the application will
+scan the entire folder and its subfolders for DICOM files and generate a list
+of DICOM patients, studies and series. If a single series is found within the
+folder, this data set will be accessed with no further interaction required.
+Otherwise, the user will be prompted to select the series of interest.
+*MRtrix3* supports data from all major manufacturers, including Siemens mosaics
+and the newer single-file multi-frame format.
+
+A separate application, :ref:`dcminfo`, is provided to view all DICOM header
+elements within a particular DICOM file, including Siemens' custom shadow
+attributes (CSA).
+
+Note that no support is provided for reading the ``DICOMDIR`` entry due to
+case-sensitivity issues. DICOM data are typically stored on CD or DVD on a
+case-insensitive filesystem. However, Unix systems will typically not access
+these filesystems in a case-insensitive manner, and will fail to find the
+appropriate files if the case of filenames supplied in the DICOMDIR file does
+not match the case of the files found on the CD or DVD.
+
+
+
+.. _nifti_format:
+
+NIfTI (``.nii``)
+-----
+
+This file format is supported both for reading and writing, and allows
+interoperation with other packages such as `SPM <http://www.fil.ion.ucl.ac.uk/spm/>`__ 
+or `FSL <http://fsl.fmrib.ox.ac.uk/fsl/>`__. 
+
+.. NOTE::
+if both qform and sform orientation fields are present, the qform fields are
+ignored. Obviously, the qform fields will be used if they are present on their
+own.
+
+
+Compressed NIfTI (``.nii.gz``)
+''''''''''''''''''''''''''''''
+
+*MRtrix3* also supports compressed NIfTI images both for reading and writing.
+
+.. NOTE::
+  While this can reduce file sizes, it does incur a runtime cost when reading or
+  writing the image (a process that can often take longer than the operation to
+  be performed), and will require the entire image to be loaded uncompressed into
+  RAM (*MRtrix3* can otherwise make use of 
+  `memory-mapping <https://en.wikipedia.org/wiki/Memory-mapped_file>`__ to keep RAM
+  requirements to a minimum). For large files, these costs can become
+  considerable; you may find that *MRtrix3* can process a large uncompressed
+  image, yet run out of RAM when presented with the equivalent compressed
+  version (in such cases, you can try using ``gunzip`` to uncompress the file
+  manually before invoking the relevant *MRtrix3* command). 
+
+
+.. _mgh_formats:
+
+FreeSurfer formats (``.mgh / .mgz``)
+---------------------------------------
+
+*MRtrix3* supports both of these formats for reading and writing.
+
+
+
+.. _analyze_format:
+
+Analyse format (``.img / .hdr``)
+------------------------------------
+
+This file format is supported both for reading and writing. However, when
+writing, the newer NIfTI standard will be used, since the Analyse format cannot
+store crucial information such as the image transform, and is hence deprecated.
+If these images are actually stored as NIfTI, they will be handled
+appropriately according to the standard. 
+
+.. NOTE::
+  In order to specify an Analyse format image on the command line, type the name
+  of its *data* file (``*.img``), *not* the header file.
+
+.. WARNING::
+  By default, Analyse format images will be assumed to be stored using RAS
+  (radiological) convention. This can modified in the :ref:`config` file, by
+  setting the ``Analyse.LeftToRight`` entry to ``true``.
+
+
+
+.. _mrtrix_tracks_format:
+
 Tracks file format (``.tck``)
--------
+=============================
 
 The format for track files is similar to that for MRtrix-format images.
 It consists of a text header in the same key: value format, ending with
