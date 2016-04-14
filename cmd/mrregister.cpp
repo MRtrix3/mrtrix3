@@ -792,10 +792,10 @@ void run ()
       nl_registration.write_params_to_header (output_header);
       output_header.datatype() = DataType::from_command_line (DataType::Float32);
       auto warp1 = Image<default_type>::create (warp1_filename, output_header).with_direct_io();
-      Registration::Warp::compute_full_deformation (nl_registration.get_im2_linear().inverse(),
-                                                    *(nl_registration.get_im2_disp_field_inv()),
-                                                    *(nl_registration.get_im1_disp_field()),
-                                                    nl_registration.get_im1_linear(), warp1);
+      Registration::Warp::compute_full_deformation (nl_registration.get_im2_to_mid_linear().inverse(),
+                                                    *(nl_registration.get_mid_to_im2()),
+                                                    *(nl_registration.get_im1_to_mid()),
+                                                    nl_registration.get_im1_to_mid_linear(), warp1);
     }
 
     if (warp2_filename.size()) {
@@ -805,10 +805,10 @@ void run ()
       nl_registration.write_params_to_header (output_header);
       output_header.datatype() = DataType::from_command_line (DataType::Float32);
       auto warp2 = Image<default_type>::create (warp2_filename, output_header).with_direct_io();
-      Registration::Warp::compute_full_deformation (nl_registration.get_im1_linear().inverse(),
-                                                    *(nl_registration.get_im1_disp_field_inv()),
-                                                    *(nl_registration.get_im2_disp_field()),
-                                                    nl_registration.get_im2_linear(), warp2);
+      Registration::Warp::compute_full_deformation (nl_registration.get_im1_to_mid_linear().inverse(),
+                                                    *(nl_registration.get_mid_to_im1()),
+                                                    *(nl_registration.get_im2_to_mid()),
+                                                    nl_registration.get_im2_to_mid_linear(), warp2);
     }
   }
 
@@ -822,15 +822,13 @@ void run ()
       deform_header.set_ndim(4);
       deform_header.size(3) = 3;
       Image<default_type> deform_field = Image<default_type>::scratch (deform_header);
-      Registration::Warp::compute_full_deformation (nl_registration.get_im2_linear().inverse(),
-                                                    *(nl_registration.get_im2_disp_field_inv()),
-                                                    *(nl_registration.get_im1_disp_field()),
-                                                    nl_registration.get_im1_linear(),
+      Registration::Warp::compute_full_deformation (nl_registration.get_im2_to_mid_linear().inverse(),
+                                                    *(nl_registration.get_mid_to_im2()),
+                                                    *(nl_registration.get_im1_to_mid()),
+                                                    nl_registration.get_im1_to_mid_linear(),
                                                     deform_field);
 
       if (im1_image.ndim() == 3) {
-        Filter::warp<Interp::Cubic> (im1_image, im1_transformed, deform_field, 0.0);
-      } else { // write to scratch buffer first since FOD reorientation requires direct IO
         Filter::warp<Interp::Cubic> (im1_image, im1_transformed, deform_field, 0.0);
         if (do_reorientation)
           Registration::Transform::reorient_warp ("reorienting FODs",
@@ -861,14 +859,14 @@ void run ()
 
   if (!im1_midway_transformed_path.empty() and !im2_midway_transformed_path.empty()) {
     if (do_nonlinear) {
-      Header midway_header (*nl_registration.get_im1_disp_field());
+      Header midway_header (*nl_registration.get_im1_to_mid());
       midway_header.datatype() = DataType::from_command_line (DataType::Float32);
       midway_header.set_ndim (im1_image.ndim());
       if (midway_header.ndim() == 4)
         midway_header.size(3) = im1_image.size(3);
 
-      Image<default_type> im1_deform_field = Image<default_type>::scratch (*(nl_registration.get_im1_disp_field()));
-      Registration::Warp::compose_linear_displacement (nl_registration.get_im1_linear(), *(nl_registration.get_im1_disp_field()), im1_deform_field);
+      Image<default_type> im1_deform_field = Image<default_type>::scratch (*(nl_registration.get_im1_to_mid()));
+      Registration::Warp::compose_linear_deformation (nl_registration.get_im1_to_mid_linear(), *(nl_registration.get_im1_to_mid()), im1_deform_field);
 
       auto im1_midway = Image<default_type>::create (im1_midway_transformed_path, midway_header).with_direct_io();
       Filter::warp<Interp::Cubic> (im1_image, im1_midway, im1_deform_field, 0.0);
@@ -876,8 +874,8 @@ void run ()
         Registration::Transform::reorient_warp ("reorienting FODs", im1_midway, im1_deform_field,
                                                 Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
 
-      Image<default_type> im2_deform_field = Image<default_type>::scratch (*(nl_registration.get_im2_disp_field()));
-      Registration::Warp::compose_linear_displacement (nl_registration.get_im2_linear(), *(nl_registration.get_im2_disp_field()), im2_deform_field);
+      Image<default_type> im2_deform_field = Image<default_type>::scratch (*(nl_registration.get_im2_to_mid()));
+      Registration::Warp::compose_linear_deformation (nl_registration.get_im2_to_mid_linear(), *(nl_registration.get_im2_to_mid()), im2_deform_field);
       auto im2_midway = Image<default_type>::create (im2_midway_transformed_path, midway_header).with_direct_io();
       Filter::warp<Interp::Cubic> (im2_image, im2_midway, im2_deform_field, 0.0);
       if (do_reorientation)

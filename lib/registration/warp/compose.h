@@ -36,7 +36,8 @@ namespace MR
             ComposeLinearDeformKernel (const transform_type& transform) :
                                        transform (transform) {}
 
-            void operator() (Image<default_type>& deform_input, Image<default_type>& deform_output) {
+            template <class InputDeformationFieldType, class OutputDeformationFieldType>
+            void operator() (InputDeformationFieldType& deform_input, OutputDeformationFieldType& deform_output) {
               deform_output.row(3) = transform * deform_input.row(3).colwise().homogeneous();
             }
 
@@ -89,12 +90,12 @@ namespace MR
         };
 
 
-        template <class DisplacementField1Type, class DisplacementField2Type>
+        template <class DeformationField1Type, class DeformationField2Type>
         class ComposeHalfwayKernel {
           public:
-            ComposeHalfwayKernel (const transform_type& linear1, DisplacementField1Type& disp1,
-                                  DisplacementField2Type& disp2, const transform_type& linear2) :
-                                    linear1 (linear1), disp1_interp (disp1), disp2_interp (disp2), linear2 (linear2) {
+            ComposeHalfwayKernel (const transform_type& linear1, DeformationField1Type& deform1,
+                                  DeformationField2Type& deform2, const transform_type& linear2) :
+                                    linear1 (linear1), deform1_interp (deform1), deform2_interp (deform2), linear2 (linear2) {
               out_of_bounds.setOnes();
               out_of_bounds *= NaN;
             }
@@ -102,35 +103,29 @@ namespace MR
             void operator() (Image<default_type>& deform) {
               Eigen::Vector3 voxel ((default_type)deform.index(0), (default_type)deform.index(1), (default_type)deform.index(2));
               Eigen::Vector3 position = linear1 * voxel;
-              disp1_interp.scanner (position);
-              if (!disp1_interp) {
+              deform1_interp.scanner (position);
+              if (!deform1_interp) {
                   deform.row(3) = out_of_bounds;
                 } else {
-                  Eigen::Vector3 midway_position = position + disp1_interp.row(3);
-                  disp2_interp.scanner (midway_position);
-                  if (!disp2_interp) {
+                  Eigen::Vector3 position2 = deform1_interp.row(3);
+                  deform2_interp.scanner (position2);
+                  if (!deform2_interp) {
                     deform.row(3) = out_of_bounds;
                   } else {
-                    deform.row(3) = linear2 * (midway_position + disp2_interp.row(3));
+                    Eigen::Vector3 position3 = deform2_interp.row(3);
+                    deform.row(3) = linear2 * position3;
                   }
                }
             }
 
           protected:
             const transform_type linear1;
-            Interp::Linear<DisplacementField2Type> disp1_interp;
-            Interp::Linear<DisplacementField2Type> disp2_interp;
+            Interp::Linear<DeformationField2Type> deform1_interp;
+            Interp::Linear<DeformationField2Type> deform2_interp;
             const transform_type linear2;
             Eigen::Vector3 out_of_bounds;
         };
 
-
-      // Compose a linear transform and a deformation field. The input and output can be the same image.
-      FORCE_INLINE void compose_linear_deformation (const transform_type& transform, Image<default_type>& deform_in, Image<default_type>& deform_out)
-      {
-        check_dimensions (deform_in, deform_out, 0, 3);
-        ThreadedLoop (deform_in, 0, 3).run (ComposeLinearDeformKernel (transform), deform_in, deform_out);
-      }
 
       // Compose a linear transform and a displacement field. The output field is a deformation field. The input and output can be the same image.
       template <class DisplacementFieldType, class DeformationFieldType>
@@ -138,6 +133,14 @@ namespace MR
       {
         check_dimensions (disp_in, deform_out, 0, 3);
         ThreadedLoop (disp_in, 0, 3).run (ComposeLinearDispKernel (transform, disp_in), disp_in, deform_out);
+      }
+
+      // Compose a linear transform and a deformation field. The output field is a deformation field. The input and output can be the same image.
+      template <class InputDeformationFieldType, class OutputDeformationFieldType>
+      FORCE_INLINE  void compose_linear_deformation (const transform_type& transform, InputDeformationFieldType& deform_in, OutputDeformationFieldType& deform_out)
+      {
+        check_dimensions (deform_in, deform_out, 0, 3);
+        ThreadedLoop (deform_in, 0, 3).run (ComposeLinearDeformKernel (transform), deform_in, deform_out);
       }
 
       // Compose two displacement fields and output a displacement field. The input and output can be the same image.
@@ -202,25 +205,25 @@ namespace MR
         }
       }
 
-      // Compose linear1<->displacement1<->[midway space]<->displacement2<->linear2. Output is a deformation field.
-      template <class DisplacementField1Type, class DisplacementField2Type, class DeformationFieldType>
-      FORCE_INLINE void compute_full_deformation (const transform_type& linear1, DisplacementField1Type& disp1,
-                                                  DisplacementField2Type& disp2, const transform_type& linear2,
-                                                  DeformationFieldType& deform_out)
+      // Compose linear1<->deform1<->[midway space]<->deform2<->linear2.
+      template <class DeformationField1Type, class DeformationField2Type, class OutputDeformationFieldType>
+      FORCE_INLINE void compute_full_deformation (const transform_type& linear1, DeformationField1Type& deform1,
+                                                  DeformationField2Type& deform2, const transform_type& linear2,
+                                                  OutputDeformationFieldType& deform_out)
       {
         MR::Transform deform_header_transform (deform_out);
-        ComposeHalfwayKernel<DisplacementField1Type, DisplacementField2Type> compose_kernel (linear1 * deform_header_transform.voxel2scanner, disp1, disp2, linear2);
+        ComposeHalfwayKernel<DeformationField1Type, DeformationField2Type> compose_kernel (linear1 * deform_header_transform.voxel2scanner, deform1, deform2, linear2);
         ThreadedLoop (deform_out, 0, 3).run (compose_kernel, deform_out);
       }
 
-      // Compose linear1<->displacement1<->[midway space]<->displacement2<->linear2. Output is a deformation field.
-      template <class DisplacementField1Type, class DisplacementField2Type, class DeformationFieldType>
-      FORCE_INLINE void compute_full_deformation (std::string message, const transform_type& linear1, DisplacementField1Type& disp1,
-                                                  DisplacementField2Type& disp2, const transform_type& linear2,
-                                                  DeformationFieldType& deform_out)
+      // Compose linear1<->deform1<->[midway space]<->deform2<->linear2.
+      template <class DeformationField1Type, class DeformationField2Type, class OutputDeformationFieldType>
+      FORCE_INLINE void compute_full_deformation (std::string message, const transform_type& linear1, DeformationField1Type& deform1,
+                                                  DeformationField2Type& deform2, const transform_type& linear2,
+                                                  OutputDeformationFieldType& deform_out)
       {
         MR::Transform deform_header_transform (deform_out);
-        ComposeHalfwayKernel<DisplacementField1Type, DisplacementField2Type> compose_kernel (linear1 * deform_header_transform.voxel2scanner, disp1, disp2, linear2);
+        ComposeHalfwayKernel<DeformationField1Type, DeformationField2Type> compose_kernel (linear1 * deform_header_transform.voxel2scanner, deform1, deform2, linear2);
         ThreadedLoop (message, deform_out, 0, 3).run (compose_kernel, deform_out);
       }
 
@@ -240,8 +243,8 @@ namespace MR
           linear = Registration::Warp::parse_linear_transform (warp, "linear2");
           index[0] = 2;
         }
-        Adapter::Extract1D<WarpType> displacement (warp, 4, index);
-        Registration::Warp::compose_linear_displacement (linear, displacement, deformation);
+        Adapter::Extract1D<WarpType> im_to_mid (warp, 4, index);
+        Registration::Warp::compose_linear_deformation (linear, im_to_mid, deformation);
         return deformation;
       }
 
@@ -258,16 +261,16 @@ namespace MR
         std::vector<int> index(1);
         if (from == 1) {
           index[0] = 0;
-          Adapter::Extract1D<Image<default_type>> displacement1 (warp, 4, index);
+          Adapter::Extract1D<Image<default_type>> im1_to_mid (warp, 4, index);
           index[0] = 3;
-          Adapter::Extract1D<Image<default_type>> displacement2 (warp, 4, index);
-          Registration::Warp::compute_full_deformation (linear2.inverse(), displacement2, displacement1, linear1, deform);
+          Adapter::Extract1D<Image<default_type>> mid_to_im2 (warp, 4, index);
+          Registration::Warp::compute_full_deformation (linear2.inverse(), mid_to_im2, im1_to_mid, linear1, deform);
         } else {
           index[0] = 1;
-          Adapter::Extract1D<Image<default_type>> displacement1 (warp, 4, index);
+          Adapter::Extract1D<Image<default_type>> mid_to_im1 (warp, 4, index);
           index[0] = 2;
-          Adapter::Extract1D<Image<default_type>> displacement2 (warp, 4, index);
-          Registration::Warp::compute_full_deformation (linear1.inverse(), displacement1, displacement2, linear2, deform);
+          Adapter::Extract1D<Image<default_type>> im2_to_mid (warp, 4, index);
+          Registration::Warp::compute_full_deformation (linear1.inverse(), mid_to_im1, im2_to_mid, linear2, deform);
         }
         return deform;
       }

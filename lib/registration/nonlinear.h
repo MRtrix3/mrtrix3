@@ -70,8 +70,8 @@ namespace MR
                     Im2MaskType& im2_mask) {
 
             if (!is_initialised) {
-              im1_linear = linear_transform.get_transform_half();
-              im2_linear = linear_transform.get_transform_half_inverse();
+              im1_to_mid_linear = linear_transform.get_transform_half();
+              im2_to_mid_linear = linear_transform.get_transform_half_inverse();
 
               INFO ("Estimating halfway space");
               std::vector<Eigen::Transform<double, 3, Eigen::Projective> > init_transforms;
@@ -152,29 +152,27 @@ namespace MR
               field_header.set_ndim(4);
               field_header.size(3) = 3;
 
-              im1_disp_field_new = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-              im2_disp_field_new = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-              im1_update_field = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-              im2_update_field = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-              im1_update_field_new = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-              im2_update_field_new = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+              im1_to_mid_new = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+              im2_to_mid_new = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+              im1_update = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+              im2_update = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+              im1_update_new = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+              im2_update_new = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
 
               if (!is_initialised) {
                 if (level == 0) {
-                  im1_disp_field = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-                  im2_disp_field = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-                  im1_deform_field_inv = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-                  im2_deform_field_inv = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-                  Warp::displacement2deformation (*im1_deform_field_inv, *im1_deform_field_inv);  // init to identity
-                  Warp::displacement2deformation (*im2_deform_field_inv, *im2_deform_field_inv);
+                  im1_to_mid = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+                  im2_to_mid = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+                  mid_to_im1 = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+                  mid_to_im2 = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
                 } else {
                   DEBUG ("Upsampling fields");
                   {
                     LogLevelLatch level(0);
-                    im1_disp_field = reslice (*im1_disp_field, field_header);
-                    im2_disp_field = reslice (*im2_disp_field, field_header);
-                    im1_deform_field_inv = reslice (*im1_deform_field_inv, field_header);
-                    im2_deform_field_inv = reslice (*im2_deform_field_inv, field_header);
+                    im1_to_mid = reslice (*im1_to_mid, field_header);
+                    im2_to_mid = reslice (*im2_to_mid, field_header);
+                    mid_to_im1 = reslice (*mid_to_im1, field_header);
+                    mid_to_im2 = reslice (*mid_to_im2, field_header);
                   }
                 }
               }
@@ -187,10 +185,10 @@ namespace MR
               while (!converged) {
                 if (iteration > 1) {
                   DEBUG ("smoothing update fields");
-                  Filter::Smooth smooth_filter (*im1_update_field);
+                  Filter::Smooth smooth_filter (*im1_update);
                   smooth_filter.set_stdev (update_smoothing_mm);
-                  smooth_filter (*im1_update_field, *im1_update_field);
-                  smooth_filter (*im2_update_field, *im2_update_field);
+                  smooth_filter (*im1_update, *im1_update);
+                  smooth_filter (*im2_update, *im2_update);
                 }
 
                 Image<default_type> im1_deform_field = Image<default_type>::scratch (field_header);
@@ -198,21 +196,21 @@ namespace MR
 
                 if (iteration > 1) {
                   DEBUG ("updating displacement field field");
-                  Warp::update_displacement_scaling_and_squaring (*im1_disp_field, *im1_update_field, *im1_disp_field_new, grad_step_altered);
-                  Warp::update_displacement_scaling_and_squaring (*im2_disp_field, *im2_update_field, *im2_disp_field_new, grad_step_altered);
+                  Warp::update_displacement_scaling_and_squaring (*im1_to_mid, *im1_update, *im1_to_mid_new, grad_step_altered);
+                  Warp::update_displacement_scaling_and_squaring (*im2_to_mid, *im2_update, *im2_to_mid_new, grad_step_altered);
 
                   DEBUG ("smoothing displacement field");
-                  Filter::Smooth smooth_filter (*im1_disp_field_new);
+                  Filter::Smooth smooth_filter (*im1_to_mid_new);
                   smooth_filter.set_stdev (disp_smoothing_mm);
                   smooth_filter.set_zero_boundary (true);
-                  smooth_filter (*im1_disp_field_new, *im1_disp_field_new);
-                  smooth_filter (*im2_disp_field_new, *im2_disp_field_new);
+                  smooth_filter (*im1_to_mid_new, *im1_to_mid_new);
+                  smooth_filter (*im2_to_mid_new, *im2_to_mid_new);
 
-                  Registration::Warp::compose_linear_displacement (im1_linear, *im1_disp_field_new, im1_deform_field);
-                  Registration::Warp::compose_linear_displacement (im2_linear, *im2_disp_field_new, im2_deform_field);
+                  Registration::Warp::compose_linear_displacement (im1_to_mid_linear, *im1_to_mid_new, im1_deform_field);
+                  Registration::Warp::compose_linear_displacement (im2_to_mid_linear, *im2_to_mid_new, im2_deform_field);
                 } else {
-                  Registration::Warp::compose_linear_displacement (im1_linear, *im1_disp_field, im1_deform_field);
-                  Registration::Warp::compose_linear_displacement (im2_linear, *im2_disp_field, im2_deform_field);
+                  Registration::Warp::compose_linear_displacement (im1_to_mid_linear, *im1_to_mid, im1_deform_field);
+                  Registration::Warp::compose_linear_displacement (im2_to_mid_linear, *im2_to_mid, im2_deform_field);
                 }
 
                 DEBUG ("warping input images");
@@ -248,10 +246,10 @@ namespace MR
 
                 if (im1_image.ndim() == 4) {
                   Metric::Demons4D<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped);
-                  ThreadedLoop (im1_warped, 0, 3).run (metric, im1_warped, im2_warped, *im1_update_field_new, *im2_update_field_new);
+                  ThreadedLoop (im1_warped, 0, 3).run (metric, im1_warped, im2_warped, *im1_update_new, *im2_update_new);
                 } else {
                   Metric::Demons<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped);
-                  ThreadedLoop (im1_warped, 0, 3).run (metric, im1_warped, im2_warped, *im1_update_field_new, *im2_update_field_new);
+                  ThreadedLoop (im1_warped, 0, 3).run (metric, im1_warped, im2_warped, *im1_update_new, *im2_update_new);
                 }
 
                 cost_new /= static_cast<default_type>(voxel_count);
@@ -260,18 +258,18 @@ namespace MR
                 if (cost_new < cost) {
                   cost = cost_new;
                   if (iteration > 1) {
-                    std::swap (im1_disp_field_new, im1_disp_field);
-                    std::swap (im2_disp_field_new, im2_disp_field);
+                    std::swap (im1_to_mid_new, im1_to_mid);
+                    std::swap (im2_to_mid_new, im2_to_mid);
                   }
-                  std::swap (im1_update_field_new, im1_update_field);
-                  std::swap (im2_update_field_new, im2_update_field);
+                  std::swap (im1_update_new, im1_update);
+                  std::swap (im2_update_new, im2_update);
 
                   // drag the inverse along for the ride
                   DEBUG ("inverting displacement field");
                   {
                     LogLevelLatch level (0);
-                    Warp::invert_displacement_deformation (*im1_disp_field, *im1_deform_field_inv, true);
-                    Warp::invert_displacement_deformation (*im2_disp_field, *im2_deform_field_inv, true);
+                    Warp::invert_displacement (*im1_to_mid, *mid_to_im1);
+                    Warp::invert_displacement (*im2_to_mid, *mid_to_im2);
                   }
                 } else {
                   converged = true;
@@ -282,11 +280,13 @@ namespace MR
 
                 if (++iteration > max_iter[level])
                   converged = true;
-             }
-             Warp::deformation2displacement (*im1_deform_field_inv, *im1_deform_field_inv);
-             Warp::deformation2displacement (*im2_deform_field_inv, *im2_deform_field_inv); //convert to displacement field for output
-           }
-
+              }
+            }
+            // Convert all warps to deformation field format for output
+            Registration::Warp::displacement2deformation (*im1_to_mid, *im1_to_mid);
+            Registration::Warp::displacement2deformation (*im2_to_mid, *im2_to_mid);
+            Registration::Warp::displacement2deformation (*mid_to_im1, *mid_to_im1);
+            Registration::Warp::displacement2deformation (*mid_to_im2, *mid_to_im2);
           }
 
           template <class InputWarpType>
@@ -294,8 +294,8 @@ namespace MR
             assert (input_warps.ndim() == 5);
 
             DEBUG ("reading linear transform from init warp field header");
-            im1_linear = Registration::Warp::parse_linear_transform (input_warps, "linear1");
-            im2_linear = Registration::Warp::parse_linear_transform (input_warps, "linear2");
+            im1_to_mid_linear = Registration::Warp::parse_linear_transform (input_warps, "linear1");
+            im2_to_mid_linear = Registration::Warp::parse_linear_transform (input_warps, "linear2");
 
             DEBUG ("loading initial warp fields");
             midway_image_header = input_warps;
@@ -304,23 +304,25 @@ namespace MR
             field_header.set_ndim (4);
             field_header.size(3) = 3;
 
-            im1_disp_field = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
+            im1_to_mid = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
             input_warps.index(4) = 0;
-            threaded_copy (input_warps, *im1_disp_field, 0, 4);
+            threaded_copy (input_warps, *im1_to_mid, 0, 4);
+            Registration::Warp::deformation2displacement (*im1_to_mid, *im1_to_mid);
 
-            im1_deform_field_inv = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
+            mid_to_im1 = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
             input_warps.index(4) = 1;
-            threaded_copy (input_warps, *im1_deform_field_inv, 0, 4);
-            Warp::displacement2deformation (*im1_deform_field_inv, *im1_deform_field_inv);
+            threaded_copy (input_warps, *mid_to_im1, 0, 4);
+            Registration::Warp::deformation2displacement (*mid_to_im1, *mid_to_im1);
 
-            im2_disp_field = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
+            im2_to_mid = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
             input_warps.index(4) = 2;
-            threaded_copy (input_warps, *im2_disp_field, 0, 4);
+            threaded_copy (input_warps, *im2_to_mid, 0, 4);
+            Registration::Warp::deformation2displacement (*im2_to_mid, *im2_to_mid);
 
-            im2_deform_field_inv = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
+            mid_to_im2 = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
             input_warps.index(4) = 3;
-            threaded_copy (input_warps, *im2_deform_field_inv, 0, 4);
-            Warp::displacement2deformation (*im2_deform_field_inv, *im2_deform_field_inv);
+            threaded_copy (input_warps, *mid_to_im2, 0, 4);
+            Registration::Warp::deformation2displacement (*mid_to_im2, *mid_to_im2);
             is_initialised = true;
           }
 
@@ -369,32 +371,32 @@ namespace MR
             fod_lmax = lmax;
           }
 
-          std::shared_ptr<Image<default_type> > get_im1_disp_field() {
-            return im1_disp_field;
+          std::shared_ptr<Image<default_type> > get_im1_to_mid() {
+            return im1_to_mid;
           }
 
-          std::shared_ptr<Image<default_type> > get_im2_disp_field() {
-            return im2_disp_field;
+          std::shared_ptr<Image<default_type> > get_im2_to_mid() {
+            return im2_to_mid;
           }
 
-          std::shared_ptr<Image<default_type> > get_im1_disp_field_inv() {
-            return im1_deform_field_inv;
+          std::shared_ptr<Image<default_type> > get_mid_to_im1() {
+            return mid_to_im1;
           }
 
-          std::shared_ptr<Image<default_type> > get_im2_disp_field_inv() {
-            return im2_deform_field_inv;
+          std::shared_ptr<Image<default_type> > get_mid_to_im2() {
+            return mid_to_im2;
           }
 
-          transform_type get_im1_linear() const {
-            return im1_linear;
+          transform_type get_im1_to_mid_linear() const {
+            return im1_to_mid_linear;
           }
 
-          transform_type get_im2_linear() const {
-            return im2_linear;
+          transform_type get_im2_to_mid_linear() const {
+            return im2_to_mid_linear;
           }
 
           Header get_output_warps_header () const {
-            Header output_header (*im1_disp_field);
+            Header output_header (*im1_to_mid);
             output_header.set_ndim (5);
             output_header.size(3) = 3;
             output_header.size(4) = 4;
@@ -407,8 +409,8 @@ namespace MR
           }
 
           void write_linear_to_header (Header& output_header) const {
-            output_header.keyval()["linear1"] = str(im1_linear.matrix());
-            output_header.keyval()["linear2"] = str(im2_linear.matrix());
+            output_header.keyval()["linear1"] = str(im1_to_mid_linear.matrix());
+            output_header.keyval()["linear2"] = str(im2_to_mid_linear.matrix());
           }
 
           void write_params_to_header (Header& output_header) const {
@@ -426,13 +428,13 @@ namespace MR
           void get_output_warps (OutputType& output_warps) {
             assert (output_warps.ndim() == 5);
             output_warps.index(4) = 0;
-            threaded_copy (*im1_disp_field, output_warps, 0, 4);
+            threaded_copy (*im1_to_mid, output_warps, 0, 4);
             output_warps.index(4) = 1;
-            threaded_copy (*im1_deform_field_inv, output_warps, 0, 4);
+            threaded_copy (*mid_to_im1, output_warps, 0, 4);
             output_warps.index(4) = 2;
-            threaded_copy (*im2_disp_field, output_warps, 0, 4);
+            threaded_copy (*im2_to_mid, output_warps, 0, 4);
             output_warps.index(4) = 3;
-            threaded_copy (*im2_deform_field_inv, output_warps, 0, 4);
+            threaded_copy (*mid_to_im2, output_warps, 0, 4);
           }
 
           Header get_midway_header () {
@@ -461,21 +463,22 @@ namespace MR
           bool do_reorientation;
           std::vector<int> fod_lmax;
 
-          transform_type im1_linear;
-          transform_type im2_linear;
+          transform_type im1_to_mid_linear;
+          transform_type im2_to_mid_linear;
           Header midway_image_header;
 
-          std::shared_ptr<Image<default_type> > im1_disp_field_new;
-          std::shared_ptr<Image<default_type> > im2_disp_field_new;
-          std::shared_ptr<Image<default_type> > im1_disp_field;  // Internally the warp is a displacement field for smoothing near the boundaries
-          std::shared_ptr<Image<default_type> > im2_disp_field;
-          std::shared_ptr<Image<default_type> > im1_deform_field_inv;
-          std::shared_ptr<Image<default_type> > im2_deform_field_inv; // Note we store the inverses as deformations since the inverter works on deformations, and we don't need to smooth these
+          // Internally the warp is stored as a displacement field to enable easy smoothing near the boundaries
+          std::shared_ptr<Image<default_type> > im1_to_mid_new;
+          std::shared_ptr<Image<default_type> > im2_to_mid_new;
+          std::shared_ptr<Image<default_type> > im1_to_mid;
+          std::shared_ptr<Image<default_type> > im2_to_mid;
+          std::shared_ptr<Image<default_type> > mid_to_im1;
+          std::shared_ptr<Image<default_type> > mid_to_im2;
 
-          std::shared_ptr<Image<default_type> > im1_update_field;
-          std::shared_ptr<Image<default_type> > im2_update_field;
-          std::shared_ptr<Image<default_type> > im1_update_field_new;
-          std::shared_ptr<Image<default_type> > im2_update_field_new;
+          std::shared_ptr<Image<default_type> > im1_update;
+          std::shared_ptr<Image<default_type> > im2_update;
+          std::shared_ptr<Image<default_type> > im1_update_new;
+          std::shared_ptr<Image<default_type> > im2_update_new;
 
     };
   }
