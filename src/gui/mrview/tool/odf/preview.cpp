@@ -135,12 +135,6 @@ namespace MR
           render_frame->set_LOD (level_of_detail_selector->value());
         }
 
-        void ODF_Preview::lighting_update_slot()
-        {
-          // Use a dummy call that won't actually change anything, but will call updateGL() (which is protected)
-          render_frame->set_LOD (level_of_detail_selector->value());
-        }
-
 
 
 
