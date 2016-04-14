@@ -76,7 +76,7 @@ Threshold the peaks fixel image::
     
     fixelthreshold -crop <template_peaks_image.msf> 0.33 <analysis_fixel_mask.msf>
 
-Generate a analysis voxel mask from the fixel mask. The median filter in this step should remove spurious voxels outside the brain, and fill in the holes in deep white matter where you have small peaks due to 3-fibre crossings::
+Generate an analysis voxel mask from the fixel mask. The median filter in this step should remove spurious voxels outside the brain, and fill in the holes in deep white matter where you have small peaks due to 3-fibre crossings::
 
     fixel2voxel <analysis_fixel_mask.msf> count - | mrthreshold - - -abs 0.5 | mrfilter - median <output_analysis_voxel_mask>
 
@@ -90,7 +90,7 @@ Recompute the fixel mask using the analysis voxel mask. Using the mask allows us
 
 8. Transform FOD images to template space
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Note that here we transform FOD images into template space *without* FOD reorientation. Reorientation will be performed in a seperate subsequent step:: 
+Note that here we transform FOD images into template space *without* FOD reorientation. Reorientation will be performed in a separate subsequent step:: 
 
     mrtransform <input_subject_fod_image> -warp <subject2template_warp> -noreorientation <output_warped_fod_image>
 
@@ -98,26 +98,26 @@ Note that here we transform FOD images into template space *without* FOD reorien
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Here we segment each FOD lobe to identify the number and orientation of fixels in each voxel. The output also contains the apparent fibre density (AFD) value per fixel estimated as the FOD lobe integral (see `here <http://www.sciencedirect.com/science/article/pii/S1053811912011615>`_ for details on FOD segmentation). Note that in the following steps we will use the shortened acronym FD (paper under review) instead of AFD ::
 
-    fod2fixel <input_warped_fod_image> -mask <input_analysis_voxel_mask> -afd <output_fd.msf>
+    fod2fixel <input_warped_fod_image> -mask <input_analysis_voxel_mask> -afd <output_afd.msf>
     
-.. NOTE:: If you would like to perform fixel-based analysis of metrics derived from other diffusion MRI models (e.g. CHARMED), replace steps 8 & 9. For example, in step 8 you can warp pre-prepocessed DW images (also without any reorientation). In step 9 you could then estimate your DWI model of choice. 
+.. NOTE:: If you would like to perform fixel-based analysis of metrics derived from other diffusion MRI models (e.g. CHARMED), replace steps 8 & 9. For example, in step 8 you can warp preprocessed DW images (also without any reorientation). In step 9 you could then estimate your DWI model of choice. 
     
     
 10. Reorient fixel orientations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Here we reorient the direction of all fixels based on Jacobian (local affine transform) at each voxel in the warp::
+Here we reorient the direction of all fixels based on the Jacobian matrix (local affine transformation) at each voxel in the warp::
 
     fixelreorient <input_afd.msf> <subject2template_warp> <output_afd_reoriented.msf>
     
 11. Assign subject fixels to template fixels
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-In step 8 we have obtained spatial correspondence between the subject and template. In step 10 we correct fixel orientations and improve angular correspondence by reorienting fixel directions based on the warp. Here, for each fixel in the template fixel analysis mask, we identify the corresponding fixel in each voxel of the subject image and assign the afd value of the subject fixel to the corresponding fixel in template space. If no fixel exists in the subject that corresponds to the template fixel then it is assigned a value of zero. See `this paper <http://www.ncbi.nlm.nih.gov/pubmed/26004503>`_ for more information::
+In step 8 we obtained spatial correspondence between subject and template. In step 10 we corrected the fixel orientations to ensure angular correspondence of the segmented peaks of subject and template. Here, for each fixel in the template fixel analysis mask, we identify the corresponding fixel in each voxel of the subject image and assign the FD value of the subject fixel to the corresponding fixel in template space. If no fixel exists in the subject that corresponds to the template fixel then it is assigned a value of zero. See `this paper <http://www.ncbi.nlm.nih.gov/pubmed/26004503>`_ for more information::
 
     fixelcorrespondence <input_afd_reoriented.msf> <input_analysis_fixel_mask.msf> <output_fd.msf>
     
 12. Compute fibre cross-section (FC) metric
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Apparent fibre density, and other related measures that are influenced by the quantity of retricted water, only permit the investigation of group differences in the number of axons that manefest as a change to *within-voxel* density. However, depending on the disease type and stage, changes to the number of axons may also manefest as macroscopic differences in brain morphology. This step computes a fixel-based metric related to morphological differences in fibre cross-section, where information is derived entirely from the warps generated during registration (paper under review):: 
+Apparent fibre density, and other related measures that are influenced by the quantity of restricted water, only permit the investigation of group differences in the number of axons that manifest as a change to *within-voxel* density. However, depending on the disease type and stage, changes to the number of axons may also manifest as macroscopic differences in brain morphology. This step computes a fixel-based metric related to morphological differences in fibre cross-section, where information is derived entirely from the warps generated during registration (paper under review):: 
 
     warp2metric <subject2template_warp> -fc <input_analysis_fixel_mask.msf> <output_fc.msf>
     
@@ -127,7 +127,7 @@ The FC files will be used in the next step. However, for group statistical analy
 
 13. Compute a combined measure of fibre density and cross-section (FDC)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-To account for changes to both within-voxel fibre density and macroscopic atrophy, fibre density and fibre cross-section must be combined (a measure we call fibre density & cross-section, FDC). This enables a more complete picture of group differences in white matter. Note that as discussed in our future work (under review), group differences in FD or FC alone must be interepreted with care in crossing-fibre regions. However group differences in FDC are more directly interpretable. To generate the combined measure we 'modulate' the FD by FC::
+To account for changes to both within-voxel fibre density and macroscopic atrophy, fibre density and fibre cross-section must be combined (a measure we call fibre density & cross-section, FDC). This enables a more complete picture of group differences in white matter. Note that as discussed in our future work (under review), group differences in FD or FC alone must be interpreted with care in crossing-fibre regions. However group differences in FDC are more directly interpretable. To generate the combined measure we 'modulate' the FD by FC::
 
     fixelmult <input_fd.msf> <input_fc.msf> <output_fdc.msf>
     
