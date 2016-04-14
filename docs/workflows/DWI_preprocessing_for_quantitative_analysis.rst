@@ -29,7 +29,7 @@ If you have access to reversed phase-encode spin-echo echo planar imaging data, 
 
   dwipreproc <input_dwi> <output_dwi> <phase_encode_direction>
 
-For more details, see the header of the :code:`scripts/dwipreproc` file. In particular, it is necessary to manually specify what type of reversed phase-encoding acquisition has taken acquired (if any), and provide the relevant input images.
+For more details, see the header of the :code:`scripts/dwipreproc` file. In particular, it is necessary to manually specify what type of reversed phase-encoding acquisition was performed (if any), and provide the relevant input images.
 
 2. Eddy current induced distortion correction and motion correction 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -65,7 +65,7 @@ The dwiintensitynorm script also outputs the study-specific FA template and whit
 
 Keeping the FA template image and white matter mask is also handy if additional subjects are added to the study at a later date. New subjects can be intensity normalised in a single step by `piping <http://userdocs.mrtrix.org/en/latest/getting_started/command_line.html#unix-pipelines>`_ the following commands together::
 
-    dwi2tensor <input_dwi> -mask <input_brain_mask> - | tensor2metric - -fa - | mrregister <fa_template> - -mask <input_brain_mask> -nl_scale 0.5,0.75,1.0 -nl_niter 5,5,15 -nl_warp - | mrtransform <input_template_wm_mask> -template <input_dwi> -warp - - | dwinormalise <input_dwi> - <output_normalised_dwi>
+    dwi2tensor <input_dwi> -mask <input_brain_mask> - | tensor2metric - -fa - | mrregister <fa_template> - -mask2 <input_brain_mask> -nl_scale 0.5,0.75,1.0 -nl_niter 5,5,15 -nl_warp - | mrtransform <input_template_wm_mask> -template <input_dwi> -warp - - | dwinormalise <input_dwi> - <output_normalised_dwi>
    
 .. NOTE:: The above command may also be useful if you wish to alter the mask then re-apply the intensity normalisation to all subjects in the study. For example you may wish to edit the mask using the ROI tool in :code:`mrview` to remove white matter regions that you hypothesise are affected by the disease (e.g. removing the corticospinal tract in a study of motor neurone disease due to T2 hyperintensity). You also may wish to redefine the mask completely, for example in an elderly population (with larger ventricles) it may be appropriate to intensity normalise using the median b=0 CSF. This could be performed by manually masking partial-volume-free CSF voxels, then running the above command with the CSF mask instead of the <input_template_wm_mask>.
    
@@ -73,7 +73,7 @@ Keeping the FA template image and white matter mask is also handy if additional 
     
 6. Computing a group average response function
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-As described `here <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`_, using the same response function when estimating FOD images for all subjects enables differences in the intra-axonal volume (and therefore DW signal) across subjects to be detected as differences in the FOD amplitude (the AFD). At high b-values (~3000 s/mm2), the shape of the estimated white matter response function is varies little across subjects and therefore choosing any single subjects' estimate response is OK. To estimate a response function from a single subject::
+As described `here <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`_, using the same response function when estimating FOD images for all subjects enables differences in the intra-axonal volume (and therefore DW signal) across subjects to be detected as differences in the FOD amplitude (the AFD). At high b-values (~3000 s/mm2), the shape of the estimated white matter response function varies little across subjects and therefore choosing any single subjects' estimate response is OK. To estimate a response function from a single subject::
 
     dwi2response tournier <Input DWI> <Output response text file>
     
@@ -81,15 +81,3 @@ Alternatively, to ensure the response function is representative of your study p
 
     average_response <input_response_files (muliple inputs accepted)> <output_group_average_response>
 
-
-
-
-
-
-
-
-
-
-  
-  
-  
