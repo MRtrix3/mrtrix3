@@ -1,5 +1,5 @@
-DWI Pre-processing for Quantitative Analysis using FODs
-=======================================================
+DWI Pre-processing for Quantitative Analysis
+============================================
 
 Introduction
 ------------
