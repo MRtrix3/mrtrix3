@@ -25,7 +25,7 @@
 using namespace MR;
 using namespace App;
 
-const char* conversion_type[] = {"deformation2displacement","displacement2deformation","warpmid2deformation","warpmid2displacement",NULL};
+const char* conversion_type[] = {"deformation2displacement","displacement2deformation","warpfull2deformation","warpfull2displacement",NULL};
 
 
 void usage ()
@@ -35,8 +35,8 @@ void usage ()
   DESCRIPTION
   + "convert between different representations of a non-linear warp. A deformation field is defined as an image where each voxel "
     "defines the corresponding position in the other image (in scanner space coordinates). A displacement field "
-    "stores the displacements (in mm) to the other image from the each voxel's position (in scanner space). The warpmid file is the "
-    "5D format output from mrregister -nl_warp_mid, which contains linear transforms, warps and their inverses that map each image to a midway space."; //TODO at link to warp format documentation
+    "stores the displacements (in mm) to the other image from the each voxel's position (in scanner space). The warpfull file is the "
+    "5D format output from mrregister -nl_warp_full, which contains linear transforms, warps and their inverses that map each image to a midway space."; //TODO at link to warp format documentation
 
   ARGUMENTS
   + Argument ("in", "the input warp image.").type_image_in ()
@@ -44,19 +44,19 @@ void usage ()
 
   OPTIONS
   + Option ("type", "the conversion type required. Valid choices are: "
-                    "deformation2displacement, displacement2deformation, warpmid2deformation, warpmid2displacement (Default: deformation2displacement)")
+                    "deformation2displacement, displacement2deformation, warpfull2deformation, warpfull2displacement (Default: deformation2displacement)")
   + Argument ("choice").type_choice (conversion_type)
 
-  + Option ("template", "define a template image when converting a warpmid file (which is defined on a grid in the midway space between image 1 & 2). For example to "
+  + Option ("template", "define a template image when converting a warpfull file (which is defined on a grid in the midway space between image 1 & 2). For example to "
                         "generate the deformation field that maps image1 to image2, then supply image2 as the template image")
   + Argument ("image").type_image_in ()
 
   + Option ("midway_space",
-            "to be used only with warpmid2deformation and warpmid2displacement conversion types. The output will only contain the non-linear warp to map an input "
-            "image to the midway space (defined by the warpmid grid). If a linear transform exists in the warpmid file header then it will be composed and included in the output.")
+            "to be used only with warpfull2deformation and warpfull2displacement conversion types. The output will only contain the non-linear warp to map an input "
+            "image to the midway space (defined by the warpfull grid). If a linear transform exists in the warpfull file header then it will be composed and included in the output.")
 
   + Option ("from",
-      "to be used only with warpmid2deformation and warpmid2displacement conversion types. Used to define the direction of the desired output field."
+      "to be used only with warpfull2deformation and warpfull2displacement conversion types. Used to define the direction of the desired output field."
       "Use -from 1 to obtain the image1->image2 field and from 2 for image2->image1. Can be used in combination with the -midway_space option to "
       "produce a field that only maps to midway space.")
   +   Argument ("image").type_integer (1,1,2);
@@ -122,23 +122,23 @@ void run ()
     Image<default_type> deformation = Image<default_type>::create (argument[1], header).with_direct_io();
     Registration::Warp::displacement2deformation (displacement, deformation);
 
-   // warpmid2deformation & warpmid2displacement
+   // warpfull2deformation & warpfull2displacement
   } else if (registration_type == 2 || registration_type == 3) {
 
     auto warp = Image<default_type>::open (argument[0]).with_direct_io (3);
     if (warp.ndim() != 5)
-      throw Exception ("invalid input image. The input warpmid field image must be a 5D file.");
+      throw Exception ("invalid input image. The input warpfull field image must be a 5D file.");
     if (warp.size(3) != 3)
-      throw Exception ("invalid input image. The input warpmid field image must have 3 volumes (x,y,z) in the 4th dimension.");
+      throw Exception ("invalid input image. The input warpfull field image must have 3 volumes (x,y,z) in the 4th dimension.");
     if (warp.size(4) != 4)
-      throw Exception ("invalid input image. The input warpmid field image must have 4 volumes in the 5th dimension.");
+      throw Exception ("invalid input image. The input warpfull field image must have 4 volumes in the 5th dimension.");
 
     Image<default_type> warp_output;
     if (midway_space) {
       warp_output = Registration::Warp::compute_midway_deformation (warp, from);
     } else {
       if (!get_options ("template").size())
-        throw Exception ("-template option required with warpmid2deformation or warpmid2displacement conversion type");
+        throw Exception ("-template option required with warpfull2deformation or warpfull2displacement conversion type");
       auto template_header = Header::open (template_filename);
       warp_output = Registration::Warp::compute_full_deformation (warp, template_header, from);
     }
