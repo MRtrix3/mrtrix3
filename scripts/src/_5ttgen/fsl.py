@@ -19,7 +19,7 @@ def getInputFiles():
   import lib.app
   from lib.runCommand   import runCommand
   if hasattr(lib.app.args, 'mask') and lib.app.args.mask is not None:
-    runCommand('mrconvert ' + lib.app.args.mask + ' ' + os.path.join(lib.app.tempDir, 'mask.mif') + ' -datatype bit -stride +1,+2,+3')
+    runCommand('mrconvert ' + lib.app.args.mask + ' ' + os.path.join(lib.app.tempDir, 'mask.mif') + ' -datatype bit -stride -1,+2,+3')
 
 
 
@@ -76,23 +76,23 @@ def execute():
   if lib.app.args.sgm_amyg_hipp:
     sgm_structures.extend([ 'L_Amyg', 'R_Amyg', 'L_Hipp', 'R_Hipp' ])
   
-  runCommand('mrconvert input.mif T1.nii')  
+  runCommand('mrconvert input.mif T1.nii -stride -1,+2,+3')
 
   # Decide whether or not we're going to do any brain masking
   if os.path.exists('mask.mif'):
     
     # Check to see if the dimensions match the T1 image
-    T1_size = getHeaderInfo('input.mif', 'size')
+    T1_size = getHeaderInfo('T1.nii', 'size')
     mask_size = getHeaderInfo('mask.mif', 'size')
     if mask_size == T1_size:
-      runCommand('mrcalc input.mif mask.mif -mult T1_masked.nii')
+      runCommand('mrcalc input.mif mask.mif -mult - | mrconvert - T1_masked' + fsl_suffix + ' -stride -1,+2,+3')
     else:
-      runCommand('mrtransform mask.mif mask_regrid.mif -template input.mif')
-      runCommand('mrcalc input.mif mask_regrid.mif -mult T1_masked' + fsl_suffix)
+      runCommand('mrtransform mask.mif mask_regrid.mif -template T1.nii')
+      runCommand('mrcalc input.mif mask_regrid.mif -mult - | mrconvert - T1_masked' + fsl_suffix)
       
   elif lib.app.args.premasked:
   
-    runCommand('mrconvert input.mif T1_masked' + fsl_suffix)
+    runCommand('mrconvert input.mif T1_masked' + fsl_suffix + ' -stride -1,+2,+3')
     
   else:
 
@@ -121,7 +121,7 @@ def execute():
 
     if not os.path.isfile('T1_preBET' + fsl_suffix):
       warnMessage('FSL command ' + ssroi_cmd + ' appears to have failed; passing T1 directly to BET')
-      runCommand('mrconvert input.mif T1_preBET' + fsl_suffix)
+      runCommand('mrconvert input.mif T1_preBET' + fsl_suffix + ' -stride -1,+2,+3')
 
     # BET
     runCommand(bet_cmd + ' T1_preBET' + fsl_suffix + ' T1_masked' + fsl_suffix + ' -f 0.15 -R')
@@ -140,16 +140,16 @@ def execute():
   # Convert FIRST meshes to partial volume images
   pve_image_list = [ ]
   for struct in sgm_structures:
-    pve_image_path = 'mesh2pve_' + struct + '.nii'
+    pve_image_path = 'mesh2pve_' + struct + '.mif'
     vtk_in_path = 'first-' + struct + '_first.vtk'
     vtk_temp_path = struct + '.vtk'
     if not os.path.exists(vtk_in_path):
       errorMessage('Missing .vtk file for structure ' + struct + '; run_first_all must have failed')
-    runCommand('meshconvert ' + vtk_in_path + ' ' + vtk_temp_path + ' -transform_first2real input.mif')
+    runCommand('meshconvert ' + vtk_in_path + ' ' + vtk_temp_path + ' -transform_first2real T1.nii')
     runCommand('mesh2pve ' + vtk_temp_path + ' T1_masked' + fsl_suffix + ' ' + pve_image_path)
     pve_image_list.append(pve_image_path)
   pve_cat = ' '.join(pve_image_list)
-  runCommand('mrmath ' + pve_cat + ' sum - | mrcalc - 1.0 -min all_sgms.nii')
+  runCommand('mrmath ' + pve_cat + ' sum - | mrcalc - 1.0 -min all_sgms.mif')
 
   # Looks like FAST in 5.0 ignores FSLOUTPUTTYPE when writing the PVE images
   # Will have to wait and see whether this changes, and update the script accordingly
@@ -163,7 +163,7 @@ def execute():
   runCommand('mrthreshold T1_masked_pve_2' + fast_suffix + ' - -abs 0.001 | maskfilter - connect wm_mask.mif -largest')
   # Step 2: Generate the images in the same fashion as the 5ttgen command
   runCommand('mrconvert T1_masked_pve_0' + fast_suffix + ' csf.mif')
-  runCommand('mrcalc 1 csf.mif -sub all_sgms.nii -min sgm.mif')
+  runCommand('mrcalc 1 csf.mif -sub all_sgms.mif -min sgm.mif')
   runCommand('mrcalc 1.0 csf.mif sgm.mif -add -sub T1_masked_pve_1' + fast_suffix + ' T1_masked_pve_2' + fast_suffix + ' -add -div multiplier.mif')
   runCommand('mrcalc multiplier.mif -finite multiplier.mif 0.0 -if multiplier_noNAN.mif')
   runCommand('mrcalc T1_masked_pve_1' + fast_suffix + ' multiplier_noNAN.mif -mult cgm.mif')

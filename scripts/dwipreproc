@@ -103,7 +103,6 @@ lib.app.gotoTempDir()
 series_size = getHeaderInfo('series.mif', 'size').split()
 grad = getHeaderInfo('series.mif', 'dwgrad').split('\n')
 stride = getHeaderInfo('series.mif', 'stride')
-transform = getHeaderInfo('series.mif', 'transform')
 if PE_design == 'Pair':
   Pair1_size  = getHeaderInfo('pair1.mif',  'size').split()
   Pair2_size  = getHeaderInfo('pair2.mif',  'size').split()
@@ -183,17 +182,17 @@ if not PE_design == 'None':
 
 # Convert the input files as necessary for FSL tools
 if PE_design == 'None':
-  runCommand('mrconvert ' + series_path + ' dwi_pre_topup.nii -stride +1,+2,+3,+4')
+  runCommand('mrconvert ' + series_path + ' dwi_pre_topup.nii -stride -1,+2,+3,+4')
 if PE_design == 'Pair':
-  runCommand('mrconvert ' + series_path + ' dwi_pre_topup.nii -stride +1,+2,+3,+4')
-  runCommand('mrcat ' + pair1_path + ' ' + pair2_path + ' - -axis 3 | mrconvert - topup_in.nii -stride +1,+2,+3,+4')
+  runCommand('mrconvert ' + series_path + ' dwi_pre_topup.nii -stride -1,+2,+3,+4')
+  runCommand('mrcat ' + pair1_path + ' ' + pair2_path + ' - -axis 3 | mrconvert - topup_in.nii -stride -1,+2,+3,+4')
 elif PE_design == 'All':
   runCommand('dwiextract ' + series_path + ' -bzero pair1.mif')
   runCommand('dwiextract ' + series2_path + ' -bzero pair2.mif')
-  runCommand('mrcat pair1.mif pair2.mif - -axis 3 | mrconvert - topup_in.nii -stride +1,+2,+3,+4')
-  runCommand('mrconvert ' + series_path + ' dwi1_pre_topup.nii -stride +1,+2,+3,+4')
+  runCommand('mrcat pair1.mif pair2.mif - -axis 3 | mrconvert - topup_in.nii -stride -1,+2,+3,+4')
+  runCommand('mrconvert ' + series_path + ' dwi1_pre_topup.nii -stride -1,+2,+3,+4')
   delFile(series_path)
-  runCommand('mrconvert ' + series2_path + ' dwi2_pre_topup.nii -stride +1,+2,+3,+4')
+  runCommand('mrconvert ' + series2_path + ' dwi2_pre_topup.nii -stride -1,+2,+3,+4')
   delFile(series2_path)
   runCommand('mrcat dwi1_pre_topup.nii dwi2_pre_topup.nii dwi_pre_eddy.nii -axis 3')
 
@@ -249,8 +248,8 @@ eddy_in_topup = ''
 if PE_design == 'None':
 
   # Generate a processing mask for eddy based on the input series
-  runCommand('dwi2mask ' + series_path + ' - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32 -stride +1,+2,+3')
-  runCommand('mrconvert ' + series_path + ' - -stride +1,+2,+3,+4 | mrinfo - -export_grad_fsl bvecs bvals')
+  runCommand('dwi2mask ' + series_path + ' - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32 -stride -1,+2,+3')
+  runCommand('mrconvert ' + series_path + ' - -stride -1,+2,+3,+4 | mrinfo - -export_grad_fsl bvecs bvals')
 
 else:
 
@@ -276,7 +275,7 @@ else:
   # Create the diffusion gradient table in FSL format
   # Make sure the strides are identical to the image actually being passed to eddy before exporting the gradient table
   if PE_design == 'Pair':
-    runCommand('mrconvert ' + series_path + ' - -stride +1,+2,+3,+4 | mrinfo - -export_grad_fsl bvecs bvals')
+    runCommand('mrconvert ' + series_path + ' - -stride -1,+2,+3,+4 | mrinfo - -export_grad_fsl bvecs bvals')
   else:
     # Concatenate the diffusion gradient table twice
     with open('grad.b', 'w') as outfile:
@@ -288,7 +287,7 @@ else:
 
 
   # Use the initial corrected image series from applytopup to derive a processing mask for eddy
-  runCommand('mrconvert dwi_post_topup' + fsl_suffix + ' -fslgrad bvecs bvals - | dwi2mask - - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32 -stride +1,+2,+3')
+  runCommand('mrconvert dwi_post_topup' + fsl_suffix + ' -fslgrad bvecs bvals - | dwi2mask - - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32 -stride -1,+2,+3')
 
   eddy_in_topup = ' --topup=field'
 
@@ -356,27 +355,36 @@ else: # 'All'
   bvals = bvals[0:num_volumes]
   with open('bvals_combined', 'w') as f:
     f.write(' '.join(bvals))
-    
+
+  # Prior to 5.0.8, a bug resulted in the output field map image from topup having an identity transform,
+  #   regardless of the transform of the input image
+  # Detect this, and manually replace the transform if necessary
+  #   (even if this doesn't cause an issue with the subsequent mrcalc command, it may in the future, it's better for
+  #   visualising the script temporary files, and it gives the user a warning about an out-of-date FSL)
+  input_transform_text = getHeaderInfo('topup_in.nii', 'transform')
+  input_transform = [ float(f) for f in input_transform_text.replace('\n', ' ').replace(',', ' ').split() ]
+  topup_transform = [ float(f) for f in getHeaderInfo('field_map' + fsl_suffix, 'transform').replace('\n', ' ').replace(',', ' ').split() ]
+  transform_error = False
+  field_map_image = 'field_map' + fsl_suffix
+  for i, t in zip(input_transform, topup_transform):
+    if (abs(i-t) / (0.5*(i+t))) > 0.001:
+      transform_error = True
+  if transform_error:
+    warnMessage('topup output field image has incorrect transform; recommend updating FSL to version 5.0.8 or later')
+    with open( 'transform.txt', 'w' ) as f:
+      for line in input_transform_text:
+        f.write (line)
+    field_map_image = 'field_map_fix' + fsl_suffix
+    runCommand('mrtransform field_map' + fsl_suffix + ' -linear transform.txt -replace ' + field_map_image)
+    delFile('field_map' + fsl_suffix)
+
 
   # Derive the weight images
-  # To properly get a voxel displacement field, need to scale the field map (which is output in Hz) appropriately
-  # Scaling appears to be correct; however FSL is a bit ambiguous when it comes to image transforms & strides
-  # Looks like topup flips the x-axis on output (both corrected images and field), and erases image transform
-  # Eddy seems to expect this and operates accordingly; but since we're doing things external to FSL and
-  #   voxel-by-voxel, need to do the flip explicitly; also import the transform from the first input image
-  #   for the sake of visualisation
-  with open( 'transform.txt', 'w' ) as f:
-    for line in transform:
-      f.write (line)
-  runCommand('mrtransform field_map' + fsl_suffix + ' - -flip 0 -linear transform.txt -replace | mrconvert - field_map_flip.mif' + stride_option)
-  delFile('field_map' + fsl_suffix)
-
-
   # Scaling term for field map is identical to the bandwidth provided in the topup config file
   #   (converts Hz to pixel count; that way a simple image gradient can be used to get the Jacobians)
   # Let mrfilter apply the default 1 voxel size gaussian smoothing filter before calculating the field gradient
-  runCommand('mrcalc field_map_flip.mif 0.1 -mult - | mrfilter - gradient - | mrconvert - field_deriv_pe.mif -coord 3 1 -axes 0,1,2')
-  delFile('field_map_flip.mif')
+  runCommand('mrcalc ' + field_map_image + ' 0.1 -mult - | mrfilter - gradient - | mrconvert - field_deriv_pe.mif -coord 3 1 -axes 0,1,2')
+  delFile(field_map_image)
   runCommand('mrcalc 1.0 field_deriv_pe.mif -add 0.0 -max jacobian1.mif')
   runCommand('mrcalc 1.0 field_deriv_pe.mif -sub 0.0 -max jacobian2.mif')
   delFile('field_deriv_pe.mif')
