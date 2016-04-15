@@ -57,7 +57,7 @@ Spherical deconvolution options
 
 -  **-threshold value** the threshold below which the amplitude of the FOD is assumed to be zero, expressed as an absolute amplitude (default = 0).
 
--  **-niter number** the maximum number of iterations to perform for each voxel (default = 0). Use '-niter 0' for a linear unconstrained spherical deconvolution.
+-  **-niter number** the maximum number of iterations to perform for each voxel (default = 50). Use '-niter 0' for a linear unconstrained spherical deconvolution.
 
 Stride options
 ^^^^^^^^^^^^^^
