@@ -103,9 +103,9 @@ class Processor
           w = (b*p).array().exp();
           work.setZero();
           work.selfadjointView<Eigen::Lower>().rankUpdate (b.transpose()*w.asDiagonal());
-          p = llt.compute (work.selfadjointView<Eigen::Lower>()).solve(b.transpose()*w.asDiagonal()*dwi);
+          p = llt.compute (work.selfadjointView<Eigen::Lower>()).solve(b.transpose()*w.asDiagonal()*w.asDiagonal()*dwi);
         }
-             
+        
         if (b0_image) {
           assign_pos_of (dwi_image, 0, 3).to (*b0_image);
           b0_image->value() = exp(p[6]);
