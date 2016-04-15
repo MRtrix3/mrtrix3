@@ -414,6 +414,8 @@ namespace MR
         void ODF::setup_ODFtype_UI (const ODF_Item* image)
         {
           assert (image);
+          if (preview)
+            preview->render_frame->set_mode (image->odf_type);
           lmax_label->setVisible (image->odf_type == odf_type_t::SH);
           lmax_selector->setVisible (image->odf_type == odf_type_t::SH);
           if (image->odf_type == odf_type_t::SH)
