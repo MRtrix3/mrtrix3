@@ -1,3 +1,5 @@
+.. _maskfilter:
+
 maskfilter
 ===========
 

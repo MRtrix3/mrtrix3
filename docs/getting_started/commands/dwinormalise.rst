@@ -1,3 +1,5 @@
+.. _dwinormalise:
+
 dwinormalise
 ===========
 

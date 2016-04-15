@@ -1,3 +1,5 @@
+.. _tensor2metric:
+
 tensor2metric
 ===========
 

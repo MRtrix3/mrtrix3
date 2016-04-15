@@ -1,3 +1,5 @@
+.. _dirorder:
+
 dirorder
 ===========
 

@@ -1,3 +1,5 @@
+.. _tck2connectome:
+
 tck2connectome
 ===========
 

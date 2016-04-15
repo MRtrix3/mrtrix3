@@ -1,3 +1,5 @@
+.. _dwi2noise:
+
 dwi2noise
 ===========
 

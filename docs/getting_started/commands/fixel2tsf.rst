@@ -1,3 +1,5 @@
+.. _fixel2tsf:
+
 fixel2tsf
 ===========
 

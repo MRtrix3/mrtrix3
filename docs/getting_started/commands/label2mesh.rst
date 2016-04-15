@@ -1,3 +1,5 @@
+.. _label2mesh:
+
 label2mesh
 ===========
 
