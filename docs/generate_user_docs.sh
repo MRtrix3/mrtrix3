@@ -36,7 +36,7 @@ Scripts for external libraries
 ################" > getting_started/scripts_list.rst
 
   mkdir -p getting_started/scripts
-  for n in `find ../scripts/ -type f -print0 | xargs -0 grep -l "lib.app.initParser"`; do
+  for n in `find ../scripts/ -type f -print0 | xargs -0 grep -l "lib.app.initParser" | sort`; do
     filepath='getting_started/scripts'
     filename=`basename $n`
     $n __print_usage_rst__ > $filepath/$filename.rst
