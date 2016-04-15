@@ -32,15 +32,15 @@ namespace MR
         + Argument ("warp1").type_file_out ()
         + Argument ("warp2").type_file_out ()
 
-      + Option ("nl_warp_mid", "output all warps that map each image to midway space and the inverses in a single 4D image file. The 4th image dimension defines the x,y,z, displacement "
-                               "and the 5th dimension indexes the field in this order: image1->midway, midway->image1, image2->midway, midway->image2."
-                               "Where image1->midway defines the field that maps image1 onto the midway space using the reverse convention (i.e. displacements map midway voxel positions to image1 space)."
-                               "When linear registration is performed first, the estimated linear transform will be included in the comments of the image header, and therefore the entire linear and "
-                               "non-linear transform can be applied using this output warp file with mrtransform")
+      + Option ("nl_warp_full", "output all warps used during registration. This saves four different warps that map each image to a midway space and their inverses in a single 5D image file. "
+                                "The 4th image dimension indexes the x,y,z component of the deformation vector and the 5th dimension indexes the field in this order: "
+                                "image1->midway, midway->image1, image2->midway, midway->image2. Where image1->midway defines the field that maps image1 onto the midway space using the reverse convention "
+                                "When linear registration is performed first, the estimated linear transform will be included in the comments of the image header, and therefore the entire linear and "
+                                "non-linear transform can be applied (in either direction) using this output warp file with mrtransform")
         + Argument ("image").type_file_out ()
 
-      + Option ("nl_init", "initialise the non-linear registration with the supplied warp image. The supplied warp must be in the same format as output using the -nl_warp_mid option "
-                            "(i.e. have 4 displacement fields with the linear transforms in the image header)")
+      + Option ("nl_init", "initialise the non-linear registration with the supplied warp image. The supplied warp must be in the same format as output using the -nl_warp_full option "
+                            "(i.e. have 4 deformation fields with the linear transforms in the image header)")
         + Argument ("image").type_image_in ()
 
       + Option ("nl_scale", "use a multi-resolution scheme by defining a scale factor for each level "

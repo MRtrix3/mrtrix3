@@ -98,7 +98,7 @@ Note that here we transform FOD images into template space *without* FOD reorien
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Here we segment each FOD lobe to identify the number and orientation of fixels in each voxel. The output also contains the apparent fibre density (AFD) value per fixel estimated as the FOD lobe integral (see `here <http://www.sciencedirect.com/science/article/pii/S1053811912011615>`_ for details on FOD segmentation). Note that in the following steps we will use the shortened acronym FD (paper under review) instead of AFD ::
 
-    fod2fixel <input_warped_fod_image> -mask <input_analysis_voxel_mask> -afd <output_afd.msf>
+    fod2fixel <input_warped_fod_image> -mask <input_analysis_voxel_mask> -afd <output_fd.msf>
     
 .. NOTE:: If you would like to perform fixel-based analysis of metrics derived from other diffusion MRI models (e.g. CHARMED), replace steps 8 & 9. For example, in step 8 you can warp preprocessed DW images (also without any reorientation). In step 9 you could then estimate your DWI model of choice. 
     

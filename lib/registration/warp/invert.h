@@ -17,7 +17,7 @@
 #define __registration_warp_invert_h__
 
 #include "image.h"
-#include "interp/cubic.h"
+#include "interp/linear.h"
 #include "algo/threaded_loop.h"
 #include "registration/warp/convert.h"
 #include "transform.h"
@@ -69,7 +69,7 @@ namespace MR
             return discrepancy.dot (discrepancy);
           }
 
-          Interp::Cubic<Image<default_type> > displacement;
+          Interp::Linear<Image<default_type> > displacement;
           MR::Transform transform;
           const size_t max_iter;
           default_type error_tolerance;
@@ -113,7 +113,7 @@ namespace MR
               return discrepancy.dot (discrepancy);
             }
 
-            Interp::Cubic<Image<default_type> > deform;
+            Interp::Linear<Image<default_type> > deform;
             MR::Transform transform;
             const size_t max_iter;
             default_type error_tolerance;

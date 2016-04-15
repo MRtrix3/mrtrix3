@@ -261,16 +261,25 @@ namespace MR
                     std::swap (im1_to_mid_new, im1_to_mid);
                     std::swap (im2_to_mid_new, im2_to_mid);
                   }
-                  std::swap (im1_update_new, im1_update);
-                  std::swap (im2_update_new, im2_update);
 
-                  // drag the inverse along for the ride
+                  // Drag the inverse along for the ride
                   DEBUG ("inverting displacement field");
                   {
                     LogLevelLatch level (0);
+
+                    // Here we apply the negative of the update field using a scaling and squaring approach to try and improve the initialisation of the inversion algorithm.
+
+
+
+
                     Warp::invert_displacement (*im1_to_mid, *mid_to_im1);
                     Warp::invert_displacement (*im2_to_mid, *mid_to_im2);
                   }
+
+
+                  std::swap (im1_update_new, im1_update);
+                  std::swap (im2_update_new, im2_update);
+
                 } else {
                   converged = true;
                 }

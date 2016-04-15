@@ -53,7 +53,7 @@ void usage ()
       // TODO link to 5D warp file format documentation
       + "Non-linear registration computes warps to map from both image1->image2 and image2->image1. "
         "Similar to Avants (2008) Med Image Anal. 12(1): 26–41, registration is performed by matching both the image1 and image2 in a 'midway space'. "
-        "Warps can be saved as two deformation fields that map directly between image1->image2 and image2->image1, or if using -nl_warp_mid as a single 5D file "
+        "Warps can be saved as two deformation fields that map directly between image1->image2 and image2->image1, or if using -nl_warp_full as a single 5D file "
         "that stores all 4 warps image1->mid->image2, and image2->mid->image1. The 5D warp format stores x,y,z deformations in the 4th dimension, and uses the 5th dimension "
         "to index the 4 warps. The affine transforms estimated (to midway space) are also stored as comments in the image header. The 5D warp file can be used to reinitialise "
         "subsequent registrations, in addition to transforming images to midway space (e.g. for intra-subject alignment in a 2-time-point longitudinal analysis).";

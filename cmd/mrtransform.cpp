@@ -131,9 +131,9 @@ void usage ()
           "combination with the -affine option, in which case the affine will be applied first)")
       + Argument ("image").type_image_in ()
 
-    + Option ("warp_mid",
+    + Option ("warp_full",
         "warp the input image using a 5D warp file output from mrregister. Any linear transforms in the warp image header "
-        "will also be applied. The -warp option must be used in combination with either the -template option or the -midway_space option. "
+        "will also be applied. The -warp_full option must be used in combination with either the -template option or the -midway_space option. "
         "If a -template image is supplied then the full warp will be used. By default the image1->image2 transform will be applied, "
         "however the -from 2 option can be used to apply the image2->image1 transform. Use the -midway_space option to warp the input "
         "image to the midway space. The -from option can also be used to define which warp to use when transforming to midway space")
@@ -230,18 +230,18 @@ void run ()
 
   // Warp 5D warp
   // TODO add reference to warp format documentation
-  opt = get_options ("warp_mid");
+  opt = get_options ("warp_full");
   Image<default_type> warp;
   if (opt.size()) {
     warp = Image<default_type>::open (opt[0][0]).with_direct_io();
     if (warp.ndim() != 5)
-      throw Exception ("the input -warp_mid image must be a 5D file.");
+      throw Exception ("the input -warp_full image must be a 5D file.");
     if (warp.size(3) != 3)
-      throw Exception ("the input -warp_mid image must have 3 volumes (x,y,z) in the 4th dimension.");
+      throw Exception ("the input -warp_full image must have 3 volumes (x,y,z) in the 4th dimension.");
     if (warp.size(4) != 4)
-      throw Exception ("the input -warp_mid image must have 4 volumes in the 5th dimension.");
+      throw Exception ("the input -warp_full image must have 4 volumes in the 5th dimension.");
     if (linear)
-      throw Exception ("the -warp_mid option cannot be applied in combination with -linear since the "
+      throw Exception ("the -warp_full option cannot be applied in combination with -linear since the "
                        "linear transform is already included in the warp header");
   }
 
