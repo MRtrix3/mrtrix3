@@ -240,7 +240,7 @@ support arbitrary combinations.
   anatomical labels typically used to refer to the ordering (e.g. RAS, LAS,
   etc), the order of storage has been changed by such a large rotation. For
   example, if a RAS image is modified such that its transform rotates the
-  images axes by 90° around the *y* axis, this in effect implies that voxels
+  image axes by 90° around the *y* axis, this in effect implies that voxels
   are now ordered IAR. 
 
   The *MRtrix3* back-end will interpret such large rotations as affecting the
@@ -248,16 +248,16 @@ support arbitrary combinations.
   always be left->right, posterior->anterior, inferior->superior *relative to
   the scanner axes*. Note that this also implies that the transform matrix will
   always be modified as necessary to bring it close to the standard coordinate
-  system, so that the first image axis is close to the $x$ axis, etc. This
+  system, so that the first image axis is close to the *x* axis, etc. This
   allows *MRtrix3* applications to operate on images in the knowledge that
   these axes are always anatomically as expected, without worrying about the
   details of *how* this information was actually stored on file. 
   
   It is important to bear this in mind when interpreting for output of
-  :ref:`mrinfo` for example, since this produces the strides and transform *as
+  `mrinfo`_ for example, since this produces the strides and transform *as
   interpreted by MRtrix3*, rather than those actually stored on file - although
   the two representations should be strictly equivalent. If you need to inspect
-  the information as stored on file, use :ref:`mrinfo`'s ``-norealign`` option. 
+  the information as stored on file, use `mrinfo`_'s ``-norealign`` option. 
 
 
 .. _supported_image_formats:
@@ -502,7 +502,7 @@ Otherwise, the user will be prompted to select the series of interest.
 *MRtrix3* supports data from all major manufacturers, including Siemens mosaics
 and the newer single-file multi-frame format.
 
-A separate application, :ref:`dcminfo`, is provided to view all DICOM header
+A separate application, `dcminfo`_, is provided to view all DICOM header
 elements within a particular DICOM file, including Siemens' custom shadow
 attributes (CSA).
 
@@ -574,7 +574,7 @@ appropriately according to the standard.
 
 .. WARNING::
   By default, Analyse format images will be assumed to be stored using RAS
-  (radiological) convention. This can modified in the :ref:`config` file, by
+  (radiological) convention. This can modified in the `configuration`_ file, by
   setting the ``Analyse.LeftToRight`` entry to ``true``.
 
 
