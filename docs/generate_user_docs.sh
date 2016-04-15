@@ -21,7 +21,7 @@ List of MRtrix3 commands
     filepath='getting_started/commands'
     filename=`basename $n`
     $n __print_usage_rst__ > $filepath/$filename.rst
-    sed -ie "1i$filename\n===========\n" $filepath/$filename.rst
+    sed -ie "1i.. _$filename:\n\n$filename\n===========\n" $filepath/$filename.rst
     echo "
 .. include:: commands/$filename.rst
 .......
