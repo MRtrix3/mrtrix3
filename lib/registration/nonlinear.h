@@ -261,24 +261,16 @@ namespace MR
                     std::swap (im1_to_mid_new, im1_to_mid);
                     std::swap (im2_to_mid_new, im2_to_mid);
                   }
+                  std::swap (im1_update_new, im1_update);
+                  std::swap (im2_update_new, im2_update);
 
-                  // Drag the inverse along for the ride
                   DEBUG ("inverting displacement field");
                   {
                     LogLevelLatch level (0);
-
-                    // Here we apply the negative of the update field using a scaling and squaring approach to try and improve the initialisation of the inversion algorithm.
-
-
-
-
                     Warp::invert_displacement (*im1_to_mid, *mid_to_im1);
                     Warp::invert_displacement (*im2_to_mid, *mid_to_im2);
                   }
 
-
-                  std::swap (im1_update_new, im1_update);
-                  std::swap (im2_update_new, im2_update);
 
                 } else {
                   converged = true;
@@ -293,9 +285,13 @@ namespace MR
             }
             // Convert all warps to deformation field format for output
             Registration::Warp::displacement2deformation (*im1_to_mid, *im1_to_mid);
+            negative_jacobian_check (*im1_to_mid);
             Registration::Warp::displacement2deformation (*im2_to_mid, *im2_to_mid);
+            negative_jacobian_check (*im2_to_mid);
             Registration::Warp::displacement2deformation (*mid_to_im1, *mid_to_im1);
+            negative_jacobian_check (*mid_to_im1);
             Registration::Warp::displacement2deformation (*mid_to_im2, *mid_to_im2);
+            negative_jacobian_check (*mid_to_im2);
           }
 
           template <class InputWarpType>
@@ -458,6 +454,17 @@ namespace MR
             std::shared_ptr<Image<default_type> > temp = std::make_shared<Image<default_type> > (Image<default_type>::scratch (header));
             Filter::reslice<Interp::Linear> (image, *temp);
             return temp;
+          }
+
+          void negative_jacobian_check (Image<default_type>& field) {
+            Adapter::Jacobian<Image<default_type> > jacobian (field);
+            bool is_neg = false;
+            for (auto i = Loop (0,3) (jacobian); i; ++i) {
+              if (jacobian.value().determinant() < 0.0)
+                is_neg = true;
+            }
+            if (is_neg)
+              WARN ("final warp computed is not diffeomorphic (negative jacobian determinants detected). Try increasing -nl_disp_smooth or -nl_update_smooth regularisation.");
           }
 
 
