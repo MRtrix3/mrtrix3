@@ -828,14 +828,12 @@ void run ()
                                                     nl_registration.get_im1_to_mid_linear(),
                                                     deform_field);
 
-      if (im1_image.ndim() == 3) {
-        Filter::warp<Interp::Cubic> (im1_image, im1_transformed, deform_field, 0.0);
-        if (do_reorientation)
-          Registration::Transform::reorient_warp ("reorienting FODs",
-                                                  im1_transformed,
-                                                  deform_field,
-                                                  Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
-      }
+      Filter::warp<Interp::Cubic> (im1_image, im1_transformed, deform_field, 0.0);
+      if (do_reorientation)
+        Registration::Transform::reorient_warp ("reorienting FODs",
+                                                im1_transformed,
+                                                deform_field,
+                                                Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
 
     } else if (do_affine) {
       Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, affine.get_transform(), Adapter::AutoOverSample, 0.0);
