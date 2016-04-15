@@ -367,7 +367,7 @@ else: # 'All'
   transform_error = False
   field_map_image = 'field_map' + fsl_suffix
   for i, t in zip(input_transform, topup_transform):
-    if (abs(i-t) / (0.5*(i+t)) > 0.001:
+    if (abs(i-t) / (0.5*(i+t))) > 0.001:
       transform_error = True
   if transform_error:
     warnMessage('topup output field image has incorrect transform; recommend updating FSL to version 5.0.8 or later')
@@ -377,7 +377,7 @@ else: # 'All'
     field_map_image = 'field_map_fix' + fsl_suffix
     runCommand('mrtransform field_map' + fsl_suffix + ' -linear transform.txt -replace ' + field_map_image)
     delFile('field_map' + fsl_suffix)
-    
+
 
   # Derive the weight images
   # Scaling term for field map is identical to the bandwidth provided in the topup config file
