@@ -526,12 +526,12 @@ void run ()
     warp2_filename = std::string (opt[0][1]);
   }
 
-  opt = get_options ("nl_warp_mid");
-  std::string warp_mid_filename;
+  opt = get_options ("nl_warp_full");
+  std::string warp_full_filename;
   if (opt.size()) {
     if (!do_nonlinear)
       throw Exception ("Non-linear warp output requested when no non-linear registration is requested");
-    warp_mid_filename = std::string (opt[0][0]);
+    warp_full_filename = std::string (opt[0][0]);
   }
 
 
@@ -775,13 +775,13 @@ void run ()
       nl_registration.run (identity_transform, im1_image, im2_image, im1_mask, im2_mask);
     }
 
-    if (warp_mid_filename.size()) {
+    if (warp_full_filename.size()) {
       //TODO add affine parameters to comments too?
       Header output_header = nl_registration.get_output_warps_header();
       nl_registration.write_params_to_header (output_header);
       nl_registration.write_linear_to_header (output_header);
       output_header.datatype() = DataType::from_command_line (DataType::Float32);
-      auto output_warps = Image<float>::create (warp_mid_filename, output_header);
+      auto output_warps = Image<float>::create (warp_full_filename, output_header);
       nl_registration.get_output_warps (output_warps);
     }
 
