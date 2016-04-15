@@ -165,21 +165,26 @@ namespace MR
         default_type min_vox_size = static_cast<default_type> (std::min (input.spacing(0), std::min (input.spacing(1), input.spacing(2))));
 
         // if the maximum update is larger than half a voxel, perform scaling and squaring to ensure the displacement field remains diffeomorphic
+
+        default_type scale_factor = 1.0;
         if (max_norm * step < min_vox_size / 2.0) {
           update_displacement (input, update, output, step);
         } else {
-          default_type scale_factor = std::pow (2, std::ceil (std::log ((max_norm * step) / (min_vox_size / 2.0)) / std::log (2.0)));
-          scale_factor = 32;
-//          CONSOLE ("scaling and squaring: " + str(scale_factor));
+          scale_factor = std::pow (2, std::ceil (std::log ((max_norm * step) / (min_vox_size / 2.0)) / std::log (2.0)));
+
           std::shared_ptr<Image<default_type>> scaled_update = std::make_shared<Image<default_type> >(Image<default_type>::scratch (update));
           std::shared_ptr<Image<default_type>> composed = std::make_shared<Image<default_type> >(Image<default_type>::scratch (update));
-          default_type temp = step / scale_factor; // apply the step size and scale factor at once
+
+          // Scaling
+          default_type scaled_step = step / scale_factor; // apply the step size and scale factor at once
           ThreadedLoop (update).run (
-                [&temp](Image<default_type>& update, Image<default_type>& scaled_update) {
-                  scaled_update.row(3) = update.row(3) * temp;
+                [&scaled_step](Image<default_type>& update, Image<default_type>& scaled_update) {
+                  scaled_update.row(3) = update.row(3) * scaled_step;
                 }, update, *scaled_update);
 
 //          CONSOLE ("composing " + str(std::log2 (scale_factor)) + "times");
+
+          // Squaring
           for (size_t i = 0; i < std::log2 (scale_factor); ++i) {
             update_displacement (*scaled_update, *scaled_update, *composed);
             std::swap (scaled_update, composed);
@@ -204,6 +209,8 @@ namespace MR
           update_displacement (input, *scaled_update, output);
         }
       }
+
+
 
       // Compose linear1<->deform1<->[midway space]<->deform2<->linear2.
       template <class DeformationField1Type, class DeformationField2Type, class OutputDeformationFieldType>
