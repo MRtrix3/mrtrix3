@@ -1,3 +1,5 @@
+.. _labelconfig:
+
 labelconfig
 ===========
 

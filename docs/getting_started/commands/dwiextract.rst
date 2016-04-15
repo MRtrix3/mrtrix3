@@ -1,3 +1,5 @@
+.. _dwiextract:
+
 dwiextract
 ===========
 

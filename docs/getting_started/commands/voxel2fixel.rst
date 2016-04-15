@@ -1,3 +1,5 @@
+.. _voxel2fixel:
+
 voxel2fixel
 ===========
 

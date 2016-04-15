@@ -1,3 +1,5 @@
+.. _msdwi2fod:
+
 msdwi2fod
 ===========
 

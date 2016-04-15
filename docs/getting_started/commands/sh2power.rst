@@ -1,3 +1,5 @@
+.. _sh2power:
+
 sh2power
 ===========
 
@@ -14,10 +16,14 @@ Synopsis
 Description
 -----------
 
-compute the power contained within each harmonic degree.
+compute the total power of a spherical harmonics image.
+
+This command computes the sum of squared SH coefficients, which equals the mean-squared amplitude of the spherical function it represents.
 
 Options
 -------
+
+-  **-spectrum** output the power spectrum, i.e., the power contained within each harmonic degree (l=0, 2, 4, ...) as a 4-D image.
 
 Standard options
 ^^^^^^^^^^^^^^^^

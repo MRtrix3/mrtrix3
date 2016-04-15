@@ -1,3 +1,5 @@
+.. _sh2peaks:
+
 sh2peaks
 ===========
 

@@ -1,3 +1,5 @@
+.. _afdconnectivity:
+
 afdconnectivity
 ===========
 
