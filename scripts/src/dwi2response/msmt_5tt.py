@@ -114,15 +114,12 @@ def execute():
   for index, b in enumerate(shells):
     int_b = str(int(round(b)))
     dwi_path = 'dwi_b' + int_b + '.mif'
+    mean_dwi_path = 'dwi_b' + int_b + '_mean.mif'
+    # dwiextract will now yield a 4D image, even if there's only a single volume in a shell
     runCommand('dwiextract dwi.mif -shell ' + str(b) + ' ' + dwi_path)
-    sizes = getHeaderInfo(dwi_path, 'size').split()
-    if len(sizes) == 3:
-      mean_path = dwi_path
-    else:
-      mean_path = 'dwi_b' + int_b + '_mean.mif'
-      runCommand('mrmath ' + dwi_path + ' mean ' + mean_path + ' -axis 3')
-    gm_mean  = float(getImageStat(mean_path, 'mean', 'gm_mask.mif'))
-    csf_mean = float(getImageStat(mean_path, 'mean', 'csf_mask.mif'))
+    runCommand('mrmath ' + dwi_path + ' mean ' + mean_dwi_path + ' -axis 3')
+    gm_mean  = float(getImageStat(mean_dwi_path, 'mean', 'gm_mask.mif'))
+    csf_mean = float(getImageStat(mean_dwi_path, 'mean', 'csf_mask.mif'))
     gm_responses .append( str(gm_mean  * math.sqrt(4.0 * math.pi)) )
     csf_responses.append( str(csf_mean * math.sqrt(4.0 * math.pi)) )
     this_b_lmax_option = ''
