@@ -285,13 +285,12 @@ namespace MR
             }
             // Convert all warps to deformation field format for output
             Registration::Warp::displacement2deformation (*im1_to_mid, *im1_to_mid);
-            negative_jacobian_check (*im1_to_mid);
             Registration::Warp::displacement2deformation (*im2_to_mid, *im2_to_mid);
-            negative_jacobian_check (*im2_to_mid);
             Registration::Warp::displacement2deformation (*mid_to_im1, *mid_to_im1);
-            negative_jacobian_check (*mid_to_im1);
             Registration::Warp::displacement2deformation (*mid_to_im2, *mid_to_im2);
-            negative_jacobian_check (*mid_to_im2);
+            if (has_negative_jacobians(*im1_to_mid) || has_negative_jacobians(*im2_to_mid) ||
+                has_negative_jacobians(*mid_to_im1) || has_negative_jacobians(*mid_to_im2))
+              WARN ("final warp computed is not diffeomorphic (negative jacobian determinants detected). Try increasing -nl_disp_smooth or -nl_update_smooth regularisation.");
           }
 
           template <class InputWarpType>
@@ -456,15 +455,13 @@ namespace MR
             return temp;
           }
 
-          void negative_jacobian_check (Image<default_type>& field) {
+          bool has_negative_jacobians (Image<default_type>& field) {
             Adapter::Jacobian<Image<default_type> > jacobian (field);
-            bool is_neg = false;
             for (auto i = Loop (0,3) (jacobian); i; ++i) {
               if (jacobian.value().determinant() < 0.0)
-                is_neg = true;
+                return true;
             }
-            if (is_neg)
-              WARN ("final warp computed is not diffeomorphic (negative jacobian determinants detected). Try increasing -nl_disp_smooth or -nl_update_smooth regularisation.");
+            return false;
           }
 
 

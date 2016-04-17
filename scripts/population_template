@@ -279,7 +279,7 @@ for level in range(0, len(nl_scales)):
     runCommand('mrregister ' + abspath(i.directory, i.filename) + ' ' + current_template +
                ' -type nonlinear' +
                ' -nl_niter ' + str(nl_niter[level]) +
-               ' -nl_warp_mid warps/' + i.prefix + '.mif' +
+               ' -nl_warp_full warps/' + i.prefix + '.mif' +
                ' -transformed input_transformed/' + i.prefix + '.mif' +
                ' -nl_update_smooth ' +  lib.app.args.nl_update_smooth +
                ' -nl_disp_smooth ' +  lib.app.args.nl_disp_smooth +
