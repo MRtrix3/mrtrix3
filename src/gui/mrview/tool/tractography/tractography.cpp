@@ -267,7 +267,7 @@ namespace MR
            if(scalar_file_options && !hide_all_button->isChecked()) {
              for (size_t i = 0, N = tractogram_list_model->rowCount(); i < N; ++i) {
                Tractogram* tractogram = dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get());
-               if (tractogram && tractogram->show && tractogram->scalar_filename.length())
+               if (tractogram && tractogram->show && tractogram->intensity_scalar_filename.length())
                  total_visible += 1;
              }
            }
@@ -486,8 +486,8 @@ namespace MR
               scalar_file_options->raise();
             }
             dynamic_cast<TrackScalarFile*> (scalar_file_options->tool)->set_tractogram (tractogram_list_model->get_tractogram (indices[0]));
-            if (dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()].get())->scalar_filename.length() == 0) {
-              if (!dynamic_cast<TrackScalarFile*> (scalar_file_options->tool)->open_track_scalar_file_slot())
+            if (dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()].get())->intensity_scalar_filename.length() == 0) {
+              if (!dynamic_cast<TrackScalarFile*> (scalar_file_options->tool)->open_intensity_track_scalar_file_slot())
                 return;
             } else {
               dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()].get())->erase_nontrack_data();

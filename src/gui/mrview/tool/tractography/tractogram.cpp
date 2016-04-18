@@ -47,8 +47,11 @@ namespace MR
 
           if (color_type == Ends)
             source += "layout (location = 3) in vec3 end_colour;\n";
-          else if (color_type == ScalarFile)
+          else if (color_type == ScalarFile) {
             source += "layout (location = 3) in float amp;\n";
+            if (tractogram.has_threshold_scalar_file () )
+              source += "layout (location = 4) in float thresh_amp;\n";
+          }
 
           source +=
           "uniform mat4 MVP;\n"
@@ -90,7 +93,10 @@ namespace MR
           if (color_type == Ends)
             source += "  v_colour = end_colour;\n";
           else if (color_type == ScalarFile) { // TODO: move to frag shader:
-              source += "  v_amp = amp;\n";
+              if (tractogram.has_threshold_scalar_file () )
+                  source += "  v_amp = thresh_amp;\n";
+              else
+                  source += "  v_amp = amp;\n";
               if (!ColourMap::maps[colourmap].special) {
                 source += "  float amplitude = clamp (";
                 if (tractogram.scale_inverted()) source += "1.0 -";
@@ -123,7 +129,7 @@ namespace MR
 
           if (color_type == ScalarFile)
            source +=
-            "in float v_amp[];\n" // does this need to be declared flat? I don't see how this could be interpolated anyway...
+            "in float v_amp[];\n"
             "out float g_amp;\n";
           if (do_crop_to_slab)
             source += "in float v_include[];\n"
@@ -291,6 +297,9 @@ namespace MR
           if (use_lighting != tractogram.tractography_tool.use_lighting)
             return true;
 
+          if (tractogram.has_threshold_scalar_file() != tractogram.tractography_tool.use_threshold_scalarfile)
+            return true;
+
           return Displayable::Shader::need_update (object);
         }
 
@@ -304,6 +313,7 @@ namespace MR
           scalarfile_by_direction = tractogram.scalarfile_by_direction;
           use_lighting = tractogram.tractography_tool.use_lighting;
           color_type = tractogram.color_type;
+          tractogram.tractography_tool.use_threshold_scalarfile = tractogram.has_threshold_scalar_file();
           Displayable::Shader::update (object);
         }
 
@@ -319,7 +329,8 @@ namespace MR
             show_colour_bar (true),
             color_type (Direction),
             original_fov (NAN),
-            scalar_filename (""),
+            intensity_scalar_filename (std::string()),
+            threshold_scalar_filename (std::string()),
             tractography_tool (tool),
             filename (filename),
             sample_stride (0)
@@ -343,8 +354,11 @@ namespace MR
             gl::DeleteVertexArrays (vertex_array_objects.size(), &vertex_array_objects[0]);
           if (colour_buffers.size())
             gl::DeleteBuffers (colour_buffers.size(), &colour_buffers[0]);
-          if (scalar_buffers.size())
-            gl::DeleteBuffers (scalar_buffers.size(), &scalar_buffers[0]);
+          if (intensity_scalar_buffers.size())
+            gl::DeleteBuffers (intensity_scalar_buffers.size(), &intensity_scalar_buffers[0]);
+          if (threshold_scalar_buffers.size())
+            gl::DeleteBuffers (threshold_scalar_buffers.size(), &threshold_scalar_buffers[0]);
+
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
@@ -455,9 +469,15 @@ namespace MR
                   gl::VertexAttribPointer (3, 3, gl::FLOAT, gl::FALSE_, 3 * sample_stride * sizeof(float), (void*)0);
                   break;
                 case TrackColourType::ScalarFile:
-                  gl::BindBuffer (gl::ARRAY_BUFFER, scalar_buffers[buf]);
+                  gl::BindBuffer (gl::ARRAY_BUFFER, intensity_scalar_buffers[buf]);
                   gl::EnableVertexAttribArray (3);
                   gl::VertexAttribPointer (3, 1, gl::FLOAT, gl::FALSE_, sample_stride * sizeof(float), (void*)0);
+
+                  if (threshold_scalar_buffers.size ()) {
+                    gl::BindBuffer (gl::ARRAY_BUFFER, threshold_scalar_buffers[buf]);
+                    gl::EnableVertexAttribArray (4);
+                    gl::VertexAttribPointer (4, 1, gl::FLOAT, gl::FALSE_, sample_stride * sizeof(float), (void*)0);
+                  }
                   break;
                 default:
                   break;
@@ -596,15 +616,16 @@ namespace MR
 
 
 
-        void Tractogram::load_track_scalars (const std::string& filename)
+        void Tractogram::load_intensity_track_scalars (const std::string& filename)
         {
           // Make sure to set graphics context!
           // We're setting up vertex array objects
           MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
-          erase_nontrack_data();
-          scalar_filename = filename;
+          erase_nontrack_data ();
+          erase_intensity_scalar_data ();
+          intensity_scalar_filename = filename;
           value_min = std::numeric_limits<float>::infinity();
           value_max = -std::numeric_limits<float>::infinity();
           std::vector<float> buffer;
@@ -636,10 +657,10 @@ namespace MR
                 buffer.push_back (tck_scalar.back());
 
               if (buffer.size() >= MAX_BUFFER_SIZE)
-                load_scalars_onto_GPU (buffer);
+                load_intensity_scalars_onto_GPU (buffer);
             }
             if (buffer.size())
-              load_scalars_onto_GPU (buffer);
+              load_intensity_scalars_onto_GPU (buffer);
             file.close();
           } else {
             const Eigen::VectorXf scalars = MR::load_vector<float> (filename);
@@ -672,12 +693,100 @@ namespace MR
                 value_min = std::min (value_min, value);
               }
 
-              load_scalars_onto_GPU (buffer);
+              load_intensity_scalars_onto_GPU (buffer);
             }
           }
           this->set_windowing (value_min, value_max);
           greaterthan = value_max;
           lessthan = value_min;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        }
+
+
+
+        void Tractogram::load_threshold_track_scalars (const std::string& filename)
+        {
+          // Make sure to set graphics context!
+          // We're setting up vertex array objects
+          Window::GrabContext context;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+
+          erase_nontrack_data ();
+          erase_threshold_scalar_data ();
+          threshold_scalar_filename = filename;
+          float value_min = std::numeric_limits<float>::infinity();
+          float value_max = -std::numeric_limits<float>::infinity();
+          std::vector<float> buffer;
+          std::vector<float> tck_scalar;
+
+          if (Path::has_suffix (filename, ".tsf")) {
+            DWI::Tractography::Properties scalar_properties;
+            DWI::Tractography::ScalarReader<float> file (filename, scalar_properties);
+            DWI::Tractography::check_properties_match (properties, scalar_properties, ".tck / .tsf");
+            while (file (tck_scalar)) {
+
+              size_t tck_size = tck_scalar.size();
+
+              if(!tck_size)
+                continue;
+
+              // Pre padding to coincide with tracks buffer
+              for (size_t i = 0; i < max_sample_stride; ++i)
+                buffer.push_back (tck_scalar.front());
+
+              for (size_t i = 0; i < tck_size; ++i) {
+                buffer.push_back (tck_scalar[i]);
+                value_max = std::max (value_max, tck_scalar[i]);
+                value_min = std::min (value_min, tck_scalar[i]);
+              }
+
+              // Post padding to coincide with tracks buffer
+              for (size_t i = 0; i < max_sample_stride; ++i)
+                buffer.push_back (tck_scalar.back());
+
+              if (buffer.size() >= MAX_BUFFER_SIZE)
+                load_threshold_scalars_onto_GPU (buffer);
+            }
+            if (buffer.size())
+              load_threshold_scalars_onto_GPU (buffer);
+            file.close();
+          } else {
+            const Eigen::VectorXf scalars = MR::load_vector<float> (filename);
+            size_t total_num_tracks = 0;
+            for (std::vector<size_t>::const_iterator i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
+              total_num_tracks += *i;
+            if (size_t(scalars.size()) != total_num_tracks)
+              throw Exception ("The scalar text file does not contain the same number of elements as the selected tractogram");
+            size_t running_index = 0;
+
+            for (size_t buffer_index = 0; buffer_index != vertex_buffers.size(); ++buffer_index) {
+              const size_t num_tracks = num_tracks_per_buffer[buffer_index];
+              std::vector<GLint>& track_lengths (original_track_sizes[buffer_index]);
+
+              for (size_t index = 0; index != num_tracks; ++index, ++running_index) {
+                const float value = scalars[running_index];
+                tck_scalar.assign (track_lengths[index], value);
+
+                // Pre padding to coincide with tracks buffer
+                for (size_t i = 0; i < max_sample_stride; ++i)
+                  buffer.push_back (tck_scalar.front());
+
+                buffer.insert (buffer.end(), tck_scalar.begin(), tck_scalar.end());
+
+                // Post padding to coincide with tracks buffer
+                for (size_t i = 0; i < max_sample_stride; ++i)
+                  buffer.push_back (tck_scalar.back());
+
+                value_max = std::max (value_max, value);
+                value_min = std::min (value_min, value);
+              }
+
+              load_threshold_scalars_onto_GPU (buffer);
+            }
+          }
+          greaterthan = value_max;
+          lessthan = value_min;
+
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
         
@@ -691,15 +800,39 @@ namespace MR
             gl::DeleteBuffers (colour_buffers.size(), &colour_buffers[0]);
             colour_buffers.clear();
           }
-          if (scalar_buffers.size()) {
-            gl::DeleteBuffers (scalar_buffers.size(), &scalar_buffers[0]);
-            scalar_buffers.clear();
+
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        }
+
+
+
+
+        void Tractogram::erase_intensity_scalar_data ()
+        {
+          Window::GrabContext context;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          if (intensity_scalar_buffers.size()) {
+            gl::DeleteBuffers (intensity_scalar_buffers.size(), &intensity_scalar_buffers[0]);
+            intensity_scalar_buffers.clear();
+          }
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        }
+
+
+
+
+        void Tractogram::erase_threshold_scalar_data ()
+        {
+          Window::GrabContext context;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          if (threshold_scalar_buffers.size()) {
+            gl::DeleteBuffers (threshold_scalar_buffers.size(), &threshold_scalar_buffers[0]);
+            threshold_scalar_buffers.clear();
             set_use_discard_lower (false);
             set_use_discard_upper (false);
           }
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
-
 
 
 
@@ -758,7 +891,7 @@ namespace MR
 
 
 
-        void Tractogram::load_scalars_onto_GPU (std::vector<float>& buffer) 
+        void Tractogram::load_intensity_scalars_onto_GPU (std::vector<float>& buffer)
         {
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
@@ -769,7 +902,27 @@ namespace MR
 
           vao_dirty = true;
 
-          scalar_buffers.push_back (vertexbuffer);
+          intensity_scalar_buffers.push_back (vertexbuffer);
+          buffer.clear();
+
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        }
+
+
+
+
+        void Tractogram::load_threshold_scalars_onto_GPU (std::vector<float>& buffer)
+        {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+
+          GLuint vertexbuffer;
+          gl::GenBuffers (1, &vertexbuffer);
+          gl::BindBuffer (gl::ARRAY_BUFFER, vertexbuffer);
+          gl::BufferData (gl::ARRAY_BUFFER, buffer.size() * sizeof(float), &buffer[0], gl::STATIC_DRAW);
+
+          vao_dirty = true;
+
+          threshold_scalar_buffers.push_back (vertexbuffer);
           buffer.clear();
 
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;

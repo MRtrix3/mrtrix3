@@ -60,6 +60,7 @@ namespace MR
             float line_thickness;
             bool do_crop_to_slab;
             bool use_lighting;
+            bool use_threshold_scalarfile;
             bool not_3D;
             float slab_thickness;
             float line_opacity;
