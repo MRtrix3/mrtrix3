@@ -151,16 +151,20 @@ namespace MR
             for (auto i = Loop (0, 3)(im); i; ++i) {
               voxel_pos << (default_type)im.index(0), (default_type)im.index(1), (default_type)im.index(2);
               scanner = transform.voxel2scanner * voxel_pos;
-              mass += im.value();
-              centre_of_mass += scanner * im.value();
+              if (std::isfinite (im.value())) {
+                mass += im.value();
+                centre_of_mass += scanner * im.value();
+              }
             }
           } else {
             for (auto i = Loop (0, 3)(im, mask); i; ++i) {
               if (mask.value()) {
                 voxel_pos << (default_type)im.index(0), (default_type)im.index(1), (default_type)im.index(2);
                 scanner = transform.voxel2scanner * voxel_pos;
-                mass += im.value();
-                centre_of_mass += scanner * im.value();
+                if (std::isfinite (im.value())) {
+                  mass += im.value();
+                  centre_of_mass += scanner * im.value();
+                }
               }
             }
           }
