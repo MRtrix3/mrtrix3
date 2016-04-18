@@ -35,7 +35,7 @@ namespace MR
           for (size_t row = 0; row < 3; ++row) {
             const auto values = MR::split (lines[row], " ");
             if (values.size() != 4)
-              throw Exception ("linear transform in initialisation syn warps image header does not contain 4 rows");
+              throw Exception ("linear transform in initialisation syn warps image header does not contain 4 columns");
             for (size_t col = 0; col < 4; ++col)
               linear (row, col) = std::stod (values[col]);
           }
