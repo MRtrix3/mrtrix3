@@ -41,12 +41,12 @@ The resulting WM fODFs can be displayed together with the tissue volume fraction
 
 ::
 
-  mrview vf.mif -odf.load wm.mif
+  mrview vf.mif -odf.load_sh wm.mif
 
 Per tissue response function estimation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Input response functions for CSF, GM and single fibre WM can be estimated from the data using prior tissue segmentations, as described in `Jeurissen et al. (2014) <#references>`__ using the ``dwi2response msmt_5tt`` command: 
+Input response functions for CSF, GM and single fibre WM can be estimated from the data using prior tissue segmentations, similarly to that described in `Jeurissen et al. (2014) <#references>`__ using the ``dwi2response msmt_5tt`` command: 
 
 ::
 
@@ -71,6 +71,8 @@ where
 - ``T1.mif`` is a coregistered T1 data set from the same subject (input)
 
 - ``5tt.mif`` is the tissue type segmentation used above (output)
+
+The difference between the default behaviour of ``dwi2response msmt_5tt`` and the method described in `Jeurissen et al. (2014) <#references>`__ is that instead of selecting WM single-fibre voxels using an FA threshold, the ``dwi2response tournier`` algorithm is instead used.
 
 Note that this process is dependent on accurate correction of EPI geometric distortions, and rigid-body registration between the DWI and T1 modalities, such that the T1 image can be reliably used to select pure-tissue voxels in the DWI volumes. Failure to achieve these may result in inappropriate voxels being used for response function estimation, with concomitant errors in tissue estimates.
 

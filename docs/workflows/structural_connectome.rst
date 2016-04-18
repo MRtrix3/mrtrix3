@@ -68,12 +68,12 @@ If you are generating structural connectomes, you should be using
 Extracting pathways of interest from a connectome
 -------------------------------------------------
 
-The command ``tcknodeextract`` can be used to extract specific
+The command ``connectome2tck`` can be used to extract specific
 connections of interest from a connectome for further interrogation or
 visualisation. Note that since the resulting connectome matrix does not
 encode precisely which parcellation node pair each streamline was
 assigned to, the streamlines are re-assigned to parcellation nodes as
-part of this command. Run ``tcknodeextract -help`` to see the various
+part of this command. Run ``connectome2tck -help`` to see the various
 ways in which streamlines may be selected from the connectome.
 
 Also: Beware of running this command on systems with distributed network

@@ -38,10 +38,9 @@ high-density receiver coils. If left uncorrected, SIFT will incorrectly
 interpret this as a spatially-varying fibre density. Therefore bias
 field correction is highly recommended. We generally estimate the bias
 field based on the mean *b=0* image, and apply the estimated field to
-all DWI volumes. Unfortunately our internal script for handling this
-step is dependent on ITK, so we haven't included it in MRtrix. If
-anybody would like to code up a bias field correction binary for MRtrix
-you're more than welcome to :-P.
+all DWI volumes. This can currently be achieved using the
+``dwibiascorrect`` script, which can employ either the FAST tool in FSL
+or the N4 algorithm in ANTS to perform the field estimate.
 
 Number of streamlines pre / post SIFT
 -------------------------------------
@@ -206,3 +205,4 @@ should be proportionally reconstructed by streamlines; if only a subset
 of pathways in the brain are permitted to be reconstructed by the
 tractography algorithm, this will clearly not be the case, so
 appplication of SIFT in this instance will provide erroneous results.
+
