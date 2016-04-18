@@ -96,9 +96,9 @@ Note that here we transform FOD images into template space *without* FOD reorien
 
 9. Segment FOD images to estimate fixels and their fibre density (FD)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Here we segment each FOD lobe to identify the number and orientation of fixels in each voxel. The output also contains the apparent fibre density (AFD) value per fixel estimated as the FOD lobe integral (see `here <http://www.sciencedirect.com/science/article/pii/S1053811912011615>`_ for details on FOD segmentation). Note that in the following steps we will use the shortened acronym FD (paper under review) instead of AFD ::
+Here we segment each FOD lobe to identify the number and orientation of fixels in each voxel. The output also contains the apparent fibre density (AFD) value per fixel estimated as the FOD lobe integral (see `here <http://www.sciencedirect.com/science/article/pii/S1053811912011615>`_ for details on FOD segmentation). Note that in the following steps we will use a more generic shortened acronym - Fibre Density (FD) instead of AFD for consistency with our recent work (paper under review)::
 
-    fod2fixel <input_warped_fod_image> -mask <input_analysis_voxel_mask> -afd <output_fd.msf>
+    fod2fixel <input_warped_fod_image> -mask <input_analysis_voxel_mask> -afd <output_fd_not_reoriented.msf>
     
 .. NOTE:: If you would like to perform fixel-based analysis of metrics derived from other diffusion MRI models (e.g. CHARMED), replace steps 8 & 9. For example, in step 8 you can warp preprocessed DW images (also without any reorientation). In step 9 you could then estimate your DWI model of choice. 
     
@@ -107,13 +107,13 @@ Here we segment each FOD lobe to identify the number and orientation of fixels i
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Here we reorient the direction of all fixels based on the Jacobian matrix (local affine transformation) at each voxel in the warp::
 
-    fixelreorient <input_afd.msf> <subject2template_warp> <output_afd_reoriented.msf>
+    fixelreorient <input_fd_not_reoriented.msf> <subject2template_warp> <output_fd_reoriented.msf>
     
 11. Assign subject fixels to template fixels
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 In step 8 we obtained spatial correspondence between subject and template. In step 10 we corrected the fixel orientations to ensure angular correspondence of the segmented peaks of subject and template. Here, for each fixel in the template fixel analysis mask, we identify the corresponding fixel in each voxel of the subject image and assign the FD value of the subject fixel to the corresponding fixel in template space. If no fixel exists in the subject that corresponds to the template fixel then it is assigned a value of zero. See `this paper <http://www.ncbi.nlm.nih.gov/pubmed/26004503>`_ for more information::
 
-    fixelcorrespondence <input_afd_reoriented.msf> <input_analysis_fixel_mask.msf> <output_fd.msf>
+    fixelcorrespondence <input_fd_reoriented.msf> <input_analysis_fixel_mask.msf> <output_fd.msf>
     
 12. Compute fibre cross-section (FC) metric
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
