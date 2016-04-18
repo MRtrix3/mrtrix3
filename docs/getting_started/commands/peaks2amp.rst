@@ -1,3 +1,5 @@
+.. _peaks2amp:
+
 peaks2amp
 ===========
 

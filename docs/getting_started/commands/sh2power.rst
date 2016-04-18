@@ -1,3 +1,5 @@
+.. _sh2power:
+
 sh2power
 ===========
 

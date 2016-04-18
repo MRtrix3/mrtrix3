@@ -69,7 +69,7 @@ lib.app.checkOutputFile(lib.app.args.bias)
 
 runCommand('mrconvert ' + lib.app.args.input + ' ' + os.path.join(lib.app.tempDir, 'in.mif') + grad_import_option)
 if lib.app.args.mask:
-  runCommand('mrconvert ' + lib.app.args.mask + ' ' + os.path.join(lib.app.tempDir, 'mask.nii') + ' -stride +1,+2,+3')
+  runCommand('mrconvert ' + lib.app.args.mask + ' ' + os.path.join(lib.app.tempDir, 'mask.mif'))
 
 lib.app.gotoTempDir()
 
@@ -83,28 +83,25 @@ if len(DW_scheme) != int(dwi_sizes[3]):
 
 # Generate a brain mask if required, or check the mask if provided
 if lib.app.args.mask:
-  mask_sizes = getHeaderInfo('mask.nii', 'size').split()
+  mask_sizes = getHeaderInfo('mask.mif', 'size').split()
   if not mask_sizes[:3] == dwi_sizes[:3]:
     errorMessage('Provided mask image does not match input DWI')
 else:
-  runCommand('dwi2mask in.mif - | mrconvert - mask.nii -stride +1,+2,+3')
+  runCommand('dwi2mask in.mif mask.mif')
 
-# Make a NiFTI image since this is what the external softwares need
-runCommand('dwiextract in.mif bzeros.mif -bzero')
-bzero_sizes = getHeaderInfo('bzeros.mif', 'size')
-if len(bzero_sizes.split()) == 4:
-  runCommand('mrmath bzeros.mif mean - -axis 3 | mrconvert - mean_bzero.nii -stride +1,+2,+3')
-else:
-  runCommand('mrconvert bzeros.mif mean_bzero.nii -stride +1,+2,+3')
+# Generate a mean b=0 image
+runCommand('dwiextract in.mif - -bzero | mrmath - mean mean_bzero.mif -axis 3')
 
 if lib.app.args.fsl:
   # FAST doesn't accept a mask input; therefore need to explicitly mask the input image
-  runCommand('mrcalc mean_bzero.nii mask.nii -mult mean_bzero_masked.nii')
+  runCommand('mrcalc mean_bzero.mif mask.mif -mult - | mrconvert - mean_bzero_masked.nii -stride -1,+2,+3')
   runCommand(fast_cmd + ' -t 2 -o fast -n 3 -b mean_bzero_masked.nii')
   bias_path = 'fast_bias' + fast_suffix
 elif lib.app.args.ants:
   # Use the brain mask as a weights image rather than a mask; means that voxels at the edge of the mask
   #   will have a smoothly-varying bias field correction applied, rather than multiplying by 1.0 outside the mask
+  runCommand('mrconvert mean_bzero.mif mean_bzero.nii -stride +1,+2,+3')
+  runCommand('mrconvert mask.mif mask.nii -stride +1,+2,+3')
   bias_path = 'bias.nii'
   runCommand('N4BiasFieldCorrection -d 3 -i mean_bzero.nii -w mask.nii -o [corrected.nii,' + bias_path + '] -s 2 -b [150] -c [200x200,0.0]')
   

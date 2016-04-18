@@ -1,3 +1,5 @@
+.. _mesh2pve:
+
 mesh2pve
 ===========
 

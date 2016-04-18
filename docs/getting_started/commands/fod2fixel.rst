@@ -1,3 +1,5 @@
+.. _fod2fixel:
+
 fod2fixel
 ===========
 

@@ -1,3 +1,5 @@
+.. _dwi2mask:
+
 dwi2mask
 ===========
 

@@ -110,7 +110,7 @@ appropriateness of response function voxel selections)
 
 ``msdwi2fod DWI.mif RF_GM.txt GM.mif RF_WM.txt WM_FODs.mif RF_CSF.txt CSF.mif -mask nodif_brain_mask.nii.gz``
 
-``mrview meanb0.mif -odf.load WM_FODs.mif`` (visually make sure that the
+``mrview meanb0.mif -odf.load_sh WM_FODs.mif`` (visually make sure that the
 white matter FODs are sensible)
 
 *Coming soon: Robust Constrained Spherical Deconvolution - Rician bias
@@ -147,7 +147,7 @@ If this still does not adequately reduce RAM usage, you will need to
 reduce the number of input streamlines to a level where your processing
 hardware can successfully execute the ``tcksift`` command, e.g.:
 
-``tckedit 100M.tck 50M.tck -number 50000000``
+``tckedit 100M.tck 50M.tck -number 50M``
 
 Alternatively, if you're feeling brave, you can give
 `SIFT2 <Handling-SIFT2-weights>`__ a try...
@@ -157,3 +157,4 @@ Alternatively, if you're feeling brave, you can give
 ``tck2connectome 10M_SIFT.tck nodes_fixSGM.mif connectome.csv``
 
 ``mrview nodes_fixSGM.mif -connectome.init nodes_fixSGM.mif -connectome.load connectome.csv``
+

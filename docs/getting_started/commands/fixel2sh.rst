@@ -1,3 +1,5 @@
+.. _fixel2sh:
+
 fixel2sh
 ===========
 
