@@ -109,6 +109,10 @@ namespace MR
             image_list_model = new Model (this);
             image_list_view->setModel (image_list_model);
 
+            image_list_view->setContextMenuPolicy (Qt::CustomContextMenu);
+            connect (image_list_view, SIGNAL (customContextMenuRequested (const QPoint&)),
+                     this, SLOT (right_click_menu_slot (const QPoint&)));
+
             main_box->addWidget (image_list_view, 1);
 
             layout = new HBoxLayout;
@@ -529,6 +533,17 @@ namespace MR
         void Overlay::selection_changed_slot (const QItemSelection &, const QItemSelection &)
         {
           update_selection();
+        }
+
+
+        void Overlay::right_click_menu_slot (const QPoint& pos)
+        {
+          QModelIndex index = image_list_view->indexAt (pos);
+          if (index.isValid()) {
+            QPoint globalPos = image_list_view->mapToGlobal (pos);
+            image_list_view->selectionModel()->select(index, QItemSelectionModel::Select);
+            colourmap_button->open_menu (globalPos);
+          }
         }
 
 

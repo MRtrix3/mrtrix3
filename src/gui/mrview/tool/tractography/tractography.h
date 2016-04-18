@@ -17,8 +17,10 @@
 #define __gui_mrview_tool_tractography_h__
 
 #include "gui/mrview/tool/base.h"
+#include "gui/color_button.h"
 #include "gui/projection.h"
 #include "gui/mrview/adjust_button.h"
+#include "gui/mrview/combo_box_error.h"
 
 namespace MR
 {
@@ -80,14 +82,20 @@ namespace MR
             void right_click_menu_slot (const QPoint& pos);
             void colour_track_by_direction_slot ();
             void colour_track_by_ends_slot ();
-            void set_track_colour_slot ();
             void randomise_track_colour_slot ();
+            void set_track_colour_slot ();
             void colour_by_scalar_file_slot ();
+            void colour_mode_selection_slot (int);
+            void colour_button_slot();
             void selection_changed_slot (const QItemSelection &, const QItemSelection &);
 
           protected:
             AdjustButton* slab_entry;
             QMenu* track_option_menu;
+
+            ComboBoxWithErrorMsg *colour_combobox;
+            QColorButton *colour_button;
+
             Dock* scalar_file_options;
             LightingDock *lighting_dock;
 
