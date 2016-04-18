@@ -89,13 +89,8 @@ if lib.app.args.mask:
 else:
   runCommand('dwi2mask in.mif mask.mif')
 
-# Make a NiFTI image since this is what the external softwares need
-runCommand('dwiextract in.mif bzeros.mif -bzero')
-bzero_sizes = getHeaderInfo('bzeros.mif', 'size')
-if len(bzero_sizes.split()) == 4:
-  runCommand('mrmath bzeros.mif mean - -axis 3 | mrconvert - mean_bzero.mif -stride +1,+2,+3')
-else:
-  runCommand('mrconvert bzeros.mif mean_bzero.mif')
+# Generate a mean b=0 image
+runCommand('dwiextract in.mif - -bzero | mrmath - mean mean_bzero.mif -axis 3')
 
 if lib.app.args.fsl:
   # FAST doesn't accept a mask input; therefore need to explicitly mask the input image
