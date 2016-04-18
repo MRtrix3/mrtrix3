@@ -93,7 +93,7 @@ runCommand('population_template fa -mask_dir ' + maskTempDir + ' fa_template.mif
 runCommand('mrthreshold fa_template.mif -abs ' +  lib.app.args.fa_threshold + ' template_wm_mask.mif')
 lib.app.make_dir('wm_mask_warped')
 for i in input:
-  runCommand('mrtransform template_wm_mask.mif -warp warps/' + i.prefix + '.mif wm_mask_warped/' + i.prefix + '.mif -from 2 -template fa/' + i.prefix + '.mif')
+  runCommand('mrtransform template_wm_mask.mif -warp_full warps/' + i.prefix + '.mif wm_mask_warped/' + i.prefix + '.mif -from 2 -template fa/' + i.prefix + '.mif')
   runCommand('dwinormalise ' + abspath(i.directory, i.filename) + ' wm_mask_warped/' + i.prefix + '.mif ' + abspath (lib.app.workingDir, lib.app.args.output_dir, i.filename) + lib.app.mrtrixForce)
 
 runCommand('mrconvert template_wm_mask.mif ' + abspath(lib.app.workingDir, lib.app.args.wm_mask) + lib.app.mrtrixForce)

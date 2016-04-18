@@ -56,11 +56,11 @@ namespace MR
               Eigen::VectorXd modulation_factors = transformed_directions.colwise().norm() / linear_transform.linear().inverse().determinant();
               transformed_directions.colwise().normalize();
               transform.noalias() = (aPSF_weights_to_FOD_transform (n_SH, transformed_directions) * modulation_factors.asDiagonal()
-                                  * Math::pinv(aPSF_weights_to_FOD_transform (n_SH, directions))).cast <typename FODImageType::value_type> ();
+                                  * Math::pinv (aPSF_weights_to_FOD_transform (n_SH, directions))).cast <typename FODImageType::value_type> ();
             } else {
               transformed_directions.colwise().normalize();
               transform.noalias() = (aPSF_weights_to_FOD_transform (n_SH, transformed_directions)
-                                  * Math::pinv(aPSF_weights_to_FOD_transform (n_SH, directions))).cast <typename FODImageType::value_type> ();
+                                  * Math::pinv (aPSF_weights_to_FOD_transform (n_SH, directions))).cast <typename FODImageType::value_type> ();
             }
           }
 
