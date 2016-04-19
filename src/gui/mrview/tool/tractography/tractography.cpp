@@ -175,10 +175,14 @@ namespace MR
 
             default_opt_grid->addLayout (layout, 2, 1, 1, 1);
 
+            scalar_file_options = new TrackScalarFileOptions (std::string("Scalar file options"), this);
+            scalar_file_options->setVisible (false);
+            default_opt_grid->addWidget (scalar_file_options, 3, 0, 1, 2);
+
             QGroupBox* slab_group_box = new QGroupBox (tr("crop to slab"));
             slab_group_box->setCheckable (true);
             slab_group_box->setChecked (true);
-            default_opt_grid->addWidget (slab_group_box, 3, 0, 1, 2);
+            default_opt_grid->addWidget (slab_group_box, 4, 0, 1, 2);
 
             connect (slab_group_box, SIGNAL (clicked (bool)), this, SLOT (on_crop_to_slab_slot (bool)));
 
@@ -194,7 +198,7 @@ namespace MR
             QGroupBox* lighting_group_box = new QGroupBox (tr("lighting"));
             lighting_group_box->setCheckable (true);
             lighting_group_box->setChecked (false);
-            default_opt_grid->addWidget (lighting_group_box, 4, 0, 1, 2);
+            default_opt_grid->addWidget (lighting_group_box, 5, 0, 1, 2);
 
             connect (lighting_group_box, SIGNAL (clicked (bool)), this, SLOT (on_use_lighting_slot (bool)));
 
@@ -251,11 +255,9 @@ namespace MR
           if(!scalar_file_options || hide_all_button->isChecked())
             return;
 
-          const auto scalarFileTool = dynamic_cast<TrackScalarFile*> (scalar_file_options->tool);
-
           for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
             if (tractogram_list_model->items[i]->show)
-              dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get())->request_render_colourbar(*scalarFileTool);
+              dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get())->request_render_colourbar (*scalar_file_options);
           }
         }
 
@@ -404,6 +406,7 @@ namespace MR
           colour_combobox->setCurrentIndex (0);
           colour_combobox->blockSignals (false);
           colour_button->setEnabled (false);
+          scalar_file_options->setVisible (false);
           window().updateGL();
         }
         
@@ -420,6 +423,7 @@ namespace MR
           colour_combobox->setCurrentIndex (1);
           colour_combobox->blockSignals (false);
           colour_button->setEnabled (false);
+          scalar_file_options->setVisible (false);
           window().updateGL();
         }
 
@@ -445,6 +449,7 @@ namespace MR
           colour_combobox->setCurrentIndex (2);
           colour_combobox->blockSignals (false);
           colour_button->setEnabled (true);
+          scalar_file_options->setVisible (false);
           window().updateGL();
         }
 
@@ -466,6 +471,7 @@ namespace MR
             colour_combobox->blockSignals (false);
             colour_button->setEnabled (true);
             colour_button->setColor (QColor (colour[0]*255.0f, colour[1]*255.0f, colour[2]*255.0f));
+            scalar_file_options->setVisible (false);
           }
           window().updateGL();
         }
@@ -479,25 +485,21 @@ namespace MR
             QMessageBox msgBox;
             msgBox.setText("Please select only one tractogram when colouring by scalar file.    ");
             msgBox.exec();
+            scalar_file_options->setVisible (false);
           } else {
-            if (!scalar_file_options) {
-              scalar_file_options = Tool::create<TrackScalarFile> ("Scalar file options");
-              scalar_file_options->setFloating (false);
-              scalar_file_options->raise();
-            }
-            dynamic_cast<TrackScalarFile*> (scalar_file_options->tool)->set_tractogram (tractogram_list_model->get_tractogram (indices[0]));
+            scalar_file_options->set_tractogram (tractogram_list_model->get_tractogram (indices[0]));
             if (dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()].get())->intensity_scalar_filename.length() == 0) {
-              if (!dynamic_cast<TrackScalarFile*> (scalar_file_options->tool)->open_intensity_track_scalar_file_slot())
+              if (!scalar_file_options->open_intensity_track_scalar_file_slot())
                 return;
             } else {
               dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()].get())->erase_nontrack_data();
               dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()].get())->color_type = ScalarFile;
             }
-            scalar_file_options->show();
             colour_combobox->blockSignals (true);
             colour_combobox->setCurrentIndex (4);
             colour_combobox->blockSignals (false);
             colour_button->setEnabled (false);
+            scalar_file_options->setVisible (true);
             window().updateGL();
           }
         }
@@ -541,9 +543,9 @@ namespace MR
           QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
           if (scalar_file_options) {
             if (indices.size() == 1) {
-              dynamic_cast<TrackScalarFile*> (scalar_file_options->tool)->set_tractogram (tractogram_list_model->get_tractogram (indices[0]));
+              scalar_file_options->set_tractogram (tractogram_list_model->get_tractogram (indices[0]));
             } else {
-              dynamic_cast<TrackScalarFile*> (scalar_file_options->tool)->set_tractogram (NULL);
+              scalar_file_options->set_tractogram (nullptr);
             }
           }
           if (!indices.size()) {

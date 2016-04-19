@@ -21,6 +21,7 @@
 #include "gui/projection.h"
 #include "gui/mrview/adjust_button.h"
 #include "gui/mrview/combo_box_error.h"
+#include "gui/mrview/tool/tractography/track_scalar_file.h"
 
 namespace MR
 {
@@ -36,6 +37,7 @@ namespace MR
     {
       namespace Tool
       {
+
         class Tractography : public Base
         {
             Q_OBJECT
@@ -97,7 +99,7 @@ namespace MR
             ComboBoxWithErrorMsg *colour_combobox;
             QColorButton *colour_button;
 
-            Dock* scalar_file_options;
+            TrackScalarFileOptions *scalar_file_options;
             LightingDock *lighting_dock;
 
         };

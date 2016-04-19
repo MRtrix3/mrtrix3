@@ -37,6 +37,7 @@ namespace MR
       {
 
         enum TrackColourType { Direction, Ends, Manual, ScalarFile };
+        enum TrackThresholdType { Colour, SeparateFile };
 
         class Tractogram : public Displayable
         {
@@ -67,12 +68,11 @@ namespace MR
 
             void set_colour (float c[3]) { colour = { c[0], c[1], c[2] }; }
 
-            bool has_threshold_scalar_file () const { return threshold_scalar_filename.length(); }
-
             bool scalarfile_by_direction;
             bool show_colour_bar;
             bool should_update_stride;
             TrackColourType color_type;
+            TrackThresholdType threshold_type;
             Eigen::Array3f colour;
             float original_fov;
             std::string intensity_scalar_filename;
@@ -89,6 +89,7 @@ namespace MR
               protected:
                 bool do_crop_to_slab, scalarfile_by_direction, use_lighting;
                 TrackColourType color_type;
+                TrackThresholdType threshold_type;
 
             } track_shader;
 

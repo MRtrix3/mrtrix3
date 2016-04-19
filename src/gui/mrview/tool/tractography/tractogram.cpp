@@ -49,7 +49,7 @@ namespace MR
             source += "layout (location = 3) in vec3 end_colour;\n";
           else if (color_type == ScalarFile) {
             source += "layout (location = 3) in float amp;\n";
-            if (tractogram.has_threshold_scalar_file () )
+            if (threshold_type == SeparateFile)
               source += "layout (location = 4) in float thresh_amp;\n";
           }
 
@@ -93,7 +93,7 @@ namespace MR
           if (color_type == Ends)
             source += "  v_colour = end_colour;\n";
           else if (color_type == ScalarFile) { // TODO: move to frag shader:
-              if (tractogram.has_threshold_scalar_file () )
+              if (threshold_type == SeparateFile)
                   source += "  v_amp = thresh_amp;\n";
               else
                   source += "  v_amp = amp;\n";
@@ -291,13 +291,13 @@ namespace MR
           if (do_crop_to_slab != tractogram.tractography_tool.crop_to_slab() ||
               color_type != tractogram.color_type) 
             return true;
-          if (tractogram.color_type == ScalarFile)
+          if (tractogram.color_type == ScalarFile) {
             if (scalarfile_by_direction != tractogram.scalarfile_by_direction)
               return true;
+            if (threshold_type != tractogram.threshold_type)
+              return true;
+          }
           if (use_lighting != tractogram.tractography_tool.use_lighting)
-            return true;
-
-          if (tractogram.has_threshold_scalar_file() != tractogram.tractography_tool.use_threshold_scalarfile)
             return true;
 
           return Displayable::Shader::need_update (object);
@@ -313,7 +313,7 @@ namespace MR
           scalarfile_by_direction = tractogram.scalarfile_by_direction;
           use_lighting = tractogram.tractography_tool.use_lighting;
           color_type = tractogram.color_type;
-          tractogram.tractography_tool.use_threshold_scalarfile = tractogram.has_threshold_scalar_file();
+          threshold_type = tractogram.threshold_type;
           Displayable::Shader::update (object);
         }
 
@@ -328,6 +328,7 @@ namespace MR
             scalarfile_by_direction (false),
             show_colour_bar (true),
             color_type (Direction),
+            threshold_type (Colour),
             original_fov (NAN),
             intensity_scalar_filename (std::string()),
             threshold_scalar_filename (std::string()),
@@ -472,8 +473,7 @@ namespace MR
                   gl::BindBuffer (gl::ARRAY_BUFFER, intensity_scalar_buffers[buf]);
                   gl::EnableVertexAttribArray (3);
                   gl::VertexAttribPointer (3, 1, gl::FLOAT, gl::FALSE_, sample_stride * sizeof(float), (void*)0);
-
-                  if (threshold_scalar_buffers.size ()) {
+                  if (threshold_scalar_buffers.size()) {
                     gl::BindBuffer (gl::ARRAY_BUFFER, threshold_scalar_buffers[buf]);
                     gl::EnableVertexAttribArray (4);
                     gl::VertexAttribPointer (4, 1, gl::FLOAT, gl::FALSE_, sample_stride * sizeof(float), (void*)0);
@@ -708,7 +708,7 @@ namespace MR
         {
           // Make sure to set graphics context!
           // We're setting up vertex array objects
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
           erase_nontrack_data ();
@@ -809,7 +809,7 @@ namespace MR
 
         void Tractogram::erase_intensity_scalar_data ()
         {
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if (intensity_scalar_buffers.size()) {
             gl::DeleteBuffers (intensity_scalar_buffers.size(), &intensity_scalar_buffers[0]);
@@ -823,7 +823,7 @@ namespace MR
 
         void Tractogram::erase_threshold_scalar_data ()
         {
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if (threshold_scalar_buffers.size()) {
             gl::DeleteBuffers (threshold_scalar_buffers.size(), &threshold_scalar_buffers[0]);
