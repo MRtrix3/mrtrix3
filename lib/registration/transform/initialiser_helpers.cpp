@@ -151,7 +151,7 @@ namespace MR
             for (auto i = Loop (0, 3)(im); i; ++i) {
               voxel_pos << (default_type)im.index(0), (default_type)im.index(1), (default_type)im.index(2);
               scanner = transform.voxel2scanner * voxel_pos;
-              if (std::isfinite (im.value())) {
+              if (std::isfinite ((default_type)im.value())) {
                 mass += im.value();
                 centre_of_mass += scanner * im.value();
               }
@@ -161,7 +161,7 @@ namespace MR
               if (mask.value()) {
                 voxel_pos << (default_type)im.index(0), (default_type)im.index(1), (default_type)im.index(2);
                 scanner = transform.voxel2scanner * voxel_pos;
-                if (std::isfinite (im.value())) {
+                if (std::isfinite ((default_type)im.value())) {
                   mass += im.value();
                   centre_of_mass += scanner * im.value();
                 }
