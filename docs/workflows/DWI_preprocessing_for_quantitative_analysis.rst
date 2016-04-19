@@ -38,8 +38,8 @@ The :code:`dwipreproc` script also interfaces with `FSL <http://fsl.fmrib.ox.ac.
   dwipreproc <input_dwi> <output_dwi>
 
 
-3. Estimate a brain mask estimation
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+3. Estimate a brain mask
+^^^^^^^^^^^^^^^^^^^^^^^^^
 A whole-brain mask is required as input to the subsequent bias field correction step. This can be computed with::
 
   dwi2mask <input_dwi> <output_mask>
