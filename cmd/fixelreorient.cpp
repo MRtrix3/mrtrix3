@@ -36,7 +36,7 @@ void usage ()
 
   ARGUMENTS
   + Argument ("input", "the input fixel image.").type_image_in ()
-  + Argument ("warp_df", "a 4D deformation field used to perform reorientation. "
+  + Argument ("warp", "a 4D deformation field used to perform reorientation. "
                          "Reorientation is performed by applying the Jacobian affine transform in each voxel in the warp, "
                          "then re-normalising the vector representing the fixel direction").type_image_in ()
   + Argument ("output", "the output fixel image.").type_image_out ();

@@ -53,7 +53,7 @@ void run ()
 
   Sparse::Image<FixelMetric> output (argument[2], header);
 
-  for (auto i = Loop ("dividing fixel images", input1) (input1, input2, output); i; ++i) {
+  for (auto i = Loop ("multiplying fixel images", input1) (input1, input2, output); i; ++i) {
     if (input1.value().size() != input2.value().size())
       throw Exception ("the fixel images do not have corresponding fixels in all voxels");
     output.value().set_size (input1.value().size());
