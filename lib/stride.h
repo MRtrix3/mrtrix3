@@ -63,29 +63,6 @@ namespace MR
 
     extern const App::OptionGroup Options;
 
-    template <class HeaderType> 
-      void set_from_command_line (HeaderType& header, const List& default_strides = List())
-      {
-        auto opt = App::get_options ("stride");
-        size_t n;
-        if (opt.size()) {
-          std::vector<int> strides = opt[0][0];
-          if (strides.size() > header.ndim())
-            WARN ("too many axes supplied to -stride option - ignoring remaining strides");
-          for (n = 0; n < std::min (header.ndim(), strides.size()); ++n)
-            header.stride(n) = strides[n];
-          for (; n < header.ndim(); ++n)
-            header.stride(n) = 0;
-        } 
-        else if (default_strides.size()) {
-          for (n = 0; n < std::min (header.ndim(), default_strides.size()); ++n) 
-            header.stride(n) = default_strides[n];
-          for (; n < header.ndim(); ++n)
-            header.stride(n) = 0;
-        }
-      }
-
-
 
 
 
@@ -431,6 +408,26 @@ namespace MR
         for (size_t n = 3; n < strides.size(); ++n)
           strides[n] = 0;
         return strides;
+      }
+
+
+    template <class HeaderType> 
+      void set_from_command_line (HeaderType& header, const List& default_strides = List())
+      {
+        auto opt = App::get_options ("stride");
+        if (opt.size()) {
+          List strides;
+          { 
+            std::vector<int> tmp = opt[0][0];
+            for (auto x : tmp)
+              strides.push_back (x); 
+          }
+          if (strides.size() > header.ndim())
+            WARN ("too many axes supplied to -stride option - ignoring remaining strides");
+          set (header, get_nearest_match (header, strides));
+        } 
+        else if (default_strides.size()) 
+          set (header, default_strides);
       }
 
 
