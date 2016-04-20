@@ -36,8 +36,8 @@ namespace MR
       namespace Tool
       {
 
-        enum TrackColourType { Direction, Ends, Manual, ScalarFile };
-        enum TrackThresholdType { Colour, SeparateFile };
+        enum class TrackColourType { Direction, Ends, Manual, ScalarFile };
+        enum class TrackThresholdType { None, UseColourFile, SeparateFile };
 
         class Tractogram : public Displayable
         {
@@ -52,8 +52,8 @@ namespace MR
 
             void render (const Projection& transform);
 
-            void request_render_colourbar(DisplayableVisitor& visitor) override {
-              if (color_type == ScalarFile && show_colour_bar)
+            void request_render_colourbar (DisplayableVisitor& visitor) override {
+              if (color_type == TrackColourType::ScalarFile && show_colour_bar)
                 visitor.render_tractogram_colourbar(*this);
             }
 
@@ -62,17 +62,20 @@ namespace MR
             void load_end_colours();
             void load_intensity_track_scalars (const std::string&);
             void load_threshold_track_scalars (const std::string&);
-            void erase_nontrack_data();
+            void erase_colour_data();
             void erase_intensity_scalar_data ();
             void erase_threshold_scalar_data ();
+
+            void set_color_type (const TrackColourType);
+            void set_threshold_type (const TrackThresholdType);
+            TrackColourType get_color_type() const { return color_type; }
+            TrackThresholdType get_threshold_type() const { return threshold_type; }
 
             void set_colour (float c[3]) { colour = { c[0], c[1], c[2] }; }
 
             bool scalarfile_by_direction;
             bool show_colour_bar;
             bool should_update_stride;
-            TrackColourType color_type;
-            TrackThresholdType threshold_type;
             Eigen::Array3f colour;
             float original_fov;
             std::string intensity_scalar_filename;
@@ -80,14 +83,18 @@ namespace MR
 
             class Shader : public Displayable::Shader {
               public:
-                Shader () : do_crop_to_slab (false), scalarfile_by_direction (false), use_lighting (false), color_type (Direction) { }
-                std::string vertex_shader_source (const Displayable& displayable) override;
-                std::string fragment_shader_source (const Displayable& displayable) override;
+                Shader () :
+                    do_crop_to_slab (false),
+                    use_lighting (false),
+                    color_type (TrackColourType::Direction),
+                    threshold_type (TrackThresholdType::None) { }
+                std::string vertex_shader_source (const Displayable&) override;
+                std::string fragment_shader_source (const Displayable&) override;
                 std::string geometry_shader_source (const Displayable&) override;
-                virtual bool need_update (const Displayable& object) const override;
-                virtual void update (const Displayable& object) override;
+                virtual bool need_update (const Displayable&) const override;
+                virtual void update (const Displayable&) override;
               protected:
-                bool do_crop_to_slab, scalarfile_by_direction, use_lighting;
+                bool do_crop_to_slab, use_lighting;
                 TrackColourType color_type;
                 TrackThresholdType threshold_type;
 
@@ -100,6 +107,10 @@ namespace MR
             static const int max_sample_stride = 6;
             Tractography& tractography_tool;
             std::string filename;
+
+            TrackColourType color_type;
+            TrackThresholdType threshold_type;
+
             std::vector<GLuint> vertex_buffers;
             std::vector<GLuint> vertex_array_objects;
             std::vector<GLuint> colour_buffers;

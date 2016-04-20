@@ -28,16 +28,17 @@ namespace MR
       namespace Tool
       {
 
-        TrackScalarFileOptions::TrackScalarFileOptions (const std::string& heading, QWidget* parent) :
-            QGroupBox (QString::fromStdString (heading), parent)
+        TrackScalarFileOptions::TrackScalarFileOptions (QWidget* parent) :
+            QGroupBox ("Scalar file options", parent),
+            tractogram (nullptr)
         {
           main_box = new Tool::Base::VBoxLayout (this);
 
-          QGroupBox* colour_box = new QGroupBox ("Colour map and scaling");
+          colour_groupbox = new QGroupBox ("Colour map and scaling");
           Tool::Base::VBoxLayout* vlayout = new Tool::Base::VBoxLayout;
           vlayout->setContentsMargins (0, 0, 0, 0);
           vlayout->setSpacing (0);
-          colour_box->setLayout (vlayout);
+          colour_groupbox->setLayout (vlayout);
 
           Tool::Base::HBoxLayout* hlayout = new Tool::Base::HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
@@ -65,10 +66,6 @@ namespace MR
           invert_scale = colourmap_menu->addAction (tr ("Invert"), this, SLOT (invert_colourmap_slot()));
           invert_scale->setCheckable (true);
           addAction (invert_scale);
-
-          scalarfile_by_direction = colourmap_menu->addAction (tr ("Colour by direction"), this, SLOT (scalarfile_by_direction_slot()));
-          scalarfile_by_direction->setCheckable (true);
-          addAction (scalarfile_by_direction);
 
           colourmap_menu->addSeparator();
 
@@ -98,7 +95,7 @@ namespace MR
 
           vlayout->addLayout (hlayout);
 
-          main_box->addWidget (colour_box);
+          main_box->addWidget (colour_groupbox);
 
           QGroupBox* threshold_box = new QGroupBox ("Thresholds");
           vlayout = new Tool::Base::VBoxLayout;
@@ -107,8 +104,9 @@ namespace MR
           threshold_box->setLayout (vlayout);
 
           threshold_file_combobox = new QComboBox (this);
-          threshold_file_combobox->addItem ("Same file as above");
-          threshold_file_combobox->addItem ("Separate file");
+          threshold_file_combobox->addItem ("None");
+          threshold_file_combobox->addItem ("Use colour scalar file");
+          threshold_file_combobox->addItem ("Separate scalar file");
           connect (threshold_file_combobox, SIGNAL (activated(int)), this, SLOT (threshold_scalar_file_slot (int)));
           vlayout->addWidget (threshold_file_combobox);
 
@@ -134,26 +132,27 @@ namespace MR
 
           main_box->addWidget (threshold_box);
 
-          main_box->addStretch ();
-          setMinimumSize (main_box->minimumSize());
+          update_UI();
         }
 
 
         void TrackScalarFileOptions::set_tractogram (Tractogram* selected_tractogram) {
           tractogram = selected_tractogram;
-          update_tool_display();
         }
 
 
 
         void TrackScalarFileOptions::render_tractogram_colourbar(const Tractogram &tractogram) {
-          float min_value = tractogram.use_discard_lower() ?
-            tractogram.scaling_min_thresholded() :
-            tractogram.scaling_min();
 
-          float max_value = tractogram.use_discard_upper() ?
-            tractogram.scaling_max_thresholded() :
-            tractogram.scaling_max();
+          float min_value = (tractogram.get_threshold_type() == TrackThresholdType::UseColourFile
+                             && tractogram.use_discard_lower()) ?
+              tractogram.scaling_min_thresholded() :
+              tractogram.scaling_min();
+
+          float max_value = (tractogram.get_threshold_type() == TrackThresholdType::UseColourFile
+                             && tractogram.use_discard_upper()) ?
+              tractogram.scaling_max_thresholded() :
+              tractogram.scaling_max();
 
           window().colourbar_renderer.render (tractogram.colourmap, tractogram.scale_inverted(),
                                               min_value, max_value,
@@ -162,151 +161,90 @@ namespace MR
 
 
 
-        void TrackScalarFileOptions::clear_tool_display () {
-          intensity_file_button->setText ("");
-          intensity_file_button->setEnabled (false);
-          threshold_file_combobox->removeItem (2);
-          threshold_file_combobox->setEnabled (false);
-          min_entry->setEnabled (false);
-          max_entry->setEnabled (false);
-          min_entry->clear();
-          max_entry->clear();
-          threshold_lower_box->setChecked (false);
-          threshold_upper_box->setChecked (false);
-          threshold_lower_box->setEnabled (false);
-          threshold_upper_box->setEnabled (false);
-          threshold_lower->setEnabled (false);
-          threshold_upper->setEnabled (false);
-          threshold_lower->clear();
-          threshold_upper->clear();
-          colourmap_menu->setEnabled (false);
-        }
-
-
-        void TrackScalarFileOptions::update_tool_display () {
+        void TrackScalarFileOptions::update_UI () {
 
           if (!tractogram) {
-            clear_tool_display ();
+            setVisible (false);
             return;
           }
+          setVisible (true);
 
-          threshold_file_combobox->removeItem (2);
+          if (tractogram->get_color_type() == TrackColourType::ScalarFile) {
 
-          if (tractogram->intensity_scalar_filename.size()) {
-            intensity_file_button->setEnabled (true);
-            threshold_file_combobox->setEnabled (true);
-            min_entry->setEnabled (true);
-            max_entry->setEnabled (true);
+            colour_groupbox->setVisible (true);
             min_entry->setRate (tractogram->scaling_rate());
             max_entry->setRate (tractogram->scaling_rate());
+            min_entry->setValue (tractogram->scaling_min());
+            max_entry->setValue (tractogram->scaling_max());
 
-            threshold_lower_box->setEnabled (true);
-            if (tractogram->use_discard_lower()) {
-              threshold_lower_box->setChecked(true);
-              threshold_lower->setEnabled (true);
-            } else {
-              threshold_lower->setEnabled (false);
-              threshold_lower_box->setChecked(false);
-            }
-            threshold_upper_box->setEnabled (true);
-            if (tractogram->use_discard_upper()) {
-              threshold_upper_box->setChecked (true);
-              threshold_upper->setEnabled (true);
-            } else {
-              threshold_upper->setEnabled (false);
-              threshold_upper_box->setChecked (false);
-            }
+            colourmap_actions[tractogram->colourmap]->setChecked (true);
+            show_colour_bar->setChecked (tractogram->show_colour_bar);
+            invert_scale->setChecked (tractogram->scale_inverted());
+
+            assert (tractogram->intensity_scalar_filename.length());
+            intensity_file_button->setText (shorten (Path::basename (tractogram->intensity_scalar_filename), 35, 0).c_str());
+
+          } else {
+            colour_groupbox->setVisible (false);
+          }
+
+          threshold_file_combobox->removeItem (3);
+          threshold_file_combobox->blockSignals (true);
+          switch (tractogram->get_threshold_type()) {
+            case TrackThresholdType::None:
+              threshold_file_combobox->setCurrentIndex (0);
+              break;
+            case TrackThresholdType::UseColourFile:
+              threshold_file_combobox->setCurrentIndex (1);
+              break;
+            case TrackThresholdType::SeparateFile:
+              assert (tractogram->threshold_scalar_filename.length());
+              threshold_file_combobox->addItem (shorten (Path::basename (tractogram->threshold_scalar_filename), 35, 0).c_str());
+              threshold_file_combobox->setCurrentIndex (3);
+              break;
+          }
+          threshold_file_combobox->blockSignals (false);
+
+          const bool show_threshold_controls = (tractogram->get_threshold_type() != TrackThresholdType::None);
+          threshold_lower_box->setVisible (show_threshold_controls);
+          threshold_lower    ->setVisible (show_threshold_controls);
+          threshold_upper_box->setVisible (show_threshold_controls);
+          threshold_upper    ->setVisible (show_threshold_controls);
+
+          if (show_threshold_controls) {
+
+            threshold_lower_box->setChecked (tractogram->use_discard_lower());
+            threshold_lower    ->setEnabled (tractogram->use_discard_lower());
+            threshold_upper_box->setChecked (tractogram->use_discard_upper());
+            threshold_upper    ->setEnabled (tractogram->use_discard_upper());
+
+            // FIXME Required scaling rate for threshold must be independent of colour
             threshold_lower->setRate (tractogram->scaling_rate());
             threshold_lower->setValue (tractogram->lessthan);
             threshold_upper->setRate (tractogram->scaling_rate());
             threshold_upper->setValue (tractogram->greaterthan);
-            colourmap_menu->setEnabled (true);
-            colourmap_actions[tractogram->colourmap]->setChecked (true);
-            show_colour_bar->setChecked (tractogram->show_colour_bar);
-            invert_scale->setChecked (tractogram->scale_inverted());
-            scalarfile_by_direction->setChecked (tractogram->scalarfile_by_direction);
-            if (tractogram->intensity_scalar_filename.length()) {
-              intensity_file_button->setText (shorten (tractogram->intensity_scalar_filename, 35, 0).c_str());
-              min_entry->setValue (tractogram->scaling_min());
-              max_entry->setValue (tractogram->scaling_max());
-            } else {
-              intensity_file_button->setText (tr("Open File"));
-            }
 
-            if (tractogram->threshold_scalar_filename.length() && tractogram->threshold_type == SeparateFile) {
-              threshold_file_combobox->addItem (shorten (tractogram->threshold_scalar_filename, 35, 0).c_str());
-              threshold_file_combobox->setCurrentIndex (2);
-            } else {
-              threshold_file_combobox->setCurrentIndex (0);
-            }
-
-          } else {
-            clear_tool_display ();
-            intensity_file_button->setText (tr("Open File"));
-            intensity_file_button->setEnabled (true);
-
-            threshold_file_combobox->setCurrentIndex (0);
-            threshold_file_combobox->setEnabled (true);
           }
         }
+
 
 
         bool TrackScalarFileOptions::open_intensity_track_scalar_file_slot ()
         {
           std::string scalar_file = Dialog::File::get_file (this, "Select scalar text file or Track Scalar file (.tsf) to open", "");
-          if (scalar_file.empty())
-            return false;
-
-          try {
-            tractogram->load_intensity_track_scalars (scalar_file);
-            tractogram->color_type = ScalarFile;
-            set_tractogram (tractogram);
-          } 
-          catch (Exception& E) {
-            E.display();
-            return false;
+          if (!scalar_file.empty()) {
+            try {
+              tractogram->load_intensity_track_scalars (scalar_file);
+              tractogram->set_color_type (TrackColourType::ScalarFile);
+            }
+            catch (Exception& E) {
+              E.display();
+              scalar_file.clear();
+            }
           }
-          return true;
-        }
-
-        bool TrackScalarFileOptions::threshold_scalar_file_slot (int /*unused*/)
-        {
-
-          // UI shouldn't be available if this isn't the case
-          assert (tractogram->color_type == ScalarFile);
-
-          std::string scalar_file;
-          switch (threshold_file_combobox->currentIndex()) {
-            case 0: // Use same file as that used for colouring
-              tractogram->erase_threshold_scalar_data();
-              tractogram->threshold_type = Colour;
-              threshold_file_combobox->removeItem (2);
-              break;
-            case 1: // Select a new & separate file for thresholding
-              scalar_file = Dialog::File::get_file (this, "Select scalar text file or Track Scalar file (.tsf) to open", "");
-              if (scalar_file.empty()) {
-                threshold_file_combobox->removeItem (2);
-                threshold_file_combobox->setCurrentIndex (0);
-                return false;
-              }
-              try {
-                tractogram->load_threshold_track_scalars (scalar_file);
-                tractogram->threshold_type = SeparateFile;
-                threshold_file_combobox->removeItem (2);
-                threshold_file_combobox->addItem (shorten (scalar_file, 35, 0).c_str());
-              } catch (Exception& E) {
-                E.display();
-                threshold_file_combobox->removeItem (2);
-                threshold_file_combobox->setCurrentIndex (0);
-                return false;
-              }
-              break;
-            case 2: // Re-selected the same file as used previously; do nothing
-              break;
-            default:
-              assert (0);
-          }
-          return true;
+          update_UI();
+          window().updateGL();
+          return scalar_file.size();
         }
 
 
@@ -341,6 +279,78 @@ namespace MR
         }
 
 
+        bool TrackScalarFileOptions::threshold_scalar_file_slot (int /*unused*/)
+        {
+
+          std::string file_path;
+          switch (threshold_file_combobox->currentIndex()) {
+            case 0:
+              tractogram->set_threshold_type (TrackThresholdType::None);
+              tractogram->erase_threshold_scalar_data();
+              tractogram->set_use_discard_lower (false);
+              tractogram->set_use_discard_upper (false);
+              break;
+            case 1:
+              if (tractogram->get_color_type() == TrackColourType::ScalarFile) {
+                tractogram->set_threshold_type (TrackThresholdType::UseColourFile);
+                tractogram->erase_threshold_scalar_data();
+              } else {
+                QMessageBox::warning (QApplication::activeWindow(),
+                                      tr ("Tractogram threshold error"),
+                                      tr ("Can only threshold based on scalar file used for streamline colouring if that colour mode is active"),
+                                      QMessageBox::Ok,
+                                      QMessageBox::Ok);
+                threshold_file_combobox->blockSignals (true);
+                switch (tractogram->get_threshold_type()) {
+                  case TrackThresholdType::None: threshold_file_combobox->setCurrentIndex (0); break;
+                  case TrackThresholdType::UseColourFile: assert (0);
+                  case TrackThresholdType::SeparateFile: threshold_file_combobox->setCurrentIndex (3); break;
+                }
+                threshold_file_combobox->blockSignals (false);
+                return false;
+              }
+              break;
+            case 2:
+              file_path = Dialog::File::get_file (this, "Select scalar text file or Track Scalar file (.tsf) to open", "");
+              if (!file_path.empty()) {
+                try {
+                  tractogram->load_threshold_track_scalars (file_path);
+                  tractogram->set_threshold_type (TrackThresholdType::SeparateFile);
+                } catch (Exception& E) {
+                  E.display();
+                  file_path.clear();
+                }
+              }
+              if (file_path.empty()) {
+                threshold_file_combobox->blockSignals (true);
+                switch (tractogram->get_threshold_type()) {
+                  case TrackThresholdType::None:
+                    threshold_file_combobox->setCurrentIndex (0);
+                    break;
+                  case TrackThresholdType::UseColourFile:
+                    threshold_file_combobox->setCurrentIndex (1);
+                    break;
+                  case TrackThresholdType::SeparateFile:
+                    // Should still be an entry in the combobox corresponding to the old file
+                    threshold_file_combobox->setCurrentIndex (3);
+                    break;
+                }
+                threshold_file_combobox->blockSignals (false);
+                return false;
+              }
+              break;
+            case 3: // Re-selected the same file as used previously; do nothing
+              assert (tractogram->get_threshold_type() == TrackThresholdType::SeparateFile);
+              break;
+            default:
+              assert (0);
+          }
+          update_UI();
+          window().updateGL();
+          return true;
+        }
+
+
         void TrackScalarFileOptions::threshold_lower_changed (int)
         {
           if (tractogram) {
@@ -361,7 +371,6 @@ namespace MR
         }
 
 
-
         void TrackScalarFileOptions::threshold_lower_value_changed ()
         {
           if (tractogram && threshold_lower_box->isChecked()) {
@@ -369,7 +378,6 @@ namespace MR
             window().updateGL();
           }
         }
-
 
 
         void TrackScalarFileOptions::threshold_upper_value_changed ()
@@ -381,19 +389,11 @@ namespace MR
         }
 
 
-        void TrackScalarFileOptions::scalarfile_by_direction_slot ()
-        {
-          if (tractogram) {
-            tractogram->scalarfile_by_direction = scalarfile_by_direction->isChecked();
-            window().updateGL();
-          }
-        }
-
         void TrackScalarFileOptions::reset_intensity_slot ()
         {
           if (tractogram) {
             tractogram->reset_windowing();
-            update_tool_display ();
+            update_UI ();
             window().updateGL();
           }
         }

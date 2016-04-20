@@ -45,13 +45,13 @@ namespace MR
             "layout (location = 1) in vec3 prev_vertex;\n"
             "layout (location = 2) in vec3 next_vertex;\n";
 
-          if (color_type == Ends)
+          if (color_type == TrackColourType::Ends)
             source += "layout (location = 3) in vec3 end_colour;\n";
-          else if (color_type == ScalarFile) {
+          else if (color_type == TrackColourType::ScalarFile)
             source += "layout (location = 3) in float amp;\n";
-            if (threshold_type == SeparateFile)
-              source += "layout (location = 4) in float thresh_amp;\n";
-          }
+
+          if (threshold_type == TrackThresholdType::SeparateFile)
+            source += "layout (location = 4) in float thresh_amp;\n";
 
           source +=
           "uniform mat4 MVP;\n"
@@ -72,9 +72,10 @@ namespace MR
           if (do_crop_to_slab)
             source += "out float v_include;\n";
 
-          if (color_type == ScalarFile)
+          if (threshold_type != TrackThresholdType::None)
             source += "out float v_amp;\n";
-          if (color_type == Ends || color_type == ScalarFile)
+
+          if (color_type == TrackColourType::Ends || color_type == TrackColourType::ScalarFile)
             source += "out vec3 v_colour;\n";
 
           // Main function
@@ -90,23 +91,23 @@ namespace MR
           if (do_crop_to_slab)
             source += "  v_include = (dot(vertex, screen_normal) - crop_var) / slab_width;\n";
 
-          if (color_type == Ends)
+          if (threshold_type == TrackThresholdType::UseColourFile)
+            source += "  v_amp = amp;\n";
+          else if (threshold_type == TrackThresholdType::SeparateFile)
+            source += "  v_amp = thresh_amp;\n";
+
+          if (color_type == TrackColourType::Ends)
             source += "  v_colour = end_colour;\n";
-          else if (color_type == ScalarFile) { // TODO: move to frag shader:
-              if (threshold_type == SeparateFile)
-                  source += "  v_amp = thresh_amp;\n";
-              else
-                  source += "  v_amp = amp;\n";
-              if (!ColourMap::maps[colourmap].special) {
-                source += "  float amplitude = clamp (";
-                if (tractogram.scale_inverted()) source += "1.0 -";
-                source += " scale * (amp - offset), 0.0, 1.0);\n";
-              }
-              if (!scalarfile_by_direction)
-                source +=
-                  std::string("  vec3 color;\n  ") +
-                  ColourMap::maps[colourmap].glsl_mapping +
-                  "  v_colour = color;\n";
+          else if (color_type == TrackColourType::ScalarFile) { // TODO: move to frag shader:
+            if (!ColourMap::maps[colourmap].special) {
+              source += "  float amplitude = clamp (";
+              if (tractogram.scale_inverted()) source += "1.0 -";
+              source += " scale * (amp - offset), 0.0, 1.0);\n";
+            }
+            source +=
+                std::string("  vec3 color;\n  ") +
+                ColourMap::maps[colourmap].glsl_mapping +
+                "  v_colour = color;\n";
           }
 
           source += "}\n";
@@ -127,18 +128,19 @@ namespace MR
           "in vec3 v_tangent[];\n"
           "in vec2 v_end[];\n";
 
-          if (color_type == ScalarFile)
+          if (threshold_type != TrackThresholdType::None)
            source +=
             "in float v_amp[];\n"
             "out float g_amp;\n";
+
           if (do_crop_to_slab)
             source += "in float v_include[];\n"
               "out float g_include;\n";
 
-          if (use_lighting || color_type == Direction || scalarfile_by_direction)
+          if (use_lighting || color_type == TrackColourType::Direction)
             source += "out vec3 g_tangent;\n";
 
-          if (color_type == ScalarFile || color_type == Ends)
+          if (color_type == TrackColourType::ScalarFile || color_type == TrackColourType::Ends)
             source += 
               "in vec3 v_colour[];\n"
               "out vec3 fColour;\n";
@@ -156,13 +158,13 @@ namespace MR
               "  if (v_include[0] > 1.0 && v_include[1] > 1.0) return;\n";
 
           // First vertex:
-          if (use_lighting || color_type == Direction || scalarfile_by_direction)
+          if (use_lighting || color_type == TrackColourType::Direction)
             source += "  g_tangent = v_tangent[0];\n";
           if (do_crop_to_slab)
             source += "  g_include = v_include[0];\n";
-          if (color_type == ScalarFile)
+          if (threshold_type != TrackThresholdType::None)
             source += "  g_amp = v_amp[0];\n";
-          if (color_type == ScalarFile || color_type == Ends)
+          if (color_type == TrackColourType::ScalarFile || color_type == TrackColourType::Ends)
             source += "  fColour = v_colour[0];\n";
 
           if (use_lighting)
@@ -178,13 +180,13 @@ namespace MR
             "  EmitVertex();\n";
 
           // Second vertex:
-          if (use_lighting || color_type == Direction || scalarfile_by_direction)
+          if (use_lighting || color_type == TrackColourType::Direction)
             source += "  g_tangent = v_tangent[1];\n";
           if (do_crop_to_slab)
             source += "  g_include = v_include[1];\n";
-          if (color_type == ScalarFile)
+          if (threshold_type != TrackThresholdType::None)
             source += "  g_amp = v_amp[1];\n";
-          if (color_type == ScalarFile || color_type == Ends)
+          if (color_type == TrackColourType::ScalarFile || color_type == TrackColourType::Ends)
             source += "  fColour = v_colour[1];\n";
 
           if (use_lighting)
@@ -214,12 +216,12 @@ namespace MR
             "uniform mat4 MV;\n"
             "out vec3 colour;\n";
 
-          if (color_type == ScalarFile || color_type == Ends)
+          if (color_type == TrackColourType::ScalarFile || color_type == TrackColourType::Ends)
             source += "in vec3 fColour;\n";
-          if (use_lighting || color_type == Direction || scalarfile_by_direction)
+          if (use_lighting || color_type == TrackColourType::Direction)
             source += "in vec3 g_tangent;\n";
 
-          if (color_type == ScalarFile)
+          if (threshold_type != TrackThresholdType::None)
             source += "in float g_amp;\n";
 
           if (use_lighting)
@@ -236,24 +238,24 @@ namespace MR
             source +=
               "  if (g_include < 0.0 || g_include > 1.0) discard;\n";
 
+          if (threshold_type != TrackThresholdType::None) {
+            if (tractogram.use_discard_lower())
+              source += "  if (g_amp < lower) discard;\n";
+            if (tractogram.use_discard_upper())
+              source += "  if (g_amp > upper) discard;\n";
+          }
+
           switch (color_type) {
-            case Direction:
+            case TrackColourType::Direction:
               source += "  colour = abs (normalize (g_tangent));\n";
               break;
-            case ScalarFile:
-              if (tractogram.use_discard_lower())
-                source += "  if (g_amp < lower) discard;\n";
-              if (tractogram.use_discard_upper())
-                source += "  if (g_amp > upper) discard;\n";
-              if (scalarfile_by_direction)
-                source += "  colour = abs (normalize (g_tangent));\n";
-              else
-                source += "  colour = fColour;\n";
-              break;
-            case Ends:
+            case TrackColourType::ScalarFile:
               source += "  colour = fColour;\n";
               break;
-            case Manual:
+            case TrackColourType::Ends:
+              source += "  colour = fColour;\n";
+              break;
+            case TrackColourType::Manual:
               source += "  colour = const_colour;\n";
           }
 
@@ -288,15 +290,12 @@ namespace MR
         bool Tractogram::Shader::need_update (const Displayable& object) const
         {
           const Tractogram& tractogram (dynamic_cast<const Tractogram&> (object));
-          if (do_crop_to_slab != tractogram.tractography_tool.crop_to_slab() ||
-              color_type != tractogram.color_type) 
+          if (do_crop_to_slab != tractogram.tractography_tool.crop_to_slab())
             return true;
-          if (tractogram.color_type == ScalarFile) {
-            if (scalarfile_by_direction != tractogram.scalarfile_by_direction)
-              return true;
-            if (threshold_type != tractogram.threshold_type)
-              return true;
-          }
+          if (color_type != tractogram.color_type)
+            return true;
+          if (threshold_type != tractogram.threshold_type)
+            return true;
           if (use_lighting != tractogram.tractography_tool.use_lighting)
             return true;
 
@@ -310,7 +309,6 @@ namespace MR
         {
           const Tractogram& tractogram (dynamic_cast<const Tractogram&> (object));
           do_crop_to_slab = tractogram.tractography_tool.crop_to_slab();
-          scalarfile_by_direction = tractogram.scalarfile_by_direction;
           use_lighting = tractogram.tractography_tool.use_lighting;
           color_type = tractogram.color_type;
           threshold_type = tractogram.threshold_type;
@@ -325,16 +323,16 @@ namespace MR
 
         Tractogram::Tractogram (Tractography& tool, const std::string& filename) :
             Displayable (filename),
-            scalarfile_by_direction (false),
             show_colour_bar (true),
-            color_type (Direction),
-            threshold_type (Colour),
             original_fov (NAN),
             intensity_scalar_filename (std::string()),
             threshold_scalar_filename (std::string()),
             tractography_tool (tool),
             filename (filename),
-            sample_stride (0)
+            color_type (TrackColourType::Direction),
+            threshold_type (TrackThresholdType::None),
+            sample_stride (0),
+            vao_dirty (true)
         {
           set_allowed_features (true, true, true);
           colourmap = 1;
@@ -359,7 +357,6 @@ namespace MR
             gl::DeleteBuffers (intensity_scalar_buffers.size(), &intensity_scalar_buffers[0]);
           if (threshold_scalar_buffers.size())
             gl::DeleteBuffers (threshold_scalar_buffers.size(), &threshold_scalar_buffers[0]);
-
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
@@ -383,14 +380,20 @@ namespace MR
                 tractography_tool.slab_thickness);
           }
 
-          if (color_type == ScalarFile) {
+          if (threshold_type != TrackThresholdType::None) {
             if (use_discard_lower())
               gl::Uniform1f (gl::GetUniformLocation (track_shader, "lower"), lessthan);
             if (use_discard_upper())
               gl::Uniform1f (gl::GetUniformLocation (track_shader, "upper"), greaterthan);
           }
-          else if (color_type == Manual)
-              gl::Uniform3fv (gl::GetUniformLocation (track_shader, "const_colour"), 1, colour.data());
+
+          if (color_type == TrackColourType::Manual)
+            gl::Uniform3fv (gl::GetUniformLocation (track_shader, "const_colour"), 1, colour.data());
+
+          if (color_type == TrackColourType::ScalarFile) {
+            gl::Uniform1f (gl::GetUniformLocation (track_shader, "offset"), display_midpoint - 0.5f * display_range);
+            gl::Uniform1f (gl::GetUniformLocation (track_shader, "scale"), 1.0 / display_range);
+          }
 
           if (tractography_tool.use_lighting) {
             gl::UniformMatrix4fv (gl::GetUniformLocation (track_shader, "MV"), 1, gl::FALSE_, transform.modelview());
@@ -455,7 +458,7 @@ namespace MR
         inline void Tractogram::render_streamlines ()
         {
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
-          for (size_t buf = 0, N= vertex_buffers.size(); buf < N; ++buf) {
+          for (size_t buf = 0, N = vertex_buffers.size(); buf < N; ++buf) {
             gl::BindVertexArray (vertex_array_objects[buf]);
 
             if (should_update_stride)
@@ -473,14 +476,15 @@ namespace MR
                   gl::BindBuffer (gl::ARRAY_BUFFER, intensity_scalar_buffers[buf]);
                   gl::EnableVertexAttribArray (3);
                   gl::VertexAttribPointer (3, 1, gl::FLOAT, gl::FALSE_, sample_stride * sizeof(float), (void*)0);
-                  if (threshold_scalar_buffers.size()) {
-                    gl::BindBuffer (gl::ARRAY_BUFFER, threshold_scalar_buffers[buf]);
-                    gl::EnableVertexAttribArray (4);
-                    gl::VertexAttribPointer (4, 1, gl::FLOAT, gl::FALSE_, sample_stride * sizeof(float), (void*)0);
-                  }
                   break;
                 default:
                   break;
+              }
+
+              if (threshold_type == TrackThresholdType::SeparateFile) {
+                gl::BindBuffer (gl::ARRAY_BUFFER, threshold_scalar_buffers[buf]);
+                gl::EnableVertexAttribArray (4);
+                gl::VertexAttribPointer (4, 1, gl::FLOAT, gl::FALSE_, sample_stride * sizeof(float), (void*)0);
               }
 
               gl::BindBuffer (gl::ARRAY_BUFFER, vertex_buffers[buf]);
@@ -508,6 +512,7 @@ namespace MR
 
         inline void Tractogram::update_stride ()
         {
+          // TODO This should perhaps be using "output_step_size" if present?
           float step_size = (properties.find ("step_size") == properties.end() ? 0.0 : to<float>(properties["step_size"]));
           GLint new_stride = GLint (tractography_tool.line_thickness * original_fov / step_size);
           new_stride = std::max (1, std::min (max_sample_stride, new_stride));
@@ -576,13 +581,16 @@ namespace MR
         
         void Tractogram::load_end_colours()
         {
+          // These data are now retained in memory - no need to re-scan track file
+          if (colour_buffers.size())
+            return;
+
           // Make sure to set graphics context!
           // We're setting up vertex array objects
           MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
-          erase_nontrack_data();
-          // TODO Is it possible to read the track endpoints from the GPU buffer rather than re-reading the .tck file?
+          erase_colour_data();
           DWI::Tractography::Reader<float> file (filename, properties);
           for (size_t buffer_index = 0, N = vertex_buffers.size(); buffer_index < N; ++buffer_index) {
             size_t num_tracks = num_tracks_per_buffer[buffer_index];
@@ -623,9 +631,7 @@ namespace MR
           MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
-          erase_nontrack_data ();
           erase_intensity_scalar_data ();
-          intensity_scalar_filename = filename;
           value_min = std::numeric_limits<float>::infinity();
           value_max = -std::numeric_limits<float>::infinity();
           std::vector<float> buffer;
@@ -696,9 +702,12 @@ namespace MR
               load_intensity_scalars_onto_GPU (buffer);
             }
           }
+          intensity_scalar_filename = filename;
           this->set_windowing (value_min, value_max);
-          greaterthan = value_max;
-          lessthan = value_min;
+          if (!std::isfinite (greaterthan))
+            greaterthan = value_max;
+          if (!std::isfinite (lessthan))
+            lessthan = value_min;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
@@ -711,9 +720,7 @@ namespace MR
           MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
-          erase_nontrack_data ();
           erase_threshold_scalar_data ();
-          threshold_scalar_filename = filename;
           float value_min = std::numeric_limits<float>::infinity();
           float value_max = -std::numeric_limits<float>::infinity();
           std::vector<float> buffer;
@@ -784,6 +791,7 @@ namespace MR
               load_threshold_scalars_onto_GPU (buffer);
             }
           }
+          threshold_scalar_filename = filename;
           greaterthan = value_max;
           lessthan = value_min;
 
@@ -792,7 +800,7 @@ namespace MR
         
         
         
-        void Tractogram::erase_nontrack_data()
+        void Tractogram::erase_colour_data()
         {
           MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
@@ -800,7 +808,6 @@ namespace MR
             gl::DeleteBuffers (colour_buffers.size(), &colour_buffers[0]);
             colour_buffers.clear();
           }
-
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
@@ -815,6 +822,7 @@ namespace MR
             gl::DeleteBuffers (intensity_scalar_buffers.size(), &intensity_scalar_buffers[0]);
             intensity_scalar_buffers.clear();
           }
+          intensity_scalar_filename.clear();
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
@@ -828,10 +836,26 @@ namespace MR
           if (threshold_scalar_buffers.size()) {
             gl::DeleteBuffers (threshold_scalar_buffers.size(), &threshold_scalar_buffers[0]);
             threshold_scalar_buffers.clear();
-            set_use_discard_lower (false);
-            set_use_discard_upper (false);
           }
+          threshold_scalar_filename.clear();
+          set_use_discard_lower (false);
+          set_use_discard_upper (false);
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        }
+
+
+
+        void Tractogram::set_color_type (const TrackColourType c)
+        {
+          if ((color_type == TrackColourType::Ends && c == TrackColourType::ScalarFile)
+              || (color_type == TrackColourType::ScalarFile && c == TrackColourType::Ends))
+            vao_dirty = true;
+          color_type = c;
+        }
+
+        void Tractogram::set_threshold_type (const TrackThresholdType t)
+        {
+          threshold_type = t;
         }
 
 

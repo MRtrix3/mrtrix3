@@ -44,38 +44,36 @@ namespace MR
             Q_OBJECT
 
             public:
-              TrackScalarFileOptions (const std::string&, QWidget*);
+              TrackScalarFileOptions (QWidget*);
               virtual ~TrackScalarFileOptions () {}
 
               void set_tractogram (Tractogram* selected_tractogram);
 
               void render_tractogram_colourbar (const Tool::Tractogram&) override;
 
+              void update_UI();
+
             public slots:
               bool open_intensity_track_scalar_file_slot ();
-              bool threshold_scalar_file_slot (int);
 
             private slots:
               void show_colour_bar_slot();
               void select_colourmap_slot ();
               void on_set_scaling_slot ();
+              bool threshold_scalar_file_slot (int);
               void threshold_lower_changed (int unused);
               void threshold_upper_changed (int unused);
               void threshold_lower_value_changed ();
               void threshold_upper_value_changed ();
               void invert_colourmap_slot ();
-              void scalarfile_by_direction_slot ();
               void reset_intensity_slot ();
 
             protected:
-              void clear_tool_display ();
-              void update_tool_display ();
-
               Tractogram *tractogram;
               Tool::Base::VBoxLayout *main_box;
+              QGroupBox *colour_groupbox;
               QAction *show_colour_bar;
               QAction *invert_scale;
-              QAction *scalarfile_by_direction;
               QMenu *colourmap_menu;
               QAction **colourmap_actions;
               QActionGroup *colourmap_group;
