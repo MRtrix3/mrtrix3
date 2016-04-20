@@ -66,7 +66,6 @@ void run()
       for (const auto v : shells[s].get_volumes()) 
         volumes.push_back (v);
     }
-    // Remove DW information from header if b=0 is the only 'shell' selected
     bzero = (shells.count() == 1 && shells[0].is_bzero());
   } else {
     const float bzero_threshold = File::Config::get_float ("BValueThreshold", 10.0);
@@ -85,11 +84,7 @@ void run()
 
   Header header (input_image);
   Stride::set_from_command_line (header);
-
-  if (volumes.size() == 1)
-    header.set_ndim (3);
-  else
-    header.size (3) = volumes.size();
+  header.size (3) = volumes.size();
 
   Eigen::MatrixXd new_grad (volumes.size(), grad.cols());
   for (size_t i = 0; i < volumes.size(); i++)
@@ -98,12 +93,6 @@ void run()
 
   auto output_image = Image<float>::create (argument[1], header);
 
-  if (output_image.ndim() == 4) {
-    auto input_volumes = Adapter::make<Adapter::Extract1D> (input_image, 3, volumes);
-    threaded_copy_with_progress_message ("extracting volumes", input_volumes, output_image);
-  }
-  else {
-    input_image.index(3) = volumes[0];
-    threaded_copy_with_progress_message ("extracting volumes", input_image, output_image, 0, 3);
-  }
+  auto input_volumes = Adapter::make<Adapter::Extract1D> (input_image, 3, volumes);
+  threaded_copy_with_progress_message ("extracting volumes", input_volumes, output_image);
 }

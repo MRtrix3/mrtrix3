@@ -65,7 +65,10 @@ const OptionGroup OutputOptions = OptionGroup ("Options for determining the cont
       + Argument ("image").type_image_in()
 
     + Option ("keep_unassigned", "by default, the program discards those streamlines that are not successfully assigned to a node. "
-                                 "Set this option to generate corresponding outputs containing these streamlines (labelled as node index 0)");
+                                 "Set this option to generate corresponding outputs containing these streamlines (labelled as node index 0)")
+
+    + Option ("keep_self", "by default, the program will not output streamlines that connect to the same node at both ends. "
+                           "Set this option to instead keep these self-connections.");
 
 
 
@@ -160,6 +163,7 @@ void run ()
   INFO ("Maximum node index is " + str(max_node_index));
 
   const node_t first_node = get_options ("keep_unassigned").size() ? 0 : 1;
+  const bool keep_self = get_options ("keep_self").size();
 
   // Get the list of nodes of interest
   std::vector<node_t> nodes;
@@ -195,6 +199,9 @@ void run ()
 
   opt = get_options ("exemplars");
   if (opt.size()) {
+
+    if (keep_self)
+      WARN ("Exemplars cannot be calculated for node self-connections; -keep_self option ignored");
 
     // Load the node image, get the centres of mass
     // Generate exemplars - these can _only_ be done per edge, and requires a mutex per edge to multi-thread
@@ -276,7 +283,7 @@ void run ()
 
   } else { // Old behaviour ie. all tracks, rather than generating exemplars
 
-    WriterExtraction writer (properties, nodes, exclusive);
+    WriterExtraction writer (properties, nodes, exclusive, keep_self);
 
     switch (file_format) {
       case 0: // One file per edge
@@ -289,9 +296,8 @@ void run ()
             }
           } else {
             // Allow duplication of edges; want to have a set of files for each node
-            for (node_t two = first_node; two <= max_node_index; ++two) {
+            for (node_t two = first_node; two <= max_node_index; ++two)
               writer.add (one, two, prefix + str(one) + "-" + str(two) + ".tck", weights_prefix.size() ? (weights_prefix + str(one) + "-" + str(two) + ".csv") : "");
-            }
           }
         }
         INFO ("A total of " + str (writer.file_count()) + " output track files will be generated (one for each edge)");

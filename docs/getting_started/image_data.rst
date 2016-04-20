@@ -248,7 +248,7 @@ For instance, it is possible to start from the *right* posterior inferior
 corner, and raster through along the *left* direction, then store the next row
 along the anterior direction, and finally the next slice in the superior
 direction. This scheme is what is normally used in the now deprecated Analyse
-format, and is commonly referred to as RAS or *radiological*. 
+format, and is commonly referred to as LAS or *radiological*. 
 
 Of course, there are many more possibilities. For instance, sagittal DICOM
 images will typically be stored using a PIR (posterior inferior right) order,
