@@ -385,7 +385,12 @@ namespace MR
           assert (indices.size() == 1);
           ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[0]));
           if (!roi->saved) {
-            if (QMessageBox::question (&window(), tr("ROI not saved"), tr ("ROI has been modified. Do you want to save it?")) == QMessageBox::Yes)
+            std::basic_string<char> text = "ROI " + roi->get_filename() + " has been modified. Do you want to save it?";
+            size_t ret = QMessageBox::warning(this, tr("ROI not saved"), tr(text.c_str()),
+                QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel, QMessageBox::Save);
+            if (ret == QMessageBox::Cancel)
+              return;
+            else if (ret == QMessageBox::Save)
               save_slot();
           }
 
