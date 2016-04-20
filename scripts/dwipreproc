@@ -367,7 +367,7 @@ else: # 'All'
   transform_error = False
   field_map_image = 'field_map' + fsl_suffix
   for i, t in zip(input_transform, topup_transform):
-    if (abs(i-t) / (0.5*(i+t))) > 0.001:
+    if abs(i-t) > 1e-4:
       transform_error = True
   if transform_error:
     warnMessage('topup output field image has incorrect transform; recommend updating FSL to version 5.0.8 or later')
