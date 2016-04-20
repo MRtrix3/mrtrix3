@@ -87,30 +87,30 @@ namespace MR
             slab_thickness  = 2 * voxel_size;
 
             VBoxLayout* main_box = new VBoxLayout (this);
-            HBoxLayout* layout = new HBoxLayout;
-            layout->setContentsMargins (0, 0, 0, 0);
-            layout->setSpacing (0);
+            HBoxLayout* hlayout = new HBoxLayout;
+            hlayout->setContentsMargins (0, 0, 0, 0);
+            hlayout->setSpacing (0);
 
             QPushButton* button = new QPushButton (this);
             button->setToolTip (tr ("Open tractogram"));
             button->setIcon (QIcon (":/open.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (tractogram_open_slot ()));
-            layout->addWidget (button, 1);
+            hlayout->addWidget (button, 1);
 
             button = new QPushButton (this);
             button->setToolTip (tr ("Close tractogram"));
             button->setIcon (QIcon (":/close.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (tractogram_close_slot ()));
-            layout->addWidget (button, 1);
+            hlayout->addWidget (button, 1);
 
             hide_all_button = new QPushButton (this);
             hide_all_button->setToolTip (tr ("Hide all tractograms"));
             hide_all_button->setIcon (QIcon (":/hide.svg"));
             hide_all_button->setCheckable (true);
             connect (hide_all_button, SIGNAL (clicked()), this, SLOT (hide_all_slot ()));
-            layout->addWidget (hide_all_button, 1);
+            hlayout->addWidget (hide_all_button, 1);
 
-            main_box->addLayout (layout, 0);
+            main_box->addLayout (hlayout, 0);
 
             tractogram_list_view = new QListView (this);
             tractogram_list_view->setSelectionMode (QAbstractItemView::ExtendedSelection);
@@ -134,28 +134,11 @@ namespace MR
 
             main_box->addWidget (tractogram_list_view, 1);
 
-            GridLayout* default_opt_grid = new GridLayout;
+            hlayout = new HBoxLayout;
+            hlayout->setContentsMargins (0, 0, 0, 0);
+            hlayout->setSpacing (0);
 
-            QSlider* slider;
-            slider = new QSlider (Qt::Horizontal);
-            slider->setRange (1,1000);
-            slider->setSliderPosition (1000);
-            connect (slider, SIGNAL (valueChanged (int)), this, SLOT (opacity_slot (int)));
-            default_opt_grid->addWidget (new QLabel ("opacity"), 0, 0);
-            default_opt_grid->addWidget (slider, 0, 1);
-
-            slider = new QSlider (Qt::Horizontal);
-            slider->setRange (-1000,1000);
-            slider->setSliderPosition (0);
-            connect (slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
-            default_opt_grid->addWidget (new QLabel ("line thickness"), 1, 0);
-            default_opt_grid->addWidget (slider, 1, 1);
-
-            default_opt_grid->addWidget (new QLabel ("color"), 2, 0);
-
-            layout = new HBoxLayout;
-            layout->setContentsMargins (0, 0, 0, 0);
-            layout->setSpacing (0);
+            hlayout->addWidget (new QLabel ("color"));
 
             colour_combobox = new ComboBoxWithErrorMsg (this, "(variable)");
             colour_combobox->setToolTip (tr ("Set how this tractogram will be colored"));
@@ -166,23 +149,45 @@ namespace MR
             colour_combobox->addItem ("File");
             colour_combobox->setEnabled (false);
             connect (colour_combobox, SIGNAL (activated(int)), this, SLOT (colour_mode_selection_slot (int)));
-            layout->addWidget (colour_combobox);
+            hlayout->addWidget (colour_combobox);
 
             colour_button = new QColorButton;
             colour_button->setToolTip (tr ("Set the fixed colour to use for all tracks"));
             colour_button->setEnabled (false);
             connect (colour_button, SIGNAL (clicked()), this, SLOT (colour_button_slot()));
-            layout->addWidget (colour_button);
+            hlayout->addWidget (colour_button);
 
-            default_opt_grid->addLayout (layout, 2, 1, 1, 1);
+            main_box->addLayout (hlayout);
 
             scalar_file_options = new TrackScalarFileOptions (this);
-            default_opt_grid->addWidget (scalar_file_options, 3, 0, 1, 2);
+            main_box->addWidget (scalar_file_options);
+
+            QGroupBox* general_groupbox = new QGroupBox ("General options");
+            GridLayout* general_opt_grid = new GridLayout;
+            general_opt_grid->setContentsMargins (0, 0, 0, 0);
+            general_opt_grid->setSpacing (0);
+
+            general_groupbox->setLayout (general_opt_grid);
+
+            QSlider* slider;
+            slider = new QSlider (Qt::Horizontal);
+            slider->setRange (1,1000);
+            slider->setSliderPosition (1000);
+            connect (slider, SIGNAL (valueChanged (int)), this, SLOT (opacity_slot (int)));
+            general_opt_grid->addWidget (new QLabel ("opacity"), 0, 0);
+            general_opt_grid->addWidget (slider, 0, 1);
+
+            slider = new QSlider (Qt::Horizontal);
+            slider->setRange (-1000,1000);
+            slider->setSliderPosition (0);
+            connect (slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
+            general_opt_grid->addWidget (new QLabel ("line thickness"), 1, 0);
+            general_opt_grid->addWidget (slider, 1, 1);
 
             QGroupBox* slab_group_box = new QGroupBox (tr("crop to slab"));
             slab_group_box->setCheckable (true);
             slab_group_box->setChecked (true);
-            default_opt_grid->addWidget (slab_group_box, 4, 0, 1, 2);
+            general_opt_grid->addWidget (slab_group_box, 4, 0, 1, 2);
 
             connect (slab_group_box, SIGNAL (clicked (bool)), this, SLOT (on_crop_to_slab_slot (bool)));
 
@@ -198,7 +203,7 @@ namespace MR
             QGroupBox* lighting_group_box = new QGroupBox (tr("lighting"));
             lighting_group_box->setCheckable (true);
             lighting_group_box->setChecked (false);
-            default_opt_grid->addWidget (lighting_group_box, 5, 0, 1, 2);
+            general_opt_grid->addWidget (lighting_group_box, 5, 0, 1, 2);
 
             connect (lighting_group_box, SIGNAL (clicked (bool)), this, SLOT (on_use_lighting_slot (bool)));
 
@@ -207,7 +212,7 @@ namespace MR
             connect (lighting_button, SIGNAL (clicked()), this, SLOT (on_lighting_settings()));
             lighting_layout->addWidget (lighting_button);
 
-            main_box->addLayout (default_opt_grid, 0);
+            main_box->addWidget (general_groupbox, 0);
 
             lighting = new GL::Lighting (parent); 
             lighting->diffuse = 0.8;
