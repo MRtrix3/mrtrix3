@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- *
+ * 
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- *
+ * 
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
+ * 
  * For more details, see www.mrtrix.org
- *
+ * 
  */
 
 //#define GL_DEBUG
@@ -35,7 +35,7 @@ namespace MR
       namespace Tool
       {
 
-
+            
 
 
         ROI::ROI (Dock* parent) :
@@ -91,7 +91,7 @@ namespace MR
 
           list_model = new ROI_Model (this);
           list_view->setModel (list_model);
-          list_view->setSelectionMode (QAbstractItemView::ExtendedSelection);
+          list_view->setSelectionMode (QAbstractItemView::SingleSelection);
 
           main_box->addWidget (list_view, 1);
 
@@ -176,7 +176,7 @@ namespace MR
           edit_mode_group->addAction (action);
           brush_button->setDefaultAction (action);
           grid_layout->addWidget (brush_button, 0, 2);
-
+          
           QLabel* label = new QLabel (tr("brush size: "));
           grid_layout->addWidget (label, 1, 0, 1, 2, Qt::AlignRight);
 
@@ -308,7 +308,7 @@ namespace MR
         void ROI::save (ROI_Item* roi)
         {
           std::vector<GLubyte> data (roi->header().size(0) * roi->header().size(1) * roi->header().size(2));
-          {
+          { 
             MRView::GrabContext context;
             ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
             roi->texture().bind();
@@ -355,10 +355,9 @@ namespace MR
         void ROI::save_slot ()
         {
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
-          for (ssize_t iRoi=0; iRoi<indices.size(); ++iRoi) {
-            ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[iRoi]));
-            save (roi);
-          }
+          assert (indices.size() == 1);
+          ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[0]));
+          save (roi);
         }
 
 
@@ -383,25 +382,19 @@ namespace MR
         void ROI::close_slot ()
         {
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
-          size_t to_process = indices.size();
-          while (to_process) {
-            size_t iRoi = to_process-1;
-            ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[iRoi]));
-            if (!roi->saved) {
-              std::basic_string<char> text = "ROI " + roi->get_filename() + " has been modified. Do you want to save it?";
-              size_t ret = QMessageBox::warning(this, tr("ROI not saved"), tr(text.c_str()),
-                               QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel, QMessageBox::Save);
-              if (ret == QMessageBox::Cancel){
-                --to_process;
-                continue;
-              }
-              if (ret == QMessageBox::Save){
-                save(roi);
-              }
-            }
-            list_model->remove_item (indices[iRoi]);
-            --to_process;
+          assert (indices.size() == 1);
+          ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[0]));
+          if (!roi->saved) {
+            std::basic_string<char> text = "ROI " + roi->get_filename() + " has been modified. Do you want to save it?";
+            size_t ret = QMessageBox::warning(this, tr("ROI not saved"), tr(text.c_str()),
+                QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel, QMessageBox::Save);
+            if (ret == QMessageBox::Cancel)
+              return;
+            else if (ret == QMessageBox::Save)
+              save_slot();
           }
+
+          list_model->remove_item (indices.first());
           updateGL();
           in_insert_mode = false;
         }
@@ -426,17 +419,16 @@ namespace MR
 
 
 
-        void ROI::undo_slot ()
+        void ROI::undo_slot () 
         {
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
-          if (indices.size() == 0) {
-            WARN ("FIXME: undo_slot shouldn't be here!");
+          if (indices.size() != 1) {
+            WARN ("FIXME: shouldn't be here!");
             return;
           }
-          for (ssize_t iRoi=0; iRoi<indices.size(); ++iRoi) {
-            ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[iRoi]));
-            roi->undo();
-          }
+          ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[0]));
+
+          roi->undo();
           update_undo_redo();
           updateGL();
           in_insert_mode = false;
@@ -448,17 +440,16 @@ namespace MR
 
 
 
-        void ROI::redo_slot ()
+        void ROI::redo_slot () 
         {
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
-          if (indices.size() == 0) {
-            WARN ("FIXME: redo_slot shouldn't be here!");
+          if (indices.size() != 1) {
+            WARN ("FIXME: shouldn't be here!");
             return;
           }
-          for (ssize_t iRoi=0; iRoi<indices.size(); ++iRoi) {
-            ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[iRoi]));
-            roi->redo();
-          }
+          ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[0]));
+
+          roi->redo();
           update_undo_redo();
           updateGL();
           in_insert_mode = false;
@@ -473,28 +464,27 @@ namespace MR
         void ROI::slice_copy_slot (QAction* action)
         {
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
-          if (indices.size() == 0) {
-            WARN ("FIXME: slice_copy_slot shouldn't be here!");
+          if (indices.size() != 1) {
+            WARN ("FIXME: shouldn't be here!");
             return;
           }
-          for (ssize_t iRoi=0; iRoi<indices.size(); ++iRoi) {
-            ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[iRoi]));
+          
+          ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[0]));
 
-            const Projection* proj = window().get_current_mode()->get_current_projection();
-            if (!proj) return;
-            const Eigen::Vector3f current_origin = proj->screen_to_model (window().mouse_position(), window().focus());
-            current_axis = normal2axis (proj->screen_normal(), roi->transform());
-            current_slice = std::lround ((roi->transform().scanner2voxel.cast<float>() * current_origin)[current_axis]);
+          const Projection* proj = window().get_current_mode()->get_current_projection();
+          if (!proj) return;
+          const Eigen::Vector3f current_origin = proj->screen_to_model (window().mouse_position(), window().focus());
+          current_axis = normal2axis (proj->screen_normal(), roi->transform());
+          current_slice = std::lround ((roi->transform().scanner2voxel.cast<float>() * current_origin)[current_axis]);
 
-            roi->start (ROI_UndoEntry (*roi, current_axis, current_slice));
+          roi->start (ROI_UndoEntry (*roi, current_axis, current_slice));
 
-            const int source_slice = current_slice + ((action == copy_from_above_button->defaultAction()) ? 1 : -1);
-            if (source_slice < 0 || source_slice >= roi->header().size (current_axis))
-              return;
+          const int source_slice = current_slice + ((action == copy_from_above_button->defaultAction()) ? 1 : -1);
+          if (source_slice < 0 || source_slice >= roi->header().size (current_axis))
+            return;
 
-            ROI_UndoEntry source (*roi, current_axis, source_slice);
-            roi->current().copy (*roi, source);
-          }
+          ROI_UndoEntry source (*roi, current_axis, source_slice);
+          roi->current().copy (*roi, source);
           updateGL();
           in_insert_mode = false;
         }
@@ -506,7 +496,7 @@ namespace MR
 
 
 
-        void ROI::select_edit_mode (QAction*)
+        void ROI::select_edit_mode (QAction*) 
         {
           brush_size_button->setEnabled (brush_button->isChecked());
         }
@@ -517,7 +507,7 @@ namespace MR
 
 
 
-        void ROI::hide_all_slot ()
+        void ROI::hide_all_slot () 
         {
           updateGL();
           in_insert_mode = false;
@@ -546,7 +536,7 @@ namespace MR
           for (int i = 0; i < list_model->rowCount(); ++i) {
             if (list_model->items[i]->show && !hide_all_button->isChecked()) {
               ROI_Item* roi = dynamic_cast<ROI_Item*>(list_model->items[i].get());
-              //if (is_3D)
+              //if (is_3D) 
               //window.get_current_mode()->overlays_for_3D.push_back (image);
               //else
               roi->render (shader, projection, projection.depth_of (window().focus()));
@@ -568,11 +558,11 @@ namespace MR
 
 
 
-        void ROI::toggle_shown_slot (const QModelIndex& index, const QModelIndex& index2)
+        void ROI::toggle_shown_slot (const QModelIndex& index, const QModelIndex& index2) 
         {
           if (index.row() == index2.row()) {
             list_view->setCurrentIndex(index);
-          }
+          } 
           else {
             for (size_t i = 0; i < list_model->items.size(); ++i) {
               if (list_model->items[i]->show) {
@@ -590,7 +580,7 @@ namespace MR
 
 
 
-        void ROI::update_slot ()
+        void ROI::update_slot () 
         {
           updateGL();
         }
@@ -600,7 +590,7 @@ namespace MR
 
 
 
-        void ROI::colour_changed ()
+        void ROI::colour_changed () 
         {
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i) {
@@ -634,16 +624,14 @@ namespace MR
 
 
 
-        void ROI::update_undo_redo ()
+        void ROI::update_undo_redo () 
         {
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
 
           if (indices.size()) {
-            for (ssize_t iRoi=0; iRoi<indices.size(); ++iRoi) {
-              ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[iRoi]));
-              undo_button->defaultAction()->setEnabled (roi->has_undo());
-              redo_button->defaultAction()->setEnabled (roi->has_redo());
-            }
+            ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[0]));
+            undo_button->defaultAction()->setEnabled (roi->has_undo());
+            redo_button->defaultAction()->setEnabled (roi->has_redo());
           }
           else {
             undo_button->defaultAction()->setEnabled (false);
@@ -656,13 +644,13 @@ namespace MR
 
 
 
-        void ROI::update_selection ()
+        void ROI::update_selection () 
         {
           if (!window().image()) {
             setEnabled (false);
             return;
           }
-          else
+          else 
             setEnabled (true);
 
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
@@ -683,7 +671,8 @@ namespace MR
             draw_button->defaultAction()->setChecked (false);
             return;
           }
-          ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[0])); // 0 is first selected
+
+          ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[0]));
           colour_button->setColor (QColor (roi->colour[0], roi->colour[1], roi->colour[2]));
           opacity_slider->setValue (1.0e3f * roi->alpha);
 
@@ -701,8 +690,8 @@ namespace MR
 
 
 
-        bool ROI::mouse_press_event ()
-        {
+        bool ROI::mouse_press_event () 
+        { 
           if (in_insert_mode || window().modifiers() != Qt::NoModifier)
             return false;
 
@@ -714,56 +703,55 @@ namespace MR
           update_cursor();
 
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
-          if (indices.size() == 0) {
-            WARN ("FIXME: mouse_press_event shouldn't be here!");
+          if (indices.size() != 1) {
+            WARN ("FIXME: shouldn't be here!");
             return false;
           }
 
           const Projection* proj = window().get_current_mode()->get_current_projection();
-          if (!proj)
+          if (!proj) 
             return false;
           current_origin =  proj->screen_to_model (window().mouse_position(), window().focus());
           window().set_focus (current_origin);
           prev_pos = current_origin;
 
-          for (ssize_t iRoi = 0; iRoi < indices.size(); ++iRoi){
-            // figure out the closest ROI axis, and lock to it:
-            ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[iRoi]));
-            current_axis = normal2axis (proj->screen_normal(), roi->transform());
 
-            // figure out current slice in ROI:
-            current_slice = std::lround ((roi->transform().scanner2voxel.cast<float>() *  current_origin)[current_axis]);
+          // figure out the closest ROI axis, and lock to it:
+          ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[0]));
+          current_axis = normal2axis (proj->screen_normal(), roi->transform());
 
-            // floating-point version of slice location to keep it consistent on
-            // mouse move:
-            Eigen::Vector3f slice_axis { 0.0, 0.0, 0.0 };
-            slice_axis[current_axis] = current_axis == 2 ? 1.0 : -1.0;
-            slice_axis = roi->transform().image2scanner.rotation().cast<float>() * slice_axis;
-            current_slice_loc = current_origin.dot (slice_axis);
+          // figure out current slice in ROI:
+          current_slice = std::lround ((roi->transform().scanner2voxel.cast<float>() *  current_origin)[current_axis]);
 
-            const Math::Versorf orient (roi->header().transform().rotation().cast<float>());
-            window().set_snap_to_image (false);
-            window().set_orientation (orient);
+          // floating-point version of slice location to keep it consistent on
+          // mouse move:
+          Eigen::Vector3f slice_axis { 0.0, 0.0, 0.0 };
+          slice_axis[current_axis] = current_axis == 2 ? 1.0 : -1.0;
+          slice_axis = roi->transform().image2scanner.rotation().cast<float>() * slice_axis;
+          current_slice_loc = current_origin.dot (slice_axis);
 
-            roi->start (ROI_UndoEntry (*roi, current_axis, current_slice));
+          const Math::Versorf orient (roi->header().transform().rotation().cast<float>());
+          window().set_snap_to_image (false);
+          window().set_orientation (orient);
 
+          roi->start (ROI_UndoEntry (*roi, current_axis, current_slice));
+         
 
-            if (brush_button->isChecked()) {
-              if (brush_size_button->isMin())
-                roi->current().draw_line (*roi, prev_pos, current_origin, insert_mode_value);
-              else
-                roi->current().draw_circle (*roi, current_origin, insert_mode_value, brush_size_button->value());
-            } else if (rectangle_button->isChecked()) {
-              roi->current().draw_rectangle (*roi, current_origin, current_origin, insert_mode_value);
-            } else if (fill_button->isChecked()) {
-              roi->current().draw_fill (*roi, current_origin, insert_mode_value);
-            }
-
+          if (brush_button->isChecked()) {
+            if (brush_size_button->isMin())
+              roi->current().draw_line (*roi, prev_pos, current_origin, insert_mode_value);
+            else
+              roi->current().draw_circle (*roi, current_origin, insert_mode_value, brush_size_button->value());
+          } else if (rectangle_button->isChecked()) {
+            roi->current().draw_rectangle (*roi, current_origin, current_origin, insert_mode_value);
+          } else if (fill_button->isChecked()) {
+            roi->current().draw_fill (*roi, current_origin, insert_mode_value);
           }
+
 
           updateGL();
 
-          return true;
+          return true; 
         }
 
 
@@ -771,53 +759,47 @@ namespace MR
 
 
 
-        bool ROI::mouse_move_event ()
-        {
+        bool ROI::mouse_move_event () 
+        { 
           if (!in_insert_mode)
             return false;
 
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
           if (!indices.size()) {
-            WARN ("FIXME: mouse_move_event shouldn't be here!");
+            WARN ("FIXME: shouldn't be here!");
             return false;
           }
-
-          Eigen::Vector3f pos_adj_orig;
+          ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[0]));
 
           const Projection* proj = window().get_current_mode()->get_current_projection();
-          if (!proj)
+          if (!proj) 
             return false;
 
-          for (ssize_t iRoi=0; iRoi < indices.size(); ++iRoi) {
+          Eigen::Vector3f pos = proj->screen_to_model (window().mouse_position(), window().focus());
+          Eigen::Vector3f slice_axis (0.0, 0.0, 0.0);
+          slice_axis[current_axis] = current_axis == 2 ? 1.0 : -1.0;
+          slice_axis = roi->transform().image2scanner.rotation().cast<float>() * slice_axis;
+          float l = (current_slice_loc - pos.dot (slice_axis)) / proj->screen_normal().dot (slice_axis);
+          window().set_focus (window().focus() + l * proj->screen_normal());
+          const Eigen::Vector3f pos_adj = pos + l * proj->screen_normal();
 
-            ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[iRoi]));
-
-            const Eigen::Vector3f pos = proj->screen_to_model (window().mouse_position(), window().focus());
-            Eigen::Vector3f slice_axis (0.0, 0.0, 0.0);
-            slice_axis[current_axis] = current_axis == 2 ? 1.0 : -1.0;
-              slice_axis = roi->transform().image2scanner.rotation().cast<float>() * slice_axis;
-              float l = (current_slice_loc - pos.dot (slice_axis)) / proj->screen_normal().dot (slice_axis);
-              window().set_focus (window().focus() + l * proj->screen_normal());
-              const Eigen::Vector3f pos_adj = pos + l * proj->screen_normal();
-              pos_adj_orig = pos_adj;
-              if (brush_button->isChecked()) {
-                if (brush_size_button->isMin())
-                  roi->current().draw_line (*roi, prev_pos, pos_adj, insert_mode_value);
-                else {
-                  const float diameter = brush_size_button->value();
-                  roi->current().draw_thick_line (*roi, prev_pos, pos_adj, insert_mode_value, diameter);
-                  roi->current().draw_circle (*roi, pos_adj, insert_mode_value, diameter);
-                }
-              } else if (rectangle_button->isChecked()) {
-                roi->current().draw_rectangle (*roi, current_origin, pos_adj, insert_mode_value);
-              } else if (fill_button->isChecked()) {
-                // Do nothing
+          if (brush_button->isChecked()) {
+            if (brush_size_button->isMin())
+              roi->current().draw_line (*roi, prev_pos, pos_adj, insert_mode_value);
+            else {
+              const float diameter = brush_size_button->value();
+              roi->current().draw_thick_line (*roi, prev_pos, pos_adj, insert_mode_value, diameter);
+              roi->current().draw_circle (*roi, pos_adj, insert_mode_value, diameter);
             }
+          } else if (rectangle_button->isChecked()) {
+            roi->current().draw_rectangle (*roi, current_origin, pos_adj, insert_mode_value);
+          } else if (fill_button->isChecked()) {
+            // Do nothing
           }
 
           updateGL();
-          prev_pos = pos_adj_orig;
-          return true;
+          prev_pos = pos_adj;
+          return true; 
         }
 
 
@@ -825,12 +807,12 @@ namespace MR
 
 
 
-        bool ROI::mouse_release_event ()
-        {
+        bool ROI::mouse_release_event () 
+        { 
           in_insert_mode = false;
           update_cursor();
           update_undo_redo();
-          return true;
+          return true; 
         }
 
 
@@ -853,8 +835,8 @@ namespace MR
 
 
 
-        void ROI::add_commandline_options (MR::App::OptionList& options)
-        {
+        void ROI::add_commandline_options (MR::App::OptionList& options) 
+        { 
           using namespace MR::App;
           options
             + OptionGroup ("ROI editor tool options")
@@ -871,7 +853,7 @@ namespace MR
 
 
 
-        bool ROI::process_commandline_option (const MR::App::ParsedOption& opt)
+        bool ROI::process_commandline_option (const MR::App::ParsedOption& opt) 
         {
           if (opt.opt->is ("roi.load")) {
             std::vector<std::unique_ptr<MR::Header>> list;
