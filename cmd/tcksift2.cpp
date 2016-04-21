@@ -20,6 +20,8 @@
 #include "image.h"
 #include "header.h"
 
+#include "file/path.h"
+
 #include "dwi/directions/set.h"
 
 #include "dwi/tractography/mapping/fixel_td_map.h"
@@ -115,7 +117,7 @@ void usage ()
   REFERENCES
     + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
     "SIFT2: Enabling dense quantitative assessment of brain white matter connectivity using streamlines tractography. "
-    "NeuroImage, 2015, doi:10.1016/j.neuroimage.2015.06.092";
+    "NeuroImage, 2015, 119, 338-351";
 
   ARGUMENTS
   + Argument ("in_tracks",   "the input track file").type_tracks_in()
@@ -146,6 +148,9 @@ void run ()
     throw Exception ("Options -min_factor and -min_coeff are mutually exclusive");
   if (get_options("max_factor").size() && get_options("max_coeff").size())
     throw Exception ("Options -max_factor and -max_coeff are mutually exclusive");
+
+  if (Path::has_suffix (argument[2], ".tck"))
+    throw Exception ("Output of tcksift2 command should be a text file, not a tracks file");
 
   auto in_dwi = Image<float>::open (argument[1]);
 
