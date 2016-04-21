@@ -49,6 +49,9 @@ void run ()
   Sparse::Image<FixelMetric> input_fixel (argument[0]);
 
   Header warp_header = Header::open(argument[1]);
+
+  check_dimensions (input_fixel, warp_header, 0, 3);
+
   if (warp_header.ndim() != 4)
     throw Exception ("The input deformation field image must be a 4D file.");
   if (warp_header.size(3) != 3)

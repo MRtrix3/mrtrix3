@@ -167,6 +167,9 @@ namespace MR
     {
       auto V = load_matrix_2D_vector<ValueType> (filename);
 
+      if (V.size() != 4 || V[0].size() != 4)
+        throw Exception ("transform in file " + filename + " is invalid. Does not contain 4x4 matrix.");
+
       transform_type M;
 
       for (ssize_t i = 0; i < 3; i++)

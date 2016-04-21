@@ -31,9 +31,9 @@ namespace MR
         if (it != input_warps.keyval().end()) {
           const auto lines = split_lines (it->second);
           if (lines.size() != 3)
-            throw Exception ("linear transform in initialisation syn warps image headerdoes not contain 3 rows");
+            throw Exception ("linear transform in initialisation syn warps image header does not contain 3 rows");
           for (size_t row = 0; row < 3; ++row) {
-            const auto values = MR::split (lines[row], " ");
+            const auto values = split (lines[row], " ", true);
             if (values.size() != 4)
               throw Exception ("linear transform in initialisation syn warps image header does not contain 4 columns");
             for (size_t col = 0; col < 4; ++col)
