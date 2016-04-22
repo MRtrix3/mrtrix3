@@ -411,21 +411,16 @@ namespace MR
       }
 
 
+
+    List __from_command_line (const List& current);
+
+
     template <class HeaderType> 
       void set_from_command_line (HeaderType& header, const List& default_strides = List())
       {
-        auto opt = App::get_options ("stride");
-        if (opt.size()) {
-          List strides;
-          { 
-            std::vector<int> tmp = opt[0][0];
-            for (auto x : tmp)
-              strides.push_back (x); 
-          }
-          if (strides.size() > header.ndim())
-            WARN ("too many axes supplied to -stride option - ignoring remaining strides");
-          set (header, get_nearest_match (header, strides));
-        } 
+        auto cmdline_strides = __from_command_line (get (header));
+        if (cmdline_strides.size())
+          set (header, cmdline_strides);
         else if (default_strides.size()) 
           set (header, default_strides);
       }
