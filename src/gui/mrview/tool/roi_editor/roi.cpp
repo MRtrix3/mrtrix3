@@ -711,7 +711,7 @@ namespace MR
           const Projection* proj = window().get_current_mode()->get_current_projection();
           if (!proj) 
             return false;
-          current_origin =  proj->screen_to_model (window().mouse_position(), window().focus());
+          current_origin = proj->screen_to_model (window().mouse_position(), window().focus());
           window().set_focus (current_origin);
           prev_pos = current_origin;
 
@@ -721,7 +721,7 @@ namespace MR
           current_axis = normal2axis (proj->screen_normal(), roi->transform());
 
           // figure out current slice in ROI:
-          current_slice = std::lround ((roi->transform().scanner2voxel.cast<float>() *  current_origin)[current_axis]);
+          current_slice = std::lround ((roi->transform().scanner2voxel.cast<float>() * current_origin)[current_axis]);
 
           // floating-point version of slice location to keep it consistent on
           // mouse move:
@@ -733,6 +733,7 @@ namespace MR
           const Math::Versorf orient (roi->header().transform().rotation().cast<float>());
           window().set_snap_to_image (false);
           window().set_orientation (orient);
+          window().set_plane (current_axis);
 
           roi->start (ROI_UndoEntry (*roi, current_axis, current_slice));
          
