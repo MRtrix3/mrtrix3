@@ -282,7 +282,55 @@ Apply the mask:
 
     mrcalc temp.mif mask.mif -mult TWFC.mif
 
-Including spinal projections in connectome
+Handling SIFT2 weights
 ------------------------------------------
 
+With the original [[tcksift]] command, the output is a _new track
+file_, which can subsequently be used as input to any command
+independently of the fact that SIFT has been applied. SIFT2 is a little
+trickier: the output of the [[tcksift2]] command is a _text file_. This
+text file contains one line for every streamline, and each line contains
+a number; these are the weights of the individual streamlines.
+Importantly, the track file that was used as input to the `tcksift2`
+command is _unaffected_ by the execution of that command.
+
+There are therefore two important questions to arise from this:
+
+How do I use the output from SIFT2?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Any MRtrix3 command that receives a track file as input will also have
+a command-line option, `-tck_weights_in`. This option is used to pass
+the weights text file to the command. If this option is omitted, then
+processing will proceed as normal for the input track file, but without
+taking the weights into consideration.
+
+Why not just add the weight information to the track data?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The `.tck` file format was developed quite a long time ago, and doesn't
+have the capability of storing such data. Therefore, combining
+per-streamline weighting data with the track data itself would require
+either modifying this format (which would break compatibility with
+MRtrix 0.2, and any other non-MRtrix code that uses this format), using
+some other existing format for track data (which, given our experiences
+with image formats, can be ill-devised), or creating a new format (which
+would need to support a lot more than just per-streamline weights in
+order to justify the effort, and would likely become a fairly lengthy
+endeavour).
+
+Furthermore, writing to such a format would require duplicating all of
+the raw track data from the input file into a new output file. This is
+expensive in terms of time and HDD space; the original file could be
+deleted afterwards, but it would then be difficult to perform any
+operations on the track data where the streamline weight information
+should be ignored (sure, you could have a command-line option to ignore
+the weights, but is that any better than having a command-line option
+to input the weights?)
+
+So, for now, it is best to think of the weights file provided by
+`tcksift2` as _accompanying_ the track file, containing additional data
+that must be _explicitly_ provided to any commands in order to be used.
+The track file can also be used _without_ taking into account the
+streamline weights, simply by _not_ providing the weights.
 
