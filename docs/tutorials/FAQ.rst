@@ -1,10 +1,10 @@
-Frequently Asked Questions
-==========================
+Frequently Asked Questions (FAQ)
+================================
 
 Processing of HCP data
 ----------------------
 
-We expect that a number of users will be wanting to use MRtrix3 for the
+We expect that a number of users will be wanting to use *MRtrix3* for the
 analysis of data from the Human Connectome Project (HCP). These data do
 however present some interesting challenges from a processing
 perspective. Here I will try to list a few ideas, as well as issues that
@@ -36,14 +36,14 @@ an answer for how these things should ideally behave.
 Is it possible to use data from all shells in CSD?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The default CSD algorithm provided in the ``dwi2fod`` command is only
+The default CSD algorithm provided in the :ref:`dwi2fod` command is only
 compatible with a single b-value shell, and will by default select the
 shell with the largest b-value for processing.
 
 The `Multi-Shell Multi-Tissue (MSMT)
 CSD <http://www.sciencedirect.com/science/article/pii/S1053811914006442>`__
-method has now been incorporated into MRtrix3, and is provided as the
-``msdwi2fod`` command. There are also instructions for its use provided
+method has now been incorporated into *MRtrix3*, and is provided as the
+:ref:`msdwi2fod` command. There are also instructions for its use provided
 in the `documentation <Multi-Tissue-CSD>`__.
 
 The image data include information on gradient non-linearities. Can I make use of this?
@@ -68,7 +68,7 @@ the gradient non-linearities will affect both the effective b-value
 Otherwise, the FODs look entirely reasonable without these
 corrections...
 
-The anatomical tissue segmentation for ACT from ``5ttgen fsl`` seems even worse than for 'normal' data...?
+The anatomical tissue segmentation for ACT from :ref:`5ttgen fsl` seems even worse than for 'normal' data...?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The combination of high spatial resolution and high receiver coil
@@ -83,8 +83,8 @@ software, for which they have been impressed by the results.
 Why does SIFT crash on my system even though it's got heaps of RAM?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The main memory requirement for SIFT is that for every streamline, it
-must store a list of every `fixel <Dixels-and-Fixels>`__ traversed, with
+The main memory requirement for `SIFT <SIFT>`_ is that for every streamline,
+it must store a list of every `fixel <Dixels-and-Fixels>`__ traversed, with
 an associated streamline length through each voxel. With a spatial
 resolution approximately double that of 'standard' DWI, the number of
 unique fixels traversed by each streamline will go up by a factor of
@@ -92,8 +92,8 @@ around 3, with a corresponding increase in RAM usage. There is literally
 nothing I can do to reduce the RAM usage of SIFT; it's fully optimised.
 
 One thing you can do however, is just down-scale the FOD image prior to
-running SIFT: ``mrresize in.mif out.mif -scale 0.5 -interp sinc``. This
-will reduce the RAM usage to more manageable levels, and realistically
+running :ref:`tcksift`: ``mrresize in.mif out.mif -scale 0.5 -interp sinc``.
+This will reduce the RAM usage to more manageable levels, and realistically
 probably won't have that much influence on the algorithm anyway.
 Importantly you can still use the high-resolution data for tracking (or
 indeed anything else); it's only the SIFT step that has the high RAM
@@ -130,15 +130,15 @@ Apply the mask:
     mrcalc temp.mif mask.mif -mult TWFC.mif
 
 Handling SIFT2 weights
-------------------------------------------
+----------------------
 
-With the original ``tcksift`` command, the output is a *new track file*,
+With the original :ref:`tcksift` command, the output is a *new track file*,
 which can subsequently be used as input to any command independently of
 the fact that SIFT has been applied. SIFT2 is a little trickier: the
-output of the ``tcksift2`` command is a *text file*. This text file
+output of the :ref:`tcksift2` command is a *text file*. This text file
 contains one line for every streamline, and each line contains
 a number; these are the weights of the individual streamlines.
-Importantly, the track file that was used as input to the ``tcksift2``
+Importantly, the track file that was used as input to the :ref:`tcksift2`
 command is *unaffected* by the execution of that command.
 
 There are therefore two important questions to arise from this:
@@ -146,7 +146,7 @@ There are therefore two important questions to arise from this:
 How do I use the output from SIFT2?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Any MRtrix3 command that receives a track file as input will also have
+Any *MRtrix3* command that receives a track file as input will also have
 a command-line option, ``-tck_weights_in``. This option is used to pass
 the weights text file to the command. If this option is omitted, then
 processing will proceed as normal for the input track file, but without
@@ -176,7 +176,7 @@ the weights, but is that any better than having a command-line option
 to input the weights?)
 
 So, for now, it is best to think of the weights file provided by
-``tcksift2`` as *accompanying* the track file, containing additional data
+:ref:`tcksift2` as *accompanying* the track file, containing additional data
 that must be *explicitly* provided to any commands in order to be used.
 The track file can also be used *without* taking into account the
 streamline weights, simply by *not* providing the weights.

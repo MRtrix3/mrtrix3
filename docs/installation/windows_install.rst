@@ -84,7 +84,7 @@ Set up git and download *MRtrix3* sources
 Build *MRtrix3*
 -------------
 
-1. Configure the MRtrix install:
+1. Configure the *MRtrix3* install:
 
    ::
 
@@ -111,14 +111,13 @@ Set up *MRtrix3*
 
    Note that although the scripts provided with MRtrix will appear in
    your path, many of these will not work on a Windows installation due
-   to their dependency on FSL; a virtual machine with both MRtrix3 and
-   FSL installed would be required to run these scripts in this
-   scenario.
+   to their dependency on FSL; a virtual machine with both *MRtrix3* and
+   FSL installed would be required to run these scripts in this scenario.
 
 2. Close the terminal and start another one to ensure the startup file
    is read
 
-3. type ``mrview`` to check that everything works
+3. Type ``mrview`` to check that everything works
 
 4. You may also want to have a look through the :ref:`mrtrix_config_options`, and set anything you think
    might be required on your system.
@@ -151,7 +150,7 @@ to identify the location of the MRtrix libraries when trying to compile
 an external module.
 
 The simplest way around this is simply to invoke the build script of the main
-MRtrix install directly. For example, if compiling an external project called
+*MRtrix3* install directly. For example, if compiling an external project called
 ``myproject``, residing in a folder alongside the main ``mrtrix3`` folder, the
 build script can be invoked with::
 

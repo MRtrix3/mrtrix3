@@ -113,7 +113,7 @@ example, this command will fail:
 
 In this example, ``dwi2tensor`` will hang waiting for input data (its
 first argument should be the input DWI data set). This will also cause
-tensor2metric to hang while it waits for ``dwi2tensor`` to provide some
+``tensor2metric`` to hang while it waits for ``dwi2tensor`` to provide some
 input.
 
 Advanced pipeline usage

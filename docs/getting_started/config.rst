@@ -4,7 +4,7 @@ Configuration file
 ======
 
 The behaviour of a number of aspects of *MRtrix3* can be controlled by
-the user via the *MRtrix configuration file*. Note, that this file is distinct
+the user via the *MRtrix3 configuration file*. Note, that this file is distinct
 from the build configuration file that is generated as part of the *MRtrix3*
 installation, but rather is used to specify default settings for a number of
 parameters, many of which relate to data visualisation when using ``mrview``.
@@ -46,5 +46,6 @@ The value entry may be interpreted by *MRtrix3* applications as either:
 -  ``Floating-point``: any floating-point value
 -  ``Text``: any text string, without any further interpretation
 
-The list of all configuration file options can be found `here <config_file_options>`_
+The list of all configuration file options can be found
+`here <config_file_options>`_.
 
