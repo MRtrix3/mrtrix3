@@ -1,21 +1,26 @@
+Configuration file options
+==========================
+
 *  **AmbientIntensity**  
-    *default: 0.6*  The default intensity for the ambient light in OpenGL renders
+    *default: 0.6*
+    The default intensity for the ambient light in OpenGL renders
 
 *  **Analyse.LeftToRight** 
-    *default: 0 (false)*  A boolean value to
-    indicate whether images in Analyse format should be assumed to be in
+    *default: 0 (false)*
+    A boolean value to indicate whether images in Analyse format should be assumed to be in
     LAS orientation (default) or RAS (when this is option is turned on).
 
 *  **BValueScaling**  
-    *default: 1 (true)*  specifies whether the
-    b-values should be scaled by the squared norm of the gradient vectors
+    *default: 1 (true)*
+    specifies whether the b-values should be scaled by the squared norm of the gradient vectors
     when loading a DW gradient scheme. This is commonly required to
     correctly interpret images acquired on scanners that nominally only
     allow a single b-value, as the common workaround is to scale the
     gradient vectors to modulate the actual b-value.
 
 *  **BValueScaling** 
-    *default: yes*  specifies whether b-values should be scaled according the DW 
+    *default: yes*
+    specifies whether b-values should be scaled according the DW 
     gradient amplitudes --- see the bvalue_scaling option for details.
 
 *  **BZeroThreshold**
@@ -239,7 +244,7 @@
 
 *  **NumberOfThreads**
     *default: number of threads provided by hardware*
-    set the default number of CPU threads to use for multi*threading.
+    set the default number of CPU threads to use for multi-threading.
 
 *  **NumberOfUndos**
     *default: 16*
@@ -273,7 +278,7 @@
     this case, it may be better to specify ``/tmp/`` here.
 
 *  **TmpFilePrefix**
-    *default: ``mrtrix*tmp*``*
+    *default: ``mrtrix-tmp-``*
     The prefix to use
    for the basename of temporary files. This will be used to generate a
    unique filename for the temporary file, by adding random characters

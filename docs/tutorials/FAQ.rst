@@ -1,165 +1,8 @@
-Troubleshooting
-=====
-
-.. _remote_display:
-
-Remote display issues
----------
-
-The GUI components in MRtrix3 (``mrview`` & ``shview``) use the OpenGL
-3.3 API to make full use of modern graphics cards. Unfortunately, X11
-forwarding is not supported for OpenGL >= 3. There are a number of
-reasons for this:
-
--  OpenGL 1 & 2 used the `OpenGL fixed function
-   pipeline <https://www.opengl.org/wiki/Fixed_Function_Pipeline>`__
-   (now deprecated), whereas OpenGL >= 3 relies much more explicitly on
-   `shaders <https://www.opengl.org/wiki/Shader>`__ and `buffer
-   objects <https://www.opengl.org/wiki/Buffer_Object>`__. Amongst other
-   things, the use of buffer objects implies that potentially very large
-   amounts of data be downloaded onto the GPU. In a X11 forwarding
-   context, this would mean transferring these data over the network,
-   which would probably end up being prohibitively slow in a sufficient
-   number of situations that including support for it into the
-   `GLX <http://en.wikipedia.org/wiki/GLX>`__ was not thought to be
-   worth the effort.
-
--  X11 is unbelievably outdated, even according to the
-   `X.org <http://www.x.org/wiki/>`__ developers themselves (as very
-   clearly explained in this `linux.conf.au
-   talk <https://www.youtube.com/watch?v=RIctzAQOe44>`__). Current
-   development efforts are going into its replacement,
-   `Wayland <http://wayland.freedesktop.org/>`__, which will start
-   replacing X11 in earnest over the next few years (it's already
-   available and usable on the latest distributions). Thankfully, remote
-   display capability is planned for Wayland, and `support for it has
-   already been
-   added <http://www.phoronix.com/scan.php?page=news_item&px=MTM0MDg>`__.
-
-So it is not possible to use ``mrview`` or ``shview`` over a standard
-remote X11 connection.
-
-Why does MRtrix3 use OpenGL 3.3 if it come with such limitations?
-^^^^^^^^^^^^^^^^^^^
-
-Because it's clearly the most future-proof option. The `older OpenGL
-versions are
-deprecated <https://www.opengl.org/wiki/Fixed_Function_Pipeline>`__, and
-not recommended for modern applications. The OpenGL 3.3 API is much
-closer to the way modern graphics hardware works, and can therefore
-provide better performance. Finally, as explained above, X11 will
-eventually be phased out anyway...
-
-What can be done about this?
-^^^^^^^^^^^^^^^^^^^
-
-There are a number of options available to deal with this, each with
-their own idiosyncraties. The simplest is to render locally (option 1),
-the other options require a fair bit of setting up on the server, and
-potentially also on the clients.
-
-1. Use MRView locally
-"""""""""""""""""""
-
-This is the simplest option, and allows the use of the local graphics
-hardware (much like X11 forwarding would have). To use this relatively
-seamlessly, the simplest option is to access the remote data using a
-network filesystem, such as
-`SSHFS <http://en.wikipedia.org/wiki/SSHFS>`__,
-`SMB <http://en.wikipedia.org/wiki/Server_Message_Block>`__ or
-`NFS <http://en.wikipedia.org/wiki/Network_File_System>`__, and run
-MRView locally, loading the data from the network share. While this may
-seem inefficient, bear in mind that MRtrix3 will typically only load the
-data it needs to, so operation will probably not be slower than it would
-have been with the MRtrix 0.2.x version. Besides, the largest data files
-are likely to be track files (which will need to be loaded in their
-entirety); in the MRtrix 0.2.x version these needed to be streamed in
-whole over the network *for every screen update*.
-
-Of the networked filesystems listed above, the simplest to use would
-probably be `SSHFS <http://en.wikipedia.org/wiki/SSHFS>`__, since it
-shouldn't require any additional setup on the server (assuming users
-already have an SSH account), and is readily available on all platforms
-(using `Win-SSHFS <https://code.google.com/p/win-sshfs/>`__ on Windows,
-`OSXFuse <http://osxfuse.github.io/>`__ on MacOSX).
-
-2. Use an OpenGL-capable VNC server
-""""""""""""""""""""""""""""""""""
-
-Using the `VNC
-protocol <http://en.wikipedia.org/wiki/Virtual_Network_Computing>`__,
-the server is responsible for doing all the rendering remotely, and
-sends the resulting screen updates over the network. With this approach,
-users are presented with a full-blown desktop environment running on the
-server. This may consume too many resources on the remote server,
-depending on the desktop environment used. Also, since rendering is
-performed on the remote server, it needs to be equipped with an OpenGL
-3.3 capable graphics stack - this means decent hardware *and* an up to
-date driver. However, it has the advantage of being widely supported and
-readily available on all platforms, with many implementations available.
-The only tricky part here is ensuring the VNC server is OpenGL-capable.
-As far as I can tell, `x11vnc <http://www.karlrunge.com/x11vnc/>`__ can
-be used for this.
-
-3. Use VirtualGL to allow OpenGL forwarding within X11
-""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-The `VirtualGL project <http://www.virtualgl.org/>`__ offers a means of
-rendering OpenGL graphics on the remote server, and sending the updated
-contents of the OpenGL window to the local display, alongside the normal
-X11 connection. This provides a means of running ``mrview`` in a
-potentially more familiar X11 over SSH session. As with the VNC
-solution, rendering needs to be performed on the remote server, meaning
-it needs to be equipped with an OpenGL 3.3 capable graphics stack - this
-means decent hardware *and* an up to date driver. Also, it requires the
-installation of additional software on the local system. Finally, for
-this to work, all OpenGL commands need to be prefixed with ``vglrun``
-(not particularly problematic as this can be scripted or aliased). This
-has been reported to work well with MRtrix3.
-
-
-Unusual symbols on terminal
----------------------------
-
-When running MRtrix commands on certain terminal emulators, you may see
-unusual characters appearing in the terminal output, that look something
-like the following:
-
-.. code::
-
-    $ mrinfo fa.mif -debug
-    mrinfo: ←[00;32m[INFO] opening image "fa.mif"...←[0m
-    mrinfo: ←[00;34m[DEBUG] reading key/value file "fa.mif"...←[0m
-    mrinfo: ←[01;31m[ERROR] failed to open key/value file "fa.mif": No such file or directory←[0m
-
-MRtrix uses VT100 terminal control codes to add colour to the terminal
-output, and to clear the terminal line of text when updating the text
-displayed during certain processes. Some terminal emulators may not
-have support for these codes, in which case unwanted characters and
-symbols may instead be displayed.
-
-There are two possible solutions:
-
-1. Use a different terminal emulator. In particular, earlier instructions
-for installing MRtrix3 on Windows involved the use of the terminal provided
-with Git for Windows; this is known to not support VT100 codes. The
-current recommendation for `MRtrix3 Windows installation <windows-install>`__
-is based on
-`MSYS2 <http://sourceforge.net/p/msys2/wiki/MSYS2%20introduction/>`__;
-the **'MinGW-w64 Win64 Shell'** provided in this installation is known to
-support VT100 codes.
-
-2. Terminal colouring can be disabled using the MRtrix
-`configuration file <config>`. Add the following line to either the
-system-wide or user config file to disable these advanced terminal features:
-
-.. code::
-
-    TerminalColor: 0
-
+Frequently Asked Questions
+==========================
 
 Processing of HCP data
-------------------------
+----------------------
 
 We expect that a number of users will be wanting to use MRtrix3 for the
 analysis of data from the Human Connectome Project (HCP). These data do
@@ -289,10 +132,10 @@ Apply the mask:
 Handling SIFT2 weights
 ------------------------------------------
 
-With the original ``tcksift`` command, the output is a _new track file_,
+With the original ``tcksift`` command, the output is a *new track file*,
 which can subsequently be used as input to any command independently of
 the fact that SIFT has been applied. SIFT2 is a little trickier: the
-output of the ``tcksift2`` command is a _text file_. This text file
+output of the ``tcksift2`` command is a *text file*. This text file
 contains one line for every streamline, and each line contains
 a number; these are the weights of the individual streamlines.
 Importantly, the track file that was used as input to the ``tcksift2``
@@ -304,7 +147,7 @@ How do I use the output from SIFT2?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Any MRtrix3 command that receives a track file as input will also have
-a command-line option, `-tck_weights_in`. This option is used to pass
+a command-line option, ``-tck_weights_in``. This option is used to pass
 the weights text file to the command. If this option is omitted, then
 processing will proceed as normal for the input track file, but without
 taking the weights into consideration.
@@ -312,7 +155,7 @@ taking the weights into consideration.
 Why not just add the weight information to the track data?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The `.tck` file format was developed quite a long time ago, and doesn't
+The ``.tck`` file format was developed quite a long time ago, and doesn't
 have the capability of storing such data. Therefore, combining
 per-streamline weighting data with the track data itself would require
 either modifying this format (which would break compatibility with
