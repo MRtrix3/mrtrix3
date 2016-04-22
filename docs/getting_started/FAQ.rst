@@ -289,13 +289,13 @@ Apply the mask:
 Handling SIFT2 weights
 ------------------------------------------
 
-With the original ``tcksift`` command, the output is a _new track
-file_, which can subsequently be used as input to any command
-independently of the fact that SIFT has been applied. SIFT2 is a little
-trickier: the output of the ``tcksift2`` command is a _text file_. This
-text file contains one line for every streamline, and each line contains
+With the original ``tcksift`` command, the output is a _new track file_,
+which can subsequently be used as input to any command independently of
+the fact that SIFT has been applied. SIFT2 is a little trickier: the
+output of the ``tcksift2`` command is a _text file_. This text file
+contains one line for every streamline, and each line contains
 a number; these are the weights of the individual streamlines.
-Importantly, the track file that was used as input to the `tcksift2`
+Importantly, the track file that was used as input to the ``tcksift2``
 command is *unaffected* by the execution of that command.
 
 There are therefore two important questions to arise from this:
@@ -333,8 +333,8 @@ the weights, but is that any better than having a command-line option
 to input the weights?)
 
 So, for now, it is best to think of the weights file provided by
-``tcksift2`` as _accompanying_ the track file, containing additional data
-that must be _explicitly_ provided to any commands in order to be used.
-The track file can also be used _without_ taking into account the
-streamline weights, simply by _not_ providing the weights.
+``tcksift2`` as *accompanying* the track file, containing additional data
+that must be *explicitly* provided to any commands in order to be used.
+The track file can also be used *without* taking into account the
+streamline weights, simply by *not* providing the weights.
 
