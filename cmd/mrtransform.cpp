@@ -142,7 +142,7 @@ void run ()
 {
   auto input_header = Header::open (argument[0]);
   Header output_header (input_header);
-  output_header.datatype() = DataType::from_command_line (output_header.datatype());
+  output_header.datatype() = DataType::from_command_line (DataType::from<float> ());
 
   // Linear
   transform_type linear_transform;
@@ -300,6 +300,8 @@ void run ()
       warp_composed_ptr = warp_ptr;
     }
 
+    if (interp == 0)
+      output_header.datatype() = DataType::from_command_line (input_header.datatype());
     auto output = Image<float>::create (argument[1], output_header).with_direct_io();
 
       switch (interp) {
