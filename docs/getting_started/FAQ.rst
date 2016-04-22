@@ -193,11 +193,15 @@ an answer for how these things should ideally behave.
 Is it possible to use data from all shells in CSD?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Not yet. We are working on inclusion of `Multi-Shell Multi-Tissue (MSMT)
+The default CSD algorithm provided in the ``dwi2fod`` command is only
+compatible with a single b-value shell, and will by default select the
+shell with the largest b-value for processing.
+
+The `Multi-Shell Multi-Tissue (MSMT)
 CSD <http://www.sciencedirect.com/science/article/pii/S1053811914006442>`__
-into MRtrix3, and hopefully it will be there soon. For now, any command
-in MRtrix that operates on diffusion data will by default automatically
-select the largest b-value shell for processing.
+method has now been incorporated into MRtrix3, and is provided as the
+``msdwi2fod`` command. There are also instructions for its use provided
+in the `documentation <Multi-Tissue-CSD>`__.
 
 The image data include information on gradient non-linearities. Can I make use of this?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -221,8 +225,8 @@ the gradient non-linearities will affect both the effective b-value
 Otherwise, the FODs look entirely reasonable without these
 corrections...
 
-The anatomical tissue segmentation for ACT from ``act_anat_prepare_fsl`` seems even worse than for 'normal' data...?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The anatomical tissue segmentation for ACT from ``5ttgen fsl`` seems even worse than for 'normal' data...?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The combination of high spatial resolution and high receiver coil
 density results in a pretty high noise level in the middle of the brain.
@@ -285,14 +289,14 @@ Apply the mask:
 Handling SIFT2 weights
 ------------------------------------------
 
-With the original [[tcksift]] command, the output is a _new track
+With the original ``tcksift`` command, the output is a _new track
 file_, which can subsequently be used as input to any command
 independently of the fact that SIFT has been applied. SIFT2 is a little
-trickier: the output of the [[tcksift2]] command is a _text file_. This
+trickier: the output of the ``tcksift2`` command is a _text file_. This
 text file contains one line for every streamline, and each line contains
 a number; these are the weights of the individual streamlines.
 Importantly, the track file that was used as input to the `tcksift2`
-command is _unaffected_ by the execution of that command.
+command is *unaffected* by the execution of that command.
 
 There are therefore two important questions to arise from this:
 
@@ -329,7 +333,7 @@ the weights, but is that any better than having a command-line option
 to input the weights?)
 
 So, for now, it is best to think of the weights file provided by
-`tcksift2` as _accompanying_ the track file, containing additional data
+``tcksift2`` as _accompanying_ the track file, containing additional data
 that must be _explicitly_ provided to any commands in order to be used.
 The track file can also be used _without_ taking into account the
 streamline weights, simply by _not_ providing the weights.
