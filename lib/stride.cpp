@@ -70,6 +70,68 @@ namespace MR
     }
 
 
+    List __from_command_line (const List& current)
+    {
+      List strides;
+      auto opt = App::get_options ("stride");
+      if (!opt.size()) 
+        return strides;
+
+      std::vector<int> tmp = opt[0][0];
+      for (auto x : tmp)
+        strides.push_back (x); 
+
+
+      if (strides.size() > current.size())
+        WARN ("too many axes supplied to -stride option - ignoring remaining strides");
+      strides.resize (current.size(), 0);
+
+      for (const auto x : strides)
+        if (std::abs(x) > int (current.size()))
+          throw Exception ("strides specified exceed image dimensions: got " + str(opt[0][0]) + ", but image has " + str(current.size()) + " axes");
+
+      for (size_t i = 0; i < strides.size()-1; ++i) {
+        if (!strides[1]) continue;
+        for (size_t j = i+1; j < strides.size(); ++j) 
+          if (std::abs (strides[i]) == std::abs (strides[j])) 
+            throw Exception ("duplicate entries provided to \"-stride\" option: " + str(opt[0][0]));
+      }
+
+      List prev = get_symbolic (current);
+      
+      for (size_t i = 0; i < strides.size(); ++i) 
+        if (strides[i] != 0) 
+          prev[i] = 0;
+
+      prev = get_symbolic (prev);
+      ssize_t max_remaining = 0;
+      for (const auto x : prev)
+        if (std::abs(x) > max_remaining)
+          max_remaining = std::abs(x);
+
+      struct FindStride {
+        FindStride (List::value_type value) : x (std::abs(value)) { }
+        bool operator() (List::value_type a) { return std::abs (a) == x; }
+        const List::value_type x;
+      };
+
+      ssize_t next_avail = 0;
+      for (ssize_t next = 1; next <= max_remaining; ++next) {
+        auto p = std::find_if (prev.begin(), prev.end(), FindStride (next));
+        assert (p != prev.end());
+        List::value_type s;
+        while (1) {
+          s = *p + ( *p > 0 ? next_avail : -next_avail );
+          if (std::find_if (strides.begin(), strides.end(), FindStride (s)) == strides.end())
+            break;
+          ++next_avail;
+        }
+        strides[std::distance (prev.begin(), p)] = s;
+      }
+      
+      return strides;
+    }
+
 
 
   }
