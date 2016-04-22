@@ -78,6 +78,8 @@ namespace MR
         // Functions can copy-construct their own voxel accessor from this and retain const-ness:
         const VoxelAccessor& accessor() const { return _accessor; }
 
+        const ::MR::Header& header() const { return _header; }
+
       protected:
         std::vector<Fixel> fixels;
 
