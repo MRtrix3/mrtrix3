@@ -72,7 +72,7 @@ namespace MR
     };
 
   template <typename X>
-    struct max_digits<X, typename std::enable_if<std::is_fundamental<typename X::value_type>::value, int>::type> {
+    struct max_digits<X, typename std::enable_if<std::is_fundamental<typename X::value_type>::value && !std::is_fundamental<typename X::Scalar>::value, int>::type> {
       static constexpr int value () { return std::numeric_limits<typename X::value_type>::max_digits10; }
     };
 
