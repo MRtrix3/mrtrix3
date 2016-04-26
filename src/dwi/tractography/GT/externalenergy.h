@@ -103,7 +103,7 @@ namespace MR {
           
           inline double hanning(const double w) const
           {
-            return (w <= (1.0-beta)/2) ? 0.0 : (w >= (1.0+beta)/2) ? 1.0 : (1 - std::cos(M_PI * (w-(1.0-beta)/2)/beta )) / 2;
+            return (w <= (1.0-beta)/2) ? 0.0 : (w >= (1.0+beta)/2) ? 1.0 : (1 - std::cos(Math::pi * (w-(1.0-beta)/2)/beta )) / 2;
           }
           
         };
