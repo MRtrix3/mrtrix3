@@ -116,12 +116,12 @@ namespace MR
                                   "(Default: 2,5,10,15,20)")
         + Argument ("angles").type_sequence_float ()
       + Option ("init_rotation.search.scale", "relative size of the images used for the rotation search. (Default: 0.15)")
-        + Argument ("scale").type_float (0.0001, 0.15, 1.0)
+        + Argument ("scale").type_float (0.0001, 1.0)
       + Option ("init_rotation.search.directions", "number of rotation axis for local search. (Default: 250)")
-        + Argument ("num").type_integer (1, 250, 10000)
+        + Argument ("num").type_integer (1, 10000)
       + Option ("init_rotation.search.run_global", "perform a global search. (Default: local)")
       + Option ("init_rotation.search.global.iterations", "number of rotations to investigate (Default: 10000)")
-        + Argument ("num").type_integer (1, 10000, 1e10);
+        + Argument ("num").type_integer (1, 1e10);
 
     const OptionGroup rigid_options =
       OptionGroup ("Rigid registration options")

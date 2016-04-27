@@ -59,7 +59,7 @@ void usage ()
       "to be used only with warpfull2deformation and warpfull2displacement conversion types. Used to define the direction of the desired output field."
       "Use -from 1 to obtain the image1->image2 field and from 2 for image2->image1. Can be used in combination with the -midway_space option to "
       "produce a field that only maps to midway space.")
-  +   Argument ("image").type_integer (1,1,2);
+  +   Argument ("image").type_integer (1, 2);
 }
 
 
