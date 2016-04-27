@@ -392,8 +392,8 @@ else: # 'All'
 
 
   # Manually combine corresponding volumes from EDDY output
-  runCommand('mrconvert dwi_post_eddy' + fsl_suffix + ' corrected1.mif -coord 3 0:' + str(num_volumes-1) + stride_option)
-  runCommand('mrconvert dwi_post_eddy' + fsl_suffix + ' corrected2.mif -coord 3 ' + str(num_volumes) + ':' + str((num_volumes*2)-1) + stride_option)
+  runCommand('mrconvert dwi_post_eddy' + fsl_suffix + ' corrected1.mif -coord 3 0:' + str(num_volumes-1))
+  runCommand('mrconvert dwi_post_eddy' + fsl_suffix + ' corrected2.mif -coord 3 ' + str(num_volumes) + ':' + str((num_volumes*2)-1))
   delFile('dwi_post_eddy' + fsl_suffix)
   runCommand('mrcalc corrected1.mif weight1.mif -mult corrected2.mif weight2.mif -mult -add sum_weights.mif -divide 0.0 -max - | mrconvert - result.mif -fslgrad bvecs_combined bvals_combined' + stride_option)
 
