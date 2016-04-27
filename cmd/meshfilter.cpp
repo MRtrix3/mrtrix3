@@ -23,8 +23,8 @@
 
 
 
-#define SMOOTH_SPATIAL_DEFAULT 10.0f
-#define SMOOTH_INFLUENCE_DEFAULT 10.0f
+#define DEFAULT_SMOOTHING_SPATIAL 10.0
+#define DEFAULT_SMOOTHING_INFLUENCE 10.0
 
 
 
@@ -38,11 +38,11 @@ const char* filters[] = { "smooth", NULL };
 
 const OptionGroup smooth_option = OptionGroup ("Options for mesh smoothing filter")
 
-    + Option ("smooth_spatial", "spatial extent of smoothing")
-      + Argument ("value").type_float (0.0f, SMOOTH_SPATIAL_DEFAULT, std::numeric_limits<float>::infinity())
+    + Option ("smooth_spatial", "spatial extent of smoothing (default: " + str(DEFAULT_SMOOTHING_INFLUENCE, 2) + "mm)")
+      + Argument ("value").type_float (0.0)
 
-    + Option ("smooth_influence", "influence factor for smoothing")
-      + Argument ("value").type_float (0.0f, SMOOTH_INFLUENCE_DEFAULT, std::numeric_limits<float>::infinity());
+    + Option ("smooth_influence", "influence factor for smoothing (default: " + str(DEFAULT_SMOOTHING_INFLUENCE, 2) + ")")
+      + Argument ("value").type_float (0.0);
 
 
 void usage ()
@@ -83,8 +83,8 @@ void run ()
   int filter = argument[1];
   if (filter == 0) {
 
-    const float spatial   = get_option_value ("smooth_spatial",  SMOOTH_SPATIAL_DEFAULT);
-    const float influence = get_option_value ("smooth_inluence", SMOOTH_INFLUENCE_DEFAULT);
+    const float spatial   = get_option_value ("smooth_spatial",  DEFAULT_SMOOTHING_SPATIAL);
+    const float influence = get_option_value ("smooth_inluence", DEFAULT_SMOOTHING_INFLUENCE);
 
     if (meshes.size() == 1) {
       meshes.front().smooth (spatial, influence);

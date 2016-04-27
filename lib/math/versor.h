@@ -16,6 +16,8 @@
 #ifndef __math_versor_h__
 #define __math_versor_h__
 
+#include <Eigen/Geometry>
+
 #include "debug.h"
 #include "math/math.h"
 
@@ -34,8 +36,11 @@ namespace MR {
         Versor () : Eigen::Quaternion<ValueType> (NAN, NAN, NAN, NAN) { }
         Versor (const value_type& w, const value_type& x, const value_type& y, const value_type& z) :
             Eigen::Quaternion<ValueType> (w, x, y, z) { Eigen::Quaternion<ValueType>::normalize(); }
-        Versor (const value_type* data) :
-            Eigen::Quaternion<ValueType> (data) { Eigen::Quaternion<ValueType>::normalize(); }
+
+        // This may be used erroneously if trying to convert from a matrix representation to a versor
+        //   (this constructor in fact just reads 4 value_type's from an array directly into the quaternion)
+        Versor (const value_type*) = delete;
+
         template <class Derived>
         Versor (const Eigen::QuaternionBase<Derived>& other) :
             Eigen::Quaternion<ValueType> (other) { Eigen::Quaternion<ValueType>::normalize(); }
@@ -48,13 +53,9 @@ namespace MR {
         Versor (const Eigen::Quaternion<OtherScalar, OtherOptions>& other) :
             Eigen::Quaternion<ValueType> (other) { Eigen::Quaternion<ValueType>::normalize(); }
 
-        Versor (const value_type angle, const Eigen::Matrix<value_type, 3, 1>& axis) {
-            Eigen::Quaternion<ValueType>::w() = std::cos (angle/2.0);
-            const value_type norm = std::sin (angle/2.0) / axis.norm();
-            Eigen::Quaternion<ValueType>::x() = axis[0] * norm;
-            Eigen::Quaternion<ValueType>::y() = axis[1] * norm;
-            Eigen::Quaternion<ValueType>::z() = axis[2] * norm;
-          }
+        // This functionality was provided explicitly in earlier MRtrix versions, but should
+        //   now be instead handled using the constructor that takes an Eigen::AngleAxis
+        Versor (const value_type, const Eigen::Matrix<value_type, 3, 1>&) = delete;
 
         bool valid() const { return std::isfinite (w()); }
         bool operator! () const { return !valid(); }

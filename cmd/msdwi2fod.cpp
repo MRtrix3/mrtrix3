@@ -51,7 +51,7 @@ void usage ()
   + Option ("mask", "only perform computation within the specified binary brain mask image.")
   +   Argument ("image").type_image_in()
 
-  + Option ("lmax","the lmax values to use per tissue type, as a comma-separated list of even integers.")
+  + Option ("lmax", "the lmax values to use per tissue type, as a comma-separated list of even integers.")
   +   Argument ("order").type_sequence_int()
 
   + Option ("directions",

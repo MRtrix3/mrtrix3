@@ -1,3 +1,5 @@
+.. _maskfilter:
+
 maskfilter
 ===========
 
@@ -31,7 +33,7 @@ Options for connected-component filter
 
 -  **-largest** only retain the largest connected component
 
--  **-connectivity** use 26 neighbourhood connectivity (Default: 6)
+-  **-connectivity** use 26-voxel-neighbourhood connectivity (Default: 6)
 
 Options for dilate / erode filters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -59,7 +61,7 @@ Standard options
 
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded applications
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
 
 -  **-failonwarn** terminate program if a warning is produced
 

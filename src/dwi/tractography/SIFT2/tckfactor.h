@@ -24,6 +24,7 @@
 #include <mutex>
 
 #include "image.h"
+#include "types.h"
 
 #include "dwi/directions/set.h"
 
@@ -41,8 +42,8 @@
 
 #define SIFT2_MIN_ITERS_DEFAULT 10
 #define SIFT2_MAX_ITERS_DEFAULT 1000
-#define SIFT2_MIN_COEFF_DEFAULT (-std::numeric_limits<float>::infinity())
-#define SIFT2_MAX_COEFF_DEFAULT (std::numeric_limits<float>::infinity())
+#define SIFT2_MIN_COEFF_DEFAULT (-std::numeric_limits<default_type>::infinity())
+#define SIFT2_MAX_COEFF_DEFAULT (std::numeric_limits<default_type>::infinity())
 #define SIFT2_MAX_COEFF_STEP_DEFAULT 1.0
 #define SIFT2_MIN_CF_DECREASE_DEFAULT 2.5e-5
 

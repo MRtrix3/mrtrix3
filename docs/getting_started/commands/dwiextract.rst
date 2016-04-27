@@ -1,3 +1,5 @@
+.. _dwiextract:
+
 dwiextract
 ===========
 
@@ -35,6 +37,11 @@ DW Shell selection options
 
 -  **-shell list** specify one or more diffusion-weighted gradient shells to use during processing, as a comma-separated list of the desired approximate b-values. Note that some commands are incompatible with multiple shells, and will throw an error if more than one b-value is provided.
 
+Stride options
+^^^^^^^^^^^^^^
+
+-  **-stride spec** specify the strides of the output data in memory, as a comma-separated list. The actual strides produced will depend on whether the output image format can support it.
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
@@ -46,7 +53,7 @@ Standard options
 
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded applications
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
 
 -  **-failonwarn** terminate program if a warning is produced
 

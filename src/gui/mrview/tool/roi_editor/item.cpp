@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 
 
@@ -41,7 +41,7 @@ namespace MR
 
         //CONF option: NumberOfUndos
         //CONF default: 16
-        //CONF The number of undo operations permitted in the MRView ROI editor tool 
+        //CONF The number of undo operations permitted in the MRView ROI editor tool
         int ROI_Item::number_of_undos = MR::File::Config::get_int ("NumberOfUndos", 16);
         int ROI_Item::current_preset_colour = 0;
         int ROI_Item::new_roi_counter = 0;
@@ -60,7 +60,9 @@ namespace MR
           set_allowed_features (false, true, false);
           set_interpolate (false);
           set_use_transparency (true);
-          set_min_max (0.0, 1.0);
+          value_min = 0;
+          value_max = 1;
+          min_max_set();
           set_windowing (-1.0f, 0.0f);
           alpha = 1.0f;
           colour = preset_colours[current_preset_colour++];
@@ -86,7 +88,7 @@ namespace MR
 
 
 
-        void ROI_Item::zero () 
+        void ROI_Item::zero ()
         {
           MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
@@ -131,7 +133,7 @@ namespace MR
           current_undo = undo_list.size()-1;
         }
 
-        void ROI_Item::undo () 
+        void ROI_Item::undo ()
         {
           if (has_undo()) {
             undo_list[current_undo].undo (*this);
@@ -139,7 +141,7 @@ namespace MR
           }
         }
 
-        void ROI_Item::redo () 
+        void ROI_Item::redo ()
         {
           if (has_redo()) {
             ++current_undo;

@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "gui/mrview/tool/odf/item.h"
+#include "gui/mrview/tool/odf/type.h"
 
 namespace MR
 {
@@ -69,7 +70,7 @@ namespace MR
               return 1;
             }
 
-            size_t add_items (const std::vector<std::string>& list, bool colour_by_direction, bool hide_negative_lobes, float scale);
+            size_t add_items (const std::vector<std::string>& list, const odf_type_t type, bool colour_by_direction, bool hide_negative_lobes, float scale);
 
             QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const {
               (void ) parent; // to suppress warnings about unused parameters

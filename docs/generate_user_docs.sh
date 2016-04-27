@@ -21,7 +21,7 @@ List of MRtrix3 commands
     filepath='getting_started/commands'
     filename=`basename $n`
     $n __print_usage_rst__ > $filepath/$filename.rst
-    sed -ie "1i$filename\n===========\n" $filepath/$filename.rst
+    sed -ie "1i.. _$filename:\n\n$filename\n===========\n" $filepath/$filename.rst
     echo "
 .. include:: commands/$filename.rst
 .......
@@ -36,7 +36,7 @@ Scripts for external libraries
 ################" > getting_started/scripts_list.rst
 
   mkdir -p getting_started/scripts
-  for n in `find ../scripts/ -type f -print0 | xargs -0 grep -l "lib.app.initParser"`; do
+  for n in `find ../scripts/ -type f -print0 | xargs -0 grep -l "lib.app.initParser" | sort`; do
     filepath='getting_started/scripts'
     filename=`basename $n`
     $n __print_usage_rst__ > $filepath/$filename.rst

@@ -1,3 +1,5 @@
+.. _mrview:
+
 mrview
 ===========
 
@@ -95,7 +97,11 @@ Tractography tool options
 ODF tool options
 ^^^^^^^^^^^^^^^^
 
--  **-odf.load image** Loads the specified image on the ODF tool.
+-  **-odf.load_sh image** Loads the specified SH-based ODF image on the ODF tool.
+
+-  **-odf.load_tensor image** Loads the specified tensor image on the ODF tool.
+
+-  **-odf.load_dixel image** Loads the specified dixel-based image on the ODF tool.
 
 Vector plot tool options
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -129,7 +135,7 @@ Standard options
 
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded applications
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
 
 -  **-failonwarn** terminate program if a warning is produced
 

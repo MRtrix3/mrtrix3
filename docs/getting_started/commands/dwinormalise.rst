@@ -1,3 +1,5 @@
+.. _dwinormalise:
+
 dwinormalise
 ===========
 
@@ -20,7 +22,7 @@ Intensity normalise the b=0 signal within a supplied white matter mask
 Options
 -------
 
--  **-intensity value** normalise the b=0 signal to the specified value (Default: 1000)
+-  **-intensity value** normalise the b=0 signal to the specified value (Default: 1e+03)
 
 -  **-percentile value** define the percentile of the mask intensties used for normalisation. If this option is not supplied then the median value (50th percentile) will be normalised to the desired intensity value.
 
@@ -44,7 +46,7 @@ Standard options
 
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded applications
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
 
 -  **-failonwarn** terminate program if a warning is produced
 

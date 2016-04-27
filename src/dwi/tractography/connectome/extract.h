@@ -40,18 +40,20 @@ namespace Connectome {
 class Selector
 {
   public:
-    Selector (const node_t node) :
+    Selector (const node_t node, const bool keep_self = true) :
       list (1, node),
-      exact_match (false) { }
+      exact_match (false),
+      keep_self (keep_self) { }
     Selector (const node_t node_one, const node_t node_two) :
       exact_match (true) { list.push_back (node_one); list.push_back (node_two); }
-    Selector (const std::vector<node_t>& node_list, const bool both) :
+    Selector (const std::vector<node_t>& node_list, const bool both, const bool keep_self = false) :
       list (node_list),
-      exact_match (both) { }
+      exact_match (both),
+      keep_self (keep_self) { }
     Selector (const Selector& that) :
-      list (that.list), exact_match (that.exact_match) { }
+      list (that.list), exact_match (that.exact_match), keep_self (that.keep_self) { }
     Selector (Selector&& that) :
-      list (std::move (that.list)), exact_match (that.exact_match) { }
+      list (std::move (that.list)), exact_match (that.exact_match), keep_self (that.keep_self) { }
 
     bool operator() (const node_t) const;
     bool operator() (const NodePair&) const;
@@ -60,7 +62,8 @@ class Selector
 
   private:
     std::vector<node_t> list;
-    bool exact_match;
+    bool exact_match, keep_self;
+
 };
 
 
@@ -101,7 +104,7 @@ class WriterExtraction
 {
 
   public:
-    WriterExtraction (const Tractography::Properties&, const std::vector<node_t>&, const bool);
+    WriterExtraction (const Tractography::Properties&, const std::vector<node_t>&, const bool, const bool);
     ~WriterExtraction();
 
     void add (const node_t, const std::string&, const std::string);
@@ -120,6 +123,7 @@ class WriterExtraction
     const Tractography::Properties& properties;
     const std::vector<node_t>& node_list;
     const bool exclusive;
+    const bool keep_self;
     std::vector< Selector > selectors;
     std::vector< Tractography::WriterUnbuffered<float>* > writers;
     Tractography::Streamline<> empty_tck;

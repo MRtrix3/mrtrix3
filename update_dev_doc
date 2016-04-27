@@ -1,0 +1,18 @@
+#!/bin/bash
+
+set -e
+./doxygen
+
+[ -d mrtrix3-dev-doc ] || git clone git@github.com:MRtrix3/mrtrix3-dev-doc.git 
+
+(
+  cd mrtrix3-dev-doc 
+  git pull
+  git rm -rf *
+  cp -r ../devdoc/* .
+  git add .
+  git commit -a -m "automatic update of dev doc"
+  git push
+)
+  
+

@@ -83,9 +83,13 @@ namespace MR
               out_5tt.index(3) = 2; // Access the WM fraction
               float integral = 0.0f;
               for (auto l = Loop (out_5tt, 0, 3) (out_5tt, out_mask); l; ++l) {
-                const float value = Math::pow2<float> (out_5tt.value()); // Processing mask value is the square of the WM fraction 
-                out_mask.value() = value;
-                integral += value;
+                const float value = Math::pow2<float> (out_5tt.value()); // Processing mask value is the square of the WM fraction
+                if (std::isfinite (value)) {
+                  out_mask.value() = value;
+                  integral += value;
+                } else {
+                  out_mask.value() = 0.0f;
+                }
               }
               if (!integral)
                 throw Exception ("Processing mask is empty; check input images / registration");

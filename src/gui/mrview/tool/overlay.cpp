@@ -372,9 +372,9 @@ namespace MR
         void Overlay::reset_colourmap(const ColourMapButton&)
         {
             QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
-            Image* overlay = nullptr;
+            Displayable* overlay = nullptr;
             for (size_t i = 0, N = indices.size(); i < N; ++i) {
-              overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
+              overlay = dynamic_cast<Displayable*> (image_list_model->get_image (indices[i]));
               overlay->reset_windowing();
             }
 
@@ -651,7 +651,7 @@ namespace MR
             +   Argument ("image").type_image_in()
 
             + Option ("overlay.opacity", "Sets the overlay opacity to floating value [0-1].")
-            +   Argument ("value").type_float (0.0, 1.0, 1.0)
+            +   Argument ("value").type_float (0.0, 1.0)
 
             + Option ("overlay.interpolation_on", "Enables overlay image interpolation.")
 

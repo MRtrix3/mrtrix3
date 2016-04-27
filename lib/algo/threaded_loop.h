@@ -29,13 +29,6 @@ namespace MR
    *
    * \defgroup image_thread_looping Thread-safe image looping 
    *
-   * @} */
-
-  /*! \addtogroup loop 
-   * \{ */
-
-  //! a class to loop over images in a multi-threaded fashion
-  /*! \ingroup image_thread_looping 
    * These functions allows arbitrary looping operations to be performed in
    * parallel, using a versatile multi-threading framework. It works
    * hand-in-hand with the [single-threaded looping functions](@ref MR::Loop()),
@@ -74,8 +67,8 @@ namespace MR
    *    time;
    * 4. repeat from step 1 until all the data have been processed.
    *
-   */
-  /* \section threaded_loop_constructor Instantiating a ThreadedLoop() object
+   *
+   * \section threaded_loop_constructor Instantiating a ThreadedLoop() object
    *
    * The ThreadedLoop() functions can be used to set up any reasonable
    * multi-threaded looping structure. The various relevant aspects that can be
@@ -133,8 +126,8 @@ namespace MR
    * ThreadedLoop ("computing exponential in-place", vox)
    *   .run (my_function, vox);
    * ~~~
-   */
-  /* To make this operation more easily generalisable to any `ImageType`, use a
+   *
+   * To make this operation more easily generalisable to any `ImageType`, use a
    * functor with a template operator() method:
    *
    * ~~~{.cpp}
@@ -191,8 +184,8 @@ namespace MR
    * ThreadedLoop (vox1).run (f, vox_out, vox1, vox2);
    * ~~~
    * 
-   */ 
-  /* This example uses a functor to computes the root-mean-square of \a vox:
+   * 
+   * This example uses a functor to computes the root-mean-square of \a vox:
    * \code 
    * class RMS {
    *   public:
@@ -240,6 +233,8 @@ namespace MR
    * \sa Loop
    * \sa Thread::run()
    * \sa thread_queue
+   *
+   * @}
    */
 
 
@@ -451,7 +446,6 @@ namespace MR
       }
 
 
-  /*! \} */
 
 }
 

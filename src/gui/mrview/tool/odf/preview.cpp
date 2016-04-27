@@ -137,8 +137,8 @@ namespace MR
 
         void ODF_Preview::lighting_update_slot()
         {
-          // Use a dummy call that won't actually change anything, but will call updateGL() (which is protected)
-          render_frame->set_LOD (level_of_detail_selector->value());
+          // Just force a redraw - preferably something compatible with all ODF modes
+          render_frame->set_show_axes (show_axes_box->isChecked());
         }
 
 

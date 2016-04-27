@@ -34,7 +34,7 @@
  * 
  * - [Thread::run()](@ref Thread::run()) to launch one or more worker threads;
  *
- * - [ThreadedLoop()](@ref threaded_loop) to run an operation over all voxels
+ * - [ThreadedLoop()](@ref image_thread_looping) to run an operation over all voxels
  *   in one or more images;
  *
  * - [Thread::run_queue()](@ref Thread::run_queue()) to run a pipeline,

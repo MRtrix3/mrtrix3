@@ -33,10 +33,10 @@ using namespace App;
 const OptionGroup LengthOption = OptionGroup ("Streamline length threshold options")
 
   + Option ("maxlength", "set the maximum length of any streamline in mm")
-    + Argument ("value").type_float (0.0, 0.0, std::numeric_limits<float>::infinity())
+    + Argument ("value").type_float (0.0)
 
   + Option ("minlength", "set the minimum length of any streamline in mm")
-    + Argument ("value").type_float (0.0, 0.0, std::numeric_limits<float>::infinity());
+    + Argument ("value").type_float (0.0);
 
 
 
@@ -47,11 +47,11 @@ const OptionGroup ResampleOption = OptionGroup ("Streamline resampling options")
 
   + Option ("upsample", "increase the density of points along the length of the streamline by some factor "
                         "(may improve mapping streamlines to ROIs, and/or visualisation)")
-    + Argument ("ratio").type_integer (1, 1, 1e6)
+    + Argument ("ratio").type_integer (2)
 
   + Option ("downsample", "increase the density of points along the length of the streamline by some factor "
                           "(decreases required storage space)")
-    + Argument ("ratio").type_integer (1, 1, 1e6)
+    + Argument ("ratio").type_integer (2)
 
   + Option ("out_ends_only", "only output the two endpoints of each streamline");
 
@@ -62,10 +62,10 @@ const OptionGroup ResampleOption = OptionGroup ("Streamline resampling options")
 const OptionGroup TruncateOption = OptionGroup ("Streamline count truncation options")
 
   + Option ("number", "set the desired number of selected streamlines to be propagated to the output file")
-    + Argument ("count").type_integer (0, 0, std::numeric_limits<int>::max())
+    + Argument ("count").type_integer (1)
 
   + Option ("skip", "omit this number of selected streamlines before commencing writing to the output file")
-    + Argument ("count").type_integer (0, 0, std::numeric_limits<int>::max());
+    + Argument ("count").type_integer (1);
 
 
 
@@ -74,10 +74,10 @@ const OptionGroup TruncateOption = OptionGroup ("Streamline count truncation opt
 const OptionGroup WeightsOption = OptionGroup ("Thresholds pertaining to per-streamline weighting")
 
   + Option ("maxweight", "set the maximum weight of any streamline")
-    + Argument ("value").type_float (0.0, std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity())
+    + Argument ("value").type_float (0.0)
 
   + Option ("minweight", "set the minimum weight of any streamline")
-    + Argument ("value").type_float (0.0, 0.0, std::numeric_limits<float>::infinity());
+    + Argument ("value").type_float (0.0);
 
 
 
@@ -109,26 +109,26 @@ void load_properties (Tractography::Properties& properties)
   opt = get_options ("maxlength");
   if (opt.size()) {
     if (properties.find ("max_dist") == properties.end()) {
-      properties["max_dist"] = str(opt[0][0]);
+      properties["max_dist"] = str(float (opt[0][0]));
     } else {
       try {
         const float maxlength = std::min (float(opt[0][0]), to<float>(properties["max_dist"]));
         properties["max_dist"] = str(maxlength);
       } catch (...) {
-        properties["max_dist"] = str(opt[0][0]);
+        properties["max_dist"] = str(float (opt[0][0]));
       }
     }
   }
   opt = get_options ("minlength");
   if (opt.size()) {
     if (properties.find ("min_dist") == properties.end()) {
-      properties["min_dist"] = str(opt[0][0]);
+      properties["min_dist"] = str(float (opt[0][0]));
     } else {
       try {
         const float minlength = std::max (float(opt[0][0]), to<float>(properties["min_dist"]));
         properties["min_dist"] = str(minlength);
       } catch (...) {
-        properties["min_dist"] = str(opt[0][0]);
+        properties["min_dist"] = str(float (opt[0][0]));
       }
     }
   }
@@ -146,10 +146,10 @@ void load_properties (Tractography::Properties& properties)
   // Only the thresholds have an influence on Properties
   opt = get_options ("maxweight");
   if (opt.size())
-    properties["max_weight"] = std::string(opt[0][0]);
+    properties["max_weight"] = str (float (opt[0][0]));
   opt = get_options ("minweight");
   if (opt.size())
-    properties["min_weight"] = std::string(opt[0][0]);
+    properties["min_weight"] = str (float (opt[0][0]));
 
 }
 

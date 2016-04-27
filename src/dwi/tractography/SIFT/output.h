@@ -49,7 +49,7 @@ namespace MR
       template <class Fixel>
       void ModelBase<Fixel>::output_target_image (const std::string& path) const
       {
-        auto out = Image<float>::create (path, accessor());
+        auto out = Image<float>::create (path, Fixel_map<Fixel>::header());
         VoxelAccessor v (accessor());
         for (auto l = Loop(out) (out, v); l; ++l) {
           if (v.value()) {
@@ -69,7 +69,7 @@ namespace MR
         const size_t L = 8;
         const size_t N = Math::SH::NforL (L);
         Math::SH::aPSF<float> aPSF (L);
-        Header H_sh (accessor());
+        Header H_sh (Fixel_map<Fixel>::header());
         H_sh.set_ndim (4);
         H_sh.size(3) = N;
         H_sh.stride (3) = 0;
@@ -100,7 +100,7 @@ namespace MR
       void ModelBase<Fixel>::output_target_image_fixel (const std::string& path) const
       {
         using Sparse::FixelMetric;
-        Header H_fixel (accessor());
+        Header H_fixel (Fixel_map<Fixel>::header());
         H_fixel.datatype() = DataType::UInt64;
         H_fixel.datatype().set_byte_order_native();
         H_fixel.keyval()[Sparse::name_key] = str(typeid(FixelMetric).name());
@@ -123,7 +123,7 @@ namespace MR
       void ModelBase<Fixel>::output_tdi (const std::string& path) const
       {
         const double current_mu = mu();
-        auto out = Image<float>::create (path, accessor());
+        auto out = Image<float>::create (path, Fixel_map<Fixel>::header());
         VoxelAccessor v (accessor());
         for (auto l = Loop (out) (out, v); l; ++l) {
           if (v.value()) {
@@ -141,7 +141,7 @@ namespace MR
       void ModelBase<Fixel>::output_tdi_null_lobes (const std::string& path) const
       {
         const double current_mu = mu();
-        auto out = Image<float>::create (path, accessor());
+        auto out = Image<float>::create (path, Fixel_map<Fixel>::header());
         VoxelAccessor v (accessor());
         for (auto l = Loop (out) (out, v); l; ++l) {
           if (v.value()) {
@@ -164,7 +164,7 @@ namespace MR
         const size_t L = 8;
         const size_t N = Math::SH::NforL (L);
         Math::SH::aPSF<float> aPSF (L);
-        Header H_sh (accessor());
+        Header H_sh (Fixel_map<Fixel>::header());
         H_sh.set_ndim (4);
         H_sh.size(3) = N;
         H_sh.stride (3) = 0;
@@ -196,7 +196,7 @@ namespace MR
       {
         using Sparse::FixelMetric;
         const double current_mu = mu();
-        Header H_fixel (accessor());
+        Header H_fixel (Fixel_map<Fixel>::header());
         H_fixel.datatype() = DataType::UInt64;
         H_fixel.datatype().set_byte_order_native();
         H_fixel.keyval()[Sparse::name_key] = str(typeid(FixelMetric).name());
@@ -219,9 +219,9 @@ namespace MR
       void ModelBase<Fixel>::output_error_images (const std::string& max_abs_diff_path, const std::string& diff_path, const std::string& cost_path) const
       {
         const double current_mu = mu();
-        auto out_max_abs_diff = Image<float>::create (max_abs_diff_path, accessor());
-        auto out_diff = Image<float>::create (diff_path, accessor());
-        auto out_cost = Image<float>::create (cost_path, accessor());
+        auto out_max_abs_diff = Image<float>::create (max_abs_diff_path, Fixel_map<Fixel>::header());
+        auto out_diff = Image<float>::create (diff_path, Fixel_map<Fixel>::header());
+        auto out_cost = Image<float>::create (cost_path, Fixel_map<Fixel>::header());
         VoxelAccessor v (accessor());
         for (auto l = Loop (v) (v, out_max_abs_diff, out_diff, out_cost); l; ++l) {
           if (v.value()) {
@@ -248,7 +248,7 @@ namespace MR
       {
         using Sparse::FixelMetric;
         const double current_mu = mu();
-        Header H_fixel (accessor());
+        Header H_fixel (Fixel_map<Fixel>::header());
         H_fixel.datatype() = DataType::UInt64;
         H_fixel.datatype().set_byte_order_native();
         H_fixel.keyval()[Sparse::name_key] = str(typeid(FixelMetric).name());
@@ -285,7 +285,7 @@ namespace MR
       template <class Fixel>
       void ModelBase<Fixel>::output_fixel_count_image (const std::string& path) const
       {
-        Header H_out (accessor());
+        Header H_out (Fixel_map<Fixel>::header());
         H_out.datatype() = DataType::UInt8;
         auto out = Image<uint8_t>::create (path, H_out);
         VoxelAccessor v (accessor());
@@ -300,10 +300,10 @@ namespace MR
       template <class Fixel>
       void ModelBase<Fixel>::output_untracked_fixels (const std::string& path_count, const std::string& path_amps) const
       {
-        Header H_uint8_t (accessor());
+        Header H_uint8_t (Fixel_map<Fixel>::header());
         H_uint8_t.datatype() = DataType::UInt8;
         auto out_count = Image<uint8_t>::create (path_count, H_uint8_t);
-        auto out_amps = Image<float>::create (path_amps, accessor());
+        auto out_amps = Image<float>::create (path_amps, Fixel_map<Fixel>::header());
         VoxelAccessor v (accessor());
         for (auto l = Loop (v) (v, out_count, out_amps, v); l; ++l) {
           if (v.value()) {

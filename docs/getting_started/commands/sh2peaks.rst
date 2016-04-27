@@ -1,3 +1,5 @@
+.. _sh2peaks:
+
 sh2peaks
 ===========
 
@@ -19,7 +21,7 @@ extract the peaks of a spherical harmonic function at each voxel, by commencing 
 Options
 -------
 
--  **-num peaks** the number of peaks to extract (default is 3).
+-  **-num peaks** the number of peaks to extract (default: 3).
 
 -  **-direction phi theta** the direction of a peak to estimate. The algorithm will attempt to find the same number of peaks as have been specified using this option.
 
@@ -42,7 +44,7 @@ Standard options
 
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded applications
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
 
 -  **-failonwarn** terminate program if a warning is produced
 

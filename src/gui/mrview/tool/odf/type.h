@@ -13,36 +13,30 @@
  * 
  */
 
-#ifndef __dwi_tractography_seeding_seeding_h__
-#define __dwi_tractography_seeding_seeding_h__
+#ifndef __gui_mrview_tool_odf_type_h__
+#define __gui_mrview_tool_odf_type_h__
 
 
-#include "mrtrix.h"
-#include "dwi/tractography/seeding/basic.h"
-#include "dwi/tractography/seeding/dynamic.h"
-#include "dwi/tractography/seeding/gmwmi.h"
-#include "dwi/tractography/seeding/list.h"
-
+#include "gui/dwi/renderer.h"
 
 
 namespace MR
 {
 
-  namespace App { class OptionGroup; }
+  class Header;
 
-  namespace DWI
+  namespace GUI
   {
-    namespace Tractography
+    namespace MRView
     {
-
-      class Properties;
-
-      namespace Seeding
+      namespace Tool
       {
 
 
-        extern const App::OptionGroup SeedOption;
-        void load_tracking_seeds (Properties&);
+
+        // TODO Remove
+        typedef GUI::DWI::Renderer::mode_t odf_type_t;
+
 
 
 
@@ -52,4 +46,8 @@ namespace MR
 }
 
 #endif
+
+
+
+
 

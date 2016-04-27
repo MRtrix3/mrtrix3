@@ -74,3 +74,4 @@ TDI can be useful for visualising the results of tractography,
 particularly when a very large number of streamlines is generated.
 
 ``tckmap <Input track file> <Output TDI> -vox <Voxel size in mm>``
+

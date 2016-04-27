@@ -164,7 +164,7 @@ namespace MR
 
               return CONTINUE;
 
-            };
+            }
 
 
             bool gen_track (GeneratedTrack& tck)

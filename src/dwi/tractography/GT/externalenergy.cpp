@@ -79,7 +79,7 @@ namespace MR {
             for (int l = 0; l <= lmax/2; l++)
               wmr_sh[l] = (l < props.resp_WM.cols()) ? props.resp_WM(s, l) : 0.0;
             wmr_rh = Math::SH::SH2RH(wmr_sh);
-            wmr0 = props.resp_WM(s,0) / std::sqrt(4*M_PI);
+            wmr0 = props.resp_WM(s,0) / std::sqrt(M_4PI);
             
             for (size_t r : shells[s].get_volumes())
             {

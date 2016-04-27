@@ -25,6 +25,11 @@
 
 #define NORM_LAMBDA_MULTIPLIER 0.0002
 
+#define DEFAULT_CSD_NEG_LAMBDA 1.0
+#define DEFAULT_CSD_NORM_LAMBDA 1.0
+#define DEFAULT_CSD_THRESHOLD 0.0
+#define DEFAULT_CSD_NITER 50
+
 namespace MR
 {
   namespace DWI
@@ -41,10 +46,10 @@ namespace MR
 
             Shared (const Header& dwi_header) :
               HR_dirs (Directions::electrostatic_repulsion_300()),
-              neg_lambda (1.0),
-              norm_lambda (1.0),
-              threshold (0.0),
-              niter (50) {
+              neg_lambda (DEFAULT_CSD_NEG_LAMBDA),
+              norm_lambda (DEFAULT_CSD_NORM_LAMBDA),
+              threshold (DEFAULT_CSD_THRESHOLD),
+              niter (DEFAULT_CSD_NITER) {
                 grad = DWI::get_valid_DW_scheme (dwi_header);
                 // Discard b=0 (b=0 normalisation not supported in this version)
                 // Only allow selection of one non-zero shell from command line

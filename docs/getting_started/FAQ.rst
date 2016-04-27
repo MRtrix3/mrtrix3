@@ -118,6 +118,46 @@ this to work, all OpenGL commands need to be prefixed with ``vglrun``
 has been reported to work well with MRtrix3.
 
 
+Unusual symbols on terminal
+---------------------------
+
+When running MRtrix commands on certain terminal emulators, you may see
+unusual characters appearing in the terminal output, that look something
+like the following:
+
+.. code::
+
+    $ mrinfo fa.mif -debug
+    mrinfo: ←[00;32m[INFO] opening image "fa.mif"...←[0m
+    mrinfo: ←[00;34m[DEBUG] reading key/value file "fa.mif"...←[0m
+    mrinfo: ←[01;31m[ERROR] failed to open key/value file "fa.mif": No such file or directory←[0m
+
+MRtrix uses VT100 terminal control codes to add colour to the terminal
+output, and to clear the terminal line of text when updating the text
+displayed during certain processes. Some terminal emulators may not
+have support for these codes, in which case unwanted characters and
+symbols may instead be displayed.
+
+There are two possible solutions:
+
+1. Use a different terminal emulator. In particular, earlier instructions
+for installing MRtrix3 on Windows involved the use of the terminal provided
+with Git for Windows; this is known to not support VT100 codes. The
+current recommendation for `MRtrix3 Windows installation <windows-install>`__
+is based on
+`MSYS2 <http://sourceforge.net/p/msys2/wiki/MSYS2%20introduction/>`__;
+the **'MinGW-w64 Win64 Shell'** provided in this installation is known to
+support VT100 codes.
+
+2. Terminal colouring can be disabled using the MRtrix
+`configuration file <config>`. Add the following line to either the
+system-wide or user config file to disable these advanced terminal features:
+
+.. code::
+
+    TerminalColor: 0
+
+
 Processing of HCP data
 ------------------------
 
@@ -153,11 +193,15 @@ an answer for how these things should ideally behave.
 Is it possible to use data from all shells in CSD?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Not yet. We are working on inclusion of `Multi-Shell Multi-Tissue (MSMT)
+The default CSD algorithm provided in the ``dwi2fod`` command is only
+compatible with a single b-value shell, and will by default select the
+shell with the largest b-value for processing.
+
+The `Multi-Shell Multi-Tissue (MSMT)
 CSD <http://www.sciencedirect.com/science/article/pii/S1053811914006442>`__
-into MRtrix3, and hopefully it will be there soon. For now, any command
-in MRtrix that operates on diffusion data will by default automatically
-select the largest b-value shell for processing.
+method has now been incorporated into MRtrix3, and is provided as the
+``msdwi2fod`` command. There are also instructions for its use provided
+in the `documentation <Multi-Tissue-CSD>`__.
 
 The image data include information on gradient non-linearities. Can I make use of this?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -181,8 +225,8 @@ the gradient non-linearities will affect both the effective b-value
 Otherwise, the FODs look entirely reasonable without these
 corrections...
 
-The anatomical tissue segmentation for ACT from ``act_anat_prepare_fsl`` seems even worse than for 'normal' data...?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The anatomical tissue segmentation for ACT from ``5ttgen fsl`` seems even worse than for 'normal' data...?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The combination of high spatial resolution and high receiver coil
 density results in a pretty high noise level in the middle of the brain.
@@ -242,7 +286,55 @@ Apply the mask:
 
     mrcalc temp.mif mask.mif -mult TWFC.mif
 
-Including spinal projections in connectome
+Handling SIFT2 weights
 ------------------------------------------
 
+With the original ``tcksift`` command, the output is a _new track file_,
+which can subsequently be used as input to any command independently of
+the fact that SIFT has been applied. SIFT2 is a little trickier: the
+output of the ``tcksift2`` command is a _text file_. This text file
+contains one line for every streamline, and each line contains
+a number; these are the weights of the individual streamlines.
+Importantly, the track file that was used as input to the ``tcksift2``
+command is *unaffected* by the execution of that command.
+
+There are therefore two important questions to arise from this:
+
+How do I use the output from SIFT2?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Any MRtrix3 command that receives a track file as input will also have
+a command-line option, `-tck_weights_in`. This option is used to pass
+the weights text file to the command. If this option is omitted, then
+processing will proceed as normal for the input track file, but without
+taking the weights into consideration.
+
+Why not just add the weight information to the track data?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The `.tck` file format was developed quite a long time ago, and doesn't
+have the capability of storing such data. Therefore, combining
+per-streamline weighting data with the track data itself would require
+either modifying this format (which would break compatibility with
+MRtrix 0.2, and any other non-MRtrix code that uses this format), using
+some other existing format for track data (which, given our experiences
+with image formats, can be ill-devised), or creating a new format (which
+would need to support a lot more than just per-streamline weights in
+order to justify the effort, and would likely become a fairly lengthy
+endeavour).
+
+Furthermore, writing to such a format would require duplicating all of
+the raw track data from the input file into a new output file. This is
+expensive in terms of time and HDD space; the original file could be
+deleted afterwards, but it would then be difficult to perform any
+operations on the track data where the streamline weight information
+should be ignored (sure, you could have a command-line option to ignore
+the weights, but is that any better than having a command-line option
+to input the weights?)
+
+So, for now, it is best to think of the weights file provided by
+``tcksift2`` as *accompanying* the track file, containing additional data
+that must be *explicitly* provided to any commands in order to be used.
+The track file can also be used *without* taking into account the
+streamline weights, simply by *not* providing the weights.
 

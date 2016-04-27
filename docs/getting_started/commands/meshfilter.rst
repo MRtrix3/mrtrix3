@@ -1,3 +1,5 @@
+.. _meshfilter:
+
 meshfilter
 ===========
 
@@ -23,9 +25,9 @@ Options
 Options for mesh smoothing filter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-smooth_spatial value** spatial extent of smoothing
+-  **-smooth_spatial value** spatial extent of smoothing (default: 10mm)
 
--  **-smooth_influence value** influence factor for smoothing
+-  **-smooth_influence value** influence factor for smoothing (default: 10)
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -38,7 +40,7 @@ Standard options
 
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded applications
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
 
 -  **-failonwarn** terminate program if a warning is produced
 

@@ -1,3 +1,5 @@
+.. _fixel2tsf:
+
 fixel2tsf
 ===========
 
@@ -20,7 +22,7 @@ Map fixel values to a track scalar file based on an input tractogram. This is us
 Options
 -------
 
--  **-angle value** the max anglular threshold for computing correspondence between a fixel direction and track tangent
+-  **-angle value** the max anglular threshold for computing correspondence between a fixel direction and track tangent (default = 30 degrees)
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -33,7 +35,7 @@ Standard options
 
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded applications
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
 
 -  **-failonwarn** terminate program if a warning is produced
 

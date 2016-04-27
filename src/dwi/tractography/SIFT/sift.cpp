@@ -41,7 +41,7 @@ const OptionGroup SIFTModelOption = OptionGroup ("Options affecting the SIFT mod
 
   + Option ("fd_thresh", "fibre density threshold; exclude an FOD lobe from filtering processing if its integral is less than this amount "
                          "(streamlines will still be mapped to it, but it will not contribute to the cost function or the filtering)")
-    + Argument ("value").type_float (0.0, 0.0, 2.0 * Math::pi);
+    + Argument ("value").type_float (0.0, 2.0 * Math::pi);
 
 
 
@@ -59,14 +59,14 @@ const OptionGroup SIFTOutputOption = OptionGroup ("Options to make SIFT provide 
 const OptionGroup SIFTTermOption = OptionGroup ("Options to control when SIFT terminates filtering")
 
   + Option ("term_number", "number of streamlines - continue filtering until this number of streamlines remain")
-    + Argument ("value").type_integer (1, 1, std::numeric_limits<int>::max())
+    + Argument ("value").type_integer (1)
 
   + Option ("term_ratio", "termination ratio - defined as the ratio between reduction in cost function, and reduction in density of streamlines.\n"
                           "Smaller values result in more streamlines being filtered out.")
-    + Argument ("value").type_float (0.0, 0.0, 10.0)
+    + Argument ("value").type_float (1e-6)
 
   + Option ("term_mu", "terminate filtering once the SIFT proportionality coefficient reaches a given value")
-    + Argument ("value").type_float (0.0, 0.0, std::numeric_limits<float>::max());
+    + Argument ("value").type_float (0.0);
 
 
 

@@ -20,6 +20,10 @@
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
 
+
+#define DEFAULT_TARGET_INTENSITY 1000.0
+
+
 using namespace MR;
 using namespace App;
 
@@ -40,13 +44,13 @@ ARGUMENTS
     "the output DWI intensity normalised image").type_image_out ();
 
 OPTIONS
-  + Option ("intensity", "normalise the b=0 signal to the specified value (Default: 1000)")
+  + Option ("intensity", "normalise the b=0 signal to the specified value (Default: " + str(DEFAULT_TARGET_INTENSITY, 1) + ")")
   + Argument ("value").type_float()
 
   + Option ("percentile", "define the percentile of the mask intensties used for normalisation. "
                           "If this option is not supplied then the median value (50th percentile) will be "
                           "normalised to the desired intensity value.")
-  + Argument ("value").type_integer (0, 50, 100)
+  + Argument ("value").type_integer (0, 100)
 
   + DWI::GradImportOptions();
 
@@ -72,7 +76,7 @@ void run () {
   }
 
   std::vector<float> bzero_mask_values;
-  float intensity = get_option_value ("intensity", 1000);
+  float intensity = get_option_value ("intensity", DEFAULT_TARGET_INTENSITY);
   int percentile = get_option_value ("percentile", 50);
 
   for (auto i = Loop ("computing " + str(percentile) + "th percentile within mask", input, 0, 3) (input, mask); i; ++i) {

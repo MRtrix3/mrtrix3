@@ -1,3 +1,5 @@
+.. _mrclusterstats:
+
 mrclusterstats
 ===========
 
@@ -30,11 +32,11 @@ Options
 
 -  **-tfce_dh value** the height increment used in the TFCE integration (default = 0.1)
 
--  **-tfce_e value** TFCE height parameter (default = 2)
+-  **-tfce_e value** TFCE extent parameter (default = 0.5)
 
--  **-tfce_h value** TFCE extent parameter (default = 0.5)
+-  **-tfce_h value** TFCE height parameter (default = 2)
 
--  **-connectivity** use 26 neighbourhood connectivity (Default: 6)
+-  **-connectivity** use 26-voxel-neighbourhood connectivity (Default: 6)
 
 -  **-nonstationary** perform non-stationarity correction (currently only implemented with tfce)
 
@@ -51,7 +53,7 @@ Standard options
 
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded applications
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
 
 -  **-failonwarn** terminate program if a warning is produced
 

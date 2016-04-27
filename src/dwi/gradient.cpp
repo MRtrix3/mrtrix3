@@ -12,7 +12,9 @@
  * For more details, see www.mrtrix.org
  * 
  */
+
 #include "dwi/gradient.h"
+#include "file/nifti1_utils.h"
 
 namespace MR
 {
@@ -48,7 +50,7 @@ namespace MR
               "multi-shell or DSI DW acquisition schemes. The default action can "
               "also be set in the MRtrix config file, under the BValueScaling entry. "
               "Valid choices are yes/no, true/false, 0/1 (default: true).")
-          +   Argument ("mode").type_bool (true);
+          +   Argument ("mode").type_bool();
 
       return group;
     }
@@ -80,10 +82,17 @@ namespace MR
       if (bvals.cols() != bvecs.cols() || bvals.cols() != header.size (3))
         throw Exception ("bvals and bvecs files must have same number of diffusion directions as DW-image");
 
+      // bvecs format actually assumes a LHS coordinate system even if image is
+      // stored using RHS - x axis is flipped to make linear 3x3 part of
+      // transform have negative determinant:
+      std::vector<size_t> order;
+      auto adjusted_transform = File::NIfTI::adjust_transform (header, order);
+      if (adjusted_transform.linear().determinant() > 0.0) 
+        bvecs.row(0) = -bvecs.row(0);
+
       // account for the fact that bvecs are specified wrt original image axes,
       // which may have been re-ordered and/or inverted by MRtrix to match the
       // expected anatomical frame of reference:
-      std::vector<size_t> order = Stride::order (header, 0, 3);
       MatrixXd G (bvecs.cols(), 3);
       for (ssize_t n = 0; n < G.rows(); ++n) {
         G(n,order[0]) = header.stride(order[0]) > 0 ? bvecs(0,n) : -bvecs(0,n);
@@ -116,7 +125,8 @@ namespace MR
 
       // deal with FSL requiring gradient directions to coincide with data strides
       // also transpose matrices in preparation for file output
-      auto order = Stride::order (header, 0, 3);
+      std::vector<size_t> order;
+      auto adjusted_transform = File::NIfTI::adjust_transform (header, order);
       MatrixXd bvecs (3, grad.rows());
       MatrixXd bvals (1, grad.rows());
       for (ssize_t n = 0; n < G.rows(); ++n) {
@@ -125,6 +135,12 @@ namespace MR
         bvecs(2,n) = header.stride(order[2]) > 0 ? G(n,order[2]) : -G(n,order[2]);
         bvals(0,n) = grad(n,3);
       }
+
+      // bvecs format actually assumes a LHS coordinate system even if image is
+      // stored using RHS - x axis is flipped to make linear 3x3 part of
+      // transform have negative determinant:
+      if (adjusted_transform.linear().determinant() > 0.0) 
+        bvecs.row(0) = -bvecs.row(0);
 
       save_matrix (bvecs, bvecs_path);
       save_matrix (bvals, bvals_path);

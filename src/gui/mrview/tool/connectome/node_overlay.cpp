@@ -36,7 +36,8 @@ namespace MR
           tex_positions.assign  (3, -1);
           set_interpolate       (false);
           set_colourmap         (5);
-          set_min_max           (0.0f, 1.0f);
+          value_min = 0.0f; value_max = 1.0f;
+          min_max_set           ();
           set_allowed_features  (true, true, true);
           set_use_discard_lower (true);
           set_use_discard_upper (false);

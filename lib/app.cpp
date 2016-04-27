@@ -48,8 +48,8 @@ namespace MR
       + Option ("debug", "display debugging messages.")
       + Option ("force", "force overwrite of output files. " 
           "Caution: Using the same file as input and output might cause unexpected behaviour.")
-      + Option ("nthreads", "use this number of threads in multi-threaded applications")
-      + Argument ("number").type_integer (0, 1, std::numeric_limits<int>::max())
+      + Option ("nthreads", "use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)")
+        + Argument ("number").type_integer (0)
       + Option ("failonwarn", "terminate program if a warning is produced")
       + Option ("help", "display this information page and exit.")
       + Option ("version", "display version information and exit.");
@@ -401,15 +401,13 @@ namespace MR
 
       switch (type) {
         case Integer:
-          stream << "INT " << defaults.i.min << " " << defaults.i.max << " " << defaults.i.def;
+          stream << "INT " << limits.i.min << " " << limits.i.max;
           break;
         case Float:
-          stream << "FLOAT " << defaults.f.min << " " << defaults.f.max << " " << defaults.f.def;
+          stream << "FLOAT " << limits.f.min << " " << limits.f.max;
           break;
         case Text:
           stream << "TEXT";
-          if (defaults.text)
-            stream << " " << defaults.text;
           break;
         case ArgFileIn:
           stream << "FILEIN";
@@ -419,9 +417,8 @@ namespace MR
           break;
         case Choice:
           stream << "CHOICE";
-          for (const char* const* p = defaults.choices.list; *p; ++p)
+          for (const char* const* p = limits.choices; *p; ++p)
             stream << " " << *p;
-          stream << " " << defaults.choices.def;
           break;
         case ImageIn:
           stream << "IMAGEIN";
@@ -845,11 +842,7 @@ namespace MR
         WARN ("existing output files will be overwritten");
         overwrite_files = true;
       }
-      //CONF option: FailOnWarn
-      //CONF default: 0 (false)
-      //CONF A boolean value specifying whether MRtrix applications should
-      //CONF abort as soon as any (otherwise non-fatal) warning is issued.
-      if (get_options ("failonwarn").size() || File::Config::get_bool ("FailOnWarn", false))
+      if (get_options ("failonwarn").size())
         fail_on_warn = true;
     }
 
@@ -953,20 +946,21 @@ namespace MR
         }
       }
 
+      load_standard_options();
+
       File::Config::init ();
+
+      //CONF option: FailOnWarn
+      //CONF default: 0 (false)
+      //CONF A boolean value specifying whether MRtrix applications should
+      //CONF abort as soon as any (otherwise non-fatal) warning is issued.
+      if (File::Config::get_bool ("FailOnWarn", false))
+        fail_on_warn = true;
 
       //CONF option: TerminalColor
       //CONF default: 1 (true)
       //CONF A boolean value to indicate whether colours should be used in the terminal.
-      terminal_use_colour = stderr_to_file ? false : File::Config::get_bool ("TerminalColor", 
-#ifdef MRTRIX_WINDOWS
-          false
-#else
-          true
-#endif
-          ); 
-
-      load_standard_options();
+      terminal_use_colour = stderr_to_file ? false : File::Config::get_bool ("TerminalColor", true);
 
       // check for the existence of all specified input files (including optional ones that have been provided)
       // if necessary, also check for pre-existence of any output files with known paths
@@ -1107,8 +1101,8 @@ namespace MR
           retval = to<int64_t> (p);
         }
 
-        const int64_t min = arg->defaults.i.min;
-        const int64_t max = arg->defaults.i.max;
+        const int64_t min = arg->limits.i.min;
+        const int64_t max = arg->limits.i.max;
         if (retval < min || retval > max) {
           std::string msg ("value supplied for ");
           if (opt) msg += std::string ("option \"") + opt->id;
@@ -1121,7 +1115,7 @@ namespace MR
 
       if (arg->type == Choice) {
         std::string selection = lowercase (p);
-        const char* const* choices = arg->defaults.choices.list;
+        const char* const* choices = arg->limits.choices;
         for (int i = 0; choices[i]; ++i) {
           if (selection == choices[i]) {
             return i;
@@ -1142,8 +1136,8 @@ namespace MR
     default_type App::ParsedArgument::as_float () const
     {
       const default_type retval = to<default_type> (p);
-      const default_type min = arg->defaults.f.min;
-      const default_type max = arg->defaults.f.max;
+      const default_type min = arg->limits.f.min;
+      const default_type max = arg->limits.f.max;
       if (retval < min || retval > max) {
         std::string msg ("value supplied for ");
         if (opt) msg += std::string ("option \"") + opt->id;

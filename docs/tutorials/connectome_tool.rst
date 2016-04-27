@@ -232,3 +232,4 @@ multiple nodes of interest are selected, an additional drop-down menu is
 provided, that allows you to prescribe how those multiple rows of matrix
 data are combined in order to produce a single scalar value per node,
 which can then be used to influence its relevant visual property.
+

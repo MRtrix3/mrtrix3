@@ -142,7 +142,7 @@ void usage ()
     + Option ("from",
         "used to define which space the input image is when using the -warp_mid option. "
         "Use -from 1 to warp from image1 or -from 2 to warp from image2")
-    +   Argument ("image").type_integer (1,1,2)
+    +   Argument ("image").type_integer (1,2)
 
     + OptionGroup ("Fibre orientation distribution handling options")
 
@@ -193,7 +193,7 @@ void run ()
 {
   auto input_header = Header::open (argument[0]);
   Header output_header (input_header);
-  output_header.datatype() = DataType::from_command_line (output_header.datatype());
+  output_header.datatype() = DataType::from_command_line (DataType::from<float> ());
 
   // Linear
   transform_type linear_transform;
@@ -373,9 +373,6 @@ void run ()
     interp = opt[0][0];
     if (!warp && !template_header)
       WARN ("interpolator choice ignored since the input image will not be regridded");
-    if (!output_header.datatype().is_signed() && (interp == 2 || interp == 3))
-      WARN ("using cubic or sinc interpolation when the output data type is not signed "
-            "may cause values to underflow. Change the output data type with -datatype");
   }
 
   // Out of bounds value
@@ -409,7 +406,9 @@ void run ()
       output_header.transform() = midway_header.transform();
     }
 
-    auto output = Image<float>::create(argument[1], output_header).with_direct_io();
+    if (interp == 0)
+      output_header.datatype() = DataType::from_command_line (input_header.datatype());
+    auto output = Image<float>::create (argument[1], output_header).with_direct_io();
 
     switch (interp) {
       case 0:
