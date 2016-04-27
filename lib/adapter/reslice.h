@@ -76,6 +76,8 @@ namespace MR
       public:
         typedef typename ImageType::value_type value_type;
 
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
         template <class HeaderType>
           Reslice (const ImageType& original,
                    const HeaderType& reference,

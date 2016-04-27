@@ -33,6 +33,8 @@ namespace MR {
         class ExternalEnergyComputer : public EnergyComputer
         {
         public:
+
+          EIGEN_MAKE_ALIGNED_OPERATOR_NEW
           
           ExternalEnergyComputer(Stats& stat, const Image<float>& dwimage, const Properties& props);
           

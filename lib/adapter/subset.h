@@ -28,6 +28,7 @@ namespace MR
     {
       public:
         typedef typename ImageType::value_type value_type;
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
         using Base<ImageType>::name;
         using Base<ImageType>::spacing;
