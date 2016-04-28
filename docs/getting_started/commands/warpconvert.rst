@@ -1,3 +1,5 @@
+.. _warpconvert:
+
 warpconvert
 ===========
 
@@ -14,18 +16,18 @@ Synopsis
 Description
 -----------
 
-convert between different representations of a non-linear warp. A deformation field is defined as an image where each voxel defines the corresponding position in the other image (in scanner space coordinates). A displacement field stores the displacements(in mm) to the other image from the each voxel's position (in scanner space). The warp file is the 5D format output from mrregister, which contains linear transforms, warps and their inverses that map each image to a midway space.
+convert between different representations of a non-linear warp. A deformation field is defined as an image where each voxel defines the corresponding position in the other image (in scanner space coordinates). A displacement field stores the displacements (in mm) to the other image from the each voxel's position (in scanner space). The warpfull file is the 5D format output from mrregister -nl_warp_full, which contains linear transforms, warps and their inverses that map each image to a midway space.
 
 Options
 -------
 
--  **-type choice** the conversion type required. Valid choices are: deformation2displacement, displacement2deformation, warp2deformation, warp2displacement (Default: deformation2displacement)
+-  **-type choice** the conversion type required. Valid choices are: deformation2displacement, displacement2deformation, warpfull2deformation, warpfull2displacement (Default: deformation2displacement)
 
--  **-template image** define a template image when converting a 5Dwarp file (which is defined in the midway space between image 1 & 2). For example to generate the deformation field that maps image1 to image2, then supply image2 as the template image
+-  **-template image** define a template image when converting a warpfull file (which is defined on a grid in the midway space between image 1 & 2). For example to generate the deformation field that maps image1 to image2, then supply image2 as the template image
 
--  **-midway_space** to be used only with 5Dwarp2deformation and 5Dwarp2displacement conversion types. The output will only contain the non-linear warp to map an input image to the midway space (defined by the 5D warp grid). If a linear transform exists in the 5Dwarp file header then it will be composed and included in the output.
+-  **-midway_space** to be used only with warpfull2deformation and warpfull2displacement conversion types. The output will only contain the non-linear warp to map an input image to the midway space (defined by the warpfull grid). If a linear transform exists in the warpfull file header then it will be composed and included in the output.
 
--  **-from image** to be used only with 5Dwarp2deformation and 5Dwarp2displacement conversion types. Used to define the direction of the desired output field.Use -from 1 to obtain the image1->image2 field and from 2 for image2->image1. Can be used in combination with the -midway_space option to produce a field that only maps to midway space.
+-  **-from image** to be used only with warpfull2deformation and warpfull2displacement conversion types. Used to define the direction of the desired output field.Use -from 1 to obtain the image1->image2 field and from 2 for image2->image1. Can be used in combination with the -midway_space option to produce a field that only maps to midway space.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -38,7 +40,7 @@ Standard options
 
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded applications
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
 
 -  **-failonwarn** terminate program if a warning is produced
 

@@ -8,29 +8,21 @@ Synopsis
 
 ::
 
-    transformcalc [ options ]  output
+    transformcalc [ options ]  input [ input ... ] operation output
 
+-  *input*: the input for the specified operation
+-  *operation*: the operation to perform, one of: flirt_import, invert, half, rigid, header, average, interpolate.flirt_import: Convert a transformation matrix produced by FSL's flirt command into a format usable by MRtrix. You'll need to provide as additional arguments the save NIfTI images that were passed to flirt with the -in and -ref options:matrix_in in ref flirt_import outputinvert: invert the input transformation:matrix_in invert outputhalf: calculate the matrix square root of the input transformation:matrix_in half outputrigid: calculate the rigid transformation of the affine input transformation:matrix_in rigid outputheader: calculate the transformation matrix from an original image and an image with modified header:mov mapmovhdr header outputaverage: calculate the average affine matrix of all input matrices:input ... average outputinterpolate: create interpolated transformation matrix between input (t=0) and input2 (t=1). Based on matrix decomposition with linear interpolation of  translation, rotation and stretch described in  Shoemake, K., Hill, M., & Duff, T. (1992). Matrix Animation and Polar Decomposition.  Matrix, 92, 258-264. doi:10.1.1.56.1336input input2 interpolate output
 -  *output*: the output transformation matrix.
 
 Description
 -----------
 
-edit linear transformation matrices.
+This command's function is to process linear transformation matrices.
 
-This command's function is to either convert the transformation matrix provided by FSL's flirt command to a format usable in MRtrix or to interpolate between two transformation matrices
+It allows to perform affine matrix operations or to convert the transformation matrix provided by FSL's flirt command to a format usable in MRtrix
 
 Options
 -------
-
--  **-flirt_import input in ref** Convert a transformation matrix produced by FSL's flirt command into a format usable by MRtrix. You'll need to provide as additional arguments the save NIfTI images that were passed to flirt with the -in and -ref options.
-
--  **-invert input** invert the input transformation.
-
--  **-half input** output the matrix square root of the input transformation.
-
--  **-header mov mapmovhdr** Calculate the transformation matrix from an original image and an image with modified header.
-
--  **-interpolate input input2 t** Create interpolated transformation matrix between input (t=0) and input2 (t=1). Based on matrix decomposition with linear interpolation of  translation, rotation and stretch described in  Shoemake, K., Hill, M., & Duff, T. (1992). Matrix Animation and Polar Decomposition.  Matrix, 92, 258-264. doi:10.1.1.56.1336
 
 Standard options
 ^^^^^^^^^^^^^^^^

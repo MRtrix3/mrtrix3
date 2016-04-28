@@ -111,6 +111,10 @@ List of MRtrix3 commands
 .......
 
 
+.. include:: commands/fixellog.rst
+.......
+
+
 .. include:: commands/fixelmult.rst
 .......
 

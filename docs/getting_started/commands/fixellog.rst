@@ -1,6 +1,6 @@
-.. _fixelreorient:
+.. _fixellog:
 
-fixelreorient
+fixellog
 ===========
 
 Synopsis
@@ -8,16 +8,15 @@ Synopsis
 
 ::
 
-    fixelreorient [ options ]  input warp output
+    fixellog [ options ]  input output
 
 -  *input*: the input fixel image.
--  *warp*: a 4D deformation field used to perform reorientation. Reorientation is performed by applying the Jacobian affine transform in each voxel in the warp, then re-normalising the vector representing the fixel direction
 -  *output*: the output fixel image.
 
 Description
 -----------
 
-Reorient fixel directions using the local affine transformation (Jacobian matrix) of an input warp.
+compute the natural logarithm of all values in a fixel image
 
 Options
 -------
