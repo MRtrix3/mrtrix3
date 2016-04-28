@@ -189,7 +189,7 @@ else:
       ' input_transformed/' + i.prefix + '.mif' +
       ' -interp linear -template average_header.mif.gz' +
       datatype)
-    os.remove ('input_transformed/' + i.prefix + '_translated.mif')
+    runCommand('rm -f input_transformed/' + i.prefix + '_translated.mif')
 runCommand('mrmath input_transformed/* mean initial_template.mif')
 current_template = 'initial_template.mif'
 
