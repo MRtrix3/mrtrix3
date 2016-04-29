@@ -16,7 +16,7 @@ To install *MRtrix3*, you will need the following:
    compiler
 -  `Python <https://www.python.org/>`__ version >= 2.6
 -  The `zlib <http://www.zlib.net/>`__ compression library
--  `Eigen <http://eigen.tuxfamily.org>`__ version 3
+-  `Eigen <http://eigen.tuxfamily.org>`__ version 3.2 *(do not install the beta version)*
 -  `Qt <http://www.qt.io/>`__ version >= 4.7 *[GUI components only]*
 
 .. NOTE::
@@ -172,14 +172,4 @@ target, e.g.:
 
 , and ``msys64`` should be able to interpret the softlink path correctly
 (confirm with ``ls -la``).
-
-
-.. _windows_trouble_shooting:
-
-Troubleshooting
------
-
-.. WARNING:: 
-    To be added
-
 

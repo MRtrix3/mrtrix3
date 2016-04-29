@@ -15,7 +15,7 @@ To install *MRtrix3* , you will need the following:
    compiler (e.g. `clang <http://clang.llvm.org/>`__ in Xcode)
 -  `Python <https://www.python.org/>`__ version >= 2.6 (already included in MacOS X)
 -  The `zlib <http://www.zlib.net/>`__ compression library (already included in MacOS X)
--  `Eigen <http://eigen.tuxfamily.org/>`__ version 3
+-  `Eigen <http://eigen.tuxfamily.org/>`__ version 3.2 *(do not install the beta version)*
 -  `Qt <http://www.qt.io/>`__ version >= 5.1 *[GUI components only]* -
    important: versions prior to this will *not* work
 
@@ -57,6 +57,10 @@ Install Dependencies
      You can use this procedure if you have good reasons to avoid the other options, or if for some reason 
      you cannot get either `Homebrew <http://brew.sh/>`__ or `MacPorts <http://macports.org/>`__ to work.
        - Install Eigen3: download and extract the source code from `eigen.tuxfamily.org <http://eigen.tuxfamily.org/>`__ 
+           Note that *MRtrix3* does not yet fully support the Eigen 3.3 beta,
+           and installation of this version may result in runtime issues. If
+           performing a manual installation, download the latest stable release
+           of Eigen3.
        - Install Qt5: download and install the latest version from `<http://download.qt.io/official_releases/qt/>`__ 
            You need to select the file labelled ``qt-opensource-mac-x64-clang-5.X.X.dmg``.
            Note that you need to use at least Qt 5.1, since earlier versions
@@ -143,31 +147,5 @@ Keeping *MRtrix3*  up to date
        ./configure
 
    and re-run step 1 again.
-
-.. _mac_trouble_shooting:
-
-Troubleshooting
------
-
-Below is a list of problems that you may encounter during installation
-or running of *MRtrix3*, along with suggested solutions.
-
-
-.. ATTENTION::
-    This section is incomplete
-
-Conflicts with previous versions of Qt
-^^^^^^^^^
-
-If previous versions of Qt were already installed on the system, they
-can sometimes conflict with the installation of *MRtrix3*. This can
-manifest in many ways, but the two most obvious one are:
-
--  ``./configure`` reports using the older version, but ``./build``
-   completes without errors. However, MRView crashes, complaining about
-   OpenGL version not being sufficient.
--  ``./configure`` reports the correct version of Qt, but ``./build``
-   fails with various error messages (typically related to refined
-   macros, with previous definitions elsewhere in the code).
 
 

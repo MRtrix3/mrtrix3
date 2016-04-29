@@ -118,6 +118,55 @@ this to work, all OpenGL commands need to be prefixed with ``vglrun``
 has been reported to work well with *MRtrix3*.
 
 
+OpenGL version 3.3 not supported
+--------------------------------
+
+This will typically lead to ``mrview`` crashing with a message such as:
+
+::
+
+    mrview: [ERROR] GLSL log [vertex shader]: ERROR: version '330' is not supported
+
+There are three main reasons for this:
+
+1. **Attempting to run MRView using X11 forwarding.** This will not work
+   without some effort, see :ref:`remote_display` for details.
+
+2. **Your installation genuinely does not support OpenGL 3.3.** In this
+   case, the solution will involve figuring out:
+
+   -  whether your graphics hardware can support OpenGL 3.3 at all;
+   -  whether your Linux distribution provides any drivers for your
+      graphics hardware that can support OpenGL 3.3;
+   -  if not, whether the manufacturer of your graphics hardware
+      provides drivers for Linux that can be installed on your
+      distribution;
+   -  how to install these drivers - a process that is invariably
+      distribution-specific, and beyond the scope of this document. If
+      you're having serious issues with this, you should consider asking
+      on the `MRtrix3 community forum <http://community.mrtrix.org/>`__,
+      you will often find others have come across similar issues and can
+      provide useful advice. If you do, make sure you provide as much
+      information as you can (at the very least, your exact
+      distribution, including which version of it, the exact model of
+      your graphics hardware, and what you've tried so far).
+
+3. **Your installation does support OpenGL 3.3, but only provides access
+   to the 3.3 functionality through the core profile, not through the
+   compatibility profile.** This seems to be an issue particularly on
+   more recent versions of Ubuntu 14.04. To see whether this is the
+   problem, you only need to add the line:
+
+   ::
+
+       NeedOpenGLCoreProfile: 1
+
+   to your MRtrix configuration file (typically, ``~/.mrtrix.conf``). If
+   it doesn't work, you're probably stuck with reason 2.
+
+
+
+
 Unusual symbols on terminal
 ---------------------------
 
@@ -196,4 +245,20 @@ possible that the particular configuration you are using is not being
 correctly detected or identified. If you are unfortunate enough to
 encounter this issue, please report to the developers the hardware
 configuration and file system type in use.
+
+
+Conflicts with previous versions of Qt
+--------------------------------------
+
+If previous versions of Qt were already installed on the system, they
+can sometimes conflict with the installation of *MRtrix3*. This can
+manifest in many ways, but the two most obvious one are:
+
+-  ``./configure`` reports using the older version, but ``./build``
+   completes without errors. However, MRView crashes, complaining about
+   OpenGL version not being sufficient.
+-  ``./configure`` reports the correct version of Qt, but ``./build``
+   fails with various error messages (typically related to refined
+   macros, with previous definitions elsewhere in the code).
+
 
