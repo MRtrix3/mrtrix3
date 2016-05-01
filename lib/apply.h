@@ -19,6 +19,8 @@
 #include <tuple>
 #include <type_traits>
 
+#include "types.h" // For FORCE_INLINE
+
 namespace MR {
   namespace {
 
