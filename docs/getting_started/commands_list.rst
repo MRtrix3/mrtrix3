@@ -99,6 +99,10 @@ List of MRtrix3 commands
 .......
 
 
+.. include:: commands/fixelcalc.rst
+.......
+
+
 .. include:: commands/fixelcfestats.rst
 .......
 
@@ -111,7 +115,15 @@ List of MRtrix3 commands
 .......
 
 
+.. include:: commands/fixellog.rst
+.......
+
+
 .. include:: commands/fixelmult.rst
+.......
+
+
+.. include:: commands/fixelreorient.rst
 .......
 
 
@@ -159,11 +171,19 @@ List of MRtrix3 commands
 .......
 
 
+.. include:: commands/mraverageheader.rst
+.......
+
+
 .. include:: commands/mrcalc.rst
 .......
 
 
 .. include:: commands/mrcat.rst
+.......
+
+
+.. include:: commands/mrcheckerboardmask.rst
 .......
 
 
@@ -195,7 +215,15 @@ List of MRtrix3 commands
 .......
 
 
+.. include:: commands/mrmetric.rst
+.......
+
+
 .. include:: commands/mrpad.rst
+.......
+
+
+.. include:: commands/mrregister.rst
 .......
 
 
@@ -287,6 +315,10 @@ List of MRtrix3 commands
 .......
 
 
+.. include:: commands/tckrandom.rst
+.......
+
+
 .. include:: commands/tcksample.rst
 .......
 
@@ -332,6 +364,14 @@ List of MRtrix3 commands
 
 
 .. include:: commands/voxel2fixel.rst
+.......
+
+
+.. include:: commands/warp2metric.rst
+.......
+
+
+.. include:: commands/warpconvert.rst
 .......
 
 
