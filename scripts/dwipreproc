@@ -15,6 +15,7 @@ from lib.getFSLEddyPath import getFSLEddyPath
 from lib.getFSLSuffix   import getFSLSuffix
 from lib.getHeaderInfo  import getHeaderInfo
 from lib.getPEDir       import getPEDir
+from lib.imagesMatch    import imagesMatch
 from lib.isWindows      import isWindows
 from lib.printMessage   import printMessage
 from lib.runCommand     import runCommand
@@ -356,27 +357,22 @@ else: # 'All'
   with open('bvals_combined', 'w') as f:
     f.write(' '.join(bvals))
 
+
   # Prior to 5.0.8, a bug resulted in the output field map image from topup having an identity transform,
   #   regardless of the transform of the input image
   # Detect this, and manually replace the transform if necessary
   #   (even if this doesn't cause an issue with the subsequent mrcalc command, it may in the future, it's better for
   #   visualising the script temporary files, and it gives the user a warning about an out-of-date FSL)
-  input_transform_text = getHeaderInfo('topup_in.nii', 'transform')
-  input_transform = [ float(f) for f in input_transform_text.replace('\n', ' ').replace(',', ' ').split() ]
-  topup_transform = [ float(f) for f in getHeaderInfo('field_map' + fsl_suffix, 'transform').replace('\n', ' ').replace(',', ' ').split() ]
-  transform_error = False
   field_map_image = 'field_map' + fsl_suffix
-  for i, t in zip(input_transform, topup_transform):
-    if abs(i-t) > 1e-4:
-      transform_error = True
-  if transform_error:
-    warnMessage('topup output field image has incorrect transform; recommend updating FSL to version 5.0.8 or later')
+  if not imagesMatch('topup_in.nii', field_map_image):
+    warnMessage('topup output field image has erroneous header; recommend updating FSL to version 5.0.8 or later')
+    input_transform_text = getHeaderInfo('topup_in.nii', 'transform')
     with open( 'transform.txt', 'w' ) as f:
       for line in input_transform_text:
         f.write (line)
+    runCommand('mrtransform ' + field_map_image + ' -linear transform.txt -replace field_map_fix' + fsl_suffix)
+    delFile(field_map_image)
     field_map_image = 'field_map_fix' + fsl_suffix
-    runCommand('mrtransform field_map' + fsl_suffix + ' -linear transform.txt -replace ' + field_map_image)
-    delFile('field_map' + fsl_suffix)
 
 
   # Derive the weight images
@@ -396,8 +392,8 @@ else: # 'All'
 
 
   # Manually combine corresponding volumes from EDDY output
-  runCommand('mrconvert dwi_post_eddy' + fsl_suffix + ' corrected1.mif -coord 3 0:' + str(num_volumes-1) + stride_option)
-  runCommand('mrconvert dwi_post_eddy' + fsl_suffix + ' corrected2.mif -coord 3 ' + str(num_volumes) + ':' + str((num_volumes*2)-1) + stride_option)
+  runCommand('mrconvert dwi_post_eddy' + fsl_suffix + ' corrected1.mif -coord 3 0:' + str(num_volumes-1))
+  runCommand('mrconvert dwi_post_eddy' + fsl_suffix + ' corrected2.mif -coord 3 ' + str(num_volumes) + ':' + str((num_volumes*2)-1))
   delFile('dwi_post_eddy' + fsl_suffix)
   runCommand('mrcalc corrected1.mif weight1.mif -mult corrected2.mif weight2.mif -mult -add sum_weights.mif -divide 0.0 -max - | mrconvert - result.mif -fslgrad bvecs_combined bvals_combined' + stride_option)
 

@@ -11,7 +11,7 @@ def runCommand(cmd, exitOnError=True):
   global mrtrix_bin_path
   
   if not mrtrix_bin_list:
-    mrtrix_bin_path = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(os.path.realpath(sys.argv[0]))), os.pardir, 'release', 'bin'));
+    mrtrix_bin_path = os.path.join(os.path.abspath(os.path.dirname(os.path.realpath(__file__))), os.pardir, os.pardir, 'release', 'bin');
     mrtrix_bin_list = os.listdir(mrtrix_bin_path)
     
   if lib.app.lastFile:
