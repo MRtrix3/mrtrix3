@@ -35,7 +35,7 @@ For more details, see the header of the :code:`scripts/dwipreproc` file. In part
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The :code:`dwipreproc` script also interfaces with `FSL <http://fsl.fmrib.ox.ac.uk/>`_'s `Eddy <http://www.ncbi.nlm.nih.gov/pubmed/26481672>`_ for correcting eddy current-induced distortions and subject motion. Note that if you have reversed phase-encode images for EPI correction, the :code:`dwipreproc` script will simultaneously run `Eddy <http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/EDDY>`_ to ensure only a single interpolation is performed. If you don't have reversed phase-encode data, then `Eddy <http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/EDDY>`_ can be run without topup using::
 
-  dwipreproc <input_dwi> <output_dwi>
+  dwipreproc -rpe_none AP <input_dwi> <output_dwi>
 
 
 3. Estimate a brain mask
