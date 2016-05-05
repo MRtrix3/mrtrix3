@@ -1,6 +1,6 @@
-.. _fixeldivide:
+.. _fixelcalc:
 
-fixeldivide
+fixelcalc
 ===========
 
 Synopsis
@@ -8,10 +8,10 @@ Synopsis
 
 ::
 
-    fixeldivide [ options ]  input1 operation input2 output
+    fixelcalc [ options ]  input1 operation input2 output
 
 -  *input1*: the input fixel image.
--  *operation*: the type of operation to be applied (either add, subtract, multiply or divide)
+-  *operation*: the type of operation to be applied (either add, sub, mult or divide)
 -  *input2*: the input fixel image.
 -  *output*: the output fixel image.
 

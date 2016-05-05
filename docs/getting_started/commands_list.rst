@@ -99,6 +99,10 @@ List of MRtrix3 commands
 .......
 
 
+.. include:: commands/fixelcalc.rst
+.......
+
+
 .. include:: commands/fixelcfestats.rst
 .......
 
@@ -308,6 +312,10 @@ List of MRtrix3 commands
 
 
 .. include:: commands/tcknormalise.rst
+.......
+
+
+.. include:: commands/tckrandom.rst
 .......
 
 

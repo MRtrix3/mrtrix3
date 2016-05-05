@@ -12,13 +12,17 @@ USAGE:
 AVAILABLE SUBSTITUTIONS:
   IN:   the full matching pattern, including leading folders
         For example, if the target list contains a file "folder/image.mif",
-        any occurence of "IN" will be substituted with "folder/image.mif".
+        any occurrence of "IN" will be substituted with "folder/image.mif".
   NAME: the basename of the matching pattern 
         For example, if the target list contains a file "folder/image.mif",
-        any occurence of "NAME" will be substituted with "image.mif".
+        any occurrence of "NAME" will be substituted with "image.mif".
   PRE:  the prefix of the matching pattern 
         For example, if the target list contains a file "folder/image.mif",
-        any occurence of "PRE" will be substituted with "image".
+        any occurrence of "PRE" will be substituted with "image".
+  UNI:  the unique prefix of the matching pattern after removing the common suffix
+        For example, if the target list contains files:
+        "folder/001dwi.mif", "folder/002dwi.mif", "folder/003dwi.mif" 
+        any occurrence of "UNI" will be substituted with "001", "002", "003".
 
 PARALLEL PROCESSING: 
   To run multiple jobs at once, add the -N option before the colon,
@@ -99,14 +103,17 @@ if [ x"$cmd" == "x" ]; then
   exit 1
 fi
 
+common_suffix=`printf '%s\n' "${args[@]}" | rev | sed -e '1{h;d;}' -e 'G;s,\(.*\).*\n\1.*,\1,;h;$!d' | rev`
 
 ( for arg in "${args[@]}"; do 
   name=$(basename "$arg")
   pre="${name%.*}"
+  uni=$(basename "$arg" "$common_suffix")
 
   actual_cmd=${cmd//IN/$arg}
   actual_cmd=${actual_cmd//NAME/$name}
   actual_cmd=${actual_cmd//PRE/$pre}
+  actual_cmd=${actual_cmd//UNI/$uni}
   actual_cmd=${actual_cmd//\"|\"/|}
   actual_cmd=${actual_cmd//\";\"/;}
   actual_cmd=${actual_cmd//\"&&\"/&&}
