@@ -2,6 +2,7 @@ def initParser(subparsers, base_parser):
   import argparse  
   parser = subparsers.add_parser('fsl', parents=[base_parser], help='Use FSL commands to generate the 5TT image based on a T1-weighted image')
   options = parser.add_argument_group('options specific to the \'fsl\' algorithm')
+  options.add_argument('-t2', help='Provide a T2-weighted image in addition to the default T1-weighted image; this will be used as a second input to FSL FAST')
   masking = options.add_mutually_exclusive_group()
   masking.add_argument('-mask', help='Manually provide a brain mask, rather than deriving one in the script')
   masking.add_argument('-premasked', action='store_true', default=False, help='Indicate that brain masking has already been applied to the input image')
@@ -17,9 +18,17 @@ def checkOutputFiles():
 def getInputFiles():
   import os
   import lib.app
-  from lib.runCommand   import runCommand
+  from lib.imagesMatch   import imagesMatch
+  from lib.errorMessage  import errorMessage
+  from lib.getHeaderInfo import getHeaderInfo
+  from lib.runCommand    import runCommand
   if hasattr(lib.app.args, 'mask') and lib.app.args.mask is not None:
     runCommand('mrconvert ' + lib.app.args.mask + ' ' + os.path.join(lib.app.tempDir, 'mask.mif') + ' -datatype bit -stride -1,+2,+3')
+  if hasattr(lib.app.args, 't2') and lib.app.args.t2 is not None:
+    if not imagesMatch(lib.app.args.input, lib.app.args.t2):
+      errorMessage('Provided T2 image does not match input T1 image')
+    runCommand('mrconvert ' + lib.app.args.t2 + ' ' + os.path.join(lib.app.tempDir, 'T2.nii') + ' -stride -1,+2,+3')
+
 
 
 
@@ -30,6 +39,7 @@ def execute():
   from lib.errorMessage  import errorMessage
   from lib.getFSLSuffix  import getFSLSuffix
   from lib.getHeaderInfo import getHeaderInfo
+  from lib.imagesMatch   import imagesMatch
   from lib.isWindows     import isWindows
   from lib.runCommand    import runCommand
   from lib.warnMessage   import warnMessage
@@ -78,21 +88,33 @@ def execute():
   
   runCommand('mrconvert input.mif T1.nii -stride -1,+2,+3')
 
+  fast_t1_input = 'T1.nii'
+  fast_t2_input = ''
+
   # Decide whether or not we're going to do any brain masking
   if os.path.exists('mask.mif'):
+
+    fast_t1_input = 'T1_masked' + fsl_suffix
     
-    # Check to see if the dimensions match the T1 image
-    T1_size = getHeaderInfo('T1.nii', 'size')
-    mask_size = getHeaderInfo('mask.mif', 'size')
-    if mask_size == T1_size:
-      runCommand('mrcalc input.mif mask.mif -mult - | mrconvert - T1_masked' + fsl_suffix + ' -stride -1,+2,+3')
+    # Check to see if the mask matches the T1 image
+    if imagesMatch('T1.nii', 'mask.mif'):
+      runCommand('mrcalc T1.nii mask.mif -mult ' + fast_t1_input)
+      mask_path = 'mask.mif'
     else:
+      warnMessage('Mask image does not match input image - re-gridding')
       runCommand('mrtransform mask.mif mask_regrid.mif -template T1.nii')
-      runCommand('mrcalc input.mif mask_regrid.mif -mult - | mrconvert - T1_masked' + fsl_suffix)
+      runCommand('mrcalc T1.nii mask_regrid.mif ' + fast_t1_input)
+      mask_path = 'mask_regrid.mif'
+
+    if os.path.exists('T2.nii'):
+      fast_t2_input = 'T2_masked' + fsl_suffix
+      runCommand('mrcalc T2.nii ' + mask_path + ' -mult ' + fast_t2_input)
       
   elif lib.app.args.premasked:
   
-    runCommand('mrconvert input.mif T1_masked' + fsl_suffix + ' -stride -1,+2,+3')
+    fast_t1_input = 'T1.nii'
+    if os.path.exists('T2.nii'):
+      fast_t2_input = 'T2.nii'
     
   else:
 
@@ -119,17 +141,30 @@ def execute():
     else:
       runCommand(ssroi_cmd + ' T1.nii T1_preBET' + fsl_suffix + ' -b', False)
 
-    if not os.path.isfile('T1_preBET' + fsl_suffix):
+    if not os.path.exists('T1_preBET' + fsl_suffix):
       warnMessage('FSL command ' + ssroi_cmd + ' appears to have failed; passing T1 directly to BET')
       runCommand('mrconvert input.mif T1_preBET' + fsl_suffix + ' -stride -1,+2,+3')
 
     # BET
-    runCommand(bet_cmd + ' T1_preBET' + fsl_suffix + ' T1_masked' + fsl_suffix + ' -f 0.15 -R')
+    fast_t1_input = 'T1_BET' + fsl_suffix
+    runCommand(bet_cmd + ' T1_preBET' + fsl_suffix + ' ' + fast_t1_input + ' -f 0.15 -R')
 
-  # Finish branching based on brain masking  
+    if os.path.exists('T2.nii'):
+      if lib.app.args.nocrop:
+        fast_t2_input = 'T2.nii'
+      else:
+        # Just a reduction of FoV, no sub-voxel interpolation going on
+        runCommand('mrtransform T2.nii T2_cropped.nii -template ' + fast_t1_input + ' -interp nearest')
+        fast_t2_input = 'T2_cropped.nii'
+
+  # Finish branching based on brain masking
 
   # FAST
-  runCommand(fast_cmd + ' T1_masked' + fsl_suffix)
+  if fast_t2_input:
+    runCommand(fast_cmd + ' -S 2 ' + fast_t2_input + ' ' + fast_t1_input)
+  else:
+    runCommand(fast_cmd + ' ' + fast_t1_input)
+  fast_output_prefix = fast_t1_input.split('.')[0]
 
   # FIRST
   first_input_is_brain_extracted = ''
@@ -146,7 +181,7 @@ def execute():
     if not os.path.exists(vtk_in_path):
       errorMessage('Missing .vtk file for structure ' + struct + '; run_first_all must have failed')
     runCommand('meshconvert ' + vtk_in_path + ' ' + vtk_temp_path + ' -transform_first2real T1.nii')
-    runCommand('mesh2pve ' + vtk_temp_path + ' T1_masked' + fsl_suffix + ' ' + pve_image_path)
+    runCommand('mesh2pve ' + vtk_temp_path + ' ' + fast_t1_input + ' ' + pve_image_path)
     pve_image_list.append(pve_image_path)
   pve_cat = ' '.join(pve_image_list)
   runCommand('mrmath ' + pve_cat + ' sum - | mrcalc - 1.0 -min all_sgms.mif')
@@ -160,14 +195,14 @@ def execute():
 
   # Combine the tissue images into the 5TT format within the script itself
   # Step 1: Run LCC on the WM image
-  runCommand('mrthreshold T1_masked_pve_2' + fast_suffix + ' - -abs 0.001 | maskfilter - connect wm_mask.mif -largest')
+  runCommand('mrthreshold ' + fast_output_prefix + '_pve_2' + fast_suffix + ' - -abs 0.001 | maskfilter - connect wm_mask.mif -largest')
   # Step 2: Generate the images in the same fashion as the 5ttgen command
-  runCommand('mrconvert T1_masked_pve_0' + fast_suffix + ' csf.mif')
-  runCommand('mrcalc 1 csf.mif -sub all_sgms.mif -min sgm.mif')
-  runCommand('mrcalc 1.0 csf.mif sgm.mif -add -sub T1_masked_pve_1' + fast_suffix + ' T1_masked_pve_2' + fast_suffix + ' -add -div multiplier.mif')
+  runCommand('mrconvert ' + fast_output_prefix + '_pve_0' + fast_suffix + ' csf.mif')
+  runCommand('mrcalc 1.0 csf.mif -sub all_sgms.mif -min sgm.mif')
+  runCommand('mrcalc 1.0 csf.mif sgm.mif -add -sub ' + fast_output_prefix + '_pve_1' + fast_suffix + ' ' + fast_output_prefix + '_pve_2' + fast_suffix + ' -add -div multiplier.mif')
   runCommand('mrcalc multiplier.mif -finite multiplier.mif 0.0 -if multiplier_noNAN.mif')
-  runCommand('mrcalc T1_masked_pve_1' + fast_suffix + ' multiplier_noNAN.mif -mult cgm.mif')
-  runCommand('mrcalc T1_masked_pve_2' + fast_suffix + ' multiplier_noNAN.mif -mult wm_mask.mif -mult wm.mif')
+  runCommand('mrcalc ' + fast_output_prefix + '_pve_1' + fast_suffix + ' multiplier_noNAN.mif -mult cgm.mif')
+  runCommand('mrcalc ' + fast_output_prefix + '_pve_2' + fast_suffix + ' multiplier_noNAN.mif -mult wm_mask.mif -mult wm.mif')
   runCommand('mrcalc 0 wm.mif -min path.mif')
   runCommand('mrcat cgm.mif sgm.mif wm.mif csf.mif path.mif - -axis 3 | mrconvert - combined_precrop.mif -stride +2,+3,+4,+1')
 

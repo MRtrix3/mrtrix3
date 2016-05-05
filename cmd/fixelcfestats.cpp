@@ -152,7 +152,7 @@ void run() {
   value_type cfe_c = get_option_value ("cfe_c", DEFAULT_CFE_C);
   int num_perms = get_option_value ("nperms", DEFAULT_PERMUTATIONS);
   value_type angular_threshold = get_option_value ("angle", DEFAULT_ANGLE_THRESHOLD);
-  const float angular_threshold_dp = cos (angular_threshold * (M_PI/180.0));
+  const float angular_threshold_dp = cos (angular_threshold * (Math::pi/180.0));
 
   value_type connectivity_threshold = get_option_value ("connectivity", DEFAULT_CONNECTIVITY_THRESHOLD);
   value_type smooth_std_dev = get_option_value ("smooth", DEFAULT_SMOOTHING_STD) / 2.3548;
@@ -259,7 +259,7 @@ void run() {
   value_type gaussian_const1 = 1.0;
   if (smooth_std_dev > 0.0) {
     do_smoothing = true;
-    gaussian_const1 = 1.0 / (smooth_std_dev *  std::sqrt (2.0 * M_PI));
+    gaussian_const1 = 1.0 / (smooth_std_dev *  std::sqrt (2.0 * Math::pi));
   }
   {
     ProgressBar progress ("normalising and thresholding fixel-fixel connectivity matrix", num_fixels);

@@ -154,7 +154,7 @@ void Matrix::zero_diagonal()
 
 void Matrix::error_check (const std::set<node_t>& missing_nodes)
 {
-  std::vector<uint32_t> node_counts (data.cols(), 0);
+  std::vector<default_type> node_counts (data.cols(), 0);
   for (node_t i = 0; i != counts.rows(); ++i) {
     for (node_t j = i; j != counts.cols(); ++j) {
       node_counts[i] += counts (i, j);

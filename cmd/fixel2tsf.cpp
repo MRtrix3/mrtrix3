@@ -83,7 +83,7 @@ void run ()
   DWI::Tractography::ScalarWriter<float> tsf_writer (argument[2], properties);
 
   float angular_threshold = get_option_value ("angle", DEFAULT_ANGULAR_THRESHOLD);
-  const float angular_threshold_dp = cos (angular_threshold * (M_PI/180.0));
+  const float angular_threshold_dp = cos (angular_threshold * (Math::pi/180.0));
 
   const size_t num_tracks = properties["count"].empty() ? 0 : to<int> (properties["count"]);
 

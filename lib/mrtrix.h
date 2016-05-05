@@ -58,6 +58,11 @@ namespace MR
 
   template <typename X, typename ReturnType = int>
     struct max_digits {
+      static constexpr int value () { return 0; }
+    };
+
+  template <typename X>
+    struct max_digits<X, typename std::enable_if<std::is_fundamental<X>::value, int>::type> {
       static constexpr int value () { return std::numeric_limits<X>::max_digits10; }
     };
 
@@ -67,9 +72,11 @@ namespace MR
     };
 
   template <typename X>
-    struct max_digits<X, typename std::enable_if<std::is_fundamental<typename X::value_type>::value, int>::type> {
+    struct max_digits<X, typename std::enable_if<std::is_fundamental<typename X::value_type>::value && !std::is_fundamental<typename X::Scalar>::value, int>::type> {
       static constexpr int value () { return std::numeric_limits<typename X::value_type>::max_digits10; }
     };
+
+
 
   template <class T> inline std::string str (const T& value, int precision = 0)
   {
