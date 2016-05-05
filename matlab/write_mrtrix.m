@@ -24,6 +24,11 @@ if isstruct(image)
 else
   dim = size(image);
 end
+
+while prod(size(dim)) < 3
+  dim(end+1) = 1;
+end 
+
 fprintf (fid, '%d', dim(1));
 fprintf (fid, ',%d', dim(2:end));
 
