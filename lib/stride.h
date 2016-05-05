@@ -416,7 +416,7 @@ namespace MR
 
 
     template <class HeaderType> 
-      void set_from_command_line (HeaderType& header, const List& default_strides = List())
+      inline void set_from_command_line (HeaderType& header, const List& default_strides = List())
       {
         auto cmdline_strides = __from_command_line (get (header));
         if (cmdline_strides.size())
