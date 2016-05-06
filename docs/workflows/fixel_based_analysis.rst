@@ -12,7 +12,7 @@ This tutorial explains how to perform fixel-based analysis using MRtrix commands
 Fixel-based analysis steps
 ---------------------------
 
-.. WARNING:: The following steps and commands are pre-release only. It is likely that some command and option names will change over the next few months, however the overall process will remain the same. We recommend you don't update MRtrix half way through a study. 
+.. WARNING:: The following steps and commands are pre-release only. It is likely that some command and option names will change over the next few months, however the overall process will remain the same. We recommend you don't update MRtrix half way through a study, and look out for update announcements on the `MRtrix community <http://community.mrtrix.org/>`_ and `blog <www.mrtrix.org/blog/>`_ pages.
 
 Note that for all MRtrix scripts and commands, additional information on the command usage and available command-line options can be found by invoking the command with the :code:`-help` option. 
 
@@ -129,7 +129,7 @@ The FC files will be used in the next step. However, for group statistical analy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 To account for changes to both within-voxel fibre density and macroscopic atrophy, fibre density and fibre cross-section must be combined (a measure we call fibre density & cross-section, FDC). This enables a more complete picture of group differences in white matter. Note that as discussed in our future work (under review), group differences in FD or FC alone must be interpreted with care in crossing-fibre regions. However group differences in FDC are more directly interpretable. To generate the combined measure we 'modulate' the FD by FC::
 
-    fixelmult <input_fd.msf> <input_fc.msf> <output_fdc.msf>
+    fixelmath <input_fd.msf> mult <input_fc.msf> <output_fdc.msf>
     
 14. Perform whole-brain fibre tractography on the FOD template
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
