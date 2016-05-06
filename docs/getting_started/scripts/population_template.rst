@@ -19,11 +19,13 @@ Generates an unbiased group-average template from a series of images. First a te
 Options
 -------
 
-- **-mask_dir** Optionally provide a set of masks inside a single directory, one per input image (with the same file name prefix). Using masks will speed up registration significantly
+- **-mask_dir** Optionally input a set of masks inside a single directory, one per input image (with the same file name prefix). Using masks will speed up registration significantly
 
 - **-warp_dir** Output a directory containing warps from each input to the template. If the folder does not exist it will be created
 
 - **-transformed_dir** Output a directory containing the input images transformed to the template. If the folder does not exist it will be created
+
+- **-template_mask** Output a template mask. Only works in -mask_dir has been input. The template mask is computed as the intersection of all subject masks in template space.
 
 - **-rigid** perform rigid registration instead of affine. This should be used for intra-subject registration in longitudinal analysis
 
