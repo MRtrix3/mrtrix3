@@ -117,7 +117,7 @@ void run () {
     for (int n = 0; n < num_images; ++n) {
       auto grad = DWI::get_DW_scheme (in[n]);
       input_grads.push_back (grad);
-      if (grad.rows() == 0 || grad.cols() != 4) {
+      if (grad.rows() == 0 || grad.cols() < 4) {
         nrows = 0;
         break;
       }   
