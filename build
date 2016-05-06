@@ -1029,8 +1029,6 @@ if len(todo):
     try: num_processors = os.sysconf('SC_NPROCESSORS_ONLN')
     except: num_processors = 1
 
-  num_processors = 1
-    
   log ('''
   
   launching ''' + str(num_processors) + ''' threads
