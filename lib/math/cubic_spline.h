@@ -1,21 +1,20 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 
 #ifndef __math_cubic_spline_h__
 #define __math_cubic_spline_h__
-
 namespace MR
 {
   namespace Math
@@ -74,12 +73,14 @@ namespace MR
         void (CubicSpline::*_internal_set) (T);
 
         inline void _set_value (T position) {
-          const auto vec = WeightVector (position * position * position, position * position, position, 1);
+          const T p2 = Math::pow2(position);
+          const auto vec = WeightVector (p2 * position, p2, position, 1.0);
           weights = (vec * basis_matrix);
         }
 
         inline void _set_value_deriv (T position) {
-          const auto vec = WeightVector (position * position * position, position * position, position, 1);
+          const T p2 = Math::pow2(position);
+          const auto vec = WeightVector (position * p2, p2, position, 1.0);
           weights = (vec * basis_matrix);
           deriv_weights = (vec * deriv_basis_matrix);
         }

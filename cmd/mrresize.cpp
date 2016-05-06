@@ -96,6 +96,10 @@ void run () {
     ++resize_option_count;
   }
 
+
+  Header output_header (resize_filter);
+  output_header.datatype() = DataType::from_command_line (output_header.datatype());
+
   int interp = 2;
   opt = get_options ("interp");
   if (opt.size()) {

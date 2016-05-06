@@ -5,7 +5,10 @@ def runCommand(cmd, exitOnError=True):
   import lib.app, os, sys
   from lib.errorMessage import errorMessage
   from lib.warnMessage  import warnMessage
+  import distutils
+  from distutils.spawn import find_executable
   global mrtrix_bin_list
+  global mrtrix_bin_path
   
   if not mrtrix_bin_list:
     mrtrix_bin_path = os.path.join(os.path.abspath(os.path.dirname(os.path.realpath(__file__))), os.pardir, os.pardir, 'release', 'bin');
@@ -26,6 +29,9 @@ def runCommand(cmd, exitOnError=True):
   # Automatically add the relevant flags to any mrtrix command calls, including filling them in around the pipes
   if binary_name in mrtrix_bin_list:
     cmdsplit = cmd.split()
+    binary_in_path = find_executable(binary_name)
+    if not binary_in_path or not os.path.samefile(binary_in_path, os.path.join(binary_name, mrtrix_bin_path)):
+      cmdsplit[0] =  os.path.join(mrtrix_bin_path, binary_name)
     for index, item in enumerate(cmdsplit):
       if item == '|':
         if lib.app.mrtrixNThreads:

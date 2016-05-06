@@ -18,7 +18,6 @@
 
 #include "image.h"
 #include "transform.h"
-#include "registration/transform/compose.h"
 #include "interp/cubic.h"
 
 namespace MR
@@ -31,15 +30,17 @@ namespace MR
 
     //! an Image providing interpolated values from another Image
     /*! the Warp class provides an Image interface to data
-     * interpolated ....
+     * interpolated after transformation with the input warp (supplied as a deformation field).
      *
      * For example:
      * \code
      * // reference header:
-     * auto reference = Header::open (argument[0]);
+     * auto warp = Header::open (argument[0]);
      * // input data to be resliced:
      * auto input = Image<float>::open (argument[1]);
-     * TOOD
+     * auto output = Image<float>::create (argument[2]);
+     * threaded_copy (interp, output);
+     *
      * \endcode
      *
      *
@@ -58,7 +59,8 @@ namespace MR
             warp (warp),
             x { 0, 0, 0 },
             dim { warp.size(0), warp.size(1), warp.size(2) },
-            vox { warp.spacing(0), warp.spacing(1), warp.spacing(2) } {
+            vox { warp.spacing(0), warp.spacing(1), warp.spacing(2) },
+            value_when_out_of_bounds (value_when_out_of_bounds) {
               assert (warp.ndim() == 4);
               assert (warp.size(3) == 3);
             }
@@ -82,15 +84,25 @@ namespace MR
 
 
         value_type value () {
-          interp.scanner (get_position());
+          Eigen::Vector3 pos = get_position();
+          if (std::isnan(pos[0]) || std::isnan(pos[1]) || std::isnan(pos[2]))
+            return value_when_out_of_bounds;
+          interp.scanner (pos);
           return interp.value();
         }
 
 
         Eigen::Matrix<value_type, Eigen::Dynamic, 1> row (size_t axis) {
           assert (interp.ndim() > 3);
-          interp.scanner (get_position()); //TODO, check for nans in warp?
-          return interp.row(axis);
+          Eigen::Vector3 pos = get_position();
+          if (std::isnan(pos[0]) || std::isnan(pos[1]) || std::isnan(pos[2])) {
+            Eigen::Matrix<value_type, Eigen::Dynamic, 1> out_of_bounds_row (interp.size (axis));
+            out_of_bounds_row.setOnes();
+            out_of_bounds_row *= value_when_out_of_bounds;
+            return out_of_bounds_row;
+          }
+          interp.scanner (pos);
+          return interp.row (axis);
         }
 
 
@@ -116,6 +128,7 @@ namespace MR
         ssize_t x[3];
         const ssize_t dim[3];
         const default_type vox[3];
+        value_type value_when_out_of_bounds;
     };
 
     //! @}

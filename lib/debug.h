@@ -21,12 +21,12 @@
 #include <string.h>
 
 namespace MR {
-  namespace App { 
+  namespace App {
     extern std::string NAME;
-  } 
+  }
 }
 
-/** \defgroup debug Debugging 
+/** \defgroup debug Debugging
  * \brief functions and macros provided to ease debugging. */
 
 /** \addtogroup debug
@@ -41,8 +41,20 @@ namespace MR {
 #define VAR(variable) \
   std::cerr << MR::App::NAME << " [" << __FILE__  << ": " << __LINE__ << "]: " << #variable << " = " << (variable) << "\n";
 
+/** \brief Prints a matrix name and in the following line its formatted value. */
+#define MAT(variable) { \
+  Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", ",\n        ", "[", "]", "\nnp.array([", "])"); \
+  std::cerr << MR::App::NAME << " [" << __FILE__  << ": " << __LINE__ << "]: " << #variable << " = " << (variable.format(fmt)) << "\n"; \
+}
 
-/** \brief Stops execution and prints current function, file and line number. 
+#define VEC(variable) { \
+  std::cerr << MR::App::NAME << " [" << __FILE__  << ": " << __LINE__ << "]: " << #variable << " = "; \
+  for (ssize_t i=0; i<variable.size(); ++i){std::cerr << str(variable(i)) << " "; } \
+  std::cerr << std::endl; \
+}
+
+
+/** \brief Stops execution and prints current function, file and line number.
   Remuses on user input (i.e. Return key). */
 #define PAUSE { \
   std::cerr << MR::App::NAME << " [" << __FILE__  << ": " << __LINE__ << "]: paused (press any key to resume)\n"; \

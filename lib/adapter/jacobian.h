@@ -51,17 +51,6 @@ namespace MR
               }
             }
 
-//            std::cout << "jacobian" << std::endl;
-
-//            std::cout << jacobian << std::endl;
-//            std::cout << "image2scanner" << std::endl;
-
-//            std::cout << transform.image2scanner.linear() << std::endl;
-//        std::cout << "scanner2image" << std::endl;
-
-//            std::cout << transform.scanner2image.linear() << std::endl;
-
-
             if (wrt_scanner)
               jacobian = jacobian * transform.scanner2image.linear().template cast<value_type>();
             return jacobian;

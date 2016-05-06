@@ -35,10 +35,13 @@ icons.cpp
 .pydevproject
 *.config
 *.creator
+*.txt
+*.log
 *.creator.user
 *.files
 *.includes
 /debug/
+/assert/
 testing.log
 testing/build.log
 testing/release/
