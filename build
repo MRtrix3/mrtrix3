@@ -1028,6 +1028,8 @@ if len(todo):
   except:
     try: num_processors = os.sysconf('SC_NPROCESSORS_ONLN')
     except: num_processors = 1
+
+  num_processors = 1
     
   log ('''
   
