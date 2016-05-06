@@ -88,12 +88,12 @@ for i in input:
   runCommand('dwi2tensor ' + abspath(i.directory, i.filename) + ' -mask ' + abspath(i.mask_directory, i.mask_filename) + ' - | tensor2metric - -fa fa/' + i.prefix + '.mif')
 
 printMessage('Generating FA population template')
-runCommand('population_template fa -mask_dir ' + maskTempDir + ' fa_template.mif -linear_scale 0.25,0.5,1.0,1.0 -nl_scale 0.5,0.75,1.0,1.0,1.0 -nl_niter 5,5,5,5,5 -warp_dir warps')
+runCommand('population_template fa -mask_dir ' + maskTempDir + ' fa_template.mif -linear_scale 0.25,0.5,1.0,1.0 -nl_scale 0.5,0.75,1.0,1.0,1.0 -nl_niter 5,5,5,5,5 -warp_dir warps -nocleanup -tempdir population_template')
 
 runCommand('mrthreshold fa_template.mif -abs ' +  lib.app.args.fa_threshold + ' template_wm_mask.mif')
 lib.app.make_dir('wm_mask_warped')
 for i in input:
-  runCommand('mrtransform template_wm_mask.mif -warp_full warps/' + i.prefix + '.mif wm_mask_warped/' + i.prefix + '.mif -from 2 -template fa/' + i.prefix + '.mif')
+  runCommand('mrtransform template_wm_mask.mif -interp nearest -warp_full warps/' + i.prefix + '.mif wm_mask_warped/' + i.prefix + '.mif -from 2 -template fa/' + i.prefix + '.mif')
   runCommand('dwinormalise ' + abspath(i.directory, i.filename) + ' wm_mask_warped/' + i.prefix + '.mif ' + abspath (lib.app.workingDir, lib.app.args.output_dir, i.filename) + lib.app.mrtrixForce)
 
 runCommand('mrconvert template_wm_mask.mif ' + abspath(lib.app.workingDir, lib.app.args.wm_mask) + lib.app.mrtrixForce)

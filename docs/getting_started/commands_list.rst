@@ -111,10 +111,6 @@ List of MRtrix3 commands
 .......
 
 
-.. include:: commands/fixeldivide.rst
-.......
-
-
 .. include:: commands/fixellog.rst
 .......
 
@@ -295,6 +291,10 @@ List of MRtrix3 commands
 .......
 
 
+.. include:: commands/tckfuzzifyends.rst
+.......
+
+
 .. include:: commands/tckgen.rst
 .......
 
@@ -312,10 +312,6 @@ List of MRtrix3 commands
 
 
 .. include:: commands/tcknormalise.rst
-.......
-
-
-.. include:: commands/tckrandom.rst
 .......
 
 
