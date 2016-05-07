@@ -51,6 +51,8 @@ Welcome to the MRtrix user documentation!
    :maxdepth: 2
    :caption: Workflows
 
+   workflows/DWI_preprocessing_for_quantitative_analysis
+   workflows/fixel_based_analysis
    workflows/act
    workflows/sift
    workflows/structural_connectome

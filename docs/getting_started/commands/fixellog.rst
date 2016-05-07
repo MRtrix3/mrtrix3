@@ -1,6 +1,6 @@
-.. _fixeldivide:
+.. _fixellog:
 
-fixeldivide
+fixellog
 ===========
 
 Synopsis
@@ -8,17 +8,15 @@ Synopsis
 
 ::
 
-    fixeldivide [ options ]  input1 operation input2 output
+    fixellog [ options ]  input output
 
--  *input1*: the input fixel image.
--  *operation*: the type of operation to be applied (either add, subtract, multiply or divide)
--  *input2*: the input fixel image.
+-  *input*: the input fixel image.
 -  *output*: the output fixel image.
 
 Description
 -----------
 
-Perform basic calculations (add, subtract, multiply, divide) between two fixel images
+compute the natural logarithm of all values in a fixel image
 
 Options
 -------

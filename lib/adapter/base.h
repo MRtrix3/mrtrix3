@@ -62,6 +62,8 @@ namespace MR
           FORCE_INLINE auto value () -> decltype(Helper::value(*this)) { return { *this }; }
           FORCE_INLINE void set_value (value_type val) { parent_.value() = val; } 
 
+	  FORCE_INLINE Eigen::Map<Eigen::Matrix<value_type, Eigen::Dynamic, 1 >, Eigen::Unaligned, Eigen::InnerStride<> > row (size_t axis) { return parent_.row(axis); }
+
           FORCE_INLINE void reset () { parent_.reset(); }
 
           friend std::ostream& operator<< (std::ostream& stream, const Base& V) {

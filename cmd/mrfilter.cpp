@@ -21,6 +21,7 @@
 #include "filter/base.h"
 #include "filter/fft.h"
 #include "filter/gradient.h"
+#include "filter/normalise.h"
 #include "filter/median.h"
 #include "filter/smooth.h"
 
@@ -29,7 +30,7 @@ using namespace MR;
 using namespace App;
 
 
-const char* filters[] = { "fft", "gradient", "median", "smooth", NULL };
+const char* filters[] = { "fft", "gradient", "median", "smooth", "normalise", NULL };
 
 
 const OptionGroup FFTOption = OptionGroup ("Options for FFT filter")
@@ -72,6 +73,12 @@ const OptionGroup MedianOption = OptionGroup ("Options for median filter")
         "or as a comma-separated list of 3 values, one for each axis (default: 3x3x3).")
     + Argument ("size").type_sequence_int();
 
+const OptionGroup NormaliseOption = OptionGroup ("Options for normalisation filter")
+
+  + Option ("extent", "specify extent of normalisation filtering neighbourhood in voxels. "
+        "This can be specified either as a single value to be used for all 3 axes, "
+        "or as a comma-separated list of 3 values, one for each axis (default: 3x3x3).")
+    + Argument ("size").type_sequence_int();
 
 
 const OptionGroup SmoothOption = OptionGroup ("Options for smooth filter")
@@ -102,7 +109,7 @@ void usage ()
 
   DESCRIPTION
   + "Perform filtering operations on 3D / 4D MR images. For 4D images, each 3D volume is processed independently."
-  + "The available filters are: fft, gradient, median, smooth."
+  + "The available filters are: fft, gradient, median, smooth, normalise."
   + "Each filter has its own unique set of optional parameters.";
 
   ARGUMENTS
@@ -114,6 +121,7 @@ void usage ()
   + FFTOption
   + GradientOption
   + MedianOption
+  + NormaliseOption
   + SmoothOption
   + Stride::Options;
 }
@@ -230,6 +238,23 @@ void run () {
       filter (input, output);
       break;
     }
+
+    // Normalisation
+    case 4:
+    {
+      auto input = Image<float>::open (argument[0]);
+      Filter::Normalise filter (input);
+
+      auto opt = get_options ("extent");
+      if (opt.size())
+        filter.set_extent (parse_ints (opt[0][0]));
+      filter.set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]) + "...");
+      Stride::set_from_command_line (filter);
+
+      auto output = Image<float>::create (argument[2], filter);
+      filter (input, output);
+      break;
+     }
 
     default:
       assert (0);

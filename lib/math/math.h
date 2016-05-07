@@ -86,19 +86,32 @@ namespace MR
     /** @} */
   }
 
+  /** @defgroup elfun Eigen helper functions
+      @{ */
+  //! check if all elements of an Eigen MatrixBase object are finite
+  template<typename Derived>
+  inline bool is_finite(const Eigen::MatrixBase<Derived>& x)
+  {
+     return ( (x - x).array() == (x - x).array()).all();
+  }
 
+  //! check if all elements of an Eigen MatrixBase object are a number
+  template<typename Derived>
+  inline bool is_nan(const Eigen::MatrixBase<Derived>& x)
+  {
+     return ((x.array() == x.array())).all();
+  }
+  /** @} */
 
 
   //! write the matrix \a M to file
   template <class MatrixType>
-    void save_matrix (const MatrixType& M, const std::string& filename) 
+    void save_matrix (const MatrixType& M, const std::string& filename)
     {
       File::OFStream out (filename);
-      for (ssize_t i = 0; i < M.rows(); i++) {
-        for (ssize_t j = 0; j < M.cols(); j++)
-          out << str(M(i,j), 10) << " ";
-        out << "\n";
-      }
+      Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
+      out << M.format(fmt);
+      out << "\n";
     }
 
   //! read matrix data into a 2D vector \a filename
@@ -111,7 +124,7 @@ namespace MR
 
       while (getline (stream, sbuf)) {
         sbuf = strip (sbuf.substr (0, sbuf.find_first_of ('#')));
-        if (sbuf.empty()) 
+        if (sbuf.empty())
           continue;
 
         V.push_back (std::vector<ValueType>());
@@ -124,7 +137,7 @@ namespace MR
           if (V.back().size() != V[0].size())
             throw Exception ("uneven rows in matrix");
       }
-      if (stream.bad()) 
+      if (stream.bad())
         throw Exception (strerror (errno));
 
       if (!V.size())
@@ -154,6 +167,9 @@ namespace MR
     {
       auto V = load_matrix_2D_vector<ValueType> (filename);
 
+      if (V.size() != 4 || V[0].size() != 4)
+        throw Exception ("transform in file " + filename + " is invalid. Does not contain 4x4 matrix.");
+
       transform_type M;
 
       for (ssize_t i = 0; i < 3; i++)
@@ -167,17 +183,14 @@ namespace MR
   inline void save_transform (const transform_type& M, const std::string& filename)
   {
     File::OFStream out (filename);
-    for (ssize_t i = 0; i < 3; i++) {
-      for (ssize_t j = 0; j < 4; j++)
-        out << str(M(i,j), 10) << " ";
-      out << "\n";
-    }
-    out << "0 0 0 1\n";
+    Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
+    out << M.matrix().format(fmt);
+    out << "\n0 0 0 1\n";
   }
 
   //! write the vector \a V to file
   template <class VectorType>
-    void save_vector (const VectorType& V, const std::string& filename) 
+    void save_vector (const VectorType& V, const std::string& filename)
     {
       File::OFStream out (filename);
       for (decltype(V.size()) i = 0; i < V.size() - 1; i++)
@@ -187,7 +200,7 @@ namespace MR
 
   //! read the vector data from \a filename
   template <class ValueType = default_type>
-    Eigen::Matrix<ValueType, Eigen::Dynamic, 1> load_vector (const std::string& filename) 
+    Eigen::Matrix<ValueType, Eigen::Dynamic, 1> load_vector (const std::string& filename)
     {
       auto vec = load_matrix<ValueType> (filename);
       if (vec.cols() == 1)

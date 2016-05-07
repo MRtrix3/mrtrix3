@@ -19,7 +19,7 @@ Description
 
 Perform filtering operations on 3D / 4D MR images. For 4D images, each 3D volume is processed independently.
 
-The available filters are: fft, gradient, median, smooth.
+The available filters are: fft, gradient, median, smooth, normalise.
 
 Each filter has its own unique set of optional parameters.
 
@@ -50,6 +50,11 @@ Options for median filter
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-extent size** specify extent of median filtering neighbourhood in voxels. This can be specified either as a single value to be used for all 3 axes, or as a comma-separated list of 3 values, one for each axis (default: 3x3x3).
+
+Options for normalisation filter
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-extent size** specify extent of normalisation filtering neighbourhood in voxels. This can be specified either as a single value to be used for all 3 axes, or as a comma-separated list of 3 values, one for each axis (default: 3x3x3).
 
 Options for smooth filter
 ^^^^^^^^^^^^^^^^^^^^^^^^^

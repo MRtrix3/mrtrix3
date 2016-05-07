@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 
 #ifndef __adapter_reslice_h__
@@ -71,7 +71,7 @@ namespace MR
      * \sa Interp::reslice()
      */
     template <template <class ImageType> class Interpolator, class ImageType>
-      class Reslice 
+      class Reslice
     {
       public:
         typedef typename ImageType::value_type value_type;
@@ -102,11 +102,11 @@ namespace MR
               else {
                 Vector3 y = direct_transform * Vector3 (0.0, 0.0, 0.0);
                 Vector3 x0 = direct_transform * Vector3 (1.0, 0.0, 0.0);
-                OS[0] = std::ceil (0.999 * (y-x0).norm());
+                OS[0] = std::ceil ((1.0-std::numeric_limits<default_type>::epsilon()) * (y-x0).norm());
                 x0 = direct_transform * Vector3 (0.0, 1.0, 0.0);
-                OS[1] = std::ceil (0.999 * (y-x0).norm());
+                OS[1] = std::ceil ((1.0-std::numeric_limits<default_type>::epsilon()) * (y-x0).norm());
                 x0 = direct_transform * Vector3 (0.0, 0.0, 1.0);
-                OS[2] = std::ceil (0.999 * (y-x0).norm());
+                OS[2] = std::ceil ((1.0-std::numeric_limits<default_type>::epsilon()) * (y-x0).norm());
               }
 
               if (OS[0] * OS[1] * OS[2] > 1) {

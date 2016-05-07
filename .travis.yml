@@ -13,7 +13,6 @@ addons:
       - g++-4.8
       - python3
 compiler:
-  - gcc
   - clang
 env:
   - python_version=2

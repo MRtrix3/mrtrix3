@@ -15,10 +15,18 @@ Scripts for external libraries
 .......
 
 
+.. include:: scripts/dwiintensitynorm.rst
+.......
+
+
 .. include:: scripts/dwipreproc.rst
 .......
 
 
 .. include:: scripts/labelsgmfix.rst
+.......
+
+
+.. include:: scripts/population_template.rst
 .......
 

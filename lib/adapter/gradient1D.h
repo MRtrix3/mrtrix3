@@ -51,6 +51,10 @@ namespace MR
           axis = val;
         }
 
+        /**
+         * @brief computes the image gradient at the current index along the dimension defined by set_axis();
+         * @return the image gradient
+         */
         value_type value ()
         {
           const ssize_t pos = index (axis);
@@ -74,6 +78,7 @@ namespace MR
 
           return result;
         }
+
 
         using Base<ImageType>::name;
         using Base<ImageType>::size;
