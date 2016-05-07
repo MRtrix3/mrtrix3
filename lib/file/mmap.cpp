@@ -182,7 +182,7 @@ namespace MR
 
 
 
-    MMap::~MMap()
+    MMap::~MMap() noexcept (false)
     {
       if (!first) return;
       if (addr) {
