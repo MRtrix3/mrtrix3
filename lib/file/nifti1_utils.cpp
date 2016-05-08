@@ -205,7 +205,7 @@ namespace MR
 
         if (is_nifti) {
           if (Raw::fetch_<int16_t> (&NH.sform_code, is_BE)) {
-            auto& M (H.transform());
+            auto& M (H.transform().matrix());
 
             M(0,0) = Raw::fetch_<float32> (&NH.srow_x[0], is_BE);
             M(0,1) = Raw::fetch_<float32> (&NH.srow_x[1], is_BE);
@@ -239,11 +239,12 @@ namespace MR
             M (0,2) /= H.spacing (2);
             M (1,2) /= H.spacing (2);
             M (2,2) /= H.spacing (2);
+
           }
           else if (Raw::fetch_<int16_t> (&NH.qform_code, is_BE)) {
             { // TODO update with Eigen3 Quaternions
               Eigen::Quaterniond Q (0.0, Raw::fetch_<float32> (&NH.quatern_b, is_BE), Raw::fetch_<float32> (&NH.quatern_c, is_BE), Raw::fetch_<float32> (&NH.quatern_d, is_BE));
-              Q.w() = std::sqrt (1.0 - Q.squaredNorm());
+              Q.w() = std::sqrt (std::max (1.0 - Q.squaredNorm(), 0.0));
               H.transform().matrix().topLeftCorner<3,3>() = Q.matrix();
             }
 
@@ -254,7 +255,7 @@ namespace MR
             // qfac:
             float qfac = Raw::fetch_<float32> (&NH.pixdim[0], is_BE) >= 0.0 ? 1.0 : -1.0;
             if (qfac < 0.0) 
-              H.transform().matrix().topLeftCorner<3,3>().col(2) *= qfac;
+              H.transform().matrix().col(2) *= qfac;
           }
         }
         else {
@@ -459,12 +460,15 @@ namespace MR
         Raw::store<int16_t> (NIFTI_XFORM_SCANNER_ANAT, &NH.sform_code, is_BE);
 
         // qform:
-        Eigen::MatrixXd R = M.matrix().topLeftCorner<3,3>();
+        Eigen::Matrix3d R = M.matrix().topLeftCorner<3,3>();
         if (R.determinant() < 0.0) {
           R.col(2) = -R.col(2);
           NH.pixdim[0] = -1.0;
         }
-        Eigen::Quaterniond Q (M.rotation());
+        Eigen::Quaterniond Q (R);
+
+        if (Q.w() < 0.0) 
+          Q.vec() = -Q.vec();
 
         Raw::store<float32> (Q.x(), &NH.quatern_b, is_BE);
         Raw::store<float32> (Q.y(), &NH.quatern_c, is_BE);
