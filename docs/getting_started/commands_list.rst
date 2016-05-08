@@ -115,10 +115,6 @@ List of MRtrix3 commands
 .......
 
 
-.. include:: commands/fixelmult.rst
-.......
-
-
 .. include:: commands/fixelreorient.rst
 .......
 
@@ -288,10 +284,6 @@ List of MRtrix3 commands
 
 
 .. include:: commands/tckedit.rst
-.......
-
-
-.. include:: commands/tckfuzzifyends.rst
 .......
 
 

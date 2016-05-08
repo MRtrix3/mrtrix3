@@ -1,8 +1,6 @@
 dwiintensitynorm
 ===========
 
-Command: pwd 
-/home/dave/dev/mrtrix3/docs
 Synopsis
 --------
 
