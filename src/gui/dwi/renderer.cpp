@@ -141,6 +141,7 @@ namespace MR
 
         if (mode_ == mode_t::TENSOR) {
           source +=
+          "uniform mat3 tensor;\n"
           "uniform mat3 inv_tensor;\n"
           "uniform vec3 dec;\n";
         }
@@ -166,7 +167,8 @@ namespace MR
           "  amplitude"+VSout+" = r_del_daz[0];\n";
         } else if (mode_ == mode_t::TENSOR) {
           source +=
-          "  amplitude"+VSout+" = 1.0 / dot (vertex, inv_tensor * vertex);\n";
+          "  vec3 new_vertex = tensor * vertex;\n"
+          "  amplitude"+VSout+" = length(new_vertex);\n";
         } else if (mode_ == mode_t::DIXEL) {
           source +=
           "  amplitude"+VSout+" = value;\n";
@@ -212,7 +214,7 @@ namespace MR
 
         if (mode_ == mode_t::SH || mode_ == mode_t::TENSOR) {
           source +=
-          "  vec3 pos = vertex * amplitude"+VSout+" * scale;\n"
+          "  vec3 pos = " + std::string(mode_ == mode_t::TENSOR ? "new_vertex" : "vertex * amplitude"+VSout) + " * scale;\n"
           "  if (reverse != 0)\n"
           "    pos = -pos;\n";
           if (orthographic_) {
@@ -552,11 +554,13 @@ namespace MR
         Eigen::FullPivLU<tensor_t> lu_decomp (D);
         const tensor_t Dinv = lu_decomp.inverse();
         if (data[0] <= 0.0f || data[1] <= 0.0f || data[2] <= 0.0f || Dinv.diagonal().minCoeff() < 0.0f) {
+          gl::UniformMatrix3fv (gl::GetUniformLocation (parent.shader, "tensor"), 1, gl::FALSE_, D.data());
           const tensor_t Dinv = tensor_t::Zero();
           gl::UniformMatrix3fv (gl::GetUniformLocation (parent.shader, "inv_tensor"), 1, gl::FALSE_, Dinv.data());
           const vector_t dec = vector_t::Zero (3);
           gl::Uniform3fv (gl::GetUniformLocation (parent.shader, "dec"), 1, dec.data());
         } else {
+          gl::UniformMatrix3fv (gl::GetUniformLocation (parent.shader, "tensor"), 1, gl::FALSE_, D.data());
           gl::UniformMatrix3fv (gl::GetUniformLocation (parent.shader, "inv_tensor"), 1, gl::FALSE_, Dinv.data());
           eig.computeDirect (D);
           const vector_t dec = eig.eigenvectors().col(2).array().abs();
