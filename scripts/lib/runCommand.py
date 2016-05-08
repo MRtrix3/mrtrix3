@@ -30,7 +30,7 @@ def runCommand(cmd, exitOnError=True):
   if binary_name in mrtrix_bin_list:
     cmdsplit = cmd.split()
     binary_in_path = find_executable(binary_name)
-    if not binary_in_path or not os.path.samefile(binary_in_path, os.path.join(binary_name, mrtrix_bin_path)):
+    if not binary_in_path or not os.path.samefile(binary_in_path, os.path.join(mrtrix_bin_path, binary_name)):
       cmdsplit[0] =  os.path.join(mrtrix_bin_path, binary_name)
     for index, item in enumerate(cmdsplit):
       if item == '|':

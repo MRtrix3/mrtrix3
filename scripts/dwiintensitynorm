@@ -24,9 +24,6 @@ class Input:
     self.mask_filename = mask_filename
     self.mask_directory = mask_directory
 
-# workaround for wrong working dir in runCommand (os.path.realpath(sys.argv[0]))
-runCommand('pwd ')
-
 lib.app.author = 'David Raffelt (david.raffelt@florey.edu.au)'
 lib.app.initParser('Performs a global DWI intensity normalisation on a group of subjects using the median b=0 white matter value as the reference. The white matter mask is estimated from a population average FA template then warped back to each subject to perform the intensity normalisation. Note that bias field correction should be performed prior to this step.')
 lib.app.parser.add_argument('input_dir', help='The input directory containing all DWI images')
