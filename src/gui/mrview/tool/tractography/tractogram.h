@@ -73,6 +73,18 @@ namespace MR
 
             void set_colour (float c[3]) { colour = { c[0], c[1], c[2] }; }
 
+            float get_threshold_rate() const {
+              switch (threshold_type) {
+                case TrackThresholdType::None: return NaN;
+                case TrackThresholdType::UseColourFile: return scaling_rate();
+                case TrackThresholdType::SeparateFile: return (1e-3 * (threshold_max - threshold_min));
+              }
+              assert (0);
+              return NaN;
+            }
+            float get_threshold_min()  const { return threshold_min; }
+            float get_threshold_max()  const { return threshold_max; }
+
             bool scalarfile_by_direction;
             bool show_colour_bar;
             bool should_update_stride;
@@ -125,6 +137,10 @@ namespace MR
             GLint sample_stride;
             float line_thickness_screenspace;
             bool vao_dirty;
+
+            // Extra members now required since different scalar files
+            //   may be used for streamline colouring and thresholding
+            float threshold_min, threshold_max;
 
 
             void load_tracks_onto_GPU (std::vector<Eigen::Vector3f>& buffer,

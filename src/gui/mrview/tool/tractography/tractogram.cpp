@@ -332,7 +332,9 @@ namespace MR
             color_type (TrackColourType::Direction),
             threshold_type (TrackThresholdType::None),
             sample_stride (0),
-            vao_dirty (true)
+            vao_dirty (true),
+            threshold_min (NaN),
+            threshold_max (NaN)
         {
           set_allowed_features (true, true, true);
           colourmap = 1;
@@ -794,6 +796,96 @@ namespace MR
           threshold_scalar_filename = filename;
           greaterthan = value_max;
           lessthan = value_min;
+          if (!std::isfinite (greaterthan))
+            greaterthan = value_max;
+          if (!std::isfinite (lessthan))
+            lessthan = value_min;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        }
+
+
+
+        void Tractogram::load_threshold_track_scalars (const std::string& filename)
+        {
+          // Make sure to set graphics context!
+          // We're setting up vertex array objects
+          MRView::GrabContext context;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+
+          erase_threshold_scalar_data ();
+          threshold_min = std::numeric_limits<float>::infinity();
+          threshold_max = -std::numeric_limits<float>::infinity();
+          std::vector<float> buffer;
+          std::vector<float> tck_scalar;
+
+          if (Path::has_suffix (filename, ".tsf")) {
+            DWI::Tractography::Properties scalar_properties;
+            DWI::Tractography::ScalarReader<float> file (filename, scalar_properties);
+            DWI::Tractography::check_properties_match (properties, scalar_properties, ".tck / .tsf");
+            while (file (tck_scalar)) {
+
+              size_t tck_size = tck_scalar.size();
+
+              if(!tck_size)
+                continue;
+
+              // Pre padding to coincide with tracks buffer
+              for (size_t i = 0; i < max_sample_stride; ++i)
+                buffer.push_back (tck_scalar.front());
+
+              for (size_t i = 0; i < tck_size; ++i) {
+                buffer.push_back (tck_scalar[i]);
+                threshold_max = std::max (threshold_max, tck_scalar[i]);
+                threshold_min = std::min (threshold_min, tck_scalar[i]);
+              }
+
+              // Post padding to coincide with tracks buffer
+              for (size_t i = 0; i < max_sample_stride; ++i)
+                buffer.push_back (tck_scalar.back());
+
+              if (buffer.size() >= MAX_BUFFER_SIZE)
+                load_threshold_scalars_onto_GPU (buffer);
+            }
+            if (buffer.size())
+              load_threshold_scalars_onto_GPU (buffer);
+            file.close();
+          } else {
+            const Eigen::VectorXf scalars = MR::load_vector<float> (filename);
+            size_t total_num_tracks = 0;
+            for (std::vector<size_t>::const_iterator i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
+              total_num_tracks += *i;
+            if (size_t(scalars.size()) != total_num_tracks)
+              throw Exception ("The scalar text file does not contain the same number of elements as the selected tractogram");
+            size_t running_index = 0;
+
+            for (size_t buffer_index = 0; buffer_index != vertex_buffers.size(); ++buffer_index) {
+              const size_t num_tracks = num_tracks_per_buffer[buffer_index];
+              std::vector<GLint>& track_lengths (original_track_sizes[buffer_index]);
+
+              for (size_t index = 0; index != num_tracks; ++index, ++running_index) {
+                const float value = scalars[running_index];
+                tck_scalar.assign (track_lengths[index], value);
+
+                // Pre padding to coincide with tracks buffer
+                for (size_t i = 0; i < max_sample_stride; ++i)
+                  buffer.push_back (tck_scalar.front());
+
+                buffer.insert (buffer.end(), tck_scalar.begin(), tck_scalar.end());
+
+                // Post padding to coincide with tracks buffer
+                for (size_t i = 0; i < max_sample_stride; ++i)
+                  buffer.push_back (tck_scalar.back());
+
+                threshold_max = std::max (threshold_max, value);
+                threshold_min = std::min (threshold_min, value);
+              }
+
+              load_threshold_scalars_onto_GPU (buffer);
+            }
+          }
+          threshold_scalar_filename = filename;
+          greaterthan = threshold_max;
+          lessthan = threshold_min;
 
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
@@ -838,6 +930,7 @@ namespace MR
             threshold_scalar_buffers.clear();
           }
           threshold_scalar_filename.clear();
+          threshold_min = threshold_max = NaN;
           set_use_discard_lower (false);
           set_use_discard_upper (false);
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
@@ -856,6 +949,17 @@ namespace MR
         void Tractogram::set_threshold_type (const TrackThresholdType t)
         {
           threshold_type = t;
+          switch (threshold_type) {
+            case TrackThresholdType::None:
+              threshold_min = threshold_max = NaN;
+              break;
+            case TrackThresholdType::UseColourFile:
+              threshold_min = value_min;
+              threshold_max = value_max;
+              break;
+            case TrackThresholdType::SeparateFile:
+              break;
+          }
         }
 
 
