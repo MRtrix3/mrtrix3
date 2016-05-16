@@ -9,7 +9,7 @@ citationWarning = ''
 cleanup = True
 lastFile = ''
 mrtrixForce = ''
-mrtrixQuiet = '-quiet'
+mrtrixQuiet = ' -quiet'
 mrtrixNThreads = ''
 parser = ''
 refList = ''
@@ -119,10 +119,10 @@ def initialise():
   if args.nocleanup:
     cleanup = False
   if args.nthreads:
-    mrtrixNThreads = '-nthreads ' + args.nthreads
+    mrtrixNThreads = ' -nthreads ' + args.nthreads
   if args.quiet:
     verbosity = 0
-    mrtrixQuiet = '-quiet'
+    mrtrixQuiet = ' -quiet'
   if args.verbose:
     verbosity = 2
     mrtrixQuiet = ''
@@ -200,25 +200,29 @@ def complete():
     sys.stdout.write(os.path.basename(sys.argv[0]) + ': ' + colourPrint + 'Contents of temporary directory kept, location: ' + tempDir + colourClear + '\n')
     sys.stdout.flush()
 
+
+
 def make_dir(dir):
- import os
- if not os.path.exists(dir):
-   os.makedirs(dir)
+  import os
+  if not os.path.exists(dir):
+    os.makedirs(dir)
+
 
 
 # determines the common postfix for a list of filenames (including the file extension)
 def getCommonPostfix(inputFiles):
- first = inputFiles[0];
- cursor = 0
- found = False;
- common = ''
- for i in reversed(first):
-   if found == False:
-     for j in inputFiles:
-       if j[len(j)-cursor-1] != first[len(first)-cursor-1]:
-         found = True
-         break
-     if found == False:
-       common = first[len(first)-cursor-1] + common
-     cursor += 1
- return common
+  first = inputFiles[0];
+  cursor = 0
+  found = False;
+  common = ''
+  for i in reversed(first):
+    if found == False:
+      for j in inputFiles:
+        if j[len(j)-cursor-1] != first[len(first)-cursor-1]:
+          found = True
+          break
+      if found == False:
+        common = first[len(first)-cursor-1] + common
+      cursor += 1
+  return common
+

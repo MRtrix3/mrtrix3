@@ -35,11 +35,11 @@ def runCommand(cmd, exitOnError=True):
     for index, item in enumerate(cmdsplit):
       if item == '|':
         if lib.app.mrtrixNThreads:
-          cmdsplit[index] = lib.app.mrtrixNThreads + ' |'
+          cmdsplit[index] = lib.app.mrtrixNThreads.strip() + ' |'
         if lib.app.mrtrixQuiet:
-          cmdsplit[index] = lib.app.mrtrixQuiet + ' ' + cmdsplit[index]
-    cmdsplit.append(lib.app.mrtrixNThreads)
-    cmdsplit.append(lib.app.mrtrixQuiet)
+          cmdsplit[index] = lib.app.mrtrixQuiet.strip() + ' ' + cmdsplit[index]
+    cmdsplit.append(lib.app.mrtrixNThreads.strip())
+    cmdsplit.append(lib.app.mrtrixQuiet.strip())
     cmd = ' '.join(cmdsplit)
     
   if lib.app.verbosity:
