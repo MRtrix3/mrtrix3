@@ -17,12 +17,14 @@ List of MRtrix3 commands
 ################" > reference/commands_list.rst
 
   mkdir -p reference/commands
-  for n in ../cmd/*; do
+  for n in `find ../cmd/ -name "*.cpp" | sort`; do
     dirpath='reference/commands'
-    cmdname=`basename $n`
+    cmdname=${n##*/}
+    cmdname=${cmdname%".cpp"}
     cmdpath=$cmdname
     if [ "$OSTYPE" == "cygwin" ] || [ "$OSTYPE" == "msys" ] || [ "$OSTYPE" == "win32" ]; then
-      cmdpath=cmdpath+'.exe'
+      cmdpath=$cmdpath+'.exe'
+    fi
     $cmdpath __print_usage_rst__ > $dirpath/$cmdname.rst
     sed -ie "1i.. _$cmdname:\n\n$cmdname\n===========\n" $dirpath/$cmdname.rst
     echo "

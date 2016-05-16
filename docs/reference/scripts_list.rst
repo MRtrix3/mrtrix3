@@ -1,6 +1,6 @@
 
 ################
-Scripts for external libraries
+Python scripts provided with MRtrix3
 ################
 
 .. include:: scripts/5ttgen.rst

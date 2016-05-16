@@ -311,11 +311,11 @@ List of MRtrix3 commands
 .......
 
 
-.. include:: commands/tcksift.rst
+.. include:: commands/tcksift2.rst
 .......
 
 
-.. include:: commands/tcksift2.rst
+.. include:: commands/tcksift.rst
 .......
 
 
