@@ -291,7 +291,7 @@ namespace MR
         typename std::remove_reference<Functor>::type func;
 
         ThreadedLoopRunInner (const std::vector<size_t>& outer_axes, const std::vector<size_t>& inner_axes,
-            const Functor& functor, ImageType&... voxels) :
+            const Functor& functor, ImageType&... /*voxels*/) :
           outer_axes (outer_axes),
           loop (Loop (inner_axes)),
           func (functor) { }

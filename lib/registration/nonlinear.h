@@ -85,8 +85,8 @@ namespace MR
 
               auto padding = Eigen::Matrix<default_type, 4, 1>(0.0, 0.0, 0.0, 0.0);
               std::vector<Header> headers;
-              headers.push_back (im2_image);
-              headers.push_back (im1_image);
+              headers.push_back (Header (im2_image));
+              headers.push_back (Header (im1_image));
               midway_image_header = compute_minimum_average_header(headers, 1, padding, init_transforms);
             } else {
               // if initialising only perform optimisation at the full resolution level

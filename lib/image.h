@@ -449,7 +449,7 @@ namespace MR
 
 
   template <typename ValueType>
-    std::string Image<ValueType>::dump_to_mrtrix_file (std::string filename, bool use_multi_threading) const 
+    std::string Image<ValueType>::dump_to_mrtrix_file (std::string filename, bool) const 
     {
       if (!data_pointer || ( !Path::has_suffix (filename, ".mih") && !Path::has_suffix (filename, ".mif") ))
         throw Exception ("FIXME: image not suitable for use with 'Image::dump_to_mrtrix_file()'");
