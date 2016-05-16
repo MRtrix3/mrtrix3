@@ -124,8 +124,8 @@ namespace MR
           image (header().get_image<cfloat>()),
           linear_interp (image),
           nearest_interp (image),
-          slice_min { NaN, NaN, NaN },
-          slice_max { NaN, NaN, NaN }
+          slice_min { { NaN, NaN, NaN } },
+          slice_max { { NaN, NaN, NaN } }
       {
         set_colourmap (guess_colourmap());
         const std::map<std::string, std::string>::const_iterator i = header().keyval().find ("comments");

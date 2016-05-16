@@ -25,9 +25,9 @@ namespace MR
 
   template <typename ValueType>
     typename std::enable_if<!is_data_type<ValueType>::value, void>::type __set_fetch_store_functions (
-        std::function<ValueType(const void*,size_t,default_type,default_type)>& fetch_func,
-        std::function<void(ValueType,void*,size_t,default_type,default_type)>& store_func, 
-        DataType datatype) { }
+        std::function<ValueType(const void*,size_t,default_type,default_type)>& /*fetch_func*/,
+        std::function<void(ValueType,void*,size_t,default_type,default_type)>& /*store_func*/, 
+        DataType /*datatype*/) { }
 
 
 
