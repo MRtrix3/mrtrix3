@@ -1777,6 +1777,11 @@ namespace MR
               continue;
             }
 
+            if (opt.opt->is ("nointerpolation")) {
+              image_interpolate_action->setChecked (false);
+              image_interpolate_slot();
+            }
+
             if (opt.opt->is ("fps")) {
               show_FPS = true;
               continue;
@@ -1852,6 +1857,8 @@ namespace MR
           +   Argument ("x,y").type_sequence_int()
 
           + Option ("fullscreen", "Start fullscreen.")
+
+          + Option ("nointerpolation", "Disable interpolation of the image.")
 
           + Option ("exit", "quit MRView")
 

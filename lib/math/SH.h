@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 
 #ifndef __math_SH_h__
@@ -62,14 +62,14 @@ namespace MR
       {
         return (lmax/2+1) * (lmax/2+1);
       }
-      
+
       //! same as index(), but consider only non-negative orders \e m
       inline size_t index_mpos (int l, int m)
       {
         return l*l/4 + m;
       }
 
-      //! returns the largest \e lmax given \a N parameters 
+      //! returns the largest \e lmax given \a N parameters
       inline size_t LforN (int N)
       {
         return N ? 2 * std::floor<size_t> ( (std::sqrt (float (1+8*N))-3.0) /4.0) : 0;
@@ -77,7 +77,7 @@ namespace MR
 
 
 
-      //! form the SH->amplitudes matrix 
+      //! form the SH->amplitudes matrix
       /*! This computes the matrix \a SHT mapping spherical harmonic
        * coefficients up to maximum harmonic degree \a lmax onto directions \a
        * dirs (in spherical coordinates, with columns [ azimuth elevation ]). */
@@ -86,14 +86,14 @@ namespace MR
         {
           using namespace Eigen;
           typedef typename MatrixType::Scalar value_type;
-          if (dirs.cols() != 2) 
+          if (dirs.cols() != 2)
             throw Exception ("direction matrix should have 2 columns: [ azimuth elevation ]");
           Matrix<value_type,Dynamic,Dynamic> SHT (dirs.rows(), NforL (lmax));
           Matrix<value_type,Dynamic,1,0,64> AL (lmax+1);
           for (ssize_t i = 0; i < dirs.rows(); i++) {
             value_type x = std::cos (dirs (i,1));
             Legendre::Plm_sph (AL, lmax, 0, x);
-            for (int l = 0; l <= lmax; l+=2) 
+            for (int l = 0; l <= lmax; l+=2)
               SHT (i,index (l,0)) = AL[l];
             for (int m = 1; m <= lmax; m++) {
               Legendre::Plm_sph (AL, lmax, m, x);
@@ -116,7 +116,7 @@ namespace MR
 
       //! scale the coefficients of each SH degree by the corresponding value in \a coefs
       template <class MatrixType, class VectorType>
-        inline void scale_degrees_forward (MatrixType& SH2amp_mapping, const VectorType& coefs) 
+        inline void scale_degrees_forward (MatrixType& SH2amp_mapping, const VectorType& coefs)
         {
           ssize_t l = 0, nl = 1;
           for (ssize_t col = 0; col < SH2amp_mapping.cols(); ++col) {
@@ -132,7 +132,7 @@ namespace MR
 
       //! scale the coefficients of each SH degree by the corresponding value in \a coefs
       template <typename MatrixType, class VectorType>
-        inline void scale_degrees_inverse (MatrixType& amp2SH_mapping, const VectorType& coefs) 
+        inline void scale_degrees_inverse (MatrixType& amp2SH_mapping, const VectorType& coefs)
         {
           ssize_t l = 0, nl = 1;
           for (ssize_t row = 0; row < amp2SH_mapping.rows(); ++row) {
@@ -164,7 +164,7 @@ namespace MR
 
           template <class MatrixType>
             Transform (const MatrixType& dirs, int lmax) :
-              SHT (init_transform (dirs, lmax)), 
+              SHT (init_transform (dirs, lmax)),
               iSHT (pinv (SHT)) { }
 
           template <class VectorType>
@@ -202,17 +202,17 @@ namespace MR
 
 
       template <class VectorType>
-        inline typename VectorType::Scalar value (const VectorType& coefs, 
-            typename VectorType::Scalar cos_elevation, 
-            typename VectorType::Scalar cos_azimuth, 
-            typename VectorType::Scalar sin_azimuth, 
-            int lmax) 
+        inline typename VectorType::Scalar value (const VectorType& coefs,
+            typename VectorType::Scalar cos_elevation,
+            typename VectorType::Scalar cos_azimuth,
+            typename VectorType::Scalar sin_azimuth,
+            int lmax)
         {
           typedef typename VectorType::Scalar value_type;
           value_type amplitude = 0.0;
           Eigen::Matrix<value_type,Eigen::Dynamic,1,0,64> AL (lmax+1);
           Legendre::Plm_sph (AL, lmax, 0, cos_elevation);
-          for (int l = 0; l <= lmax; l+=2) 
+          for (int l = 0; l <= lmax; l+=2)
             amplitude += AL[l] * coefs[index (l,0)];
           value_type c0 (1.0), s0 (0.0);
           for (int m = 1; m <= lmax; m++) {
@@ -233,10 +233,10 @@ namespace MR
         }
 
       template <class VectorType>
-        inline typename VectorType::Scalar value (const VectorType& coefs, 
-            typename VectorType::Scalar cos_elevation, 
-            typename VectorType::Scalar azimuth, 
-            int lmax) 
+        inline typename VectorType::Scalar value (const VectorType& coefs,
+            typename VectorType::Scalar cos_elevation,
+            typename VectorType::Scalar azimuth,
+            int lmax)
         {
           return value (coefs, cos_elevation, std::cos(azimuth), std::sin(azimuth), lmax);
         }
@@ -371,7 +371,7 @@ namespace MR
         spherical2cartesian (const MatrixType1& az_el, MatrixType2&& cartesian)
         {
           cartesian.resize (az_el.rows(), 3);
-          for (ssize_t dir = 0; dir < az_el.rows(); ++dir) 
+          for (ssize_t dir = 0; dir < az_el.rows(); ++dir)
             spherical2cartesian (az_el.row (dir), cartesian.row (dir));
         }
 
@@ -381,7 +381,7 @@ namespace MR
         spherical2cartesian (const MatrixType& az_el)
         {
           Eigen::MatrixXd cartesian (az_el.rows(), 3);
-          for (ssize_t dir = 0; dir < az_el.rows(); ++dir) 
+          for (ssize_t dir = 0; dir < az_el.rows(); ++dir)
             spherical2cartesian (az_el.row (dir), cartesian.row (dir));
           return cartesian;
         }
@@ -396,7 +396,7 @@ namespace MR
           auto r = std::sqrt (Math::pow2(xyz[0]) + Math::pow2(xyz[1]) + Math::pow2(xyz[2]));
           az_el_r[0] = std::atan2 (xyz[1], xyz[0]);
           az_el_r[1] = std::acos (xyz[2] / r);
-          if (az_el_r.size() == 3) 
+          if (az_el_r.size() == 3)
             az_el_r[2] = r;
         }
 
@@ -406,7 +406,7 @@ namespace MR
         cartesian2spherical (const MatrixType1& cartesian, MatrixType2&& az_el, bool include_r = false)
         {
           az_el.allocate (cartesian.rows(), include_r ? 3 : 2);
-          for (ssize_t dir = 0; dir < cartesian.rows(); ++dir) 
+          for (ssize_t dir = 0; dir < cartesian.rows(); ++dir)
             cartesian2spherical (cartesian.row (dir), az_el.row (dir));
         }
 
@@ -416,7 +416,7 @@ namespace MR
         cartesian2spherical (const MatrixType& cartesian, bool include_r = false)
         {
           Eigen::MatrixXd az_el (cartesian.rows(), include_r ? 3 : 2);
-          for (ssize_t dir = 0; dir < cartesian.rows(); ++dir) 
+          for (ssize_t dir = 0; dir < cartesian.rows(); ++dir)
             cartesian2spherical (cartesian.row (dir), az_el.row (dir));
           return az_el;
         }
@@ -443,7 +443,7 @@ namespace MR
             for (int l = 0; l < lmax/2+1; l++) SHT (i,l) = AL[2*l];
           }
 
-          return (sh = pinv(SHT) * sigs); 
+          return (sh = pinv(SHT) * sigs);
         }
 
 
@@ -582,8 +582,8 @@ namespace MR
        * reduction in accuracy. */
       template <class VectorType, class UnitVectorType, class ValueType = float>
         inline typename VectorType::Scalar get_peak (
-            const VectorType& sh, 
-            int lmax, 
+            const VectorType& sh,
+            int lmax,
             UnitVectorType& unit_init_dir,
             PrecomputedAL<typename VectorType::Scalar>* precomputer = nullptr)
         {
@@ -614,7 +614,7 @@ namespace MR
             unit_init_dir[2] -= del*std::sin (el);
             unit_init_dir.normalize();
 
-            if (dt < ANGLE_TOLERANCE) 
+            if (dt < ANGLE_TOLERANCE)
               return amplitude;
           }
 
@@ -629,19 +629,19 @@ namespace MR
 
 
       //! computes first and second order derivatives of SH series
-      /*! This is used primarily in the get_peaks() function. */
+      /*! This is used primarily in the get_peak() function. */
       template <class VectorType>
         inline void derivatives (
-            const VectorType& sh, 
+            const VectorType& sh,
             const int lmax,
-            const typename VectorType::Scalar elevation, 
-            const typename VectorType::Scalar azimuth, 
+            const typename VectorType::Scalar elevation,
+            const typename VectorType::Scalar azimuth,
             typename VectorType::Scalar& amplitude,
-            typename VectorType::Scalar& dSH_del, 
-            typename VectorType::Scalar& dSH_daz, 
-            typename VectorType::Scalar& d2SH_del2, 
+            typename VectorType::Scalar& dSH_del,
+            typename VectorType::Scalar& dSH_daz,
+            typename VectorType::Scalar& d2SH_del2,
             typename VectorType::Scalar& d2SH_deldaz,
-            typename VectorType::Scalar& d2SH_daz2, 
+            typename VectorType::Scalar& d2SH_daz2,
             PrecomputedAL<typename VectorType::Scalar>* precomputer)
         {
           typedef typename VectorType::Scalar value_type;
@@ -802,7 +802,7 @@ namespace MR
           }
 
           inline const Eigen::Matrix<ValueType,Eigen::Dynamic,1>& RH_coefs() const { return RH; }
-          
+
 
         private:
           const size_t lmax;

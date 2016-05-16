@@ -71,11 +71,14 @@ namespace MR
               true),
 
           Entry ("Complex",
-              "float phase = atan (color.r, color.g) * 0.954929658551372;\n"
-              "color.rgb = phase + vec3 (-2.0, 0.0, 2.0);\n"
-              "if (phase > 2.0) color.b -= 6.0;\n"
-              "if (phase < -2.0) color.r += 6.0;\n"
-              "color.rgb = clamp (scale * (amplitude - offset), 0.0, 1.0) * (2.0 - abs (color.rgb));\n",
+              "float C = atan (color.g, color.r) / 1.047197551196598;\n"
+              "if (C < -2.0) color.rgb = vec3 (0.0, -C-2.0, 1.0);\n"
+              "else if (C < -1.0) color.rgb = vec3 (C+2.0, 0.0, 1.0);\n"
+              "else if (C < 0.0) color.rgb = vec3 (1.0, 0.0, -C);\n"
+              "else if (C < 1.0) color.rgb = vec3 (1.0, C, 0.0);\n"
+              "else if (C < 2.0) color.rgb = vec3 (2.0-C, 1.0, 0.0);\n"
+              "else color.rgb = vec3 (0.0, 1.0, C-2.0);\n"
+              "color.rgb = scale * (amplitude - offset) * color.rgb;\n",
               Entry::basic_map_fn(),
               "length (color.rg)",
               true),

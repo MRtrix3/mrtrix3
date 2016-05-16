@@ -40,7 +40,7 @@ namespace MR
 
 
 
-    //! convenience function to warp one DataSet onto another
+    //! convenience function to warp one image onto another
     /*! This function resamples (regrids) the Image \a source onto the
      * Image& \a destination, using the templated interpolator class and a supplied deformation field.
      *
@@ -77,7 +77,7 @@ namespace MR
            header.size(3) = 3;
            Stride::set (header, Stride::contiguous_along_axis (3));
            auto warp_resliced = Image<typename WarpType::value_type>::scratch (header);
-           reslice<Interp::Linear> (warp, warp_resliced);
+           reslice<Interp::Cubic> (warp, warp_resliced);
            Adapter::Warp<Interpolator, ImageTypeSource, Image<typename WarpType::value_type> > interp (source, warp_resliced, value_when_out_of_bounds);
 
            if (destination.ndim() == 4)
@@ -88,10 +88,10 @@ namespace MR
         // no need to reslice warp
         } else {
            Adapter::Warp<Interpolator, ImageTypeSource, Image<typename WarpType::value_type> > interp (source, warp, value_when_out_of_bounds);
-           if (destination.ndim() == 4)
+           if (destination.ndim() == 4 && destination.is_direct_io())
              ThreadedLoop ("warping \"" + source.name() + "\"", interp, 0, 3, 1).run (CopyKernel4D(), interp, destination);
            else
-             threaded_copy_with_progress_message ("warping \"" + source.name() + "\"", interp, destination);
+             threaded_copy_with_progress_message ("warping \"" + source.name() + "\"", interp, destination, 0, destination.ndim(), 2);
         }
       }
 

@@ -108,7 +108,7 @@ data type for the output image. For example::
 .. NOTE::
   Not all image formats support all possible datatypes. The MRtrix image file
   formats are designed to handle all of the possibilities listed below, while
-  other image formats may only support of subset. When a data type is requested
+  other image formats may only support a subset. When a data type is requested
   that isn't supported by the image format, a hopefully suitable alternative
   data type will be used instead.
 
@@ -206,7 +206,7 @@ to simply as the *transform*. You can view the transform for any image using
                          DOS: 03/10/2007 15:58:40
       dw_scheme:         [ 167 entries ]
 
-The 'transform' field above shows the first 3 rows of the transformation matrix
+The 'Transform' field above shows the first 3 rows of the transformation matrix
 (technically, this is a 4×4 matrix, but the last row is always set to ``[ 0 0 0
 1 ]``). The first 3 columns correspond to the *x*, *y* & *z* image axes
 respectively, while the last column corresponds to the location *in real
@@ -219,7 +219,7 @@ normalised to unit amplitude. This may differ from other packages.
 
 Furthermore, *MRtrix3* will always present the transform that best matches the
 real space. If the transform of the image on file represents a large rotation,
-such that for example the image *x* axis is more closely with the scanner's *z*
+such that for example the image *x* axis is closer to the scanner's *z*
 axis, this transform will be modified by permutation or inversion of the axes
 to bring it in alignment with the expected coordinate system, so that the first
 axis genuinely can be interpreted as approximately left-right, etc. To achieve

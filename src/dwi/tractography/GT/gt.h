@@ -34,7 +34,7 @@ namespace MR {
     namespace Tractography {
       namespace GT {
         
-        const double M_4PI = 4 * M_PI;
+        const double M_4PI = 4.0 * Math::pi;
         const double M_sqrt4PI = std::sqrt(M_4PI);
         
         

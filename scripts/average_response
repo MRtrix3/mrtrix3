@@ -4,7 +4,7 @@ import string
 
 
 if len(sys.argv) < 3 :
-  print "average_response response1.txt response2.txt response3.txt average_response.txt"
+  print "example usage: average_response input_response1.txt input_response2.txt input_response3.txt ... output_average_response.txt"
   exit(1)
 
 commandString = string.join(sys.argv[1:])

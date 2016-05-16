@@ -34,11 +34,10 @@ void usage ()
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   DESCRIPTION
-  + "Divide two fixel images";
+  + "compute the natural logarithm of all values in a fixel image";
 
   ARGUMENTS
-  + Argument ("input1", "the input fixel image.").type_image_in ()
-  + Argument ("input2", "the input fixel image.").type_image_in ()
+  + Argument ("input", "the input fixel image.").type_image_in ()
   + Argument ("output", "the output fixel image.").type_image_out ();
 }
 
@@ -46,20 +45,15 @@ void usage ()
 void run ()
 {
   auto header = Header::open (argument[0]);
-  Sparse::Image<FixelMetric> input1 (argument[0]);
-  Sparse::Image<FixelMetric> input2 (argument[1]);
+  Sparse::Image<FixelMetric> input (argument[0]);
 
-  check_dimensions (input1, input2);
+  Sparse::Image<FixelMetric> output (argument[1], header);
 
-  Sparse::Image<FixelMetric> output (argument[2], header);
-
-  for (auto i = Loop ("dividing fixel images", input1) (input1, input2, output); i; ++i) {
-    if (input1.value().size() != input2.value().size())
-      throw Exception ("the fixel images do not have corresponding fixels in all voxels");
-    output.value().set_size (input1.value().size());
-    for (size_t fixel = 0; fixel != input1.value().size(); ++fixel) {
-      output.value()[fixel] = input1.value()[fixel];
-      output.value()[fixel].value = input1.value()[fixel].value / input2.value()[fixel].value;
+  for (auto i = Loop ("computing log", input) (input, output); i; ++i) {
+    output.value().set_size (input.value().size());
+    for (size_t fixel = 0; fixel != input.value().size(); ++fixel) {
+      output.value()[fixel] = input.value()[fixel];
+      output.value()[fixel].value = std::log (input.value()[fixel].value);
     }
   }
 }

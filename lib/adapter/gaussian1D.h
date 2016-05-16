@@ -29,12 +29,14 @@ namespace MR
         Gaussian1D (const ImageType& parent,
                     default_type stdev_in = 1.0,
                     size_t axis_in = 0,
-                    size_t extent = 0) :
+                    size_t extent = 0,
+                    bool zero_boundary = false) :
           Base<ImageType> (parent),
           stdev (stdev_in),
-          axis (axis_in) {
+          axis (axis_in),
+          zero_boundary (zero_boundary) {
           if (!extent)
-            radius = ceil(2.5 * stdev / spacing(axis));
+            radius = ceil(2 * stdev / spacing(axis));
           else if (extent == 1)
             radius = 0;
           else
@@ -50,6 +52,11 @@ namespace MR
             return Base<ImageType>::value();
 
           const ssize_t pos = index (axis);
+
+          if (zero_boundary)
+            if (pos == 0 || pos == size(axis) - 1)
+              return 0.0;
+
           const ssize_t from = (pos < radius) ? 0 : pos - radius;
           const ssize_t to = (pos + radius) >= size(axis) ? size(axis) - 1 : pos + radius;
 
@@ -59,7 +66,7 @@ namespace MR
           for (ssize_t k = from; k <= to; ++k, ++c) {
             index (axis) = k;
             value_type neighbour_value = Base<ImageType>::value();
-            if (std::isfinite(neighbour_value)) {
+            if (std::isfinite (neighbour_value)) {
               av_weights += kernel[c];
               result += value_type (Base<ImageType>::value()) * kernel[c];
             }
@@ -96,6 +103,7 @@ namespace MR
         ssize_t radius;
         size_t axis;
         std::vector<default_type> kernel;
+        const bool zero_boundary;
       };
   }
 }

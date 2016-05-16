@@ -173,7 +173,7 @@ def checkOutputFile(path):
       warnMessage('Output file ' + os.path.basename(path) + ' already exists; will be overwritten at script completion')
       mrtrixForce = ' -force'
     else:
-      errorMessage('Output file ' + os.path.basename(path) + ' already exists (use -force to override)')
+      errorMessage('Output file ' + path + ' already exists (use -force to override)')
       sys.exit(1)
 
 
@@ -200,3 +200,25 @@ def complete():
     sys.stdout.write(os.path.basename(sys.argv[0]) + ': ' + colourPrint + 'Contents of temporary directory kept, location: ' + tempDir + colourClear + '\n')
     sys.stdout.flush()
 
+def make_dir(dir):
+ import os
+ if not os.path.exists(dir):
+   os.makedirs(dir)
+
+
+# determines the common postfix for a list of filenames (including the file extension)
+def getCommonPostfix(inputFiles):
+ first = inputFiles[0];
+ cursor = 0
+ found = False;
+ common = ''
+ for i in reversed(first):
+   if found == False:
+     for j in inputFiles:
+       if j[len(j)-cursor-1] != first[len(first)-cursor-1]:
+         found = True
+         break
+     if found == False:
+       common = first[len(first)-cursor-1] + common
+     cursor += 1
+ return common

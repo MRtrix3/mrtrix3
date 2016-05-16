@@ -33,10 +33,10 @@ namespace MR
         using Base<ImageType>::spacing;
 
         template <class VectorType>
-          Subset (const ImageType& original, const VectorType& from, const VectorType& dimensions) :
+          Subset (const ImageType& original, const VectorType& from, const VectorType& size) :
             Base<ImageType> (original),
             from_ (container_cast<decltype(from_)>(from)),
-            size_ (container_cast<decltype(size_)>(dimensions)),
+            size_ (container_cast<decltype(size_)>(size)),
             transform_ (original.transform()) {
 
               for (size_t n = 0; n < ndim(); ++n) 
