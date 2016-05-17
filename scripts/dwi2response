@@ -131,6 +131,6 @@ algorithm.execute()
 
 # Finalize for all algorithms
 if lib.app.args.voxels:
-  runCommand('mrconvert voxels.mif ' + os.path.join(lib.app.workingDir, lib.app.args.voxels) + lib.app.mrtrixForce)
+  runCommand('mrconvert voxels.mif "' + os.path.join(lib.app.workingDir, lib.app.args.voxels) + '"' + lib.app.mrtrixForce)
 lib.app.complete()
 
