@@ -307,8 +307,8 @@ void run ()
       Registration::Transform::Rigid transform;
       std::vector<Eigen::Transform<default_type, 3, Eigen::Projective> > init_transforms;
       Eigen::Matrix<default_type, 4, 1> padding (0.0, 0.0, 0.0, 0.0);
-      headers.push_back (input1);
-      headers.push_back (input2);
+      headers.push_back (Header (input1));
+      headers.push_back (Header (input2));
 
       Header midway_image_header = compute_minimum_average_header (headers, 1, padding, init_transforms);
 

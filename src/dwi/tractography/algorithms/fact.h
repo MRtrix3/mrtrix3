@@ -55,7 +55,14 @@ namespace MR
             throw Exception ("4th-order Runge-Kutta integration not valid for FACT algorithm");
 
           set_step_size (0.1);
-          max_angle *= vox() / step_size;
+          // If user specifies the angle threshold manually, want to enforce this as-is at each step
+          // If it's calculated automatically, it needs to be corrected for the fact that the permissible
+          //   angle per step has been calculated within set_step_size(), but FACT will not curve at each
+          //   step; only at the voxel transitions.
+          if (!App::get_options("angle").size()) {
+            max_angle *= vox() / step_size;
+            cos_max_angle = std::cos (max_angle);
+          }
           dot_threshold = std::cos (max_angle);
 
           properties["method"] = "FACT";

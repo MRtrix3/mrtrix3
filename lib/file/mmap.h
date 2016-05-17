@@ -53,7 +53,7 @@ namespace MR
          * the byte offset specified in \a entry will be mapped. 
          */
         MMap (const Entry& entry, bool readwrite = false, bool preload = true, int64_t mapped_size = -1);
-        ~MMap ();
+        ~MMap () noexcept (false);
 
         std::string name () const {
           return Entry::name;
