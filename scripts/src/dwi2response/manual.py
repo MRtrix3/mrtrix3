@@ -39,12 +39,20 @@ def execute():
   from lib.getHeaderInfo import getHeaderInfo
   from lib.runCommand    import runCommand
   
-  lmax_option = ''
-  if lib.app.args.lmax:
-    lmax_option = ' -lmax ' + lib.app.args.lmax
-  
   shells = [ int(round(float(x))) for x in getHeaderInfo('dwi.mif', 'shells').split() ]
-
+  
+  # Get lmax information (if provided)
+  lmax = [ ]
+  if lib.app.args.lmax:
+    lmax = [ int(x.strip()) for x in lib.app.args.lmax.split(',') ]
+    if not len(lmax) == len(shells):
+      errorMessage('Number of manually-defined lmax\'s (' + str(len(lmax)) + ') does not match number of b-value shells (' + str(len(shells)) + ')')
+    for l in lmax:
+      if l%2:
+        errorMessage('Values for lmax must be even')
+      if l<0:
+        errorMessage('Values for lmax must be non-negative')
+    
   # Do we have directions, or do we need to calculate them?
   if not os.path.exists('dirs.mif'):
     runCommand('dwi2tensor dwi.mif - -mask in_voxels.mif | tensor2metric - -vector dirs.mif')
@@ -53,6 +61,9 @@ def execute():
   response = [ ]
   max_length = 0
   for index, b in enumerate(shells):
+    lmax_option = ''
+    if lmax:
+      lmax_option = ' -lmax ' + str(lmax[index])
     runCommand('dwiextract dwi.mif - -shell ' + str(b) + ' | amp2sh - - | sh2response - in_voxels.mif dirs.mif response_b' + str(b) + '.txt' + lmax_option)
     shell_response = open('response_b' + str(b) + '.txt', 'r').read().split()
     response.append(shell_response)
