@@ -18,6 +18,8 @@ Description
 
 Diffusion (kurtosis) tensor estimation using iteratively reweighted linear least squares estimator.
 
+The tensor coefficients are stored in the output image as follows: volumes 0-5: D11, D22, D33, D12, D13, D23 ; If diffusion kurtosis is also estimated, these are stored as follows: volumes 6-8: W1111, W2222, W3333 ; volumes 9-14: W1112, W1113, W1222, W1333, W2223, W2333 ; volumes 15-17: W1122, W1133, W2233 ; volumes 18-20: W1123, W1223, W1233 ;
+
 Options
 -------
 
