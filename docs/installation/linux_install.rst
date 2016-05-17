@@ -16,6 +16,7 @@ To install *MRtrix3*, you will need the following:
 -  a `C++11 <https://en.wikipedia.org/wiki/C%2B%2B11>`__ compliant
    compiler (GCC version >= 4.8, clang)
 -  `Python <https://www.python.org/>`__ version >= 2.6
+-  `NumPy <http://www.numpy.org/>`__
 -  The `zlib <http://www.zlib.net/>`__ compression library
 -  `Eigen <http://eigen.tuxfamily.org>`__ version 3.2 *(do not install the beta version)*
 -  `Qt <http://www.qt.io/>`__ version >= 4.7 *[GUI components only]*
@@ -43,19 +44,19 @@ for hints on how to proceed in this case.
 
    ::
 
-       sudo apt-get install git g++ python libeigen3-dev zlib1g-dev libqt4-opengl-dev libgl1-mesa-dev
+       sudo apt-get install git g++ python numpy libeigen3-dev zlib1g-dev libqt4-opengl-dev libgl1-mesa-dev
 
 -  RPM-based distros (Fedora, CentOS):
 
    ::
 
-       sudo yum install git g++ python eigen3-devel zlib-devel libqt4-devel libgl1-mesa-dev
+       sudo yum install git g++ python numpy eigen3-devel zlib-devel libqt4-devel libgl1-mesa-dev
 
 -  Arch Linux:
 
    ::
 
-       sudo pacman -Syu git python gcc zlib eigen qt5-svg
+       sudo pacman -Syu git python numpy gcc zlib eigen qt5-svg
 
 If this doesn't work
 ^^^^^^^^^^^^^^^^^^^^
@@ -71,6 +72,8 @@ packages:
 -  your compiler (gcc 4.8 or above, or clang)
 
 -  Python version >2.6
+
+-  NumPy
 
 -  the zlib compression library and its corresponding development
    header/include files

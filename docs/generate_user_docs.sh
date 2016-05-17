@@ -23,7 +23,7 @@ List of MRtrix3 commands
     cmdname=${cmdname%".cpp"}
     cmdpath=$cmdname
     if [ "$OSTYPE" == "cygwin" ] || [ "$OSTYPE" == "msys" ] || [ "$OSTYPE" == "win32" ]; then
-      cmdpath=$cmdpath+'.exe'
+      cmdpath=${cmdpath}".exe"
     fi
     $cmdpath __print_usage_rst__ > $dirpath/$cmdname.rst
     sed -ie "1i.. _$cmdname:\n\n$cmdname\n===========\n" $dirpath/$cmdname.rst
