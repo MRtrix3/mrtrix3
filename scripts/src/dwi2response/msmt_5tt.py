@@ -54,7 +54,7 @@ def execute():
     errorMessage('Imported anatomical image ' + os.path.basename(lib.app.args.in_5tt) + ' is not in the 5TT format')
 
   # Get shell information
-  shells = [ float(x) for x in getHeaderInfo('dwi.mif', 'shells').split() ]
+  shells = [ int(round(float(x))) for x in getHeaderInfo('dwi.mif', 'shells').split() ]
   if len(shells) < 3:
     warnMessage('Less than three b-value shells; response functions will not be applicable in MSMT CSD algorithm')
 
@@ -67,6 +67,8 @@ def execute():
     for l in wm_lmax:
       if l%2:
         errorMessage('Values for lmax must be even')
+      if l<0:
+        errorMessage('Values for lmax must be non-negative')
 
   runCommand('dwi2tensor dwi.mif - -mask mask.mif | tensor2metric - -fa fa.mif -vector vector.mif')
   if not os.path.exists('dirs.mif'):
@@ -112,9 +114,8 @@ def execute():
   max_length = 0
 
   for index, b in enumerate(shells):
-    int_b = str(int(round(b)))
-    dwi_path = 'dwi_b' + int_b + '.mif'
-    mean_dwi_path = 'dwi_b' + int_b + '_mean.mif'
+    dwi_path = 'dwi_b' + str(b) + '.mif'
+    mean_dwi_path = 'dwi_b' + str(b) + '_mean.mif'
     # dwiextract will now yield a 4D image, even if there's only a single volume in a shell
     runCommand('dwiextract dwi.mif -shell ' + str(b) + ' ' + dwi_path)
     runCommand('mrmath ' + dwi_path + ' mean ' + mean_dwi_path + ' -axis 3')
@@ -125,8 +126,8 @@ def execute():
     this_b_lmax_option = ''
     if wm_lmax:
       this_b_lmax_option = ' -lmax ' + str(wm_lmax[index])
-    runCommand('amp2sh ' + dwi_path + ' - | sh2response - wm_sf_mask.mif dirs.mif wm_response_b' + int_b + '.txt' + this_b_lmax_option)
-    wm_response = open('wm_response_b' + int_b + '.txt', 'r').read().split()
+    runCommand('amp2sh ' + dwi_path + ' - | sh2response - wm_sf_mask.mif dirs.mif wm_response_b' + str(b) + '.txt' + this_b_lmax_option)
+    wm_response = open('wm_response_b' + str(b) + '.txt', 'r').read().split()
     wm_responses.append(wm_response)
     max_length = max(max_length, len(wm_response))
 
