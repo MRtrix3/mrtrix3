@@ -33,7 +33,7 @@ using namespace App;
 void usage ()
 {
 
-	AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
   + "convert a mesh surface to a partial volume estimation image.";

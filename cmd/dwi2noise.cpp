@@ -29,6 +29,9 @@ using namespace App;
 
 void usage ()
 {
+
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
+
   DESCRIPTION
   + "estimate noise level voxel-wise using residuals from a truncated SH fit";
 

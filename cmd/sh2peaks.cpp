@@ -31,6 +31,8 @@ using namespace App;
 
 void usage ()
 {
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
+
   DESCRIPTION
     + "extract the peaks of a spherical harmonic function at each voxel, by commencing a Newton search along a set of specified directions";
 

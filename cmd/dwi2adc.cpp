@@ -29,6 +29,8 @@ using namespace std;
 
 void usage ()
 {
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
+
   DESCRIPTION 
     + "convert mean dwi (trace-weighted) images to mean adc maps";
 

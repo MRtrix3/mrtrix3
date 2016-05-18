@@ -28,7 +28,9 @@
 using namespace MR;
 using namespace App;
 
-void usage () {
+void usage ()
+{
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   DESCRIPTION
     + "optimise the polarity of the directions in a scheme with respect to a "

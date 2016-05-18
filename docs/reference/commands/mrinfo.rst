@@ -95,7 +95,7 @@ Standard options
 
 
 
-**Author:** Robert Smith (r.smith@brain.org.au) and J-Donald Tournier (d.tournier@brain.org.au)
+**Author:** J-Donald Tournier (d.tournier@brain.org.au) and Robert E. Smith (robert.smith@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
 
