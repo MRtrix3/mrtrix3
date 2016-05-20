@@ -45,7 +45,7 @@ using namespace App;
 
 void usage ()
 {
-  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
   + "compare two peak images for differences, within specified tolerance.";
