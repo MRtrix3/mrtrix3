@@ -49,6 +49,8 @@ using namespace App;
 
 void usage ()
 {
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
+
   DESCRIPTION
   + "compare two fixel images for differences, within specified tolerance.";
 
