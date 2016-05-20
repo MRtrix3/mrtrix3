@@ -103,7 +103,7 @@ void run ()
         from.push_back (lower_corners[in][axis]);
         dimensions.push_back (upper_corners[in][axis] - lower_corners[in][axis] + 1);
       }
-      Adapter::Subset<decltype(labels)> subset (labels, from, dimensions);
+      Adapter::Subset<Image<uint32_t>> subset (labels, from, dimensions);
 
       auto scratch = Image<bool>::scratch (subset, "Node " + str(in) + " mask");
       for (auto i = Loop (subset) (subset, scratch); i; ++i)
