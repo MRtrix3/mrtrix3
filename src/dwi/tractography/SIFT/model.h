@@ -194,7 +194,6 @@ namespace MR
               max_index = std::max (max_index, i);
             }
             WARN ("Only " + str (num_tracks) + " tracks read from input track file; expected " + str (contributions.size()));
-            WARN ("(suggest running command tckfixcount on file " + path + ")");
             contributions.resize (max_index + 1);
           }
         }
@@ -340,32 +339,38 @@ namespace MR
         if (master.contributions[in.index])
           throw Exception ("FIXME: Same streamline has been mapped multiple times! (?)");
 
-        std::vector<Track_fixel_contribution> masked_contributions;
-        double total_contribution = 0.0, total_length = 0.0;
+        try {
 
-        for (Mapping::SetDixel::const_iterator i = in.begin(); i != in.end(); ++i) {
-          total_length += i->get_length();
-          const size_t fixel_index = master.dixel2fixel (*i);
-          if (fixel_index && (i->get_length() > Track_fixel_contribution::min())) {
-            total_contribution += i->get_length() * master.fixels[fixel_index].get_weight();
-            bool incremented = false;
-            for (std::vector<Track_fixel_contribution>::iterator c = masked_contributions.begin(); !incremented && c != masked_contributions.end(); ++c) {
-              if ((c->get_fixel_index() == fixel_index) && c->add (i->get_length()))
-                incremented = true;
+          std::vector<Track_fixel_contribution> masked_contributions;
+          double total_contribution = 0.0, total_length = 0.0;
+
+          for (Mapping::SetDixel::const_iterator i = in.begin(); i != in.end(); ++i) {
+            total_length += i->get_length();
+            const size_t fixel_index = master.dixel2fixel (*i);
+            if (fixel_index && (i->get_length() > Track_fixel_contribution::min())) {
+              total_contribution += i->get_length() * master.fixels[fixel_index].get_weight();
+              bool incremented = false;
+              for (std::vector<Track_fixel_contribution>::iterator c = masked_contributions.begin(); !incremented && c != masked_contributions.end(); ++c) {
+                if ((c->get_fixel_index() == fixel_index) && c->add (i->get_length()))
+                  incremented = true;
+              }
+              if (!incremented)
+                masked_contributions.push_back (Track_fixel_contribution (fixel_index, i->get_length()));
             }
-            if (!incremented)
-              masked_contributions.push_back (Track_fixel_contribution (fixel_index, i->get_length()));
           }
+
+          master.contributions[in.index] = new TrackContribution (masked_contributions, total_contribution, total_length);
+
+          TD_sum += total_contribution;
+          for (std::vector<Track_fixel_contribution>::const_iterator i = masked_contributions.begin(); i != masked_contributions.end(); ++i)
+            fixel_TDs [i->get_fixel_index()] += i->get_length();
+
+          return true;
+
+        } catch (...) {
+          throw Exception ("Error allocating memory for streamline visitations");
+          return false;
         }
-
-        master.contributions[in.index] = new TrackContribution (masked_contributions, total_contribution, total_length);
-
-        TD_sum += total_contribution;
-        for (std::vector<Track_fixel_contribution>::const_iterator i = masked_contributions.begin(); i != masked_contributions.end(); ++i)
-          fixel_TDs [i->get_fixel_index()] += i->get_length();
-
-        return true;
-
       }
 
 
