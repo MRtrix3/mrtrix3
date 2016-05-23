@@ -184,7 +184,11 @@ namespace MR {
       void TckFactor::estimate_factors()
       {
 
-        coefficients = decltype(coefficients)::Zero (num_tracks());
+        try {
+          coefficients = decltype(coefficients)::Zero (num_tracks());
+        } catch (...) {
+          throw Exception ("Error assigning memory for streamline weights vector");
+        }
 
         const double init_cf = calc_cost_function();
         double cf_data = init_cf;
@@ -319,10 +323,14 @@ namespace MR {
       {
         if (size_t(coefficients.size()) != contributions.size())
           throw Exception ("Cannot output weighting factors if they have not first been estimated!");
-        decltype(coefficients) weights (coefficients.size());
-        for (SIFT::track_t i = 0; i != num_tracks(); ++i)
-          weights[i] = std::exp (coefficients[i]);
-        save_vector (weights, path);
+        try {
+          decltype(coefficients) weights (coefficients.size());
+          for (SIFT::track_t i = 0; i != num_tracks(); ++i)
+            weights[i] = std::exp (coefficients[i]);
+          save_vector (weights, path);
+        } catch (...) {
+          WARN ("Unable to assign memory for output factor file: \"" + Path::basename(path) + "\" not created");
+        }
       }
 
 

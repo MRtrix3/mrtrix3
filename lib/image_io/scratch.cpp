@@ -30,8 +30,12 @@ namespace MR
     {
       assert (buffer_size);
       DEBUG ("allocating scratch buffer for image \"" + header.name() + "\"...");
-      addresses.push_back (std::unique_ptr<uint8_t[]> (new uint8_t [buffer_size]));
-      memset (addresses[0].get(), 0, buffer_size);
+      try {
+        addresses.push_back (std::unique_ptr<uint8_t[]> (new uint8_t [buffer_size]));
+        memset (addresses[0].get(), 0, buffer_size);
+      } catch (...) {
+        throw Exception ("Error allocating memory for scratch buffer");
+      }
     }
 
 
