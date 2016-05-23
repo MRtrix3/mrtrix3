@@ -53,7 +53,7 @@ Response function estimation
 To perform spherical deconvolution, the DWI signal emanating from a
 single coherently-oriented fibre bundle must be estimated. We provide a
 script for doing this, which has :ref:`a range of algorithms and
-parameters <_response_fn_estimation>`. This example will use
+parameters <response_fn_estimation>`. This example will use
 fairly sensible defaults:
 
 .. code::
