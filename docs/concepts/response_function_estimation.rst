@@ -1,7 +1,7 @@
 .. _response_fn_estimation:
 
 Response function estimation
-============
+============================
 
 A compulsory step in spherical deconvolution is deriving the 'response
 function (RF)', which is used as the kernel during the deconvolution
