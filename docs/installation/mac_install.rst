@@ -119,7 +119,7 @@ Set up *MRtrix3*
 
    ::
 
-       echo PATH=$(pwd)/release/bin:$(pwd)/scripts:\$PATH >> ~/.bashrc
+       echo "export PATH=$(pwd)/release/bin:$(pwd)/scripts:$PATH" >> ~/.bashrc
 
 2. Close the terminal and start another one to ensure the startup file
    is read (or just type 'bash')
