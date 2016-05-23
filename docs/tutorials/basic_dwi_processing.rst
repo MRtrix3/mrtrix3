@@ -53,15 +53,13 @@ Response function estimation
 To perform spherical deconvolution, the DWI signal emanating from a
 single coherently-oriented fibre bundle must be estimated. We provide a
 script for doing this, which has `a range of algorithms and
-parameters <Response-function-estimation>`__. This example will use
+parameters <concepts/Response-function-estimation>`__. This example will use
 fairly sensible defaults:
 
 .. code::
 
     $ dwi2response tournier <Input DWI> <Output response text file>
     $ shview <Output response text file>
-
-``dwi2response tournier <Input DWI> <Output response text file>``
 
 Fibre Orientation Distribution estimation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
