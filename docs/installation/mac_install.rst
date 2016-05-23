@@ -119,7 +119,7 @@ Set up *MRtrix3*
 
    ::
 
-       echo "export PATH=$(pwd)/release/bin:$(pwd)/scripts:$PATH" >> ~/.bashrc
+       echo "export PATH=$(pwd)/release/bin:$(pwd)/scripts:$PATH" >> ~/.profile
 
 2. Close the terminal and start another one to ensure the startup file
    is read (or just type 'bash')
@@ -127,6 +127,10 @@ Set up *MRtrix3*
 3. type ``mrview`` to check that everything works
 
 4. You may also want to have a look through the `configuration file options <config_file_options>`_ and set anything you think might be required on your system.
+
+  .. NOTE:: 
+    The above assumes that your shell will read the `~/.profile` file at startup time. This is not always guaranteed, depending on how your system is configured. If you find that the above doesn' work (e.g. typing `mrview` returns a 'command not found' error), try writing the updated PATH to a different file, for example `~/.bash_profile` or `~/.bashrc`. In other words, amend the command in step 1 to end with `... >> ~/.bash_profile`, and see whether this allows `mrview` to run from a fresh terminal. 
+
 
 Keeping *MRtrix3*  up to date
 --------------------------
