@@ -20,15 +20,16 @@ def checkOutputFiles():
 def getInputFiles():
   import os
   import lib.app
+  from lib.getUserPath   import getUserPath
   from lib.runCommand  import runCommand
   from lib.warnMessage import warnMessage
   mask_path = os.path.join(lib.app.tempDir, 'mask.mif')
   if os.path.exists(mask_path):
     warnMessage('-mask option is ignored by algorithm \'manual\'')
     os.remove(mask_path)
-  runCommand('mrconvert ' + lib.app.args.in_voxels + ' ' + os.path.join(lib.app.tempDir, 'in_voxels.mif'))
+  runCommand('mrconvert ' + getUserPath(lib.app.args.in_voxels, True) + ' ' + os.path.join(lib.app.tempDir, 'in_voxels.mif'))
   if lib.app.args.dirs:
-    runCommand('mrconvert ' + lib.app.args.dirs + ' ' + os.path.join(lib.app.tempDir, 'dirs.mif') + ' -stride 0,0,0,1')
+    runCommand('mrconvert ' + getUserPath(lib.app.args.dirs, True) + ' ' + os.path.join(lib.app.tempDir, 'dirs.mif') + ' -stride 0,0,0,1')
 
 
 
@@ -37,7 +38,7 @@ def execute():
   import lib.app
   from lib.errorMessage  import errorMessage
   from lib.getHeaderInfo import getHeaderInfo
-  from lib.getOutputPath import getOutputPath
+  from lib.getUserPath   import getUserPath
   from lib.runCommand    import runCommand
   
   shells = [ int(round(float(x))) for x in getHeaderInfo('dwi.mif', 'shells').split() ]
@@ -75,6 +76,6 @@ def execute():
       line += ['0'] * (max_length - len(line))
       f.write(' '.join(line) + '\n')
 
-  shutil.copyfile('response.txt', getOutputPath(lib.app.args.output, False))
+  shutil.copyfile('response.txt', getUserPath(lib.app.args.output, False))
   shutil.copyfile('in_voxels.mif', 'voxels.mif')
 

@@ -27,10 +27,11 @@ def checkOutputFiles():
 def getInputFiles():
   import os
   import lib.app
-  from lib.runCommand import runCommand
-  runCommand('mrconvert ' + lib.app.args.in_5tt + ' ' + os.path.join(lib.app.tempDir, '5tt.mif'))
+  from lib.getUserPath import getUserPath
+  from lib.runCommand  import runCommand
+  runCommand('mrconvert ' + getUserPath(lib.app.args.in_5tt, True) + ' ' + os.path.join(lib.app.tempDir, '5tt.mif'))
   if lib.app.args.dirs:
-    runCommand('mrconvert ' + lib.app.args.dirs + ' ' + os.path.join(lib.app.tempDir, 'dirs.mif') + ' -stride 0,0,0,1')
+    runCommand('mrconvert ' + getUserPath(lib.app.args.dirs, True) + ' ' + os.path.join(lib.app.tempDir, 'dirs.mif') + ' -stride 0,0,0,1')
 
 
 
@@ -39,7 +40,7 @@ def execute():
   import lib.app
   from lib.getHeaderInfo import getHeaderInfo
   from lib.getImageStat  import getImageStat
-  from lib.getOutputPath import getOutputPath
+  from lib.getUserPath   import getUserPath
   from lib.printMessage  import printMessage
   from lib.runCommand    import runCommand
   from lib.warnMessage   import warnMessage
@@ -143,9 +144,9 @@ def execute():
     for line in csf_responses:
       f.write(line + '\n')
 
-  shutil.copyfile('gm.txt',  getOutputPath(lib.app.args.out_gm,  False))
-  shutil.copyfile('wm.txt',  getOutputPath(lib.app.args.out_wm,  False))
-  shutil.copyfile('csf.txt', getOutputPath(lib.app.args.out_csf, False))
+  shutil.copyfile('gm.txt',  getUserPath(lib.app.args.out_gm,  False))
+  shutil.copyfile('wm.txt',  getUserPath(lib.app.args.out_wm,  False))
+  shutil.copyfile('csf.txt', getUserPath(lib.app.args.out_csf, False))
 
   # Generate output 4D binary image with voxel selections
   runCommand('mrcat gm_mask.mif wm_sf_mask.mif csf_mask.mif voxels.mif -axis 3')
