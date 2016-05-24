@@ -18,12 +18,12 @@
 import os, sys
 import lib.app
 
-from lib.binaryInPath  import binaryInPath
-from lib.errorMessage  import errorMessage
-from lib.isWindows     import isWindows
-from lib.getOutputPath import getOutputPath
-from lib.printMessage  import printMessage
-from lib.runCommand    import runCommand
+from lib.binaryInPath import binaryInPath
+from lib.errorMessage import errorMessage
+from lib.isWindows    import isWindows
+from lib.getUserPath  import getUserPath
+from lib.printMessage import printMessage
+from lib.runCommand   import runCommand
 
 lib.app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
 lib.app.initCitations([ 'first', 'FSL', 'SIFT_followup' ])
@@ -76,8 +76,8 @@ with open(lib.app.args.config) as f:
        config[line[1]] = line[0] # This can remain as a string
 
 # Get the parcellation and T1 images into the temporary directory, with conversion of the T1 into the correct format for FSL
-runCommand('mrconvert ' + lib.app.args.parc + ' ' + os.path.join(lib.app.tempDir, 'parc.mif'))
-runCommand('mrconvert ' + lib.app.args.t1   + ' ' + os.path.join(lib.app.tempDir, 'T1.nii') + ' -stride -1,+2,+3')
+runCommand('mrconvert ' + getUserPath(lib.app.args.parc, True) + ' ' + os.path.join(lib.app.tempDir, 'parc.mif'))
+runCommand('mrconvert ' + getUserPath(lib.app.args.t1, True)   + ' ' + os.path.join(lib.app.tempDir, 'T1.nii') + ' -stride -1,+2,+3')
 
 lib.app.gotoTempDir()
 
@@ -114,7 +114,7 @@ for struct in structure_map.keys():
 result_path = 'result' + os.path.splitext(lib.app.args.output)[1]
 runCommand('mrmath ' + ' '.join(mask_list) + ' sum - | mrcalc - 1 -gt overlap_mask.mif')
 runCommand('mrcalc overlap_mask.mif 0 parc.mif -if result.mif')
-runCommand('mrconvert result.mif ' + getOutputPath(lib.app.args.output, True) + lib.app.mrtrixForce)
+runCommand('mrconvert result.mif ' + getUserPath(lib.app.args.output, True) + lib.app.mrtrixForce)
 
 lib.app.complete()
 

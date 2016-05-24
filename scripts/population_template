@@ -15,7 +15,7 @@ def relpath(*arg):
 
 from lib.errorMessage  import errorMessage
 from lib.getHeaderInfo import getHeaderInfo
-from lib.getOutputPath import getOutputPath
+from lib.getUserPath   import getUserPath
 from lib.printMessage  import printMessage
 from lib.runCommand    import runCommand
 from lib.warnMessage   import warnMessage
@@ -354,16 +354,16 @@ for level in range(0, len(nl_scales)):
         runCommand('mv tmp.mif warps/' + i.prefix + '.mif')
 
 
-runCommand('mrconvert ' + current_template + ' ' + getOutputPath(lib.app.args.template) + lib.app.mrtrixForce)
+runCommand('mrconvert ' + current_template + ' ' + getUserPath(lib.app.args.template) + lib.app.mrtrixForce)
 
 if lib.app.args.warp_dir:
-  shutil.copy('warps/', getOutputPath(lib.app.args.warp_dir, False))
+  shutil.copy('warps/', getUserPath(lib.app.args.warp_dir, False))
 
 if lib.app.args.transformed_dir:
-  shutil.copy('input_transformed/', getOutputPath(lib.app.args.transformed_dir, False))
+  shutil.copy('input_transformed/', getUserPath(lib.app.args.transformed_dir, False))
 
 if lib.app.args.template_mask:
-  runCommand('mrconvert ' + current_template_mask + ' ' + getOutputPath(lib.app.args.template_mask, True) + lib.app.mrtrixForce)
+  runCommand('mrconvert ' + current_template_mask + ' ' + getUserPath(lib.app.args.template_mask, True) + lib.app.mrtrixForce)
 
 lib.app.complete()
 

@@ -10,8 +10,8 @@
 import argparse, os, sys
 import lib.app
 
-from lib.getOutputPath import getOutputPath
-from lib.runCommand    import runCommand
+from lib.getUserPath import getUserPath
+from lib.runCommand  import runCommand
 
 lib.app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
 lib.app.initCitations([ 'ACT', 'bet', 'fast', 'first', 'FSL' ])
@@ -43,13 +43,13 @@ algorithm = getattr(_5ttgen, lib.app.args.algorithm)
 lib.app.checkOutputFile(lib.app.args.output)
 algorithm.checkOutputFiles()
 
-runCommand('mrconvert ' + lib.app.args.input + ' ' + os.path.join(lib.app.tempDir, 'input.mif'))
+runCommand('mrconvert ' + getUserPath(lib.app.args.input, True) + ' ' + os.path.join(lib.app.tempDir, 'input.mif'))
 algorithm.getInputFiles()
 
 lib.app.gotoTempDir()
 
 algorithm.execute()
 
-runCommand('mrconvert result.mif ' + getOutputPath(lib.app.args.output, True) + lib.app.mrtrixForce)
+runCommand('mrconvert result.mif ' + getUserPath(lib.app.args.output, True) + lib.app.mrtrixForce)
 lib.app.complete()
 
