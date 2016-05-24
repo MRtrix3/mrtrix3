@@ -14,6 +14,7 @@ def relpath(*arg):
 from lib.printMessage  import printMessage
 from lib.errorMessage  import errorMessage
 from lib.getHeaderInfo import getHeaderInfo
+from lib.getOutputPath import getOutputPath
 from lib.runCommand    import runCommand
 
 class Input:
@@ -91,10 +92,10 @@ runCommand('mrthreshold fa_template.mif -abs ' +  lib.app.args.fa_threshold + ' 
 lib.app.make_dir('wm_mask_warped')
 for i in input:
   runCommand('mrtransform template_wm_mask.mif -interp nearest -warp_full warps/' + i.prefix + '.mif wm_mask_warped/' + i.prefix + '.mif -from 2 -template fa/' + i.prefix + '.mif')
-  runCommand('dwinormalise ' + abspath(i.directory, i.filename) + ' wm_mask_warped/' + i.prefix + '.mif ' + abspath (lib.app.workingDir, lib.app.args.output_dir, i.filename) + lib.app.mrtrixForce)
+  runCommand('dwinormalise ' + abspath(i.directory, i.filename) + ' wm_mask_warped/' + i.prefix + '.mif ' + getOutputPath(os.path.join(lib.app.args.output_dir, i.filename), True) + lib.app.mrtrixForce)
 
-runCommand('mrconvert template_wm_mask.mif ' + abspath(lib.app.workingDir, lib.app.args.wm_mask) + lib.app.mrtrixForce)
-runCommand('mrconvert fa_template.mif ' + abspath(lib.app.workingDir, lib.app.args.fa_template) + lib.app.mrtrixForce)
+runCommand('mrconvert template_wm_mask.mif ' + getOutputPath(lib.app.args.wm_mask, True) + lib.app.mrtrixForce)
+runCommand('mrconvert fa_template.mif ' + getOutputPath(lib.app.args.fa_template, True) + lib.app.mrtrixForce)
 
 lib.app.complete()
 

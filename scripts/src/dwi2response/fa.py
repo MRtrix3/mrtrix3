@@ -27,7 +27,8 @@ def getInputFiles():
 def execute():
   import os, shutil
   import lib.app
-  from lib.runCommand import runCommand
+  from lib.getOutputPath import getOutputPath
+  from lib.runCommand    import runCommand
   lmax_option = ''
   if lib.app.args.lmax:
     lmax_option = ' -lmax ' + lib.app.args.lmax
@@ -45,5 +46,5 @@ def execute():
   runCommand('amp2sh dwi.mif dwiSH.mif' + lmax_option)
   runCommand('sh2response dwiSH.mif voxels.mif vector.mif response.txt' + lmax_option)
 
-  shutil.copyfile('response.txt', os.path.join(lib.app.workingDir, lib.app.args.output))
+  shutil.copyfile('response.txt', getOutputPath(lib.app.args.output, False))
 

@@ -10,6 +10,7 @@ import lib.app
 from lib.errorMessage  import errorMessage
 from lib.getHeaderInfo import getHeaderInfo
 from lib.getImageStat  import getImageStat
+from lib.getOutputPath import getOutputPath
 from lib.printMessage  import printMessage
 from lib.runCommand    import runCommand
 from lib.warnMessage   import warnMessage
@@ -131,6 +132,6 @@ algorithm.execute()
 
 # Finalize for all algorithms
 if lib.app.args.voxels:
-  runCommand('mrconvert voxels.mif ' + os.path.join(lib.app.workingDir, lib.app.args.voxels) + lib.app.mrtrixForce)
+  runCommand('mrconvert voxels.mif ' + getOutputPath(lib.app.args.voxels, True) + lib.app.mrtrixForce)
 lib.app.complete()
 

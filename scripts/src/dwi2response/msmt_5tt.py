@@ -39,6 +39,7 @@ def execute():
   import lib.app
   from lib.getHeaderInfo import getHeaderInfo
   from lib.getImageStat  import getImageStat
+  from lib.getOutputPath import getOutputPath
   from lib.printMessage  import printMessage
   from lib.runCommand    import runCommand
   from lib.warnMessage   import warnMessage
@@ -142,9 +143,9 @@ def execute():
     for line in csf_responses:
       f.write(line + '\n')
 
-  shutil.copyfile('gm.txt',  os.path.join(lib.app.workingDir, lib.app.args.out_gm))
-  shutil.copyfile('wm.txt',  os.path.join(lib.app.workingDir, lib.app.args.out_wm))
-  shutil.copyfile('csf.txt', os.path.join(lib.app.workingDir, lib.app.args.out_csf))
+  shutil.copyfile('gm.txt',  getOutputPath(lib.app.args.out_gm,  False))
+  shutil.copyfile('wm.txt',  getOutputPath(lib.app.args.out_wm,  False))
+  shutil.copyfile('csf.txt', getOutputPath(lib.app.args.out_csf, False))
 
   # Generate output 4D binary image with voxel selections
   runCommand('mrcat gm_mask.mif wm_sf_mask.mif csf_mask.mif voxels.mif -axis 3')

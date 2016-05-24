@@ -10,7 +10,8 @@
 import argparse, os, sys
 import lib.app
 
-from lib.runCommand   import runCommand
+from lib.getOutputPath import getOutputPath
+from lib.runCommand    import runCommand
 
 lib.app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
 lib.app.initCitations([ 'ACT', 'bet', 'fast', 'first', 'FSL' ])
@@ -49,6 +50,6 @@ lib.app.gotoTempDir()
 
 algorithm.execute()
 
-runCommand('mrconvert result.mif ' + os.path.join(lib.app.workingDir, lib.app.args.output) + lib.app.mrtrixForce)
+runCommand('mrconvert result.mif ' + getOutputPath(lib.app.args.output, True) + lib.app.mrtrixForce)
 lib.app.complete()
 

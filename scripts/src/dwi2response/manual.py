@@ -37,6 +37,7 @@ def execute():
   import lib.app
   from lib.errorMessage  import errorMessage
   from lib.getHeaderInfo import getHeaderInfo
+  from lib.getOutputPath import getOutputPath
   from lib.runCommand    import runCommand
   
   shells = [ int(round(float(x))) for x in getHeaderInfo('dwi.mif', 'shells').split() ]
@@ -74,6 +75,6 @@ def execute():
       line += ['0'] * (max_length - len(line))
       f.write(' '.join(line) + '\n')
 
-  shutil.copyfile('response.txt', os.path.join(lib.app.workingDir, lib.app.args.output))
+  shutil.copyfile('response.txt', getOutputPath(lib.app.args.output, False))
   shutil.copyfile('in_voxels.mif', 'voxels.mif')
 

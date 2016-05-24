@@ -26,9 +26,10 @@ def getInputFiles():
 def execute():
   import math, os, shutil
   import lib.app
-  from lib.getImageStat import getImageStat
-  from lib.printMessage import printMessage
-  from lib.runCommand   import runCommand
+  from lib.getImageStat  import getImageStat
+  from lib.getOutputPath import getOutputPath
+  from lib.printMessage  import printMessage
+  from lib.runCommand    import runCommand
   
   lmax_option = ''
   if lib.app.args.lmax:
@@ -114,5 +115,5 @@ def execute():
     shutil.copyfile('iter' + str(lib.app.args.max_iters-1) + '_RF.txt', 'response.txt')
     shutil.copyfile('iter' + str(lib.app.args.max_iters-1) + '_SF.mif', 'voxels.mif')
 
-  shutil.copyfile('response.txt', os.path.join(lib.app.workingDir, lib.app.args.output))
+  shutil.copyfile('response.txt', getOutputPath(lib.app.args.output, False))
 

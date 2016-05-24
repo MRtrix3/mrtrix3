@@ -18,11 +18,12 @@
 import os, sys
 import lib.app
 
-from lib.binaryInPath import binaryInPath
-from lib.errorMessage import errorMessage
-from lib.isWindows    import isWindows
-from lib.printMessage import printMessage
-from lib.runCommand   import runCommand
+from lib.binaryInPath  import binaryInPath
+from lib.errorMessage  import errorMessage
+from lib.isWindows     import isWindows
+from lib.getOutputPath import getOutputPath
+from lib.printMessage  import printMessage
+from lib.runCommand    import runCommand
 
 lib.app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
 lib.app.initCitations([ 'first', 'FSL', 'SIFT_followup' ])
@@ -113,7 +114,7 @@ for struct in structure_map.keys():
 result_path = 'result' + os.path.splitext(lib.app.args.output)[1]
 runCommand('mrmath ' + ' '.join(mask_list) + ' sum - | mrcalc - 1 -gt overlap_mask.mif')
 runCommand('mrcalc overlap_mask.mif 0 parc.mif -if result.mif')
-runCommand('mrconvert result.mif ' + os.path.join(lib.app.workingDir, lib.app.args.output) + lib.app.mrtrixForce)
+runCommand('mrconvert result.mif ' + getOutputPath(lib.app.args.output, True) + lib.app.mrtrixForce)
 
 lib.app.complete()
 

@@ -14,6 +14,7 @@ from lib.errorMessage   import errorMessage
 from lib.getFSLEddyPath import getFSLEddyPath
 from lib.getFSLSuffix   import getFSLSuffix
 from lib.getHeaderInfo  import getHeaderInfo
+from lib.getOutputPath  import getOutputPath
 from lib.getPEDir       import getPEDir
 from lib.imagesMatch    import imagesMatch
 from lib.isWindows      import isWindows
@@ -402,10 +403,10 @@ else: # 'All'
 # Also export the gradient table to the path requested by the user if necessary
 grad_export_option = ''
 if lib.app.args.export_grad_mrtrix:
-  grad_export_option = ' -export_grad_mrtrix ' + os.path.join(lib.app.workingDir, lib.app.args.export_grad_mrtrix)
+  grad_export_option = ' -export_grad_mrtrix ' + getOutputPath(lib.app.args.export_grad_mrtrix, True)
 elif lib.app.args.export_grad_fsl:
-  grad_export_option = ' -export_grad_fsl ' + os.path.join(lib.app.workingDir, lib.app.args.export_grad_fsl[0]) + ' ' + os.path.join(lib.app.workingDir, lib.app.args.export_grad_fsl[1])
+  grad_export_option = ' -export_grad_fsl ' + getOutputPath(lib.app.args.export_grad_fsl[0], True) + ' ' + getOutputPath(lib.app.args.export_grad_fsl[1], True)
 
-runCommand('mrconvert result.mif ' + os.path.join(lib.app.workingDir, lib.app.args.output) + grad_export_option + lib.app.mrtrixForce)
+runCommand('mrconvert result.mif ' + getOutputPath(lib.app.args.output, True) + grad_export_option + lib.app.mrtrixForce)
 lib.app.complete()
 

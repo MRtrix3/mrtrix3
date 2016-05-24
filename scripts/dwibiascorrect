@@ -11,6 +11,7 @@ from lib.binaryInPath  import binaryInPath
 from lib.errorMessage  import errorMessage
 from lib.getFSLSuffix  import getFSLSuffix
 from lib.getHeaderInfo import getHeaderInfo
+from lib.getOutputPath import getOutputPath
 from lib.isWindows     import isWindows
 from lib.runCommand    import runCommand
 
@@ -106,8 +107,8 @@ elif lib.app.args.ants:
   runCommand('N4BiasFieldCorrection -d 3 -i mean_bzero.nii -w mask.nii -o [corrected.nii,' + bias_path + '] -s 2 -b [150] -c [200x200,0.0]')
   
 runCommand('mrcalc in.mif ' + bias_path + ' -div result.mif')
-runCommand('mrconvert result.mif ' + os.path.join(lib.app.workingDir, lib.app.args.output) + lib.app.mrtrixForce)
+runCommand('mrconvert result.mif ' + getOutputPath(lib.app.args.output, True) + lib.app.mrtrixForce)
 if lib.app.args.bias:
-  runCommand('mrconvert ' + bias_path + ' ' + os.path.join(lib.app.workingDir, lib.app.args.bias) + lib.app.mrtrixForce)
+  runCommand('mrconvert ' + bias_path + ' ' + getOutputPath(lib.app.args.bias, True) + lib.app.mrtrixForce)
 lib.app.complete()
 
