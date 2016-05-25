@@ -23,10 +23,7 @@
 #include "command.h"
 #include "progressbar.h"
 
-#ifdef MRTRIX_UPDATED_API
 #include "types.h"
-#endif
-
 #include "mesh/mesh.h"
 
 using namespace MR;
@@ -48,11 +45,7 @@ void usage ()
 
 void run ()
 {
-#ifdef MRTRIX_UPDATED_API
   const default_type dist_sq = Math::pow2 (default_type(argument[2]));
-#else
-  const float dist_sq = Math::pow2 (float(argument[2]));
-#endif
 
   MR::Mesh::MeshMulti multi_in1, multi_in2;
 
@@ -93,31 +86,19 @@ void run ()
   
     for (size_t i = 0; i != in1.num_triangles(); ++i) {
       // Explicitly load the vertex data
-#ifdef MRTRIX_UPDATED_API  
       std::array<Eigen::Vector3, 3> v1;
-#else 
-      std::array<Point<float>, 3> v1;
-#endif
       for (size_t vertex = 0; vertex != 3; ++vertex)
         v1[vertex] = in1.vert(in1.tri(i)[vertex]);
       bool match_found = false;
       for (size_t j = 0; j != in2.num_triangles() && !match_found; ++j) {
-#ifdef MRTRIX_UPDATED_API 
         std::array<Eigen::Vector3, 3> v2;
-#else 
-        std::array<Point<float>, 3> v2;
-#endif
         for (size_t vertex = 0; vertex != 3; ++vertex)
           v2[vertex] = in2.vert (in2.tri(j)[vertex]);
         bool all_vertices_matched = true;
         for (size_t a = 0; a != 3; ++a) {
           size_t b = 0;
           for (; b != 3; ++b) {
-#ifdef MRTRIX_UPDATED_API
             if ((v1[a]-v2[b]).squaredNorm() < dist_sq)
-#else
-            if (dist2 (v1[a], v2[b]) < dist_sq)
-#endif          
               break;
             
           }
@@ -132,31 +113,19 @@ void run ()
     }
   
     for (size_t i = 0; i != in1.num_quads(); ++i) {
-#ifdef MRTRIX_UPDATED_API  
       std::array<Eigen::Vector3, 4> v1;
-#else 
-      std::array<Point<float>, 4> v1;
-#endif
       for (size_t vertex = 0; vertex != 4; ++vertex)
         v1[vertex] = in1.vert (in1.quad(i)[vertex]);
       bool match_found = false;
       for (size_t j = 0; j != in2.num_quads() && !match_found; ++j) {
-#ifdef MRTRIX_UPDATED_API 
         std::array<Eigen::Vector3, 4> v2;
-#else 
-        std::array<Point<float>, 4> v2;
-#endif
         for (size_t vertex = 0; vertex != 4; ++vertex)
           v2[vertex] = in2.vert (in2.quad(j)[vertex]);
         bool all_vertices_matched = true;
         for (size_t a = 0; a != 4; ++a) {
           size_t b = 0;
           for (; b != 4; ++b) {
-#ifdef MRTRIX_UPDATED_API
             if ((v1[a]-v2[b]).squaredNorm() < dist_sq)
-#else
-            if (dist2 (v1[a], v2[b]) < dist_sq)
-#endif          
               break;
             
           }
