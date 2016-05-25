@@ -1,7 +1,7 @@
 Using the connectome visualisation tool
 ==========================
 
-The connectome tool bar in MRtrix has been designed from scratch, with
+The connectome tool bar in *MRtrix3* has been designed from scratch, with
 the intention of providing a simple, data-driven mechanism for visually
 assessing individual connectomes as well as the results of network-based
 group statistics. The interface may therefore vary considerably from
@@ -27,41 +27,64 @@ The desired image is the output of the ``labelconfig`` command, as
 detailed in the :ref:`stuct_connectome_construction` guide: the
 tool uses this image to localise each parcel in 3D space in preparation
 for visualisation. Alternatively, you can load the relevant parcellation
-image from the command-line when you first run MRView, using the
-``-connectome.load`` option.
+image from the command-line when you first run ``mrview``, using the
+``-connectome.init`` option.
 
-Basic connectome visualisation
-------------------------------
+.. ATTENTION::
+If you still do not see anything in the ``mrview`` main window, this is
+likely because you have not yet opened a primary image in ``mrview``. This
+is currently necessary for ``mrview`` to correctly set up the camera
+positioning. The easiest solution is to open your parcellation image not
+only to initialise the connectome tool, but also as a standard image in
+``mrview``; then simply *hide* the main image using the 'View' menu.
 
 With the basis parcellation image loaded, the tool will display the
 location of each node; note however that all of the nodes are exactly
 the same colour, and exactly the same size, and there are no connections
 shown between them - it's an entirely dis-connected network. This makes
 sense - we haven't actually provided the tool with any information
-regarding which connections are present and which are absent. We can
-also do the opposite: change the "Edge visualisation" - "Visibility"
-from 'None' to 'All', and now the software shows every edge in the
-connectome non-discriminantly.
+regarding which connections are present and which are absent.
 
-Therefore, we need some mechanism of informing the software of which
-edges should be drawn, and which should not. Most logically, this could
-be achieved by loading a structural connectome, and perhaps applying
-some threshold. So now, for the "Edge visualisation" - "Visibility"
-option, select "Matrix file", and load your connectome. The software now
-uses the data from this external file to threshold which edges are drawn
-and which are not, and also allows you to vary that threshold
-interactively.
+For most users, connectome data will be loaded using the
+'open' button in the 'connectome matrices' section, or at the command-line
+when ``mrview`` is first run using the ``-connectome.load`` option.
 
-The connectome still however has a binary appearance; every edge in the
-connectome is either present or absent, and they all have the same size
-and the same colour. We know that our connectome contains weights
-distributed over a wide scale, and would like to be able to see this as
-part of our visualisation; for instance, we may decide that more dense
-connections should have a 'hot' colour appearance, whereas less dense
-connections should be darker. We can achieve this by changing the "Edge
-visualisation" - "Colour" from 'Fixed' to 'Matrix file', and selecting
-an appropriate matrix file (perhaps the same file as was used for the
-visibility threshold, perhaps not).
+Basis of connectome visualisation customisation
+-----------------------------------------------
+
+With the above steps completed, you should obtain a fairly rduimentary
+visualisation of the connectome you have loaded. The plethora of
+buttons and gadgets in the connectome tool user interface is however
+a clue regarding the scope of customisation available for precisely
+how the connectome data will be displayed.
+
+As an example, consider the 'Edge visualisation - Colour' entry. These
+options control how the colour of each individual edge in the connectome
+will be determined, based on the data the tool is provided with. Clicking
+on the main combo box shows that there are a few options available:
+
+* *Fixed*: Use the same fixed colour to display all visible edges.
+
+* *By direction*: The XYZ spatial offset between the two nodes connected by
+an edge is used to derive an RGB colour (much like the default streamlines
+colouring).
+
+* *Connectome*: The colour of each edge will depend on the value for that
+edge in the connectome you have loaded, based on some form of
+value -> colour mapping (a 'colour map').
+
+* *Matrix file*: Operates similarly to the *connectome* option; except that
+the value for each edge is drawn from a matrix file that is *not* the
+connectome matrix you have loaded (though it must be based on the same
+parcellation to have any meaning). So for instance: You could load a
+structural connectome file as your connectome matrix and show only those
+edges where the connection density is above a certain threshold, but then
+set the *colour* of each edge based on a *different matrix file* that
+contains functional connectivity values.
+
+If the *Connectome* or *Matrix file* options are used, it is also possible
+to alter the colour map used, and modify the values at which the edges will
+reach the colours at either extreme of the colour map.
 
 Hopefully, this simple demonstration will be enough to highlight the
 design principle of this tool, and therefore the frame of mind necessary
@@ -81,8 +104,8 @@ the network are most affected. I can even automatically hide any nodes
 that are not involved in the detected network by selecting "Node
 visualisation" - "Visibility" - 'Degree >= 1'.
 
-Importing node information
---------------------------
+Importing detailed node information
+-----------------------------------
 
 When the parcellation image is first loaded, the software has no
 information regarding the designations of the underlying nodes, so it
@@ -131,12 +154,12 @@ to instead represent each connection based on the structural trajectory
 by which those nodes are inter-connected. This can be achieved as
 follows:
 
--  When generating the connectome using ``tck2connectome``, use the
+-  When generating the connectome using :ref:`tck2connectome`, use the
    ``-assignments`` option. This will produce a text file where each
    line contains the indices of the two nodes to which that particular
    streamline was assigned.
 
--  Use the ``connectome2tck`` command to produce a single track file,
+-  Use the :ref:`connectome2tck` command to produce a single track file,
    where every streamline represents the mean, or *exemplar*, trajectory
    between two nodes. This is achieved using two command-line options:
    ``-exemplars`` to instruct the command to generate the exemplar
@@ -145,7 +168,7 @@ follows:
    to instruct the command to place all computed exemplars into a single
    output file.
 
--  In the MRView connectome toolbar, select "Edge visualisation" -
+-  In the ``mrview`` connectome toolbar, select "Edge visualisation" -
    "Geometry" - 'Streamlines / Streamtubes', and select the exemplar
    track file just generated.
 
@@ -160,18 +183,18 @@ the volume of each parcel to a triangulated mesh. The process is as
 follows:
 
 -  Compute a triangular mesh for each node, and store the results in a
-   single file. The command is called ``label2mesh``. Note that the
+   single file. The command is called :ref:`label2mesh`. Note that the
    output file *must* be in the ``.obj`` file format: this is the only
    format currently supported that is capable of storing multiple mesh
    objects in a single file.
 
 -  (Optional) Smooth the meshes to make them more aesthetically pleasing
    (the results of the conversion process used in ``label2mesh`` appear
-   very 'blocky'). Apply the ``meshfilter`` command, using the
+   very 'blocky'). Apply the :ref:`meshfilter` command, using the
    ``smooth`` operator. Again, the output must be in the ``.obj``
    format.
 
--  In the MRView connectome toolbar, select "Node visualisation" -
+-  In the ``mrview`` connectome toolbar, select "Node visualisation" -
    "Geometry" - 'Mesh', and select the mesh file just generated.
 
 Using node selection to highlight features of interest
@@ -187,9 +210,9 @@ In any connectome visualisation software, when the user selects one or
 more particular nodes of interest, some modification must be applied to
 the visual features of the nodes in order to 'highlight' the nodes of
 interest. In many cases, this may be hard-wired to behave in a
-particular way. In the case of MRtrix, this highlighting mechanism is
-entirely flexible: the user can control the visual modifications applied
-to both those network elements selected and those not selected. For
+particular way. In the case of ``mrview`` in *MRtrix3*, this highlighting
+mechanism is entirely flexible: the user can control the visual modifications
+applied to both those network elements selected and those not selected. For
 instance, you may choose for nodes to become completely opaque when you
 select them, while other un-selected nodes remain transparent; or they
 may grow in size with respect to the rest of the connectome; or they may

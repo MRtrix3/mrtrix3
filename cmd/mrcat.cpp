@@ -24,6 +24,8 @@ using namespace MR;
 using namespace App;
 
 void usage () {
+AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
+
 DESCRIPTION
   + "concatenate several images into one";
 

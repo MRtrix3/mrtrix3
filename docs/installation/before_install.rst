@@ -5,7 +5,7 @@ Before you install
 Acknowledging this work
 ----------------------------------
 
-If you wish to include results generated using the MRtrix package in a publication, please include a line such as the following to acknowledge this work:
+If you wish to include results generated using the *MRtrix3* package in a publication, please include a line such as the following to acknowledge this work:
 
 * Fibre-tracking was performed using the MRtrix package (J-D Tournier, Brain Research Institute, Melbourne, Australia, https://github.com/MRtrix3/mrtrix3) (Tournier et al. 2012)
 

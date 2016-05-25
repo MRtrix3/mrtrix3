@@ -9,7 +9,7 @@ Command-line usage
 
 If you need to become familiar with using the command-line, there are
 plenty of tutorials online to get you started. There are however a few notable 
-features specific to *MRtrix*, which are outlined below.
+features specific to *MRtrix3*, which are outlined below.
 
 Using short option names
 -------------
@@ -113,7 +113,7 @@ example, this command will fail:
 
 In this example, ``dwi2tensor`` will hang waiting for input data (its
 first argument should be the input DWI data set). This will also cause
-tensor2metric to hang while it waits for ``dwi2tensor`` to provide some
+``tensor2metric`` to hang while it waits for ``dwi2tensor`` to provide some
 input.
 
 Advanced pipeline usage
@@ -155,13 +155,13 @@ This command will execute the following actions:
 How is it implemented?
 '''''''''''''''''''''''''''''''''''''''''
 
-The procedure used in *MRtrix* to feed data sets down a pipeline is
+The procedure used in *MRtrix3* to feed data sets down a pipeline is
 somewhat different from the more traditional use of pipes. Given the
 large amounts of data typically contained in a data set, the 'standard'
 practice of feeding the entire data set through the pipe would be
-prohibitively inefficient. *MRtrix* applications access the data via
+prohibitively inefficient. *MRtrix3* applications access the data via
 memory-mapping (when this is possible), and do not need to explicitly
-copy the data into their own memory space. When using pipes, *MRtrix*
+copy the data into their own memory space. When using pipes, *MRtrix3*
 applications will simply generate a temporary file and feed its filename
 through to the next stage once their processing is done. The next
 program in the pipeline will then simply read this filename and access
@@ -178,7 +178,7 @@ If a piped command has failed, and no other *MRtrix* programs are currently runn
 *Really* advanced pipeline usage
 '''''''''''''''''''''''''''''''''''''''''
 
-As implemented, *MRtrix* commands treat image file names that start with
+As implemented, *MRtrix3* commands treat image file names that start with
 the ``TmpFilePrefix`` (default is ``mrtrix-tmp-``) as temporary. When
 reading the image name from the previous stage in the pipeline, the
 image file name will trivially match this. But this also means that it

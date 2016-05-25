@@ -29,6 +29,8 @@ using namespace App;
 
 void usage ()
 {
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
+
   DESCRIPTION
   + "perform conversion between different file types and optionally "
   "extract a subset of the input image."

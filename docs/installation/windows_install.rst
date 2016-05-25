@@ -15,8 +15,9 @@ To install *MRtrix3*, you will need the following:
 -  a `C++11 <https://en.wikipedia.org/wiki/C%2B%2B11>`__ compliant
    compiler
 -  `Python <https://www.python.org/>`__ version >= 2.6
+-  `NumPy <http://www.numpy.org/>`__
 -  The `zlib <http://www.zlib.net/>`__ compression library
--  `Eigen <http://eigen.tuxfamily.org>`__ version 3
+-  `Eigen <http://eigen.tuxfamily.org>`__ version 3.2 *(do not install the beta version)*
 -  `Qt <http://www.qt.io/>`__ version >= 4.7 *[GUI components only]*
 
 .. NOTE::
@@ -62,7 +63,7 @@ Install *MRtrix3* dependencies
 
    ::
 
-       pacman -S git python pkg-config mingw-w64-x86_64-gcc mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5
+       pacman -S git mingw-w64-x86_64-python3 mingw-w64-x86_64-python3-numpy pkg-config mingw-w64-x86_64-gcc mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5
 
 Set up git and download *MRtrix3* sources
 ---------------------------------------
@@ -84,7 +85,7 @@ Set up git and download *MRtrix3* sources
 Build *MRtrix3*
 -------------
 
-1. Configure the MRtrix install:
+1. Configure the *MRtrix3* install:
 
    ::
 
@@ -107,18 +108,17 @@ Set up *MRtrix3*
 
    ::
 
-       echo "export PATH=$(pwd)/release/bin:$(pwd)/scripts:\$PATH" >> ~/.bashrc
+       echo "export PATH=$(pwd)/release/bin:$(pwd)/scripts:$PATH" >> ~/.bashrc
 
    Note that although the scripts provided with MRtrix will appear in
    your path, many of these will not work on a Windows installation due
-   to their dependency on FSL; a virtual machine with both MRtrix3 and
-   FSL installed would be required to run these scripts in this
-   scenario.
+   to their dependency on FSL; a virtual machine with both *MRtrix3* and
+   FSL installed would be required to run these scripts in this scenario.
 
 2. Close the terminal and start another one to ensure the startup file
    is read
 
-3. type ``mrview`` to check that everything works
+3. Type ``mrview`` to check that everything works
 
 4. You may also want to have a look through the :ref:`mrtrix_config_options`, and set anything you think
    might be required on your system.
@@ -151,7 +151,7 @@ to identify the location of the MRtrix libraries when trying to compile
 an external module.
 
 The simplest way around this is simply to invoke the build script of the main
-MRtrix install directly. For example, if compiling an external project called
+*MRtrix3* install directly. For example, if compiling an external project called
 ``myproject``, residing in a folder alongside the main ``mrtrix3`` folder, the
 build script can be invoked with::
 
@@ -173,14 +173,4 @@ target, e.g.:
 
 , and ``msys64`` should be able to interpret the softlink path correctly
 (confirm with ``ls -la``).
-
-
-.. _windows_trouble_shooting:
-
-Troubleshooting
------
-
-.. WARNING:: 
-    To be added
-
 

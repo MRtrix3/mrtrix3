@@ -191,10 +191,10 @@ else:
                 datatype +
                 ' input_transformed/' + i.prefix + '_translated.mif')
     if useMasks:
-	  runCommand('mrtransform ' + abspath(i.mask_directory, i.mask_filename) +
-		         ' -linear linear_transforms/' + i.prefix + '.txt' +
-		         datatype +
-		         ' masks_transformed/' + i.prefix + '_translated.mif')
+      runCommand('mrtransform ' + abspath(i.mask_directory, i.mask_filename) +
+             ' -linear linear_transforms/' + i.prefix + '.txt' +
+             datatype +
+             ' masks_transformed/' + i.prefix + '_translated.mif')
   # update average space to new extent
   runCommand('mraverageheader ' + ' '.join(['input_transformed/' + i.prefix + '_translated.mif' for i in input]) +
    ' average_header.mif.gz' ' -force')
@@ -207,10 +207,10 @@ else:
     runCommand('rm -f input_transformed/' + i.prefix + '_translated.mif')
     if useMasks:
       runCommand('mrtransform ' +
-	             ' masks_transformed/' + i.prefix + '_translated.mif' +
-	             ' masks_transformed/' + i.prefix + '.mif' +
-	             ' -interp nearest -template average_header.mif.gz' +
-	             datatype)
+               ' masks_transformed/' + i.prefix + '_translated.mif' +
+               ' masks_transformed/' + i.prefix + '.mif' +
+               ' -interp nearest -template average_header.mif.gz' +
+               datatype)
       runCommand('rm -f masks_transformed/' + i.prefix + '_translated.mif')
 
 

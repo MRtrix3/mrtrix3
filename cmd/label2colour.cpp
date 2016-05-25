@@ -39,7 +39,7 @@ using namespace MR::Connectome;
 void usage ()
 {
 
-	AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
   + "convert a parcellated image (where values are node indices) into a colour image "

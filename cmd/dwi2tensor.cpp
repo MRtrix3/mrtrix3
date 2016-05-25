@@ -29,6 +29,16 @@ typedef float value_type;
 
 #define DEFAULT_NITER 2
 
+const char* encoding_description =
+  "The tensor coefficients are stored in the output image as follows: \n"
+  "volumes 0-5: D11, D22, D33, D12, D13, D23 ; \n\n"
+  "If diffusion kurtosis is estimated using the -dkt option, these are stored as follows: \n"
+  "volumes 0-2: W1111, W2222, W3333 ; \n"
+  "volumes 3-8: W1112, W1113, W1222, W1333, W2223, W2333 ; \n"
+  "volumes 9-11: W1122, W1133, W2233 ; \n"
+  "volumes 12-14: W1123, W1223, W1233 ;";
+
+
 void usage ()
 {
 
@@ -57,7 +67,9 @@ void usage ()
   AUTHOR = "Ben Jeurissen (ben.jeurissen@uantwerpen.be)";
   
   DESCRIPTION
-  + "Diffusion (kurtosis) tensor estimation using iteratively reweighted linear least squares estimator.";
+  + "Diffusion (kurtosis) tensor estimation using iteratively reweighted linear least squares estimator."
+  + encoding_description;
+
 }
 
 template <class MASKType, class B0Type, class DKTType, class PredictType>
