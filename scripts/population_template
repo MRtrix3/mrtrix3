@@ -354,7 +354,7 @@ for level in range(0, len(nl_scales)):
         runCommand('mv tmp.mif warps/' + i.prefix + '.mif')
 
 
-runCommand('mrconvert ' + current_template + ' ' + getUserPath(lib.app.args.template) + lib.app.mrtrixForce)
+runCommand('mrconvert ' + current_template + ' ' + getUserPath(lib.app.args.template, True) + lib.app.mrtrixForce)
 
 if lib.app.args.warp_dir:
   shutil.copy('warps/', getUserPath(lib.app.args.warp_dir, False))

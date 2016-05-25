@@ -90,8 +90,8 @@ grad_option = ''
 if lib.app.args.grad:
   grad_option = ' -grad ' + getUserPath(lib.app.args.grad, True)
 elif lib.app.args.fslgrad:
-  grad_option = ' -fslgrad ' + getUserPath(lib.app.args.fslgrad[0], True) + ' ' + getUserPath(lib.app.args.fslgrad[1])
-runCommand('mrconvert ' + getUserPath(lib.app.args.input) + ' ' + os.path.join(lib.app.tempDir, 'series.mif') + grad_option)
+  grad_option = ' -fslgrad ' + getUserPath(lib.app.args.fslgrad[0], True) + ' ' + getUserPath(lib.app.args.fslgrad[1], True)
+runCommand('mrconvert ' + getUserPath(lib.app.args.input, True) + ' ' + os.path.join(lib.app.tempDir, 'series.mif') + grad_option)
 if PE_design == 'Pair':
   runCommand('mrconvert ' + getUserPath(lib.app.args.rpe_pair[0], True) + ' ' + os.path.join(lib.app.tempDir, 'pair1.mif'))
   runCommand('mrconvert ' + getUserPath(lib.app.args.rpe_pair[1], True) + ' ' + os.path.join(lib.app.tempDir, 'pair2.mif'))

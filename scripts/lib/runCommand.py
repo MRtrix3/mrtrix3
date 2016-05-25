@@ -49,12 +49,13 @@ def runCommand(cmd, exitOnError=True):
     if next_is_binary:
       is_mrtrix_binary = item in mrtrix_bin_list
       # Make sure we're not accidentally running an MRtrix command from a different installation to the script
-      binary_sys = find_executable(item)
-      binary_manual = os.path.join(mrtrix_bin_path, item)
-      if (isWindows()):
-        binary_manual = binary_manual + '.exe'
-      if not binary_sys or not os.path.samefile(binary_sys, binary_manual):
-        item = binary_manual
+      if is_mrtrix_binary:
+        binary_sys = find_executable(item)
+        binary_manual = os.path.join(mrtrix_bin_path, item)
+        if (isWindows()):
+          binary_manual = binary_manual + '.exe'
+        if not binary_sys or not os.path.samefile(binary_sys, binary_manual):
+          item = binary_manual
       next_is_binary = False
     if item == '|':
       if is_mrtrix_binary:
