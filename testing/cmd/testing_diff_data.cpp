@@ -25,19 +25,8 @@
 #include "progressbar.h"
 #include "datatype.h"
 
-#ifdef MRTRIX_UPDATED_API
- 
-# include "image.h"
-# include "algo/threaded_loop.h"
- 
-#else
- 
-# include "image/buffer.h"
-# include "image/voxel.h"
-# include "image/threaded_loop.h"
- 
-#endif
-
+#include "image.h"
+#include "algo/threaded_loop.h"
 
 using namespace MR;
 using namespace App;
@@ -56,8 +45,6 @@ void usage ()
 
 void run ()
 {
-#ifdef MRTRIX_UPDATED_API
-
   auto in1 = Image<cdouble>::open (argument[0]);
   auto in2 = Image<cdouble>::open (argument[1]);
   check_dimensions (in1, in2);
@@ -84,36 +71,6 @@ void run ()
         throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within specified precision of " + str(tol)
              + " (" + str(cdouble (a.value())) + " vs " + str(cdouble (b.value())) + ")");
         }, in1, in2);
-
-#else
-
-  Image::Buffer<cdouble> buffer1 (argument[0]);
-  Image::Buffer<cdouble> buffer2 (argument[1]);
-  Image::check_dimensions (buffer1, buffer2);
-  for (size_t i = 0; i < buffer1.ndim(); ++i) {
-    if (std::isfinite (buffer1.vox(i)))
-      if (buffer1.vox(i) != buffer2.vox(i))
-        throw Exception ("images \"" + buffer1.name() + "\" and \"" + buffer2.name() + "\" do not have matching voxel spacings " +
-                                       str(buffer1.vox(i)) + " vs " + str(buffer2.vox(i)));
-  }
-  for (size_t i  = 0; i < 4; ++i) {
-    for (size_t j  = 0; j < 4; ++j) {
-      if (std::abs (buffer1.transform()(i,j) - buffer2.transform()(i,j)) > 0.001)
-        throw Exception ("images \"" + buffer1.name() + "\" and \"" + buffer2.name() + "\" do not have matching header transforms "
-                         + "\n" + str(buffer1.transform()) + "vs \n " + str(buffer2.transform()) + ")");
-    }
-  }
-
-  double tol = argument[2];
-
-  Image::ThreadedLoop (buffer1)
-    .run ([&tol] (const decltype(buffer1.voxel())& a, const decltype(buffer2.voxel())& b) {
-       if (std::abs (a.value() - b.value()) > tol)
-         throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within specified precision of " + str(tol) 
-             + " (" + str(cdouble (a.value())) + " vs " + str(cdouble (b.value())) + ")");
-     }, buffer1.voxel(), buffer2.voxel());
-
-#endif
 
   CONSOLE ("data checked OK");
 }
