@@ -72,6 +72,7 @@ namespace MR {
           case 469:  az_el_pairs = tesselation_469 (); return;
           case 513:  az_el_pairs = tesselation_513 (); return;
           case 1281: az_el_pairs = tesselation_1281 (); return;
+          case 5000: az_el_pairs = electrostatic_repulsion_5000 (); return;
           default: throw Exception ("No pre-defined data set of " + str (i) + " directions");
         }
       }

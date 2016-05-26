@@ -13,14 +13,17 @@
  * 
  */
 
-#ifndef __dwi_Sn_scale_estimator_h__
-#define __dwi_Sn_scale_estimator_h__
+#ifndef __math_Sn_scale_estimator_h__
+#define __math_Sn_scale_estimator_h__
 
+#include <vector>
+
+#include "types.h"
 #include "math/median.h"
 
 
 namespace MR {
-  namespace DWI {
+  namespace Math {
 
 
     // Sn robust estimator of scale to get solid estimate of standard deviation:
