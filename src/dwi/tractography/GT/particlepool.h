@@ -19,9 +19,11 @@
 #define PAGESIZE 10000
 
 #include <deque>
-#include <stack>
+#include <vector>
 
 #include <mutex>
+
+#include "math/rng.h"
 
 #include "dwi/tractography/GT/particle.h"
 
@@ -50,17 +52,20 @@ namespace MR {
           {
             std::lock_guard<std::mutex> lock (mutex);
             if (avail.empty()) {
-              // Create new particles
-              pool.resize(pool.size() + PAGESIZE);
-              std::deque<Particle>::reverse_iterator it = pool.rbegin();
-              for (unsigned int k = 0; k < PAGESIZE; ++it, ++k) {
-                avail.push( &(*it) );
-              }
+//              // Create new particles
+//              pool.resize(pool.size() + PAGESIZE);
+//              std::deque<Particle>::reverse_iterator it = pool.rbegin();
+//              for (unsigned int k = 0; k < PAGESIZE; ++it, ++k) {
+//                avail.push( &(*it) );
+//              }
+              pool.emplace_back(pos, dir);
+              return &pool.back();
+            } else {
+              Particle* p = avail.back();
+              p->init(pos, dir);
+              avail.pop_back();
+              return p;
             }
-            Particle* p = avail.top();
-            p->init(pos, dir);
-            avail.pop();
-            return p;
           }
           
           /**
@@ -69,13 +74,38 @@ namespace MR {
           void destroy(Particle* p) {
             std::lock_guard<std::mutex> lock (mutex);
             p->finalize();
-            avail.push(p);
+            avail.push_back(p);
+//            VAR(avail.size());
+          }
+          
+          inline size_t size() const {
+            return pool.size() - avail.size();
+          }
+          
+          Particle* getRandom() {
+            std::lock_guard<std::mutex> lock (mutex);
+            Particle* p = nullptr;
+            if (pool.size() > avail.size())
+            {
+              std::uniform_int_distribution<size_t> dist(0, pool.size()-1);
+              do {
+                p = &pool[dist(rng)];
+              } while (std::find(avail.begin(), avail.end(), p) != avail.end());  // possibly very slow... make O(1) with flag in Particle?
+            }
+            return p;
+          }
+          
+          void clear() {
+            std::lock_guard<std::mutex> lock (mutex);
+            pool.clear();
+            avail.clear();
           }
           
         protected:
           std::mutex mutex;
           std::deque<Particle> pool;
-          std::stack<Particle*> avail;
+          std::vector<Particle*> avail;
+          Math::RNG rng;
         };
 
       }

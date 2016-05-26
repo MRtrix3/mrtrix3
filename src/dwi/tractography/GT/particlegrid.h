@@ -67,14 +67,16 @@ namespace MR {
           }
           
           unsigned int getTotalCount() const {
-            return list.size();
+//            return list.size();
+            return pool.size();
           }
           
           void add(const Point_t& pos, const Point_t& dir);
           
           void shift(Particle* p, const Point_t& pos, const Point_t& dir);
           
-          void remove(const size_t idx);
+//          void remove(const size_t idx);
+          void remove(Particle* p);
           
           void clear();
           
@@ -88,7 +90,7 @@ namespace MR {
         protected:
           std::mutex mutex;
           ParticlePool pool;
-          ParticleVectorType list;
+          //ParticleVectorType list;
           std::vector<ParticleVectorType> grid;
           Math::RNG rng;
           transform_type T_s2g;

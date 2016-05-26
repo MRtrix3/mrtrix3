@@ -89,7 +89,7 @@ namespace MR {
           
           size_t idx;
           Particle* par;
-           do {
+          do {
             par = pGrid.getRandom(idx);
             if (par == NULL || par->hasPredecessor() || par->hasSuccessor())
               return;
@@ -100,7 +100,8 @@ namespace MR {
           double R = std::exp(-dE) * pGrid.getTotalCount() / props.density * props.p_birth / props.p_death;
           if (R > rng_uniform()) {
             E->acceptChanges();
-            pGrid.remove(idx);
+//            pGrid.remove(idx);
+            pGrid.remove(par);
             stats.incNa('d');
           }
           else {
