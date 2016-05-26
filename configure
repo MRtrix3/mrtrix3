@@ -907,38 +907,20 @@ int main() { Foo f; }
         if entry[0] != '$': qt_ldflags += [ entry.replace('\"','').replace("'",'') ]
   
       cmd = [ moc, 'qt.h', '-o', 'qt_moc.cpp' ]
-      log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
-      try: process = subprocess.Popen (cmd, cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-      except OSError: raise QMOCError
-      if process.wait() != 0: raise QMOCError
+      execute (cmd, QMOCError, cwd=qt_dir.name) #process = subprocess.Popen (cmd, cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
       cmd = cxx + [ '-c' ] + cpp_flags + qt_cflags + [ 'qt.cpp', '-o', 'qt.o' ]
-      log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
-      try: process = subprocess.Popen (cmd, cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-      except OSError: raise CompileError('oserror')
-      except: raise
-      retcode = process.wait()
-      if retcode != 0: raise CompileError('process not terminated properly (exit code = %s)'%str(retcode))
+      execute (cmd, CompileError, cwd=qt_dir.name)
 
       cmd = cxx + [ '-c' ] + cpp_flags + qt_cflags + [ 'qt_moc.cpp', '-o', 'qt_moc.o' ]
-      log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
-      try: process = subprocess.Popen (cmd , cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-      except OSError: raise CompileError('oserror')
-      except: raise
-      if process.wait() != 0: raise CompileError('process not terminated properly')
+      execute (cmd, CompileError, cwd=qt_dir.name)
 
       cmd = cxx + ld_flags + [ 'qt_moc.o', 'qt.o', '-o', 'qt' ] + qt_ldflags
-      log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
-      try: process = subprocess.Popen (cmd , cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-      except OSError: raise LinkError('oserror')
-      except: raise
-      if process.wait() != 0: raise LinkError('process not terminated properly')
+      execute (cmd, LinkError, cwd=qt_dir.name)
 
       cmd = os.path.join(qt_dir.name, 'qt')
-      log ('\nexecuting "' + cmd + '"...\n')
-      process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-      if process.wait() != 0: raise LinkError('process not terminated properly')
-      report (process.stdout.read().decode(errors='ignore').strip() + '\n')
+      ret = execute (cmd, RuntimeError)
+      report (ret[1])
 
     
   except QMakeError:
@@ -957,8 +939,10 @@ Are all necessary (static or shared) Qt libraries installed?''')
     error ('''error invoking Qt moc!
 
 use the MOC environment variable to specify the Qt moc command''')
-  except CompileError as e:
-    error ('error compiling Qt application! ' + str(e))
+  except CompileError:
+    error ('error compiling Qt application! See configure.log for details.')
+  except RuntimeError:
+    error ('error running Qt application! See configure.log for details.')
   except OSError as e:
     error ('Unexpected error! Unable to configure Qt environment: ' + str(e))
   except:
