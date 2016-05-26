@@ -43,6 +43,7 @@ namespace MR {
             predecessor = nullptr;
             successor = nullptr;
             visited = false;
+            alive = false;
           }
           
           Particle(const Point_t& p, const Point_t& d)
@@ -62,6 +63,7 @@ namespace MR {
             predecessor = nullptr;
             successor = nullptr;
             visited = false;
+            alive = true;
           }
           
           inline void finalize()
@@ -70,6 +72,7 @@ namespace MR {
               removePredecessor();
             if (successor)
               removeSuccessor();
+            alive = false;
           }
           
           
@@ -173,6 +176,11 @@ namespace MR {
             visited = v;
           }
           
+          bool isAlive() const
+          {
+            return alive;
+          }
+          
 
         protected:
           
@@ -180,6 +188,7 @@ namespace MR {
           Particle* predecessor;
           Particle* successor;
           bool visited;
+          bool alive;
           
           void setPredecessor(Particle* p1)
           {

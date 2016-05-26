@@ -19,8 +19,7 @@
 #define PAGESIZE 10000
 
 #include <deque>
-#include <vector>
-
+#include <stack>
 #include <mutex>
 
 #include "math/rng.h"
@@ -61,9 +60,9 @@ namespace MR {
               pool.emplace_back(pos, dir);
               return &pool.back();
             } else {
-              Particle* p = avail.back();
+              Particle* p = avail.top();
               p->init(pos, dir);
-              avail.pop_back();
+              avail.pop();
               return p;
             }
           }
@@ -74,7 +73,7 @@ namespace MR {
           void destroy(Particle* p) {
             std::lock_guard<std::mutex> lock (mutex);
             p->finalize();
-            avail.push_back(p);
+            avail.push(p);
 //            VAR(avail.size());
           }
           
@@ -90,7 +89,7 @@ namespace MR {
               std::uniform_int_distribution<size_t> dist(0, pool.size()-1);
               do {
                 p = &pool[dist(rng)];
-              } while (std::find(avail.begin(), avail.end(), p) != avail.end());  // possibly very slow... make O(1) with flag in Particle?
+              } while (!p->isAlive());
             }
             return p;
           }
@@ -98,13 +97,14 @@ namespace MR {
           void clear() {
             std::lock_guard<std::mutex> lock (mutex);
             pool.clear();
-            avail.clear();
+            std::stack<Particle*> e = {};
+            avail.swap(e);
           }
           
         protected:
           std::mutex mutex;
           std::deque<Particle> pool;
-          std::vector<Particle*> avail;
+          std::stack<Particle*> avail;
           Math::RNG rng;
         };
 
