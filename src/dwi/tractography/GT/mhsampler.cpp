@@ -87,10 +87,9 @@ namespace MR {
           //TRACE;
           stats.incN('d');
           
-          size_t idx;
           Particle* par;
           do {
-            par = pGrid.getRandom(idx);
+            par = pGrid.getRandom();
             if (par == NULL || par->hasPredecessor() || par->hasSuccessor())
               return;
           } while (! lock->lockIfNotLocked(par->getPosition()));
@@ -100,7 +99,6 @@ namespace MR {
           double R = std::exp(-dE) * pGrid.getTotalCount() / props.density * props.p_birth / props.p_death;
           if (R > rng_uniform()) {
             E->acceptChanges();
-//            pGrid.remove(idx);
             pGrid.remove(par);
             stats.incNa('d');
           }
@@ -117,10 +115,9 @@ namespace MR {
           //TRACE;
           stats.incN('r');
           
-          size_t idx;
           Particle* par;
           do {
-            par = pGrid.getRandom(idx);
+            par = pGrid.getRandom();
             if (par == NULL)
               return;
           } while (! lock->lockIfNotLocked(par->getPosition()));
@@ -153,10 +150,9 @@ namespace MR {
           //TRACE;
           stats.incN('o');
           
-          size_t idx;
           Particle* par;
           do {
-            par = pGrid.getRandom(idx);
+            par = pGrid.getRandom();
             if (par == NULL)
               return;
           } while (! lock->lockIfNotLocked(par->getPosition()));
@@ -190,10 +186,9 @@ namespace MR {
           //TRACE;
           stats.incN('c');
           
-          size_t idx;
           Particle* par;
           do {
-            par = pGrid.getRandom(idx);
+            par = pGrid.getRandom();
             if (par == NULL)
               return;
           } while (! lock->lockIfNotLocked(par->getPosition()));

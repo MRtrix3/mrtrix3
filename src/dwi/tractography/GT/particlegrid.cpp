@@ -26,8 +26,6 @@ namespace MR {
           Particle* p = pool.create(pos, dir);
           unsigned int gidx = pos2idx(pos);
           grid[gidx].push_back(p);
-//          std::lock_guard<std::mutex> lock (mutex);
-//          list.push_back(p);
         }
         
         void ParticleGrid::shift(Particle *p, const Point_t& pos, const Point_t& dir)
@@ -45,22 +43,6 @@ namespace MR {
           grid[gidx1].push_back(p);
         }
         
-//        void ParticleGrid::remove(const size_t idx)
-//        {
-//          std::lock_guard<std::mutex> lock (mutex);
-//          Particle* p = list[idx];
-//          unsigned int gidx0 = pos2idx(p->getPosition());
-//          for (ParticleVectorType::iterator it = grid[gidx0].begin(); it != grid[gidx0].end(); ++it) {
-//            if (*it == p) {
-//              grid[gidx0].erase(it);
-//              break;
-//            }
-//          }
-//          list[idx] = list.back();    // FIXME Not thread safe if last element is in use by another _delete_ proposal!  
-//          list.pop_back();            // May corrupt datastructure, but program won't crash. Ignore for now.
-//          pool.destroy(p);
-//        }
-        
         void ParticleGrid::remove(Particle* p)
         {
           unsigned int gidx0 = pos2idx(p->getPosition());
@@ -76,9 +58,7 @@ namespace MR {
         void ParticleGrid::clear()
         {
           grid.clear();
-          std::lock_guard<std::mutex> lock (mutex);
           pool.clear();
-//          list.clear();
         }
         
         const ParticleGrid::ParticleVectorType* ParticleGrid::at(const ssize_t x, const ssize_t y, const ssize_t z) const
@@ -86,17 +66,6 @@ namespace MR {
           if ((x < 0) || (size_t(x) >= dims[0]) || (y < 0) || (size_t(y) >= dims[1]) || (z < 0) || (size_t(z) >= dims[2]))  // out of bounds
             return nullptr;
           return &grid[xyz2idx(x, y, z)];
-        }
-        
-        Particle* ParticleGrid::getRandom(size_t& idx)
-        {
-//          if (list.empty())
-//            return nullptr;
-//          std::uniform_int_distribution<size_t> dist(0, list.size()-1);
-//          idx = dist(rng);
-//          return list[idx];
-          idx = 0;
-          return pool.getRandom();
         }
         
         void ParticleGrid::exportTracks(Tractography::Writer<float> &writer)
@@ -148,8 +117,6 @@ namespace MR {
             }
           }
           // Free all particle locks
-//          for (ParticleVectorType::iterator it = list.begin(); it != list.end(); ++it)
-//            (*it)->setVisited(false);
           for (ParticleVectorType& gridvox : grid) {
             for (Particle* par : gridvox) {
                 par->setVisited(false);

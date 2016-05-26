@@ -51,12 +51,6 @@ namespace MR {
           {
             std::lock_guard<std::mutex> lock (mutex);
             if (avail.empty()) {
-//              // Create new particles
-//              pool.resize(pool.size() + PAGESIZE);
-//              std::deque<Particle>::reverse_iterator it = pool.rbegin();
-//              for (unsigned int k = 0; k < PAGESIZE; ++it, ++k) {
-//                avail.push( &(*it) );
-//              }
               pool.emplace_back(pos, dir);
               return &pool.back();
             } else {
@@ -74,14 +68,19 @@ namespace MR {
             std::lock_guard<std::mutex> lock (mutex);
             p->finalize();
             avail.push(p);
-//            VAR(avail.size());
           }
           
+          /**
+           * @brief Return number of Particles in the pool.
+           */
           inline size_t size() const {
             return pool.size() - avail.size();
           }
           
-          Particle* getRandom() {
+          /**
+           * @brief Select random particle from the pool (uniformly).
+           */
+          Particle* random() {
             std::lock_guard<std::mutex> lock (mutex);
             Particle* p = nullptr;
             if (pool.size() > avail.size())
@@ -94,6 +93,9 @@ namespace MR {
             return p;
           }
           
+          /**
+           * @brief Clear pool.
+           */
           void clear() {
             std::lock_guard<std::mutex> lock (mutex);
             pool.clear();
