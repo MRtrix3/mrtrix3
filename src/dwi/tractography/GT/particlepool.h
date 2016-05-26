@@ -82,15 +82,16 @@ namespace MR {
            */
           Particle* random() {
             std::lock_guard<std::mutex> lock (mutex);
-            Particle* p = nullptr;
             if (pool.size() > avail.size())
             {
               std::uniform_int_distribution<size_t> dist(0, pool.size()-1);
-              do {
-                p = &pool[dist(rng)];
-              } while (!p->isAlive());
+              for (int k = 0; k != 5; ++k) {
+                Particle* p = &pool[dist(rng)];
+                if (p->isAlive())
+                  return p;
+              }
             }
-            return p;
+            return nullptr;
           }
           
           /**
