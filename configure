@@ -459,8 +459,9 @@ try:
 except:
   error ('''compiler not found!
 
-Use CXX environment variable to set path to compiler, as follows:
-     CXX=/usr/bin/g++-4.8 ./configure''')
+ Use CXX environment variable to set path to compiler, as follows:
+   $ export CXX=/usr/bin/g++-4.8 
+   $ ./configure''')
 
 try:
   compile ('''
@@ -480,18 +481,21 @@ int main() {
 except CompileError:
   error ('''compiler test failed!
 
-Use CXX environment variable to set path to compiler, as follows:
-     CXX=/usr/bin/g++-4.8 ./configure
+ Use CXX environment variable to set path to compiler, as follows:
+   $ export CXX=/usr/bin/g++-4.8 
+   $./configure
 
-You can also use the CXX_ARGS to set the arguments expected by the 
-compiler, in case this differs from gcc, as follows:
+ You can also use the CXX_ARGS to set the arguments expected by the 
+ compiler, in case this differs from gcc, as follows:
 
-     CXX_ARGS="-c CFLAGS SRC -o OBJECT" ./configure''')
+   $ export CXX_ARGS="-c CFLAGS SRC -o OBJECT" 
+   $ ./configure''')
 except (LinkError, RuntimeError):
   error ('''linking error!
 
-Use LD environment variable to set path to compiler, as follows:
-     LD=/usr/bin/g++-4.8 ./configure''')
+ Use LD environment variable to set path to compiler, as follows:
+   $ export LD=/usr/bin/g++-4.8 
+   $ ./configure''')
 except:
   raise
 
@@ -591,23 +595,25 @@ int main() {
 ''', cpp_flags + zlib_cflags, ld_flags + zlib_ldflags)
   report (zlib_version + '\n')
 except CompileError:
-  error ('''compiler error!
+  error ('''error compiling zlib application!
 
-Use the ZLIB_CFLAGS environment variable to set the path to
-the zlib include files and to set any required flags
-For example:
-     ZLIB_CFLAGS="-isystem /usr/local/include" ./configure''')
+ Use the ZLIB_CFLAGS environment variable to set the path to
+ the zlib include files and to set any required flags
+ For example:
+   $ export ZLIB_CFLAGS="-isystem /usr/local/include"
+   $./configure''')
 except LinkError:
   error ('''linker error!
 
-Use the ZLIB_LDFLAGS environment variable to set the path to
-the zlib libraries and to set the library to use
-For example:
-     ZLIB_LDFLAGS="-L/usr/local/lib -lz" ./configure''')
+ Use the ZLIB_LDFLAGS environment variable to set the path to
+ the zlib libraries and to set the library to use
+ For example:
+   $ ZLIB_LDFLAGS="-L/usr/local/lib -lz" 
+   $ ./configure''')
 except RuntimeError:
   error ('''runtime error!
 
-There is something wrong with your zlib implementation!''')
+ Unable to configure zlib - see configure.log for details.''')
 except:
   error ('zlib implementation not found!')
 
@@ -649,21 +655,22 @@ int main (int argc, char* argv[]) {
   cpp_flags += eigen_cflags
   report (eigen_version + '\n')
 except CompileError:
-  error ('''compiler error!
+  error (''' error compiling Eigen application!
 
-Use the EIGEN_CFLAGS environment variable to set the path to
-the Eigen3 include files and to set any required flags
-For example:
-     EIGEN_CFLAGS="-isystem /usr/include/eigen3" ./configure''')
+ Use the EIGEN_CFLAGS environment variable to set the path to
+ the Eigen3 include files and to set any required flags
+ For example:
+   $ export EIGEN_CFLAGS="-isystem /usr/include/eigen3" 
+   $ ./configure''')
 except LinkError:
-  error ('''linker error!
+  error (''' error linking Eigen application!
 
-This shouldn't happen! Please report this to the MRtrix3 dev team.
+ This shouldn't happen! Please report this to the MRtrix3 dev team.
 ''')
 except RuntimeError:
-  error ('''runtime error!
+  error (''' error running Eigen application!
 
-This shouldn't happen! Please report this to the MRtrix3 dev team.
+ This shouldn't happen! Please report this to the MRtrix3 dev team.
 ''')
 except:
   error ('Eigen3 implementation not found!')
@@ -859,9 +866,10 @@ int main() { Foo f; }
 
 ''' + stderr)
       except QMakeError as E:
-        error ('''error issuing qmake command!
+        error (''' error issuing qmake command!
 
-  Use the QMAKE environment variable to set the correct qmake command for use with Qt''')
+ Use the QMAKE environment variable to set the correct qmake command for use with Qt
+ or set PATH to ensure the correct version is listed first''')
       except:
         raise
 
@@ -918,33 +926,37 @@ int main() { Foo f; }
       cmd = cxx + ld_flags + [ 'qt_moc.o', 'qt.o', '-o', 'qt' ] + qt_ldflags
       execute (cmd, LinkError, cwd=qt_dir.name)
 
-      cmd = os.path.join(qt_dir.name, 'qt')
-      ret = execute (cmd, RuntimeError)
+      cmd = [ os.path.join('.', 'qt') ]
+      ret = execute (cmd, RuntimeError, cwd=qt_dir.name)
       report (ret[1])
 
     
   except QMakeError:
-    error ('''error invoking Qt qmake!
+    error (''' error invoking Qt qmake!
 
-  Use the QMAKE environment variable to set the correct qmake command for use with Qt''')
+ Use the QMAKE environment variable to set the correct qmake command for use with Qt,
+ or set PATH to ensure the correct version is listed first''')
   except QMOCError:
-    error ('''error invoking Qt moc!
+    error (''' error invoking Qt moc!
 
-use the MOC environment variable to specify the Qt moc command''')
+ Use the MOC environment variable to specify the Qt moc command,
+ or set PATH to ensure the correct version is listed first''')
   except LinkError:
-    error ('''error linking Qt application!
+    error (''' error linking Qt application!
 
-Are all necessary (static or shared) Qt libraries installed?''')
-  except QMOCError:
-    error ('''error invoking Qt moc!
-
-use the MOC environment variable to specify the Qt moc command''')
+ Are all necessary (static or shared) Qt libraries installed?''')
   except CompileError:
-    error ('error compiling Qt application! See configure.log for details.')
+    error (''' error compiling Qt application! 
+    
+ Unable to configure Qt - see configure.log for details.''')
   except RuntimeError:
-    error ('error running Qt application! See configure.log for details.')
+    error (''' error running Qt application! 
+
+ Unable to configure Qt - see configure.log for details.''')
   except OSError as e:
-    error ('Unexpected error! Unable to configure Qt environment: ' + str(e))
+    error (' Unexpected error: ' + str(e) + '''
+    
+ Unable to configure Qt - see configure.log for details.''')
   except:
     raise
 
