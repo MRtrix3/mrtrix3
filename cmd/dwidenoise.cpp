@@ -17,6 +17,7 @@
 #include "command.h"
 #include "image.h"
 #include <Eigen/Dense>
+#include <Eigen/SVD>
 
 #define DEFAULT_SIZE 5
 
@@ -60,14 +61,44 @@ public:
     : extent(size/2),
       m(dwi.size(3)),
       n(size*size*size),
-      X(m,n),
+      X(m,n), Xm(m),
       pos{0, 0, 0}
   { }
   
   void operator () (ImageType& dwi, ImageType& out)
   {
+    // Load data in local window
     load_data(dwi);
-    VAR(X);
+    // Centre data
+    Xm = X.rowwise().mean();
+    X.colwise() -= Xm;
+    // Compute SVD
+    Eigen::JacobiSVD<Eigen::MatrixXd> svd (X, Eigen::ComputeThinU | Eigen::ComputeThinV);
+    Eigen::VectorXd s = svd.singularValues();
+    VAR(s);
+    // Simply threshold at 90% variance for now
+    double thres = 0.90 * s.squaredNorm();
+    double cumsum = 0.0;
+    for (size_t i = 0; i < n; ++i) {
+      if (cumsum <= thres)
+        cumsum += s[i] * s[i];
+      else
+        s[i] = 0.0;
+    }
+    VAR(s);
+    // Restore DWI data
+    X = svd.matrixU() * s.asDiagonal() * svd.matrixV().adjoint();
+    X += Xm;
+    Eigen::MatrixXd A (m,2);
+    A.col(0) = dwi.row(3).template cast<double>();
+    A.col(1) = X.col(n/2);
+    VAR(A);
+    // Store output
+    assign_pos_of(dwi).to(out);
+    VAR(out.index(0));
+    VAR(out.index(1));
+    VAR(out.index(2));
+    out.row(3) = X.col(n/2).template cast<value_type>();
   }
   
   void load_data (ImageType& dwi)
@@ -90,6 +121,7 @@ private:
   int extent;
   size_t m, n;
   Eigen::MatrixXd X;
+  Eigen::VectorXd Xm;
   ssize_t pos[3];
   
 };
