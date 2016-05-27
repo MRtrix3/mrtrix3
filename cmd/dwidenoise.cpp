@@ -75,7 +75,6 @@ public:
     // Compute SVD
     Eigen::JacobiSVD<Eigen::MatrixXd> svd (X, Eigen::ComputeThinU | Eigen::ComputeThinV);
     Eigen::VectorXd s = svd.singularValues();
-    VAR(s);
     // Simply threshold at 90% variance for now
     double thres = 0.90 * s.squaredNorm();
     double cumsum = 0.0;
@@ -85,19 +84,11 @@ public:
       else
         s[i] = 0.0;
     }
-    VAR(s);
     // Restore DWI data
     X = svd.matrixU() * s.asDiagonal() * svd.matrixV().adjoint();
-    X += Xm;
-    Eigen::MatrixXd A (m,2);
-    A.col(0) = dwi.row(3).template cast<double>();
-    A.col(1) = X.col(n/2);
-    VAR(A);
+    X.colwise() += Xm;
     // Store output
     assign_pos_of(dwi).to(out);
-    VAR(out.index(0));
-    VAR(out.index(1));
-    VAR(out.index(2));
     out.row(3) = X.col(n/2).template cast<value_type>();
   }
   
@@ -140,12 +131,8 @@ void run ()
   
   DenoisingFunctor< Image<value_type> > func (dwi_in, extent);
   
-  dwi_in.index(0) = 8;
-  dwi_in.index(1) = 9;
-  dwi_in.index(2) = 10;
-  
-  func(dwi_in, dwi_out);
-  
+  ThreadedLoop ("running MP-PCA denoising", dwi_in, 0, 3)
+    .run (func, dwi_in, dwi_out);
 
 }
 
