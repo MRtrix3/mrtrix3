@@ -60,25 +60,26 @@ public:
     : extent(size/2),
       m(dwi.size(3)),
       n(size*size*size),
-      X(m,n)
+      X(m,n),
+      pos{0, 0, 0}
   { }
   
   void operator () (ImageType& dwi, ImageType& out)
   {
     load_data(dwi);
-    std::cout << X << std::endl;
+    VAR(X);
   }
   
   void load_data (ImageType& dwi)
   {
-    pos = { dwi.index(0), dwi.index(1), dwi.index(2) };
+    pos[0] = dwi.index(0); pos[1] = dwi.index(1); pos[2] = dwi.index(2);
     X.setZero();
     ssize_t k = 0;
-    for (dwi.index(2) -= extent; dwi.index(2) <= pos[2]+extent; ++dwi.index(2), ++k)
-      for (dwi.index(1) -= extent; dwi.index(1) <= pos[1]+extent; ++dwi.index(1), ++k)
-        for (dwi.index(0) -= extent; dwi.index(0) <= pos[0]+extent; ++dwi.index(0), ++k)
-          if (dwi.valid())
-            X.column(k) = dwi.row(3);
+    for (dwi.index(2) = pos[2]-extent; dwi.index(2) <= pos[2]+extent; ++dwi.index(2))
+      for (dwi.index(1) = pos[1]-extent; dwi.index(1) <= pos[1]+extent; ++dwi.index(1))
+        for (dwi.index(0) = pos[0]-extent; dwi.index(0) <= pos[0]+extent; ++dwi.index(0), ++k)
+          if (! is_out_of_bounds(dwi))
+            X.col(k) = dwi.row(3).template cast<double>();
     // reset image position
     dwi.index(0) = pos[0];
     dwi.index(1) = pos[1];
@@ -89,7 +90,7 @@ private:
   int extent;
   size_t m, n;
   Eigen::MatrixXd X;
-  ssize_t pos[] = {0, 0, 0};
+  ssize_t pos[3];
   
 };
 
@@ -107,8 +108,8 @@ void run ()
   
   DenoisingFunctor< Image<value_type> > func (dwi_in, extent);
   
-  dwi_in.index(0) = 10;
-  dwi_in.index(1) = 10;
+  dwi_in.index(0) = 8;
+  dwi_in.index(1) = 9;
   dwi_in.index(2) = 10;
   
   func(dwi_in, dwi_out);
