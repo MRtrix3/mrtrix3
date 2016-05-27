@@ -46,6 +46,7 @@ Welcome to the MRtrix user documentation!
    tutorials/connectome_tool
    tutorials/labelconfig
    tutorials/advanced_debugging
+   tutorials/warping_images_with_warps_from_other_packages
 
 .. toctree::
    :maxdepth: 2
