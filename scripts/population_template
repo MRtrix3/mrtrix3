@@ -13,11 +13,12 @@ def abspath(*arg):
 def relpath(*arg):
   return os.path.relpath(os.path.join(*arg),lib.app.workingDir)
 
-from lib.printMessage  import printMessage
 from lib.errorMessage  import errorMessage
-from lib.warnMessage   import warnMessage
 from lib.getHeaderInfo import getHeaderInfo
+from lib.getUserPath   import getUserPath
+from lib.printMessage  import printMessage
 from lib.runCommand    import runCommand
+from lib.warnMessage   import warnMessage
 
 class Input:
   def __init__(self, filename, prefix, directory, mask_filename = '', mask_directory = ''):
@@ -353,16 +354,16 @@ for level in range(0, len(nl_scales)):
         runCommand('mv tmp.mif warps/' + i.prefix + '.mif')
 
 
-runCommand('mrconvert ' + current_template + ' ' + abspath(lib.app.workingDir, lib.app.args.template) + lib.app.mrtrixForce)
+runCommand('mrconvert ' + current_template + ' ' + getUserPath(lib.app.args.template, True) + lib.app.mrtrixForce)
 
 if lib.app.args.warp_dir:
-  runCommand('cp warps/* ' + abspath(lib.app.workingDir, lib.app.args.warp_dir))
+  shutil.copy('warps/', getUserPath(lib.app.args.warp_dir, False))
 
 if lib.app.args.transformed_dir:
-  runCommand('cp input_transformed/* ' + abspath(lib.app.workingDir, lib.app.args.transformed_dir))
+  shutil.copy('input_transformed/', getUserPath(lib.app.args.transformed_dir, False))
 
 if lib.app.args.template_mask:
-  runCommand('mrconvert ' + current_template_mask + ' ' + abspath(lib.app.workingDir, lib.app.args.template_mask) + lib.app.mrtrixForce)
+  runCommand('mrconvert ' + current_template_mask + ' ' + getUserPath(lib.app.args.template_mask, True) + lib.app.mrtrixForce)
 
 lib.app.complete()
 

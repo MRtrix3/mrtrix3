@@ -21,13 +21,14 @@ def getInputFiles():
   from lib.imagesMatch   import imagesMatch
   from lib.errorMessage  import errorMessage
   from lib.getHeaderInfo import getHeaderInfo
+  from lib.getUserPath   import getUserPath
   from lib.runCommand    import runCommand
   if hasattr(lib.app.args, 'mask') and lib.app.args.mask is not None:
-    runCommand('mrconvert ' + lib.app.args.mask + ' ' + os.path.join(lib.app.tempDir, 'mask.mif') + ' -datatype bit -stride -1,+2,+3')
+    runCommand('mrconvert ' + getUserPath(lib.app.args.mask, True) + ' ' + os.path.join(lib.app.tempDir, 'mask.mif') + ' -datatype bit -stride -1,+2,+3')
   if hasattr(lib.app.args, 't2') and lib.app.args.t2 is not None:
     if not imagesMatch(lib.app.args.input, lib.app.args.t2):
       errorMessage('Provided T2 image does not match input T1 image')
-    runCommand('mrconvert ' + lib.app.args.t2 + ' ' + os.path.join(lib.app.tempDir, 'T2.nii') + ' -stride -1,+2,+3')
+    runCommand('mrconvert ' + getUserPath(lib.app.args.t2, True) + ' ' + os.path.join(lib.app.tempDir, 'T2.nii') + ' -stride -1,+2,+3')
 
 
 
