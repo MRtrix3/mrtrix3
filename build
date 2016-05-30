@@ -334,21 +334,16 @@ environ = os.environ.copy()
 environ.update ({ 'PATH': PATH })
 
 target_bin_dir = os.path.join (mrtrix_dir[0], config_name, bin_dir);
-lib_dir = os.path.join (mrtrix_dir[-1], lib_dir)
 
 system = platform.system().lower()
 if system.startswith('mingw') or system.startswith('msys'):
   target_lib_dir = target_bin_dir
 else:
   target_lib_dir = os.path.join (mrtrix_dir[-1], config_name, lib_dir)
-
+lib_dir = os.path.join (mrtrix_dir[-1], lib_dir)
 
 if ld_enabled and len(runpath):
   ld_flags += [ runpath+os.path.relpath (target_lib_dir,target_bin_dir) ]
-
-if separate_project:
-  if ld_enabled and len(runpath):
-    ld_flags += [ runpath+os.path.relpath (target_lib_dir,target_bin_dir) ]
 
 
 # get version info:
