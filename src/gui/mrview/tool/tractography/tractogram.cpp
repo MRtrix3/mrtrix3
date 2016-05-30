@@ -570,6 +570,8 @@ namespace MR
             tck_count++;
             if (buffer.size() >= MAX_BUFFER_SIZE)
               load_tracks_onto_GPU (buffer, starts, sizes, tck_count);
+
+            endpoint_tangents.push_back ((tck.back() - tck.front()).normalized());
           }
           if (buffer.size()) {
             load_tracks_onto_GPU (buffer, starts, sizes, tck_count);
@@ -593,32 +595,26 @@ namespace MR
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
           erase_colour_data();
-          DWI::Tractography::Reader<float> file (filename, properties);
+          size_t total_tck_counter = 0;
           for (size_t buffer_index = 0, N = vertex_buffers.size(); buffer_index < N; ++buffer_index) {
-            size_t num_tracks = num_tracks_per_buffer[buffer_index];
+
+            const size_t num_tracks = num_tracks_per_buffer[buffer_index];
             std::vector<Eigen::Vector3f> buffer;
-            DWI::Tractography::Streamline<float> tck;
-            while (num_tracks--) {
-              file (tck);
-              const Eigen::Vector3f tangent ((tck.back() - tck.front()).normalized());
+            for (size_t buffer_tck_counter = 0; buffer_tck_counter != num_tracks; ++buffer_tck_counter) {
+
+              const Eigen::Vector3f& tangent (endpoint_tangents[total_tck_counter++]);
               const Eigen::Vector3f colour (std::abs (tangent[0]), std::abs (tangent[1]), std::abs (tangent[2]));
-              for (auto& i : tck)
-                i = colour;
+              const size_t tck_length = original_track_sizes[buffer_index][buffer_tck_counter];
 
-              // Pre padding to coincide with tracks buffer
-              for (size_t i = 0; i < max_sample_stride; ++i)
-                buffer.push_back (tck.front());
-
-              buffer.insert (buffer.end(), tck.begin(), tck.end());
-
-              // Post padding to coincide with tracks buffer
-              for (size_t i = 0; i < max_sample_stride; ++i)
-                buffer.push_back (tck.back());
+              // Includes pre- and post-padding to coincide with tracks buffer
+              for (size_t i = 0; i != tck_length + (2 * max_sample_stride); ++i)
+                buffer.push_back (colour);
 
             }
             load_end_colours_onto_GPU (buffer);
           }
-          file.close();
+          // Don't need this now that we've initialised the GPU buffers
+          endpoint_tangents.clear();
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
