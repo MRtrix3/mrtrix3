@@ -101,14 +101,14 @@ Diffusion image processing
    note that here we are estimating *multi-shell*, *multi-tissue*
    response functions:
 
-``dwi2response msmt_5tt DWI.mif 5TT.mif RF_GM.txt RF_WM.txt RF_CSF.txt -voxels RF_voxels.mif``
+``dwi2response msmt_5tt DWI.mif 5TT.mif RF_WM.txt RF_GM.txt RF_CSF.txt -voxels RF_voxels.mif``
 
 ``mrview meanb0.mif -overlay.load RF_voxels.mif -overlay.opacity 0.5`` (check
 appropriateness of response function voxel selections)
 
 4. Perform Multi-Shell, Multi-Tissue Constrained Spherical Deconvolution:
 
-``msdwi2fod DWI.mif RF_GM.txt GM.mif RF_WM.txt WM_FODs.mif RF_CSF.txt CSF.mif -mask nodif_brain_mask.nii.gz``
+``msdwi2fod DWI.mif RF_WM.txt WM_FODs.mif RF_GM.txt GM.mif RF_CSF.txt CSF.mif -mask nodif_brain_mask.nii.gz``
 
 ``mrview meanb0.mif -odf.load_sh WM_FODs.mif`` (visually make sure that the
 white matter FODs are sensible)
