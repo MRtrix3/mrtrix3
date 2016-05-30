@@ -96,12 +96,20 @@ public:
         break;
     }
     s.tail(r-p).setZero();
+    sigma = (p==r) ? NaN : std::sqrt(sigsq1);
     // Restore DWI data
     X = svd.matrixU() * s.asDiagonal() * svd.matrixV().adjoint();
     X.colwise() += Xm;
     // Store output
     assign_pos_of(dwi).to(out);
     out.row(3) = X.col(n/2).template cast<value_type>();
+  }
+  
+  void operator () (ImageType& dwi, ImageType& out, ImageType& noise)
+  {
+    operator ()(dwi, out);
+    assign_pos_of(dwi).to(noise);
+    noise.value() = sigma;
   }
   
   void load_data (ImageType& dwi)
@@ -126,6 +134,7 @@ private:
   Eigen::MatrixXf X;
   Eigen::VectorXf Xm;
   ssize_t pos[3];
+  float sigma;
   
 };
 
@@ -143,8 +152,20 @@ void run ()
   
   DenoisingFunctor< Image<value_type> > func (dwi_in, extent);
   
-  ThreadedLoop ("running MP-PCA denoising", dwi_in, 0, 3)
-    .run (func, dwi_in, dwi_out);
+  auto opt = get_options("noise");
+  if (opt.size())
+  {
+    header.set_ndim(3);
+    auto noise = Image<value_type>::create (opt[0][0], header);
+    ThreadedLoop ("running MP-PCA denoising", dwi_in, 0, 3)
+      .run (func, dwi_in, dwi_out, noise);
+  } 
+  else
+  {
+    ThreadedLoop ("running MP-PCA denoising", dwi_in, 0, 3)
+      .run (func, dwi_in, dwi_out);
+  }
+
 
 }
 
