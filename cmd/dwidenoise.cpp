@@ -61,6 +61,7 @@ public:
     : extent(size/2),
       m(dwi.size(3)),
       n(size*size*size),
+      r((m<n) ? m : n),
       X(m,n), Xm(m),
       pos{0, 0, 0}
   { }
@@ -75,15 +76,26 @@ public:
     // Compute SVD
     Eigen::JacobiSVD<Eigen::MatrixXf> svd (X, Eigen::ComputeThinU | Eigen::ComputeThinV);
     Eigen::VectorXf s = svd.singularValues();
-    // Simply threshold at 90% variance for now
-    double thres = 0.90 * s.squaredNorm();
-    double cumsum = 0.0;
-    for (size_t i = 0; i < n; ++i) {
-      if (cumsum <= thres)
-        cumsum += s[i] * s[i];
-      else
-        s[i] = 0.0;
+    Eigen::VectorXf lam = s.array().square() / n;
+    Eigen::VectorXf clam (r);
+    float cs = 0.0;
+    for (size_t i = r; i != 0; --i) {
+      cs += lam[i-1];
+      clam[i-1] = cs;
     }
+    float sigsq1, sigsq2, gam;
+    size_t p;
+    for (p = 0; p < r; ++p) {
+      gam = float(m-p) / float(n);
+      // First estimation of sigma
+      sigsq1 = clam[p] / (r-p) / ((gam<1.0) ? 1.0 : gam);
+      // Second estimation of sigma
+      sigsq2 = (lam[p] - lam[r]) / 4 / std::sqrt(gam);
+      // sigsq2 > sigsq1 if signal
+      if (sigsq2 < sigsq1)
+        break;
+    }
+    s.tail(r-p).setZero();
     // Restore DWI data
     X = svd.matrixU() * s.asDiagonal() * svd.matrixV().adjoint();
     X.colwise() += Xm;
@@ -110,7 +122,7 @@ public:
   
 private:
   int extent;
-  size_t m, n;
+  size_t m, n, r;
   Eigen::MatrixXf X;
   Eigen::VectorXf Xm;
   ssize_t pos[3];
