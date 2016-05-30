@@ -52,11 +52,7 @@ inline bool within_haussdorf (const DWI::Tractography::Streamline<>& tck1, const
   for (const auto& a : tck1) {
     float distance = std::numeric_limits<float>::max();
     for (const auto& b : tck2)
-#ifdef MRTRIX_UPDATED_API
       distance = std::min (distance, (a - b).squaredNorm());
-#else
-      distance = std::min (distance, (a - b).norm2());
-#endif
     if (distance > tol)
       return false;
   }
