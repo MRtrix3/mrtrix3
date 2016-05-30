@@ -63,7 +63,7 @@ public:
       n(size*size*size),
       r((m<n) ? m : n),
       X(m,n), Xm(m),
-      pos{0, 0, 0}
+      pos{{0, 0, 0}}
   { }
   
   void operator () (ImageType& dwi, ImageType& out)
@@ -87,11 +87,9 @@ public:
     size_t p;
     for (p = 0; p < r; ++p) {
       gam = float(m-p) / float(n);
-      // First estimation of sigma
       sigsq1 = clam[p] / (r-p) / ((gam<1.0) ? 1.0 : gam);
-      // Second estimation of sigma
       sigsq2 = (lam[p] - lam[r]) / 4 / std::sqrt(gam);
-      // sigsq2 > sigsq1 if signal
+      // for signal components sigsq2 > sigsq1
       if (sigsq2 < sigsq1)
         break;
     }
@@ -133,7 +131,7 @@ private:
   size_t m, n, r;
   Eigen::MatrixXf X;
   Eigen::VectorXf Xm;
-  ssize_t pos[3];
+  std::array<ssize_t, 3> pos;
   float sigma;
   
 };
