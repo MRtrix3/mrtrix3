@@ -76,25 +76,26 @@ public:
     // Compute SVD
     Eigen::JacobiSVD<Eigen::MatrixXf> svd (X, Eigen::ComputeThinU | Eigen::ComputeThinV);
     Eigen::VectorXf s = svd.singularValues();
-    Eigen::VectorXf lam = s.array().square() / n;
-    Eigen::VectorXf clam (r);
-    float cs = 0.0;
-    for (size_t i = r; i != 0; --i) {
-      cs += lam[i-1];
-      clam[i-1] = cs;
-    }
-    float sigsq1, sigsq2, gam;
-    size_t p;
-    for (p = 0; p < r; ++p) {
-      gam = float(m-p) / float(n);
-      sigsq1 = clam[p] / (r-p) / ((gam<1.0) ? 1.0 : gam);
-      sigsq2 = (lam[p] - lam[r-1]) / 4 / std::sqrt(gam);
-      // for signal components sigsq2 > sigsq1
-      if (sigsq2 < sigsq1)
+    // Marchenko-Pastur optimal threshold
+    double lam_r = s[r-1]*s[r-1] / n;
+    double clam = 0.0;
+    double lam, gam, sigsq1, sigsq2;
+    sigma = NaN;
+    for (ssize_t p = r-1; p >= 0; --p)
+    {
+      lam = s[p]*s[p] / n;
+      clam += lam;
+      gam = double(m-p) / double(n);
+      sigsq1 = clam / (r-p) / ((gam<1.0) ? 1.0 : gam);
+      sigsq2 = (lam - lam_r) / 4 / std::sqrt(gam);
+      // sigsq2 > sigsq1 if signal else noise
+      if (sigsq2 < sigsq1) {
+        sigma = std::sqrt(sigsq1);
+        s[p] = 0.0;
+      } else {
         break;
+      }
     }
-    s.tail(r-p).setZero();
-    sigma = (p==r) ? NaN : std::sqrt(sigsq1);
     // Restore DWI data
     X = svd.matrixU() * s.asDiagonal() * svd.matrixV().adjoint();
     X.colwise() += Xm;
