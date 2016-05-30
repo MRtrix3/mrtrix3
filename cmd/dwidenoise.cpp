@@ -73,8 +73,8 @@ public:
     Xm = X.rowwise().mean();
     X.colwise() -= Xm;
     // Compute SVD
-    Eigen::JacobiSVD<Eigen::MatrixXd> svd (X, Eigen::ComputeThinU | Eigen::ComputeThinV);
-    Eigen::VectorXd s = svd.singularValues();
+    Eigen::JacobiSVD<Eigen::MatrixXf> svd (X, Eigen::ComputeThinU | Eigen::ComputeThinV);
+    Eigen::VectorXf s = svd.singularValues();
     // Simply threshold at 90% variance for now
     double thres = 0.90 * s.squaredNorm();
     double cumsum = 0.0;
@@ -101,7 +101,7 @@ public:
       for (dwi.index(1) = pos[1]-extent; dwi.index(1) <= pos[1]+extent; ++dwi.index(1))
         for (dwi.index(0) = pos[0]-extent; dwi.index(0) <= pos[0]+extent; ++dwi.index(0), ++k)
           if (! is_out_of_bounds(dwi))
-            X.col(k) = dwi.row(3).template cast<double>();
+            X.col(k) = dwi.row(3).template cast<float>();
     // reset image position
     dwi.index(0) = pos[0];
     dwi.index(1) = pos[1];
@@ -111,8 +111,8 @@ public:
 private:
   int extent;
   size_t m, n;
-  Eigen::MatrixXd X;
-  Eigen::VectorXd Xm;
+  Eigen::MatrixXf X;
+  Eigen::VectorXf Xm;
   ssize_t pos[3];
   
 };
