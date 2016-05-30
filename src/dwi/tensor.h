@@ -28,17 +28,20 @@ namespace MR
     template <typename T, class MatrixType> 
       inline Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> grad2bmatrix (const MatrixType& grad, bool dki = false)
     {
+      std::unique_ptr<DWI::Shells> shells;
       try {
-        DWI::Shells shells (grad);
-        if (dki) {
-          if (shells.count() < 3)
-            throw Exception ("Kurtosis tensor estimation requires at least 3 b-value shells");
-        } else {
-          if (shells.count() < 2)
-            throw Exception ("Tensor estimation requires at least 2 b-values");
-        }
+        shells.reset (new DWI::Shells (grad));
       } catch (...) {
         WARN ("Unable to separate diffusion gradient table into shells; tensor estimation success uncertain");
+      }
+      if (shells) {
+        if (dki) {
+          if (shells->count() < 3)
+            throw Exception ("Kurtosis tensor estimation requires at least 3 b-value shells");
+        } else {
+          if (shells->count() < 2)
+            throw Exception ("Tensor estimation requires at least 2 b-values");
+        }
       }
 
       Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> bmat (grad.rows(), (dki ? 22 : 7));
