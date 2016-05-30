@@ -88,7 +88,7 @@ public:
     for (p = 0; p < r; ++p) {
       gam = float(m-p) / float(n);
       sigsq1 = clam[p] / (r-p) / ((gam<1.0) ? 1.0 : gam);
-      sigsq2 = (lam[p] - lam[r]) / 4 / std::sqrt(gam);
+      sigsq2 = (lam[p] - lam[r-1]) / 4 / std::sqrt(gam);
       // for signal components sigsq2 > sigsq1
       if (sigsq2 < sigsq1)
         break;
