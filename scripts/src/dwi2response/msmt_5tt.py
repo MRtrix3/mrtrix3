@@ -83,7 +83,7 @@ def execute():
   # Revise WM mask to only include single-fibre voxels
   printMessage('Calling dwi2response recursively to select WM single-fibre voxels using \'' + lib.app.args.wm_algo + '\' algorithm')
   recursive_cleanup_option=''
-  if not lib.app.args.cleanup:
+  if not lib.app.cleanup:
     recursive_cleanup_option = ' -nocleanup'
   runCommand('dwi2response -quiet -tempdir ' + lib.app.tempDir + recursive_cleanup_option + ' ' + lib.app.args.wm_algo + ' dwi.mif wm_ss_response.txt -mask wm_mask.mif -voxels wm_sf_mask.mif')
 
