@@ -210,7 +210,7 @@ namespace MR
         template <class Fixel>
         void ModelBase<Fixel>::scale_FDs_by_GM ()
         {
-          if (App::get_options("no_fd_scaling").size())
+          if (!App::get_options("fd_scale_gm").size())
             return;
           if (!act_5tt.valid()) {
             INFO ("Cannot scale fibre densities according to GM fraction; no ACT image data provided");
