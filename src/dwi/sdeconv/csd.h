@@ -13,8 +13,8 @@
  * 
  */
 
-#ifndef __dwi_sdeconv_constrained_h__
-#define __dwi_sdeconv_constrained_h__
+#ifndef __dwi_sdeconv_csd_h__
+#define __dwi_sdeconv_csd_h__
 
 #include "app.h"
 #include "header.h"
@@ -34,10 +34,12 @@ namespace MR
 {
   namespace DWI
   {
+    namespace SDeconv
+    {
 
     extern const App::OptionGroup CSD_options;
 
-    class CSDeconv
+    class CSD
     {
       public:
         class Shared
@@ -66,8 +68,14 @@ namespace MR
             {
               using namespace App;
               auto opt = get_options ("lmax");
-              if (opt.size())
-                lmax = opt[0][0];
+              if (opt.size()) {
+                auto list = parse_ints (opt[0][0]);
+                if (list.size() != 1)
+                  throw Exception ("CSD algorithm expects a single lmax to be specified");
+                lmax = list.front();
+                if (lmax <= 0 || lmax % 2)
+                  throw Exception ("lmax must be a positive even integer");
+              }
               opt = get_options ("filter");
               if (opt.size())
                 init_filter = load_vector<> (opt[0][0]);
@@ -213,7 +221,7 @@ namespace MR
 
 
 
-        CSDeconv (const Shared& shared_data) :
+        CSD (const Shared& shared_data) :
           shared (shared_data),
           work (shared.Mt_M.rows(), shared.Mt_M.cols()),
           HR_T (shared.HR_trans.rows(), shared.HR_trans.cols()),
@@ -223,24 +231,11 @@ namespace MR
           Mt_b (shared.HR_trans.cols()),
           llt (work.rows()),
           old_neg (shared.HR_trans.rows()),
-          computed_once (false) {
-          }
+          computed_once (false) { }
 
-        CSDeconv (const CSDeconv&) = default;
-        /*
-           CSDeconv (const CSDeconv& c) :
-           shared (c.shared),
-           work (shared.Mt_M.rows(), shared.Mt_M.cols()),
-           HR_T (shared.HR_trans.rows(), shared.HR_trans.cols()),
-           F (shared.HR_trans.cols()),
-           init_F (shared.rconv.rows()),
-           HR_amps (shared.HR_trans.rows()),
-           Mt_b (shared.HR_trans.cols()),
-           old_neg (shared.HR_trans.rows()),
-           computed_once (false) {
-           }
-           */
-        ~CSDeconv() { }
+        CSD (const CSD&) = default;
+
+        ~CSD() { }
 
         template <class VectorType>
           void set (const VectorType& DW_signals) {
@@ -294,6 +289,7 @@ namespace MR
     };
 
 
+    }
   }
 }
 
