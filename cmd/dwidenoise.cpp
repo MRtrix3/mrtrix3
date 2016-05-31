@@ -62,7 +62,7 @@ public:
       m(dwi.size(3)),
       n(size*size*size),
       r((m<n) ? m : n),
-      X(m,n), Xm(m),
+      X(m,n), 
       pos{{0, 0, 0}}
   { }
   
@@ -70,9 +70,6 @@ public:
   {
     // Load data in local window
     load_data(dwi);
-    // Centre data
-    Xm = X.rowwise().mean();
-    X.colwise() -= Xm;
     // Compute SVD
     Eigen::JacobiSVD<Eigen::MatrixXf> svd (X, Eigen::ComputeThinU | Eigen::ComputeThinV);
     Eigen::VectorXf s = svd.singularValues();
@@ -98,7 +95,6 @@ public:
     }
     // Restore DWI data
     X = svd.matrixU() * s.asDiagonal() * svd.matrixV().adjoint();
-    X.colwise() += Xm;
     // Store output
     assign_pos_of(dwi).to(out);
     out.row(3) = X.col(n/2).template cast<value_type>();
@@ -131,7 +127,6 @@ private:
   int extent;
   size_t m, n, r;
   Eigen::MatrixXf X;
-  Eigen::VectorXf Xm;
   std::array<ssize_t, 3> pos;
   float sigma;
   
