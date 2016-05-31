@@ -28,6 +28,7 @@ def execute():
   import os, shutil
   import lib.app
   from lib.getImageStat import getImageStat
+  from lib.getUserPath  import getUserPath
   from lib.printMessage import printMessage
   from lib.runCommand   import runCommand
   
@@ -96,5 +97,5 @@ def execute():
     shutil.copyfile('iter' + str(lib.app.args.max_iters-1) + '_RF.txt', 'response.txt')
     shutil.copyfile('iter' + str(lib.app.args.max_iters-1) + '_SF.mif', 'voxels.mif')
     
-  shutil.copyfile('response.txt', os.path.join(lib.app.workingDir, lib.app.args.output))
+  shutil.copyfile('response.txt', getUserPath(lib.app.args.output, False))
 

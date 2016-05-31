@@ -9,7 +9,7 @@ citationWarning = ''
 cleanup = True
 lastFile = ''
 mrtrixForce = ''
-mrtrixQuiet = '-quiet'
+mrtrixQuiet = ' -quiet'
 mrtrixNThreads = ''
 parser = ''
 refList = ''
@@ -119,10 +119,10 @@ def initialise():
   if args.nocleanup:
     cleanup = False
   if args.nthreads:
-    mrtrixNThreads = '-nthreads ' + args.nthreads
+    mrtrixNThreads = ' -nthreads ' + args.nthreads
   if args.quiet:
     verbosity = 0
-    mrtrixQuiet = '-quiet'
+    mrtrixQuiet = ' -quiet'
   if args.verbose:
     verbosity = 2
     mrtrixQuiet = ''
@@ -222,3 +222,4 @@ def getCommonPostfix(inputFiles):
        common = first[len(first)-cursor-1] + common
      cursor += 1
  return common
+

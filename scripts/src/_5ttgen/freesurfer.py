@@ -15,8 +15,9 @@ def checkOutputFiles():
 def getInputFiles():
   import os, shutil
   import lib.app
+  from lib.getUserPath import getUserPath
   if hasattr(lib.app.args, 'lut') and lib.app.args.lut:
-    shutil.copyfile(lib.app.args.lut, os.path.join(lib.app.tempDir, 'LUT.txt'))
+    shutil.copyfile(getUserPath(lib.app.args.lut, False), os.path.join(lib.app.tempDir, 'LUT.txt'))
 
 
 
@@ -24,7 +25,8 @@ def execute():
   import os, sys
   import lib.app
   from lib.errorMessage import errorMessage
-  from lib.runCommand import runCommand
+  from lib.getUserPath  import getUserPath
+  from lib.runCommand   import runCommand
 
   lut_path = 'LUT.txt'
   if not os.path.exists('LUT.txt'):
