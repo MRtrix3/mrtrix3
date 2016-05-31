@@ -20,6 +20,7 @@
 #include "math/gradient_descent.h"
 #include "math/math.h"
 #include "math/median.h"
+#include "debug.h"
 
 
 namespace MR
@@ -141,20 +142,30 @@ namespace MR
             Xnew = (Asqrt * Bsqrtinv) - ((Asqrt * Bsqrtinv - Bsqrtinv * Asqrt) * 0.5);
           }
 
-          // project affine to rigid
+          // project affine 3x3 matrix to rigid matrix
+          // adjust translation to account for scale of affine by matching projected control point
+          // centroids of affine and projected rigid transformation
           Eigen::Matrix<default_type, 3, 3> L(Xnew.template block<3,3>(0,0));
           Eigen::Matrix<default_type, 3, 3> R;
           project_linear2rotation(L, R);
           Xnew.template block<3,3>(0,0) = R;
+          if (control_points.size()) {
+            P = control_points;
+            Eigen::Matrix<default_type, 3, 1> T_affine, T_new, centroid;
+            T_affine = Xnew.block<3,1>(0,3);
+            centroid = P.rowwise().mean().head<3>();
+            T_new = L.sqrt() * centroid + T_affine - R.sqrt() * centroid;
+            Xnew.template block<3,1>(0,3) = T_new;
+          }
           Registration::Transform::param_mat2vec(Xnew, newx);
 
           // stop criterion based on max shift of control points
           if (control_points.size()) {
+            Diff.noalias() = ((Xnew) * P - X * P).cwiseAbs();
             Diff.row(0) *= recip_spacing(0);
             Diff.row(1) *= recip_spacing(1);
             Diff.row(2) *= recip_spacing(2);
             Diff.colwise() -= stop_len;
-            // MAT(Diff);
             if (Diff.template block<3,4>(0,0).maxCoeff() <= 0.0) {
               DEBUG("max control point movement (" + str(Diff.template block<3,4>(0,0).maxCoeff()) +
               ") smaller than tolerance" );
