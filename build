@@ -438,7 +438,7 @@ class Entry:
 
   def set_executable (self):
     self.action = 'LB'
-    if len(exe_suffix) > 0: cc_file = self.name[:-len(exe_suffix)]
+    if len(exe_suffix) > 0 and self.name.endswith(exe_suffix): cc_file = self.name[:-len(exe_suffix)]
     else: cc_file = self.name
     cc_file = split_intermediate (cc_file)
     cc_file = os.path.normpath (os.path.join (cc_file[0], cmd_dir, os.sep.join (split_path(cc_file[2])[1:]) + cpp_suffix))
