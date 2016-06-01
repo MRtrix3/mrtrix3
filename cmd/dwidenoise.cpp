@@ -76,7 +76,7 @@ public:
     // Marchenko-Pastur optimal threshold
     const double lam_r = s[r-1]*s[r-1] / n;
     double clam = 0.0;
-    sigma = NaN;
+    sigma2 = NaN;
     for (ssize_t p = r-1; p >= 0; --p)
     {
       double lam = s[p]*s[p] / n;
