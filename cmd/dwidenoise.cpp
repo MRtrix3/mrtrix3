@@ -86,10 +86,10 @@ public:
       double sigsq2 = (lam - lam_r) / 4 / std::sqrt(gam);
       // sigsq2 > sigsq1 if signal else noise
       if (sigsq2 < sigsq1) {
+        sigma2 = sigsq1;
         s[p] = 0.0;
       } 
       else {
-        sigma = std::sqrt(sigsq1);
         break;
       }
     }
@@ -105,7 +105,7 @@ public:
   {
     operator ()(dwi, out);
     assign_pos_of(dwi).to(noise);
-    noise.value() = sigma;
+    noise.value() = (float) std::sqrt(sigma2);
   }
   
   void load_data (ImageType& dwi)
@@ -129,7 +129,7 @@ private:
   const size_t m, n, r;
   Eigen::MatrixXf X;
   std::array<ssize_t, 3> pos;
-  float sigma;
+  double sigma2;
   
 };
 
