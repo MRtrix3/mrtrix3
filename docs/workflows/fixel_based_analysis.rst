@@ -129,7 +129,7 @@ The FC files will be used in the next step. However, for group statistical analy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 To account for changes to both within-voxel fibre density and macroscopic atrophy, fibre density and fibre cross-section must be combined (a measure we call fibre density & cross-section, FDC). This enables a more complete picture of group differences in white matter. Note that as discussed in our future work (under review), group differences in FD or FC alone must be interpreted with care in crossing-fibre regions. However group differences in FDC are more directly interpretable. To generate the combined measure we 'modulate' the FD by FC::
 
-    fixelmath <input_fd.msf> mult <input_fc.msf> <output_fdc.msf>
+    fixelcalc <input_fd.msf> mult <input_fc.msf> <output_fdc.msf>
     
 14. Perform whole-brain fibre tractography on the FOD template
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
