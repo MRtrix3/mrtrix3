@@ -12,33 +12,19 @@
  * For more details, see www.mrtrix.org
  * 
  */
-#include "dwi/sdeconv/constrained.h"
+#include "dwi/sdeconv/csd.h"
 
 namespace MR
 {
   namespace DWI
   {
+    namespace SDeconv
+    {
 
     using namespace App;
 
     const OptionGroup CSD_options =
-      OptionGroup ("Spherical deconvolution options")
-      + Option ("lmax",
-                "set the maximum harmonic order for the output series. By default, the "
-                "program will use the highest possible lmax given the number of "
-                "diffusion-weighted images, up to a maximum of 8.")
-      + Argument ("order").type_integer (2, 30)
-
-      + Option ("mask",
-                "only perform computation within the specified binary brain mask image.")
-      + Argument ("image").type_image_in()
-
-      + Option ("directions",
-                "specify the directions over which to apply the non-negativity constraint "
-                "(by default, the built-in 300 direction set is used). These should be "
-                "supplied as a text file containing the [ az el ] pairs for the directions.")
-      + Argument ("file").type_file_in()
-
+      OptionGroup ("Options for the Constrained Spherical Deconvolution algorithm")
       + Option ("filter",
                 "the linear frequency filtering parameters used for the initial linear "
                 "spherical deconvolution step (default = [ 1 1 1 0 0 ]). These should be "
@@ -63,10 +49,12 @@ namespace MR
 
       + Option ("niter",
                 "the maximum number of iterations to perform for each voxel (default = " + str(DEFAULT_CSD_NITER) + "). "
+                // TODO Explicit SD algorithm?
                 "Use '-niter 0' for a linear unconstrained spherical deconvolution.")
       + Argument ("number").type_integer (0, 1000);
 
 
+    }
   }
 }
 

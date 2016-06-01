@@ -239,10 +239,6 @@ List of MRtrix3 commands
 .......
 
 
-.. include:: commands/msdwi2fod.rst
-.......
-
-
 .. include:: commands/peaks2amp.rst
 .......
 
