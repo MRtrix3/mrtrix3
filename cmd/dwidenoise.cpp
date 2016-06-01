@@ -80,7 +80,7 @@ class DenoisingFunctor
     }
 
     // Load data in local window
-    load_data(dwi);
+    load_data (dwi);
 
     // Compute SVD
     Eigen::JacobiSVD<Eigen::MatrixXf> svd (X, Eigen::ComputeThinU | Eigen::ComputeThinV);
@@ -90,25 +90,26 @@ class DenoisingFunctor
     const double lam_r = s[r-1]*s[r-1] / n;
     double clam = 0.0;
     sigma2 = NaN;
+    ssize_t cutoff_p = r;
     for (ssize_t p = r-1; p >= 0; --p)
     {
       double lam = s[p]*s[p] / n;
       clam += lam;
       double gam = double(m-p) / double(n);
-      double sigsq1 = clam / (r-p) / ((gam<1.0) ? 1.0 : gam);
+      double sigsq1 = clam / (m-p) / std::max (gam, 1.0);
       double sigsq2 = (lam - lam_r) / 4 / std::sqrt(gam);
       // sigsq2 > sigsq1 if signal else noise
       if (sigsq2 < sigsq1) {
         sigma2 = sigsq1;
-        s[p] = 0.0;
+        cutoff_p = p;
       } 
-      else {
-        break;
-      }
     }
 
-    // Restore DWI data
-    X = svd.matrixU() * s.asDiagonal() * svd.matrixV().adjoint();
+    if (cutoff_p < ssize_t(r)) {
+      s.tail (r-cutoff_p).setZero();
+      // Restore DWI data
+      X = svd.matrixU() * s.asDiagonal() * svd.matrixV().adjoint();
+    }
 
     // Store output
     assign_pos_of(dwi).to(out);
