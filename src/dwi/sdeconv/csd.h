@@ -73,8 +73,6 @@ namespace MR
                 if (list.size() != 1)
                   throw Exception ("CSD algorithm expects a single lmax to be specified");
                 lmax = list.front();
-                if (lmax <= 0 || lmax % 2)
-                  throw Exception ("lmax must be a positive even integer");
               }
               opt = get_options ("filter");
               if (opt.size())
@@ -117,6 +115,9 @@ namespace MR
             void init ()
             {
               using namespace Math::SH;
+
+              if (lmax <= 0 || lmax % 2)
+                throw Exception ("lmax must be a positive even integer");
 
               assert (response.size());
               lmax_response = std::min (lmax_response, std::min (lmax_data, lmax));

@@ -111,6 +111,7 @@ class CSD_Processor
       data (shared.dwis.size()),
       mask (mask) { }
 
+
     void operator () (Image<float>& dwi, Image<float>& fod) {
       if (!load_data (dwi)) {
         for (auto l = Loop (3) (fod); l; ++l)
@@ -131,7 +132,6 @@ class CSD_Processor
 
       write_back (fod);
     }
-
 
 
   private:
@@ -160,7 +160,6 @@ class CSD_Processor
     }
 
 
-
     void write_back (Image<float>& fod) {
       for (auto l = Loop (3) (fod); l; ++l)
         fod.value() = sdeconv.FOD() [fod.index(3)];
@@ -174,13 +173,13 @@ class CSD_Processor
 class MSMT_Processor
 {
   public:
-    MSMT_Processor (const DWI::SDeconv::MSMT_CSD& shared, Image<bool>& mask_image, std::vector< Image<float> > odf_images) :
-        shared (shared),
-        solver (shared.problem),
+    MSMT_Processor (const DWI::SDeconv::MSMT_CSD::Shared& shared, Image<bool>& mask_image, std::vector< Image<float> > odf_images) :
+        sdeconv (shared),
         mask_image (mask_image),
         odf_images (odf_images),
-        dwi (shared.problem.H.rows()),
-        p (shared.problem.H.cols()) { }
+        dwi_data (shared.grad.rows()),
+        output_data (shared.problem.H.cols()) { }
+
 
     void operator() (Image<float>& dwi_image)
     {
@@ -191,27 +190,29 @@ class MSMT_Processor
       }
 
       for (auto l = Loop (3) (dwi_image); l; ++l)
-        dwi[dwi_image.index(3)] = dwi_image.value();
+        dwi_data[dwi_image.index(3)] = dwi_image.value();
 
-      size_t niter = solver (p, dwi);
-      if (niter >= shared.problem.max_niter) {
-        INFO ("failed to converge");
+      sdeconv (dwi_data, output_data);
+      if (sdeconv.niter >= sdeconv.shared.problem.max_niter) {
+        INFO ("voxel [ " + str (dwi_image.index(0)) + " " + str (dwi_image.index(1)) + " " + str (dwi_image.index(2)) +
+            " ] did not reach full convergence");
       }
 
+      size_t j = 0;
       for (size_t i = 0; i < odf_images.size(); ++i) {
         assign_pos_of (dwi_image, 0, 3).to (odf_images[i]);
         for (auto l = Loop(3)(odf_images[i]); l; ++l)
-          odf_images[i].value() = p[size_t(odf_images[i].index(3))];
+          odf_images[i].value() = output_data[j++];
       }
     }
 
+
   private:
-    const DWI::SDeconv::MSMT_CSD& shared;
-    Math::ICLS::Solver<double> solver;
+    DWI::SDeconv::MSMT_CSD sdeconv;
     Image<bool> mask_image;
     std::vector< Image<float> > odf_images;
-    Eigen::VectorXd dwi;
-    Eigen::VectorXd p;
+    Eigen::VectorXd dwi_data;
+    Eigen::VectorXd output_data;
 };
 
 
@@ -223,18 +224,18 @@ class MSMT_Processor
 void run ()
 {
 
-
-  auto dwi = Image<float>::open (argument[1]).with_direct_io (3);
-  Header header (dwi);
-  header.set_ndim (4);
-  header.datatype() = DataType::Float32;
-  Stride::set_from_command_line (header);
+  auto header_in = Header::open (argument[1]);
+  Header header_out (header_in);
+  header_out.set_ndim (4);
+  header_out.datatype() = DataType::Float32;
+  header_out.datatype().set_byte_order_native();
+  Stride::set_from_command_line (header_out, Stride::contiguous_along_axis (3, header_in));
 
   auto mask = Image<bool>();
   auto opt = get_options ("mask");
   if (opt.size()) {
     mask = Header::open (opt[0][0]).get_image<bool>();
-    check_dimensions (dwi, mask, 0, 3);
+    check_dimensions (header_in, mask, 0, 3);
   }
 
   int algorithm = argument[0];
@@ -243,15 +244,21 @@ void run ()
     if (argument.size() != 4)
       throw Exception ("CSD algorithm expects a single input response function and single output FOD image");
 
-    DWI::SDeconv::CSD::Shared shared (dwi);
+    DWI::SDeconv::CSD::Shared shared (header_in);
     shared.parse_cmdline_options();
-    shared.set_response (argument[2]);
+    try {
+      shared.set_response (argument[2]);
+    } catch (Exception& e) {
+      throw Exception (e, "CSD algorithm expects second argument to be the input response function file");
+    }
+
     shared.init();
 
-    header.size(3) = shared.nSH();
-    auto fod = Image<float>::create (argument[3], header);
+    header_out.size(3) = shared.nSH();
+    auto fod = Image<float>::create (argument[3], header_out);
 
     CSD_Processor processor (shared, mask);
+    auto dwi = header_in.get_image<float>().with_direct_io (3);
     ThreadedLoop ("performing constrained spherical deconvolution", dwi, 0, 3)
         .run (processor, dwi, fod);
 
@@ -260,64 +267,32 @@ void run ()
     if (argument.size() % 2)
       throw Exception ("MSMT_CSD algorithm expects pairs of (input response function & output FOD image) to be provided");
 
-    auto grad = DWI::get_valid_DW_scheme (dwi);
+    DWI::SDeconv::MSMT_CSD::Shared shared (header_in);
 
-    DWI::Shells shells (grad);
-    size_t nbvals = shells.count();
-
-    std::vector<int> lmax;
-    std::vector<Eigen::MatrixXd> response;
-    std::vector<std::string> path;
-    for (size_t i = 0; i < (argument.size()-2)/2; i++) {
-      Eigen::MatrixXd r;
-      try {
-        r = load_matrix<> (argument[i*2+2]);
-      } catch (Exception& e) {
-        e.display();
-        throw Exception ("The first of each argument pair should be an input response function file");
-      }
-      if (size_t(r.rows()) != nbvals)
-        throw Exception ("number of rows in response function text file should match number of shells in dwi");
-      size_t n = 0;
-      for (size_t j = 0; j < size_t(r.rows()); j++) {
-        for (size_t k = 0; k < size_t(r.cols()); k++) {
-          if (r(j,k))
-            n = std::max (n, k+1);
-        }
-      }
-      r.conservativeResize (r.rows(), n);
-      lmax.push_back ((r.cols()-1)*2);
-      response.push_back (r);
-      path.push_back (argument[i*2+3]);
+    const size_t num_tissues = (argument.size()-2)/2;
+    std::vector<std::string> response_paths;
+    std::vector<std::string> odf_paths;
+    for (size_t i = 0; i < num_tissues; ++i) {
+      response_paths.push_back (argument[i*2+2]);
+      odf_paths.push_back (argument[i*2+3]);
     }
 
-    auto opt = get_options ("lmax");
-    if (opt.size()) {
-      std::vector<int> lmax_user = parse_ints (opt[0][0]);
-      if (lmax_user.size() != lmax.size())
-        throw Exception ("Number of lmaxes specified does not match number of tissues");
-      for (size_t i = 0; i < lmax_user.size(); i++) {
-        if (lmax_user[i] < 0 || lmax_user[i] % 2)
-          throw Exception ("Each value of lmax must be a non-negative even integer");
-        lmax[i] = lmax_user[i];
-        response[i].conservativeResizeLike (Eigen::MatrixXd::Zero(response[i].rows(), lmax_user[i]/2+1));
-      }
+    try {
+      shared.set_responses (response_paths);
+    } catch (Exception& e) {
+      throw Exception (e, "MSMT_CSD algorithm expects the first file in each argument pair to be an input response function file");
     }
 
-    Eigen::MatrixXd HR_dirs = DWI::Directions::electrostatic_repulsion_300();
-    opt = get_options ("directions");
-    if (opt.size())
-      HR_dirs = load_matrix<> (opt[0][0]);
-
-    DWI::SDeconv::MSMT_CSD shared (lmax, response, grad, HR_dirs);
+    shared.init();
 
     std::vector< Image<float> > odfs;
-    for (size_t i = 0; i < path.size(); ++i) {
-      header.size (3) = Math::SH::NforL (lmax[i]);
-      odfs.push_back(Image<float> (Image<float>::create (path[i], header)));
+    for (size_t i = 0; i < num_tissues; ++i) {
+      header_out.size (3) = Math::SH::NforL (shared.lmax[i]);
+      odfs.push_back (Image<float> (Image<float>::create (odf_paths[i], header_out)));
     }
 
     MSMT_Processor processor (shared, mask, odfs);
+    auto dwi = header_in.get_image<float>().with_direct_io (3);
     ThreadedLoop ("performing multi-shell, multi-tissue CSD", dwi, 0, 3)
         .run (processor, dwi);
 
