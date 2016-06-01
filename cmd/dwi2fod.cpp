@@ -14,14 +14,11 @@
  */
 
 #include "command.h"
+#include "header.h"
 #include "image.h"
-#include "memory.h"
-#include "progressbar.h"
-#include "algo/threaded_copy.h"
 #include "algo/threaded_loop.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
-#include "dwi/directions/predefined.h"
 #include "dwi/sdeconv/csd.h"
 #include "dwi/sdeconv/msmt_csd.h"
 #include "math/SH.h"

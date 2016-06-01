@@ -18,13 +18,14 @@
 
 #include <vector>
 
-#include "app.h"
 #include "header.h"
 
 #include "math/constrained_least_squares.h"
 #include "math/math.h"
+#include "math/SH.h"
 
 #include "dwi/directions/predefined.h"
+#include "dwi/gradient.h"
 #include "dwi/shells.h"
 
 
