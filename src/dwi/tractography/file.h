@@ -212,6 +212,7 @@ namespace MR
           using __WriterBase__<ValueType>::create;
           using __WriterBase__<ValueType>::verify_stream;
           using __WriterBase__<ValueType>::update_counts;
+          using __WriterBase__<ValueType>::open_success;
 
           typedef Eigen::Matrix<ValueType,3,1> vector_type;
 
@@ -222,7 +223,12 @@ namespace MR
             if (!Path::has_suffix (name, ".tck"))
               throw Exception ("output track files must use the .tck suffix");
 
-            File::OFStream out (name, std::ios::out | std::ios::binary | std::ios::trunc);
+            File::OFStream out;
+            try {
+              out.open (name, std::ios::out | std::ios::binary | std::ios::trunc);
+            } catch (Exception& e) {
+              throw Exception (e, "Unable to create output track file");
+            }
 
             const_cast<Properties&> (properties).set_timestamp();
             const_cast<Properties&> (properties).set_version_info();
@@ -235,6 +241,7 @@ namespace MR
             out.write (reinterpret_cast<char*> (&x[0]), sizeof (x));
             if (!out.good())
               throw Exception ("error writing tracks file \"" + name + "\": " + strerror (errno));
+            open_success = true;
 
             auto opt = App::get_options ("tck_weights_out");
             if (opt.size())
@@ -302,7 +309,7 @@ namespace MR
           /*! \note \c buffer needs to be greater than \c num_points by one
            * element to add the barrier. */
           void commit (vector_type* data, size_t num_points) {
-            if (num_points == 0) 
+            if (num_points == 0 || !open_success)
               return;
 
             int64_t prev_barrier_addr = barrier_addr;
