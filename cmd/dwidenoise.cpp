@@ -97,7 +97,8 @@ public:
     X = svd.matrixU() * s.asDiagonal() * svd.matrixV().adjoint();
     // Store output
     assign_pos_of(dwi).to(out);
-    out.row(3) = X.col(n/2).template cast<value_type>();
+    for (auto l = Loop (3) (out); l; ++l)
+      out.value() = X(out.index(3), n/2);
   }
   
   void operator () (ImageType& dwi, ImageType& out, ImageType& noise)
