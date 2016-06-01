@@ -74,22 +74,22 @@ public:
     Eigen::JacobiSVD<Eigen::MatrixXf> svd (X, Eigen::ComputeThinU | Eigen::ComputeThinV);
     Eigen::VectorXf s = svd.singularValues();
     // Marchenko-Pastur optimal threshold
-    double lam_r = s[r-1]*s[r-1] / n;
+    const double lam_r = s[r-1]*s[r-1] / n;
     double clam = 0.0;
-    double lam, gam, sigsq1, sigsq2;
     sigma = NaN;
     for (ssize_t p = r-1; p >= 0; --p)
     {
-      lam = s[p]*s[p] / n;
+      double lam = s[p]*s[p] / n;
       clam += lam;
-      gam = double(m-p) / double(n);
-      sigsq1 = clam / (r-p) / ((gam<1.0) ? 1.0 : gam);
-      sigsq2 = (lam - lam_r) / 4 / std::sqrt(gam);
+      double gam = double(m-p) / double(n);
+      double sigsq1 = clam / (r-p) / ((gam<1.0) ? 1.0 : gam);
+      double sigsq2 = (lam - lam_r) / 4 / std::sqrt(gam);
       // sigsq2 > sigsq1 if signal else noise
       if (sigsq2 < sigsq1) {
-        sigma = std::sqrt(sigsq1);
         s[p] = 0.0;
-      } else {
+      } 
+      else {
+        sigma = std::sqrt(sigsq1);
         break;
       }
     }
@@ -124,8 +124,8 @@ public:
   }
   
 private:
-  int extent;
-  size_t m, n, r;
+  const int extent;
+  const size_t m, n, r;
   Eigen::MatrixXf X;
   std::array<ssize_t, 3> pos;
   float sigma;
