@@ -66,7 +66,8 @@ namespace MR
               total_count (0),
               name (name), 
               dtype (DataType::from<ValueType>()),
-              count_offset (0)
+              count_offset (0),
+              open_success (false)
           {
             dtype.set_byte_order_native();
             if (dtype != DataType::Float32LE && dtype != DataType::Float32BE &&
@@ -78,8 +79,10 @@ namespace MR
 
             ~__WriterBase__()
             {
-              File::OFStream out (name, std::ios::in | std::ios::out | std::ios::binary);
-              update_counts (out);
+              if (open_success) {
+                File::OFStream out (name, std::ios::in | std::ios::out | std::ios::binary);
+                update_counts (out);
+              }
             }
 
             void create (File::OFStream& out, const Properties& properties, const std::string& type) {
@@ -124,7 +127,8 @@ namespace MR
           protected:
             std::string name;
             DataType dtype;
-            int64_t  count_offset;
+            int64_t count_offset;
+            bool open_success;
 
 
             void verify_stream (const File::OFStream& out) {
