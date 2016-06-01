@@ -179,7 +179,7 @@ namespace MR
 
                 Eigen::MatrixXd HR_SHT = Math::SH::init_transform (HR_dirs, maxlmax);
 
-                for(size_t i = 0; i != num_tissues(); i++) {
+                for (size_t i = 0; i != num_tissues(); i++) {
                   if (lmax[i] > 0)
                     m[i] = HR_dirs.rows();
                   else
@@ -189,9 +189,9 @@ namespace MR
                   N += n[i];
                 }
 
-                Eigen::MatrixXd A (M,N);
+                Eigen::MatrixXd A (Eigen::MatrixXd::Zero (M, N));
                 size_t b_m = 0; size_t b_n = 0;
-                for(size_t i = 0; i != num_tissues(); i++) {
+                for (size_t i = 0; i != num_tissues(); i++) {
                   A.block (b_m,b_n,m[i],n[i]) = HR_SHT.block (0,0,m[i],n[i]);
                   b_m += m[i];
                   b_n += n[i];
