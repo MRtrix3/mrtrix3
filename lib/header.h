@@ -116,6 +116,8 @@ namespace MR
             }
           }
 
+      EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
+
       //! assignment operator
       /*! This copies everything over, resets the intensity scaling if the data
        * type is floating-point, and resets the IO handler. */

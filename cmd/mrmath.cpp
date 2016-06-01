@@ -357,7 +357,7 @@ void run ()
       throw Exception ("mrmath requires either multiple input images, or the -axis option to be provided");
 
     // Pre-load all image headers
-    std::vector<Header> headers_in;
+    std::vector<Header, Eigen::aligned_allocator<Header>> headers_in;
     // std::vector<std::unique_ptr<Header>> headers_in;
 
     // Header of first input image is the template to which all other input images are compared

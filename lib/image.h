@@ -232,6 +232,7 @@ namespace MR
         Buffer (const Buffer& b) : 
           Header (b), fetch_func (b.fetch_func), store_func (b.store_func) { }
 
+      EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         FORCE_INLINE ValueType get_value (size_t offset) const {
           ssize_t nseg = offset / io->segment_size();
@@ -353,7 +354,7 @@ namespace MR
     {
       if (!valid())
         throw Exception ("FIXME: don't invoke get_image() with invalid Header!");
-      auto buffer = std::make_shared<typename Image<ValueType>::Buffer> (*this, read_write_if_existing);
+      std::shared_ptr<typename Image<ValueType>::Buffer> buffer (new typename Image<ValueType>::Buffer (*this, read_write_if_existing));
       return { buffer };
     }
 
