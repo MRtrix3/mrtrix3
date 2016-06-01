@@ -41,11 +41,14 @@ void usage ()
 
 
   OPTIONS
-  + Option ("size", "set the window size of the denoising filter. (default = " + str(DEFAULT_SIZE) + ")")
-    + Argument ("window").type_integer (0, 50)
-  
-  + Option ("noise", "the output noise map.")
-    + Argument ("level").type_image_out();
+    + Option ("mask", "only perform computation within the specified binary brain mask image.")
+    +   Argument ("image").type_image_in()
+
+    + Option ("size", "set the window size of the denoising filter. (default = " + str(DEFAULT_SIZE) + ")")
+    +   Argument ("window").type_integer (0, 50)
+
+    + Option ("noise", "the output noise map.")
+    +   Argument ("level").type_image_out();
 
 }
 
@@ -56,23 +59,33 @@ typedef float value_type;
 template <class ImageType>
 class DenoisingFunctor
 {
-public:
-  DenoisingFunctor (ImageType& dwi, int size)
+  public:
+  DenoisingFunctor (ImageType& dwi, int size, Image<bool>& mask, ImageType& noise)
     : extent(size/2),
       m(dwi.size(3)),
       n(size*size*size),
       r((m<n) ? m : n),
       X(m,n), 
-      pos{{0, 0, 0}}
+      pos{{0, 0, 0}}, 
+      mask (mask),
+      noise (noise)
   { }
   
   void operator () (ImageType& dwi, ImageType& out)
   {
+    if (mask.valid()) {
+      assign_pos_of (dwi).to (mask);
+      if (!mask.value())
+        return;
+    }
+
     // Load data in local window
     load_data(dwi);
+
     // Compute SVD
     Eigen::JacobiSVD<Eigen::MatrixXf> svd (X, Eigen::ComputeThinU | Eigen::ComputeThinV);
     Eigen::VectorXf s = svd.singularValues();
+
     // Marchenko-Pastur optimal threshold
     const double lam_r = s[r-1]*s[r-1] / n;
     double clam = 0.0;
@@ -93,20 +106,21 @@ public:
         break;
       }
     }
+
     // Restore DWI data
     X = svd.matrixU() * s.asDiagonal() * svd.matrixV().adjoint();
+
     // Store output
     assign_pos_of(dwi).to(out);
     for (auto l = Loop (3) (out); l; ++l)
       out.value() = X(out.index(3), n/2);
+
+    if (noise.valid()) {
+      assign_pos_of(dwi).to(noise);
+      noise.value() = value_type (std::sqrt(sigma2));
+    }
   }
   
-  void operator () (ImageType& dwi, ImageType& out, ImageType& noise)
-  {
-    operator ()(dwi, out);
-    assign_pos_of(dwi).to(noise);
-    noise.value() = (float) std::sqrt(sigma2);
-  }
   
   void load_data (ImageType& dwi)
   {
@@ -130,6 +144,8 @@ private:
   Eigen::MatrixXf X;
   std::array<ssize_t, 3> pos;
   double sigma2;
+  Image<bool> mask;
+  ImageType noise;
   
 };
 
@@ -139,29 +155,29 @@ void run ()
 {
   auto dwi_in = Image<value_type>::open (argument[0]).with_direct_io(3);
 
+  Image<bool> mask;
+  auto opt = get_options ("mask");
+  if (opt.size()) {
+    mask = Image<bool>::open (opt[0][0]);
+    check_dimensions (mask, dwi_in, 0, 3);
+  }
+
   auto header = Header (dwi_in);
   header.datatype() = DataType::Float32;
   auto dwi_out = Image<value_type>::create (argument[1], header);
   
   int extent = get_option_value("size", DEFAULT_SIZE);
   
-  DenoisingFunctor< Image<value_type> > func (dwi_in, extent);
-  
-  auto opt = get_options("noise");
-  if (opt.size())
-  {
+  Image<value_type> noise;
+  opt = get_options("noise");
+  if (opt.size()) {
     header.set_ndim(3);
-    auto noise = Image<value_type>::create (opt[0][0], header);
-    ThreadedLoop ("running MP-PCA denoising", dwi_in, 0, 3)
-      .run (func, dwi_in, dwi_out, noise);
-  } 
-  else
-  {
-    ThreadedLoop ("running MP-PCA denoising", dwi_in, 0, 3)
-      .run (func, dwi_in, dwi_out);
+    noise = Image<value_type>::create (opt[0][0], header);
   }
 
-
+  DenoisingFunctor< Image<value_type> > func (dwi_in, extent, mask, noise);
+  ThreadedLoop ("running MP-PCA denoising", dwi_in, 0, 3)
+    .run (func, dwi_in, dwi_out);
 }
 
 
