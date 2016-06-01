@@ -17,7 +17,7 @@
 #include "command.h"
 #include "image.h"
 #include <Eigen/Dense>
-#include <Eigen/SVD>
+#include <Eigen/Eigenvalues>
 
 #define DEFAULT_SIZE 5
 
@@ -31,7 +31,7 @@ void usage ()
   + "denoise DWI data and estimate the noise level based on the optimal threshold for PCA.";
 
   
-  AUTHOR = "Daan Christiaens (daan.christiaens@kuleuven.be) & Jelle Veraart (jelle.veraart@nyumc.org) & J-Donald Tournier (jdtournier.gmail.com)";
+  AUTHOR = "Daan Christiaens (daan.christiaens@kuleuven.be) & Jelle Veraart (jelle.veraart@nyumc.org) & J-Donald Tournier (jdtournier@gmail.com)";
   
   
   ARGUMENTS
