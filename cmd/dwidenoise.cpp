@@ -82,33 +82,43 @@ class DenoisingFunctor
     // Load data in local window
     load_data (dwi);
 
-    // Compute SVD
-    Eigen::JacobiSVD<Eigen::MatrixXf> svd (X, Eigen::ComputeThinU | Eigen::ComputeThinV);
-    Eigen::VectorXf s = svd.singularValues();
-
+    // Compute Eigendecomposition:
+    Eigen::MatrixXf XtX (r,r);
+    if (m <= n)
+      XtX.template triangularView<Eigen::Lower>() = X * X.transpose();
+    else 
+      XtX.template triangularView<Eigen::Lower>() = X.transpose() * X;
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXf> eig (XtX);
+    // eigenvalues provide squared singular values:
+    Eigen::VectorXf s = eig.eigenvalues();
+   
     // Marchenko-Pastur optimal threshold
-    const double lam_r = s[r-1]*s[r-1] / n;
+    const double lam_r = s[0] / n;
     double clam = 0.0;
     sigma2 = NaN;
-    ssize_t cutoff_p = r;
-    for (ssize_t p = r-1; p >= 0; --p)
+    ssize_t cutoff_p = 0;
+    for (ssize_t p = 0; p < r; ++p)
     {
-      double lam = s[p]*s[p] / n;
+      double lam = s[p] / n;
       clam += lam;
-      double gam = double(m-p) / double(n);
-      double sigsq1 = clam / (m-p) / std::max (gam, 1.0);
+      double gam = double(m-r+p+1) / double(n);
+      double sigsq1 = clam / (m-r+p+1) / std::max (gam, 1.0);
       double sigsq2 = (lam - lam_r) / 4 / std::sqrt(gam);
       // sigsq2 > sigsq1 if signal else noise
       if (sigsq2 < sigsq1) {
         sigma2 = sigsq1;
-        cutoff_p = p;
+        cutoff_p = p+1;
       } 
     }
 
-    if (cutoff_p < ssize_t(r)) {
-      s.tail (r-cutoff_p).setZero();
-      // Restore DWI data
-      X = svd.matrixU() * s.asDiagonal() * svd.matrixV().adjoint();
+    if (cutoff_p > 0) {
+      // recombine data using only eigenvectors above threshold:
+      s.head (cutoff_p).setZero();
+      s.tail (r-cutoff_p).setOnes();
+      if (m <= n) 
+        X.col (n/2) = eig.eigenvectors() * s.asDiagonal() * eig.eigenvectors().adjoint() * X.col(n/2);
+      else 
+        X.col (n/2) = X * eig.eigenvectors() * s.asDiagonal() * eig.eigenvectors().adjoint().col(n/2);
     }
 
     // Store output
@@ -116,6 +126,7 @@ class DenoisingFunctor
     for (auto l = Loop (3) (out); l; ++l)
       out.value() = X(out.index(3), n/2);
 
+    // store noise map if requested:
     if (noise.valid()) {
       assign_pos_of(dwi).to(noise);
       noise.value() = value_type (std::sqrt(sigma2));
@@ -141,7 +152,7 @@ class DenoisingFunctor
   
 private:
   const int extent;
-  const size_t m, n, r;
+  const ssize_t m, n, r;
   Eigen::MatrixXf X;
   std::array<ssize_t, 3> pos;
   double sigma2;
