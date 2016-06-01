@@ -44,7 +44,7 @@ void usage ()
     + Option ("mask", "only perform computation within the specified binary brain mask image.")
     +   Argument ("image").type_image_in()
 
-    + Option ("size", "set the window size of the denoising filter. (default = " + str(DEFAULT_SIZE) + ")")
+    + Option ("extent", "set the window size of the denoising filter. (default = " + str(DEFAULT_SIZE) + ")")
     +   Argument ("window").type_integer (0, 50)
 
     + Option ("noise", "the output noise map.")
@@ -60,13 +60,13 @@ template <class ImageType>
 class DenoisingFunctor
 {
   public:
-  DenoisingFunctor (ImageType& dwi, int size, Image<bool>& mask, ImageType& noise)
-    : extent(size/2),
-      m(dwi.size(3)),
-      n(size*size*size),
-      r((m<n) ? m : n),
-      X(m,n), 
-      pos{{0, 0, 0}}, 
+  DenoisingFunctor (ImageType& dwi, int extent, Image<bool>& mask, ImageType& noise)
+    : extent (extent/2),
+      m (dwi.size(3)),
+      n (extent*extent*extent),
+      r ((m<n) ? m : n),
+      X (m,n), 
+      pos {{0, 0, 0}}, 
       mask (mask),
       noise (noise)
   { }
@@ -166,7 +166,9 @@ void run ()
   header.datatype() = DataType::Float32;
   auto dwi_out = Image<value_type>::create (argument[1], header);
   
-  int extent = get_option_value("size", DEFAULT_SIZE);
+  int extent = get_option_value("extent", DEFAULT_SIZE);
+  if (!(extent & 1))
+    throw Exception ("-extent must be an odd number");
   
   Image<value_type> noise;
   opt = get_options("noise");
