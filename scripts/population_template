@@ -111,7 +111,10 @@ lib.app.checkOutputFile(lib.app.args.template)
 if lib.app.args.warp_dir:
   lib.app.args.warp_dir = relpath(lib.app.args.warp_dir)
   lib.app.checkOutputFile(lib.app.args.warp_dir)
-  lib.app.make_dir(lib.app.args.warp_dir)
+
+if lib.app.args.transformed_dir:
+  lib.app.args.transformed_dir = relpath(lib.app.args.transformed_dir)
+  lib.app.checkOutputFile(lib.app.args.transformed_dir)
 
 # automatically detect SH series
 do_fod_registration = False
@@ -360,10 +363,16 @@ for level in range(0, len(nl_scales)):
 runCommand('mrconvert ' + current_template + ' ' + getUserPath(lib.app.args.template, True) + lib.app.mrtrixForce)
 
 if lib.app.args.warp_dir:
-  shutil.copy('warps/', getUserPath(lib.app.args.warp_dir, False))
+  warp_path = getUserPath(lib.app.args.warp_dir, False)
+  if os.path.exists(warp_path):
+    shutil.rmtree(warp_path)
+  shutil.copytree('warps/', warp_path)
 
 if lib.app.args.transformed_dir:
-  shutil.copy('input_transformed/', getUserPath(lib.app.args.transformed_dir, False))
+  transformed_path = getUserPath(lib.app.args.transformed_dir, False)
+  if os.path.exists(transformed_path):
+    shutil.rmtree(transformed_path)
+  shutil.copytree('input_transformed/', transformed_path)
 
 if lib.app.args.template_mask:
   runCommand('mrconvert ' + current_template_mask + ' ' + getUserPath(lib.app.args.template_mask, True) + lib.app.mrtrixForce)
