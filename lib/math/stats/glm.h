@@ -171,7 +171,6 @@ namespace MR
             SX.resize (X.rows(), X.cols());
             pinvSX.resize (pinvX.rows(), pinvX.cols());
             for (ssize_t i = 0; i < X.rows(); ++i) {
-              // TODO: check whether we should permute rows or columns
               SX.row(i) = X.row (perm_labelling[i]);
               pinvSX.col(i) = pinvX.col (perm_labelling[i]);
             }
