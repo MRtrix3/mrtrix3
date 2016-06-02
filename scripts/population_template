@@ -2,7 +2,7 @@
 
 # Generates an unbiased group-average template via image registration of images to a midway space.
 
-import os, sys
+import os, shutil, sys
 import lib.app
 import numpy
 import math
@@ -12,6 +12,9 @@ def abspath(*arg):
 
 def relpath(*arg):
   return os.path.relpath(os.path.join(*arg),lib.app.workingDir)
+
+def allindir(dir):
+  return ' '.join( [ os.path.join(dir, file) for file in os.listdir(dir) ] )
 
 from lib.errorMessage  import errorMessage
 from lib.getHeaderInfo import getHeaderInfo
@@ -108,7 +111,10 @@ lib.app.checkOutputFile(lib.app.args.template)
 if lib.app.args.warp_dir:
   lib.app.args.warp_dir = relpath(lib.app.args.warp_dir)
   lib.app.checkOutputFile(lib.app.args.warp_dir)
-  lib.app.make_dir(lib.app.args.warp_dir)
+
+if lib.app.args.transformed_dir:
+  lib.app.args.transformed_dir = relpath(lib.app.args.transformed_dir)
+  lib.app.checkOutputFile(lib.app.args.transformed_dir)
 
 # automatically detect SH series
 do_fod_registration = False
@@ -215,11 +221,11 @@ else:
       runCommand('rm -f masks_transformed/' + i.prefix + '_translated.mif')
 
 
-runCommand('mrmath input_transformed/* mean initial_template.mif')
+runCommand('mrmath ' + allindir('input_transformed') + ' mean initial_template.mif')
 current_template = 'initial_template.mif'
 
 if useMasks:
-  runCommand('mrmath masks_transformed/* min initial_template_mask.mif')
+  runCommand('mrmath ' + allindir('masks_transformed') + ' min initial_template_mask.mif')
   current_template_mask = 'initial_template_mask.mif'
 
 # Optimise template with linear registration
@@ -261,7 +267,7 @@ for level in range(0, len(linear_scales)):
                  output)
 
   # Here we ensure the template doesn't drift or scale
-  runCommand('transformcalc linear_transforms/*.txt average linear_transform_average.txt -force -quiet')
+  runCommand('transformcalc ' + allindir('linear_transforms') + ' average linear_transform_average.txt -force -quiet')
   if dorigid:
     runCommand('transformcalc linear_transform_average.txt rigid linear_transform_average.txt -force -quiet')
   runCommand('transformcalc linear_transform_average.txt invert linear_transform_average_inv.txt -force -quiet')
@@ -285,11 +291,11 @@ for level in range(0, len(linear_scales)):
                ' masks_transformed/' + i.prefix + '.mif' +
                ' -force')
 
-  runCommand ('mrmath input_transformed/* mean linear_template' + str(level) + '.mif')
+  runCommand ('mrmath ' + allindir('input_transformed') + ' mean linear_template' + str(level) + '.mif')
   current_template = 'linear_template' + str(level) + '.mif'
 
   if useMasks:
-    runCommand ('mrmath masks_transformed/* min linear_template_mask' + str(level) + '.mif')
+    runCommand ('mrmath ' + allindir('masks_transformed') + ' min linear_template_mask' + str(level) + '.mif')
     current_template_mask = 'linear_template_mask' + str(level) + '.mif'
 
 # Optimise the template with non-linear registration
@@ -339,11 +345,11 @@ for level in range(0, len(nl_scales)):
                  ' -interp nearest ' +
                  ' -force')
 
-  runCommand ('mrmath input_transformed/* mean nl_template' + str(level) + '.mif')
+  runCommand ('mrmath ' + allindir('input_transformed') + ' mean nl_template' + str(level) + '.mif')
   current_template = 'nl_template' + str(level) + '.mif'
   
   if useMasks:
-    runCommand ('mrmath masks_transformed/* min nl_template_mask' + str(level) + '.mif')
+    runCommand ('mrmath ' + allindir('masks_transformed') + ' min nl_template_mask' + str(level) + '.mif')
     current_template_mask = 'nl_template_mask' + str(level) + '.mif'
     
   if level < len(nl_scales) - 1:
@@ -357,10 +363,16 @@ for level in range(0, len(nl_scales)):
 runCommand('mrconvert ' + current_template + ' ' + getUserPath(lib.app.args.template, True) + lib.app.mrtrixForce)
 
 if lib.app.args.warp_dir:
-  shutil.copy('warps/', getUserPath(lib.app.args.warp_dir, False))
+  warp_path = getUserPath(lib.app.args.warp_dir, False)
+  if os.path.exists(warp_path):
+    shutil.rmtree(warp_path)
+  shutil.copytree('warps/', warp_path)
 
 if lib.app.args.transformed_dir:
-  shutil.copy('input_transformed/', getUserPath(lib.app.args.transformed_dir, False))
+  transformed_path = getUserPath(lib.app.args.transformed_dir, False)
+  if os.path.exists(transformed_path):
+    shutil.rmtree(transformed_path)
+  shutil.copytree('input_transformed/', transformed_path)
 
 if lib.app.args.template_mask:
   runCommand('mrconvert ' + current_template_mask + ' ' + getUserPath(lib.app.args.template_mask, True) + lib.app.mrtrixForce)

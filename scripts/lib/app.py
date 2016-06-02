@@ -169,11 +169,16 @@ def checkOutputFile(path):
   if not path:
     return
   if os.path.exists(path):
+    type = ''
+    if os.path.isfile(path):
+      type = ' file'
+    elif os.path.isdir(path):
+      type = ' directory'
     if args.force:
-      warnMessage('Output file ' + os.path.basename(path) + ' already exists; will be overwritten at script completion')
+      warnMessage('Output' + type + ' ' + os.path.basename(path) + ' already exists; will be overwritten at script completion')
       mrtrixForce = ' -force'
     else:
-      errorMessage('Output file ' + path + ' already exists (use -force to override)')
+      errorMessage('Output' + type + ' ' + path + ' already exists (use -force to override)')
       sys.exit(1)
 
 
