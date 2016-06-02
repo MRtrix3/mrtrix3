@@ -147,7 +147,7 @@ namespace MR
           text_offset (MR::File::Config::get_float ("MRViewColourBarTextOffset", 10.0f)),
           //CONF option: MRViewColourHorizontalPadding
           //CONF default: 100
-          //CONF The width in pixels between horizontally adjacent colour bars
+          //CONF The width in pixels between horizontally adjacent colour bars.
           colourbar_padding (MR::File::Config::get_float ("MRViewColourBarHorizontalPadding", 100.0f))
           {
             end_render_colourbars ();

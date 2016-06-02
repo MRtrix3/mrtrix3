@@ -51,4 +51,7 @@ Python scripts provided with MRtrix3
 .......
 " >> reference/scripts_list.rst
   done
-  
+
+# Generating list of configuration file options
+
+  grep -rn --include=\*.h --include=\*.cpp '^\s*//CONF\b ' ../ | sed -ne 's/^.*CONF \(.*\)/\1/p' | ./format_config_options > reference/config_file_options.rst
