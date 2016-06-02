@@ -989,7 +989,7 @@ int main() { Foo f; }
       cmd = cxx + ld_flags + [ 'qt_moc.o', 'qt.o', '-o', 'qt' ] + qt_ldflags
       execute (cmd, LinkError, cwd=qt_dir.name)
 
-      cmd = [ os.path.join('.', 'qt') ]
+      cmd = [ os.path.join(qt_dir.name, 'qt') ]
       ret = execute (cmd, RuntimeError, cwd=qt_dir.name)
       report (ret[1])
 
