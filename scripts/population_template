@@ -181,7 +181,7 @@ else:
   mask = ''
   for i in input:
     if useMasks:
-        mask = ' -mask1 ' + abspath(i.mask_directory, i.mask_filename)
+      mask = ' -mask1 ' + abspath(i.mask_directory, i.mask_filename)
     output = ' -rigid linear_transforms/' + i.prefix + '.txt'
     runCommand('mrregister ' + abspath(i.directory, i.filename) + ' average_header.mif.gz' +
                 mask +
@@ -198,10 +198,10 @@ else:
                 datatype +
                 ' input_transformed/' + i.prefix + '_translated.mif')
     if useMasks:
-	  runCommand('mrtransform ' + abspath(i.mask_directory, i.mask_filename) +
-		         ' -linear linear_transforms/' + i.prefix + '.txt' +
-		         datatype +
-		         ' masks_transformed/' + i.prefix + '_translated.mif')
+      runCommand('mrtransform ' + abspath(i.mask_directory, i.mask_filename) +
+             ' -linear linear_transforms/' + i.prefix + '.txt' +
+             datatype +
+             ' masks_transformed/' + i.prefix + '_translated.mif')
   # update average space to new extent
   runCommand('mraverageheader ' + ' '.join(['input_transformed/' + i.prefix + '_translated.mif' for i in input]) +
    ' average_header.mif.gz' ' -force')
@@ -214,10 +214,10 @@ else:
     runCommand('rm -f input_transformed/' + i.prefix + '_translated.mif')
     if useMasks:
       runCommand('mrtransform ' +
-	             ' masks_transformed/' + i.prefix + '_translated.mif' +
-	             ' masks_transformed/' + i.prefix + '.mif' +
-	             ' -interp nearest -template average_header.mif.gz' +
-	             datatype)
+               ' masks_transformed/' + i.prefix + '_translated.mif' +
+               ' masks_transformed/' + i.prefix + '.mif' +
+               ' -interp nearest -template average_header.mif.gz' +
+               datatype)
       runCommand('rm -f masks_transformed/' + i.prefix + '_translated.mif')
 
 
@@ -347,11 +347,11 @@ for level in range(0, len(nl_scales)):
 
   runCommand ('mrmath ' + allindir('input_transformed') + ' mean nl_template' + str(level) + '.mif')
   current_template = 'nl_template' + str(level) + '.mif'
-  
+
   if useMasks:
     runCommand ('mrmath ' + allindir('masks_transformed') + ' min nl_template_mask' + str(level) + '.mif')
     current_template_mask = 'nl_template_mask' + str(level) + '.mif'
-    
+
   if level < len(nl_scales) - 1:
     if (nl_scales[level] < nl_scales[level + 1]):
       upsample_factor = nl_scales[level + 1] / nl_scales[level]
