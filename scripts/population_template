@@ -2,7 +2,7 @@
 
 # Generates an unbiased group-average template via image registration of images to a midway space.
 
-import os, sys
+import os, shutil, sys
 import lib.app
 import numpy
 import math
