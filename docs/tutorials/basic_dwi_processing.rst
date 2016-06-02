@@ -57,7 +57,7 @@ Fibre Orientation Distribution estimation
 This command performs Constrained Spherical Deconvolution (CSD) based on
 the response function estimated previously.
 
-``dwi2fod <Input DWI> <Input response text file> <Output FOD image> -mask <Input DWI mask>``
+``dwi2fod csd <Input DWI> <Input response text file> <Output FOD image> -mask <Input DWI mask>``
 
 Whole-brain streamlines tractography
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

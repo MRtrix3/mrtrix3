@@ -13,7 +13,7 @@ Multi-tissue CSD can be performed as:
 
 ::
 
-  msdwi2fod dwi.mif csf.txt csf.mif gm.txt gm.mif wm.txt wm.mif
+  dwi2fod msmt_csd dwi.mif csf.txt csf.mif gm.txt gm.mif wm.txt wm.mif
 
 where
 
@@ -29,7 +29,7 @@ Typically, you will also want to use the ``-mask`` to avoid calculations in non-
 
 ::
 
-  msdwi2fod -mask mask.mif dwi.mif csf.txt csf.mif gm.txt gm.mif wm.txt wm.mif
+  dwi2fod msmt_csd -mask mask.mif dwi.mif csf.txt csf.mif gm.txt gm.mif wm.txt wm.mif
 
 RGB tissue volume fraction maps can be obtained as follows:
 
