@@ -459,8 +459,12 @@ try:
 except:
   error ('''compiler not found!
 
-Use CXX environment variable to set path to compiler, as follows:
-     CXX=/usr/bin/g++-4.8 ./configure''')
+ MRtrix3 was unable to find an appropriate C++ compiler.
+ Set the CXX environment variable to inform 'configure' of the
+ path to the compiler on your system, as follows:
+   $ export CXX=/usr/bin/g++-4.8 
+   $ ./configure
+ (amend with the actual path to the compiler on your system)''')
 
 try:
   compile ('''
@@ -480,18 +484,29 @@ int main() {
 except CompileError:
   error ('''compiler test failed!
 
-Use CXX environment variable to set path to compiler, as follows:
-     CXX=/usr/bin/g++-4.8 ./configure
+ MRtrix3 was unable to compile a simple C++ program.
+ Set the CXX environment variable to inform 'configure' of the
+ path to the compiler on your system, as follows:
+   $ export CXX=/usr/bin/g++-4.8 
+   $./configure
+ (amend with the actual path to the compiler on your system)
 
-You can also use the CXX_ARGS to set the arguments expected by the 
-compiler, in case this differs from gcc, as follows:
+ If you are using a compiler other than gcc, you can also set
+ the CXX_ARGS environment variable to specify how your compiler
+ expects different arguments to be presented on the command
+ line, for instance as follows:
 
-     CXX_ARGS="-c CFLAGS SRC -o OBJECT" ./configure''')
+   $ export CXX_ARGS="-c CFLAGS SRC -o OBJECT" 
+   $ ./configure''')
 except (LinkError, RuntimeError):
   error ('''linking error!
 
-Use LD environment variable to set path to compiler, as follows:
-     LD=/usr/bin/g++-4.8 ./configure''')
+ MRtrix3 was unable to find an appropriate C++ linker.
+ Set the LD environment variable to inform 'configure' of the
+ path to the linker on your system, as follows:
+   $ export LD=/usr/bin/g++-4.8 
+   $ ./configure
+ (amend with the actual path to the compiler on your system)''')
 except:
   raise
 
@@ -591,25 +606,45 @@ int main() {
 ''', cpp_flags + zlib_cflags, ld_flags + zlib_ldflags)
   report (zlib_version + '\n')
 except CompileError:
-  error ('''compiler error!
+  error ('''error compiling zlib application!
 
-Use the ZLIB_CFLAGS environment variable to set the path to
-the zlib include files and to set any required flags
-For example:
-     ZLIB_CFLAGS="-isystem /usr/local/include" ./configure''')
+ MRtrix3 was unable to compile a test program involving zlib.
+ Set the ZLIB_CFLAGS environment variable to inform 'configure' of
+ the flags it must provide to the compiler in order to compile
+ programs that use zlib functionality; this may include the path to
+ the zlib include files, as well as any required flags.
+ For example:
+   $ export ZLIB_CFLAGS="-isystem /usr/local/include"
+   $./configure
+ (amend with the actual path to the zlib include files on your system)''')
 except LinkError:
   error ('''linker error!
 
-Use the ZLIB_LDFLAGS environment variable to set the path to
-the zlib libraries and to set the library to use
-For example:
-     ZLIB_LDFLAGS="-L/usr/local/lib -lz" ./configure''')
+ MRtrix3 was unable to link a test program involving zlib.
+ Set the ZLIB_LDFLAGS environment variable to inform 'configure' of
+ the flags it must provide to the linker in order to link programs
+ that use zlib functionality; this may include the path to the zlib
+ libraries, as well as any required flags.
+ For example:
+   $ ZLIB_LDFLAGS="-L/usr/local/lib -lz" 
+   $ ./configure
+  (amend with the actual path to the zlib library file on your system)''')
 except RuntimeError:
   error ('''runtime error!
 
-There is something wrong with your zlib implementation!''')
+ Unable to configure zlib - see file configure.log for details.''')
 except:
-  error ('zlib implementation not found!')
+  error ('''zlib implementation not found!
+
+ MRtrix3 was unable to find zlib on your system.
+ Set the ZLIB_CFLAGS environment variable to inform 'configure' of
+ the flags it must provide to the compiler in order to compile
+ programs that use zlib functionality; this may include the path to
+ the zlib include files, as well as any required flags.
+ For example:
+   $ export ZLIB_CFLAGS="-isystem /usr/local/include"
+   $./configure
+ (amend with the actual path to the zlib include files on your system)''')
 
 cpp_flags += zlib_cflags
 ld_flags += zlib_ldflags
@@ -649,24 +684,39 @@ int main (int argc, char* argv[]) {
   cpp_flags += eigen_cflags
   report (eigen_version + '\n')
 except CompileError:
-  error ('''compiler error!
+  error (''' error compiling Eigen application!
 
-Use the EIGEN_CFLAGS environment variable to set the path to
-the Eigen3 include files and to set any required flags
-For example:
-     EIGEN_CFLAGS="-isystem /usr/include/eigen3" ./configure''')
+ MRtrix3 was unable to compile a test program involving Eigen3.
+ Set the EIGEN_CFLAGS environment variable to inform 'configure' of
+ the flags it must provide to the compiler in order to compile
+ programs that use Eigen3 functionality; this may include the path
+ to the Eigen3 libraries, as well as any required flags.
+ For example:
+   $ export EIGEN_CFLAGS="-isystem /usr/include/eigen3"
+   $ ./configure
+ (amend with the actual path to the Eigen3 files on your system)''')
 except LinkError:
-  error ('''linker error!
+  error (''' error linking Eigen application!
 
-This shouldn't happen! Please report this to the MRtrix3 dev team.
+ This shouldn't happen! Please report this to the MRtrix3 dev team.
 ''')
 except RuntimeError:
-  error ('''runtime error!
+  error (''' error running Eigen application!
 
-This shouldn't happen! Please report this to the MRtrix3 dev team.
+ This shouldn't happen! Please report this to the MRtrix3 dev team.
 ''')
 except:
-  error ('Eigen3 implementation not found!')
+  error ('''Eigen3 implementation not found!
+
+ MRtrix3 was unable to find Eigen3 on your system.
+ Set the EIGEN_CFLAGS environment variable to inform 'configure' of
+ the flags it must provide to the compiler in order to compile
+ programs that use Eigen3 functionality; this may include the path
+ to the Eigen3 libraries, as well as any required flags.
+ For example:
+   $ export EIGEN_CFLAGS="-isystem /usr/include/eigen3"
+   $ ./configure
+ (amend with the actual path to the Eigen3 files on your system)''')
 
 
 
@@ -690,7 +740,7 @@ if not noshared:
       except CompileError:
         error ('''compiler not found!
 
-  an unexpected error occurred''')
+ an unexpected error occurred. Please report this to the MRtrix3 dev team.''')
       except:
         raise
   
@@ -703,8 +753,10 @@ if not noshared:
         except LinkError: 
           error ('''linker not found!
 
-  Use the LDLIB_ARGS environment variable to set the command-line
-  for shared library generation''')
+ MRtrix3 was unable to employ the linker program for shared library generation.
+ Set the LDLIB_ARGS environment variable to inform 'configure' of
+ the flags it must provide to the linker in order to perform
+ shared library generation''')
         except:
           raise
 
@@ -740,13 +792,18 @@ if not nogui:
     if int (moc_version.split('.')[0]) < 4:
       error (''' Qt moc version is too old!
 
-  Use the MOC environment variable to specify the Qt meta-object compiler, 
-  or set PATH to ensure the correct version is listed first''')
+  The version number reported by the Qt moc command is too old.
+  Either set the MOC environment variable to inform 'configure' of the
+  correct path of a more up-to-date Qt meta-object compiler,
+  or set your PATH environment variable to ensure that the correct
+  version is listed first''')
   except OSError:
     error (''' Qt moc not found!
 
-  Use the MOC environment variable to specify the Qt meta-object compiler,
-  or set PATH to include its location''')
+  MRtrix3 was unable to locate the Qt meta-object compiler 'moc'.
+  Either set the MOC environment variable to inform 'configure' of the path
+  to the Qt meta-object compiler command on your system, or update your
+  PATH environment variable to include the location of this command''')
   except:
     raise
   
@@ -760,15 +817,20 @@ if not nogui:
     qmake_version = get_qt_version([ qmake, '-v' ], OSError)
     report (qmake + ' (version ' + qmake_version + ')\n')
     if int (qmake_version.split('.')[0]) < 4:
-      error (''' Qt qmake not found!
+      error (''' Qt qmake version is too old!
 
-  Use the QMAKE environment variable to specify the Qt qmake executable,
-  or set PATH to ensure the correct version is listed first''')
+  The version number reported by the Qt qmake command is too old.
+  Either set the QMAKE environment variable to inform 'configure' of the
+  correct path of a more up-to-date Qt qmake executable,
+  or set your PATH environment variable to ensure that the correct
+  version is listed first''')
   except OSError:
     error (''' Qt qmake not found!
 
-  Use the QMAKE environment variable to specify the Qt qmake executable,
-  or set PATH to include its location''')
+  MRtrix3 was unable to locate the Qt command 'qmake'.
+  Either set the QMAKE environment variable to inform 'configure' of the path
+  to this command on your system, or update your PATH environment variable to
+  include the location of this command''')
   except:
     raise
   
@@ -783,19 +845,24 @@ if not nogui:
     rcc_version = get_qt_version([ rcc, '-v' ], OSError)
     report (rcc + ' (version ' + rcc_version + ')\n')
     if int (rcc_version.split('.')[0]) < 4:
-      error (''' Qt rcc not found!
+      error (''' Qt rcc version is too old!
 
-  Use the RCC environment variable to specify the Qt rcc executable,
-  or set PATH to ensure the correct version is listed first''')
+  The version number reported by the Qt rcc command is too old.
+  Either set the RCC environment variable to inform 'configure' of the
+  correct path of a more up-to-date Qt rcc executable,
+  or set your PATH environment variable to ensure that the correct
+  version is listed first''')
   except OSError:
     error (''' Qt rcc not found!
 
-  Use the RCC environment variable to specify the Qt rcc executable,
-  or set PATH to include its location''')
+  MRtrix3 was unable to locate the Qt command 'rcc'.
+  Either set the RCC environment variable to inform 'configure' of the path
+  to this command on your system, or update your PATH environment variable to
+  include the location of this command''')
   except:
     raise
-  
-    
+
+
 
 
   report ('Checking for Qt: ')
@@ -859,9 +926,13 @@ int main() { Foo f; }
 
 ''' + stderr)
       except QMakeError as E:
-        error ('''error issuing qmake command!
+        error (''' error issuing qmake command!
 
-  Use the QMAKE environment variable to set the correct qmake command for use with Qt''')
+  MRtrix3 encountered an error when invoking the Qt qmake command.
+  Either set the QMAKE environment variable to inform 'configure' of the
+  path to the correct qmake command for use with Qt, or update your
+  PATH environment variable to ensure that the correct version is
+  the first found by your system''')
       except:
         raise
 
@@ -907,60 +978,56 @@ int main() { Foo f; }
         if entry[0] != '$': qt_ldflags += [ entry.replace('\"','').replace("'",'') ]
   
       cmd = [ moc, 'qt.h', '-o', 'qt_moc.cpp' ]
-      log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
-      try: process = subprocess.Popen (cmd, cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-      except OSError: raise QMOCError
-      if process.wait() != 0: raise QMOCError
+      execute (cmd, QMOCError, cwd=qt_dir.name) #process = subprocess.Popen (cmd, cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
       cmd = cxx + [ '-c' ] + cpp_flags + qt_cflags + [ 'qt.cpp', '-o', 'qt.o' ]
-      log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
-      try: process = subprocess.Popen (cmd, cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-      except OSError: raise CompileError('oserror')
-      except: raise
-      retcode = process.wait()
-      if retcode != 0: raise CompileError('process not terminated properly (exit code = %s)'%str(retcode))
+      execute (cmd, CompileError, cwd=qt_dir.name)
 
       cmd = cxx + [ '-c' ] + cpp_flags + qt_cflags + [ 'qt_moc.cpp', '-o', 'qt_moc.o' ]
-      log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
-      try: process = subprocess.Popen (cmd , cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-      except OSError: raise CompileError('oserror')
-      except: raise
-      if process.wait() != 0: raise CompileError('process not terminated properly')
+      execute (cmd, CompileError, cwd=qt_dir.name)
 
       cmd = cxx + ld_flags + [ 'qt_moc.o', 'qt.o', '-o', 'qt' ] + qt_ldflags
-      log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
-      try: process = subprocess.Popen (cmd , cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-      except OSError: raise LinkError('oserror')
-      except: raise
-      if process.wait() != 0: raise LinkError('process not terminated properly')
+      execute (cmd, LinkError, cwd=qt_dir.name)
 
-      cmd = os.path.join(qt_dir.name, 'qt')
-      log ('\nexecuting "' + cmd + '"...\n')
-      process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-      if process.wait() != 0: raise LinkError('process not terminated properly')
-      report (process.stdout.read().decode(errors='ignore').strip() + '\n')
+      cmd = [ os.path.join('.', 'qt') ]
+      ret = execute (cmd, RuntimeError, cwd=qt_dir.name)
+      report (ret[1])
 
     
   except QMakeError:
-    error ('''error invoking Qt qmake!
+    error (''' error invoking Qt qmake!
 
-  Use the QMAKE environment variable to set the correct qmake command for use with Qt''')
+ MRtrix3 encountered an error when invoking the Qt qmake command.
+ Either set the QMAKE environment variable to inform 'configure' of the
+ path to the correct qmake command for use with Qt, or update your
+ PATH environment variable to ensure that the correct version is
+ the first found by your system''')
   except QMOCError:
-    error ('''error invoking Qt moc!
+    error (''' error invoking Qt moc!
 
-use the MOC environment variable to specify the Qt moc command''')
+ MRtrix3 encountered an error when invoking the Qt meta-object compiler.
+ Either set the QMAKE environment variable to inform 'configure' of the
+ path to the correct moc command for use with Qt, or update your
+ PATH environment variable to ensure that the correct version is
+ the first found by your system''')
   except LinkError:
-    error ('''error linking Qt application!
+    error (''' error linking Qt application!
 
-Are all necessary (static or shared) Qt libraries installed?''')
-  except QMOCError:
-    error ('''error invoking Qt moc!
+ MRtrix3 encountered an issue when linking a test Qt application.
+ Please ensure that you have installed all necessary QT libraries,
+ whether static or shared.''')
+  except CompileError:
+    error (''' error compiling Qt application! 
+    
+ Unable to configure Qt - see file configure.log for details.''')
+  except RuntimeError:
+    error (''' error running Qt application! 
 
-use the MOC environment variable to specify the Qt moc command''')
-  except CompileError as e:
-    error ('error compiling Qt application! ' + str(e))
+ Unable to configure Qt - see file configure.log for details.''')
   except OSError as e:
-    error ('Unexpected error! Unable to configure Qt environment: ' + str(e))
+    error (' Unexpected error: ' + str(e) + '''
+    
+ Unable to configure Qt - see file configure.log for details.''')
   except:
     raise
 
@@ -1010,17 +1077,28 @@ if R_module:
     report (R_version + '\n')
   except CompileError:
     error ('''compiler error!
-  
-  Use the R_CFLAGS environment variable to set the path to the R include files'
-  For example:'
-       R_CFLAGS="-isystem /usr/local/include/R" ./configure''')
+
+  MRtrix3 encountered an error when testing compilation of MRtrix as an R module.
+  Set the R_CFLAGS environment variable to inform 'configure' of the
+  flags it must provide to the compiler in order to compile
+  programs that use R functionality; this may include the path to
+  the R include files, as well as any required flags.
+  For example:
+    $ export R_CFLAGS="-isystem /usr/local/include/R"
+    $ ./configure
+  (amend with the actual path to the R include files on your system)''')
   except LinkError:
     error ('''linker error!'
-  
-  Use the R_LDFLAGS environment variable to set the path to the R library'
-  and include any required libraries'
-  For example:'
-       R_LDFLAGS="-L/usr/local/R/lib -lR" ./configure''')
+
+  MRtrix3 encountered an error when testing linking of MRtrix as an R module.
+  Set the R_LDFLAGS environment variable to inform 'configure' of the
+  flags it must provide to the linker in order to link
+  programs that use R functionality; this may include the path to
+  the R libraries, as well as any required flags.
+  For example:
+    $ export R_LDFLAGS="-L/usr/local/R/lib -lR"
+    $ ./configure
+  (amend with the actual path to the R libraries on your system)''')
   except RuntimeError:
     error ('''error running command - check configure.log for details''')
   except: 
