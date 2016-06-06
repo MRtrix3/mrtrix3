@@ -130,8 +130,12 @@ namespace MR
         V.push_back (std::vector<ValueType>());
 
         const auto elements = MR::split (sbuf, " ,;\t", true);
-        for (const auto& entry : elements)
-          V.back().push_back (to<ValueType> (entry));
+        try {
+          for (const auto& entry : elements)
+            V.back().push_back (to<ValueType> (entry));
+        } catch (...) {
+          throw Exception ("File \"" + filename + "\" contains non-numerical data");
+        }
 
         if (V.size() > 1)
           if (V.back().size() != V[0].size())
@@ -150,7 +154,12 @@ namespace MR
   template <class ValueType = default_type>
     Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> load_matrix (const std::string& filename)
     {
-      auto V = load_matrix_2D_vector<ValueType> (filename);
+      std::vector<std::vector<ValueType>> V;
+      try {
+        V = load_matrix_2D_vector<ValueType> (filename);
+      } catch (Exception& e) {
+        throw e;
+      }
 
       Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> M (V.size(), V[0].size());
 
@@ -165,7 +174,12 @@ namespace MR
   template <class ValueType = default_type>
     transform_type load_transform (const std::string& filename)
     {
-      auto V = load_matrix_2D_vector<ValueType> (filename);
+      std::vector<std::vector<ValueType>> V;
+      try {
+        V = load_matrix_2D_vector<ValueType> (filename);
+      } catch (Exception& e) {
+        throw e;
+      }
 
       if (V.size() != 4 || V[0].size() != 4)
         throw Exception ("transform in file " + filename + " is invalid. Does not contain 4x4 matrix.");
