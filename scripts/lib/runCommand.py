@@ -54,7 +54,15 @@ def runCommand(cmd, exitOnError=True):
         binary_manual = os.path.join(mrtrix_bin_path, item)
         if (isWindows()):
           binary_manual = binary_manual + '.exe'
-        if not binary_sys or not os.path.samefile(binary_sys, binary_manual):
+        use_manual_binary_path = not binary_sys
+        if not use_manual_binary_path:
+          # os.path.samefile() not supported on all platforms / Python versions
+          if hasattr(os.path, 'samefile'):
+            use_manual_binary_path = not os.path.samefile(binary_sys, binary_manual)
+          else:
+            # Hack equivalent of samefile(); not perfect, but should be adequate for use here
+            use_manual_binary_path = not os.path.normcase(os.path.normpath(binary_sys)) == os.path.normcase(os.path.normpath(binary_manual))
+        if use_manual_binary_path:
           item = binary_manual
       next_is_binary = False
     if item == '|':
