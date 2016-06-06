@@ -28,8 +28,8 @@ using namespace App;
 
 const OptionGroup SIFTModelOption = OptionGroup ("Options affecting the SIFT model")
 
-  + Option ("no_fd_scaling", "by default, the fibre densities in voxels with grey matter partial volume contamination are scaled appropriately to compensate. \n"
-                             "Provide this option to override this behaviour and not perform any scaling.")
+  + Option ("fd_scale_gm", "provide this option (in conjunction with -act) to heuristically downsize the fibre density estimates based on the presence of GM in the voxel. "
+                           "This can assist in reducing tissue interface effects when using a single-tissue deconvolution algorithm")
 
   + Option ("no_dilate_lut", "do NOT dilate FOD lobe lookup tables; only map streamlines to FOD lobes if the precise tangent lies within the angular spread of that lobe")
 
