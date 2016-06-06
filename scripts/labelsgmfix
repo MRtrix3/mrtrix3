@@ -108,8 +108,8 @@ for key, value in structure_map.items():
     os.rename('sgm_new.mif', 'sgm.mif')
 
 # Detect any overlapping voxels between the SGM masks, and set to zero
-runCommand('mrcalc sgm_overlap_mask.mif 0 sgm.mif -if sgm_masked.mif')
 runCommand('mrmath ' + ' '.join(mask_list) + ' sum - | mrcalc - 1 -gt sgm_overlap_mask.mif')
+runCommand('mrcalc sgm_overlap_mask.mif 0 sgm.mif -if sgm_masked.mif')
 
 # Convert the SGM label image to the indices that are required based on the user-provided LUT file
 runCommand('labelconvert sgm_masked.mif ' + sgm_lut_file_path + ' ' + getUserPath(lib.app.args.lut, True) + ' sgm_new_labels.mif')
@@ -128,6 +128,6 @@ for struct in structure_map.keys():
 
 # Insert the new delineations of all SGM structures in a single call
 runCommand('mrcalc sgm_new_labels.mif 0.5 -gt sgm_new_labels.mif parc.mif -if result.mif')
-runCommand('mrconvert result.mif ' + os.path.join(lib.app.workingDir, lib.app.args.output) + lib.app.mrtrixForce)
+runCommand('mrconvert result.mif ' + getUserPath(lib.app.args.output, True) + lib.app.mrtrixForce)
 lib.app.complete()
 

@@ -150,7 +150,7 @@ namespace MR {
             //   each streamline to each voxel it traverses
             // Third version is the 'precise' mapping as described in the SIFT paper
             // Fourth method only maps the streamline endpoints
-            void voxelise         (const Streamline<>&, SetVoxel&) const;
+            void voxelise (const Streamline<>&, SetVoxel&) const;
             template <class Cont> void voxelise         (const Streamline<>&, Cont&) const;
             template <class Cont> void voxelise_precise (const Streamline<>&, Cont&) const;
             template <class Cont> void voxelise_ends    (const Streamline<>&, Cont&) const;

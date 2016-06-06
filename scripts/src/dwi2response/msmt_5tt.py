@@ -147,8 +147,8 @@ def execute():
     for line in csf_responses:
       f.write(line + '\n')
 
-  shutil.copyfile('gm.txt',  getUserPath(lib.app.args.out_gm,  False))
   shutil.copyfile('wm.txt',  getUserPath(lib.app.args.out_wm,  False))
+  shutil.copyfile('gm.txt',  getUserPath(lib.app.args.out_gm,  False))
   shutil.copyfile('csf.txt', getUserPath(lib.app.args.out_csf, False))
 
   # Generate output 4D binary image with voxel selections; RGB as in MSMT-CSD paper

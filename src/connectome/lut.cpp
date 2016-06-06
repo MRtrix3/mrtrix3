@@ -98,7 +98,7 @@ LUT::file_format LUT::guess_file_format (const std::string& path)
       default_type mean_length() const { return sum_lengths / default_type(count); }
       bool is_numeric() const { return numeric; }
       bool is_integer() const { return integer; }
-      bool is_unary_range_float() const { return !is_integer() && min >= 0.0 && max <= 1.0; }
+      bool is_unary_range_float() const { return is_numeric() && min >= 0.0 && max <= 1.0; }
       bool is_8bit() const { return is_integer() && min >= 0 && max <= 255; }
 
     private:
@@ -114,7 +114,22 @@ LUT::file_format LUT::guess_file_format (const std::string& path)
   std::string line;
   while (std::getline (in_lut, line)) {
     if (line.size() > 1 && line[0] != '#') {
-      auto entries = split (line, "\t ", true);
+      // Before splitting by whitespace, need to capture any strings that are
+      //   encased within quotation marks
+      auto split_by_quotes = split (line, "\"\'", false);
+      if (!(split_by_quotes.size()%2))
+        throw Exception ("Odd number of quotation marks in a line in LUT file \"" + Path::basename (path) + "\"");
+      decltype(split_by_quotes) entries;
+      for (size_t i = 0; i != split_by_quotes.size(); ++i) {
+        // Every second line must be encased in quotation marks, and is
+        //   therefore preserved without splitting
+        if (i % 2) {
+          entries.push_back (split_by_quotes[i]);
+        } else {
+          const auto block_split = split(split_by_quotes[i], "\t ", true);
+          entries.insert (entries.end(), block_split.begin(), block_split.end());
+        }
+      }
       for (decltype(entries)::iterator i = entries.begin(); i != entries.end();) {
         if (!i->size() || (i->size() == 1 && std::isspace ((*i)[0])))
           i = entries.erase (i);

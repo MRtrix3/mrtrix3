@@ -49,7 +49,7 @@ def execute():
       RF_in_path = 'init_RF.txt'
       mask_in_path = 'mask.mif'
       init_RF = '1 -1 1'
-      with open('init_RF.txt', 'w') as f:
+      with open(RF_in_path, 'w') as f:
         f.write(init_RF);
       iter_lmax_option = ' -lmax 4'
     else:
@@ -58,7 +58,7 @@ def execute():
       iter_lmax_option = lmax_option
 
     # Run CSD
-    runCommand('dwi2fod dwi.mif ' + RF_in_path + ' ' + prefix + 'FOD.mif -mask ' + mask_in_path + iter_lmax_option)
+    runCommand('dwi2fod csd dwi.mif ' + RF_in_path + ' ' + prefix + 'FOD.mif -mask ' + mask_in_path + iter_lmax_option)
     # Get amplitudes of two largest peaks, and direction of largest
     # TODO Speed-test fod2fixel against sh2peaks
     # TODO Add maximum number of fixels per voxel option to fod2fixel?
