@@ -145,7 +145,7 @@ For reference, this algorithm operates as follows:
 
 1. Resample the 5TT segmented image to diffusion image space.
 
-2. For each of the three tissues (GM, WM, CSF), select those voxels that
+2. For each of the three tissues (WM, GM, CSF), select those voxels that
    obey the following criteria:
 
 -  The tissue partial volume fraction must be at least 0.95.
