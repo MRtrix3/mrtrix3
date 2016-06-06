@@ -16,8 +16,9 @@ To install *MRtrix3*, you will need the following:
 -  a `C++11 <https://en.wikipedia.org/wiki/C%2B%2B11>`__ compliant
    compiler (GCC version >= 4.8, clang)
 -  `Python <https://www.python.org/>`__ version >= 2.6
+-  `NumPy <http://www.numpy.org/>`__
 -  The `zlib <http://www.zlib.net/>`__ compression library
--  `Eigen <http://eigen.tuxfamily.org>`__ version 3
+-  `Eigen <http://eigen.tuxfamily.org>`__ version 3.2 *(do not install the beta version)*
 -  `Qt <http://www.qt.io/>`__ version >= 4.7 *[GUI components only]*
 
 .. WARNING:: 
@@ -43,19 +44,19 @@ for hints on how to proceed in this case.
 
    ::
 
-       sudo apt-get install git g++ python libeigen3-dev zlib1g-dev libqt4-opengl-dev libgl1-mesa-dev
+       sudo apt-get install git g++ python numpy libeigen3-dev zlib1g-dev libqt4-opengl-dev libgl1-mesa-dev
 
 -  RPM-based distros (Fedora, CentOS):
 
    ::
 
-       sudo yum install git g++ python eigen3-devel zlib-devel libqt4-devel libgl1-mesa-dev
+       sudo yum install git g++ python numpy eigen3-devel zlib-devel libqt4-devel libgl1-mesa-dev
 
 -  Arch Linux:
 
    ::
 
-       sudo pacman -Syu git python gcc zlib eigen qt5-svg
+       sudo pacman -Syu git python numpy gcc zlib eigen qt5-svg
 
 If this doesn't work
 ^^^^^^^^^^^^^^^^^^^^
@@ -72,10 +73,14 @@ packages:
 
 -  Python version >2.6
 
+-  NumPy
+
 -  the zlib compression library and its corresponding development
    header/include files
 
--  the Eigen template library (only consists of development header/include files)
+-  the Eigen template library (only consists of development header/include files);
+   note that *MRtrix3* may not run correctly with the beta release of Eigen,
+   so we recommend download and installation of the latest stable release
 
 -  Qt version >4.7, its corresponding development header/include files,
    and the executables required to compile the code. Note this will most
@@ -153,7 +158,7 @@ Set up *MRtrix3*
 
    ::
 
-       echo PATH=$(pwd)/release/bin:$(pwd)/scripts:\$PATH >> ~/.bashrc
+       echo "export PATH=$(pwd)/release/bin:$(pwd)/scripts:$PATH" >> ~/.bashrc
 
 2. Close the terminal and start another one to ensure the startup file
    is read (or just type 'bash')
@@ -340,61 +345,4 @@ the default for new sessions, you should add the relevant line to your
 ::
 
     echo export PATH=$(pwd)/mrtrix3/release/bin:$(pwd)/mrtrix3/scripts:\$PATH >> ~/.bashrc
-
-
-.. _linux_trouble_shooting:
-
-Troubleshooting
------
-
-Below is a list of problems that you may encounter during installation
-or running of *MRtrix3*, along with suggested solutions.
-
-OpenGL version 3.3 not supported
-^^^^^
-
-This will typically lead to ``mrview`` crashing with a message such as:
-
-::
-
-    mrview: [ERROR] GLSL log [vertex shader]: ERROR: version '330' is not supported
-
-There are three main reasons for this:
-
-1. **Attempting to run MRView using X11 forwarding.** This will not work
-   without some effort, see :ref:`remote_display` for details.
-
-2. **Your installation genuinely does not support OpenGL 3.3.** In this
-   case, the solution will involve figuring out:
-
-   -  whether your graphics hardware can support OpenGL 3.3 at all;
-   -  whether your Linux distribution provides any drivers for your
-      graphics hardware that can support OpenGL 3.3;
-   -  if not, whether the manufacturer of your graphics hardware
-      provides drivers for Linux that can be installed on your
-      distribution;
-   -  how to install these drivers - a process that is invariably
-      distribution-specific, and beyond the scope of this document. If
-      you're having serious issues with this, you should consider asking
-      on the `MRtrix3 community forum <http://community.mrtrix.org/>`__,
-      you will often find others have come across similar issues and can
-      provide useful advice. If you do, make sure you provide as much
-      information as you can (at the very least, your exact
-      distribution, including which version of it, the exact model of
-      your graphics hardware, and what you've tried so far).
-
-3. **Your installation does support OpenGL 3.3, but only provides access
-   to the 3.3 functionality through the core profile, not through the
-   compatibility profile.** This seems to be an issue particularly on
-   more recent versions of Ubuntu 14.04. To see whether this is the
-   problem, you only need to add the line:
-
-   ::
-
-       NeedOpenGLCoreProfile: 1
-
-   to your MRtrix configuration file (typically, ``~/.mrtrix.conf``). If
-   it doesn't work, you're probably stuck with reason 2.
-
-
 

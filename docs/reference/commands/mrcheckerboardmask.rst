@@ -50,7 +50,7 @@ Standard options
 
 
 
-**Author:** J-Donald Tournier (jdtournier@gmail.com)
+**Author:** Max Pietsch (maximilian.pietsch@kcl.ac.uk)
 
 **Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
 

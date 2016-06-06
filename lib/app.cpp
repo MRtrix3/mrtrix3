@@ -54,7 +54,7 @@ namespace MR
       + Option ("help", "display this information page and exit.")
       + Option ("version", "display version information and exit.");
 
-    const char* AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
+    const char* AUTHOR = nullptr;
     const char* COPYRIGHT =
        "Copyright (c) 2008-2016 the MRtrix3 contributors"
        "\n\n"
@@ -853,6 +853,9 @@ namespace MR
     {
       argument.clear();
       option.clear();
+
+      if (!AUTHOR)
+        throw Exception ("No author specified for command " + std::string(NAME));
 
       if (argc == 2) {
         if (strcmp (argv[1], "__print_full_usage__") == 0) {

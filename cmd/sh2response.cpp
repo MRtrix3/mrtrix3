@@ -40,7 +40,9 @@ using namespace App;
 
 
 
-void usage () {
+void usage ()
+{
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   DESCRIPTION 
     + "generate an appropriate response function from the image data for spherical deconvolution";

@@ -28,6 +28,8 @@ using namespace App;
 
 void usage ()
 {
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
+
   DESCRIPTION
   + "convert a set of amplitudes (defined along a set of corresponding directions) "
     "to their spherical harmonic representation. The spherical harmonic decomposition is "

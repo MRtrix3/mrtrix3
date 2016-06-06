@@ -155,7 +155,7 @@ const OptionGroup MappingOption = OptionGroup ("Options for the streamline-to-vo
 
 void usage () {
 
-AUTHOR = "Robert E. Smith (r.smith@brain.org.au) and J-Donald Tournier (d.tournier@brain.org.au)";
+AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au) and J-Donald Tournier (jdtournier@gmail.com)";
 
 DESCRIPTION
   + "Use track data as a form of contrast for producing a high-resolution image."

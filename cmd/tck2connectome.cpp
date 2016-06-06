@@ -44,7 +44,7 @@ using namespace MR::DWI::Tractography::Connectome;
 void usage ()
 {
 
-	AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
   + "generate a connectome matrix from a streamlines file and a node parcellation image";

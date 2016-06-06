@@ -17,13 +17,13 @@ List of MRtrix3 commands
 ################" > reference/commands_list.rst
 
   mkdir -p reference/commands
-  for n in ../cmd/*; do
+  for n in `find ../cmd/ -name "*.cpp" | sort`; do
     dirpath='reference/commands'
     cppname=`basename $n`
-    cmdname=${cppname%.cpp}
+    cmdname=${cppname%".cpp"}
     cmdpath=$cmdname
     if [ "$OSTYPE" == "cygwin" ] || [ "$OSTYPE" == "msys" ] || [ "$OSTYPE" == "win32" ]; then
-      cmdpath=cmdpath+'.exe'
+      cmdpath=${cmdpath}+'.exe'
     fi
     $cmdpath __print_usage_rst__ > $dirpath/$cmdname.rst
     sed -ie "1i.. _$cmdname:\n\n$cmdname\n===========\n" $dirpath/$cmdname.rst
@@ -51,4 +51,8 @@ Python scripts provided with MRtrix3
 .......
 " >> reference/scripts_list.rst
   done
-  
+
+# Generating list of configuration file options
+
+  grep -rn --include=\*.h --include=\*.cpp '^\s*//CONF\b ' ../ | sed -ne 's/^.*CONF \(.*\)/\1/p' | ./format_config_options > reference/config_file_options.rst
+

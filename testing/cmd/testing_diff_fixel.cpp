@@ -38,6 +38,8 @@ using namespace App;
 
 void usage ()
 {
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)";
+
   DESCRIPTION
   + "compare two fixel images for differences, within specified tolerance.";
 

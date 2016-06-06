@@ -46,6 +46,8 @@ const char* operations[] = {
 
 void usage ()
 {
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
+
   DESCRIPTION
     + "compute summary statistic on image intensities either across images, "
     "or along a specified axis for a single image. Supported operations are:"

@@ -156,7 +156,7 @@ References based on command-line options:
 
 
 
-**Author:** J-Donald Tournier (jdtournier@gmail.com) & Robert E. Smith (robert.smith@florey.edu.au)
+**Author:** J-Donald Tournier (jdtournier@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
 

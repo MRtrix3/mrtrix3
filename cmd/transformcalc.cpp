@@ -44,6 +44,8 @@ const char* operations[] = {
 
 void usage ()
 {
+  AUTHOR = "Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
+
   DESCRIPTION
   + "This command's function is to process linear transformation matrices."
 

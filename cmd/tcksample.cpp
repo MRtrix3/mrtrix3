@@ -39,6 +39,7 @@ const char* statistics[] = { "mean", "median", "min", "max", nullptr };
 
 void usage ()
 {
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 

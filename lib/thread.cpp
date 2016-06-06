@@ -33,7 +33,7 @@ namespace MR
 
     //CONF option: NumberOfThreads
     //CONF default: number of threads provided by hardware
-    //CONF set the default number of CPU threads to use for multi-threading.
+    //CONF Set the default number of CPU threads to use for multi-threading.
 
     size_t number_of_threads ()
     {
