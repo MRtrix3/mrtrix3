@@ -95,24 +95,28 @@ const OptionGroup TWIOption = OptionGroup ("Options for the TWI image contrast p
 
   + Option ("contrast",
       "define the desired form of contrast for the output image\n"
-      "Options are: tdi, length, invlength, scalar_map, scalar_map_count, fod_amp, curvature (default: tdi)")
+      "Options are: " + join(contrasts, ", ") + " (default: tdi)")
     + Argument ("type").type_choice (contrasts)
 
   + Option ("image",
       "provide the scalar image map for generating images with 'scalar_map' / 'scalar_map_count' contrast, or the spherical harmonics image for 'fod_amp' contrast")
     + Argument ("image").type_image_in()
 
+  + Option ("vector_file",
+      "provide the vector data file for generating images with 'vector_file' contrast")
+    + Argument ("path").type_file_in()
+
   + Option ("stat_vox",
       "define the statistic for choosing the final voxel intensities for a given contrast "
-      "type given the individual values from the tracks passing through each voxel\n"
-      "Options are: sum, min, mean, max (default: sum)")
+      "type given the individual values from the tracks passing through each voxel. \n"
+      "Options are: " + join(voxel_statistics, ", ") + " (default: sum)")
     + Argument ("type").type_choice (voxel_statistics)
 
   + Option ("stat_tck",
       "define the statistic for choosing the contribution to be made by each streamline as a "
-      "function of the samples taken along their lengths\n"
-      "Only has an effect for 'scalar_map', 'fod_amp' and 'curvature' contrast types\n"
-      "Options are: sum, min, mean, max, median, mean_nonzero, gaussian, ends_min, ends_mean, ends_max, ends_prod (default: mean)")
+      "function of the samples taken along their lengths. \n"
+      "Only has an effect for 'scalar_map', 'fod_amp' and 'curvature' contrast types. \n"
+      "Options are: " + join(track_statistics, ", ") + " (default: mean)")
     + Argument ("type").type_choice (track_statistics)
 
   + Option ("fwhm_tck",
@@ -377,23 +381,23 @@ void run () {
 
     case TDI:
       if (stat_vox != V_SUM && stat_vox != V_MEAN) {
-        INFO ("Cannot use voxel statistic other than 'sum' or 'mean' for TDI generation - ignoring");
+        WARN ("Cannot use voxel statistic other than 'sum' or 'mean' for TDI generation - ignoring");
         stat_vox = V_SUM;
       }
       if (stat_tck != T_MEAN)
-        INFO ("Cannot use track statistic other than default for TDI generation - ignoring");
+        WARN ("Cannot use track statistic other than default for TDI generation - ignoring");
       stat_tck = T_MEAN;
       break;
 
     case LENGTH:
       if (stat_tck != T_MEAN)
-        INFO ("Cannot use track statistic other than default for length-weighted TDI generation - ignoring");
+        WARN ("Cannot use track statistic other than default for length-weighted TDI generation - ignoring");
       stat_tck = T_MEAN;
       break;
 
     case INVLENGTH:
       if (stat_tck != T_MEAN)
-        INFO ("Cannot use track statistic other than default for inverse-length-weighted TDI generation - ignoring");
+        WARN ("Cannot use track statistic other than default for inverse-length-weighted TDI generation - ignoring");
       stat_tck = T_MEAN;
       break;
 
@@ -407,6 +411,12 @@ void run () {
       break;
 
     case CURVATURE:
+      break;
+
+    case VECTOR_FILE:
+      if (stat_tck != T_MEAN)
+        WARN ("Cannot use track statistic other than default when providing contrast from an external data file - ignoring");
+      stat_tck = T_MEAN;
       break;
 
     default:
@@ -492,6 +502,7 @@ void run () {
     case SCALAR_MAP_COUNT: msg += "scalar-map-thresholded tdi"; break;
     case FOD_AMP:          msg += "FOD amplitude";              break;
     case CURVATURE:        msg += "curvature";                  break;
+    case VECTOR_FILE:      msg += "external-file-based";        break;
     default:               msg += "ERROR";                      break;
   }
   msg += " contrast";
@@ -554,7 +565,14 @@ void run () {
       mapper->add_scalar_image (assoc_image);
     else
       mapper->add_fod_image (assoc_image);
-    header.keyval()["twi_assoc_image"] = assoc_image;
+    header.keyval()["twi_assoc_image"] = Path::basename (assoc_image);
+  } else if (contrast == VECTOR_FILE) {
+    opt = get_options ("vector_file");
+    if (!opt.size())
+      throw Exception ("If using 'vector_file' contrast, must provide the relevant data file using the -vector_file option");
+    const std::string path (opt[0][0]);
+    mapper->add_vector_data (path);
+    header.keyval()["twi_vector_file"] = Path::basename (path);
   }
 
   std::unique_ptr<MapWriterBase> writer;

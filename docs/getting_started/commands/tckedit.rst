@@ -37,15 +37,6 @@ Streamline length threshold options
 
 -  **-minlength value** set the minimum length of any streamline in mm
 
-Streamline resampling options
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
--  **-upsample ratio** increase the density of points along the length of the streamline by some factor (may improve mapping streamlines to ROIs, and/or visualisation)
-
--  **-downsample ratio** increase the density of points along the length of the streamline by some factor (decreases required storage space)
-
--  **-out_ends_only** only output the two endpoints of each streamline
-
 Streamline count truncation options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -60,9 +51,15 @@ Thresholds pertaining to per-streamline weighting
 
 -  **-minweight value** set the minimum weight of any streamline
 
+Other options specific to tckedit
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 -  **-inverse** output the inverse selection of streamlines based on the criteria provided, i.e. only those streamlines that fail at least one criterion will be written to file.
 
--  **-test_ends_only** only test the ends of each streamline against the provided include/exclude ROIs
+-  **-ends_only** only test the ends of each streamline against the provided include/exclude ROIs
+
+Options for handling streamline weights
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-tck_weights_in path** specify a text scalar file containing the streamline weights
 

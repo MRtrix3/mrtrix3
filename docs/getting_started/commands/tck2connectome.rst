@@ -35,12 +35,21 @@ Structural connectome streamline assignment option
 
 -  **-assignment_all_voxels** assign the streamline to all nodes it intersects along its length (note that this means a streamline may be assigned to more than two nodes, or indeed none at all)
 
-Structural connectome metric option
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Structural connectome metric options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-metric choice** specify the edge weight metric. Options are: count (default), meanlength, invlength, invnodevolume, invlength_invnodevolume, mean_scalar
+-  **-scale_length** scale each contribution to the connectome edge by the length of the streamline
 
--  **-image path** provide the associated image for the mean_scalar metric
+-  **-scale_invlength** scale each contribution to the connectome edge by the inverse of the streamline length
+
+-  **-scale_invnodevol** scale each contribution to the connectome edge by the inverse of the two node volumes
+
+-  **-scale_file path** scale each contribution to the connectome edge according to the values in a vector file
+
+Other options for tck2connectome
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-stat_edge statistic** statistic for combining the values from all streamlines in an edge into a single scale value for that edge (options are: sum,mean,min,max; default=sum)
 
 -  **-tck_weights_in path** specify a text scalar file containing the streamline weights
 

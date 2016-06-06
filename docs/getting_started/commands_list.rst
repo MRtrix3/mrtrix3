@@ -307,6 +307,10 @@ List of MRtrix3 commands
 .......
 
 
+.. include:: commands/tckresample.rst
+.......
+
+
 .. include:: commands/tcksample.rst
 .......
 

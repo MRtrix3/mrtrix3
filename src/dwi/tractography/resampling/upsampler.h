@@ -13,22 +13,23 @@
  * 
  */
 
-#ifndef __dwi_tractography_resample_h__
-#define __dwi_tractography_resample_h__
+#ifndef __dwi_tractography_resampling_upsampler_h__
+#define __dwi_tractography_resampling_upsampler_h__
 
 
 #include <vector>
 
-#include "math/hermite.h"
-#include "dwi/tractography/tracking/generated_track.h"
+#include "dwi/tractography/resampling/resampling.h"
 
 
 namespace MR {
   namespace DWI {
     namespace Tractography {
+      namespace Resampling {
 
 
-        class Upsampler
+
+        class Upsampler : public Base
         {
 
           public:
@@ -48,12 +49,11 @@ namespace MR {
             ~Upsampler() { }
 
 
+            bool operator() (std::vector<Eigen::Vector3f>&) const override;
+            bool valid () const override { return (M.rows()); }
+
             void set_ratio (const size_t);
-            bool operator() (std::vector<Eigen::Vector3f>&) const;
-
             size_t get_ratio() const { return (M.rows() ? (M.rows() + 1) : 1); }
-            bool   valid ()    const { return (M.rows()); }
-
 
           private:
             Eigen::MatrixXf M;
@@ -66,37 +66,7 @@ namespace MR {
 
 
 
-
-
-
-
-
-
-
-
-      class Downsampler
-      {
-
-        public:
-          Downsampler () : ratio (1) { }
-          Downsampler (const size_t downsample_ratio) : ratio (downsample_ratio) { }
-
-          bool operator() (Tracking::GeneratedTrack&) const;
-          bool operator() (std::vector<Eigen::Vector3f>&) const;
-
-          bool valid() const { return (ratio > 1); }
-          size_t get_ratio() const { return ratio; }
-          void set_ratio (const size_t i) { ratio = i; }
-
-        private:
-          size_t ratio;
-
-      };
-
-
-
-
-
+      }
     }
   }
 }

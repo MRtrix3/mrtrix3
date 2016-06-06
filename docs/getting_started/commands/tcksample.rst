@@ -17,23 +17,18 @@ Synopsis
 Description
 -----------
 
-sample values of associated image at each location along tracks
+sample values of an associated image along tracks
 
-The values are written to the output file as ASCII text, in the same order as the track vertices, with all values for each track on the same line (space separated), and individual tracks on separate lines.
+By default, the value of the underlying image at each point along the track is written to either an ASCII file (with all values for each track on the same line), or a track scalar file (.tsf). Alternatively, some statistic can be taken from the values along each streamline and written to a vector file.
 
 Options
 -------
 
-Streamline resampling options
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-  **-stat_tck statistic** compute some statistic from the values along each streamline (options are: integral,mean,median,min,max
 
--  **-resample num start end** resample tracks before sampling from the image, by resampling the tracks at 'num' equidistant and comparable locations along the tracks between 'start' and 'end' (specified as comma-separated 3-vectors in scanner coordinates)
+-  **-precise** use the precise mechanism for mapping streamlines to voxels (obviates the need for trilinear interpolation) (only applicable if some per-streamline statistic is requested)
 
--  **-waypoint point** [only used with -resample] together with the start and end points, this defines an arc of a circle passing through all points, along which resampling is to occur.
-
--  **-locations file** [only used with -resample] output a new track file with vertices at the locations resampled by the algorithm.
-
--  **-warp image** [only used with -resample] specify an image containing the warp field to the space in which the resampling is to take place. The tracks will be resampled as per their locations in the warped space, with sampling itself taking place in the original space
+-  **-use_tdi_fraction** each streamline is assigned a fraction of the image intensity in each element based on the fraction of the track density contributed by that streamline (this is only appropriate for processing a whole-brain tractogram, only for images for which the quantiative parameter is additive, and only if using the -precise option)
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -58,7 +53,7 @@ Standard options
 
 
 
-**Author:** J-Donald Tournier (jdtournier@gmail.com)
+**Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
 
