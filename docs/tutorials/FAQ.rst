@@ -208,4 +208,22 @@ of the location of those libraries; e.g.:
 (Replace the path to the *MRtrix3* scripts directory with the location of your
 own installation)
 
+``tck2connectome`` no longer has the ``-contrast mean_scalar`` option...?
+-------------------------------------------------------------------------
+
+The functionality previously provided by this command and option can now be
+achieved by instead splitting the operation into two independent steps:
+
+.. code::
+
+    tcksample tracks.tck scalar.mif mean_scalars.csv -stat_tck mean
+    tck2connectome tracks.tck nodes.mif connectome.csv -scale_file mean_scalars.csv -stat_edge mean
+
+The first step samples the image ``scalar.mif`` along each streamline,
+calculates the *mean sampled value along each streamline*, and stores these
+values into file ``mean_scalars.csv`` (one value for every streamline). The
+second step then assigns the value associated with each streamline during
+connectome construction to be the values from this file, and finally
+calculates the value of each edge to be the *mean of the values for the
+streamlines in that edge*.
 

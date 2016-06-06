@@ -1,5 +1,5 @@
 ################
-List of MRtrix3 config file options
+List of MRtrix3 configuration file options
 ################
 
 *  **AmbientIntensity**
@@ -20,7 +20,7 @@ List of MRtrix3 config file options
 *  **BZeroThreshold**
     *default: 10.0*
 
-     specifies the b-value threshold for determining those image volumes that correspond to b=0.
+     Specifies the b-value threshold for determining those image volumes that correspond to b=0.
 
 *  **BackgroundColor**
     *default: 1,1,1 (white)*
