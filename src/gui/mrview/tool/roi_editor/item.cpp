@@ -60,10 +60,9 @@ namespace MR
           set_allowed_features (false, true, false);
           set_interpolate (false);
           set_use_transparency (true);
-          value_min = 0;
-          value_max = 1;
+          value_min = 0.0f; value_max = 1.0f;
+          set_windowing (0.0f, 1.0f);
           min_max_set();
-          set_windowing (-1.0f, 0.0f);
           alpha = 1.0f;
           colour = preset_colours[current_preset_colour++];
           if (current_preset_colour >= 6)

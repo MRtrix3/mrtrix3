@@ -61,6 +61,7 @@ namespace MR
             void hide_all_slot ();
             void toggle_shown_slot (const QModelIndex&, const QModelIndex&);
             void selection_changed_slot (const QItemSelection &, const QItemSelection &);
+            void right_click_menu_slot (const QPoint&);
             void volume_changed (int);
             void update_slot (int unused);
             void values_changed ();
