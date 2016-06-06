@@ -28,11 +28,22 @@ using namespace App;
 void usage ()
 {
   DESCRIPTION
-  + "denoise DWI data and estimate the noise level based on the optimal threshold for PCA.";
-
+    + "denoise DWI data and estimate the noise level based on the optimal threshold for PCA."
+    
+    + "DWI data denoising and noise map estimation by exploiting  data redundancy in the PCA domain"
+    "using the prior knowledge that the eigenspectrum of random covariance matrices is described by"
+    "the universal Marchenko Pastur distribution."
+    "Important note: image denoising must be performed as the first step of the image processing pipeline."
+    "The routine will fail if interpolation or smoothing has been applied to the data prior to denoising."
+    "Note that this function does not correct for non-Gaussian noise biases.";
   
   AUTHOR = "Daan Christiaens (daan.christiaens@kuleuven.be) & Jelle Veraart (jelle.veraart@nyumc.org) & J-Donald Tournier (jdtournier@gmail.com)";
   
+  REFERENCES
+    + "Veraart, J.; Fieremans, E. & Novikov, D.S. " // Internal
+    "Diffusion MRI noise mapping using random matrix theory "
+    "Magn. Res. Med, 2016, early view, doi: 10.1002/mrm.26059";
+    
   
   ARGUMENTS
   + Argument ("dwi", "the input diffusion-weighted image.").type_image_in ()
@@ -102,7 +113,7 @@ class DenoisingFunctor
       double lam = s[p] / n;
       clam += lam;
       double gam = double(m-r+p+1) / double(n);
-      double sigsq1 = clam / (m-r+p+1) / std::max (gam, 1.0);
+      double sigsq1 = clam / (p+1) / std::max (gam, 1.0);
       double sigsq2 = (lam - lam_r) / 4 / std::sqrt(gam);
       // sigsq2 > sigsq1 if signal else noise
       if (sigsq2 < sigsq1) {
