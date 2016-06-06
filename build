@@ -236,6 +236,14 @@ The special target 'doc' is used to update the command documentation, so that
 any modifications to the inline documentation in commands can be propagate
 through to the user documentation site.
 
+By default, 'build' will use all available cores to run a parallel build. In some
+instances, this can cause problems (notably out of RAM errors). You can control 
+how many jobs 'build' will run concurrently using the NUMBER_OF_PROCESSORS 
+environment variable. For example:
+
+  $ NUMBER_OF_PROCESSORS=1 ./build
+
+
 OPTIONS:
 
   -verbose               print each command as it is being invoked
