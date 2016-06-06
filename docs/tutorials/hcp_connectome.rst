@@ -66,11 +66,12 @@ tool, then apply your corrections to the tissue data using the
    numbers in the image no longer correspond to entries in FreeSurfer's
    colour lookup table, but rows and columns of the connectome:
 
-``labelconfig aparc+aseg.nii.gz fs_default.txt nodes.mif -lut_freesurfer FreeSurferColorLUT.txt``
+``labelconvert aparc+aseg.nii.gz FreeSurferColorLUT.txt fs_default.txt nodes.mif``
 
-The configuration file (``fs_default.txt`` in this case) is also a handy
-text file that provides a structure name for every row / column of the
-connectome matrix. It is provided as part of MRtrix3, and located at
+File ``FreeSurferColorLUT.txt`` is provided with FreeSurfer in the root
+difrectory. The target lookup table file (``fs_default.txt`` in this case)
+is a handy text file that provides a structure name for every row / column
+of the connectome matrix: it is provided as part of MRtrix3, and located at
 ``src/connectome/config/fs_default.txt`` within the MRtrix3 folder.
 
 4. Replace FreeSurfer's estimates of sub-cortical grey matter structures

@@ -23,12 +23,12 @@ space of an MR image: the software has no information about the spatial
 locations of the nodes upon which that connectome is based. So the first
 step is actually to load an image to provide the tool with this
 information, using the "Node image" button at the top of the toolbar.
-The desired image is the output of the ``labelconfig`` command, as
+The desired image is the output of the ``labelconvert`` command, as
 detailed in the :ref:`stuct_connectome_construction` guide: the
 tool uses this image to localise each parcel in 3D space in preparation
 for visualisation. Alternatively, you can load the relevant parcellation
 image from the command-line when you first run MRView, using the
-``-connectome.load`` option.
+``-connectome.init`` option.
 
 Basic connectome visualisation
 ------------------------------
@@ -50,7 +50,8 @@ some threshold. So now, for the "Edge visualisation" - "Visibility"
 option, select "Matrix file", and load your connectome. The software now
 uses the data from this external file to threshold which edges are drawn
 and which are not, and also allows you to vary that threshold
-interactively.
+interactively. (You can also load a connectome matrix from the command
+line using the ``-connectome.load`` option.)
 
 The connectome still however has a binary appearance; every edge in the
 connectome is either present or absent, and they all have the same size
@@ -88,32 +89,13 @@ When the parcellation image is first loaded, the software has no
 information regarding the designations of the underlying nodes, so it
 simply labels them as "Node 1", "Node 2" etc.. To show the anatomical
 name of each node in the list, you must load the connectome
-configuration file that was used in the ``labelconfig`` step during
-[structural connectome construction]. This file simply provides a list
-of node indices and the corresponding names, so is perfect for
+lookup table that was used as the target output in the ``labelconvert``
+step during [structural connectome construction]. This file provides a
+list of node indices and their corresponding names, so is perfect for
 subsequent assessment of the resulting connectomes, whether using this
-tool or in other contexts.
-
-Where this gets slightly trickier, is if the parcellation you have used
-comes with a pre-defined colour for each node, and you wish to make use
-of these colours in your visualisation. These colours are typically
-provided in a 'lookup table' file, which contains node indices, names,
-and red-green-blue colour components. However, because of the effect of
-the ``labelconfig`` step in pre-processing, the indices provided in such
-a file *no longer correspond* to the indices in the parcellation image
-that was imported into the connectome toolbar. Therefore, to make use of
-such colour information, you must provide *both* the colour lookup table
-provided with the parcellation, *and* the connectome config file used in
-the \`labelconfig step. The software will then figure out which colour
-to assign to each node; you can activate this colouring by selecting
-"Node visualisation" - "Colour" - 'LUT' (short for *L*\ ook\_U\_p
-*T*\ able).
-
-Although some software packages perform this step automatically, they
-can only do so for their own parcellation schemes. By explicitly
-importing this information, the connectome visualisation in MRtrix is
-independent of the particular mechanism or software used to produce the
-parcellation.
+tool or in other contexts (e.g. Matlab). Such a lookup table may also
+include a pre-defined colour for each node, which can then be used
+during visualisation by selecting "Node Visualisation -> Colour -> LUT".
 
 Advanced visualisation
 ----------------------

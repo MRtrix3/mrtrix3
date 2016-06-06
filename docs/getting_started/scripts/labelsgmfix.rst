@@ -4,11 +4,11 @@ labelsgmfix
 Synopsis
 --------
 
-    labelsgmfix [ options ] parc t1 config output
+    labelsgmfix [ options ] parc t1 lut output
 
 - *parc*: The input FreeSurfer parcellation image
 - *t1*: The T1 image to be provided to FIRST
-- *config*: Either the FreeSurfer lookup table (if the input parcellation image is directly from FreeSurfer), or the connectome configuration file (if the parcellation image has been modified using the labelconfig command)
+- *lut*: The lookup table file that the parcellated image is based on
 - *output*: The output parcellation image
 
 Description

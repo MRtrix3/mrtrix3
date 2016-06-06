@@ -21,18 +21,7 @@ convert a parcellated image (where values are node indices) into a colour image 
 Options
 -------
 
-Options for importing information from parcellation lookup tables
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
--  **-lut_basic path** get information from a basic lookup table consisting of index / name pairs
-
--  **-lut_freesurfer path** get information from a FreeSurfer lookup table (typically "FreeSurferColorLUT.txt")
-
--  **-lut_aal path** get information from the AAL lookup table (typically "ROI_MNI_V4.txt")
-
--  **-lut_itksnap path** get information from an ITK-SNAP lookup table (this includes the IIT atlas file "LUT_GM.txt")
-
--  **-config file** If the input parcellation image was created using labelconfig, provide the connectome config file used so that the node indices are converted correctly
+-  **-lut file** Provide the relevant colour lookup table (if not provided, nodes will be coloured randomly)
 
 Standard options
 ^^^^^^^^^^^^^^^^

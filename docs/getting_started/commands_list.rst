@@ -143,7 +143,7 @@ List of MRtrix3 commands
 .......
 
 
-.. include:: commands/labelconfig.rst
+.. include:: commands/labelconvert.rst
 .......
 
 
