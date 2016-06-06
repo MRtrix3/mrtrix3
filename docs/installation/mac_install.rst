@@ -92,7 +92,7 @@ Build *MRtrix3*
        git clone git@github.com:MRtrix3/mrtrix3.git
 
 
-2. Configure the MRtrix install:
+2. Configure the *MRtrix3* install:
 
    ::
 
@@ -122,8 +122,7 @@ Set up *MRtrix3*
 
 3. type ``mrview`` to check that everything works
 
-4. You may also want to have a look through the :ref:`mrtrix_config_options` and set anything you think
-   might be required on your system.
+4. You may also want to have a look through the `configuration file options <config_file_options>`_ and set anything you think might be required on your system.
 
 Keeping *MRtrix3*  up to date
 --------------------------

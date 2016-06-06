@@ -129,7 +129,7 @@ Build *MRtrix3*
 
        git clone git@github.com:MRtrix3/mrtrix3.git
 
-2. Configure the MRtrix install:
+2. Configure the *MRtrix3* install:
 
    ::
 
@@ -167,7 +167,7 @@ Keeping *MRtrix3* up to date
 --------------------------
 
 1. You can update your installation at any time by opening a terminal in
-   the MRtrix3 folder, and typing:
+   the *MRtrix3* folder, and typing:
 
    ::
 
@@ -284,7 +284,7 @@ Limitations
 """""
 
 -  **OpenGL support:** this approach cannot magically make your system
-   run MRView if it doesn't already support OpenGL 3.3 and above. This
+   run ``mrview`` if it doesn't already support OpenGL 3.3 and above. This
    is a hardware driver issue, and can only be addressed by upgrading
    the drivers for your system - something that may or may not be
    possible.
@@ -305,7 +305,7 @@ Limitations
    server. The recommendation would be to configure with the ``-nogui``
    option to skip the GUI components. You should also be able to access
    your data over the network (e.g. using SAMBA or SSHFS), in which case
-   you would be able to display the images by running MRView locally and
+   you would be able to display the images by running ``mrview`` locally and
    loading the images over the shared network drives.
 
 Instructions
@@ -313,7 +313,7 @@ Instructions
 
 First, obtain the code and extract or clone it on a modern distribution
 (Arch, Ubuntu 14.04, Mint 17, ..., potentially with a virtual machine if
-required). Then, from the main ``mrtrix3`` folder:
+required). Then, from the main *MRtrix3* folder:
 
 ::
 
@@ -353,7 +353,7 @@ or running of *MRtrix3*, along with suggested solutions.
 OpenGL version 3.3 not supported
 ^^^^^
 
-This will typically lead to MRView crashing with a message such as:
+This will typically lead to ``mrview`` crashing with a message such as:
 
 ::
 

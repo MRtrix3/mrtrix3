@@ -1,6 +1,6 @@
 .. _stuct_connectome_construction:
 
-Structural-connectome construction
+Structural connectome construction
 ==================================
 
 Included in this new version of MRtrix are some useful tools for

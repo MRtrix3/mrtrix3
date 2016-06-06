@@ -8,12 +8,12 @@ the user changing to the new version, or any data that may be used
 interchangeably between the two versions.
 
 **Important:** note that although it is possible to use and display FODs
-generated using MRtrix 0.2.x in the newer MRtrix3 applications (and
+generated using MRtrix 0.2.x in the newer *MRtrix3* applications (and
 vice-versa), the FODs will *NOT* be correct. Moreover, it is very
 difficult to tell the difference on simple visual inspection - the FODs
 will still *look* reasonable, but will give incorrect results if used
 for tractography or in quantitative analyses. To ensure your images are
-correct, you should use the ``shbasis`` application included in MRtrix3,
+correct, you should use the :ref:`shbasis` application included in *MRtrix3*,
 as described below.
 
 The problem
@@ -38,12 +38,12 @@ optimal.
 Now this 'bug' didn't actually cause any problems; the previous version
 of MRtrix was self-consistent in its handling of the issue throughout
 the code. It was annoying for any users transferring data between MRtrix
-and other packages though. For the release of the new MRtrix, we have
+and other packages though. For the release of the new *MRtrix3*, we have
 decided to correct the underlying error in the SH basis once and for
 all, as there are various mathematical operations that are greatly
 simplified when the basis is orthonormal. This does however introduce a
 problem for anyone that has done prior image processing using the old
-MRtrix and wants to be able to use that data with the new MRtrix: if you
+MRtrix 0.2 and wants to be able to use that data with *MRtrix3*: if you
 have image data that was generated using the *old* SH basis, but read it
 using MRtrix code that was compiled using the *new* SH basis, the data
 will *not be interpreted correctly*.
@@ -52,14 +52,14 @@ The solution
 ------------
 
 There is a solution, but it takes a bit of manual labour on your part.
-We have provided a new MRtrix command called ``shbasis``. This command
+We have provided a new command called ``shbasis``. This command
 will read your image data, and tell you which SH basis it thinks your
 image data are stored in (or if it's unable to make this decision).
 
 Furthermore, it includes a command-line option for *changing* the SH
 basis of the underlying image data: ``-convert``. The most important
 choice for this option is ``-convert native``. This option identifies
-the SH basis that the new version of MRtrix is compiled for (this is the
+the SH basis that *MRtrix3* is compiled for (this is the
 new orthonormal basis by default); and if the image data is not
 currently stored in this basis, it *modifies the image data in-place* so
 that it conforms to the correct basis.
@@ -81,12 +81,12 @@ harmonic data (only FOD images; raw DWIs / response functions / TDIs /
 etc. do not need to be converted).
 
 Also: Remember I said that data previously generated will not be
-interpreted correctly by the new MRtrix commands without the SH basis
+interpreted correctly by *MRtrix3* commands without the SH basis
 conversion? The same applies in the other direction. So if you load FOD
-images that have either been generated using the new MRtrix, or have
+images that have either been generated using *MRtrix*, or have
 been previously converted using ``shbasis``, commands from the previous
 version of MRtrix (0.2) won't interpret them correctly. We hope that
-once we have feature completeness in the new MRtrix, the old version
+once we have feature completeness in *MRtrix3*, the old version
 will no longer be necessary, and therefore this will not be a problem.
 
 Problematic data
@@ -113,3 +113,4 @@ warnings just to make sure you appreciate the danger in what you're
 doing, so you should only ever use this setting for problematic data;
 for the vast majority of conversions, ``-convert native`` is much
 better.
+
