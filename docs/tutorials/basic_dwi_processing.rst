@@ -69,7 +69,7 @@ the response function estimated previously.
 
 .. code::
 
-    $ dwi2fod <Input DWI> <Input response text file> <Output FOD image> -mask <Input DWI mask>
+    $ dwi2fod csd <Input DWI> <Input response text file> <Output FOD image> -mask <Input DWI mask>
     $ mrview <Input DWI> -odf.load_sh <Output FOD image>
 
 Whole-brain streamlines tractography
@@ -100,3 +100,4 @@ particularly when a very large number of streamlines is generated.
 
     $ tckmap <Input track file> <Output TDI> -vox <Voxel size in mm>
     $ mrview <Output TDI>
+

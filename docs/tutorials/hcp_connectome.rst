@@ -111,13 +111,17 @@ appropriateness of response function voxel selections)
 
 4. Perform Multi-Shell, Multi-Tissue Constrained Spherical Deconvolution:
 
-``msdwi2fod DWI.mif RF_WM.txt WM_FODs.mif RF_GM.txt GM.mif RF_CSF.txt CSF.mif -mask nodif_brain_mask.nii.gz``
+``dwi2fod msmt_5tt DWI.mif RF_WM.txt WM_FODs.mif RF_GM.txt GM.mif RF_CSF.txt CSF.mif -mask nodif_brain_mask.nii.gz``
 
-``mrview meanb0.mif -odf.load_sh WM_FODs.mif`` (visually make sure that the
-white matter FODs are sensible)
+``mrconvert WM_FODs.mif - -coord 3 0 | mrcat CSF.mif GM.mif - tissueRGB.mif -axis 3``
 
-*Coming soon: Robust Constrained Spherical Deconvolution - Rician bias
-correction, outlier rejection & spatial regularisation*
+This generates a 4D image with 3 volumes, corresponding to the tissue
+densities of CSF, GM and WM, which will then be displayed in `mrview`
+as an RGB image with CSF as red, GM as green and WM as blue (as was
+presented in the MSMT CSD manuscript).
+
+``mrview tissueRGB.mif -odf.load_sh WM_FODs.mif`` (visually make sure that
+both the tissue segmentations and the white matter FODs are sensible)
 
 Connectome generation
 ---------------------

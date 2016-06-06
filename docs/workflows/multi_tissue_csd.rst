@@ -13,7 +13,7 @@ Multi-tissue CSD can be performed as:
 
 ::
 
-  msdwi2fod dwi.mif wm.txt wm.mif gm.txt gm.mif csf.txt csf.mif
+  dwi2fod msmt_csd dwi.mif wm.txt wm.mif gm.txt gm.mif csf.txt csf.mif
 
 where
 
@@ -29,7 +29,7 @@ Typically, you will also want to use the ``-mask`` to avoid calculations in non-
 
 ::
 
-  msdwi2fod -mask mask.mif dwi.mif wm.txt wm.mif gm.txt gm.mif csf.txt csf.mif
+  dwi2fod msmt_csd -mask mask.mif dwi.mif wm.txt wm.mif gm.txt gm.mif csf.txt csf.mif
 
 RGB tissue signal contribution maps can be obtained as follows:
 
@@ -84,3 +84,4 @@ References
    improved analysis of multi-shell diffusion MRI data.* NeuroImage, 103
    (2014), pp. 411–426 [`SD
    link <http://www.sciencedirect.com/science/article/pii/S1053811914006442>`__\ ]
+
