@@ -7,6 +7,14 @@ We outline the steps for installing *MRtrix3* for Windows using `MSYS2 <http://s
 Please consult :ref:`windows_trouble_shooting` if you encounter any issues with the configure, build
 or runtime operations of *MRtrix3*.
 
+.. WARNING::
+    Some of the Python scripts provided with *MRtrix3* are dependent on
+    external software tools (for instance FSL). If these packages are
+    not available on Windows, then the corresponding *MRtrix3* scripts
+    also cannot be run on Windows. A virtual machine may therefore be
+    required in order to use these particular scripts; though *MRtrix3*
+    may still be installed natively on Windows for other tasks.
+
 Check requirements
 ------------------
 
