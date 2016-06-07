@@ -406,13 +406,13 @@ elif system == 'windows':
   ld_lib_flags += [ '-pthread', '-shared' ]
   runpath = ''
 elif system == 'darwin':
-  if os.environ.has_key('MACOSX_DEPLOYMENT_TARGET') and os.environ.has_key('QMAKE_MACOSX_DEPLOYMENT_TARGET'):
+  if 'MACOSX_DEPLOYMENT_TARGET' in os.environ and 'QMAKE_MACOSX_DEPLOYMENT_TARGET' in os.environ:
     if not os.environ['QMAKE_MACOSX_DEPLOYMENT_TARGET'] == os.environ['MACOSX_DEPLOYMENT_TARGET']:
       error ('environment variables QMAKE_MACOSX_DEPLOYMENT_TARGET and MACOSX_DEPLOYMENT_TARGET differ')
     macosx_version = os.environ['MACOSX_DEPLOYMENT_TARGET']
-  elif os.environ.has_key('QMAKE_MACOSX_DEPLOYMENT_TARGET'):
+  elif 'QMAKE_MACOSX_DEPLOYMENT_TARGET' in os.environ:
     macosx_version = os.environ['QMAKE_MACOSX_DEPLOYMENT_TARGET']
-  elif os.environ.has_key('MACOSX_DEPLOYMENT_TARGET'):
+  elif 'MACOSX_DEPLOYMENT_TARGET' in os.environ:
     macosx_version = os.environ['MACOSX_DEPLOYMENT_TARGET']
   else:
     macosx_version =  ('.'.join(execute([ 'sw_vers', '-productVersion' ], RuntimeError)[1].split('.')[:2]))
