@@ -15,6 +15,10 @@ Scripts for external libraries
 .......
 
 
+.. include:: scripts/dwigradcheck.rst
+.......
+
+
 .. include:: scripts/dwiintensitynorm.rst
 .......
 

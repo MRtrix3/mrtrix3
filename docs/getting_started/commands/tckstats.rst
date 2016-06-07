@@ -20,9 +20,13 @@ calculate statistics on streamlines length.
 Options
 -------
 
+-  **-output field** output only the field specified. Multiple such options can be supplied if required. Choices are: mean, median, std, min, max, count. Useful for use in scripts.
+
 -  **-histogram path** output a histogram of streamline lengths
 
 -  **-dump path** dump the streamlines lengths to a text file
+
+-  **-ignorezero** do not generate a warning if the track file contains streamlines with zero length
 
 -  **-tck_weights_in path** specify a text scalar file containing the streamline weights
 
@@ -49,7 +53,7 @@ Standard options
 
 
 
-**Author:** Robert E. Smith (r.smith@brain.org.au)
+**Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
 
