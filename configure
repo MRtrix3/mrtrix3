@@ -406,9 +406,11 @@ elif system == 'windows':
   ld_lib_flags += [ '-pthread', '-shared' ]
   runpath = ''
 elif system == 'darwin':
+  macosx_version =  ('.'.join(execute ([ 'sw_vers', '-productVersion' ], RuntimeError)[1].split('.')[:2]))
   cxx = [ 'clang++' ]
-  cpp_flags += [ '-DMRTRIX_MACOSX', '-fPIC' ]
-  ld_lib_flags += [ '-dynamiclib', '-install_name', '@rpath/LIBNAME' ]
+  cpp_flags += [ '-DMRTRIX_MACOSX', '-fPIC', '-mmacosx-version-min='+macosx_version ]
+  ld_flags += [ '-mmacosx-version-min='+macosx_version ]
+  ld_lib_flags += [ '-dynamiclib', '-install_name', '@rpath/LIBNAME', '-mmacosx-version-min='+macosx_version ]
   runpath = '-Wl,-rpath,@loader_path/'
   lib_suffix = '.dylib'
 
@@ -621,7 +623,7 @@ ld_lib_flags += zlib_ldflags
 
 # Eigen3 flags:
 
-report('checking for Eigen 3 library: ')
+report('Checking for Eigen 3 library: ')
 if 'EIGEN_CFLAGS' in os.environ.keys(): 
   eigen_cflags = shlex.split (os.environ['EIGEN_CFLAGS'])
 else:
@@ -843,7 +845,7 @@ int main() { Foo f; }
       file = 'CONFIG += c++11'
       if debug: file += ' debug'
       file += '\nQT += core gui opengl svg\n'
-      file += 'HEADERS += qt.h\nSOURCES += qt.cpp\n'
+      file += 'HEADERS += qt.h\nSOURCES += qt.cpp\nQMAKE_MACOSX_DEPLOYMENT_TARGET = '+macosx_version + '\n'
 
       log ('\nproject file "qt.pro":\n---\n' + file + '---\n')
       f=open (os.path.join (qt_dir.name, 'qt.pro'), 'w')
