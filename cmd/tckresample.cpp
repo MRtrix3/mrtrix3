@@ -65,14 +65,19 @@ void run ()
   Resampling::Base* resampler = Resampling::get_resampler();
 
   float old_step_size = NaN;
-  Properties::const_iterator i = properties.find ("output_step_size");
-  if (i == properties.end()) {
-    i = properties.find ("step_size");
-    if (i != properties.end())
+  try {
+    Properties::const_iterator i = properties.find ("output_step_size");
+    if (i == properties.end()) {
+      i = properties.find ("step_size");
+      if (i != properties.end())
+        old_step_size = to<float> (i->second);
+    } else {
       old_step_size = to<float> (i->second);
-  } else {
-    old_step_size = to<float> (i->second);
+    }
+  } catch (...) {
+    DEBUG ("Unable to read input track file step size");
   }
+
   if (std::isfinite (old_step_size)) {
     float new_step_size = NaN;
     if (typeid (*resampler) == typeid (Resampling::Downsampler))
@@ -81,7 +86,7 @@ void run ()
       new_step_size = dynamic_cast<Resampling::FixedStepSize*> (resampler)->get_step_size();
     if (typeid (*resampler) == typeid (Resampling::Upsampler))
       new_step_size = old_step_size / dynamic_cast<Resampling::Upsampler*> (resampler)->get_ratio();
-    properties["output_step_size"] = str(new_step_size);
+    properties["output_step_size"] = std::isfinite (new_step_size) ? str(new_step_size) : "variable";
   }
 
   auto downsample = properties.find ("downsample_factor");

@@ -37,14 +37,14 @@ namespace MR {
 
             + Option ("upsample", "increase the density of points along the length of each streamline by some factor "
                                   "(may improve mapping streamlines to ROIs, and/or visualisation)")
-              + Argument ("ratio").type_integer (1, 1e6)
+              + Argument ("ratio").type_integer (1)
 
             + Option ("downsample", "increase the density of points along the length of each streamline by some factor "
                                     "(decreases required storage space)")
-              + Argument ("ratio").type_integer (1, 1e6)
+              + Argument ("ratio").type_integer (1)
 
             + Option ("step_size", "re-sample the streamlines to a desired step size (in mm)")
-              + Argument ("value").type_float (0.0, 1e6)
+              + Argument ("value").type_float (0.0)
 
             + Option ("num_points", "re-sample each streamline to a fixed number of points")
               + Argument ("count").type_integer (2)
