@@ -27,7 +27,7 @@ To install *MRtrix3* , you will need the following:
 Install Dependencies
 --------------------
 
-1. Update MacOS X to version 10.9 (Mavericks) or higher - OpenGL 3.3 will
+1. Update MacOS X to version 10.10 (Yosemite) or higher - OpenGL 3.3 will
    typically not work on older versions
 
 2. Install XCode from the Apple Store
