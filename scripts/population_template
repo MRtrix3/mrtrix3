@@ -76,8 +76,8 @@ if lib.app.args.mask_dir:
   if not os.path.exists(maskDir):
     errorMessage('mask directory not found')
   maskFiles = os.listdir(maskDir)
-  if len(maskFiles) != len(inFiles):
-    errorMessage('the number of images in the mask directory does not equal the number of images in the input directory')
+  if len(maskFiles) < len(inFiles):
+    errorMessage('there are not enough mask images for the number of images in the input directory')
   maskCommonPostfix = lib.app.getCommonPostfix(maskFiles)
   maskPrefixes = []
   for m in maskFiles:
@@ -224,9 +224,6 @@ else:
 runCommand('mrmath ' + allindir('input_transformed') + ' mean initial_template.mif')
 current_template = 'initial_template.mif'
 
-if useMasks:
-  runCommand('mrmath ' + allindir('masks_transformed') + ' min initial_template_mask.mif')
-  current_template_mask = 'initial_template_mask.mif'
 
 # Optimise template with linear registration
 printMessage('Optimising template with linear registration')
@@ -289,15 +286,16 @@ for level in range(0, len(linear_scales)):
 
 
 # Create a template mask for nl registration by taking the intersection of all transformed input masks and dilating
-if useMasks:
-  runCommand('mrtransform ' + abspath(i.mask_directory, i.mask_filename) +
-           ' -template ' + current_template +
-           ' -interp nearest' +
-           ' -linear linear_transforms/' + i.prefix + '.txt' +
-           ' masks_transformed/' + i.prefix + '.mif' +
-           ' -force')
-  runCommand ('mrmath ' + allindir('masks_transformed') + ' min - | maskfilter - median - | maskfilter - dilate -npass 6 init_nl_template_mask.mif -force')
-  current_template_mask = 'init_nl_template_mask.mif'
+  if useMasks:
+    for i in input:
+	  runCommand('mrtransform ' + abspath(i.mask_directory, i.mask_filename) +
+		         ' -template ' + current_template +
+		         ' -interp nearest' +
+		         ' -linear linear_transforms/' + i.prefix + '.txt' +
+		         ' masks_transformed/' + i.prefix + '.mif' +
+		         ' -force')
+    runCommand ('mrmath ' + allindir('masks_transformed') + ' min - | maskfilter - median - | maskfilter - dilate -npass 5 init_nl_template_mask.mif -force')
+    current_template_mask = 'init_nl_template_mask.mif'
 
 
 # Optimise the template with non-linear registration
@@ -351,7 +349,7 @@ for level in range(0, len(nl_scales)):
   current_template = 'nl_template' + str(level) + '.mif'
 
   if useMasks:
-    runCommand ('mrmath ' + allindir('masks_transformed') + ' min - | maskfilter - median - | maskfilter - dilate -npass 6 nl_template_mask' + str(level) + '.mif')
+    runCommand ('mrmath ' + allindir('masks_transformed') + ' min - | maskfilter - median - | maskfilter - dilate -npass 5 nl_template_mask' + str(level) + '.mif')
     current_template_mask = 'nl_template_mask' + str(level) + '.mif'
 
   if level < len(nl_scales) - 1:
