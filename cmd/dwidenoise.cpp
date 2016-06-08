@@ -28,27 +28,29 @@ using namespace App;
 void usage ()
 {
   DESCRIPTION
-    + "denoise DWI data and estimate the noise level based on the optimal threshold for PCA."
+    + "Denoise DWI data and estimate the noise level based on the optimal threshold for PCA."
     
-    + "DWI data denoising and noise map estimation by exploiting  data redundancy in the PCA domain"
-    "using the prior knowledge that the eigenspectrum of random covariance matrices is described by"
+    + "DWI data denoising and noise map estimation by exploiting data redundancy in the PCA domain "
+    "using the prior knowledge that the eigenspectrum of random covariance matrices is described by "
     "the universal Marchenko Pastur distribution."
-    "Important note: image denoising must be performed as the first step of the image processing pipeline."
+
+    + "Important note: image denoising must be performed as the first step of the image processing pipeline. "
     "The routine will fail if interpolation or smoothing has been applied to the data prior to denoising."
-    "Note that this function does not correct for non-Gaussian noise biases.";
+    
+    + "Note that this function does not correct for non-Gaussian noise biases.";
   
   AUTHOR = "Daan Christiaens (daan.christiaens@kuleuven.be) & Jelle Veraart (jelle.veraart@nyumc.org) & J-Donald Tournier (jdtournier@gmail.com)";
   
   REFERENCES
     + "Veraart, J.; Fieremans, E. & Novikov, D.S. "
     "Diffusion MRI noise mapping using random matrix theory "
-    "Magn. Res. Med, 2016, early view, doi: 10.1002/mrm.26059";
+    "Magn. Res. Med., 2016, early view, doi: 10.1002/mrm.26059";
   
   COPYRIGHT = "Copyright (c) 2016 New York University, University of Antwerp, and the MRtrix3 contributors \n \n"
       "Permission is hereby granted, free of charge, to any non-commercial entity ('Recipient') obtaining a copy of this software and "
       "associated documentation files (the 'Software'), to the Software solely for non-commercial research, including the rights to "
       "use, copy and modify the Software, subject to the following conditions: \n \n"
-      "\t 1. The above copyright notice and this permission notice shall be included by Recipient in all copies or substantial portions of"
+      "\t 1. The above copyright notice and this permission notice shall be included by Recipient in all copies or substantial portions of "
       "the Software. \n \n"
       "\t 2. THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES"
       "OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE"
