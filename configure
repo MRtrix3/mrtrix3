@@ -1058,7 +1058,7 @@ if profile:
   ld_flags += [ '-g', '-pg' ]
   ld_lib_flags += [ '-g', '-pg' ]
 elif debug:
-  if os.path.basename(cxx).startswith('g++'):
+  if os.path.basename(cxx[0]).startswith('g++'):
     cpp_flags += [ '-Og' ]
   else:
     cpp_flags += [ '-O0' ]
