@@ -77,7 +77,7 @@ if lib.app.args.mask_dir:
     errorMessage('mask directory not found')
   maskFiles = os.listdir(maskDir)
   if len(maskFiles) < len(inFiles):
-    errorMessage('the there are not enough mask images for the number of images in the input directory')
+    errorMessage('there are not enough mask images for the number of images in the input directory')
   maskCommonPostfix = lib.app.getCommonPostfix(maskFiles)
   maskPrefixes = []
   for m in maskFiles:
