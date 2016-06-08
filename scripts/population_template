@@ -226,11 +226,6 @@ else:
 runCommand('mrmath ' + allindir('input_transformed') + ' mean initial_template.mif')
 current_template = 'initial_template.mif'
 
-if useMasks:
-  runCommand('mrmath ' + allindir('masks_transformed') + ' min initial_template_mask.mif')
-  current_template_mask = 'initial_template_mask.mif'
-
-
 
 # Optimise template with linear registration
 printMessage('Optimising template with linear registration')
