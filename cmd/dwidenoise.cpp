@@ -74,8 +74,8 @@ void usage ()
     + Option ("mask", "only perform computation within the specified binary brain mask image.")
     +   Argument ("image").type_image_in()
 
-    + Option ("extent", "set the window size of the denoising filter. (default = " + str(DEFAULT_SIZE) + ")")
-    +   Argument ("window").type_integer (0, 50)
+    + Option ("extent", "set the window size of the denoising filter. (default = " + str(DEFAULT_SIZE) + "," + str(DEFAULT_SIZE) + "," + str(DEFAULT_SIZE) + ")")
+    +   Argument ("window").type_sequence_int ()
 
     + Option ("noise", "the output noise map.")
     +   Argument ("level").type_image_out();
@@ -90,10 +90,10 @@ template <class ImageType>
 class DenoisingFunctor
 {
   public:
-  DenoisingFunctor (ImageType& dwi, int extent, Image<bool>& mask, ImageType& noise)
-    : extent (extent/2),
+  DenoisingFunctor (ImageType& dwi, std::vector<int> extent, Image<bool>& mask, ImageType& noise)
+    : extent {{extent[0]/2, extent[1]/2, extent[2]/2}},
       m (dwi.size(3)),
-      n (extent*extent*extent),
+      n (extent[0]*extent[1]*extent[2]),
       r ((m<n) ? m : n),
       X (m,n), 
       pos {{0, 0, 0}}, 
@@ -169,9 +169,9 @@ class DenoisingFunctor
     pos[0] = dwi.index(0); pos[1] = dwi.index(1); pos[2] = dwi.index(2);
     X.setZero();
     ssize_t k = 0;
-    for (dwi.index(2) = pos[2]-extent; dwi.index(2) <= pos[2]+extent; ++dwi.index(2))
-      for (dwi.index(1) = pos[1]-extent; dwi.index(1) <= pos[1]+extent; ++dwi.index(1))
-        for (dwi.index(0) = pos[0]-extent; dwi.index(0) <= pos[0]+extent; ++dwi.index(0), ++k)
+    for (dwi.index(2) = pos[2]-extent[2]; dwi.index(2) <= pos[2]+extent[2]; ++dwi.index(2))
+      for (dwi.index(1) = pos[1]-extent[1]; dwi.index(1) <= pos[1]+extent[1]; ++dwi.index(1))
+        for (dwi.index(0) = pos[0]-extent[0]; dwi.index(0) <= pos[0]+extent[0]; ++dwi.index(0), ++k)
           if (! is_out_of_bounds(dwi))
             X.col(k) = dwi.row(3).template cast<float>();
     // reset image position
@@ -181,7 +181,7 @@ class DenoisingFunctor
   }
   
 private:
-  const int extent;
+  const std::array<ssize_t, 3> extent;
   const ssize_t m, n, r;
   Eigen::MatrixXf X;
   std::array<ssize_t, 3> pos;
@@ -208,9 +208,18 @@ void run ()
   header.datatype() = DataType::Float32;
   auto dwi_out = Image<value_type>::create (argument[1], header);
   
-  int extent = get_option_value("extent", DEFAULT_SIZE);
-  if (!(extent & 1))
-    throw Exception ("-extent must be an odd number");
+  opt = get_options("extent");
+  std::vector<int> extent = { DEFAULT_SIZE, DEFAULT_SIZE, DEFAULT_SIZE };
+  if (opt.size()) {
+    extent = parse_ints(opt[0][0]);
+    if (extent.size() == 1)
+      extent = {extent[0], extent[0], extent[0]};
+    if (extent.size() != 3)
+      throw Exception ("-extent must be either a scalar or a list of length 3");
+    for (auto &e : extent)
+      if (!(e & 1))
+        throw Exception ("-extent must be a (list of) odd numbers");
+  }
   
   Image<value_type> noise;
   opt = get_options("noise");
