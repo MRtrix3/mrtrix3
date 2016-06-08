@@ -105,8 +105,6 @@ for i in inFiles:
 noreorientation = lib.app.args.noreorientation
 dorigid = lib.app.args.rigid
 
-print dorigid
-
 lib.app.args.template = relpath(lib.app.args.template)
 lib.app.checkOutputFile(lib.app.args.template)
 
