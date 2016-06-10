@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# insert Git version number into doc
+
+sed -e 's/PROJECT_NUMBER.*=.*\>/PROJECT_NUMBER = '$(git describe --abbrev=8 --dirty --always)'/' Doxyfile | doxygen -
