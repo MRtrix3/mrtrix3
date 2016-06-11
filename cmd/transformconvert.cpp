@@ -38,19 +38,19 @@ void usage ()
   + "This command's function is to convert linear transformation matrices."
 
   + "It allows to convert the transformation matrix provided by FSL's flirt command "
-  + "and ITK's (ANT's) linear transformation format to a format usable in MRtrix."
+  + "and ITK's linear transformation format to a format usable in MRtrix."
   ;
 
   ARGUMENTS
   + Argument ("input", "the input for the specified operation").allow_multiple()
-  + Argument ("operation", "the operation to perform, one of: " + join(operations, ", ") + "."
+  + Argument ("operation", "the operation to perform, one of:\n" + join(operations, ", ") + "."
     + "\n\nflirt_import: "
     + "Convert a transformation matrix produced by FSL's flirt command into a format usable by MRtrix. "
-        "You'll need to provide as additional arguments the save NIfTI images that were passed to flirt "
+        "You'll need to provide as additional arguments the NIfTI images that were passed to flirt "
         "with the -in and -ref options:\nmatrix_in in ref flirt_import output"
 
     + "\n\nitk_import: "
-    + "Convert a plain text transformation matrix file produced by ITK's or ANT's affine registration "
+    + "Convert a plain text transformation matrix file produced by ITK's (ANTS, Slicer) affine registration "
     + "into a format usable by MRtrix."
     ).type_choice (operations)
 
@@ -128,14 +128,14 @@ template <typename TransformationType>
 void parse_itk_trafo (const std::string& itk_file, TransformationType& transformation, Eigen::Vector3d& centre_of_rotation) {
   const std::string first_line = "#Insight Transform File V1.0";
   std::vector<std::string> supported_transformations = {"MatrixOffsetTransformBase_double_3_3",
-                                                        "MatrixOffsetTransformBase_float_3_3"
+                                                        "MatrixOffsetTransformBase_float_3_3",
+                                                        "AffineTransform_double_3_3",
+                                                        "AffineTransform_float_3_3"
                                                       };
   // TODO, support derived classes that are compatible
   // FixedCenterOfRotationAffineTransform_float_3_3?
   // QuaternionRigidTransform_double_3_3?
   // QuaternionRigidTransform_float_3_3?
-  // "AffineTransform_double_3_3",
-  // "AffineTransform_float_3_3",
 
   File::KeyValue file (itk_file, first_line.c_str());
   std::string line;
