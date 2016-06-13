@@ -44,6 +44,7 @@ lib.app.parser.add_argument('-template_mask', help='Output a template mask. Only
 lib.app.parser.add_argument('-rigid', action='store_true', help='perform rigid registration instead of affine. This should be used for intra-subject registration in longitudinal analysis')
 lib.app.parser.add_argument('-linear_scale', help='Specifiy the multi-resolution pyramid used to build the rigid or affine template, in the form of a list of scale factors (default: 0.3,0.4,0.5,0.6,0.7,1.0,1.0,1.0,1.0,1.0). This implicitly defines the number of template levels')
 lib.app.parser.add_argument('-linear_lmax', help='Specifiy the lmax used for rigid or affine registration for each scale factor, in the form of a list of integers (default: 0,0,2,2,2,2,2,2,4,4,4,4,4,4,4,4). The list must be the same length as the affine_scale factor list')
+lib.app.parser.add_argument('-linear_niter', help='Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:500 for each scale). The must be a single number or a list of same length as the linear_scale factor list')
 lib.app.parser.add_argument('-nl_scale', help='Specifiy the multi-resolution pyramid used to build the non-linear template, in the form of a list of scale factors (default: 0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0). This implicitly defines the number of template levels')
 lib.app.parser.add_argument('-nl_lmax', help='Specifiy the lmax used for non-linear registration for each scale factor, in the form of a list of integers (default: 0,0,2,2,2,2,2,2,2,2,4,4,4,4). The list must be the same length as the nl_scale factor list')
 lib.app.parser.add_argument('-nl_niter', help='Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5). The list must be the same length as the nl_scale factor list')
@@ -133,6 +134,13 @@ if lib.app.args.linear_scale:
   linear_scales = [float(x) for x in lib.app.args.linear_scale.split(',')]
 if lib.app.args.linear_lmax:
   linear_lmax = [int(x) for x in lib.app.args.linear_lmax.split(',')]
+linear_niter =   [500] * len(linear_scales)
+if lib.app.args.linear_niter:
+  linear_niter = [int(x) for x in lib.app.args.linear_niter.split(',')]
+  if len(linear_niter) == 1:
+    linear_niter = linear_niter * len(linear_scales)
+  elif len(linear_scales) != len(linear_niter):
+      errorMessage('linear_scales and linear_niter schedules are not equal in length')
 
 if do_fod_registration:
   if len(linear_scales) != len(linear_lmax):
@@ -237,6 +245,7 @@ for level in range(0, len(linear_scales)):
     lmax = ''
     if dorigid:
       scale = ' -rigid_scale ' + str(linear_scales[level])
+      niter = ' -rigid_niter ' + str(linear_niter[level])
       regtype = ' -type rigid'
       output = ' -rigid linear_transforms/' + i.prefix + '.txt'
       if level > 0:
@@ -245,6 +254,7 @@ for level in range(0, len(linear_scales)):
         lmax = ' -rigid_lmax ' + str(linear_lmax[level])
     else:
       scale = ' -affine_scale ' + str(linear_scales[level])
+      niter = ' -affine_niter ' + str(linear_niter[level])
       regtype = ' -type affine'
       output = ' -affine linear_transforms/' + i.prefix + '.txt'
       if level > 0:
@@ -258,6 +268,7 @@ for level in range(0, len(linear_scales)):
                  initialise +
                  mask +
                  scale +
+                 niter +
                  lmax +
                  regtype +
                  datatype +
