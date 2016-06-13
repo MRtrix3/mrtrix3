@@ -288,6 +288,8 @@ namespace MR
             midway_image_header = compute_minimum_average_header (im1_image, im2_image, transform, midspace_voxel_subsampling, midspace_padding);
 
             for (size_t level = 0; level < scale_factor.size(); level++) {
+              if (max_iter[level] == 0)
+                continue;
               {
                 std::string st;
                 loop_density[level] < 1.0 ? st = ", loop density: " + str(loop_density[level]) : st = "";
@@ -298,7 +300,9 @@ namespace MR
                 }
               }
 
+              INFO("smoothing image 1");
               auto im1_smoothed = Registration::multi_resolution_lmax (im1_image, scale_factor[level], do_reorientation, fod_lmax[level]);
+              INFO("smoothing image 2");
               auto im2_smoothed = Registration::multi_resolution_lmax (im2_image, scale_factor[level], do_reorientation, fod_lmax[level]);
 
               Filter::Resize midway_resize_filter (midway_image_header);
@@ -344,8 +348,6 @@ namespace MR
 
 
               for (auto gd_iteration = 0; gd_iteration < gd_repetitions[level]; ++gd_iteration){
-                if (max_iter[level] == 0)
-                  continue;
                 if (reg_bbgd) {
                   Math::GradientDescentBB<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
                     optim (evaluate, *transform.get_gradient_descent_updator());
