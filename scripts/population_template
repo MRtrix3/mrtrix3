@@ -43,7 +43,7 @@ lib.app.parser.add_argument('-transformed_dir', help='Output a directory contain
 lib.app.parser.add_argument('-template_mask', help='Output a template mask. Only works in -mask_dir has been input. The template mask is computed as the intersection of all subject masks in template space.')
 lib.app.parser.add_argument('-rigid', action='store_true', help='perform rigid registration instead of affine. This should be used for intra-subject registration in longitudinal analysis')
 lib.app.parser.add_argument('-linear_scale', help='Specifiy the multi-resolution pyramid used to build the rigid or affine template, in the form of a list of scale factors (default: 0.3,0.4,0.5,0.6,0.7,1.0,1.0,1.0,1.0,1.0). This implicitly defines the number of template levels')
-lib.app.parser.add_argument('-linear_lmax', help='Specifiy the lmax used for rigid or affine registration for each scale factor, in the form of a list of integers (default: 0,0,2,2,2,2,2,2,4,4,4,4,4,4,4,4). The list must be the same length as the affine_scale factor list')
+lib.app.parser.add_argument('-linear_lmax', help='Specifiy the lmax used for rigid or affine registration for each scale factor, in the form of a list of integers (default: 2,2,2,2,2,2,4,4,4,4). The list must be the same length as the affine_scale factor list')
 lib.app.parser.add_argument('-linear_niter', help='Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:500 for each scale). The must be a single number or a list of same length as the linear_scale factor list')
 lib.app.parser.add_argument('-nl_scale', help='Specifiy the multi-resolution pyramid used to build the non-linear template, in the form of a list of scale factors (default: 0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0). This implicitly defines the number of template levels')
 lib.app.parser.add_argument('-nl_lmax', help='Specifiy the lmax used for non-linear registration for each scale factor, in the form of a list of integers (default: 0,0,2,2,2,2,2,2,2,2,4,4,4,4). The list must be the same length as the nl_scale factor list')
@@ -51,7 +51,7 @@ lib.app.parser.add_argument('-nl_niter', help='Specifiy the number of registrati
 lib.app.parser.add_argument('-nl_update_smooth', default='2.0', help='Regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 2.0 x voxel_size)')
 lib.app.parser.add_argument('-nl_disp_smooth', default='1.0', help='Regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0 x voxel_size)')
 lib.app.parser.add_argument('-nl_grad_step', default='0.5', help='The gradient step size for non-linear registration (Default: 0.5)')
-lib.app.parser.add_argument('-noreorientation', action='store_true', help='Turn off FOD reorientation. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc')
+lib.app.parser.add_argument('-noreorientation', action='store_true', help='Turn off FOD reorientation in mrregister. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc')
 lib.app.parser.add_argument('-initial_alignment', default='mass', help='Method of alignment to form the initial template. Options are "mass" (default), "geometric" and "none".')
 lib.app.initialise()
 
@@ -293,6 +293,8 @@ for level in range(0, len(linear_scales)):
         initialise = ' -rigid_init_matrix linear_transforms/' + i.prefix + '.txt'
       if do_fod_registration:
         lmax = ' -rigid_lmax ' + str(linear_lmax[level])
+      else:
+        lmax = ' -noreorientation'
       if lib.app.args.verbose:
         mrregister_log = ' -info -rigid_log ' + 'log/' + i.filename + "_" + str(level) + '.log'
     else:
@@ -304,6 +306,8 @@ for level in range(0, len(linear_scales)):
         initialise = ' -affine_init_matrix linear_transforms/' + i.prefix + '.txt'
       if do_fod_registration:
         lmax = ' -affine_lmax ' + str(linear_lmax[level])
+      else:
+        lmax = ' -noreorientation'
       if lib.app.args.verbose:
         mrregister_log = ' -info -affine_log ' + 'log/' + i.filename + "_" + str(level) + '.log'
 
