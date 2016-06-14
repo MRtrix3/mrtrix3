@@ -23,20 +23,20 @@ for arg in sys.argv[1:]:
   elif '-nogui'.startswith (arg): nogui = True
   elif '-noortho'.startswith (arg): sh_basis_def = '-DUSE_NON_ORTHONORMAL_SH_BASIS'
   elif '-noshared'.startswith (arg): noshared = True
-  elif '-static'.startswith (arg): 
+  elif '-static'.startswith (arg):
     static = True
     noshared = True
   elif '-verbose'.startswith (arg): verbose = True
-  elif '-R'.startswith (arg): 
+  elif '-R'.startswith (arg):
     R_module = True
     #noshared = True
     nogui = True
   elif arg[0] != '-':
-    if profile_name != None: 
+    if profile_name != None:
       print ('configure: too many names supplied')
       sys.exit (1)
     profile_name = arg
-  else: 
+  else:
     print ("""
 usage: [ENV] ./configure [name] [-debug] [-assert] [-profile] [-nogui] [-noshared]
 
@@ -57,12 +57,12 @@ assertions enabled, which can be used with the build script as follows:
 
    $ ./build testing
 
-By default, the build script will compile the 'release' folder. 
+By default, the build script will compile the 'release' folder.
 
 Note that naming a target folder does *not* set any compiler flags. These are
 modified by command-line options or environment variables. It is perfectly
 valid to use non-standard options with a default ('release') target folder, or
-standard options in a named target folder. For instance: 
+standard options in a named target folder. For instance:
 
    $ ARCH=x86-84 ./configure -noshared
 
@@ -123,7 +123,7 @@ LDLIB_ARGS      The arguments expected by the linker for generating a shared lib
                 The default is:
                 "-shared LDLIB_FLAGS OBJECTS -o LIB"
 
-ARCH            the specific CPU architecture to compile for. This variable 
+ARCH            the specific CPU architecture to compile for. This variable
                 will be passed to the compiler using -march=$ARCH.
                 The default is 'native'.
 
@@ -159,13 +159,13 @@ PATH            Set the path to use during the configure process.
                 needs to be specified correctly at configure time.
 """)
     sys.exit (0)
-  
+
 
 if not profile_name:
   profile_name = 'release'
 
 
-try: 
+try:
   os.makedirs (profile_name)
 except OSError:
   if not os.path.isdir (profile_name):
@@ -180,7 +180,7 @@ config_report = ''
 def log (message):
   global logfile
   logfile.write (message.encode (errors='ignore'))
-  if (verbose): 
+  if (verbose):
     sys.stdout.write (message)
     sys.stdout.flush()
 
@@ -220,7 +220,7 @@ ld_args = 'OBJECTS LDFLAGS -o EXECUTABLE'.split()
 ld_flags = [ ]
 
 if static:
-  ld_flags += [ '-static', '-Wl,-u,pthread_cancel,-u,pthread_cond_broadcast,-u,pthread_cond_destroy,-u,pthread_cond_signal,-u,pthread_cond_wait,-u,pthread_create,-u,pthread_detach,-u,pthread_cond_signal,-u,pthread_equal,-u,pthread_join,-u,pthread_mutex_lock,-u,pthread_mutex_unlock,-u,pthread_once,-u,pthread_setcancelstate' ] 
+  ld_flags += [ '-static', '-Wl,-u,pthread_cancel,-u,pthread_cond_broadcast,-u,pthread_cond_destroy,-u,pthread_cond_signal,-u,pthread_cond_wait,-u,pthread_create,-u,pthread_detach,-u,pthread_cond_signal,-u,pthread_equal,-u,pthread_join,-u,pthread_mutex_lock,-u,pthread_mutex_unlock,-u,pthread_once,-u,pthread_setcancelstate' ]
 
 ld_lib_args = 'OBJECTS LDLIB_FLAGS -o LIB'.split()
 ld_lib_flags = [ ]
@@ -241,14 +241,14 @@ class TempFile:
   def __enter__ (self):
     return self
 
-  def __exit__(self, type, value, traceback):      
+  def __exit__(self, type, value, traceback):
     try:
       os.unlink (self.name)
     except OSError as error:
       log ('error deleting temporary file "' + self.name + '": ' + error.strerror)
     except:
       raise
-  
+
 
 
 class DeleteAfter:
@@ -265,8 +265,8 @@ class DeleteAfter:
       log ('error deleting temporary file "' + self.name + '": ' + error.strerror)
     except:
       raise
-    
-    
+
+
 class TempDir:
   def __init__ (self):
     self.name = tempfile.mkdtemp ();
@@ -283,7 +283,7 @@ class TempDir:
         else:
           os.unlink (fname)
       os.rmdir (self.name)
-       
+
     except OSError as error:
       log ('error deleting temporary folder "' + self.name + '": ' + error.strerror)
     except:
@@ -380,7 +380,7 @@ def qt_exec_hint (name):
 
 def commit (name, variable):
   cache.write (name + ' = ')
-  if type (variable) == type([]): 
+  if type (variable) == type([]):
     cache.write ('[')
     if len(variable): cache.write(' \'' + '\', \''.join (variable) + '\' ')
     cache.write (']\n')
@@ -391,7 +391,7 @@ def commit (name, variable):
 def fillin (template, keyvalue):
   cmd = []
   for item in template:
-    if item in keyvalue: 
+    if item in keyvalue:
       if type(keyvalue[item]) == type ([]): cmd += keyvalue[item]
       else: cmd += [ keyvalue[item] ]
     else: cmd += [ item ]
@@ -401,7 +401,7 @@ def fillin (template, keyvalue):
 
 def execute (cmd, exception, raise_on_non_zero_exit_code = True, cwd = None):
   log ('EXEC <<\nCMD: ' + ' '.join(cmd) + '\n')
-  try: 
+  try:
     process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd)
     ( stdout, stderr ) = process.communicate()
 
@@ -411,21 +411,21 @@ def execute (cmd, exception, raise_on_non_zero_exit_code = True, cwd = None):
     stderr = stderr.decode(errors='ignore').rstrip()
     if len (stderr): log ('STDERR:\n' + stderr + '\n')
     log ('>>\n\n')
-  
-  except OSError as error: 
+
+  except OSError as error:
     log ('error invoking command "' + cmd[0] + '": ' + error.strerror + '\n>>\n\n')
     raise exception
   except:
     print ('Unexpected error:', str(sys.exc_info()))
     raise
   else:
-    if raise_on_non_zero_exit_code and process.returncode != 0: 
+    if raise_on_non_zero_exit_code and process.returncode != 0:
       raise exception (stderr)
 
 
   return (process.returncode, stdout, stderr)
 
-  
+
 
 def compile (source, compiler_flags = [], linker_flags = []):
   global cpp, ld
@@ -440,7 +440,7 @@ def compile (source, compiler_flags = [], linker_flags = []):
         'SRC': F.name,
         'OBJECT': obj.name })
       execute (cmd, CompileError)
-      
+
       with DeleteAfter ('a.out') as out:
         cmd = fillin (ld, {
           'LDFLAGS': linker_flags,
@@ -493,16 +493,28 @@ elif system == 'windows':
   ld_lib_flags += [ '-pthread', '-shared' ]
   runpath = ''
 elif system == 'darwin':
+  if 'MACOSX_DEPLOYMENT_TARGET' in os.environ and 'QMAKE_MACOSX_DEPLOYMENT_TARGET' in os.environ:
+    if not os.environ['QMAKE_MACOSX_DEPLOYMENT_TARGET'] == os.environ['MACOSX_DEPLOYMENT_TARGET']:
+      error ('environment variables QMAKE_MACOSX_DEPLOYMENT_TARGET and MACOSX_DEPLOYMENT_TARGET differ')
+    macosx_version = os.environ['MACOSX_DEPLOYMENT_TARGET']
+  elif 'QMAKE_MACOSX_DEPLOYMENT_TARGET' in os.environ:
+    macosx_version = os.environ['QMAKE_MACOSX_DEPLOYMENT_TARGET']
+  elif 'MACOSX_DEPLOYMENT_TARGET' in os.environ:
+    macosx_version = os.environ['MACOSX_DEPLOYMENT_TARGET']
+  else:
+    macosx_version =  ('.'.join(execute([ 'sw_vers', '-productVersion' ], RuntimeError)[1].split('.')[:2]))
+  report ('OS X deployment target: ' +  macosx_version + '\n')
   cxx = [ 'clang++' ]
-  cpp_flags += [ '-DMRTRIX_MACOSX', '-fPIC' ]
-  ld_lib_flags += [ '-dynamiclib', '-install_name', '@rpath/LIBNAME' ]
+  cpp_flags += [ '-DMRTRIX_MACOSX', '-fPIC', '-mmacosx-version-min='+macosx_version ]
+  ld_flags += [ '-mmacosx-version-min='+macosx_version ]
+  ld_lib_flags += [ '-dynamiclib', '-install_name', '@rpath/LIBNAME', '-mmacosx-version-min='+macosx_version ]
   runpath = '-Wl,-rpath,@loader_path/'
   lib_suffix = '.dylib'
 
 
 
 
-if 'ARCH' in os.environ.keys(): 
+if 'ARCH' in os.environ.keys():
   march = os.environ['ARCH']
   report ('Machine architecture set by ARCH environment variable to: ' + march + '\n')
   cpp_flags += [ '-march='+march ]
@@ -539,7 +551,7 @@ if 'LDLIB_FLAGS' in os.environ.keys(): ld_lib_flags += shlex.split (os.environ['
 
 
 report ('Checking for C++11 compliant compiler [' + cpp[0] + ']: ')
-try: 
+try:
   compiler_version = execute ([ cpp[0], '-dumpversion' ], CompileError)[1]
   if len(compiler_version) == 0: report ('(no version information)')
   else: report (compiler_version)
@@ -557,9 +569,9 @@ struct Derived : Base {
     using Base::Base;
 };
 
-int main() { 
+int main() {
   Derived D (int); // check for contructor inheritance
-  return (0); 
+  return (0);
 }
 ''', cpp_flags, ld_flags)
   report (' - tested ok\n')
@@ -584,14 +596,14 @@ report ('Detecting pointer size: ')
 try:
   pointer_size = int (compile ('''
 #include <iostream>
-int main() { 
-  std::cout << sizeof(void*); 
+int main() {
+  std::cout << sizeof(void*);
   return (0);
 }
 ''', cpp_flags, ld_flags))
   report (str(8*pointer_size) + ' bit\n')
   if pointer_size == 8: cpp_flags += [ '-DMRTRIX_WORD64' ]
-  elif pointer_size != 4: 
+  elif pointer_size != 4:
     error ('unexpected pointer size!')
 except:
   error ('unable to determine pointer size!' + configure_log_hint)
@@ -616,9 +628,9 @@ report ('Checking for variable-length array support: ')
 try:
   compile ('''
 
-int main(int argc, char* argv[]) { 
+int main(int argc, char* argv[]) {
   int x[argc];
-  return 0; 
+  return 0;
 }
 ''', cpp_flags, ld_flags)
   report ('yes\n')
@@ -639,9 +651,9 @@ class X {
   std::string s;
 };
 
-int main(int argc, char* argv[]) { 
+int main(int argc, char* argv[]) {
   X x[argc];
-  return 0; 
+  return 0;
 }
 ''', cpp_flags, ld_flags)
   report ('yes\n')
@@ -664,8 +676,8 @@ try:
 #include <iostream>
 #include <zlib.h>
 
-int main() { 
-  std::cout << zlibVersion(); 
+int main() {
+  std::cout << zlibVersion();
   return (0);
 }
 ''', cpp_flags + zlib_cflags, ld_flags + zlib_ldflags)
@@ -695,8 +707,8 @@ ld_lib_flags += zlib_ldflags
 
 # Eigen3 flags:
 
-report('checking for Eigen 3 library: ')
-if 'EIGEN_CFLAGS' in os.environ.keys(): 
+report('Checking for Eigen 3 library: ')
+if 'EIGEN_CFLAGS' in os.environ.keys():
   eigen_cflags = shlex.split (os.environ['EIGEN_CFLAGS'])
 else:
   try:
@@ -756,15 +768,14 @@ if not noshared:
         error ('compiler not found!' + configure_log_hint)
       except:
         error ('unexpected exception!' + configure_log_hint)
-  
       with DeleteAfter (lib_prefix + 'test' + lib_suffix) as lib:
         cmd = fillin (ld_lib, {
           'LDLIB_FLAGS': ld_lib_flags,
           'OBJECTS': obj.name,
           'LIB': lib.name })
         try: execute (cmd, LinkError)
-        except LinkError: 
-          error ('''linker error!
+        except LinkError:
+          error ('''linker not found!
 
   MRtrix3 was unable to employ the linker program for shared library generation.''' + compiler_hint ('shared library linker', 'LDLIB_FLAGS', '"-L/usr/local/lib"', 'LDLIB_ARGS', '"-shared LDLIB_FLAGS OBJECTS -o LIB"'))
         except:
@@ -795,8 +806,8 @@ qt_ldflags = []
 if not nogui:
 
   report ('Checking for Qt moc: ')
-  moc = 'moc' 
-  if 'MOC' in os.environ.keys(): 
+  moc = 'moc'
+  if 'MOC' in os.environ.keys():
     moc = os.environ['MOC']
   try:
     moc_version = get_qt_version([ moc, '-v' ], OSError)
@@ -814,12 +825,10 @@ if not nogui:
   except:
     error ('unexpected exception!' + configure_log_hint)
 
-    
-
   report ('Checking for Qt qmake: ')
-  qmake = 'qmake' 
-  if 'QMAKE' in os.environ.keys(): 
-    qmake = os.environ['QMAKE'] 
+  qmake = 'qmake'
+  if 'QMAKE' in os.environ.keys():
+    qmake = os.environ['QMAKE']
   try:
     qmake_version = get_qt_version([ qmake, '-v' ], OSError)
     report (qmake + ' (version ' + qmake_version + ')\n')
@@ -839,10 +848,10 @@ if not nogui:
   
   
   report ('Checking for Qt rcc: ')
-  rcc = 'rcc' 
-   
-  if 'RCC' in os.environ.keys(): 
-    rcc = os.environ['RCC'] 
+  rcc = 'rcc'
+
+  if 'RCC' in os.environ.keys():
+    rcc = os.environ['RCC']
   try:
     rcc_version = get_qt_version([ rcc, '-v' ], OSError)
     report (rcc + ' (version ' + rcc_version + ')\n')
@@ -882,7 +891,7 @@ class Foo: public QObject {
 };
 '''
       log ('\nsource file "qt.h":\n---\n' + file + '---\n')
-  
+
       f=open (os.path.join (qt_dir.name, 'qt.h'), 'w')
       f.write (file)
       f.close();
@@ -908,6 +917,8 @@ int main() { Foo f; }
       if debug: file += ' debug'
       file += '\nQT += core gui opengl svg\n'
       file += 'HEADERS += qt.h\nSOURCES += qt.cpp\n'
+      if system == "darwin":
+        file += 'QMAKE_MACOSX_DEPLOYMENT_TARGET = '+macosx_version + '\n'
 
       log ('\nproject file "qt.pro":\n---\n' + file + '---\n')
       f=open (os.path.join (qt_dir.name, 'qt.pro'), 'w')
@@ -916,16 +927,21 @@ int main() { Foo f; }
 
       qmake_cmd = [ qmake ]
 
-      (retcode, stdout, stderr) = execute (qmake_cmd, QMakeError, raise_on_non_zero_exit_code = False, cwd=qt_dir.name)
-      if retcode != 0:
-        report ('''
-        
-  qmake returned with error: ''' + stderr + '''
-''')
-        raise QMakeError
+      try:
+         (retcode, stdout, stderr) = execute (qmake_cmd, QMakeError, raise_on_non_zero_exit_code = False, cwd=qt_dir.name)
+         if retcode != 0:
+           error ('''qmake returned with error:
+
+''' + stderr)
+      except QMakeError as E:
+        error ('''error issuing qmake command!
+
+  Use the QMAKE environment variable to set the correct qmake command for use with Qt''')
+      except:
+        raise
 
 
-      qt_defines = [] 
+      qt_defines = []
       qt_includes = []
       qt_cflags = []
       qt_libs = []
@@ -949,11 +965,11 @@ int main() { Foo f; }
       for index, entry in enumerate(qt_includes):
         if entry[2:].startswith('..'):
           qt_includes[index] = '-I' + os.path.abspath(qt_dir.name + '/' + entry[2:])
-      
+
       qt = qt_cflags + qt_defines + qt_includes
       qt_cflags = []
       for entry in qt:
-        if entry[0] != '$' and not entry == '-I.': 
+        if entry[0] != '$' and not entry == '-I.':
           entry = entry.replace('\"','').replace("'",'')
           if entry.startswith('-I'):
             qt_cflags += [ '-isystem', entry[2:] ]
@@ -964,7 +980,7 @@ int main() { Foo f; }
       qt_ldflags = []
       for entry in qt:
         if entry[0] != '$': qt_ldflags += [ entry.replace('\"','').replace("'",'') ]
-  
+
       cmd = [ moc, 'qt.h', '-o', 'qt_moc.cpp' ]
       execute (cmd, QMOCError, cwd=qt_dir.name) #process = subprocess.Popen (cmd, cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
@@ -981,7 +997,7 @@ int main() { Foo f; }
       ret = execute (cmd, RuntimeError)
       report (ret[1])
 
-    
+
   except QMakeError:
     error ('error invoking Qt qmake!' + configure_log_hint)
   except QMOCError:
@@ -1011,31 +1027,31 @@ if R_module:
 
   report ('Checking for R library: ')
   R_cflags = [ '-isystem', '/usr/include/R' ]
-  if 'R_CFLAGS' in os.environ.keys(): 
+  if 'R_CFLAGS' in os.environ.keys():
     R_cflags = shlex.split (os.environ['R_CFLAGS'])
   else:
-    try: 
+    try:
       R_cflags = shlex.split (execute ([ 'pkg-config', '--cflags', 'libR' ], RuntimeError)[1])
     except:
       log ('error running pkg-config --libs libR - assuming defaults for R_CFLAGS\n\n')
-      
+
   R_ldflags = [ '-L/usr/lib/R/lib', '-lR' ]
-  if 'R_LDFLAGS' in os.environ.keys(): 
+  if 'R_LDFLAGS' in os.environ.keys():
     R_ldflags = shlex.split (os.environ['R_LDFLAGS'])
   else:
-    try: 
+    try:
       R_ldflags = shlex.split (execute ([ 'pkg-config', '--libs', 'libR' ], RuntimeError)[1])
     except:
       log ('error running pkg-config --libs libR - assuming defaults for R_LDFLAGS\n\n')
-    
+
 
   try:
     R_version = compile ('''
   #include <R.h>
   #include <Rversion.h>
   #include <iostream>
-  
-  int main() { 
+
+  int main() {
     std::cout << R_MAJOR << "." << R_MINOR << " (r" << R_SVN_REVISION << ")\\n";
     return 0;
   }
@@ -1053,10 +1069,10 @@ if R_module:
     error ('error running command!' + configure_log_hint)
   except: 
     error ('unexpected exception!' + configure_log_hint)
-  
+
   cpp_flags += R_cflags + [ '-DMRTRIX_AS_R_LIBRARY' ]
   ld_lib_flags += R_ldflags
-    
+
   ld_flags = ld_lib_flags
   exe_suffix = lib_suffix
 
