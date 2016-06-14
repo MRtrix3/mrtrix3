@@ -398,7 +398,7 @@ if system == 'linux':
   ld_lib_flags += [ '-pthread', '-shared' ]
   runpath = '-Wl,-rpath,$ORIGIN/'
 elif system == 'windows':
-  cpp_flags += [ '-pthread', '-DMRTRIX_WINDOWS', '-mms-bitfields' ]
+  cpp_flags += [ '-pthread', '-DMRTRIX_WINDOWS', '-mms-bitfields', '-Wa,-mbig-obj' ]
   exe_suffix = '.exe'
   lib_prefix = ''
   lib_suffix = '.dll'
@@ -1058,7 +1058,11 @@ if profile:
   ld_flags += [ '-g', '-pg' ]
   ld_lib_flags += [ '-g', '-pg' ]
 elif debug:
-  cpp_flags += [ '-O0', '-g' ]
+  if os.path.basename(cxx[0]).startswith('g++'):
+    cpp_flags += [ '-Og' ]
+  else:
+    cpp_flags += [ '-O0' ]
+  cpp_flags += [ '-g' ]
   ld_flags += [ '-g' ]
   ld_lib_flags += [ '-g' ]
 else:
