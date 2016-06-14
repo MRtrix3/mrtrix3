@@ -40,6 +40,7 @@ Welcome to the MRtrix user documentation!
    :caption: Tutorials
    
    tutorials/basic_dwi_processing
+   tutorials/denoising
    tutorials/hcp_connectome
    tutorials/connectome_tool
    tutorials/labelconfig
