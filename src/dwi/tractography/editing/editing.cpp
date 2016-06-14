@@ -75,22 +75,8 @@ const OptionGroup WeightsOption = OptionGroup ("Thresholds pertaining to per-str
 void load_properties (Tractography::Properties& properties)
 {
 
-  // ROIOption
-  auto opt = get_options ("include");
-  for (size_t i = 0; i < opt.size(); ++i)
-    properties.include.add (ROI (opt[i][0]));
-
-  opt = get_options ("exclude");
-  for (size_t i = 0; i < opt.size(); ++i)
-    properties.exclude.add (ROI (opt[i][0]));
-
-  opt = get_options ("mask");
-  for (size_t i = 0; i < opt.size(); ++i)
-    properties.mask.add (ROI (opt[i][0]));
-
-
   // LengthOption
-  opt = get_options ("maxlength");
+  auto opt = get_options ("maxlength");
   if (opt.size()) {
     if (properties.find ("max_dist") == properties.end()) {
       properties["max_dist"] = str(float (opt[0][0]));

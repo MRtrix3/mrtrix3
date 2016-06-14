@@ -104,13 +104,12 @@ namespace MR {
             }
 
             // Stitch back together in preparation for sending down queue as a single track
-            out.push_back (Eigen::Vector3f());
+            out.push_back ({ NaN, NaN, NaN });
             for (const auto& i : cropped_tracks) {
               for (const auto& p : i)
                 out.push_back (p);
               out.push_back ({ NaN, NaN, NaN });
             }
-            out.push_back ({ NaN, NaN, NaN });
             return true;
 
           } else {

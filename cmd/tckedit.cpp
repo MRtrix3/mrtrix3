@@ -80,6 +80,14 @@ void usage ()
 }
 
 
+void erase_if_present (Tractography::Properties& p, const std::string s)
+{
+  auto i = p.find (s);
+  if (i != p.end())
+    p.erase (i);
+}
+
+
 
 void run ()
 {
@@ -139,17 +147,22 @@ void run ()
   load_rois (properties);
 
   // Some properties from tracking may be overwritten by this editing process
+  // Due to the potential use of masking, we have no choice but to clear the
+  //   properties class of any fields that would otherwise propagate through
+  //   and be applied as part of this editing
+  erase_if_present (properties, "min_dist");
+  erase_if_present (properties, "max_dist");
+  erase_if_present (properties, "min_weight");
+  erase_if_present (properties, "max_weight");
   Editing::load_properties (properties);
 
   // Parameters that the worker threads need to be aware of, but do not appear in Properties
-  const bool inverse = get_options ("inverse").size();
+  const bool inverse   = get_options ("inverse").size();
   const bool ends_only = get_options ("ends_only").size();
 
   // Parameters that the output thread needs to be aware of
-  auto opt = get_options ("number");
-  const size_t number = opt.size() ? size_t(opt[0][0]) : 0;
-  opt = get_options ("skip");
-  const size_t skip   = opt.size() ? size_t(opt[0][0]) : 0;
+  const size_t number = get_option_value ("number", size_t(0));
+  const size_t skip   = get_option_value ("skip",   size_t(0));
 
   Loader loader (input_file_list);
   Worker worker (properties, inverse, ends_only);
