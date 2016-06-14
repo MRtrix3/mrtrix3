@@ -22,12 +22,12 @@ Typical use will be:
     dwidenoise dwi.mif out.mif -noise noise.mif
   
 where ``dwi.mif`` contains the raw input DWI image, ``out.mif`` is the denoised
-DWI output, and ``noise.mif`` is the estimated spatially-valying noise level.
+DWI output, and ``noise.mif`` is the estimated spatially-varying noise level.
 
-We always recommend eyeballing the residuals, i.e. out-in, as part of the 
-quality control. The lack of anatomy in the residuals maps are a marker of 
-accuracy and signal-preservation during denoising. This can be easily obtained
-with
+We always recommend eyeballing the residuals, i.e. out - in, as part of the 
+quality control. The lack of anatomy in the residuals maps is a marker of 
+accuracy and signal-preservation during denoising. The residuals can be easily
+obtained with
 
 ::
     
