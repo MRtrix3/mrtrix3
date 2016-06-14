@@ -65,9 +65,9 @@ namespace MR
           gd_repetitions (1, 1),
           scale_factor (3),
           loop_density (1, 1.0),
-          kernel_extent(3, 1),
-          grad_tolerance(1.0e-6),
-          step_tolerance(1.0e-10),
+          kernel_extent (3, 1),
+          grad_tolerance (1.0e-6),
+          step_tolerance (1.0e-10),
           log_stream (nullptr),
           init_translation_type (Transform::Init::mass),
           init_rotation_type (Transform::Init::none),
@@ -353,10 +353,12 @@ namespace MR
                     optim (evaluate, *transform.get_gradient_descent_updator());
                   optim.be_verbose (analyse_descent);
                   optim.precondition (optimiser_weights);
-                  if (analyse_descent)
+                  if (log_stream)
+                    optim.run (max_iter[level], grad_tolerance, log_stream);
+                  else if (analyse_descent)
                     optim.run (max_iter[level], grad_tolerance, std::cout.rdbuf());
                   else
-                    optim.run (max_iter[level], grad_tolerance);
+                      optim.run (max_iter[level], grad_tolerance);
                   DEBUG ("gradient descent ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
                   if (!is_finite(optim.state())) {
                     throw Exception ("registration failed: encountered NaN in parameters.");
@@ -368,10 +370,12 @@ namespace MR
                     optim (evaluate, *transform.get_gradient_descent_updator());
                   optim.be_verbose (analyse_descent);
                   optim.precondition (optimiser_weights);
-                  if (analyse_descent)
+                  if (log_stream)
+                    optim.run (max_iter[level], grad_tolerance, log_stream);
+                  else if (analyse_descent)
                     optim.run (max_iter[level], grad_tolerance, std::cout.rdbuf());
                   else
-                    optim.run (max_iter[level], grad_tolerance);
+                      optim.run (max_iter[level], grad_tolerance);
                   DEBUG ("gradient descent ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
                   if (!is_finite(optim.state())) {
                     throw Exception ("registration failed due to NaN in parameters");

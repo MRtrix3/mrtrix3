@@ -184,7 +184,10 @@ namespace MR
 
       + Option ("rigid_lmax", "explicitly set the lmax to be used per scale factor in rigid FOD registration. By default FOD registration will "
                               "use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.")
-      + Argument ("num").type_sequence_int ();
+      + Argument ("num").type_sequence_int ()
+
+      + Option ("rigid_log", "write gradient descent parameter evolution to log file")
+      + Argument ("file").type_file_out ();
 
 
     const OptionGroup affine_options =
@@ -249,7 +252,10 @@ namespace MR
 
       + Option ("affine_lmax", "explicitly set the lmax to be used per scale factor in affine FOD registration. By default FOD registration will "
                               "use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.")
-      + Argument ("num").type_sequence_int ();
+      + Argument ("num").type_sequence_int ()
+
+      + Option ("affine_log", "write gradient descent parameter evolution to log file")
+      + Argument ("file").type_file_out ();
 
 
     const OptionGroup fod_options =
