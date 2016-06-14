@@ -79,6 +79,10 @@ List of MRtrix3 commands
 .......
 
 
+.. include:: commands/dwidenoise.rst
+.......
+
+
 .. include:: commands/dwiextract.rst
 .......
 
