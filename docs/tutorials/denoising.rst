@@ -25,7 +25,7 @@ where ``dwi.mif`` contains the raw input DWI image, ``out.mif`` is the denoised
 DWI output, and ``noise.mif`` is the estimated spatially-varying noise level.
 
 We always recommend eyeballing the residuals, i.e. out - in, as part of the 
-quality control. The lack of anatomy in the residuals maps is a marker of 
+quality control. The lack of anatomy in the residual maps is a marker of 
 accuracy and signal-preservation during denoising. The residuals can be easily
 obtained with
 
