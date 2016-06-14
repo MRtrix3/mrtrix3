@@ -382,7 +382,7 @@ for level in range(0, len(nl_scales)):
     if do_fod_registration:
       lmax = ' -nl_lmax ' + str(nl_lmax[level])
     else:
-      lmax = ''
+      lmax = ' -noreorientation'
 
     runCommand('mrregister ' + abspath(i.directory, i.filename) + ' ' + current_template +
                ' -type nonlinear' +
