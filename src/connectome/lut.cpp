@@ -17,8 +17,6 @@
 
 #include "connectome/lut.h"
 
-#include "debug.h"
-
 #include <fstream>
 
 

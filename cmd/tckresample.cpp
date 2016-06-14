@@ -38,10 +38,13 @@ using namespace DWI::Tractography;
 void usage ()
 {
 
-  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au) and J-Donald Tournier (jdtournier@gmail.com)";
 
   DESCRIPTION
-  + "resample streamlines according to a specified trajectory";
+  + "Resample each streamline to a new set of vertices. "
+  + "This may be either increasing or decreasing the number of samples along "
+    "each streamline, or changing the positions of the samples according to "
+    "some specified trajectory.";
 
   ARGUMENTS
   + Argument ("in_tracks",  "the input track file").type_tracks_in()
@@ -100,8 +103,6 @@ void run ()
   ProgressBar progress ("sampling streamlines");
 
   // Single-threaded in order to retain order of streamlines in the output file
-  // TODO Implement a Tractography::Writer wrapper that buffers received streamlines
-  //   only when necessary in order to write them out in the correct order
   DWI::Tractography::Streamline<value_type> tck;
   while (read (tck)) {
     if (!resampler->limits (tck)) { skipped++; continue; }

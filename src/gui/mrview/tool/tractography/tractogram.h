@@ -124,7 +124,7 @@ namespace MR
             TrackColourType color_type;
             TrackThresholdType threshold_type;
 
-            // TODO Instead of tracking the file path, pre-calculate the
+            // Instead of tracking the file path, pre-calculate the
             //   streamline tangents and store them; then, if colour by
             //   endpoint is requested, generate the buffer based on these
             //   and the known track sizes

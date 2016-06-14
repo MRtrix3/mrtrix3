@@ -33,12 +33,6 @@ namespace MR
 
         class Tractogram;
 
-          // TODO Can't have this hidden all the time for non-scalar-file colouring:
-          //   want to be able to activate thresholding using a separate file
-          // Also want to preserve capability to threshold using the same file as
-          //   is currently used for colouring
-          // To save UI space: Have a 'none' threshold entry that will hide the boxes
-
           class TrackScalarFileOptions : public QGroupBox, public DisplayableVisitor
           {
             Q_OBJECT

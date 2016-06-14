@@ -16,7 +16,9 @@ Synopsis
 Description
 -----------
 
-resample streamlines according to a specified trajectory
+Resample each streamline to a new set of vertices. 
+
+This may be either increasing or decreasing the number of samples along each streamline, or changing the positions of the samples according to some specified trajectory.
 
 Options
 -------
@@ -61,7 +63,7 @@ Standard options
 
 
 
-**Author:** J-Donald Tournier (jdtournier@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)
+**Author:** Robert E. Smith (robert.smith@florey.edu.au) and J-Donald Tournier (jdtournier@gmail.com)
 
 **Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
 
