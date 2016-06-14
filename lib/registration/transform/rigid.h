@@ -18,6 +18,7 @@
 
 #include "registration/transform/base.h"
 #include "types.h"
+#include "file/config.h"
 #include "math/math.h"
 
 using namespace MR::Math;
@@ -73,7 +74,9 @@ namespace MR
           typedef int has_robust_estimator;
 
           Rigid () : Base (12) {
-            const Eigen::Vector4d weights (0.0003, 0.0003, 0.0003, 1.0);
+            default_type w1 (MR::File::Config::get_float ("reg_gdweight_matrix", 0.0003f));
+            default_type w2 (MR::File::Config::get_float ("reg_gdweight_translation", 1.0f));
+            const Eigen::Vector4d weights (w1, w1, w1, w2);
             this->optimiser_weights << weights, weights, weights;
           }
 
