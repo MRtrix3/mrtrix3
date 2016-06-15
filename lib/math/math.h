@@ -108,6 +108,7 @@ namespace MR
   template <class MatrixType>
     void save_matrix (const MatrixType& M, const std::string& filename)
     {
+      DEBUG ("saving " + str(M.rows()) + "x" + str(M.cols()) + " matrix to file \"" + filename + "\"...");
       File::OFStream out (filename);
       Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
       out << M.format(fmt);
@@ -139,13 +140,13 @@ namespace MR
 
         if (V.size() > 1)
           if (V.back().size() != V[0].size())
-            throw Exception ("uneven rows in matrix");
+            throw Exception ("uneven rows in matrix file \"" + filename + "\"");
       }
       if (stream.bad())
         throw Exception (strerror (errno));
 
       if (!V.size())
-        throw Exception ("no data in file");
+        throw Exception ("no data in matrix file \"" + filename + "\"");
 
       return V;
     }
@@ -154,6 +155,7 @@ namespace MR
   template <class ValueType = default_type>
     Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> load_matrix (const std::string& filename)
     {
+      DEBUG ("loading matrix file \"" + filename + "\"...");
       std::vector<std::vector<ValueType>> V;
       try {
         V = load_matrix_2D_vector<ValueType> (filename);
@@ -167,6 +169,7 @@ namespace MR
         for (ssize_t j = 0; j < M.cols(); j++)
           M(i,j) = V[i][j];
 
+      DEBUG ("found " + str(M.rows()) + "x" + str(M.cols()) + " matrix in file \"" + filename + "\"");
       return M;
     }
 
@@ -174,6 +177,8 @@ namespace MR
   template <class ValueType = default_type>
     transform_type load_transform (const std::string& filename)
     {
+      DEBUG ("loading transform file \"" + filename + "\"...");
+
       std::vector<std::vector<ValueType>> V;
       try {
         V = load_matrix_2D_vector<ValueType> (filename);
@@ -196,6 +201,7 @@ namespace MR
   //! write the transform \a M to file
   inline void save_transform (const transform_type& M, const std::string& filename)
   {
+    DEBUG ("saving transform to file \"" + filename + "\"...");
     File::OFStream out (filename);
     Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
     out << M.matrix().format(fmt);
@@ -206,6 +212,7 @@ namespace MR
   template <class VectorType>
     void save_vector (const VectorType& V, const std::string& filename)
     {
+      DEBUG ("saving vector of size " + str(V.size()) + " to file \"" + filename + "\"...");
       File::OFStream out (filename);
       for (decltype(V.size()) i = 0; i < V.size() - 1; i++)
         out << str(V[i], 10) << " ";
