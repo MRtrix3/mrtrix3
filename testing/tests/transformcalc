@@ -1,4 +1,3 @@
-transformcalc moving2templateFSL.txt moving.mif.gz template.mif.gz flirt_import tmp.txt --force; testing_diff_matrix tmp.txt transformcalc/out.txt 0.001
 transformcalc moving2templateFSL.txt transformcalc/out.txt average tmp.txt --force; testing_diff_matrix tmp.txt transformcalc/out2.txt 0.001
 transformcalc transformcalc/out.txt moving2templateFSL.txt average tmp2.txt --force; testing_diff_matrix tmp.txt tmp2.txt 0.001
 transformcalc moving2templateFSL.txt moving2template.txt 1 interpolate tmp.txt --force; testing_diff_matrix tmp.txt moving2template.txt 0.001
