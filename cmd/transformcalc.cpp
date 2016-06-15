@@ -74,6 +74,7 @@ void usage ()
         "scaling: vector of 3 scaling factors in x, y, z direction, "
         "shear: list of shear factors for xy, xz, yz axes, "
         "angles: list of Euler angles about static x, y, z axes in radians in the range [0:pi]x[-pi:pi]x[-pi:pi], "
+        "angle_axis: angle in radians and rotation axis, "
         "translation : translation vector along x, y, z axes in mm, "
         "R: composed roation matrix (R = rot_x * rot_y * rot_z), "
         "S: composed scaling and shear matrix."
@@ -203,11 +204,20 @@ void run ()
               * Eigen::AngleAxisd(euler_angles[1], Eigen::Vector3d::UnitY())
               * Eigen::AngleAxisd(euler_angles[2], Eigen::Vector3d::UnitZ())).matrix()));
 
+      Eigen::RowVector4d angle_axis;
+      {
+        auto AA = Eigen::AngleAxis<default_type> (R);
+        angle_axis(0) = AA.angle();
+        angle_axis.block<1,3>(0,1) = AA.axis();
+      }
+
+
       File::OFStream out (output_path);
       Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "\n");
       out << "scaling: "     << Eigen::RowVector3d(S(0,0), S(1,1), S(2,2)).format(fmt);
-      out << "shear: "       << Eigen::RowVector3d(S(0,0), S(1,1), S(2,2)).format(fmt);
+      out << "shear: "       << Eigen::RowVector3d(S(0,1), S(0,2), S(1,2)).format(fmt);
       out << "angles: "      << euler_angles.transpose().format(fmt);
+      out << "angle_axis: "   << angle_axis.format(fmt);
       out << "translation: " << transform.translation().transpose().format(fmt);
       out << "R: " << R.row(0).format(fmt);
       out << "R: " << R.row(1).format(fmt);
