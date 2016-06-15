@@ -213,11 +213,8 @@ void run ()
       transform.translation() = transform.translation() + centre_of_rotation - transform.linear() * centre_of_rotation;
 
       // TODO is the coordinate switch robust to large rotations?
-      auto coord_switch = Eigen::DiagonalMatrix<default_type, 4>();
-      coord_switch.setIdentity();
-      coord_switch.diagonal()(0) = -1.0f;
-      coord_switch.diagonal()(1) = -1.0f;
-      transform.matrix() = coord_switch * transform.matrix() * coord_switch;
+      transform.matrix().template block<2,2>(0,2) *= -1.0;
+      transform.matrix().template block<1,2>(2,0) *= -1.0;
 
       INFO("linear:\n" + str(transform.matrix()));
       INFO("translation:\n" + str(transform.translation().transpose()));
@@ -225,6 +222,7 @@ void run ()
         WARN ("NAN in transformation.");
 
       save_transform (transform, output_path);
+      break;
     }
     default: assert (0);
   }
