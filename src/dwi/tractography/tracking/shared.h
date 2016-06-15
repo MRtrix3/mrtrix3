@@ -22,9 +22,9 @@
 #include "header.h"
 #include "transform.h"
 #include "dwi/tractography/properties.h"
-#include "dwi/tractography/resample.h"
 #include "dwi/tractography/roi.h"
 #include "dwi/tractography/ACT/shared.h"
+#include "dwi/tractography/resampling/downsampler.h"
 #include "dwi/tractography/tracking/types.h"
 
 #define MAX_TRIALS 1000
@@ -209,7 +209,7 @@ namespace MR
             float step_size, threshold, init_threshold;
             size_t max_seed_attempts;
             bool unidirectional, rk4, stop_on_all_include, implicit_max_num_attempts;
-            Downsampler downsampler;
+            DWI::Tractography::Resampling::Downsampler downsampler;
 
             // Additional members for ACT
             bool is_act() const { return bool (act_shared_additions); }

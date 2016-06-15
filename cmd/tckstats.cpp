@@ -42,7 +42,7 @@ using namespace MR::DWI::Tractography;
 void usage ()
 {
 
-  AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
   + "calculate statistics on streamlines length.";
@@ -67,7 +67,7 @@ class LW
 {
   public:
     LW (const float l, const float w) : length (l), weight (w) { }
-    LW () : length (NAN), weight (NAN) { }
+    LW () : length (NaN), weight (NaN) { }
     bool operator< (const LW& that) const { return length < that.length; }
     float get_length() const { return length; }
     float get_weight() const { return weight; }
@@ -94,7 +94,7 @@ void run ()
 
   const bool weights_provided = get_options ("tck_weights_in").size();
 
-  float step_size = NAN;
+  float step_size = NaN;
   size_t count = 0, header_count = 0;
   float min_length = std::numeric_limits<float>::infinity();
   float max_length = 0.0f;
@@ -130,15 +130,17 @@ void run ()
     while (reader (tck)) {
       ++count;
       const float length = std::isfinite (step_size) ? tck.calc_length (step_size) : tck.calc_length();
-      min_length = std::min (min_length, length);
-      max_length = std::max (max_length, length);
-      sum_lengths += tck.weight * length;
-      sum_weights += tck.weight;
-      all_lengths.push_back (LW (length, tck.weight));
-      const size_t index = std::isfinite (step_size) ? std::round (length / step_size) : std::round (length);
-      while (histogram.size() <= index)
-        histogram.push_back (0.0);
-      histogram[index] += tck.weight;
+      if (std::isfinite (length)) {
+        min_length = std::min (min_length, length);
+        max_length = std::max (max_length, length);
+        sum_lengths += tck.weight * length;
+        sum_weights += tck.weight;
+        all_lengths.push_back (LW (length, tck.weight));
+        const size_t index = std::isfinite (step_size) ? std::round (length / step_size) : std::round (length);
+        while (histogram.size() <= index)
+          histogram.push_back (0.0);
+        histogram[index] += tck.weight;
+      }
       if (dump)
         (*dump) << length << "\n";
       ++progress;

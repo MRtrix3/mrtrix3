@@ -42,8 +42,8 @@
 
 //CONF option: BZeroThreshold
 //CONF default: 10.0
-//CONF specifies the b-value threshold for determining those image
-//CONF volumes that correspond to b=0
+//CONF Specifies the b-value threshold for determining those image
+//CONF volumes that correspond to b=0.
 
 
 

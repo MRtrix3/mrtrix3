@@ -25,6 +25,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 
 namespace MR {
@@ -33,35 +34,38 @@ namespace Connectome {
 
 
 
-
-enum lut_format { LUT_NONE, LUT_BASIC, LUT_FREESURFER, LUT_AAL, LUT_ITKSNAP };
-extern const char* lut_format_strings[];
-
-extern const App::OptionGroup LookupTableOption;
-class Node_map;
-void load_lut_from_cmdline (Node_map&);
-
-typedef Eigen::Array<uint8_t, 3, 1> RGB;
-
-
-
 // Class for storing any useful information regarding a parcellation node that
 //   may be imported from a lookup table
-class Node_info
+class LUT_node
 {
 
   public:
-    Node_info (const std::string& n) :
+
+    typedef Eigen::Array<uint8_t, 3, 1> RGB;
+
+    LUT_node (const std::string& n) :
       name (n),
       colour (0, 0, 0),
       alpha (255) { }
 
-    Node_info (const std::string& n, const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a = 255) :
+    LUT_node (const std::string& n, const std::string& sn) :
+      name (n),
+      short_name (sn),
+      colour (0, 0, 0),
+      alpha (255) { }
+
+    LUT_node (const std::string& n, const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a = 255) :
       name (n),
       colour (r, g, b),
       alpha (a) { }
 
-    Node_info (const std::string& n, const RGB& rgb, const uint8_t a = 255) :
+    LUT_node (const std::string& n, const std::string& sn, const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a = 255) :
+      name (n),
+      short_name (sn),
+      colour (r, g, b),
+      alpha (a) { }
+
+    LUT_node (const std::string& n, const RGB& rgb, const uint8_t a = 255) :
       name (n),
       colour (rgb),
       alpha (a) { }
@@ -72,13 +76,14 @@ class Node_info
     void set_alpha  (const uint8_t a) { alpha = a; }
 
 
-    const std::string& get_name()   const { return name; }
-    const RGB&         get_colour() const { return colour; }
-    uint8_t            get_alpha()  const { return alpha; }
+    const std::string& get_name()       const { return name; }
+    const std::string& get_short_name() const { return short_name.size() ? short_name : name; }
+    const RGB&         get_colour()     const { return colour; }
+    uint8_t            get_alpha()      const { return alpha; }
 
 
   private:
-    std::string name;
+    std::string name, short_name;
     RGB colour;
     uint8_t alpha;
 
@@ -87,17 +92,38 @@ class Node_info
 
 
 
-class Node_map : public std::map<node_t, Node_info>
+class LUT : public std::multimap<node_t, LUT_node>
 {
+    enum file_format { LUT_NONE, LUT_BASIC, LUT_FREESURFER, LUT_AAL, LUT_ITKSNAP, LUT_MRTRIX };
   public:
-    void load (const std::string&, const lut_format);
+    typedef std::multimap<node_t, LUT_node> map_type;
+    LUT () : exclusive (true) { }
+    LUT (const std::string&);
+    void load (const std::string&);
+    bool is_exclusive() const { return exclusive; }
   private:
+    bool exclusive;
+
+    file_format guess_file_format (const std::string&);
+
     void parse_line_basic      (const std::string&);
     void parse_line_freesurfer (const std::string&);
     void parse_line_aal        (const std::string&);
     void parse_line_itksnap    (const std::string&);
+    void parse_line_mrtrix     (const std::string&);
+
+    void check_and_insert (const node_t, const LUT_node&);
 
 };
+
+
+
+
+// Convenience function for constructing a mapping from one lookup table to another
+// NOTE: If the TARGET LUT contains multiple entries for a particular index, and a
+//   mapping TO that index is required, the conversion is ill-formed.
+std::vector<node_t> get_lut_mapping (const LUT&, const LUT&);
+
 
 
 

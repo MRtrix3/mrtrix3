@@ -188,19 +188,19 @@ namespace MR
 
       //CONF option: MRViewFocusModifierKey 
       //CONF default: meta (cmd on MacOSX) 
-      //CONF modifier key to select focus mode in MRView. Valid
+      //CONF Modifier key to select focus mode in MRView. Valid
       //CONF choices include shift, alt, ctrl, meta (on MacOSX: shift, alt,
       //CONF ctrl, cmd).
       
-      //CONF option: MRViewMoveModifierKey 
+      //CONF option: MRViewMoveModifierKey
       //CONF default: shift
-      //CONF modifier key to select move mode in MRView. Valid
+      //CONF Modifier key to select move mode in MRView. Valid
       //CONF choices include shift, alt, ctrl, meta (on MacOSX: shift, alt,
       //CONF ctrl, cmd).
       
       //CONF option: MRViewRotateModifierKey
       //CONF default: ctrl
-      //CONF modifier key to select rotate mode in MRView. Valid
+      //CONF Modifier key to select rotate mode in MRView. Valid
       //CONF choices include shift, alt, ctrl, meta (on MacOSX: shift, alt,
       //CONF ctrl, cmd).
 
@@ -870,7 +870,7 @@ namespace MR
           }
           //CONF option: MRViewDockFloating
           //CONF default: 0 (false)
-          //CONF Whether Tools should start docked in the main window, or
+          //CONF Whether MRView tools should start docked in the main window, or
           //CONF floating (detached from the main window).
           tool->setFloating (MR::File::Config::get_int ("MRViewDockFloating", 0));
           tool->show();
@@ -1383,10 +1383,10 @@ namespace MR
 
         font.initGL();
         gl::Enable (gl::DEPTH_TEST);
-        //CONF option: ImageBackgroundColour
+        //CONF option: MRViewImageBackgroundColour
         //CONF default: 0,0,0 (black)
-        // CONF The default image background colour
-        File::Config::get_RGB ("ImageBackgroundColour", background_colour, 0.0f, 0.0f, 0.0f);
+        //CONF The default image background colour in the main MRView window.
+        File::Config::get_RGB ("MRViewImageBackgroundColour", background_colour, 0.0f, 0.0f, 0.0f);
         gl::ClearColor (background_colour[0], background_colour[1], background_colour[2], 1.0);
         mode.reset (dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create());
         set_mode_features();

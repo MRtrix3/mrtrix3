@@ -34,7 +34,7 @@ using namespace App;
 void usage ()
 {
 
-	AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
   + "manually set the partial volume fractions in an ACT five-tissue-type (5TT) image using mask images";

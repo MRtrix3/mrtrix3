@@ -69,7 +69,7 @@ def execute():
       mask_in_path = 'iter' + str(iteration-1) + '_SF.mif'
   
     # Run CSD
-    runCommand('dwi2fod dwi.mif ' + RF_in_path + ' ' + prefix + 'FOD.mif -mask ' + mask_in_path)
+    runCommand('dwi2fod csd dwi.mif ' + RF_in_path + ' ' + prefix + 'FOD.mif -mask ' + mask_in_path)
     # Get amplitudes of two largest peaks, and directions of largest
     runCommand('fod2fixel ' + prefix + 'FOD.mif -peak ' + prefix + 'peaks.msf -mask ' + mask_in_path + ' -fmls_no_thresholds')
     runCommand('fixel2voxel ' + prefix + 'peaks.msf split_value ' + prefix + 'amps.mif')

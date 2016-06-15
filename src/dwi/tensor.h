@@ -52,17 +52,17 @@ namespace MR
         bmat (i,3)  = grad(i,3) *  grad(i,0) * grad(i,1) * T(2.0);
         bmat (i,4)  = grad(i,3) *  grad(i,0) * grad(i,2) * T(2.0);
         bmat (i,5)  = grad(i,3) *  grad(i,1) * grad(i,2) * T(2.0);
-        bmat (i,6)  = -1.0;
+        bmat (i,6)  = T(-1.0);
         if (dki) {
-          bmat (i,7)  = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,0) * grad(i,0) * T(1.0/6.0);
-          bmat (i,8)  = -grad(i,3) * grad(i,3) * grad(i,1) * grad(i,1) * grad(i,1) * grad(i,1) * T(1.0/6.0);
-          bmat (i,9)  = -grad(i,3) * grad(i,3) * grad(i,2) * grad(i,2) * grad(i,2) * grad(i,2) * T(1.0/6.0);
-          bmat (i,10) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,0) * grad(i,1) * T(2.0/3.0);
-          bmat (i,11) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,0) * grad(i,2) * T(2.0/3.0);
-          bmat (i,12) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,1) * grad(i,1) * grad(i,1) * T(2.0/3.0);
-          bmat (i,13) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,2) * grad(i,2) * grad(i,2) * T(2.0/3.0);
-          bmat (i,14) = -grad(i,3) * grad(i,3) * grad(i,1) * grad(i,1) * grad(i,1) * grad(i,2) * T(2.0/3.0);
-          bmat (i,15) = -grad(i,3) * grad(i,3) * grad(i,1) * grad(i,2) * grad(i,2) * grad(i,2) * T(2.0/3.0);
+          bmat (i,7)  = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,0) * grad(i,0) * T(1.0)/T(6.0);
+          bmat (i,8)  = -grad(i,3) * grad(i,3) * grad(i,1) * grad(i,1) * grad(i,1) * grad(i,1) * T(1.0)/T(6.0);
+          bmat (i,9)  = -grad(i,3) * grad(i,3) * grad(i,2) * grad(i,2) * grad(i,2) * grad(i,2) * T(1.0)/T(6.0);
+          bmat (i,10) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,0) * grad(i,1) * T(2.0)/T(3.0);
+          bmat (i,11) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,0) * grad(i,2) * T(2.0)/T(3.0);
+          bmat (i,12) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,1) * grad(i,1) * grad(i,1) * T(2.0)/T(3.0);
+          bmat (i,13) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,2) * grad(i,2) * grad(i,2) * T(2.0)/T(3.0);
+          bmat (i,14) = -grad(i,3) * grad(i,3) * grad(i,1) * grad(i,1) * grad(i,1) * grad(i,2) * T(2.0)/T(3.0);
+          bmat (i,15) = -grad(i,3) * grad(i,3) * grad(i,1) * grad(i,2) * grad(i,2) * grad(i,2) * T(2.0)/T(3.0);
           bmat (i,16) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,1) * grad(i,1);
           bmat (i,17) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,2) * grad(i,2);
           bmat (i,18) = -grad(i,3) * grad(i,3) * grad(i,1) * grad(i,1) * grad(i,2) * grad(i,2);

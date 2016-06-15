@@ -45,7 +45,7 @@ const char* interp_choices[] = { "nearest", "linear", "cubic", "sinc", NULL };
 void usage ()
 {
 
-  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) & David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and David Raffelt (david.raffelt@florey.edu.au) and Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
 
   DESCRIPTION
   + "apply spatial transformations to an image. "

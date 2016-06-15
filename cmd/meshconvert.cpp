@@ -47,7 +47,7 @@ const OptionGroup transform_options = OptionGroup ("Options for applying spatial
 void usage ()
 {
 
-	AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
   + "convert meshes between different formats, and apply transformations.";

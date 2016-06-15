@@ -26,6 +26,8 @@ using namespace App;
 
 void usage ()
 {
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
+
   DESCRIPTION
   + "create an initial warp image, representing an identity transformation. "
     "This is useful to obtain the warp fields from other normalisation "

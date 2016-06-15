@@ -38,6 +38,7 @@ const char* encoding_description =
   "volumes 9-11: W1122, W1133, W2233 ; \n"
   "volumes 12-14: W1123, W1223, W1233 ;";
 
+
 void usage ()
 {
 
@@ -68,6 +69,7 @@ void usage ()
   DESCRIPTION
   + "Diffusion (kurtosis) tensor estimation using iteratively reweighted linear least squares estimator."
   + encoding_description;
+
 }
 
 template <class MASKType, class B0Type, class DKTType, class PredictType>

@@ -46,7 +46,7 @@ def execute():
   from lib.warnMessage   import warnMessage
   
   if isWindows():
-    errorMessage('Script cannot run in FSL mode on Windows')
+    errorMessage('\'fsl\' algorithm of 5ttgen script cannot be run on Windows: FSL not available on Windows')
 
   fsl_path = os.environ.get('FSLDIR', '')
   if not fsl_path:
