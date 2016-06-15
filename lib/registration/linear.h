@@ -310,7 +310,6 @@ namespace MR
               Header midway_resized (midway_resize_filter);
 
               ParamType parameters (transform, im1_smoothed, im2_smoothed, midway_resized, im1_mask, im2_mask);
-              INFO ("loop density: " + str(loop_density[level]));
               parameters.loop_density = loop_density[level];
               // if (robust_estimate)
               //   INFO ("using robust estimate");
@@ -346,7 +345,7 @@ namespace MR
               if (do_reorientation && fod_lmax[level] > 0)
                 evaluate.set_directions (aPSF_directions);
 
-
+              INFO("linear registration...");
               for (auto gd_iteration = 0; gd_iteration < gd_repetitions[level]; ++gd_iteration){
                 if (reg_bbgd) {
                   Math::GradientDescentBB<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
@@ -394,6 +393,7 @@ namespace MR
               // update midway (affine average) space using the current transformations
               midway_image_header = compute_minimum_average_header(im1_image, im2_image, parameters.transformation, midspace_voxel_subsampling, midspace_padding);
             }
+            INFO("linear registration done");
           }
 
         template<class Im1ImageType, class Im2ImageType, class TransformType>
