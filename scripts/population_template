@@ -23,6 +23,40 @@ from lib.printMessage  import printMessage
 from lib.runCommand    import runCommand
 from lib.warnMessage   import warnMessage
 
+def check_linear_transformation (transformation, max_scaling = 0.5, max_shear = 0.2, max_rot = 2 * math.pi, pause_on_warn = True):
+  def load_key_value(file):
+    res = {}
+    with open (file, "r") as f:
+      for line in f.readlines():
+        if len(line)==1 or line.startswith("#"):
+          continue
+        name, var = line.rstrip().partition(":")[::2]
+        if name in res.keys():
+          res[name].append(var.split())
+        else:
+          res[name] = var.split()
+    return res
+
+  bGood = True
+  runCommand ('transformcalc ' + transformation + ' decompose ' + transformation + 'decomp')
+  data = load_key_value(transformation + 'decomp')
+  runCommand('rm ' + transformation + 'decomp')
+  scaling = numpy.array([float(x) for x in data['scaling']])
+  if numpy.any(scaling < 0) or numpy.any(scaling > (1 + max_scaling)) or numpy.any(scaling < (1 - max_scaling)):
+    warnMessage ("large scaling (" + str(scaling) + ") in " + transformation)
+    bGood = False
+  shear = numpy.array([float(x) for x in data['shear']])
+  if numpy.any(numpy.abs(shear) > max_shear):
+    warnMessage ("large shear (" + str(shear) + ") in " + transformation)
+    bGood = False
+  rot_angle = float(data['angle_axis'][0])
+  if numpy.abs(rot_angle) > max_rot:
+    warnMessage ("large rotation (" + str(rot_angle) + ") in " + transformation)
+    bGood = False
+  if not bGood and pause_on_warn:
+    raw_input("press enter to continue")
+  return bGood
+
 class Input:
   def __init__(self, filename, prefix, directory, mask_filename = '', mask_directory = ''):
     self.filename = filename
@@ -40,11 +74,13 @@ lib.app.parser.add_argument('template', help='The output template image')
 lib.app.parser.add_argument('-mask_dir', help='Optionally input a set of masks inside a single directory, one per input image (with the same file name prefix). Using masks will speed up registration significantly')
 lib.app.parser.add_argument('-warp_dir', help='Output a directory containing warps from each input to the template. If the folder does not exist it will be created')
 lib.app.parser.add_argument('-transformed_dir', help='Output a directory containing the input images transformed to the template. If the folder does not exist it will be created')
+lib.app.parser.add_argument('-linear_transformations_dir', help='Output a directory containing the linear transformations used to generate the template. If the folder does not exist it will be created')
 lib.app.parser.add_argument('-template_mask', help='Output a template mask. Only works in -mask_dir has been input. The template mask is computed as the intersection of all subject masks in template space.')
 lib.app.parser.add_argument('-rigid', action='store_true', help='perform rigid registration instead of affine. This should be used for intra-subject registration in longitudinal analysis')
 lib.app.parser.add_argument('-linear_scale', help='Specifiy the multi-resolution pyramid used to build the rigid or affine template, in the form of a list of scale factors (default: 0.3,0.4,0.5,0.6,0.7,1.0,1.0,1.0,1.0,1.0). This implicitly defines the number of template levels')
 lib.app.parser.add_argument('-linear_lmax', help='Specifiy the lmax used for rigid or affine registration for each scale factor, in the form of a list of integers (default: 2,2,2,2,2,2,4,4,4,4). The list must be the same length as the affine_scale factor list')
 lib.app.parser.add_argument('-linear_niter', help='Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:500 for each scale). The must be a single number or a list of same length as the linear_scale factor list')
+lib.app.parser.add_argument('-linear_estimator', help='Choose estimator for intensity difference metric. Valid choices are: l1 (least absolute: |x|), l2 (ordinary least squares), lp (least powers: |x|^1.2), Default: l2')
 lib.app.parser.add_argument('-nl_scale', help='Specifiy the multi-resolution pyramid used to build the non-linear template, in the form of a list of scale factors (default: 0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0). This implicitly defines the number of template levels')
 lib.app.parser.add_argument('-nl_lmax', help='Specifiy the lmax used for non-linear registration for each scale factor, in the form of a list of integers (default: 0,0,2,2,2,2,2,2,2,2,4,4,4,4). The list must be the same length as the nl_scale factor list')
 lib.app.parser.add_argument('-nl_niter', help='Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5). The list must be the same length as the nl_scale factor list')
@@ -68,6 +104,11 @@ else:
 initial_alignment = lib.app.args.initial_alignment
 if initial_alignment not in ["mass", "geometric", "none"]:
   errorMessage('initial_alignment must be one of ' + " ".join(["mass", "geometric", "none"]));
+
+linear_estimator = lib.app.args.linear_estimator
+if linear_estimator:
+  if lib.app.args.linear_estimator not in ["l1", "l1", "lp"]:
+    errorMessage('linear_estimator must be one of ' + " ".join(["l1", "l1", "lp"]));
 
 useMasks = False
 if lib.app.args.mask_dir:
@@ -117,6 +158,11 @@ if lib.app.args.transformed_dir:
   lib.app.args.transformed_dir = relpath(lib.app.args.transformed_dir)
   lib.app.checkOutputFile(lib.app.args.transformed_dir)
 
+if lib.app.args.linear_transformations_dir:
+  lib.app.args.linear_transformations_dir = relpath(lib.app.args.linear_transformations_dir)
+  lib.app.checkOutputFile(lib.app.args.linear_transformations_dir)
+
+
 # automatically detect SH series
 do_fod_registration = False
 image_size = [int(x) for x in getHeaderInfo(relpath(input[0].directory, input[0].filename), 'size').split(' ')]
@@ -127,6 +173,7 @@ if len(image_size) == 4:
   if not (val - int(val)) and not noreorientation:
     printMessage("SH Series detected, performing FOD registration")
     do_fod_registration = True
+
 
 linear_scales = [0.3,0.4,0.5,0.6,0.7,1.0,1.0,1.0,1.0,1.0]
 linear_lmax =   [0,  0,  0,  0,  2,  2,  2,  2,  2,  2]
@@ -283,6 +330,7 @@ for level in range(0, len(linear_scales)):
     else:
       mask = ''
     lmax = ''
+    metric = ''
     mrregister_log = ''
     if dorigid:
       scale = ' -rigid_scale ' + str(linear_scales[level])
@@ -295,6 +343,8 @@ for level in range(0, len(linear_scales)):
         lmax = ' -rigid_lmax ' + str(linear_lmax[level])
       else:
         lmax = ' -noreorientation'
+      if linear_estimator:
+        metric = ' -rigid_metric.diff.estimator ' + linear_estimator
       if lib.app.args.verbose:
         mrregister_log = ' -info -rigid_log ' + 'log/' + i.filename + "_" + str(level) + '.log'
     else:
@@ -308,6 +358,8 @@ for level in range(0, len(linear_scales)):
         lmax = ' -affine_lmax ' + str(linear_lmax[level])
       else:
         lmax = ' -noreorientation'
+      if linear_estimator:
+        metric = ' -affine_metric.diff.estimator ' + linear_estimator
       if lib.app.args.verbose:
         mrregister_log = ' -info -affine_log ' + 'log/' + i.filename + "_" + str(level) + '.log'
 
@@ -320,9 +372,11 @@ for level in range(0, len(linear_scales)):
                  niter +
                  lmax +
                  regtype +
+                 metric +
                  datatype +
                  output +
                  mrregister_log)
+    check_linear_transformation('linear_transforms/' + i.prefix + '.txt')
 
   # Here we ensure the template doesn't drift or scale
   runCommand('transformcalc ' + allindir('linear_transforms') + ' average linear_transform_average.txt -force -quiet')
@@ -429,11 +483,18 @@ if lib.app.args.warp_dir:
     shutil.rmtree(warp_path)
   shutil.copytree('warps/', warp_path)
 
+if lib.app.args.linear_transformations_dir:
+  linear_transformations_path = getUserPath(lib.app.args.linear_transformations_dir, False)
+  if os.path.exists(linear_transformations_path):
+    shutil.rmtree(linear_transformations_path)
+  shutil.copytree('linear_transforms/', linear_transformations_path)
+
 if lib.app.args.transformed_dir:
   transformed_path = getUserPath(lib.app.args.transformed_dir, False)
   if os.path.exists(transformed_path):
     shutil.rmtree(transformed_path)
   shutil.copytree('input_transformed/', transformed_path)
+
 
 if lib.app.args.template_mask:
   runCommand('mrconvert ' + current_template_mask + ' ' + getUserPath(lib.app.args.template_mask, True) + lib.app.mrtrixForce)
