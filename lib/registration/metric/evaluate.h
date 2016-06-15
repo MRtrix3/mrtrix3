@@ -36,7 +36,6 @@ namespace MR
           typedef void type;
         };
 
-
         template <class MetricType, typename U = void>
         struct metric_requires_precompute {
           typedef int no;
@@ -44,6 +43,16 @@ namespace MR
 
         template <class MetricType>
         struct metric_requires_precompute<MetricType, typename Void2<typename MetricType::requires_precompute>::type> {
+          typedef int yes;
+        };
+
+        template <class MetricType, typename U = void>
+        struct metric_requires_initialisation {
+          typedef int no;
+        };
+
+        template <class MetricType>
+        struct metric_requires_initialisation<MetricType, typename Void2<typename MetricType::requires_initialisation>::type> {
           typedef int yes;
         };
       }
@@ -56,11 +65,20 @@ namespace MR
             typedef typename ParamType::TransformParamType TransformParamType;
             typedef default_type value_type;
 
-            Evaluate (const MetricType& metric, ParamType& parameters) :
-              metric (metric),
+            template <class U = MetricType>
+            Evaluate (const MetricType& metric_, ParamType& parameters, typename metric_requires_initialisation<U>::yes = 0) :
+              metric (metric_),
               params (parameters),
               iteration (1) {
+                // update number of volumes
+                metric.init (parameters.im1_image, parameters.im2_image);
             }
+
+            template <class U = MetricType>
+            Evaluate (const MetricType& metric, ParamType& parameters, typename metric_requires_initialisation<U>::no = 0) :
+              metric (metric),
+              params (parameters),
+              iteration (1) { }
 
             //  metric_requires_precompute<U>::yes: operator() loops over processed_image instead of midway_image
             template <class U = MetricType>

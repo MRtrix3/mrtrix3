@@ -76,6 +76,24 @@ namespace MR
               diff_values.resize(volumes, 1);
             };
 
+          /** requires_initialisation:
+          type_trait to distinguish metric types that require a call to init before the operator() is called */
+          typedef int requires_initialisation;
+
+          void init (const Im1Type& im1, const Im2Type& im2) {
+            assert (im1.ndim() == 4);
+            assert (im2.ndim() == 4);
+            assert(im1.size(3) == im2.size(3));
+            if (volumes != im1.size(3)) {
+                volumes = im1.size(3);
+                im1_grad.resize(volumes, 3);
+                im2_grad.resize(volumes, 3);
+                im1_values.resize(volumes, 1);
+                im2_values.resize(volumes, 1);
+                diff_values.resize(volumes, 1);
+              }
+          }
+
           template <class Params>
             default_type operator() (Params& params,
                                      const Eigen::Vector3& im1_point,
@@ -91,14 +109,18 @@ namespace MR
               if (im2_values.hasNaN())
                 return 0.0;
 
-              const auto jacobian_vec = params.transformation.get_jacobian_vector_wrt_params (midway_point);
+              assert (volumes == im1_grad.rows() && "metric.init not called after image has been cropped?");
+              assert (volumes == im2_grad.rows() && "metric.init not called after image has been cropped?");
+
+              const Eigen::Matrix<default_type, 4, 1> jacobian_vec (params.transformation.get_jacobian_vector_wrt_params (midway_point));
               diff_values = im1_values - im2_values;
 
               Eigen::Matrix<default_type, Eigen::Dynamic, 1> residuals, grads;
-              estimator(diff_values.template cast<default_type>(), residuals, grads);
+              estimator (diff_values.template cast<default_type>(), residuals, grads);
 
+              Eigen::Matrix<default_type, 1, 3> g;
               for (ssize_t i = 0; i < volumes; ++i) {
-                const Eigen::Vector3d g = grads[i] * (im1_grad.row(i) + im2_grad.row(i));
+                g = grads[i] * (im1_grad.row(i) + im2_grad.row(i));
                 gradient.segment<4>(0) += g(0) * jacobian_vec;
                 gradient.segment<4>(4) += g(1) * jacobian_vec;
                 gradient.segment<4>(8) += g(2) * jacobian_vec;
