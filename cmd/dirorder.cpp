@@ -26,7 +26,9 @@
 using namespace MR;
 using namespace App;
 
-void usage () {
+void usage ()
+{
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   DESCRIPTION
     + "reorder a set of directions to ensure near-uniformity upon truncation - "

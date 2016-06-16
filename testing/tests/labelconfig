@@ -1,2 +1,0 @@
-labelconfig labelconfig/in_fs.mif.gz labelconfig/fs_default.txt -lut_freesurfer labelconfig/FreeSurferColorLUT.txt - | testing_diff_data - labelconfig/out_fs.mif.gz 0.5
-labelconfig labelconfig/in_aal.mif.gz labelconfig/aal.txt -lut_aal labelconfig/ROI_MNI_V4.txt - | testing_diff_data - labelconfig/out_aal.mif.gz 0.5

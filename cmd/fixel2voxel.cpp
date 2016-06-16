@@ -59,6 +59,7 @@ const char* operations[] = {
 
 void usage ()
 {
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
   + "convert a fixel-based sparse-data image into some form of scalar image. "

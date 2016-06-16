@@ -56,7 +56,7 @@ estimated using:
 
 ::
     
-    dwi2response msmt_5tt dwi.mif 5tt.mif gm.txt wm.txt csf.txt
+    dwi2response msmt_5tt dwi.mif 5tt.mif wm.txt gm.txt csf.txt
 
 For a detailed explanation of different strategies for response function 
 estimation, have a look at `this page <http://mrtrix.readthedocs.org/en/latest/concepts/response_function_estimation.html#msmt-5tt>`__.

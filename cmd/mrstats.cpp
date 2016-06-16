@@ -31,7 +31,10 @@ using namespace MR;
 using namespace App;
 
 
-void usage () {
+void usage ()
+{
+AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
+
 DESCRIPTION
   + "compute images statistics.";
 

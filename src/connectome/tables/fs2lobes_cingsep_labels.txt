@@ -1,0 +1,22 @@
+# Lookup table file to accompany conversion file fs2lobes_cingsep_convert.txt
+# Following conversion of a label image to the targets as defined in the file fs2lobes_cingsep_convert.txt, this file provides the labels for the resulting image.
+
+
+0   Unknown
+
+1   L_Frontal_lobe
+2   L_Parietal_lobe
+3   L_Occipital_lobe
+4   L_Temporal_lobe
+5   L_Cingulate_lobe
+6   L_Cerebellum
+7   L_Subcortical
+
+8   R_Subcortical
+9   R_Cerebellum
+10  R_Cingulate_lobe
+11  R_Temporal_lobe
+12  R_Occipital_lobe
+13  R_Parietal_lobe
+14  R_Frontal_lobe
+

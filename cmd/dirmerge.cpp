@@ -27,7 +27,9 @@
 using namespace MR;
 using namespace App;
 
-void usage () {
+void usage ()
+{
+AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
 DESCRIPTION
   + "splice or merge sets of directions over multiple shells into a single set, "

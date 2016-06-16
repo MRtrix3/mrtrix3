@@ -2,7 +2,6 @@
 
 import os, sys
 import lib.app
-import numpy
 import math
 
 def abspath(*arg):

@@ -31,6 +31,8 @@ using namespace App;
 
 void usage ()
 {
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
+
   DESCRIPTION
   + "compare two mesh files for differences, within specified tolerance. "
     "Note that vertex normals are currently not tested.";

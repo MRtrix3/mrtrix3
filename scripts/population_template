@@ -288,12 +288,12 @@ for level in range(0, len(linear_scales)):
 # Create a template mask for nl registration by taking the intersection of all transformed input masks and dilating
   if useMasks:
     for i in input:
-	  runCommand('mrtransform ' + abspath(i.mask_directory, i.mask_filename) +
-		         ' -template ' + current_template +
-		         ' -interp nearest' +
-		         ' -linear linear_transforms/' + i.prefix + '.txt' +
-		         ' masks_transformed/' + i.prefix + '.mif' +
-		         ' -force')
+      runCommand('mrtransform ' + abspath(i.mask_directory, i.mask_filename) +
+                 ' -template ' + current_template +
+                 ' -interp nearest' +
+                 ' -linear linear_transforms/' + i.prefix + '.txt' +
+                 ' masks_transformed/' + i.prefix + '.mif' +
+                 ' -force')
     runCommand ('mrmath ' + allindir('masks_transformed') + ' min - | maskfilter - median - | maskfilter - dilate -npass 5 init_nl_template_mask.mif -force')
     current_template_mask = 'init_nl_template_mask.mif'
 

@@ -32,28 +32,28 @@ namespace MR
         File::Config::get_RGB ("BackgroundColor", background_color, 1.0, 1.0, 1.0);
 
         //CONF option: LightPosition
-        //CONF default: 1,1,3 
+        //CONF default: 1,1,3
         //CONF The default position vector to use for the light in OpenGL
-        //CONF renders
+        //CONF renders.
         File::Config::get_RGB ("LightPosition", lightpos, 1.0, 1.0, 3.0);
 
         Eigen::Map<Eigen::Vector3f> (lightpos).normalize();
 
         //CONF option: AmbientIntensity
         //CONF default: 0.6
-        //CONF The default intensity for the ambient light in OpenGL renders
+        //CONF The default intensity for the ambient light in OpenGL renders.
         ambient = File::Config::get_float ("AmbientIntensity", 0.6);
         //CONF option: DiffuseIntensity
         //CONF default: 0.3
-        //CONF The default intensity for the diffuse light in OpenGL renders
+        //CONF The default intensity for the diffuse light in OpenGL renders.
         diffuse = File::Config::get_float ("DiffuseIntensity", 0.3);
         //CONF option: SpecularIntensity
         //CONF default: 0.4
-        //CONF The default intensity for the specular light in OpenGL renders
+        //CONF The default intensity for the specular light in OpenGL renders.
         specular = File::Config::get_float ("SpecularIntensity", 0.4);
         //CONF option: SpecularExponent
         //CONF default: 1
-        //CONF The default exponent for the specular light in OpenGL renders
+        //CONF The default exponent for the specular light in OpenGL renders.
         shine = File::Config::get_float ("SpecularExponent", 1.0);
       }
 

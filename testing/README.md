@@ -139,6 +139,7 @@ $ git submodule update --remote
 At this point, you can commit and push this change, or optionally add your
 tests in the same commit:
 ```ShellSession
+$ git add testing/data
 $ git add testing/tests/mycommand    # <- optional
 $ git commit
 $ git push

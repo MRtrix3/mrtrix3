@@ -8,7 +8,7 @@ invaluable when discussing diffusion MRI processing methods and
 statistics. We'd like to share these with our user base in the hope that
 others will gain advantages from using the same terminology, and also so
 that we all know what everyone else is talking about! Anyone using
-MRtrix to develop their own software may also see these terms scattered
+*MRtrix3* to develop their own software may also see these terms scattered
 throughout the library code, so will need to know what they represent.
 
 All MRtrix users should be familiar with the terms 'pixel' and 'voxel';
@@ -84,14 +84,17 @@ are historically more accustomed to dealing with FODs that are
 continuous functions on the sphere, and are utilised as such during
 processing; however, if the FOD is *segmented* in any way (either
 through peak-finding, the segmentation approach as described in the
-appendices of the SIFT NeuroImage paper, or more advanced methods), each
-discrete feature of a particular FOD can be labelled a fixel, as each
-represents a set of fibres within that voxel that form a coherent bundle
-in orientation space.
+appendices of the
+`SIFT NeuroImage paper <www.sciencedirect.com/science/article/pii/S1053811912011615>`_,
+or more advanced methods), each discrete feature of a particular FOD can
+be labelled a fixel, as each represents a set of fibres within that voxel
+that form a coherent bundle in orientation space.
 
-The term 'fixel' will begin appearing in the literature as we published
-our newest statistical methods, which allow for the inference of group
-differences not just at the voxel level, but the *fixel* level; that is,
-if only one fibre bundle within a crossing-fibre voxel is affected in a
-cohort, we hope to both identify the bundle affected, and quantify the
-group effect that is specific to that bundle.
+The term 'fixel' has now appeared in the literature with the publication
+of our new statistical method,
+`Connectivity-based Fixel Enhancement <http://www.sciencedirect.com/science/article/pii/S1053811915004218>`_,
+which allows for the inference of group differences not just at the voxel
+level, but the *fixel* level; that is, if only one fibre bundle within a
+crossing-fibre voxel is affected in a cohort, we hope to both identify the
+bundle affected, and quantify the group effect that is specific to that bundle.
+

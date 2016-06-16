@@ -4,7 +4,7 @@ Multi-tissue constrained spherical deconvolution
 Introduction
 ------------
 
-Multi-tissue constrained spherical deconvolution (CSD) of multi-shell data exploits the unique b-value dependencies of the different macroscopic tissue types (WM/GM/CSF) to estimate a multi-tissue orientation distribution function (ODF) as explained in `Jeurissen et al. (2014) <#references>`__. As it includes separate compartments for each tissue type, it can produce a map of the WM/GM/CSF volume fractions directly from the DW data. In addition, the more complete modelling of the DW signal results in more accurate apparent fiber density (AFD) measures and more precise fibre orientation estimates at the tissue interfaces.
+Multi-tissue constrained spherical deconvolution (CSD) of multi-shell data exploits the unique b-value dependencies of the different macroscopic tissue types (WM/GM/CSF) to estimate a multi-tissue orientation distribution function (ODF) as explained in `Jeurissen et al. (2014) <#references>`__. As it includes separate compartments for each tissue type, it can produce a map of the WM/GM/CSF signal contributions directly from the DW data. In addition, the more complete modelling of the DW signal results in more accurate apparent fiber density (AFD) measures and more precise fibre orientation estimates at the tissue interfaces.
 
 User guide
 ----------
@@ -13,7 +13,7 @@ Multi-tissue CSD can be performed as:
 
 ::
 
-  msdwi2fod dwi.mif csf.txt csf.mif gm.txt gm.mif wm.txt wm.mif
+  dwi2fod msmt_csd dwi.mif wm.txt wm.mif gm.txt gm.mif csf.txt csf.mif
 
 where
 
@@ -29,15 +29,15 @@ Typically, you will also want to use the ``-mask`` to avoid calculations in non-
 
 ::
 
-  msdwi2fod -mask mask.mif dwi.mif csf.txt csf.mif gm.txt gm.mif wm.txt wm.mif
+  dwi2fod msmt_csd -mask mask.mif dwi.mif wm.txt wm.mif gm.txt gm.mif csf.txt csf.mif
 
-RGB tissue volume fraction maps can be obtained as follows:
+RGB tissue signal contribution maps can be obtained as follows:
 
 ::
 
   mrconvert -coord 3 0 wm.mif - | mrcat csf.mif gm.mif - vf.mif
 
-The resulting WM fODFs can be displayed together with the tissue volume fraction map as:
+The resulting WM fODFs can be displayed together with the tissue signal contribution map as:
 
 ::
 
@@ -50,7 +50,7 @@ Input response functions for CSF, GM and single fibre WM can be estimated from t
 
 ::
 
-  dwi2response msmt_5tt dwi.mif 5tt.mif gm.txt wm.txt csf.txt
+  dwi2response msmt_5tt dwi.mif 5tt.mif wm.txt gm.txt csf.txt
 	
 where
 
@@ -84,3 +84,4 @@ References
    improved analysis of multi-shell diffusion MRI data.* NeuroImage, 103
    (2014), pp. 411–426 [`SD
    link <http://www.sciencedirect.com/science/article/pii/S1053811914006442>`__\ ]
+
