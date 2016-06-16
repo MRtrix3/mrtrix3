@@ -74,7 +74,14 @@ namespace MR
           robust_estimate (false),
           do_reorientation (false),
           fod_lmax (3),
+          //CONF option: reg_bbgd
+          //CONF default: 1 (true)
+          //CONF Linear registration: use Barzilai Borwein gradient descent
           reg_bbgd (File::Config::get_bool ("reg_bbgd", true)),
+          //CONF option: reg_analyse_descent
+          //CONF default: 0 (false)
+          //CONF Linear registration: write comma separated gradient descent parameters and gradients
+          //CONF to stdout and verbose gradient descent output to stderr
           analyse_descent (File::Config::get_bool ("reg_analyse_descent", false)) {
           scale_factor[0] = 0.25;
           scale_factor[1] = 0.5;
@@ -332,8 +339,14 @@ namespace MR
                 midway_image_header.spacing(2));
               Eigen::Vector3d coherence(spacing);
               Eigen::Vector3d stop(spacing);
+              //CONF option: reg_coherence_len
+              //CONF default: 3.0
+              //CONF Linear registration: estimated spatial coherence length in voxel
               default_type reg_coherence_len = File::Config::get_float ("reg_coherence_len", 3.0); // = 3 stdev blur
               coherence *= reg_coherence_len * 1.0 / (2.0 * scale_factor[level]);
+              //CONF option: reg_stop_len
+              //CONF default: 0.0001
+              //CONF Linear registration: smallest step in fraction of voxel at which to stop registration
               default_type reg_stop_len = File::Config::get_float ("reg_stop_len", 0.0001);
               stop.array() *= reg_stop_len;
               DEBUG ("coherence length: " + str(coherence));
