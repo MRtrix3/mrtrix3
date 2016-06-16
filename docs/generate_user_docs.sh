@@ -11,6 +11,9 @@
 
 # Generating documentation for all commands
 
+mrtrix_root=$( cd "$(dirname "${BASH_SOURCE}")"/../ ; pwd -P )
+export PATH=$mrtrix_root/release/bin:$mrtrix_root/release/scripts:"$PATH"
+
   echo "
 ################
 List of MRtrix3 commands
