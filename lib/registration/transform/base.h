@@ -200,8 +200,15 @@ namespace MR
             compute_halfspace_transformations();
           }
 
-          void debug() {
-            INFO ("debug():");
+          std::string info () {
+            Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", "\n", "", "", "", "");
+            INFO ("transformation:\n"+str(trafo.matrix().format(fmt)));
+            INFO ("transformation_half:\n"+str(trafo_half.matrix().format(fmt)));
+            INFO ("transformation_half_inverse:\n"+str(trafo_half_inverse.matrix().format(fmt)));
+            return "centre: "+str(centre.transpose(),12);
+          }
+
+          std::string debug () {
             INFO ("parameters of type " + str(DataType::from<ParameterType>().specifier()));
             Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", "\n", "", "", "", "");
             INFO ("trafo:\n"+str(trafo.matrix().format(fmt)));
@@ -209,6 +216,7 @@ namespace MR
             INFO ("trafo_half:\n"+str(trafo_half.matrix().format(fmt)));
             INFO ("trafo_half_inverse:\n"+str(trafo_half_inverse.matrix().format(fmt)));
             INFO ("centre: "+str(centre.transpose(),12));
+            return "";
           }
 
           template <class ParamType, class VectorType>
@@ -219,7 +227,7 @@ namespace MR
                                 const default_type& weiszfeld_precision,
                                 const size_t& weiszfeld_iterations,
                                 default_type& learning_rate) const {
-            DEBUG("robust estimator for this metric is not implemented.");
+            DEBUG ("robust estimator is not implemented for this metric");
             for (auto& grad_estimate : grad_estimates) {
               gradient += grad_estimate;
             }

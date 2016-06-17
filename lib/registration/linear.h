@@ -245,6 +245,9 @@ namespace MR
                 im1_image, im2_image, im1_mask, im2_mask, transform, init);
             }
 
+            INFO ("Transformation before registration:");
+            INFO (transform.info());
+
             // TODO global search
             // if (global_search) {
             //   GlobalSearch::GlobalSearch transformation_search;
