@@ -1596,7 +1596,7 @@ namespace MR
             // TODO
           }
           if (changeFlags & QPinchGesture::ScaleFactorChanged) {
-            set_FOV (FOV() * e->lastScaleFactor() / e->scaleFactor());
+            set_FOV (FOV() / e->scaleFactor());
             glarea->update();
           }
         }
