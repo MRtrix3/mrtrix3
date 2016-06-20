@@ -105,6 +105,7 @@ namespace MR
           setMinimumSize (256, 256);
           setFocusPolicy (Qt::StrongFocus);
           grabGesture (Qt::PinchGesture);
+          grabGesture (Qt::PanGesture);
           QFont font_ = font();
           font_.setPointSize (MR::File::Config::get_int ("FontSize", 10));
           setFont (font_);
@@ -1576,6 +1577,12 @@ namespace MR
       bool Window::gestureEventGL (QGestureEvent* event) 
       {
         assert (mode);
+
+        if (QGesture* pan = event->gesture(Qt::PanGesture)) {
+          QPanGesture* e = static_cast<QPanGesture*> (pan);
+          mouse_displacement_ = QPoint (e->delta().x(), -e->delta().y());
+          mode->pan_event();
+        }
       
         if (QGesture* pinch = event->gesture(Qt::PinchGesture)) {
           QPinchGesture* e = static_cast<QPinchGesture*> (pinch);
