@@ -105,7 +105,6 @@ namespace MR
           setMinimumSize (256, 256);
           setFocusPolicy (Qt::StrongFocus);
           grabGesture (Qt::PinchGesture);
-          grabGesture (Qt::SwipeGesture);
           QFont font_ = font();
           font_.setPointSize (MR::File::Config::get_int ("FontSize", 10));
           setFont (font_);
@@ -1577,19 +1576,8 @@ namespace MR
       bool Window::gestureEventGL (QGestureEvent* event) 
       {
         assert (mode);
-        
-        if (QGesture *swipe = event->gesture (Qt::SwipeGesture)) {
-          QSwipeGesture* e = static_cast<QSwipeGesture*> (swipe);
-          int dx = e->horizontalDirection() == QSwipeGesture::Left ? -1 : ( 
-             e->horizontalDirection() == QSwipeGesture::Right ? 1 : 0); 
-          if (dx != 0 && image_group->actions().size() > 1) {
-            QAction* action = image_group->checkedAction();
-            int N = image_group->actions().size();
-            int n = image_group->actions().indexOf (action);
-            image_select_slot (image_group->actions()[(n+N+dx)%N]);
-          }
-        }
-        else if (QGesture* pinch = event->gesture(Qt::PinchGesture)) {
+      
+        if (QGesture* pinch = event->gesture(Qt::PinchGesture)) {
           QPinchGesture* e = static_cast<QPinchGesture*> (pinch);
           QPinchGesture::ChangeFlags changeFlags = e->changeFlags();
           if (changeFlags & QPinchGesture::RotationAngleChanged) {
