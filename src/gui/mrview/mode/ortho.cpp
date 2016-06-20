@@ -140,7 +140,7 @@ namespace MR
 
 
 
-        void Ortho::slice_move_event (int x) 
+        void Ortho::slice_move_event (float x) 
         {
           const Projection* proj = get_current_projection();
           if (!proj) return;

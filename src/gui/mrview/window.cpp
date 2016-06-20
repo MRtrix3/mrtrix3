@@ -1524,7 +1524,7 @@ namespace MR
       {
         assert (mode);
 #if QT_VERSION >= 0x050400
-        QPoint delta = event->pixelDelta();
+        QPoint delta = 30 * event->pixelDelta();
         if (delta.isNull())
           delta = event->angleDelta();
 #else
