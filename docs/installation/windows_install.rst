@@ -73,11 +73,11 @@ Install *MRtrix3* dependencies
 
        pacman -S git mingw-w64-x86_64-python3 mingw-w64-x86_64-python3-numpy pkg-config mingw-w64-x86_64-gcc mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5
     
-    Sometimes ``pacman`` may fail to find a particular package from any of
-    the available mirrors. If this occurs, you can download the relevant
-    package from `SourceForge <https://sourceforge.net/projects/msys2/files/REPOS/MINGW/x86_64/>`__:
-    place both the package file and corresponding .sig file into the
-    ``/var/cache/pacman/pkg`` directory, and repeat the ``pacman`` call above.
+   Sometimes ``pacman`` may fail to find a particular package from any of
+   the available mirrors. If this occurs, you can download the relevant
+   package from `SourceForge <https://sourceforge.net/projects/msys2/files/REPOS/MINGW/x86_64/>`__:
+   place both the package file and corresponding .sig file into the
+   ``/var/cache/pacman/pkg`` directory, and repeat the ``pacman`` call above.
 
 Set up git and download *MRtrix3* sources
 ---------------------------------------
