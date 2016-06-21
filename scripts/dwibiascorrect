@@ -12,6 +12,7 @@ from lib.errorMessage  import errorMessage
 from lib.getFSLSuffix  import getFSLSuffix
 from lib.getHeaderInfo import getHeaderInfo
 from lib.getUserPath   import getUserPath
+from lib.imagesMatch   import imagesMatch
 from lib.isWindows     import isWindows
 from lib.runCommand    import runCommand
 
@@ -99,6 +100,13 @@ if lib.app.args.fsl:
   runCommand(fast_cmd + ' -t 2 -o fast -n 3 -b mean_bzero_masked.nii')
   bias_path = 'fast_bias' + fast_suffix
 elif lib.app.args.ants:
+
+  # If the mask image was provided manually, and doesn't match the input image perfectly
+  #   (i.e. also transform and voxel sizes), N4 will fail
+  if lib.app.args.mask:
+    if not imagesMatch('mean_bzero.mif', 'mask.mif'):
+      errorMessage('Input mask header does not perfectly match DWI as required by N4')
+
   # Use the brain mask as a weights image rather than a mask; means that voxels at the edge of the mask
   #   will have a smoothly-varying bias field correction applied, rather than multiplying by 1.0 outside the mask
   runCommand('mrconvert mean_bzero.mif mean_bzero.nii -stride +1,+2,+3')
