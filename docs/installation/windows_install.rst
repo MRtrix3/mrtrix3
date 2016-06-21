@@ -125,22 +125,22 @@ Set up *MRtrix3*
        echo "export PATH=\"$(pwd)/release/bin:$(pwd)/scripts:\$PATH\"" >> ~/.bashrc
 
    .. WARNING::
-       The command above will _add_ an extra line to the relevant file. If you
-       ever need to modify this line, you should _not_ issue the command above
+       The command above will *add* an extra line to the relevant file. If you
+       ever need to modify this line, you should *not* issue the command above
        again, since this will only add yet another line, leaving the previous
-       (potentially problematic) line in place. Instead, open the `~/.bashrc`
+       (potentially problematic) line in place. Instead, open the ``~/.bashrc``
        file in a text editor and modify it directly. The simple option is to
        remove the line previously added, save, and issue the command above
        again. 
 
        Any text editor will be suitable for this provided it supports
-       Unix-style newlines (this rules out the _Notepad_ application available
+       Unix-style newlines (this rules out the ``Notepad`` application available
        on Windows by default). If you need to edit this file (or any other text
-       file), we recommend you install `QtCreator`::
+       file), we recommend you install ``QtCreator``::
 
          pacman -S mingw-w64-x86_64-qt-creator
        
-       after which you can edit the `~/.bashrc` file::
+       after which you can edit the ``~/.bashrc`` file::
 
          qtcreator ~/.bashrc 
 

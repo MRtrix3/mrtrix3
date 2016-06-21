@@ -123,15 +123,15 @@ Set up *MRtrix3*
        echo "export PATH=\"$(pwd)/release/bin:$(pwd)/scripts:\$PATH\"" >> ~/.bash_profile
 
    .. WARNING::
-       The command above will _add_ an extra line to the relevant file. If you
-       ever need to modify this line, you should _not_ issue the command above
+       The command above will *add* an extra line to the relevant file. If you
+       ever need to modify this line, you should *not* issue the command above
        again, since this will only add yet another line, leaving the previous
-       (potentially problematic) line in place. Instead, open the `~/.bashrc`
+       (potentially problematic) line in place. Instead, open the ``~/.bashrc``
        file in a text editor and modify it directly. The simplest option is to
        remove the line previously added, save, and issue the command above
        again. 
 
-       On MacOSX, you can edit your `~/.bashrc` file as follows::
+       On MacOSX, you can edit your ``~/.bashrc`` file as follows::
 
          open -t ~/.bashrc 
 
