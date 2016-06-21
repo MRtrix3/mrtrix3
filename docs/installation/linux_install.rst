@@ -158,7 +158,22 @@ Set up *MRtrix3*
 
    ::
 
-       echo "export PATH=$(pwd)/release/bin:$(pwd)/scripts:\$PATH" >> ~/.bashrc
+       echo "export PATH=\"$(pwd)/release/bin:$(pwd)/scripts:\$PATH\"" >> ~/.bashrc
+
+   .. WARNING::
+       The command above will _add_ an extra line to the relevant file. If you
+       ever need to modify this line, you should _not_ issue the command above
+       again, since this will only add yet another line, leaving the previous
+       (potentially problematic) line in place. Instead, open the `~/.bashrc`
+       file in a text editor and modify it directly. The simplest option is to
+       remove the line previously added, save, and issue the command above
+       again. 
+
+       There are many text editors available on GNU/Linux, but `gedit` is
+       probably the most commonly available, simple to use text editor. You can
+       edit your `~/.bashrc` file as follows::
+
+         gedit ~/.bashrc 
 
 2. Close the terminal and start another one to ensure the startup file
    is read (or just type 'bash')
