@@ -21,7 +21,7 @@ lib.app.initCitations([ 'MSMT_CSD', 'SD', 'Tax2014', 'Tournier2013' ])
 lib.app.initParser('Estimate response function(s) for spherical deconvolution')
 
 
-base_parser = lib.app.Parser(description='Arguments & options common to all algorithms', add_help=False, formatter_class=argparse.RawDescriptionHelpFormatter)
+base_parser = lib.app.Parser(description='Arguments & options common to all algorithms', parents=[lib.app.parser], add_help=False, formatter_class=argparse.RawDescriptionHelpFormatter)
 
 # Standard input/output arguments
 base_argument = base_parser.add_argument_group('Positional argument common to all algorithms')

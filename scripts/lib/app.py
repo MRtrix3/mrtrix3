@@ -108,7 +108,8 @@ def initialise():
   if use_colour:
     use_colour = use_colour.lower() in ('yes', 'true', '1')
   else:
-    use_colour = not sys.platform.startswith('win')
+    # Windows now also gets coloured text terminal support, so make this the default
+    use_colour = True 
   if use_colour:
     colourClear = '\033[0m'
     colourConsole = '\033[03;34m'
