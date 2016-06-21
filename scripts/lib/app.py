@@ -72,7 +72,7 @@ def initParser(desc):
   standardOptions.add_argument('-continue', nargs=2, dest='cont', metavar=('<TempDir>', '<LastFile>'), help='Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file')
   standardOptions.add_argument('-force', action='store_true', help='Force overwrite of output files if pre-existing')
   standardOptions.add_argument('-help', action='store_true', help='Display help information for the script')
-  standardOptions.add_argument('-nocleanup', action='store_true', help='Do not delete temporary directory at script completion')
+  standardOptions.add_argument('-nocleanup', action='store_true', help='Do not delete temporary files during script, or temporary directory at script completion')
   standardOptions.add_argument('-nthreads', metavar='number', help='Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)')
   standardOptions.add_argument('-tempdir', metavar='/path/to/tmp/', help='Manually specify the path in which to generate the temporary directory')
   verbosity_group = standardOptions.add_mutually_exclusive_group()

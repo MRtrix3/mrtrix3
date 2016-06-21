@@ -5,6 +5,7 @@ def runCommand(cmd, exitOnError=True):
   import lib.app, os, subprocess, sys
   from lib.errorMessage import errorMessage
   from lib.isWindows    import isWindows
+  from lib.printMessage import printMessage
   from lib.warnMessage  import warnMessage
   import distutils
   from distutils.spawn import find_executable
@@ -95,8 +96,13 @@ def runCommand(cmd, exitOnError=True):
     sys.stdout.flush()
 
   error = False
+  error_text = ''
   if len(cmdstack) == 1:
-    error = subprocess.call (cmdstack[0], stdin=None, stdout=None, stderr=None)
+    process = subprocess.Popen(cmdstack[0], stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (stdoutdata, stderrdata) = process.communicate()
+    if process.returncode:
+      error = True
+      error_text = stdoutdata.decode('utf-8') + stderrdata.decode('utf-8')
   else:
     processes = [ ]
     for index, command in enumerate(cmdstack):
@@ -104,22 +110,33 @@ def runCommand(cmd, exitOnError=True):
         proc_in = processes[index-1].stdout
       else:
         proc_in = None
-      if index < len(cmdstack)-1:
-        proc_out = subprocess.PIPE
-      else:
-        proc_out = None
-      process = subprocess.Popen (command, stdin=proc_in, stdout=proc_out, stderr=None)
+      process = subprocess.Popen (command, stdin=proc_in, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
       processes.append(process)
 
     # Wait for all commands to complete
-    for process in processes:
-      process.wait()
-      if process.returncode:
-        error = True
+    for index, process in enumerate(processes):
+      if index < len(cmdstack)-1:
+        # Only capture the output if the command failed; otherwise, let it pipe to the next command
+        process.wait()
+        if process.returncode:
+          error = True
+          (stdoutdata, stderrdata) = process.communicate()
+          error_text = error_text + stdoutdata.decode('utf-8') + stderrdata.decode('utf-8')
+      else:
+        (stdoutdata, stderrdata) = process.communicate()
+        if process.returncode:
+          error = True
+          error_text = error_text + stdoutdata.decode('utf-8') + stderrdata.decode('utf-8')
+
 
   if (error):
     if exitOnError:
-      errorMessage('Command failed: ' + cmd)
+      printMessage('')
+      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + lib.app.colourError + '[ERROR] Command failed: ' + cmd + lib.app.colourClear + '\n')
+      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + lib.app.colourPrint + 'Output of failed command:' + lib.app.colourClear + '\n')
+      sys.stderr.write(error_text)
+      lib.app.complete()
+      exit(1)
     else:
       warnMessage('Command failed: ' + cmd)
 
