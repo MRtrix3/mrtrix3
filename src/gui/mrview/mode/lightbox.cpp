@@ -288,11 +288,13 @@ namespace MR
           if(image())
           {
             const auto& header = image()->header();
-            float slice_inc = std::pow (header.spacing(0)*header.spacing(1)*header.spacing(2), 1.f/3.f);
-            slice_focus_inc_adjust_rate = slice_inc / 5.f;
+            if (prev_image_name.empty()) {
+              float slice_inc = std::pow (header.spacing(0)*header.spacing(1)*header.spacing(2), 1.f/3.f);
+              slice_focus_inc_adjust_rate = slice_inc / 5.f;
 
-            set_slice_increment(slice_inc);
-            emit slice_increment_reset();
+              set_slice_increment(slice_inc);
+              emit slice_increment_reset();
+            }
 
             prev_image_name = image()->header().name();
           }

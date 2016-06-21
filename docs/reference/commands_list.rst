@@ -3,378 +3,196 @@
 List of MRtrix3 commands
 ################
 
-.. include:: commands/5tt2gmwmi.rst
-.......
 
+.. toctree::
+   :maxdepth: 1
 
-.. include:: commands/5tt2vis.rst
-.......
 
 
-.. include:: commands/5ttedit.rst
-.......
+   commands/5tt2gmwmi
 
+   commands/5tt2vis
 
-.. include:: commands/afdconnectivity.rst
-.......
+   commands/5ttedit
 
+   commands/afdconnectivity
 
-.. include:: commands/amp2sh.rst
-.......
+   commands/amp2sh
 
+   commands/connectome2tck
 
-.. include:: commands/connectome2tck.rst
-.......
+   commands/dcmedit
 
+   commands/dcminfo
 
-.. include:: commands/dcmedit.rst
-.......
+   commands/dirflip
 
+   commands/dirgen
 
-.. include:: commands/dcminfo.rst
-.......
+   commands/dirmerge
 
+   commands/dirorder
 
-.. include:: commands/dirflip.rst
-.......
+   commands/dirsplit
 
+   commands/dirstat
 
-.. include:: commands/dirgen.rst
-.......
+   commands/dwi2adc
 
+   commands/dwi2fod
 
-.. include:: commands/dirmerge.rst
-.......
+   commands/dwi2mask
 
+   commands/dwi2noise
 
-.. include:: commands/dirorder.rst
-.......
+   commands/dwi2tensor
 
+   commands/dwidenoise
 
-.. include:: commands/dirsplit.rst
-.......
+   commands/dwiextract
 
+   commands/dwinormalise
 
-.. include:: commands/dirstat.rst
-.......
+   commands/fixel2sh
 
+   commands/fixel2tsf
 
-.. include:: commands/dwi2adc.rst
-.......
+   commands/fixel2voxel
 
+   commands/fixelcalc
 
-.. include:: commands/dwi2fod.rst
-.......
+   commands/fixelcfestats
 
+   commands/fixelcorrespondence
 
-.. include:: commands/dwi2mask.rst
-.......
+   commands/fixellog
 
+   commands/fixelreorient
 
-.. include:: commands/dwi2noise.rst
-.......
+   commands/fixelstats
 
+   commands/fixelthreshold
 
-.. include:: commands/dwi2tensor.rst
-.......
+   commands/fod2dec
 
+   commands/fod2fixel
 
-.. include:: commands/dwidenoise.rst
-.......
+   commands/label2colour
 
+   commands/label2mesh
 
-.. include:: commands/dwiextract.rst
-.......
+   commands/labelconvert
 
+   commands/maskfilter
 
-.. include:: commands/dwinormalise.rst
-.......
+   commands/mesh2pve
 
+   commands/meshconvert
 
-.. include:: commands/fixel2sh.rst
-.......
+   commands/meshfilter
 
+   commands/mraverageheader
 
-.. include:: commands/fixel2tsf.rst
-.......
+   commands/mrcalc
 
+   commands/mrcat
 
-.. include:: commands/fixel2voxel.rst
-.......
+   commands/mrcheckerboardmask
 
+   commands/mrclusterstats
 
-.. include:: commands/fixelcalc.rst
-.......
+   commands/mrconvert
 
+   commands/mrcrop
 
-.. include:: commands/fixelcfestats.rst
-.......
+   commands/mrfilter
 
+   commands/mrinfo
 
-.. include:: commands/fixelcorrespondence.rst
-.......
+   commands/mrmath
 
+   commands/mrmesh
 
-.. include:: commands/fixellog.rst
-.......
+   commands/mrmetric
 
+   commands/mrpad
 
-.. include:: commands/fixelreorient.rst
-.......
+   commands/mrregister
 
+   commands/mrresize
 
-.. include:: commands/fixelstats.rst
-.......
+   commands/mrstats
 
+   commands/mrthreshold
 
-.. include:: commands/fixelthreshold.rst
-.......
+   commands/mrtransform
 
+   commands/mrview
 
-.. include:: commands/fod2dec.rst
-.......
+   commands/peaks2amp
 
+   commands/sh2amp
 
-.. include:: commands/fod2fixel.rst
-.......
+   commands/sh2peaks
 
+   commands/sh2power
 
-.. include:: commands/label2colour.rst
-.......
+   commands/sh2response
 
+   commands/shbasis
 
-.. include:: commands/label2mesh.rst
-.......
+   commands/shconv
 
+   commands/shview
 
-.. include:: commands/labelconvert.rst
-.......
+   commands/tck2connectome
 
+   commands/tckconvert
 
-.. include:: commands/maskfilter.rst
-.......
+   commands/tckedit
 
+   commands/tckgen
 
-.. include:: commands/mesh2pve.rst
-.......
+   commands/tckglobal
 
+   commands/tckinfo
 
-.. include:: commands/meshconvert.rst
-.......
+   commands/tckmap
 
+   commands/tcknormalise
 
-.. include:: commands/meshfilter.rst
-.......
+   commands/tckresample
 
+   commands/tcksample
 
-.. include:: commands/mraverageheader.rst
-.......
+   commands/tcksift2
 
+   commands/tcksift
 
-.. include:: commands/mrcalc.rst
-.......
+   commands/tckstats
 
+   commands/tensor2metric
 
-.. include:: commands/mrcat.rst
-.......
+   commands/transformcalc
 
+   commands/transformconvert
 
-.. include:: commands/mrcheckerboardmask.rst
-.......
+   commands/tsfdivide
 
+   commands/tsfinfo
 
-.. include:: commands/mrclusterstats.rst
-.......
+   commands/tsfmult
 
+   commands/tsfsmooth
 
-.. include:: commands/mrconvert.rst
-.......
+   commands/tsfthreshold
 
+   commands/voxel2fixel
 
-.. include:: commands/mrcrop.rst
-.......
+   commands/warp2metric
 
+   commands/warpconvert
 
-.. include:: commands/mrfilter.rst
-.......
+   commands/warpcorrect
 
-
-.. include:: commands/mrinfo.rst
-.......
-
-
-.. include:: commands/mrmath.rst
-.......
-
-
-.. include:: commands/mrmesh.rst
-.......
-
-
-.. include:: commands/mrmetric.rst
-.......
-
-
-.. include:: commands/mrpad.rst
-.......
-
-
-.. include:: commands/mrregister.rst
-.......
-
-
-.. include:: commands/mrresize.rst
-.......
-
-
-.. include:: commands/mrstats.rst
-.......
-
-
-.. include:: commands/mrthreshold.rst
-.......
-
-
-.. include:: commands/mrtransform.rst
-.......
-
-
-.. include:: commands/mrview.rst
-.......
-
-
-.. include:: commands/peaks2amp.rst
-.......
-
-
-.. include:: commands/sh2amp.rst
-.......
-
-
-.. include:: commands/sh2peaks.rst
-.......
-
-
-.. include:: commands/sh2power.rst
-.......
-
-
-.. include:: commands/sh2response.rst
-.......
-
-
-.. include:: commands/shbasis.rst
-.......
-
-
-.. include:: commands/shconv.rst
-.......
-
-
-.. include:: commands/shview.rst
-.......
-
-
-.. include:: commands/tck2connectome.rst
-.......
-
-
-.. include:: commands/tckconvert.rst
-.......
-
-
-.. include:: commands/tckedit.rst
-.......
-
-
-.. include:: commands/tckgen.rst
-.......
-
-
-.. include:: commands/tckglobal.rst
-.......
-
-
-.. include:: commands/tckinfo.rst
-.......
-
-
-.. include:: commands/tckmap.rst
-.......
-
-
-.. include:: commands/tcknormalise.rst
-.......
-
-
-.. include:: commands/tckresample.rst
-.......
-
-
-.. include:: commands/tcksample.rst
-.......
-
-
-.. include:: commands/tcksift.rst
-.......
-
-
-.. include:: commands/tcksift2.rst
-.......
-
-
-.. include:: commands/tckstats.rst
-.......
-
-
-.. include:: commands/tensor2metric.rst
-.......
-
-
-.. include:: commands/transformcalc.rst
-.......
-
-
-.. include:: commands/transformconvert.rst
-.......
-
-
-.. include:: commands/tsfdivide.rst
-.......
-
-
-.. include:: commands/tsfinfo.rst
-.......
-
-
-.. include:: commands/tsfmult.rst
-.......
-
-
-.. include:: commands/tsfsmooth.rst
-.......
-
-
-.. include:: commands/tsfthreshold.rst
-.......
-
-
-.. include:: commands/voxel2fixel.rst
-.......
-
-
-.. include:: commands/warp2metric.rst
-.......
-
-
-.. include:: commands/warpconvert.rst
-.......
-
-
-.. include:: commands/warpcorrect.rst
-.......
-
-
-.. include:: commands/warpinit.rst
-.......
-
+   commands/warpinit
