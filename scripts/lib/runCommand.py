@@ -29,6 +29,7 @@ def runCommand(cmd, exitOnError=True):
 
   # Vectorise the command string, preserving anything encased within quotation marks
   # This will eventually allow the use of subprocess rather than os.system()
+  # TODO Use shlex.split()?
   quotation_split = cmd.split('\"')
   if not len(quotation_split)%2:
     errorMessage('Malformed command \"' + cmd + '\": odd number of quotation marks')

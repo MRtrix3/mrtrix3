@@ -1,8 +1,10 @@
 def initParser(subparsers, base_parser):
   import argparse
-  parser = subparsers.add_parser('tournier', parents=[base_parser], help='Use the Tournier et al. (2013) iterative RF selection algorithm')
-  argument = parser.add_argument_group('Positional argument specific to the \'tournier\' algorithm')
-  argument.add_argument('output', help='The output response function text file')
+  import lib.app
+  lib.app.addCitation('If using \'tournier\' algorithm', 'Tournier, J.-D.; Calamante, F. & Connelly, A. Determination of the appropriate b value and number of gradient directions for high-angular-resolution diffusion-weighted imaging. NMR Biomedicine, 2013, 26, 1775-1786', False)
+  parser = subparsers.add_parser('tournier', parents=[base_parser], add_help=False, description='Use the Tournier et al. (2013) iterative algorithm for single-fibre voxel selection and response function estimation')
+  parser.add_argument('input', help='The input DWI')
+  parser.add_argument('output', help='The output response function text file')
   options = parser.add_argument_group('Options specific to the \'tournier\' algorithm')
   options.add_argument('-iter_voxels', type=int, default=3000, help='Number of single-fibre voxels to select when preparing for the next iteration')
   options.add_argument('-sf_voxels', type=int, default=300, help='Number of single-fibre voxels to use when calculating response function')

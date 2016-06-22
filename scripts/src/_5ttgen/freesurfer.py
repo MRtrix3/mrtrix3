@@ -1,12 +1,14 @@
 def initParser(subparsers, base_parser):
   import argparse  
-  parser = subparsers.add_parser('freesurfer', parents=[base_parser], help='Generate the 5TT image based on a FreeSurfer parcellation image (any image containing \'aseg\' in its name)')
-  options = parser.add_argument_group('options specific to the \'freesurfer\' algorithm')
-  options.add_argument('-lut', help='Manually provide path to the lookup table on which the input parcellation image is based (likely FreeSurferColorLUT.txt)')
+  parser = subparsers.add_parser('freesurfer', parents=[base_parser], add_help=False, description='Generate the 5TT image based on a FreeSurfer parcellation image')
+  parser.add_argument('input',  help='The input FreeSurfer parcellation image (any image containing \'aseg\' in its name)')
+  parser.add_argument('output', help='The output 5TT image')
+  options = parser.add_argument_group('Options specific to the \'freesurfer\' algorithm')
+  options.add_argument('-lut', help='Manually provide path to the lookup table on which the input parcellation image is based (e.g. FreeSurferColorLUT.txt)')
   parser.set_defaults(algorithm='freesurfer')
-  
-  
-  
+
+
+
 def checkOutputFiles():
   pass
 

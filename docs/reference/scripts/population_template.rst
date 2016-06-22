@@ -1,13 +1,20 @@
 population_template
 ===========
 
+.. _population_template:
+
+population_template
+===================
+
 Synopsis
 --------
 
+::
+
     population_template [ options ] input_dir template
 
-- *input_dir*: The input directory containing all images used to build the template
-- *template*: The output template image
+-  *input_dir*: The input directory containing all images used to build the template
+-  *template*: The output template image
 
 Description
 -----------
@@ -16,6 +23,9 @@ Generates an unbiased group-average template from a series of images. First a te
 
 Options
 -------
+
+Options for the population_template script
+==========================================
 
 - **-mask_dir** Optionally input a set of masks inside a single directory, one per input image (with the same file name prefix). Using masks will speed up registration significantly
 
@@ -48,8 +58,7 @@ Options
 - **-initial_alignment** Method of alignment to form the initial template. Options are "mass" (default), "geometric" and "none".
 
 Standard options
-^^^^^^^^^^^^^^^^
-
+================
 
 - **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
 
@@ -57,7 +66,7 @@ Standard options
 
 - **-help** Display help information for the script
 
-- **-nocleanup** Do not delete temporary directory at script completion
+- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
 
 - **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
 
@@ -67,20 +76,16 @@ Standard options
 
 - **-verbose** Display additional information for every command invoked
 
-References
-^^^^^^^^^^
+--------------
 
 
-
----
 
 **Author:** David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk) & Thijs Dhollander thijs.dhollander@florey.edu.au)
 
-**Copyright:** 
-Copyright (c) 2008-2016 the MRtrix3 contributors
+**Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
 
 This Source Code Form is subject to the terms of the Mozilla Public 
-License, v. 2.0. If a copy of the MPL was not distributed with this
+License, v. 2.0. If a copy of the MPL was not distributed with this 
 file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 MRtrix is distributed in the hope that it will be useful, 
@@ -88,3 +93,4 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 For more details, see www.mrtrix.org
+
