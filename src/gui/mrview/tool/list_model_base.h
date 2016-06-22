@@ -115,9 +115,9 @@ namespace MR
 
             Qt::ItemFlags flags (const QModelIndex& index) const {
 
-              static constexpr auto valid_flags = Qt::ItemIsDragEnabled | Qt::ItemIsEnabled |
+              static constexpr const auto valid_flags = Qt::ItemIsDragEnabled | Qt::ItemIsEnabled |
                 Qt::ItemIsSelectable | Qt::ItemIsUserCheckable;
-              static constexpr auto invalid_flags = valid_flags | Qt::ItemIsDropEnabled;
+              static constexpr const auto invalid_flags = valid_flags | Qt::ItemIsDropEnabled;
 
               if (!index.isValid()) return invalid_flags;
               return valid_flags;
