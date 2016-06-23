@@ -116,7 +116,8 @@ Build *MRtrix3*
 Set up *MRtrix3* 
 --------------
 
-1. Set your PATH in the shell startup file:
+1. Set your PATH in the shell startup file: run the following snippet *from
+   the MRtrix3 root directory*:
 
    ::
 
@@ -124,12 +125,17 @@ Set up *MRtrix3*
 
    .. WARNING::
        The command above will *add* an extra line to the relevant file. If you
-       ever need to modify this line, you should *not* issue the command above
-       again, since this will only add yet another line, leaving the previous
-       (potentially problematic) line in place. Instead, open the ``~/.bashrc``
-       file in a text editor and modify it directly. The simplest option is to
-       remove the line previously added, save, and issue the command above
-       again. 
+       encounter an issue running the snippet above, or step 3 below does not
+       work, you should *not* re-attempt the command above again, since this
+       will only add yet another line, leaving the previous (potentially
+       problematic) line in place. Instead, open the ``~/.bash_profile`` file
+       in a text editor and modify it directly. The simplest option is to
+       remove the line previously added, and manually add the necessary line:
+       For instance, if you have installed *MRtrix3* to `/usr/local/mrtrix3`,
+       you would add the following line to the file ``~/.bash_profile`` (amend
+       with your actual installation path):
+
+         export PATH=/Users/name/mrtrix3/release/bin:/Users/name/mrtrix3/scripts:$PATH
 
        On MacOSX, you can edit your ``~/.bashrc`` file as follows::
 

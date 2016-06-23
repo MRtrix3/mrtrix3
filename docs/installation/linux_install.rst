@@ -153,8 +153,8 @@ Build *MRtrix3*
 Set up *MRtrix3*
 --------------
 
-1. Set your PATH in the shell startup file (amend if you use tcsh or
-   some other shell):
+1. Set your PATH in the shell startup file: run the following snippet *from
+   the MRtrix3 root directory* (amend if you use tcsh or some other shell):
 
    ::
 
@@ -162,12 +162,17 @@ Set up *MRtrix3*
 
    .. WARNING::
        The command above will *add* an extra line to the relevant file. If you
-       ever need to modify this line, you should *not* issue the command above
-       again, since this will only add yet another line, leaving the previous
-       (potentially problematic) line in place. Instead, open the ``~/.bashrc``
-       file in a text editor and modify it directly. The simplest option is to
-       remove the line previously added, save, and issue the command above
-       again. 
+       encounter an issue running the snippet above, or step 3 below does not
+       work, you should *not* re-attempt the command above again, since this
+       will only add yet another line, leaving the previous (potentially
+       problematic) line in place. Instead, open the ``~/.bashrc`` file in a
+       text editor and modify it directly. The simplest option is to remove
+       the line previously added, and manually add the necessary line: For
+       instance, if you have installed *MRtrix3* to `/usr/local/mrtrix3`, you
+       would add the following line to the file ``~/.bashrc`` (amend with your
+       actual installation path):
+
+         export PATH=/usr/local/mrtrix3/release/bin:/usr/local/mrtrix3/scripts:$PATH
 
        There are many text editors available on GNU/Linux, but ``gedit`` is
        probably the most commonly available, simple to use text editor. You can

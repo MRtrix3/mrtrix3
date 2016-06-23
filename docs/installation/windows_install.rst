@@ -118,7 +118,8 @@ Build *MRtrix3*
 Set up *MRtrix3*
 --------------
 
-1. Set your PATH in the shell startup file:
+1. Set your PATH in the shell startup file: run the following snippet *from
+   the MRtrix3 root directory*:
 
    ::
 
@@ -126,23 +127,33 @@ Set up *MRtrix3*
 
    .. WARNING::
        The command above will *add* an extra line to the relevant file. If you
-       ever need to modify this line, you should *not* issue the command above
-       again, since this will only add yet another line, leaving the previous
-       (potentially problematic) line in place. Instead, open the ``~/.bashrc``
-       file in a text editor and modify it directly. The simple option is to
-       remove the line previously added, save, and issue the command above
-       again. 
+       encounter an issue running the snippet above, or step 3 below does not
+       work, you should *not* re-attempt the command above again, since this
+       will only add yet another line, leaving the previous (potentially
+       problematic) line in place. Instead, open the ``~/.bashrc`` file in a
+       text editor and modify it directly. The simplest option is to remove
+       the line previously added, and manually add the necessary line: For
+       instance, if you have installed *MRtrix3* to
+       `/c/msys2/home/name/mrtrix3`, you would add the following line to the
+       file ``~/.bashrc`` (amend with your actual installation path):
+
+         export PATH=/c/msys2/home/name/mrtrix3/release/bin:/c/msys2/home/name/mrtrix3/scripts:$PATH
 
        Any text editor will be suitable for this provided it supports
        Unix-style newlines (this rules out the ``Notepad`` application available
        on Windows by default). If you need to edit this file (or any other text
-       file), we recommend you install ``QtCreator``::
+       file), we recommend you install ``nano``::
 
-         pacman -S mingw-w64-x86_64-qt-creator
-       
-       after which you can edit the ``~/.bashrc`` file::
+         pacman -S nano
 
-         qtcreator ~/.bashrc 
+       , after which you can edit the ``~/.bashrc`` file::
+
+         nano -w ~/.bashrc
+
+       Although ``nano`` is a terminal-based editor and does not have a full
+       graphical interface, it is not too difficult to use. Simply delete and
+       add text as required; use Ctrl+O to output the file (press enter to
+       confirm overwriting the existing file); Ctrl-X exits.
 
 2. Close the terminal and start another one to ensure the startup file
    is read
