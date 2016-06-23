@@ -34,7 +34,7 @@ namespace MR
             ListModelBase (QObject* parent) :
               QAbstractItemModel (parent) { }
 
-            QVariant data (const QModelIndex& index, int role) const {
+            QVariant data (const QModelIndex& index, int role) const override {
               // The item may (temporarily) be null during an intermediate step of reordering items
               // see insertRows / removeRows
               if (!index.isValid()) return QVariant();
@@ -45,7 +45,7 @@ namespace MR
               return items[index.row()] ? shorten (items[index.row()]->get_filename(), 35, 0).c_str() : "";
             }
 
-            bool setData (const QModelIndex& idx, const QVariant& value, int role) {
+            bool setData (const QModelIndex& idx, const QVariant& value, int role) override {
               if (role == Qt::CheckStateRole) {
                 Qt::KeyboardModifiers keyMod = QApplication::keyboardModifiers ();
                 if (keyMod.testFlag (Qt::ShiftModifier)) {
@@ -113,22 +113,22 @@ namespace MR
               return true;
             }
 
-            Qt::ItemFlags flags (const QModelIndex& index) const {
+            Qt::ItemFlags flags (const QModelIndex& index) const override {
 
-              static constexpr const auto valid_flags = Qt::ItemIsDragEnabled | Qt::ItemIsEnabled |
+              static const auto valid_flags = Qt::ItemIsDragEnabled | Qt::ItemIsEnabled |
                 Qt::ItemIsSelectable | Qt::ItemIsUserCheckable;
-              static constexpr const auto invalid_flags = valid_flags | Qt::ItemIsDropEnabled;
+              static const auto invalid_flags = valid_flags | Qt::ItemIsDropEnabled;
 
               if (!index.isValid()) return invalid_flags;
               return valid_flags;
             }
 
-            QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const { 
+            QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const override {
               (void) parent; // to suppress warnings about unused parameters
               return createIndex (row, column); 
             }
 
-            QModelIndex parent (const QModelIndex&) const { return QModelIndex(); }
+            QModelIndex parent (const QModelIndex&) const override { return QModelIndex(); }
 
             int rowCount (const QModelIndex& parent = QModelIndex()) const { 
               (void) parent;  // to suppress warnings about unused parameters
