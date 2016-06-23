@@ -98,14 +98,6 @@ namespace MR
       return false;
     }
 
-    inline bool is_file (int file_descriptor)
-    {
-      struct stat buf;
-      if (!fstat (file_descriptor, &buf)) return S_ISREG (buf.st_mode);
-      throw Exception (strerror (errno));
-      return false;
-    }
-
     inline bool has_suffix (const std::string& name, const std::string& suffix)
     {
       return (name.size() < suffix.size() ?

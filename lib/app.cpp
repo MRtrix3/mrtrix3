@@ -1006,12 +1006,14 @@ namespace MR
       setvbuf (stdout, nullptr, _IOLBF, 0);
 #endif
 
-      try {
-        stderr_to_file = Path::is_file (STDERR_FILENO);
-      } catch (...) {
+      struct stat buf;
+      if (fstat (STDERR_FILENO, &buf)) {
         DEBUG ("Unable to determine nature of stderr; assuming socket");
         stderr_to_file = false;
       }
+      else 
+        stderr_to_file = S_ISREG (buf.st_mode);
+
       terminal_use_colour = !stderr_to_file;
 
       argc = cmdline_argc;
