@@ -26,8 +26,9 @@ namespace MR
   {
     namespace Stats
     {
+      namespace GLM
+      {
 
-      namespace GLM {
 
         //! scale contrasts for use in t-test
         /*! Note each row of the contrast matrix will be treated as an independent contrast. The number
@@ -138,22 +139,24 @@ namespace MR
       /** \addtogroup Statistics
       @{ */
       /*! A class to compute t-statistics using a General Linear Model. */
+      template <typename ValueType>
       class GLMTTest
       {
         public:
+          typedef ValueType value_type;
           /*!
           * @param measurements a matrix storing the measured data for each subject in a column //TODO
           * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
           * @param contrast a matrix containing the contrast of interest.
           */
-          GLMTTest (const Eigen::MatrixXf& measurements,
-                    const Eigen::MatrixXf& design,
-                    const Eigen::MatrixXf& contrast) :
+          GLMTTest (const Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& measurements,
+                    const Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& design,
+                    const Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& contrast) :
             y (measurements),
             X (design),
             scaled_contrasts (GLM::scale_contrasts (contrast, X, X.rows()-rank(X)).transpose())
           {
-            pinvX = Math::pinv (X.cast<double>()).template cast<float>();
+            pinvX = Math::pinv (X.template cast<double>()).template cast<ValueType>();
           }
 
           /*! Compute the t-statistics
@@ -162,11 +165,11 @@ namespace MR
           * @param max_stat the maximum t-statistic
           * @param min_stat the minimum t-statistic
           */
-          void operator() (const std::vector<size_t>& perm_labelling, std::vector<float>& stats,
-                           float& max_stat, float& min_stat) const
+          void operator() (const std::vector<size_t>& perm_labelling, Eigen::Array<ValueType, Eigen::Dynamic, 1>& stats,
+                           ValueType& max_stat, ValueType& min_stat) const
           {
-            stats.resize (y.rows(), 0.0);
-            Eigen::MatrixXf tvalues, betas, residuals, SX, pinvSX;
+            stats = Eigen::Array<ValueType, Eigen::Dynamic, 1>::Zero (y.rows());
+            Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> tvalues, betas, residuals, SX, pinvSX;
 
             SX.resize (X.rows(), X.cols());
             pinvSX.resize (pinvX.rows(), pinvX.cols());
@@ -178,17 +181,17 @@ namespace MR
             pinvSX.transposeInPlace();
             SX.transposeInPlace();
             for (ssize_t i = 0; i < y.rows(); i += GLM_BATCH_SIZE) {
-              Eigen::MatrixXf tmp = y.block (i, 0, std::min (GLM_BATCH_SIZE, (int)(y.rows()-i)), y.cols());
+              const Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> tmp = y.block (i, 0, std::min (GLM_BATCH_SIZE, (int)(y.rows()-i)), y.cols());
               GLM::ttest (tvalues, SX, pinvSX, tmp, scaled_contrasts, betas, residuals);
               for (ssize_t n = 0; n < tvalues.rows(); ++n) {
-                float val = tvalues(n,0);
+                ValueType val = tvalues(n,0);
                 if (std::isfinite (val)) {
                   if (val > max_stat)
                     max_stat = val;
                   if (val < min_stat)
                     min_stat = val;
                 } else {
-                  val = float(0.0);
+                  val = ValueType(0);
                 }
                 stats[i+n] = val;
               }
@@ -199,8 +202,8 @@ namespace MR
           size_t num_elements () const { return y.rows(); }
 
         protected:
-          const Eigen::MatrixXf& y;
-          Eigen::MatrixXf X, pinvX, scaled_contrasts;
+          const Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& y;
+          Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> X, pinvX, scaled_contrasts;
       };
       //! @}
 

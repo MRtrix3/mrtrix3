@@ -39,6 +39,8 @@ using namespace MR::DWI::Tractography::Mapping;
 using Sparse::FixelMetric;
 
 typedef float value_type;
+typedef Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> matrix_type;
+typedef Eigen::Array<value_type, Eigen::Dynamic, 1> vector_type;
 
 #define DEFAULT_PERMUTATIONS 5000
 #define DEFAULT_CFE_DH 0.1
@@ -352,19 +354,21 @@ void run() {
   {
     ProgressBar progress ("outputting beta coefficients, effect size and standard deviation");
     auto temp = Math::Stats::GLM::solve_betas (data, design);
-    for (ssize_t i = 0; i < contrast.cols(); ++i)
+    for (ssize_t i = 0; i < contrast.cols(); ++i) {
       write_fixel_output (output_prefix + "beta" + str(i) + ".msf", temp.row(i), input_header, mask_fixel_image, fixel_index_image);
+      ++progress;
+    }
     temp = Math::Stats::GLM::abs_effect_size (data, design, contrast);
-    write_fixel_output (output_prefix + "abs_effect.msf", temp.row(0), input_header, mask_fixel_image, fixel_index_image);
+    write_fixel_output (output_prefix + "abs_effect.msf", temp.row(0), input_header, mask_fixel_image, fixel_index_image); ++progress;
     temp = Math::Stats::GLM::std_effect_size (data, design, contrast);
-    write_fixel_output (output_prefix + "std_effect.msf", temp.row(0), input_header, mask_fixel_image, fixel_index_image);
+    write_fixel_output (output_prefix + "std_effect.msf", temp.row(0), input_header, mask_fixel_image, fixel_index_image); ++progress;
     temp = Math::Stats::GLM::stdev (data, design);
     write_fixel_output (output_prefix + "std_dev.msf", temp.row(0), input_header, mask_fixel_image, fixel_index_image);
   }
 
-  Math::Stats::GLMTTest glm_ttest (data, design, contrast);
+  Math::Stats::GLMTTest<value_type> glm_ttest (data, design, contrast);
   Stats::CFE::Enhancer cfe_integrator (connectivity_matrix, cfe_dh, cfe_e, cfe_h);
-  std::shared_ptr<std::vector<double> > empirical_cfe_statistic;
+  Stats::PermTest::empirical_vector_type empirical_cfe_statistic;
 
   Header output_header (input_header);
   output_header.keyval()["num permutations"] = str(num_perms);
@@ -378,20 +382,19 @@ void run() {
 
   // If performing non-stationarity adjustment we need to pre-compute the empirical CFE statistic
   if (do_nonstationary_adjustment) {
-    empirical_cfe_statistic.reset(new std::vector<double> (num_fixels, 0.0));
-    Stats::PermTest::precompute_empirical_stat (glm_ttest, cfe_integrator, nperms_nonstationary, *empirical_cfe_statistic);
+    Stats::PermTest::precompute_empirical_stat (glm_ttest, cfe_integrator, nperms_nonstationary, empirical_cfe_statistic);
     output_header.keyval()["nonstationary adjustment"] = str(true);
-    write_fixel_output (output_prefix + "cfe_empirical.msf", *empirical_cfe_statistic, output_header, mask_fixel_image, fixel_index_image);
+    write_fixel_output (output_prefix + "cfe_empirical.msf", empirical_cfe_statistic, output_header, mask_fixel_image, fixel_index_image);
   } else {
     output_header.keyval()["nonstationary adjustment"] = str(false);
   }
 
   // Precompute default statistic and CFE statistic
-  std::vector<value_type> cfe_output (num_fixels, 0.0);
-  std::shared_ptr<std::vector<value_type> > cfe_output_neg;
-  std::vector<value_type> tvalue_output (num_fixels, 0.0);
+  vector_type cfe_output (num_fixels);
+  std::shared_ptr<vector_type> cfe_output_neg;
+  vector_type tvalue_output (num_fixels);
   if (compute_negative_contrast)
-    cfe_output_neg.reset (new std::vector<value_type> (num_fixels, 0.0));
+    cfe_output_neg.reset (new vector_type (num_fixels));
 
   Stats::PermTest::precompute_default_permutation (glm_ttest, cfe_integrator, empirical_cfe_statistic, cfe_output, cfe_output_neg, tvalue_output);
 
@@ -403,14 +406,14 @@ void run() {
   // Perform permutation testing
   opt = get_options ("notest");
   if (!opt.size()) {
-    Eigen::Matrix<value_type, Eigen::Dynamic, 1> perm_distribution (num_perms);
-    std::shared_ptr<Eigen::Matrix<value_type, Eigen::Dynamic, 1> > perm_distribution_neg;
-    std::vector<value_type> uncorrected_pvalues (num_fixels, 0.0);
-    std::shared_ptr<std::vector<value_type> > uncorrected_pvalues_neg;
+    vector_type perm_distribution (num_perms);
+    std::shared_ptr<vector_type> perm_distribution_neg;
+    vector_type uncorrected_pvalues (num_fixels);
+    std::shared_ptr<vector_type> uncorrected_pvalues_neg;
 
     if (compute_negative_contrast) {
-      perm_distribution_neg.reset (new Eigen::Matrix<value_type, Eigen::Dynamic, 1> (num_perms));
-      uncorrected_pvalues_neg.reset (new std::vector<value_type> (num_fixels, 0.0));
+      perm_distribution_neg.reset (new vector_type (num_perms));
+      uncorrected_pvalues_neg.reset (new vector_type (num_fixels));
     }
 
     Stats::PermTest::run_permutations (glm_ttest, cfe_integrator, num_perms, empirical_cfe_statistic,
@@ -419,18 +422,18 @@ void run() {
                                        uncorrected_pvalues, uncorrected_pvalues_neg);
 
     ProgressBar progress ("outputting final results");
-    save_matrix (perm_distribution, output_prefix + "perm_dist.txt");
+    save_matrix (perm_distribution, output_prefix + "perm_dist.txt"); ++progress;
 
-    std::vector<value_type> pvalue_output (num_fixels, 0.0);
-    Math::Stats::statistic2pvalue (perm_distribution, cfe_output, pvalue_output);
-    write_fixel_output (output_prefix + "fwe_pvalue.msf", pvalue_output, output_header, mask_fixel_image, fixel_index_image);
-    write_fixel_output (output_prefix + "uncorrected_pvalue.msf", uncorrected_pvalues, output_header, mask_fixel_image, fixel_index_image);
+    vector_type pvalue_output (num_fixels);
+    Math::Stats::statistic2pvalue (perm_distribution, cfe_output, pvalue_output); ++progress;
+    write_fixel_output (output_prefix + "fwe_pvalue.msf", pvalue_output, output_header, mask_fixel_image, fixel_index_image); ++progress;
+    write_fixel_output (output_prefix + "uncorrected_pvalue.msf", uncorrected_pvalues, output_header, mask_fixel_image, fixel_index_image); ++progress;
 
     if (compute_negative_contrast) {
-      save_matrix (*perm_distribution_neg, output_prefix + "perm_dist_neg.txt");
-      std::vector<value_type> pvalue_output_neg (num_fixels, 0.0);
-      Math::Stats::statistic2pvalue (*perm_distribution_neg, *cfe_output_neg, pvalue_output_neg);
-      write_fixel_output (output_prefix + "fwe_pvalue_neg.msf", pvalue_output_neg, output_header, mask_fixel_image, fixel_index_image);
+      save_matrix (*perm_distribution_neg, output_prefix + "perm_dist_neg.txt"); ++progress;
+      vector_type pvalue_output_neg (num_fixels);
+      Math::Stats::statistic2pvalue (*perm_distribution_neg, *cfe_output_neg, pvalue_output_neg); ++progress;
+      write_fixel_output (output_prefix + "fwe_pvalue_neg.msf", pvalue_output_neg, output_header, mask_fixel_image, fixel_index_image); ++progress;
       write_fixel_output (output_prefix + "uncorrected_pvalue_neg.msf", *uncorrected_pvalues_neg, output_header, mask_fixel_image, fixel_index_image);
     }
   }

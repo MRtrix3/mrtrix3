@@ -15,6 +15,8 @@
 #ifndef __math_stats_permutation_h__
 #define __math_stats_permutation_h__
 
+#include "math/math.h"
+
 namespace MR
 {
   namespace Math
@@ -22,7 +24,6 @@ namespace MR
     namespace Stats
     {
 
-      typedef float value_type;
 
 
       inline bool is_duplicate_vector (const std::vector<size_t>& v1, const std::vector<size_t>& v2)
@@ -38,7 +39,7 @@ namespace MR
       inline bool is_duplicate_permutation (const std::vector<size_t>& perm,
                                             const std::vector<std::vector<size_t> >& previous_permutations)
       {
-        for (unsigned int p = 0; p < previous_permutations.size(); p++) {
+        for (size_t p = 0; p < previous_permutations.size(); p++) {
           if (is_duplicate_vector (perm, previous_permutations[p]))
             return true;
         }
@@ -72,21 +73,23 @@ namespace MR
       }
 
 
-      inline void statistic2pvalue (const Eigen::Matrix<value_type, Eigen::Dynamic, 1>& perm_dist,
-                                    const std::vector<value_type>& stats,
-                                    std::vector<value_type>& pvalues)
+      template <typename VectorType>
+      inline void statistic2pvalue (const VectorType& perm_dist,
+                                    const VectorType& stats,
+                                    VectorType& pvalues)
       {
-        std::vector <value_type> permutations (perm_dist.size(), 0);
+        typedef typename container_value_type<VectorType>::type value_type;
+        std::vector<value_type> permutations (perm_dist.size(), 0);
         for (ssize_t i = 0; i < perm_dist.size(); i++)
           permutations[i] = perm_dist[i];
         std::sort (permutations.begin(), permutations.end());
         pvalues.resize (stats.size());
-        for (size_t i = 0; i < stats.size(); ++i) {
+        for (size_t i = 0; i < size_t(stats.size()); ++i) {
           if (stats[i] > 0.0) {
             value_type pvalue = 1.0;
-            for (size_t j = 0; j < permutations.size(); ++j) {
+            for (size_t j = 0; j < size_t(permutations.size()); ++j) {
               if (stats[i] < permutations[j]) {
-                pvalue = value_type (j) / value_type (permutations.size());
+                pvalue = value_type(j) / value_type(permutations.size());
                 break;
               }
             }
@@ -96,6 +99,9 @@ namespace MR
             pvalues[i] = 0.0;
         }
       }
+
+
+
     }
   }
 }

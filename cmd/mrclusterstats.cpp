@@ -100,6 +100,8 @@ void usage ()
 
 
 typedef Stats::TFCE::value_type value_type;
+typedef Eigen::Matrix<value_type, Eigen::Dynamic, 1> matrix_type;
+typedef Eigen::Array<value_type, Eigen::Dynamic, 1> vector_type;
 
 
 void run() {
@@ -125,12 +127,12 @@ void run() {
   }
 
   // Load design matrix:
-  Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> design = load_matrix<value_type> (argument[1]);
+  const matrix_type design = load_matrix<value_type> (argument[1]);
   if (design.rows() != (ssize_t)subjects.size())
     throw Exception ("number of input files does not match number of rows in design matrix");
 
   // Load contrast matrix:
-  Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> contrast = load_matrix<value_type> (argument[2]);
+  matrix_type contrast = load_matrix<value_type> (argument[2]);
   if (contrast.cols() != design.cols())
     throw Exception ("the number of contrasts does not equal the number of columns in the design matrix");
 
@@ -142,7 +144,7 @@ void run() {
   std::vector<std::vector<int> > mask_indices = connector.precompute_adjacency (mask_image);
 
   const size_t num_vox = mask_indices.size();
-  Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> data (num_vox, subjects.size());
+  matrix_type data (num_vox, subjects.size());
 
 
   {
@@ -193,14 +195,14 @@ void run() {
   Image<value_type> fwe_pvalue_image_neg;
   Image<value_type> uncorrected_pvalue_image_neg;
 
-  Eigen::Matrix<value_type, Eigen::Dynamic, 1> perm_distribution (num_perms);
-  std::shared_ptr<Eigen::Matrix<value_type, Eigen::Dynamic, 1> > perm_distribution_neg;
-  std::vector<value_type> default_cluster_output (num_vox, 0.0);
-  std::shared_ptr<std::vector<value_type> > default_cluster_output_neg;
-  std::vector<value_type> tvalue_output (num_vox, 0.0);
-  std::shared_ptr<std::vector<double> > empirical_tfce_statistic;
-  std::vector<value_type> uncorrected_pvalue (num_vox, 0.0);
-  std::shared_ptr<std::vector<value_type> > uncorrected_pvalue_neg;
+  vector_type perm_distribution (num_perms);
+  std::shared_ptr<vector_type> perm_distribution_neg;
+  vector_type default_cluster_output (num_vox);
+  std::shared_ptr<vector_type> default_cluster_output_neg;
+  vector_type tvalue_output (num_vox);
+  Stats::PermTest::empirical_vector_type empirical_tfce_statistic;
+  vector_type uncorrected_pvalue (num_vox);
+  std::shared_ptr<vector_type> uncorrected_pvalue_neg;
 
 
   bool compute_negative_contrast = get_options("negative").size() ? true : false;
@@ -211,15 +213,15 @@ void run() {
     else
       cluster_neg_name.append ("tfce_neg.mif");
     cluster_image_neg = Image<value_type>::create (cluster_neg_name, output_header);
-    perm_distribution_neg.reset (new Eigen::Matrix<value_type, Eigen::Dynamic, 1> (num_perms));
-    default_cluster_output_neg.reset (new std::vector<value_type> (num_vox, 0.0));
+    perm_distribution_neg.reset (new vector_type (num_perms));
+    default_cluster_output_neg.reset (new vector_type (num_vox));
     fwe_pvalue_image_neg = Image<value_type>::create (prefix + "fwe_pvalue_neg.mif", output_header);
-    uncorrected_pvalue_neg.reset (new std::vector<value_type> (num_vox, 0.0));
+    uncorrected_pvalue_neg.reset (new vector_type (num_vox));
     uncorrected_pvalue_image_neg = Image<value_type>::create (prefix + "uncorrected_pvalue_neg.mif", output_header);
   }
 
   { // Do permutation testing:
-    Math::Stats::GLMTTest glm (data, design, contrast);
+    Math::Stats::GLMTTest<value_type> glm (data, design, contrast);
 
     // Suprathreshold clustering
     if (std::isfinite (cluster_forming_threshold)) {
@@ -239,10 +241,8 @@ void run() {
     // TFCE
     } else {
       Stats::TFCE::Enhancer tfce_integrator (connector, tfce_dh, tfce_E, tfce_H);
-      if (do_nonstationary_adjustment) {
-        empirical_tfce_statistic.reset (new std::vector<double> (num_vox, 0.0));
-        Stats::PermTest::precompute_empirical_stat (glm, tfce_integrator, nperms_nonstationary, *empirical_tfce_statistic);
-      }
+      if (do_nonstationary_adjustment)
+        Stats::PermTest::precompute_empirical_stat (glm, tfce_integrator, nperms_nonstationary, empirical_tfce_statistic);
 
       Stats::PermTest::precompute_default_permutation (glm, tfce_integrator, empirical_tfce_statistic,
                                                        default_cluster_output, default_cluster_output_neg, tvalue_output);
@@ -256,7 +256,7 @@ void run() {
 
   save_matrix (perm_distribution, prefix + "perm_dist.txt");
 
-  std::vector<value_type> pvalue_output (num_vox, 0.0);
+  vector_type pvalue_output (num_vox);
   Math::Stats::statistic2pvalue (perm_distribution, default_cluster_output, pvalue_output);
   {
     ProgressBar progress ("generating output");
@@ -267,12 +267,13 @@ void run() {
       cluster_image.value() = default_cluster_output[i];
       fwe_pvalue_image.value() = pvalue_output[i];
       uncorrected_pvalue_image.value() = uncorrected_pvalue[i];
+      ++progress;
     }
   }
   {
     if (compute_negative_contrast) {
       save_matrix (*perm_distribution_neg, prefix + "perm_dist_neg.txt");
-      std::vector<value_type> pvalue_output_neg (num_vox, 0.0);
+      vector_type pvalue_output_neg (num_vox);
       Math::Stats::statistic2pvalue (*perm_distribution_neg, *default_cluster_output_neg, pvalue_output_neg);
 
       ProgressBar progress ("generating negative contrast output");
@@ -282,6 +283,7 @@ void run() {
         cluster_image_neg.value() = (*default_cluster_output_neg)[i];
         fwe_pvalue_image_neg.value() = pvalue_output_neg[i];
         uncorrected_pvalue_image_neg.value() = (*uncorrected_pvalue_neg)[i];
+        ++progress;
       }
     }
 

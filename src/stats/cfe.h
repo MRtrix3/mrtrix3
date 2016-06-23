@@ -27,6 +27,7 @@ namespace MR
     {
 
       typedef float value_type;
+      typedef Eigen::Array<value_type, Eigen::Dynamic, 1> vector_type;
       typedef DWI::Tractography::Mapping::SetVoxelDir SetVoxelDir;
 
 
@@ -121,11 +122,10 @@ namespace MR
                     const value_type dh, const value_type E, const value_type H) :
                     connectivity_map (connectivity_map), dh (dh), E (E), H (H) { }
 
-          value_type operator() (const value_type max_stat, const std::vector<value_type>& stats,
-                                 std::vector<value_type>& enhanced_stats) const
+          value_type operator() (const value_type max_stat, const vector_type& stats,
+                                 vector_type& enhanced_stats) const
           {
-            enhanced_stats.resize (stats.size());
-            std::fill (enhanced_stats.begin(), enhanced_stats.end(), 0.0);
+            enhanced_stats = vector_type::Zero(stats.size());
             value_type max_enhanced_stat = 0.0;
             for (size_t fixel = 0; fixel < connectivity_map.size(); ++fixel) {
               std::map<int32_t, connectivity>::const_iterator connected_fixel;
