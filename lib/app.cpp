@@ -14,6 +14,7 @@
  */
 
 #include <unistd.h>
+#include <fcntl.h>
 
 #include "app.h"
 #include "debug.h"
@@ -75,6 +76,7 @@ namespace MR
     int log_level = 1;
     bool fail_on_warn = false;
     bool stderr_to_file = false;
+    bool stderr_seekable = false;
     bool terminal_use_colour = true;
 
     const char* project_version = nullptr;
@@ -1011,8 +1013,11 @@ namespace MR
         DEBUG ("Unable to determine nature of stderr; assuming socket");
         stderr_to_file = false;
       }
-      else 
+      else {
         stderr_to_file = S_ISREG (buf.st_mode);
+        int mode = fcntl (STDERR_FILENO, F_GETFL);
+        stderr_seekable = !( mode & O_APPEND );
+      }
 
       terminal_use_colour = !stderr_to_file;
 

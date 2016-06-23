@@ -49,6 +49,7 @@ namespace MR
     extern int argc;
     extern char** argv;
     extern bool stderr_to_file;
+    extern bool stderr_seekable;
 
     extern const char* project_version;
     extern const char* build_date;
