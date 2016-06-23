@@ -106,6 +106,7 @@ namespace MR
              }
              
              void add_images (std::vector<std::unique_ptr<MR::Header>>& list);
+             void dropEvent (QDropEvent* event) override;
         };
 
       }

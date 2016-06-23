@@ -103,6 +103,8 @@ namespace MR
             image_list_view = new QListView (this);
             image_list_view->setSelectionMode (QAbstractItemView::ExtendedSelection);
             image_list_view->setDragEnabled (true);
+            image_list_view->setDragDropMode (QAbstractItemView::InternalMove);
+            image_list_view->setAcceptDrops (true);
             image_list_view->viewport()->setAcceptDrops (true);
             image_list_view->setDropIndicatorShown (true);
 
@@ -218,6 +220,31 @@ namespace MR
           QModelIndex last = image_list_model->index (image_list_model->rowCount()-1, 0, QModelIndex());
           image_list_view->selectionModel()->select (QItemSelection (first, last), QItemSelectionModel::Select);
         }
+
+
+
+
+        void Overlay::dropEvent (QDropEvent* event)
+        {
+          static constexpr int max_files = 32;
+
+          const QMimeData* mimeData = event->mimeData();
+          if (mimeData->hasUrls()) {
+            std::vector<std::unique_ptr<MR::Header>> list;
+            QList<QUrl> urlList = mimeData->urls();
+            for (int i = 0; i < urlList.size() && i < max_files; ++i) {
+              try {
+                list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (urlList.at (i).path().toUtf8().constData()))));
+              }
+              catch (Exception& e) {
+                e.display();
+              }
+            }
+            if (list.size())
+              add_images (list);
+          }
+        }
+
 
 
 
