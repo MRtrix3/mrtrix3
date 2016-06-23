@@ -43,6 +43,7 @@ namespace MR
 
     inline void __update_progress_cmdline (const std::string& text, bool done) 
     {
+      static int count = 0;
       if (App::stderr_to_file) {
         if (App::stderr_seekable) { 
           // can overwrite, replace previous progress status:
@@ -56,7 +57,11 @@ namespace MR
         }
         else {
           // can't overwrite, so just output the line as-is:
-          __print_stderr ((text + "\n").c_str());
+          if (done || count == 0)
+            __print_stderr ((text + "\n").c_str());
+          ++count;
+          if (count >= 30)
+            count = 0;
         }
       }
       else {
