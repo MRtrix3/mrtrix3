@@ -44,15 +44,23 @@ namespace MR
     inline void __update_progress_cmdline (const std::string& text, bool done) 
     {
       if (App::stderr_to_file) {
-        if (!done && __stderr_offset == 0)
+        if (App::stderr_seekable) { 
+          // can overwrite, replace previous progress status:
+          if (!done && __stderr_offset == 0)
             __stderr_offset = ftello (stderr);
-        else if (__stderr_offset)
-          fseeko (stderr, __stderr_offset, SEEK_SET);
-        __print_stderr ((text + (done ? "\n" : "")).c_str());
-        if (done)
-          __stderr_offset = 0;
+          else if (__stderr_offset)
+            fseeko (stderr, __stderr_offset, SEEK_SET);
+          __print_stderr ((text + (done ? "\n" : "")).c_str());
+          if (done)
+            __stderr_offset = 0;
+        }
+        else {
+          // can't overwrite, so just output the line as-is:
+          __print_stderr ((text + "\n").c_str());
+        }
       }
       else {
+        // output to terminal using VT100 codes:
         __stderr_offset = done ? 0 : 1;
         __print_stderr (("\r" + text CLEAR_LINE_CODE + (done ? "\n" : "")).c_str());
       }
