@@ -1012,6 +1012,7 @@ namespace MR
         DEBUG ("Unable to determine nature of stderr; assuming socket");
         stderr_to_file = false;
       }
+      terminal_use_colour = !stderr_to_file;
 
       argc = cmdline_argc;
       argv = cmdline_argv;
