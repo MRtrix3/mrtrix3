@@ -142,7 +142,8 @@ namespace MR
                            uncorrected_pvalue_counter (stats_calculator.num_elements(), 0),
                            perm_dist_pos (perm_dist_pos), perm_dist_neg (perm_dist_neg),
                            global_uncorrected_pvalue_counter (global_uncorrected_pvalue_counter),
-                           global_uncorrected_pvalue_counter_neg (global_uncorrected_pvalue_counter_neg)
+                           global_uncorrected_pvalue_counter_neg (global_uncorrected_pvalue_counter_neg),
+                           mutex (new std::mutex())
               {
                 if (global_uncorrected_pvalue_counter_neg)
                   uncorrected_pvalue_counter_neg.reset (new std::vector<size_t>(stats_calculator.num_elements(), 0));
@@ -150,6 +151,7 @@ namespace MR
 
 
               ~Processor () {
+                std::lock_guard<std::mutex> lock (*mutex);
                 for (size_t i = 0; i < stats_calculator.num_elements(); ++i) {
                   global_uncorrected_pvalue_counter[i] += uncorrected_pvalue_counter[i];
                   if (global_uncorrected_pvalue_counter_neg)
@@ -223,8 +225,10 @@ namespace MR
               std::shared_ptr<std::vector<size_t> > uncorrected_pvalue_counter_neg;
               VectorType& perm_dist_pos;
               std::shared_ptr<VectorType> perm_dist_neg;
+
               std::vector<size_t>& global_uncorrected_pvalue_counter;
               std::shared_ptr<std::vector<size_t> > global_uncorrected_pvalue_counter_neg;
+              std::shared_ptr<std::mutex> mutex;
         };
 
 
