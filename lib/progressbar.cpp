@@ -52,8 +52,10 @@ namespace MR
           else if (__stderr_offset)
             fseeko (stderr, __stderr_offset, SEEK_SET);
           __print_stderr ((text + (done ? "\n" : "")).c_str());
-          if (done)
+          if (done) {
             __stderr_offset = 0;
+            ftruncate (STDERR_FILENO, ftello (stderr));
+          }
         }
         else {
           // can't overwrite, so just output the line as-is:
