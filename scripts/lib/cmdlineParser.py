@@ -84,10 +84,10 @@ class Parser(argparse.ArgumentParser):
 
 
   def print_help(self):
-    global author, citationList, copyright
-    import subprocess
+    import subprocess, textwrap
     import lib.app
     from lib.readMRtrixConfSetting import readMRtrixConfSetting
+    global author, citationList, copyright
 
     def bold(text):
       return ''.join( c + chr(0x08) + c for c in text)
@@ -95,36 +95,39 @@ class Parser(argparse.ArgumentParser):
     def underline(text):
       return ''.join( '_' + chr(0x08) + c for c in text)
 
+    w = textwrap.TextWrapper(width=80, initial_indent='     ', subsequent_indent='     ')
+    w_arg = textwrap.TextWrapper(width=80, initial_indent='', subsequent_indent='                     ')
+
     s = '     ' + bold(self.prog) + ': Script using the MRtrix3 Python libraries\n'
     s += '\n'
     s += bold('SYNOPSIS') + '\n'
     s += '\n'
-    s += '     ' + underline(self.prog) + ' [ options ]'
+    synopsis = underline(self.prog) + ' [ options ]'
     # Compulsory sub-parser algorithm selection (if present)
     if self._subparsers:
-      s += ' ' + self._subparsers._group_actions[0].dest + ' ...'
+      synopsis += ' ' + self._subparsers._group_actions[0].dest + ' ...'
     # Find compulsory input arguments
     for arg in self._positionals._group_actions:
       if arg.metavar:
-        s += ' ' + arg.metavar
+        synopsis += ' ' + arg.metavar
       else:
-        s += ' ' + arg.dest
-    s += '\n'
+        synopsis += ' ' + arg.dest
+    s += w.fill(synopsis) + '\n'
     s += '\n'
     if self._subparsers:
-      s += '        ' + underline(self._subparsers._group_actions[0].dest) + '    ' + self._subparsers._group_actions[0].help + '\n'
+      s += w_arg.fill(underline(self._subparsers._group_actions[0].dest) + ' '*(max(21-len(self._subparsers._group_actions[0].dest), 1))) + '\n'
       s += '\n'
     for arg in self._positionals._group_actions:
-      s += '        '
+      line = '        '
       if arg.metavar:
-        s += underline(arg.metavar)
+        line += underline(arg.metavar) + ' '*(max(13-len(arg.metavar), 1))
       else:
-        s += underline(arg.dest)
-      s += '    ' + arg.help + '\n'
+        line += underline(arg.dest) + ' '*(max(13-len(arg.dest), 1))
+      s += w_arg.fill(line + arg.help) + '\n'
       s += '\n'
     s += bold('DESCRIPTION') + '\n'
     s += '\n'
-    s += '     ' + self.description + '\n'
+    s += w.fill(self.description) + '\n'
     s += '\n'
     # Option groups
     for group in reversed(self._action_groups):
@@ -142,22 +145,26 @@ class Parser(argparse.ArgumentParser):
               s += ' '.join(option.metavar)
             else:
               s += option.metavar
+          elif option.nargs:
+            s += (' ' + option.dest.upper)*option.nargs
+          elif option.type is not None:
+            s += ' ' + option.type.__name__.upper()
           s += '\n'
-          s += '     ' + option.help + '\n'
+          s += w.fill(option.help) + '\n'
           s += '\n'
     s += bold('AUTHOR') + '\n'
-    s += '     ' + lib.app.author + '\n'
+    s += w.fill(lib.app.author) + '\n'
     s += '\n'
     s += bold('COPYRIGHT') + '\n'
-    s += lib.app.copyright + '\n'
+    s += w.fill(lib.app.copyright) + '\n'
     if lib.app.citationList:
       s += '\n'
       s += bold('REFERENCES') + '\n'
       s += '\n'
       for entry in lib.app.citationList:
         if entry[0]:
-          s += '     * ' + entry[0] + ':\n'
-        s += '     ' + entry[1] + '\n'
+          s += w.fill('* ' + entry[0] + ':') + '\n'
+        s += w.fill(entry[1]) + '\n'
         s += '\n'
     command = readMRtrixConfSetting('HelpCommand')
     if not command:
