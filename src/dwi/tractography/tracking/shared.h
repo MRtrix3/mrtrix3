@@ -18,8 +18,9 @@
 
 #include <vector>
 
-#include "memory.h"
 #include "header.h"
+#include "image.h"
+#include "memory.h"
 #include "transform.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/roi.h"
@@ -72,8 +73,8 @@ namespace MR
               implicit_max_num_attempts (properties.find ("max_num_attempts") == properties.end()),
               downsampler ()
 #ifdef DEBUG_TERMINATIONS
-            , debug_header (properties.find ("act") == properties.end() ? diff_path : properties["act"]),
-              transform  (debug_header)
+            , debug_header (Header::open (properties.find ("act") == properties.end() ? diff_path : properties["act"])),
+              transform (debug_header)
 #endif
               {
 
@@ -267,13 +268,13 @@ namespace MR
             void add_termination (const term_t i, const Eigen::Vector3f& p) const
             {
               ++terminations[i];
-              auto voxel debug_images[i]->voxel();
-              const auto pv = transform.scanner2voxel (p);
-              voxel[0] = ssize_t (std::round (pv[0]));
-              voxel[1] = ssize_t (std::round (pv[1]));
-              voxel[2] = ssize_t (std::round (pv[2]));
-              if (!is_out_of_bounds (voxel))
-                voxel.value() += 1;
+              Image<uint32_t> image (*debug_images[i]);
+              const auto pv = transform.scanner2voxel * p.cast<default_type>();
+              image.index(0) = ssize_t (std::round (pv[0]));
+              image.index(1) = ssize_t (std::round (pv[1]));
+              image.index(2) = ssize_t (std::round (pv[2]));
+              if (!is_out_of_bounds (image))
+                image.value() += 1;
             }
 #endif
 
