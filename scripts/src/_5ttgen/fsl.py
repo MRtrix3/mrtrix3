@@ -1,6 +1,7 @@
 def initParser(subparsers, base_parser):
   import argparse
   import lib.app
+  import lib.cmdlineParser
   parser = subparsers.add_parser('fsl', parents=[base_parser], add_help=False, description='Use FSL commands to generate the 5TT image based on a T1-weighted image')
   lib.app.addCitation('If using \'fsl\' algorithm', 'Smith, S. M. Fast robust automated brain extraction. Human Brain Mapping, 2002, 17, 143-155', True)
   lib.app.addCitation('If using \'fsl\' algorithm', 'Zhang, Y.; Brady, M. & Smith, S. Segmentation of brain MR images through a hidden Markov random field model and the expectation-maximization algorithm. IEEE Transactions on Medical Imaging, 2001, 20, 45-57', True)
@@ -10,9 +11,9 @@ def initParser(subparsers, base_parser):
   parser.add_argument('output', help='The output 5TT image')
   options = parser.add_argument_group('Options specific to the \'fsl\' algorithm')
   options.add_argument('-t2', metavar='<T2 image>', help='Provide a T2-weighted image in addition to the default T1-weighted image; this will be used as a second input to FSL FAST')
-  masking = options.add_mutually_exclusive_group()
-  masking.add_argument('-mask', help='Manually provide a brain mask, rather than deriving one in the script')
-  masking.add_argument('-premasked', action='store_true', default=False, help='Indicate that brain masking has already been applied to the input image')
+  options.add_argument('-mask', help='Manually provide a brain mask, rather than deriving one in the script')
+  options.add_argument('-premasked', action='store_true', default=False, help='Indicate that brain masking has already been applied to the input image')
+  lib.cmdlineParser.flagMutuallyExclusiveOptions( [ 'mask', 'premasked' ] )
   parser.set_defaults(algorithm='fsl')
   
   

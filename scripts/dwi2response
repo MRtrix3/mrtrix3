@@ -27,9 +27,9 @@ common_options.add_argument('-shell', help='The b-value shell(s) to use in respo
 common_options.add_argument('-lmax', help='The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)')
 common_options.add_argument('-mask', help='Provide an initial mask for response voxel selection')
 common_options.add_argument('-voxels', help='Output an image showing the final voxel selection(s)')
-grad_import_group = common_options.add_mutually_exclusive_group()
-grad_import_group.add_argument('-grad', help='Pass the diffusion gradient table in MRtrix format')
-grad_import_group.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Pass the diffusion gradient table in FSL bvecs/bvals format')
+common_options.add_argument('-grad', help='Pass the diffusion gradient table in MRtrix format')
+common_options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Pass the diffusion gradient table in FSL bvecs/bvals format')
+lib.cmdlineParser.flagMutuallyExclusiveOptions( [ 'grad', 'fslgrad' ] )
 
 algorithm_list = getAlgorithmList()
 # Subparsers for individual algorithms

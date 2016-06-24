@@ -51,9 +51,6 @@ Standard options
 
 - **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
 
-optional arguments
-==================
-
 - **-quiet** Suppress all console output during script execution
 
 - **-verbose** Display additional information for every command invoked
@@ -142,9 +139,6 @@ Standard options
 - **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
 
 - **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
-
-optional arguments
-==================
 
 - **-quiet** Suppress all console output during script execution
 

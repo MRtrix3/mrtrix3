@@ -10,5 +10,5 @@ def getAlgorithmList():
     filename = filename.split('.')
     if len(filename) == 2 and filename[1] == 'py' and not filename[0] == '__init__':
       algorithm_list.append(filename[0])
-  return algorithm_list
-  
+  return sorted(algorithm_list)
+

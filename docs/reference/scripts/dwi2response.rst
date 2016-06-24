@@ -44,6 +44,10 @@ Options common to all dwi2response algorithms
 
 - **-voxels** Output an image showing the final voxel selection(s)
 
+- **-grad** Pass the diffusion gradient table in MRtrix format
+
+- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
+
 Standard options
 ================
 
@@ -59,16 +63,9 @@ Standard options
 
 - **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
 
-optional arguments
-==================
-
 - **-quiet** Suppress all console output during script execution
 
 - **-verbose** Display additional information for every command invoked
-
-- **-grad** Pass the diffusion gradient table in MRtrix format
-
-- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
 References
 ^^^^^^^^^^
@@ -139,6 +136,10 @@ Options common to all dwi2response algorithms
 
 - **-voxels** Output an image showing the final voxel selection(s)
 
+- **-grad** Pass the diffusion gradient table in MRtrix format
+
+- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
+
 Standard options
 ================
 
@@ -154,16 +155,9 @@ Standard options
 
 - **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
 
-optional arguments
-==================
-
 - **-quiet** Suppress all console output during script execution
 
 - **-verbose** Display additional information for every command invoked
-
-- **-grad** Pass the diffusion gradient table in MRtrix format
-
-- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
 References
 ^^^^^^^^^^
@@ -242,6 +236,10 @@ Options common to all dwi2response algorithms
 
 - **-voxels** Output an image showing the final voxel selection(s)
 
+- **-grad** Pass the diffusion gradient table in MRtrix format
+
+- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
+
 Standard options
 ================
 
@@ -257,16 +255,9 @@ Standard options
 
 - **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
 
-optional arguments
-==================
-
 - **-quiet** Suppress all console output during script execution
 
 - **-verbose** Display additional information for every command invoked
-
-- **-grad** Pass the diffusion gradient table in MRtrix format
-
-- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
 References
 ^^^^^^^^^^
@@ -340,6 +331,10 @@ Options common to all dwi2response algorithms
 
 - **-voxels** Output an image showing the final voxel selection(s)
 
+- **-grad** Pass the diffusion gradient table in MRtrix format
+
+- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
+
 Standard options
 ================
 
@@ -355,16 +350,9 @@ Standard options
 
 - **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
 
-optional arguments
-==================
-
 - **-quiet** Suppress all console output during script execution
 
 - **-verbose** Display additional information for every command invoked
-
-- **-grad** Pass the diffusion gradient table in MRtrix format
-
-- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
 References
 ^^^^^^^^^^
@@ -440,6 +428,10 @@ Options common to all dwi2response algorithms
 
 - **-voxels** Output an image showing the final voxel selection(s)
 
+- **-grad** Pass the diffusion gradient table in MRtrix format
+
+- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
+
 Standard options
 ================
 
@@ -455,16 +447,9 @@ Standard options
 
 - **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
 
-optional arguments
-==================
-
 - **-quiet** Suppress all console output during script execution
 
 - **-verbose** Display additional information for every command invoked
-
-- **-grad** Pass the diffusion gradient table in MRtrix format
-
-- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
 References
 ^^^^^^^^^^

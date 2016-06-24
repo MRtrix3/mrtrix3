@@ -2,6 +2,9 @@
 import argparse
 
 
+mutuallyExclusiveOptionGroups = [ ]
+
+
 def initialise(desc):
   import argparse
   import lib.app
@@ -17,9 +20,18 @@ def initialise(desc):
   standard_options.add_argument('-nocleanup', action='store_true', help='Do not delete temporary files during script, or temporary directory at script completion')
   standard_options.add_argument('-nthreads', metavar='number', help='Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)')
   standard_options.add_argument('-tempdir', metavar='/path/to/tmp/', help='Manually specify the path in which to generate the temporary directory')
-  verbosity_group = standard_options.add_mutually_exclusive_group()
-  verbosity_group.add_argument('-quiet',   action='store_true', help='Suppress all console output during script execution')
-  verbosity_group.add_argument('-verbose', action='store_true', help='Display additional information for every command invoked')
+  standard_options.add_argument('-quiet',   action='store_true', help='Suppress all console output during script execution')
+  standard_options.add_argument('-verbose', action='store_true', help='Display additional information for every command invoked')
+  flagMutuallyExclusiveOptions( [ 'quiet', 'verbose' ] )
+
+
+
+def flagMutuallyExclusiveOptions(options, required=False):
+  import sys
+  if not type(options) is list or not type(options[0]) is str:
+    sys.stderr.write('Script error: cmdlineParser.flagMutuallyExclusiveOptions() only accepts a list of strings\n')
+    sys.exit(1)
+  mutuallyExclusiveOptionGroups.append( (options, required) )
 
 
 
@@ -34,8 +46,40 @@ class Parser(argparse.ArgumentParser):
         sys.exit(0)
     sys.stderr.write('\nError: %s\n' % message)
     sys.stderr.write('Usage: ' + self.format_usage() + '\n')
-    sys.stderr.write('Usage: (Run ' + self.prog + ' -help for more information)')
+    sys.stderr.write('Usage: (Run ' + self.prog + ' -help for more information)\n\n')
     sys.exit(2)
+
+
+
+  def format_usage(self):
+    argument_list = [ ]
+    trailing_ellipsis = ''
+    if self._subparsers:
+      argument_list.append(self._subparsers._group_actions[0].dest)
+      trailing_ellipsis = ' ...'
+    for arg in self._positionals._group_actions:
+      if arg.metavar:
+        argument_list.append(arg.metavar)
+      else:
+        argument_list.append(arg.dest)
+    return self.prog + ' [ options ] ' + ' '.join(argument_list) + trailing_ellipsis
+
+
+
+  def parse_args(self):
+    import sys
+    args = argparse.ArgumentParser.parse_args(self)
+    for group in mutuallyExclusiveOptionGroups:
+      count = 0
+      for option in group[0]:
+        if hasattr(args, option):
+          count += 1
+      if count > 1:
+        sys.stderr.write('\nError: You cannot use more than one of the following options: ' + ', '.join([ '-' + o for o in group[0] ]) + '\n\n')
+        sys.exit(2)
+      if group[1] and not count:
+        sys.stderr.write('\nError: One of the following options must be provided: ' + ', '.join([ '-' + o for o in group[0] ]) + '\n\n')
+    return args
 
 
 
@@ -44,14 +88,14 @@ class Parser(argparse.ArgumentParser):
     import subprocess
     import lib.app
     from lib.readMRtrixConfSetting import readMRtrixConfSetting
-    
+
     def bold(text):
       return ''.join( c + chr(0x08) + c for c in text)
-    
+
     def underline(text):
       return ''.join( '_' + chr(0x08) + c for c in text)
-    
-    s = '     ' + bold(self.prog) + ': Script using the MRtrix3 Python libraries\n' 
+
+    s = '     ' + bold(self.prog) + ': Script using the MRtrix3 Python libraries\n'
     s += '\n'
     s += bold('SYNOPSIS') + '\n'
     s += '\n'
@@ -129,21 +173,6 @@ class Parser(argparse.ArgumentParser):
 
 
 
-  def format_usage(self):
-    argument_list = [ ]
-    trailing_ellipsis = ''
-    if self._subparsers:
-      argument_list.append(self._subparsers._group_actions[0].dest)
-      trailing_ellipsis = ' ...'
-    for arg in self._positionals._group_actions:
-      if arg.metavar:
-        argument_list.append(arg.metavar)
-      else:
-        argument_list.append(arg.dest)
-    return self.prog + ' [ options ] ' + ' '.join(argument_list) + trailing_ellipsis
-
-
-
   def printUsageRst(self):
     import subprocess, sys
     import lib.app
@@ -198,7 +227,7 @@ class Parser(argparse.ArgumentParser):
             else:
               text += option.metavar
           print ('')
-          print ('-  **' + text + '** ' + option.help)
+          print ('- **' + text + '** ' + option.help)
     if lib.app.citationList:
       print ('')
       print ('References')
