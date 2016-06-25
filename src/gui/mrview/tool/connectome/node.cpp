@@ -20,7 +20,6 @@
 
 #include "exception.h"
 #include "gui/mrview/window.h"
-#include "surface/vox2mesh.h"
 
 namespace MR
 {

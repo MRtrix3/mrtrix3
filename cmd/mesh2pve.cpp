@@ -20,6 +20,7 @@
 #include "header.h"
 
 #include "surface/mesh.h"
+#include "surface/algo/mesh2image.h"
 
 
 
@@ -59,9 +60,12 @@ void run ()
   Surface::Mesh mesh (argument[0]);
 
   // Get the template image
-  Header template_image = Header::open (argument[1]);
+  Header template_header = Header::open (argument[1]);
 
   // Create the output image
-  mesh.output_pve_image (template_image, argument[2]);
+  Image<float> output = Image<float>::create (argument[2], template_header);
+
+  // Perform the partial volume estimation
+  Surface::Algo::mesh2image (mesh, output);
 
 }

@@ -19,9 +19,9 @@
 #include <ios>
 #include <iostream>
 
-#include <ctime>
 #include <vector>
-#include <set>
+
+#include "surface/utils.h"
 
 
 namespace MR
@@ -46,58 +46,6 @@ namespace MR
 
 
 
-    void Mesh::transform_first_to_realspace (const Header& header)
-    {
-      Transform transform (header);
-      for (VertexList::iterator v = vertices.begin(); v != vertices.end(); ++v) {
-        (*v)[0] = ((header.size(0)-1) * header.spacing(0)) - (*v)[0];
-        *v = transform.image2scanner * *v;
-      }
-      if (normals.size()) {
-        for (VertexList::iterator n = normals.begin(); n != normals.end(); ++n) {
-          (*n)[0] = -(*n)[0];
-          *n = transform.image2scanner.rotation() * *n;
-        }
-      }
-    }
-
-    void Mesh::transform_realspace_to_first (const Header& header)
-    {
-      Transform transform (header);
-      for (VertexList::iterator v = vertices.begin(); v != vertices.end(); ++v) {
-        *v = transform.scanner2image * *v;
-        (*v)[0] = ((header.size(0)-1) * header.spacing(0)) - (*v)[0];
-      }
-      if (normals.size()) {
-        for (VertexList::iterator n = normals.begin(); n != normals.end(); ++n) {
-          *n = transform.scanner2image.rotation() * *n;
-          (*n)[0] = -(*n)[0];
-        }
-      }
-    }
-
-    void Mesh::transform_voxel_to_realspace (const Header& header)
-    {
-      Transform transform (header);
-      for (VertexList::iterator v = vertices.begin(); v != vertices.end(); ++v)
-        *v = transform.voxel2scanner * *v;
-      if (normals.size()) {
-        for (VertexList::iterator n = normals.begin(); n != normals.end(); ++n)
-          *n = transform.voxel2scanner.rotation() * *n;
-      }
-    }
-
-    void Mesh::transform_realspace_to_voxel (const Header& header)
-    {
-      Transform transform (header);
-      for (VertexList::iterator v = vertices.begin(); v != vertices.end(); ++v)
-        *v = transform.scanner2voxel * *v;
-      if (normals.size()) {
-        for (VertexList::iterator n = normals.begin(); n != normals.end(); ++n)
-          *n = transform.scanner2voxel.rotation() * *n;
-      }
-    }
-
 
 
     void Mesh::save (const std::string& path, const bool binary) const
@@ -115,455 +63,17 @@ namespace MR
 
 
 
-    void Mesh::output_pve_image (const Header& H, const std::string& path)
-    {
-
-      // For initial segmentation of mesh - identify voxels on the mesh, inside & outside
-      enum vox_mesh_t { UNDEFINED, ON_MESH, OUTSIDE, INSIDE };
-
-      ProgressBar progress ("converting mesh to PVE image", 7);
-
-      // For speed, want the vertex data to be in voxel positions
-      // Therefore modify the vertex data in place, but save the original data and set it
-      //   back to the way it was on function completion
-      const VertexList vertices_realspace (vertices);
-      transform_realspace_to_voxel (H);
-
-      static const Vox adj_voxels[6] = { { -1,  0,  0 },
-                                         { +1,  0,  0 },
-                                         {  0, -1,  0 },
-                                         {  0, +1,  0 },
-                                         {  0,  0, -1 },
-                                         {  0,  0, +1 } };
-
-      // Compute normals for polygons
-      std::vector<Eigen::Vector3> polygon_normals;
-      normals.reserve (triangles.size() + quads.size());
-      for (TriangleList::const_iterator p = triangles.begin(); p != triangles.end(); ++p)
-        polygon_normals.push_back (calc_normal (*p));
-      for (QuadList::const_iterator p = quads.begin(); p != quads.end(); ++p)
-        polygon_normals.push_back (calc_normal (*p));
-
-      // Create some memory to work with:
-      // Stores a flag for each voxel as encoded in enum vox_mesh_t
-      auto init_seg = Image<uint8_t>::scratch (H);
-
-      // For every voxel, stores those polygons that may intersect the voxel
-      typedef std::map< Vox, std::vector<size_t> > Vox2Poly;
-      Vox2Poly voxel2poly;
-
-      // Map each polygon to the underlying voxels
-      for (size_t poly_index = 0; poly_index != num_polygons(); ++poly_index) {
-
-        const size_t num_vertices = (poly_index < triangles.size()) ? 3 : 4;
-
-        // Figure out the voxel extent of this polygon in three dimensions
-        Vox lower_bound (H.size(0)-1, H.size(1)-1, H.size(2)-1), upper_bound (0, 0, 0);
-        VertexList this_poly_verts;
-        if (num_vertices == 3)
-          load_triangle_vertices (this_poly_verts, poly_index);
-        else
-          load_quad_vertices (this_poly_verts, poly_index - triangles.size());
-        for (VertexList::const_iterator v = this_poly_verts.begin(); v != this_poly_verts.end(); ++v) {
-          for (size_t axis = 0; axis != 3; ++axis) {
-            const int this_axis_voxel = std::round((*v)[axis]);
-            lower_bound[axis] = std::min (lower_bound[axis], this_axis_voxel);
-            upper_bound[axis] = std::max (upper_bound[axis], this_axis_voxel);
-          }
-        }
-
-        // Constrain to lie within the dimensions of the image
-        for (size_t axis = 0; axis != 3; ++axis) {
-          lower_bound[axis] = std::max(0,                   lower_bound[axis]);
-          upper_bound[axis] = std::min(int(H.size(axis)-1), upper_bound[axis]);
-        }
-
-        // For all voxels within this rectangular region, assign this polygon to the map
-        Vox voxel;
-        for (voxel[2] = lower_bound[2]; voxel[2] <= upper_bound[2]; ++voxel[2]) {
-          for (voxel[1] = lower_bound[1]; voxel[1] <= upper_bound[1]; ++voxel[1]) {
-            for (voxel[0] = lower_bound[0]; voxel[0] <= upper_bound[0]; ++voxel[0]) {
-              std::vector<size_t> this_voxel_polys;
-//#if __clang__
-//              Vox2Poly::const_iterator existing = voxel2poly.find (voxel);
-//#else
-//              Vox2Poly::iterator existing = voxel2poly.find (voxel);
-//#endif
-              Vox2Poly::const_iterator existing = voxel2poly.find (voxel);
-              if (existing != voxel2poly.end()) {
-                this_voxel_polys = existing->second;
-                voxel2poly.erase (existing);
-              } else {
-                // Only call this once each voxel, regardless of the number of intersecting polygons
-                assign_pos_of (voxel).to (init_seg);
-                init_seg.value() = ON_MESH;
-              }
-              this_voxel_polys.push_back (poly_index);
-              voxel2poly.insert (std::make_pair (voxel, this_voxel_polys));
-        } } }
-
-      }
-      ++progress;
-
-
-      // Find all voxels that are not partial-volumed with the mesh, and are not inside the mesh
-      // Use a corner of the image FoV to commence filling of the volume, and then check that all
-      //   eight corners have been flagged as outside the volume
-      const Vox corner_voxels[8] = {
-                     Vox (             0,              0,              0),
-                     Vox (             0,              0, H.size (2) - 1),
-                     Vox (             0, H.size (1) - 1,              0),
-                     Vox (             0, H.size (1) - 1, H.size (2) - 1),
-                     Vox (H.size (0) - 1,              0,              0),
-                     Vox (H.size (0) - 1,              0, H.size (2) - 1),
-                     Vox (H.size (0) - 1, H.size (1) - 1,              0),
-                     Vox (H.size (0) - 1, H.size (1) - 1, H.size (2) - 1)};
-
-      // TODO This is slow; is there a faster implementation?
-      // This is essentially a connected-component analysis...
-      std::vector<Vox> to_expand;
-      to_expand.push_back (corner_voxels[0]);
-      assign_pos_of (corner_voxels[0]).to (init_seg);
-      init_seg.value() = vox_mesh_t::OUTSIDE;
-      do {
-        const Vox centre_voxel (to_expand.back());
-        to_expand.pop_back();
-        for (size_t adj_vox_idx = 0; adj_vox_idx != 6; ++adj_vox_idx) {
-          const Vox this_voxel (centre_voxel + adj_voxels[adj_vox_idx]);
-          assign_pos_of (this_voxel).to (init_seg);
-          if (!is_out_of_bounds (init_seg) && init_seg.value() == vox_mesh_t (UNDEFINED)) {
-            init_seg.value() = vox_mesh_t (OUTSIDE);
-            to_expand.push_back (this_voxel);
-          }
-        }
-      } while (!to_expand.empty());
-      ++progress;
-
-      for (size_t cnr_idx = 0; cnr_idx != 8; ++cnr_idx) {
-        assign_pos_of (corner_voxels[cnr_idx]).to (init_seg);
-        if (init_seg.value() == vox_mesh_t (UNDEFINED))
-          throw Exception ("Mesh is not bound within image field of view");
-      }
-
-
-      // Find those voxels that remain unassigned, and set them to INSIDE
-      for (auto l = Loop (init_seg) (init_seg); l; ++l) {
-        if (init_seg.value() == vox_mesh_t (UNDEFINED))
-          init_seg.value() = vox_mesh_t (INSIDE);
-      }
-      ++progress;
-
-
-      // Generate the initial estimated PVE image
-      auto pve_est = Image<float>::scratch (H);
-
-      for (auto l = Loop (init_seg) (init_seg, pve_est); l; ++l) {
-        switch (init_seg.value()) {
-          case vox_mesh_t (UNDEFINED): throw Exception ("Code error: poor filling of initial mesh estimate"); break;
-          case vox_mesh_t (ON_MESH):   pve_est.value() = 0.5; break;
-          case vox_mesh_t (OUTSIDE):   pve_est.value() = 0.0; break;
-          case vox_mesh_t (INSIDE):    pve_est.value() = 1.0; break;
-        }
-      }
-      ++progress;
-
-
-      // Get better partial volume estimates for all necessary voxels
-      // TODO This could be multi-threaded, but hard to justify the dev time
-      static const size_t pve_os_ratio = 10;
-
-      for (Vox2Poly::const_iterator i = voxel2poly.begin(); i != voxel2poly.end(); ++i) {
-
-        const Vox& voxel (i->first);
-
-        // Generate a set of points within this voxel that need to be tested individually
-        std::vector<Vertex> to_test;
-        to_test.reserve (Math::pow3 (pve_os_ratio));
-        for (size_t x_idx = 0; x_idx != pve_os_ratio; ++x_idx) {
-          const float x = voxel[0] - 0.5 + ((float(x_idx) + 0.5) / float(pve_os_ratio));
-          for (size_t y_idx = 0; y_idx != pve_os_ratio; ++y_idx) {
-            const float y = voxel[1] - 0.5 + ((float(y_idx) + 0.5) / float(pve_os_ratio));
-            for (size_t z_idx = 0; z_idx != pve_os_ratio; ++z_idx) {
-              const float z = voxel[2] - 0.5 + ((float(z_idx) + 0.5) / float(pve_os_ratio));
-              to_test.push_back (Vertex (x, y, z));
-            }
-          }
-        }
-
-        // Count the number of these points that lie inside the mesh
-        int inside_mesh_count = 0;
-        for (std::vector<Vertex>::const_iterator i_p = to_test.begin(); i_p != to_test.end(); ++i_p) {
-          const Vertex& p (*i_p);
-
-          float best_min_edge_distance = -INFINITY;
-          bool best_result_inside = false;
-
-          // Only test against those polygons that are near this voxel
-          for (std::vector<size_t>::const_iterator polygon_index = i->second.begin(); polygon_index != i->second.end(); ++polygon_index) {
-            const Eigen::Vector3& n (polygon_normals[*polygon_index]);
-
-            const size_t polygon_num_vertices = (*polygon_index < triangles.size()) ? 3 : 4;
-            VertexList v;
-
-            bool is_inside = false;
-            float min_edge_distance = std::numeric_limits<float>::infinity();
-
-            if (polygon_num_vertices == 3) {
-
-              load_triangle_vertices (v, *polygon_index);
-
-              // First: is it aligned with the normal?
-              const Vertex poly_centre ((v[0] + v[1] + v[2]) * (1.0 / 3.0));
-              const Vertex diff (p - poly_centre);
-              is_inside = (diff.dot (n) <= 0.0);
-
-              // Second: how well does it project onto this polygon?
-              const Vertex p_on_plane (p - (n * (diff.dot (n))));
-
-              std::array<float, 3> edge_distances;
-              Vertex zero = (v[2]-v[0]).cross (n); zero.normalize();
-              Vertex one  = (v[1]-v[2]).cross (n); one .normalize();
-              Vertex two  = (v[0]-v[1]).cross (n); two .normalize();
-              edge_distances[0] = (p_on_plane - v[0]).dot (zero);
-              edge_distances[1] = (p_on_plane - v[2]).dot (one);
-              edge_distances[2] = (p_on_plane - v[1]).dot (two);
-              min_edge_distance = std::min (edge_distances[0], std::min (edge_distances[1], edge_distances[2]));
-
-            } else {
-
-              load_quad_vertices (v, *polygon_index);
-
-              // This may be slightly ill-posed with a quad; no guarantee of fixed normal
-              // Proceed regardless
-
-              // First: is it aligned with the normal?
-              const Vertex poly_centre ((v[0] + v[1] + v[2] + v[3]) * 0.25f);
-              const Vertex diff (p - poly_centre);
-              is_inside = (diff.dot (n) <= 0.0);
-
-              // Second: how well does it project onto this polygon?
-              const Vertex p_on_plane (p - (n * (diff.dot (n))));
-
-              for (int edge = 0; edge != 4; ++edge) {
-                // Want an appropriate vector emanating from this edge from which to test the 'on-plane' distance
-                //   (bearing in mind that there may not be a uniform normal)
-                // For this, I'm going to take a weighted average based on the relative distance between the
-                //   two points at either end of this edge
-                // Edge is between points p1 and p2; edge 0 is between points 0 and 1
-                const Vertex& p0 ((edge-1) >= 0 ? v[edge-1] : v[3]);
-                const Vertex& p1 (v[edge]);
-                const Vertex& p2 ((edge+1) < 4 ? v[edge+1] : v[0]);
-                const Vertex& p3 ((edge+2) < 4 ? v[edge+2] : v[edge-2]);
-
-                const float d1 = (p1 - p_on_plane).norm();
-                const float d2 = (p2 - p_on_plane).norm();
-                // Give more weight to the normal at the point that's closer
-                Vertex edge_normal = (d2*(p0-p1) + d1*(p3-p2));
-                edge_normal.normalize();
-
-                // Now, how far away is the point within the plane from this edge?
-                const float this_edge_distance = (p_on_plane - p1).dot (edge_normal);
-                min_edge_distance = std::min (min_edge_distance, this_edge_distance);
-
-              }
-
-            }
-
-            if (min_edge_distance > best_min_edge_distance) {
-              best_min_edge_distance = min_edge_distance;
-              best_result_inside = is_inside;
-            }
-
-          }
-
-          if (best_result_inside)
-            ++inside_mesh_count;
-
-        }
-
-        assign_pos_of (voxel).to (pve_est);
-        pve_est.value() = (float)inside_mesh_count / (float)Math::pow3 (pve_os_ratio);
-
-      }
-      ++progress;
-
-      // Write image to file
-      auto out = Image<float>::create (path, H);
-      copy (pve_est, out);
-      ++progress;
-
-      // Restore the vertex data back to realspace
-      vertices = vertices_realspace;
-
-    }
-
-
-
-    void Mesh::smooth (const float spatial_factor, const float influence_factor)
-    {
-      if (!vertices.size()) return;
-      if (quads.size())
-        throw Exception ("For now, mesh smoothing is only supported for triangular meshes");
-      if (vertices.size() == 3 * vertices.size())
-        throw Exception ("Cannot perform smoothing on this mesh: no triangulation information");
-
-      // Pre-compute polygon centroids and areas
-      VertexList centroids;
-      std::vector<float> areas;
-      for (TriangleList::const_iterator p = triangles.begin(); p != triangles.end(); ++p) {
-        centroids.push_back ((vertices[(*p)[0]] + vertices[(*p)[1]] + vertices[(*p)[2]]) * (1.0f/3.0f));
-        areas.push_back (calc_area (*p));
-      }
-      for (QuadList::const_iterator p = quads.begin(); p != quads.end(); ++p) {
-        centroids.push_back ((vertices[(*p)[0]] + vertices[(*p)[1]] + vertices[(*p)[2]] + vertices[(*p)[3]]) * 0.25f);
-        areas.push_back (calc_area (*p));
-      }
-
-      // Perform pre-calculation of an appropriate mesh neighbourhood for each vertex
-      // Use knowledge of the connections between vertices provided by the triangles/quads to
-      //   perform an iterative search outward from each vertex, selecting a subset of
-      //   polygons for each vertex
-      // Extent of window should be approximately the value of spatial_factor, though only an
-      //   approximate windowing is likely to be used (i.e. number of iterations)
-      //
-      // Initialisation is different to iterations: Need a single pass to find those
-      //   polygons that actually use the vertex
-      std::vector< std::set<uint32_t> > vert_polys (vertices.size(), std::set<uint32_t>());
-      // For each vertex, don't just want to store the polygons within the neighbourhood;
-      //   also want to store those that will be expanded from in the next iteration
-      std::vector< std::vector<uint32_t> > vert_polys_to_expand (vertices.size(), std::vector<uint32_t>());
-
-      for (uint32_t t = 0; t != triangles.size(); ++t) {
-        for (uint32_t i = 0; i != 3; ++i) {
-          vert_polys[(triangles[t])[i]].insert (t);
-          vert_polys_to_expand[(triangles[t])[i]].push_back (t);
-        }
-      }
-
-      // Now, we want to expand this selection outwards for each vertex
-      // To do this, also want to produce a list for each polygon: containing those polygons
-      //   that share a common edge (i.e. two vertices)
-      std::vector< std::vector<uint32_t> > poly_neighbours (triangles.size(), std::vector<uint32_t>());
-      for (uint32_t i = 0; i != triangles.size(); ++i) {
-        for (uint32_t j = i+1; j != triangles.size(); ++j) {
-          if (triangles[i].shares_edge (triangles[j])) {
-            poly_neighbours[i].push_back (j);
-            poly_neighbours[j].push_back (i);
-
-          }
-        }
-      }
-
-      // TODO Will want to develop a better heuristic for this
-      for (size_t iter = 0; iter != 8; ++iter) {
-        for (uint32_t v = 0; v != vertices.size(); ++v) {
-
-          // Find polygons at the outer edge of this expanding front, and add them to the neighbourhood for this vertex
-          std::vector<uint32_t> next_front;
-          for (std::vector<uint32_t>::const_iterator front = vert_polys_to_expand[v].begin(); front != vert_polys_to_expand[v].end(); ++front) {
-            for (std::vector<uint32_t>::const_iterator expansion = poly_neighbours[*front].begin(); expansion != poly_neighbours[*front].end(); ++expansion) {
-              const std::set<uint32_t>::const_iterator existing = vert_polys[v].find (*expansion);
-              if (existing == vert_polys[v].end()) {
-                vert_polys[v].insert (*expansion);
-                next_front.push_back (*expansion);
-              }
-            }
-          }
-          vert_polys_to_expand[v] = std::move (next_front);
-
-        }
-      }
-
-
-
-      // Need to perform a first mollification pass, where the polygon normals are
-      //   smoothed but the vertices are not perturbed
-      // However, in order to calculate these new normals, we need to calculate new vertex positions!
-      // Make a copy of the original vertices
-      const VertexList orig_vertices (vertices);
-      // Use half standard spatial factor for mollification
-      // Denominator = 2(SF/2)^2
-      const float spatial_mollification_power_multiplier = -2.0f / Math::pow2 (spatial_factor);
-      // No need to normalise the Gaussian; have to explicitly normalise afterwards
-      for (uint32_t v = 0; v != vertices.size(); ++v) {
-
-        Vertex new_pos (0.0f, 0.0f, 0.0f);
-        float sum_weights = 0.0f;
-
-        // For now, just use every polygon as part of the estimate
-        // Eventually, restrict this to some form of mesh neighbourhood
-        //for (size_t i = 0; i != centroids.size(); ++i) {
-        for (std::set<uint32_t>::const_iterator it = vert_polys[v].begin(); it != vert_polys[v].end(); ++it) {
-          const uint32_t i = *it;
-          float this_weight = areas[i];
-          const float distance_sq = (centroids[i] - vertices[v]).squaredNorm();
-          this_weight *= std::exp (distance_sq * spatial_mollification_power_multiplier);
-          const Vertex prediction = centroids[i];
-          new_pos += this_weight * prediction;
-          sum_weights += this_weight;
-        }
-
-        new_pos *= (1.0f / sum_weights);
-        vertices[v] = new_pos;
-
-      }
-
-      // Have new vertices; compute polygon normals based on these vertices
-      VertexList tangents;
-      for (TriangleList::const_iterator p = triangles.begin(); p != triangles.end(); ++p)
-        tangents.push_back (calc_normal (*p));
-      for (QuadList::const_iterator p = quads.begin(); p != quads.end(); ++p)
-        tangents.push_back (calc_normal (*p));
-
-      // Restore the original vertices
-      vertices = orig_vertices;
-
-      // Now perform the actual smoothing
-      const float spatial_power_multiplier = -0.5f / Math::pow2 (spatial_factor);
-      const float influence_power_multiplier = -0.5f / Math::pow2 (influence_factor);
-      for (size_t v = 0; v != vertices.size(); ++v) {
-
-        Vertex new_pos (0.0f, 0.0f, 0.0f);
-        float sum_weights = 0.0f;
-
-        //for (size_t i = 0; i != centroids.size(); ++i) {
-        for (std::set<uint32_t>::const_iterator it = vert_polys[v].begin(); it != vert_polys[v].end(); ++it) {
-          const uint32_t i = *it;
-          float this_weight = areas[i];
-          const float distance_sq = (centroids[i] - vertices[v]).squaredNorm();
-          this_weight *= std::exp (distance_sq * spatial_power_multiplier);
-          const float prediction_distance = (centroids[i] - vertices[v]).dot (tangents[i]);
-          const Vertex prediction = vertices[v] + (tangents[i] * prediction_distance);
-          this_weight *= std::exp (Math::pow2 (prediction_distance) * influence_power_multiplier);
-          new_pos += this_weight * prediction;
-          sum_weights += this_weight;
-        }
-
-        new_pos *= (1.0f / sum_weights);
-        vertices[v] = new_pos;
-
-      }
-
-      // If the vertex normals were calculated previously, re-calculate them
-      if (normals.size())
-        calculate_normals();
-
-    }
-
-
-
-
     void Mesh::calculate_normals()
     {
       normals.clear();
-      normals.assign (vertices.size(), Vertex (0.0f, 0.0f, 0.0f));
+      normals.assign (vertices.size(), Vertex (0.0, 0.0, 0.0));
       for (TriangleList::const_iterator p = triangles.begin(); p != triangles.end(); ++p) {
-        const Vertex this_normal = calc_normal (*p);
+        const Vertex this_normal = normal (*this, *p);
         for (size_t index = 0; index != 3; ++index)
           normals[(*p)[index]] += this_normal;
       }
       for (QuadList::const_iterator p = quads.begin(); p != quads.end(); ++p) {
-        const Vertex this_normal = calc_normal (*p);
+        const Vertex this_normal = normal (*this, *p);
         for (size_t index = 0; index != 4; ++index)
           normals[(*p)[index]] += this_normal;
       }
@@ -769,8 +279,9 @@ namespace MR
           in.read (reinterpret_cast<char*>(&attribute_byte_count), sizeof(uint16_t));
           if (attribute_byte_count)
             warn_attribute = true;
+
           triangles.push_back ( std::vector<uint32_t> { uint32_t(vertices.size()-3), uint32_t(vertices.size()-2), uint32_t(vertices.size()-1) } );
-          const Eigen::Vector3 computed_normal = calc_normal (triangles.back());
+          const Eigen::Vector3 computed_normal = Surface::normal (*this, triangles.back());
           if (computed_normal.dot (normal.cast<default_type>()) < 0.0)
             warn_right_hand_rule = true;
           if (std::abs (computed_normal.dot (normal.cast<default_type>())) < 0.99)
@@ -834,7 +345,7 @@ namespace MR
               throw Exception ("Error parsing STL file " + Path::basename (path) + ": facet ended with " + str(vertex_index) + " vertices");
             triangles.push_back ( std::vector<uint32_t> { uint32_t(vertices.size()-3), uint32_t(vertices.size()-2), uint32_t(vertices.size()-1) } );
             vertex_index = 0;
-            const Eigen::Vector3 computed_normal = calc_normal (triangles.back());
+            const Eigen::Vector3 computed_normal = Surface::normal (*this, triangles.back());
             if (computed_normal.dot (normal) < 0.0)
               warn_right_hand_rule = true;
             if (std::abs (computed_normal.dot (normal)) < 0.99)
@@ -1081,7 +592,7 @@ namespace MR
         out.write (reinterpret_cast<const char*>(&count), sizeof(uint32_t));
         const uint16_t attribute_byte_count = 0;
         for (TriangleList::const_iterator i = triangles.begin(); i != triangles.end(); ++i) {
-          const Eigen::Vector3 n (calc_normal (*i));
+          const Eigen::Vector3 n (normal (*this, *i));
           const float n_temp[3] { float(n[0]), float(n[1]), float(n[2]) };
           out.write (reinterpret_cast<const char*>(&n_temp[0]), 3 * sizeof(float));
           for (size_t v = 0; v != 3; ++v) {
@@ -1098,7 +609,7 @@ namespace MR
         File::OFStream out (path);
         out << "solid \n";
         for (TriangleList::const_iterator i = triangles.begin(); i != triangles.end(); ++i) {
-          const Eigen::Vector3 n (calc_normal (*i));
+          const Eigen::Vector3 n (normal (*this, *i));
           out << "facet normal " << str (n[0]) << " " << str (n[1]) << " " << str (n[2]) << "\n";
           out << "    outer loop\n";
           for (size_t v = 0; v != 3; ++v) {
@@ -1131,6 +642,20 @@ namespace MR
 
 
 
+    void Mesh::load_triangle_vertices (VertexList& output, const size_t index) const
+    {
+      output.clear();
+      for (size_t axis = 0; axis != 3; ++axis)
+        output.push_back (vertices[triangles[index][axis]]);
+    }
+
+    void Mesh::load_quad_vertices (VertexList& output, const size_t index) const
+    {
+      output.clear();
+      for (size_t axis = 0; axis != 4; ++axis)
+        output.push_back (vertices[quads[index][axis]]);
+    }
+
 
 
     void Mesh::verify_data() const
@@ -1149,56 +674,6 @@ namespace MR
             throw Exception ("Mesh vertex index exceeds number of vertices read");
     }
 
-
-
-    void Mesh::load_triangle_vertices (VertexList& output, const size_t index) const
-    {
-      output.clear();
-      for (size_t axis = 0; axis != 3; ++axis)
-        output.push_back (vertices[triangles[index][axis]]);
-    }
-
-    void Mesh::load_quad_vertices (VertexList& output, const size_t index) const
-    {
-      output.clear();
-      for (size_t axis = 0; axis != 4; ++axis)
-        output.push_back (vertices[quads[index][axis]]);
-    }
-
-
-
-
-
-    Eigen::Vector3 Mesh::calc_normal (const Triangle& in) const
-    {
-      Eigen::Vector3 result = (vertices[in[1]] - vertices[in[0]]).cross (vertices[in[2]] - vertices[in[1]]);
-      result.normalize();
-      return result;
-    }
-
-    Eigen::Vector3 Mesh::calc_normal (const Quad& in) const
-    {
-      Eigen::Vector3 norm1 = (vertices[in[1]] - vertices[in[0]]).cross (vertices[in[2]] - vertices[in[1]]);
-      Eigen::Vector3 norm2 = (vertices[in[2]] - vertices[in[0]]).cross (vertices[in[3]] - vertices[in[2]]);
-      norm1.normalize(); norm2.normalize();
-      Eigen::Vector3 result = norm1 + norm2;
-      result.normalize();
-      return result;
-    }
-
-
-
-    float Mesh::calc_area (const Triangle& in) const
-    {
-      return 0.5 * ((vertices[in[1]] - vertices[in[0]]).cross (vertices[in[2]] - vertices[in[0]]).norm());
-    }
-    float Mesh::calc_area (const Quad& in) const
-    {
-      const std::vector<uint32_t> v_one { in[0], in[1], in[2] };
-      const std::vector<uint32_t> v_two { in[0], in[2], in[3] };
-      const Triangle one (v_one), two (v_two);
-      return (calc_area (one) + calc_area (two));
-    }
 
 
 

@@ -31,7 +31,6 @@
 #include "dwi/tractography/properties.h"
 
 #include "surface/mesh_multi.h"
-#include "surface/vox2mesh.h"
 
 namespace MR
 {

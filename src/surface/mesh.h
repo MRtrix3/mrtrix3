@@ -37,6 +37,11 @@ namespace MR
   namespace Surface
   {
 
+    namespace Filter
+    {
+      class Smooth;
+    }
+
 
 
     class Mesh {
@@ -59,6 +64,14 @@ namespace MR
           normals = std::move (that.normals);
           triangles = std::move (that.triangles);
           quads = std::move (that.quads);
+          return *this;
+        }
+
+        Mesh& operator= (const Mesh& that) {
+          vertices = that.vertices;
+          normals = that.normals;
+          triangles = that.triangles;
+          quads = that.quads;
           return *this;
         }
 
@@ -102,17 +115,28 @@ namespace MR
           quads = q;
         }
 
+        void load (VertexList&& v, VertexList&& n, TriangleList&& p, QuadList&& q) {
+          vertices = std::move (v);
+          normals = std::move (n);
+          triangles = std::move (p);
+          quads = std::move (q);
+        }
+        void load (const VertexList& v, const VertexList& n, const TriangleList& p, const QuadList& q) {
+          vertices = v;
+          normals = n;
+          triangles = p;
+          quads = q;
+        }
 
-        void transform_first_to_realspace (const Header&);
-        void transform_realspace_to_first (const Header&);
-        void transform_voxel_to_realspace (const Header&);
-        void transform_realspace_to_voxel (const Header&);
+        void clear() {
+          vertices.clear();
+          normals.clear();
+          triangles.clear();
+          quads.clear();
+        }
+
 
         void save (const std::string&, const bool binary = false) const;
-
-        void output_pve_image (const Header&, const std::string&);
-
-        void smooth (const float, const float);
 
         size_t num_vertices() const { return vertices.size(); }
         size_t num_triangles() const { return triangles.size(); }
@@ -129,6 +153,14 @@ namespace MR
         const Vertex&   norm (const size_t i) const { assert (i < normals  .size()); return normals[i]; }
         const Triangle& tri  (const size_t i) const { assert (i < triangles.size()); return triangles[i]; }
         const Quad&     quad (const size_t i) const { assert (i < quads    .size()); return quads[i]; }
+
+        const VertexList&   get_vertices()  const { return vertices; }
+        const VertexList&   get_normals()   const { return normals; }
+        const TriangleList& get_triangles() const { return triangles; }
+        const QuadList&     get_quads()     const { return quads; }
+
+        void load_triangle_vertices (VertexList&, const size_t) const;
+        void load_quad_vertices     (VertexList&, const size_t) const;
 
 
       protected:
@@ -150,16 +182,10 @@ namespace MR
 
         void verify_data() const;
 
-        void load_triangle_vertices (VertexList&, const size_t) const;
-        void load_quad_vertices     (VertexList&, const size_t) const;
-
-        Eigen::Vector3 calc_normal (const Triangle&) const;
-        Eigen::Vector3 calc_normal (const Quad&) const;
-
-        float calc_area (const Triangle&) const;
-        float calc_area (const Quad&) const;
-
         friend class MeshMulti;
+        friend class Filter::Smooth;
+        template <class ImageType>
+        void mesh2image (const ImageType&, Mesh&, const default_type);
 
     };
 
