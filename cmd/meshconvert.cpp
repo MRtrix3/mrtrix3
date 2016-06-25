@@ -18,6 +18,7 @@
 #include "command.h"
 #include "header.h"
 #include "surface/mesh.h"
+#include "surface/mesh_multi.h"
 
 
 

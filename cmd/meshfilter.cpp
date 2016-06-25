@@ -20,6 +20,7 @@
 #include "thread_queue.h"
 
 #include "surface/mesh.h"
+#include "surface/mesh_multi.h"
 
 
 

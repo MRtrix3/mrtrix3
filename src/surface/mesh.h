@@ -28,73 +28,14 @@
 #include "algo/copy.h"
 #include "algo/loop.h"
 
+#include "surface/types.h"
+
 
 
 namespace MR
 {
   namespace Surface
   {
-
-
-    typedef Eigen::Vector3 Vertex;
-    typedef std::vector<Vertex> VertexList;
-
-    class Vox : public Eigen::Array3i
-    {
-      public:
-        using Eigen::Array3i::Array3i;
-        bool operator< (const Vox& i) const
-        {
-          return ((*this)[2] == i[2] ? (((*this)[1] == i[1]) ? ((*this)[0] < i[0]) : ((*this)[1] < i[1])) : ((*this)[2] < i[2]));
-        }
-    };
-
-
-    template <uint32_t vertices = 3>
-    class Polygon
-    {
-
-      public:
-
-        template <typename T>
-        Polygon (const T* const d)
-        {
-          for (size_t i = 0; i != vertices; ++i)
-            indices[i] = d[i];
-        }
-
-        template <class C>
-        Polygon (const C& d)
-        {
-          assert (d.size() == vertices);
-          for (size_t i = 0; i != vertices; ++i)
-            indices[i] = d[i];
-        }
-
-        Polygon()
-        {
-          memset (indices, 0, vertices * sizeof (uint32_t));
-        }
-
-
-        uint32_t& operator[] (const size_t i)       { assert (i < vertices); return indices[i]; }
-        uint32_t  operator[] (const size_t i) const { assert (i < vertices); return indices[i]; }
-
-        size_t size() const { return vertices; }
-
-        bool shares_edge (const Polygon&) const;
-
-      private:
-        uint32_t indices[vertices];
-
-    };
-
-    template <> bool Polygon<3>::shares_edge (const Polygon<3>&) const;
-
-    typedef Polygon<3> Triangle;
-    typedef std::vector<Triangle> TriangleList;
-    typedef Polygon<4> Quad;
-    typedef std::vector<Quad> QuadList;
 
 
 
@@ -221,26 +162,6 @@ namespace MR
         friend class MeshMulti;
 
     };
-
-
-
-
-    // Class to handle multiple meshes per file
-    // For now, this will only be supported using the .obj file type
-    // TODO Another alternative may be .vtp: XML-based polydata by VTK
-    //   (would allow embedding binary data within the file, rather than
-    //   everything being ASCII as in .obj)
-
-    class MeshMulti : public std::vector<Mesh>
-    {
-      public:
-        using std::vector<Mesh>::vector;
-
-        void load (const std::string&);
-        void save (const std::string&) const;
-    };
-
-
 
 
 

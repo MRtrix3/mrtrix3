@@ -26,6 +26,7 @@
 #include "adapter/subset.h"
 
 #include "surface/mesh.h"
+#include "surface/mesh_multi.h"
 #include "surface/vox2mesh.h"
 
 
