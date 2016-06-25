@@ -13,21 +13,21 @@
  * 
  */
 
-#ifndef __mesh_vox2mesh_h__
-#define __mesh_vox2mesh_h__
+#ifndef __surface_vox2mesh_h__
+#define __surface_vox2mesh_h__
 
 #include <array>
 #include <map>
 
 #include "progressbar.h"
 
-#include "mesh/mesh.h"
+#include "surface/mesh.h"
 
 
 
 namespace MR
 {
-  namespace Mesh
+  namespace Surface
   {
 
 

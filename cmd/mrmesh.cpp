@@ -18,8 +18,8 @@
 
 #include "image.h"
 #include "filter/optimal_threshold.h"
-#include "mesh/mesh.h"
-#include "mesh/vox2mesh.h"
+#include "surface/mesh.h"
+#include "surface/vox2mesh.h"
 
 
 
@@ -53,18 +53,18 @@ void usage ()
 void run ()
 {
 
-  Mesh::Mesh mesh;
+  Surface::Mesh mesh;
 
   if (get_options ("blocky").size()) {
 
     auto input = Image<bool>::open (argument[0]);
-    Mesh::vox2mesh (input, mesh);
+    Surface::vox2mesh (input, mesh);
 
   } else {
 
     auto input = Image<float>::open (argument[0]);
     float threshold = get_option_value ("threshold", Filter::estimate_optimal_threshold (input));
-    Mesh::vox2mesh_mc (input, threshold, mesh);
+    Surface::vox2mesh_mc (input, threshold, mesh);
 
   }
 

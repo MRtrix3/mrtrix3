@@ -37,7 +37,7 @@
 #include "gui/color_button.h"
 #include "gui/projection.h"
 
-#include "mesh/mesh.h"
+#include "surface/mesh.h"
 
 #include "connectome/mat2vec.h"
 #include "connectome/lut.h"

@@ -13,8 +13,8 @@
  * 
  */
 
-#ifndef __mesh_mesh_h__
-#define __mesh_mesh_h__
+#ifndef __surface_mesh_h__
+#define __surface_mesh_h__
 
 
 #include <fstream>
@@ -32,7 +32,7 @@
 
 namespace MR
 {
-  namespace Mesh
+  namespace Surface
   {
 
 

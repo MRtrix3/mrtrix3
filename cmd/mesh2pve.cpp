@@ -19,7 +19,7 @@
 
 #include "header.h"
 
-#include "mesh/mesh.h"
+#include "surface/mesh.h"
 
 
 
@@ -56,7 +56,7 @@ void run ()
 {
 
   // Read in the mesh data
-  Mesh::Mesh mesh (argument[0]);
+  Surface::Mesh mesh (argument[0]);
 
   // Get the template image
   Header template_image = Header::open (argument[1]);

@@ -14,7 +14,7 @@
  */
 
 
-#include "mesh/mesh.h"
+#include "surface/mesh.h"
 
 #include <ios>
 #include <iostream>
@@ -26,7 +26,7 @@
 
 namespace MR
 {
-  namespace Mesh
+  namespace Surface
   {
 
     namespace {

@@ -19,7 +19,7 @@
 #include "progressbar.h"
 #include "thread_queue.h"
 
-#include "mesh/mesh.h"
+#include "surface/mesh.h"
 
 
 
@@ -30,7 +30,7 @@
 
 using namespace MR;
 using namespace App;
-using namespace MR::Mesh;
+using namespace MR::Surface;
 
 
 const char* filters[] = { "smooth", NULL };
@@ -73,7 +73,7 @@ void run ()
 
   // Read in the mesh data
   try {
-    MR::Mesh::Mesh mesh (argument[0]);
+    Mesh mesh (argument[0]);
     meshes.push_back (mesh);
   } catch (...) {
     meshes.load (argument[0]);
