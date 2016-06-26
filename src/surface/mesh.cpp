@@ -18,9 +18,10 @@
 
 #include <ios>
 #include <iostream>
-
+#include <string>
 #include <vector>
 
+#include "surface/freesurfer.h"
 #include "surface/utils.h"
 
 
@@ -33,14 +34,20 @@ namespace MR
 
     Mesh::Mesh (const std::string& path)
     {
-      if (path.substr (path.size() - 4) == ".vtk" || path.substr (path.size() - 4) == ".VTK")
+      if (path.substr (path.size() - 4) == ".vtk" || path.substr (path.size() - 4) == ".VTK") {
         load_vtk (path);
-      else if (path.substr (path.size() - 4) == ".stl" || path.substr (path.size() - 4) == ".STL")
+      } else if (path.substr (path.size() - 4) == ".stl" || path.substr (path.size() - 4) == ".STL") {
         load_stl (path);
-      else if (path.substr (path.size() - 4) == ".obj" || path.substr (path.size() - 4) == ".OBJ")
+      } else if (path.substr (path.size() - 4) == ".obj" || path.substr (path.size() - 4) == ".OBJ") {
         load_obj (path);
-      else
-        throw Exception ("Input mesh file not in supported format");
+      } else {
+        try {
+          load_fs (path);
+        } catch (...) {
+          clear();
+          throw Exception ("Input mesh file not in supported format");
+        }
+      }
       name = path;
     }
 
@@ -378,6 +385,8 @@ namespace MR
       verify_data();
     }
 
+
+
     void Mesh::load_obj (const std::string& path)
     {
 
@@ -488,6 +497,68 @@ namespace MR
       verify_data();
     }
 
+
+    void Mesh::load_fs (const std::string& path)
+    {
+
+      std::ifstream in (path.c_str(), std::ios_base::in | std::ios_base::binary);
+      if (!in)
+        throw Exception ("Error opening input file!");
+
+      const int32_t magic_number = FreeSurfer::get_int24_BE (in);
+
+      if (magic_number == FreeSurfer::triangle_file_magic_number) {
+
+        char c;
+        for (size_t i = 0; i != 2; ++i) {
+          do {
+            in.read (&c, 1);
+          } while (c != '\n');
+        }
+        const int32_t num_vertices = FreeSurfer::get_BE<int32_t> (in);
+        const int32_t num_polygons = FreeSurfer::get_BE<int32_t> (in);
+        vertices.reserve (num_vertices);
+        for (int32_t i = 0; i != num_vertices; ++i) {
+          float temp[3];
+          for (size_t axis = 0; axis != 3; ++axis)
+            temp[axis] = FreeSurfer::get_BE<float> (in);
+          vertices.push_back (Vertex (temp[0], temp[1], temp[2]));
+        }
+        if (!in.good())
+          throw Exception ("Error reading FreeSurfer file: EOF reached");
+        for (int32_t i = 0; i != num_polygons; ++i) {
+          int32_t temp[3];
+          for (size_t v = 0; v != 3; ++v)
+            temp[v] = FreeSurfer::get_BE<int32_t> (in);
+          triangles.push_back (Triangle (temp));
+        }
+        if (!in.good())
+          throw Exception ("Error reading FreeSurfer file: EOF reached");
+
+      } else if (magic_number == FreeSurfer::quad_file_magic_number) {
+
+        const int32_t num_vertices = FreeSurfer::get_int24_BE (in);
+        const int32_t num_polygons = FreeSurfer::get_int24_BE (in);
+        vertices.reserve (num_vertices);
+        for (int32_t i = 0; i != num_vertices; ++i) {
+          int16_t temp[3];
+          for (size_t axis = 0; axis != 3; ++axis)
+            temp[axis] = FreeSurfer::get_BE<int16_t> (in);
+          vertices.push_back (Vertex (0.01 * temp[0], 0.01 * temp[1], 0.01 * temp[2]));
+        }
+        for (int32_t i = 0; i != num_polygons; ++i) {
+          int32_t temp[4];
+          for (size_t v = 0; v != 4; ++v)
+            temp[v] = FreeSurfer::get_int24_BE (in);
+          quads.push_back (Quad (temp));
+        }
+
+      } else {
+        throw Exception ("File " + Path::basename (path) + " is not a FreeSurfer surface file");
+      }
+
+      verify_data();
+    }
 
 
 

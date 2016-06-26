@@ -65,8 +65,12 @@ void run ()
   try {
     MR::Surface::Mesh mesh (argument[0]);
     meshes.push_back (mesh);
-  } catch (...) {
-    meshes.load (argument[0]);
+  } catch (Exception& e) {
+    try {
+      meshes.load (argument[0]);
+    } catch (...) {
+      throw e;
+    }
   }
 
   auto opt = get_options ("transform");
