@@ -50,11 +50,11 @@ namespace MR
                                       Vox ( 0,  1,  0),
                                       Vox ( 1,  0,  0) };
 
-        static const int plane_axes[6][2] = { {0, 1},
+        static const int plane_axes[6][2] = { {1, 0},
                                               {0, 2},
-                                              {1, 2},
+                                              {2, 1},
                                               {0, 1},
-                                              {0, 2},
+                                              {2, 0},
                                               {1, 2} };
 
         if (input_image.ndim() != 3)
