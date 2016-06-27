@@ -45,10 +45,10 @@ namespace MR
           load_fs (path);
         } catch (...) {
           clear();
-          throw Exception ("Input mesh file not in supported format");
+          throw Exception ("Input surface mesh file not in supported format");
         }
       }
-      name = path;
+      name = Path::banename (path);
     }
 
 

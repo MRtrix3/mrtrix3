@@ -32,6 +32,8 @@ namespace MR
       constexpr int32_t triangle_file_magic_number = 16777214;
       constexpr int32_t quad_file_magic_number = 16777215;
 
+      constexpr int32_t new_curv_file_magic_number = 16777215;
+
 
       inline int32_t get_int24_BE (std::ifstream& stream)
       {
