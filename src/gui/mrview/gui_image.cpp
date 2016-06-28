@@ -423,11 +423,10 @@ namespace MR
           size_t vol_idx = image.index(3);
           auto cached_tex = tex_4d_cache.find(vol_idx);
           if (cached_tex != tex_4d_cache.end()) {
-            _texture = cached_tex->second;
+            _texture.cache_copy (cached_tex->second);
             tex_positions[3] = vol_idx;
           } else {
-            auto tex = GL::Texture();
-            _texture = tex;
+            _texture.cache_copy(GL::Texture());
             tex_positions[3] = -1;
           }
 
@@ -436,7 +435,7 @@ namespace MR
           // Reset cache in case we've stored too many 3d textures
           if (gl::GetError () == gl::OUT_OF_MEMORY) {
             tex_4d_cache.clear();
-            _texture = GL::Texture();
+            _texture.cache_copy(GL::Texture());
           }
         }
       }
@@ -444,7 +443,7 @@ namespace MR
       inline void Image::update_texture_4D_cache ()
       {
         if (image.ndim() == 4)
-          tex_4d_cache[image.index(3)] = _texture;
+          tex_4d_cache[image.index(3)].cache_copy(_texture);
       }
 
 
