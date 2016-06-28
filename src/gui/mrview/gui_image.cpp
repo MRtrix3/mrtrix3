@@ -301,6 +301,8 @@ namespace MR
 
       void Image::update_texture3D ()
       {
+        lookup_texture_4D_cache();
+
         // Binding also guarantees texture interpolation is updated
         bind();
 
@@ -411,7 +413,40 @@ namespace MR
           copy_texture_3D_complex();
 
         min_max_set ();
+        update_texture_4D_cache ();
       }
+
+
+      inline void Image::lookup_texture_4D_cache ()
+      {
+        if (!volume_unchanged() && !texture_mode_changed) {
+          size_t vol_idx = image.index(3);
+          auto cached_tex = tex_4d_cache.find(vol_idx);
+          if (cached_tex != tex_4d_cache.end()) {
+            _texture = cached_tex->second;
+            tex_positions[3] = vol_idx;
+          } else {
+            auto tex = GL::Texture();
+            _texture = tex;
+            tex_positions[3] = -1;
+          }
+
+          bind();
+
+          // Reset cache in case we've stored too many 3d textures
+          if (gl::GetError () == gl::OUT_OF_MEMORY) {
+            tex_4d_cache.clear();
+            _texture = GL::Texture();
+          }
+        }
+      }
+
+      inline void Image::update_texture_4D_cache ()
+      {
+        if (image.ndim() == 4)
+          tex_4d_cache[image.index(3)] = _texture;
+      }
+
 
       // required to shut up clang's compiler warnings about std::abs() when
       // instantiating Image::copy_texture_3D() with unsigned types:

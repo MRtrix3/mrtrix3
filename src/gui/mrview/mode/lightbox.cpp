@@ -25,8 +25,10 @@ namespace MR
       {
 
         bool LightBox::show_grid_lines(true);
+        bool LightBox::show_volumes(false);
         size_t LightBox::n_rows(3);
         size_t LightBox::n_cols(5);
+        size_t LightBox::volume_increment(1);
         float LightBox::slice_focus_increment(1.f);
         float LightBox::slice_focus_inc_adjust_rate(0.2f);
         std::string LightBox::prev_image_name;
@@ -40,8 +42,10 @@ namespace MR
 
           if(!img || prev_image_name != img->header().name())
             image_changed_event();
-          else
+          else {
+            set_volume_increment(1);
             set_slice_increment(slice_focus_increment);
+          }
         }
 
 
@@ -59,6 +63,13 @@ namespace MR
           updateGL();
         }
 
+        void LightBox::set_volume_increment(size_t vol_inc)
+        {
+          volume_increment = vol_inc;
+          update_volume_indices();
+          updateGL();
+        }
+
         void LightBox::set_slice_increment(float inc)
         {
           slice_focus_increment = inc;
@@ -72,14 +83,28 @@ namespace MR
           updateGL();
         }
 
+        void LightBox::set_show_volumes(bool show_vol)
+        {
+          show_volumes = show_vol;
+          updateGL();
+        }
+
+        inline bool LightBox::render_volumes()
+        {
+          return show_volumes && image () && image()->image.ndim() == 4;
+        }
+
         inline void LightBox::update_layout()
         {
           // Can't use std::vector resize() because Projection needs to be assignable
           slices_proj_focusdelta = std::vector<proj_focusdelta>(
               n_cols * n_rows,
               proj_focusdelta(projection, 0.f));
+
           set_current_slice_index((n_rows * n_cols) / 2);
           update_slices_focusdelta();
+
+          update_volume_indices();
 
           frame_VB.clear();
           frame_VAO.clear();
@@ -87,10 +112,14 @@ namespace MR
 
         void LightBox::set_current_slice_index(size_t slice_index)
         {
-          size_t prev_index = current_slice_index;
+          int prev_index = current_slice_index;
           current_slice_index = slice_index;
 
-          if(prev_index != current_slice_index) {
+          if (render_volumes()) {
+            window().set_image_volume(3, volume_indices[current_slice_index]);
+          }
+
+          else if (prev_index != (int)current_slice_index) {
             const Projection& slice_proj = slices_proj_focusdelta[current_slice_index].first;
             float focus_delta = slices_proj_focusdelta[current_slice_index].second;
 
@@ -107,6 +136,21 @@ namespace MR
             slices_proj_focusdelta[i].second =
               slice_focus_increment * (i - current_slice_index_int);
           }
+        }
+
+        void LightBox::update_volume_indices()
+        {
+          bool is_4d = image () && image()->image.ndim() == 4;
+          volume_indices.resize (n_rows * n_cols, 0);
+
+          if (!is_4d)
+            return;
+
+          int n_vols = image()->image.size(3);
+          int initial_vol = image()->image.index(3);
+
+          for(int i = 0, N = volume_indices.size(); i < N; ++i)
+            volume_indices[i] = std::min(std::max(initial_vol + (int)volume_increment * (i - (int)current_slice_index), 0), n_vols - 1);
         }
 
         void LightBox::draw_plane_primitive (int axis, Displayable::Shader& shader_program, Projection& with_projection)
@@ -133,10 +177,12 @@ namespace MR
 
           const Eigen::Vector3f orig_focus = window().focus();
 
-          if(layout_is_dirty) {
+          if (layout_is_dirty) {
             update_layout();
             layout_is_dirty = false;
           }
+
+          bool rend_vols = render_volumes();
 
           size_t slice_idx = 0;
           for(size_t row = 0; row < n_rows; ++row) {
@@ -150,9 +196,14 @@ namespace MR
               // because move_in_out_displacement is reliant on MVP
               setup_projection (plane(), slice_proj);
 
-              float focus_delta = slices_proj_focusdelta[slice_idx].second;
-              Eigen::Vector3f slice_focus = move_in_out_displacement(focus_delta, slice_proj);
-              set_focus(orig_focus + slice_focus);
+              if (rend_vols)
+                image()->image.index(3) = volume_indices[slice_idx];
+
+              else {
+                float focus_delta = slices_proj_focusdelta[slice_idx].second;
+                Eigen::Vector3f slice_focus = move_in_out_displacement(focus_delta, slice_proj);
+                set_focus(orig_focus + slice_focus);
+              }
 
               draw_plane_primitive(plane(), slice_shader, slice_proj);
 
@@ -167,6 +218,8 @@ namespace MR
           }
 
           // Restore view state
+          if(rend_vols)
+            image()->image.index(3) = volume_indices[current_slice_index];
           set_focus(orig_focus);
           projection.set_viewport(window(), x, y, w, h);
 
@@ -278,6 +331,8 @@ namespace MR
         void LightBox::image_changed_event()
         {
           Base::image_changed_event();
+
+          update_volume_indices();
 
           if(image()) {
             const auto& header = image()->header();
