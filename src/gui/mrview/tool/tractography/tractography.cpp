@@ -301,6 +301,28 @@ namespace MR
         }
 
 
+        void Tractography::dropEvent (QDropEvent* event)
+        {
+          static constexpr int max_files = 32;
+
+          const QMimeData* mimeData = event->mimeData();
+          if (mimeData->hasUrls()) {
+            std::vector<std::string> list;
+            QList<QUrl> urlList = mimeData->urls();
+            for (int i = 0; i < urlList.size() && i < max_files; ++i) {
+                list.push_back (urlList.at (i).path().toUtf8().constData());
+            }
+            try {
+              tractogram_list_model->add_items (list, *this);
+              window().updateGL();
+            }
+            catch (Exception& e) {
+              e.display();
+            }
+          }
+        }
+
+
         void Tractography::tractogram_close_slot ()
         {
           MRView::GrabContext context;

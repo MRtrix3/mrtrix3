@@ -37,6 +37,7 @@ namespace MR
             setFont (f);
             setFrameShadow (QFrame::Sunken); 
             setFrameShape (QFrame::Panel);
+            setAcceptDrops (true);
           }
 
         void Base::adjustSize () 

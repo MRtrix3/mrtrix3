@@ -79,6 +79,7 @@ namespace MR
             void update_slot ();
             void colour_changed ();
             void opacity_changed (int unused);
+            void model_rows_changed ();
 
           protected:
              QPushButton *hide_all_button, *close_button, *save_button;
@@ -108,6 +109,8 @@ namespace MR
              void save (ROI_Item*);
 
              int normal2axis (const Eigen::Vector3f&, const MR::Transform&) const;
+
+             void dropEvent (QDropEvent* event) override;
         };
 
 
