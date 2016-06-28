@@ -295,6 +295,12 @@ namespace MR
           std::vector<std::string> list = Dialog::File::get_files (this,
                                                                    "Select fixel images to open",
                                                                    GUI::Dialog::File::image_filter_string);
+          add_images (list);
+        }
+
+
+        void Vector::add_images (std::vector<std::string> &list)
+        {
           if (list.empty())
             return;
           size_t previous_size = fixel_list_model->rowCount();
@@ -307,6 +313,27 @@ namespace MR
             QModelIndex last = fixel_list_model->index (new_size -1, 0, QModelIndex());
             fixel_list_view->selectionModel()->select (QItemSelection (first, last), QItemSelectionModel::Select);
             update_selection();
+          }
+        }
+
+
+        void Vector::dropEvent (QDropEvent* event)
+        {
+          static constexpr int max_files = 32;
+
+          const QMimeData* mimeData = event->mimeData();
+          if (mimeData->hasUrls()) {
+            std::vector<std::string> list;
+            QList<QUrl> urlList = mimeData->urls();
+            for (int i = 0; i < urlList.size() && i < max_files; ++i) {
+                list.push_back (urlList.at (i).path().toUtf8().constData());
+            }
+            try {
+              add_images (list);
+            }
+            catch (Exception& e) {
+              e.display();
+            }
           }
         }
 
