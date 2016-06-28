@@ -431,12 +431,6 @@ namespace MR
           }
 
           bind();
-
-          // Reset cache in case we've stored too many 3d textures
-          if (gl::GetError () == gl::OUT_OF_MEMORY) {
-            tex_4d_cache.clear();
-            _texture.cache_copy(GL::Texture());
-          }
         }
       }
 
