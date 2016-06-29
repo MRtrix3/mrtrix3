@@ -21,8 +21,9 @@
 #include "math/SH.h"
 #include "dwi/directions/predefined.h"
 #include "timer.h"
-#include "math/stats/permutation.h"
 #include "math/stats/glm.h"
+#include "math/stats/permutation.h"
+#include "math/stats/typedefs.h"
 #include "stats/tfce.h"
 #include "stats/cluster.h"
 #include "stats/permtest.h"
@@ -30,6 +31,7 @@
 
 using namespace MR;
 using namespace App;
+using namespace MR::Math::Stats;
 
 
 #define DEFAULT_PERMUTATIONS 5000
@@ -99,22 +101,18 @@ void usage ()
 }
 
 
-typedef Stats::TFCE::value_type value_type;
-typedef Eigen::Matrix<value_type, Eigen::Dynamic, 1> matrix_type;
-typedef Eigen::Array<value_type, Eigen::Dynamic, 1> vector_type;
-
 
 void run() {
 
-  value_type cluster_forming_threshold = get_option_value ("threshold", NAN);
-  value_type tfce_dh = get_option_value ("tfce_dh", DEFAULT_TFCE_DH);
-  value_type tfce_H = get_option_value ("tfce_h", DEFAULT_TFCE_H);
-  value_type tfce_E = get_option_value ("tfce_e", DEFAULT_TFCE_E);
-  int num_perms = get_option_value ("nperms", DEFAULT_PERMUTATIONS);
-  int nperms_nonstationary = get_option_value ("nperms_nonstationary", DEFAULT_PERMUTATIONS_NONSTATIONARITY);
+  const value_type cluster_forming_threshold = get_option_value ("threshold", NaN);
+  const value_type tfce_dh = get_option_value ("tfce_dh", DEFAULT_TFCE_DH);
+  const value_type tfce_H = get_option_value ("tfce_h", DEFAULT_TFCE_H);
+  const value_type tfce_E = get_option_value ("tfce_e", DEFAULT_TFCE_E);
+  const int num_perms = get_option_value ("nperms", DEFAULT_PERMUTATIONS);
+  const int nperms_nonstationary = get_option_value ("nperms_nonstationary", DEFAULT_PERMUTATIONS_NONSTATIONARITY);
   
-  bool do_26_connectivity = get_options("connectivity").size();
-  bool do_nonstationary_adjustment = get_options ("nonstationary").size();
+  const bool do_26_connectivity = get_options("connectivity").size();
+  const bool do_nonstationary_adjustment = get_options ("nonstationary").size();
 
   // Read filenames
   std::vector<std::string> subjects;
@@ -127,18 +125,18 @@ void run() {
   }
 
   // Load design matrix:
-  const matrix_type design = load_matrix<value_type> (argument[1]);
+  const matrix_type design = load_matrix (argument[1]);
   if (design.rows() != (ssize_t)subjects.size())
     throw Exception ("number of input files does not match number of rows in design matrix");
 
   // Load contrast matrix:
-  matrix_type contrast = load_matrix<value_type> (argument[2]);
+  const matrix_type contrast = load_matrix (argument[2]);
   if (contrast.cols() != design.cols())
     throw Exception ("the number of contrasts does not equal the number of columns in the design matrix");
 
   // Load Mask
   auto header = Header::open (argument[3]);
-  auto mask_image = header.get_image<value_type>();
+  auto mask_image = header.get_image<bool>();
 
   Filter::Connector connector (do_26_connectivity);
   std::vector<std::vector<int> > mask_indices = connector.precompute_adjacency (mask_image);
@@ -146,13 +144,12 @@ void run() {
   const size_t num_vox = mask_indices.size();
   matrix_type data (num_vox, subjects.size());
 
-
   {
     // Load images
     ProgressBar progress("loading images", subjects.size());
     for (size_t subject = 0; subject < subjects.size(); subject++) {
       LogLevelLatch log_level (0);
-      auto input_image = Image<float>::open(subjects[subject]).with_direct_io (3);
+      auto input_image = Image<float>::open (subjects[subject]); //.with_direct_io (3); <- Should be inputting 3D images?
       check_dimensions (input_image, mask_image, 0, 3);
       int index = 0;
       std::vector<std::vector<int> >::iterator it;
@@ -179,7 +176,7 @@ void run() {
     output_header.keyval()["tfce_h"] = str(tfce_H);
   }
 
-  std::string prefix (argument[4]);
+  const std::string prefix (argument[4]);
 
   std::string cluster_name (prefix);
   if (std::isfinite (cluster_forming_threshold))
@@ -187,41 +184,41 @@ void run() {
   else
     cluster_name.append ("tfce.mif");
 
-  auto cluster_image = Image<value_type>::create (cluster_name, output_header);
-  auto tvalue_image = Image<value_type>::create (prefix + "tvalue.mif", output_header);
-  auto fwe_pvalue_image = Image<value_type>::create (prefix + "fwe_pvalue.mif", output_header);
-  auto uncorrected_pvalue_image = Image<value_type>::create (prefix + "uncorrected_pvalue.mif", output_header);
-  Image<value_type> cluster_image_neg;
-  Image<value_type> fwe_pvalue_image_neg;
-  Image<value_type> uncorrected_pvalue_image_neg;
+  auto cluster_image = Image<float>::create (cluster_name, output_header);
+  auto tvalue_image = Image<float>::create (prefix + "tvalue.mif", output_header);
+  auto fwe_pvalue_image = Image<float>::create (prefix + "fwe_pvalue.mif", output_header);
+  auto uncorrected_pvalue_image = Image<float>::create (prefix + "uncorrected_pvalue.mif", output_header);
+  Image<float> cluster_image_neg;
+  Image<float> fwe_pvalue_image_neg;
+  Image<float> uncorrected_pvalue_image_neg;
 
   vector_type perm_distribution (num_perms);
   std::shared_ptr<vector_type> perm_distribution_neg;
   vector_type default_cluster_output (num_vox);
   std::shared_ptr<vector_type> default_cluster_output_neg;
   vector_type tvalue_output (num_vox);
-  Stats::PermTest::empirical_vector_type empirical_tfce_statistic;
+  vector_type empirical_tfce_statistic;
   vector_type uncorrected_pvalue (num_vox);
   std::shared_ptr<vector_type> uncorrected_pvalue_neg;
 
 
-  bool compute_negative_contrast = get_options("negative").size() ? true : false;
+  const bool compute_negative_contrast = get_options("negative").size() ? true : false;
   if (compute_negative_contrast) {
     std::string cluster_neg_name (prefix);
     if (std::isfinite (cluster_forming_threshold))
        cluster_neg_name.append ("cluster_sizes_neg.mif");
     else
       cluster_neg_name.append ("tfce_neg.mif");
-    cluster_image_neg = Image<value_type>::create (cluster_neg_name, output_header);
+    cluster_image_neg = Image<float>::create (cluster_neg_name, output_header);
     perm_distribution_neg.reset (new vector_type (num_perms));
     default_cluster_output_neg.reset (new vector_type (num_vox));
-    fwe_pvalue_image_neg = Image<value_type>::create (prefix + "fwe_pvalue_neg.mif", output_header);
+    fwe_pvalue_image_neg = Image<float>::create (prefix + "fwe_pvalue_neg.mif", output_header);
     uncorrected_pvalue_neg.reset (new vector_type (num_vox));
-    uncorrected_pvalue_image_neg = Image<value_type>::create (prefix + "uncorrected_pvalue_neg.mif", output_header);
+    uncorrected_pvalue_image_neg = Image<float>::create (prefix + "uncorrected_pvalue_neg.mif", output_header);
   }
 
   { // Do permutation testing:
-    Math::Stats::GLMTTest<value_type> glm (data, design, contrast);
+    Math::Stats::GLMTTest glm (data, design, contrast);
 
     // Suprathreshold clustering
     if (std::isfinite (cluster_forming_threshold)) {
@@ -257,9 +254,9 @@ void run() {
   save_matrix (perm_distribution, prefix + "perm_dist.txt");
 
   vector_type pvalue_output (num_vox);
-  Math::Stats::statistic2pvalue (perm_distribution, default_cluster_output, pvalue_output);
+  Math::Stats::Permutation::statistic2pvalue (perm_distribution, default_cluster_output, pvalue_output);
   {
-    ProgressBar progress ("generating output");
+    ProgressBar progress ("generating output", num_vox);
     for (size_t i = 0; i < num_vox; i++) {
       for (size_t dim = 0; dim < cluster_image.ndim(); dim++)
         tvalue_image.index(dim) = cluster_image.index(dim) = fwe_pvalue_image.index(dim) = uncorrected_pvalue_image.index(dim) = mask_indices[i][dim];
@@ -270,22 +267,21 @@ void run() {
       ++progress;
     }
   }
-  {
-    if (compute_negative_contrast) {
-      save_matrix (*perm_distribution_neg, prefix + "perm_dist_neg.txt");
-      vector_type pvalue_output_neg (num_vox);
-      Math::Stats::statistic2pvalue (*perm_distribution_neg, *default_cluster_output_neg, pvalue_output_neg);
 
-      ProgressBar progress ("generating negative contrast output");
-      for (size_t i = 0; i < num_vox; i++) {
-        for (size_t dim = 0; dim < cluster_image.ndim(); dim++)
-          cluster_image_neg.index(dim) = fwe_pvalue_image_neg.index(dim) = uncorrected_pvalue_image_neg.index(dim) = mask_indices[i][dim];
-        cluster_image_neg.value() = (*default_cluster_output_neg)[i];
-        fwe_pvalue_image_neg.value() = pvalue_output_neg[i];
-        uncorrected_pvalue_image_neg.value() = (*uncorrected_pvalue_neg)[i];
-        ++progress;
-      }
+  if (compute_negative_contrast) {
+    save_matrix (*perm_distribution_neg, prefix + "perm_dist_neg.txt");
+    vector_type pvalue_output_neg (num_vox);
+    Math::Stats::Permutation::statistic2pvalue (*perm_distribution_neg, *default_cluster_output_neg, pvalue_output_neg);
+
+    ProgressBar progress ("generating negative contrast output", num_vox);
+    for (size_t i = 0; i < num_vox; i++) {
+      for (size_t dim = 0; dim < cluster_image.ndim(); dim++)
+        cluster_image_neg.index(dim) = fwe_pvalue_image_neg.index(dim) = uncorrected_pvalue_image_neg.index(dim) = mask_indices[i][dim];
+      cluster_image_neg.value() = (*default_cluster_output_neg)[i];
+      fwe_pvalue_image_neg.value() = pvalue_output_neg[i];
+      uncorrected_pvalue_image_neg.value() = (*uncorrected_pvalue_neg)[i];
+      ++progress;
     }
-
   }
+
 }
