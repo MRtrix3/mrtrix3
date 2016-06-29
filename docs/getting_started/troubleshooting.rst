@@ -153,9 +153,7 @@ There are three main reasons for this:
 
 3. **Your installation does support OpenGL 3.3, but only provides access
    to the 3.3 functionality through the _compatibility_ profile, not through the
-   (default) core profile.** Alternatively, MRView runs with visual artefacts
-   or a blank screen (particularly in volume render mode). This seems to be an
-   issue particularly on ATI/AMD hardware. To see whether this is the problem,
+   (default) core profile.** To see whether this is the problem,
    you only need to add the line:
 
    ::
@@ -166,6 +164,16 @@ There are three main reasons for this:
    it doesn't work, you're probably stuck with reason 2.
 
 
+MRView runs with visual artefacts or no display
+-----------------------------------------------
+
+If you find that MRView displays with visual glitches or a blank screen,
+particularly in volume render mode, and on ATI/AMD hardware, you may find that
+setting::
+
+    NeedOpenGLCoreProfile: 0
+
+may resolve the problem.
 
 
 Unusual symbols on terminal
