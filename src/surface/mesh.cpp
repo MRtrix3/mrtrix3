@@ -48,7 +48,7 @@ namespace MR
           throw Exception ("Input surface mesh file not in supported format");
         }
       }
-      name = Path::banename (path);
+      name = Path::basename (path);
     }
 
 

@@ -17,6 +17,7 @@
 #define __surface_polygon_h__
 
 #include <assert.h>
+#include <initializer_list>
 #include <stdint.h>
 
 namespace MR
@@ -44,6 +45,15 @@ namespace MR
           assert (d.size() == vertices);
           for (size_t i = 0; i != vertices; ++i)
             indices[i] = d[i];
+        }
+
+        template <typename T>
+        Polygon (const std::initializer_list<T> l)
+        {
+          assert (l.size() == vertices);
+          size_t counter = 0;
+          for (auto i = l.begin(); i != l.end(); ++i, ++counter)
+            indices[counter] = *i;
         }
 
         Polygon()
