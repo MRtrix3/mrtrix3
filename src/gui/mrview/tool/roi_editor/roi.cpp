@@ -84,14 +84,16 @@ namespace MR
           main_box->addLayout (layout, 0);
 
           list_view = new QListView (this);
-          list_view->setSelectionMode (QAbstractItemView::ExtendedSelection);
+          list_view->setSelectionMode (QAbstractItemView::SingleSelection);
           list_view->setDragEnabled (true);
+          list_view->setDragDropMode (QAbstractItemView::InternalMove);
+          list_view->setAcceptDrops (true);
           list_view->viewport()->setAcceptDrops (true);
           list_view->setDropIndicatorShown (true);
 
           list_model = new ROI_Model (this);
           list_view->setModel (list_model);
-          list_view->setSelectionMode (QAbstractItemView::SingleSelection);
+          connect (list_model, SIGNAL (rowsInserted(const QModelIndex&, int, int)), this, SLOT (model_rows_changed ()));
 
           main_box->addWidget (list_view, 1);
 
@@ -299,6 +301,33 @@ namespace MR
 
           load (list);
           in_insert_mode = false;
+        }
+
+
+
+
+
+        void ROI::dropEvent (QDropEvent* event)
+        {
+          static constexpr int max_files = 32;
+
+          const QMimeData* mimeData = event->mimeData();
+          if (mimeData->hasUrls()) {
+            std::vector<std::unique_ptr<MR::Header>> list;
+            QList<QUrl> urlList = mimeData->urls();
+            for (int i = 0; i < urlList.size() && i < max_files; ++i) {
+              try {
+                list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (urlList.at (i).path().toUtf8().constData()))));
+              }
+              catch (Exception& e) {
+                e.display();
+              }
+            }
+            if (list.size()) {
+                load (list);
+                in_insert_mode = false;
+            }
+          }
         }
 
 
@@ -622,9 +651,16 @@ namespace MR
 
 
 
+        void ROI::model_rows_changed ()
+        {
+          updateGL ();
+        }
 
 
-        void ROI::update_undo_redo () 
+
+
+
+        void ROI::update_undo_redo ()
         {
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
 

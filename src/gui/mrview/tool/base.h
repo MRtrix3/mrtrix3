@@ -139,6 +139,16 @@ namespace MR
             virtual void reset_event () { }
             virtual QCursor* get_cursor ();
             void update_cursor() { window().set_cursor(); }
+
+            void dragEnterEvent (QDragEnterEvent* event) override {
+              event->acceptProposedAction();
+            }
+            void dragMoveEvent (QDragMoveEvent* event) override {
+              event->acceptProposedAction();
+            }
+            void dragLeaveEvent (QDragLeaveEvent* event) override {
+              event->accept();
+            }
         };
 
 
