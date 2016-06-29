@@ -585,7 +585,7 @@ namespace MR
 
 
 
-        void Volume::slice_move_event (int x) 
+        void Volume::slice_move_event (float x) 
         {
          
           std::vector<GL::vec4*> clip = get_clip_planes_to_be_edited();

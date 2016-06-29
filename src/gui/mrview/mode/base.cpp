@@ -151,7 +151,7 @@ done_painting:
         void Base::mouse_press_event () { }
         void Base::mouse_release_event () { }
 
-        void Base::slice_move_event (int x) 
+        void Base::slice_move_event (float x) 
         {
           const Projection* proj = get_current_projection();
           if (!proj) return;

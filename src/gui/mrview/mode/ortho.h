@@ -40,7 +40,7 @@ namespace MR
             virtual void paint (Projection& projection);
 
             virtual void mouse_press_event ();
-            virtual void slice_move_event (int x);
+            virtual void slice_move_event (float x);
             virtual void panthrough_event ();
             virtual const Projection* get_current_projection () const;
 
