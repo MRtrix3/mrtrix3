@@ -82,7 +82,7 @@ namespace MR
        * coefficients up to maximum harmonic degree \a lmax onto directions \a
        * dirs (in spherical coordinates, with columns [ azimuth elevation ]). */
       template <class MatrixType>
-        Eigen::Matrix<typename MatrixType::Scalar,Eigen::Dynamic, Eigen::Dynamic> init_transform (const MatrixType& dirs, int lmax)
+        Eigen::Matrix<typename MatrixType::Scalar,Eigen::Dynamic, Eigen::Dynamic> init_transform (const MatrixType& dirs, const int lmax)
         {
           using namespace Eigen;
           typedef typename MatrixType::Scalar value_type;
@@ -91,7 +91,7 @@ namespace MR
           Matrix<value_type,Dynamic,Dynamic> SHT (dirs.rows(), NforL (lmax));
           Matrix<value_type,Dynamic,1,0,64> AL (lmax+1);
           for (ssize_t i = 0; i < dirs.rows(); i++) {
-            value_type x = std::cos (dirs (i,1));
+            const value_type x = std::cos (dirs (i,1));
             Legendre::Plm_sph (AL, lmax, 0, x);
             for (int l = 0; l <= lmax; l+=2)
               SHT (i,index (l,0)) = AL[l];

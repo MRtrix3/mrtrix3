@@ -121,7 +121,8 @@ namespace MR
           void finalise()
           {
             // 2pi == solid angle of halfsphere in steradians
-            integral *= 2.0 * Math::pi / float(mask.size());
+            //integral *= 2.0 * Math::pi / float(mask.size());
+            // No longer needed: Segmenter::weights should deal with this
             // This is calculated as the lobe is built, just needs to be set to unit length
             mean_dir.normalize();
           }
@@ -256,6 +257,9 @@ namespace MR
 
           std::shared_ptr<Math::SH::Transform    <default_type>> transform;
           std::shared_ptr<Math::SH::PrecomputedAL<default_type>> precomputer;
+
+          // Store a vector of weights to be applied when computing integrals, to account for non-uniformities in direction distribution
+          std::shared_ptr<Eigen::Array<default_type, Eigen::Dynamic, 1>> weights;
 
           default_type ratio_to_negative_lobe_integral; // Integral of positive lobe must be at least this ratio larger than the largest negative lobe integral
           default_type ratio_to_negative_lobe_mean_peak; // Peak value of positive lobe must be at least this ratio larger than the mean negative lobe peak
