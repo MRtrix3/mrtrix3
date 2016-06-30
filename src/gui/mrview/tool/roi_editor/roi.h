@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 
 #ifndef __gui_mrview_tool_roi_editor_roi_h__
@@ -53,15 +53,15 @@ namespace MR
             ROI (Dock* parent);
             ~ROI();
 
-            void draw (const Projection& projection, bool is_3D, int axis, int slice);
+            void draw (const Projection& projection, bool is_3D, int axis, int slice) override;
 
             static void add_commandline_options (MR::App::OptionList& options);
-            virtual bool process_commandline_option (const MR::App::ParsedOption& opt);
+            virtual bool process_commandline_option (const MR::App::ParsedOption& opt) override;
 
-            virtual bool mouse_press_event ();
-            virtual bool mouse_move_event ();
-            virtual bool mouse_release_event ();
-            virtual QCursor* get_cursor ();
+            virtual bool mouse_press_event () override;
+            virtual bool mouse_move_event () override;
+            virtual bool mouse_release_event () override;
+            virtual QCursor* get_cursor () override;
 
           private slots:
             void new_slot ();
@@ -79,6 +79,7 @@ namespace MR
             void update_slot ();
             void colour_changed ();
             void opacity_changed (int unused);
+            void model_rows_changed ();
 
           protected:
              QPushButton *hide_all_button, *close_button, *save_button;
@@ -99,15 +100,17 @@ namespace MR
              Mode::Slice::Shader shader;
 
              void update_undo_redo ();
-             void updateGL() { 
+             void updateGL() {
                window().get_current_mode()->update_overlays = true;
                window().updateGL();
              }
-             
+
              void load (std::vector<std::unique_ptr<MR::Header>>& list);
              void save (ROI_Item*);
 
              int normal2axis (const Eigen::Vector3f&, const MR::Transform&) const;
+
+             void dropEvent (QDropEvent* event) override;
         };
 
 

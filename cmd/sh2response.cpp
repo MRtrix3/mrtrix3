@@ -40,7 +40,9 @@ using namespace App;
 
 
 
-void usage () {
+void usage ()
+{
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   DESCRIPTION 
     + "generate an appropriate response function from the image data for spherical deconvolution";
@@ -90,7 +92,17 @@ void run ()
       continue;
 
     Eigen::Vector3d d = dir.row(3);
+    if (!d.allFinite()) {
+      WARN ("voxel with invalid direction [ " + str(dir.index(0)) + " " + str(dir.index(1)) + " " + str(dir.index(2)) + " ]; skipping");
+      continue;
+    }
     d.normalize();
+    // Uncertainty regarding Eigen's behaviour when normalizing a zero vector; may change behaviour between versions
+    if (!d.allFinite() || !d.squaredNorm()) {
+      WARN ("voxel with zero direction [ " + str(dir.index(0)) + " " + str(dir.index(1)) + " " + str(dir.index(2)) + " ]; skipping");
+      continue;
+    }
+
     Math::SH::delta (delta, d, lmax);
 
     for (int l = 0; l <= lmax; l += 2) {

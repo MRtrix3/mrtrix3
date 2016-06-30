@@ -35,19 +35,32 @@ namespace Connectome {
 
 
 
+enum stat_edge { SUM, MEAN, MIN, MAX };
+extern const char* statistics[];
+extern const App::Option EdgeStatisticOption;
+
+
+
 
 class Matrix
 {
 
   public:
-    Matrix (const node_t max_node_index, const bool vector_output = false) :
+    Matrix (const node_t max_node_index, const stat_edge stat, const bool vector_output = false) :
         data   (MR::Connectome::matrix_type::Zero (vector_output ? 1 : (max_node_index + 1), max_node_index + 1)),
-        counts (MR::Connectome::matrix_type::Zero (vector_output ? 1 : (max_node_index + 1), max_node_index + 1)) { }
+        counts (MR::Connectome::matrix_type::Zero (vector_output ? 1 : (max_node_index + 1), max_node_index + 1)),
+        statistic (stat)
+    {
+      if (statistic == stat_edge::MIN)
+        data = MR::Connectome::matrix_type::Constant (vector_output ? 1 : (max_node_index + 1), max_node_index + 1, std::numeric_limits<default_type>::infinity());
+      else if (statistic == stat_edge::MAX)
+        data = MR::Connectome::matrix_type::Constant (vector_output ? 1 : (max_node_index + 1), max_node_index + 1, -std::numeric_limits<default_type>::infinity());
+    }
 
     bool operator() (const Mapped_track_nodepair&);
     bool operator() (const Mapped_track_nodelist&);
 
-    void scale_by_streamline_count();
+    void finalize();
     void remove_unassigned();
     void zero_diagonal();
 
@@ -61,8 +74,11 @@ class Matrix
 
   private:
     MR::Connectome::matrix_type data, counts;
+    const stat_edge statistic;
     std::vector<NodePair> assignments_pairs;
     std::vector< std::vector<node_t> > assignments_lists;
+
+    void apply (double&, const double, const double);
 
 };
 

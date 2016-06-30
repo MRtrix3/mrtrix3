@@ -147,6 +147,12 @@ void TrackMapperTWI::set_factor (const Streamline<>& tck, SetVoxelExtras& out) c
       }
       break;
 
+    case VECTOR_FILE:
+      assert (vector_data);
+      assert (tck.index < size_t(vector_data->size()));
+      out.factor = (*vector_data)[tck.index];
+      break;
+
     default:
       throw Exception ("FIXME: Undefined / unsupported contrast mechanism in TrackMapperTWI::get_factor()");
 
@@ -179,6 +185,15 @@ void TrackMapperTWI::add_fod_image (const std::string& path)
   if (contrast != FOD_AMP)
     throw Exception ("Cannot add an FOD image to TWI unless the FOD_AMP contrast is used");
   image_plugin.reset (new TWIFODImagePlugin (path));
+}
+
+void TrackMapperTWI::add_vector_data (const std::string& path)
+{
+  if (image_plugin)
+    throw Exception ("Cannot add both an associated image and a vector data file to TWI");
+  if (contrast != VECTOR_FILE)
+    throw Exception ("Cannot add a vector data file to TWI unless the VECTOR_FILE contrast is used");
+  vector_data.reset (new Eigen::VectorXf (load_vector<float> (path)));
 }
 
 

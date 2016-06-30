@@ -41,7 +41,7 @@ using namespace App;
 void usage ()
 {
 
-	AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
   + "generate an image for visualisation purposes from an ACT 5TT segmented anatomical image";

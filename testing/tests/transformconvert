@@ -1,0 +1,4 @@
+transformconvert transformconvert/affine_ants_zero.txt itk_import tmp.txt --force; testing_diff_matrix tmp.txt transformconvert/affine_mrtrix_zero.txt 0.0001
+transformconvert transformconvert/affine_ants.txt itk_import tmp.txt --force; testing_diff_matrix tmp.txt transformconvert/affine_mrtrix.txt 0.0001
+transformconvert transformconvert/affine2_slicer.txt itk_import tmp.txt --force; testing_diff_matrix tmp.txt transformconvert/affine2_mrtrix.txt 0.0001
+transformconvert moving2templateFSL.txt moving.mif.gz template.mif.gz flirt_import tmp.txt --force; testing_diff_matrix tmp.txt transformconvert/out.txt 0.001

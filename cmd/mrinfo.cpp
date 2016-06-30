@@ -35,7 +35,7 @@ const OptionGroup GradExportOptions = DWI::GradExportOptions();
 void usage ()
 {
 
-  AUTHOR = "Robert Smith (r.smith@brain.org.au) and J-Donald Tournier (d.tournier@brain.org.au)";
+  AUTHOR = "J-Donald Tournier (d.tournier@brain.org.au) and Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
     + "display header information, or extract specific information from the header."

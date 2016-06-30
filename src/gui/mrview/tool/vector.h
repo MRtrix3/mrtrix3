@@ -101,6 +101,9 @@ namespace MR
             QSlider *opacity_slider;
 
             QGroupBox *lock_to_grid, *crop_to_slice;
+
+            void add_images (std::vector<std::string>& list);
+            void dropEvent (QDropEvent* event) override;
         };
       }
     }

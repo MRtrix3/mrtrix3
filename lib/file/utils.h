@@ -86,7 +86,9 @@ namespace MR
 
 
     inline void create (const std::string& filename, int64_t size = 0)
-    { 
+    {
+      DEBUG (std::string("creating ") + (size ? "" : "empty ") + "file \"" + filename + "\"" + (size ? " with size " + str (size) : ""));
+
       int fid = open (filename.c_str(), O_CREAT | O_RDWR | ( App::overwrite_files ? O_TRUNC : O_EXCL ), 0666);
       if (fid < 0) {
         if (App::check_overwrite_files_func && errno == EEXIST) 
@@ -115,7 +117,7 @@ namespace MR
 
     inline void resize (const std::string& filename, int64_t size)
     {
-      DEBUG ("resizing file \"" + filename + "\" to " + str (size) + "...");
+      DEBUG ("resizing file \"" + filename + "\" to " + str (size));
 
       int fd = open (filename.c_str(), O_RDWR, 0666);
       if (fd < 0)

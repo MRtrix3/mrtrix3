@@ -9,7 +9,7 @@ citationWarning = ''
 cleanup = True
 lastFile = ''
 mrtrixForce = ''
-mrtrixQuiet = '-quiet'
+mrtrixQuiet = ' -quiet'
 mrtrixNThreads = ''
 parser = ''
 refList = ''
@@ -119,10 +119,10 @@ def initialise():
   if args.nocleanup:
     cleanup = False
   if args.nthreads:
-    mrtrixNThreads = '-nthreads ' + args.nthreads
+    mrtrixNThreads = ' -nthreads ' + args.nthreads
   if args.quiet:
     verbosity = 0
-    mrtrixQuiet = '-quiet'
+    mrtrixQuiet = ' -quiet'
   if args.verbose:
     verbosity = 2
     mrtrixQuiet = ''
@@ -169,11 +169,16 @@ def checkOutputFile(path):
   if not path:
     return
   if os.path.exists(path):
+    type = ''
+    if os.path.isfile(path):
+      type = ' file'
+    elif os.path.isdir(path):
+      type = ' directory'
     if args.force:
-      warnMessage('Output file ' + os.path.basename(path) + ' already exists; will be overwritten at script completion')
+      warnMessage('Output' + type + ' ' + os.path.basename(path) + ' already exists; will be overwritten at script completion')
       mrtrixForce = ' -force'
     else:
-      errorMessage('Output file ' + path + ' already exists (use -force to override)')
+      errorMessage('Output' + type + ' ' + path + ' already exists (use -force to override)')
       sys.exit(1)
 
 
@@ -222,3 +227,4 @@ def getCommonPostfix(inputFiles):
        common = first[len(first)-cursor-1] + common
      cursor += 1
  return common
+

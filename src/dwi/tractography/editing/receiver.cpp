@@ -28,7 +28,10 @@ namespace MR {
 
         bool Receiver::operator() (const Streamline<>& in)
         {
-          auto display_func = [&](){ return printf ("%8" PRIu64 " read, %8" PRIu64 " written", total_count, count); };
+          auto display_func = [&]() {
+            return (printf ("%8" PRIu64 " read, %8" PRIu64 " written", total_count, count)
+                    + (crop ? printf(", %8" PRIu64 " segments", segments) : ""));
+          };
 
           if (number && (count == number))
             return false;
@@ -48,23 +51,26 @@ namespace MR {
               progress.update (display_func);
               return true;
             }
-            output (in);
+            writer (in);
+            ++segments;
 
           } else {
 
             // Explicitly handle case where the streamline has been cropped into multiple components
             // Worker class separates track segments using invalid points as delimiters
             Streamline<> temp;
-            temp.index = in.index;
-            temp.weight = in.weight;
             for (const auto& p : in) {
               if (p.allFinite()) {
                 temp.push_back (p);
               } else if (temp.size()) {
-                output (temp);
+                temp.index = in.index;
+                temp.weight = in.weight;
+                writer (temp);
+                ++segments;
                 temp.clear();
               }
             }
+            assert (temp.empty());
 
           }
 
@@ -72,20 +78,6 @@ namespace MR {
           progress.update (display_func);
           return (!(number && (count == number)));
 
-        }
-
-
-
-        void Receiver::output (const Streamline<>& in)
-        {
-          if (ends_only) {
-            Streamline<> temp;
-            temp.push_back (in.front());
-            temp.push_back (in.back());
-            writer (temp);
-          } else {
-            writer (in);
-          }
         }
 
 

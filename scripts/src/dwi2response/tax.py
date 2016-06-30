@@ -27,6 +27,7 @@ def execute():
   import math, os, shutil
   import lib.app
   from lib.getImageStat import getImageStat
+  from lib.getUserPath  import getUserPath
   from lib.printMessage import printMessage
   from lib.runCommand   import runCommand
   
@@ -68,7 +69,7 @@ def execute():
       mask_in_path = 'iter' + str(iteration-1) + '_SF.mif'
   
     # Run CSD
-    runCommand('dwi2fod dwi.mif ' + RF_in_path + ' ' + prefix + 'FOD.mif -mask ' + mask_in_path)
+    runCommand('dwi2fod csd dwi.mif ' + RF_in_path + ' ' + prefix + 'FOD.mif -mask ' + mask_in_path)
     # Get amplitudes of two largest peaks, and directions of largest
     runCommand('fod2fixel ' + prefix + 'FOD.mif -peak ' + prefix + 'peaks.msf -mask ' + mask_in_path + ' -fmls_no_thresholds')
     runCommand('fixel2voxel ' + prefix + 'peaks.msf split_value ' + prefix + 'amps.mif')
@@ -114,5 +115,5 @@ def execute():
     shutil.copyfile('iter' + str(lib.app.args.max_iters-1) + '_RF.txt', 'response.txt')
     shutil.copyfile('iter' + str(lib.app.args.max_iters-1) + '_SF.mif', 'voxels.mif')
 
-  shutil.copyfile('response.txt', os.path.join(lib.app.workingDir, lib.app.args.output))
+  shutil.copyfile('response.txt', getUserPath(lib.app.args.output, False))
 

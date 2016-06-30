@@ -55,6 +55,8 @@ namespace MR {
                 case 0x1310U: 
                   acq_dim[0] = std::max (item.get_uint()[0], item.get_uint()[1]);
                   acq_dim[1] = std::max (item.get_uint()[2], item.get_uint()[3]);
+                  if (item.get_uint()[0] == 0 && item.get_uint()[3] == 0)
+                    std::swap (acq_dim[0], acq_dim[1]);
                   return;
                 case 0x0024U: 
                   sequence_name = item.get_string()[0];

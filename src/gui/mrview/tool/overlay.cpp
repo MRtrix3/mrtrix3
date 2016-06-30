@@ -103,11 +103,17 @@ namespace MR
             image_list_view = new QListView (this);
             image_list_view->setSelectionMode (QAbstractItemView::ExtendedSelection);
             image_list_view->setDragEnabled (true);
+            image_list_view->setDragDropMode (QAbstractItemView::InternalMove);
+            image_list_view->setAcceptDrops (true);
             image_list_view->viewport()->setAcceptDrops (true);
             image_list_view->setDropIndicatorShown (true);
 
             image_list_model = new Model (this);
             image_list_view->setModel (image_list_model);
+
+            image_list_view->setContextMenuPolicy (Qt::CustomContextMenu);
+            connect (image_list_view, SIGNAL (customContextMenuRequested (const QPoint&)),
+                     this, SLOT (right_click_menu_slot (const QPoint&)));
 
             main_box->addWidget (image_list_view, 1);
 
@@ -214,6 +220,31 @@ namespace MR
           QModelIndex last = image_list_model->index (image_list_model->rowCount()-1, 0, QModelIndex());
           image_list_view->selectionModel()->select (QItemSelection (first, last), QItemSelectionModel::Select);
         }
+
+
+
+
+        void Overlay::dropEvent (QDropEvent* event)
+        {
+          static constexpr int max_files = 32;
+
+          const QMimeData* mimeData = event->mimeData();
+          if (mimeData->hasUrls()) {
+            std::vector<std::unique_ptr<MR::Header>> list;
+            QList<QUrl> urlList = mimeData->urls();
+            for (int i = 0; i < urlList.size() && i < max_files; ++i) {
+              try {
+                list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (urlList.at (i).path().toUtf8().constData()))));
+              }
+              catch (Exception& e) {
+                e.display();
+              }
+            }
+            if (list.size())
+              add_images (list);
+          }
+        }
+
 
 
 
@@ -529,6 +560,17 @@ namespace MR
         void Overlay::selection_changed_slot (const QItemSelection &, const QItemSelection &)
         {
           update_selection();
+        }
+
+
+        void Overlay::right_click_menu_slot (const QPoint& pos)
+        {
+          QModelIndex index = image_list_view->indexAt (pos);
+          if (index.isValid()) {
+            QPoint globalPos = image_list_view->mapToGlobal (pos);
+            image_list_view->selectionModel()->select(index, QItemSelectionModel::Select);
+            colourmap_button->open_menu (globalPos);
+          }
         }
 
 

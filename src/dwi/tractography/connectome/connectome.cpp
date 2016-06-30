@@ -16,7 +16,7 @@
 
 
 #include "dwi/tractography/connectome/connectome.h"
-#include "dwi/tractography/connectome/edge_metrics.h"
+#include "dwi/tractography/connectome/metric.h"
 #include "dwi/tractography/connectome/tck2nodes.h"
 
 
@@ -30,16 +30,15 @@ namespace Connectome {
 
 
 
-const char* modes[] = { "assignment_end_voxels", "assignment_radial_search", "assignment_reverse_search", "assignment_forward_search", "assignment_all_voxels", NULL };
-
-const char* metrics[] = { "count", "meanlength", "invlength", "invnodevolume", "invlength_invnodevolume", "mean_scalar", NULL };
-
-
 using namespace App;
 
 
 
-const OptionGroup AssignmentOption = OptionGroup ("Structural connectome streamline assignment option")
+const char* modes[] = { "assignment_end_voxels", "assignment_radial_search", "assignment_reverse_search", "assignment_forward_search", "assignment_all_voxels", NULL };
+
+
+
+const OptionGroup AssignmentOptions = OptionGroup ("Structural connectome streamline assignment option")
 
   + Option ("assignment_end_voxels", "use a simple voxel lookup value at each streamline endpoint")
 
@@ -98,42 +97,31 @@ Tck2nodes_base* load_assignment_mode (Image<node_t>& nodes_data)
 
 
 
-const OptionGroup MetricOption = OptionGroup ("Structural connectome metric option")
+const OptionGroup MetricOptions = OptionGroup ("Structural connectome metric options")
 
-  + Option ("metric", "specify the edge weight metric. "
-                      "Options are: count (default), meanlength, invlength, invnodevolume, invlength_invnodevolume, mean_scalar")
-    + Argument ("choice").type_choice (metrics)
+  + Option ("scale_length", "scale each contribution to the connectome edge by the length of the streamline")
+  + Option ("scale_invlength", "scale each contribution to the connectome edge by the inverse of the streamline length")
+  + Option ("scale_invnodevol", "scale each contribution to the connectome edge by the inverse of the two node volumes")
 
-  + Option ("image", "provide the associated image for the mean_scalar metric")
+  + Option ("scale_file", "scale each contribution to the connectome edge according to the values in a vector file")
     + Argument ("path").type_image_in();
 
 
 
-Metric_base* load_metric (Image<node_t>& nodes_data)
+void setup_metric (Metric& metric, Image<node_t>& nodes_data)
 {
-  int edge_metric = 0; // default = count
-  auto opt = get_options ("metric");
-  if (opt.size())
-    edge_metric = opt[0][0];
-  switch (edge_metric) {
-
-    case 0: return new Metric_count (); break;
-    case 1: return new Metric_meanlength (); break;
-    case 2: return new Metric_invlength (); break;
-    case 3: return new Metric_invnodevolume (nodes_data); break;
-    case 4: return new Metric_invlength_invnodevolume (nodes_data); break;
-
-    case 5:
-      opt = get_options ("image");
-      if (!opt.size())
-        throw Exception ("To use the \"mean_scalar\" metric, you must provide the associated scalar image using the -image option");
-      return new Metric_meanscalar (opt[0][0]);
-      break;
-
-    default: throw Exception ("Undefined edge weight metric");
-
+  if (get_options ("scale_length").size()) {
+    if (get_options ("scale_invlength").size())
+      throw Exception ("Options -scale_length and -scale_invlength are mutually exclusive");
+    metric.set_scale_length();
+  } else if (get_options ("scale_invlength").size()) {
+    metric.set_scale_invlength();
   }
-  return NULL;
+  if (get_options ("scale_invnnodevol").size())
+    metric.set_scale_invnodevol (nodes_data);
+  auto opt = get_options ("scale_file");
+  if (opt.size())
+    metric.set_scale_file (opt[0][0]);
 }
 
 

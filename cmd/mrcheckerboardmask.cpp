@@ -24,14 +24,14 @@ using namespace App;
 
 void usage ()
 {
+  AUTHOR = "Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
+
   DESCRIPTION
   + "create bitwise checkerboard image";
-
 
   ARGUMENTS
   + Argument ("input", "the input image to be .").type_image_in ()
   + Argument ("output", "the output binary image mask.").type_image_out ();
-
 
   OPTIONS
   + Option ("tiles", "specify the number of tiles in any direction")

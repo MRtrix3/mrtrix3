@@ -27,6 +27,8 @@ using namespace App;
 
 void usage () {
 
+AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
+
 DESCRIPTION
   + "apply generic voxel-wise mathematical operations to images."
 

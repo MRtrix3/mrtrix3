@@ -87,30 +87,30 @@ namespace MR
             slab_thickness  = 2 * voxel_size;
 
             VBoxLayout* main_box = new VBoxLayout (this);
-            HBoxLayout* layout = new HBoxLayout;
-            layout->setContentsMargins (0, 0, 0, 0);
-            layout->setSpacing (0);
+            HBoxLayout* hlayout = new HBoxLayout;
+            hlayout->setContentsMargins (0, 0, 0, 0);
+            hlayout->setSpacing (0);
 
             QPushButton* button = new QPushButton (this);
             button->setToolTip (tr ("Open tractogram"));
             button->setIcon (QIcon (":/open.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (tractogram_open_slot ()));
-            layout->addWidget (button, 1);
+            hlayout->addWidget (button, 1);
 
             button = new QPushButton (this);
             button->setToolTip (tr ("Close tractogram"));
             button->setIcon (QIcon (":/close.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (tractogram_close_slot ()));
-            layout->addWidget (button, 1);
+            hlayout->addWidget (button, 1);
 
             hide_all_button = new QPushButton (this);
             hide_all_button->setToolTip (tr ("Hide all tractograms"));
             hide_all_button->setIcon (QIcon (":/hide.svg"));
             hide_all_button->setCheckable (true);
             connect (hide_all_button, SIGNAL (clicked()), this, SLOT (hide_all_slot ()));
-            layout->addWidget (hide_all_button, 1);
+            hlayout->addWidget (hide_all_button, 1);
 
-            main_box->addLayout (layout, 0);
+            main_box->addLayout (hlayout, 0);
 
             tractogram_list_view = new QListView (this);
             tractogram_list_view->setSelectionMode (QAbstractItemView::ExtendedSelection);
@@ -134,27 +134,60 @@ namespace MR
 
             main_box->addWidget (tractogram_list_view, 1);
 
-            GridLayout* default_opt_grid = new GridLayout;
+            hlayout = new HBoxLayout;
+            hlayout->setContentsMargins (0, 0, 0, 0);
+            hlayout->setSpacing (0);
+
+            hlayout->addWidget (new QLabel ("color"));
+
+            colour_combobox = new ComboBoxWithErrorMsg (this, "(variable)");
+            colour_combobox->setToolTip (tr ("Set how this tractogram will be colored"));
+            colour_combobox->addItem ("Direction");
+            colour_combobox->addItem ("Endpoints");
+            colour_combobox->addItem ("Random");
+            colour_combobox->addItem ("Manual");
+            colour_combobox->addItem ("File");
+            colour_combobox->setEnabled (false);
+            connect (colour_combobox, SIGNAL (activated(int)), this, SLOT (colour_mode_selection_slot (int)));
+            hlayout->addWidget (colour_combobox);
+
+            colour_button = new QColorButton;
+            colour_button->setToolTip (tr ("Set the fixed colour to use for all tracks"));
+            colour_button->setEnabled (false);
+            connect (colour_button, SIGNAL (clicked()), this, SLOT (colour_button_slot()));
+            hlayout->addWidget (colour_button);
+
+            main_box->addLayout (hlayout);
+
+            scalar_file_options = new TrackScalarFileOptions (this);
+            main_box->addWidget (scalar_file_options);
+
+            QGroupBox* general_groupbox = new QGroupBox ("General options");
+            GridLayout* general_opt_grid = new GridLayout;
+            general_opt_grid->setContentsMargins (0, 0, 0, 0);
+            general_opt_grid->setSpacing (0);
+
+            general_groupbox->setLayout (general_opt_grid);
 
             QSlider* slider;
             slider = new QSlider (Qt::Horizontal);
             slider->setRange (1,1000);
             slider->setSliderPosition (1000);
             connect (slider, SIGNAL (valueChanged (int)), this, SLOT (opacity_slot (int)));
-            default_opt_grid->addWidget (new QLabel ("opacity"), 0, 0);
-            default_opt_grid->addWidget (slider, 0, 1);
+            general_opt_grid->addWidget (new QLabel ("opacity"), 0, 0);
+            general_opt_grid->addWidget (slider, 0, 1);
 
             slider = new QSlider (Qt::Horizontal);
             slider->setRange (-1000,1000);
             slider->setSliderPosition (0);
             connect (slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
-            default_opt_grid->addWidget (new QLabel ("line thickness"), 1, 0);
-            default_opt_grid->addWidget (slider, 1, 1);
+            general_opt_grid->addWidget (new QLabel ("line thickness"), 1, 0);
+            general_opt_grid->addWidget (slider, 1, 1);
 
             QGroupBox* slab_group_box = new QGroupBox (tr("crop to slab"));
             slab_group_box->setCheckable (true);
             slab_group_box->setChecked (true);
-            default_opt_grid->addWidget (slab_group_box, 3, 0, 1, 2);
+            general_opt_grid->addWidget (slab_group_box, 4, 0, 1, 2);
 
             connect (slab_group_box, SIGNAL (clicked (bool)), this, SLOT (on_crop_to_slab_slot (bool)));
 
@@ -170,7 +203,7 @@ namespace MR
             QGroupBox* lighting_group_box = new QGroupBox (tr("lighting"));
             lighting_group_box->setCheckable (true);
             lighting_group_box->setChecked (false);
-            default_opt_grid->addWidget (lighting_group_box, 4, 0, 1, 2);
+            general_opt_grid->addWidget (lighting_group_box, 5, 0, 1, 2);
 
             connect (lighting_group_box, SIGNAL (clicked (bool)), this, SLOT (on_use_lighting_slot (bool)));
 
@@ -179,7 +212,7 @@ namespace MR
             connect (lighting_button, SIGNAL (clicked()), this, SLOT (on_lighting_settings()));
             lighting_layout->addWidget (lighting_button);
 
-            main_box->addLayout (default_opt_grid, 0);
+            main_box->addWidget (general_groupbox, 0);
 
             lighting = new GL::Lighting (parent); 
             lighting->diffuse = 0.8;
@@ -215,8 +248,9 @@ namespace MR
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           not_3D = !is_3D;
           for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
-            if (tractogram_list_model->items[i]->show && !hide_all_button->isChecked())
-              dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get())->render (transform);
+            Tractogram* tractogram = dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get());
+            if (tractogram->show && !hide_all_button->isChecked())
+              tractogram->render (transform);
           }
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
@@ -224,14 +258,13 @@ namespace MR
 
         void Tractography::draw_colourbars ()
         {
-          if(!scalar_file_options || hide_all_button->isChecked())
+          if (hide_all_button->isChecked())
             return;
 
-          const auto scalarFileTool = dynamic_cast<TrackScalarFile*> (scalar_file_options->tool);
-
           for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
-            if (tractogram_list_model->items[i]->show)
-              dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get())->request_render_colourbar(*scalarFileTool);
+            Tractogram* tractogram = dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get());
+            if (tractogram->show && tractogram->get_color_type() == TrackColourType::ScalarFile && tractogram->intensity_scalar_filename.length())
+              tractogram->request_render_colourbar (*scalar_file_options);
           }
         }
 
@@ -240,10 +273,10 @@ namespace MR
         size_t Tractography::visible_number_colourbars () {
            size_t total_visible(0);
 
-           if(scalar_file_options && !hide_all_button->isChecked()) {
+           if (!hide_all_button->isChecked()) {
              for (size_t i = 0, N = tractogram_list_model->rowCount(); i < N; ++i) {
                Tractogram* tractogram = dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get());
-               if (tractogram && tractogram->show && tractogram->scalar_filename.length())
+               if (tractogram->show && tractogram->get_color_type() == TrackColourType::ScalarFile && tractogram->intensity_scalar_filename.length())
                  total_visible += 1;
              }
            }
@@ -268,13 +301,38 @@ namespace MR
         }
 
 
+        void Tractography::dropEvent (QDropEvent* event)
+        {
+          static constexpr int max_files = 32;
+
+          const QMimeData* mimeData = event->mimeData();
+          if (mimeData->hasUrls()) {
+            std::vector<std::string> list;
+            QList<QUrl> urlList = mimeData->urls();
+            for (int i = 0; i < urlList.size() && i < max_files; ++i) {
+                list.push_back (urlList.at (i).path().toUtf8().constData());
+            }
+            try {
+              tractogram_list_model->add_items (list, *this);
+              window().updateGL();
+            }
+            catch (Exception& e) {
+              e.display();
+            }
+          }
+        }
+
+
         void Tractography::tractogram_close_slot ()
         {
+          MRView::GrabContext context;
           QModelIndexList indexes = tractogram_list_view->selectionModel()->selectedIndexes();
           while (indexes.size()) {
             tractogram_list_model->remove_item (indexes.first());
             indexes = tractogram_list_view->selectionModel()->selectedIndexes();
           }
+          scalar_file_options->set_tractogram (nullptr);
+          scalar_file_options->update_UI();
           window().updateGL();
         }
 
@@ -362,9 +420,9 @@ namespace MR
         {
           QModelIndex index = tractogram_list_view->indexAt (pos);
           if (index.isValid()) {
-            QPoint globalPos = tractogram_list_view->mapToGlobal( pos);
-            tractogram_list_view->selectionModel()->select(index, QItemSelectionModel::Select);
-            track_option_menu->exec(globalPos);
+            QPoint globalPos = tractogram_list_view->mapToGlobal (pos);
+            tractogram_list_view->selectionModel()->select (index, QItemSelectionModel::Select);
+            track_option_menu->exec (globalPos);
           }
         }
 
@@ -373,9 +431,17 @@ namespace MR
         {
           QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i)  {
-            tractogram_list_model->get_tractogram (indices[i])->erase_nontrack_data();
-            tractogram_list_model->get_tractogram (indices[i])->color_type = Direction;
+            Tractogram* tractogram = tractogram_list_model->get_tractogram (indices[i]);
+            tractogram->set_color_type (TrackColourType::Direction);
+            if (tractogram->get_threshold_type() == TrackThresholdType::UseColourFile)
+              tractogram->set_threshold_type (TrackThresholdType::None);
           }
+          colour_combobox->blockSignals (true);
+          colour_combobox->setCurrentIndex (0);
+          colour_combobox->clearError();
+          colour_combobox->blockSignals (false);
+          colour_button->setEnabled (false);
+          update_scalar_options();
           window().updateGL();
         }
         
@@ -384,10 +450,47 @@ namespace MR
         {
           QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i) {
-            tractogram_list_model->get_tractogram (indices[i])->erase_nontrack_data();
-            tractogram_list_model->get_tractogram (indices[i])->color_type = Ends;
-            tractogram_list_model->get_tractogram (indices[i])->load_end_colours();
+            Tractogram* tractogram = tractogram_list_model->get_tractogram (indices[i]);
+            tractogram->set_color_type (TrackColourType::Ends);
+            tractogram->load_end_colours();
+            if (tractogram->get_threshold_type() == TrackThresholdType::UseColourFile)
+              tractogram->set_threshold_type (TrackThresholdType::None);
           }
+          colour_combobox->blockSignals (true);
+          colour_combobox->setCurrentIndex (1);
+          colour_combobox->clearError();
+          colour_combobox->blockSignals (false);
+          colour_button->setEnabled (false);
+          update_scalar_options();
+          window().updateGL();
+        }
+
+
+        void Tractography::randomise_track_colour_slot()
+        {
+          QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indices.size(); ++i) {
+            Tractogram* tractogram = tractogram_list_model->get_tractogram (indices[i]);
+            float colour[3];
+            Math::RNG::Uniform<float> rng;
+            do {
+              colour[0] = rng();
+              colour[1] = rng();
+              colour[2] = rng();
+            } while (colour[0] < 0.5 && colour[1] < 0.5 && colour[2] < 0.5);
+            tractogram->set_color_type (TrackColourType::Manual);
+            tractogram->set_colour (colour);
+            if (tractogram->get_threshold_type() == TrackThresholdType::UseColourFile)
+              tractogram->set_threshold_type (TrackThresholdType::None);
+            if (!i)
+              colour_button->setColor (QColor (colour[0]*255.0f, colour[1]*255.0f, colour[2]*255.0f));
+          }
+          colour_combobox->blockSignals (true);
+          colour_combobox->setCurrentIndex (2);
+          colour_combobox->clearError();
+          colour_combobox->blockSignals (false);
+          colour_button->setEnabled (true);
+          update_scalar_options();
           window().updateGL();
         }
 
@@ -400,29 +503,19 @@ namespace MR
           if (color.isValid()) {
             QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
             for (int i = 0; i < indices.size(); ++i) {
-              tractogram_list_model->get_tractogram (indices[i])->erase_nontrack_data();
-              tractogram_list_model->get_tractogram (indices[i])->color_type = Manual;
-              tractogram_list_model->get_tractogram (indices[i])->set_colour (colour);
+              Tractogram* tractogram = tractogram_list_model->get_tractogram (indices[i]);
+              tractogram->set_color_type (TrackColourType::Manual);
+              tractogram->set_colour (colour);
+              if (tractogram->get_threshold_type() == TrackThresholdType::UseColourFile)
+                tractogram->set_threshold_type (TrackThresholdType::None);
             }
-          }
-          window().updateGL();
-        }
-
-
-        void Tractography::randomise_track_colour_slot()
-        {
-          QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
-          for (int i = 0; i < indices.size(); ++i) {
-            float colour[3];
-            Math::RNG::Uniform<float> rng;
-            do {
-              colour[0] = rng();
-              colour[1] = rng();
-              colour[2] = rng();
-            } while (colour[0] < 0.5 && colour[1] < 0.5 && colour[2] < 0.5);
-            dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()].get())->erase_nontrack_data();
-            dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()].get())->color_type = Manual;
-            dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()].get())->set_colour (colour);
+            colour_combobox->blockSignals (true);
+            colour_combobox->setCurrentIndex (3);
+            colour_combobox->clearError();
+            colour_combobox->blockSignals (false);
+            colour_button->setEnabled (true);
+            colour_button->setColor (QColor (colour[0]*255.0f, colour[1]*255.0f, colour[2]*255.0f));
+            update_scalar_options();
           }
           window().updateGL();
         }
@@ -432,24 +525,70 @@ namespace MR
         {
           QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
           if (indices.size() != 1) {
-            QMessageBox msgBox;
-            msgBox.setText("Please select only one tractogram when colouring by scalar file.    ");
-            msgBox.exec();
-          } else {
-            if (!scalar_file_options) {
-              scalar_file_options = Tool::create<TrackScalarFile> ("Scalar file options");
-              scalar_file_options->setFloating (false);
-              scalar_file_options->raise();
+            // User may have accessed this from the context menu
+            QMessageBox::warning (QApplication::activeWindow(),
+                                  tr ("Tractogram colour error"),
+                                  tr ("Cannot set multiple tractograms to use the same file for streamline colouring"),
+                                  QMessageBox::Ok,
+                                  QMessageBox::Ok);
+            return;
+          }
+          Tractogram* tractogram = tractogram_list_model->get_tractogram (indices[0]);
+          scalar_file_options->set_tractogram (tractogram);
+          if (tractogram->intensity_scalar_filename.empty()) {
+            if (!scalar_file_options->open_intensity_track_scalar_file_slot()) {
+              colour_combobox->blockSignals (true);
+              switch (tractogram->get_color_type()) {
+                case TrackColourType::Direction:  colour_combobox->setCurrentIndex (0); break;
+                case TrackColourType::Ends:       colour_combobox->setCurrentIndex (1); break;
+                case TrackColourType::Manual:     colour_combobox->setCurrentIndex (3); break;
+                case TrackColourType::ScalarFile: colour_combobox->setCurrentIndex (4); break;
+              }
+              colour_combobox->clearError();
+              colour_combobox->blockSignals (false);
+              return;
             }
-            dynamic_cast<TrackScalarFile*> (scalar_file_options->tool)->set_tractogram (tractogram_list_model->get_tractogram (indices[0]));
-            if (dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()].get())->scalar_filename.length() == 0) {
-              if (!dynamic_cast<TrackScalarFile*> (scalar_file_options->tool)->open_track_scalar_file_slot())
-                return;
-            } else {
-              dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()].get())->erase_nontrack_data();
-              dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()].get())->color_type = ScalarFile;
-            }
-            scalar_file_options->show();
+          }
+          tractogram->set_color_type (TrackColourType::ScalarFile);
+          colour_combobox->blockSignals (true);
+          colour_combobox->setCurrentIndex (4);
+          colour_combobox->clearError();
+          colour_combobox->blockSignals (false);
+          colour_button->setEnabled (false);
+          update_scalar_options();
+          window().updateGL();
+        }
+
+
+        void Tractography::colour_mode_selection_slot (int /*unused*/)
+        {
+          switch (colour_combobox->currentIndex()) {
+            case 0: colour_track_by_direction_slot(); break;
+            case 1: colour_track_by_ends_slot(); break;
+            case 2: randomise_track_colour_slot(); break;
+            case 3: set_track_colour_slot(); break;
+            case 4: colour_by_scalar_file_slot(); break;
+            case 5: break;
+            default: assert (0);
+          }
+        }
+
+
+        void Tractography::colour_button_slot()
+        {
+          // Button brings up its own colour prompt; if set_track_colour_slot()
+          //   were to be called, this would present its own selection prompt
+          // Need to instead set the colours here explicitly
+          const QColor color = colour_button->color();
+          if (color.isValid()) {
+            QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+            float c[3] = { color.red()/255.0f, color.green()/255.0f, color.blue()/255.0f };
+            for (int i = 0; i < indices.size(); ++i)
+              tractogram_list_model->get_tractogram (indices[i])->set_colour (c);
+            colour_combobox->blockSignals (true);
+            colour_combobox->setCurrentIndex (3); // In case it was on random
+            colour_combobox->clearError();
+            colour_combobox->blockSignals (false);
             window().updateGL();
           }
         }
@@ -457,14 +596,62 @@ namespace MR
 
         void Tractography::selection_changed_slot (const QItemSelection &, const QItemSelection &)
         {
-          if (scalar_file_options) {
-            QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
-            if (indices.size() == 1) {
-              dynamic_cast<TrackScalarFile*> (scalar_file_options->tool)->set_tractogram (tractogram_list_model->get_tractogram (indices[0]));
-            } else {
-              dynamic_cast<TrackScalarFile*> (scalar_file_options->tool)->set_tractogram (NULL);
+          update_scalar_options();
+          QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+          if (!indices.size()) {
+            colour_combobox->setEnabled (false);
+            colour_button->setEnabled (false);
+            return;
+          }
+          colour_combobox->setEnabled (true);
+          TrackColourType color_type = tractogram_list_model->get_tractogram (indices[0])->get_color_type();
+          Eigen::Array3f color = tractogram_list_model->get_tractogram (indices[0])->colour;
+          bool color_type_consistent = true;
+          for (int i = 1; i != indices.size(); ++i) {
+            const Tractogram* tractogram = tractogram_list_model->get_tractogram (indices[i]);
+            if (tractogram->get_color_type() != color_type) {
+              color_type_consistent = false;
+              break;
             }
           }
+          if (color_type_consistent) {
+            colour_combobox->blockSignals (true);
+            switch (color_type) {
+              case TrackColourType::Direction:
+                colour_combobox->setCurrentIndex (0);
+                colour_button->setEnabled (false);
+                break;
+              case TrackColourType::Ends:
+                colour_combobox->setCurrentIndex (1);
+                colour_button->setEnabled (false);
+                break;
+              case TrackColourType::Manual:
+                colour_combobox->setCurrentIndex (3);
+                colour_button->setEnabled (true);
+                colour_button->setColor (QColor (color[0]*255.0f, color[1]*255.0f, color[2]*255.0f));
+                break;
+              case TrackColourType::ScalarFile:
+                colour_combobox->setCurrentIndex (4);
+                colour_button->setEnabled (false);
+                break;
+            }
+            colour_combobox->clearError();
+            colour_combobox->blockSignals (false);
+          } else {
+            colour_combobox->setError();
+          }
+        }
+
+
+
+        void Tractography::update_scalar_options()
+        {
+          QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+          if (indices.size() == 1)
+            scalar_file_options->set_tractogram (tractogram_list_model->get_tractogram (indices[0]));
+          else
+            scalar_file_options->set_tractogram (nullptr);
+          scalar_file_options->update_UI();
         }
 
 

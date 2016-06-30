@@ -27,7 +27,7 @@
 #include "dwi/tractography/weights.h"
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/connectome/connectome.h"
-#include "dwi/tractography/connectome/edge_metrics.h"
+#include "dwi/tractography/connectome/metric.h"
 #include "dwi/tractography/connectome/mapper.h"
 #include "dwi/tractography/connectome/matrix.h"
 #include "dwi/tractography/connectome/tck2nodes.h"
@@ -44,7 +44,7 @@ using namespace MR::DWI::Tractography::Connectome;
 void usage ()
 {
 
-	AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
   + "generate a connectome matrix from a streamlines file and a node parcellation image";
@@ -56,8 +56,12 @@ void usage ()
 
 
   OPTIONS
-  + MR::DWI::Tractography::Connectome::AssignmentOption
-  + MR::DWI::Tractography::Connectome::MetricOption
+  + MR::DWI::Tractography::Connectome::AssignmentOptions
+  + MR::DWI::Tractography::Connectome::MetricOptions
+
+  + OptionGroup ("Other options for tck2connectome")
+
+  + MR::DWI::Tractography::Connectome::EdgeStatisticOption
 
   + Tractography::TrackWeightsInOption
 
@@ -112,9 +116,12 @@ void run ()
   // Are we generating a matrix or a vector?
   const bool vector_output = get_options ("vector").size();
 
-  // Get the metric & assignment mechanism for connectome construction
-  std::unique_ptr<Metric_base>    metric    (load_metric (node_image));
+  // Get the metric, assignment mechanism & per-edge statistic for connectome construction
+  Metric metric;
+  Tractography::Connectome::setup_metric (metric, node_image);
   std::unique_ptr<Tck2nodes_base> tck2nodes (load_assignment_mode (node_image));
+  auto opt = get_options ("stat_edge");
+  stat_edge statistic = opt.size() ? stat_edge(int(opt[0][0])) : stat_edge::SUM;
 
   // Prepare for reading the track data
   Tractography::Properties properties;
@@ -122,8 +129,8 @@ void run ()
 
   // Initialise classes in preparation for multi-threading
   Mapping::TrackLoader loader (reader, properties["count"].empty() ? 0 : to<size_t>(properties["count"]), "Constructing connectome");
-  Tractography::Connectome::Mapper mapper (*tck2nodes, *metric);
-  Tractography::Connectome::Matrix connectome (max_node_index, vector_output);
+  Tractography::Connectome::Mapper mapper (*tck2nodes, metric);
+  Tractography::Connectome::Matrix connectome (max_node_index, statistic, vector_output);
 
   // Multi-threaded connectome construction
   if (tck2nodes->provides_pair()) {
@@ -142,9 +149,7 @@ void run ()
         connectome);
   }
 
-  if (metric->scale_edges_by_streamline_count())
-    connectome.scale_by_streamline_count();
-
+  connectome.finalize();
   connectome.error_check (missing_nodes);
 
   if (!get_options ("keep_unassigned").size())
@@ -154,7 +159,7 @@ void run ()
     connectome.zero_diagonal();
 
   connectome.write (argument[2]);
-  auto opt = get_options ("out_assignments");
+  opt = get_options ("out_assignments");
   if (opt.size())
     connectome.write_assignments (opt[0][0]);
 

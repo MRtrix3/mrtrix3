@@ -40,7 +40,6 @@
 #include "mesh/mesh.h"
 
 #include "connectome/mat2vec.h"
-#include "connectome/config/config.h"
 #include "connectome/lut.h"
 
 #include "gui/mrview/tool/connectome/colourmap_observers.h"
@@ -133,8 +132,7 @@ namespace MR
             void edge_alpha_value_slot (int);
             void edge_alpha_parameter_slot();
 
-            void config_open_slot();
-            void lut_open_slot (int);
+            void lut_open_slot ();
             void lighting_change_slot (int);
             void lighting_settings_slot();
             void lighting_parameter_slot();
@@ -221,8 +219,7 @@ namespace MR
             AdjustButton *edge_alpha_lower_button, *edge_alpha_upper_button;
             QCheckBox *edge_alpha_invert_checkbox;
 
-            QPushButton *config_button;
-            QComboBox *lut_combobox;
+            QPushButton *lut_button;
             QCheckBox *lighting_checkbox;
             QPushButton *lighting_settings_button;
             QCheckBox *crop_to_slab_checkbox;
@@ -252,17 +249,7 @@ namespace MR
 
             // If a lookup table is provided, this container will store the
             //   properties of each node as provided in that file (e.g. name & colour)
-            Node_map lut;
-
-            // If a connectome configuration file is provided, this will map
-            //   each structure name to an index in the parcellation image;
-            //   this can then be used to produce the lookup table
-            std::vector<std::string> config;
-
-            // If both a LUT and a config file have been provided, this provides
-            //   a direct vector mapping from image node index to a position in
-            //   the lookup table, pre-generated
-            std::vector<Node_map::const_iterator> lut_mapping;
+            MR::Connectome::LUT lut;
 
 
             // Fixed lighting settings from the main window, and popup dialog
@@ -388,7 +375,7 @@ namespace MR
 
             // Helper functions for determining actual node / edge visual properties
             //   given current selection status
-            void node_selection_changed (const std::vector<node_t>&);
+            void           node_selection_changed          (const std::vector<node_t>&);
             bool           node_visibility_given_selection (const node_t);
             Eigen::Array3f node_colour_given_selection     (const node_t);
             float          node_size_given_selection       (const node_t);
