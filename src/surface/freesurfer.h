@@ -18,8 +18,13 @@
 #define __surface_freesurfer_h__
 
 #include <stdint.h>
+#include <fstream>
 
 #include "raw.h"
+
+#include "connectome/lut.h"
+
+#include "surface/types.h"
 
 namespace MR
 {
@@ -52,6 +57,10 @@ namespace MR
         stream.read (reinterpret_cast<char*>(&temp), sizeof(T));
         return Raw::fetch_BE<T> (&temp);
       }
+
+
+
+      void read_annot (const std::string&, label_vector_type&, Connectome::LUT&);
 
 
 

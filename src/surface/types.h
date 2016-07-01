@@ -17,7 +17,7 @@
 #define __surface_types_h__
 
 
-
+#include "connectome/connectome.h"
 #include "surface/polygon.h"
 
 
@@ -44,6 +44,8 @@ namespace MR
           return ((*this)[2] == i[2] ? (((*this)[1] == i[1]) ? ((*this)[0] < i[0]) : ((*this)[1] < i[1])) : ((*this)[2] < i[2]));
         }
     };
+
+    typedef Eigen::Array<Connectome::node_t, Eigen::Dynamic, 1> label_vector_type;
 
 
 
