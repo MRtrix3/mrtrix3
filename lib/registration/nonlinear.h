@@ -127,7 +127,7 @@ namespace MR
               resize_filter.datatype() = DataType::Float64; // for saving debug output with save()
 
               Header midway_image_header_resized = resize_filter;
-              midway_image_header_resized.set_ndim(3);
+              midway_image_header_resized.ndim() = 3;
 
               default_type update_smoothing_mm = update_smoothing * ((midway_image_header_resized.spacing(0)
                                                                     + midway_image_header_resized.spacing(1)
@@ -142,14 +142,14 @@ namespace MR
               DEBUG ("Initialising scratch images");
               Header warped_header (midway_image_header_resized);
               if (im1_image.ndim() == 4) {
-                warped_header.set_ndim(4);
+                warped_header.ndim() = 4;
                 warped_header.size(3) = im1_smoothed.size(3);
               }
               auto im1_warped = Image<default_type>::scratch (warped_header);
               auto im2_warped = Image<default_type>::scratch (warped_header);
 
               Header field_header (midway_image_header_resized);
-              field_header.set_ndim(4);
+              field_header.ndim() = 4;
               field_header.size(3) = 3;
 
               im1_to_mid_new = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
@@ -303,9 +303,9 @@ namespace MR
 
             DEBUG ("loading initial warp fields");
             midway_image_header = input_warps;
-            midway_image_header.set_ndim (3);
+            midway_image_header.ndim() = 3;
             Header field_header (input_warps);
-            field_header.set_ndim (4);
+            field_header.ndim() = 4;
             field_header.size(3) = 3;
 
             im1_to_mid = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
@@ -401,7 +401,7 @@ namespace MR
 
           Header get_output_warps_header () const {
             Header output_header (*im1_to_mid);
-            output_header.set_ndim (5);
+            output_header.ndim() = 5;
             output_header.size(3) = 3;
             output_header.size(4) = 4;
             output_header.stride(0) = 1;

@@ -50,7 +50,7 @@ namespace MR
       if (num_axes < 3) throw Exception ("cannot create NIfTI-1.1 image with less than 3 dimensions");
       if (num_axes > 8) throw Exception ("cannot create NIfTI-1.1 image with more than 8 dimensions");
 
-      H.set_ndim (num_axes);
+      H.ndim() = num_axes;
       File::NIfTI::check (H, true);
 
       return true;

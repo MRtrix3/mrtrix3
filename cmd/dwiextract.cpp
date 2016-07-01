@@ -89,7 +89,7 @@ void run()
   Eigen::MatrixXd new_grad (volumes.size(), grad.cols());
   for (size_t i = 0; i < volumes.size(); i++)
     new_grad.row (i) = grad.row (volumes[i]);
-  header.set_DW_scheme (new_grad);
+  DWI::set_DW_scheme (header, new_grad);
 
   auto output_image = Image<float>::create (argument[1], header);
 

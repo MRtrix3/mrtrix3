@@ -98,7 +98,7 @@ namespace MR {
           max_values += Eigen::Vector3f (3.0*voxel_size[0], 3.0*voxel_size[1], 3.0*voxel_size[2]);
 
           header.name() = "tckmap image header";
-          header.set_ndim (3);
+          header.ndim() = 3;
 
           for (size_t i = 0; i != 3; ++i) {
             header.size(i) = std::ceil((max_values[i] - min_values[i]) / voxel_size[i]);

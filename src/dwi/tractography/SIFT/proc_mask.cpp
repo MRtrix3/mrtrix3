@@ -63,7 +63,7 @@ namespace MR
               ACT::verify_5TT_image (in_5tt);
 
               Header H_5tt (in_dwi);
-              H_5tt.set_ndim (4);
+              H_5tt.ndim() = 4;
               H_5tt.size(3) = 5;
               assert (!out_5tt.valid());
               out_5tt = Image<float>::scratch (H_5tt, "5TT scratch buffer");

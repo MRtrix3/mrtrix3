@@ -89,7 +89,7 @@ void run ()
     auto H = compute_minimum_average_header (headers_in, resolution, padding, transform_header_with);
     H.datatype() = DataType::Bit;
     if (fill) {
-      H.set_ndim(dim);
+      H.ndim() = dim;
       if (dim == 4)
         H.size(3) = headers_in.back().size(3);
     }

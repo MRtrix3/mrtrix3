@@ -85,7 +85,7 @@ void run ()
   DWI::Tractography::ACT::verify_5TT_image (input);
 
   Header H (input);
-  H.set_ndim (3);
+  H.ndim() = 3;
 
   const float bg_multiplier   = get_option_value ("bg",   VALUE_DEFAULT_BG);
   const float cgm_multiplier  = get_option_value ("cgm",  VALUE_DEFAULT_CGM);

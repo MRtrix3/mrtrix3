@@ -146,7 +146,7 @@ void run ()
     H.datatype().set_byte_order_native();
   } else {
     H = input;
-    H.set_ndim (3);
+    H.ndim() = 3;
   }
   auto output = Image<float>::create (argument[1], H);
 

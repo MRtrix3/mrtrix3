@@ -58,7 +58,7 @@ void run () {
   if (spectrum)
     power_header.size (3) = 1 + lmax/2;
   else
-    power_header.set_ndim(3);
+    power_header.ndim() = 3;
   power_header.datatype() = DataType::Float32;
 
   auto power_data = Image<float>::create(argument[1], power_header);

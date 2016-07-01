@@ -70,7 +70,7 @@ namespace MR
         const size_t N = Math::SH::NforL (L);
         Math::SH::aPSF<float> aPSF (L);
         Header H_sh (Fixel_map<Fixel>::header());
-        H_sh.set_ndim (4);
+        H_sh.ndim() = 4;
         H_sh.size(3) = N;
         H_sh.stride (3) = 0;
         auto out = Image<float>::create (path, H_sh);
@@ -165,7 +165,7 @@ namespace MR
         const size_t N = Math::SH::NforL (L);
         Math::SH::aPSF<float> aPSF (L);
         Header H_sh (Fixel_map<Fixel>::header());
-        H_sh.set_ndim (4);
+        H_sh.ndim() = 4;
         H_sh.size(3) = N;
         H_sh.stride (3) = 0;
         auto out = Image<float>::create (path, H_sh);
