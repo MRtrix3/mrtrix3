@@ -238,8 +238,8 @@ namespace MR
           f2 = f2.substr(0,found).append("_ev.mif");
 
           Header new_header1, new_header2;
-          new_header1.set_ndim(4);
-          new_header2.set_ndim(4);
+          new_header1.ndim() = 4;
+          new_header2.ndim() = 4;
           for (ssize_t dim=0; dim < 3; ++dim){
             new_header1.size(dim) = im1.size(dim);
             new_header2.size(dim) = im2.size(dim);

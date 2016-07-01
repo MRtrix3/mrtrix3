@@ -264,49 +264,49 @@ void run ()
   auto adc_img = Image<value_type>();
   opt = get_options ("adc");
   if (opt.size()) {
-    header.set_ndim (3);
+    header.ndim() = 3;
     adc_img = Image<value_type>::create (opt[0][0], header);
   }
   
   auto fa_img = Image<value_type>();
   opt = get_options ("fa");
   if (opt.size()) {
-    header.set_ndim (3);
+    header.ndim() = 3;
     fa_img = Image<value_type>::create (opt[0][0], header);
   }
   
   auto ad_img = Image<value_type>();
   opt = get_options ("ad");
   if (opt.size()) {
-    header.set_ndim (3);
+    header.ndim() = 3;
     ad_img = Image<value_type>::create (opt[0][0], header);
   }
   
   auto rd_img = Image<value_type>();
   opt = get_options ("rd");
   if (opt.size()) {
-    header.set_ndim (3);
+    header.ndim() = 3;
     rd_img = Image<value_type>::create (opt[0][0], header);
   }
   
   auto cl_img = Image<value_type>();
   opt = get_options ("cl");
   if (opt.size()) {
-    header.set_ndim (3);
+    header.ndim() = 3;
     cl_img = Image<value_type>::create (opt[0][0], header);
   }
   
   auto cp_img = Image<value_type>();
   opt = get_options ("cp");
   if (opt.size()) {
-    header.set_ndim (3);
+    header.ndim() = 3;
     cp_img = Image<value_type>::create (opt[0][0], header);
   }
   
   auto cs_img = Image<value_type>();
   opt = get_options ("cs");
   if (opt.size()) {
-    header.set_ndim (3);
+    header.ndim() = 3;
     cs_img = Image<value_type>::create (opt[0][0], header);
   }
   
@@ -326,9 +326,9 @@ void run ()
   auto value_img = Image<value_type>();
   opt = get_options ("value");
   if (opt.size()) {
-    header.set_ndim (3);
+    header.ndim() = 3;
     if (vals.size()>1) {
-      header.set_ndim (4);
+      header.ndim() = 4;
       header.size (3) = vals.size();
     }
     value_img = Image<value_type>::create (opt[0][0], header);
@@ -337,7 +337,7 @@ void run ()
   auto vector_img = Image<value_type>();
   opt = get_options ("vector");
   if (opt.size()) {
-    header.set_ndim (4);
+    header.ndim() = 4;
     header.size (3) = vals.size()*3;
     vector_img = Image<value_type>::create (opt[0][0], header);
   }

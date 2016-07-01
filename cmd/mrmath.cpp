@@ -369,7 +369,7 @@ void run ()
 
     // Wipe any excess unary-dimensional axes
     while (header.size (header.ndim() - 1) == 1)
-      header.set_ndim (header.ndim() - 1);
+      header.ndim() = header.ndim() - 1;
 
     // Verify that dimensions of all input images adequately match
     for (size_t i = 1; i != num_inputs; ++i) {

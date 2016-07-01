@@ -75,7 +75,7 @@ void run ()
   auto opt = get_options ("fc");
   if (opt.size()) {
     Header output_header (input);
-    output_header.set_ndim (3);
+    output_header.ndim() = 3;
     output_header.datatype() = DataType::UInt64;
     output_header.datatype().set_byte_order_native();
     output_header.keyval()[Sparse::name_key] = str(typeid(FixelMetric).name());
@@ -95,7 +95,7 @@ void run ()
   opt = get_options ("jdet");
   if (opt.size()) {
     Header output_header (input);
-    output_header.set_ndim(3);
+    output_header.ndim() = 3;
     jdeterminant_output.reset (new Image<value_type> (Image<value_type>::create (opt[0][0], output_header)));
   }
 

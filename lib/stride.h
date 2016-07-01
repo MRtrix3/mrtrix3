@@ -136,7 +136,7 @@ namespace MR
       void set (HeaderType& header, const List& stride)
       {
         size_t n = 0;
-        for (; n < std::min (header.ndim(), stride.size()); ++n)
+        for (; n < std::min<size_t> (header.ndim(), stride.size()); ++n)
           header.stride (n) = stride[n];
         for (; n < stride.size(); ++n)
           header.stride (n) = 0;
@@ -159,7 +159,7 @@ namespace MR
     template <class HeaderType> 
       std::vector<size_t> order (const HeaderType& header, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
       {
-        to_axis = std::min (to_axis, header.ndim());
+        to_axis = std::min<size_t> (to_axis, header.ndim());
         assert (to_axis > from_axis);
         std::vector<size_t> ret (to_axis-from_axis);
         for (size_t i = 0; i < ret.size(); ++i) 

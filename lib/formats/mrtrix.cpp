@@ -69,7 +69,7 @@ namespace MR
           !Path::has_suffix (H.name(), ".mif"))
         return false;
 
-      H.set_ndim (num_axes);
+      H.ndim() = num_axes;
       for (size_t i = 0; i < H.ndim(); i++)
         if (H.size (i) < 1)
           H.size(i) = 1;

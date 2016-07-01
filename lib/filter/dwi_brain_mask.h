@@ -71,7 +71,7 @@ namespace MR
             typedef typename InputImageType::value_type value_type;
 
             Header header (input);
-            header.set_ndim (3);
+            header.ndim() = 3;
 
             // Generate a 'master' scratch buffer mask, to which all shells will contribute
             auto mask_image = Image<bool>::scratch (header, "DWI mask");

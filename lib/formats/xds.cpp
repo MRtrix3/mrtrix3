@@ -32,7 +32,7 @@ namespace MR
             !Path::has_suffix (H.name(), ".bshort"))
           return std::unique_ptr<ImageIO::Base>();
 
-        H.set_ndim (4);
+        H.ndim() = 4;
         int BE;
 
         std::string name (H.name());
@@ -93,7 +93,7 @@ namespace MR
         if (num_axes < 2)
           throw Exception ("cannot create XDS image with less than 2 dimensions");
 
-        H.set_ndim (4);
+        H.ndim() = 4;
 
         H.size(2) = 1;
         for (size_t n = 0; n < 4; ++n)

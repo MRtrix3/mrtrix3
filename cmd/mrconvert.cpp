@@ -114,7 +114,7 @@ void permute_DW_scheme (Header& H, const std::vector<int>& axes)
 template <class ImageType>
 inline std::vector<int> set_header (Header& header, const ImageType& input)
 {
-  header.set_ndim (input.ndim());
+  header.ndim() = input.ndim();
   for (size_t n = 0; n < header.ndim(); ++n) {
     header.size(n) = input.size(n);
     header.spacing(n) = input.spacing(n);
@@ -126,7 +126,7 @@ inline std::vector<int> set_header (Header& header, const ImageType& input)
   std::vector<int> axes;
   if (opt.size()) {
     axes = opt[0][0];
-    header.set_ndim (axes.size());
+    header.ndim() = axes.size();
     for (size_t i = 0; i < axes.size(); ++i) {
       if (axes[i] >= static_cast<int> (input.ndim()))
         throw Exception ("axis supplied to option -axes is out of bounds");
@@ -134,7 +134,7 @@ inline std::vector<int> set_header (Header& header, const ImageType& input)
     }
     permute_DW_scheme (header, axes);
   } else {
-    header.set_ndim (input.ndim());
+    header.ndim() = input.ndim();
     axes.assign (input.ndim(), 0);
     for (size_t i = 0; i < axes.size(); ++i) {
       axes[i] = i;

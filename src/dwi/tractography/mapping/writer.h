@@ -142,7 +142,7 @@ namespace MR {
             {
               Header H_counts (header);
               if (type == DEC || type == TOD) 
-                H_counts.set_ndim (3);
+                H_counts.ndim() = 3;
               counts.reset (new Image<float> (Image<float>::scratch (H_counts, "TWI streamline count buffer")));
             }
           }

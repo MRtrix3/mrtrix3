@@ -348,7 +348,7 @@ namespace MR
 
           try {
             MR::Header header (roi->header());
-            header.set_ndim(3);
+            header.ndim() = 3;
             header.datatype() = DataType::Bit;
             std::string name = GUI::Dialog::File::get_save_image_name (&window(), "Select name of ROI to save", roi->get_filename());
             if (name.size()) {

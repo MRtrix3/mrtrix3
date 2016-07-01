@@ -109,7 +109,7 @@ namespace MR
         for (size_t i = 0; i < H.ndim(); i++)
           if (H.stride(i))
             ++n;
-        H.set_ndim (n + num.size());
+        H.axes_.resize (n + num.size());
 
         for (size_t i = 0; i < num.size(); ++i) {
           while (H.stride(a)) ++a;
@@ -219,7 +219,7 @@ namespace MR
           }
         }
 
-        H.set_ndim (n + Pdim.size());
+        H.axes_.resize (n + Pdim.size());
 
         for (size_t i = 0; i < Pdim.size(); ++i) {
           while (H.stride(a)) 
@@ -384,7 +384,7 @@ namespace MR
   {
     if (ndim() < 3) {
       INFO ("image contains fewer than 3 dimensions - adding extra dimensions");
-      set_ndim (3);
+      axes_.resize (3);
     }
 
     if (!std::isfinite (spacing(0)) || !std::isfinite (spacing(1)) || !std::isfinite (spacing(2))) {
