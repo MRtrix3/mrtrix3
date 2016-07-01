@@ -133,7 +133,7 @@ void run () {
         for (ssize_t i = 0; i < input_grads[n].rows(); ++i, ++row)
           for (size_t j = 0; j < 4; ++j) 
             grad_out (row,j) = input_grads[n](i,j);
-      header_out.set_DW_scheme (grad_out);
+      DWI::set_DW_scheme (header_out, grad_out);
     }
   }
 

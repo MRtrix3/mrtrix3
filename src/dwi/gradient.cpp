@@ -71,7 +71,29 @@ namespace MR
 
 
 
-    MatrixXd load_bvecs_bvals (const Header& header, const std::string& bvecs_path, const std::string& bvals_path)
+    Eigen::MatrixXd parse_DW_scheme (const Header& header)
+    {
+      Eigen::MatrixXd G;
+      const auto it = header.keyval().find ("dw_scheme");
+      if (it != header.keyval().end()) {
+        const auto lines = split_lines (it->second);
+        for (size_t row = 0; row < lines.size(); ++row) {
+          const auto values = parse_floats (lines[row]);
+          if (G.cols() == 0)
+            G.resize (lines.size(), values.size());
+          else if (G.cols() != ssize_t (values.size()))
+            throw Exception ("malformed DW scheme in image \"" + header.name() + "\" - uneven number of entries per row");
+          for (size_t col = 0; col < values.size(); ++col)
+            G(row, col) = values[col];
+        }
+      }
+      return G;
+    }
+
+
+
+
+    Eigen::MatrixXd load_bvecs_bvals (const Header& header, const std::string& bvecs_path, const std::string& bvals_path)
     {
       auto bvals = load_matrix<> (bvals_path);
       auto bvecs = load_matrix<> (bvecs_path);
@@ -168,7 +190,7 @@ namespace MR
           grad = load_bvecs_bvals (header, opt_fsl[0][0], opt_fsl[0][1]);
         }
         if (!opt_mrtrix.size() && !opt_fsl.size())
-          grad = header.parse_DW_scheme();
+          grad = parse_DW_scheme (header);
       }
       catch (Exception& E) {
         E.display (3);

@@ -315,23 +315,6 @@ namespace MR
       //! get/set generic key/value text attributes
       std::map<std::string, std::string>& keyval () { return keyval_; }
 
-      Eigen::MatrixXd parse_DW_scheme () const;
-
-      template <class MatrixType> 
-        void set_DW_scheme (const MatrixType& G)
-        {
-          std::string dw_scheme;
-          for (ssize_t row = 0; row < G.rows(); ++row) {
-            std::string line;
-            for (ssize_t col = 0; col < G.cols(); ++col) {
-              line += str(G(row,col), 10);
-              if (col < G.cols() - 1) line += ",";
-            }
-            add_line (dw_scheme, line);
-          }
-          keyval()["dw_scheme"] = dw_scheme;
-        }
-
       static Header open (const std::string& image_name);
       static Header create (const std::string& image_name, const Header& template_header);
       static Header scratch (const Header& template_header, const std::string& label = "scratch image");

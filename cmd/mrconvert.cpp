@@ -105,7 +105,7 @@ void permute_DW_scheme (Header& H, const std::vector<int>& axes)
   for (int row = 0; row != in.rows(); ++row)
     out.block<1,3>(row, 0) = in.block<1,3>(row, 0) * R;
 
-  H.set_DW_scheme (out);
+  DWI::set_DW_scheme (H, out);
 }
 
 
@@ -211,7 +211,7 @@ void run ()
     WARN ("requested datatype is real but input datatype is complex - imaginary component will be ignored");
 
   if (get_options ("grad").size() || get_options ("fslgrad").size())
-    header_out.set_DW_scheme (DWI::get_DW_scheme (header_in));
+    DWI::set_DW_scheme (header_out, DWI::get_DW_scheme (header_in));
 
   auto opt = get_options ("coord");
   std::vector<std::vector<int>> pos;
@@ -234,7 +234,7 @@ void run ()
           Eigen::MatrixXd extract_grad (pos[3].size(), grad.cols());
           for (size_t dir = 0; dir != pos[3].size(); ++dir)
             extract_grad.row (dir) = grad.row (pos[3][dir]);
-          header_out.set_DW_scheme (extract_grad);
+          DWI::set_DW_scheme (header_out, extract_grad);
         }
       }
     }

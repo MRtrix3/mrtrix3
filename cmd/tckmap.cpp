@@ -24,6 +24,7 @@
 #include "image.h"
 #include "thread_queue.h"
 
+#include "dwi/gradient.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/weights.h"
@@ -356,7 +357,7 @@ void run () {
       grad (row, 2) = ((*dirs)[row])[2];
       grad (row, 3) = 1.0f;
     }
-    header.set_DW_scheme (grad);
+    set_DW_scheme (header, grad);
   }
 
   opt = get_options ("tod");

@@ -358,7 +358,7 @@ void run ()
           Eigen::Vector3 grad_vector = grad.block<1,3>(n,0);
           grad.block<1,3>(n,0) = rotation * grad_vector;
         }
-        output_header.set_DW_scheme(grad);
+        DWI::set_DW_scheme (output_header, grad);
       }
     }
     catch (Exception& e) {

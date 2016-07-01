@@ -185,9 +185,9 @@ void run ()
   for (size_t i = 0; i < argument.size(); ++i) {
     auto header = Header::open (argument[i]);
     if (raw_dwgrad)
-      header.set_DW_scheme (DWI::get_DW_scheme (header));
+      DWI::set_DW_scheme (header, DWI::get_DW_scheme (header));
     else if (export_grad || check_option_group (GradImportOptions) || dwgrad || shells || shellcounts)
-      header.set_DW_scheme (DWI::get_valid_DW_scheme (header, true));
+      DWI::set_DW_scheme (header, DWI::get_valid_DW_scheme (header, true));
 
     Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", "\n", "", "", "", "\n");
     if (format)     std::cout << header.format() << "\n";
@@ -199,9 +199,9 @@ void run ()
     if (offset)     std::cout << header.intensity_offset() << "\n";
     if (multiplier) std::cout << header.intensity_scale() << "\n";
     if (transform)  std::cout << header.transform().matrix().format(fmt);
-    if (dwgrad)     std::cout << header.parse_DW_scheme() << "\n";
+    if (dwgrad)     std::cout << DWI::parse_DW_scheme (header) << "\n";
     if (shells || shellcounts)     {
-      DWI::Shells dwshells (header.parse_DW_scheme());
+      DWI::Shells dwshells (DWI::parse_DW_scheme (header));
       if (shells) {
         for (size_t i = 0; i < dwshells.count(); i++)
           std::cout << dwshells[i].get_mean() << " ";
