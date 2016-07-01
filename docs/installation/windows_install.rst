@@ -139,7 +139,7 @@ Set up *MRtrix3*
    and set anything you think might be required on your system.
    
   .. NOTE:: 
-    The above assumes that your shell will read the ``~/.bash_profile`` file
+    The above assumes that your shell will read the ``~/.bashrc`` file
     at startup time. This is not always guaranteed, depending on how your
     system is configured. If you find that the above doesn't work (e.g. typing
     ``mrview`` returns a 'command not found' error), try changing step 1 to

@@ -142,11 +142,11 @@ Set up *MRtrix3*
     system is configured. If you find that the above doesn't work (e.g. typing
     ``mrview`` returns a 'command not found' error), try changing step 1 to
     instruct the ``set_path`` script to update ``PATH`` within a different
-    file, for example ``~/.bash_profile`` or ``~/.profile``, e.g. as follows:
+    file, for example ``~/.profile`` or ``~/.bashrc``, e.g. as follows:
 
     ::
 
-      ./set_path ~/.bash_profile
+      ./set_path ~/.profile
 
 Keeping *MRtrix3* up to date
 --------------------------
