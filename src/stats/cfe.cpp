@@ -50,7 +50,7 @@ namespace MR
             int32_t last_index = first_index + fixel_indexer.value();
             int32_t closest_fixel_index = -1;
             value_type largest_dp = 0.0;
-            direction_type dir (i->get_dir().normalized());
+            const direction_type dir (i->get_dir().normalized());
             for (int32_t j = first_index; j < last_index; ++j) {
               const value_type dp = std::abs (dir.dot (fixel_directions[j]));
               if (dp > largest_dp) {

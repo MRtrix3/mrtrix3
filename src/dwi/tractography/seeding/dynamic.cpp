@@ -230,7 +230,7 @@ namespace MR
               }
             }
             if (good_seed) {
-              d = fixel.get_dir();
+              d = fixel.get_dir().cast<float>();
 #ifdef DYNAMIC_SEED_DEBUGGING
               write_seed (p);
 #endif

@@ -414,7 +414,7 @@ namespace MR {
             size_t index = 0;
             for (typename Fixel_map<Fixel>::ConstIterator iter = begin (v); iter; ++iter, ++index) {
               const size_t fixel_index = size_t(iter);
-              FixelMetric fixel_metric (iter().get_dir(), iter().get_FOD(), iter().get_count());
+              FixelMetric fixel_metric (iter().get_dir().cast<float>(), iter().get_FOD(), iter().get_count());
               count_image   .value()[index] = fixel_metric;
               fixel_metric.value = mins[fixel_index];
               min_image     .value()[index] = fixel_metric;

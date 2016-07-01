@@ -34,15 +34,15 @@ namespace MR {
           {
             public:
               VoxelAddon() : sum_factors (0.0) { }
-              VoxelAddon (const float v) : sum_factors (v) { }
-              float get_factor() const { return sum_factors; }
+              VoxelAddon (const default_type v) : sum_factors (v) { }
+              default_type get_factor() const { return sum_factors; }
             protected:
-              void operator+= (const float f) const { sum_factors += f; }
-              void operator=  (const float f) { sum_factors = f; }
+              void operator+= (const default_type f) const { sum_factors += f; }
+              void operator=  (const default_type f) { sum_factors = f; }
               void operator=  (const VoxelAddon& that) { sum_factors = that.sum_factors; }
-              void normalize (const float l) const { sum_factors /= l; }
+              void normalize (const default_type l) const { sum_factors /= l; }
             private:
-              mutable float sum_factors;
+              mutable default_type sum_factors;
           };
 
 
@@ -54,16 +54,16 @@ namespace MR {
             public:
             Voxel (const int x, const int y, const int z) : Base (x, y, z) , VoxelAddon () { }
             Voxel (const Eigen::Vector3i& that) : Base (that), VoxelAddon() { }
-            Voxel (const Eigen::Vector3i& v, const float l) : Base (v, l), VoxelAddon () { }
-            Voxel (const Eigen::Vector3i& v, const float l, const float f) : Base (v, l), VoxelAddon (f) { }
+            Voxel (const Eigen::Vector3i& v, const default_type l) : Base (v, l), VoxelAddon () { }
+            Voxel (const Eigen::Vector3i& v, const default_type l, const default_type f) : Base (v, l), VoxelAddon (f) { }
             Voxel () : Base (), VoxelAddon () { }
 
             Voxel& operator= (const Voxel& V) { Base::operator= (V); VoxelAddon::operator= (V); return *this; }
-            void operator+= (const float l) const { Base::operator+= (l); };
+            void operator+= (const default_type l) const { Base::operator+= (l); }
             bool operator== (const Voxel& V) const { return Base::operator== (V); }
             bool operator<  (const Voxel& V) const { return Base::operator<  (V); }
 
-            void add (const float l, const float f) const { Base::operator+= (l); VoxelAddon::operator+= (f); }
+            void add (const default_type l, const default_type f) const { Base::operator+= (l); VoxelAddon::operator+= (f); }
             void normalize() const { VoxelAddon::normalize (get_length()); Base::normalize(); }
 
           };
@@ -75,18 +75,18 @@ namespace MR {
             public:
             VoxelDEC () : Base (), VoxelAddon () { }
             VoxelDEC (const Eigen::Vector3i& V) : Base (V), VoxelAddon () { }
-            VoxelDEC (const Eigen::Vector3i& V, const Eigen::Vector3f& d) : Base (V, d), VoxelAddon () { }
-            VoxelDEC (const Eigen::Vector3i& V, const Eigen::Vector3f& d, const float l) : Base (V, d, l), VoxelAddon () { }
-            VoxelDEC (const Eigen::Vector3i& V, const Eigen::Vector3f& d, const float l, const float f) : Base (V, d, l), VoxelAddon (f) { }
+            VoxelDEC (const Eigen::Vector3i& V, const Eigen::Vector3& d) : Base (V, d), VoxelAddon () { }
+            VoxelDEC (const Eigen::Vector3i& V, const Eigen::Vector3& d, const default_type l) : Base (V, d, l), VoxelAddon () { }
+            VoxelDEC (const Eigen::Vector3i& V, const Eigen::Vector3& d, const default_type l, const default_type f) : Base (V, d, l), VoxelAddon (f) { }
 
             VoxelDEC& operator=  (const VoxelDEC& V)   { Base::operator= (V); VoxelAddon::operator= (V); return (*this); }
-            void operator+= (const float) const { assert (0); }
-            void operator+= (const Eigen::Vector3f&) const { assert (0); };
+            void operator+= (const default_type) const { assert (0); }
+            void operator+= (const Eigen::Vector3&) const { assert (0); }
             bool operator== (const VoxelDEC& V) const { return Base::operator== (V); }
             bool operator<  (const VoxelDEC& V) const { return Base::operator<  (V); }
 
-            void add (const Eigen::Vector3f&, const float) const { assert (0); };
-            void add (const Eigen::Vector3f& i, const float l, const float f) const { Base::add (i, l); VoxelAddon::operator+= (f); }
+            void add (const Eigen::Vector3&, const default_type) const { assert (0); }
+            void add (const Eigen::Vector3& i, const default_type l, const default_type f) const { Base::add (i, l); VoxelAddon::operator+= (f); }
             void normalize() const { VoxelAddon::normalize (get_length()); Base::normalize(); }
 
           };
@@ -96,18 +96,19 @@ namespace MR {
           {
             typedef Mapping::Dixel Base;
             public:
+            typedef DWI::Directions::index_type dir_index_type;
             Dixel () : Base (), VoxelAddon () { }
             Dixel (const Eigen::Vector3i& V) : Base (V), VoxelAddon () { }
-            Dixel (const Eigen::Vector3i& V, const size_t b) : Base (V, b), VoxelAddon () { }
-            Dixel (const Eigen::Vector3i& V, const size_t b, const float l) : Base (V, b, l), VoxelAddon () { }
-            Dixel (const Eigen::Vector3i& V, const size_t b, const float l, const float f) : Base (V, b, l), VoxelAddon (f) { }
+            Dixel (const Eigen::Vector3i& V, const dir_index_type b) : Base (V, b), VoxelAddon () { }
+            Dixel (const Eigen::Vector3i& V, const dir_index_type b, const default_type l) : Base (V, b, l), VoxelAddon () { }
+            Dixel (const Eigen::Vector3i& V, const dir_index_type b, const default_type l, const default_type f) : Base (V, b, l), VoxelAddon (f) { }
 
             Dixel& operator=  (const Dixel& V)       { Base::operator= (V); VoxelAddon::operator= (V); return *this; }
             bool   operator== (const Dixel& V) const { return Base::operator== (V); }
             bool   operator<  (const Dixel& V) const { return Base::operator<  (V); }
-            void   operator+= (const float)  const { assert (0); };
+            void   operator+= (const default_type)  const { assert (0); }
 
-            void add (const float l, const float f) const { Base::operator+= (l); VoxelAddon::operator+= (f); }
+            void add (const default_type l, const default_type f) const { Base::operator+= (l); VoxelAddon::operator+= (f); }
             void normalize() const { VoxelAddon::normalize (get_length()); Base::normalize(); }
 
           };
@@ -117,19 +118,20 @@ namespace MR {
           {
             typedef Mapping::VoxelTOD Base;
             public:
+            typedef Eigen::Matrix<default_type, Eigen::Dynamic, 1> vector_type;
             VoxelTOD () : Base (), VoxelAddon () { }
             VoxelTOD (const Eigen::Vector3i& V) : Base (V), VoxelAddon () { }
-            VoxelTOD (const Eigen::Vector3i& V, const Eigen::VectorXf& t) : Base (V, t), VoxelAddon () { }
-            VoxelTOD (const Eigen::Vector3i& V, const Eigen::VectorXf& t, const float l) : Base (V, t, l), VoxelAddon () { }
-            VoxelTOD (const Eigen::Vector3i& V, const Eigen::VectorXf& t, const float l, const float f) : Base (V, t, l), VoxelAddon (f) { }
+            VoxelTOD (const Eigen::Vector3i& V, const vector_type& t) : Base (V, t), VoxelAddon () { }
+            VoxelTOD (const Eigen::Vector3i& V, const vector_type& t, const default_type l) : Base (V, t, l), VoxelAddon () { }
+            VoxelTOD (const Eigen::Vector3i& V, const vector_type& t, const default_type l, const default_type f) : Base (V, t, l), VoxelAddon (f) { }
 
             VoxelTOD& operator=  (const VoxelTOD& V)   { Base::operator= (V); VoxelAddon::operator= (V); return (*this); }
             bool      operator== (const VoxelTOD& V) const { return Base::operator== (V); }
             bool      operator<  (const VoxelTOD& V) const { return Base::operator< (V); }
-            void      operator+= (const Eigen::VectorXf&) const { assert (0); };
+            void      operator+= (const vector_type&) const { assert (0); }
 
-            void add (const Eigen::VectorXf&, const float) const { assert (0); };
-            void add (const Eigen::VectorXf& i, const float l, const float f) const { Base::add (i, l); VoxelAddon::operator+= (f); }
+            void add (const vector_type&, const default_type) const { assert (0); }
+            void add (const vector_type& i, const default_type l, const default_type f) const { Base::add (i, l); VoxelAddon::operator+= (f); }
             void normalize() const { VoxelAddon::normalize (get_length()); Base::normalize(); }
 
           };
@@ -158,7 +160,7 @@ namespace MR {
           {
             public:
               typedef Voxel VoxType;
-              inline void insert (const Eigen::Vector3i& v, const float l, const float f)
+              inline void insert (const Eigen::Vector3i& v, const default_type l, const default_type f)
               {
                 const Voxel temp (v, l, f);
                 iterator existing = std::set<Voxel>::find (temp);
@@ -172,7 +174,7 @@ namespace MR {
           {
             public:
               typedef VoxelDEC VoxType;
-              inline void insert (const Eigen::Vector3i& v, const Eigen::Vector3f& d, const float l, const float f)
+              inline void insert (const Eigen::Vector3i& v, const Eigen::Vector3& d, const default_type l, const default_type f)
               {
                 const VoxelDEC temp (v, d, l, f);
                 iterator existing = std::set<VoxelDEC>::find (temp);
@@ -186,7 +188,8 @@ namespace MR {
           {
             public:
               typedef Dixel VoxType;
-              inline void insert (const Eigen::Vector3i& v, const size_t d, const float l, const float f)
+              typedef Dixel::dir_index_type dir_index_type;
+              inline void insert (const Eigen::Vector3i& v, const dir_index_type d, const default_type l, const default_type f)
               {
                 const Dixel temp (v, d, l, f);
                 iterator existing = std::set<Dixel>::find (temp);
@@ -200,7 +203,8 @@ namespace MR {
           {
             public:
               typedef VoxelTOD VoxType;
-              inline void insert (const Eigen::Vector3i& v, const Eigen::VectorXf& t, const float l, const float f)
+              typedef VoxelTOD::vector_type vector_type;
+              inline void insert (const Eigen::Vector3i& v, const vector_type& t, const default_type l, const default_type f)
               {
                 const VoxelTOD temp (v, t, l, f);
                 iterator existing = std::set<VoxelTOD>::find (temp);

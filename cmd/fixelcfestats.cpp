@@ -214,7 +214,7 @@ void run() {
     fixel_index_image.value() = directions.size();
     int32_t fixel_count = 0;
     for (size_t f = 0; f != mask_fixel_image.value().size(); ++f, ++fixel_count) {
-      directions.push_back (mask_fixel_image.value()[f].dir);
+      directions.push_back (mask_fixel_image.value()[f].dir.cast<default_type>());
       const Eigen::Vector3 pos (mask_fixel_image.index(0), mask_fixel_image.index(1), mask_fixel_image.index(2));
       positions.push_back (image_transform.voxel2scanner * pos);
     }
@@ -326,7 +326,7 @@ void run() {
            value_type largest_dp = 0.0;
            int index_of_closest_fixel = -1;
            for (size_t f = 0; f != fixel.value().size(); ++f) {
-             const value_type dp = std::abs (directions[i].dot(fixel.value()[f].dir));
+             const value_type dp = std::abs (directions[i].dot(fixel.value()[f].dir.cast<default_type>()));
              if (dp > largest_dp) {
                largest_dp = dp;
                index_of_closest_fixel = f;

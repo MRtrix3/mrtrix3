@@ -41,22 +41,22 @@ namespace MR {
           void TrackMapper::gaussian_smooth_factors (const Streamline<>& tck) const
           {
 
-            std::vector<float> unsmoothed (factors);
+            std::vector<default_type> unsmoothed (factors);
 
             for (size_t i = 0; i != unsmoothed.size(); ++i) {
 
-              double sum = 0.0, norm = 0.0;
+              default_type sum = 0.0, norm = 0.0;
 
               if (std::isfinite (unsmoothed[i])) {
                 sum  = unsmoothed[i];
                 norm = 1.0; // Gaussian is unnormalised -> e^0 = 1
               }
 
-              float distance = 0.0;
+              default_type distance = 0.0;
               for (size_t j = i; j--; ) { // Decrement AFTER null test, so loop runs with j = 0
                 distance += (tck[j] - tck[j+1]).norm();
                 if (std::isfinite (unsmoothed[j])) {
-                  const float this_weight = exp (-distance * distance / gaussian_denominator);
+                  const default_type this_weight = exp (-distance * distance / gaussian_denominator);
                   norm += this_weight;
                   sum  += this_weight * unsmoothed[j];
                 }
@@ -65,7 +65,7 @@ namespace MR {
               for (size_t j = i + 1; j < unsmoothed.size(); ++j) {
                 distance += (tck[j] - tck[j-1]).norm();
                 if (std::isfinite (unsmoothed[j])) {
-                  const float this_weight = exp (-distance * distance / gaussian_denominator);
+                  const default_type this_weight = exp (-distance * distance / gaussian_denominator);
                   norm += this_weight;
                   sum  += this_weight * unsmoothed[j];
                 }

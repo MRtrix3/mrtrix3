@@ -30,7 +30,7 @@ namespace MR {
           Mask temp (*this);
           for (size_t d = 0; d != size(); ++d) {
             if (!temp[d]) {
-              for (std::vector<dir_t>::const_iterator i = dirs->get_adj_dirs(d).begin(); i != dirs->get_adj_dirs(d).end(); ++i)
+              for (std::vector<index_type>::const_iterator i = dirs->get_adj_dirs(d).begin(); i != dirs->get_adj_dirs(d).end(); ++i)
                 reset (*i);
             }
           }
@@ -45,7 +45,7 @@ namespace MR {
           Mask temp (*this);
           for (size_t d = 0; d != size(); ++d) {
             if (temp[d]) {
-              for (std::vector<dir_t>::const_iterator i = dirs->get_adj_dirs(d).begin(); i != dirs->get_adj_dirs(d).end(); ++i)
+              for (std::vector<index_type>::const_iterator i = dirs->get_adj_dirs(d).begin(); i != dirs->get_adj_dirs(d).end(); ++i)
                 set (*i);
             }
           }
@@ -66,7 +66,7 @@ namespace MR {
 
       bool Mask::is_adjacent (const size_t d) const
       {
-        for (std::vector<dir_t>::const_iterator i = dirs->get_adj_dirs (d).begin(); i != dirs->get_adj_dirs (d).end(); ++i) {
+        for (std::vector<index_type>::const_iterator i = dirs->get_adj_dirs (d).begin(); i != dirs->get_adj_dirs (d).end(); ++i) {
           if (test (*i))
             return true;
         }

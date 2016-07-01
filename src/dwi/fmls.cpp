@@ -34,19 +34,19 @@ namespace MR {
             "threshold the ratio between the integral of a positive FOD lobe, and the integral of the largest negative lobe. "
             "Any lobe that fails to exceed the integral dictated by this ratio will be discarded. "
             "Default: " + str(FMLS_RATIO_TO_NEGATIVE_LOBE_INTEGRAL_DEFAULT, 2) + ".")
-        + App::Argument ("value").type_float (0.0, 1e6)
+        + App::Argument ("value").type_float (0.0)
 
         + App::Option ("fmls_ratio_peak_to_mean_neg",
             "threshold the ratio between the peak amplitude of a positive FOD lobe, and the mean peak amplitude of all negative lobes. "
             "Any lobe that fails to exceed the peak amplitude dictated by this ratio will be discarded. "
             "Default: " + str(FMLS_RATIO_TO_NEGATIVE_LOBE_MEAN_PEAK_DEFAULT, 2) + ".")
-        + App::Argument ("value").type_float (0.0, 1e6)
+        + App::Argument ("value").type_float (0.0)
 
         + App::Option ("fmls_peak_value",
             "threshold the raw peak amplitude of positive FOD lobes. "
             "Any lobe for which the peak amplitude is smaller than this threshold will be discarded. "
             "Default: " + str(FMLS_PEAK_VALUE_THRESHOLD, 2) + ".")
-        + App::Argument ("value").type_float (0.0, 1e6)
+        + App::Argument ("value").type_float (0.0)
 
         + App::Option ("fmls_no_thresholds",
             "disable all FOD lobe thresholding; every lobe with a positive FOD amplitude will be retained.")
@@ -158,7 +158,7 @@ namespace MR {
         Eigen::Matrix<default_type, Eigen::Dynamic, 1> values (dirs.size());
         transform->SH2A (values, in);
 
-        typedef std::multimap<default_type, dir_t, Max_abs> map_type;
+        typedef std::multimap<default_type, index_type, Max_abs> map_type;
         map_type data_in_order;
         for (size_t i = 0; i != size_t(values.size()); ++i)
           data_in_order.insert (std::make_pair (values[i], i));
@@ -166,7 +166,7 @@ namespace MR {
         if (data_in_order.begin()->first <= 0.0)
           return true;
 
-        std::vector< std::pair<dir_t, uint32_t> > retrospective_assignments;
+        std::vector< std::pair<index_type, uint32_t> > retrospective_assignments;
 
         for (const auto& i : data_in_order) {
 
@@ -255,9 +255,9 @@ namespace MR {
           if (i->is_negative() || i->get_peak_value() < std::max (min_peak_amp, peak_value_threshold) || i->get_integral() < min_integral) {
             i = out.erase (i);
           } else {
-            const dir_t peak_bin (i->get_peak_dir_bin());
+            const index_type peak_bin (i->get_peak_dir_bin());
             auto newton_peak = dirs.get_dir (peak_bin);
-            float new_peak_value = Math::SH::get_peak (in, lmax, newton_peak, &(*precomputer));
+            const default_type new_peak_value = Math::SH::get_peak (in, lmax, newton_peak, &(*precomputer));
             if (std::isfinite (new_peak_value) && new_peak_value > i->get_peak_value() && std::isfinite (newton_peak[0]))
               i->revise_peak (newton_peak, new_peak_value);
             i->finalise();
@@ -290,15 +290,15 @@ namespace MR {
             NON_POD_VLA (new_assignments, std::vector<uint32_t>, dirs.size());
             while (!processed.full()) {
 
-              for (dir_t dir = 0; dir != dirs.size(); ++dir) {
+              for (index_type dir = 0; dir != dirs.size(); ++dir) {
                 if (!processed[dir]) {
-                  for (std::vector<dir_t>::const_iterator neighbour = dirs.get_adj_dirs (dir).begin(); neighbour != dirs.get_adj_dirs (dir).end(); ++neighbour) {
+                  for (std::vector<index_type>::const_iterator neighbour = dirs.get_adj_dirs (dir).begin(); neighbour != dirs.get_adj_dirs (dir).end(); ++neighbour) {
                     if (processed[*neighbour])
                       new_assignments[dir].push_back (out.lut[*neighbour]);
                   }
                 }
               }
-              for (dir_t dir = 0; dir != dirs.size(); ++dir) {
+              for (index_type dir = 0; dir != dirs.size(); ++dir) {
                 if (new_assignments[dir].size() == 1) {
 
                   out.lut[dir] = new_assignments[dir].front();

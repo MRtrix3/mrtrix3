@@ -54,7 +54,7 @@ namespace MR
 
 
       using DWI::Directions::Mask;
-      using DWI::Directions::dir_t;
+      using DWI::Directions::index_type;
 
 
       class Segmenter;
@@ -67,9 +67,9 @@ namespace MR
       class FOD_lobe {
 
         public:
-          FOD_lobe (const DWI::Directions::Set& dirs, const dir_t seed, const default_type value) :
+          FOD_lobe (const DWI::Directions::Set& dirs, const index_type seed, const default_type value) :
               mask (dirs),
-              values (dirs.size(), 0.0),
+              values (Eigen::Array<default_type, Eigen::Dynamic, 1>::Zero (dirs.size())),
               peak_dir_bin (seed),
               peak_value (std::abs (value)),
               peak_dir (dirs.get_dir (seed)),
@@ -85,25 +85,25 @@ namespace MR
           //   assigned to any other lobe in the voxel
           FOD_lobe (const DWI::Directions::Mask& i) :
               mask (i),
-              values (i.size(), 0.0),
+              values (Eigen::Array<default_type, Eigen::Dynamic, 1>::Zero (i.size())),
               peak_dir_bin (i.size()),
               peak_value (0.0),
               integral (0.0),
               neg (false) { }
 
 
-          void add (const dir_t bin, const default_type value)
+          void add (const index_type bin, const default_type value)
           {
             assert ((value <= 0.0 && neg) || (value >= 0.0 && !neg));
             mask[bin] = true;
             values[bin] = value;
-            const Eigen::Vector3f& dir = mask.get_dirs()[bin];
-            const float multiplier = (peak_dir.dot (dir)) > 0.0 ? 1.0 : -1.0;
+            const Eigen::Vector3& dir = mask.get_dirs()[bin];
+            const default_type multiplier = (peak_dir.dot (dir)) > 0.0 ? 1.0 : -1.0;
             mean_dir += dir * multiplier * value;
             integral += std::abs (value);
           }
 
-          void revise_peak (const Eigen::Vector3f& real_peak, const float value)
+          void revise_peak (const Eigen::Vector3& real_peak, const default_type value)
           {
             assert (!neg);
             peak_dir = real_peak;
@@ -121,7 +121,7 @@ namespace MR
           void finalise()
           {
             // 2pi == solid angle of halfsphere in steradians
-            integral *= 2.0 * Math::pi / float(mask.size());
+            integral *= 2.0 * Math::pi / default_type(mask.size());
             // This is calculated as the lobe is built, just needs to be set to unit length
             mean_dir.normalize();
           }
@@ -137,29 +137,29 @@ namespace MR
               peak_value = that.peak_value;
               peak_dir = that.peak_dir;
             }
-            const float multiplier = (mean_dir.dot (that.mean_dir)) > 0.0 ? 1.0 : -1.0;
+            const default_type multiplier = (mean_dir.dot (that.mean_dir)) > 0.0 ? 1.0 : -1.0;
             mean_dir += that.mean_dir * that.integral * multiplier;
             integral += that.integral;
           }
 
           const DWI::Directions::Mask& get_mask() const { return mask; }
-          const std::vector<float>& get_values() const { return values; }
-          dir_t get_peak_dir_bin() const { return peak_dir_bin; }
-          float get_peak_value() const { return peak_value; }
-          const Eigen::Vector3f& get_peak_dir() const { return peak_dir; }
-          const Eigen::Vector3f& get_mean_dir() const { return mean_dir; }
-          float get_integral() const { return integral; }
+          const Eigen::Array<default_type, Eigen::Dynamic, 1>& get_values() const { return values; }
+          index_type get_peak_dir_bin() const { return peak_dir_bin; }
+          default_type get_peak_value() const { return peak_value; }
+          const Eigen::Vector3& get_peak_dir() const { return peak_dir; }
+          const Eigen::Vector3& get_mean_dir() const { return mean_dir; }
+          default_type get_integral() const { return integral; }
           bool is_negative() const { return neg; }
 
 
         private:
           DWI::Directions::Mask mask;
-          std::vector<float> values;
-          dir_t peak_dir_bin;
-          float peak_value;
-          Eigen::Vector3f peak_dir;
-          Eigen::Vector3f mean_dir;
-          float integral;
+          Eigen::Array<default_type, Eigen::Dynamic, 1> values;
+          index_type peak_dir_bin;
+          default_type peak_value;
+          Eigen::Vector3 peak_dir;
+          Eigen::Vector3 mean_dir;
+          default_type integral;
           bool neg;
 
       };
