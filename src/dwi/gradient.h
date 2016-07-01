@@ -37,7 +37,6 @@ namespace MR
 
   namespace DWI
   {
-    using namespace Eigen;
 
     App::OptionGroup GradImportOptions (bool include_bvalue_scaling = true);
     App::OptionGroup GradExportOptions();

@@ -115,7 +115,7 @@ namespace MR
       // account for the fact that bvecs are specified wrt original image axes,
       // which may have been re-ordered and/or inverted by MRtrix to match the
       // expected anatomical frame of reference:
-      MatrixXd G (bvecs.cols(), 3);
+      Eigen::MatrixXd G (bvecs.cols(), 3);
       for (ssize_t n = 0; n < G.rows(); ++n) {
         G(n,order[0]) = header.stride(order[0]) > 0 ? bvecs(0,n) : -bvecs(0,n);
         G(n,order[1]) = header.stride(order[1]) > 0 ? bvecs(1,n) : -bvecs(1,n);
@@ -123,10 +123,7 @@ namespace MR
       }
 
       // rotate gradients into scanner coordinate system:
-      MatrixXd grad (G.rows(), 4);
-      //Math::Matrix<ValueType> grad_G = grad.sub (0, grad.rows(), 0, 3);
-      //Math::Matrix<ValueType> rotation = header.transform().sub (0,3,0,3);
-      //Math::mult (grad_G, ValueType(0.0), ValueType(1.0), CblasNoTrans, G, CblasTrans, rotation);
+      Eigen::MatrixXd grad (G.rows(), 4);
 
       grad.leftCols<3>().transpose() = header.transform().rotation() * G.transpose();
       grad.col(3) = bvals.row(0);
@@ -140,17 +137,17 @@ namespace MR
 
     void save_bvecs_bvals (const Header& header, const std::string& bvecs_path, const std::string& bvals_path)
     {
-      const auto grad = header.parse_DW_scheme();
+      const auto grad = parse_DW_scheme (header);
 
       // rotate vectors from scanner space to image space
-      MatrixXd G = grad.leftCols<3>() * header.transform().rotation();
+      Eigen::MatrixXd G = grad.leftCols<3>() * header.transform().rotation();
 
       // deal with FSL requiring gradient directions to coincide with data strides
       // also transpose matrices in preparation for file output
       std::vector<size_t> order;
       auto adjusted_transform = File::NIfTI::adjust_transform (header, order);
-      MatrixXd bvecs (3, grad.rows());
-      MatrixXd bvals (1, grad.rows());
+      Eigen::MatrixXd bvecs (3, grad.rows());
+      Eigen::MatrixXd bvals (1, grad.rows());
       for (ssize_t n = 0; n < G.rows(); ++n) {
         bvecs(0,n) = header.stride(order[0]) > 0 ? G(n,order[0]) : -G(n,order[0]);
         bvecs(1,n) = header.stride(order[1]) > 0 ? G(n,order[1]) : -G(n,order[1]);
@@ -170,14 +167,11 @@ namespace MR
 
 
 
-
-
-
-    MatrixXd get_DW_scheme (const Header& header)
+    Eigen::MatrixXd get_DW_scheme (const Header& header)
     {
       DEBUG ("searching for suitable gradient encoding...");
       using namespace App;
-      MatrixXd grad;
+      Eigen::MatrixXd grad;
 
       try {
         const auto opt_mrtrix = get_options ("grad");
@@ -212,7 +206,7 @@ namespace MR
 
 
 
-    MatrixXd get_valid_DW_scheme (const Header& header, bool nofail)
+    Eigen::MatrixXd get_valid_DW_scheme (const Header& header, bool nofail)
     {
       auto grad = get_DW_scheme (header);
 
