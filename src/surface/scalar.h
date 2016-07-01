@@ -26,50 +26,44 @@ namespace MR
   {
 
 
-    class Scalar {
+    class Scalar : public Eigen::Array<default_type, Eigen::Dynamic, 1> {
 
       public:
-        typedef Eigen::Array<default_type, Eigen::Dynamic, 1> vector_type;
+        typedef Eigen::Array<default_type, Eigen::Dynamic, 1> Base;
 
         Scalar (const std::string&, const Mesh&);
 
         Scalar (const Scalar& that) = default;
 
         Scalar (Scalar&& that) :
-            values (std::move (that.values)) { }
+            Base (std::move (that)),
+            name (std::move (that.name)) { }
 
         Scalar() { }
 
         Scalar& operator= (Scalar&& that) {
-          values = std::move (that.values);
+          Base::operator= (std::move (that));
+          name = std::move (that.name);
           return *this;
         }
 
         Scalar& operator= (const Scalar& that) {
-          values = that.values;
+          Base::operator= (that);
+          name = that.name;
           return *this;
         }
 
 
         void clear() {
-          values.clear();
+          Base::resize(0);
+          name.clear();
         }
 
 
         void save (const std::string&) const;
 
-        size_t num_values() const { return values.size(); }
-
         const std::string& get_name() const { return name; }
         void set_name (const std::string& s) { name = s; }
-
-        default_type value (const size_t i) const { assert (i < values.size()); return values[i]; }
-
-        const vector_type& get_values() const { return values; }
-
-
-      protected:
-        vector_type values;
 
 
       private:

@@ -24,6 +24,7 @@
 
 #include "connectome/lut.h"
 
+#include "surface/scalar.h"
 #include "surface/types.h"
 
 namespace MR
@@ -61,6 +62,7 @@ namespace MR
 
 
       void read_annot (const std::string&, label_vector_type&, Connectome::LUT&);
+      void read_label (const std::string&, VertexList&, Scalar&);
 
 
 
