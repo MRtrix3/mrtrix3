@@ -51,7 +51,8 @@ in the MRtrix3 toplevel directory.
 
 # set default destination file based on OS:
 filename = os.path.expanduser('~')
-if platform.system().lower() == 'darwin':
+sysname = platform.system().lower()
+if sysname == 'darwin' or sysname.startswith('mingw') or sysname.startswith('msys'):
   filename = os.path.join(filename, '.bash_profile')
 else:
   filename = os.path.join(filename, '.bashrc')
