@@ -98,6 +98,7 @@ def runCommand(cmd, exitOnError=True):
 
   error = False
   error_text = ''
+  # TODO If script is running in verbose mode, ideally want to duplicate stderr output in the terminal
   if len(cmdstack) == 1:
     process = subprocess.Popen(cmdstack[0], stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (stdoutdata, stderrdata) = process.communicate()
@@ -136,8 +137,17 @@ def runCommand(cmd, exitOnError=True):
       sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + lib.app.colourError + '[ERROR] Command failed: ' + cmd + lib.app.colourClear + '\n')
       sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + lib.app.colourPrint + 'Output of failed command:' + lib.app.colourClear + '\n')
       sys.stderr.write(error_text)
+      if not lib.app.cleanup and lib.app.tempDir:
+        with open(os.path.join(lib.app.tempDir, 'error.txt'), 'w') as outfile:
+          outfile.write(cmd + '\n\n' + error_text + '\n')
       lib.app.complete()
       exit(1)
     else:
       warnMessage('Command failed: ' + cmd)
 
+  # Only now do we append to the script log, since the command has completed successfully
+  # Note: Writing the command as it was formed as the input to runCommand():
+  #   other flags may potentially change if this file is eventually used to resume the script
+  if lib.app.tempDir:
+    with open(os.path.join(lib.app.tempDir, 'log.txt'), 'a') as outfile:
+      outfile.write(cmd + '\n')
