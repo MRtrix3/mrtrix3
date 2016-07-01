@@ -87,10 +87,12 @@ namespace MR {
           }
 
           size_t size () const { return unit_vectors.size(); }
-          const Eigen::Vector3f& get_dir (const size_t i) const { return unit_vectors[i]; }
-          const std::vector<dir_t>& get_adj_dirs (const size_t i) const { return adj_dirs[i]; }
+          const Eigen::Vector3f& get_dir (const size_t i) const { assert (i < size()); return unit_vectors[i]; }
+          const std::vector<dir_t>& get_adj_dirs (const size_t i) const { assert (i < size()); return adj_dirs[i]; }
 
           bool dirs_are_adjacent (const dir_t one, const dir_t two) const {
+            assert (one < size());
+            assert (two < size());
             for (const auto& i : adj_dirs[one]) {
               if (i == two)
                 return true;
@@ -101,7 +103,7 @@ namespace MR {
           dir_t get_min_linkage (const dir_t one, const dir_t two) const;
 
           const std::vector<Eigen::Vector3f>& get_dirs() const { return unit_vectors; }
-          const Eigen::Vector3f& operator[] (const size_t i) const { return unit_vectors[i]; }
+          const Eigen::Vector3f& operator[] (const size_t i) const { assert (i < size()); return unit_vectors[i]; }
 
 
         protected:

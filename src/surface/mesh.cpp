@@ -527,7 +527,7 @@ namespace MR
         if (!in.good())
           throw Exception ("Error reading FreeSurfer file: EOF reached");
         for (int32_t i = 0; i != num_polygons; ++i) {
-          int32_t temp[3];
+          std::array<int32_t, 3> temp;
           for (size_t v = 0; v != 3; ++v)
             temp[v] = FreeSurfer::get_BE<int32_t> (in);
           triangles.push_back (Triangle (temp));
@@ -547,7 +547,7 @@ namespace MR
           vertices.push_back (Vertex (0.01 * temp[0], 0.01 * temp[1], 0.01 * temp[2]));
         }
         for (int32_t i = 0; i != num_polygons; ++i) {
-          int32_t temp[4];
+          std::array<int32_t, 4> temp;
           for (size_t v = 0; v != 4; ++v)
             temp[v] = FreeSurfer::get_int24_BE (in);
           quads.push_back (Quad (temp));
