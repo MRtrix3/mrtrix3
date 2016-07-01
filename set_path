@@ -119,5 +119,4 @@ elif append_path is True:
 with open (filename, 'w') as f:
   f.write (output)
 print ('File "''' + filename + '" succesfully updated')
-
-
+print ('(Close terminal and open a new one for change to take effect)')
