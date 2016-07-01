@@ -12,7 +12,7 @@ def initParser(subparsers, base_parser):
   options = parser.add_argument_group('Options specific to the \'fsl\' algorithm')
   options.add_argument('-t2', metavar='<T2 image>', help='Provide a T2-weighted image in addition to the default T1-weighted image; this will be used as a second input to FSL FAST')
   options.add_argument('-mask', help='Manually provide a brain mask, rather than deriving one in the script')
-  options.add_argument('-premasked', action='store_true', default=False, help='Indicate that brain masking has already been applied to the input image')
+  options.add_argument('-premasked', action='store_true', help='Indicate that brain masking has already been applied to the input image')
   lib.cmdlineParser.flagMutuallyExclusiveOptions( [ 'mask', 'premasked' ] )
   parser.set_defaults(algorithm='fsl')
   
@@ -31,9 +31,9 @@ def getInputFiles():
   from lib.getHeaderInfo import getHeaderInfo
   from lib.getUserPath   import getUserPath
   from lib.runCommand    import runCommand
-  if hasattr(lib.app.args, 'mask') and lib.app.args.mask is not None:
+  if lib.app.args.mask:
     runCommand('mrconvert ' + getUserPath(lib.app.args.mask, True) + ' ' + os.path.join(lib.app.tempDir, 'mask.mif') + ' -datatype bit -stride -1,+2,+3')
-  if hasattr(lib.app.args, 't2') and lib.app.args.t2 is not None:
+  if lib.app.args.t2:
     if not imagesMatch(lib.app.args.input, lib.app.args.t2):
       errorMessage('Provided T2 image does not match input T1 image')
     runCommand('mrconvert ' + getUserPath(lib.app.args.t2, True) + ' ' + os.path.join(lib.app.tempDir, 'T2.nii') + ' -stride -1,+2,+3')

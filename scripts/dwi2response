@@ -82,6 +82,7 @@ if lib.app.args.grad:
 elif lib.app.args.fslgrad:
   grad_import_option = ' -fslgrad ' + getUserPath(lib.app.args.fslgrad[0], True) + ' ' + getUserPath(lib.app.args.fslgrad[1], True)
 
+lib.app.makeTempDir()
 
 # Get standard input data into the temporary directory
 if lib.app.args.single_shell or shell_option:

@@ -72,6 +72,8 @@ lib.app.checkOutputFile (lib.app.args.wm_mask)
 lib.app.checkOutputFile (lib.app.args.output_dir)
 lib.app.make_dir(lib.app.args.output_dir)
 
+lib.app.makeTempDir()
+
 maskTempDir = os.path.join(lib.app.tempDir, os.path.basename(os.path.normpath(maskDir)))
 runCommand ('cp -r ' + maskDir + ' ' + maskTempDir)
 

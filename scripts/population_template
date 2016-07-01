@@ -159,6 +159,7 @@ if do_fod_registration:
   if len(nl_scales) != len(nl_lmax):
     errorMessage('nl_scales and nl_lmax schedules are not equal in length')
 
+lib.app.makeTempDir()
 lib.app.gotoTempDir()
 
 lib.app.make_dir('input_transformed')

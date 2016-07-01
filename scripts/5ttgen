@@ -41,6 +41,7 @@ algorithm = getattr(_5ttgen, lib.app.args.algorithm)
 lib.app.checkOutputFile(lib.app.args.output)
 algorithm.checkOutputFiles()
 
+lib.app.makeTempDir()
 runCommand('mrconvert ' + getUserPath(lib.app.args.input, True) + ' ' + os.path.join(lib.app.tempDir, 'input.mif'))
 algorithm.getInputFiles()
 

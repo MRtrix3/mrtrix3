@@ -72,8 +72,15 @@ class Parser(argparse.ArgumentParser):
     for group in mutuallyExclusiveOptionGroups:
       count = 0
       for option in group[0]:
+        # Checking its presence is not adequate; by default, argparse adds these members to the namespace
+        # Need to test if more than one of these options DIFFERS FROM ITS DEFAULT
+        # Will need to loop through actions to find it manually
         if hasattr(args, option):
-          count += 1
+          for arg in self._actions:
+            if arg.dest == option:
+              if not getattr(args, option) == arg.default:
+                count += 1
+              break
       if count > 1:
         sys.stderr.write('\nError: You cannot use more than one of the following options: ' + ', '.join([ '-' + o for o in group[0] ]) + '\n\n')
         sys.exit(2)

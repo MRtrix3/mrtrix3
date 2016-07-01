@@ -90,6 +90,8 @@ lib.app.checkOutputFile(lib.app.args.output)
 
 # Convert all input images into MRtrix format and store in temprary directory first;
 #   that way getHeaderInfo() can be run multiple times without having to repeatedly parse e.g. DICOM data
+lib.app.makeTempDir()
+
 grad_option = ''
 if lib.app.args.grad:
   grad_option = ' -grad ' + getUserPath(lib.app.args.grad, True)

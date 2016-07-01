@@ -26,8 +26,8 @@ lib.app.parser.add_argument('output', help='The output corrected image series')
 options = lib.app.parser.add_argument_group('Options for the dwibiascorrect script')
 options.add_argument('-mask', help='Manually provide a mask image for bias field estimation')
 options.add_argument('-bias', help='Output the estimated bias field')
-options.add_argument('-ants', action='store_true', default=False, help='Use ANTS N4 to estimate the inhomogeneity field')
-options.add_argument('-fsl', action='store_true', default=False, help='Use FSL FAST to estimate the inhomogeneity field')
+options.add_argument('-ants', action='store_true', help='Use ANTS N4 to estimate the inhomogeneity field')
+options.add_argument('-fsl', action='store_true', help='Use FSL FAST to estimate the inhomogeneity field')
 lib.cmdlineParser.flagMutuallyExclusiveOptions( [ 'ants', 'fsl' ] )
 options.add_argument('-grad', help='Pass the diffusion gradient table in MRtrix format')
 options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Pass the diffusion gradient table in FSL bvecs/bvals format')
@@ -71,6 +71,8 @@ elif lib.app.args.fslgrad:
 
 lib.app.checkOutputFile(lib.app.args.output)
 lib.app.checkOutputFile(lib.app.args.bias)
+
+lib.app.makeTempDir()
 
 runCommand('mrconvert ' + getUserPath(lib.app.args.input, True) + ' ' + os.path.join(lib.app.tempDir, 'in.mif') + grad_import_option)
 if lib.app.args.mask:

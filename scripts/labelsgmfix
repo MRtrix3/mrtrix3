@@ -62,7 +62,9 @@ structure_map = { 'L_Accu':'Left-Accumbens-area',  'R_Accu':'Right-Accumbens-are
 if lib.app.args.sgm_amyg_hipp:
   structure_map.update({ 'L_Amyg':'Left-Amygdala',    'R_Amyg':'Right-Amygdala',
                          'L_Hipp':'Left-Hippocampus', 'R_Hipp':'Right-Hippocampus' })
-                  
+
+lib.app.makeTempDir()
+
 # Get the parcellation and T1 images into the temporary directory, with conversion of the T1 into the correct format for FSL
 runCommand('mrconvert ' + getUserPath(lib.app.args.parc, True) + ' ' + os.path.join(lib.app.tempDir, 'parc.mif'))
 runCommand('mrconvert ' + getUserPath(lib.app.args.t1, True)   + ' ' + os.path.join(lib.app.tempDir, 'T1.nii') + ' -stride -1,+2,+3')

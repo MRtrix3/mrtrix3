@@ -40,10 +40,8 @@ def addCitation(condition, reference, is_external):
 
 
 
-# TODO Stop using mutually exclusive groups, they bugger up the help pages with subparsers
-
 def initialise():
-  import os, random, string, sys
+  import os, sys
   from lib.errorMessage          import errorMessage
   from lib.printMessage          import printMessage
   from lib.readMRtrixConfSetting import readMRtrixConfSetting
@@ -88,7 +86,7 @@ def initialise():
   if args.quiet:
     verbosity = 0
     mrtrixQuiet = ' -quiet'
-  if args.verbose:
+  elif args.verbose:
     verbosity = 2
     mrtrixQuiet = ''
 
@@ -105,24 +103,6 @@ def initialise():
     tempDir = os.path.abspath(args.cont[0])
     lastFile = args.cont[1]
   else:
-    if args.tempdir:
-      dir_path = os.path.abspath(args.tempdir)
-    else:
-      dir_path = readMRtrixConfSetting('TmpFileDir')
-      if not dir_path:
-        if os.name == 'posix':
-          dir_path = '/tmp'
-        else:
-          dir_path = '.'
-    prefix = readMRtrixConfSetting('TmpFilePrefix')
-    if not prefix:
-      prefix = os.path.basename(sys.argv[0]) + '-tmp-'
-    tempDir = dir_path
-    while os.path.isdir(tempDir):
-      random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))
-      tempDir = os.path.join(dir_path, prefix + random_string) + os.sep
-    os.makedirs(tempDir)
-    printMessage('Generated temporary directory: ' + tempDir)
     with open(os.path.join(tempDir, 'cwd.txt'), 'w') as outfile:
       outfile.write(workingDir + '\n')
     with open(os.path.join(tempDir, 'command.txt'), 'w') as outfile:
@@ -152,9 +132,45 @@ def checkOutputFile(path):
 
 
 
+def makeTempDir():
+  import os, random, string, sys
+  from lib.errorMessage          import errorMessage
+  from lib.printMessage          import printMessage
+  from lib.readMRtrixConfSetting import readMRtrixConfSetting
+  global args, tempDir
+  if args.cont:
+    printMessage('Skipping temporary directory creation due to use of -continue option')
+    return
+  if tempDir:
+    errorMessage('Script error: Cannot use multiple temporary directories')
+  if args.tempdir:
+    dir_path = os.path.abspath(args.tempdir)
+  else:
+    dir_path = readMRtrixConfSetting('TmpFileDir')
+    if not dir_path:
+      if os.name == 'posix':
+        dir_path = '/tmp'
+      else:
+        dir_path = '.'
+  prefix = readMRtrixConfSetting('TmpFilePrefix')
+  if not prefix:
+    prefix = os.path.basename(sys.argv[0]) + '-tmp-'
+  tempDir = dir_path
+  while os.path.isdir(tempDir):
+    random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))
+    tempDir = os.path.join(dir_path, prefix + random_string) + os.sep
+  os.makedirs(tempDir)
+  printMessage('Generated temporary directory: ' + tempDir)
+
+
+
 def gotoTempDir():
   import os
+  from lib.errorMessage import errorMessage
   from lib.printMessage import printMessage
+  global tempDir
+  if not tempDir:
+    errorMessage('Script error: No temporary directory location set')
   if verbosity:
     printMessage('Changing to temporary directory (' + tempDir + ')')
   os.chdir(tempDir)
@@ -164,20 +180,24 @@ def gotoTempDir():
 def complete():
   import os, shutil, sys
   from lib.printMessage import printMessage
+  global tempDir, workingDir
   printMessage('Changing back to original directory (' + workingDir + ')')
   os.chdir(workingDir)
-  if cleanup:
+  if cleanup and tempDir:
     printMessage('Deleting temporary directory ' + tempDir)
     shutil.rmtree(tempDir)
-  else:
+  elif tempDir:
     # This needs to be printed even if the -quiet option is used
     sys.stdout.write(os.path.basename(sys.argv[0]) + ': ' + colourPrint + 'Contents of temporary directory kept, location: ' + tempDir + colourClear + '\n')
     sys.stdout.flush()
 
+
+
 def make_dir(dir):
- import os
- if not os.path.exists(dir):
-   os.makedirs(dir)
+  import os
+  if not os.path.exists(dir):
+    os.makedirs(dir)
+
 
 
 # determines the common postfix for a list of filenames (including the file extension)
