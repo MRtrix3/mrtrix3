@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 
 #ifndef __gui_mrview_tool_list_model_base_h__
@@ -125,19 +125,19 @@ namespace MR
 
             QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const override {
               (void) parent; // to suppress warnings about unused parameters
-              return createIndex (row, column); 
+              return createIndex (row, column);
             }
 
             QModelIndex parent (const QModelIndex&) const override { return QModelIndex(); }
 
-            int rowCount (const QModelIndex& parent = QModelIndex()) const { 
+            int rowCount (const QModelIndex& parent = QModelIndex()) const override {
               (void) parent;  // to suppress warnings about unused parameters
-              return items.size(); 
+              return items.size();
             }
 
-            int columnCount (const QModelIndex& parent = QModelIndex()) const { 
+            int columnCount (const QModelIndex& parent = QModelIndex()) const override {
               (void) parent;  // to suppress warnings about unused parameters
-              return 1; 
+              return 1;
             }
 
             void remove_item (QModelIndex& index) {

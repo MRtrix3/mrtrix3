@@ -105,7 +105,7 @@ void permute_DW_scheme (Header& H, const std::vector<int>& axes)
   for (int row = 0; row != in.rows(); ++row)
     out.block<1,3>(row, 0) = in.block<1,3>(row, 0) * R;
 
-  H.set_DW_scheme (out);
+  DWI::set_DW_scheme (H, out);
 }
 
 
@@ -114,7 +114,7 @@ void permute_DW_scheme (Header& H, const std::vector<int>& axes)
 template <class ImageType>
 inline std::vector<int> set_header (Header& header, const ImageType& input)
 {
-  header.set_ndim (input.ndim());
+  header.ndim() = input.ndim();
   for (size_t n = 0; n < header.ndim(); ++n) {
     header.size(n) = input.size(n);
     header.spacing(n) = input.spacing(n);
@@ -126,7 +126,7 @@ inline std::vector<int> set_header (Header& header, const ImageType& input)
   std::vector<int> axes;
   if (opt.size()) {
     axes = opt[0][0];
-    header.set_ndim (axes.size());
+    header.ndim() = axes.size();
     for (size_t i = 0; i < axes.size(); ++i) {
       if (axes[i] >= static_cast<int> (input.ndim()))
         throw Exception ("axis supplied to option -axes is out of bounds");
@@ -134,7 +134,7 @@ inline std::vector<int> set_header (Header& header, const ImageType& input)
     }
     permute_DW_scheme (header, axes);
   } else {
-    header.set_ndim (input.ndim());
+    header.ndim() = input.ndim();
     axes.assign (input.ndim(), 0);
     for (size_t i = 0; i < axes.size(); ++i) {
       axes[i] = i;
@@ -211,7 +211,7 @@ void run ()
     WARN ("requested datatype is real but input datatype is complex - imaginary component will be ignored");
 
   if (get_options ("grad").size() || get_options ("fslgrad").size())
-    header_out.set_DW_scheme (DWI::get_DW_scheme (header_in));
+    DWI::set_DW_scheme (header_out, DWI::get_DW_scheme (header_in));
 
   auto opt = get_options ("coord");
   std::vector<std::vector<int>> pos;
@@ -234,7 +234,7 @@ void run ()
           Eigen::MatrixXd extract_grad (pos[3].size(), grad.cols());
           for (size_t dir = 0; dir != pos[3].size(); ++dir)
             extract_grad.row (dir) = grad.row (pos[3][dir]);
-          header_out.set_DW_scheme (extract_grad);
+          DWI::set_DW_scheme (header_out, extract_grad);
         }
       }
     }

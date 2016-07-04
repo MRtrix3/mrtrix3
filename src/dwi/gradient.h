@@ -37,7 +37,6 @@ namespace MR
 
   namespace DWI
   {
-    using namespace Eigen;
 
     App::OptionGroup GradImportOptions (bool include_bvalue_scaling = true);
     App::OptionGroup GradExportOptions();
@@ -129,6 +128,40 @@ namespace MR
           if (G(n,3)) 
             G(n,3) *= G.row(n).template head<3>().squaredNorm();
       }
+
+
+
+
+    //! store the DW gradient encoding matrix in a header
+    /*! this will store the DW gradient encoding matrix into the
+     * Header::keyval() structure of \a header, under the key 'dw_scheme'.  
+     */
+    template <class MatrixType> 
+      void set_DW_scheme (Header& header, const MatrixType& G)
+      {
+        std::string dw_scheme;
+        for (ssize_t row = 0; row < G.rows(); ++row) {
+          std::string line;
+          for (ssize_t col = 0; col < G.cols(); ++col) {
+            line += str(G(row,col), 10);
+            if (col < G.cols() - 1) line += ",";
+          }
+          add_line (dw_scheme, line);
+        }
+        header.keyval()["dw_scheme"] = dw_scheme;
+      }
+
+
+
+    //! parse the DW gradient encoding matrix from a header
+    /*! extract the DW gradient encoding matrix stored in the \a header if one
+     * is present. This is expected to be stored in the Header::keyval()
+     * structure, under the key 'dw_scheme'.
+     */
+    Eigen::MatrixXd parse_DW_scheme (const Header& header);
+
+
+
 
     //! get the DW gradient encoding matrix
     /*! attempts to find the DW gradient encoding matrix, using the following

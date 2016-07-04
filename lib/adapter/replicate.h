@@ -40,7 +40,7 @@ namespace MR
             header_ (replication_template),
             pos_ (ndim(), 0)
           {
-            for (size_t n = 0; n < std::min (parent().ndim(), header_.ndim()); ++n) {
+            for (size_t n = 0; n < std::min<size_t> (parent().ndim(), header_.ndim()); ++n) {
               if (parent().size(n) > 1 && parent().size(n) != header_.size(n))
                 throw Exception ("cannot replicate over non-singleton dimensions");
             }

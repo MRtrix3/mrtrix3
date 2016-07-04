@@ -24,6 +24,7 @@
 #include "image.h"
 #include "thread_queue.h"
 
+#include "dwi/gradient.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/weights.h"
@@ -292,7 +293,7 @@ void run () {
   }
 
   if (header.ndim() > 3) {
-    header.set_ndim (3);
+    header.ndim() = 3;
     header.sanitise();
   }
 
@@ -328,23 +329,23 @@ void run () {
   opt = get_options ("dec");
   if (opt.size()) {
     writer_type = DEC;
-    header.set_ndim (4);
+    header.ndim() = 4;
     header.size (3) = 3;
     header.sanitise();
     Stride::set (header, Stride::contiguous_along_axis (3, header));
   }
 
-  std::unique_ptr<DWI::Directions::FastLookupSet> dirs;
+  std::unique_ptr<Directions::FastLookupSet> dirs;
   opt = get_options ("dixel");
   if (opt.size()) {
     if (writer_type != GREYSCALE)
       throw Exception ("Options for setting output image dimensionality are mutually exclusive");
     writer_type = DIXEL;
     if (Path::exists (opt[0][0]))
-      dirs.reset (new DWI::Directions::FastLookupSet (str(opt[0][0])));
+      dirs.reset (new Directions::FastLookupSet (str(opt[0][0])));
     else
-      dirs.reset (new DWI::Directions::FastLookupSet (to<size_t>(opt[0][0])));
-    header.set_ndim (4);
+      dirs.reset (new Directions::FastLookupSet (to<size_t>(opt[0][0])));
+    header.ndim() = 4;
     header.size(3) = dirs->size();
     header.sanitise();
     Stride::set (header, Stride::contiguous_along_axis (3, header));
@@ -356,7 +357,7 @@ void run () {
       grad (row, 2) = ((*dirs)[row])[2];
       grad (row, 3) = 1.0f;
     }
-    header.set_DW_scheme (grad);
+    set_DW_scheme (header, grad);
   }
 
   opt = get_options ("tod");
@@ -367,7 +368,7 @@ void run () {
     const size_t lmax = opt[0][0];
     if (lmax % 2)
       throw Exception ("lmax for TODI must be an even number");
-    header.set_ndim (4);
+    header.ndim() = 4;
     header.size(3) = Math::SH::NforL (lmax);
     header.sanitise();
     Stride::set (header, Stride::contiguous_along_axis (3, header));

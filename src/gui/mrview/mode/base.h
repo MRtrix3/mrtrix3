@@ -84,7 +84,7 @@ namespace MR
             virtual void mouse_press_event ();
             virtual void mouse_release_event ();
             virtual void reset_event ();
-            virtual void slice_move_event (int x);
+            virtual void slice_move_event (float x);
             virtual void set_focus_event ();
             virtual void contrast_event ();
             virtual void pan_event ();

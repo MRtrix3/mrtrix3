@@ -193,7 +193,7 @@ void TrackMapperTWI::add_vector_data (const std::string& path)
     throw Exception ("Cannot add both an associated image and a vector data file to TWI");
   if (contrast != VECTOR_FILE)
     throw Exception ("Cannot add a vector data file to TWI unless the VECTOR_FILE contrast is used");
-  vector_data.reset (new Eigen::VectorXf (std::move (load_vector<float> (path))));
+  vector_data.reset (new Eigen::VectorXf (load_vector<float> (path)));
 }
 
 

@@ -109,7 +109,7 @@ class Segmented_FOD_receiver
     Segmented_FOD_receiver (const Header& header) :
         H (header)
     {
-      H.set_ndim (3);
+      H.ndim() = 3;
       H.datatype() = DataType::UInt64;
       H.datatype().set_byte_order_native();
       H.keyval()[Sparse::name_key] = str(typeid(FixelMetric).name());

@@ -192,7 +192,7 @@ namespace MR
 //          save (*scaled_update, std::string("composed_update.mif"), false);
 //          Adapter::Jacobian<Image<default_type> > jacobian (*scaled_update);
 //          Header header (*scaled_update);
-//          header.set_ndim(3);
+//          header.ndim() = 3;
 //          bool is_neg = false;
 //          auto jacobian_det = Image<default_type>::scratch (header);
 //          Eigen::MatrixXd ident = Eigen::MatrixXd::Identity (3,3);
@@ -237,7 +237,7 @@ namespace MR
       template <class WarpType>
       FORCE_INLINE WarpType compute_midway_deformation (WarpType& warp, const int from) {
         Header midway_header (warp);
-        midway_header.set_ndim(4);
+        midway_header.ndim() = 4;
         midway_header.size(3) = 3;
         WarpType deformation = WarpType::scratch (midway_header);
 
@@ -258,7 +258,7 @@ namespace MR
       template <class WarpType, class TemplateType>
       FORCE_INLINE WarpType compute_full_deformation (WarpType& warp, TemplateType& template_image, const int from) {
         Header deform_header (template_image);
-        deform_header.set_ndim(4);
+        deform_header.ndim() = 4;
         deform_header.size(3) = 3;
         WarpType deform = WarpType::scratch (deform_header);
 

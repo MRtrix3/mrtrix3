@@ -114,7 +114,7 @@ namespace MR {
         if (nchannels > 1) 
           INFO ("data segment is larger than expected from image dimensions - interpreting as multi-channel data");
 
-        H.set_ndim (3 + (dim[0]*dim[2]>1) + (nchannels>1));
+        H.ndim() = 3 + (dim[0]*dim[2]>1) + (nchannels>1);
 
         size_t current_axis = 0;
 

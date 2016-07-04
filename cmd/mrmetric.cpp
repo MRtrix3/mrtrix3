@@ -413,7 +413,7 @@ void run ()
         output2mask = Header::scratch (midway_image_header, "-").get_image<bool>();
 
         Header new_header;
-        new_header.set_ndim(input1.ndim());
+        new_header.ndim() = input1.ndim();
         for (ssize_t dim=0; dim < 3; ++dim){
           new_header.size(dim) = midway_image_header.size(dim);
           new_header.spacing(dim) = midway_image_header.spacing(dim);

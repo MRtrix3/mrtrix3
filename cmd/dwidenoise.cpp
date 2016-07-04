@@ -224,7 +224,7 @@ void run ()
   Image<value_type> noise;
   opt = get_options("noise");
   if (opt.size()) {
-    header.set_ndim(3);
+    header.ndim() = 3;
     noise = Image<value_type>::create (opt[0][0], header);
   }
 

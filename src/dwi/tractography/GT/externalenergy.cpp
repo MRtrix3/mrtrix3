@@ -48,7 +48,7 @@ namespace MR {
             WARN("No isotropic response functions provided; using single-tissue white matter model.");
           }
           
-          header.set_ndim(3);
+          header.ndim() = 3;
           eext = Image<float>::scratch(header, "external energy");
           
           // Set kernel matrices --------------------------------------------------------

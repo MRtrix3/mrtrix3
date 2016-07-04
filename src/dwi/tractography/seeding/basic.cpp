@@ -181,7 +181,7 @@ namespace MR
 
           auto sub = Adapter::make<Adapter::Subset> (vox, bottom, top);
           Header header = sub;
-          header.set_ndim (3);
+          header.ndim() = 3;
 
           auto buf = Image<float>::scratch (header);
           volume *= buf.spacing(0) * buf.spacing(1) * buf.spacing(2);

@@ -191,7 +191,7 @@ namespace MR
 
     // create average space header
     Header header_out;
-    header_out.set_ndim(3);
+    header_out.ndim() = 3;
     for (size_t i = 0; i < 3; i++)
       header_out.spacing(i) = spacing(i);
 
