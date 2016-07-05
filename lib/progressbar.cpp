@@ -72,14 +72,14 @@ namespace MR
 
     void display_func_redirect (ProgressInfo& p)
     {
+      static size_t count = 0;
       static size_t next_update_at = 0;
       // need to update whole line since text may have changed:
       if (p.text_has_been_modified) {
         __need_newline = false;
-        if (p.value == 0)
-          next_update_at = 0;
-        // only update for zero or power of two (to reduce frequency of updates):
-        if (p.value == next_update_at) {
+        if (p.value == 0 && p.current_val == 0)
+          count = next_update_at = 0;
+        if (count++ == next_update_at) {
           if (p.multiplier) {
             __print_stderr (printf ("%s: [%3zu%%] %s%s\n", 
                   App::NAME.c_str(), p.value, p.text.c_str(), p.ellipsis.c_str()));;
