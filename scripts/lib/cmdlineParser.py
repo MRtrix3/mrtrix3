@@ -38,12 +38,15 @@ def flagMutuallyExclusiveOptions(options, required=False):
 class Parser(argparse.ArgumentParser):
 
   def error(self, message):
-    import sys
+    import shlex, sys
     import lib.app
     for arg in sys.argv:
       if '-help'.startswith(arg):
         self.print_help()
         sys.exit(0)
+    if len(shlex.split(self.prog)) == len(sys.argv): # No arguments provided to subparser
+      self.print_help()
+      sys.exit(0)
     sys.stderr.write('\nError: %s\n' % message)
     sys.stderr.write('Usage: ' + self.format_usage() + '\n')
     sys.stderr.write('Usage: (Run ' + self.prog + ' -help for more information)\n\n')
@@ -109,7 +112,7 @@ class Parser(argparse.ArgumentParser):
     s += '\n'
     s += bold('SYNOPSIS') + '\n'
     s += '\n'
-    synopsis = underline(self.prog) + ' [ options ]'
+    synopsis = self.prog + ' [ options ]'
     # Compulsory sub-parser algorithm selection (if present)
     if self._subparsers:
       synopsis += ' ' + self._subparsers._group_actions[0].dest + ' ...'
@@ -119,18 +122,22 @@ class Parser(argparse.ArgumentParser):
         synopsis += ' ' + arg.metavar
       else:
         synopsis += ' ' + arg.dest
-    s += w.fill(synopsis) + '\n'
+    # Unfortunately this can line wrap early because textwrap is counting each
+    #   underlined character as 3 characters when calculating when to wrap
+    # Fix by underlining after the fact
+    s += w.fill(synopsis).replace(self.prog, underline(self.prog), 1) + '\n'
     s += '\n'
     if self._subparsers:
-      s += w_arg.fill(underline(self._subparsers._group_actions[0].dest) + ' '*(max(21-len(self._subparsers._group_actions[0].dest), 1))) + '\n'
+      s += '        ' + w_arg.fill(self._subparsers._group_actions[0].dest + ' '*(max(13-len(self._subparsers._group_actions[0].dest), 1)) + self._subparsers._group_actions[0].help).replace (self._subparsers._group_actions[0].dest, underline(self._subparser._group_actions[0].dest), 1) + '\n'
       s += '\n'
     for arg in self._positionals._group_actions:
       line = '        '
       if arg.metavar:
-        line += underline(arg.metavar) + ' '*(max(13-len(arg.metavar), 1))
+        name = arg.metavar
       else:
-        line += underline(arg.dest) + ' '*(max(13-len(arg.dest), 1))
-      s += w_arg.fill(line + arg.help) + '\n'
+        name = arg.dest
+      line += name + ' '*(max(13-len(name), 1)) + arg.help
+      s += w_arg.fill(line).replace(name, underline(name), 1) + '\n'
       s += '\n'
     s += bold('DESCRIPTION') + '\n'
     s += '\n'
