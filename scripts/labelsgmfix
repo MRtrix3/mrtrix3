@@ -10,7 +10,7 @@
 
 
 import os, sys
-import lib.app
+import lib.app, lib.cmdlineParser
 
 from lib.binaryInPath import binaryInPath
 from lib.errorMessage import errorMessage
@@ -21,14 +21,17 @@ from lib.printMessage import printMessage
 from lib.runCommand   import runCommand
 
 lib.app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
-lib.app.initCitations([ 'first', 'FSL', 'SIFT_followup' ])
-lib.app.initParser('In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST')
+lib.app.addCitation('', 'Patenaude, B.; Smith, S. M.; Kennedy, D. N. & Jenkinson, M. A Bayesian model of shape and appearance for subcortical brain segmentation. NeuroImage, 2011, 56, 907-922', True)
+lib.app.addCitation('', 'Smith, S. M.; Jenkinson, M.; Woolrich, M. W.; Beckmann, C. F.; Behrens, T. E.; Johansen-Berg, H.; Bannister, P. R.; De Luca, M.; Drobnjak, I.; Flitney, D. E.; Niazy, R. K.; Saunders, J.; Vickers, J.; Zhang, Y.; De Stefano, N.; Brady, J. M. & Matthews, P. M. Advances in functional and structural MR image analysis and implementation as FSL. NeuroImage, 2004, 23, S208-S219', True)
+lib.app.addCitation('', 'Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. The effects of SIFT on the reproducibility and biological accuracy of the structural connectome. NeuroImage, 2015, 104, 253-265', False)
+lib.cmdlineParser.initialise('In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST')
 lib.app.parser.add_argument('parc',   help='The input FreeSurfer parcellation image')
 lib.app.parser.add_argument('t1',     help='The T1 image to be provided to FIRST')
 lib.app.parser.add_argument('lut',    help='The lookup table file that the parcellated image is based on')
 lib.app.parser.add_argument('output', help='The output parcellation image')
-lib.app.parser.add_argument('-premasked', action='store_true', default=False, help='Indicate that brain masking has been applied to the T1 input image')
-lib.app.parser.add_argument('-sgm_amyg_hipp', action='store_true', default=False, help='Consider the amygdalae and hippocampi as sub-cortical grey matter structures, and also replace their estimates with those from FIRST')
+options = lib.app.parser.add_argument_group('Options for the labelsgmfix script')
+options.add_argument('-premasked', action='store_true', default=False, help='Indicate that brain masking has been applied to the T1 input image')
+options.add_argument('-sgm_amyg_hipp', action='store_true', default=False, help='Consider the amygdalae and hippocampi as sub-cortical grey matter structures, and also replace their estimates with those from FIRST')
 lib.app.initialise()
 
 if isWindows():
@@ -59,7 +62,9 @@ structure_map = { 'L_Accu':'Left-Accumbens-area',  'R_Accu':'Right-Accumbens-are
 if lib.app.args.sgm_amyg_hipp:
   structure_map.update({ 'L_Amyg':'Left-Amygdala',    'R_Amyg':'Right-Amygdala',
                          'L_Hipp':'Left-Hippocampus', 'R_Hipp':'Right-Hippocampus' })
-                  
+
+lib.app.makeTempDir()
+
 # Get the parcellation and T1 images into the temporary directory, with conversion of the T1 into the correct format for FSL
 runCommand('mrconvert ' + getUserPath(lib.app.args.parc, True) + ' ' + os.path.join(lib.app.tempDir, 'parc.mif'))
 runCommand('mrconvert ' + getUserPath(lib.app.args.t1, True)   + ' ' + os.path.join(lib.app.tempDir, 'T1.nii') + ' -stride -1,+2,+3')

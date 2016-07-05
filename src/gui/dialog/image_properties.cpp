@@ -16,6 +16,7 @@
 #include "header.h"
 #include "stride.h"
 #include "math/math.h"
+#include "dwi/gradient.h"
 #include "gui/dialog/file.h"
 #include "gui/dialog/list.h"
 #include "gui/dialog/image_properties.h"
@@ -88,7 +89,7 @@ namespace MR
           transform->appendChild (new TreeItem (std::string(), ss.str(), transform));
         }
 
-        auto DW_scheme = H.parse_DW_scheme();
+        auto DW_scheme = DWI::parse_DW_scheme (H);
         if (DW_scheme.rows()) {
           if (DW_scheme.cols() != 4) {
             root->appendChild (new TreeItem ("Diffusion scheme", "(invalid)", root));
@@ -137,7 +138,7 @@ namespace MR
         std::string text = k.data().toString().toUtf8().constData();
 
         if (text == "Transform") save_data = H.transform().matrix();
-        else if (text == "Diffusion scheme") save_data = H.parse_DW_scheme();
+        else if (text == "Diffusion scheme") save_data = DWI::parse_DW_scheme (H);
         else {
           save_data.resize (0, 0);
           return;

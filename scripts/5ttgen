@@ -8,32 +8,30 @@
 
 
 import argparse, os, sys
-import lib.app
+import lib.app, lib.cmdlineParser
 
-from lib.getUserPath import getUserPath
-from lib.runCommand  import runCommand
+from lib.getAlgorithmList import getAlgorithmList
+from lib.getUserPath      import getUserPath
+from lib.runCommand       import runCommand
 
 lib.app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
-lib.app.initCitations([ 'ACT', 'bet', 'fast', 'first', 'FSL' ])
-lib.app.initParser('Generate a 5TT image suitable for ACT')
+lib.app.addCitation('', 'Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. NeuroImage, 2012, 62, 1924-1938', False)
+lib.cmdlineParser.initialise('Generate a 5TT image suitable for ACT')
 
-base_parser = lib.app.Parser(description='Arguments & options common to all algorithms', add_help=False, formatter_class=argparse.RawDescriptionHelpFormatter)
-base_parser.add_argument('input',  help='The input image (will depend on the algorithm used)')
-base_parser.add_argument('output', help='The output 5TT image')
-base_parser.add_argument('-nocrop', action='store_true', default=False, help='Do NOT crop the resulting 5TT image to reduce its size (keep the same dimensions as the input image)')
-base_parser.add_argument('-sgm_amyg_hipp', action='store_true', default=False, help='Represent the amygdalae and hippocampi as sub-cortical grey matter in the 5TT image')
+base_parser = lib.cmdlineParser.Parser(description='Base parser for 5ttgen script', parents=[lib.app.parser], add_help=False)
+common_options = base_parser.add_argument_group('Options common to all 5ttgen algorithms')
+common_options.add_argument('-nocrop', action='store_true', default=False, help='Do NOT crop the resulting 5TT image to reduce its size (keep the same dimensions as the input image)')
+common_options.add_argument('-sgm_amyg_hipp', action='store_true', default=False, help='Represent the amygdalae and hippocampi as sub-cortical grey matter in the 5TT image')
 
-subparsers = lib.app.parser.add_subparsers(title='software options', description='Select the software / algorithm to be used to derive the 5TT image', help='Additional help available for individual software options: Use e.g. ' + os.path.basename(sys.argv[0]) + ' fsl -help')
+algorithm_list = getAlgorithmList()
+subparsers = lib.app.parser.add_subparsers(title='Algorithm choices', help='Select the software / algorithm to be used to derive the 5TT image; additional details and options become available once an algorithm is nominated. Options are: ' + ', '.join(algorithm_list), dest='algorithm')
 
-# Import the command-line settings for all algorithms found in the scripts/src/_5ttgen/ directory
+# Import the command-line settings for all algorithms found
 from src import _5ttgen
-algorithm_list = os.listdir(os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'src', '_5ttgen'))
-for filename in algorithm_list:
-  filename = filename.split('.')
-  if len(filename) == 2 and filename[1] == 'py' and not filename[0] == '__init__':
-    __import__('src._5ttgen', globals(), locals(), [ filename[0] ])
-    algorithm = getattr(_5ttgen, filename[0])
-    algorithm.initParser(subparsers, base_parser)
+for name in algorithm_list:
+  __import__('src._5ttgen', globals(), locals(), [ name ])
+  algorithm = getattr(_5ttgen, name)
+  algorithm.initParser(subparsers, base_parser)
 
 lib.app.initialise()
 
@@ -43,6 +41,7 @@ algorithm = getattr(_5ttgen, lib.app.args.algorithm)
 lib.app.checkOutputFile(lib.app.args.output)
 algorithm.checkOutputFiles()
 
+lib.app.makeTempDir()
 runCommand('mrconvert ' + getUserPath(lib.app.args.input, True) + ' ' + os.path.join(lib.app.tempDir, 'input.mif'))
 algorithm.getInputFiles()
 

@@ -136,7 +136,6 @@ class Segmented_FOD_receiver
 
   private:
     template<typename UIntType> void primitive_commit ();
-    template<typename UIntType> Image<UIntType> commit_index_file ();
 
     Header H;
     std::string fixel_folder_path, index_path, dir_path, afd_path, peak_path, disp_path;
@@ -204,7 +203,7 @@ void Segmented_FOD_receiver::primitive_commit ()
   if (output_index_file) {
     auto index_header (H);
     index_header.keyval()[FixelFormat::n_fixels_key] = str(n_fixels);
-    index_header.set_ndim (4);
+    index_header.ndim () = 4;
     index_header.size (3) = 2;
     index_header.datatype () = DataType::from<UIntType> ();
     index_header.datatype ().set_byte_order_native ();
@@ -214,7 +213,7 @@ void Segmented_FOD_receiver::primitive_commit ()
   }
 
   auto fixel_data_header (H);
-  fixel_data_header.set_ndim (3);
+  fixel_data_header.ndim () = 3;
   fixel_data_header.size (0) = n_fixels;
   fixel_data_header.size (2) = 1;
   fixel_data_header.datatype () = DataType::Float32;
@@ -360,7 +359,7 @@ void run ()
 
   FMLS::FODQueueWriter writer (fod_data, mask);
 
-  const DWI::Directions::Set dirs (5000);
+  const DWI::Directions::Set dirs (1281);
   Segmenter fmls (dirs, Math::SH::LforN (H.size(3)));
   load_fmls_thresholds (fmls);
 

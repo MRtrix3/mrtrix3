@@ -655,10 +655,10 @@ void run ()
   if (op == 10) { // count
     H_out.datatype() = DataType::UInt8;
   } else if (op == 13 || op == 14) { // dec
-    H_out.set_ndim (4);
+    H_out.ndim() = 4;
     H_out.size (3) = 3;
   } else if (op == 15 || op == 16 || op == 17) { // split_*
-    H_out.set_ndim (4);
+    H_out.ndim() = 4;
     uint32_t max_count = 0;
     for (auto l = Loop ("determining largest fixel count", in) (in); l; ++l)
       max_count = std::max (max_count, in.value().size());

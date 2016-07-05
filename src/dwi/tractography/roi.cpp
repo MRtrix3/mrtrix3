@@ -105,7 +105,7 @@ namespace MR {
 
         auto sub = Adapter::make<Adapter::Subset> (data, bottom, top);
         Header mask_header (sub);
-        mask_header.set_ndim (3);
+        mask_header.ndim() = 3;
         auto mask = Image<bool>::scratch (mask_header, data.name());
         threaded_copy (sub, mask, 0, 3);
         return mask;
