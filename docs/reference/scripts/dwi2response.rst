@@ -1,6 +1,3 @@
-dwi2response
-===========
-
 .. _dwi2response_fa:
 
 dwi2response fa
@@ -25,7 +22,7 @@ Options
 -------
 
 Options specific to the 'fa' algorithm
-======================================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-erode** Number of brain mask erosion steps to apply prior to threshold (not used if mask is provided manually)
 
@@ -34,7 +31,7 @@ Options specific to the 'fa' algorithm
 - **-threshold** Apply a hard FA threshold, rather than selecting the top voxels
 
 Options common to all dwi2response algorithms
-=============================================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-shell** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
 
@@ -49,7 +46,7 @@ Options common to all dwi2response algorithms
 - **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
 Standard options
-================
+^^^^^^^^^^^^^^^^
 
 - **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
 
@@ -121,12 +118,12 @@ Options
 -------
 
 Options specific to the 'manual' algorithm
-==========================================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-dirs** Manually provide the fibre direction in each voxel (a tensor fit will be used otherwise)
 
 Options common to all dwi2response algorithms
-=============================================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-shell** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
 
@@ -141,7 +138,7 @@ Options common to all dwi2response algorithms
 - **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
 Standard options
-================
+^^^^^^^^^^^^^^^^
 
 - **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
 
@@ -215,7 +212,7 @@ Options
 -------
 
 Options specific to the 'msmt_5tt' algorithm
-============================================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-dirs** Manually provide the fibre direction in each voxel (a tensor fit will be used otherwise)
 
@@ -226,7 +223,7 @@ Options specific to the 'msmt_5tt' algorithm
 - **-wm_algo algorithm** dwi2response algorithm to use for WM single-fibre voxel selection
 
 Options common to all dwi2response algorithms
-=============================================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-shell** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
 
@@ -241,7 +238,7 @@ Options common to all dwi2response algorithms
 - **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
 Standard options
-================
+^^^^^^^^^^^^^^^^
 
 - **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
 
@@ -312,7 +309,7 @@ Options
 -------
 
 Options specific to the 'tax' algorithm
-=======================================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-peak_ratio** Second-to-first-peak amplitude ratio threshold
 
@@ -321,7 +318,7 @@ Options specific to the 'tax' algorithm
 - **-convergence** Percentile change in any RF coefficient required to continue iterating
 
 Options common to all dwi2response algorithms
-=============================================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-shell** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
 
@@ -336,7 +333,7 @@ Options common to all dwi2response algorithms
 - **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
 Standard options
-================
+^^^^^^^^^^^^^^^^
 
 - **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
 
@@ -407,7 +404,7 @@ Options
 -------
 
 Options specific to the 'tournier' algorithm
-============================================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-iter_voxels** Number of single-fibre voxels to select when preparing for the next iteration
 
@@ -418,7 +415,7 @@ Options specific to the 'tournier' algorithm
 - **-max_iters** Maximum number of iterations
 
 Options common to all dwi2response algorithms
-=============================================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-shell** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
 
@@ -433,7 +430,7 @@ Options common to all dwi2response algorithms
 - **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
 Standard options
-================
+^^^^^^^^^^^^^^^^
 
 - **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
 
@@ -503,7 +500,7 @@ Options
 -------
 
 Standard options
-================
+^^^^^^^^^^^^^^^^
 
 - **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
 

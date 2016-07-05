@@ -1,6 +1,3 @@
-5ttgen
-===========
-
 .. _5ttgen_freesurfer:
 
 5ttgen freesurfer
@@ -25,19 +22,19 @@ Options
 -------
 
 Options specific to the 'freesurfer' algorithm
-==============================================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-lut** Manually provide path to the lookup table on which the input parcellation image is based (e.g. FreeSurferColorLUT.txt)
 
 Options common to all 5ttgen algorithms
-=======================================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocrop** Do NOT crop the resulting 5TT image to reduce its size (keep the same dimensions as the input image)
 
 - **-sgm_amyg_hipp** Represent the amygdalae and hippocampi as sub-cortical grey matter in the 5TT image
 
 Standard options
-================
+^^^^^^^^^^^^^^^^
 
 - **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
 
@@ -110,7 +107,7 @@ Options
 -------
 
 Options specific to the 'fsl' algorithm
-=======================================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-t2 <T2 image>** Provide a T2-weighted image in addition to the default T1-weighted image; this will be used as a second input to FSL FAST
 
@@ -119,14 +116,14 @@ Options specific to the 'fsl' algorithm
 - **-premasked** Indicate that brain masking has already been applied to the input image
 
 Options common to all 5ttgen algorithms
-=======================================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocrop** Do NOT crop the resulting 5TT image to reduce its size (keep the same dimensions as the input image)
 
 - **-sgm_amyg_hipp** Represent the amygdalae and hippocampi as sub-cortical grey matter in the 5TT image
 
 Standard options
-================
+^^^^^^^^^^^^^^^^
 
 - **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
 
@@ -198,7 +195,7 @@ Options
 -------
 
 Standard options
-================
+^^^^^^^^^^^^^^^^
 
 - **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
 

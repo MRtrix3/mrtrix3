@@ -242,7 +242,7 @@ class Parser(argparse.ArgumentParser):
       if group._group_actions and not (len(group._group_actions) == 1 and isinstance(group._group_actions[0], argparse._SubParsersAction)) and not group == self._positionals:
         print ('')
         print (group.title)
-        print ('='*len(group.title))
+        print ('^'*len(group.title))
         for option in group._group_actions:
           text = '/'.join(option.option_strings)
           if option.metavar:
