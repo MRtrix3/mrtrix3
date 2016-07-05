@@ -19,9 +19,8 @@
 
 #include "image.h"
 
-#include "sparse/fixel_metric.h"
-#include "sparse/keys.h"
-#include "sparse/image.h"
+#include "fixel_format/keys.h"
+#include "fixel_format/helpers.h"
 
 #include "math/SH.h"
 
@@ -29,6 +28,9 @@
 
 #include "dwi/fmls.h"
 #include "dwi/directions/set.h"
+
+#include "gui/dialog/progress.h"
+#include "file/path.h"
 
 
 
@@ -40,11 +42,15 @@ using namespace App;
 
 
 
-using Sparse::FixelMetric;
-
-
-
 const OptionGroup OutputOptions = OptionGroup ("Metric values for fixel-based sparse output images")
+
+  + Option ("index",
+            "store the index file")
+    + Argument ("image").type_image_out()
+
+  + Option ("dir",
+            "store the fixel directions")
+    + Argument ("image").type_image_out()
 
   + Option ("afd",
             "store the total Apparent Fibre Density per fixel (integral of FOD lobe)")
@@ -81,7 +87,8 @@ void usage ()
     "Neuroimage, 2012, 15;59(4), 3976-94.";
 
   ARGUMENTS
-  + Argument ("fod", "the input fod image.").type_image_in ();
+  + Argument ("fod", "the input fod image.").type_image_in ()
+  + Argument ("fixel_folder", "the output fixel folder").type_text();
 
 
   OPTIONS
@@ -107,104 +114,204 @@ class Segmented_FOD_receiver
 
   public:
     Segmented_FOD_receiver (const Header& header) :
-        H (header)
+        H (header), n_fixels (0), output_index_file (true)
     {
-      H.set_ndim (3);
-      H.datatype() = DataType::UInt64;
-      H.datatype().set_byte_order_native();
-      H.keyval()[Sparse::name_key] = str(typeid(FixelMetric).name());
-      H.keyval()[Sparse::size_key] = str(sizeof(FixelMetric));
     }
 
+    void commit ();
 
-    void set_afd_output  (const std::string&);
-    void set_peak_output (const std::string&);
-    void set_disp_output (const std::string&);
+    void set_output_index_file (bool flag) { output_index_file = flag; }
+    void set_fixel_folder_output (const std::string& path) { fixel_folder_path = path; }
+    void set_index_output (const std::string& path) { index_path = path; }
+    std::string get_index_output () { return index_path; }
+    void set_directions_output (const std::string& path) { dir_path = path; }
+    void set_afd_output  (const std::string& path) { afd_path = path; }
+    void set_peak_output (const std::string& path) { peak_path = path; }
+    void set_disp_output (const std::string& path) { disp_path = path; }
+
     size_t num_outputs() const;
 
     bool operator() (const FOD_lobes&);
 
 
-
   private:
-    Header H;
+    template<typename UIntType> void primitive_commit ();
+    template<typename UIntType> Image<UIntType> commit_index_file ();
 
-    // These must be stored using pointers as Sparse::Image
-    //   uses class constructors rather than static functions;
-    //   the Sparse::Image class should be modified
-    std::unique_ptr<Sparse::Image<FixelMetric>> afd, peak, disp;
+    Header H;
+    std::string fixel_folder_path, index_path, dir_path, afd_path, peak_path, disp_path;
+    std::vector<FOD_lobes> lobes;
+    uint64_t n_fixels;
+    bool output_index_file;
 };
 
 
 
-
-void Segmented_FOD_receiver::set_afd_output (const std::string& path)
-{
-  assert (!afd);
-  afd.reset (new Sparse::Image<FixelMetric> (path, H));
-}
-
-void Segmented_FOD_receiver::set_peak_output (const std::string& path)
-{
-  assert (!peak);
-  peak.reset (new Sparse::Image<FixelMetric> (path, H));
-}
-
-void Segmented_FOD_receiver::set_disp_output (const std::string& path)
-{
-  assert (!disp);
-  disp.reset (new Sparse::Image<FixelMetric> (path, H));
-}
-
 size_t Segmented_FOD_receiver::num_outputs() const
 {
-  size_t count = 0;
-  if (afd)  ++count;
-  if (peak) ++count;
-  if (disp) ++count;
+  size_t count = output_index_file ? 1 : 0;
+  if (dir_path.size()) ++count;
+  if (afd_path.size())  ++count;
+  if (peak_path.size()) ++count;
+  if (disp_path.size()) ++count;
   return count;
 }
 
 
 
 
-
-
 bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
 {
-  if (!in.size())
-    return true;
 
-  if (afd) {
-    assign_pos_of (in.vox).to (*afd);
-    afd->value().set_size (in.size());
-    for (size_t i = 0; i != in.size(); ++i) {
-      FixelMetric this_fixel (in[i].get_mean_dir(), in[i].get_integral(), in[i].get_integral());
-      afd->value()[i] = this_fixel;
-    }
-  }
-
-  if (peak) {
-    assign_pos_of (in.vox).to (*peak);
-    peak->value().set_size (in.size());
-    for (size_t i = 0; i != in.size(); ++i) {
-      FixelMetric this_fixel (in[i].get_peak_dir(), in[i].get_integral(), in[i].get_peak_value());
-      peak->value()[i] = this_fixel;
-    }
-  }
-
-  if (disp) {
-    assign_pos_of (in.vox).to (*disp);
-    disp->value().set_size (in.size());
-    for (size_t i = 0; i != in.size(); ++i) {
-      FixelMetric this_fixel (in[i].get_mean_dir(), in[i].get_integral(), in[i].get_integral() / in[i].get_peak_value());
-      disp->value()[i] = this_fixel;
-    }
+  if (size_t n = in.size()) {
+    lobes.emplace_back (in);
+    n_fixels += n;
   }
 
   return true;
 }
 
+
+
+void Segmented_FOD_receiver::commit ()
+{
+  if (!lobes.size() || !n_fixels || !num_outputs())
+    return;
+
+  if (n_fixels < (uint64_t)std::numeric_limits<uint32_t>::max ())
+    primitive_commit<uint32_t> ();
+  else
+    primitive_commit<uint64_t> ();
+}
+
+
+
+template<typename UIntType>
+void Segmented_FOD_receiver::primitive_commit ()
+{
+  using DataImage = Image<float>;
+  using IndexImage = Image<UIntType>;
+
+  const auto index_filepath = Path::join (fixel_folder_path, index_path);
+
+  std::unique_ptr<Image<UIntType>> index_image (nullptr);
+  std::unique_ptr<DataImage> dir_image (nullptr);
+  std::unique_ptr<DataImage> afd_image (nullptr);
+  std::unique_ptr<DataImage> peak_image (nullptr);
+  std::unique_ptr<DataImage> disp_image (nullptr);
+
+
+  if (output_index_file) {
+    auto index_header (H);
+    index_header.keyval()[FixelFormat::n_fixels_key] = str(n_fixels);
+    index_header.set_ndim (4);
+    index_header.size (3) = 2;
+    index_header.datatype () = DataType::from<UIntType> ();
+    index_header.datatype ().set_byte_order_native ();
+    index_image = std::unique_ptr<IndexImage> (new IndexImage (IndexImage::create (index_filepath, index_header)));
+  } else {
+    index_image = std::unique_ptr<IndexImage> (new IndexImage (IndexImage::open (index_filepath)));
+  }
+
+  auto fixel_data_header (H);
+  fixel_data_header.set_ndim (3);
+  fixel_data_header.size (0) = n_fixels;
+  fixel_data_header.size (2) = 1;
+  fixel_data_header.datatype () = DataType::Float32;
+  fixel_data_header.datatype ().set_byte_order_native();
+
+  if (dir_path.size ()) {
+    auto dir_header (fixel_data_header);
+    dir_header.size (1) = 3;
+    dir_image = std::unique_ptr<DataImage> (new DataImage (DataImage::create (Path::join(fixel_folder_path, dir_path), dir_header)));
+    dir_image->index (1) = 0;
+    FixelFormat::check_fixel_size (*index_image, *dir_image);
+  }
+
+  if (afd_path.size ()) {
+    auto afd_header (fixel_data_header);
+    afd_header.size (1) = 1;
+    afd_image = std::unique_ptr<DataImage> (new DataImage (DataImage::create (Path::join(fixel_folder_path, afd_path), afd_header)));
+    afd_image->index (1) = 0;
+    FixelFormat::check_fixel_size (*index_image, *afd_image);
+  }
+
+  if (peak_path.size ()) {
+    auto peak_header (fixel_data_header);
+    peak_header.size (1) = 1;
+    peak_image = std::unique_ptr<DataImage> (new DataImage (DataImage::create (Path::join(fixel_folder_path, peak_path), peak_header)));
+    peak_image->index (1) = 0;
+    FixelFormat::check_fixel_size (*index_image, *peak_image);
+  }
+
+  if (disp_path.size ()) {
+    auto disp_header (fixel_data_header);
+    disp_header.size (1) = 1;
+    disp_image = std::unique_ptr<DataImage> (new DataImage (DataImage::create (Path::join(fixel_folder_path, disp_path), disp_header)));
+    disp_image->index (1) = 0;
+    FixelFormat::check_fixel_size (*index_image, *disp_image);
+  }
+
+  size_t offset (0), lobe_index (0);
+  const size_t nlobes (lobes.size ());
+
+  MR::ProgressBar progress("Generating fixel files", nlobes);
+  auto display_func = [&lobe_index, nlobes, &offset]() {
+    return str (lobe_index) + " of " + str (nlobes) + " FOD lobes read. " + str (offset) + " fixels found.";
+  };
+
+  for (const auto& vox_fixels : lobes) {
+    size_t n_vox_fixels = vox_fixels.size();
+
+    if (output_index_file) {
+      assign_pos_of (vox_fixels.vox).to (*index_image);
+
+      index_image->index (3) = 0;
+      index_image->value () = n_vox_fixels;
+
+      index_image->index (3) = 1;
+      index_image->value () = offset;
+    }
+
+    if (dir_image) {
+      for (size_t i = 0; i < n_vox_fixels; ++i) {
+        dir_image->index (0) = offset + i;
+        dir_image->row (1) = vox_fixels[i].get_mean_dir ();
+      }
+    }
+
+    if (afd_image) {
+      for (size_t i = 0; i < n_vox_fixels; ++i) {
+        afd_image->index (0) = offset + i;
+        afd_image->value () = vox_fixels[i].get_integral ();
+      }
+    }
+
+    if (peak_image) {
+      for (size_t i = 0; i < n_vox_fixels; ++i) {
+        peak_image->index (0) = offset + i;
+        peak_image->value () = vox_fixels[i].get_peak_value ();
+      }
+    }
+
+    if (disp_image) {
+      for (size_t i = 0; i < n_vox_fixels; ++i) {
+        disp_image->index (0) = offset + i;
+        disp_image->value () = vox_fixels[i].get_integral () / vox_fixels[i].get_peak_value ();
+      }
+    }
+
+
+    offset += n_vox_fixels;
+    lobe_index ++;
+
+    progress.update (display_func);
+  }
+
+  progress.done ();
+
+  assert (offset == n_fixels);
+}
 
 
 
@@ -217,12 +324,18 @@ void run ()
 
   Segmented_FOD_receiver receiver (H);
 
+  auto& fixel_folder_path  = argument[1];
+  receiver.set_fixel_folder_output (fixel_folder_path);
+
+  static const std::string default_index_filename = "index.mif";
+  receiver.set_index_output (default_index_filename);
+
   auto
-  opt = get_options ("afd");  if (opt.size()) receiver.set_afd_output  (opt[0][0]);
+  opt = get_options ("index"); if (opt.size()) receiver.set_index_output (opt[0][0]);
+  opt = get_options ("dir"); if (opt.size()) receiver.set_directions_output (opt[0][0]);
+  opt = get_options ("afd");  if (opt.size()) receiver.set_afd_output (opt[0][0]);
   opt = get_options ("peak"); if (opt.size()) receiver.set_peak_output (opt[0][0]);
   opt = get_options ("disp"); if (opt.size()) receiver.set_disp_output (opt[0][0]);
-  if (!receiver.num_outputs())
-    throw Exception ("Nothing to do; please specify at least one output image type");
 
   opt = get_options ("mask");
   Image<float> mask;
@@ -232,6 +345,19 @@ void run ()
       throw Exception ("Cannot use image \"" + str(opt[0][0]) + "\" as mask image; dimensions do not match FOD image");
   }
 
+
+  if (!Path::exists (fixel_folder_path))
+    File::mkdir (fixel_folder_path);
+  else if (!Path::is_dir (fixel_folder_path))
+    throw Exception (str(fixel_folder_path) + " is not a directory");
+  else if (Path::exists (Path::join (fixel_folder_path, receiver.get_index_output ()))) {
+    receiver.set_output_index_file (false);
+
+    if (!receiver.num_outputs ())
+      throw Exception ("Nothing to do; please specify at least one output image type");
+  }
+
+
   FMLS::FODQueueWriter writer (fod_data, mask);
 
   const DWI::Directions::Set dirs (5000);
@@ -239,5 +365,7 @@ void run ()
   load_fmls_thresholds (fmls);
 
   Thread::run_queue (writer, Thread::batch (SH_coefs()), Thread::multi (fmls), Thread::batch (FOD_lobes()), receiver);
+
+  receiver.commit ();
 }
 
