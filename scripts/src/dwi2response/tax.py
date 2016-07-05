@@ -1,8 +1,10 @@
 def initParser(subparsers, base_parser):
   import argparse
-  parser = subparsers.add_parser('tax', parents=[base_parser], help='Use the Tax et al. (2014) recursive calibration algorithm')
-  argument = parser.add_argument_group('Positional argument specific to the \'tax\' algorithm')
-  argument.add_argument('output', help='The output response function text file')
+  import lib.app
+  lib.app.addCitation('If using \'tax\' algorithm', 'Tax, C. M.; Jeurissen, B.; Vos, S. B.; Viergever, M. A. & Leemans, A. Recursive calibration of the fiber response function for spherical deconvolution of diffusion MRI data. NeuroImage, 2014, 86, 67-80', False)
+  parser = subparsers.add_parser('tax', parents=[base_parser], add_help=False, description='Use the Tax et al. (2014) recursive calibration algorithm for single-fibre voxel selection and response function estimation')
+  parser.add_argument('input', help='The input DWI')
+  parser.add_argument('output', help='The output response function text file')
   options = parser.add_argument_group('Options specific to the \'tax\' algorithm')
   options.add_argument('-peak_ratio', type=float, default=0.1, help='Second-to-first-peak amplitude ratio threshold')
   options.add_argument('-max_iters', type=int, default=20, help='Maximum number of iterations')

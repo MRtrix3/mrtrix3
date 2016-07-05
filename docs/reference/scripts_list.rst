@@ -3,30 +3,22 @@
 Python scripts provided with MRtrix3
 ################
 
-.. include:: scripts/5ttgen.rst
-.......
+
+.. toctree::
+   :max_depth: 1
 
 
-.. include:: scripts/dwi2response.rst
-.......
 
+   scripts/5ttgen
 
-.. include:: scripts/dwibiascorrect.rst
-.......
+   scripts/dwi2response
 
+   scripts/dwibiascorrect
 
-.. include:: scripts/dwiintensitynorm.rst
-.......
+   scripts/dwiintensitynorm
 
+   scripts/dwipreproc
 
-.. include:: scripts/dwipreproc.rst
-.......
+   scripts/labelsgmfix
 
-
-.. include:: scripts/labelsgmfix.rst
-.......
-
-
-.. include:: scripts/population_template.rst
-.......
-
+   scripts/population_template
