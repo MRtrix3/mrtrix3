@@ -67,14 +67,14 @@ namespace MR
       class FOD_lobe {
 
         public:
-          FOD_lobe (const DWI::Directions::Set& dirs, const dir_t seed, const default_type value) :
+          FOD_lobe (const DWI::Directions::Set& dirs, const dir_t seed, const default_type value, const default_type weight) :
               mask (dirs),
               values (dirs.size(), 0.0),
               peak_dir_bin (seed),
               peak_value (std::abs (value)),
               peak_dir (dirs.get_dir (seed)),
-              mean_dir (peak_dir * value),
-              integral (std::abs (value)),
+              mean_dir (peak_dir * value * weight),
+              integral (std::abs (value * weight)),
               neg (value <= 0.0)
           {
             mask[seed] = true;
@@ -92,15 +92,15 @@ namespace MR
               neg (false) { }
 
 
-          void add (const dir_t bin, const default_type value)
+          void add (const dir_t bin, const default_type value, const default_type weight)
           {
             assert ((value <= 0.0 && neg) || (value >= 0.0 && !neg));
             mask[bin] = true;
             values[bin] = value;
             const Eigen::Vector3f& dir = mask.get_dirs()[bin];
             const float multiplier = (peak_dir.dot (dir)) > 0.0 ? 1.0 : -1.0;
-            mean_dir += dir * multiplier * value;
-            integral += std::abs (value);
+            mean_dir += dir * multiplier * value * weight;
+            integral += std::abs (value * weight);
           }
 
           void revise_peak (const Eigen::Vector3f& real_peak, const float value)
@@ -121,7 +121,8 @@ namespace MR
           void finalise()
           {
             // 2pi == solid angle of halfsphere in steradians
-            integral *= 2.0 * Math::pi / float(mask.size());
+            //integral *= 2.0 * Math::pi / float(mask.size());
+            // No longer needed: Segmenter::weights should deal with this
             // This is calculated as the lobe is built, just needs to be set to unit length
             mean_dir.normalize();
           }
@@ -256,6 +257,9 @@ namespace MR
 
           std::shared_ptr<Math::SH::Transform    <default_type>> transform;
           std::shared_ptr<Math::SH::PrecomputedAL<default_type>> precomputer;
+
+          // Store a vector of weights to be applied when computing integrals, to account for non-uniformities in direction distribution
+          std::shared_ptr<Eigen::Array<default_type, Eigen::Dynamic, 1>> weights;
 
           default_type ratio_to_negative_lobe_integral; // Integral of positive lobe must be at least this ratio larger than the largest negative lobe integral
           default_type ratio_to_negative_lobe_mean_peak; // Peak value of positive lobe must be at least this ratio larger than the mean negative lobe peak

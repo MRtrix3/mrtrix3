@@ -84,7 +84,7 @@ void run () {
   if (axis >= ndims) ndims = axis+1;
 
   Header header_out (in[0]);
-  header_out.set_ndim (ndims);
+  header_out.ndim() = ndims;
 
   for (size_t i = 0; i < header_out.ndim(); i++) {
     if (header_out.size (i) <= 1) {
@@ -133,7 +133,7 @@ void run () {
         for (ssize_t i = 0; i < input_grads[n].rows(); ++i, ++row)
           for (size_t j = 0; j < 4; ++j) 
             grad_out (row,j) = input_grads[n](i,j);
-      header_out.set_DW_scheme (grad_out);
+      DWI::set_DW_scheme (header_out, grad_out);
     }
   }
 
@@ -152,7 +152,7 @@ void run () {
       out.value() = in.value();
     };
 
-    ThreadedLoop ("concatenating \"" + image_in.name() + "\"...", image_in, 0, std::min (image_in.ndim(), image_out.ndim()))
+    ThreadedLoop ("concatenating \"" + image_in.name() + "\"...", image_in, 0, std::min<size_t> (image_in.ndim(), image_out.ndim()))
       .run (copy_func, image_in, image_out);
     if (axis < int(image_in.ndim()))
       axis_offset += image_in.size (axis);

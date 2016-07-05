@@ -55,7 +55,7 @@ void run ()
   auto header = Header::open (argument[0]);
 
   header.datatype() = DataType::Float32;
-  header.set_ndim (4);
+  header.ndim() = 4;
   header.size(3) = 3;
   Stride::set (header, Stride::contiguous_along_axis (3));
 

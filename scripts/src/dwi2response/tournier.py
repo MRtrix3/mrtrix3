@@ -100,9 +100,9 @@ def execute():
         shutil.move(prefix + 'SF.mif', 'voxels.mif')
         break
 
-    # Select a greater number of top single-fibre voxels, and dilate;
+    # Select a greater number of top single-fibre voxels, and dilate (within bounds of initial mask);
     #   these are the voxels that will be re-tested in the next iteration
-    runCommand('mrthreshold ' + prefix + 'CF.mif -top ' + str(lib.app.args.iter_voxels) + ' - | maskfilter - dilate ' + prefix + 'SF_dilated.mif -npass ' + str(lib.app.args.dilate))
+    runCommand('mrthreshold ' + prefix + 'CF.mif -top ' + str(lib.app.args.iter_voxels) + ' - | maskfilter - dilate - -npass ' + str(lib.app.args.dilate) + ' | mrcalc mask.mif - -mult ' + prefix + 'SF_dilated.mif')
     delFile(prefix + 'CF.mif')
 
   # Commence the next iteration

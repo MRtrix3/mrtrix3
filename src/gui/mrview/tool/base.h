@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 
 #ifndef __gui_mrview_tool_base_h__
@@ -28,8 +28,8 @@
 
 namespace MR
 {
-  namespace App { 
-    class OptionList; 
+  namespace App {
+    class OptionList;
     class Options;
   }
 
@@ -49,7 +49,7 @@ namespace MR
           public:
             Dock (const QString& name) :
               QDockWidget (name, Window::main), tool (nullptr) { }
-            ~Dock (); 
+            ~Dock ();
 
             void closeEvent (QCloseEvent*) override;
 
@@ -69,7 +69,7 @@ namespace MR
             static void add_commandline_options (MR::App::OptionList& options);
             virtual bool process_commandline_option (const MR::App::ParsedOption& opt);
 
-            virtual QSize sizeHint () const;
+            virtual QSize sizeHint () const override;
 
             void grab_focus () {
               window().tool_has_focus = this;
@@ -139,6 +139,16 @@ namespace MR
             virtual void reset_event () { }
             virtual QCursor* get_cursor ();
             void update_cursor() { window().set_cursor(); }
+
+            void dragEnterEvent (QDragEnterEvent* event) override {
+              event->acceptProposedAction();
+            }
+            void dragMoveEvent (QDragMoveEvent* event) override {
+              event->acceptProposedAction();
+            }
+            void dragLeaveEvent (QDragLeaveEvent* event) override {
+              event->accept();
+            }
         };
 
 
@@ -148,7 +158,7 @@ namespace MR
 
 
         //! \cond skip
-        
+
         inline Dock::~Dock () { delete tool; }
 
 
@@ -175,7 +185,7 @@ namespace MR
         //! \endcond
 
 
-        template <class T> 
+        template <class T>
           Dock* create (const QString& text)
           {
             Dock* dock = new Dock (text);
@@ -189,7 +199,7 @@ namespace MR
           }
 
 
-        template <class T> 
+        template <class T>
           class Action : public __Action__
         {
           public:

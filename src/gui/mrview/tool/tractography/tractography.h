@@ -102,6 +102,7 @@ namespace MR
             TrackScalarFileOptions *scalar_file_options;
             LightingDock *lighting_dock;
 
+            void dropEvent (QDropEvent* event) override;
             void update_scalar_options();
 
         };

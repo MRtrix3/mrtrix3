@@ -11,10 +11,19 @@
 
 # Generating documentation for all commands
 
+mrtrix_root=$( cd "$(dirname "${BASH_SOURCE}")"/../ ; pwd -P )
+export PATH=$mrtrix_root/release/bin:$mrtrix_root/release/scripts:"$PATH"
+
   echo "
 ################
 List of MRtrix3 commands
-################" > reference/commands_list.rst
+################
+
+
+.. toctree::
+   :maxdepth: 1
+
+" > reference/commands_list.rst
 
   mkdir -p reference/commands
   for n in `find ../cmd/ -name "*.cpp" | sort`; do
@@ -27,10 +36,8 @@ List of MRtrix3 commands
     fi
     $cmdpath __print_usage_rst__ > $dirpath/$cmdname.rst
     sed -ie "1i.. _$cmdname:\n\n$cmdname\n===========\n" $dirpath/$cmdname.rst
-    echo "
-.. include:: commands/$cmdname.rst
-.......
-" >> reference/commands_list.rst
+    echo '
+   commands/'"$cmdname" >> reference/commands_list.rst
   done
 
 # Generating documentation for all scripts

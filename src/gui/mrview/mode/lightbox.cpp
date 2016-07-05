@@ -90,8 +90,7 @@ namespace MR
           size_t prev_index = current_slice_index;
           current_slice_index = slice_index;
 
-          if(prev_index != current_slice_index)
-          {
+          if(prev_index != current_slice_index) {
             const Projection& slice_proj = slices_proj_focusdelta[current_slice_index].first;
             float focus_delta = slices_proj_focusdelta[current_slice_index].second;
 
@@ -134,17 +133,14 @@ namespace MR
 
           const Eigen::Vector3f orig_focus = window().focus();
 
-          if(layout_is_dirty)
-          {
+          if(layout_is_dirty) {
             update_layout();
             layout_is_dirty = false;
           }
 
           size_t slice_idx = 0;
-          for(size_t row = 0; row < n_rows; ++row)
-          {
-            for(size_t col = 0; col < n_cols; ++col, ++slice_idx)
-            {
+          for(size_t row = 0; row < n_rows; ++row) {
+            for(size_t col = 0; col < n_cols; ++col, ++slice_idx) {
               Projection& slice_proj = slices_proj_focusdelta[slice_idx].first;
 
               // Place the first slice in the top-left corner
@@ -212,8 +208,7 @@ namespace MR
 
             size_t pt_idx = 0;
             // Row grid lines
-            for(size_t row = 1; row < n_rows; ++row, pt_idx += 4)
-            {
+            for(size_t row = 1; row < n_rows; ++row, pt_idx += 4) {
               float y_pos = (y_inc * row) - 1.f;
               data[pt_idx] = -1.f;
               data[pt_idx+1] = y_pos;
@@ -222,8 +217,7 @@ namespace MR
             }
 
             // Column grid lines
-            for(size_t col = 1; col < n_cols; ++col, pt_idx += 4)
-            {
+            for(size_t col = 1; col < n_cols; ++col, pt_idx += 4) {
               float x_pos = (x_inc * col) - 1.f;
               data[pt_idx] = x_pos;
               data[pt_idx+1] = -1.f;
@@ -285,21 +279,21 @@ namespace MR
         {
           Base::image_changed_event();
 
-          if(image())
-          {
+          if(image()) {
             const auto& header = image()->header();
-            float slice_inc = std::pow (header.spacing(0)*header.spacing(1)*header.spacing(2), 1.f/3.f);
-            slice_focus_inc_adjust_rate = slice_inc / 5.f;
+            if (prev_image_name.empty()) {
+              float slice_inc = std::pow (header.spacing(0)*header.spacing(1)*header.spacing(2), 1.f/3.f);
+              slice_focus_inc_adjust_rate = slice_inc / 5.f;
 
-            set_slice_increment(slice_inc);
-            emit slice_increment_reset();
+              set_slice_increment(slice_inc);
+              emit slice_increment_reset();
+            }
 
             prev_image_name = image()->header().name();
           }
           else
             prev_image_name.clear();
         }
-
 
       }
     }
