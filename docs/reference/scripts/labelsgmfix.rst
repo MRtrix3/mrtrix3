@@ -1,6 +1,3 @@
-labelsgmfix
-===========
-
 .. _labelsgmfix:
 
 labelsgmfix
@@ -27,14 +24,14 @@ Options
 -------
 
 Options for the labelsgmfix script
-==================================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-premasked** Indicate that brain masking has been applied to the T1 input image
 
 - **-sgm_amyg_hipp** Consider the amygdalae and hippocampi as sub-cortical grey matter structures, and also replace their estimates with those from FIRST
 
 Standard options
-================
+^^^^^^^^^^^^^^^^
 
 - **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
 

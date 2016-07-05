@@ -1,6 +1,3 @@
-dwiintensitynorm
-===========
-
 .. _dwiintensitynorm:
 
 dwiintensitynorm
@@ -28,12 +25,12 @@ Options
 -------
 
 Options for the dwiintensitynorm script
-=======================================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-fa_threshold** The threshold applied to the Fractional Anisotropy group template used to derive an approximate white matter mask
 
 Standard options
-================
+^^^^^^^^^^^^^^^^
 
 - **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
 

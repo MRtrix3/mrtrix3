@@ -1,6 +1,3 @@
-population_template
-===========
-
 .. _population_template:
 
 population_template
@@ -25,7 +22,7 @@ Options
 -------
 
 Options for the population_template script
-==========================================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-mask_dir** Optionally input a set of masks inside a single directory, one per input image (with the same file name prefix). Using masks will speed up registration significantly
 
@@ -58,7 +55,7 @@ Options for the population_template script
 - **-initial_alignment** Method of alignment to form the initial template. Options are "mass" (default), "geometric" and "none".
 
 Standard options
-================
+^^^^^^^^^^^^^^^^
 
 - **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
 

@@ -1,6 +1,3 @@
-dwibiascorrect
-===========
-
 .. _dwibiascorrect:
 
 dwibiascorrect
@@ -25,7 +22,7 @@ Options
 -------
 
 Options for the dwibiascorrect script
-=====================================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-mask** Manually provide a mask image for bias field estimation
 
@@ -40,7 +37,7 @@ Options for the dwibiascorrect script
 - **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
 Standard options
-================
+^^^^^^^^^^^^^^^^
 
 - **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
 

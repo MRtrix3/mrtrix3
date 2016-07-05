@@ -58,7 +58,7 @@ Python scripts provided with MRtrix3
     filepath='reference/scripts'
     filename=`basename $n`
     $n __print_usage_rst__ > $filepath/$filename.rst
-    sed -ie "1i$filename\n===========\n" $filepath/$filename.rst
+    #sed -ie "1i$filename\n===========\n" $filepath/$filename.rst
     echo '
    scripts/'"$filename" >> reference/scripts_list.rst
   done
