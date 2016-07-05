@@ -1,6 +1,3 @@
-dwipreproc
-===========
-
 .. _dwipreproc:
 
 dwipreproc
@@ -26,7 +23,7 @@ Options
 -------
 
 Options for passing reversed phase-encode data; one of these options MUST be provided
-=====================================================================================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-rpe_none** Specify explicitly that no reversed phase-encoding image data is provided; eddy will perform eddy current and motion correction only
 
@@ -35,7 +32,7 @@ Options for passing reversed phase-encode data; one of these options MUST be pro
 - **-rpe_all input_revpe** Provide a second DWI series identical to the input series, that has the opposite phase encoding; these will be combined in the output image
 
 Options for the dwipreproc script
-=================================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-cuda** Use the CUDA version of eddy
 
@@ -48,7 +45,7 @@ Options for the dwipreproc script
 - **-export_grad_fsl bvecs bvals** Export the final gradient table in FSL bvecs/bvals format
 
 Standard options
-================
+^^^^^^^^^^^^^^^^
 
 - **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
 
