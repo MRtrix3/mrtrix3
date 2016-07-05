@@ -207,11 +207,11 @@ namespace MR {
 
           if (adj_lobes.empty()) {
 
-            out.push_back (FOD_lobe (dirs, i.second, i.first * (*weights)[i.second]));
+            out.push_back (FOD_lobe (dirs, i.second, i.first, (*weights)[i.second]));
 
           } else if (adj_lobes.size() == 1) {
 
-            out[adj_lobes.front()].add (i.second, i.first * (*weights)[i.second]);
+            out[adj_lobes.front()].add (i.second, i.first, (*weights)[i.second]);
 
           } else {
 
@@ -223,7 +223,7 @@ namespace MR {
               std::sort (adj_lobes.begin(), adj_lobes.end());
               for (size_t j = 1; j != adj_lobes.size(); ++j)
                 out[adj_lobes[0]].merge (out[adj_lobes[j]]);
-              out[adj_lobes[0]].add (i.second, i.first * (*weights)[i.second]);
+              out[adj_lobes[0]].add (i.second, i.first, (*weights)[i.second]);
               for (auto j = retrospective_assignments.begin(); j != retrospective_assignments.end(); ++j) {
                 bool modified = false;
                 for (size_t k = 1; k != adj_lobes.size(); ++k) {
@@ -259,7 +259,7 @@ namespace MR {
         }
 
         for (const auto& i : retrospective_assignments)
-          out[i.second].add (i.first, values[i.first] * (*weights)[i.first]);
+          out[i.second].add (i.first, values[i.first], (*weights)[i.first]);
 
         default_type mean_neg_peak = 0.0, max_neg_integral = 0.0;
         uint32_t neg_lobe_count = 0;
