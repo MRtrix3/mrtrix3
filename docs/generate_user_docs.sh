@@ -49,7 +49,7 @@ Python scripts provided with MRtrix3
 
 
 .. toctree::
-   :max_depth: 1
+   :maxdepth: 1
 
 " > reference/scripts_list.rst
 
