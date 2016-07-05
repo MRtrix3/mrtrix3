@@ -17,7 +17,13 @@ export PATH=$mrtrix_root/release/bin:$mrtrix_root/release/scripts:"$PATH"
   echo "
 ################
 List of MRtrix3 commands
-################" > reference/commands_list.rst
+################
+
+
+.. toctree::
+   :maxdepth: 1
+
+" > reference/commands_list.rst
 
   mkdir -p reference/commands
   for n in `find ../cmd/ -name "*.cpp" | sort`; do
@@ -30,10 +36,8 @@ List of MRtrix3 commands
     fi
     $cmdpath __print_usage_rst__ > $dirpath/$cmdname.rst
     sed -ie "1i.. _$cmdname:\n\n$cmdname\n===========\n" $dirpath/$cmdname.rst
-    echo "
-.. include:: commands/$cmdname.rst
-.......
-" >> reference/commands_list.rst
+    echo '
+   commands/'"$cmdname" >> reference/commands_list.rst
   done
 
 # Generating documentation for all scripts
@@ -41,18 +45,22 @@ List of MRtrix3 commands
   echo "
 ################
 Python scripts provided with MRtrix3
-################" > reference/scripts_list.rst
+################
+
+
+.. toctree::
+   :maxdepth: 1
+
+" > reference/scripts_list.rst
 
   mkdir -p reference/scripts
-  for n in `find ../scripts/ -type f -print0 | xargs -0 grep -l "lib.app.initParser" | sort`; do
+  for n in `find ../scripts/ -type f -print0 | xargs -0 grep -l "lib.cmdlineParser.initialise" | sort`; do
     filepath='reference/scripts'
     filename=`basename $n`
     $n __print_usage_rst__ > $filepath/$filename.rst
-    sed -ie "1i$filename\n===========\n" $filepath/$filename.rst
-    echo "
-.. include:: scripts/$filename.rst
-.......
-" >> reference/scripts_list.rst
+    #sed -ie "1i$filename\n===========\n" $filepath/$filename.rst
+    echo '
+   scripts/'"$filename" >> reference/scripts_list.rst
   done
 
 # Generating list of configuration file options

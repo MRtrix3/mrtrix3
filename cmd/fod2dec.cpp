@@ -261,7 +261,7 @@ void run () {
       auto fod_img = fod_hdr.get_image<value_type>().with_direct_io(3);
 
       auto dec_hdr = Header(fod_img);
-      dec_hdr.set_ndim(4);
+      dec_hdr.ndim() = 4;
       dec_hdr.size(3) = 3;
       Stride::set (dec_hdr, Stride::contiguous_along_axis (3, dec_hdr));
       dec_img = Image<value_type>::scratch(dec_hdr,"DEC map");
@@ -284,7 +284,7 @@ void run () {
 
     auto out_hdr = map_hdr.valid() ? Header(map_hdr) : Header(dec_img);
     out_hdr.datatype() = DataType::Float32;
-    out_hdr.set_ndim(4);
+    out_hdr.ndim() = 4;
     out_hdr.size(3) = 3;
     Stride::set (out_hdr, Stride::contiguous_along_axis (3, out_hdr));
     out_img = Image<value_type>::create(argument[1],out_hdr);

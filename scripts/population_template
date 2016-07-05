@@ -3,8 +3,8 @@
 # Generates an unbiased group-average template via image registration of images to a midway space.
 
 import os, shutil, sys
-import lib.app
-import numpy
+import lib.app, lib.cmdlineParser
+#import numpy
 import math
 
 def abspath(*arg):
@@ -68,27 +68,30 @@ class Input:
 
 
 lib.app.author = 'David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk) & Thijs Dhollander thijs.dhollander@florey.edu.au)'
-lib.app.initParser('Generates an unbiased group-average template from a series of images. First a template is optimised with linear registration (rigid or affine, affine is default), then non-linear registration is used to optimise the template further.')
+lib.cmdlineParser.initialise('Generates an unbiased group-average template from a series of images. First a template is optimised with linear registration (rigid or affine, affine is default), then non-linear registration is used to optimise the template further.')
 lib.app.parser.add_argument('input_dir', help='The input directory containing all images used to build the template')
 lib.app.parser.add_argument('template', help='The output template image')
-lib.app.parser.add_argument('-mask_dir', help='Optionally input a set of masks inside a single directory, one per input image (with the same file name prefix). Using masks will speed up registration significantly')
-lib.app.parser.add_argument('-warp_dir', help='Output a directory containing warps from each input to the template. If the folder does not exist it will be created')
-lib.app.parser.add_argument('-transformed_dir', help='Output a directory containing the input images transformed to the template. If the folder does not exist it will be created')
-lib.app.parser.add_argument('-linear_transformations_dir', help='Output a directory containing the linear transformations used to generate the template. If the folder does not exist it will be created')
-lib.app.parser.add_argument('-template_mask', help='Output a template mask. Only works in -mask_dir has been input. The template mask is computed as the intersection of all subject masks in template space.')
-lib.app.parser.add_argument('-rigid', action='store_true', help='perform rigid registration instead of affine. This should be used for intra-subject registration in longitudinal analysis')
-lib.app.parser.add_argument('-linear_scale', help='Specifiy the multi-resolution pyramid used to build the rigid or affine template, in the form of a list of scale factors (default: 0.3,0.4,0.5,0.6,0.7,1.0,1.0,1.0,1.0,1.0). This implicitly defines the number of template levels')
-lib.app.parser.add_argument('-linear_lmax', help='Specifiy the lmax used for rigid or affine registration for each scale factor, in the form of a list of integers (default: 2,2,2,2,2,2,4,4,4,4). The list must be the same length as the affine_scale factor list')
-lib.app.parser.add_argument('-linear_niter', help='Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:500 for each scale). The must be a single number or a list of same length as the linear_scale factor list')
-lib.app.parser.add_argument('-linear_estimator', help='Choose estimator for intensity difference metric. Valid choices are: l1 (least absolute: |x|), l2 (ordinary least squares), lp (least powers: |x|^1.2), Default: l2')
-lib.app.parser.add_argument('-nl_scale', help='Specifiy the multi-resolution pyramid used to build the non-linear template, in the form of a list of scale factors (default: 0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0). This implicitly defines the number of template levels')
-lib.app.parser.add_argument('-nl_lmax', help='Specifiy the lmax used for non-linear registration for each scale factor, in the form of a list of integers (default: 0,0,2,2,2,2,2,2,2,2,4,4,4,4). The list must be the same length as the nl_scale factor list')
-lib.app.parser.add_argument('-nl_niter', help='Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5). The list must be the same length as the nl_scale factor list')
-lib.app.parser.add_argument('-nl_update_smooth', default='2.0', help='Regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 2.0 x voxel_size)')
-lib.app.parser.add_argument('-nl_disp_smooth', default='1.0', help='Regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0 x voxel_size)')
-lib.app.parser.add_argument('-nl_grad_step', default='0.5', help='The gradient step size for non-linear registration (Default: 0.5)')
-lib.app.parser.add_argument('-noreorientation', action='store_true', help='Turn off FOD reorientation in mrregister. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc')
-lib.app.parser.add_argument('-initial_alignment', default='mass', help='Method of alignment to form the initial template. Options are "mass" (default), "geometric" and "none".')
+
+options = lib.app.parser.add_argument_group('Options for the population_template script')
+options.add_argument('-mask_dir', help='Optionally input a set of masks inside a single directory, one per input image (with the same file name prefix). Using masks will speed up registration significantly')
+options.add_argument('-warp_dir', help='Output a directory containing warps from each input to the template. If the folder does not exist it will be created')
+options.add_argument('-transformed_dir', help='Output a directory containing the input images transformed to the template. If the folder does not exist it will be created')
+options.add_argument('-linear_transformations_dir', help='Output a directory containing the linear transformations used to generate the template. If the folder does not exist it will be created')
+options.add_argument('-template_mask', help='Output a template mask. Only works in -mask_dir has been input. The template mask is computed as the intersection of all subject masks in template space.')
+options.add_argument('-rigid', action='store_true', help='perform rigid registration instead of affine. This should be used for intra-subject registration in longitudinal analysis')
+options.add_argument('-linear_scale', help='Specifiy the multi-resolution pyramid used to build the rigid or affine template, in the form of a list of scale factors (default: 0.3,0.4,0.5,0.6,0.7,1.0,1.0,1.0,1.0,1.0). This implicitly defines the number of template levels')
+options.add_argument('-linear_lmax', help='Specifiy the lmax used for rigid or affine registration for each scale factor, in the form of a list of integers (default: 2,2,2,2,2,2,4,4,4,4). The list must be the same length as the affine_scale factor list')
+options.add_argument('-linear_niter', help='Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:500 for each scale). The must be a single number or a list of same length as the linear_scale factor list')
+options.add_argument('-linear_estimator', help='Choose estimator for intensity difference metric. Valid choices are: l1 (least absolute: |x|), l2 (ordinary least squares), lp (least powers: |x|^1.2), Default: l2')
+options.add_argument('-nl_scale', help='Specifiy the multi-resolution pyramid used to build the non-linear template, in the form of a list of scale factors (default: 0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0). This implicitly defines the number of template levels')
+options.add_argument('-nl_lmax', help='Specifiy the lmax used for non-linear registration for each scale factor, in the form of a list of integers (default: 0,0,2,2,2,2,2,2,2,2,4,4,4,4). The list must be the same length as the nl_scale factor list')
+options.add_argument('-nl_niter', help='Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5). The list must be the same length as the nl_scale factor list')
+options.add_argument('-nl_update_smooth', default='2.0', help='Regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 2.0 x voxel_size)')
+options.add_argument('-nl_disp_smooth', default='1.0', help='Regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0 x voxel_size)')
+options.add_argument('-nl_grad_step', default='0.5', help='The gradient step size for non-linear registration (Default: 0.5)')
+options.add_argument('-noreorientation', action='store_true', help='Turn off FOD reorientation in mrregister. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc')
+options.add_argument('-initial_alignment', default='mass', help='Method of alignment to form the initial template. Options are "mass" (default), "geometric" and "none".')
+
 lib.app.initialise()
 
 lib.app.args.input_dir = relpath(lib.app.args.input_dir)
@@ -213,6 +216,7 @@ if do_fod_registration:
   if len(nl_scales) != len(nl_lmax):
     errorMessage('nl_scales and nl_lmax schedules are not equal in length')
 
+lib.app.makeTempDir()
 lib.app.gotoTempDir()
 
 lib.app.make_dir('input_transformed')

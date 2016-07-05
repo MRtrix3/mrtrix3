@@ -83,7 +83,7 @@ namespace MR
       if (num_axes < 3) throw Exception ("cannot create MGH image with less than 3 dimensions");
       if (num_axes > 4) throw Exception ("cannot create MGH image with more than 4 dimensions");
 
-      H.set_ndim (num_axes);
+      H.ndim() = num_axes;
 
       return (true);
     }

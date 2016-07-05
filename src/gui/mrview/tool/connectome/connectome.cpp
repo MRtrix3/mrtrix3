@@ -2317,7 +2317,7 @@ namespace MR
 
           // Construct the node overlay image
           MR::Header H_overlay (H);
-          H_overlay.set_ndim (4);
+          H_overlay.ndim() = 4;
           H_overlay.size (3) = 4; // RGBA
           H_overlay.stride (0) = 2;
           H_overlay.stride (1) = 3;

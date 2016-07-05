@@ -223,7 +223,7 @@ void run ()
 
   auto header_in = Header::open (argument[1]);
   Header header_out (header_in);
-  header_out.set_ndim (4);
+  header_out.ndim() = 4;
   header_out.datatype() = DataType::Float32;
   header_out.datatype().set_byte_order_native();
   Stride::set_from_command_line (header_out, Stride::contiguous_along_axis (3, header_in));

@@ -71,7 +71,7 @@ void run ()
   auto dwi_in = Image<value_type>::open (argument[0]);
 
   auto header = Header (dwi_in);
-  header.set_ndim (3);
+  header.ndim() = 3;
   header.datatype() = DataType::Float32;
   auto noise = Image<value_type>::create (argument[1], header);
 

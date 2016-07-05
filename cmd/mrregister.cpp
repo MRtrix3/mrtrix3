@@ -802,7 +802,7 @@ void run ()
 
     if (warp1_filename.size()) {
       Header output_header (im2_image);
-      output_header.set_ndim(4);
+      output_header.ndim() = 4;
       output_header.size(3) =3;
       nl_registration.write_params_to_header (output_header);
       output_header.datatype() = DataType::from_command_line (DataType::Float32);
@@ -815,7 +815,7 @@ void run ()
 
     if (warp2_filename.size()) {
       Header output_header (im1_image);
-      output_header.set_ndim(4);
+      output_header.ndim() = 4;
       output_header.size(3) = 3;
       nl_registration.write_params_to_header (output_header);
       output_header.datatype() = DataType::from_command_line (DataType::Float32);
@@ -834,7 +834,7 @@ void run ()
 
     if (do_nonlinear) {
       Header deform_header (im1_transformed);
-      deform_header.set_ndim(4);
+      deform_header.ndim() = 4;
       deform_header.size(3) = 3;
       Image<default_type> deform_field = Image<default_type>::scratch (deform_header);
       Registration::Warp::compute_full_deformation (nl_registration.get_im2_to_mid_linear().inverse(),
@@ -874,7 +874,7 @@ void run ()
     if (do_nonlinear) {
       Header midway_header (*nl_registration.get_im1_to_mid());
       midway_header.datatype() = DataType::from_command_line (DataType::Float32);
-      midway_header.set_ndim (im1_image.ndim());
+      midway_header.ndim() = im1_image.ndim();
       if (midway_header.ndim() == 4)
         midway_header.size(3) = im1_image.size(3);
 
