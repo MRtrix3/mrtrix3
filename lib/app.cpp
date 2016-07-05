@@ -75,8 +75,6 @@ namespace MR
     std::vector<ParsedOption> option;
     int log_level = 1;
     bool fail_on_warn = false;
-    bool stderr_to_file = false;
-    bool stderr_seekable = false;
     bool terminal_use_colour = true;
 
     const char* project_version = nullptr;
@@ -965,7 +963,7 @@ namespace MR
       //CONF option: TerminalColor
       //CONF default: 1 (true)
       //CONF A boolean value to indicate whether colours should be used in the terminal.
-      terminal_use_colour = stderr_to_file ? false : File::Config::get_bool ("TerminalColor", true);
+      terminal_use_colour = File::Config::get_bool ("TerminalColor", terminal_use_colour);
 
       // check for the existence of all specified input files (including optional ones that have been provided)
       // if necessary, also check for pre-existence of any output files with known paths
@@ -1008,18 +1006,7 @@ namespace MR
       setvbuf (stdout, nullptr, _IOLBF, 0);
 #endif
 
-      struct stat buf;
-      if (fstat (STDERR_FILENO, &buf)) {
-        DEBUG ("Unable to determine nature of stderr; assuming socket");
-        stderr_to_file = false;
-      }
-      else {
-        stderr_to_file = S_ISREG (buf.st_mode);
-        int mode = fcntl (STDERR_FILENO, F_GETFL);
-        stderr_seekable = !( mode & O_APPEND );
-      }
-
-      terminal_use_colour = !stderr_to_file;
+      terminal_use_colour = !ProgressBar::set_update_method();
 
       argc = cmdline_argc;
       argv = cmdline_argv;

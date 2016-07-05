@@ -19,13 +19,13 @@
 #ifdef MRTRIX_WINDOWS
 # define CLEAR_LINE_CODE 
 #else
-# define CLEAR_LINE_CODE +"\033[0K"
+# define CLEAR_LINE_CODE "\033[0K"
 #endif
 
 namespace MR
 {
 
-  extern off_t __stderr_offset;
+  extern bool __need_newline;
 
   namespace
   {
@@ -41,59 +41,141 @@ namespace MR
 
 
 
-    inline void __update_progress_cmdline (const std::string& text, bool done) 
+    void display_func_terminal (ProgressInfo& p)
     {
-      static int count = 0;
-      if (App::stderr_to_file) {
-        if (App::stderr_seekable) { 
-          // can overwrite, replace previous progress status:
-          if (!done && __stderr_offset == 0)
-            __stderr_offset = ftello (stderr);
-          else if (__stderr_offset)
-            fseeko (stderr, __stderr_offset, SEEK_SET);
-          __print_stderr ((text + (done ? "\n" : "")).c_str());
-          if (done) {
-            __stderr_offset = 0;
-            ftruncate (STDERR_FILENO, ftello (stderr));
+      __need_newline = true;
+      if (p.multiplier) 
+        __print_stderr (printf ("\r%s: [%3zu%%] %s%s" CLEAR_LINE_CODE, 
+              App::NAME.c_str(), p.value, p.text.c_str(), p.ellipsis.c_str()));
+      else
+        __print_stderr (printf ("\r%s: [%s] %s%s" CLEAR_LINE_CODE, 
+              App::NAME.c_str(), busy[p.value%6], p.text.c_str(), p.ellipsis.c_str()));
+    }
+
+
+    void done_func_terminal (ProgressInfo& p)
+    {
+      if (p.multiplier)
+        __print_stderr (printf ("\r%s: [100%%] %s" CLEAR_LINE_CODE "\n", 
+              App::NAME.c_str(), p.text.c_str()));
+      else
+        __print_stderr (printf ("\r%s: [done] %s" CLEAR_LINE_CODE "\n", 
+              App::NAME.c_str(), p.text.c_str()));
+      __need_newline = false;
+    }
+
+
+
+
+
+
+
+    void display_func_redirect (ProgressInfo& p)
+    {
+      static size_t next_update_at = 0;
+      // need to update whole line since text may have changed:
+      if (p.text_has_been_modified) {
+        __need_newline = false;
+        if (p.value == 0)
+          next_update_at = 0;
+        // only update for zero or power of two (to reduce frequency of updates):
+        if (p.value == next_update_at) {
+          if (p.multiplier) {
+            __print_stderr (printf ("%s: [%3zu%%] %s%s\n", 
+                  App::NAME.c_str(), p.value, p.text.c_str(), p.ellipsis.c_str()));;
+          }
+          else {
+            __print_stderr (printf ("%s: [%s] %s%s\n", 
+                  App::NAME.c_str(), busy[p.value%6], p.text.c_str(), p.ellipsis.c_str()));
+          }
+          if (next_update_at)
+            next_update_at *= 2; 
+          else 
+            next_update_at = 1;
+        }
+      }
+      // text is static - can simply append to the current line:
+      else {
+        __need_newline = true;
+        if (p.multiplier) {
+          if (p.value == 0) {
+            __print_stderr (printf ("%s: %s%s [", 
+                  App::NAME.c_str(), p.text.c_str(), p.ellipsis.c_str()));;
+          }
+          else if (p.value%2 == 0) {
+            __print_stderr (printf ("="));
           }
         }
         else {
-          // can't overwrite, so just output the line as-is:
-          if (done || count == 0)
-            __print_stderr ((text + "\n").c_str());
-          ++count;
-          if (count >= 30)
-            count = 0;
+          if (p.value == 0) {
+            __print_stderr (printf ("%s: %s%s ", 
+                  App::NAME.c_str(), p.text.c_str(), p.ellipsis.c_str()));;
+          }
+          else if (!(p.value & (p.value-1))) {
+            __print_stderr (".");
+          }
+        }
+      }
+    }
+
+
+    void done_func_redirect (ProgressInfo& p)
+    {
+      if (p.text_has_been_modified) {
+        if (p.multiplier) {
+          __print_stderr (printf ("%s: [100%%] %s\n", App::NAME.c_str(), p.text.c_str()));;
+        }
+        else {
+          __print_stderr (printf ("%s: [done] %s\n", App::NAME.c_str(), p.text.c_str()));
         }
       }
       else {
-        // output to terminal using VT100 codes:
-        __stderr_offset = done ? 0 : 1;
-        __print_stderr (("\r" + text CLEAR_LINE_CODE + (done ? "\n" : "")).c_str());
+        if (p.multiplier) 
+          __print_stderr (printf ("]\n"));
+        else
+          __print_stderr (printf (" done\n"));
       }
+      __need_newline = false;
     }
 
-
-    void display_func_cmdline (ProgressInfo& p)
-    {
-      if (p.multiplier) 
-        __update_progress_cmdline (printf ("%s: [%3zu%%] %s%s", App::NAME.c_str(), size_t (p.value), p.text.c_str(), p.ellipsis.c_str()), false);
-      else
-        __update_progress_cmdline (printf ("%s: [%s] %s%s", App::NAME.c_str(), busy[p.value%6], p.text.c_str(), p.ellipsis.c_str()), false);
-    }
-
-
-    void done_func_cmdline (ProgressInfo& p)
-    {
-      if (p.multiplier)
-        __update_progress_cmdline (printf ("%s: [%3u%%] %s", App::NAME.c_str(), 100, p.text.c_str()), true);
-      else
-        __update_progress_cmdline (printf ("%s: [done] %s", App::NAME.c_str(), p.text.c_str()), true);
-    }
   }
 
-  void (*ProgressInfo::display_func) (ProgressInfo& p) = display_func_cmdline;
-  void (*ProgressInfo::done_func) (ProgressInfo& p) = done_func_cmdline;
+
+  void (*ProgressInfo::display_func) (ProgressInfo& p) = display_func_terminal;
+  void (*ProgressInfo::done_func) (ProgressInfo& p) = done_func_terminal;
+
+
+
+
+
+
+  bool ProgressBar::set_update_method () 
+  {
+    bool stderr_to_file = false;
+
+    struct stat buf;
+    if (fstat (STDERR_FILENO, &buf)) {
+      DEBUG ("Unable to determine nature of stderr; assuming socket");
+      stderr_to_file = false;
+    }
+    else 
+      stderr_to_file = S_ISREG (buf.st_mode);
+
+
+
+    if (stderr_to_file) {
+      ProgressInfo::display_func = display_func_redirect;
+      ProgressInfo::done_func = done_func_redirect;
+    }
+    else {
+      ProgressInfo::display_func = display_func_terminal;
+      ProgressInfo::done_func = done_func_terminal;
+    }
+
+    return stderr_to_file;
+  }
+
+
 
 
 }
