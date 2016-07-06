@@ -102,11 +102,6 @@ def initialise():
   if args.cont:
     tempDir = os.path.abspath(args.cont[0])
     lastFile = args.cont[1]
-  else:
-    with open(os.path.join(tempDir, 'cwd.txt'), 'w') as outfile:
-      outfile.write(workingDir + '\n')
-    with open(os.path.join(tempDir, 'command.txt'), 'w') as outfile:
-      outfile.write(' '.join(sys.argv) + '\n')
 
 
 
@@ -161,6 +156,10 @@ def makeTempDir():
     tempDir = os.path.join(dir_path, prefix + random_string) + os.sep
   os.makedirs(tempDir)
   printMessage('Generated temporary directory: ' + tempDir)
+  with open(os.path.join(tempDir, 'cwd.txt'), 'w') as outfile:
+    outfile.write(workingDir + '\n')
+  with open(os.path.join(tempDir, 'command.txt'), 'w') as outfile:
+    outfile.write(' '.join(sys.argv) + '\n')
 
 
 
