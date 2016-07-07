@@ -23,6 +23,7 @@ namespace MR
   namespace FixelFormat
   {
     const std::string n_fixels_key ("nfixels");
+    const std::initializer_list <const std::string> supported_fixel_formats { ".mif", ".nii" };
   }
 }
 
