@@ -320,3 +320,62 @@ command being used; e.g.:
    generated at any value of ``lmax``, since the angular resolution of the
    original image data is not a limiting factor here.
 
+Visualising streamlines terminations
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+I am frequently asked about Figures 5-7 in the `Anatomically-Constrained
+Tractography <http://www.sciencedirect.com/science/article/pii/S1053811912005824>`__
+article, which demonstrate the effects that the ACT method has on the
+locations of streamlines terminations. There are two different techniques
+used in these figures, which I'll explain here in full.
+
+-  Figure 6 shows *streamlines termination density maps*: these are 3D maps
+   where the intensity in each voxel reflects the number of streamlines
+   terminations within that voxel. So they're a bit like Track Density Images
+   (TDIs), except that it's only the streamlines termination points that
+   contribute to the map, rather than the entire streamline. The easiest way to
+   achieve this approach is with the ``tckmap`` command, using the
+   ``-ends_only`` option.
+   
+-  Figures 5 and 7 display large dots at the streamline endpoints lying within
+   the displayed slab, in conjunction with the streamlines themselves and a
+   background image. Unfortunately this functionality is not yet
+   implemented within *MRtrix3*, so duplicating this type of visualisation
+   requires a bit of manual manipulation and software gymnastics:
+   
+   -  Use the new ``tckresample`` command, with the ``-endpoints`` option,
+      to generate a new track file that contains only the two endpoints of
+      each streamline.
+   
+   -  Load this track file into the *old MRtrix 0.2 version of ``mrview``*.
+      This software can be acquired `here <https://github.com/jdtournier/mrtrix-0.2>`__.
+      Note that you will likely want to *not* run the installation component
+      of the build for this software; that way you should not encounter
+      issues with conflicting commmand names between MRtrix versions. This
+      does however mean that you will need to provide the full path to the
+      MRtrix 0.2 ``mrview`` executable in order to run it.
+      
+   -  Within the ``mrview`` tractography tool, enable the 'depth blend'
+      option. This will display each streamline point as a dot, rather than
+      drawing lines between the streamline points.
+   
+   -  Adjust the brightness / contrast of the background image so that it is
+      completely black.
+   
+   -  Take a screenshot.
+   
+   -  Remove the streamline endpoints track file from the tractography tool,
+      and disable the 'depth blend' option (it's best to disable the 'depth
+      blend' option before opening any larger track file).
+   
+   -  Reset the windowing of the main image, and/or load the complete tracks
+      file, and take an additional screenshot, making sure not to move the
+      view focus or resize the ``mrview`` window (so that the two screenshots
+      overlay on top of one another).
+   
+   -  The two screenshots are then combined using image editing software such
+      as GIMP. The colors of the termination points can also be modified
+      independently before they are combined with the second screenshot. One
+      trick I used in this manuscript was to rotate the hue of the termination
+      screenshot by 180 degrees: this provides a pseudo-random coloring of the
+      termination points that contrasts well against the tracks.
