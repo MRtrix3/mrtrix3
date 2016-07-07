@@ -84,7 +84,7 @@ namespace MR
 
         if (dim.empty())
           throw Exception ("missing \"dim\" specification for MRtrix image \"" + H.name() + "\"");
-        H.set_ndim (dim.size());
+        H.ndim() = dim.size();
         for (size_t n = 0; n < dim.size(); n++) {
           if (dim[n] < 1)
             throw Exception ("invalid dimensions for MRtrix image \"" + H.name() + "\"");
@@ -95,7 +95,7 @@ namespace MR
           throw Exception ("missing \"vox\" specification for MRtrix image \"" + H.name() + "\"");
         if (vox.size() < 3)
           throw Exception ("too few entries in \"vox\" specification for MRtrix image \"" + H.name() + "\"");
-        for (size_t n = 0; n < std::min (vox.size(), H.ndim()); n++) {
+        for (size_t n = 0; n < std::min<size_t> (vox.size(), H.ndim()); n++) {
           if (vox[n] < 0.0)
             throw Exception ("invalid voxel size for MRtrix image \"" + H.name() + "\"");
           H.spacing(n) = vox[n];

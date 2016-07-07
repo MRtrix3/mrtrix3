@@ -5,53 +5,42 @@
 
 
 import argparse, math, os, shutil, sys
-import lib.app
+import lib.app, lib.cmdlineParser
 
-from lib.errorMessage  import errorMessage
-from lib.getHeaderInfo import getHeaderInfo
-from lib.getImageStat  import getImageStat
-from lib.getUserPath   import getUserPath
-from lib.printMessage  import printMessage
-from lib.runCommand    import runCommand
-from lib.warnMessage   import warnMessage
+from lib.errorMessage     import errorMessage
+from lib.getAlgorithmList import getAlgorithmList
+from lib.getHeaderInfo    import getHeaderInfo
+from lib.getImageStat     import getImageStat
+from lib.getUserPath      import getUserPath
+from lib.printMessage     import printMessage
+from lib.runCommand       import runCommand
+from lib.warnMessage      import warnMessage
 
 
 lib.app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
-lib.app.initCitations([ 'MSMT_CSD', 'SD', 'Tax2014', 'Tournier2013' ])
-lib.app.initParser('Estimate response function(s) for spherical deconvolution')
-
-
-base_parser = lib.app.Parser(description='Arguments & options common to all algorithms', add_help=False, formatter_class=argparse.RawDescriptionHelpFormatter)
-
-# Standard input/output arguments
-base_argument = base_parser.add_argument_group('Positional argument common to all algorithms')
-base_argument.add_argument('input',  help='The input DWI')
+lib.cmdlineParser.initialise('Estimate response function(s) for spherical deconvolution')
 
 # General options
-base_options = base_parser.add_argument_group('Options common to all algorithms')
-base_options.add_argument('-shell', help='The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)')
-base_options.add_argument('-lmax', help='The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)')
-base_options.add_argument('-mask', help='Provide an initial mask for response voxel selection')
-base_options.add_argument('-voxels', help='Output an image showing the final voxel selection(s)')
-grad_import_group = base_options.add_mutually_exclusive_group()
-grad_import_group.add_argument('-grad', help='Pass the diffusion gradient table in MRtrix format')
-grad_import_group.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Pass the diffusion gradient table in FSL bvecs/bvals format')
+base_parser = lib.cmdlineParser.Parser(description='Base parser for dwi2response script', parents=[lib.app.parser], add_help=False)
+common_options = base_parser.add_argument_group('Options common to all dwi2response algorithms')
+common_options.add_argument('-shell', help='The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)')
+common_options.add_argument('-lmax', help='The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)')
+common_options.add_argument('-mask', help='Provide an initial mask for response voxel selection')
+common_options.add_argument('-voxels', help='Output an image showing the final voxel selection(s)')
+common_options.add_argument('-grad', help='Pass the diffusion gradient table in MRtrix format')
+common_options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Pass the diffusion gradient table in FSL bvecs/bvals format')
+lib.cmdlineParser.flagMutuallyExclusiveOptions( [ 'grad', 'fslgrad' ] )
 
+algorithm_list = getAlgorithmList()
+# Subparsers for individual algorithms
+subparsers = lib.app.parser.add_subparsers(title='Algorithm choices', help='Select the algorithm to be used to derive the response function; additional details and options become available once an algorithm is nominated. Options are: ' + ', '.join(algorithm_list), dest='algorithm')
 
-# Groups for individual algorithms
-subparsers = lib.app.parser.add_subparsers(title='algorithm choices', description='Select the algorithm to be used to derive the response function', help='Additional help available for individual algorithms: Use e.g. ' + os.path.basename(sys.argv[0]) + ' fa -help')
-#subparsers.required = True
-
-
-# Import the command-line settings for all algorithms found in the scripts/src/dwi2response/ directory
+# Import the command-line settings for all algorithms found
 from src import dwi2response
-algorithm_list = os.listdir(os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'src', 'dwi2response'))
-for filename in algorithm_list:
-  filename = filename.split('.')
-  if len(filename) == 2 and filename[1] == 'py' and not filename[0] == '__init__':
-    __import__('src.dwi2response', globals(), locals(), [ filename[0] ])
-    algorithm = getattr(dwi2response, filename[0])
-    algorithm.initParser(subparsers, base_parser)
+for name in algorithm_list:
+  __import__('src.dwi2response', globals(), locals(), [ name ])
+  algorithm = getattr(dwi2response, name)
+  algorithm.initParser(subparsers, base_parser)
 
 
 lib.app.initialise()
@@ -64,7 +53,6 @@ algorithm = getattr(dwi2response, lib.app.args.algorithm)
 # Check for prior existence of output files, and grab any input files, used by the particular algorithm
 lib.app.checkOutputFile(lib.app.args.voxels)
 algorithm.checkOutputFiles()
-algorithm.getInputFiles()
 
 
 # Sanitise some inputs, and get ready for data import
@@ -93,6 +81,7 @@ if lib.app.args.grad:
 elif lib.app.args.fslgrad:
   grad_import_option = ' -fslgrad ' + getUserPath(lib.app.args.fslgrad[0], True) + ' ' + getUserPath(lib.app.args.fslgrad[1], True)
 
+lib.app.makeTempDir()
 
 # Get standard input data into the temporary directory
 if lib.app.args.single_shell or shell_option:
@@ -102,6 +91,7 @@ else: # Don't want to discard b=0 in multi-shell algorithms, which dwiextract wi
 if lib.app.args.mask:
   runCommand('mrconvert ' + getUserPath(lib.app.args.mask, True) + ' ' + os.path.join(lib.app.tempDir, 'mask.mif') + ' -datatype bit')
 
+algorithm.getInputFiles()
 
 lib.app.gotoTempDir()
 
