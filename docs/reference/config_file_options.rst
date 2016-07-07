@@ -1,3 +1,5 @@
+.. _config_file_options:
+
 ################
 List of MRtrix3 configuration file options
 ################

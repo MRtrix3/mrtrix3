@@ -274,6 +274,24 @@ You can then copy the contents of the ``release/bin/`` folder onto target
 systems, make sure their location is listed in the ``PATH``, and start
 using these commands.
 
+If you also wish to be able to use the *MRtrix3* Python scripts, you can
+also copy the full contents of the ``scripts`` directory to the target
+system, and append their location to the ``PATH`` environment variable
+also. However, in order for certain functionalities of these scripts to
+work (for instance, controlling the command-line verbosity and
+multi-threading of invoked *MRtrix3* commands), the relative path between
+the scripts and binaries must be maintained; that is, the binaries must
+be located in ``../release/bin`` relative to ``scripts``. Therefore, the
+recommended solution is:
+
+1. Create an ``mrtrix3`` directory on the target system.
+2. Place the contents of ``release/bin`` into ``mrtrix3/release/bin``
+   on the target system.
+3. Place the contents of ``scripts`` (including all sub-directories) into
+   ``mrtrix3/scripts`` on the target system.
+4. Add ``mrtrix3/release/bin`` and ``mrtrix3/scripts`` to ``PATH`` on the
+   target system.
+
 Standalone packager
 ^^^^^^^^^^^
 

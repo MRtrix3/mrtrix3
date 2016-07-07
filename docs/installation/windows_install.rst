@@ -56,6 +56,11 @@ Install and update MSYS2
    .. NOTE::
     Future versions of MSYS2 will drop ``update-core``. If your version came without ``update-core``, it is probably safe to skip this step.
 
+.. WARNING::
+    At time of writing, this MSYS2 system update will give a number of instructions, including: terminating the terminal when the update is
+    completed, and modifying the shortcuts for executing the shell(s). Although these instructions are not as prominent as they could be,
+    it is *vital* that they are followed correctly!
+
 4. Close the shell and start **'MinGW-w64 Win64 Shell'**
    
 5. Update the other packages:
@@ -117,6 +122,7 @@ Build *MRtrix3*
 
 Set up *MRtrix3*
 --------------
+
 
 1. Update the shell startup file, so that the locations of *MRtrix3* commands
    and scripts will be added to your ``PATH`` envionment variable.
