@@ -35,14 +35,15 @@ void usage ()
   + "Crop a fixel index image along with corresponding fixel data images";
 
   ARGUMENTS
-  + Argument ("fixel_in", "the input fixel folder").type_text ()
-  + Argument ("fixel_out", "the output fixel folder").type_text ();
+  + Argument ("dir_in", "the input fixel folder").type_text ()
+  + Argument ("dir_out", "the output fixel folder").type_text ();
 
   OPTIONS
   + Option ("mask", "the threshold mask").required ()
-  + Argument ("data_image").type_image_in ()
-  + Option ("data", "specify the list of fixel data images to be cropped relative to the input fixel folder ").allow_multiple ()
-  + Argument ("data_images").type_image_in ();
+  + Argument ("image").type_image_in ()
+  + Option ("data", "specify a fixel data image filename (relative to the input fixel folder) to "
+                    "be cropped.").allow_multiple ()
+  + Argument ("image").type_image_in ();
 }
 
 
@@ -64,17 +65,17 @@ void run ()
   Header out_header = Header (index_image);
   size_t total_nfixels = std::stoul (out_header.keyval ()[FixelFormat::n_fixels_key]);
 
-  // We need to do a first pass fo the mask image to determine the cropped images' properties
+  // We need to do a first pass fo the mask image to determine the cropped num. of fixels
   for (auto l = Loop (0) (mask_image); l; ++l) {
     if (!mask_image.value ())
       total_nfixels --;
   }
 
   out_header.keyval ()[FixelFormat::n_fixels_key] = str (total_nfixels);
-  auto index_image_basename = Path::basename (index_image.name ());
+  const auto index_image_basename = Path::basename (index_image.name ());
   auto out_index_image = Image<uint32_t>::create (Path::join (out_fixel_folder, index_image_basename), out_header);
 
-  // Crop index images
+  // Crop index image
   mask_image.index (1) = 0;
   for (auto l = Loop ("cropping index image: " + index_image_basename, 0, 3) (index_image, out_index_image); l; ++l) {
     index_image.index (3) = 0;
