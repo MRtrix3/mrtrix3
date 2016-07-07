@@ -1052,12 +1052,16 @@ namespace MR
 
       void Window::slice_next_slot () 
       {
-        mode->slice_move_event (1);
+        assert (mode);
+        if (image()) 
+          mode->slice_move_event (1);
       }
 
       void Window::slice_previous_slot () 
       {
-        mode->slice_move_event (-1);
+        assert (mode);
+        if (image()) 
+          mode->slice_move_event (-1);
       }
 
 
