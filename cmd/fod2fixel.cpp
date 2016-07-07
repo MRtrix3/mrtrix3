@@ -135,7 +135,6 @@ class Segmented_FOD_receiver
 
 
   private:
-    template<typename UIntType> void primitive_commit ();
 
     Header H;
     std::string fixel_folder_path, index_path, dir_path, afd_path, peak_path, disp_path;
@@ -177,23 +176,12 @@ void Segmented_FOD_receiver::commit ()
   if (!lobes.size() || !n_fixels || !num_outputs())
     return;
 
-  if (n_fixels < (uint64_t)std::numeric_limits<uint32_t>::max ())
-    primitive_commit<uint32_t> ();
-  else
-    primitive_commit<uint64_t> ();
-}
-
-
-
-template<typename UIntType>
-void Segmented_FOD_receiver::primitive_commit ()
-{
   using DataImage = Image<float>;
-  using IndexImage = Image<UIntType>;
+  using IndexImage = Image<uint32_t>;
 
   const auto index_filepath = Path::join (fixel_folder_path, index_path);
 
-  std::unique_ptr<Image<UIntType>> index_image (nullptr);
+  std::unique_ptr<IndexImage> index_image (nullptr);
   std::unique_ptr<DataImage> dir_image (nullptr);
   std::unique_ptr<DataImage> afd_image (nullptr);
   std::unique_ptr<DataImage> peak_image (nullptr);
@@ -205,7 +193,7 @@ void Segmented_FOD_receiver::primitive_commit ()
     index_header.keyval()[FixelFormat::n_fixels_key] = str(n_fixels);
     index_header.ndim () = 4;
     index_header.size (3) = 2;
-    index_header.datatype () = DataType::from<UIntType> ();
+    index_header.datatype () = DataType::from<uint32_t> ();
     index_header.datatype ().set_byte_order_native ();
     index_image = std::unique_ptr<IndexImage> (new IndexImage (IndexImage::create (index_filepath, index_header)));
   } else {
@@ -252,12 +240,7 @@ void Segmented_FOD_receiver::primitive_commit ()
   }
 
   size_t offset (0), lobe_index (0);
-  const size_t nlobes (lobes.size ());
 
-  MR::ProgressBar progress("Generating fixel files", nlobes);
-  auto display_func = [&lobe_index, nlobes, &offset]() {
-    return str (lobe_index) + " of " + str (nlobes) + " FOD lobes read. " + str (offset) + " fixels found.";
-  };
 
   for (const auto& vox_fixels : lobes) {
     size_t n_vox_fixels = vox_fixels.size();
@@ -303,11 +286,7 @@ void Segmented_FOD_receiver::primitive_commit ()
 
     offset += n_vox_fixels;
     lobe_index ++;
-
-    progress.update (display_func);
   }
-
-  progress.done ();
 
   assert (offset == n_fixels);
 }
