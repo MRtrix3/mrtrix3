@@ -13,7 +13,7 @@ To install *MRtrix3* , you will need the following:
 
 -  a `C++11 <https://en.wikipedia.org/wiki/C%2B%2B11>`__ compliant
    compiler (e.g. `clang <http://clang.llvm.org/>`__ in Xcode)
--  `Python <https://www.python.org/>`__ version >= 2.6 (already included in MacOS X)
+-  `Python <https://www.python.org/>`__ version >= 2.7 (already included in MacOS X)
 -  The `zlib <http://www.zlib.net/>`__ compression library (already included in MacOS X)
 -  `Eigen <http://eigen.tuxfamily.org/>`__ version 3.2 *(do not install the beta version)*
 -  `Qt <http://www.qt.io/>`__ version >= 5.1 *[GUI components only]* -

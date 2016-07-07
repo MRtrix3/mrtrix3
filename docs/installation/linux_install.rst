@@ -15,8 +15,7 @@ To install *MRtrix3*, you will need the following:
 
 -  a `C++11 <https://en.wikipedia.org/wiki/C%2B%2B11>`__ compliant
    compiler (GCC version >= 4.8, clang)
--  `Python <https://www.python.org/>`__ version >= 2.6
--  `NumPy <http://www.numpy.org/>`__
+-  `Python <https://www.python.org/>`__ version >= 2.7
 -  The `zlib <http://www.zlib.net/>`__ compression library
 -  `Eigen <http://eigen.tuxfamily.org>`__ version 3.2 *(do not install the beta version)*
 -  `Qt <http://www.qt.io/>`__ version >= 4.7 *[GUI components only]*
@@ -71,7 +70,7 @@ packages:
 
 -  your compiler (gcc 4.8 or above, or clang)
 
--  Python version >2.6
+-  Python version >2.7
 
 -  NumPy
 
