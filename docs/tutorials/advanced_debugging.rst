@@ -19,8 +19,8 @@ resulting information. The instructions for doing so are below.
    (``git pull``)
 
 3. Configure and compile *MRtrix3* in debug mode:
-   ``./configure -debug -assert debug; ./build debug`` Note that this
-   compilation will reside *alongside* your existing *MRtrix3*
+   ``./configure -debug -assert debug; ./build debug``
+   Note that this compilation will reside *alongside* your existing *MRtrix3*
    installation, but will not interfere with it in any way. Commands
    that are compiled in debug mode will reside in the ``debug/bin``
    directory.
@@ -37,20 +37,28 @@ resulting information. The instructions for doing so are below.
    ``-debug`` option so that *MRtrix3* produces more verbose information
    at the command-line.
 
-5. Once ``gdb`` has loaded, type ``r`` and hit ENTER to run the command.
+5. If running on Windows, once ``gdb`` has loaded, type the following into
+   the terminal:
+   ``b abort`` (+ ENTER)
+   ``b exit`` (+ ENTER)
+   These 'breakpoints' must be set explicitly in order to prevent the command
+   from being terminated completely on an error, which would otherwise
+   preclude debugging once an error is actually encountered.
 
-6. If an error is encountered, ``gdb`` will print an error, and then provide
+6. At the ``gdb`` terminal, type ``r`` and hit ENTER to run the command.
+
+7. If an error is encountered, ``gdb`` will print an error, and then provide
    a terminal with ``(gdb)`` shown on the left hand side. Type ``bt``
    and hit ENTER: This stands for 'backtrace', and will print details on
    the internal code that was running when the problem occurred.
 
-7. Copy all of the raw text, from the command you ran in instruction 3
+8. Copy all of the raw text, from the command you ran in instruction 3
    all the way down to the bottom of the backtrace details, and send it
    to us. The best place for these kind of reports is to make a new
    issue in the `Issues <https://github.com/MRtrix3/mrtrix3/issues>`__
    tracker for the GitHub repository.
 
-8. If ``gdb`` does not report any error, it is possible that a memory error
+9. If ``gdb`` does not report any error, it is possible that a memory error
    is occurring, but even the debug version of the software is not performing
    the necessary checks to detect it. If this is the case, you can also try
    using `Valgrind <http://valgrind.org/>`_, which will perform a more
