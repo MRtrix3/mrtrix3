@@ -19,14 +19,22 @@ resulting information. The instructions for doing so are below.
    (``git pull``)
 
 3. Configure and compile *MRtrix3* in debug mode:
-   ``./configure -debug -assert debug; ./build debug``
+
+   ::
+   
+       ./configure -debug -assert debug; ./build debug
+       
    Note that this compilation will reside *alongside* your existing *MRtrix3*
    installation, but will not interfere with it in any way. Commands
    that are compiled in debug mode will reside in the ``debug/bin``
    directory.
 
 4. Execute the problematic command within ``gdb``:
-   ``gdb --args debug/bin/command (arguments) (-options) -debug``
+
+   ::
+   
+       gdb --args debug/bin/command (arguments) (-options) -debug
+       
    Note that the version of the command that is compiled in debug mode
    resides in the ``debug/bin`` directory; you must provide this full
    path *explicitly* to ensure that this is the version of the command that
@@ -39,8 +47,12 @@ resulting information. The instructions for doing so are below.
 
 5. If running on Windows, once ``gdb`` has loaded, type the following into
    the terminal:
-   ``b abort`` (+ ENTER)
-   ``b exit`` (+ ENTER)
+   
+   ::
+   
+       b abort
+       b exit
+
    These 'breakpoints' must be set explicitly in order to prevent the command
    from being terminated completely on an error, which would otherwise
    preclude debugging once an error is actually encountered.
@@ -64,7 +76,10 @@ resulting information. The instructions for doing so are below.
    using `Valgrind <http://valgrind.org/>`_, which will perform a more
    exhaustive check for memory faults (and correspondingly, the command will
    run exceptionally slowly):
-   ``valgrind debug/bin/command (arguments) (-options)``
+   
+   ::
+   
+       valgrind debug/bin/command (arguments) (-options)
 
 We greatly appreciate any contribution that the community can make
 toward making *MRtrix3* as robust as possible, so please don't hesitate to
