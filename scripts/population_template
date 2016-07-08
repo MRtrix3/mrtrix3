@@ -2,9 +2,9 @@
 
 # Generates an unbiased group-average template via image registration of images to a midway space.
 
-import os, sys
-import lib.app
-import numpy
+import os, shutil, sys
+import lib.app, lib.cmdlineParser
+#import numpy
 import math
 
 def abspath(*arg):
@@ -12,6 +12,9 @@ def abspath(*arg):
 
 def relpath(*arg):
   return os.path.relpath(os.path.join(*arg),lib.app.workingDir)
+
+def allindir(dir):
+  return ' '.join( [ os.path.join(dir, file) for file in os.listdir(dir) ] )
 
 from lib.errorMessage  import errorMessage
 from lib.getHeaderInfo import getHeaderInfo
@@ -31,24 +34,25 @@ class Input:
 
 
 lib.app.author = 'David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk) & Thijs Dhollander thijs.dhollander@florey.edu.au)'
-lib.app.initParser('Generates an unbiased group-average template from a series of images. First a template is optimised with linear registration (rigid or affine, affine is default), then non-linear registration is used to optimise the template further.')
+lib.cmdlineParser.initialise('Generates an unbiased group-average template from a series of images. First a template is optimised with linear registration (rigid or affine, affine is default), then non-linear registration is used to optimise the template further.')
 lib.app.parser.add_argument('input_dir', help='The input directory containing all images used to build the template')
 lib.app.parser.add_argument('template', help='The output template image')
-lib.app.parser.add_argument('-mask_dir', help='Optionally input a set of masks inside a single directory, one per input image (with the same file name prefix). Using masks will speed up registration significantly')
-lib.app.parser.add_argument('-warp_dir', help='Output a directory containing warps from each input to the template. If the folder does not exist it will be created')
-lib.app.parser.add_argument('-transformed_dir', help='Output a directory containing the input images transformed to the template. If the folder does not exist it will be created')
-lib.app.parser.add_argument('-template_mask', help='Output a template mask. Only works in -mask_dir has been input. The template mask is computed as the intersection of all subject masks in template space.')
-lib.app.parser.add_argument('-rigid', action='store_true', help='perform rigid registration instead of affine. This should be used for intra-subject registration in longitudinal analysis')
-lib.app.parser.add_argument('-linear_scale', help='Specifiy the multi-resolution pyramid used to build the rigid or affine template, in the form of a list of scale factors (default: 0.3,0.4,0.5,0.6,0.7,1.0,1.0,1.0,1.0,1.0). This implicitly defines the number of template levels')
-lib.app.parser.add_argument('-linear_lmax', help='Specifiy the lmax used for rigid or affine registration for each scale factor, in the form of a list of integers (default: 0,0,2,2,2,2,2,2,4,4,4,4,4,4,4,4). The list must be the same length as the affine_scale factor list')
-lib.app.parser.add_argument('-nl_scale', help='Specifiy the multi-resolution pyramid used to build the non-linear template, in the form of a list of scale factors (default: 0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0). This implicitly defines the number of template levels')
-lib.app.parser.add_argument('-nl_lmax', help='Specifiy the lmax used for non-linear registration for each scale factor, in the form of a list of integers (default: 0,0,2,2,2,2,2,2,2,2,4,4,4,4). The list must be the same length as the nl_scale factor list')
-lib.app.parser.add_argument('-nl_niter', help='Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5). The list must be the same length as the nl_scale factor list')
-lib.app.parser.add_argument('-nl_update_smooth', default='2.0', help='Regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 2.0 x voxel_size)')
-lib.app.parser.add_argument('-nl_disp_smooth', default='1.0', help='Regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0 x voxel_size)')
-lib.app.parser.add_argument('-nl_grad_step', default='0.5', help='The gradient step size for non-linear registration (Default: 0.5)')
-lib.app.parser.add_argument('-noreorientation', action='store_true', help='Turn off FOD reorientation. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc')
-lib.app.parser.add_argument('-initial_alignment', default='mass', help='Method of alignment to form the initial template. Options are "mass" (default), "geometric" and "none".')
+options = lib.app.parser.add_argument_group('Options for the population_template script')
+options.add_argument('-mask_dir', help='Optionally input a set of masks inside a single directory, one per input image (with the same file name prefix). Using masks will speed up registration significantly')
+options.add_argument('-warp_dir', help='Output a directory containing warps from each input to the template. If the folder does not exist it will be created')
+options.add_argument('-transformed_dir', help='Output a directory containing the input images transformed to the template. If the folder does not exist it will be created')
+options.add_argument('-template_mask', help='Output a template mask. Only works in -mask_dir has been input. The template mask is computed as the intersection of all subject masks in template space.')
+options.add_argument('-rigid', action='store_true', help='perform rigid registration instead of affine. This should be used for intra-subject registration in longitudinal analysis')
+options.add_argument('-linear_scale', help='Specifiy the multi-resolution pyramid used to build the rigid or affine template, in the form of a list of scale factors (default: 0.3,0.4,0.5,0.6,0.7,1.0,1.0,1.0,1.0,1.0). This implicitly defines the number of template levels')
+options.add_argument('-linear_lmax', help='Specifiy the lmax used for rigid or affine registration for each scale factor, in the form of a list of integers (default: 0,0,2,2,2,2,2,2,4,4,4,4,4,4,4,4). The list must be the same length as the affine_scale factor list')
+options.add_argument('-nl_scale', help='Specifiy the multi-resolution pyramid used to build the non-linear template, in the form of a list of scale factors (default: 0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0). This implicitly defines the number of template levels')
+options.add_argument('-nl_lmax', help='Specifiy the lmax used for non-linear registration for each scale factor, in the form of a list of integers (default: 0,0,2,2,2,2,2,2,2,2,4,4,4,4). The list must be the same length as the nl_scale factor list')
+options.add_argument('-nl_niter', help='Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5). The list must be the same length as the nl_scale factor list')
+options.add_argument('-nl_update_smooth', default='2.0', help='Regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 2.0 x voxel_size)')
+options.add_argument('-nl_disp_smooth', default='1.0', help='Regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0 x voxel_size)')
+options.add_argument('-nl_grad_step', default='0.5', help='The gradient step size for non-linear registration (Default: 0.5)')
+options.add_argument('-noreorientation', action='store_true', help='Turn off FOD reorientation. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc')
+options.add_argument('-initial_alignment', default='mass', help='Method of alignment to form the initial template. Options are "mass" (default), "geometric" and "none".')
 lib.app.initialise()
 
 lib.app.args.input_dir = relpath(lib.app.args.input_dir)
@@ -73,8 +77,8 @@ if lib.app.args.mask_dir:
   if not os.path.exists(maskDir):
     errorMessage('mask directory not found')
   maskFiles = os.listdir(maskDir)
-  if len(maskFiles) != len(inFiles):
-    errorMessage('the number of images in the mask directory does not equal the number of images in the input directory')
+  if len(maskFiles) < len(inFiles):
+    errorMessage('there are not enough mask images for the number of images in the input directory')
   maskCommonPostfix = lib.app.getCommonPostfix(maskFiles)
   maskPrefixes = []
   for m in maskFiles:
@@ -108,7 +112,10 @@ lib.app.checkOutputFile(lib.app.args.template)
 if lib.app.args.warp_dir:
   lib.app.args.warp_dir = relpath(lib.app.args.warp_dir)
   lib.app.checkOutputFile(lib.app.args.warp_dir)
-  lib.app.make_dir(lib.app.args.warp_dir)
+
+if lib.app.args.transformed_dir:
+  lib.app.args.transformed_dir = relpath(lib.app.args.transformed_dir)
+  lib.app.checkOutputFile(lib.app.args.transformed_dir)
 
 # automatically detect SH series
 do_fod_registration = False
@@ -134,7 +141,7 @@ if do_fod_registration:
 
 nl_scales = [0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0]
 nl_niter =  [5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5  ,5  ,5  ,5  ,5  ]
-nl_lmax =   [0,  0,  2,  2,  2,  2,  2,  2,  4,  4,  4,  4  ,4  ,4  ,4  ,4  ]
+nl_lmax =   [2,  2,  2,  2,  2,  2,  2,  2,  4,  4,  4,  4  ,4  ,4  ,4  ,4  ]
 datatype = ' -datatype float32'
 
 if lib.app.args.nl_scale:
@@ -152,6 +159,7 @@ if do_fod_registration:
   if len(nl_scales) != len(nl_lmax):
     errorMessage('nl_scales and nl_lmax schedules are not equal in length')
 
+lib.app.makeTempDir()
 lib.app.gotoTempDir()
 
 lib.app.make_dir('input_transformed')
@@ -175,7 +183,7 @@ else:
   mask = ''
   for i in input:
     if useMasks:
-        mask = ' -mask1 ' + abspath(i.mask_directory, i.mask_filename)
+      mask = ' -mask1 ' + abspath(i.mask_directory, i.mask_filename)
     output = ' -rigid linear_transforms/' + i.prefix + '.txt'
     runCommand('mrregister ' + abspath(i.directory, i.filename) + ' average_header.mif.gz' +
                 mask +
@@ -192,10 +200,10 @@ else:
                 datatype +
                 ' input_transformed/' + i.prefix + '_translated.mif')
     if useMasks:
-	  runCommand('mrtransform ' + abspath(i.mask_directory, i.mask_filename) +
-		         ' -linear linear_transforms/' + i.prefix + '.txt' +
-		         datatype +
-		         ' masks_transformed/' + i.prefix + '_translated.mif')
+      runCommand('mrtransform ' + abspath(i.mask_directory, i.mask_filename) +
+             ' -linear linear_transforms/' + i.prefix + '.txt' +
+             datatype +
+             ' masks_transformed/' + i.prefix + '_translated.mif')
   # update average space to new extent
   runCommand('mraverageheader ' + ' '.join(['input_transformed/' + i.prefix + '_translated.mif' for i in input]) +
    ' average_header.mif.gz' ' -force')
@@ -208,19 +216,16 @@ else:
     runCommand('rm -f input_transformed/' + i.prefix + '_translated.mif')
     if useMasks:
       runCommand('mrtransform ' +
-	             ' masks_transformed/' + i.prefix + '_translated.mif' +
-	             ' masks_transformed/' + i.prefix + '.mif' +
-	             ' -interp nearest -template average_header.mif.gz' +
-	             datatype)
+               ' masks_transformed/' + i.prefix + '_translated.mif' +
+               ' masks_transformed/' + i.prefix + '.mif' +
+               ' -interp nearest -template average_header.mif.gz' +
+               datatype)
       runCommand('rm -f masks_transformed/' + i.prefix + '_translated.mif')
 
 
-runCommand('mrmath input_transformed/* mean initial_template.mif')
+runCommand('mrmath ' + allindir('input_transformed') + ' mean initial_template.mif')
 current_template = 'initial_template.mif'
 
-if useMasks:
-  runCommand('mrmath masks_transformed/* min initial_template_mask.mif')
-  current_template_mask = 'initial_template_mask.mif'
 
 # Optimise template with linear registration
 printMessage('Optimising template with linear registration')
@@ -228,7 +233,7 @@ for level in range(0, len(linear_scales)):
   for i in input:
     initialise = ''
     if useMasks:
-      mask = ' -mask1 ' + abspath(i.mask_directory, i.mask_filename) + ' -mask2 ' + current_template_mask
+      mask = ' -mask1 ' + abspath(i.mask_directory, i.mask_filename)
     else:
       mask = ''
     lmax = ''
@@ -261,7 +266,7 @@ for level in range(0, len(linear_scales)):
                  output)
 
   # Here we ensure the template doesn't drift or scale
-  runCommand('transformcalc linear_transforms/*.txt average linear_transform_average.txt -force -quiet')
+  runCommand('transformcalc ' + allindir('linear_transforms') + ' average linear_transform_average.txt -force -quiet')
   if dorigid:
     runCommand('transformcalc linear_transform_average.txt rigid linear_transform_average.txt -force -quiet')
   runCommand('transformcalc linear_transform_average.txt invert linear_transform_average_inv.txt -force -quiet')
@@ -277,20 +282,23 @@ for level in range(0, len(linear_scales)):
                ' input_transformed/' + i.prefix + '.mif' +
                datatype +
                ' -force')
-    if useMasks:
-      runCommand('mrtransform ' + abspath(i.mask_directory, i.mask_filename) +
-               ' -template ' + current_template +
-               ' -interp nearest' +
-               ' -linear linear_transforms/' + i.prefix + '.txt' +
-               ' masks_transformed/' + i.prefix + '.mif' +
-               ' -force')
 
-  runCommand ('mrmath input_transformed/* mean linear_template' + str(level) + '.mif')
+  runCommand ('mrmath ' + allindir('input_transformed') + ' mean linear_template' + str(level) + '.mif -force')
   current_template = 'linear_template' + str(level) + '.mif'
 
+
+# Create a template mask for nl registration by taking the intersection of all transformed input masks and dilating
   if useMasks:
-    runCommand ('mrmath masks_transformed/* min linear_template_mask' + str(level) + '.mif')
-    current_template_mask = 'linear_template_mask' + str(level) + '.mif'
+    for i in input:
+      runCommand('mrtransform ' + abspath(i.mask_directory, i.mask_filename) +
+                 ' -template ' + current_template +
+                 ' -interp nearest' +
+                 ' -linear linear_transforms/' + i.prefix + '.txt' +
+                 ' masks_transformed/' + i.prefix + '.mif' +
+                 ' -force')
+    runCommand ('mrmath ' + allindir('masks_transformed') + ' min - | maskfilter - median - | maskfilter - dilate -npass 5 init_nl_template_mask.mif -force')
+    current_template_mask = 'init_nl_template_mask.mif'
+
 
 # Optimise the template with non-linear registration
 printMessage('Optimising template with non-linear registration')
@@ -339,13 +347,13 @@ for level in range(0, len(nl_scales)):
                  ' -interp nearest ' +
                  ' -force')
 
-  runCommand ('mrmath input_transformed/* mean nl_template' + str(level) + '.mif')
+  runCommand ('mrmath ' + allindir('input_transformed') + ' mean nl_template' + str(level) + '.mif')
   current_template = 'nl_template' + str(level) + '.mif'
-  
+
   if useMasks:
-    runCommand ('mrmath masks_transformed/* min nl_template_mask' + str(level) + '.mif')
+    runCommand ('mrmath ' + allindir('masks_transformed') + ' min - | maskfilter - median - | maskfilter - dilate -npass 5 nl_template_mask' + str(level) + '.mif')
     current_template_mask = 'nl_template_mask' + str(level) + '.mif'
-    
+
   if level < len(nl_scales) - 1:
     if (nl_scales[level] < nl_scales[level + 1]):
       upsample_factor = nl_scales[level + 1] / nl_scales[level]
@@ -357,10 +365,16 @@ for level in range(0, len(nl_scales)):
 runCommand('mrconvert ' + current_template + ' ' + getUserPath(lib.app.args.template, True) + lib.app.mrtrixForce)
 
 if lib.app.args.warp_dir:
-  shutil.copy('warps/', getUserPath(lib.app.args.warp_dir, False))
+  warp_path = getUserPath(lib.app.args.warp_dir, False)
+  if os.path.exists(warp_path):
+    shutil.rmtree(warp_path)
+  shutil.copytree('warps/', warp_path)
 
 if lib.app.args.transformed_dir:
-  shutil.copy('input_transformed/', getUserPath(lib.app.args.transformed_dir, False))
+  transformed_path = getUserPath(lib.app.args.transformed_dir, False)
+  if os.path.exists(transformed_path):
+    shutil.rmtree(transformed_path)
+  shutil.copytree('input_transformed/', transformed_path)
 
 if lib.app.args.template_mask:
   runCommand('mrconvert ' + current_template_mask + ' ' + getUserPath(lib.app.args.template_mask, True) + lib.app.mrtrixForce)

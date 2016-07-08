@@ -108,7 +108,7 @@ namespace MR
           datatype_ (DataType::from<typename HeaderType::value_type>()),
           offset_ (0.0),
           scale_ (1.0) {
-            set_ndim (original.ndim());
+            axes_.resize (original.ndim());
             for (size_t n = 0; n < original.ndim(); ++n) {
               size(n) = original.size(n);
               stride(n) = original.stride(n);
@@ -145,7 +145,7 @@ namespace MR
       /*! This copies all the relevant parameters over from \a original, */
       template <class HeaderType, typename std::enable_if<!std::is_base_of<Header, HeaderType>::value, void*>::type = nullptr>
         Header& operator= (const HeaderType& original) {
-          set_ndim (original.ndim());
+          axes_.resize (original.ndim());
           for (size_t n = 0; n < original.ndim(); ++n) {
             size(n) = original.size(n);
             stride(n) = original.stride(n);
@@ -187,10 +187,28 @@ namespace MR
       //! get/set the 4x4 affine transformation matrix mapping image to world coordinates
       transform_type& transform () { return transform_; }
 
+      class NDimProxy {
+        public:
+          NDimProxy (std::vector<Axis>& axes) : axes (axes) { }
+          NDimProxy (NDimProxy&&) = default;
+          NDimProxy (const NDimProxy&) = delete;
+          NDimProxy& operator=(NDimProxy&&) = default;
+          NDimProxy& operator=(const NDimProxy&) = delete;
+
+          operator size_t () const { return axes.size(); }
+          size_t   operator= (size_t new_size) { axes.resize (new_size); return new_size; }
+          friend std::ostream& operator<< (std::ostream& stream, const NDimProxy& proxy) {
+            stream << proxy.axes.size();
+            return stream;
+          }
+        private:
+          std::vector<Axis>& axes; 
+      };
+
       //! return the number of dimensions (axes) of image
-      size_t ndim () const;
+      size_t ndim () const { return axes_.size(); }
       //! set the number of dimensions (axes) of image
-      void set_ndim (size_t new_ndim);
+      NDimProxy ndim () { return { axes_ }; }
 
       //! get the number of voxels across axis
       const ssize_t& size (size_t axis) const;
@@ -299,23 +317,6 @@ namespace MR
       //! get/set generic key/value text attributes
       std::map<std::string, std::string>& keyval () { return keyval_; }
 
-      Eigen::MatrixXd parse_DW_scheme () const;
-
-      template <class MatrixType> 
-        void set_DW_scheme (const MatrixType& G)
-        {
-          std::string dw_scheme;
-          for (ssize_t row = 0; row < G.rows(); ++row) {
-            std::string line;
-            for (ssize_t col = 0; col < G.cols(); ++col) {
-              line += str(G(row,col), 10);
-              if (col < G.cols() - 1) line += ",";
-            }
-            add_line (dw_scheme, line);
-          }
-          keyval()["dw_scheme"] = dw_scheme;
-        }
-
       static Header open (const std::string& image_name);
       static Header create (const std::string& image_name, const Header& template_header);
       static Header scratch (const Header& template_header, const std::string& label = "scratch image");
@@ -378,8 +379,6 @@ namespace MR
 
 
 
-  inline size_t Header::ndim () const { return axes_.size(); }
-  inline void Header::set_ndim (size_t new_ndim) { axes_.resize (new_ndim); }
 
   inline const ssize_t& Header::size (size_t axis) const { return axes_[axis].size; }
   inline ssize_t& Header::size (size_t axis) { return axes_[axis].size; }

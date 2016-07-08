@@ -1,12 +1,14 @@
 def initParser(subparsers, base_parser):
   import argparse  
-  parser = subparsers.add_parser('freesurfer', parents=[base_parser], help='Generate the 5TT image based on a FreeSurfer parcellation image (any image containing \'aseg\' in its name)')
-  options = parser.add_argument_group('options specific to the \'freesurfer\' algorithm')
-  options.add_argument('-lut', help='Manually provide path to file FreeSurferColorLUT.txt')
+  parser = subparsers.add_parser('freesurfer', parents=[base_parser], add_help=False, description='Generate the 5TT image based on a FreeSurfer parcellation image')
+  parser.add_argument('input',  help='The input FreeSurfer parcellation image (any image containing \'aseg\' in its name)')
+  parser.add_argument('output', help='The output 5TT image')
+  options = parser.add_argument_group('Options specific to the \'freesurfer\' algorithm')
+  options.add_argument('-lut', help='Manually provide path to the lookup table on which the input parcellation image is based (e.g. FreeSurferColorLUT.txt)')
   parser.set_defaults(algorithm='freesurfer')
-  
-  
-  
+
+
+
 def checkOutputFiles():
   pass
 
@@ -28,25 +30,25 @@ def execute():
   from lib.getUserPath  import getUserPath
   from lib.runCommand   import runCommand
 
-  lut_path = 'LUT.txt'
+  lut_input_path = 'LUT.txt'
   if not os.path.exists('LUT.txt'):
     freesurfer_home = os.environ.get('FREESURFER_HOME', '')
     if not freesurfer_home:
       errorMessage('Environment variable FREESURFER_HOME is not set; please run appropriate FreeSurfer configuration script, set this variable manually, or provide script with path to file FreeSurferColorLUT.txt using -lut option')
-    lut_path = os.path.join(freesurfer_home, 'FreeSurferColorLUT.txt')
-    if not os.path.isfile(lut_path):
-      errorMessage('Could not find FreeSurfer lookup table file\n(Expected location: ' + freesurfer_lut + ')')
+    lut_input_path = os.path.join(freesurfer_home, 'FreeSurferColorLUT.txt')
+    if not os.path.isfile(lut_input_path):
+      errorMessage('Could not find FreeSurfer lookup table file (expected location: ' + freesurfer_lut + '), and none provided using -lut')
 
   if lib.app.args.sgm_amyg_hipp:
-    config_file_name = 'FreeSurfer2ACT_sgm_amyg_hipp.txt'
+    lut_output_file_name = 'FreeSurfer2ACT_sgm_amyg_hipp.txt'
   else:
-    config_file_name = 'FreeSurfer2ACT.txt'
-  config_path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'data', config_file_name);
-  if not os.path.isfile(config_path):
-    errorMessage('Could not find config file for converting FreeSurfer parcellation output to tissues\n(Expected location: ' + config_path + ')')
+    lut_output_file_name = 'FreeSurfer2ACT.txt'
+  lut_output_path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'data', lut_output_file_name);
+  if not os.path.isfile(lut_output_path):
+    errorMessage('Could not find lookup table file for converting FreeSurfer parcellation output to tissues (expected location: ' + lut_output_path + ')')
 
   # Initial conversion from FreeSurfer parcellation to five principal tissue types
-  runCommand('labelconfig input.mif ' + config_path + ' indices.mif -lut_freesurfer ' + lut_path)
+  runCommand('labelconvert input.mif ' + lut_input_path + ' ' + lut_output_path + ' indices.mif')
 
   # Use mrcrop to reduce file size
   if lib.app.args.nocrop:

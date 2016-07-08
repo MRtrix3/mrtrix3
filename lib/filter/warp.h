@@ -73,7 +73,7 @@ namespace MR
            !spacings_match (warp, destination, 0, 3)) {
 
            Header header (destination);
-           header.set_ndim(4);
+           header.ndim() = 4;
            header.size(3) = 3;
            Stride::set (header, Stride::contiguous_along_axis (3));
            auto warp_resliced = Image<typename WarpType::value_type>::scratch (header);

@@ -30,6 +30,8 @@ using namespace App;
 
 void usage ()
 {
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
+
   DESCRIPTION
   + "compare two track files for differences, within specified tolerance. "
     "This uses the symmetric Hausdorff distance to compare streamlines. For each "

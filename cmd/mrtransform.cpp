@@ -45,7 +45,7 @@ const char* interp_choices[] = { "nearest", "linear", "cubic", "sinc", NULL };
 void usage ()
 {
 
-  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) & David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and David Raffelt (david.raffelt@florey.edu.au) and Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
 
   DESCRIPTION
   + "apply spatial transformations to an image. "
@@ -358,7 +358,7 @@ void run ()
           Eigen::Vector3 grad_vector = grad.block<1,3>(n,0);
           grad.block<1,3>(n,0) = rotation * grad_vector;
         }
-        output_header.set_DW_scheme(grad);
+        DWI::set_DW_scheme (output_header, grad);
       }
     }
     catch (Exception& e) {

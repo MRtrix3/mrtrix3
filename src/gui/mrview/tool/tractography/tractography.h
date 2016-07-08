@@ -17,8 +17,11 @@
 #define __gui_mrview_tool_tractography_h__
 
 #include "gui/mrview/tool/base.h"
+#include "gui/color_button.h"
 #include "gui/projection.h"
 #include "gui/mrview/adjust_button.h"
+#include "gui/mrview/combo_box_error.h"
+#include "gui/mrview/tool/tractography/track_scalar_file.h"
 
 namespace MR
 {
@@ -34,6 +37,7 @@ namespace MR
     {
       namespace Tool
       {
+
         class Tractography : public Base
         {
             Q_OBJECT
@@ -58,6 +62,7 @@ namespace MR
             float line_thickness;
             bool do_crop_to_slab;
             bool use_lighting;
+            bool use_threshold_scalarfile;
             bool not_3D;
             float slab_thickness;
             float line_opacity;
@@ -80,16 +85,25 @@ namespace MR
             void right_click_menu_slot (const QPoint& pos);
             void colour_track_by_direction_slot ();
             void colour_track_by_ends_slot ();
-            void set_track_colour_slot ();
             void randomise_track_colour_slot ();
+            void set_track_colour_slot ();
             void colour_by_scalar_file_slot ();
+            void colour_mode_selection_slot (int);
+            void colour_button_slot();
             void selection_changed_slot (const QItemSelection &, const QItemSelection &);
 
           protected:
             AdjustButton* slab_entry;
             QMenu* track_option_menu;
-            Dock* scalar_file_options;
+
+            ComboBoxWithErrorMsg *colour_combobox;
+            QColorButton *colour_button;
+
+            TrackScalarFileOptions *scalar_file_options;
             LightingDock *lighting_dock;
+
+            void dropEvent (QDropEvent* event) override;
+            void update_scalar_options();
 
         };
       }

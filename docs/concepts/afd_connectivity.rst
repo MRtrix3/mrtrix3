@@ -2,10 +2,10 @@ Motivation for ``afdconnectivity``
 ==================
 
 
-Due to the interest in the ``afdconnectivity`` command, I thought I'd
+Due to the interest in the :ref:`afdconnectivity` command, I thought I'd
 explain the reasoning behind the approach, the rationale behind the
 improvements made in commit 40ccdb62, and the argument for why we
-recommend the use of SIFT as an alternative if possible.
+recommend the use of :ref:`sift` as an alternative if possible.
 
 The ``afdconnectivity`` command was originally written as a 'hack' for a
 colleague who wanted to obtain quantitative measures of 'connectivity'
@@ -86,10 +86,9 @@ it's improved with use of the ``-wbft`` option, but is noisy in regions
 where fixels are traversed by very few streamlines, and still may not
 share the fibre volume of each fixel appropriately. Again, SIFT provides
 the better alternative: an equivalent map can be produced by selecting
-your streamlines of interest post-SIFT, and running tckmap with the
--contrast precise\_tdi option (sums streamline lengths within each voxel
-rather than counting streamlines). Remember: a product of
-cross-sectional area and length gives a volume!
+your streamlines of interest post-SIFT, and running ``tckmap -precise``
+(sums streamline lengths within each voxel rather than counting
+streamlines). Remember: a product of cross-sectional area and length gives a volume!
 
 This is also an important message for interpretation of AFD results,
 both in this context and others. FOD amplitude (in any guise) is *in no
@@ -99,7 +98,8 @@ modulation step in
 `AFD <http://www.sciencedirect.com/science/article/pii/S1053811911012092>`__,
 and is the entire premise behind the SIFT method.
 
-Anyways, wikirant over. We are considering writing a technical note that
-will discuss this issue, so we are trusting the MRtrix3 beta user base
+Anyways, rant over. We are considering writing a technical note that
+will discuss this issue, so we are trusting the *MRtrix3* beta user base
 not to do anything scientifically unethical with this information /
 command until we can create the relevant article for citation.
+

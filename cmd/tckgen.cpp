@@ -52,7 +52,7 @@ const char* algorithms[] = { "fact", "ifod1", "ifod2", "nulldist1", "nulldist2",
 void usage ()
 {
 
-  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) & Robert E. Smith (robert.smith@florey.edu.au)";
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
   + "perform streamlines tractography.";

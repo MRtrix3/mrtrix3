@@ -33,20 +33,20 @@ Welcome to the MRtrix user documentation!
    getting_started/config
    getting_started/image_data
    getting_started/command_line
-   getting_started/commands_list
-   getting_started/scripts_list
-   getting_started/FAQ
+   getting_started/troubleshooting
    
 .. toctree::
    :maxdepth: 2
    :caption: Tutorials
    
    tutorials/basic_dwi_processing
+   tutorials/denoising
    tutorials/hcp_connectome
    tutorials/connectome_tool
    tutorials/labelconfig
    tutorials/advanced_debugging
    tutorials/warping_images_with_warps_from_other_packages
+   tutorials/FAQ
 
 .. toctree::
    :maxdepth: 2
@@ -68,4 +68,13 @@ Welcome to the MRtrix user documentation!
    concepts/dixels_fixels
    concepts/afd_connectivity
    concepts/response_function_estimation
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Reference
+   
+   reference/commands_list
+   reference/scripts_list
+   reference/config_file_options
+   reference/mrtrix2_equivalent_commands
 

@@ -33,6 +33,8 @@ using namespace App;
 
 void usage ()
 {
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
+
   DESCRIPTION
   + "generate a test image of random numbers";
 
@@ -52,7 +54,7 @@ void run ()
 
   Header header;
 
-  header.set_ndim (dim.size());
+  header.ndim() = dim.size();
   for (size_t n = 0; n < dim.size(); ++n) {
     header.size(n) = dim[n];
     header.spacing(n) = 1.0f;

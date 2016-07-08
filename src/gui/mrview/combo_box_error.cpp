@@ -44,14 +44,19 @@ namespace MR
         setCurrentIndex (error_index);
       }
 
-
-      void ComboBoxWithErrorMsg::onSetIndex (int new_index)
+      void ComboBoxWithErrorMsg::clearError (int new_index)
       {
         if (error_index == -1 || new_index == error_index)
           return;
         // Delete the extra element
         removeItem (error_index);
         error_index = -1;
+      }
+
+
+      void ComboBoxWithErrorMsg::onSetIndex (int new_index)
+      {
+        clearError (new_index);
       }
 
 

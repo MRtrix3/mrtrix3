@@ -1,7 +1,7 @@
 Structural connectome for Human Connectome Project (HCP)
 ========================================================
 
-This document duplicates the information provided during the MRtrix
+This document duplicates the information provided during the *MRtrix3*
 demonstration at ISMRM 2015 in Toronto. We will generate a structural
 connectome for quintessential Human Connectome Project subject 100307.
 Some of these instructions will be specific to HCP data, others will be
@@ -48,9 +48,11 @@ Structural image processing
 ``5ttgen fsl T1w_acpc_dc_restore_brain.nii.gz 5TT.mif -premasked``
 
 Note that it is *not necessary* to use a tissue-segmented image that has
-the same resolution as the diffusion images; MRtrix will happily acquire
+the same resolution as the diffusion images; *MRtrix3* will happily acquire
 interpolated values from each of them separately as tracking is
-performed.
+performed. This allows ACT to exploit the higher spatial resolution of
+the tissue-segmented anatomical image, but still use the diffusion image
+information at its native resolution also.
 
 2. Collapse the multi-tissue image into a 3D greyscale image for
    visualisation:
@@ -58,20 +60,21 @@ performed.
 ``5tt2vis 5TT.mif vis.mif; mrview vis.mif``
 
 If the tissue segmentation image contains clearly erroneous tissue
-labels, you can delineate them manually using ``mrview``'s ROI editor
-tool, then apply your corrections to the tissue data using the
-``5ttedit`` command.
+labels, you can delineate them manually using the ROI editor tool
+in :ref:`mrview`, then apply your corrections to the tissue data using the
+:ref:`5ttedit` command.
 
 3. Modify the integer values in the parcellated image, such that the
    numbers in the image no longer correspond to entries in FreeSurfer's
    colour lookup table, but rows and columns of the connectome:
 
-``labelconfig aparc+aseg.nii.gz fs_default.txt nodes.mif -lut_freesurfer FreeSurferColorLUT.txt``
+``labelconvert aparc+aseg.nii.gz FreeSurferColorLUT.txt fs_default.txt nodes.mif``
 
-The configuration file (``fs_default.txt`` in this case) is also a handy
-text file that provides a structure name for every row / column of the
-connectome matrix. It is provided as part of MRtrix3, and located at
-``src/connectome/config/fs_default.txt`` within the MRtrix3 folder.
+File ``FreeSurferColorLUT.txt`` is provided with FreeSurfer in its root
+directory. The target lookup table file (``fs_default.txt`` in this case)
+is a handy text file that provides a structure name for every row / column
+of the connectome matrix: it is provided as part of *MRtrix3*, and located at
+``src/connectome/tables/fs_default.txt`` within the *MRtrix3* folder.
 
 4. Replace FreeSurfer's estimates of sub-cortical grey matter structures
    with estimates from FSL's FIRST tool:
@@ -101,20 +104,24 @@ Diffusion image processing
    note that here we are estimating *multi-shell*, *multi-tissue*
    response functions:
 
-``dwi2response msmt_5tt DWI.mif 5TT.mif RF_GM.txt RF_WM.txt RF_CSF.txt -voxels RF_voxels.mif``
+``dwi2response msmt_5tt DWI.mif 5TT.mif RF_WM.txt RF_GM.txt RF_CSF.txt -voxels RF_voxels.mif``
 
 ``mrview meanb0.mif -overlay.load RF_voxels.mif -overlay.opacity 0.5`` (check
 appropriateness of response function voxel selections)
 
 4. Perform Multi-Shell, Multi-Tissue Constrained Spherical Deconvolution:
 
-``msdwi2fod DWI.mif RF_GM.txt GM.mif RF_WM.txt WM_FODs.mif RF_CSF.txt CSF.mif -mask nodif_brain_mask.nii.gz``
+``dwi2fod msmt_5tt DWI.mif RF_WM.txt WM_FODs.mif RF_GM.txt GM.mif RF_CSF.txt CSF.mif -mask nodif_brain_mask.nii.gz``
 
-``mrview meanb0.mif -odf.load_sh WM_FODs.mif`` (visually make sure that the
-white matter FODs are sensible)
+``mrconvert WM_FODs.mif - -coord 3 0 | mrcat CSF.mif GM.mif - tissueRGB.mif -axis 3``
 
-*Coming soon: Robust Constrained Spherical Deconvolution - Rician bias
-correction, outlier rejection & spatial regularisation*
+This generates a 4D image with 3 volumes, corresponding to the tissue
+densities of CSF, GM and WM, which will then be displayed in `mrview`
+as an RGB image with CSF as red, GM as green and WM as blue (as was
+presented in the MSMT CSD manuscript).
+
+``mrview tissueRGB.mif -odf.load_sh WM_FODs.mif`` (visually make sure that
+both the tissue segmentations and the white matter FODs are sensible)
 
 Connectome generation
 ---------------------
@@ -129,9 +136,10 @@ in a maximum length of 125mm, which would preclude the reconstruction of
 some longer pathways.
 
 2. Apply the `Spherical-deconvolution Informed Filtering of Tractograms
-   (SIFT) <sift>`__ method, which reduces the overall streamline count,
-   but provides more biologically meaningful estimates of structural
-   connection density:
+   (SIFT) <sift>`__ algorithm
+
+This method reduces the overall streamline count, but provides more
+biologically meaningful estimates of structural connection density:
 
 ``tcksift 100M.tck WM_FODs.mif 10M_SIFT.tck -act 5TT.mif -term_number 10M``
 
@@ -145,7 +153,7 @@ reduce memory consumption):
 
 If this still does not adequately reduce RAM usage, you will need to
 reduce the number of input streamlines to a level where your processing
-hardware can successfully execute the ``tcksift`` command, e.g.:
+hardware can successfully execute the :ref:`tcksift` command, e.g.:
 
 ``tckedit 100M.tck 50M.tck -number 50M``
 

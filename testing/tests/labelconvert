@@ -1,0 +1,2 @@
+labelconvert labelconvert/in_aal.mif.gz labelconvert/ROI_MNI_V4.txt labelconvert/aal.txt - | testing_diff_data - labelconvert/out_aal.mif.gz 0.5
+labelconvert labelconvert/in_fs.mif.gz labelconvert/FreeSurferColorLUT.txt labelconvert/fs_default.txt  - | testing_diff_data - labelconvert/out_fs.mif.gz 0.5

@@ -23,20 +23,20 @@ for arg in sys.argv[1:]:
   elif '-nogui'.startswith (arg): nogui = True
   elif '-noortho'.startswith (arg): sh_basis_def = '-DUSE_NON_ORTHONORMAL_SH_BASIS'
   elif '-noshared'.startswith (arg): noshared = True
-  elif '-static'.startswith (arg): 
+  elif '-static'.startswith (arg):
     static = True
     noshared = True
   elif '-verbose'.startswith (arg): verbose = True
-  elif '-R'.startswith (arg): 
+  elif '-R'.startswith (arg):
     R_module = True
     #noshared = True
     nogui = True
   elif arg[0] != '-':
-    if profile_name != None: 
+    if profile_name != None:
       print ('configure: too many names supplied')
       sys.exit (1)
     profile_name = arg
-  else: 
+  else:
     print ("""
 usage: [ENV] ./configure [name] [-debug] [-assert] [-profile] [-nogui] [-noshared]
 
@@ -57,12 +57,12 @@ assertions enabled, which can be used with the build script as follows:
 
    $ ./build testing
 
-By default, the build script will compile the 'release' folder. 
+By default, the build script will compile the 'release' folder.
 
 Note that naming a target folder does *not* set any compiler flags. These are
 modified by command-line options or environment variables. It is perfectly
 valid to use non-standard options with a default ('release') target folder, or
-standard options in a named target folder. For instance: 
+standard options in a named target folder. For instance:
 
    $ ARCH=x86-84 ./configure -noshared
 
@@ -100,9 +100,14 @@ ENVIRONMENT VARIABLES:
 For non-standard setups, you may need to supply additional
 information using environment variables. For example, to set
 the compiler, use:
-   $ CXX=/usr/local/bin/g++-4.1 ./configure
+   $ CXX=/usr/local/bin/g++-5.5 ./configure
 
-The following environment variables can be set:
+Alternatively:
+   $ export CXX=/usr/local/bin/g++-5.5
+   $ ./configure
+
+Multiple environment variables can be set this way as needed. 
+The following environment variables are available:
 
 CXX             The compiler command to use. The default is "g++" ("clang" on MacOSX)
 
@@ -118,7 +123,7 @@ LDLIB_ARGS      The arguments expected by the linker for generating a shared lib
                 The default is:
                 "-shared LDLIB_FLAGS OBJECTS -o LIB"
 
-ARCH            the specific CPU architecture to compile for. This variable 
+ARCH            the specific CPU architecture to compile for. This variable
                 will be passed to the compiler using -march=$ARCH.
                 The default is 'native'.
 
@@ -128,7 +133,7 @@ LDFLAGS         Any additional flags to the linker.
 
 LDLIB_FLAGS     Any additional flags to the linker to generate a shared library.
 
-EIGEN_CFLAGS    Any flags required to compile with Eigen.
+EIGEN_CFLAGS    Any flags required to compile with Eigen3.
                 This may include in particular the path to the
                 include files, if not in a standard location
                 For example:
@@ -138,7 +143,7 @@ ZLIB_CFLAGS     Any flags required to compile with the zlib compression library.
 
 ZLIB_LDFLAGS    Any flags required to link with the zlib compression library.
 
-QMAKE           The command to run to invoke qmake. 
+QMAKE           The command to invoke Qt's qmake (default: qmake). 
 
 MOC             The command to invoke Qt's meta-object compile (default: moc)
 
@@ -149,17 +154,18 @@ PATH            Set the path to use during the configure process.
                 For example:
                 $ PATH=/usr/local/bin:$PATH ./configure
 
-                Note that this path will NOT be used during the build
-                process itself.
+                Note that this path will be stored in the config file and used
+                during subsequent invocations of the build process. It only
+                needs to be specified correctly at configure time.
 """)
     sys.exit (0)
-  
+
 
 if not profile_name:
   profile_name = 'release'
 
 
-try: 
+try:
   os.makedirs (profile_name)
 except OSError:
   if not os.path.isdir (profile_name):
@@ -174,7 +180,7 @@ config_report = ''
 def log (message):
   global logfile
   logfile.write (message.encode (errors='ignore'))
-  if (verbose): 
+  if (verbose):
     sys.stdout.write (message)
     sys.stdout.flush()
 
@@ -214,7 +220,7 @@ ld_args = 'OBJECTS LDFLAGS -o EXECUTABLE'.split()
 ld_flags = [ ]
 
 if static:
-  ld_flags += [ '-static', '-Wl,-u,pthread_cancel,-u,pthread_cond_broadcast,-u,pthread_cond_destroy,-u,pthread_cond_signal,-u,pthread_cond_wait,-u,pthread_create,-u,pthread_detach,-u,pthread_cond_signal,-u,pthread_equal,-u,pthread_join,-u,pthread_mutex_lock,-u,pthread_mutex_unlock,-u,pthread_once,-u,pthread_setcancelstate' ] 
+  ld_flags += [ '-static', '-Wl,-u,pthread_cancel,-u,pthread_cond_broadcast,-u,pthread_cond_destroy,-u,pthread_cond_signal,-u,pthread_cond_wait,-u,pthread_create,-u,pthread_detach,-u,pthread_cond_signal,-u,pthread_equal,-u,pthread_join,-u,pthread_mutex_lock,-u,pthread_mutex_unlock,-u,pthread_once,-u,pthread_setcancelstate' ]
 
 ld_lib_args = 'OBJECTS LDLIB_FLAGS -o LIB'.split()
 ld_lib_flags = [ ]
@@ -235,14 +241,14 @@ class TempFile:
   def __enter__ (self):
     return self
 
-  def __exit__(self, type, value, traceback):      
+  def __exit__(self, type, value, traceback):
     try:
       os.unlink (self.name)
     except OSError as error:
       log ('error deleting temporary file "' + self.name + '": ' + error.strerror)
     except:
       raise
-  
+
 
 
 class DeleteAfter:
@@ -259,8 +265,8 @@ class DeleteAfter:
       log ('error deleting temporary file "' + self.name + '": ' + error.strerror)
     except:
       raise
-    
-    
+
+
 class TempDir:
   def __init__ (self):
     self.name = tempfile.mkdtemp ();
@@ -277,7 +283,7 @@ class TempDir:
         else:
           os.unlink (fname)
       os.rmdir (self.name)
-       
+
     except OSError as error:
       log ('error deleting temporary folder "' + self.name + '": ' + error.strerror)
     except:
@@ -285,15 +291,96 @@ class TempDir:
 
 
 
+# error handling helpers:
+
+class VersionError (Exception): pass
 class QMakeError (Exception): pass
 class QMOCError (Exception): pass
 class CompileError (Exception): pass
 class LinkError (Exception): pass
 class RuntimeError (Exception): pass
 
+def compiler_hint (cmd, flags_var, flags, args_var=None, args=None):
+  ret='''
+
+  Set the '''+ flags_var + ''' environment variable to inform 'configure' of the path to the
+  ''' + cmd + ''' on your system, as follows:
+    $ export ''' + flags_var + '=' + flags + '''
+    $./configure
+  (amend with the actual path to the ''' + cmd + ''' on your system)
+'''
+  if args_var is not None:
+    ret += '''
+  If you are using a ''' + cmd + ' other than gcc, you can also set the ' + args_var + '''
+  environment variable to specify how your ''' + cmd + ''' expects different arguments
+  to be presented on the command line, for instance as follows:
+    $ export ''' + args_var + '=' + args + '''
+    $ ./configure
+'''
+  return ret
+ 
+def compiler_flags_hint (name, var, flags):
+  return '''
+
+  Set the ''' + var + ''' environment variable to inform 'configure' of
+  the flags it must provide to the compiler in order to compile
+  programs that use ''' + name + ''' functionality; this may include the path to
+  the ''' + name + ''' include files, as well as any required flags.
+  For example:
+    $ export ''' + var + '=' + flags + '''
+    $./configure
+  (amend with the actual path to the ''' + name + ''' include files on your system)
+'''
+ 
+def linker_flags_hint (name, var, flags):
+  return '''
+
+  Set the ''' + var + ''' environment variable to inform 'configure' of
+  the flags it must provide to the linker in order to link
+  programs that use ''' + name + ''' functionality; this may include the path to
+  the ''' + name + ''' libraries, as well as any required flags.
+  For example:
+    $ export ''' + var + '=' + flags + '''
+    $./configure
+  (amend with the actual path to the ''' + name + ''' library file on your system)
+'''
+
+configure_log_hint='''
+
+  See the file 'configure.log' for details. If this doesn't help and you need
+  further assistance, please post on the MRtrix3 community forum
+  (http://community.mrtrix.org/), and make sure to include the full contents of
+  the 'configure.log' file.
+'''
+
+qt_path_hint='''
+
+  Make sure your PATH environment variable includes the location of the correct 
+  version of this command, for example:
+    $ export PATH=/opt/qt5/bin:$PATH
+    $./configure
+  (amend with the actual path to the Qt executables on your system)
+'''
+
+def qt_exec_hint (name):
+  return '''
+
+  If your PATH already includes the correct location, but there are several
+  versions of the command available, use the ''' + name.upper() + ''' environment variable to inform
+  'configure' of the correct version, for example:
+    $ export '''+ name.upper() + '=' + name + '''-qt5
+    $./configure
+  (amend with the actual name of (or full path to) Qt's ''' + name + ''' on your system)
+'''
+
+
+
+
+# other helper functions:
+
 def commit (name, variable):
   cache.write (name + ' = ')
-  if type (variable) == type([]): 
+  if type (variable) == type([]):
     cache.write ('[')
     if len(variable): cache.write(' \'' + '\', \''.join (variable) + '\' ')
     cache.write (']\n')
@@ -304,7 +391,7 @@ def commit (name, variable):
 def fillin (template, keyvalue):
   cmd = []
   for item in template:
-    if item in keyvalue: 
+    if item in keyvalue:
       if type(keyvalue[item]) == type ([]): cmd += keyvalue[item]
       else: cmd += [ keyvalue[item] ]
     else: cmd += [ item ]
@@ -314,7 +401,7 @@ def fillin (template, keyvalue):
 
 def execute (cmd, exception, raise_on_non_zero_exit_code = True, cwd = None):
   log ('EXEC <<\nCMD: ' + ' '.join(cmd) + '\n')
-  try: 
+  try:
     process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd)
     ( stdout, stderr ) = process.communicate()
 
@@ -324,21 +411,21 @@ def execute (cmd, exception, raise_on_non_zero_exit_code = True, cwd = None):
     stderr = stderr.decode(errors='ignore').rstrip()
     if len (stderr): log ('STDERR:\n' + stderr + '\n')
     log ('>>\n\n')
-  
-  except OSError as error: 
+
+  except OSError as error:
     log ('error invoking command "' + cmd[0] + '": ' + error.strerror + '\n>>\n\n')
     raise exception
   except:
     print ('Unexpected error:', str(sys.exc_info()))
     raise
   else:
-    if raise_on_non_zero_exit_code and process.returncode != 0: 
+    if raise_on_non_zero_exit_code and process.returncode != 0:
       raise exception (stderr)
 
 
   return (process.returncode, stdout, stderr)
 
-  
+
 
 def compile (source, compiler_flags = [], linker_flags = []):
   global cpp, ld
@@ -353,7 +440,7 @@ def compile (source, compiler_flags = [], linker_flags = []):
         'SRC': F.name,
         'OBJECT': obj.name })
       execute (cmd, CompileError)
-      
+
       with DeleteAfter ('a.out') as out:
         cmd = fillin (ld, {
           'LDFLAGS': linker_flags,
@@ -398,7 +485,7 @@ if system == 'linux':
   ld_lib_flags += [ '-pthread', '-shared' ]
   runpath = '-Wl,-rpath,$ORIGIN/'
 elif system == 'windows':
-  cpp_flags += [ '-pthread', '-DMRTRIX_WINDOWS', '-mms-bitfields' ]
+  cpp_flags += [ '-pthread', '-DMRTRIX_WINDOWS', '-mms-bitfields', '-Wa,-mbig-obj' ]
   exe_suffix = '.exe'
   lib_prefix = ''
   lib_suffix = '.dll'
@@ -406,16 +493,28 @@ elif system == 'windows':
   ld_lib_flags += [ '-pthread', '-shared' ]
   runpath = ''
 elif system == 'darwin':
+  if 'MACOSX_DEPLOYMENT_TARGET' in os.environ and 'QMAKE_MACOSX_DEPLOYMENT_TARGET' in os.environ:
+    if not os.environ['QMAKE_MACOSX_DEPLOYMENT_TARGET'] == os.environ['MACOSX_DEPLOYMENT_TARGET']:
+      error ('environment variables QMAKE_MACOSX_DEPLOYMENT_TARGET and MACOSX_DEPLOYMENT_TARGET differ')
+    macosx_version = os.environ['MACOSX_DEPLOYMENT_TARGET']
+  elif 'QMAKE_MACOSX_DEPLOYMENT_TARGET' in os.environ:
+    macosx_version = os.environ['QMAKE_MACOSX_DEPLOYMENT_TARGET']
+  elif 'MACOSX_DEPLOYMENT_TARGET' in os.environ:
+    macosx_version = os.environ['MACOSX_DEPLOYMENT_TARGET']
+  else:
+    macosx_version =  ('.'.join(execute([ 'sw_vers', '-productVersion' ], RuntimeError)[1].split('.')[:2]))
+  report ('OS X deployment target: ' +  macosx_version + '\n')
   cxx = [ 'clang++' ]
-  cpp_flags += [ '-DMRTRIX_MACOSX', '-fPIC' ]
-  ld_lib_flags += [ '-dynamiclib', '-install_name', '@rpath/LIBNAME' ]
+  cpp_flags += [ '-DMRTRIX_MACOSX', '-fPIC', '-mmacosx-version-min='+macosx_version ]
+  ld_flags += [ '-mmacosx-version-min='+macosx_version ]
+  ld_lib_flags += [ '-dynamiclib', '-install_name', '@rpath/LIBNAME', '-mmacosx-version-min='+macosx_version ]
   runpath = '-Wl,-rpath,@loader_path/'
   lib_suffix = '.dylib'
 
 
 
 
-if 'ARCH' in os.environ.keys(): 
+if 'ARCH' in os.environ.keys():
   march = os.environ['ARCH']
   report ('Machine architecture set by ARCH environment variable to: ' + march + '\n')
   cpp_flags += [ '-march='+march ]
@@ -445,22 +544,21 @@ ld += ld_args
 # CPP flags:
 
 if 'CFLAGS' in os.environ.keys(): cpp_flags += shlex.split (os.environ['CFLAGS'])
-if 'LDFLAGS' in os.environ.keys(): ld_flags + shlex.split (os.environ['LDFLAGS'])
+if 'LDFLAGS' in os.environ.keys(): ld_flags += shlex.split (os.environ['LDFLAGS'])
 ld_lib_flags += ld_flags
-if 'LDLIB_FLAGS' in os.environ.keys(): ld_lib_flags + shlex.split (os.environ['LDLIB_FLAGS'])
+if 'LDLIB_FLAGS' in os.environ.keys(): ld_lib_flags += shlex.split (os.environ['LDLIB_FLAGS'])
 
 
 
 report ('Checking for C++11 compliant compiler [' + cpp[0] + ']: ')
-try: 
+try:
   compiler_version = execute ([ cpp[0], '-dumpversion' ], CompileError)[1]
   if len(compiler_version) == 0: report ('(no version information)')
   else: report (compiler_version)
 except:
   error ('''compiler not found!
 
-Use CXX environment variable to set path to compiler, as follows:
-     CXX=/usr/bin/g++-4.8 ./configure''')
+  MRtrix3 was unable to find an appropriate C++11 compiler.''' + compiler_hint ('compiler', 'CXX', '/usr/bin/g++-5.5') + configure_log_hint)
 
 try:
   compile ('''
@@ -471,29 +569,23 @@ struct Derived : Base {
     using Base::Base;
 };
 
-int main() { 
+int main() {
   Derived D (int); // check for contructor inheritance
-  return (0); 
+  return (0);
 }
 ''', cpp_flags, ld_flags)
   report (' - tested ok\n')
 except CompileError:
   error ('''compiler test failed!
 
-Use CXX environment variable to set path to compiler, as follows:
-     CXX=/usr/bin/g++-4.8 ./configure
-
-You can also use the CXX_ARGS to set the arguments expected by the 
-compiler, in case this differs from gcc, as follows:
-
-     CXX_ARGS="-c CFLAGS SRC -o OBJECT" ./configure''')
+  MRtrix3 was unable to compile a simple C++ program.''' + compiler_hint ('compiler', 'CXX', '/usr/bin/g++-5.5', 'CXX_ARGS', '"-c CFLAGS SRC -o OBJECT"') + configure_log_hint)
 except (LinkError, RuntimeError):
   error ('''linking error!
 
-Use LD environment variable to set path to compiler, as follows:
-     LD=/usr/bin/g++-4.8 ./configure''')
+  MRtrix3 was unable to find an appropriate C++ linker.''' + compiler_hint ('linker', 'LD', '/usr/bin/g++-5.5', 'LD_ARGS', '"LDFLAGS OBJECTS -o EXECUTABLE"') + configure_log_hint)
 except:
-  raise
+  error (' unexpected exception!' + configure_log_hint)
+
 
 
 
@@ -504,17 +596,17 @@ report ('Detecting pointer size: ')
 try:
   pointer_size = int (compile ('''
 #include <iostream>
-int main() { 
-  std::cout << sizeof(void*); 
+int main() {
+  std::cout << sizeof(void*);
   return (0);
 }
 ''', cpp_flags, ld_flags))
   report (str(8*pointer_size) + ' bit\n')
   if pointer_size == 8: cpp_flags += [ '-DMRTRIX_WORD64' ]
-  elif pointer_size != 4: 
+  elif pointer_size != 4:
     error ('unexpected pointer size!')
 except:
-  error ('unable to determine pointer size!')
+  error ('unable to determine pointer size!' + configure_log_hint)
 
 
 
@@ -536,9 +628,9 @@ report ('Checking for variable-length array support: ')
 try:
   compile ('''
 
-int main(int argc, char* argv[]) { 
+int main(int argc, char* argv[]) {
   int x[argc];
-  return 0; 
+  return 0;
 }
 ''', cpp_flags, ld_flags)
   report ('yes\n')
@@ -559,9 +651,9 @@ class X {
   std::string s;
 };
 
-int main(int argc, char* argv[]) { 
+int main(int argc, char* argv[]) {
   X x[argc];
-  return 0; 
+  return 0;
 }
 ''', cpp_flags, ld_flags)
   report ('yes\n')
@@ -584,32 +676,26 @@ try:
 #include <iostream>
 #include <zlib.h>
 
-int main() { 
-  std::cout << zlibVersion(); 
+int main() {
+  std::cout << zlibVersion();
   return (0);
 }
 ''', cpp_flags + zlib_cflags, ld_flags + zlib_ldflags)
   report (zlib_version + '\n')
 except CompileError:
-  error ('''compiler error!
+  error ('''error compiling zlib application!
 
-Use the ZLIB_CFLAGS environment variable to set the path to
-the zlib include files and to set any required flags
-For example:
-     ZLIB_CFLAGS="-isystem /usr/local/include" ./configure''')
+  MRtrix3 was unable to compile a test program involving zlib.''' + compiler_flags_hint ('zlib', 'ZLIB_CFLAGS', '"-isystem /usr/local/include"'))
 except LinkError:
   error ('''linker error!
 
-Use the ZLIB_LDFLAGS environment variable to set the path to
-the zlib libraries and to set the library to use
-For example:
-     ZLIB_LDFLAGS="-L/usr/local/lib -lz" ./configure''')
+  MRtrix3 was unable to link a test program involving zlib.''' + linker_flags_hint ('zlib', 'ZLIB_LDFLAGS', '"-L/usr/local/lib -lz"'))
 except RuntimeError:
   error ('''runtime error!
 
-There is something wrong with your zlib implementation!''')
+ Unable to configure zlib''' + configure_log_hint)
 except:
-  error ('zlib implementation not found!')
+  error ('unexpected exception!' + configure_log_hint)
 
 cpp_flags += zlib_cflags
 ld_flags += zlib_ldflags
@@ -621,8 +707,8 @@ ld_lib_flags += zlib_ldflags
 
 # Eigen3 flags:
 
-report('checking for Eigen 3 library: ')
-if 'EIGEN_CFLAGS' in os.environ.keys(): 
+report('Checking for Eigen 3 library: ')
+if 'EIGEN_CFLAGS' in os.environ.keys():
   eigen_cflags = shlex.split (os.environ['EIGEN_CFLAGS'])
 else:
   try:
@@ -649,24 +735,15 @@ int main (int argc, char* argv[]) {
   cpp_flags += eigen_cflags
   report (eigen_version + '\n')
 except CompileError:
-  error ('''compiler error!
+  error (''' error compiling Eigen application!
 
-Use the EIGEN_CFLAGS environment variable to set the path to
-the Eigen3 include files and to set any required flags
-For example:
-     EIGEN_CFLAGS="-isystem /usr/include/eigen3" ./configure''')
-except LinkError:
-  error ('''linker error!
+  MRtrix3 was unable to compile a test program involving Eigen3.''' + compiler_flags_hint ('Eigen3', 'EIGEN_CFLAGS', '"-isystem /usr/include/eigen3"'))
+except ( LinkError, RuntimeError ) as e:
+  error (''' error linking Eigen application!
 
-This shouldn't happen! Please report this to the MRtrix3 dev team.
-''')
-except RuntimeError:
-  error ('''runtime error!
-
-This shouldn't happen! Please report this to the MRtrix3 dev team.
-''')
+  This shouldn't happen!''' + configure_log_hint)
 except:
-  error ('Eigen3 implementation not found!')
+  error ('unexpected exception!' + configure_log_hint)
 
 
 
@@ -688,25 +765,21 @@ if not noshared:
         'OBJECT': obj.name })
       try: execute (cmd, CompileError)
       except CompileError:
-        error ('''compiler not found!
-
-  an unexpected error occurred''')
+        error ('compiler not found!' + configure_log_hint)
       except:
-        raise
-  
+        error ('unexpected exception!' + configure_log_hint)
       with DeleteAfter (lib_prefix + 'test' + lib_suffix) as lib:
         cmd = fillin (ld_lib, {
           'LDLIB_FLAGS': ld_lib_flags,
           'OBJECTS': obj.name,
           'LIB': lib.name })
         try: execute (cmd, LinkError)
-        except LinkError: 
+        except LinkError:
           error ('''linker not found!
 
-  Use the LDLIB_ARGS environment variable to set the command-line
-  for shared library generation''')
+  MRtrix3 was unable to employ the linker program for shared library generation.''' + compiler_hint ('shared library linker', 'LDLIB_FLAGS', '"-L/usr/local/lib"', 'LDLIB_ARGS', '"-shared LDLIB_FLAGS OBJECTS -o LIB"'))
         except:
-          raise
+          error ('unexpected exception!' + configure_log_hint)
 
         report ('yes\n')
 
@@ -728,74 +801,74 @@ qt_cflags = []
 qt_ldflags = []
 
 
+
+
 if not nogui:
 
   report ('Checking for Qt moc: ')
-  moc = 'moc' 
-  if 'MOC' in os.environ.keys(): 
+  moc = 'moc'
+  if 'MOC' in os.environ.keys():
     moc = os.environ['MOC']
   try:
     moc_version = get_qt_version([ moc, '-v' ], OSError)
     report (moc + ' (version ' + moc_version + ')\n')
     if int (moc_version.split('.')[0]) < 4:
-      error (''' Qt moc version is too old!
+      raise VersionError
+  except VersionError:
+    error (''' Qt moc version is too old!
 
-  Use the MOC environment variable to specify the Qt meta-object compiler, 
-  or set PATH to ensure the correct version is listed first''')
+  The version number reported by the Qt moc command is too old.''' + qt_path_hint + qt_exec_hint ('moc'))
   except OSError:
     error (''' Qt moc not found!
 
-  Use the MOC environment variable to specify the Qt meta-object compiler,
-  or set PATH to include its location''')
+  MRtrix3 was unable to locate the Qt meta-object compiler 'moc'.''' + qt_path_hint)
   except:
-    raise
-  
-    
+    error ('unexpected exception!' + configure_log_hint)
 
   report ('Checking for Qt qmake: ')
-  qmake = 'qmake' 
-  if 'QMAKE' in os.environ.keys(): 
-    qmake = os.environ['QMAKE'] 
+  qmake = 'qmake'
+  if 'QMAKE' in os.environ.keys():
+    qmake = os.environ['QMAKE']
   try:
     qmake_version = get_qt_version([ qmake, '-v' ], OSError)
     report (qmake + ' (version ' + qmake_version + ')\n')
     if int (qmake_version.split('.')[0]) < 4:
-      error (''' Qt qmake not found!
+      raise VersionError
+  except VersionError:
+    error (''' Qt qmake version is too old!
 
-  Use the QMAKE environment variable to specify the Qt qmake executable,
-  or set PATH to ensure the correct version is listed first''')
+  The version number reported by the Qt qmake command is too old.''' + qt_path_hint + qt_exec_hint ('qmake'))
   except OSError:
     error (''' Qt qmake not found!
 
-  Use the QMAKE environment variable to specify the Qt qmake executable,
-  or set PATH to include its location''')
+  MRtrix3 was unable to locate the Qt command 'qmake'.''' + qt_path_hint)
   except:
-    raise
+    error ('unexpected exception!' + configure_log_hint)
   
   
   
   report ('Checking for Qt rcc: ')
-  rcc = 'rcc' 
-   
-  if 'RCC' in os.environ.keys(): 
-    rcc = os.environ['RCC'] 
+  rcc = 'rcc'
+
+  if 'RCC' in os.environ.keys():
+    rcc = os.environ['RCC']
   try:
     rcc_version = get_qt_version([ rcc, '-v' ], OSError)
     report (rcc + ' (version ' + rcc_version + ')\n')
     if int (rcc_version.split('.')[0]) < 4:
-      error (''' Qt rcc not found!
+      raise VersionError
+  except VersionError:
+    error (''' Qt rcc version is too old!
 
-  Use the RCC environment variable to specify the Qt rcc executable,
-  or set PATH to ensure the correct version is listed first''')
+  The version number reported by the Qt rcc command is too old.''' + qt_path_hint + qt_exec_hint ('rcc'))
   except OSError:
     error (''' Qt rcc not found!
 
-  Use the RCC environment variable to specify the Qt rcc executable,
-  or set PATH to include its location''')
+  MRtrix3 was unable to locate the Qt command 'rcc'.''' + qt_path_hint)
   except:
-    raise
-  
-    
+    error ('unexpected exception!' + configure_log_hint)
+
+
 
 
   report ('Checking for Qt: ')
@@ -818,7 +891,7 @@ class Foo: public QObject {
 };
 '''
       log ('\nsource file "qt.h":\n---\n' + file + '---\n')
-  
+
       f=open (os.path.join (qt_dir.name, 'qt.h'), 'w')
       f.write (file)
       f.close();
@@ -844,6 +917,8 @@ int main() { Foo f; }
       if debug: file += ' debug'
       file += '\nQT += core gui opengl svg\n'
       file += 'HEADERS += qt.h\nSOURCES += qt.cpp\n'
+      if system == "darwin":
+        file += 'QMAKE_MACOSX_DEPLOYMENT_TARGET = '+macosx_version + '\n'
 
       log ('\nproject file "qt.pro":\n---\n' + file + '---\n')
       f=open (os.path.join (qt_dir.name, 'qt.pro'), 'w')
@@ -852,7 +927,7 @@ int main() { Foo f; }
 
       qmake_cmd = [ qmake ]
 
-      try: 
+      try:
          (retcode, stdout, stderr) = execute (qmake_cmd, QMakeError, raise_on_non_zero_exit_code = False, cwd=qt_dir.name)
          if retcode != 0:
            error ('''qmake returned with error:
@@ -866,7 +941,7 @@ int main() { Foo f; }
         raise
 
 
-      qt_defines = [] 
+      qt_defines = []
       qt_includes = []
       qt_cflags = []
       qt_libs = []
@@ -890,11 +965,11 @@ int main() { Foo f; }
       for index, entry in enumerate(qt_includes):
         if entry[2:].startswith('..'):
           qt_includes[index] = '-I' + os.path.abspath(qt_dir.name + '/' + entry[2:])
-      
+
       qt = qt_cflags + qt_defines + qt_includes
       qt_cflags = []
       for entry in qt:
-        if entry[0] != '$' and not entry == '-I.': 
+        if entry[0] != '$' and not entry == '-I.':
           entry = entry.replace('\"','').replace("'",'')
           if entry.startswith('-I'):
             qt_cflags += [ '-isystem', entry[2:] ]
@@ -905,64 +980,38 @@ int main() { Foo f; }
       qt_ldflags = []
       for entry in qt:
         if entry[0] != '$': qt_ldflags += [ entry.replace('\"','').replace("'",'') ]
-  
+
       cmd = [ moc, 'qt.h', '-o', 'qt_moc.cpp' ]
-      log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
-      try: process = subprocess.Popen (cmd, cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-      except OSError: raise QMOCError
-      if process.wait() != 0: raise QMOCError
+      execute (cmd, QMOCError, cwd=qt_dir.name) #process = subprocess.Popen (cmd, cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
       cmd = cxx + [ '-c' ] + cpp_flags + qt_cflags + [ 'qt.cpp', '-o', 'qt.o' ]
-      log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
-      try: process = subprocess.Popen (cmd, cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-      except OSError: raise CompileError('oserror')
-      except: raise
-      retcode = process.wait()
-      if retcode != 0: raise CompileError('process not terminated properly (exit code = %s)'%str(retcode))
+      execute (cmd, CompileError, cwd=qt_dir.name)
 
       cmd = cxx + [ '-c' ] + cpp_flags + qt_cflags + [ 'qt_moc.cpp', '-o', 'qt_moc.o' ]
-      log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
-      try: process = subprocess.Popen (cmd , cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-      except OSError: raise CompileError('oserror')
-      except: raise
-      if process.wait() != 0: raise CompileError('process not terminated properly')
+      execute (cmd, CompileError, cwd=qt_dir.name)
 
       cmd = cxx + ld_flags + [ 'qt_moc.o', 'qt.o', '-o', 'qt' ] + qt_ldflags
-      log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
-      try: process = subprocess.Popen (cmd , cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-      except OSError: raise LinkError('oserror')
-      except: raise
-      if process.wait() != 0: raise LinkError('process not terminated properly')
+      execute (cmd, LinkError, cwd=qt_dir.name)
 
-      cmd = os.path.join(qt_dir.name, 'qt')
-      log ('\nexecuting "' + cmd + '"...\n')
-      process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-      if process.wait() != 0: raise LinkError('process not terminated properly')
-      report (process.stdout.read().decode(errors='ignore').strip() + '\n')
+      cmd = [ os.path.join(qt_dir.name, 'qt') ]
+      ret = execute (cmd, RuntimeError)
+      report (ret[1])
 
-    
+
   except QMakeError:
-    error ('''error invoking Qt qmake!
-
-  Use the QMAKE environment variable to set the correct qmake command for use with Qt''')
+    error ('error invoking Qt qmake!' + configure_log_hint)
   except QMOCError:
-    error ('''error invoking Qt moc!
-
-use the MOC environment variable to specify the Qt moc command''')
+    error ('error invoking Qt moc!' + configure_log_hint)
   except LinkError:
-    error ('''error linking Qt application!
-
-Are all necessary (static or shared) Qt libraries installed?''')
-  except QMOCError:
-    error ('''error invoking Qt moc!
-
-use the MOC environment variable to specify the Qt moc command''')
-  except CompileError as e:
-    error ('error compiling Qt application! ' + str(e))
+    error ('error linking Qt application!' + configure_log_hint)
+  except CompileError:
+    error ('error compiling Qt application!' + configure_log_hint)
+  except RuntimeError:
+    error ('error running Qt application!' + configure_log_hint)
   except OSError as e:
-    error ('Unexpected error! Unable to configure Qt environment: ' + str(e))
+    error ('unexpected error: ' + str(e) + configure_log_hint)
   except:
-    raise
+    error ('unexpected exception!' + configure_log_hint)
 
 
 
@@ -978,31 +1027,31 @@ if R_module:
 
   report ('Checking for R library: ')
   R_cflags = [ '-isystem', '/usr/include/R' ]
-  if 'R_CFLAGS' in os.environ.keys(): 
+  if 'R_CFLAGS' in os.environ.keys():
     R_cflags = shlex.split (os.environ['R_CFLAGS'])
   else:
-    try: 
+    try:
       R_cflags = shlex.split (execute ([ 'pkg-config', '--cflags', 'libR' ], RuntimeError)[1])
     except:
       log ('error running pkg-config --libs libR - assuming defaults for R_CFLAGS\n\n')
-      
+
   R_ldflags = [ '-L/usr/lib/R/lib', '-lR' ]
-  if 'R_LDFLAGS' in os.environ.keys(): 
+  if 'R_LDFLAGS' in os.environ.keys():
     R_ldflags = shlex.split (os.environ['R_LDFLAGS'])
   else:
-    try: 
+    try:
       R_ldflags = shlex.split (execute ([ 'pkg-config', '--libs', 'libR' ], RuntimeError)[1])
     except:
       log ('error running pkg-config --libs libR - assuming defaults for R_LDFLAGS\n\n')
-    
+
 
   try:
     R_version = compile ('''
   #include <R.h>
   #include <Rversion.h>
   #include <iostream>
-  
-  int main() { 
+
+  int main() {
     std::cout << R_MAJOR << "." << R_MINOR << " (r" << R_SVN_REVISION << ")\\n";
     return 0;
   }
@@ -1010,25 +1059,20 @@ if R_module:
     report (R_version + '\n')
   except CompileError:
     error ('''compiler error!
-  
-  Use the R_CFLAGS environment variable to set the path to the R include files'
-  For example:'
-       R_CFLAGS="-isystem /usr/local/include/R" ./configure''')
+
+  MRtrix3 encountered an error when testing compilation of MRtrix as an R module.''' + compiler_hint ('R', 'R_CFLAGS', '"-isystem /usr/local/include/R"'))
   except LinkError:
     error ('''linker error!'
-  
-  Use the R_LDFLAGS environment variable to set the path to the R library'
-  and include any required libraries'
-  For example:'
-       R_LDFLAGS="-L/usr/local/R/lib -lR" ./configure''')
+
+  MRtrix3 encountered an error when testing linking of MRtrix as an R module.''' + linker_flags_hint ('R', 'R_LDFLAGS', '"-L/usr/local/R/lib -lR"'))
   except RuntimeError:
-    error ('''error running command - check configure.log for details''')
+    error ('error running command!' + configure_log_hint)
   except: 
-    raise
-  
+    error ('unexpected exception!' + configure_log_hint)
+
   cpp_flags += R_cflags + [ '-DMRTRIX_AS_R_LIBRARY' ]
   ld_lib_flags += R_ldflags
-    
+
   ld_flags = ld_lib_flags
   exe_suffix = lib_suffix
 
@@ -1044,7 +1088,11 @@ if profile:
   ld_flags += [ '-g', '-pg' ]
   ld_lib_flags += [ '-g', '-pg' ]
 elif debug:
-  cpp_flags += [ '-O0', '-g' ]
+  if os.path.basename(cxx[0]).startswith('g++'):
+    cpp_flags += [ '-Og' ]
+  else:
+    cpp_flags += [ '-O0' ]
+  cpp_flags += [ '-g' ]
   ld_flags += [ '-g' ]
   ld_lib_flags += [ '-g' ]
 else:

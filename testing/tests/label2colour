@@ -1,3 +1,2 @@
-label2colour labelconfig/in_fs.mif.gz -lut_freesurfer labelconfig/FreeSurferColorLUT.txt - | testing_diff_data - label2colour/out_fs_all.mif.gz 0.5
-label2colour labelconfig/out_fs.mif.gz -lut_freesurfer labelconfig/FreeSurferColorLUT.txt -config labelconfig/fs_default.txt - | testing_diff_data - label2colour/out_fs_config.mif.gz 0.5
-label2colour labelconfig/in_iit.mif.gz -lut_itksnap labelconfig/LUT_GM.txt - | testing_diff_data - label2colour/out_iit.mif.gz 0.5
+label2colour labelconvert/in_fs.mif.gz -lut labelconvert/FreeSurferColorLUT.txt - | testing_diff_data - label2colour/out_fs.mif.gz 0.5
+label2colour labelconvert/in_iit.mif.gz -lut labelconvert/LUT_GM.txt - | testing_diff_data - label2colour/out_iit.mif.gz 0.5

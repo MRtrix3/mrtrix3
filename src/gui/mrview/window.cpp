@@ -105,7 +105,7 @@ namespace MR
           setMinimumSize (256, 256);
           setFocusPolicy (Qt::StrongFocus);
           grabGesture (Qt::PinchGesture);
-          grabGesture (Qt::SwipeGesture);
+          grabGesture (Qt::PanGesture);
           QFont font_ = font();
           font_.setPointSize (MR::File::Config::get_int ("FontSize", 10));
           setFont (font_);
@@ -188,19 +188,19 @@ namespace MR
 
       //CONF option: MRViewFocusModifierKey 
       //CONF default: meta (cmd on MacOSX) 
-      //CONF modifier key to select focus mode in MRView. Valid
+      //CONF Modifier key to select focus mode in MRView. Valid
       //CONF choices include shift, alt, ctrl, meta (on MacOSX: shift, alt,
       //CONF ctrl, cmd).
       
-      //CONF option: MRViewMoveModifierKey 
+      //CONF option: MRViewMoveModifierKey
       //CONF default: shift
-      //CONF modifier key to select move mode in MRView. Valid
+      //CONF Modifier key to select move mode in MRView. Valid
       //CONF choices include shift, alt, ctrl, meta (on MacOSX: shift, alt,
       //CONF ctrl, cmd).
       
       //CONF option: MRViewRotateModifierKey
       //CONF default: ctrl
-      //CONF modifier key to select rotate mode in MRView. Valid
+      //CONF Modifier key to select rotate mode in MRView. Valid
       //CONF choices include shift, alt, ctrl, meta (on MacOSX: shift, alt,
       //CONF ctrl, cmd).
 
@@ -870,7 +870,7 @@ namespace MR
           }
           //CONF option: MRViewDockFloating
           //CONF default: 0 (false)
-          //CONF Whether Tools should start docked in the main window, or
+          //CONF Whether MRView tools should start docked in the main window, or
           //CONF floating (detached from the main window).
           tool->setFloating (MR::File::Config::get_int ("MRViewDockFloating", 0));
           tool->show();
@@ -1052,12 +1052,16 @@ namespace MR
 
       void Window::slice_next_slot () 
       {
-        mode->slice_move_event (1);
+        assert (mode);
+        if (image()) 
+          mode->slice_move_event (1);
       }
 
       void Window::slice_previous_slot () 
       {
-        mode->slice_move_event (-1);
+        assert (mode);
+        if (image()) 
+          mode->slice_move_event (-1);
       }
 
 
@@ -1383,10 +1387,10 @@ namespace MR
 
         font.initGL();
         gl::Enable (gl::DEPTH_TEST);
-        //CONF option: ImageBackgroundColour
+        //CONF option: MRViewImageBackgroundColour
         //CONF default: 0,0,0 (black)
-        // CONF The default image background colour
-        File::Config::get_RGB ("ImageBackgroundColour", background_colour, 0.0f, 0.0f, 0.0f);
+        //CONF The default image background colour in the main MRView window.
+        File::Config::get_RGB ("MRViewImageBackgroundColour", background_colour, 0.0f, 0.0f, 0.0f);
         gl::ClearColor (background_colour[0], background_colour[1], background_colour[2], 1.0);
         mode.reset (dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create());
         set_mode_features();
@@ -1524,7 +1528,7 @@ namespace MR
       {
         assert (mode);
 #if QT_VERSION >= 0x050400
-        QPoint delta = event->pixelDelta();
+        QPoint delta = 30 * event->pixelDelta();
         if (delta.isNull())
           delta = event->angleDelta();
 #else
@@ -1577,26 +1581,21 @@ namespace MR
       bool Window::gestureEventGL (QGestureEvent* event) 
       {
         assert (mode);
-        
-        if (QGesture *swipe = event->gesture (Qt::SwipeGesture)) {
-          QSwipeGesture* e = static_cast<QSwipeGesture*> (swipe);
-          int dx = e->horizontalDirection() == QSwipeGesture::Left ? -1 : ( 
-             e->horizontalDirection() == QSwipeGesture::Right ? 1 : 0); 
-          if (dx != 0 && image_group->actions().size() > 1) {
-            QAction* action = image_group->checkedAction();
-            int N = image_group->actions().size();
-            int n = image_group->actions().indexOf (action);
-            image_select_slot (image_group->actions()[(n+N+dx)%N]);
-          }
+
+        if (QGesture* pan = event->gesture(Qt::PanGesture)) {
+          QPanGesture* e = static_cast<QPanGesture*> (pan);
+          mouse_displacement_ = QPoint (e->delta().x(), -e->delta().y());
+          mode->pan_event();
         }
-        else if (QGesture* pinch = event->gesture(Qt::PinchGesture)) {
+      
+        if (QGesture* pinch = event->gesture(Qt::PinchGesture)) {
           QPinchGesture* e = static_cast<QPinchGesture*> (pinch);
           QPinchGesture::ChangeFlags changeFlags = e->changeFlags();
           if (changeFlags & QPinchGesture::RotationAngleChanged) {
             // TODO
           }
           if (changeFlags & QPinchGesture::ScaleFactorChanged) {
-            set_FOV (FOV() * e->lastScaleFactor() / e->scaleFactor());
+            set_FOV (FOV() / e->scaleFactor());
             glarea->update();
           }
         }

@@ -1,7 +1,7 @@
 .. _response_fn_estimation:
 
 Response function estimation
-============
+============================
 
 A compulsory step in spherical deconvolution is deriving the 'response
 function (RF)', which is used as the kernel during the deconvolution
@@ -24,7 +24,7 @@ that this algorithm would not produce the desired result in a number of
 circumstances, and the available command-line options for altering its
 behaviour were not intuitive.
 
-As a result, we are now instead providing ``dwi2response`` as a
+As a result, we are now instead providing :ref:`dwi2response` as a
 *script*. This was done for a few reasons. Firstly, it means that we can
 provide multiple different mechanisms / algorithms for response function
 estimation, all accessible within the one script, allowing users to
@@ -135,7 +135,7 @@ single-tissue voxels in the diffusion images. This algorithm is
 hard-wired to provide response functions for the most typical use case
 for MSMT CSD: An isotropic grey matter response, an anisotropic white
 matter response, and an isotropic CSF response; the output response
-functions are provided in the format expected by the ``msdwi2fod``
+functions are provided in the format expected by the :ref:`msdwi2fod`
 command. Those wishing to experiment with different multi-tissue
 response function configurations will need to use the ``manual``
 algorithm (which will provide a multi-shell response function if the
@@ -145,7 +145,7 @@ For reference, this algorithm operates as follows:
 
 1. Resample the 5TT segmented image to diffusion image space.
 
-2. For each of the three tissues (GM, WM, CSF), select those voxels that
+2. For each of the three tissues (WM, GM, CSF), select those voxels that
    obey the following criteria:
 
 -  The tissue partial volume fraction must be at least 0.95.
@@ -197,7 +197,7 @@ The following are the differences between the implementation in
    `SIFT paper (Appendix
    2) <http://www.sciencedirect.com/science/article/pii/S1053811912011615>`__
    is used to locate the FOD peaks. The alternative is to use the
-   ``sh2peaks`` command, which uses a Newton search from 60 pre-defined
+   :ref:`sh2peaks` command, which uses a Newton search from 60 pre-defined
    directions to locate these peaks. In my experience, the latter is
    slower, and may fail to identify some FOD peaks because the seeding
    directions are not sufficiently dense.
@@ -316,5 +316,4 @@ forum <community.mrtrix.org>`__.
    inhomogeneity distortion correction, ``msmt_5tt`` is currently the
    only fully-automated method for getting multi-shell multi-tissue
    response functions.
-
 

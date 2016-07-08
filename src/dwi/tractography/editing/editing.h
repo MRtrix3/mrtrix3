@@ -29,7 +29,6 @@ namespace Editing {
 
 
 extern const App::OptionGroup LengthOption;
-extern const App::OptionGroup ResampleOption;
 extern const App::OptionGroup TruncateOption;
 extern const App::OptionGroup WeightsOption;
 

@@ -38,6 +38,7 @@ const char* encoding_description =
   "volumes 9-11: W1122, W1133, W2233 ; \n"
   "volumes 12-14: W1123, W1223, W1233 ;";
 
+
 void usage ()
 {
 
@@ -68,6 +69,7 @@ void usage ()
   DESCRIPTION
   + "Diffusion (kurtosis) tensor estimation using iteratively reweighted linear least squares estimator."
   + encoding_description;
+
 }
 
 template <class MASKType, class B0Type, class DKTType, class PredictType>
@@ -178,7 +180,7 @@ void run ()
 
   Header header (dwi);
   header.datatype() = DataType::Float32;
-  header.set_ndim (4);
+  header.ndim() = 4;
   
   Image<value_type>* predict = nullptr;
   opt = get_options ("predicted_signal");
@@ -192,14 +194,14 @@ void run ()
   Image<value_type>* b0 = nullptr;
   opt = get_options ("b0");
   if (opt.size()) {
-    header.set_ndim (3);
+    header.ndim() = 3;
     b0 = new Image<value_type> (Image<value_type>::create (opt[0][0], header));
   }
 
   Image<value_type>* dkt = nullptr;
   opt = get_options ("dkt");
   if (opt.size()) {
-    header.set_ndim (4);
+    header.ndim() = 4;
     header.size(3) = 15;
     dkt = new Image<value_type> (Image<value_type>::create (opt[0][0], header));
   }

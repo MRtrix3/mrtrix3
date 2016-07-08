@@ -214,6 +214,23 @@ namespace MR
           }
 
 
+          template <typename matrix_type>
+          bool operator() (const Eigen::Matrix<matrix_type, Eigen::Dynamic, 1>& data)
+          {
+            if (data.size()) {
+              if (buffer_size + data.size() > buffer_capacity)
+                commit();
+
+              for (int i = 0; i != data.size(); ++i)
+                add_scalar (value_type(data[i]));
+              add_scalar (delimiter());
+              ++count;
+            }
+            ++total_count;
+            return true;
+          }
+
+
 
         protected:
 

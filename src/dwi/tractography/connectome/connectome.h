@@ -42,20 +42,16 @@ typedef MR::Connectome::node_t node_t;
 typedef std::pair<node_t, node_t> NodePair;
 
 class Tck2nodes_base;
-class Metric_base;
+class Metric;
 
 
 
-extern const char* metrics[];
 extern const char* modes[];
-
-
-
-extern const App::OptionGroup AssignmentOption;
+extern const App::OptionGroup AssignmentOptions;
 Tck2nodes_base* load_assignment_mode (Image<node_t>&);
 
-extern const App::OptionGroup MetricOption;
-Metric_base* load_metric (Image<node_t>&);
+extern const App::OptionGroup MetricOptions;
+void setup_metric (Metric&, Image<node_t>&);
 
 
 

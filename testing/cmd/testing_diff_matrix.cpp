@@ -33,6 +33,8 @@ using namespace App;
 
 void usage ()
 {
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
+
   DESCRIPTION
   + "compare two matrices for differences, within specified tolerance.";
 

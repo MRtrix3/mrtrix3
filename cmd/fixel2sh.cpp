@@ -38,7 +38,7 @@ using Sparse::FixelMetric;
 void usage ()
 {
 
-  AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
   + "convert a fixel-based sparse-data image into an SH image that can be visually evaluated using MRview";
@@ -66,7 +66,7 @@ void run ()
   H_out.datatype() = DataType::Float32;
   H_out.datatype().set_byte_order_native();
   const size_t sh_dim = H_in.ndim();
-  H_out.set_ndim (H_in.ndim() + 1);
+  H_out.ndim() = H_in.ndim() + 1;
   H_out.size (sh_dim) = N;
 
   auto sh = Image<float>::create (argument[1], H_out);

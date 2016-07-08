@@ -32,11 +32,10 @@ using namespace App;
 
 void usage ()
 {
-  AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
   + "Generate a mesh file from an image.";
-
 
   ARGUMENTS
   + Argument ("input",  "the input image.").type_image_in ()

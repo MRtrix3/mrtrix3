@@ -27,6 +27,8 @@ using namespace App;
 
 void usage () {
 
+AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
+
 DESCRIPTION
   + "apply generic voxel-wise mathematical operations to images."
 
@@ -581,8 +583,8 @@ void get_header (const StackEntry& entry, Header& header)
   }
 
   if (header.ndim() < entry.image->ndim()) 
-    header.set_ndim (entry.image->ndim());
-  for (size_t n = 0; n < std::min (header.ndim(), entry.image->ndim()); ++n) {
+    header.ndim() = entry.image->ndim();
+  for (size_t n = 0; n < std::min<size_t> (header.ndim(), entry.image->ndim()); ++n) {
     if (header.size(n) > 1 && entry.image->size(n) > 1 && header.size(n) != entry.image->size(n))
       throw Exception ("dimensions of input images do not match - aborting");
     header.size(n) = std::max (header.size(n), entry.image->size(n));

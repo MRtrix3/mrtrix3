@@ -24,23 +24,21 @@ namespace MR
 {
   namespace DWI
   {
-    using namespace App;
-    using namespace Eigen;
 
-    const OptionGroup ShellOption = OptionGroup ("DW Shell selection options")
-      + Option ("shell",
+    const App::OptionGroup ShellOption = App::OptionGroup ("DW Shell selection options")
+      + App::Option ("shell",
           "specify one or more diffusion-weighted gradient shells to use during "
           "processing, as a comma-separated list of the desired approximate b-values. "
           "Note that some commands are incompatible with multiple shells, and "
           "will throw an error if more than one b-value is provided.")
-        + Argument ("list").type_sequence_float();
+        + App::Argument ("list").type_sequence_float();
 
 
 
 
 
 
-    Shell::Shell (const MatrixXd& grad, const std::vector<size_t>& indices) :
+    Shell::Shell (const Eigen::MatrixXd& grad, const std::vector<size_t>& indices) :
         volumes (indices),
         mean (0.0),
         stdev (0.0),
@@ -221,7 +219,7 @@ namespace MR
 
 
 
-    Shells::Shells (const MatrixXd& grad)
+    Shells::Shells (const Eigen::MatrixXd& grad)
     {
       BValueList bvals = grad.col (3);
       std::vector<size_t> clusters (bvals.size(), 0);
