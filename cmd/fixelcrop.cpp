@@ -65,7 +65,7 @@ void run ()
   Header out_header = Header (index_image);
   size_t total_nfixels = std::stoul (out_header.keyval ()[FixelFormat::n_fixels_key]);
 
-  // We need to do a first pass fo the mask image to determine the cropped num. of fixels
+  // We need to do a first pass of the mask image to determine the cropped num. of fixels
   for (auto l = Loop (0) (mask_image); l; ++l) {
     if (!mask_image.value ())
       total_nfixels --;
