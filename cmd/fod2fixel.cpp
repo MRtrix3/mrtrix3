@@ -114,13 +114,12 @@ class Segmented_FOD_receiver
 
   public:
     Segmented_FOD_receiver (const Header& header) :
-        H (header), n_fixels (0), output_index_file (true)
+        H (header), n_fixels (0)
     {
     }
 
     void commit ();
 
-    void set_output_index_file (bool flag) { output_index_file = flag; }
     void set_fixel_folder_output (const std::string& path) { fixel_folder_path = path; }
     void set_index_output (const std::string& path) { index_path = path; }
     std::string get_index_output () { return index_path; }
@@ -140,14 +139,13 @@ class Segmented_FOD_receiver
     std::string fixel_folder_path, index_path, dir_path, afd_path, peak_path, disp_path;
     std::vector<FOD_lobes> lobes;
     uint64_t n_fixels;
-    bool output_index_file;
 };
 
 
 
 size_t Segmented_FOD_receiver::num_outputs() const
 {
-  size_t count = output_index_file ? 1 : 0;
+  size_t count = 1;
   if (dir_path.size()) ++count;
   if (afd_path.size())  ++count;
   if (peak_path.size()) ++count;
@@ -187,18 +185,13 @@ void Segmented_FOD_receiver::commit ()
   std::unique_ptr<DataImage> peak_image (nullptr);
   std::unique_ptr<DataImage> disp_image (nullptr);
 
-
-  if (output_index_file) {
-    auto index_header (H);
-    index_header.keyval()[FixelFormat::n_fixels_key] = str(n_fixels);
-    index_header.ndim () = 4;
-    index_header.size (3) = 2;
-    index_header.datatype () = DataType::from<uint32_t> ();
-    index_header.datatype ().set_byte_order_native ();
-    index_image = std::unique_ptr<IndexImage> (new IndexImage (IndexImage::create (index_filepath, index_header)));
-  } else {
-    index_image = std::unique_ptr<IndexImage> (new IndexImage (IndexImage::open (index_filepath)));
-  }
+  auto index_header (H);
+  index_header.keyval()[FixelFormat::n_fixels_key] = str(n_fixels);
+  index_header.ndim () = 4;
+  index_header.size (3) = 2;
+  index_header.datatype () = DataType::from<uint32_t> ();
+  index_header.datatype ().set_byte_order_native ();
+  index_image = std::unique_ptr<IndexImage> (new IndexImage (IndexImage::create (index_filepath, index_header)));
 
   auto fixel_data_header (H);
   fixel_data_header.ndim () = 3;
@@ -245,15 +238,13 @@ void Segmented_FOD_receiver::commit ()
   for (const auto& vox_fixels : lobes) {
     size_t n_vox_fixels = vox_fixels.size();
 
-    if (output_index_file) {
-      assign_pos_of (vox_fixels.vox).to (*index_image);
+    assign_pos_of (vox_fixels.vox).to (*index_image);
 
-      index_image->index (3) = 0;
-      index_image->value () = n_vox_fixels;
+    index_image->index (3) = 0;
+    index_image->value () = n_vox_fixels;
 
-      index_image->index (3) = 1;
-      index_image->value () = offset;
-    }
+    index_image->index (3) = 1;
+    index_image->value () = offset;
 
     if (dir_image) {
       for (size_t i = 0; i < n_vox_fixels; ++i) {
@@ -282,7 +273,6 @@ void Segmented_FOD_receiver::commit ()
         disp_image->value () = vox_fixels[i].get_integral () / vox_fixels[i].get_peak_value ();
       }
     }
-
 
     offset += n_vox_fixels;
     lobe_index ++;
@@ -323,18 +313,10 @@ void run ()
       throw Exception ("Cannot use image \"" + str(opt[0][0]) + "\" as mask image; dimensions do not match FOD image");
   }
 
+  if (!receiver.num_outputs ())
+    throw Exception ("Nothing to do; please specify at least one output image type");
 
-  if (!Path::exists (fixel_folder_path))
-    File::mkdir (fixel_folder_path);
-  else if (!Path::is_dir (fixel_folder_path))
-    throw Exception (str(fixel_folder_path) + " is not a directory");
-  else if (Path::exists (Path::join (fixel_folder_path, receiver.get_index_output ()))) {
-    receiver.set_output_index_file (false);
-
-    if (!receiver.num_outputs ())
-      throw Exception ("Nothing to do; please specify at least one output image type");
-  }
-
+  FixelFormat::check_fixel_folder (fixel_folder_path, true, true);
 
   FMLS::FODQueueWriter writer (fod_data, mask);
 

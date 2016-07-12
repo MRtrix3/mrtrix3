@@ -77,7 +77,7 @@ namespace MR
     }
 
 
-    inline bool check_fixel_folder (const std::string &path, bool create_if_missing = false)
+    inline void check_fixel_folder (const std::string &path, bool create_if_missing = false, bool check_if_empty = false)
     {
       bool exists (true);
 
@@ -88,7 +88,8 @@ namespace MR
       else if (!Path::is_dir (path))
         throw Exception (str(path) + " is not a directory");
 
-      return exists;
+      if (check_if_empty && Path::Dir (path).read_name ().size () != 0)
+        throw Exception ("Expected fixel directory " + path + " to be empty.");
     }
 
 
@@ -115,6 +116,26 @@ namespace MR
     }
 
 
+    inline std::vector<Header> find_data_headers (const std::string &fixel_folder_path, const Header &index_header)
+    {
+      check_index_image (index_header);
+
+      std::vector<Header> data_headers;
+
+      auto dir_walker = Path::Dir (fixel_folder_path);
+      std::string fname;
+      while ((fname = dir_walker.read_name ()).size ()) {
+        auto full_path = Path::join (fixel_folder_path, fname);
+        Header H;
+        if (Path::has_suffix (fname, FixelFormat::supported_fixel_formats)
+                && is_data_image (H = Header::open (full_path))
+                && fixels_match (index_header, H)) {
+          data_headers.emplace_back (std::move (H));
+        }
+      }
+
+      return data_headers;
+    }
   }
 }
 
