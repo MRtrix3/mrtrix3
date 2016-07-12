@@ -43,7 +43,7 @@ for hints on how to proceed in this case.
 
    ::
 
-       sudo apt-get install git g++ python numpy libeigen3-dev zlib1g-dev libqt4-opengl-dev libgl1-mesa-dev
+       sudo apt-get install git g++ python python-numpy libeigen3-dev zlib1g-dev libqt4-opengl-dev libgl1-mesa-dev
 
 -  RPM-based distros (Fedora, CentOS):
 
@@ -55,7 +55,7 @@ for hints on how to proceed in this case.
 
    ::
 
-       sudo pacman -Syu git python numpy gcc zlib eigen qt5-svg
+       sudo pacman -Syu git python python-numpy gcc zlib eigen qt5-svg
 
 If this doesn't work
 ^^^^^^^^^^^^^^^^^^^^
