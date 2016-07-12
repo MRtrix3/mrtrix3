@@ -182,7 +182,7 @@ void run ()
     case 0: { // flirt_import
       if (num_inputs != 3)
         throw Exception ("flirt_import requires 3 inputs");
-      transform_type transform = load_transform<default_type> (argument[0]);
+      transform_type transform = load_transform (argument[0]);
       auto src_header = Header::open (argument[1]); // -in
       auto dest_header = Header::open (argument[2]); // -ref
 

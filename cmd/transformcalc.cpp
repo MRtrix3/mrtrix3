@@ -85,14 +85,14 @@ void run ()
     case 0: { // invert
       if (num_inputs != 1)
         throw Exception ("invert requires 1 input");
-      transform_type input = load_transform<default_type> (argument[0]);
+      transform_type input = load_transform (argument[0]);
       save_transform (input.inverse(), output_path);
       break;
     }
     case 1: { // half
       if (num_inputs != 1)
         throw Exception ("half requires 1 input");
-      Eigen::Transform<default_type, 3, Eigen::Projective> input = load_transform<default_type> (argument[0]);
+      Eigen::Transform<default_type, 3, Eigen::Projective> input = load_transform (argument[0]);
       transform_type output;
       Eigen::Matrix<default_type, 4, 4> half = input.matrix().sqrt();
       output.matrix() = half.topLeftCorner(3,4);
@@ -102,7 +102,7 @@ void run ()
     case 2: { // rigid
       if (num_inputs != 1)
         throw Exception ("rigid requires 1 input");
-      transform_type input = load_transform<default_type> (argument[0]);
+      transform_type input = load_transform (argument[0]);
       transform_type output (input);
       output.linear() = input.rotation();
       save_transform (output, output_path);
@@ -127,7 +127,7 @@ void run ()
       std::vector<Eigen::MatrixXd> matrices;
       for (size_t i = 0; i < num_inputs; i++) {
         DEBUG(str(argument[i]));
-        Tin = load_transform<default_type> (argument[i]);
+        Tin = load_transform (argument[i]);
         matrices.push_back(Tin.matrix());
       }
 
@@ -140,8 +140,8 @@ void run ()
     case 5: { // interpolate
       if (num_inputs != 3)
         throw Exception ("interpolation requires 3 inputs");
-      transform_type transform1 = load_transform<default_type> (argument[0]);
-      transform_type transform2 = load_transform<default_type> (argument[1]);
+      transform_type transform1 = load_transform (argument[0]);
+      transform_type transform2 = load_transform (argument[1]);
       default_type t = parse_floats(argument[2])[0];
 
       transform_type transform_out;
