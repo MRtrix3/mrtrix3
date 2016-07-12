@@ -303,12 +303,10 @@ void run ()
       throw Exception ("no linear transformation provided for option '-half'");
     if (replace)
       throw Exception ("cannot use -half option in conjunction with -replace or -identity options");
-    {
-      Eigen::Matrix<default_type, 4, 4> temp;
-      temp.row(3) << 0, 0, 0, 1.0;
-      temp.topLeftCorner(3,4) = linear_transform.matrix().topLeftCorner(3,4);
-      linear_transform.matrix() = temp.sqrt().topLeftCorner(3,4);
-    }
+    Eigen::Matrix<default_type, 4, 4> temp;
+    temp.row(3) << 0, 0, 0, 1.0;
+    temp.topLeftCorner(3,4) = linear_transform.matrix().topLeftCorner(3,4);
+    linear_transform.matrix() = temp.sqrt().topLeftCorner(3,4);
   }
 
   // Flip
@@ -325,8 +323,12 @@ void run ()
     }
     if (!replace)
       flip = input_header.transform() * flip * input_header.transform().inverse();
+    // For flipping an axis in the absence of any other linear transform
+    if (!linear) {
+      linear_transform.setIdentity();
+      linear = true;
+    }
     linear_transform = linear_transform * flip;
-    linear = true;
   }
 
   Stride::List stride = Stride::get (input_header);
@@ -507,7 +509,7 @@ void run ()
     Eigen::MatrixXd rotation = linear_transform.linear();
     Eigen::MatrixXd temp = rotation.transpose() * rotation;
     if (!temp.isIdentity (0.001))
-      WARN("the input linear transform is not orthonormal and therefore applying this without the -template"
+      WARN("the input linear transform is not orthonormal and therefore applying this without the -template "
            "option will mean the output header transform will also be not orthonormal");
 
     add_line (output_header.keyval()["comments"], std::string ("transform modified"));
