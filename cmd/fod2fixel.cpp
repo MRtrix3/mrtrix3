@@ -122,7 +122,6 @@ class Segmented_FOD_receiver
 
     void set_fixel_folder_output (const std::string& path) { fixel_folder_path = path; }
     void set_index_output (const std::string& path) { index_path = path; }
-    std::string get_index_output () { return index_path; }
     void set_directions_output (const std::string& path) { dir_path = path; }
     void set_afd_output  (const std::string& path) { afd_path = path; }
     void set_peak_output (const std::string& path) { peak_path = path; }
@@ -296,11 +295,15 @@ void run ()
   receiver.set_fixel_folder_output (fixel_folder_path);
 
   static const std::string default_index_filename = "index.mif";
+  static const std::string default_directions_filename = "directions.mif";
   receiver.set_index_output (default_index_filename);
+  receiver.set_directions_output (default_directions_filename);
+
+  bool set_directions_file (false);
 
   auto
   opt = get_options ("index"); if (opt.size()) receiver.set_index_output (opt[0][0]);
-  opt = get_options ("dir"); if (opt.size()) receiver.set_directions_output (opt[0][0]);
+  opt = get_options ("dir"); if (opt.size()) { receiver.set_directions_output (opt[0][0]); set_directions_file = true; }
   opt = get_options ("afd");  if (opt.size()) receiver.set_afd_output (opt[0][0]);
   opt = get_options ("peak"); if (opt.size()) receiver.set_peak_output (opt[0][0]);
   opt = get_options ("disp"); if (opt.size()) receiver.set_disp_output (opt[0][0]);
@@ -317,6 +320,9 @@ void run ()
     throw Exception ("Nothing to do; please specify at least one output image type");
 
   FixelFormat::check_fixel_folder (fixel_folder_path, true, true);
+
+  if (!set_directions_file)
+    WARN ("No explicit directions image filename specified. Generating default " + default_directions_filename);
 
   FMLS::FODQueueWriter writer (fod_data, mask);
 
