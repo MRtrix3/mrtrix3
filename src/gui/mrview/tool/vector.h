@@ -39,7 +39,7 @@ namespace MR
 
             Vector (Dock* parent);
 
-            virtual ~Vector ();
+            virtual ~Vector () {}
 
             void draw (const Projection& transform, bool is_3D, int axis, int slice) override;
             void draw_colourbars () override;
@@ -68,7 +68,6 @@ namespace MR
             void fixel_close_slot ();
             void toggle_shown_slot (const QModelIndex&, const QModelIndex&);
             void hide_all_slot ();
-            void update_selection();
             void on_lock_to_grid_slot (bool is_checked);
             void on_crop_to_slice_slot (bool is_checked);
             void opacity_slot (int opacity);
@@ -104,6 +103,11 @@ namespace MR
 
             void add_images (std::vector<std::string>& list);
             void dropEvent (QDropEvent* event) override;
+
+          private:
+            void update_gui_controls ();
+            void update_gui_scaling_controls ();
+            void update_gui_threshold_controls ();
         };
       }
     }
