@@ -50,7 +50,19 @@ namespace MR
                   if(Path::has_suffix (filenames[i], {".msf", ".msh"}))
                     fixel_image = new Fixel (filenames[i], fixel_tool);
                   else
+                    fixel_image = new FixelFolder (Path::dirname (filenames[i]), fixel_tool);
+                }
+                catch (InvalidFixelDirectoryException &)
+                {
+                  try
+                  {
                     fixel_image = new PackedFixel (filenames[i], fixel_tool);
+                  }
+                  catch (InvalidImageException& e)
+                  {
+                    e.display();
+                    continue;
+                  }
                 }
                 catch(InvalidImageException& e)
                 {
@@ -422,6 +434,8 @@ namespace MR
             upper_threshold_val += fixel->greaterthan;
             line_length_multiplier += fixel->get_line_length_multiplier();
             line_thickness = fixel->get_line_thickenss();
+
+            fixel->load_scaleby_vector_opts (*length_combobox);
           }
 
           rate /= indices.size();
@@ -554,24 +568,16 @@ namespace MR
         void Vector::length_type_slot (int selection)
         {
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-          switch (selection) {
-            case 0: {
-              for (int i = 0; i < indices.size(); ++i)
-                fixel_list_model->get_fixel_image (indices[i])->set_length_type (Unity);
-              break;
-            }
-            case 1: {
-              for (int i = 0; i < indices.size(); ++i)
-                fixel_list_model->get_fixel_image (indices[i])->set_length_type (Amplitude);
-              break;
-            }
-            case 2: {
-              for (int i = 0; i < indices.size(); ++i)
-                fixel_list_model->get_fixel_image (indices[i])->set_length_type (LValue);
-              break;
-            }
+          for (int i = 0; i < indices.size(); ++i) {
+            const auto fixel = fixel_list_model->get_fixel_image (indices[i]);
+            fixel->set_length_type ((FixelLengthType)selection);
+            min_value->setRate (fixel->scaling_rate ());
+            max_value->setRate (fixel->scaling_rate ());
+            min_value->setValue (fixel->scaling_min ());
+            max_value->setValue (fixel->scaling_min ());
           }
-          window().updateGL();
+
+          window ().updateGL ();
         }
 
 

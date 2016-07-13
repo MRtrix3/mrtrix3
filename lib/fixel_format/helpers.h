@@ -21,40 +21,43 @@
 
 namespace MR
 {
+  class InvalidFixelDirectoryException : public Exception
+  {
+    public:
+      InvalidFixelDirectoryException (const std::string& msg) : Exception(msg) {}
+      InvalidFixelDirectoryException (const Exception& previous_exception, const std::string& msg)
+        : Exception(previous_exception, msg) {}
+  };
+
   namespace FixelFormat
   {
-    template <typename IndexFileHeader>
-    inline bool is_index_image (const IndexFileHeader& in)
+    inline bool is_index_image (const Header& in)
     {
       return in.keyval ().count (n_fixels_key);
     }
 
 
-    template <typename IndexFileHeader>
-    inline void check_index_image (const IndexFileHeader& in)
+    inline void check_index_image (const Header& in)
     {
       if (!is_index_image (in))
-        throw Exception (in.name () + " is not a valid fixel index image. Header key " + n_fixels_key + " not found");
+        throw InvalidImageException (in.name () + " is not a valid fixel index image. Header key " + n_fixels_key + " not found");
     }
 
 
-    template <typename DataFileHeader>
-    inline bool is_data_image (const DataFileHeader& in)
+    inline bool is_data_image (const Header& in)
     {
       return in.ndim () == 3 && in.size (2) == 1;
     }
 
 
-    template <typename DataFileHeader>
-    inline void check_data_image (const DataFileHeader& in)
+    inline void check_data_image (const Header& in)
     {
       if (!is_data_image (in))
-        throw Exception (in.name () + " is not a valid fixel data image. Expected a 3-dimensionl image of size n x m x 1");
+        throw InvalidImageException (in.name () + " is not a valid fixel data image. Expected a 3-dimensionl image of size n x m x 1");
     }
 
 
-    template <typename IndexFileHeader, typename DataFileHeader>
-    inline bool fixels_match (const IndexFileHeader& index_h, const DataFileHeader& data_h)
+    inline bool fixels_match (const Header& index_h, const Header& data_h)
     {
       bool fixels_match (false);
 
@@ -66,14 +69,13 @@ namespace MR
     }
 
 
-    template <typename IndexFileHeader, typename DataFileHeader>
-    inline void check_fixel_size (const IndexFileHeader& index_h, const DataFileHeader& data_h)
+    inline void check_fixel_size (const Header& index_h, const Header& data_h)
     {
       check_index_image (index_h);
       check_data_image (data_h);
 
       if (!fixels_match (index_h, data_h))
-        throw Exception ("Fixel number mismatch between index image " + index_h.name() + " and data image " + data_h.name());
+        throw InvalidImageException ("Fixel number mismatch between index image " + index_h.name() + " and data image " + data_h.name());
     }
 
 
@@ -110,7 +112,7 @@ namespace MR
       }
 
       if (!index_found)
-        throw Exception ("Could not find index image in directory " + fixel_folder_path);
+        throw InvalidFixelDirectoryException ("Could not find index image in directory " + fixel_folder_path);
 
       return H;
     }

@@ -33,11 +33,11 @@ namespace MR
           slice_fixel_indices (3),
           slice_fixel_sizes (3),
           slice_fixel_counts (3),
+          length_type (Unity),
           fixel_tool (fixel_tool),
           voxel_size_length_multipler (1.f),
           user_line_length_multiplier (1.f),
           line_thickness (0.0015f),
-          length_type (Unity),
           colour_type (CValue)
         {
           set_allowed_features (true, true, false);
@@ -185,7 +185,9 @@ namespace MR
           const AbstractFixel& fixel (dynamic_cast<const AbstractFixel&> (object));
           if (color_type != fixel.colour_type)
             return true;
-          if (length_type != fixel.length_type)
+          else if (length_type != fixel.length_type)
+            return true;
+          else if (fixel.internal_buffers_dirty ())
             return true;
           return Displayable::Shader::need_update (object);
         }
@@ -206,6 +208,8 @@ namespace MR
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           start (fixel_shader);
           projection.set (fixel_shader);
+
+          update_image_buffer ();
 
           gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "length_mult"), voxel_size_length_multipler * user_line_length_multiplier);
           gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "line_thickness"), line_thickness);
@@ -313,9 +317,9 @@ namespace MR
               // two or more points in our regular grid may correspond to the same nearest voxel
               for(const GLsizei index : voxel_indices) {
                 regular_grid_buffer_pos.push_back (scanner_pos);
-                regular_grid_buffer_dir.push_back (buffer_dir[index]);
-                regular_grid_buffer_val.push_back (buffer_val[2 * index]);
-                regular_grid_buffer_val.push_back (buffer_val[(2 * index) + 1]);
+                regular_grid_buffer_dir.push_back ((*buffer_dir)[index]);
+                regular_grid_buffer_val.push_back ((*buffer_val)[2 * index]);
+                regular_grid_buffer_val.push_back ((*buffer_val)[(2 * index) + 1]);
               }
             }
           }
@@ -358,35 +362,49 @@ namespace MR
 
           load_image_buffer ();
 
-          regular_grid_buffer_pos = std::vector<Eigen::Vector3f> (buffer_pos.size());
+          regular_grid_buffer_pos = std::vector<Eigen::Vector3f> (buffer_pos->size ());
 
-          regular_grid_vao.gen();
+          regular_grid_vao.gen ();
 
-          regular_grid_vertex_buffer.gen();
-          regular_grid_dir_buffer.gen();
-          regular_grid_val_buffer.gen();
+          regular_grid_vertex_buffer.gen ();
+          regular_grid_dir_buffer.gen ();
+          regular_grid_val_buffer.gen ();
 
-          vertex_array_object.gen();
-          vertex_array_object.bind();
+          vertex_array_object.gen ();
+          vertex_array_object.bind ();
+
+          vertex_buffer.gen ();
+          direction_buffer.gen ();
+          value_buffer.gen ();
+
+          reload_dir_and_value_buffers ();
+
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        }
+
+
+        void AbstractFixel::reload_dir_and_value_buffers ()
+        {
+          MRView::GrabContext context;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+
+          vertex_array_object.bind ();
 
           // voxel centres
-          vertex_buffer.gen();
           vertex_buffer.bind (gl::ARRAY_BUFFER);
-          gl::BufferData (gl::ARRAY_BUFFER, buffer_pos.size() * sizeof(Eigen::Vector3f), &buffer_pos[0][0], gl::STATIC_DRAW);
+          gl::BufferData (gl::ARRAY_BUFFER, buffer_pos->size () * sizeof(Eigen::Vector3f), &(*buffer_pos)[0][0], gl::STATIC_DRAW);
           gl::EnableVertexAttribArray (0);
           gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)0);
 
           // fixel directions
-          direction_buffer.gen();
           direction_buffer.bind (gl::ARRAY_BUFFER);
-          gl::BufferData (gl::ARRAY_BUFFER, buffer_dir.size() * sizeof(Eigen::Vector3f), &buffer_dir[0][0], gl::STATIC_DRAW);
+          gl::BufferData (gl::ARRAY_BUFFER, buffer_dir->size () * sizeof(Eigen::Vector3f), &(*buffer_dir)[0][0], gl::STATIC_DRAW);
           gl::EnableVertexAttribArray (1);
           gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 0, (void*)0);
 
           // fixel sizes and values
-          value_buffer.gen();
           value_buffer.bind (gl::ARRAY_BUFFER);
-          gl::BufferData (gl::ARRAY_BUFFER, buffer_val.size() * sizeof(float), &buffer_val[0], gl::STATIC_DRAW);
+          gl::BufferData (gl::ARRAY_BUFFER, buffer_val->size () * sizeof(float), &(*buffer_val)[0], gl::STATIC_DRAW);
           gl::EnableVertexAttribArray (2);
           gl::VertexAttribPointer (2, 2, gl::FLOAT, gl::FALSE_, 0, (void*)0);
 
@@ -416,12 +434,12 @@ namespace MR
               if (fixel_data->value()[f].value < value_min)
                 value_min = fixel_data->value()[f].value;
 
-              buffer_pos.push_back (pos);
-              buffer_dir.push_back (fixel_data->value()[f].dir);
-              buffer_val.push_back (fixel_data->value()[f].size);
-              buffer_val.push_back (fixel_data->value()[f].value);
+              buffer_pos->push_back (pos);
+              buffer_dir->push_back (fixel_data->value()[f].dir);
+              buffer_val->push_back (fixel_data->value()[f].size);
+              buffer_val->push_back (fixel_data->value()[f].value);
 
-              GLint point_index = buffer_pos.size() - 1;
+              GLint point_index = buffer_pos->size() - 1;
 
               for (size_t axis = 0; axis < 3; ++axis) {
                 slice_fixel_indices[axis][voxel[axis]].push_back (point_index);
@@ -484,14 +502,14 @@ namespace MR
               value_min = std::min (value_min, length);
               value_max = std::max (value_max, length);
 
-              buffer_pos.push_back (pos);
-              buffer_dir.push_back (vector.normalized());
+              buffer_pos->push_back (pos);
+              buffer_dir->push_back (vector.normalized());
 
               // Use the vector length to represent both fixel amplitude and value
-              buffer_val.push_back (length);
-              buffer_val.push_back (length);
+              buffer_val->push_back (length);
+              buffer_val->push_back (length);
 
-              GLint point_index = buffer_pos.size() - 1;
+              GLint point_index = buffer_pos->size() - 1;
 
               for (size_t axis = 0; axis < 3; ++axis) {
                 slice_fixel_indices[axis][voxel[axis]].push_back (point_index);
@@ -506,6 +524,150 @@ namespace MR
           this->set_windowing (value_min, value_max);
           greaterthan = value_max;
           lessthan = value_min;
+        }
+
+
+        void FixelFolder::load_image_buffer()
+        {
+          for (size_t axis = 0; axis < 3; ++axis) {
+            slice_fixel_indices[axis].resize (fixel_data->size (axis));
+            slice_fixel_sizes  [axis].resize (fixel_data->size (axis));
+            slice_fixel_counts [axis].resize (fixel_data->size (axis), 0);
+          }
+
+          // Load fixel index image
+          for (auto l = Loop(0, 3) (*fixel_data); l; ++l) {
+
+            const std::array<int, 3> voxel {{ int(fixel_data->index(0)), int(fixel_data->index(1)), int(fixel_data->index(2)) }};
+            Eigen::Vector3f pos { float(voxel[0]), float(voxel[1]), float(voxel[2]) };
+            pos = transform.voxel2scanner.cast<float>() * pos;
+
+            fixel_data->index (3) = 0;
+            const size_t nfixels = fixel_data->value ();
+
+            for (size_t f = 0; f < nfixels; ++f) {
+
+              buffer_pos->push_back (pos);
+
+              const GLint point_index = buffer_pos->size () - 1;
+
+              for (size_t axis = 0; axis < 3; ++axis) {
+                slice_fixel_indices[axis][voxel[axis]].push_back (point_index);
+                slice_fixel_sizes  [axis][voxel[axis]].push_back (1);
+                slice_fixel_counts [axis][voxel[axis]]++;
+              }
+
+              voxel_to_indices_map[voxel].push_back (point_index);
+            }
+          }
+
+          auto data_headers = FixelFormat::find_data_headers (Path::dirname (fixel_data->name ()), *fixel_data);
+
+          // Load fixel data direction images
+          for (Header& header : data_headers) {
+
+            if (header.size (1) != 3) continue;
+
+            auto data_image = header.get_image<float> ().with_direct_io ();
+            const auto data_key = Path::basename (data_image.name ());
+            buffer_dir_dict[data_key];
+
+            data_image.index (1) = 0;
+            for (auto l = Loop(0, 3) (*fixel_data); l; ++l) {
+              fixel_data->index (3) = 0;
+              const size_t nfixels = fixel_data->value ();
+              fixel_data->index (3) = 1;
+              const size_t offset = fixel_data->value ();
+              for (size_t f = 0; f < nfixels; ++f) {
+                data_image.index (0) = offset + f;
+                buffer_dir_dict[data_key].emplace_back (data_image.row (1));
+              }
+            }
+          }
+
+          if (!buffer_dir_dict.size())
+            throw InvalidImageException ("Fixel index image " + fixel_data->name () + " has no associated directions file");
+
+          // Load fixel data value images
+          for (auto& header : data_headers) {
+
+            if (header.size (1) != 1) continue;
+
+            auto data_image = header.get_image<float> ();
+            const auto data_key = Path::basename (header.name ());
+            buffer_val_dict[data_key];
+            std::pair<float, float> min_max = { std::numeric_limits<float>::max (), std::numeric_limits<float>::min () };
+
+            value_types.push_back (data_key);
+
+            data_image.index (1) = 0;
+            for (auto l = Loop(0, 3) (*fixel_data); l; ++l) {
+              fixel_data->index (3) = 0;
+              const size_t nfixels = fixel_data->value ();
+              fixel_data->index (3) = 1;
+              const size_t offset = fixel_data->value ();
+
+              for (size_t f = 0; f < nfixels; ++f) {
+                data_image.index (0) = offset + f;
+                float value = data_image.value ();
+                buffer_val_dict[data_key].emplace_back (value);
+                // FIXME: Shader needs two values atm
+                buffer_val_dict[data_key].emplace_back (value);
+                min_max = { std::min (min_max.first, value), std::max (min_max.second, value) };
+              }
+            }
+
+            buffer_min_max_dict[data_key] = min_max;
+          }
+
+          if (!buffer_val_dict.size())
+            throw InvalidImageException ("Fixel index image " + fixel_data->name () + " has no associated value image files");
+
+          c_buffer_dir = buffer_dir_dict.begin()->first;
+          c_buffer_val = buffer_val_dict.begin()->first;
+
+          buffer_dirty = true;
+          update_image_buffer ();
+        }
+
+
+        void FixelFolder::update_image_buffer () {
+
+          if (buffer_dirty) {
+            buffer_dir = (&buffer_dir_dict[c_buffer_dir]);
+            buffer_val = (&buffer_val_dict[c_buffer_val]);
+
+            reload_dir_and_value_buffers ();
+
+            buffer_dirty = false;
+
+            std::tie(value_min, value_max) = buffer_min_max_dict[c_buffer_val];
+            this->set_windowing (value_min, value_max);
+            greaterthan = value_max;
+            lessthan = value_min;
+          }
+        }
+
+
+        void FixelFolder::set_length_type (FixelLengthType value) {
+
+          if (value != FixelLengthType::Unity) {
+
+            size_t value_index = (size_t)value;
+
+            if (value_index < value_types.size()) {
+              c_buffer_val = value_types[value_index];
+              buffer_dirty = true;
+              std::tie(value_min, value_max) = buffer_min_max_dict[c_buffer_val];
+              this->set_windowing (value_min, value_max);
+              greaterthan = value_max;
+              lessthan = value_min;
+            }
+
+            value = Amplitude;
+          }
+
+          length_type = value;
         }
 
       }

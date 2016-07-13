@@ -24,6 +24,7 @@
 #include "algo/loop.h"
 #include "sparse/image.h"
 #include "sparse/fixel_metric.h"
+#include "fixel_format/helpers.h"
 
 #include "gui/mrview/displayable.h"
 #include "gui/mrview/tool/vector.h"
@@ -69,6 +70,7 @@ namespace MR
               }
 
               void load_image ();
+              void reload_dir_and_value_buffers ();
 
               void set_line_length_multiplier (float value) {
                 user_line_length_multiplier = value;
@@ -86,7 +88,7 @@ namespace MR
                 return line_thickness;
               }
 
-              void set_length_type (FixelLengthType value) {
+              virtual void set_length_type (FixelLengthType value) {
                 length_type = value;
               }
 
@@ -102,6 +104,17 @@ namespace MR
                 return colour_type;
               }
 
+              bool virtual internal_buffers_dirty () const {
+                return false;
+              }
+
+              void load_scaleby_vector_opts (ComboBoxWithErrorMsg& combo_box) const {
+                combo_box.clear ();
+                for (const auto& value_name: value_types)
+                  combo_box.addItem (tr (value_name.c_str ()));
+                combo_box.setCurrentIndex (0);
+              }
+
             protected:
               struct IntPointHasher {
                 size_t operator () (const std::array<int, 3>& v) const {
@@ -112,14 +125,17 @@ namespace MR
               };
 
               virtual void load_image_buffer() = 0;
+              virtual void update_image_buffer() {}
               virtual void request_update_interp_image_buffer (const Projection&) = 0;
               void update_interp_image_buffer (const Projection&, const MR::Header&, const MR::Transform&);
 
               std::string filename;
               MR::Header header;
-              std::vector<Eigen::Vector3f> buffer_pos;
-              std::vector<Eigen::Vector3f> buffer_dir;
-              std::vector<float> buffer_val;
+              std::vector<std::string> value_types;
+
+              std::unique_ptr<std::vector<Eigen::Vector3f>> buffer_pos;
+              std::vector<Eigen::Vector3f>* buffer_dir;
+              std::vector<float>* buffer_val;
 
               std::vector<Eigen::Vector3f> regular_grid_buffer_pos;
               std::vector<Eigen::Vector3f> regular_grid_buffer_dir;
@@ -133,12 +149,14 @@ namespace MR
               // To support off-axis rendering, we maintain dict mapping voxels to buffer_pos indices
               std::unordered_map <std::array<int, 3>, std::vector<GLint>, IntPointHasher> voxel_to_indices_map;
 
+              FixelLengthType length_type;
             private:
               Vector& fixel_tool;
               GL::VertexBuffer vertex_buffer;
               GL::VertexBuffer direction_buffer;
-              GL::VertexArrayObject vertex_array_object;
               GL::VertexBuffer value_buffer;
+              GL::VertexArrayObject vertex_array_object;
+
 
               GL::VertexArrayObject regular_grid_vao;
               GL::VertexBuffer regular_grid_vertex_buffer;
@@ -148,7 +166,6 @@ namespace MR
               float voxel_size_length_multipler;
               float user_line_length_multiplier;
               float line_thickness;
-              FixelLengthType length_type;
               FixelColourType colour_type;
         };
 
@@ -172,6 +189,7 @@ namespace MR
 
         typedef MR::Sparse::Image<MR::Sparse::FixelMetric> FixelSparseImageType;
         typedef MR::Image<float> FixelPackedImageType;
+        typedef MR::Image<uint32_t> FixelIndexImageType;
 
         // Subclassed specialisations of template wrapper
         // This is because loading of image data is dependent on particular buffer type
@@ -182,11 +200,21 @@ namespace MR
               Fixel (const std::string& filename, Vector& fixel_tool) :
                 FixelType (filename, fixel_tool)
               {
+                value_types = {"Unity", "Fixel size", "Associated value"};
+
+                buffer_pos.reset (new std::vector<Eigen::Vector3f> ());
+                buffer_dir = &buffer_dir_store;
+                buffer_val = &buffer_val_store;
                 fixel_data.reset (new FixelSparseImageType (header));
-                load_image();
+                load_image ();
               }
               void load_image_buffer () override;
+
+            private:
+              std::vector<Eigen::Vector3f> buffer_dir_store;
+              std::vector<float> buffer_val_store;
         };
+
 
         class PackedFixel : public FixelType<FixelPackedImageType>
         {
@@ -194,10 +222,45 @@ namespace MR
               PackedFixel (const std::string& filename, Vector& fixel_tool) :
                 FixelType (filename, fixel_tool)
               {
-                fixel_data.reset (new FixelPackedImageType (header.get_image<float>()));
-                load_image();
+                value_types = {"Unity", "Fixel size"};
+
+                buffer_pos.reset (new std::vector<Eigen::Vector3f> ());
+                buffer_dir = &buffer_dir_store;
+                buffer_val = &buffer_val_store;
+                fixel_data.reset (new FixelPackedImageType (header.get_image<float> ()));
+                load_image ();
               }
               void load_image_buffer () override;
+            private:
+              std::vector<Eigen::Vector3f> buffer_dir_store;
+              std::vector<float> buffer_val_store;
+        };
+
+
+        class FixelFolder : public FixelType<FixelIndexImageType>
+        {
+            public:
+              FixelFolder (const std::string& dirname, Vector& fixel_tool) :
+                FixelType (FixelFormat::find_index_header (dirname).name (), fixel_tool)
+              {
+                value_types = {"Unity"};
+
+                buffer_pos.reset (new std::vector<Eigen::Vector3f> ());
+                fixel_data.reset (new FixelIndexImageType (header.get_image<uint32_t> ()));
+                load_image ();
+              }
+              void load_image_buffer () override;
+              void set_length_type (FixelLengthType value) override;
+              virtual bool internal_buffers_dirty () const override { return buffer_dirty; }
+            protected:
+              void update_image_buffer () override;
+            private:
+              bool buffer_dirty;
+              std::string c_buffer_dir, c_buffer_val;
+
+              std::map<const std::string, std::vector<Eigen::Vector3f>> buffer_dir_dict;
+              std::map<const std::string, std::vector<float>> buffer_val_dict;
+              std::map<const std::string, std::pair<float, float>> buffer_min_max_dict;
         };
 
       }
