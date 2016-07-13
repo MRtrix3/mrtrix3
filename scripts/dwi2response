@@ -71,7 +71,7 @@ if lib.app.args.shell:
     shell_values = [ int(x) for x in lib.app.args.shell.split(',') ]
   except:
     errorMessage('-shell option should provide a comma-separated list of b-values')
-  if lib.app.args.single_shell and not len(lmax) == 1:
+  if lib.app.args.single_shell and not len(shell_values) == 1:
     errorMessage('Can only specify a single b-value shell for single-shell algorithms')
   shell_option = ' -shell ' + lib.app.args.shell
 
