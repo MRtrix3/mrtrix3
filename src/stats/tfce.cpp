@@ -32,9 +32,10 @@ namespace MR
 
 
 
-      value_type Enhancer::operator() (const value_type max_stat, const vector_type& stats, vector_type& enhanced_stats) const
+      value_type Enhancer::operator() (const vector_type& stats, vector_type& enhanced_stats) const
       {
         enhanced_stats = vector_type::Zero (stats.size());
+        const value_type max_stat = stats.maxCoeff();
 
         for (value_type h = this->dh; h < max_stat; h += this->dh) {
           std::vector<Filter::cluster> clusters;

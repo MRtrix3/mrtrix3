@@ -116,7 +116,7 @@ namespace MR
           * @param max_stat the maximum t-statistic
           * @param min_stat the minimum t-statistic
           */
-          void operator() (const std::vector<size_t>& perm_labelling, vector_type& stats, value_type& max_stat, value_type& min_stat) const;
+          void operator() (const std::vector<size_t>& perm_labelling, vector_type& stats) const;
 
           size_t num_subjects () const { return y.cols(); }
           size_t num_elements () const { return y.rows(); }

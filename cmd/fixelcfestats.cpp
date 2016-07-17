@@ -26,6 +26,7 @@
 #include "math/stats/permutation.h"
 #include "math/stats/typedefs.h"
 #include "stats/cfe.h"
+#include "stats/enhance.h"
 #include "stats/permtest.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/scalar_file.h"
@@ -368,7 +369,8 @@ void run() {
   }
 
   Math::Stats::GLMTTest glm_ttest (data, design, contrast);
-  Stats::CFE::Enhancer cfe_integrator (connectivity_matrix, cfe_dh, cfe_e, cfe_h);
+  std::shared_ptr<Stats::EnhancerBase> cfe_integrator;
+  cfe_integrator.reset (new Stats::CFE::Enhancer (connectivity_matrix, cfe_dh, cfe_e, cfe_h));
   vector_type empirical_cfe_statistic;
 
   Header output_header (input_header);

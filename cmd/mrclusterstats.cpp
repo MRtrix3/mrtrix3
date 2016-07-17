@@ -24,9 +24,10 @@
 #include "math/stats/glm.h"
 #include "math/stats/permutation.h"
 #include "math/stats/typedefs.h"
-#include "stats/tfce.h"
 #include "stats/cluster.h"
+#include "stats/enhance.h"
 #include "stats/permtest.h"
+#include "stats/tfce.h"
 
 
 using namespace MR;
@@ -108,6 +109,7 @@ void run() {
   const value_type tfce_dh = get_option_value ("tfce_dh", DEFAULT_TFCE_DH);
   const value_type tfce_H = get_option_value ("tfce_h", DEFAULT_TFCE_H);
   const value_type tfce_E = get_option_value ("tfce_e", DEFAULT_TFCE_E);
+  const bool use_tfce = !std::isfinite (cluster_forming_threshold);
   const int num_perms = get_option_value ("nperms", DEFAULT_PERMUTATIONS);
   const int nperms_nonstationary = get_option_value ("nperms_nonstationary", DEFAULT_PERMUTATIONS_NONSTATIONARITY);
   
@@ -168,23 +170,17 @@ void run() {
   output_header.keyval()["num permutations"] = str(num_perms);
   output_header.keyval()["26 connectivity"] = str(do_26_connectivity);
   output_header.keyval()["nonstationary adjustment"] = str(do_nonstationary_adjustment);
-  if (std::isfinite (cluster_forming_threshold)) {
-    output_header.keyval()["threshold"] = str(cluster_forming_threshold);
-  } else {
+  if (use_tfce) {
     output_header.keyval()["tfce_dh"] = str(tfce_dh);
     output_header.keyval()["tfce_e"] = str(tfce_E);
     output_header.keyval()["tfce_h"] = str(tfce_H);
+  } else {
+    output_header.keyval()["threshold"] = str(cluster_forming_threshold);
   }
 
   const std::string prefix (argument[4]);
 
-  std::string cluster_name (prefix);
-  if (std::isfinite (cluster_forming_threshold))
-     cluster_name.append ("cluster_sizes.mif");
-  else
-    cluster_name.append ("tfce.mif");
-
-  auto cluster_image = Image<float>::create (cluster_name, output_header);
+  auto cluster_image = Image<float>::create (prefix + (use_tfce ? "tfce.mif" : "cluster_sizes.mif"), output_header);
   auto tvalue_image = Image<float>::create (prefix + "tvalue.mif", output_header);
   auto fwe_pvalue_image = Image<float>::create (prefix + "fwe_pvalue.mif", output_header);
   auto uncorrected_pvalue_image = Image<float>::create (prefix + "uncorrected_pvalue.mif", output_header);
@@ -197,19 +193,14 @@ void run() {
   vector_type default_cluster_output (num_vox);
   std::shared_ptr<vector_type> default_cluster_output_neg;
   vector_type tvalue_output (num_vox);
-  vector_type empirical_tfce_statistic;
+  vector_type empirical_enhanced_statistic;
   vector_type uncorrected_pvalue (num_vox);
   std::shared_ptr<vector_type> uncorrected_pvalue_neg;
 
 
   const bool compute_negative_contrast = get_options("negative").size() ? true : false;
   if (compute_negative_contrast) {
-    std::string cluster_neg_name (prefix);
-    if (std::isfinite (cluster_forming_threshold))
-       cluster_neg_name.append ("cluster_sizes_neg.mif");
-    else
-      cluster_neg_name.append ("tfce_neg.mif");
-    cluster_image_neg = Image<float>::create (cluster_neg_name, output_header);
+    cluster_image_neg = Image<float>::create (prefix + (use_tfce ? "tfce_neg.mif" : "cluster_sizes_neg.mif"), output_header);
     perm_distribution_neg.reset (new vector_type (num_perms));
     default_cluster_output_neg.reset (new vector_type (num_vox));
     fwe_pvalue_image_neg = Image<float>::create (prefix + "fwe_pvalue_neg.mif", output_header);
@@ -217,38 +208,30 @@ void run() {
     uncorrected_pvalue_image_neg = Image<float>::create (prefix + "uncorrected_pvalue_neg.mif", output_header);
   }
 
+  std::shared_ptr<Stats::EnhancerBase> enhancer;
+  if (use_tfce)
+    enhancer.reset (new Stats::TFCE::Enhancer (connector, tfce_dh, tfce_E, tfce_H));
+  else
+    enhancer.reset (new Stats::Cluster::ClusterSize (connector, cluster_forming_threshold));
+
   { // Do permutation testing:
     Math::Stats::GLMTTest glm (data, design, contrast);
 
-    // Suprathreshold clustering
-    if (std::isfinite (cluster_forming_threshold)) {
-      if (do_nonstationary_adjustment)
+    if (do_nonstationary_adjustment) {
+      // TODO Is this limitation still required?
+      if (!use_tfce)
         throw Exception ("nonstationary adjustment is not currently implemented for threshold-based cluster analysis");
-      Stats::Cluster::ClusterSize cluster_size_test (connector, cluster_forming_threshold);
-
-      Stats::PermTest::precompute_default_permutation (glm, cluster_size_test, empirical_tfce_statistic,
-                                                       default_cluster_output, default_cluster_output_neg, tvalue_output);
-
-
-
-      Stats::PermTest::run_permutations (glm, cluster_size_test, num_perms, empirical_tfce_statistic,
-                                         default_cluster_output, default_cluster_output_neg,
-                                         perm_distribution, perm_distribution_neg,
-                                         uncorrected_pvalue, uncorrected_pvalue_neg);
-    // TFCE
-    } else {
-      Stats::TFCE::Enhancer tfce_integrator (connector, tfce_dh, tfce_E, tfce_H);
-      if (do_nonstationary_adjustment)
-        Stats::PermTest::precompute_empirical_stat (glm, tfce_integrator, nperms_nonstationary, empirical_tfce_statistic);
-
-      Stats::PermTest::precompute_default_permutation (glm, tfce_integrator, empirical_tfce_statistic,
-                                                       default_cluster_output, default_cluster_output_neg, tvalue_output);
-
-      Stats::PermTest::run_permutations (glm, tfce_integrator, num_perms, empirical_tfce_statistic,
-                                         default_cluster_output, default_cluster_output_neg,
-                                         perm_distribution, perm_distribution_neg,
-                                         uncorrected_pvalue, uncorrected_pvalue_neg);
+      Stats::PermTest::precompute_empirical_stat (glm, enhancer, nperms_nonstationary, empirical_enhanced_statistic);
     }
+
+    Stats::PermTest::precompute_default_permutation (glm, enhancer, empirical_enhanced_statistic,
+                                                     default_cluster_output, default_cluster_output_neg, tvalue_output);
+
+    Stats::PermTest::run_permutations (glm, enhancer, num_perms, empirical_enhanced_statistic,
+                                       default_cluster_output, default_cluster_output_neg,
+                                       perm_distribution, perm_distribution_neg,
+                                       uncorrected_pvalue, uncorrected_pvalue_neg);
+
   }
 
   save_matrix (perm_distribution, prefix + "perm_dist.txt");

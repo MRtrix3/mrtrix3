@@ -108,7 +108,7 @@ namespace MR
 
 
 
-      void GLMTTest::operator() (const std::vector<size_t>& perm_labelling, vector_type& stats, value_type& max_stat, value_type& min_stat) const
+      void GLMTTest::operator() (const std::vector<size_t>& perm_labelling, vector_type& stats) const
       {
         stats = vector_type::Zero (y.rows());
         matrix_type tvalues, betas, residuals, SX, pinvSX;
@@ -127,14 +127,8 @@ namespace MR
           GLM::ttest (tvalues, SX, pinvSX, tmp, scaled_contrasts, betas, residuals);
           for (ssize_t n = 0; n < tvalues.rows(); ++n) {
             value_type val = tvalues(n,0);
-            if (std::isfinite (val)) {
-              if (val > max_stat)
-                max_stat = val;
-              if (val < min_stat)
-                min_stat = val;
-            } else {
+            if (!std::isfinite (val))
               val = value_type(0);
-            }
             stats[i+n] = val;
           }
         }

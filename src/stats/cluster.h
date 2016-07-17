@@ -19,6 +19,8 @@
 #include "filter/connected_components.h"
 #include "math/stats/typedefs.h"
 
+#include "stats/enhance.h"
+
 namespace MR
 {
   namespace Stats
@@ -35,13 +37,13 @@ namespace MR
 
       /** \addtogroup Statistics
       @{ */
-      class ClusterSize {
+      class ClusterSize : public Stats::EnhancerBase {
         public:
           ClusterSize (const Filter::Connector& connector, value_type cluster_forming_threshold) :
                        connector (connector), cluster_forming_threshold (cluster_forming_threshold) { }
 
 
-          value_type operator() (const value_type /*unused*/, const vector_type& stats, vector_type& get_cluster_sizes) const;
+          value_type operator() (const vector_type& stats, vector_type& get_cluster_sizes) const override;
 
 
         protected:
