@@ -218,7 +218,6 @@ void run() {
     Math::Stats::GLMTTest glm (data, design, contrast);
 
     if (do_nonstationary_adjustment) {
-      // TODO Is this limitation still required?
       if (!use_tfce)
         throw Exception ("nonstationary adjustment is not currently implemented for threshold-based cluster analysis");
       Stats::PermTest::precompute_empirical_stat (glm, enhancer, nperms_nonstationary, empirical_enhanced_statistic);
@@ -231,7 +230,6 @@ void run() {
                                        default_cluster_output, default_cluster_output_neg,
                                        perm_distribution, perm_distribution_neg,
                                        uncorrected_pvalue, uncorrected_pvalue_neg);
-
   }
 
   save_matrix (perm_distribution, prefix + "perm_dist.txt");
