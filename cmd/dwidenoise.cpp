@@ -46,6 +46,22 @@ void usage ()
     "Diffusion MRI noise mapping using random matrix theory "
     "Magn. Res. Med., 2016, early view, doi: 10.1002/mrm.26059";
   
+  ARGUMENTS
+  + Argument ("dwi", "the input diffusion-weighted image.").type_image_in ()
+
+  + Argument ("out", "the output denoised DWI image.").type_image_out ();
+
+
+  OPTIONS
+    + Option ("mask", "only perform computation within the specified binary brain mask image.")
+    +   Argument ("image").type_image_in()
+
+    + Option ("extent", "set the window size of the denoising filter. (default = " + str(DEFAULT_SIZE) + "," + str(DEFAULT_SIZE) + "," + str(DEFAULT_SIZE) + ")")
+    +   Argument ("window").type_sequence_int ()
+
+    + Option ("noise", "the output noise map.")
+    +   Argument ("level").type_image_out();
+
   COPYRIGHT = "Copyright (c) 2016 New York University, University of Antwerp, and the MRtrix3 contributors \n \n"
       "Permission is hereby granted, free of charge, to any non-commercial entity ('Recipient') obtaining a copy of this software and "
       "associated documentation files (the 'Software'), to the Software solely for non-commercial research, including the rights to "
@@ -63,23 +79,6 @@ void usage ()
       "\t 5. The Software may only be used for non-commercial research and may not be used for clinical care. \n \n"
       "\t 6. Any publication by Recipient of research involving the Software shall cite the references listed below.";
     
-  
-  ARGUMENTS
-  + Argument ("dwi", "the input diffusion-weighted image.").type_image_in ()
-
-  + Argument ("out", "the output denoised DWI image.").type_image_out ();
-
-
-  OPTIONS
-    + Option ("mask", "only perform computation within the specified binary brain mask image.")
-    +   Argument ("image").type_image_in()
-
-    + Option ("extent", "set the window size of the denoising filter. (default = " + str(DEFAULT_SIZE) + "," + str(DEFAULT_SIZE) + "," + str(DEFAULT_SIZE) + ")")
-    +   Argument ("window").type_sequence_int ()
-
-    + Option ("noise", "the output noise map.")
-    +   Argument ("level").type_image_out();
-
 }
 
 
