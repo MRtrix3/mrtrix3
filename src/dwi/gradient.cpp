@@ -250,10 +250,8 @@ namespace MR
       };
 
       auto opt = get_options ("export_grad_mrtrix");
-      if (opt.size()) {
-        File::OFStream out (opt[0][0]);
-        out << check(header).keyval().find ("dw_scheme")->second << "\n";;
-      }
+      if (opt.size()) 
+        save_matrix (parse_DW_scheme (check (header)), opt[0][0]);
 
       opt = get_options ("export_grad_fsl");
       if (opt.size()) 
