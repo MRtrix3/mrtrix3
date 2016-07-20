@@ -4,7 +4,6 @@
 
 import os, shutil, sys
 import lib.app, lib.cmdlineParser
-#import numpy
 import math
 
 def abspath(*arg):
@@ -22,6 +21,37 @@ from lib.getUserPath   import getUserPath
 from lib.printMessage  import printMessage
 from lib.runCommand    import runCommand
 from lib.warnMessage   import warnMessage
+
+try:
+  import bogus
+  from numpy import loadtxt, savetxt, dot
+except ImportError:
+  def loadtxt(fname, delimiter=" ", dtype=float):
+    with open(fname, "r") as f:
+      return [[dtype(x) for x in l.rstrip().split(delimiter)] for l in f.readlines()]
+
+  def savetxt(fname, X, delimiter=" ", fmt="%.14e"):
+    import sys
+    try:
+      if sys.version_info[0] >= 3:
+        fh = open(fname, 'wb')
+      else:
+        fh = open(fname, 'w')
+      if len(X) == 1:
+          ncol = 1
+      else:
+        ncol = len(X[0])
+      fmt = [fmt, ] * ncol
+      format = delimiter.join(fmt)
+      for row in X:
+        fh.write((format % tuple(row) + '\n'))
+    finally:
+        fh.close()
+
+  def dot(a, b):
+    # matrix dot product
+    # does not check input dimensions
+    return [[sum(x*y for x,y in zip(a_row,b_col)) for b_col in zip(*b)] for a_row in a]
 
 def check_linear_transformation (transformation, max_scaling = 0.5, max_shear = 0.2, max_rot = 2 * math.pi, pause_on_warn = True):
   def load_key_value(file):
@@ -41,16 +71,16 @@ def check_linear_transformation (transformation, max_scaling = 0.5, max_shear = 
   runCommand ('transformcalc ' + transformation + ' decompose ' + transformation + 'decomp')
   data = load_key_value(transformation + 'decomp')
   runCommand('rm ' + transformation + 'decomp')
-  scaling = numpy.array([float(x) for x in data['scaling']])
-  if numpy.any(scaling < 0) or numpy.any(scaling > (1 + max_scaling)) or numpy.any(scaling < (1 - max_scaling)):
+  scaling = [float(x) for x in data['scaling']]
+  if any([x < 0 for x in scaling]) or any([x > (1 + max_scaling) for x in scaling]) or any([x < (1 - max_scaling) for x in scaling]):
     warnMessage ("large scaling (" + str(scaling) + ") in " + transformation)
     bGood = False
-  shear = numpy.array([float(x) for x in data['shear']])
-  if numpy.any(numpy.abs(shear) > max_shear):
+  shear = [float(x) for x in data['shear']]
+  if any([abs(x) > max_shear for x in shear]):
     warnMessage ("large shear (" + str(shear) + ") in " + transformation)
     bGood = False
   rot_angle = float(data['angle_axis'][0])
-  if numpy.abs(rot_angle) > max_rot:
+  if abs(rot_angle) > max_rot:
     warnMessage ("large rotation (" + str(rot_angle) + ") in " + transformation)
     bGood = False
   if not bGood and pause_on_warn:
@@ -64,7 +94,6 @@ class Input:
     self.directory = directory
     self.mask_filename = mask_filename
     self.mask_directory = mask_directory
-
 
 
 lib.app.author = 'David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk) & Thijs Dhollander thijs.dhollander@florey.edu.au)'
@@ -387,10 +416,11 @@ for level in range(0, len(linear_scales)):
   if dorigid:
     runCommand('transformcalc linear_transform_average.txt rigid linear_transform_average.txt -force -quiet')
   runCommand('transformcalc linear_transform_average.txt invert linear_transform_average_inv.txt -force -quiet')
-  average_inv = numpy.loadtxt('linear_transform_average_inv.txt')
+
+  average_inv = loadtxt('linear_transform_average_inv.txt')
   for i in input:
-    transform = numpy.loadtxt('linear_transforms/' + i.prefix + '.txt').dot(average_inv)
-    numpy.savetxt('linear_transforms/' + i.prefix + '.txt', transform)
+    transform = dot(loadtxt('linear_transforms/' + i.prefix + '.txt'), average_inv)
+    savetxt('linear_transforms/' + i.prefix + '.txt', transform)
 
   for i in input:
     runCommand('mrtransform ' + abspath(i.directory, i.filename) +
