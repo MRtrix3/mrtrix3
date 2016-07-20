@@ -70,7 +70,7 @@ def check_linear_transformation (transformation, max_scaling = 0.5, max_shear = 
   bGood = True
   runCommand ('transformcalc ' + transformation + ' decompose ' + transformation + 'decomp')
   data = load_key_value(transformation + 'decomp')
-  runCommand('rm ' + transformation + 'decomp')
+  os.remove(transformation + 'decomp')
   scaling = [float(x) for x in data['scaling']]
   if any([x < 0 for x in scaling]) or any([x > (1 + max_scaling) for x in scaling]) or any([x < (1 - max_scaling) for x in scaling]):
     warnMessage ("large scaling (" + str(scaling) + ") in " + transformation)
@@ -84,7 +84,8 @@ def check_linear_transformation (transformation, max_scaling = 0.5, max_shear = 
     warnMessage ("large rotation (" + str(rot_angle) + ") in " + transformation)
     bGood = False
   if not bGood and pause_on_warn:
-    raw_input("press enter to continue")
+    warnMessage ("you might want to manually repeat mrregister with different parameters and overwrite the transformation file: \n%s\n" % transformation)
+    raw_input("press enter to continue population_template")
   return bGood
 
 class Input:
@@ -108,6 +109,7 @@ options.add_argument('-transformed_dir', help='Output a directory containing the
 options.add_argument('-linear_transformations_dir', help='Output a directory containing the linear transformations used to generate the template. If the folder does not exist it will be created')
 options.add_argument('-template_mask', help='Output a template mask. Only works in -mask_dir has been input. The template mask is computed as the intersection of all subject masks in template space.')
 options.add_argument('-rigid', action='store_true', help='perform rigid registration instead of affine. This should be used for intra-subject registration in longitudinal analysis')
+options.add_argument('-linear_no_pause', action='store_true', help='Do not pause the script if a linear registration seems implausible')
 options.add_argument('-linear_scale', help='Specifiy the multi-resolution pyramid used to build the rigid or affine template, in the form of a list of scale factors (default: 0.3,0.4,0.5,0.6,0.7,1.0,1.0,1.0,1.0,1.0). This implicitly defines the number of template levels')
 options.add_argument('-linear_lmax', help='Specifiy the lmax used for rigid or affine registration for each scale factor, in the form of a list of integers (default: 2,2,2,2,2,2,4,4,4,4). The list must be the same length as the affine_scale factor list')
 options.add_argument('-linear_niter', help='Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:500 for each scale). The must be a single number or a list of same length as the linear_scale factor list')
@@ -178,6 +180,9 @@ for i in inFiles:
 
 noreorientation = lib.app.args.noreorientation
 dorigid = lib.app.args.rigid
+do_pause_on_warn = True
+if lib.app.args.linear_no_pause:
+  do_pause_on_warn = False
 
 lib.app.args.template = relpath(lib.app.args.template)
 lib.app.checkOutputFile(lib.app.args.template)
@@ -249,7 +254,10 @@ lib.app.makeTempDir()
 lib.app.gotoTempDir()
 
 lib.app.make_dir('input_transformed')
+lib.app.make_dir('linear_transforms_initial')
 lib.app.make_dir('linear_transforms')
+for level in range(0, len(linear_scales)):
+  lib.app.make_dir('linear_transforms_%i' % level)
 if useMasks:
   lib.app.make_dir('masks_transformed')
 if lib.app.args.verbose:
@@ -288,7 +296,7 @@ else:
   for i in input:
     if useMasks:
       mask = ' -mask1 ' + abspath(i.mask_directory, i.mask_filename)
-    output = ' -rigid linear_transforms/' + i.prefix + '.txt'
+    output = ' -rigid linear_transforms_initial/' + i.prefix + '.txt'
     runCommand('mrregister ' + abspath(i.directory, i.filename) + ' average_header.mif' +
                 mask +
                 ' -rigid_scale 1 ' +
@@ -300,12 +308,12 @@ else:
                 output)
     # translate input images to centre of mass without interpolation
     runCommand('mrtransform ' + abspath(i.directory, i.filename) +
-                ' -linear linear_transforms/' + i.prefix + '.txt' +
+                ' -linear linear_transforms_initial/' + i.prefix + '.txt' +
                 datatype +
                 ' input_transformed/' + i.prefix + '_translated.mif')
     if useMasks:
       runCommand('mrtransform ' + abspath(i.mask_directory, i.mask_filename) +
-             ' -linear linear_transforms/' + i.prefix + '.txt' +
+             ' -linear linear_transforms_initial/' + i.prefix + '.txt' +
              datatype +
              ' masks_transformed/' + i.prefix + '_translated.mif')
   # update average space to new extent
@@ -369,9 +377,9 @@ for level in range(0, len(linear_scales)):
       scale = ' -rigid_scale ' + str(linear_scales[level])
       niter = ' -rigid_niter ' + str(linear_niter[level])
       regtype = ' -type rigid'
-      output = ' -rigid linear_transforms/' + i.prefix + '.txt'
+      output = ' -rigid linear_transforms_%i/%s.txt'% (level, i.prefix)
       if level > 0:
-        initialise = ' -rigid_init_matrix linear_transforms/' + i.prefix + '.txt'
+        initialise = ' -rigid_init_matrix linear_transforms_%i/%s.txt'% (level-1, i.prefix)
       if do_fod_registration:
         lmax = ' -rigid_lmax ' + str(linear_lmax[level])
       else:
@@ -384,9 +392,9 @@ for level in range(0, len(linear_scales)):
       scale = ' -affine_scale ' + str(linear_scales[level])
       niter = ' -affine_niter ' + str(linear_niter[level])
       regtype = ' -type affine'
-      output = ' -affine linear_transforms/' + i.prefix + '.txt'
+      output = ' -affine linear_transforms_%i/%s.txt'% (level, i.prefix)
       if level > 0:
-        initialise = ' -affine_init_matrix linear_transforms/' + i.prefix + '.txt'
+        initialise = ' -affine_init_matrix linear_transforms_%i/%s.txt'% (level-1, i.prefix)
       if do_fod_registration:
         lmax = ' -affine_lmax ' + str(linear_lmax[level])
       else:
@@ -409,23 +417,23 @@ for level in range(0, len(linear_scales)):
                  datatype +
                  output +
                  mrregister_log)
-    check_linear_transformation('linear_transforms/' + i.prefix + '.txt')
+    check_linear_transformation('linear_transforms_%i/%s.txt'% (level, i.prefix), pause_on_warn=do_pause_on_warn)
 
   # Here we ensure the template doesn't drift or scale
-  runCommand('transformcalc ' + allindir('linear_transforms') + ' average linear_transform_average.txt -force -quiet')
+  runCommand('transformcalc ' + allindir('linear_transforms_%i' % level) + ' average linear_transform_average.txt -force -quiet')
   if dorigid:
     runCommand('transformcalc linear_transform_average.txt rigid linear_transform_average.txt -force -quiet')
   runCommand('transformcalc linear_transform_average.txt invert linear_transform_average_inv.txt -force -quiet')
 
   average_inv = loadtxt('linear_transform_average_inv.txt')
   for i in input:
-    transform = dot(loadtxt('linear_transforms/' + i.prefix + '.txt'), average_inv)
-    savetxt('linear_transforms/' + i.prefix + '.txt', transform)
+    transform = dot(loadtxt('linear_transforms_%i/%s.txt'% (level, i.prefix)), average_inv)
+    savetxt('linear_transforms_%i/%s.txt'% (level, i.prefix), transform)
 
   for i in input:
     runCommand('mrtransform ' + abspath(i.directory, i.filename) +
                ' -template ' + current_template +
-               ' -linear linear_transforms/' + i.prefix + '.txt' +
+               ' -linear linear_transforms_%i/%s.txt'% (level, i.prefix) +
                ' input_transformed/' + i.prefix + '.mif' +
                datatype +
                ' -force')
@@ -440,12 +448,13 @@ for level in range(0, len(linear_scales)):
       runCommand('mrtransform ' + abspath(i.mask_directory, i.mask_filename) +
                  ' -template ' + current_template +
                  ' -interp nearest' +
-                 ' -linear linear_transforms/' + i.prefix + '.txt' +
+                 ' -linear linear_transforms_%i/%s.txt'% (level, i.prefix) +
                  ' masks_transformed/' + i.prefix + '.mif' +
                  ' -force')
     runCommand ('mrmath ' + allindir('masks_transformed') + ' min - | maskfilter - median - | maskfilter - dilate -npass 5 init_nl_template_mask.mif -force')
     current_template_mask = 'init_nl_template_mask.mif'
 
+runCommand('cp ' + allindir('linear_transforms_%i'% level) + 'linear_transforms/')
 
 # Optimise the template with non-linear registration
 printMessage('Optimising template with non-linear registration')
