@@ -70,10 +70,9 @@ namespace MR
           FOD_lobe (const DWI::Directions::Set& dirs, const dir_t seed, const default_type value, const default_type weight) :
               mask (dirs),
               values (dirs.size(), 0.0),
-              peak_dir_bin (seed),
-              peak_value (std::abs (value)),
-              peak_dir (dirs.get_dir (seed)),
-              mean_dir (peak_dir * value * weight),
+              max_peak_value (std::abs (value)),
+              peak_dirs (1, dirs.get_dir (seed)),
+              mean_dir (peak_dirs.front() * value * weight),
               integral (std::abs (value * weight)),
               neg (value <= 0.0)
           {
@@ -86,8 +85,7 @@ namespace MR
           FOD_lobe (const DWI::Directions::Mask& i) :
               mask (i),
               values (i.size(), 0.0),
-              peak_dir_bin (i.size()),
-              peak_value (0.0),
+              max_peak_value (0.0),
               integral (0.0),
               neg (false) { }
 
@@ -98,16 +96,18 @@ namespace MR
             mask[bin] = true;
             values[bin] = value;
             const Eigen::Vector3f& dir = mask.get_dirs()[bin];
-            const float multiplier = (peak_dir.dot (dir)) > 0.0 ? 1.0 : -1.0;
+            const float multiplier = (mean_dir.dot (dir)) > 0.0 ? 1.0 : -1.0;
             mean_dir += dir * multiplier * value * weight;
             integral += std::abs (value * weight);
           }
 
-          void revise_peak (const Eigen::Vector3f& real_peak, const float value)
+          void revise_peak (const size_t index, const Eigen::Vector3f& real_peak, const float value)
           {
             assert (!neg);
-            peak_dir = real_peak;
-            peak_value = value;
+            assert (index < num_peaks());
+            peak_dirs[index] = real_peak;
+            if (!index)
+              max_peak_value = value;
           }
 
 #ifdef FMLS_OPTIMISE_MEAN_DIR
@@ -133,10 +133,11 @@ namespace MR
             mask |= that.mask;
             for (size_t i = 0; i != mask.size(); ++i)
               values[i] += that.values[i];
-            if (that.peak_value > peak_value) {
-              peak_dir_bin = that.peak_dir_bin;
-              peak_value = that.peak_value;
-              peak_dir = that.peak_dir;
+            if (that.max_peak_value > max_peak_value) {
+              max_peak_value = that.max_peak_value;
+              peak_dirs.insert (peak_dirs.begin(), that.peak_dirs.begin(), that.peak_dirs.end());
+            } else {
+              peak_dirs.insert (peak_dirs.end(), that.peak_dirs.begin(), that.peak_dirs.end());
             }
             const float multiplier = (mean_dir.dot (that.mean_dir)) > 0.0 ? 1.0 : -1.0;
             mean_dir += that.mean_dir * that.integral * multiplier;
@@ -145,9 +146,9 @@ namespace MR
 
           const DWI::Directions::Mask& get_mask() const { return mask; }
           const std::vector<float>& get_values() const { return values; }
-          dir_t get_peak_dir_bin() const { return peak_dir_bin; }
-          float get_peak_value() const { return peak_value; }
-          const Eigen::Vector3f& get_peak_dir() const { return peak_dir; }
+          float get_max_peak_value() const { return max_peak_value; }
+          size_t num_peaks() const { return peak_dirs.size(); }
+          const Eigen::Vector3f& get_peak_dir (const size_t i) const { assert (i < num_peaks()); return peak_dirs[i]; }
           const Eigen::Vector3f& get_mean_dir() const { return mean_dir; }
           float get_integral() const { return integral; }
           bool is_negative() const { return neg; }
@@ -156,9 +157,8 @@ namespace MR
         private:
           DWI::Directions::Mask mask;
           std::vector<float> values;
-          dir_t peak_dir_bin;
-          float peak_value;
-          Eigen::Vector3f peak_dir;
+          float max_peak_value;
+          std::vector<Eigen::Vector3f> peak_dirs;
           Eigen::Vector3f mean_dir;
           float integral;
           bool neg;
@@ -223,6 +223,19 @@ namespace MR
       };
 
 
+      // Store a vector of weights to be applied when computing integrals, to account for non-uniformities in direction distribution
+      // These weights are applied to the amplitude along each direction as the integral for each lobe is summed,
+      //   in order to take into account the relative spacing between adjacent directions
+      class IntegrationWeights
+      {
+        public:
+          IntegrationWeights (const DWI::Directions::Set& dirs);
+          default_type operator[] (const size_t i) { assert (i < size_t(data.size())); return data[i]; }
+        private:
+          Eigen::Array<default_type, Eigen::Dynamic, 1> data;
+      };
+
+
 
 
       class Segmenter {
@@ -257,9 +270,7 @@ namespace MR
 
           std::shared_ptr<Math::SH::Transform    <default_type>> transform;
           std::shared_ptr<Math::SH::PrecomputedAL<default_type>> precomputer;
-
-          // Store a vector of weights to be applied when computing integrals, to account for non-uniformities in direction distribution
-          std::shared_ptr<Eigen::Array<default_type, Eigen::Dynamic, 1>> weights;
+          std::shared_ptr<IntegrationWeights> weights;
 
           default_type ratio_to_negative_lobe_integral; // Integral of positive lobe must be at least this ratio larger than the largest negative lobe integral
           default_type ratio_to_negative_lobe_mean_peak; // Peak value of positive lobe must be at least this ratio larger than the mean negative lobe peak

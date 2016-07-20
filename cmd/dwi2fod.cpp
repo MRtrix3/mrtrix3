@@ -265,6 +265,7 @@ void run ()
       throw Exception ("MSMT_CSD algorithm expects pairs of (input response function & output FOD image) to be provided");
 
     DWI::SDeconv::MSMT_CSD::Shared shared (header_in);
+    shared.parse_cmdline_options();
 
     const size_t num_tissues = (argument.size()-2)/2;
     std::vector<std::string> response_paths;
