@@ -230,7 +230,7 @@ namespace MR
       {
         public:
           IntegrationWeights (const DWI::Directions::Set& dirs);
-          default_type operator[] (const size_t i) { assert (i < data.size()); return data[i]; }
+          default_type operator[] (const size_t i) { assert (i < size_t(data.size())); return data[i]; }
         private:
           Eigen::Array<default_type, Eigen::Dynamic, 1> data;
       };
