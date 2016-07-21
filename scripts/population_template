@@ -523,7 +523,7 @@ for level in range(0, len(nl_scales)):
         runCommand('mv tmp.mif warps_%i/%s.mif' % (level, i.prefix))
   else:
     for i in input:
-      shutil.move('warps_%i/%s.mif warps/' % (level, i.prefix))
+      shutil.move('warps_%i/%s.mif', 'warps/' % (level, i.prefix))
 
 
 runCommand('mrconvert ' + current_template + ' ' + getUserPath(lib.app.args.template, True) + lib.app.mrtrixForce)
