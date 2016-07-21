@@ -380,9 +380,9 @@ for level in range(0, len(linear_scales)):
       scale = ' -rigid_scale ' + str(linear_scales[level])
       niter = ' -rigid_niter ' + str(linear_niter[level])
       regtype = ' -type rigid'
-      output = ' -rigid linear_transforms_%i/%s.txt'% (level, i.prefix)
+      output = ' -rigid linear_transforms_%i/%s.txt' % (level, i.prefix)
       if level > 0:
-        initialise = ' -rigid_init_matrix linear_transforms_%i/%s.txt'% (level-1, i.prefix)
+        initialise = ' -rigid_init_matrix linear_transforms_%i/%s.txt' % (level-1, i.prefix)
       if do_fod_registration:
         lmax = ' -rigid_lmax ' + str(linear_lmax[level])
       else:
@@ -395,9 +395,9 @@ for level in range(0, len(linear_scales)):
       scale = ' -affine_scale ' + str(linear_scales[level])
       niter = ' -affine_niter ' + str(linear_niter[level])
       regtype = ' -type affine'
-      output = ' -affine linear_transforms_%i/%s.txt'% (level, i.prefix)
+      output = ' -affine linear_transforms_%i/%s.txt' % (level, i.prefix)
       if level > 0:
-        initialise = ' -affine_init_matrix linear_transforms_%i/%s.txt'% (level-1, i.prefix)
+        initialise = ' -affine_init_matrix linear_transforms_%i/%s.txt' % (level-1, i.prefix)
       if do_fod_registration:
         lmax = ' -affine_lmax ' + str(linear_lmax[level])
       else:
@@ -420,7 +420,7 @@ for level in range(0, len(linear_scales)):
                  datatype +
                  output +
                  mrregister_log)
-    check_linear_transformation('linear_transforms_%i/%s.txt'% (level, i.prefix), pause_on_warn=do_pause_on_warn)
+    check_linear_transformation('linear_transforms_%i/%s.txt' % (level, i.prefix), pause_on_warn=do_pause_on_warn)
 
   # Here we ensure the template doesn't drift or scale
   runCommand('transformcalc ' + allindir('linear_transforms_%i' % level) + ' average linear_transform_average.txt -force -quiet')
@@ -430,13 +430,13 @@ for level in range(0, len(linear_scales)):
 
   average_inv = loadtxt('linear_transform_average_inv.txt')
   for i in input:
-    transform = dot(loadtxt('linear_transforms_%i/%s.txt'% (level, i.prefix)), average_inv)
+    transform = dot(loadtxt('linear_transforms_%i/%s.txt' % (level, i.prefix)), average_inv)
     savetxt('linear_transforms_%i/%s.txt'% (level, i.prefix), transform)
 
   for i in input:
     runCommand('mrtransform ' + abspath(i.directory, i.filename) +
                ' -template ' + current_template +
-               ' -linear linear_transforms_%i/%s.txt'% (level, i.prefix) +
+               ' -linear linear_transforms_%i/%s.txt' % (level, i.prefix) +
                ' input_transformed/' + i.prefix + '.mif' +
                datatype +
                ' -force')
@@ -445,19 +445,19 @@ for level in range(0, len(linear_scales)):
   current_template = 'linear_template' + str(level) + '.mif'
 
 
-# Create a template mask for nl registration by taking the intersection of all transformed input masks and dilating
-  if useMasks:
-    for i in input:
-      runCommand('mrtransform ' + abspath(i.mask_directory, i.mask_filename) +
-                 ' -template ' + current_template +
-                 ' -interp nearest' +
-                 ' -linear linear_transforms_%i/%s.txt'% (level, i.prefix) +
-                 ' masks_transformed/' + i.prefix + '.mif' +
-                 ' -force')
-    runCommand ('mrmath ' + allindir('masks_transformed') + ' min - | maskfilter - median - | maskfilter - dilate -npass 5 init_nl_template_mask.mif -force')
-    current_template_mask = 'init_nl_template_mask.mif'
+runCommand('cp ' + allindir('linear_transforms_%i' % level) + ' linear_transforms/')
 
-runCommand('cp ' + allindir('linear_transforms_%i'% level) + ' linear_transforms/')
+# Create a template mask for nl registration by taking the intersection of all transformed input masks and dilating
+if useMasks:
+  for i in input:
+    runCommand('mrtransform ' + abspath(i.mask_directory, i.mask_filename) +
+               ' -template ' + current_template +
+               ' -interp nearest' +
+               ' -linear linear_transforms/%s.txt' % i.prefix +
+               ' masks_transformed/%s.mif' % i.prefix +
+               ' -force')
+  runCommand ('mrmath ' + allindir('masks_transformed') + ' min - | maskfilter - median - | maskfilter - dilate -npass 5 init_nl_template_mask.mif -force')
+  current_template_mask = 'init_nl_template_mask.mif'
 
 # Optimise the template with non-linear registration
 printMessage('Optimising template with non-linear registration')
