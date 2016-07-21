@@ -907,12 +907,35 @@ namespace MR
       }
 
       if (num_optional_arguments && num_args_required > argument.size())
-        throw Exception ("expected at least " + str (num_args_required)
+        throw Exception ("Expected at least " + str (num_args_required)
             + " arguments (" + str (argument.size()) + " supplied)");
 
-      if (num_optional_arguments == 0 && num_args_required != argument.size())
-        throw Exception ("expected exactly " + str (num_args_required)
+      if (num_optional_arguments == 0 && num_args_required != argument.size()) {
+        Exception e ("Expected exactly " + str (num_args_required)
             + " arguments (" + str (argument.size()) + " supplied)");
+        std::string s = "Usage: " + NAME;
+        for (const auto& a : ARGUMENTS)
+          s += " " + std::string(a.id);
+        e.push_back (s);
+        s = "Yours: " + NAME;
+        for (const auto& a : argument)
+          s += " " + std::string(a);
+        e.push_back (s);
+        if (argument.size() > num_args_required) {
+          std::vector<std::string> potential_options;
+          for (const auto& a : argument) {
+            for (const auto& og : OPTIONS) {
+              for (const auto& o : og) {
+                if (std::string(a) == std::string(o.id))
+                  potential_options.push_back ("'-" + a + "'");
+              }
+            }
+          }
+          if (potential_options.size())
+            e.push_back ("(Did you mean " + join(potential_options, " or ") + "?)");
+        }
+        throw e;
+      }
 
       size_t num_extra_arguments = argument.size() - num_args_required;
       size_t num_arg_per_multi = num_optional_arguments ? num_extra_arguments / num_optional_arguments : 0;
