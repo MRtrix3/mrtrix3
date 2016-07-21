@@ -258,6 +258,9 @@ lib.app.make_dir('linear_transforms_initial')
 lib.app.make_dir('linear_transforms')
 for level in range(0, len(linear_scales)):
   lib.app.make_dir('linear_transforms_%i' % level)
+for level in range(0, len(nl_scales)):
+  lib.app.make_dir('warps_%i' % level)
+
 if useMasks:
   lib.app.make_dir('masks_transformed')
 if lib.app.args.verbose:
@@ -454,7 +457,7 @@ for level in range(0, len(linear_scales)):
     runCommand ('mrmath ' + allindir('masks_transformed') + ' min - | maskfilter - median - | maskfilter - dilate -npass 5 init_nl_template_mask.mif -force')
     current_template_mask = 'init_nl_template_mask.mif'
 
-runCommand('cp ' + allindir('linear_transforms_%i'% level) + 'linear_transforms/')
+runCommand('cp ' + allindir('linear_transforms_%i'% level) + ' linear_transforms/')
 
 # Optimise the template with non-linear registration
 printMessage('Optimising template with non-linear registration')
@@ -462,7 +465,7 @@ lib.app.make_dir('warps')
 for level in range(0, len(nl_scales)):
   for i in input:
     if level > 0:
-      initialise = ' -nl_init warps/' + i.prefix + '.mif'
+      initialise = ' -nl_init warps_%i/%s.mif' % (level-1, i.prefix)
       scale = ''
     else:
       scale = ' -nl_scale ' + str(nl_scales[level])
@@ -484,7 +487,7 @@ for level in range(0, len(nl_scales)):
     runCommand('mrregister ' + abspath(i.directory, i.filename) + ' ' + current_template +
                ' -type nonlinear' +
                ' -nl_niter ' + str(nl_niter[level]) +
-               ' -nl_warp_full warps/' + i.prefix + '.mif' +
+               ' -nl_warp_full warps_%i/%s.mif' % (level, i.prefix) +
                ' -transformed input_transformed/' + i.prefix + '.mif' +
                ' -nl_update_smooth ' +  lib.app.args.nl_update_smooth +
                ' -nl_disp_smooth ' +  lib.app.args.nl_disp_smooth +
@@ -495,10 +498,12 @@ for level in range(0, len(nl_scales)):
                  mask +
                  datatype +
                  lmax)
+    if level > 0:
+      runCommand('rm warps_%i/%s.mif' % (level-1, i.prefix))
     if useMasks:
       runCommand('mrtransform ' + abspath(i.mask_directory, i.mask_filename) +
                  ' -template ' + current_template +
-                 ' -warp_full warps/' + i.prefix + '.mif' +
+                 ' -warp_full warps_%i/%s.mif' % (level, i.prefix) +
                  ' masks_transformed/' + i.prefix + '.mif' +
                  ' -interp nearest ' +
                  ' -force')
@@ -514,8 +519,11 @@ for level in range(0, len(nl_scales)):
     if (nl_scales[level] < nl_scales[level + 1]):
       upsample_factor = nl_scales[level + 1] / nl_scales[level]
       for i in input:
-        runCommand('mrresize warps/' + i.prefix + '.mif -scale ' + str(upsample_factor) + ' tmp.mif')
-        runCommand('mv tmp.mif warps/' + i.prefix + '.mif')
+        runCommand('mrresize warps_%i/%s.mif -scale %f tmp.mif' % (level, i.prefix, upsample_factor))
+        runCommand('mv tmp.mif warps_%i/%s.mif' % (level, i.prefix))
+  else:
+    for i in input:
+      shutil.move('warps_%i/%s.mif warps/' % (level, i.prefix))
 
 
 runCommand('mrconvert ' + current_template + ' ' + getUserPath(lib.app.args.template, True) + lib.app.mrtrixForce)
@@ -537,7 +545,6 @@ if lib.app.args.transformed_dir:
   if os.path.exists(transformed_path):
     shutil.rmtree(transformed_path)
   shutil.copytree('input_transformed/', transformed_path)
-
 
 if lib.app.args.template_mask:
   runCommand('mrconvert ' + current_template_mask + ' ' + getUserPath(lib.app.args.template_mask, True) + lib.app.mrtrixForce)
