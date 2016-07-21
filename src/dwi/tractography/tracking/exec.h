@@ -367,6 +367,11 @@ namespace MR
               if (track_excluded)
                 return true;
 
+              if (tck.size() == 1) {
+                S.add_rejection (NO_PROPAGATION_FROM_SEED);
+                return true;
+              }
+
               if (tck.size() < S.min_num_points) {
                 S.add_rejection (TRACK_TOO_SHORT);
                 return true;
