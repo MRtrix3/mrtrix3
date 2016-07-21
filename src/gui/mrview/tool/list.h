@@ -19,7 +19,7 @@
 #include "gui/mrview/tool/roi_editor/roi.h"
 #include "gui/mrview/tool/overlay.h"
 #include "gui/mrview/tool/odf/odf.h"
-#include "gui/mrview/tool/vector.h"
+#include "gui/mrview/tool/vector/vector.h"
 #include "gui/mrview/tool/screen_capture.h"
 #include "gui/mrview/tool/tractography/tractography.h"
 #include "gui/mrview/tool/connectome/connectome.h"
