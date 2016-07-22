@@ -116,7 +116,7 @@ void check_and_update (Header& H, const conv_t conversion)
 
   // Need to mask out voxels where the DC term is zero
   Header header_mask (H);
-  header_mask.set_ndim (3);
+  header_mask.ndim() = 3;
   header_mask.datatype() = DataType::Bit;
   auto mask = Image<bool>::scratch (header_mask);
   size_t voxel_count = 0;

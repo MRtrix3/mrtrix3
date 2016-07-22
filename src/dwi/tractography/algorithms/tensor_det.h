@@ -121,7 +121,7 @@ namespace MR
       protected:
       const Shared& S;
       Tracking::Interpolator<Image<float>>::type source;
-      Eigen::SelfAdjointEigenSolver<Matrix3f> eig;
+      Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eig;
       Eigen::Matrix3f M;
       Eigen::VectorXf dt;
 

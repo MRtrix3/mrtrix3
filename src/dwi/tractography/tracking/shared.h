@@ -120,7 +120,7 @@ namespace MR
                   rejections[i] = 0;
 
 #ifdef DEBUG_TERMINATIONS
-                debug_header.set_ndim (3);
+                debug_header.ndim() = 3;
                 debug_header.datatype() = DataType::UInt32;
                 for (size_t i = 0; i != TERMINATION_REASON_COUNT; ++i) {
                   std::string name;

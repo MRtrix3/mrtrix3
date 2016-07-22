@@ -223,7 +223,7 @@ void run ()
 
   auto header_in = Header::open (argument[1]);
   Header header_out (header_in);
-  header_out.set_ndim (4);
+  header_out.ndim() = 4;
   header_out.datatype() = DataType::Float32;
   header_out.datatype().set_byte_order_native();
   Stride::set_from_command_line (header_out, Stride::contiguous_along_axis (3, header_in));
@@ -265,6 +265,7 @@ void run ()
       throw Exception ("MSMT_CSD algorithm expects pairs of (input response function & output FOD image) to be provided");
 
     DWI::SDeconv::MSMT_CSD::Shared shared (header_in);
+    shared.parse_cmdline_options();
 
     const size_t num_tissues = (argument.size()-2)/2;
     std::vector<std::string> response_paths;
