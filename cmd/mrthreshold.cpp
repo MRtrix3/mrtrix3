@@ -42,7 +42,7 @@ void usage ()
     "or using a histogram-based analysis to cut out the background.";
 
   REFERENCES 
-    + "* If not using the -abs option:\n"
+    + "* If not using the -histogram option or any manual thresholding option:\n"
     "Ridgway, G. R.; Omar, R.; Ourselin, S.; Hill, D. L.; Warren, J. D. & Fox, N. C. "
     "Issues with threshold masking in voxel-based morphometry of atrophied brains. "
     "NeuroImage, 2009, 44, 99-111";
@@ -230,15 +230,19 @@ void run ()
     }
   }
   else {
+    Image<bool> mask;
+    opt = get_options ("mask");
+    if (opt.size())
+      mask = Image<bool>::open (opt[0][0]);
     if (use_histogram) {
-      Histogram<decltype(in)> hist (in);
-      threshold_value = hist.first_min();
-    }
-    else if (std::isnan (threshold_value)) {
-      Image<bool> mask;
-      opt = get_options ("mask");
-      if (opt.size())
-        mask = Image<bool>::open (opt[0][0]);
+      if (mask.valid()) {
+        auto hist = Algo::Histogram::generate (in, mask, 0);
+        threshold_value = hist.first_min();
+      } else {
+        auto hist = Algo::Histogram::generate (in, 0);
+        threshold_value = hist.first_min();
+      }
+    } else if (std::isnan (threshold_value)) {
       threshold_value = Filter::estimate_optimal_threshold (in, mask);
     }
 

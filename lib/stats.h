@@ -17,10 +17,9 @@
 
 
 #include "app.h"
+#include "algo/histogram.h"
+#include "file/ofstream.h"
 #include "math/median.h"
-
-
-#define DEFAULT_HISTOGRAM_BINS 100
 
 
 namespace MR
@@ -36,62 +35,44 @@ namespace MR
     typedef cfloat complex_type;
 
 
-    class CalibrateHistogram
-    {
-      public:
-        CalibrateHistogram (int nbins) : min (std::numeric_limits<value_type>::infinity()), max (-std::numeric_limits<value_type>::infinity()), width (0.0), bins (nbins) { }
-
-        value_type min, max, width;
-        int bins;
-
-        void operator() (value_type val) {
-          if (std::isfinite (val)) {
-            if (val < min) min = val;
-            if (val > max) max = val;
-          }
-        }
-
-        void init (std::ostream& stream) {
-          width = (max - min) / float (bins+1);
-          for (int i = 0; i < bins; i++)
-            stream << (min + width/2.0) + i* width << " ";
-          stream << "\n";
-        }
-    };
-
-
-
     class Stats
     {
       public:
-        Stats (bool is_complex = false) :
-          mean (0.0, 0.0),
-          std (0.0, 0.0),
-          min (INFINITY, INFINITY),
-          max (-INFINITY, -INFINITY),
-          count (0),
-          dump (NULL),
-          is_complex (is_complex) { }
+        Stats (const bool is_complex = false, const bool ignorezero = false) :
+            mean (0.0, 0.0),
+            std (0.0, 0.0),
+            min (INFINITY, INFINITY),
+            max (-INFINITY, -INFINITY),
+            count (0),
+            dump (NULL),
+            is_complex (is_complex),
+            ignore_zero (ignorezero) { }
 
-        void generate_histogram (const CalibrateHistogram& cal) {
-          hmin = cal.min;
-          hwidth = cal.width;
-          hist.resize (cal.bins);
+        void generate_histogram (const Algo::Histogram::Calibrator& cal) {
+          hist.reset (new Algo::Histogram::Data (cal));
         }
 
         void dump_to (std::ostream& stream) {
           dump = &stream;
         }
 
-        void write_histogram (std::ostream& stream) {
-          for (size_t i = 0; i < hist.size(); ++i)
-            stream << hist[i] << " ";
+        void write_histogram_header (std::ofstream& stream) const {
+          assert (hist);
+          for (size_t i = 0; i != hist->size(); ++i)
+            stream << hist->get_bin_centre(i) << " ";
+          stream << "\n";
+        }
+
+        void write_histogram_data (std::ofstream& stream) const {
+          assert (hist);
+          for (size_t i = 0; i < hist->size(); ++i)
+            stream << (*hist)[i] << " ";
           stream << "\n";
         }
 
 
         void operator() (complex_type val) {
-          if (std::isfinite (val.real()) && std::isfinite (val.imag())) {
+          if (std::isfinite (val.real()) && std::isfinite (val.imag()) && !(ignore_zero && val.real() == 0.0 && val.imag() == 0.0)) {
             mean += val;
             std += cdouble (val.real()*val.real(), val.imag()*val.imag());
             if (min.real() > val.real()) min = complex_type (val.real(), min.imag());
@@ -106,15 +87,8 @@ namespace MR
             if (!is_complex)
               values.push_back(val.real());
 
-
-            if (hist.size()) {
-              int bin = int ( (val.real()-hmin) / hwidth);
-              if (bin < 0)
-                bin = 0;
-              else if (bin >= int (hist.size()))
-                bin = hist.size()-1;
-              hist[bin]++;
-            }
+            if (hist)
+              (*hist) (val.real());
           }
         }
 
@@ -172,10 +146,9 @@ namespace MR
         cdouble mean, std;
         complex_type min, max;
         size_t count;
-        value_type hmin, hwidth;
-        std::vector<size_t> hist;
+        std::unique_ptr<Algo::Histogram::Data> hist;
         std::ostream* dump;
-        bool is_complex;
+        const bool is_complex, ignore_zero;
         std::vector<float> values;
     };
 

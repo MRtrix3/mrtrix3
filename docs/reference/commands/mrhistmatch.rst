@@ -1,6 +1,6 @@
-.. _fixelstats:
+.. _mrhistmatch:
 
-fixelstats
+mrhistmatch
 ===========
 
 Synopsis
@@ -8,33 +8,27 @@ Synopsis
 
 ::
 
-    fixelstats [ options ]  input
+    mrhistmatch [ options ]  input target output
 
--  *input*: the input fixel image.
+-  *input*: the input image to be modified
+-  *target*: the input image from which to derive the target histogram
+-  *output*: the output image
 
 Description
 -----------
 
-Compute fixel image statistics
+modify the intensities of one image to match the histogram of another via a non-linear transform.
 
 Options
 -------
 
-Statistics options
-^^^^^^^^^^^^^^^^^^
+-  **-mask_input image** only generate input histogram based on a specified binary mask image
 
--  **-output field** output only the field specified. Multiple such options can be supplied if required. Choices are: mean, median, std, min, max, count. Useful for use in scripts.
+-  **-mask_target image** only generate target histogram based on a specified binary mask image
 
--  **-mask image** only perform computation within the specified binary mask image.
+-  **-cdfs path** output the histogram CDFs to a text file (for debugging).
 
--  **-dump file** dump the voxel intensities to a text file.
-
-Histogram generation options
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
--  **-histogram file** generate histogram of intensities and store in specified text file. Note that the first line of the histogram gives the centre of the bins.
-
--  **-bins num** Manually set the number of bins to use to generate the histogram.
+-  **-bins num** the number of bins to use to generate the histograms
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -59,7 +53,7 @@ Standard options
 
 
 
-**Author:** David Raffelt (david.raffelt@florey.edu.au)
+**Author:** Robert E. Smith (robert.smith@florey.edu.au
 
 **Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
 

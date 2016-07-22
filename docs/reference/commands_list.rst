@@ -107,6 +107,8 @@ List of MRtrix3 commands
 
    commands/mrfilter
 
+   commands/mrhistmatch
+
    commands/mrinfo
 
    commands/mrmath
@@ -165,9 +167,9 @@ List of MRtrix3 commands
 
    commands/tcksample
 
-   commands/tcksift2
-
    commands/tcksift
+
+   commands/tcksift2
 
    commands/tckstats
 

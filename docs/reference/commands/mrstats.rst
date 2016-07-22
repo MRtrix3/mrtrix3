@@ -27,13 +27,21 @@ Statistics options
 
 -  **-mask image** only perform computation within the specified binary mask image.
 
--  **-histogram file** generate histogram of intensities and store in specified text file. Note that the first line of the histogram gives the centre of the bins.
-
--  **-bins num** the number of bins to use to generate the histogram (default = 100).
-
 -  **-dump file** dump the voxel intensities to a text file.
 
--  **-voxel pos** only perform computation within the specified voxel, supplied as a comma-separated vector of 3 integer values (multiple voxels can be included).
+Histogram generation options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-histogram file** generate histogram of intensities and store in specified text file. Note that the first line of the histogram gives the centre of the bins.
+
+-  **-bins num** Manually set the number of bins to use to generate the histogram.
+
+Additional options for mrstats
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-ignorezero** ignore zero-valued input voxels.
+
+-  **-voxel pos** only perform computation within the specified voxel(s), supplied as a comma-separated vector of 3 integer values (multiple voxels can be included).
 
 -  **-position file** dump the position of the voxels in the mask to a text file.
 

@@ -16,6 +16,7 @@
 
 #include "command.h"
 #include "progressbar.h"
+#include "algo/histogram.h"
 #include "algo/loop.h"
 
 #include "stats.h"
@@ -42,7 +43,8 @@ void usage ()
   + Argument ("input", "the input fixel image.").type_image_in ();
 
   OPTIONS
-  + Stats::Options;
+  + Stats::Options
+  + Algo::Histogram::Options;
 }
 
 
@@ -50,17 +52,14 @@ void run ()
 {
   Sparse::Image<FixelMetric> input (argument[0]);
 
-  std::unique_ptr<File::OFStream> dumpstream, hist_stream, position_stream;
+  auto opt = get_options("mask");
+  std::unique_ptr<Sparse::Image<FixelMetric> > mask_ptr;
+  if (opt.size()) {
+    mask_ptr.reset (new Sparse::Image<FixelMetric> (opt[0][0]));
+    check_dimensions (input, *mask_ptr);
+  }
 
-  auto opt = get_options ("histogram");
-  if (opt.size())
-    hist_stream.reset (new File::OFStream (opt[0][0]));
-
-  int nbins = DEFAULT_HISTOGRAM_BINS;
-  opt = get_options ("bins");
-  if (opt.size())
-    nbins = opt[0][0];
-  Stats::CalibrateHistogram calibrate (nbins);
+  std::unique_ptr<File::OFStream> dumpstream, position_stream;
 
   opt = get_options ("dump");
   if (opt.size())
@@ -77,15 +76,17 @@ void run ()
 
   bool header_shown (!App::log_level || fields.size());
 
-  opt = get_options("mask");
-  std::unique_ptr<Sparse::Image<FixelMetric> > mask_ptr;
+  Stats::Stats stats (false);
+
+  if (dumpstream)
+    stats.dump_to (*dumpstream);
+
+  opt = get_options ("histogram");
+  std::string histogram_path;
   if (opt.size()) {
-    mask_ptr.reset (new Sparse::Image<FixelMetric> (opt[0][0]));
-    check_dimensions (input, *mask_ptr);
-  }
-
-
-  if (hist_stream) {
+    histogram_path = std::string(opt[0][0]);
+    const size_t nbins = get_option_value ("bins", 0);
+    Algo::Histogram::Calibrator calibrate (nbins, false);
     for (auto i = Loop (input) (input); i; ++i) {
       if (mask_ptr) {
         assign_pos_of (input).to (*mask_ptr);
@@ -101,16 +102,11 @@ void run ()
         }
       }
     }
-    calibrate.init (*hist_stream);
-  }
-
-  Stats::Stats stats (false);
-
-  if (dumpstream)
-    stats.dump_to (*dumpstream);
-
-  if (hist_stream)
+    calibrate.finalize (1);
     stats.generate_histogram (calibrate);
+  } else if (get_options ("bins").size()) {
+    WARN ("Option -bins ignored as -histogram was not specified");
+  }
 
   for (auto i = Loop (input) (input); i; ++i) {
     if (mask_ptr) {
@@ -135,7 +131,10 @@ void run ()
 
   stats.print (input, fields);
 
-  if (hist_stream)
-    stats.write_histogram (*hist_stream);
+  if (histogram_path.size()) {
+    File::OFStream stream (histogram_path);
+    stats.write_histogram_header (stream);
+    stats.write_histogram_data (stream);
+  }
 
 }

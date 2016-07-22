@@ -13,109 +13,213 @@
  * 
  */
 
-#ifndef __image_histogram_h__
-#define __image_histogram_h__
+#ifndef __algo_histogram_h__
+#define __algo_histogram_h__
 
 #include <vector>
 
+#include "image_helpers.h"
 #include "algo/loop.h"
-#include "algo/min_max.h"
 
 namespace MR
 {
-
-    template <class Set> class Histogram
+  namespace Algo
+  {
+    namespace Histogram
     {
-      public:
-        typedef typename Set::value_type value_type;
 
-        Histogram (Set& D, const size_t num_buckets=100) {
-          if (num_buckets < 10)
-            throw Exception ("Error initialising histogram: number of buckets must be greater than 10");
 
-          INFO ("Initialising histogram with " + str (num_buckets) + " buckets");
-          list.resize (num_buckets);
+      extern const App::OptionGroup Options;
 
-          value_type min, max;
-          min_max (D, min, max);
 
-          value_type step = (max-min) / value_type (num_buckets);
+      class Calibrator
+      {
 
-          for (size_t n = 0; n < list.size(); n++)
-            list[n].value = min + step * (n + 0.5);
+        public:
+          Calibrator (const size_t number_of_bins = 0, const bool ignorezero = false) :
+              min (std::numeric_limits<default_type>::infinity()),
+              max (-std::numeric_limits<default_type>::infinity()),
+              bin_width (NaN),
+              num_bins (number_of_bins),
+              ignore_zero (ignorezero) { }
 
-          for (auto l = Loop("building histogram of \"" + shorten (D.name()) + "\"", D) (D); l; ++l) {
-            const value_type val = D.value();
-            if (std::isfinite (val) && val != 0.0) {
-              size_t pos = size_t ( (val-min) /step);
-              if (pos >= list.size()) pos = list.size()-1;
-              list[pos].frequency++;
+          template <typename value_type>
+          bool operator() (const value_type val) {
+            if (std::isfinite (val) && !(ignore_zero && val == 0.0)) {
+              min = std::min (min, default_type(val));
+              max = std::max (max, default_type(val));
+              if (!num_bins)
+                data.push_back (default_type(val));
             }
-          }
-        }
-
-
-        size_t frequency (size_t index) const {
-          return list[index].frequency;
-        }
-        value_type value (size_t index) const {
-          return list[index].value;
-        }
-        size_t num () const {
-          return list.size();
-        }
-        value_type first_min () const {
-          size_t p1 = 0;
-          while (list[p1].frequency <= list[p1+1].frequency && p1+2 < list.size())
-            ++p1;
-          for (size_t p = p1; p < list.size(); ++p) {
-            if (2*list[p].frequency < list[p1].frequency)
-              break;
-            if (list[p].frequency >= list[p1].frequency)
-              p1 = p;
+            return true;
           }
 
-          size_t m1 (p1+1);
-          while (list[m1].frequency >= list[m1+1].frequency && m1+2 < list.size())
-            ++m1;
-          for (size_t m = m1; m < list.size(); ++m) {
-            if (list[m].frequency > 2*list[m1].frequency)
-              break;
-            if (list[m].frequency <= list[m1].frequency)
-              m1 = m;
+          void finalize (const size_t num_volumes);
+
+          default_type get_bin_width() const { return bin_width; }
+          size_t get_num_bins() const { return num_bins; }
+          default_type get_min() const { return min; }
+          default_type get_max() const { return max; }
+          bool get_ignore_zero() const { return ignore_zero; }
+
+
+        private:
+          default_type min, max, bin_width;
+          size_t num_bins;
+          const bool ignore_zero;
+          std::vector<default_type> data;
+
+          default_type get_iqr();
+
+      };
+
+
+
+
+      class Data
+      {
+        public:
+
+          typedef Eigen::Array<size_t, Eigen::Dynamic, 1> vector_type;
+          typedef Eigen::Array<default_type, Eigen::Dynamic, 1> cdf_type;
+
+          Data (const Calibrator& calibrate) :
+              info (calibrate),
+              list (vector_type::Zero (info.get_num_bins())) { }
+
+          template <typename value_type>
+          bool operator() (const value_type val) {
+            if (std::isfinite (val) && !(info.get_ignore_zero() && val == 0.0)) {
+              const size_t pos = bin (val);
+              if (pos != size_t(list.size()))
+                ++list[pos];
+            }
+            return true;
           }
 
-          return list[m1].value;
-        }
-
-        float entropy () const {
-          int totalFrequency = 0;
-          for (size_t i = 0; i < list.size(); i++)
-            totalFrequency += list[i].frequency;
-          float imageEntropy = 0;
-
-          for (size_t i = 0; i < list.size(); i++){
-            double probability = static_cast<double>(list[i].frequency) / static_cast<double>(totalFrequency);
-            if (probability > 0.99 / totalFrequency)
-              imageEntropy += -probability * log(probability);
+          template <typename value_type>
+          size_t bin (const value_type val) const {
+            size_t pos = std::floor ((val - info.get_min()) / info.get_bin_width());
+            if (pos < 0) return size();
+            if (pos > size_t(list.size())) return size();
+            return pos;
           }
-          return imageEntropy;
+
+
+          size_t operator[] (const size_t index) const {
+            assert (index < size_t(list.size()));
+            return list[index];
+          }
+          size_t size() const {
+            return list.size();
+          }
+          default_type get_bin_centre (const size_t i) const {
+            return info.get_min() + (info.get_bin_width() * (i + 0.5));
+          }
+          const Calibrator& get_calibration() const { return info; }
+
+          const vector_type& pdf() const { return list; }
+          cdf_type cdf() const;
+
+          default_type first_min () const;
+
+          default_type entropy () const;
+
+        protected:
+          const Calibrator info;
+          vector_type list;
+          friend class Kernel;
+      };
+
+
+      // Convenience functions for calibrating (& histograming) basic input images
+      template <class ImageType>
+      void calibrate (Calibrator& result, ImageType& image)
+      {
+        for (auto l = Loop(image) (image); l; ++l)
+          result (image.value());
+        result.finalize (image.ndim() > 3 ? image.size(3) : 1);
+      }
+
+      template <class ImageType, class MaskType>
+      void calibrate (Calibrator& result, ImageType& image, MaskType& mask)
+      {
+        if (!mask.valid()) {
+          calibrate (result, image);
+          return;
         }
+        if (!dimensions_match (image, mask))
+          throw Exception ("Image and mask for histogram generation do not match");
+        for (auto l = Loop(image) (image, mask); l; ++l) {
+          if (mask.value())
+            result (image.value());
+        }
+        result.finalize (image.ndim() > 3 ? image.size(3) : 1);
+      }
 
-      protected:
-        class Entry
-        {
-          public:
-            Entry () : frequency (0), value (0.0) { }
-            size_t  frequency;
-            value_type  value;
-        };
+      template <class ImageType>
+      Data generate (ImageType& image, const size_t num_bins, const bool ignore_zero = false)
+      {
+        Calibrator calibrator (num_bins, ignore_zero);
+        calibrate (calibrator, image);
+        return generate (calibrator, image);
+      }
 
-        std::vector<Entry> list;
-        friend class Kernel;
-    };
+      template <class ImageType, class MaskType>
+      Data generate (ImageType& image, MaskType& mask, const size_t num_bins, const bool ignore_zero = false)
+      {
+        Calibrator calibrator (num_bins, ignore_zero);
+        calibrate (calibrator, image, mask);
+        return generate (calibrator, image, mask);
+      }
+
+      template <class ImageType>
+      Data generate (const Calibrator& calibrator, ImageType& image)
+      {
+        Data result (calibrator);
+        for (auto l = Loop(image) (image); l; ++l)
+          result (typename ImageType::value_type (image.value()));
+        return result;
+      }
+
+      template <class ImageType, class MaskType>
+      Data generate (const Calibrator& calibrator, ImageType& image, MaskType& mask)
+      {
+        if (!mask.valid())
+          return generate (calibrator, image);
+        Data result (calibrator);
+        for (auto l = Loop(image) (image, mask); l; ++l) {
+          if (mask.value())
+            result (typename ImageType::value_type (image.value()));
+        }
+        return result;
+      }
 
 
+
+
+      class Matcher
+      {
+
+          typedef Eigen::Array<default_type, Eigen::Dynamic, 1> vector_type;
+
+        public:
+          Matcher (const Data& input, const Data& target);
+
+          default_type operator() (const default_type) const;
+
+        private:
+          const Calibrator calib_input, calib_target;
+          vector_type mapping;
+
+      };
+
+
+
+
+
+    }
+  }
 }
 
 #endif
