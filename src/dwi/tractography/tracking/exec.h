@@ -367,7 +367,8 @@ namespace MR
               if (track_excluded)
                 return true;
 
-              if (tck.size() == 1) {
+              // seedtest algorithm uses min_num_points = 1; should be 2 or more for all other algorithms
+              if (tck.size() == 1 && S.min_num_points > 1) {
                 S.add_rejection (NO_PROPAGATION_FROM_SEED);
                 return true;
               }
