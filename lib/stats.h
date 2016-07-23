@@ -124,10 +124,10 @@ namespace MR
                 s += str (ima.index(n)) + " ";
             else
               s += "0 ";
-            s += "] ";
+            s += "]";
 
-            int width = is_complex ? 24 : 12;
-            std::cout << std::setw(15) << std::right << s << " ";
+            int width = is_complex ? 20 : 10;
+            std::cout << std::setw(12) << std::right << s << " ";
 
             std::cout << std::setw(width) << std::right << ( count ? str(mean) : "N/A" );
 
@@ -137,7 +137,7 @@ namespace MR
             std::cout << " " << std::setw(width) << std::right << ( count > 1 ? str(std) : "N/A" )
               << " " << std::setw(width) << std::right << ( count ? str(min) : "N/A" )
               << " " << std::setw(width) << std::right << ( count ? str(max) : "N/A" )
-              << " " << std::setw(12) << std::right << count << "\n";
+              << " " << std::setw(10) << std::right << count << "\n";
           }
 
         }
@@ -156,15 +156,15 @@ namespace MR
 
     inline void print_header (bool is_complex)
     {
-      int width = is_complex ? 24 : 12;
-      std::cout << std::setw(15) << std::right << "volume"
+      int width = is_complex ? 20 : 10;
+      std::cout << std::setw(12) << std::right << "volume"
         << " " << std::setw(width) << std::right << "mean";
       if (!is_complex)
         std::cout << " " << std::setw(width) << std::right << "median";
-      std::cout  << " " << std::setw(width) << std::right << "std. dev."
+      std::cout  << " " << std::setw(width) << std::right << "stdev"
         << " " << std::setw(width) << std::right << "min"
         << " " << std::setw(width) << std::right << "max"
-        << " " << std::setw(12) << std::right << "count\n";
+        << " " << std::setw(10) << std::right << "count" << "\n";
     }
 
   }
