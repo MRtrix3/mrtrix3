@@ -24,7 +24,6 @@
 #include "progressbar.h"
 
 #include "algo/loop.h"
-#include "algo/histogram.h"
 #include "filter/optimal_threshold.h"
 
 
@@ -36,13 +35,12 @@ void usage ()
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   DESCRIPTION
-  + "create bitwise image by thresholding image intensity. By default, an "
+  + "Create bitwise image by thresholding image intensity. By default, an "
     "optimal threshold is determined using a parameter-free method. "
-    "Alternatively the threshold can be defined manually by the user "
-    "or using a histogram-based analysis to cut out the background.";
+    "Alternatively the threshold can be defined manually by the user.";
 
   REFERENCES 
-    + "* If not using the -histogram option or any manual thresholding option:\n"
+    + "* If not using any manual thresholding option:\n"
     "Ridgway, G. R.; Omar, R.; Ourselin, S.; Hill, D. L.; Warren, J. D. & Fox, N. C. "
     "Issues with threshold masking in voxel-based morphometry of atrophied brains. "
     "NeuroImage, 2009, 44, 99-111";
@@ -55,9 +53,6 @@ void usage ()
   OPTIONS
   + Option ("abs", "specify threshold value as absolute intensity.")
   + Argument ("value").type_float()
-
-  + Option ("histogram", "define the threshold by a histogram analysis to cut out the background. "
-                         "Note that only the first study is used for thresholding.")
 
   + Option ("percentile", "threshold the image at the ith percentile.")
   + Argument ("value").type_float (0.0, 100.0)
@@ -88,18 +83,11 @@ void usage ()
 void run ()
 {
   default_type threshold_value (NaN), percentile (NaN), bottomNpercent (NaN), topNpercent (NaN);
-  bool use_histogram = false;
   size_t topN (0), bottomN (0), nopt (0);
 
   auto opt = get_options ("abs");
   if (opt.size()) {
     threshold_value = opt[0][0];
-    ++nopt;
-  }
-
-  opt = get_options ("histogram");
-  if (opt.size()) {
-    use_histogram = true;
     ++nopt;
   }
 
@@ -234,17 +222,8 @@ void run ()
     opt = get_options ("mask");
     if (opt.size())
       mask = Image<bool>::open (opt[0][0]);
-    if (use_histogram) {
-      if (mask.valid()) {
-        auto hist = Algo::Histogram::generate (in, mask, 0);
-        threshold_value = hist.first_min();
-      } else {
-        auto hist = Algo::Histogram::generate (in, 0);
-        threshold_value = hist.first_min();
-      }
-    } else if (std::isnan (threshold_value)) {
+    if (std::isnan (threshold_value))
       threshold_value = Filter::estimate_optimal_threshold (in, mask);
-    }
 
     const std::string msg = "thresholding \"" + shorten (in.name()) + "\" at intensity " + str (threshold_value);
     for (auto l = Loop(msg, in) (in, out); l; ++l) {

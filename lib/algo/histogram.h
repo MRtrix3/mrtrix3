@@ -54,7 +54,7 @@ namespace MR
             return true;
           }
 
-          void finalize (const size_t num_volumes);
+          void finalize (const size_t num_volumes, const bool is_integer);
 
           default_type get_bin_width() const { return bin_width; }
           size_t get_num_bins() const { return num_bins; }
@@ -138,7 +138,7 @@ namespace MR
       {
         for (auto l = Loop(image) (image); l; ++l)
           result (image.value());
-        result.finalize (image.ndim() > 3 ? image.size(3) : 1);
+        result.finalize (image.ndim() > 3 ? image.size(3) : 1, std::is_integral<typename ImageType::value_type>::value);
       }
 
       template <class ImageType, class MaskType>
@@ -154,7 +154,7 @@ namespace MR
           if (mask.value())
             result (image.value());
         }
-        result.finalize (image.ndim() > 3 ? image.size(3) : 1);
+        result.finalize (image.ndim() > 3 ? image.size(3) : 1, std::is_integral<typename ImageType::value_type>::value);
       }
 
       template <class ImageType>

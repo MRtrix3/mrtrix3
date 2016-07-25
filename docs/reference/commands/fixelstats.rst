@@ -27,14 +27,7 @@ Statistics options
 
 -  **-mask image** only perform computation within the specified binary mask image.
 
--  **-dump file** dump the voxel intensities to a text file.
-
-Histogram generation options
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
--  **-histogram file** generate histogram of intensities and store in specified text file. Note that the first line of the histogram gives the centre of the bins.
-
--  **-bins num** Manually set the number of bins to use to generate the histogram.
+-  **-ignorezero** ignore zero values during statistics calculation
 
 Standard options
 ^^^^^^^^^^^^^^^^

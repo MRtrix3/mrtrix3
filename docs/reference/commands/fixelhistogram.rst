@@ -1,6 +1,6 @@
-.. _mrstats:
+.. _fixelhistogram:
 
-mrstats
+fixelhistogram
 ===========
 
 Synopsis
@@ -8,33 +8,26 @@ Synopsis
 
 ::
 
-    mrstats [ options ]  image
+    fixelhistogram [ options ]  input
 
--  *image*: the input image from which statistics will be computed.
+-  *input*: the input fixel image.
 
 Description
 -----------
 
-compute images statistics.
+Generate a histogram of fixel values.
 
 Options
 -------
 
-Statistics options
-^^^^^^^^^^^^^^^^^^
+Histogram generation options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-output field** output only the field specified. Multiple such options can be supplied if required. Choices are: mean, median, std, min, max, count. Useful for use in scripts.
+-  **-bins num** Manually set the number of bins to use to generate the histogram.
 
--  **-mask image** only perform computation within the specified binary mask image.
+-  **-mask image** Calculate the histogram only within a mask image.
 
--  **-ignorezero** ignore zero values during statistics calculation
-
-Additional options for mrstats
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
--  **-allvolumes** generate statistics across all image volumes, rather than one set of statistics per image volume
-
--  **-ignorezero** ignore zero-valued input voxels.
+-  **-ignorezero** ignore zero-valued data during histogram construction.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -59,7 +52,7 @@ Standard options
 
 
 
-**Author:** J-Donald Tournier (jdtournier@gmail.com)
+**Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
 

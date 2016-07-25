@@ -27,19 +27,18 @@ namespace MR
 
       const OptionGroup Options = OptionGroup ("Histogram generation options")
 
-      + Option ("histogram",
-          "generate histogram of intensities and store in specified text file. Note "
-          "that the first line of the histogram gives the centre of the bins.")
-      + Argument ("file").type_file_out ()
+      + Option ("bins", "Manually set the number of bins to use to generate the histogram.")
+      + Argument ("num").type_integer (2)
 
-      + Option ("bins",
-          "Manually set the number of bins to use to generate the histogram.")
-      + Argument ("num").type_integer (2);
+      + Option ("mask", "Calculate the histogram only within a mask image.")
+      + Argument ("image").type_image_in()
 
+      + Option ("ignorezero", "ignore zero-valued data during histogram construction.");
 
 
 
-      void Calibrator::finalize (const size_t num_volumes)
+
+      void Calibrator::finalize (const size_t num_volumes, const bool is_integer)
       {
         if (!std::isfinite (bin_width)) {
           if (num_bins) {
@@ -52,10 +51,17 @@ namespace MR
             // Will need to revisit if mrstats gets capability to compute statistics across all volumes rather than splitting
             bin_width = 2.0 * get_iqr() * std::pow<default_type> (data.size() / num_volumes, -1.0/3.0);
             std::vector<default_type>().swap (data); // No longer required; free the memory used
-            // Now set the number of bins, and recalculate the bin width, to ensure
-            //   evenly-spaced bins from min to max
-            num_bins = std::round ((max - min) / get_bin_width());
-            bin_width = (max - min) / default_type(num_bins);
+            // If the input data are integers, the bin width should also be an integer, to avoid getting
+            //   regular spike artifacts in the histogram
+            if (is_integer) {
+              bin_width = std::round (bin_width);
+              num_bins = std::ceil ((max - min) / bin_width);
+            } else {
+              // Now set the number of bins, and recalculate the bin width, to ensure
+              //   evenly-spaced bins from min to max
+              num_bins = std::round ((max - min) / get_bin_width());
+              bin_width = (max - min) / default_type(num_bins);
+            }
           }
         }
       }

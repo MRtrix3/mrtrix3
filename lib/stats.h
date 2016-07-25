@@ -17,7 +17,6 @@
 
 
 #include "app.h"
-#include "algo/histogram.h"
 #include "file/ofstream.h"
 #include "math/median.h"
 
@@ -31,8 +30,8 @@ namespace MR
     extern const char * field_choices[];
     extern const App::OptionGroup Options;
 
-    typedef float value_type;
-    typedef cfloat complex_type;
+    typedef default_type value_type;
+    typedef cdouble complex_type;
 
 
     class Stats
@@ -44,31 +43,8 @@ namespace MR
             min (INFINITY, INFINITY),
             max (-INFINITY, -INFINITY),
             count (0),
-            dump (NULL),
             is_complex (is_complex),
             ignore_zero (ignorezero) { }
-
-        void generate_histogram (const Algo::Histogram::Calibrator& cal) {
-          hist.reset (new Algo::Histogram::Data (cal));
-        }
-
-        void dump_to (std::ostream& stream) {
-          dump = &stream;
-        }
-
-        void write_histogram_header (std::ofstream& stream) const {
-          assert (hist);
-          for (size_t i = 0; i != hist->size(); ++i)
-            stream << hist->get_bin_centre(i) << " ";
-          stream << "\n";
-        }
-
-        void write_histogram_data (std::ofstream& stream) const {
-          assert (hist);
-          for (size_t i = 0; i < hist->size(); ++i)
-            stream << (*hist)[i] << " ";
-          stream << "\n";
-        }
 
 
         void operator() (complex_type val) {
@@ -80,15 +56,8 @@ namespace MR
             if (max.real() < val.real()) max = complex_type (val.real(), max.imag());
             if (max.imag() < val.imag()) max = complex_type (max.real(), val.imag());
             count++;
-
-            if (dump)
-              *dump << str(val) << "\n";
-
             if (!is_complex)
               values.push_back(val.real());
-
-            if (hist)
-              (*hist) (val.real());
           }
         }
 
@@ -146,8 +115,6 @@ namespace MR
         cdouble mean, std;
         complex_type min, max;
         size_t count;
-        std::unique_ptr<Algo::Histogram::Data> hist;
-        std::ostream* dump;
         const bool is_complex, ignore_zero;
         std::vector<float> values;
     };

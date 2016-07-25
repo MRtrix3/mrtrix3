@@ -16,14 +16,12 @@ Synopsis
 Description
 -----------
 
-create bitwise image by thresholding image intensity. By default, an optimal threshold is determined using a parameter-free method. Alternatively the threshold can be defined manually by the user or using a histogram-based analysis to cut out the background.
+Create bitwise image by thresholding image intensity. By default, an optimal threshold is determined using a parameter-free method. Alternatively the threshold can be defined manually by the user.
 
 Options
 -------
 
 -  **-abs value** specify threshold value as absolute intensity.
-
--  **-histogram** define the threshold by a histogram analysis to cut out the background. Note that only the first study is used for thresholding.
 
 -  **-percentile value** threshold the image at the ith percentile.
 
@@ -65,7 +63,7 @@ Standard options
 References
 ^^^^^^^^^^
 
-* If not using the -histogram option or any manual thresholding option:Ridgway, G. R.; Omar, R.; Ourselin, S.; Hill, D. L.; Warren, J. D. & Fox, N. C. Issues with threshold masking in voxel-based morphometry of atrophied brains. NeuroImage, 2009, 44, 99-111
+* If not using any manual thresholding option:Ridgway, G. R.; Omar, R.; Ourselin, S.; Hill, D. L.; Warren, J. D. & Fox, N. C. Issues with threshold masking in voxel-based morphometry of atrophied brains. NeuroImage, 2009, 44, 99-111
 
 --------------
 

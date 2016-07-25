@@ -80,10 +80,7 @@ void run ()
   INFO ("Target histogram ranges from " + str(calib_target.get_min()) + " to " + str(calib_target.get_max()) + "; using " + str(calib_target.get_num_bins()) + " bins");
   Algo::Histogram::Data hist_target = Algo::Histogram::generate (calib_target, target, mask_target);
 
-  // Now need to find the conversion function to map the input histogram to the target one
-
-  // TODO Move this to a header somewhere
-
+  // Non-linear intensity mapping determined within this class
   Algo::Histogram::Matcher matcher (hist_input, hist_target);
 
   // Generate the output image

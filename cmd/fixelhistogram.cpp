@@ -15,9 +15,9 @@
 
 
 #include "command.h"
+#include "algo/histogram.h"
 #include "algo/loop.h"
 
-#include "stats.h"
 #include "image.h"
 
 #include "sparse/fixel_metric.h"
@@ -32,16 +32,16 @@ using Sparse::FixelMetric;
 
 void usage ()
 {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
-  + "Compute fixel image statistics";
+  + "Generate a histogram of fixel values.";
 
   ARGUMENTS
   + Argument ("input", "the input fixel image.").type_image_in ();
 
   OPTIONS
-  + Stats::Options;
+  + Algo::Histogram::Options;
 }
 
 
@@ -56,30 +56,47 @@ void run ()
     check_dimensions (input, *mask_ptr);
   }
 
-  std::vector<std::string> fields;
-  opt = get_options ("output");
-  for (size_t n = 0; n < opt.size(); ++n)
-    fields.push_back (opt[n][0]);
+  File::OFStream output (argument[1]);
 
-  Stats::Stats stats (false);
-
+  size_t nbins = get_option_value ("bins", 0);
+  Algo::Histogram::Calibrator calibrator (nbins, get_options ("ignorezero").size());
   for (auto i = Loop (input) (input); i; ++i) {
     if (mask_ptr) {
       assign_pos_of (input).to (*mask_ptr);
       if (input.value().size() != mask_ptr->value().size())
         throw Exception ("the input fixel image and mask image to not have corrresponding fixels");
     }
+    for (size_t fixel = 0; fixel != input.value().size(); ++fixel) {
+      if (mask_ptr) {
+        if (mask_ptr->value()[fixel].value > 0.5)
+          calibrator (input.value()[fixel].value);
+      } else {
+        calibrator (input.value()[fixel].value);
+      }
+    }
+  }
+  calibrator.finalize (1, false);
+
+  Algo::Histogram::Data histogram (calibrator);
+
+  for (auto i = Loop (input) (input); i; ++i) {
+    if (mask_ptr)
+      assign_pos_of (input).to (*mask_ptr);
 
     for (size_t fixel = 0; fixel != input.value().size(); ++fixel) {
       if (mask_ptr) {
         if (mask_ptr->value()[fixel].value > 0.5)
-          stats (input.value()[fixel].value);
+          histogram (input.value()[fixel].value);
       } else {
-        stats (input.value()[fixel].value);
+        histogram (input.value()[fixel].value);
       }
     }
   }
 
-  Stats::print_header (false);
-  stats.print (input, fields);
+  for (size_t i = 0; i != nbins; ++i)
+    output << (calibrator.get_min() + ((i+0.5) * calibrator.get_bin_width())) << ",";
+  output << "\n";
+  for (size_t i = 0; i != nbins; ++i)
+    output << histogram[i] << ",";
+  output << "\n";
 }
