@@ -41,7 +41,15 @@ namespace MR {
                     match = false;
               }
               if (match && !series_time_mismatch_warning_issued) {
-                if (to<float> (series_time) != to<float> ((*this)[n]->time)) {
+                float stime = NaN, stime_ref = NaN;
+                try {
+                  stime = to<float> (series_time);
+                  stime_ref = to<float> ((*this)[n]->time);
+                }
+                catch (Exception& E) {
+                  INFO ("error reading DICOM series time - field does not exist or is empty?");
+                }
+                if (stime != stime_ref) {
                   INFO ("WARNING: series times do not match - this may cause problem with series grouping");
                   series_time_mismatch_warning_issued = true;
                 }
