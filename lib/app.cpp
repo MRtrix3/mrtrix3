@@ -492,7 +492,7 @@ namespace MR
 
       //CONF option: HelpCommand
       //CONF default: less
-      //CONF the command to use to display each command's help page (leave
+      //CONF The command to use to display each command's help page (leave
       //CONF empty to send directly to the terminal).
       const std::string help_display_command = File::Config::get ("HelpCommand", MRTRIX_HELP_COMMAND); 
 
