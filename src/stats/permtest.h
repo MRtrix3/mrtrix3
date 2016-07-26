@@ -19,6 +19,7 @@
 #include <memory>
 #include <mutex>
 
+#include "app.h"
 #include "progressbar.h"
 #include "thread.h"
 #include "thread_queue.h"
@@ -28,6 +29,11 @@
 
 #include "stats/enhance.h"
 #include "stats/permstack.h"
+
+
+#define DEFAULT_NUMBER_PERMUTATIONS 5000
+#define DEFAULT_NUMBER_PERMUTATIONS_NONSTATIONARITY 5000
+
 
 namespace MR
 {
@@ -40,6 +46,10 @@ namespace MR
 
       typedef Math::Stats::value_type value_type;
       typedef Math::Stats::vector_type vector_type;
+
+
+
+      const App::OptionGroup Options (const bool include_nonstationarity);
 
 
 

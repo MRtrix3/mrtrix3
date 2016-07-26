@@ -1,6 +1,6 @@
-.. _connectomestats:
+.. _vectorstats:
 
-connectomestats
+vectorstats
 ===========
 
 Synopsis
@@ -8,10 +8,9 @@ Synopsis
 
 ::
 
-    connectomestats [ options ]  input algorithm design contrast output
+    vectorstats [ options ]  input design contrast output
 
--  *input*: a text file listing the file names of the input connectomes
--  *algorithm*: the algorithm to use in network-based clustering/enhancement. Options are: nbs, nbs_tfce, none
+-  *input*: a text file listing the file names of the input subject data
 -  *design*: the design matrix. Note that a column of 1's will need to be added for correlations.
 -  *contrast*: the contrast vector, specified as a single row of weights
 -  *output*: the filename prefix for all output.
@@ -19,7 +18,7 @@ Synopsis
 Description
 -----------
 
-Connectome group-wise statistics at the edge level using non-parametric permutation testing.
+Statistical testing of vector data using non-parametric permutation testing.
 
 Options
 -------
@@ -30,24 +29,6 @@ Options for permutation testing
 -  **-notest** don't perform permutation testing and only output population statistics (effect size, stdev etc)
 
 -  **-nperms num** the number of permutations (Default: 5000)
-
--  **-nonstationary** perform non-stationarity correction
-
--  **-nperms_nonstationary num** the number of permutations used when precomputing the empirical statistic image for nonstationary correction (Default: 5000)
-
-Options for controlling TFCE behaviour
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
--  **-tfce_dh value** the height increment used in the tfce integration (default: 0.1)
-
--  **-tfce_e value** tfce extent exponent (default: 0.4)
-
--  **-tfce_h value** tfce height exponent (default: 3)
-
-Additional options for connectomestats
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
--  **-threshold value** the t-statistic value to use in threshold-based clustering algorithms
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -67,15 +48,6 @@ Standard options
 -  **-help** display this information page and exit.
 
 -  **-version** display version information and exit.
-
-References
-^^^^^^^^^^
-
-* If using the NBS algorithm: Zalesky, A.; Fornito, A. & Bullmore, E. T. Network-based statistic: Identifying differences in brain networks. NeuroImage, 2010, 53, 1197-1207
-
-* If using the NBS-TFCE algorithm: Vinokur, L.; Zalesky, A.; Raffelt, D.; Smith, R.E. & Connelly, A. A Novel Threshold-Free Network-Based Statistics Method: Demonstration using Simulated Pathology. OHBM, 2015, 4144
-
-* If using the -nonstationary option: Salimi-Khorshidi, G.; Smith, S.M. & Nichols, T.E. Adjusting the effect of nonstationarity in cluster-based and TFCE inference. Neuroimage, 2011, 54(3), 2006-19
 
 --------------
 

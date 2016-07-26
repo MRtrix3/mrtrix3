@@ -32,8 +32,6 @@ using namespace MR;
 using namespace App;
 
 
-#define NPERMS_DEFAULT 5000
-
 
 void usage ()
 {
@@ -54,11 +52,7 @@ void usage ()
 
 
   OPTIONS
-
-  + Option ("notest", "don't perform permutation testing and only output population statistics (effect size, stdev etc)")
-
-  + Option ("nperms", "the number of permutations (default: " + str(NPERMS_DEFAULT) + ").")
-  + Argument ("num").type_integer (1);
+  + Stats::PermTest::Options (false);
 
 }
 
@@ -94,7 +88,7 @@ void run()
   const vector_type example_data = load_vector (filenames.front());
   const size_t num_elements = example_data.size();
 
-  const size_t num_perms = get_option_value ("nperms", NPERMS_DEFAULT);
+  const size_t num_perms = get_option_value ("nperms", DEFAULT_NUMBER_PERMUTATIONS);
 
   // Load design matrix
   const matrix_type design = load_matrix (argument[2]);
@@ -173,11 +167,11 @@ void run()
   // Perform permutation testing
   if (!get_options ("notest").size()) {
 
+    std::shared_ptr<Stats::EnhancerBase> enhancer;
     vector_type null_distribution (num_perms), uncorrected_pvalues (num_perms);
     vector_type empirical_distribution;
 
-    // TODO Need the float_type_changes updates in order to bypass enhancement
-    Stats::PermTest::run_permutations (glm_ttest, nullptr, num_perms, empirical_distribution,
+    Stats::PermTest::run_permutations (glm_ttest, enhancer, num_perms, empirical_distribution,
                                        default_tvalues, std::shared_ptr<vector_type>(),
                                        null_distribution, std::shared_ptr<vector_type>(),
                                        uncorrected_pvalues, std::shared_ptr<vector_type>());

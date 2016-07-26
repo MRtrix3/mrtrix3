@@ -45,9 +45,6 @@ const char* algorithms[] = { "nbs", "nbs_tfce", "none", nullptr };
 #define TFCE_H_DEFAULT 3.0
 
 
-#define NPERMS_DEFAULT 5000
-#define NPERMS_NONSTATIONARITY_DEFAULT 5000
-
 
 void usage ()
 {
@@ -72,29 +69,15 @@ void usage ()
 
   OPTIONS
 
-  + Option ("notest", "don't perform permutation testing and only output population statistics (effect size, stdev etc)")
-
-  + Option ("nperms", "the number of permutations (default: " + str(NPERMS_DEFAULT) + ").")
-  + Argument ("num").type_integer (1)
-
-  + Option ("threshold", "the t-statistic value to use in threshold-based clustering algorithms")
-  + Argument ("value").type_float (0.0)
+  + Stats::PermTest::Options (true)
 
   // TODO OptionGroup these, and provide a generic loader function
-  + Option ("tfce_dh", "the height increment used in the tfce integration (default: 0.1)")
-  + Argument ("value").type_float (1e-6)
+  + Stats::TFCE::Options (TFCE_DH_DEFAULT, TFCE_E_DEFAULT, TFCE_H_DEFAULT)
 
-  + Option ("tfce_e", "tfce extent exponent (default: 0.5)")
-  + Argument ("value").type_float (0.0)
+  + OptionGroup ("Additional options for connectomestats")
 
-  + Option ("tfce_h", "tfce height exponent (default: 2.0)")
-  + Argument ("value").type_float (0.0)
-
-  + Option ("nonstationary", "do adjustment for non-stationarity")
-
-  + Option ("nperms_nonstationary", "the number of permutations used when precomputing the empirical statistic image for nonstationary correction (Default: " + str(NPERMS_NONSTATIONARITY_DEFAULT) + ")")
-  + Argument ("num").type_integer (1);
-
+  + Option ("threshold", "the t-statistic value to use in threshold-based clustering algorithms")
+  + Argument ("value").type_float (0.0);
 
 
   REFERENCES + "* If using the NBS algorithm: \n"
@@ -118,13 +101,12 @@ using Math::Stats::vector_type;
 
 
 
-
-void load_tfce_parameters (MR::Connectome::Enhance::TFCEWrapper& enhancer)
+void load_tfce_parameters (Stats::TFCE::Wrapper& enhancer)
 {
-  const default_type dh = get_option_value ("tfce_dh", TFCE_DH_DEFAULT);
+  const default_type dH = get_option_value ("tfce_dh", TFCE_DH_DEFAULT);
   const default_type E  = get_option_value ("tfce_e", TFCE_E_DEFAULT);
   const default_type H  = get_option_value ("tfce_h", TFCE_H_DEFAULT);
-  enhancer.set_tfce_parameters (E, H, dh);
+  enhancer.set_tfce_parameters (dH, E, H);
 }
 
 
@@ -168,8 +150,8 @@ void run()
       break;
     case 1: {
       std::shared_ptr<Stats::TFCE::EnhancerBase> base (new MR::Connectome::Enhance::NBS (num_nodes));
-      enhancer.reset (new MR::Connectome::Enhance::TFCEWrapper (base));
-      load_tfce_parameters (*(dynamic_cast<MR::Connectome::Enhance::TFCEWrapper*>(enhancer.get())));
+      enhancer.reset (new Stats::TFCE::Wrapper (base));
+      load_tfce_parameters (*(dynamic_cast<Stats::TFCE::Wrapper*>(enhancer.get())));
       if (get_options ("threshold").size())
         WARN (std::string (argument[1]) + " is a threshold-free algorithm; -threshold option ignored");
       }
@@ -184,9 +166,9 @@ void run()
       throw Exception ("Unknown enhancement algorithm");
   }
 
-  const size_t num_perms = get_option_value ("nperms", NPERMS_DEFAULT);
+  const size_t num_perms = get_option_value ("nperms", DEFAULT_NUMBER_PERMUTATIONS);
   const bool do_nonstationary_adjustment = get_options ("nonstationary").size();
-  const size_t nperms_nonstationary = get_option_value ("nperms_nonstationarity", NPERMS_NONSTATIONARITY_DEFAULT);
+  const size_t nperms_nonstationary = get_option_value ("nperms_nonstationarity", DEFAULT_NUMBER_PERMUTATIONS_NONSTATIONARITY);
 
   // Load design matrix
   const matrix_type design = load_matrix (argument[2]);

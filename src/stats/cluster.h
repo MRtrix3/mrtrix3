@@ -19,6 +19,7 @@
 #include "filter/connected_components.h"
 #include "math/stats/typedefs.h"
 
+#include "stats/tfce.h"
 #include "stats/enhance.h"
 
 namespace MR
@@ -37,18 +38,24 @@ namespace MR
 
       /** \addtogroup Statistics
       @{ */
-      class ClusterSize : public Stats::EnhancerBase {
+      class ClusterSize : public Stats::TFCE::EnhancerBase {
         public:
-          ClusterSize (const Filter::Connector& connector, value_type cluster_forming_threshold) :
-                       connector (connector), cluster_forming_threshold (cluster_forming_threshold) { }
+          ClusterSize (const Filter::Connector& connector, const value_type T) :
+                       connector (connector), threshold (T) { }
+
+          void set_threshold (const value_type T) { threshold = T; }
 
 
-          value_type operator() (const vector_type& stats, vector_type& get_cluster_sizes) const override;
+          value_type operator() (const vector_type& in, vector_type& out) const override {
+            return (*this) (in, threshold, out);
+          }
+
+          value_type operator() (const vector_type&, const value_type, vector_type&) const override;
 
 
         protected:
           const Filter::Connector& connector;
-          const value_type cluster_forming_threshold;
+          value_type threshold;
       };
       //! @}
 

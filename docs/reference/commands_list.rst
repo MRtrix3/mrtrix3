@@ -363,6 +363,10 @@ List of MRtrix3 commands
 .......
 
 
+.. include:: commands/vectorstats.rst
+.......
+
+
 .. include:: commands/voxel2fixel.rst
 .......
 

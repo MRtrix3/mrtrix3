@@ -84,33 +84,6 @@ namespace MR {
 
 
 
-      class TFCEWrapper : public Stats::EnhancerBase
-      {
-        public:
-          TFCEWrapper (const std::shared_ptr<Stats::TFCE::EnhancerBase> base) : enhancer (base), E (NaN), H (NaN), dh (NaN) { }
-          TFCEWrapper (const TFCEWrapper& that) = default;
-          ~TFCEWrapper() { }
-
-          // TODO Homogenise TFCE
-          void set_tfce_parameters (const value_type extent, const value_type height, const value_type d_height)
-          {
-            E = extent;
-            H = height;
-            dh = d_height;
-          }
-
-          value_type operator() (const vector_type&, vector_type&) const override;
-
-        private:
-          std::shared_ptr<Stats::TFCE::EnhancerBase> enhancer;
-          value_type E, H, dh;
-
-      };
-
-
-
-
-
     }
   }
 }

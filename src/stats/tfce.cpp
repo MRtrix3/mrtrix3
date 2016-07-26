@@ -23,30 +23,39 @@ namespace MR
     {
 
 
-
-      Enhancer::Enhancer (const Filter::Connector& connector, const value_type dh, const value_type E, const value_type H) :
-          connector (connector),
-          dh (dh),
-          E (E),
-          H (H) { }
-
-
-
-      value_type Enhancer::operator() (const vector_type& stats, vector_type& enhanced_stats) const
+      using namespace App;
+      const OptionGroup Options (const default_type default_dh, const default_type default_e, const default_type default_h)
       {
-        enhanced_stats = vector_type::Zero (stats.size());
-        const value_type max_stat = stats.maxCoeff();
+        OptionGroup result = OptionGroup ("Options for controlling TFCE behaviour")
 
-        for (value_type h = this->dh; h < max_stat; h += this->dh) {
-          std::vector<Filter::cluster> clusters;
-          std::vector<uint32_t> labels (enhanced_stats.size(), 0);
-          connector.run (clusters, labels, stats, h);
-          for (size_t i = 0; i < size_t(enhanced_stats.size()); ++i)
-            if (labels[i])
-              enhanced_stats[i] += pow (clusters[labels[i]-1].size, this->E) * pow (h, this->H);
+        + Option ("tfce_dh", "the height increment used in the tfce integration (default: " + str(default_dh, 2) + ")")
+        + Argument ("value").type_float (1e-6)
+
+        + Option ("tfce_e", "tfce extent exponent (default: " + str(default_e, 2) + ")")
+        + Argument ("value").type_float (0.0)
+
+        + Option ("tfce_h", "tfce height exponent (default: " + str(default_h, 2) + ")")
+        + Argument ("value").type_float (0.0);
+
+        return result;
+      }
+
+
+
+      value_type Wrapper::operator() (const vector_type& in, vector_type& out) const
+      {
+        out = vector_type::Zero (in.size());
+        const value_type max_input_value = in.maxCoeff();
+        for (value_type h = dH; (h-dH) < max_input_value; h += dH) {
+          vector_type temp;
+          const value_type max = (*enhancer) (in, h, temp);
+          if (max) {
+            const value_type h_multiplier = std::pow (h, H);
+            for (size_t index = 0; index != size_t(in.size()); ++index)
+              out[index] += (std::pow (temp[index], E) * h_multiplier);
+          }
         }
-
-        return enhanced_stats.maxCoeff();
+        return out.maxCoeff();
       }
 
 

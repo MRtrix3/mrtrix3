@@ -24,23 +24,34 @@ Voxel-based analysis using permutation testing and threshold-free cluster enhanc
 Options
 -------
 
--  **-negative** automatically test the negative (opposite) contrast. By computing the opposite contrast simultaneously the computation time is reduced.
+Options for permutation testing
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-nperms num** the number of permutations (default = 5000).
+-  **-notest** don't perform permutation testing and only output population statistics (effect size, stdev etc)
+
+-  **-nperms num** the number of permutations (Default: 5000)
+
+-  **-nonstationary** perform non-stationarity correction
+
+-  **-nperms_nonstationary num** the number of permutations used when precomputing the empirical statistic image for nonstationary correction (Default: 5000)
+
+Options for controlling TFCE behaviour
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-tfce_dh value** the height increment used in the tfce integration (default: 0.1)
+
+-  **-tfce_e value** tfce extent exponent (default: 0.5)
+
+-  **-tfce_h value** tfce height exponent (default: 2)
+
+Additional options for mrclusterstats
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-negative** automatically test the negative (opposite) contrast. By computing the opposite contrast simultaneously the computation time is reduced.
 
 -  **-threshold value** the cluster-forming threshold to use for a standard cluster-based analysis. This disables TFCE, which is the default otherwise.
 
--  **-tfce_dh value** the height increment used in the TFCE integration (default = 0.1)
-
--  **-tfce_e value** TFCE extent parameter (default = 0.5)
-
--  **-tfce_h value** TFCE height parameter (default = 2)
-
 -  **-connectivity** use 26-voxel-neighbourhood connectivity (Default: 6)
-
--  **-nonstationary** perform non-stationarity correction (currently only implemented with tfce)
-
--  **-nperms_nonstationary num** the number of permutations used when precomputing the empirical statistic image for nonstationary correction (Default: 5000)
 
 Standard options
 ^^^^^^^^^^^^^^^^
