@@ -89,7 +89,7 @@ namespace MR
             HeaderHelper (const ::MR::Header& H) :
                 ::MR::Header (H)
             {
-              set_ndim (3);
+              ndim() = 3;
             }
             HeaderHelper() = default;
         } _header;

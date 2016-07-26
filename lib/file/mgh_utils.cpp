@@ -37,7 +37,7 @@ namespace MR
         }
 
         const size_t ndim = (Raw::fetch_<int32_t> (&MGHH.nframes, is_BE) > 1) ? 4 : 3;
-        H.set_ndim (ndim);
+        H.ndim() = ndim;
         H.size (0) = Raw::fetch_<int32_t> (&MGHH.width, is_BE);
         H.size (1) = Raw::fetch_<int32_t> (&MGHH.height, is_BE);
         H.size (2) = Raw::fetch_<int32_t> (&MGHH.depth, is_BE);

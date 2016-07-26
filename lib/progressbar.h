@@ -116,7 +116,7 @@ namespace MR
             text.resize (old_size, ' ');
 #endif
 	}
-      };
+      }
 
       //! update text displayed and optionally increment counter
       template <class TextFunc> 
@@ -253,7 +253,7 @@ namespace MR
         text = new_text;
         if (show && prog)
           prog->set_text (new_text);
-      };
+      }
 
       //! update text displayed and optionally increment counter
       /*! This expects a function, functor or lambda function that should

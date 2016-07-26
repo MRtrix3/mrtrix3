@@ -1,11 +1,13 @@
 def initParser(subparsers, base_parser):
   import argparse
-  parser = subparsers.add_parser('msmt_5tt', parents=[base_parser], help='Derive MSMT-CSD responses based on a co-registered 5TT image')
-  arguments = parser.add_argument_group('Positional arguments specific to the \'msmt_5tt\' algorithm')
-  arguments.add_argument('in_5tt', help='Input co-registered 5TT image')
-  arguments.add_argument('out_wm', help='Output WM response text file')
-  arguments.add_argument('out_gm', help='Output GM response text file')
-  arguments.add_argument('out_csf', help='Output CSF response text file')
+  import lib.app
+  lib.app.addCitation('If using \'msmt_csd\' algorithm', 'Jeurissen, B.; Tournier, J.-D.; Dhollander, T.; Connelly, A. & Sijbers, J. Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data. NeuroImage, 2014, 103, 411-426', False)
+  parser = subparsers.add_parser('msmt_5tt', parents=[base_parser], add_help=False, description='Derive MSMT-CSD tissue response functions based on a co-registered five-tissue-type (5TT) image')
+  parser.add_argument('input', help='The input DWI')
+  parser.add_argument('in_5tt', help='Input co-registered 5TT image')
+  parser.add_argument('out_wm', help='Output WM response text file')
+  parser.add_argument('out_gm', help='Output GM response text file')
+  parser.add_argument('out_csf', help='Output CSF response text file')
   options = parser.add_argument_group('Options specific to the \'msmt_5tt\' algorithm')
   options.add_argument('-dirs', help='Manually provide the fibre direction in each voxel (a tensor fit will be used otherwise)')
   options.add_argument('-fa', type=float, default=0.2, help='Upper fractional anisotropy threshold for GM and CSF voxel selection')
@@ -87,7 +89,7 @@ def execute():
   recursive_cleanup_option=''
   if not lib.app.cleanup:
     recursive_cleanup_option = ' -nocleanup'
-  runCommand('dwi2response -quiet -tempdir ' + lib.app.tempDir + recursive_cleanup_option + ' ' + lib.app.args.wm_algo + ' dwi.mif wm_ss_response.txt -mask wm_mask.mif -voxels wm_sf_mask.mif')
+  runCommand('dwi2response ' + lib.app.args.wm_algo + ' dwi.mif wm_ss_response.txt -mask wm_mask.mif -voxels wm_sf_mask.mif -quiet -tempdir ' + lib.app.tempDir + recursive_cleanup_option)
 
   # Check for empty masks
   wm_voxels  = int(getImageStat('wm_sf_mask.mif', 'count', 'wm_sf_mask.mif'))

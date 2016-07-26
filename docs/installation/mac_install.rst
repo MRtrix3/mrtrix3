@@ -46,6 +46,7 @@ Install Dependencies
    - With `Homebrew <http://brew.sh/>`__:
        - Install Eigen3: ``brew install eigen``
        - Install Qt5: ``brew install qt5``
+       - Install pkg-config: ``brew install pkg-config``
        - Add Qt's binaries to your path: ``export PATH=`brew --prefix`/opt/qt5/bin:$PATH``
       
    - With `MacPorts <http://macports.org/>`__:

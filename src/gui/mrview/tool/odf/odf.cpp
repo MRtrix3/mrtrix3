@@ -854,13 +854,13 @@ namespace MR
           options
             + OptionGroup ("ODF tool options")
 
-            + Option ("odf.load_sh", "Loads the specified SH-based ODF image on the ODF tool.")
+            + Option ("odf.load_sh", "Loads the specified SH-based ODF image on the ODF tool.").allow_multiple()
             +   Argument ("image").type_image_in()
 
-            + Option ("odf.load_tensor", "Loads the specified tensor image on the ODF tool.")
+            + Option ("odf.load_tensor", "Loads the specified tensor image on the ODF tool.").allow_multiple()
             +   Argument ("image").type_image_in()
 
-            + Option ("odf.load_dixel", "Loads the specified dixel-based image on the ODF tool.")
+            + Option ("odf.load_dixel", "Loads the specified dixel-based image on the ODF tool.").allow_multiple()
             +   Argument ("image").type_image_in();
             
         }

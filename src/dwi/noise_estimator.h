@@ -50,7 +50,7 @@ namespace MR {
                 for (auto l2 = Loop (3) (dwi); l2; ++l2) 
                   S(dwi.index(3), dwi.index(axis)) = dwi.value();
 
-              R.noalias() = H.selfadjointView<Lower>() * S - S;
+              R.noalias() = H.selfadjointView<Eigen::Lower>() * S - S;
 
               for (auto l = Loop (axis) (noise); l; ++l) {
                 R.col (noise.index (axis)).array() *= leverage.array();
