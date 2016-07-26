@@ -27,6 +27,10 @@ List of MRtrix3 commands
 .......
 
 
+.. include:: commands/connectomestats.rst
+.......
+
+
 .. include:: commands/dcmedit.rst
 .......
 
