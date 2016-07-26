@@ -123,7 +123,7 @@ void usage ()
 
 template <class VectorType>
 void write_fixel_output (const std::string& filename,
-                         const VectorType data,
+                         const VectorType& data,
                          const Header& header,
                          Sparse::Image<FixelMetric>& mask_vox,
                          Image<int32_t>& indexer_vox) {
@@ -196,7 +196,7 @@ void run() {
 
   // Create an image to store the fixel indices, if we had a fixel scratch buffer this would be cleaner
   Header index_header (input_header);
-  index_header.set_ndim(4);
+  index_header.ndim() = 4;
   index_header.size(3) = 2;
   auto fixel_index_image = Image<int32_t>::scratch (index_header);
   for (auto i = Loop ()(fixel_index_image);i; ++i)

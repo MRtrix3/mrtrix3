@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 
-import os, sys
-import lib.app
-import math
+import math, os, sys
+import lib.app, lib.cmdlineParser
 
 def abspath(*arg):
   return os.path.abspath(os.path.join(*arg))
@@ -25,14 +24,14 @@ class Input:
     self.mask_directory = mask_directory
 
 lib.app.author = 'David Raffelt (david.raffelt@florey.edu.au)'
-lib.app.initParser('Performs a global DWI intensity normalisation on a group of subjects using the median b=0 white matter value as the reference. The white matter mask is estimated from a population average FA template then warped back to each subject to perform the intensity normalisation. Note that bias field correction should be performed prior to this step.')
+lib.cmdlineParser.initialise('Performs a global DWI intensity normalisation on a group of subjects using the median b=0 white matter value as the reference. The white matter mask is estimated from a population average FA template then warped back to each subject to perform the intensity normalisation. Note that bias field correction should be performed prior to this step.')
 lib.app.parser.add_argument('input_dir', help='The input directory containing all DWI images')
 lib.app.parser.add_argument('mask_dir', help='Input directory containing brain masks, corresponding to one per input image (with the same file name prefix)')
 lib.app.parser.add_argument('output_dir', help='The output directory containing all of the intensity normalised DWI images')
 lib.app.parser.add_argument('fa_template', help='The output population specific FA template, which is threshold to estimate a white matter mask')
 lib.app.parser.add_argument('wm_mask', help='The output white matter mask (in template space), used to estimate the median b=0 white matter value for normalisation')
-
-lib.app.parser.add_argument('-fa_threshold', default='0.4', help='The threshold applied to the Fractional Anisotropy group template used to derive an approximate white matter mask')
+options = lib.app.parser.add_argument_group('Options for the dwiintensitynorm script')
+options.add_argument('-fa_threshold', default='0.4', help='The threshold applied to the Fractional Anisotropy group template used to derive an approximate white matter mask')
 
 
 lib.app.initialise()
@@ -72,6 +71,8 @@ lib.app.checkOutputFile (lib.app.args.fa_template)
 lib.app.checkOutputFile (lib.app.args.wm_mask)
 lib.app.checkOutputFile (lib.app.args.output_dir)
 lib.app.make_dir(lib.app.args.output_dir)
+
+lib.app.makeTempDir()
 
 maskTempDir = os.path.join(lib.app.tempDir, os.path.basename(os.path.normpath(maskDir)))
 runCommand ('cp -r ' + maskDir + ' ' + maskTempDir)

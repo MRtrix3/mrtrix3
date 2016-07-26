@@ -1,13 +1,17 @@
+.. _dwibiascorrect:
+
 dwibiascorrect
-===========
+==============
 
 Synopsis
 --------
 
+::
+
     dwibiascorrect [ options ] input output
 
-- *input*: The input image series to be corrected
-- *output*: The output corrected image series
+-  *input*: The input image series to be corrected
+-  *output*: The output corrected image series
 
 Description
 -----------
@@ -16,6 +20,9 @@ Perform B1 field inhomogeneity correction for a DWI volume series
 
 Options
 -------
+
+Options for the dwibiascorrect script
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-mask** Manually provide a mask image for bias field estimation
 
@@ -32,14 +39,13 @@ Options
 Standard options
 ^^^^^^^^^^^^^^^^
 
-
 - **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
 
 - **-force** Force overwrite of output files if pre-existing
 
 - **-help** Display help information for the script
 
-- **-nocleanup** Do not delete temporary directory at script completion
+- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
 
 - **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
 
@@ -52,28 +58,22 @@ Standard options
 References
 ^^^^^^^^^^
 
-fast:
-Zhang, Y.; Brady, M. & Smith, S. Segmentation of brain MR images through a hidden Markov random field model and the expectation-maximization algorithm. IEEE Transactions on Medical Imaging, 2001, 20, 45-57
+* If using -fast option: Zhang, Y.; Brady, M. & Smith, S. Segmentation of brain MR images through a hidden Markov random field model and the expectation-maximization algorithm. IEEE Transactions on Medical Imaging, 2001, 20, 45-57
+
+* If using -fast option: Smith, S. M.; Jenkinson, M.; Woolrich, M. W.; Beckmann, C. F.; Behrens, T. E.; Johansen-Berg, H.; Bannister, P. R.; De Luca, M.; Drobnjak, I.; Flitney, D. E.; Niazy, R. K.; Saunders, J.; Vickers, J.; Zhang, Y.; De Stefano, N.; Brady, J. M. & Matthews, P. M. Advances in functional and structural MR image analysis and implementation as FSL. NeuroImage, 2004, 23, S208-S219
+
+* If using -ants option: Tustison, N.; Avants, B.; Cook, P.; Zheng, Y.; Egan, A.; Yushkevich, P. & Gee, J. N4ITK: Improved N3 Bias Correction. IEEE Transactions on Medical Imaging, 2010, 29, 1310-1320
+
+--------------
 
 
-FSL:
-Smith, S. M.; Jenkinson, M.; Woolrich, M. W.; Beckmann, C. F.; Behrens, T. E.; Johansen-Berg, H.; Bannister, P. R.; De Luca, M.; Drobnjak, I.; Flitney, D. E.; Niazy, R. K.; Saunders, J.; Vickers, J.; Zhang, Y.; De Stefano, N.; Brady, J. M. & Matthews, P. M. Advances in functional and structural MR image analysis and implementation as FSL. NeuroImage, 2004, 23, S208-S219
-
-
-N4:
-Tustison, N.; Avants, B.; Cook, P.; Zheng, Y.; Egan, A.; Yushkevich, P. & Gee, J. N4ITK: Improved N3 Bias Correction. IEEE Transactions on Medical Imaging, 2010, 29, 1310-1320
-
-
-
----
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** 
-Copyright (c) 2008-2016 the MRtrix3 contributors
+**Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
 
 This Source Code Form is subject to the terms of the Mozilla Public 
-License, v. 2.0. If a copy of the MPL was not distributed with this
+License, v. 2.0. If a copy of the MPL was not distributed with this 
 file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 MRtrix is distributed in the hope that it will be useful, 
@@ -81,3 +81,4 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 For more details, see www.mrtrix.org
+
