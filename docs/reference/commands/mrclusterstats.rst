@@ -24,6 +24,8 @@ Voxel-based analysis using permutation testing and threshold-free cluster enhanc
 Options
 -------
 
+-  **-notest** don't perform permutation testing and only output population statistics (effect size, stdev etc)
+
 -  **-negative** automatically test the negative (opposite) contrast. By computing the opposite contrast simultaneously the computation time is reduced.
 
 -  **-nperms num** the number of permutations (default = 5000).
