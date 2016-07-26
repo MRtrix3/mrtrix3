@@ -22,7 +22,7 @@ However, you can also use :code:`mrtransform` to apply warps generated from othe
     warpcorrect mrtrix_warp[].nii mrtrix_warp_corrected.mif
 
 
-4. **Warp the image**. :code:`mrtransform` can warp any 3D or 4D image, however if the number of volumes in the 4th dimension equals the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28 etc), then it image is assumed to be a FOD image and `reorientation <http://www.ncbi.nlm.nih.gov/pubmed/22183751>`_ is automatically applied. Also note that `FOD modulation <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`_ can be applied using the `-modulation`. This preserves the total apparent fibre density across the width of each bundle before and after warping::
+4. **Warp the image**. :code:`mrtransform` can warp any 3D or 4D image, however if the number of volumes in the 4th dimension equals the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28 etc), then it  assumes the image to be an FOD image and `reorientation <http://www.ncbi.nlm.nih.gov/pubmed/22183751>`_ is automatically applied. Also note that `FOD modulation <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`_ can be applied using the option `-modulation`. This preserves the total apparent fibre density across the width of each bundle before and after warping::
 
     mrtransform input_fod_image.mif -warp mrtrix_warp_corrected.mif warped_fod_image.mif
     
