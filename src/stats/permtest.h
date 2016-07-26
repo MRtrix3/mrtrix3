@@ -297,7 +297,7 @@ namespace MR
             {
               PermutationStack permutations (num_permutations,
                                              stats_calculator.num_subjects(),
-                                             "running " + str(num_permutations) + " permutations...");
+                                             "running " + str(num_permutations) + " permutations");
 
               Processor<StatsType, EnhancementType> processor (permutations, stats_calculator, enhancer,
                                                                empirical_enhanced_statistic,
