@@ -23,7 +23,6 @@ from lib.runCommand    import runCommand
 from lib.warnMessage   import warnMessage
 
 try:
-  import bogus
   from numpy import loadtxt, savetxt, dot
 except ImportError:
   def loadtxt(fname, delimiter=" ", dtype=float):
