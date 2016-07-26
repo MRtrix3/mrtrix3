@@ -167,8 +167,7 @@ void run()
   for (size_t i = 0; i != filenames.size(); ++i)
     default_permutation[i] = i;
   vector_type default_tvalues;
-  default_type max_stat, min_stat;
-  glm_ttest (default_permutation, default_tvalues, max_stat, min_stat);
+  glm_ttest (default_permutation, default_tvalues);
   save_vector (default_tvalues, output_prefix + "_tvalue.csv");
 
   // Perform permutation testing

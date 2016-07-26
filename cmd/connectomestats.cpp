@@ -157,7 +157,7 @@ void run()
   const MR::Connectome::node_t num_nodes = example_connectome.rows();
 
   // Initialise enhancement algorithm
-  std::shared_ptr<MR::Connectome::Enhance::Base> enhancer;
+  std::shared_ptr<Stats::EnhancerBase> enhancer;
   switch (int(argument[1])) {
     case 0: {
       auto opt = get_options ("threshold");
@@ -167,7 +167,7 @@ void run()
       }
       break;
     case 1: {
-      std::shared_ptr<MR::Connectome::Enhance::Base> base (new MR::Connectome::Enhance::NBS (num_nodes));
+      std::shared_ptr<Stats::TFCE::EnhancerBase> base (new MR::Connectome::Enhance::NBS (num_nodes));
       enhancer.reset (new MR::Connectome::Enhance::TFCEWrapper (base));
       load_tfce_parameters (*(dynamic_cast<MR::Connectome::Enhance::TFCEWrapper*>(enhancer.get())));
       if (get_options ("threshold").size())
@@ -265,27 +265,10 @@ void run()
 
   Math::Stats::GLMTTest glm_ttest (data, design, contrast);
 
-  vector_type empirical_statistic;
-
   // If performing non-stationarity adjustment we need to pre-compute the empirical statistic
+  vector_type empirical_statistic;
   if (do_nonstationary_adjustment) {
-    switch (int(argument[1])) {
-      case 0: {
-        MR::Connectome::Enhance::NBS* temp = dynamic_cast<MR::Connectome::Enhance::NBS*> (enhancer.get());
-        Stats::PermTest::precompute_empirical_stat (glm_ttest, *temp, nperms_nonstationary, empirical_statistic);
-        }
-        break;
-      case 1: {
-        MR::Connectome::Enhance::TFCEWrapper* temp = dynamic_cast<MR::Connectome::Enhance::TFCEWrapper*> (enhancer.get());
-        Stats::PermTest::precompute_empirical_stat (glm_ttest, *temp, nperms_nonstationary, empirical_statistic);
-        }
-        break;
-      case 2: {
-        MR::Connectome::Enhance::PassThrough* temp = dynamic_cast<MR::Connectome::Enhance::PassThrough*> (enhancer.get());
-        Stats::PermTest::precompute_empirical_stat (glm_ttest, *temp, nperms_nonstationary, empirical_statistic);
-        }
-        break;
-    }
+    Stats::PermTest::precompute_empirical_stat (glm_ttest, enhancer, nperms_nonstationary, empirical_statistic);
     save_matrix (mat2vec.V2M (empirical_statistic), output_prefix + "_empirical.csv");
   }
 
@@ -293,7 +276,7 @@ void run()
   vector_type tvalue_output   (num_edges);
   vector_type enhanced_output (num_edges);
 
-  Stats::PermTest::precompute_default_permutation (glm_ttest, *enhancer, empirical_statistic, enhanced_output, std::shared_ptr<vector_type>(), tvalue_output);
+  Stats::PermTest::precompute_default_permutation (glm_ttest, enhancer, empirical_statistic, enhanced_output, std::shared_ptr<vector_type>(), tvalue_output);
 
   save_matrix (mat2vec.V2M (tvalue_output),   output_prefix + "_tvalue.csv");
   save_matrix (mat2vec.V2M (enhanced_output), output_prefix + "_enhanced.csv");
@@ -306,32 +289,10 @@ void run()
     vector_type null_distribution (num_perms);
     vector_type uncorrected_pvalues (num_edges);
 
-    switch (int(argument[1])) {
-
-      case 0: {
-        MR::Connectome::Enhance::NBS* temp = dynamic_cast<MR::Connectome::Enhance::NBS*> (enhancer.get());
-        Stats::PermTest::run_permutations (glm_ttest, *temp, num_perms, empirical_statistic,
-                                           enhanced_output, std::shared_ptr<vector_type>(),
-                                           null_distribution, std::shared_ptr<vector_type>(),
-                                           uncorrected_pvalues, std::shared_ptr<vector_type>());
-        }
-        break;
-      case 1: {
-        MR::Connectome::Enhance::TFCEWrapper* temp = dynamic_cast<MR::Connectome::Enhance::TFCEWrapper*> (enhancer.get());
-        Stats::PermTest::run_permutations (glm_ttest, *temp, num_perms, empirical_statistic,
-                                           enhanced_output, std::shared_ptr<vector_type>(),
-                                           null_distribution, std::shared_ptr<vector_type>(),
-                                           uncorrected_pvalues, std::shared_ptr<vector_type>());
-        } break;
-      case 2: {
-        MR::Connectome::Enhance::PassThrough* temp = dynamic_cast<MR::Connectome::Enhance::PassThrough*> (enhancer.get());
-        Stats::PermTest::run_permutations (glm_ttest, *temp, num_perms, empirical_statistic,
-                                           enhanced_output, std::shared_ptr<vector_type>(),
-                                           null_distribution, std::shared_ptr<vector_type>(),
-                                           uncorrected_pvalues, std::shared_ptr<vector_type>());
-        }
-        break;
-    }
+    Stats::PermTest::run_permutations (glm_ttest, enhancer, num_perms, empirical_statistic,
+                                       enhanced_output, std::shared_ptr<vector_type>(),
+                                       null_distribution, std::shared_ptr<vector_type>(),
+                                       uncorrected_pvalues, std::shared_ptr<vector_type>());
 
     save_vector (null_distribution, output_prefix + "_null_dist.txt");
     vector_type pvalue_output (num_edges);

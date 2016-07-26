@@ -29,15 +29,15 @@ namespace MR {
 
 
 
-      value_type PassThrough::enhance (const value_type max_t, const vector_type& in, vector_type& out) const
+      value_type PassThrough::operator() (const vector_type& in, vector_type& out) const
       {
         out = in;
-        return max_t;
+        return out.maxCoeff();
       }
 
 
 
-      value_type NBS::enhance_at_t (const vector_type& in, vector_type& out, const value_type T) const
+      value_type NBS::operator() (const vector_type& in, const value_type T, vector_type& out) const
       {
         out = vector_type::Zero (in.size());
         value_type max_value = value_type(0);
@@ -105,12 +105,13 @@ namespace MR {
 
 
 
-      value_type TFCEWrapper::enhance (const value_type max_t, const vector_type& in, vector_type& out) const
+      value_type TFCEWrapper::operator() (const vector_type& in, vector_type& out) const
       {
         out = vector_type::Zero (in.size());
-        for (value_type h = dh; (h-dh) < max_t; h += dh) {
+        const value_type max_input_value = in.maxCoeff();
+        for (value_type h = dh; (h-dh) < max_input_value; h += dh) {
           vector_type temp;
-          const value_type max = (*enhancer) (in, temp, h);
+          const value_type max = (*enhancer) (in, h, temp);
           if (max) {
             const value_type h_multiplier = std::pow (h, H);
             for (size_t index = 0; index != size_t(in.size()); ++index)

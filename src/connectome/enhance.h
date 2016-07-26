@@ -25,6 +25,8 @@
 #include "bitset.h"
 
 #include "connectome/mat2vec.h"
+#include "stats/enhance.h"
+#include "stats/tfce.h"
 
 
 
@@ -34,41 +36,26 @@ namespace MR {
 
 
 
-      // TODO This should instead be handled using the new base enhancer class
-      // These changes must not have been pushed...
-      class Base
-      {
-        public:
-          Base() { }
-          Base (const Base& that) = default;
-          virtual ~Base() { }
-
-          value_type operator() (const value_type max, const vector_type& in, vector_type& out) const { return enhance (max, in, out); }
-          virtual value_type operator() (const vector_type& in, vector_type& out, const value_type t) const { return enhance_at_t (in, out, t); }
-
-        protected:
-          virtual value_type enhance (const value_type, const vector_type&, vector_type&) const { assert (0); return NaN; }
-          virtual value_type enhance_at_t (const vector_type&, vector_type&, const value_type) const { assert (0); return NaN; }
-
-      };
+      typedef Math::Stats::value_type  value_type;
+      typedef Math::Stats::vector_type vector_type;
 
 
 
-      // This should be possible to use for either edge or node inference
-      class PassThrough : public Base
+      // This should be possible to use for any domain of inference
+      class PassThrough : public Stats::EnhancerBase
       {
         public:
           PassThrough() { }
           ~PassThrough() { }
 
         private:
-          value_type enhance (const value_type, const vector_type&, vector_type&) const override;
+          value_type operator() (const vector_type&, vector_type&) const override;
 
       };
 
 
 
-      class NBS : public Base
+      class NBS : public Stats::TFCE::EnhancerBase
       {
         public:
 
@@ -80,6 +67,12 @@ namespace MR {
 
           void set_threshold (const value_type t) { threshold = t; }
 
+          value_type operator() (const vector_type& in, vector_type& out) const override {
+            return (*this) (in, threshold, out);
+          }
+
+          value_type operator() (const vector_type&, const value_type, vector_type&) const;
+
         protected:
           std::shared_ptr< std::vector< std::vector<size_t> > > adjacency;
           value_type threshold;
@@ -87,20 +80,14 @@ namespace MR {
         private:
           void initialise (const node_t);
 
-          value_type enhance (const value_type max_t, const vector_type& in, vector_type& out) const override {
-            return enhance_at_t (in, out, threshold);
-          }
-
-          value_type enhance_at_t (const vector_type&, vector_type&, const value_type) const override;
-
       };
 
 
 
-      class TFCEWrapper : public Base
+      class TFCEWrapper : public Stats::EnhancerBase
       {
         public:
-          TFCEWrapper (const std::shared_ptr<Base> base) : enhancer (base), E (NaN), H (NaN), dh (NaN) { }
+          TFCEWrapper (const std::shared_ptr<Stats::TFCE::EnhancerBase> base) : enhancer (base), E (NaN), H (NaN), dh (NaN) { }
           TFCEWrapper (const TFCEWrapper& that) = default;
           ~TFCEWrapper() { }
 
@@ -112,11 +99,11 @@ namespace MR {
             dh = d_height;
           }
 
-        private:
-          std::shared_ptr<Base> enhancer;
-          value_type E, H, dh;
+          value_type operator() (const vector_type&, vector_type&) const override;
 
-          value_type enhance (const value_type, const vector_type&, vector_type&) const override;
+        private:
+          std::shared_ptr<Stats::TFCE::EnhancerBase> enhancer;
+          value_type E, H, dh;
 
       };
 

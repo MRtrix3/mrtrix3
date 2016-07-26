@@ -135,7 +135,12 @@ namespace MR
               bool operator() (const Permutation& permutation)
               {
                 stats_calculator (permutation.data, statistics);
-                perm_dist_pos[permutation.index] = (*enhancer) (statistics, enhanced_statistics);
+                if (enhancer) {
+                  perm_dist_pos[permutation.index] = (*enhancer) (statistics, enhanced_statistics);
+                } else {
+                  enhanced_statistics = statistics;
+                  perm_dist_pos[permutation.index] = enhanced_statistics.maxCoeff();
+                }
 
                 if (empirical_enhanced_statistics.size()) {
                   perm_dist_pos[permutation.index] = 0.0;

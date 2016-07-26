@@ -37,6 +37,16 @@ namespace MR
 
 
 
+      class EnhancerBase : public Stats::EnhancerBase
+      {
+        public:
+          // Alternative functor that also takes the threshold value
+          virtual value_type operator() (const vector_type& /*input_statistics*/, const value_type /*threshold*/, vector_type& /*enhanced_statistics*/) const = 0;
+
+      };
+
+
+
       /** \addtogroup Statistics
       @{ */
       class Enhancer : public Stats::EnhancerBase {
