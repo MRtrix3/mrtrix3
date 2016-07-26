@@ -21,6 +21,7 @@
 #include "math/stats/typedefs.h"
 
 #include "dwi/tractography/mapping/mapper.h"
+#include "stats/enhance.h"
 
 namespace MR
 {
@@ -78,13 +79,13 @@ namespace MR
 
 
 
-      class Enhancer {
+      class Enhancer : public Stats::EnhancerBase {
         public:
           Enhancer (const std::vector<std::map<int32_t, connectivity> >& connectivity_map,
                     const value_type dh, const value_type E, const value_type H);
 
 
-          value_type operator() (const value_type max_stat, const vector_type& stats, vector_type& enhanced_stats) const;
+          value_type operator() (const vector_type& stats, vector_type& enhanced_stats) const override;
 
 
         protected:

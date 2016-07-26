@@ -26,7 +26,7 @@ namespace MR
 
 
 
-      value_type ClusterSize::operator() (const value_type /*unused*/, const vector_type& stats, vector_type& get_cluster_sizes) const
+      value_type ClusterSize::operator() (const vector_type& stats, vector_type& get_cluster_sizes) const
       {
         std::vector<Filter::cluster> clusters;
         std::vector<uint32_t> labels (stats.size(), 0);

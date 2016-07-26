@@ -97,7 +97,7 @@ namespace MR
 
 
 
-      value_type Enhancer::operator() (const value_type max_stat, const vector_type& stats, vector_type& enhanced_stats) const
+      value_type Enhancer::operator() (const vector_type& stats, vector_type& enhanced_stats) const
       {
         enhanced_stats = vector_type::Zero (stats.size());
         value_type max_enhanced_stat = 0.0;

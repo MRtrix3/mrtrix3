@@ -26,21 +26,26 @@ namespace MR
 
       PermutationStack::PermutationStack (const size_t num_permutations, const size_t num_samples, const std::string msg, const bool include_default) :
           num_permutations (num_permutations),
-          current_permutation (0),
+          counter (0),
           progress (msg, num_permutations)
       {
-        Math::Stats::Permutation::generate (num_permutations, num_samples, permutations, include_default);
+        Math::Stats::Permutation::generate (num_permutations, num_samples, data, include_default);
       }
 
 
 
-      size_t PermutationStack::next()
+      bool PermutationStack::operator() (Permutation& out)
       {
-        std::lock_guard<std::mutex> lock (permutation_mutex);
-        size_t index = current_permutation++;
-        if (index < permutations.size())
+        if (counter < num_permutations) {
+          out.index = counter;
+          out.data = data[counter++];
           ++progress;
-        return index;
+          return true;
+        } else {
+          out.index = num_permutations;
+          out.data.clear();
+          return false;
+        }
       }
 
 
