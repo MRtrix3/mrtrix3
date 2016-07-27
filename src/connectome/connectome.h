@@ -31,6 +31,8 @@ typedef uint32_t node_t;
 typedef Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> matrix_type;
 
 
+matrix_type read_matrix( const std::string& path );
+
 void verify_matrix (matrix_type&, const node_t);
 
 
