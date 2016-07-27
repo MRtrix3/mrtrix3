@@ -60,22 +60,28 @@ void run ()
 
   size_t nbins = get_option_value ("bins", 0);
   Algo::Histogram::Calibrator calibrator (nbins, get_options ("ignorezero").size());
-  for (auto i = Loop (input) (input); i; ++i) {
-    if (mask_ptr) {
-      assign_pos_of (input).to (*mask_ptr);
-      if (input.value().size() != mask_ptr->value().size())
-        throw Exception ("the input fixel image and mask image to not have corrresponding fixels");
-    }
-    for (size_t fixel = 0; fixel != input.value().size(); ++fixel) {
+
+  opt = get_options ("template");
+  if (opt.size()) {
+    calibrator.from_file (opt[0][0]);
+  } else {
+    for (auto i = Loop (input) (input); i; ++i) {
       if (mask_ptr) {
-        if (mask_ptr->value()[fixel].value > 0.5)
+        assign_pos_of (input).to (*mask_ptr);
+        if (input.value().size() != mask_ptr->value().size())
+          throw Exception ("the input fixel image and mask image to not have corrresponding fixels");
+      }
+      for (size_t fixel = 0; fixel != input.value().size(); ++fixel) {
+        if (mask_ptr) {
+          if (mask_ptr->value()[fixel].value > 0.5)
+            calibrator (input.value()[fixel].value);
+        } else {
           calibrator (input.value()[fixel].value);
-      } else {
-        calibrator (input.value()[fixel].value);
+        }
       }
     }
+    calibrator.finalize (1, false);
   }
-  calibrator.finalize (1, false);
 
   Algo::Histogram::Data histogram (calibrator);
 

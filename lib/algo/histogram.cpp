@@ -30,11 +30,39 @@ namespace MR
       + Option ("bins", "Manually set the number of bins to use to generate the histogram.")
       + Argument ("num").type_integer (2)
 
+      + Option ("template", "Use an existing histogram file as the template for histogram formation")
+      + Argument ("file").type_file_in()
+
       + Option ("mask", "Calculate the histogram only within a mask image.")
       + Argument ("image").type_image_in()
 
       + Option ("ignorezero", "ignore zero-valued data during histogram construction.");
 
+
+
+
+      void Calibrator::from_file (const std::string& path)
+      {
+        Eigen::MatrixXd M;
+        try {
+          M = load_matrix (path);
+          if (M.cols() == 1)
+            throw Exception ("Histogram template must have at least 2 columns");
+          std::vector<default_type>().swap (data);
+          auto V = M.row(0);
+          num_bins = V.size();
+          bin_width = (V[num_bins-1] - V[0]) / default_type(num_bins-1);
+          min = V[0] - (0.5 * bin_width);
+          max = V[num_bins-1] + (0.5 * bin_width);
+          for (size_t i = 0; i != num_bins; ++i) {
+            if (std::abs (get_bin_centre(i) - V[i]) > 1e-5)
+              throw Exception ("Non-equal spacing in histogram bin centres");
+          }
+        } catch (Exception& e) {
+          throw Exception (e, "Could not use file \"" + path + "\" as histogram template");
+        }
+
+      }
 
 
 

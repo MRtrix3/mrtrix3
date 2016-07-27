@@ -25,6 +25,8 @@ Histogram generation options
 
 -  **-bins num** Manually set the number of bins to use to generate the histogram.
 
+-  **-template file** Use an existing histogram file as the template for histogram formation
+
 -  **-mask image** Calculate the histogram only within a mask image.
 
 -  **-ignorezero** ignore zero-valued data during histogram construction.

@@ -120,13 +120,18 @@ void run ()
   File::OFStream output (argument[1]);
 
   Algo::Histogram::Calibrator calibrator (nbins, get_options ("ignorezero").size());
-  for (auto v = Volume_loop(data); v; ++v)
-    run_volume (calibrator, data, mask);
-  // If getting min/max using all volumes, but generating a single histogram per volume,
-  //   then want the automatic calculation of bin width to be based on the number of
-  //   voxels per volume, rather than the total number of values sent to the calibrator
-  calibrator.finalize (header.ndim() > 3 && !allvolumes ? header.size(3) : 1,
-                       header.datatype().is_integer() && header.intensity_offset() == 0.0 && header.intensity_scale() == 1.0);
+  opt = get_options ("template");
+  if (opt.size()) {
+    calibrator.from_file (opt[0][0]);
+  } else {
+    for (auto v = Volume_loop(data); v; ++v)
+      run_volume (calibrator, data, mask);
+    // If getting min/max using all volumes, but generating a single histogram per volume,
+    //   then want the automatic calculation of bin width to be based on the number of
+    //   voxels per volume, rather than the total number of values sent to the calibrator
+    calibrator.finalize (header.ndim() > 3 && !allvolumes ? header.size(3) : 1,
+                         header.datatype().is_integer() && header.intensity_offset() == 0.0 && header.intensity_scale() == 1.0);
+  }
   nbins = calibrator.get_num_bins();
 
   for (size_t i = 0; i != nbins; ++i)

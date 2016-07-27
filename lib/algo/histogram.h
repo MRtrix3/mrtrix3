@@ -54,7 +54,14 @@ namespace MR
             return true;
           }
 
+          void from_file (const std::string&);
+
           void finalize (const size_t num_volumes, const bool is_integer);
+
+          default_type get_bin_centre (const size_t i) const {
+            assert (i < num_bins);
+            return get_min() + (get_bin_width() * (i + 0.5));
+          }
 
           default_type get_bin_width() const { return bin_width; }
           size_t get_num_bins() const { return num_bins; }
@@ -112,9 +119,6 @@ namespace MR
           }
           size_t size() const {
             return list.size();
-          }
-          default_type get_bin_centre (const size_t i) const {
-            return info.get_min() + (info.get_bin_width() * (i + 0.5));
           }
           const Calibrator& get_calibration() const { return info; }
 
