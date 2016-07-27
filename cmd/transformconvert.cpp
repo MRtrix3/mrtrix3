@@ -19,7 +19,7 @@
 #include "command.h"
 #include "math/math.h"
 #include "image.h"
-#include "file/nifti1_utils.h"
+#include "file/nifti_utils.h"
 #include "transform.h"
 #include "file/key_value.h"
 

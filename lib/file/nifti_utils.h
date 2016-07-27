@@ -13,10 +13,11 @@
  * 
  */
 
-#ifndef __file_nifti1_utils_h__
-#define __file_nifti1_utils_h__
+#ifndef __file_nifti_utils_h__
+#define __file_nifti_utils_h__
 
 #include "file/nifti1.h"
+#include "file/nifti2.h"
 
 namespace MR
 {
@@ -27,12 +28,20 @@ namespace MR
     namespace NIfTI
     {
 
+      constexpr size_t ver1_hdr_size = 348;
+      constexpr size_t ver1_hdr_with_ext_size = 352;
+      constexpr size_t ver2_hdr_size = 540;
+      constexpr size_t ver2_hdr_with_ext_size = 544;
+      constexpr char ver2_sig_extra[4] { '\r', '\n', '\032', '\n' };
+
       transform_type adjust_transform (const Header& H, std::vector<size_t>& order);
 
-      void check (Header& H, bool single_file);
       size_t read (Header& H, const nifti_1_header& NH);
+      size_t read (Header& H, const nifti_2_header& NH);
       void check (Header& H, bool single_file);
+      size_t version (Header& H);
       void write (nifti_1_header& NH, const Header& H, bool single_file);
+      void write (nifti_2_header& NH, const Header& H, bool single_file);
 
     }
   }

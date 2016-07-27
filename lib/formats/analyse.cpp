@@ -16,7 +16,7 @@
 #include "file/ofstream.h"
 #include "file/utils.h"
 #include "file/entry.h"
-#include "file/nifti1_utils.h"
+#include "file/nifti_utils.h"
 #include "header.h"
 #include "formats/list.h"
 #include "image_io/default.h"
@@ -31,8 +31,14 @@ namespace MR
       if (!Path::has_suffix (H.name(), ".img"))
         return std::unique_ptr<ImageIO::Base>();
 
-      File::MMap fmap (H.name().substr (0, H.name().size()-4) + ".hdr");
-      File::NIfTI::read (H, * ( (const nifti_1_header*) fmap.address()));
+      const std::string header_path = H.name().substr (0, H.name().size()-4) + ".hdr";
+      File::MMap fmap (header_path);
+      if (fmap.size() == File::NIfTI::ver1_hdr_size || fmap.size() == File::NIfTI::ver1_hdr_with_ext_size)
+        File::NIfTI::read (H, * ( (const nifti_1_header*) fmap.address()));
+      else if (fmap.size() == File::NIfTI::ver2_hdr_size || fmap.size() == File::NIfTI::ver2_hdr_with_ext_size)
+        File::NIfTI::read (H, * ( (const nifti_2_header*) fmap.address()));
+      else
+        throw Exception ("Error reading NIfTI header file \"" + header_path + "\": Invalid size (" + str(fmap.size()) + ")");
 
       std::unique_ptr<ImageIO::Base> io_handler (new ImageIO::Default (H));
       io_handler->files.push_back (File::Entry (H.name()));
@@ -50,10 +56,10 @@ namespace MR
         return false;
 
       if (num_axes < 3)
-        throw Exception ("cannot create NIfTI-1.1 image with less than 3 dimensions");
+        throw Exception ("cannot create NIfTI image with less than 3 dimensions");
 
-      if (num_axes > 8)
-        throw Exception ("cannot create NIfTI-1.1 image with more than 8 dimensions");
+      if (num_axes > 7)
+        throw Exception ("cannot create NIfTI image with more than 7 dimensions");
 
       H.ndim() = num_axes;
       File::NIfTI::check (H, false);
@@ -68,14 +74,29 @@ namespace MR
     std::unique_ptr<ImageIO::Base> Analyse::create (Header& H) const
     {
       if (H.ndim() > 7)
-        throw Exception ("NIfTI-1.1 format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
+        throw Exception ("NIfTI format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
 
-      nifti_1_header NH;
-      File::NIfTI::write (NH, H, false);
-
-      std::string hdr_name (H.name().substr (0, H.name().size()-4) + ".hdr");
+      const std::string hdr_name (H.name().substr (0, H.name().size()-4) + ".hdr");
       File::OFStream out (hdr_name);
-      out.write ( (char*) &NH, 352);
+
+      const size_t nifti_version = File::NIfTI::version (H);
+      switch (nifti_version) {
+        case 1: {
+          nifti_1_header NH;
+          File::NIfTI::write (NH, H, false);
+          out.write ( (char*) &NH, sizeof (nifti_1_header));
+        }
+        break;
+        case 2: {
+          nifti_2_header NH;
+          File::NIfTI::write (NH, H, false);
+          out.write ( (char*) &NH, sizeof (nifti_2_header));
+        }
+        break;
+        default:
+          throw Exception ("Error determining NIfTI version for file \"" + H.name() + "\"");
+      }
+
       out.close();
 
       File::create (H.name(), footprint(H));
