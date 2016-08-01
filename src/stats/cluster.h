@@ -12,11 +12,12 @@
  * For more details, see www.mrtrix.org
  * 
  */
+
 #ifndef __stats_cluster_h__
 #define __stats_cluster_h__
 
-
 #include "filter/connected_components.h"
+#include "math/stats/typedefs.h"
 
 namespace MR
 {
@@ -25,7 +26,11 @@ namespace MR
     namespace Cluster
     {
 
-      typedef float value_type;
+
+
+      typedef Math::Stats::value_type value_type;
+      typedef Math::Stats::vector_type vector_type;
+
 
 
       /** \addtogroup Statistics
@@ -35,25 +40,17 @@ namespace MR
           ClusterSize (const Filter::Connector& connector, value_type cluster_forming_threshold) :
                        connector (connector), cluster_forming_threshold (cluster_forming_threshold) { }
 
-          value_type operator() (const value_type unused, const std::vector<value_type>& stats,
-                                 std::vector<value_type>& get_cluster_sizes) const
-          {
-            std::vector<Filter::cluster> clusters;
-            std::vector<uint32_t> labels (stats.size(), 0);
-            connector.run (clusters, labels, stats, cluster_forming_threshold);
-            get_cluster_sizes.resize (stats.size());
-            for (size_t i = 0; i < stats.size(); ++i)
-              get_cluster_sizes[i] = labels[i] ? clusters[labels[i]-1].size : 0.0;
 
-            return clusters.size() ? std::max_element (clusters.begin(), clusters.end())->size : 0.0;
-          }
+          value_type operator() (const value_type /*unused*/, const vector_type& stats, vector_type& get_cluster_sizes) const;
+
 
         protected:
           const Filter::Connector& connector;
-          value_type cluster_forming_threshold;
+          const value_type cluster_forming_threshold;
       };
-
       //! @}
+
+
 
     }
   }

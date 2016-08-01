@@ -2338,7 +2338,9 @@ namespace MR
           for (size_t i = 0; i < list.size(); ++i) {
             try {
               MR::Connectome::matrix_type matrix = MR::load_matrix<default_type> (list[i]);
-              MR::Connectome::verify_matrix (matrix, num_nodes());
+              MR::Connectome::to_upper (matrix);
+              if (matrix.rows() != num_nodes())
+                throw Exception ("Matrix file \"" + Path::basename(list[i]) + "\" is incorrect size");
               FileDataVector temp;
               mat2vec (matrix, temp);
               temp.calc_stats();
@@ -2730,7 +2732,9 @@ namespace MR
           MR::Connectome::matrix_type temp;
           try {
             temp = MR::load_matrix<default_type> (path);
-            MR::Connectome::verify_matrix (temp, num_nodes());
+            MR::Connectome::to_upper (temp);
+            if (temp.rows() != num_nodes())
+              throw Exception ("Matrix file \"" + Path::basename(path) + "\" is incorrect size");
           } catch (Exception& e) {
             e.display();
             return false;

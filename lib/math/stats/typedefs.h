@@ -12,25 +12,31 @@
  * For more details, see www.mrtrix.org
  * 
  */
+#ifndef __math_stats_types_h__
+#define __math_stats_types_h__
+
+#include "types.h"
+
+#include <Eigen/Dense>
+
+namespace MR
+{
+  namespace Math
+  {
+    namespace Stats
+    {
 
 
-#include "dwi/tractography/mapping/voxel.h"
+
+      typedef MR::default_type value_type;
+      typedef Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> matrix_type;
+      typedef Eigen::Array<value_type, Eigen::Dynamic, 1> vector_type;
 
 
-namespace MR {
-  namespace DWI {
-    namespace Tractography {
-      namespace Mapping {
 
-
-        const Dixel::dir_index_type Dixel::invalid = std::numeric_limits<Dixel::dir_index_type>::max();
-
-
-      }
     }
   }
 }
 
 
-
-
+#endif
