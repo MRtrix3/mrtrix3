@@ -14,7 +14,7 @@
  */
 
 #include "dwi/gradient.h"
-#include "file/nifti1_utils.h"
+#include "file/nifti_utils.h"
 
 namespace MR
 {

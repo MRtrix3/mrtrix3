@@ -20,7 +20,7 @@
 #include "math/math.h"
 #include "math/average_space.h"
 #include "image.h"
-#include "file/nifti1_utils.h"
+#include "file/nifti_utils.h"
 #include "transform.h"
 #include "file/key_value.h"
 

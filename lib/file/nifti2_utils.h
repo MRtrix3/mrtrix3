@@ -13,10 +13,10 @@
  * 
  */
 
-#ifndef __file_nifti1_utils_h__
-#define __file_nifti1_utils_h__
+#ifndef __file_nifti2_utils_h__
+#define __file_nifti2_utils_h__
 
-#include "file/nifti1.h"
+#include "file/nifti2.h"
 
 namespace MR
 {
@@ -24,14 +24,15 @@ namespace MR
 
   namespace File
   {
-    namespace NIfTI1
+    namespace NIfTI2
     {
 
-      constexpr size_t header_size = 348;
-      constexpr size_t header_with_ext_size = 352;
+      constexpr size_t header_size = 540;
+      constexpr size_t header_with_ext_size = 544;
+      constexpr char signature_extra[4] { '\r', '\n', '\032', '\n' };
 
-      size_t read (Header& H, const nifti_1_header& NH);
-      void write (nifti_1_header& NH, const Header& H, const bool single_file);
+      size_t read (Header& H, const nifti_2_header& NH);
+      void write (nifti_2_header& NH, const Header& H, const bool single_file);
 
     }
   }
