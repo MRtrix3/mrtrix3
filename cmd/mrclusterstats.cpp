@@ -184,27 +184,7 @@ void run() {
   }
 
   const std::string prefix (argument[4]);
-
-  auto cluster_image = Image<float>::create (prefix + (use_tfce ? "tfce.mif" : "cluster_sizes.mif"), output_header);
-  auto tvalue_image = Image<float>::create (prefix + "tvalue.mif", output_header);
-  auto fwe_pvalue_image = Image<float>::create (prefix + "fwe_pvalue.mif", output_header);
-  auto uncorrected_pvalue_image = Image<float>::create (prefix + "uncorrected_pvalue.mif", output_header);
-  auto abs_effect_image = Image<float>::create (prefix + "abs_effect.mif", output_header);
-  auto std_effect_image = Image<float>::create (prefix + "std_effect.mif", output_header);
-  auto std_dev_image = Image<float>::create (prefix + "std_dev.mif", output_header);
-  std::vector<Image<float>> beta_images;
-  for (ssize_t i = 0; i < contrast.cols(); ++i)
-    beta_images.push_back(Image<float>::create (prefix + "beta" + str(i) + ".mif", output_header));
-  Image<float> cluster_image_neg;
-  Image<float> fwe_pvalue_image_neg;
-  Image<float> uncorrected_pvalue_image_neg;
-
-  bool compute_negative_contrast = get_options("negative").size() ? true : false;
-  if (compute_negative_contrast) {
-    cluster_image_neg = Image<float>::create (prefix + (use_tfce ? "tfce_neg.mif" : "cluster_sizes_neg.mif"), output_header);
-    fwe_pvalue_image_neg = Image<float>::create (prefix + "fwe_pvalue_neg.mif", output_header);
-    uncorrected_pvalue_image_neg = Image<float>::create (prefix + "uncorrected_pvalue_neg.mif", output_header);
-  }
+  bool compute_negative_contrast = get_options("negative").size();
 
   vector_type perm_distribution (num_perms);
   std::shared_ptr<vector_type> perm_distribution_neg;
@@ -236,21 +216,44 @@ void run() {
 
   {
     ProgressBar progress ("generating pre-permutation output", (compute_negative_contrast ? 3 : 2) + contrast.cols() + 3);
-    write_output (tvalue_output, mask_indices, tvalue_image); ++progress;
-    write_output (default_cluster_output, mask_indices, cluster_image); ++progress;
+    {
+      auto tvalue_image = Image<float>::create (prefix + "tvalue.mif", output_header);
+      write_output (tvalue_output, mask_indices, tvalue_image);
+    }
+    ++progress;
+    {
+      auto cluster_image = Image<float>::create (prefix + (use_tfce ? "tfce.mif" : "cluster_sizes.mif"), output_header);
+      write_output (default_cluster_output, mask_indices, cluster_image);
+    }
+    ++progress;
     if (compute_negative_contrast) {
-      write_output (*default_cluster_output_neg, mask_indices, cluster_image_neg); ++progress;
+      auto cluster_image_neg = Image<float>::create (prefix + (use_tfce ? "tfce_neg.mif" : "cluster_sizes_neg.mif"), output_header);
+      write_output (*default_cluster_output_neg, mask_indices, cluster_image_neg);
+      ++progress;
     }
     auto temp = Math::Stats::GLM::solve_betas (data, design);
     for (ssize_t i = 0; i < contrast.cols(); ++i) {
-      write_output (temp.row(i), mask_indices, beta_images[i]); ++progress;
+      auto beta_image = Image<float>::create (prefix + "beta" + str(i) + ".mif", output_header);
+      write_output (temp.row(i), mask_indices, beta_image);
+      ++progress;
     }
-    temp = Math::Stats::GLM::abs_effect_size (data, design, contrast);
-    write_output (temp.row(0), mask_indices, abs_effect_image); ++progress;
-    temp = Math::Stats::GLM::std_effect_size (data, design, contrast);
-    write_output (temp.row(0), mask_indices, std_effect_image); ++progress;
-    temp = Math::Stats::GLM::stdev (data, design);
-    write_output (temp.row(0), mask_indices, std_dev_image);
+    {
+      const auto temp = Math::Stats::GLM::abs_effect_size (data, design, contrast);
+      auto abs_effect_image = Image<float>::create (prefix + "abs_effect.mif", output_header);
+      write_output (temp.row(0), mask_indices, abs_effect_image);
+    }
+    ++progress;
+    {
+      const auto temp = Math::Stats::GLM::std_effect_size (data, design, contrast);
+      auto std_effect_image = Image<float>::create (prefix + "std_effect.mif", output_header);
+      write_output (temp.row(0), mask_indices, std_effect_image);
+    }
+    ++progress;
+    {
+      const auto temp = Math::Stats::GLM::stdev (data, design);
+      auto std_dev_image = Image<float>::create (prefix + "std_dev.mif", output_header);
+      write_output (temp.row(0), mask_indices, std_dev_image);
+    }
   }
 
   auto opt = get_options ("notest");
@@ -266,14 +269,25 @@ void run() {
 
     {
       ProgressBar progress ("generating output", compute_negative_contrast ? 4 : 2);
-      write_output (uncorrected_pvalue, mask_indices, uncorrected_pvalue_image); ++progress;
-      vector_type fwe_pvalue_output (num_vox);
-      Math::Stats::Permutation::statistic2pvalue (perm_distribution, default_cluster_output, fwe_pvalue_output);
-      write_output (fwe_pvalue_output, mask_indices, fwe_pvalue_image); ++progress;
+      {
+        auto uncorrected_pvalue_image = Image<float>::create (prefix + "uncorrected_pvalue.mif", output_header);
+        write_output (uncorrected_pvalue, mask_indices, uncorrected_pvalue_image);
+      }
+      ++progress;
+      {
+        vector_type fwe_pvalue_output (num_vox);
+        Math::Stats::Permutation::statistic2pvalue (perm_distribution, default_cluster_output, fwe_pvalue_output);
+        auto fwe_pvalue_image = Image<float>::create (prefix + "fwe_pvalue.mif", output_header);
+        write_output (fwe_pvalue_output, mask_indices, fwe_pvalue_image);
+      }
+      ++progress;
       if (compute_negative_contrast) {
-        write_output (*uncorrected_pvalue_neg, mask_indices, uncorrected_pvalue_image_neg); ++progress;
+        auto uncorrected_pvalue_image_neg = Image<float>::create (prefix + "uncorrected_pvalue_neg.mif", output_header);
+        write_output (*uncorrected_pvalue_neg, mask_indices, uncorrected_pvalue_image_neg);
+        ++progress;
         vector_type fwe_pvalue_output_neg (num_vox);
         Math::Stats::Permutation::statistic2pvalue (*perm_distribution_neg, *default_cluster_output_neg, fwe_pvalue_output_neg);
+        auto fwe_pvalue_image_neg = Image<float>::create (prefix + "fwe_pvalue_neg.mif", output_header);
         write_output (fwe_pvalue_output_neg, mask_indices, fwe_pvalue_image_neg);
       }
     }
