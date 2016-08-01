@@ -21,6 +21,8 @@ List of MRtrix3 commands
 
    commands/connectome2tck
 
+   commands/connectomestats
+
    commands/dcmedit
 
    commands/dcminfo
@@ -165,9 +167,9 @@ List of MRtrix3 commands
 
    commands/tcksample
 
-   commands/tcksift2
-
    commands/tcksift
+
+   commands/tcksift2
 
    commands/tckstats
 
@@ -186,6 +188,8 @@ List of MRtrix3 commands
    commands/tsfsmooth
 
    commands/tsfthreshold
+
+   commands/vectorstats
 
    commands/voxel2fixel
 

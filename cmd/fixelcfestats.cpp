@@ -26,6 +26,7 @@
 #include "math/stats/permutation.h"
 #include "math/stats/typedefs.h"
 #include "stats/cfe.h"
+#include "stats/enhance.h"
 #include "stats/permtest.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/scalar_file.h"
@@ -42,7 +43,6 @@ using Sparse::FixelMetric;
 using Stats::CFE::direction_type;
 using Stats::CFE::connectivity_value_type;
 
-#define DEFAULT_PERMUTATIONS 5000
 #define DEFAULT_CFE_DH 0.1
 #define DEFAULT_CFE_E 2.0
 #define DEFAULT_CFE_H 3.0
@@ -50,7 +50,6 @@ using Stats::CFE::connectivity_value_type;
 #define DEFAULT_ANGLE_THRESHOLD 30.0
 #define DEFAULT_CONNECTIVITY_THRESHOLD 0.01
 #define DEFAULT_SMOOTHING_STD 10.0
-#define DEFAULT_PERMUTATIONS_NONSTATIONARITY 5000
 
 void usage ()
 {
@@ -86,13 +85,9 @@ void usage ()
 
   OPTIONS
 
-  + Option ("notest", "don't perform permutation testing and only output population statistics (effect size, stdev etc)")
+  + Stats::PermTest::Options (true)
 
-  + Option ("negative", "automatically test the negative (opposite) contrast. By computing the opposite contrast simultaneously "
-                        "the computation time is reduced.")
-
-  + Option ("nperms", "the number of permutations (default: " + str(DEFAULT_PERMUTATIONS) + ").")
-  + Argument ("num").type_integer (1)
+  + OptionGroup ("Parameters for the Connectivity-based Fixel Enhancement algorithm")
 
   + Option ("cfe_dh", "the height increment used in the cfe integration (default: " + str(DEFAULT_CFE_DH, 2) + ")")
   + Argument ("value").type_float (0.001, 1.0)
@@ -106,6 +101,11 @@ void usage ()
   + Option ("cfe_c", "cfe connectivity exponent (default: " + str(DEFAULT_CFE_C, 2) + ")")
   + Argument ("value").type_float (0.0, 100.0)
 
+  + OptionGroup ("Additional options for fixelcfestats")
+
+  + Option ("negative", "automatically test the negative (opposite) contrast. By computing the opposite contrast simultaneously "
+                        "the computation time is reduced.")
+
   + Option ("angle", "the max angle threshold for computing inter-subject fixel correspondence (Default: " + str(DEFAULT_ANGLE_THRESHOLD, 2) + " degrees)")
   + Argument ("value").type_float (0.0, 90.0)
 
@@ -113,12 +113,8 @@ void usage ()
   + Argument ("threshold").type_float (0.0, 1.0)
 
   + Option ("smooth", "smooth the fixel value along the fibre tracts using a Gaussian kernel with the supplied FWHM (default: " + str(DEFAULT_SMOOTHING_STD, 2) + "mm)")
-  + Argument ("FWHM").type_float (0.0, 200.0)
+  + Argument ("FWHM").type_float (0.0, 200.0);
 
-  + Option ("nonstationary", "do adjustment for non-stationarity")
-
-  + Option ("nperms_nonstationary", "the number of permutations used when precomputing the empirical statistic image for nonstationary correction (Default: " + str(DEFAULT_PERMUTATIONS_NONSTATIONARITY) + ")")
-  + Argument ("num").type_integer (1);
 }
 
 
@@ -153,7 +149,7 @@ void run() {
   const value_type cfe_h = get_option_value ("cfe_h", DEFAULT_CFE_H);
   const value_type cfe_e = get_option_value ("cfe_e", DEFAULT_CFE_E);
   const value_type cfe_c = get_option_value ("cfe_c", DEFAULT_CFE_C);
-  const int num_perms = get_option_value ("nperms", DEFAULT_PERMUTATIONS);
+  const int num_perms = get_option_value ("nperms", DEFAULT_NUMBER_PERMUTATIONS);
   const value_type angular_threshold = get_option_value ("angle", DEFAULT_ANGLE_THRESHOLD);
   const value_type angular_threshold_dp = cos (angular_threshold * (Math::pi/180.0));
 
@@ -162,7 +158,7 @@ void run() {
 
   const bool do_nonstationary_adjustment = get_options ("nonstationary").size();
 
-  const int nperms_nonstationary = get_option_value ("nperms_nonstationary", DEFAULT_PERMUTATIONS_NONSTATIONARITY);
+  const int nperms_nonstationary = get_option_value ("nperms_nonstationary", DEFAULT_NUMBER_PERMUTATIONS_NONSTATIONARITY);
   
   // Read filenames
   std::vector<std::string> filenames;
@@ -368,7 +364,8 @@ void run() {
   }
 
   Math::Stats::GLMTTest glm_ttest (data, design, contrast);
-  Stats::CFE::Enhancer cfe_integrator (connectivity_matrix, cfe_dh, cfe_e, cfe_h);
+  std::shared_ptr<Stats::EnhancerBase> cfe_integrator;
+  cfe_integrator.reset (new Stats::CFE::Enhancer (connectivity_matrix, cfe_dh, cfe_e, cfe_h));
   vector_type empirical_cfe_statistic;
 
   Header output_header (input_header);

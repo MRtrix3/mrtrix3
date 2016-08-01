@@ -2342,7 +2342,7 @@ namespace MR
               if (matrix.rows() != num_nodes())
                 throw Exception ("Matrix file \"" + Path::basename(list[i]) + "\" is incorrect size");
               FileDataVector temp;
-              mat2vec (matrix, temp);
+              mat2vec.M2V (matrix, temp);
               temp.calc_stats();
               temp.set_name (list[i]);
               data.push_back (std::move (temp));
@@ -2739,8 +2739,7 @@ namespace MR
             e.display();
             return false;
           }
-          data.clear();
-          mat2vec (temp, data);
+          mat2vec.M2V (temp, data);
           data.calc_stats();
           data.set_name (Path::basename (path));
           return true;

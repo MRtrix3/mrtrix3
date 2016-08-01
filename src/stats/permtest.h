@@ -19,6 +19,7 @@
 #include <memory>
 #include <mutex>
 
+#include "app.h"
 #include "progressbar.h"
 #include "thread.h"
 #include "thread_queue.h"
@@ -26,7 +27,13 @@
 #include "math/stats/permutation.h"
 #include "math/stats/typedefs.h"
 
+#include "stats/enhance.h"
 #include "stats/permstack.h"
+
+
+#define DEFAULT_NUMBER_PERMUTATIONS 5000
+#define DEFAULT_NUMBER_PERMUTATIONS_NONSTATIONARITY 5000
+
 
 namespace MR
 {
@@ -42,16 +49,19 @@ namespace MR
 
 
 
+      const App::OptionGroup Options (const bool include_nonstationarity);
+
+
+
       /*! A class to pre-compute the empirical enhanced statistic image for non-stationarity correction */
-      template <class StatsType, class EnhancementType>
+      template <class StatsType>
         class PreProcessor {
           public:
-            PreProcessor (PermutationStack& permutation_stack,
-                          const StatsType& stats_calculator,
-                          const EnhancementType& enhancer,
+            PreProcessor (const StatsType& stats_calculator,
+                          const std::shared_ptr<EnhancerBase> enhancer,
                           vector_type& global_enhanced_sum,
                           std::vector<size_t>& global_enhanced_count) :
-                            perm_stack (permutation_stack), stats_calculator (stats_calculator),
+                            stats_calculator (stats_calculator),
                             enhancer (enhancer), global_enhanced_sum (global_enhanced_sum),
                             global_enhanced_count (global_enhanced_count), enhanced_sum (vector_type::Zero (global_enhanced_sum.size())),
                             enhanced_count (global_enhanced_sum.size(), 0.0), stats (global_enhanced_sum.size()),
@@ -66,31 +76,22 @@ namespace MR
               }
             }
 
-            void execute ()
+            bool operator() (const Permutation& permutation)
             {
-              size_t index;
-              while (( index = perm_stack.next() ) < perm_stack.num_permutations)
-                process_permutation (index);
-            }
-
-          protected:
-
-            void process_permutation (size_t index)
-            {
-              value_type max_stat = 0.0, min_stat = 0.0;
-              stats_calculator (perm_stack.permutation (index), stats, max_stat, min_stat);
-              enhancer (max_stat, stats, enhanced_stats);
+              stats_calculator (permutation.data, stats);
+              (*enhancer) (stats, enhanced_stats);
               for (ssize_t i = 0; i < enhanced_stats.size(); ++i) {
                 if (enhanced_stats[i] > 0.0) {
                   enhanced_sum[i] += enhanced_stats[i];
                   enhanced_count[i]++;
                 }
               }
+              return true;
             }
 
-            PermutationStack& perm_stack;
+          protected:
             StatsType stats_calculator;
-            EnhancementType enhancer;
+            std::shared_ptr<EnhancerBase> enhancer;
             vector_type& global_enhanced_sum;
             std::vector<size_t>& global_enhanced_count;
             vector_type enhanced_sum;
@@ -104,12 +105,11 @@ namespace MR
 
 
         /*! A class to perform the permutation testing */
-        template <class StatsType, class EnhancementType>
+        template <class StatsType>
           class Processor {
             public:
-              Processor (PermutationStack& permutation_stack,
-                         const StatsType& stats_calculator,
-                         const EnhancementType& enhancer,
+              Processor (const StatsType& stats_calculator,
+                         const std::shared_ptr<EnhancerBase> enhancer,
                          const vector_type& empirical_enhanced_statistics,
                          const vector_type& default_enhanced_statistics,
                          const std::shared_ptr<vector_type> default_enhanced_statistics_neg,
@@ -117,7 +117,7 @@ namespace MR
                          std::shared_ptr<vector_type> perm_dist_neg,
                          std::vector<size_t>& global_uncorrected_pvalue_counter,
                          std::shared_ptr< std::vector<size_t> > global_uncorrected_pvalue_counter_neg) :
-                           perm_stack (permutation_stack), stats_calculator (stats_calculator),
+                           stats_calculator (stats_calculator),
                            enhancer (enhancer), empirical_enhanced_statistics (empirical_enhanced_statistics),
                            default_enhanced_statistics (default_enhanced_statistics), default_enhanced_statistics_neg (default_enhanced_statistics_neg),
                            statistics (stats_calculator.num_elements()), enhanced_statistics (stats_calculator.num_elements()),
@@ -141,28 +141,22 @@ namespace MR
                 }
               }
 
-              void execute ()
+
+              bool operator() (const Permutation& permutation)
               {
-                size_t index;
-                while (( index = perm_stack.next() ) < perm_stack.num_permutations)
-                    process_permutation (index);
-              }
-
-
-            protected:
-
-              void process_permutation (size_t index)
-              {
-                value_type max_stat = 0.0, min_stat = 0.0;
-                stats_calculator (perm_stack.permutation (index), statistics, max_stat, min_stat);
-                perm_dist_pos(index) = enhancer (max_stat, statistics, enhanced_statistics);
+                stats_calculator (permutation.data, statistics);
+                if (enhancer) {
+                  perm_dist_pos[permutation.index] = (*enhancer) (statistics, enhanced_statistics);
+                } else {
+                  enhanced_statistics = statistics;
+                  perm_dist_pos[permutation.index] = enhanced_statistics.maxCoeff();
+                }
 
                 if (empirical_enhanced_statistics.size()) {
-                  perm_dist_pos(index) = 0.0;
+                  perm_dist_pos[permutation.index] = 0.0;
                   for (ssize_t i = 0; i < enhanced_statistics.size(); ++i) {
                     enhanced_statistics[i] /= empirical_enhanced_statistics[i];
-                    if (enhanced_statistics[i] > perm_dist_pos(index))
-                      perm_dist_pos(index) = enhanced_statistics[i];
+                    perm_dist_pos[permutation.index] = std::max(perm_dist_pos[permutation.index], enhanced_statistics[i]);
                   }
                 }
 
@@ -173,17 +167,15 @@ namespace MR
 
                 // Compute the opposite contrast
                 if (perm_dist_neg) {
-                  for (ssize_t i = 0; i < statistics.size(); ++i)
-                    statistics[i] = -statistics[i];
+                  statistics = -statistics;
 
-                  (*perm_dist_neg)(index) = enhancer (-min_stat, statistics, enhanced_statistics);
+                  (*perm_dist_neg)[permutation.index] = (*enhancer) (statistics, enhanced_statistics);
 
                   if (empirical_enhanced_statistics.size()) {
-                    (*perm_dist_neg)(index) = 0.0;
+                    (*perm_dist_neg)[permutation.index] = 0.0;
                     for (ssize_t i = 0; i < enhanced_statistics.size(); ++i) {
                       enhanced_statistics[i] /= empirical_enhanced_statistics[i];
-                      if (enhanced_statistics[i] > (*perm_dist_neg)(index))
-                        (*perm_dist_neg)(index) = enhanced_statistics[i];
+                      (*perm_dist_neg)[permutation.index] = std::max ((*perm_dist_neg)[permutation.index], enhanced_statistics[i]);
                     }
                   }
 
@@ -192,12 +184,12 @@ namespace MR
                       (*uncorrected_pvalue_counter_neg)[i]++;
                   }
                 }
+                return true;
               }
 
-
-              PermutationStack& perm_stack;
+            protected:
               StatsType stats_calculator;
-              EnhancementType enhancer;
+              std::shared_ptr<EnhancerBase> enhancer;
               const vector_type& empirical_enhanced_statistics;
               const vector_type& default_enhanced_statistics;
               const std::shared_ptr<vector_type> default_enhanced_statistics_neg;
@@ -215,18 +207,17 @@ namespace MR
 
 
         // Precompute the empircal test statistic for non-stationarity adjustment
-        template <class StatsType, class EnhancementType>
-          void precompute_empirical_stat (const StatsType& stats_calculator, const EnhancementType& enhancer,
+        template <class StatsType>
+          void precompute_empirical_stat (const StatsType& stats_calculator, const std::shared_ptr<EnhancerBase> enhancer,
                                           const size_t num_permutations, vector_type& empirical_statistic)
           {
             std::vector<size_t> global_enhanced_count (empirical_statistic.size(), 0);
-            PermutationStack preprocessor_permutations (num_permutations,
-                                                        stats_calculator.num_subjects(),
-                                                        "precomputing empirical statistic for non-stationarity adjustment...", false);
+            PermutationStack permutations (num_permutations,
+                                           stats_calculator.num_subjects(),
+                                           "precomputing empirical statistic for non-stationarity adjustment...", false);
             {
-              PreProcessor<StatsType, EnhancementType> preprocessor (preprocessor_permutations, stats_calculator, enhancer,
-                                                                     empirical_statistic, global_enhanced_count);
-              auto preprocessor_threads = Thread::run (Thread::multi (preprocessor), "preprocessor threads");
+              PreProcessor<StatsType> preprocessor (stats_calculator, enhancer, empirical_statistic, global_enhanced_count);
+              Thread::run_queue (permutations, Permutation(), Thread::multi (preprocessor));
             }
             for (ssize_t i = 0; i < empirical_statistic.size(); ++i) {
               if (global_enhanced_count[i] > 0)
@@ -237,9 +228,9 @@ namespace MR
 
 
           // Precompute the default statistic image and enhanced statistic. We need to precompute this for calculating the uncorrected p-values.
-          template <class StatsType, class EnhancementType>
+          template <class StatsType>
             void precompute_default_permutation (const StatsType& stats_calculator,
-                                                 const EnhancementType& enhancer,
+                                                 const std::shared_ptr<EnhancerBase> enhancer,
                                                  const vector_type& empirical_enhanced_statistic,
                                                  vector_type& default_enhanced_statistics,
                                                  std::shared_ptr<vector_type> default_enhanced_statistics_neg,
@@ -248,38 +239,32 @@ namespace MR
               std::vector<size_t> default_labelling (stats_calculator.num_subjects());
               for (size_t i = 0; i < default_labelling.size(); ++i)
                 default_labelling[i] = i;
-              value_type max_stat = 0.0, min_stat = 0.0;
-              stats_calculator (default_labelling, default_statistics, max_stat, min_stat);
-              max_stat = enhancer (max_stat, default_statistics, default_enhanced_statistics);
+              stats_calculator (default_labelling, default_statistics);
+              (*enhancer) (default_statistics, default_enhanced_statistics);
 
-              if (empirical_enhanced_statistic.size()) {
-                for (ssize_t i = 0; i < default_statistics.size(); ++i)
-                  default_enhanced_statistics[i] /= empirical_enhanced_statistic[i];
-              }
+              if (empirical_enhanced_statistic.size())
+                default_enhanced_statistics /= empirical_enhanced_statistic;
 
               // Compute the opposite contrast
               if (default_enhanced_statistics_neg) {
-                for (ssize_t i = 0; i < default_statistics.size(); ++i)
-                  default_statistics[i] = -default_statistics[i];
+                default_statistics = -default_statistics;
 
-                max_stat = enhancer (-min_stat, default_statistics, *default_enhanced_statistics_neg);
+                (*enhancer) (default_statistics, *default_enhanced_statistics_neg);
 
-                if (empirical_enhanced_statistic.size()) {
-                  for (ssize_t i = 0; i < default_statistics.size(); ++i)
-                    (*default_enhanced_statistics_neg)[i] /= empirical_enhanced_statistic[i];
-                }
+                if (empirical_enhanced_statistic.size())
+                  (*default_enhanced_statistics_neg) /= empirical_enhanced_statistic;
+
                 // revert default_statistics to positive contrast for output
-                for (ssize_t i = 0; i < default_statistics.size(); ++i)
-                  default_statistics[i] = -default_statistics[i];
+                default_statistics = -default_statistics;
               }
             }
 
 
 
 
-        template <class StatsType, class EnhancementType>
+        template <class StatsType>
           inline void run_permutations (const StatsType& stats_calculator,
-                                        const EnhancementType& enhancer,
+                                        const std::shared_ptr<EnhancerBase> enhancer,
                                         const size_t num_permutations,
                                         const vector_type& empirical_enhanced_statistic,
                                         const vector_type& default_enhanced_statistics,
@@ -297,14 +282,14 @@ namespace MR
             {
               PermutationStack permutations (num_permutations,
                                              stats_calculator.num_subjects(),
-                                             "running " + str(num_permutations) + " permutations...");
+                                             "running " + str(num_permutations) + " permutations");
 
-              Processor<StatsType, EnhancementType> processor (permutations, stats_calculator, enhancer,
-                                                               empirical_enhanced_statistic,
-                                                               default_enhanced_statistics, default_enhanced_statistics_neg,
-                                                               perm_dist_pos, perm_dist_neg,
-                                                               global_uncorrected_pvalue_count, global_uncorrected_pvalue_count_neg);
-              auto threads = Thread::run (Thread::multi (processor), "permutation threads");
+              Processor<StatsType> processor (stats_calculator, enhancer,
+                                              empirical_enhanced_statistic,
+                                              default_enhanced_statistics, default_enhanced_statistics_neg,
+                                              perm_dist_pos, perm_dist_neg,
+                                              global_uncorrected_pvalue_count, global_uncorrected_pvalue_count_neg);
+              Thread::run_queue (permutations, Permutation(), Thread::multi (processor));
             }
 
             for (size_t i = 0; i < stats_calculator.num_elements(); ++i) {

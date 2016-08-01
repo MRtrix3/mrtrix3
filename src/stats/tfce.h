@@ -21,6 +21,8 @@
 #include "math/stats/permutation.h"
 #include "math/stats/typedefs.h"
 
+#include "stats/enhance.h"
+
 namespace MR
 {
   namespace Stats
@@ -30,24 +32,49 @@ namespace MR
 
 
 
+      const App::OptionGroup Options (const default_type, const default_type, const default_type);
+
+
+
+
       typedef Math::Stats::value_type value_type;
       typedef Math::Stats::vector_type vector_type;
 
 
 
-      /** \addtogroup Statistics
-      @{ */
-      class Enhancer {
+      class EnhancerBase : public Stats::EnhancerBase
+      {
         public:
-          Enhancer (const Filter::Connector& connector, const value_type dh, const value_type E, const value_type H);
+          // Alternative functor that also takes the threshold value;
+          //   makes TFCE integration cleaner
+          virtual value_type operator() (const vector_type& /*input_statistics*/, const value_type /*threshold*/, vector_type& /*enhanced_statistics*/) const = 0;
 
-          value_type operator() (const value_type max_stat, const vector_type& stats, vector_type& enhanced_stats) const;
-
-        protected:
-          const Filter::Connector& connector;
-          const value_type dh, E, H;
       };
-      //! @}
+
+
+
+
+      class Wrapper : public Stats::EnhancerBase
+      {
+        public:
+          Wrapper (const std::shared_ptr<TFCE::EnhancerBase> base) : enhancer (base), dH (NaN), E (NaN), H (NaN) { }
+          Wrapper (const std::shared_ptr<TFCE::EnhancerBase> base, const default_type dh, const default_type e, const default_type h) : enhancer (base), dH (dh), E (e), H (h) { }
+          Wrapper (const Wrapper& that) = default;
+          ~Wrapper() { }
+
+          void set_tfce_parameters (const value_type d_height, const value_type extent, const value_type height)
+          {
+            dH = d_height;
+            E = extent;
+            H = height;
+          }
+
+          value_type operator() (const vector_type&, vector_type&) const override;
+
+        private:
+          std::shared_ptr<Stats::TFCE::EnhancerBase> enhancer;
+          value_type dH, E, H;
+      };
 
 
 
