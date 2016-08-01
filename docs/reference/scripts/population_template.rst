@@ -30,19 +30,27 @@ Options for the population_template script
 
 - **-transformed_dir** Output a directory containing the input images transformed to the template. If the folder does not exist it will be created
 
+- **-linear_transformations_dir** Output a directory containing the linear transformations used to generate the template. If the folder does not exist it will be created
+
 - **-template_mask** Output a template mask. Only works in -mask_dir has been input. The template mask is computed as the intersection of all subject masks in template space.
 
 - **-rigid** perform rigid registration instead of affine. This should be used for intra-subject registration in longitudinal analysis
 
-- **-linear_scale** Specifiy the multi-resolution pyramid used to build the rigid or affine template, in the form of a list of scale factors (default: 0.3,0.4,0.5,0.6,0.7,1.0,1.0,1.0,1.0,1.0). This implicitly defines the number of template levels
+- **-linear_no_pause** Do not pause the script if a linear registration seems implausible
 
-- **-linear_lmax** Specifiy the lmax used for rigid or affine registration for each scale factor, in the form of a list of integers (default: 0,0,2,2,2,2,2,2,4,4,4,4,4,4,4,4). The list must be the same length as the affine_scale factor list
+- **-linear_scale** Specifiy the multi-resolution pyramid used to build the rigid or affine template, in the form of a list of scale factors (default: 0.3,0.4,0.6,0.8,1.0,1.0). This implicitly defines the number of template levels
+
+- **-linear_lmax** Specifiy the lmax used for rigid or affine registration for each scale factor, in the form of a list of integers (default: 2,2,2,4,4,4). The list must be the same length as the linear_scale factor list
+
+- **-linear_niter** Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:500 for each scale). The must be a single number or a list of same length as the linear_scale factor list
+
+- **-linear_estimator** Choose estimator for intensity difference metric. Valid choices are: l1 (least absolute: |x|), l2 (ordinary least squares), lp (least powers: |x|^1.2), Default: l2
 
 - **-nl_scale** Specifiy the multi-resolution pyramid used to build the non-linear template, in the form of a list of scale factors (default: 0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0). This implicitly defines the number of template levels
 
-- **-nl_lmax** Specifiy the lmax used for non-linear registration for each scale factor, in the form of a list of integers (default: 0,0,2,2,2,2,2,2,2,2,4,4,4,4). The list must be the same length as the nl_scale factor list
+- **-nl_lmax** Specifiy the lmax used for non-linear registration for each scale factor, in the form of a list of integers (default: 2,2,2,2,2,2,2,2,4,4,4,4,4,4,4,4). The list must be the same length as the nl_scale factor list
 
-- **-nl_niter** Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5). The list must be the same length as the nl_scale factor list
+- **-nl_niter** Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default: 5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5). The list must be the same length as the nl_scale factor list
 
 - **-nl_update_smooth** Regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 2.0 x voxel_size)
 
@@ -50,7 +58,7 @@ Options for the population_template script
 
 - **-nl_grad_step** The gradient step size for non-linear registration (Default: 0.5)
 
-- **-noreorientation** Turn off FOD reorientation. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc
+- **-noreorientation** Turn off FOD reorientation in mrregister. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc
 
 - **-initial_alignment** Method of alignment to form the initial template. Options are "mass" (default), "geometric" and "none".
 
