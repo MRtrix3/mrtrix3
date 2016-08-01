@@ -50,11 +50,11 @@ class GraphTheory
     metric_type strength() const;
     metric_type betweenness() const;
     metric_type clustering_coefficient() const;
-    metric_type shortest_path_lenth() const;
+    metric_type characteristic_path_length() const;
     metric_type local_efficiency() const;
 
-    float global_efficiency() const;
-    float small_worldness() const;
+    double global_efficiency() const;
+    double small_worldness() const;
 
     void write_matrix( const std::string& path ) const;
 
@@ -62,9 +62,14 @@ class GraphTheory
 
   private:
 
+    bool nonzero( const double& value ) const;
+    std::vector< size_t > nonzero_indices( const Eigen::RowVectorXd& vec ) const;
+    std::vector< size_t > equal_indices( const Eigen::RowVectorXd& vec, const double& value ) const;
+
     node_t _num_nodes;
     matrix_type _cm;
     matrix_type _cm_length;
+    matrix_type _cm_distance;
     matrix_type _cm_max_scaled;
 
 };
