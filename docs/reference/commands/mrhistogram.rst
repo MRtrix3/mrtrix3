@@ -1,6 +1,6 @@
-.. _mrstats:
+.. _mrhistogram:
 
-mrstats
+mrhistogram
 ===========
 
 Synopsis
@@ -8,33 +8,34 @@ Synopsis
 
 ::
 
-    mrstats [ options ]  image
+    mrhistogram [ options ]  image hist
 
--  *image*: the input image from which statistics will be computed.
+-  *image*: the input image from which the histogram will be computed
+-  *hist*: the output histogram file
 
 Description
 -----------
 
-compute images statistics.
+generate a histogram of image intensities.
 
 Options
 -------
 
-Statistics options
-^^^^^^^^^^^^^^^^^^
+Histogram generation options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-output field** output only the field specified. Multiple such options can be supplied if required. Choices are: mean, median, std, min, max, count. Useful for use in scripts.
+-  **-bins num** Manually set the number of bins to use to generate the histogram.
 
--  **-mask image** only perform computation within the specified binary mask image.
+-  **-template file** Use an existing histogram file as the template for histogram formation
 
--  **-ignorezero** ignore zero values during statistics calculation
+-  **-mask image** Calculate the histogram only within a mask image.
 
-Additional options for mrstats
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-  **-ignorezero** ignore zero-valued data during histogram construction.
 
--  **-allvolumes** generate statistics across all image volumes, rather than one set of statistics per image volume
+Additional options for mrhistogram
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-ignorezero** ignore zero-valued input voxels.
+-  **-allvolumes** generate one histogram across all image volumes, rather than one per image volume
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -59,7 +60,7 @@ Standard options
 
 
 
-**Author:** J-Donald Tournier (jdtournier@gmail.com)
+**Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
 

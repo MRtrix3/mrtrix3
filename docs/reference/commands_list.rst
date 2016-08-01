@@ -67,6 +67,8 @@ List of MRtrix3 commands
 
    commands/fixelcorrespondence
 
+   commands/fixelhistogram
+
    commands/fixellog
 
    commands/fixelreorient
@@ -108,6 +110,10 @@ List of MRtrix3 commands
    commands/mrcrop
 
    commands/mrfilter
+
+   commands/mrhistmatch
+
+   commands/mrhistogram
 
    commands/mrinfo
 

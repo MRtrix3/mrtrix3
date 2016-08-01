@@ -1,5 +1,3 @@
 mrstats dwi.mif -output mean -output median -output std -output min -output max -output count > tmp.txt && testing_diff_matrix tmp.txt mrstats/out.txt 0.001
 mrstats dwi.mif -output mean -output median -output std -output min -output max -output count -mask mask.mif > tmp.txt && testing_diff_matrix tmp.txt mrstats/masked.txt 0.001
-mrstats dwi.mif -histogram tmp.txt -force && testing_diff_matrix tmp.txt mrstats/hist.txt 0.5
-mrstats dwi_mean.mif -dump tmp.txt -force && testing_diff_matrix tmp.txt mrstats/dump.txt 0.5
-mrstats dwi_mean.mif -mask mask.mif -position tmp.txt -force && testing_diff_matrix tmp.txt mrstats/position.txt 0.5
+mrstats dwi.mif -output mean -output median -output std -output min -output max -output count -allvolumes > tmp.txt && testing_diff_matrix tmp.txt mrstats/allvolumes.txt 0.001
