@@ -105,10 +105,6 @@ void usage ()
 
 
 
-
-
-
-
 class Segmented_FOD_receiver
 {
 
@@ -134,9 +130,30 @@ class Segmented_FOD_receiver
 
   private:
 
+    struct Primitive_FOD_lobe {
+      Eigen::Vector3f mean_dir;
+      float integral;
+      float peak_value;
+      Primitive_FOD_lobe (Eigen::Vector3f mean_dir, float integral, float peak_value)
+        : mean_dir (mean_dir), integral (integral), peak_value (peak_value) {}
+    };
+
+
+    class Primitive_FOD_lobes : public std::vector<Primitive_FOD_lobe> {
+      public:
+        Eigen::Array3i vox;
+
+        Primitive_FOD_lobes (const FOD_lobes& in) : vox (in.vox)
+        {
+          for (const FOD_lobe& lobe : in) {
+            this->emplace_back (lobe.get_mean_dir (), lobe.get_integral (), lobe.get_peak_value ());
+          }
+        }
+    };
+
     Header H;
     std::string fixel_folder_path, index_path, dir_path, afd_path, peak_path, disp_path;
-    std::vector<FOD_lobes> lobes;
+    std::vector<Primitive_FOD_lobes> lobes;
     uint64_t n_fixels;
 };
 
@@ -248,28 +265,28 @@ void Segmented_FOD_receiver::commit ()
     if (dir_image) {
       for (size_t i = 0; i < n_vox_fixels; ++i) {
         dir_image->index (0) = offset + i;
-        dir_image->row (1) = vox_fixels[i].get_mean_dir ();
+        dir_image->row (1) = vox_fixels[i].mean_dir;
       }
     }
 
     if (afd_image) {
       for (size_t i = 0; i < n_vox_fixels; ++i) {
         afd_image->index (0) = offset + i;
-        afd_image->value () = vox_fixels[i].get_integral ();
+        afd_image->value () = vox_fixels[i].integral;
       }
     }
 
     if (peak_image) {
       for (size_t i = 0; i < n_vox_fixels; ++i) {
         peak_image->index (0) = offset + i;
-        peak_image->value () = vox_fixels[i].get_peak_value ();
+        peak_image->value () = vox_fixels[i].peak_value;
       }
     }
 
     if (disp_image) {
       for (size_t i = 0; i < n_vox_fixels; ++i) {
         disp_image->index (0) = offset + i;
-        disp_image->value () = vox_fixels[i].get_integral () / vox_fixels[i].get_peak_value ();
+        disp_image->value () = vox_fixels[i].integral / vox_fixels[i].peak_value;
       }
     }
 
@@ -324,13 +341,16 @@ void run ()
   if (!set_directions_file)
     WARN ("No explicit directions image filename specified. Generating default " + default_directions_filename);
 
-  FMLS::FODQueueWriter writer (fod_data, mask);
+  std::unique_ptr <FMLS::FODQueueWriter> writer (new FMLS::FODQueueWriter(fod_data, mask));
 
   const DWI::Directions::Set dirs (1281);
-  Segmenter fmls (dirs, Math::SH::LforN (H.size(3)));
-  load_fmls_thresholds (fmls);
+  std::unique_ptr <Segmenter> fmls (new Segmenter (dirs, Math::SH::LforN (H.size(3))));
+  load_fmls_thresholds (*fmls);
 
-  Thread::run_queue (writer, Thread::batch (SH_coefs()), Thread::multi (fmls), Thread::batch (FOD_lobes()), receiver);
+  Thread::run_queue (*writer, Thread::batch (SH_coefs()), Thread::multi (*fmls), Thread::batch (FOD_lobes()), receiver);
+
+  writer.release ();
+  fmls.release ();
 
   receiver.commit ();
 }
