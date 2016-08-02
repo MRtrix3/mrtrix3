@@ -209,6 +209,7 @@ void run() {
     if (!use_tfce)
       throw Exception ("nonstationary adjustment is not currently implemented for threshold-based cluster analysis");
     Stats::PermTest::precompute_empirical_stat (glm, enhancer, nperms_nonstationary, empirical_enhanced_statistic);
+    save_matrix (empirical_enhanced_statistic, prefix + "empirical.txt");
   }
 
   Stats::PermTest::precompute_default_permutation (glm, enhancer, empirical_enhanced_statistic,
@@ -256,40 +257,37 @@ void run() {
     }
   }
 
-  auto opt = get_options ("notest");
-  if (!opt.size()) {
+  if (!get_options ("notest").size()) {
     Stats::PermTest::run_permutations (glm, enhancer, num_perms, empirical_enhanced_statistic,
                                        default_cluster_output, default_cluster_output_neg,
                                        perm_distribution, perm_distribution_neg,
                                        uncorrected_pvalue, uncorrected_pvalue_neg);
 
-    save_matrix (perm_distribution, prefix + "perm_dist.txt");    
+    save_matrix (perm_distribution, prefix + "perm_dist.txt");
     if (compute_negative_contrast)
       save_matrix (*perm_distribution_neg, prefix + "perm_dist_neg.txt");
 
+    ProgressBar progress ("generating output", compute_negative_contrast ? 4 : 2);
     {
-      ProgressBar progress ("generating output", compute_negative_contrast ? 4 : 2);
-      {
-        auto uncorrected_pvalue_image = Image<float>::create (prefix + "uncorrected_pvalue.mif", output_header);
-        write_output (uncorrected_pvalue, mask_indices, uncorrected_pvalue_image);
-      }
+      auto uncorrected_pvalue_image = Image<float>::create (prefix + "uncorrected_pvalue.mif", output_header);
+      write_output (uncorrected_pvalue, mask_indices, uncorrected_pvalue_image);
+    }
+    ++progress;
+    {
+      vector_type fwe_pvalue_output (num_vox);
+      Math::Stats::Permutation::statistic2pvalue (perm_distribution, default_cluster_output, fwe_pvalue_output);
+      auto fwe_pvalue_image = Image<float>::create (prefix + "fwe_pvalue.mif", output_header);
+      write_output (fwe_pvalue_output, mask_indices, fwe_pvalue_image);
+    }
+    ++progress;
+    if (compute_negative_contrast) {
+      auto uncorrected_pvalue_image_neg = Image<float>::create (prefix + "uncorrected_pvalue_neg.mif", output_header);
+      write_output (*uncorrected_pvalue_neg, mask_indices, uncorrected_pvalue_image_neg);
       ++progress;
-      {
-        vector_type fwe_pvalue_output (num_vox);
-        Math::Stats::Permutation::statistic2pvalue (perm_distribution, default_cluster_output, fwe_pvalue_output);
-        auto fwe_pvalue_image = Image<float>::create (prefix + "fwe_pvalue.mif", output_header);
-        write_output (fwe_pvalue_output, mask_indices, fwe_pvalue_image);
-      }
-      ++progress;
-      if (compute_negative_contrast) {
-        auto uncorrected_pvalue_image_neg = Image<float>::create (prefix + "uncorrected_pvalue_neg.mif", output_header);
-        write_output (*uncorrected_pvalue_neg, mask_indices, uncorrected_pvalue_image_neg);
-        ++progress;
-        vector_type fwe_pvalue_output_neg (num_vox);
-        Math::Stats::Permutation::statistic2pvalue (*perm_distribution_neg, *default_cluster_output_neg, fwe_pvalue_output_neg);
-        auto fwe_pvalue_image_neg = Image<float>::create (prefix + "fwe_pvalue_neg.mif", output_header);
-        write_output (fwe_pvalue_output_neg, mask_indices, fwe_pvalue_image_neg);
-      }
+      vector_type fwe_pvalue_output_neg (num_vox);
+      Math::Stats::Permutation::statistic2pvalue (*perm_distribution_neg, *default_cluster_output_neg, fwe_pvalue_output_neg);
+      auto fwe_pvalue_image_neg = Image<float>::create (prefix + "fwe_pvalue_neg.mif", output_header);
+      write_output (fwe_pvalue_output_neg, mask_indices, fwe_pvalue_image_neg);
     }
   }
 
