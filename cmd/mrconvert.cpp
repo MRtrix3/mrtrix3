@@ -21,6 +21,7 @@
 #include "algo/threaded_copy.h"
 #include "adapter/extract.h"
 #include "adapter/permute_axes.h"
+#include "file/json.h"
 #include "dwi/gradient.h"
 
 
@@ -76,6 +77,10 @@ void usage ()
             "scaling) for floating-point and binary images. Note that his option has no "
             "effect for floating-point and binary images.")
   + Argument ("values").type_sequence_float()
+
+  + Option ("json",
+            "import data from a JSON file into header key-value pairs")
+  + Argument ("file").type_file_in()
 
   + Stride::Options
 
@@ -245,6 +250,25 @@ void run ()
         for (size_t i = 0; i < pos[n].size(); i++)
           pos[n][i] = i;
       }
+    }
+  }
+
+
+  opt = get_options ("json");
+  if (opt.size()) {
+    std::ifstream in (opt[0][0]);
+    if (!in)
+      throw Exception ("Error opening JSON file \"" + std::string(opt[0][0]) + "\"");
+    nlohmann::json json;
+    try {
+      in >> json;
+    } catch (...) {
+      throw Exception ("Error parsing JSON file \"" + std::string(opt[0][0]) + "\"");
+    }
+    for (auto i = json.cbegin(); i != json.cend(); ++i) {
+      // Only load simple parameters at the first level
+      if (i->is_primitive())
+        header_out.keyval().insert (std::make_pair (i.key(), str(i.value())));
     }
   }
 

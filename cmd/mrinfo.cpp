@@ -20,6 +20,7 @@
 
 #include "command.h"
 #include "header.h"
+#include "file/json.h"
 #include "dwi/gradient.h"
 
 
@@ -75,6 +76,9 @@ void usage ()
     + Option ("property", "any text properties embedded in the image header under the "
         "specified key (use 'all' to list all keys found)").allow_multiple()
     +   Argument ("key").type_text()
+
+    + Option ("json", "export header key/value entries to a JSON file")
+    +   Argument ("file").type_file_out()
 
     + GradImportOptions
     + Option ("raw_dwgrad",
@@ -157,8 +161,10 @@ void run ()
 
   bool export_grad = check_option_group (GradExportOptions);
 
-  if (export_grad && argument.size() > 1 )
+  if (export_grad && argument.size() > 1)
     throw Exception ("can only export DW gradient table to file if a single input image is provided");
+
+  std::unique_ptr<nlohmann::json> json (get_options ("json").size() ? new nlohmann::json : nullptr);
 
   if (get_options ("norealign").size())
     Header::do_not_realign_transform = true;
@@ -218,8 +224,29 @@ void run ()
 
     DWI::export_grad_commandline (header);
 
+    if (json) {
+      for (const auto& kv : header.keyval()) {
+        if (json->find (kv.first) == json->end()) {
+          (*json)[kv.first] = kv.second;
+        } else if ((*json)[kv.first] != kv.second) {
+          // If the value for this key differs between images, turn the JSON entry into an array
+          if ((*json)[kv.first].is_array())
+            (*json)[kv.first].push_back (kv.second);
+          else
+            (*json)[kv.first] = { (*json)[kv.first], kv.second };
+        }
+      }
+    }
+
     if (print_full_header)
       std::cout << header.description();
+  }
+
+  if (json) {
+    auto opt = get_options ("json");
+    assert (opt.size());
+    File::OFStream out (opt[0][0]);
+    out << json->dump(4) << "\n";
   }
 
 }

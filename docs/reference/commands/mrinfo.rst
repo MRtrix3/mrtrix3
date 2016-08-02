@@ -48,6 +48,8 @@ Options
 
 -  **-property key** any text properties embedded in the image header under the specified key (use 'all' to list all keys found)
 
+-  **-json file** export header key/value entries to a JSON file
+
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
