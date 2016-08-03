@@ -377,6 +377,7 @@ else: # 'All'
     with open( 'transform.txt', 'w' ) as f:
       for line in input_transform_text:
         f.write (line)
+      f.write('\n0 0 0 1\n')
     runCommand('mrtransform ' + field_map_image + ' -linear transform.txt -replace field_map_fix' + fsl_suffix)
     delFile(field_map_image)
     field_map_image = 'field_map_fix' + fsl_suffix
