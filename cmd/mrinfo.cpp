@@ -77,7 +77,7 @@ void usage ()
         "specified key (use 'all' to list all keys found)").allow_multiple()
     +   Argument ("key").type_text()
 
-    + Option ("json", "export header key/value entries to a JSON file")
+    + Option ("json_export", "export header key/value entries to a JSON file")
     +   Argument ("file").type_file_out()
 
     + GradImportOptions
@@ -170,7 +170,7 @@ void run ()
   if (export_grad && argument.size() > 1)
     throw Exception ("can only export DW gradient table to file if a single input image is provided");
 
-  std::unique_ptr<nlohmann::json> json (get_options ("json").size() ? new nlohmann::json : nullptr);
+  std::unique_ptr<nlohmann::json> json (get_options ("json_export").size() ? new nlohmann::json : nullptr);
 
   if (get_options ("norealign").size())
     Header::do_not_realign_transform = true;
@@ -249,7 +249,7 @@ void run ()
   }
 
   if (json) {
-    auto opt = get_options ("json");
+    auto opt = get_options ("json_export");
     assert (opt.size());
     File::OFStream out (opt[0][0]);
     out << json->dump(4) << "\n";

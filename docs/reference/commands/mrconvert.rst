@@ -31,7 +31,12 @@ Options
 
 -  **-scaling values** specify the data scaling parameters used to rescale the intensity values. These take the form of a comma-separated 2-vector of floating-point values, corresponding to offset & scale, with final intensity values being given by offset + scale * stored_value. By default, the values in the input image header are passed through to the output image header when writing to an integer image, and reset to 0,1 (no scaling) for floating-point and binary images. Note that his option has no effect for floating-point and binary images.
 
--  **-json file** import data from a JSON file into header key-value pairs
+Options for handling JSON (JavaScript Object Notation) files
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-json_import file** import data from a JSON file into header key-value pairs
+
+-  **-json_export file** export data from an image header key-value pairs into a JSON file
 
 Stride options
 ^^^^^^^^^^^^^^

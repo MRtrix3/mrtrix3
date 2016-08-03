@@ -22,6 +22,7 @@
 #include "adapter/extract.h"
 #include "adapter/permute_axes.h"
 #include "file/json.h"
+#include "file/ofstream.h"
 #include "dwi/gradient.h"
 
 
@@ -78,9 +79,13 @@ void usage ()
             "effect for floating-point and binary images.")
   + Argument ("values").type_sequence_float()
 
-  + Option ("json",
-            "import data from a JSON file into header key-value pairs")
+  + OptionGroup ("Options for handling JSON (JavaScript Object Notation) files")
+
+  + Option ("json_import", "import data from a JSON file into header key-value pairs")
   + Argument ("file").type_file_in()
+
+  + Option ("json_export", "export data from an image header key-value pairs into a JSON file")
+  + Argument ("file").type_file_out()
 
   + Stride::Options
 
@@ -218,7 +223,25 @@ void run ()
   if (get_options ("grad").size() || get_options ("fslgrad").size())
     DWI::set_DW_scheme (header_out, DWI::get_DW_scheme (header_in));
 
-  auto opt = get_options ("coord");
+  auto opt = get_options ("json_import");
+  if (opt.size()) {
+    std::ifstream in (opt[0][0]);
+    if (!in)
+      throw Exception ("Error opening JSON file \"" + std::string(opt[0][0]) + "\"");
+    nlohmann::json json;
+    try {
+      in >> json;
+    } catch (...) {
+      throw Exception ("Error parsing JSON file \"" + std::string(opt[0][0]) + "\"");
+    }
+    for (auto i = json.cbegin(); i != json.cend(); ++i) {
+      // Only load simple parameters at the first level
+      if (i->is_primitive())
+        header_out.keyval().insert (std::make_pair (i.key(), str(i.value())));
+    }
+  }
+
+  opt = get_options ("coord");
   std::vector<std::vector<int>> pos;
   if (opt.size()) {
     pos.assign (header_in.ndim(), std::vector<int>());
@@ -254,25 +277,6 @@ void run ()
   }
 
 
-  opt = get_options ("json");
-  if (opt.size()) {
-    std::ifstream in (opt[0][0]);
-    if (!in)
-      throw Exception ("Error opening JSON file \"" + std::string(opt[0][0]) + "\"");
-    nlohmann::json json;
-    try {
-      in >> json;
-    } catch (...) {
-      throw Exception ("Error parsing JSON file \"" + std::string(opt[0][0]) + "\"");
-    }
-    for (auto i = json.cbegin(); i != json.cend(); ++i) {
-      // Only load simple parameters at the first level
-      if (i->is_primitive())
-        header_out.keyval().insert (std::make_pair (i.key(), str(i.value())));
-    }
-  }
-
-
   opt = get_options ("scaling");
   if (opt.size()) {
     if (header_out.datatype().is_integer()) {
@@ -284,6 +288,16 @@ void run ()
     }
     else
       WARN ("-scaling option has no effect for floating-point or binary images");
+  }
+
+
+  opt = get_options ("json_export");
+  if (opt.size()) {
+    nlohmann::json json;
+    for (const auto& kv : header_out.keyval())
+      json[kv.first] = kv.second;
+    File::OFStream out (opt[0][0]);
+    out << json.dump(4);
   }
 
 
