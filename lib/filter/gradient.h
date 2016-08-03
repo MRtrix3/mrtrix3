@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 
 #ifndef __image_filter_gradient_h__
@@ -50,7 +50,8 @@ namespace MR
             Base (in),
             smoother (in),
             wrt_scanner (true),
-            magnitude (magnitude)
+            magnitude (magnitude),
+            stdev (1, 0)
         {
           if (in.ndim() == 4) {
             if (!magnitude) {
@@ -76,6 +77,7 @@ namespace MR
             throw Exception("input image must be 3D or 4D");
           }
           datatype() = DataType::Float32;
+          DEBUG ("creating gradient filter");
         }
 
         void compute_wrt_scanner (bool do_wrt_scanner) {
@@ -86,7 +88,7 @@ namespace MR
 
         void set_stdev (const std::vector<default_type>& stdevs)
         {
-          smoother.set_stdev (stdevs);
+          stdev = stdevs;
         }
 
 
@@ -95,6 +97,7 @@ namespace MR
         {
           if (magnitude) {
             Gradient full_gradient (in, false);
+            full_gradient.set_stdev (stdev);
             full_gradient.set_message (message);
             auto temp = Image<float>::scratch (full_gradient, "full 3D gradient image");
             full_gradient (in, temp);
@@ -110,7 +113,7 @@ namespace MR
             }
             return;
           }
-
+          smoother.set_stdev (stdev);
           auto smoothed = Image<float>::scratch (smoother);
           if (message.size())
             smoother.set_message ("applying smoothing prior to calculating gradient");
@@ -151,6 +154,7 @@ namespace MR
         Filter::Smooth smoother;
         bool wrt_scanner;
         const bool magnitude;
+        std::vector<default_type> stdev;
     };
     //! @}
   }
