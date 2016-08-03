@@ -133,20 +133,26 @@ void print_strides (const Header& header)
   std::cout << buffer << "\n";
 }
 
-void print_properties (const Header& header, const std::string& key)
+void print_properties (const Header& header, const std::string& key, const size_t indent = 0)
 {
   if (lowercase (key) == "all") {
     for (const auto& it : header.keyval()) {
       std::cout << it.first << ": ";
-      print_properties (header, it.first);
+      print_properties (header, it.first, it.first.size()+2);
     }
   }
   else {
     const auto values = header.keyval().find (key);
-    if (values != header.keyval().end())
-      std::cout << values->second << "\n";
-    else
+    if (values != header.keyval().end()) {
+      auto lines = split (values->second, "\n");
+      std::cout << lines[0] << "\n";
+      for (size_t i = 1; i != lines.size(); ++i) {
+        lines[i].insert (0, indent, ' ');
+        std::cout << lines[i] << "\n";
+      }
+    } else {
       WARN ("no \"" + key + "\" entries found in \"" + header.name() + "\"");
+    }
   }
 }
 
