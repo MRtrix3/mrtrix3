@@ -29,7 +29,7 @@ namespace MR
     namespace NIfTI
     {
 
-      bool right_left_warning_issued = false;
+      extern bool right_left_warning_issued;
 
       transform_type adjust_transform (const Header& H, std::vector<size_t>& order);
 

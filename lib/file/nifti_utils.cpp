@@ -26,6 +26,9 @@ namespace MR
     {
 
 
+      bool right_left_warning_issued = false;
+
+
 
       transform_type adjust_transform (const Header& H, std::vector<size_t>& axes)
       {
