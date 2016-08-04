@@ -80,6 +80,21 @@ namespace MR {
                   G[1] = item.get_float()[1];
                   G[2] = item.get_float()[2];
                   return;
+                case 0x1312U:
+                  if (item.get_string()[0] == "ROW")
+                    pe_axis = 0;
+                  else if (item.get_string()[0] == "COL")
+                    pe_axis = 1;
+                  return;
+                case 0x0095U:
+                  pixel_bandwidth = item.get_float()[0];
+                  return;
+                case 0x0081U:
+                  echo_time = item.get_float()[0];
+                  return;
+                case 0x0091:
+                  echo_train_length = item.get_int()[0];
+                  return;
               }
               return;
             case 0x0020U: 
@@ -206,6 +221,12 @@ namespace MR {
                   G[2] = item.get_float()[2];
                 }
                 return;
+              // Siemens bandwidth per pixel phase encode
+              // At least, it's what's reported here: http://lcni.uoregon.edu/kb-articles/kb-0003
+              // Doesn't appear to work; use CSA field "BandwidthPerPixelPhaseEncode" instead
+              //case 0x1028U:
+              //  bandwidth_per_pixel_phase_encode = item.get_float()[0];
+              //  return;
             }
             return;
           case 0x0029U: // Siemens CSA entry
@@ -284,6 +305,10 @@ namespace MR {
             images_in_mosaic = entry.get_int();
           else if (strcmp ("SliceNormalVector", entry.key()) == 0) 
             entry.get_float (orientation_z);
+          else if (strcmp ("PhaseEncodingDirectionPositive", entry.key()) == 0)
+            pe_sign = (entry.get_int() > 0) ? 1 : -1;
+          else if (strcmp ("BandwidthPerPixelPhaseEncode", entry.key()) == 0)
+            bandwidth_per_pixel_phase_encode = entry.get_float();
         }
 
         if (G[0] && bvalue)
@@ -356,7 +381,7 @@ namespace MR {
       }
 
 
-      std::vector<size_t> Frame::count (const std::vector<Frame*>& frames) 
+      std::vector<size_t> Frame::count (const std::vector<Frame*>& frames)
       {
         std::vector<size_t> dim (3, 0);
         std::vector<size_t> index (3, 1);

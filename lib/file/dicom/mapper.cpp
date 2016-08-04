@@ -36,8 +36,8 @@ namespace MR {
         Patient* patient (series[0]->study->patient);
         std::string sbuf = ( patient->name.size() ? patient->name : "unnamed" );
         sbuf += " " + format_ID (patient->ID);
-        if (series[0]->modality.size()) sbuf 
-          += std::string (" [") + series[0]->modality + "]";
+        if (series[0]->modality.size())
+          sbuf += std::string (" [") + series[0]->modality + "]";
         if (series[0]->name.size()) 
           sbuf += std::string (" ") + series[0]->name;
         add_line (H.keyval()["comments"], sbuf);
@@ -104,11 +104,28 @@ namespace MR {
           add_line (H.keyval()["comments"], sbuf);
         }
 
-
-
-
-
         const Image& image (*(*series[0])[0]);
+
+        if (image.pe_axis != 3 && image.pe_sign) {
+          std::string pe_symbol;
+          switch (image.pe_axis) {
+            case 0: pe_symbol = "i"; break;
+            case 1: pe_symbol = "j"; break;
+            case 2: pe_symbol = "k"; break;
+            default: assert (0);
+          }
+          if (image.pe_sign < 0)
+            pe_symbol += '-';
+          add_line (H.keyval()["comments"], "PhaseEncodingDirection: " + pe_symbol);
+        }
+
+        if (std::isfinite (image.bandwidth_per_pixel_phase_encode) && image.pe_axis != 3) {
+          const default_type effective_echo_spacing = 1.0 / (image.bandwidth_per_pixel_phase_encode * image.dim[image.pe_axis]);
+          add_line (H.keyval()["comments"], "EffectiveEchoSpacing: " + str (effective_echo_spacing, 3));
+        }
+
+        if (std::isfinite (image.echo_time))
+          add_line (H.keyval()["comments"], "EchoTime: " + str (0.001 * image.echo_time, 6));
 
         size_t nchannels = image.frames.size() ? 1 : image.data_size / (image.dim[0] * image.dim[1] * (image.bits_alloc/8));
         if (nchannels > 1) 

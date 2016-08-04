@@ -43,6 +43,10 @@ namespace MR {
             bvalue = G[0] = G[1] = G[2] = NAN;
             data = bits_alloc = data_size = frame_offset = 0;
             DW_scheme_wrt_image = false;
+            pe_axis = 3;
+            pe_sign = 0;
+            pixel_bandwidth = bandwidth_per_pixel_phase_encode = echo_time = NAN;
+            echo_train_length = 0;
           }
 
           size_t acq_dim[2], dim[2], series_num, instance, acq, sequence;
@@ -51,6 +55,10 @@ namespace MR {
           size_t data, bits_alloc, data_size, frame_offset;
           std::string filename;
           bool DW_scheme_wrt_image;
+          size_t pe_axis;
+          int pe_sign;
+          default_type pixel_bandwidth, bandwidth_per_pixel_phase_encode, echo_time;
+          size_t echo_train_length;
           std::vector<uint32_t> index;
 
           bool operator< (const Frame& frame) const {
