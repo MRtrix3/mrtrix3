@@ -81,13 +81,10 @@ namespace MR
         }
 
         void compute_wrt_scanner (bool do_wrt_scanner) {
-          if (do_wrt_scanner && magnitude)
-            WARN ("For a gradient magnitude image, setting gradient to scanner axes has no effect");
           wrt_scanner = do_wrt_scanner;
         }
 
-        void set_stdev (const std::vector<default_type>& stdevs)
-        {
+        void set_stdev (const std::vector<default_type>& stdevs) {
           stdev = stdevs;
         }
 
@@ -98,6 +95,7 @@ namespace MR
           if (magnitude) {
             Gradient full_gradient (in, false);
             full_gradient.set_stdev (stdev);
+            full_gradient.compute_wrt_scanner (wrt_scanner);
             full_gradient.set_message (message);
             auto temp = Image<float>::scratch (full_gradient, "full 3D gradient image");
             full_gradient (in, temp);
