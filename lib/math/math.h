@@ -186,7 +186,7 @@ namespace MR
         throw e;
       }
 
-      if (V.size() != 4 || V[0].size() != 4)
+      if ((V.size() != 4 && V.size() != 3) || V[0].size() != 4)
         throw Exception ("transform in file " + filename + " is invalid. Does not contain 4x4 matrix.");
 
       transform_type M;
