@@ -38,6 +38,12 @@ void usage () {
     + Option ("bins", "the number of bins to use to generate the histograms")
       + Argument ("num").type_integer (2);
 
+  REFERENCES
+    + "* If using inverse contrast normalization for inter-modal (DWI - T1) registration:\n"
+      "Bhushan, C.; Haldar, J. P.; Choi, S.; Joshi, A. A.; Shattuck, D. W. & Leahy, R. M. "
+      "Co-registration and distortion correction of diffusion and anatomical images based on inverse contrast normalization. "
+      "NeuroImage, 2015, 115, 269-280";
+
 }
 
 
