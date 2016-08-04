@@ -38,39 +38,39 @@ class GraphTheory
 
   public:
 
-    GraphTheory( const matrix_type& cm );
+    GraphTheory();
     virtual ~GraphTheory();
 
-    void exclude( std::set< node_t > nodes );
-    void zero_diagonal();
-    void symmetrise();
+    void exclude( matrix_type&, const node_t& node ) const;
+    void exclude( matrix_type&, const std::set< node_t >& nodes ) const;
+    void zero_diagonal( matrix_type& ) const;
+    void symmetrise( matrix_type& ) const;
 
-    void weight_conversion();
+    matrix_type weight_to_max_scaled( const matrix_type& ) const;
+    matrix_type weight_to_length( const matrix_type& ) const;
+    matrix_type weight_to_distance( const matrix_type& ) const;
 
-    metric_type strength() const;
-    metric_type betweenness() const;
-    metric_type clustering_coefficient() const;
-    metric_type characteristic_path_length() const;
-    metric_type local_efficiency() const;
+    metric_type strength( const matrix_type& ) const;
+    metric_type betweenness( const matrix_type& ) const;
+    metric_type clustering_coefficient( const matrix_type& ) const;
+    metric_type characteristic_path_length( const matrix_type& ) const;
+    metric_type local_efficiency( const matrix_type& ) const;
 
-    double global_efficiency() const;
-    double small_worldness() const;
+    double global_efficiency( const matrix_type& ) const;
+    double vulnerability( const matrix_type& ) const;
+    double small_worldness( const matrix_type& ) const;
 
-    void write_matrix( const std::string& path ) const;
+    void write_matrix( const matrix_type&, const std::string& path ) const;
 
-    void print_global() const;
+    void print_global( const matrix_type& ) const;
 
   private:
+
+    matrix_type length_to_distance( const matrix_type& cm_length ) const;
 
     bool nonzero( const double& value ) const;
     std::vector< size_t > nonzero_indices( const Eigen::RowVectorXd& vec ) const;
     std::vector< size_t > equal_indices( const Eigen::RowVectorXd& vec, const double& value ) const;
-
-    node_t _num_nodes;
-    matrix_type _cm;
-    matrix_type _cm_length;
-    matrix_type _cm_distance;
-    matrix_type _cm_max_scaled;
 
 };
 

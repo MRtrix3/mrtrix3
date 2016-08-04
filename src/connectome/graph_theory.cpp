@@ -14,10 +14,11 @@
  */
 
 
+
 #include "connectome/graph_theory.h"
-#include "connectome/mat2vec.h"
 #include "file/ofstream.h"
 #include "exception.h"
+#include <iomanip>
 
 
 namespace MR {
@@ -27,10 +28,8 @@ namespace Connectome {
 #define EPSILON std::numeric_limits< double >::epsilon()
 
 
-GraphTheory::GraphTheory( const matrix_type& cm )
-            : _cm( cm )
+GraphTheory::GraphTheory()
 {
-  _num_nodes = _cm.cols();
 }
 
 
@@ -39,76 +38,92 @@ GraphTheory::~GraphTheory()
 }
 
 
-void GraphTheory::exclude( std::set< node_t > nodes )
+void GraphTheory::exclude( matrix_type& cm, const node_t& node ) const
 {
-  for ( auto n = nodes.crbegin(); n != nodes.crend() ; n++ )
+  node_t num_rows = cm.rows();
+  node_t num_cols = cm.cols();
+  cm.block( node  , 0, num_rows-node  , num_cols ) =
+  cm.block( node+1, 0, num_rows-node-1, num_cols );
+  cm.conservativeResize( num_rows-1, num_cols );
+
+  num_rows = cm.rows();
+  cm.block( 0, node  , num_rows, cm.cols()-node   ) =
+  cm.block( 0, node+1, num_rows, cm.cols()-node-1 );
+  cm.conservativeResize( num_rows, num_cols-1 );
+}
+
+
+void GraphTheory::exclude( matrix_type& cm, const std::set< node_t >& nodes ) const
+{
+  for ( auto n = nodes.crbegin(); n != nodes.crend() ; ++n )
   {
-    // remove one row
-    _cm.block( (*n)  , 0, _num_nodes-(*n), _num_nodes ) =
-    _cm.block( (*n)+1, 0, _num_nodes-(*n), _num_nodes );
-    _cm.conservativeResize( _num_nodes-1, _num_nodes );
-
-    // remove one column
-    _cm.block( 0, (*n)  , _num_nodes, _num_nodes-(*n) ) =
-    _cm.block( 0, (*n)+1, _num_nodes, _num_nodes-(*n) );
-    _cm.conservativeResize( _num_nodes, _num_nodes-1 );
-
-    // update node count
-    -- _num_nodes;
+    exclude( cm, *n );
   }
 }
 
 
-void GraphTheory::zero_diagonal()
+void GraphTheory::zero_diagonal( matrix_type& cm ) const
 {
-  _cm.diagonal() = Eigen::MatrixXd::Zero( _num_nodes, 1 );
+  cm.diagonal() = Eigen::MatrixXd::Zero( cm.rows(), 1 );
 }
 
 
-void GraphTheory::symmetrise()
+void GraphTheory::symmetrise( matrix_type& cm ) const
 {
-  Eigen::MatrixXd upper = _cm.triangularView< Eigen::Upper >();
-  _cm = upper + upper.transpose() -
-        upper.cwiseProduct( Eigen::MatrixXd::Identity(_num_nodes,_num_nodes) );
+  Eigen::MatrixXd upper = cm.triangularView< Eigen::Upper >();
+  cm = upper + upper.transpose() -
+       upper.cwiseProduct( Eigen::MatrixXd::Identity( cm.rows(), cm.cols() ) );
 }
 
 
-void GraphTheory::weight_conversion()
+matrix_type GraphTheory::weight_to_max_scaled( const matrix_type& cm ) const
 {
-  /*
-   * convert a connectivity matrix to a length matrix
-   */
-  _cm_length.resize( _num_nodes, _num_nodes );
-  for ( node_t r = 0; r < _num_nodes; r++ )
-  {
-    for ( node_t c = 0; c < _num_nodes; c++ )
-    {
-      double value = _cm( r, c );
-      _cm_length( r, c ) = nonzero( value ) ? ( 1.0 / value ) : 0.0;
-    }
-  }
-
-  /*
-   * convert a connectivity matrix to a max-normalised matrix
-   */
-  double maxValue = _cm.maxCoeff();
+  /* convert a connectivity matrix to a max-normalised matrix */
+  double maxValue = cm.maxCoeff();
   if ( !nonzero( maxValue ) )
   {
     throw Exception( "Maximum matrix entry is zero." );
   }
-  _cm_max_scaled = _cm / _cm.maxCoeff();
+  return cm / maxValue;
+}
 
-  /*
-   * convert a length matrix to a distance matrix
-   */
-  // initialise a matrix with zero diagonal & Inf for pairwise connections
-  _cm_distance = Eigen::MatrixXd::Ones( _num_nodes, _num_nodes ) * Inf;
-  _cm_distance.diagonal() = Eigen::MatrixXd::Zero( _num_nodes, 1 );
-  for ( node_t u = 0; u < _num_nodes; u++ )
+
+matrix_type GraphTheory::weight_to_length( const matrix_type& cm ) const
+{
+  /* convert a connectivity matrix to a length matrix */
+  node_t num_nodes = cm.rows();
+  matrix_type cm_length( num_nodes, num_nodes );
+  for ( node_t r = 0; r < num_nodes; r++ )
   {
-    std::vector< bool > S( _num_nodes, true );
-    matrix_type L = _cm_length;
-    node_t V = u;
+    for ( node_t c = 0; c < num_nodes; c++ )
+    {
+      double value = cm( r, c );
+      cm_length( r, c ) = nonzero( value ) ? ( 1.0 / value ) : 0.0;
+    }
+  }
+  return cm_length;
+}
+
+
+matrix_type GraphTheory::weight_to_distance( const matrix_type& cm ) const
+{
+  /* convert a connectivity matrix to a distance matrix */
+  return length_to_distance( weight_to_length( cm ) );
+}
+
+
+matrix_type GraphTheory::length_to_distance( const matrix_type& cm_length ) const
+{
+  /* convert a length matrix to a distance matrix */
+  // initialise a matrix with zero diagonal & Inf for pairwise connections
+  node_t num_nodes = cm_length.rows();
+  matrix_type cm_distance = Eigen::MatrixXd::Ones( num_nodes, num_nodes ) * Inf;
+  cm_distance.diagonal() = Eigen::MatrixXd::Zero( num_nodes, 1 );
+  for ( node_t n = 0; n < num_nodes; n++ )
+  {
+    std::vector< bool > S( num_nodes, true );
+    matrix_type L = cm_length;
+    node_t V = n;
     while ( 1 )
     {
       S[ V ] = false;
@@ -117,51 +132,54 @@ void GraphTheory::weight_conversion()
       auto nonzeros = nonzero_indices( vec );
       for ( size_t index = 0; index < nonzeros.size(); index++ )
       {
-        double d = std::min( _cm_distance( u, nonzeros[ index ] ),
-                             _cm_distance( u, V ) + L( V, nonzeros[ index ] ) );
-        _cm_distance( u, nonzeros[ index ] ) = d;
+        double d = std::min( cm_distance( n, nonzeros[ index ] ),
+                             cm_distance( n, V ) + L( V, nonzeros[ index ] ) );
+        cm_distance( n, nonzeros[ index ] ) = d;
       }
       double min_distance = Inf;
-      for ( node_t n = 0; n < _num_nodes; n++ )
+      for ( node_t u = 0; u < num_nodes; u++ )
       {
-        if ( S[ n ] )
+        if ( S[ u ] )
         {
-          min_distance = std::min( min_distance, _cm_distance( u, n ) );
+          min_distance = std::min( min_distance, cm_distance( n, u ) );
         }
       }
       if ( std::isinf( min_distance ) )
       {
         break;
       }
-      auto equals = equal_indices( _cm_distance.row( u ), min_distance );
+      auto equals = equal_indices( cm_distance.row( n ), min_distance );
       V = equals[ 0 ];
     }
   }
+  return cm_distance;
 }
 
 
-metric_type GraphTheory::strength() const
+metric_type GraphTheory::strength( const matrix_type& cm ) const
 {
-  return _cm.rowwise().sum();
+  return cm.rowwise().sum();
 }
 
 
-metric_type GraphTheory::clustering_coefficient() const
+metric_type GraphTheory::clustering_coefficient( const matrix_type& cm ) const
 {
   // Method from Zhang et al., Stat Appl Genet Mol Biol 2005, 4(1), 17
-  metric_type numerator = ( _cm_max_scaled *
-                            _cm_max_scaled *
-                            _cm_max_scaled ).diagonal();
-  metric_type denominator = Eigen::MatrixXd::Zero( _num_nodes, 1 );
-  for ( node_t n = 0; n != _num_nodes; n++ )
+  node_t num_nodes = cm.rows();
+  matrix_type cm_max_scaled = weight_to_max_scaled( cm );
+  metric_type numerator = ( cm_max_scaled *
+                            cm_max_scaled *
+                            cm_max_scaled ).diagonal();
+  metric_type denominator = Eigen::MatrixXd::Zero( num_nodes, 1 );
+  for ( node_t n = 0; n != num_nodes; n++ )
   {
-    for ( node_t j = 0; j != _num_nodes; j++ )
+    for ( node_t j = 0; j != num_nodes; j++ )
     {
-      for ( node_t k = 0; k != _num_nodes; k++ )
+      for ( node_t k = 0; k != num_nodes; k++ )
       {
         if ( j != n && k != n && j != k )
         {
-          denominator( n ) += _cm_max_scaled( n, j ) * _cm_max_scaled( n, k );
+          denominator( n ) += cm_max_scaled( n, j ) * cm_max_scaled( n, k );
         }
       }
     }
@@ -170,33 +188,102 @@ metric_type GraphTheory::clustering_coefficient() const
 }
 
 
-metric_type GraphTheory::characteristic_path_length() const
+metric_type GraphTheory::characteristic_path_length( const matrix_type& cm ) const
 {
-  return _cm_distance.rowwise().sum() / ( _num_nodes-1 );
+  return weight_to_distance( cm ).rowwise().sum() / ( cm.rows()-1 );
 }
 
 
-void GraphTheory::write_matrix( const std::string& path ) const
+metric_type GraphTheory::local_efficiency( const matrix_type& cm ) const
+{
+  matrix_type W = weight_to_max_scaled( cm );
+  matrix_type L = weight_to_length( W );
+
+  node_t num_nodes = cm.rows();
+  metric_type Elocal = Eigen::MatrixXd::Zero( num_nodes, 1 );
+  for ( node_t n = 0; n < num_nodes; n++ )
+  {
+    auto nonzeros = nonzero_indices( W.row( n ) );
+    metric_type s_Wn( nonzeros.size(), 1 );
+    for ( auto nz = 0; nz < nonzeros.size(); nz++ )
+    {
+      s_Wn( nz ) = 2.0 * std::pow( W( n, nonzeros[ nz ] ), 1.0 / 3.0 );
+    }
+    matrix_type L_sub = L;
+    auto zeros = equal_indices( L_sub.row( n ), 0.0 );
+    exclude( L_sub, std::set< node_t >( zeros.begin(), zeros.end() ) );
+    matrix_type D_inv_sub = length_to_distance( L_sub ).cwiseInverse();
+    D_inv_sub.diagonal() = Eigen::MatrixXd::Zero( D_inv_sub.rows(), 1 );
+    matrix_type s_D_inv_sub = 2.0 * D_inv_sub.array().pow( 1.0 / 3.0 );
+
+    double numerator = 0.5 * ( s_Wn * s_Wn.transpose() ).cwiseProduct( s_D_inv_sub ).sum();
+    if ( numerator )
+    {
+      auto s_A = 2.0 * Eigen::MatrixXd::Ones( 1, nonzeros.size() );
+      double denominator = s_A.sum() * s_A.sum() - s_A.array().square().sum();
+      Elocal( n ) = numerator / denominator;
+    }
+  }  
+  return Elocal;
+}
+
+
+double GraphTheory::global_efficiency( const matrix_type& cm ) const
+{
+  matrix_type cm_distance_inv = weight_to_distance( weight_to_max_scaled( cm )
+                                                   ).cwiseInverse();
+  node_t num_nodes = cm.cols();
+  cm_distance_inv.diagonal() = Eigen::MatrixXd::Zero( num_nodes, 1 );
+  return cm_distance_inv.sum() / ( num_nodes * ( num_nodes - 1 ) );
+}
+
+
+double GraphTheory::vulnerability( const matrix_type& cm ) const
+{
+  // Method from Latora et al., Phys. Rev., EStat. Nonlinear Soft Matter Phys. 71
+  node_t num_nodes = cm.rows();
+  double e_g = global_efficiency( cm );
+  metric_type node_vulnerability = Eigen::MatrixXd::Zero( num_nodes, 1 );
+  for ( node_t n = 0; n < num_nodes; n++ )
+  {
+    matrix_type cm_sub = cm;
+    exclude( cm_sub, n );
+    node_vulnerability( n ) = ( e_g - global_efficiency( cm_sub ) ) / e_g;
+  }
+  return node_vulnerability.maxCoeff();
+}
+
+
+void GraphTheory::write_matrix( const matrix_type& cm, const std::string& path ) const
 {
   std::ofstream file( path );
-  for ( node_t r = 0; r != _num_nodes; r++ )
+  for ( node_t r = 0; r != cm.rows(); r++ )
   {
-    for ( node_t c = 0; c != _num_nodes; c++ )
+    for ( node_t c = 0; c != cm.cols(); c++ )
     {
-      file << _cm( r, c ) << " " << std::flush;
+      file << cm( r, c ) << " " << std::flush;
     }
     file << '\n';
   }
 }
 
 
-void GraphTheory::print_global() const
+void GraphTheory::print_global( const matrix_type& cm ) const
 {
-  Eigen::MatrixXd global_metrics = Eigen::MatrixXd::Zero( 1, 3 );
-  global_metrics( 0 ) = strength().mean();
-  global_metrics( 1 ) = clustering_coefficient().mean();
-  global_metrics( 2 ) = characteristic_path_length().mean();
-  std::cout << global_metrics << std::endl;
+  Eigen::MatrixXd global_metrics = Eigen::MatrixXd::Zero( 1, 6 );
+  global_metrics( 0 ) = strength( cm ).mean();
+  global_metrics( 1 ) = clustering_coefficient( cm ).mean();
+  global_metrics( 2 ) = characteristic_path_length( cm ).mean();
+  global_metrics( 3 ) = local_efficiency( cm ).mean();
+  global_metrics( 4 ) = global_efficiency( cm );
+  global_metrics( 5 ) = vulnerability( cm );
+  std::cout << std::setw( 12 ) << std::right << "Kw"
+            << std::setw( 12 ) << std::right << "Cw"
+            << std::setw( 12 ) << std::right << "Lw"
+            << std::setw( 12 ) << std::right << "Ew-l"
+            << std::setw( 12 ) << std::right << "Ew-g"
+            << std::setw( 12 ) << std::right << "Vw" << std::endl;
+  std::cout << " " << global_metrics << std::endl;
 }
 
 

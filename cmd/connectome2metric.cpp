@@ -33,7 +33,7 @@ void usage ()
   AUTHOR = "Chun-Hung Jimmy Yeh (chun-hung.yeh@florey.edu.au)";
 
   DESCRIPTION
-  + "compute connectomic metrics.";
+  + "compute connectomic metrics for a weighted and undirected network.";
 
   ARGUMENTS
   + Argument( "matrix_in", "the connectome matrix file" ).type_file_in();
@@ -57,7 +57,8 @@ void usage ()
 void run ()
 {
 
-  GraphTheory graph_theory( Connectome::read_matrix( argument[0] ) );
+  matrix_type cm = Connectome::read_matrix( argument[0] );
+  GraphTheory graph_theory;
 
   // pre-processing connectivity matrix if required
   auto opt = get_options( "exclude" );
@@ -69,30 +70,29 @@ void run ()
     {
       unwanted.insert( (node_t)(*n) );
     }
-    graph_theory.exclude( unwanted );
+    graph_theory.exclude( cm, unwanted );
   }
 
   opt = get_options( "zero_diagonal" );
   if ( opt.size() )
   {
-    graph_theory.zero_diagonal();
+    graph_theory.zero_diagonal( cm );
   }
 
   opt = get_options( "symmetrise" );
   if ( opt.size() )
   {
-    graph_theory.symmetrise();
+    graph_theory.symmetrise( cm );
   }
 
   opt = get_options( "export" );
   if ( opt.size() )
   {
-    graph_theory.write_matrix( opt[0][0] );
+    graph_theory.write_matrix( cm, opt[0][0] );
   }
 
   // computing and display metrics
-  graph_theory.weight_conversion();
-  graph_theory.print_global();
+  graph_theory.print_global( cm );
 
 }
 
