@@ -236,6 +236,8 @@ void run ()
   if (opt.size()) {
     if (replace)
       throw Exception ("you cannot use the -replace option with the -template option");
+    if (!linear)
+      linear_transform.setIdentity();
     template_header = Header::open (opt[0][0]);
     for (size_t i = 0; i < 3; ++i) {
       output_header.size(i) = template_header.size(i);
