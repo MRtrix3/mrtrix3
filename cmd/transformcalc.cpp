@@ -191,7 +191,7 @@ void run ()
     case 6: { // decompose
       if (num_inputs != 1)
         throw Exception ("decomposition requires 1 input");
-      transform_type transform = load_transform<default_type> (argument[0]);
+      transform_type transform = load_transform (argument[0]);
 
       Eigen::MatrixXd M = transform.linear();
       Eigen::Matrix3d R = transform.rotation();
