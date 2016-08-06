@@ -25,6 +25,7 @@ from lib.warnMessage   import warnMessage
 try:
   from numpy import loadtxt, savetxt, dot
 except ImportError:
+  printMessage("numpy not found. using replacement functions")
   def loadtxt(fname, delimiter=" ", dtype=float):
     with open(fname, "r") as f:
       return [[dtype(x) for x in l.rstrip().split(delimiter)] for l in f.readlines()]
