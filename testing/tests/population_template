@@ -1,1 +1,1 @@
-# population_template population_template/in population_template/out.mif.gz -linear_scale 0.2,0.3 -linear_lmax 2,4 -linear_niter 20,20 -nl_scale 0.2,0.3 -nl_lmax 4,4 -nl_niter 1,1 -force ## TODO
+population_template population_template/in population_template/out.mif.gz -linear_scale 0.2,0.3 -linear_niter 20,20 -nl_scale 0.2,0.3 -nl_niter 1,1 -force; rm population_template/out.mif.gz; 
