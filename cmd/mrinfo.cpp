@@ -65,7 +65,7 @@ void usage ()
     +   Option ("stride", "data strides i.e. order and direction of axes data layout")
     +   Option ("offset", "image intensity offset")
     +   Option ("multiplier", "image intensity multiplier")
-    +   Option ("transform", "the image transform")
+    +   Option ("transform", "the voxel to image transformation")
     +   Option ("norealign",
           "do not realign transform to near-default RAS coordinate system (the "
           "default behaviour on image load). This is useful to inspect the transform "
@@ -131,7 +131,7 @@ void print_strides (const Header& header)
 
 void print_transform (const Header& header)
 {
-  Eigen::IOFormat fmt (Eigen::FullPrecision, 0, ", ", "\n", "", "", "", "\n");
+  Eigen::IOFormat fmt (Eigen::FullPrecision, 0, " ", "\n", "", "", "", "\n");
   Eigen::Matrix<default_type, 4, 4> matrix;
   matrix.topLeftCorner<3,4>() = header.transform().matrix();
   matrix.row(3) << 0.0, 0.0, 0.0, 1.0;
