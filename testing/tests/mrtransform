@@ -4,3 +4,4 @@ mrtransform moving.mif.gz -replace moving2template.txt - | testing_diff_data - m
 mrtransform template.mif.gz -template moving.mif.gz -interp linear -inverse -linear moving2template.txt - | testing_diff_data - mrtransform/out4.mif.gz 0.01
 mrtransform dwi_mean.mif -flip 0 - | testing_diff_data - mrtransform/out5.mif 0.001
 mrtransform dwi.mif -identity - | testing_diff_data - mrtransform/out6.mif 0.001
+mrinfo dwi.mif -transform > tmp.txt; mrtransform -replace tmp.txt dwi.mif - | mrtransform dwi.mif -template - - | testing_diff_data - dwi.mif 0.0001
