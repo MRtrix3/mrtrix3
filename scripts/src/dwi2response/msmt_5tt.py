@@ -89,7 +89,7 @@ def execute():
   recursive_cleanup_option=''
   if not lib.app.cleanup:
     recursive_cleanup_option = ' -nocleanup'
-  runCommand('dwi2response -quiet -tempdir ' + lib.app.tempDir + recursive_cleanup_option + ' ' + lib.app.args.wm_algo + ' dwi.mif wm_ss_response.txt -mask wm_mask.mif -voxels wm_sf_mask.mif')
+  runCommand('dwi2response ' + lib.app.args.wm_algo + ' dwi.mif wm_ss_response.txt -mask wm_mask.mif -voxels wm_sf_mask.mif -quiet -tempdir ' + lib.app.tempDir + recursive_cleanup_option)
 
   # Check for empty masks
   wm_voxels  = int(getImageStat('wm_sf_mask.mif', 'count', 'wm_sf_mask.mif'))

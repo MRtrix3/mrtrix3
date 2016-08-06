@@ -152,19 +152,28 @@ There are three main reasons for this:
       your graphics hardware, and what you've tried so far).
 
 3. **Your installation does support OpenGL 3.3, but only provides access
-   to the 3.3 functionality through the core profile, not through the
-   compatibility profile.** This seems to be an issue particularly on
-   more recent versions of Ubuntu 14.04. To see whether this is the
-   problem, you only need to add the line:
+   to the 3.3 functionality through the _compatibility_ profile, not through the
+   (default) core profile.** To see whether this is the problem,
+   you only need to add the line:
 
    ::
 
-       NeedOpenGLCoreProfile: 1
+       NeedOpenGLCoreProfile: 0
 
-   to your MRtrix configuration file (typically, ``~/.mrtrix.conf``). If
+   to your `MRtrix configuration file <config>`__ (typically, ``~/.mrtrix.conf``). If
    it doesn't work, you're probably stuck with reason 2.
 
 
+MRView runs with visual artefacts or no display
+-----------------------------------------------
+
+If you find that MRView displays with visual glitches or a blank screen,
+particularly in volume render mode, and on ATI/AMD hardware, you may find that
+setting::
+
+    NeedOpenGLCoreProfile: 0
+
+may resolve the problem.
 
 
 Unusual symbols on terminal
@@ -199,7 +208,7 @@ the **'MinGW-w64 Win64 Shell'** provided in this installation is known to
 support VT100 codes.
 
 2. Terminal colouring can be disabled using the MRtrix
-`configuration file <config>`. Add the following line to either the
+`configuration file <config>`__. Add the following line to either the
 system-wide or user config file to disable these advanced terminal features:
 
 .. code::
@@ -258,7 +267,7 @@ manifest in many ways, but the two most obvious one are:
    completes without errors. However, MRView crashes, complaining about
    OpenGL version not being sufficient.
 -  ``./configure`` reports the correct version of Qt, but ``./build``
-   fails with various error messages (typically related to refined
+   fails with various error messages (typically related to redefined
    macros, with previous definitions elsewhere in the code).
 
 
@@ -266,25 +275,24 @@ manifest in many ways, but the two most obvious one are:
 Compiler error during build
 ---------------------------
 
-If you encounter an error during the build process that resembles the following:
+If you encounter an error during the build process that resembles the following::
 
-```
-ERROR: (#/#) [CC] release/cmd/command.o
+    ERROR: (#/#) [CC] release/cmd/command.o
+    
+    /usr/bin/g++-4.8 -c -std=c++11 -pthread -fPIC -march=native -I/home/user/mrtrix3/eigen -Wall -O2 -DNDEBUG -Isrc -Icmd -I./lib -Icmd cmd/command.cpp -o release/cmd/command.o
+    
+    failed with output
+    
+    g++-4.8: internal compiler error: Killed (program cc1plus)
+    Please submit a full bug report,
+    with preprocessed source if appropriate.
+    See for instructions.
 
-/usr/bin/g++-4.8 -c -std=c++11 -pthread -fPIC -march=native -I/home/user/mrtrix3/eigen -Wall -O2 -DNDEBUG -Isrc -Icmd -I./lib -Icmd cmd/command.cpp -o release/cmd/command.o
-
-failed with output
-
-g++-4.8: internal compiler error: Killed (program cc1plus)
-Please submit a full bug report,
-with preprocessed source if appropriate.
-See for instructions.
-```
 
 This is most typically caused by the compiler running out of RAM. This
 can be solved either through installing more RAM into your system, or
-by restricting the number of threads to be used during compilation:
-```
-NUMBER_OF_PROCESSORS=1 ./build
-```
+by restricting the number of threads to be used during compilation::
+
+    NUMBER_OF_PROCESSORS=1 ./build
+
 

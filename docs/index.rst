@@ -43,7 +43,7 @@ Welcome to the MRtrix user documentation!
    tutorials/denoising
    tutorials/hcp_connectome
    tutorials/connectome_tool
-   tutorials/labelconfig
+   tutorials/labelconvert
    tutorials/advanced_debugging
    tutorials/warping_images_with_warps_from_other_packages
    tutorials/FAQ
