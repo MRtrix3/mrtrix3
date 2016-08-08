@@ -3,14 +3,15 @@ args = ''
 author = ''
 citationList = []
 cleanup = True
+keepOnError = True
 copyright = '''Copyright (c) 2008-2016 the MRtrix3 contributors
 
-This Source Code Form is subject to the terms of the Mozilla Public 
-License, v. 2.0. If a copy of the MPL was not distributed with this 
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-MRtrix is distributed in the hope that it will be useful, 
-but WITHOUT ANY WARRANTY; without even the implied warranty of 
+MRtrix is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 For more details, see www.mrtrix.org'''
@@ -45,7 +46,7 @@ def initialise():
   from lib.errorMessage          import errorMessage
   from lib.printMessage          import printMessage
   from lib.readMRtrixConfSetting import readMRtrixConfSetting
-  global args, citationList, cleanup, externalCitations, lastFile, mrtrixNThreads, mrtrixQuiet, parser, tempDir, verbosity, workingDir
+  global args, citationList, cleanup, keepOnError, externalCitations, lastFile, mrtrixNThreads, mrtrixQuiet, parser, tempDir, verbosity, workingDir
   global colourClear, colourConsole, colourError, colourPrint, colourWarn
 
   if not parser:
@@ -71,7 +72,7 @@ def initialise():
     use_colour = use_colour.lower() in ('yes', 'true', '1')
   else:
     # Windows now also gets coloured text terminal support, so make this the default
-    use_colour = True 
+    use_colour = True
   if use_colour:
     colourClear = '\033[0m'
     colourConsole = '\033[03;34m'
@@ -81,6 +82,8 @@ def initialise():
 
   if args.nocleanup:
     cleanup = False
+  if args.cleanuponerror:
+    keepOnError = False
   if args.nthreads:
     mrtrixNThreads = ' -nthreads ' + args.nthreads
   if args.quiet:
@@ -174,7 +177,7 @@ def gotoTempDir():
     printMessage('Changing to temporary directory (' + tempDir + ')')
   os.chdir(tempDir)
 
-  
+
 
 def complete():
   import os, shutil, sys
