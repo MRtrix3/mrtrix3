@@ -173,30 +173,35 @@ namespace MR
       return M;
     }
 
-  //! read matrix data into a 4x4 Eigen::Tranform\a filename
-  template <class ValueType = default_type>
-    transform_type load_transform (const std::string& filename)
-    {
-      DEBUG ("loading transform file \"" + filename + "\"...");
+  //! read matrix data from \a filename into an Eigen::Tranform class
+  inline transform_type load_transform (const std::string& filename)
+  {
+    DEBUG ("loading transform file \"" + filename + "\"...");
 
-      std::vector<std::vector<ValueType>> V;
-      try {
-        V = load_matrix_2D_vector<ValueType> (filename);
-      } catch (Exception& e) {
-        throw e;
-      }
-
-      if ((V.size() != 4 && V.size() != 3) || V[0].size() != 4)
-        throw Exception ("transform in file " + filename + " is invalid. Does not contain 4x4 matrix.");
-
-      transform_type M;
-
-      for (ssize_t i = 0; i < 3; i++)
-        for (ssize_t j = 0; j < 4; j++)
-          M(i,j) = V[i][j];
-
-      return M;
+    std::vector<std::vector<default_type>> V;
+    try {
+      V = load_matrix_2D_vector<> (filename);
+    } catch (Exception& e) {
+      throw e;
     }
+
+    if (V.empty())
+      throw Exception ("transform in file " + filename + " is empty");
+
+    if (V[0].size() != 4)
+      throw Exception ("transform in file " + filename + " is invalid: does not contain 4 columns.");
+
+    if (V.size() != 3 && V.size() != 4)
+      throw Exception ("transform in file " + filename + " is invalid: must contain either 3 or 4 rows.");
+
+    transform_type M;
+
+    for (ssize_t i = 0; i < 3; i++)
+      for (ssize_t j = 0; j < 4; j++)
+        M(i,j) = V[i][j];
+
+    return M;
+  }
 
   //! write the transform \a M to file
   inline void save_transform (const transform_type& M, const std::string& filename)

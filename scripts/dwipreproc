@@ -373,12 +373,7 @@ else: # 'All'
   field_map_image = 'field_map' + fsl_suffix
   if not imagesMatch('topup_in.nii', field_map_image):
     warnMessage('topup output field image has erroneous header; recommend updating FSL to version 5.0.8 or later')
-    input_transform_text = getHeaderInfo('topup_in.nii', 'transform')
-    with open( 'transform.txt', 'w' ) as f:
-      for line in input_transform_text:
-        f.write (line)
-      f.write('\n0 0 0 1\n')
-    runCommand('mrtransform ' + field_map_image + ' -linear transform.txt -replace field_map_fix' + fsl_suffix)
+    runCommand('mrtransform ' + field_map_image + ' -replace topup_in.nii field_map_fix' + fsl_suffix)
     delFile(field_map_image)
     field_map_image = 'field_map_fix' + fsl_suffix
 
