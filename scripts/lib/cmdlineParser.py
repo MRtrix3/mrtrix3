@@ -18,13 +18,11 @@ def initialise(desc):
   standard_options.add_argument('-force', action='store_true', help='Force overwrite of output files if pre-existing')
   standard_options.add_argument('-help', action='store_true', help='Display help information for the script')
   standard_options.add_argument('-nocleanup', action='store_true', help='Do not delete temporary files during script, or temporary directory at script completion')
-  standard_options.add_argument('-cleanuponerror', action='store_true', help='Delete temporary directory if script terminates with an error')
   standard_options.add_argument('-nthreads', metavar='number', help='Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)')
   standard_options.add_argument('-tempdir', metavar='/path/to/tmp/', help='Manually specify the path in which to generate the temporary directory')
   standard_options.add_argument('-quiet',   action='store_true', help='Suppress all console output during script execution')
   standard_options.add_argument('-verbose', action='store_true', help='Display additional information for every command invoked')
   flagMutuallyExclusiveOptions( [ 'quiet', 'verbose' ] )
-  flagMutuallyExclusiveOptions( [ 'nocleanup', 'cleanuponerror' ] )
 
 
 

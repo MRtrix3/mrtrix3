@@ -3,7 +3,6 @@ args = ''
 author = ''
 citationList = []
 cleanup = True
-keepOnError = True
 copyright = '''Copyright (c) 2008-2016 the MRtrix3 contributors
 
 This Source Code Form is subject to the terms of the Mozilla Public
@@ -46,7 +45,7 @@ def initialise():
   from lib.errorMessage          import errorMessage
   from lib.printMessage          import printMessage
   from lib.readMRtrixConfSetting import readMRtrixConfSetting
-  global args, citationList, cleanup, keepOnError, externalCitations, lastFile, mrtrixNThreads, mrtrixQuiet, parser, tempDir, verbosity, workingDir
+  global args, citationList, cleanup, externalCitations, lastFile, mrtrixNThreads, mrtrixQuiet, parser, tempDir, verbosity, workingDir
   global colourClear, colourConsole, colourError, colourPrint, colourWarn
 
   if not parser:
@@ -82,8 +81,6 @@ def initialise():
 
   if args.nocleanup:
     cleanup = False
-  if args.cleanuponerror:
-    keepOnError = False
   if args.nthreads:
     mrtrixNThreads = ' -nthreads ' + args.nthreads
   if args.quiet:
@@ -190,6 +187,12 @@ def complete():
     shutil.rmtree(tempDir)
   elif tempDir:
     # This needs to be printed even if the -quiet option is used
+    if os.path.isfile(os.path.join(tempDir, 'error.txt')):
+      with open(os.path.join(tempDir, 'error.txt'),'rb') as errortext:
+        sys.stdout.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'Script failed while executing command:' + colourClear + '\n')
+        errorline = errortext.readline()
+        sys.stdout.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn +  errorline.rstrip() + colourClear + '\n')
+      sys.stdout.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'For debugging, inspect contents of temporary directory.' + colourClear + '\n')
     sys.stdout.write(os.path.basename(sys.argv[0]) + ': ' + colourPrint + 'Contents of temporary directory kept, location: ' + tempDir + colourClear + '\n')
     sys.stdout.flush()
 
