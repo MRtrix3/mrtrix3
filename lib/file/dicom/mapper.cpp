@@ -116,16 +116,17 @@ namespace MR {
           }
           if (image.pe_sign < 0)
             pe_symbol += '-';
-          add_line (H.keyval()["comments"], "PhaseEncodingDirection: " + pe_symbol);
+          H.keyval()["PhaseEncodingDirection"] = pe_symbol;
         }
 
         if (std::isfinite (image.bandwidth_per_pixel_phase_encode) && image.pe_axis != 3) {
           const default_type effective_echo_spacing = 1.0 / (image.bandwidth_per_pixel_phase_encode * image.dim[image.pe_axis]);
-          add_line (H.keyval()["comments"], "EffectiveEchoSpacing: " + str (effective_echo_spacing, 3));
+          H.keyval()["EffectiveEchoSpacing"] = str (effective_echo_spacing, 3);
+          H.keyval()["TotalReadoutTime"] = str (effective_echo_spacing * (image.dim[image.pe_axis] - 1), 3);
         }
 
         if (std::isfinite (image.echo_time))
-          add_line (H.keyval()["comments"], "EchoTime: " + str (0.001 * image.echo_time, 6));
+          H.keyval()["EchoTime"] = str (0.001 * image.echo_time, 6);
 
         size_t nchannels = image.frames.size() ? 1 : image.data_size / (image.dim[0] * image.dim[1] * (image.bits_alloc/8));
         if (nchannels > 1) 
