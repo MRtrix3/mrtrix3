@@ -15,8 +15,9 @@
 
 
 #include "command.h"
-#include "progressbar.h"
 #include "image.h"
+#include "phase_encoding.h"
+#include "progressbar.h"
 #include "dwi/gradient.h"
 #include "algo/loop.h"
 #include "adapter/extract.h"
@@ -49,7 +50,8 @@ void usage ()
 
 void run() 
 {
-  auto input_image = Image<float>::open (argument[0]);
+  auto input_header = Header::open (argument[0]);
+  auto input_image = input_header.get_image<float>();
 
   Eigen::MatrixXd grad = DWI::get_valid_DW_scheme (input_image);
 
@@ -90,6 +92,14 @@ void run()
   for (size_t i = 0; i < volumes.size(); i++)
     new_grad.row (i) = grad.row (volumes[i]);
   DWI::set_DW_scheme (header, new_grad);
+
+  const auto pe_scheme = PhaseEncoding::get_scheme (input_header);
+  if (pe_scheme.rows()) {
+    Eigen::MatrixXd new_scheme (volumes.size(), pe_scheme.cols());
+    for (size_t i = 0; i != volumes.size(); ++i)
+      new_scheme.row(i) = pe_scheme.row (volumes[i]);
+    PhaseEncoding::set_scheme (header, new_scheme);
+  }
 
   auto output_image = Image<float>::create (argument[1], header);
 

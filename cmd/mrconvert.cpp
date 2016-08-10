@@ -17,6 +17,7 @@
 #include "command.h"
 #include "header.h"
 #include "image.h"
+#include "phase_encoding.h"
 #include "transform.h"
 #include "algo/threaded_copy.h"
 #include "adapter/extract.h"
@@ -252,17 +253,31 @@ void run ()
       if (pos[axis].size())
         throw Exception ("\"coord\" option specified twice for axis " + str (axis));
       pos[axis] = parse_ints (opt[n][1], header_in.size(axis)-1);
-      auto grad = DWI::get_DW_scheme (header_out);
-      if (axis == 3 && grad.rows()) {
-        if ((ssize_t)grad.rows() != header_in.size(3)) {
-          WARN ("Diffusion encoding of input file does not match number of image volumes; omitting gradient information from output image");
-          header_out.keyval().erase ("dw_scheme");
+      if (axis == 3) {
+        const auto grad = DWI::get_DW_scheme (header_out);
+        if (grad.rows()) {
+          if ((ssize_t)grad.rows() != header_in.size(3)) {
+            WARN ("Diffusion encoding of input file does not match number of image volumes; omitting gradient information from output image");
+            header_out.keyval().erase ("dw_scheme");
+          }
+          else {
+            Eigen::MatrixXd extract_grad (pos[3].size(), grad.cols());
+            for (size_t dir = 0; dir != pos[3].size(); ++dir)
+              extract_grad.row (dir) = grad.row (pos[3][dir]);
+            DWI::set_DW_scheme (header_out, extract_grad);
+          }
         }
-        else {
-          Eigen::MatrixXd extract_grad (pos[3].size(), grad.cols());
-          for (size_t dir = 0; dir != pos[3].size(); ++dir)
-            extract_grad.row (dir) = grad.row (pos[3][dir]);
-          DWI::set_DW_scheme (header_out, extract_grad);
+        Eigen::MatrixXd pe_scheme;
+        try {
+          pe_scheme = PhaseEncoding::get_scheme (header_out);
+        } catch (...) {
+          WARN ("Phase encoding scheme of input file does not match number of image volumes; omitting information from output image");
+        }
+        if (pe_scheme.rows()) {
+          Eigen::MatrixXd extract_scheme (pos[3].size(), pe_scheme.cols());
+          for (size_t vol = 0; vol != pos[3].size(); ++vol)
+            extract_scheme.row (vol) = pe_scheme.row (pos[3][vol]);
+          PhaseEncoding::set_scheme (header_out, extract_scheme);
         }
       }
     }

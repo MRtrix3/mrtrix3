@@ -66,6 +66,8 @@ namespace MR
       const auto it = header.keyval().find ("pe_scheme");
       if (it != header.keyval().end()) {
         const auto lines = split_lines (it->second);
+        if (ssize_t(lines.size()) != ((header.ndim() > 3) ? header.size(3) : 1))
+          throw Exception ("malformed PE scheme in image \"" + header.name() + "\" - number of rows does not equal number of volumes");
         for (size_t row = 0; row < lines.size(); ++row) {
           const auto values = parse_floats (lines[row]);
           if (PE.cols() == 0)
