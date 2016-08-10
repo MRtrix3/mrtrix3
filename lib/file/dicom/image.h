@@ -99,7 +99,8 @@ namespace MR {
 
           static std::vector<size_t> count (const std::vector<Frame*>& frames);
           static default_type get_slice_separation (const std::vector<Frame*>& frames, size_t nslices);
-          static std::string get_DW_scheme (const std::vector<Frame*>& frames, size_t nslices, const transform_type& image_transform);
+          static std::string get_DW_scheme (const std::vector<Frame*>& frames, const size_t nslices, const transform_type& image_transform);
+          static Eigen::MatrixXd get_PE_scheme (const std::vector<Frame*>& frames, const size_t nslices);
 
           friend std::ostream& operator<< (std::ostream& stream, const Frame& item);
       };

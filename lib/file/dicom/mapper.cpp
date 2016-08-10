@@ -14,6 +14,7 @@
  */
 
 #include "header.h"
+#include "phase_encoding.h"
 #include "image_io/default.h"
 #include "image_io/mosaic.h"
 #include "file/dicom/mapper.h"
@@ -106,25 +107,6 @@ namespace MR {
 
         const Image& image (*(*series[0])[0]);
 
-        if (image.pe_axis != 3 && image.pe_sign) {
-          std::string pe_symbol;
-          switch (image.pe_axis) {
-            case 0: pe_symbol = "i"; break;
-            case 1: pe_symbol = "j"; break;
-            case 2: pe_symbol = "k"; break;
-            default: assert (0);
-          }
-          if (image.pe_sign < 0)
-            pe_symbol += '-';
-          H.keyval()["PhaseEncodingDirection"] = pe_symbol;
-        }
-
-        if (std::isfinite (image.bandwidth_per_pixel_phase_encode) && image.pe_axis != 3) {
-          const default_type effective_echo_spacing = 1.0 / (image.bandwidth_per_pixel_phase_encode * image.dim[image.pe_axis]);
-          H.keyval()["EffectiveEchoSpacing"] = str (effective_echo_spacing, 3);
-          H.keyval()["TotalReadoutTime"] = str (effective_echo_spacing * (image.dim[image.pe_axis] - 1), 3);
-        }
-
         if (std::isfinite (image.echo_time))
           H.keyval()["EchoTime"] = str (0.001 * image.echo_time, 6);
 
@@ -204,8 +186,7 @@ namespace MR {
             H.keyval()["dw_scheme"] = dw_scheme;
         }
 
-
-
+        PhaseEncoding::set_scheme (H, Frame::get_PE_scheme (frames, dim[1]));
 
         for (size_t n = 1; n < frames.size(); ++n) // check consistency of data scaling:
           if (frames[n]->scale_intercept != frames[n-1]->scale_intercept ||

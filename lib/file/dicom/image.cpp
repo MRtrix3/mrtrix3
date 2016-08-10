@@ -445,7 +445,7 @@ namespace MR {
 
 
 
-      std::string Frame::get_DW_scheme (const std::vector<Frame*>& frames, size_t nslices, const transform_type& image_transform)
+      std::string Frame::get_DW_scheme (const std::vector<Frame*>& frames, const size_t nslices, const transform_type& image_transform)
       {
         if (!std::isfinite (frames[0]->bvalue)) {
           DEBUG ("no DW encoding information found in DICOM frames");
@@ -477,6 +477,30 @@ namespace MR {
 
         return dw_scheme;
       }
+
+
+
+      Eigen::MatrixXd Frame::get_PE_scheme (const std::vector<Frame*>& frames, const size_t nslices)
+      {
+        const size_t num_volumes = frames.size() / nslices;
+        Eigen::MatrixXd pe_scheme = Eigen::MatrixXd::Zero (num_volumes, 4);
+
+        for (size_t n = 0; n != num_volumes; ++n) {
+          const Frame& frame (*frames[n*nslices]);
+          if (frame.pe_axis == 3 || !frame.pe_sign) {
+            DEBUG ("no phase-encoding information found in DICOM frames");
+            return { };
+          }
+          pe_scheme (n, frame.pe_axis) = frame.pe_sign ? 1 : -1;
+          if (std::isfinite (frame.bandwidth_per_pixel_phase_encode)) {
+            const default_type effective_echo_spacing = 1.0 / (frame.bandwidth_per_pixel_phase_encode * frame.dim[frame.pe_axis]);
+            pe_scheme(n, 3) = effective_echo_spacing * (frame.dim[frame.pe_axis] - 1);
+          }
+        }
+
+        return pe_scheme;
+      }
+
 
 
     }
