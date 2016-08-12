@@ -149,7 +149,7 @@ void run () {
     nrows = 0; ncols = 0;
     std::vector<Eigen::MatrixXd> input_schemes;
     for (int n = 0; n != num_images; ++n) {
-      auto scheme = PhaseEncoding::get_scheme (in[n]);
+      auto scheme = PhaseEncoding::parse_scheme (in[n]);
       if (!scheme.rows()) {
         nrows = 0;
         break;

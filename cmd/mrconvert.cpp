@@ -93,7 +93,10 @@ void usage ()
   + DataType::options()
 
   + DWI::GradImportOptions (false)
-  + DWI::GradExportOptions();
+  + DWI::GradExportOptions()
+
+  + PhaseEncoding::ImportOptions
+  + PhaseEncoding::ExportOptions;
 }
 
 
@@ -111,12 +114,32 @@ void permute_DW_scheme (Header& H, const std::vector<int>& axes)
     permute(axes[axis], axis) = 1.0;
   const Eigen::Matrix3d R = T.scanner2voxel.rotation() * permute * T.voxel2scanner.rotation();
 
-  Eigen::MatrixXd out (in.rows(), 4);
-  out.col(3) = in.col(3); // Copy b-values
+  Eigen::MatrixXd out (in.rows(), in.cols());
+  out.block(0, 3, out.rows(), out.cols()-3) = in.block(0, 3, in.rows(), in.cols()-3); // Copy b-values (and anything else stored in dw_scheme)
   for (int row = 0; row != in.rows(); ++row)
     out.block<1,3>(row, 0) = in.block<1,3>(row, 0) * R;
 
   DWI::set_DW_scheme (H, out);
+}
+
+
+
+void permute_PE_scheme (Header& H, const std::vector<int>& axes)
+{
+  auto in = PhaseEncoding::parse_scheme (H);
+  if (!in.rows())
+    return;
+
+  Eigen::Matrix3d permute = Eigen::Matrix3d::Zero();
+  for (size_t axis = 0; axis != 3; ++axis)
+    permute(axes[axis], axis) = 1.0;
+
+  Eigen::MatrixXd out (in.rows(), in.cols());
+  out.block(0, 3, out.rows(), out.cols()-3) = in.block(0, 3, in.rows(), in.cols()-3); // Copy total readout times (and anything else stored in pe_scheme)
+  for (int row = 0; row != in.rows(); ++row)
+    out.block<1,3>(row, 0) = in.block<1,3>(row, 0) * permute;
+
+  PhaseEncoding::set_scheme (H, out);
 }
 
 
@@ -144,6 +167,7 @@ inline std::vector<int> set_header (Header& header, const ImageType& input)
       header.size(i) = axes[i] < 0 ? 1 : input.size (axes[i]);
     }
     permute_DW_scheme (header, axes);
+    permute_PE_scheme (header, axes);
   } else {
     header.ndim() = input.ndim();
     axes.assign (input.ndim(), 0);
@@ -184,6 +208,7 @@ inline void copy_permute (Header& header_in, Header& header_out, const std::vect
 
     auto out = Header::create (output_filename, header_out).get_image<T>();
     DWI::export_grad_commandline (out);
+    PhaseEncoding::export_commandline (out);
 
     auto perm = Adapter::make <Adapter::PermuteAxes> (in, axes); 
     threaded_copy_with_progress (perm, out, 0, std::numeric_limits<size_t>::max(), 2);
@@ -194,6 +219,7 @@ inline void copy_permute (Header& header_in, Header& header_out, const std::vect
     const auto axes = set_header (header_out, extract);
     auto out = Image<T>::create (output_filename, header_out);
     DWI::export_grad_commandline (out);
+    PhaseEncoding::export_commandline (out);
 
     auto perm = Adapter::make <Adapter::PermuteAxes> (extract, axes); 
     threaded_copy_with_progress (perm, out, 0, std::numeric_limits<size_t>::max(), 2);
@@ -223,6 +249,9 @@ void run ()
 
   if (get_options ("grad").size() || get_options ("fslgrad").size())
     DWI::set_DW_scheme (header_out, DWI::get_DW_scheme (header_in));
+
+  if (get_options ("import_pe_table").size() || get_options ("import_pe_eddy").size())
+    PhaseEncoding::set_scheme (header_out, PhaseEncoding::get_scheme (header_in));
 
   auto opt = get_options ("json_import");
   if (opt.size()) {
@@ -269,7 +298,7 @@ void run ()
         }
         Eigen::MatrixXd pe_scheme;
         try {
-          pe_scheme = PhaseEncoding::get_scheme (header_out);
+          pe_scheme = PhaseEncoding::parse_scheme (header_out);
         } catch (...) {
           WARN ("Phase encoding scheme of input file does not match number of image volumes; omitting information from output image");
         }

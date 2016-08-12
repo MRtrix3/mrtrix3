@@ -45,6 +45,7 @@ void usage ()
     + Option ("bzero", "output b=0 volumes instead of the diffusion weighted volumes.")
     + DWI::GradImportOptions()
     + DWI::ShellOption
+    + PhaseEncoding::ImportOptions
     + Stride::Options;
 }
 

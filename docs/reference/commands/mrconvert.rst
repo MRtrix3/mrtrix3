@@ -62,6 +62,20 @@ DW gradient table export options
 
 -  **-export_grad_fsl bvecs_path bvals_path** export the diffusion-weighted gradient table to files in FSL (bvecs / bvals) format
 
+Options for importing phase-encode tables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-import_pe_table file** import a phase-encoding table from file
+
+-  **-import_pe_eddy config indices** import phase-encoding information from an EDDY-style config / index file pair
+
+Options for exporting phase-encode tables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-export_pe_table file** export phase-encoding table to file
+
+-  **-export_pe_eddy config indices** export phase-encoding information to an EDDY-style config / index file pair
+
 Standard options
 ^^^^^^^^^^^^^^^^
 

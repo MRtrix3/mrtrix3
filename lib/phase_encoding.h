@@ -19,6 +19,7 @@
 
 #include <Eigen/Dense>
 
+#include "app.h"
 #include "header.h"
 #include "file/ofstream.h"
 
@@ -27,6 +28,11 @@ namespace MR
 {
   namespace PhaseEncoding
   {
+
+
+
+    extern const App::OptionGroup ImportOptions;
+    extern const App::OptionGroup ExportOptions;
 
 
 
@@ -124,9 +130,20 @@ namespace MR
     //! parse the phase encoding matrix from a header
     /*! extract the phase encoding matrix stored in the \a header if one
        *  is present. This is expected to be stored in the Header::keyval()
-       *  structure, under the key 'pe_scheme'.
+       *  structure, under the key 'pe_scheme'. Alternatively, if the phase
+       *  encoding direction and bandwidth is fixed for all volumes in the
+       *  series, this information may be stored using the keys
+       *  'PhaseEncodingDirection' and 'TotalReadoutTime'.
        */
-    Eigen::MatrixXd get_scheme (const Header& header);
+    Eigen::MatrixXd parse_scheme (const Header&);
+
+
+
+    //! get a phase encoding matrix
+    /*! get a valid phase-encoding matrix, either from files specified at
+     *  the command-line, or from the contents of the image header.
+     */
+    Eigen::MatrixXd get_scheme (const Header&);
 
 
 
@@ -135,17 +152,17 @@ namespace MR
     void scheme2eddy (const MatrixType& PE, Eigen::MatrixXd& config, Eigen::Array<int, Eigen::Dynamic, 1>& indices)
     {
       try {
-        check_scheme (PE);
+        check (PE);
       } catch (Exception& e) {
         throw Exception (e, "Cannot convert phase-encoding scheme to eddy format");
       }
       if (PE.cols() != 4)
-        throw Exception ("Phase-encode matrix requires 4 columns to convert to eddy format");
+        throw Exception ("Phase-encoding matrix requires 4 columns to convert to eddy format");
       config.resize (0, 0);
       indices.resize (PE.rows());
-      for (size_t PE_row = 0; PE_row != PE.rows(); ++PE_row) {
+      for (ssize_t PE_row = 0; PE_row != PE.rows(); ++PE_row) {
 
-        for (size_t config_row = 0; config_row != config.rows(); ++config_row) {
+        for (ssize_t config_row = 0; config_row != config.rows(); ++config_row) {
           if (PE.template block<1,3>(PE_row, 0).isApprox (config.block<1,3>(config_row, 0))
               && ((std::abs(PE(PE_row, 3) - config(config_row, 3))) / (PE(PE_row, 3) + config(config_row, 3)) < 1e-3)) {
 
@@ -173,13 +190,13 @@ namespace MR
     void save (const MatrixType& PE, const std::string& path)
     {
       try {
-        check_scheme (PE);
+        check (PE);
       } catch (Exception& e) {
         throw Exception (e, "Cannot export phase-encoding table to file \"" + path + "\"");
       }
 
       File::OFStream out (path);
-      for (size_t row = 0; row != PE.rows(); ++row) {
+      for (ssize_t row = 0; row != PE.rows(); ++row) {
         // Write phase-encode direction as integers; other information as floating-point
         out << PE.template block<1, 3>(row, 0).template cast<int>();
         if (PE.cols() > 3)
@@ -198,6 +215,11 @@ namespace MR
       save_matrix (config, config_path);
       save_vector (indices, index_path);
     }
+
+
+
+    //! Save the phase-encoding scheme from a header to file depending on command-line options
+    void export_commandline (const Header&);
 
 
 
