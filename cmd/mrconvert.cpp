@@ -81,12 +81,20 @@ void usage ()
   + Argument ("values").type_sequence_float()
 
   + OptionGroup ("Options for handling JSON (JavaScript Object Notation) files")
-
   + Option ("json_import", "import data from a JSON file into header key-value pairs")
-  + Argument ("file").type_file_in()
-
+    + Argument ("file").type_file_in()
   + Option ("json_export", "export data from an image header key-value pairs into a JSON file")
-  + Argument ("file").type_file_out()
+    + Argument ("file").type_file_out()
+
+  + OptionGroup ("Options for manipulating image header key/value entries")
+  + Option ("header_cat", "concatenate a header key/value entry with the specified text").allow_multiple()
+    + Argument ("key").type_text()
+    + Argument ("value").type_text()
+  + Option ("header_erase", "erase a header key/value entry").allow_multiple()
+    + Argument ("key").type_text()
+  + Option ("header_set", "set a header key/value entry to the specified text (will erase any existing entry)").allow_multiple()
+    + Argument ("key").type_text()
+    + Argument ("value").type_text()
 
   + Stride::Options
 
@@ -269,6 +277,29 @@ void run ()
       if (i->is_primitive())
         header_out.keyval().insert (std::make_pair (i.key(), str(i.value())));
     }
+  }
+
+  {
+    opt = get_options ("header_cat");
+    for (size_t i = 0; i != opt.size(); ++i) {
+      auto entry = header_out.keyval().find (opt[i][0]);
+      if (entry == header_out.keyval().end())
+        header_out.keyval()[opt[i][0]] = std::string(opt[i][1]);
+      else
+        add_line (header_out.keyval()[opt[i][0]], std::string(opt[i][1]));
+    }
+    opt = get_options ("header_erase");
+    for (size_t i = 0; i != opt.size(); ++i) {
+      auto entry = header_out.keyval().find (opt[i][0]);
+      if (entry == header_out.keyval().end()) {
+        WARN ("No header key/value entry \"" + opt[i][0] + "\" found; ignored");
+      } else {
+        header_out.keyval().erase (entry);
+      }
+    }
+    opt = get_options ("header_set");
+    for (size_t i = 0; i != opt.size(); ++i)
+      header_out.keyval()[opt[i][0]] = std::string(opt[i][1]);
   }
 
   opt = get_options ("coord");

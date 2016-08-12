@@ -38,6 +38,15 @@ Options for handling JSON (JavaScript Object Notation) files
 
 -  **-json_export file** export data from an image header key-value pairs into a JSON file
 
+Options for manipulating image header key/value entries
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-header_cat key value** concatenate a header key/value entry with the specified text
+
+-  **-header_erase key** erase a header key/value entry
+
+-  **-header_set key value** set a header key/value entry to the specified text (will erase any existing entry)
+
 Stride options
 ^^^^^^^^^^^^^^
 
