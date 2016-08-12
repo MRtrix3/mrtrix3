@@ -22,7 +22,7 @@
 #include "algo/threaded_copy.h"
 #include "adapter/extract.h"
 #include "adapter/permute_axes.h"
-#include "file/json.h"
+#include "file/json_utils.h"
 #include "file/ofstream.h"
 #include "dwi/gradient.h"
 
@@ -262,22 +262,8 @@ void run ()
     PhaseEncoding::set_scheme (header_out, PhaseEncoding::get_scheme (header_in));
 
   auto opt = get_options ("json_import");
-  if (opt.size()) {
-    std::ifstream in (opt[0][0]);
-    if (!in)
-      throw Exception ("Error opening JSON file \"" + std::string(opt[0][0]) + "\"");
-    nlohmann::json json;
-    try {
-      in >> json;
-    } catch (...) {
-      throw Exception ("Error parsing JSON file \"" + std::string(opt[0][0]) + "\"");
-    }
-    for (auto i = json.cbegin(); i != json.cend(); ++i) {
-      // Only load simple parameters at the first level
-      if (i->is_primitive())
-        header_out.keyval().insert (std::make_pair (i.key(), str(i.value())));
-    }
-  }
+  if (opt.size())
+    File::JSON::load (header_out, opt[0][0]);
 
   {
     opt = get_options ("header_cat");
@@ -367,13 +353,8 @@ void run ()
 
 
   opt = get_options ("json_export");
-  if (opt.size()) {
-    nlohmann::json json;
-    for (const auto& kv : header_out.keyval())
-      json[kv.first] = kv.second;
-    File::OFStream out (opt[0][0]);
-    out << json.dump(4);
-  }
+  if (opt.size())
+    File::JSON::save (header_out, opt[0][0]);
 
 
   if (header_out.intensity_offset() == 0.0 && header_out.intensity_scale() == 1.0 && !header_out.datatype().is_floating_point()) {

@@ -16,6 +16,7 @@
 #include "header.h"
 #include "raw.h"
 #include "file/config.h"
+#include "file/json_utils.h"
 #include "file/nifti_utils.h"
 #include "file/nifti1_utils.h"
 
@@ -214,6 +215,24 @@ namespace MR
             if (qfac < 0.0) 
               H.transform().matrix().col(2) *= qfac;
           }
+
+          //CONF option: NIfTI.AutoLoadJSON
+          //CONF default: 0 (false)
+          //CONF A boolean value to indicate whether, when opening NIfTI images,
+          //CONF any corresponding JSON file should be automatically loaded
+          if (File::Config::get_bool ("NIfTI.AutoLoadJSON", false)) {
+            std::string json_path = H.name();
+            if (Path::has_suffix (json_path, ".nii.gz"))
+              json_path = json_path.substr (0, json_path.size()-7);
+            else if (Path::has_suffix (json_path, ".nii"))
+              json_path = json_path.substr (0, json_path.size()-4);
+            else
+              assert (0);
+            json_path += ".json";
+            if (Path::exists (json_path))
+              File::JSON::load (H, json_path);
+          }
+
         }
         else {
           H.transform()(0,0) = std::numeric_limits<default_type>::quiet_NaN();
@@ -398,6 +417,24 @@ namespace MR
         Raw::store<float32> (M (2,3), &NH.srow_z[3], is_BE);
 
         strncpy ( (char*) &NH.magic, single_file ? "n+1\0" : "ni1\0", 4);
+
+        //CONF option: NIfTI.AutoSaveJSON
+        //CONF default: 0 (false)
+        //CONF A boolean value to indicate whether, when writing NIfTI images,
+        //CONF a corresponding JSON file should be automatically created in order
+        //CONF to save any header entries that cannot be stored in the NIfTI
+        //CONF header
+        if (single_file && File::Config::get_bool ("NIfTI.AutoSaveJSON", false)) {
+          std::string json_path = H.name();
+          if (Path::has_suffix (json_path, ".nii.gz"))
+            json_path = json_path.substr (0, json_path.size()-7);
+          else if (Path::has_suffix (json_path, ".nii"))
+            json_path = json_path.substr (0, json_path.size()-4);
+          else
+            assert (0);
+          json_path += ".json";
+          File::JSON::save (H, json_path);
+        }
       }
 
 

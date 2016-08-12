@@ -289,6 +289,16 @@ List of MRtrix3 configuration file options
 
      A boolean value to indicate whether NIfTI images should always be written in the new NIfTI-2 format. If false, images will be written in the older NIfTI-1 format by default, with the exception being files where the number of voxels along any axis exceeds the maximum permissible in that format (32767), in which case the output file will automatically switch to the NIfTI-2 format.
 
+*  **NIfTI.AutoLoadJSON**
+    *default: 0 (false)*
+
+     A boolean value to indicate whether, when opening NIfTI images, any corresponding JSON file should be automatically loaded
+
+*  **NIfTI.AutoSaveJSON**
+    *default: 0 (false)*
+
+     A boolean value to indicate whether, when writing NIfTI images, a corresponding JSON file should be automatically created in order to save any header entries that cannot be stored in the NIfTI header
+
 *  **NeedOpenGLCoreProfile**
     *default: 1 (true)*
 
