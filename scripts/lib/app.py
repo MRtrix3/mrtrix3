@@ -55,6 +55,10 @@ def initialise():
     parser.print_help()
     sys.exit(0)
 
+  if sys.argv[-1] == '__print_usage_markdown__':
+    parser.printUsageMarkdown()
+    exit(0)
+
   if sys.argv[-1] == '__print_usage_rst__':
     parser.printUsageRst()
     exit(0)

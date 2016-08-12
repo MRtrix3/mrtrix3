@@ -20,6 +20,18 @@ def getPEDir(string):
       return ( 2, False )
     elif string == 'si':
       return ( 2, True )
+    elif string == 'i':
+      return ( 0, False )
+    elif string == 'i-':
+      return ( 0, True )
+    elif string == 'j':
+      return ( 1, False )
+    elif string == 'j-':
+      return ( 1, True )
+    elif string == 'k':
+      return ( 2, False )
+    elif string == 'k-':
+      return ( 2, True )
     else:
-      errorMessage('Unrecognized phase encode direction specifier')
+      errorMessage('Unrecognized phase encode direction specifier: ' + string)
 

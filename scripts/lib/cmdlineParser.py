@@ -198,6 +198,70 @@ class Parser(argparse.ArgumentParser):
 
 
 
+  def printUsageMarkdown(self):
+    import sys
+    import lib.app
+    if self._subparsers and len(sys.argv) == 3:
+      for alg in self._subparsers._group_actions[0].choices:
+        if alg == sys.argv[1]:
+          self._subparsers._group_actions[0].choices[alg].printUsageMarkdown()
+          return
+      self.error('Invalid subparser nominated')
+    print ('## Synopsis')
+    print ('')
+    print ('    ' + self.format_usage())
+    print ('')
+    if self._subparsers:
+      print ('-  *' + self._subparsers._group_actions[0].dest + '*: ' + self._subparsers._group_actions[0].help)
+    for arg in self._positionals._group_actions:
+      if arg.metavar:
+        name = arg.metavar
+      else:
+        name = arg.dest
+      print ('-  *' + name + '*: ' + arg.help)
+    print ('')
+    print ('## Description')
+    print ('')
+    print (self.description)
+    print ('')
+    print ('## Options')
+    print ('')
+    for group in reversed(self._action_groups):
+      if group._group_actions and not (len(group._group_actions) == 1 and isinstance(group._group_actions[0], argparse._SubParsersAction)) and not group == self._positionals:
+        print ('#### ' + group.title)
+        print ('')
+        for option in group._group_actions:
+          text = '/'.join(option.option_strings)
+          if option.metavar:
+            text += ' '
+            if isinstance(option.metavar, tuple):
+              text += ' '.join(option.metavar)
+            else:
+              text += option.metavar
+          print ('+ **-' + text + '**<br>' + option.help)
+          print ('')
+    if lib.app.citationList:
+      print ('## References')
+      print ('')
+      for ref in lib.app.citationList:
+        text = ''
+        if ref[0]:
+          text += ref[0] + ': '
+        text += ref[1]
+        print (text)
+        print ('')
+    print ('---')
+    print ('')
+    print ('**Author:** ' + lib.app.author)
+    print ('')
+    print ('**Copyright:** ' + lib.app.copyright)
+    print ('')
+    if self._subparsers:
+      for alg in getAlgorithmList():
+        proc = subprocess.call ([ self.prog, alg, '__print_usage_markdown__' ])
+
+
+
   def printUsageRst(self):
     import subprocess, sys
     import lib.app
