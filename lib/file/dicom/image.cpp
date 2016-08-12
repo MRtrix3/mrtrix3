@@ -491,7 +491,11 @@ namespace MR {
             DEBUG ("no phase-encoding information found in DICOM frames");
             return { };
           }
-          pe_scheme (n, frame.pe_axis) = frame.pe_sign ? 1 : -1;
+          // Sign of phase-encoding direction needs to reflect fact that DICOM is in LPS but NIfTI/MRtrix are RAS
+          int pe_sign = frame.pe_sign;
+          if (frame.pe_axis == 0 || frame.pe_axis == 1)
+            pe_sign = -pe_sign;
+          pe_scheme (n, frame.pe_axis) = pe_sign;
           if (std::isfinite (frame.bandwidth_per_pixel_phase_encode)) {
             const default_type effective_echo_spacing = 1.0 / (frame.bandwidth_per_pixel_phase_encode * frame.dim[frame.pe_axis]);
             pe_scheme(n, 3) = effective_echo_spacing * (frame.dim[frame.pe_axis] - 1);
