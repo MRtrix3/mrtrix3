@@ -20,6 +20,7 @@
 
 #include "command.h"
 #include "header.h"
+#include "phase_encoding.h"
 #include "file/json.h"
 #include "dwi/gradient.h"
 
@@ -91,7 +92,9 @@ void usage ()
     +   Option ("dwgrad", "the diffusion-weighting gradient table, as stored in the header "
           "(i.e. without any interpretation, scaling of b-values, or normalisation of gradient vectors)")
     +   Option ("shells", "list the average b-value of each shell")
-    +   Option ("shellcounts", "list the number of volumes in each shell");
+    +   Option ("shellcounts", "list the number of volumes in each shell")
+
+    + PhaseEncoding::ExportOptions;
 
 }
 
@@ -165,10 +168,13 @@ void run ()
 {
   auto check_option_group = [](const App::OptionGroup& g) { for (auto o: g) if (get_options (o.id).size()) return true; return false; };
 
-  bool export_grad = check_option_group (GradExportOptions);
+  const bool export_grad = check_option_group (GradExportOptions);
+  const bool export_pe   = check_option_group (PhaseEncoding::ExportOptions);
 
   if (export_grad && argument.size() > 1)
     throw Exception ("can only export DW gradient table to file if a single input image is provided");
+  if (export_pe && argument.size() > 1)
+    throw Exception ("can only export phase encoding table to file if a single input image is provided");
 
   std::unique_ptr<nlohmann::json> json (get_options ("json_export").size() ? new nlohmann::json : nullptr);
 
@@ -191,7 +197,7 @@ void run ()
   const bool raw_dwgrad  = get_options("raw_dwgrad")    .size();
 
   const bool print_full_header = !(format || ndim || size || vox || datatype || stride ||
-      offset || multiplier || properties.size() || transform || dwgrad || export_grad || shells || shellcounts);
+      offset || multiplier || properties.size() || transform || dwgrad || export_grad || shells || shellcounts || export_pe);
 
 
   for (size_t i = 0; i < argument.size(); ++i) {
@@ -229,6 +235,7 @@ void run ()
       print_properties (header, properties[n][0]);
 
     DWI::export_grad_commandline (header);
+    PhaseEncoding::export_commandline (header);
 
     if (json) {
       for (const auto& kv : header.keyval()) {

@@ -74,6 +74,13 @@ DW gradient table export options
 
 -  **-shellcounts** list the number of volumes in each shell
 
+Options for exporting phase-encode tables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-export_pe_table file** export phase-encoding table to file
+
+-  **-export_pe_eddy config indices** export phase-encoding information to an EDDY-style config / index file pair
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
