@@ -21,8 +21,9 @@ def initialise(desc):
   standard_options.add_argument('-nthreads', metavar='number', help='Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)')
   standard_options.add_argument('-tempdir', metavar='/path/to/tmp/', help='Manually specify the path in which to generate the temporary directory')
   standard_options.add_argument('-quiet',   action='store_true', help='Suppress all console output during script execution')
-  standard_options.add_argument('-verbose', action='store_true', help='Display additional information for every command invoked')
-  flagMutuallyExclusiveOptions( [ 'quiet', 'verbose' ] )
+  standard_options.add_argument('-verbose', action='store_true', help='Display additional information and progress for every command invoked')
+  standard_options.add_argument('-debug', action='store_true', help='Display additional debugging information over and above the verbose output')
+  flagMutuallyExclusiveOptions( [ 'quiet', 'verbose', 'debug' ] )
 
 
 

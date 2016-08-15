@@ -3,6 +3,7 @@ mrtrix_bin_list = [ ]
 def runCommand(cmd, exitOnError=True):
 
   import lib.app, os, subprocess, sys
+  from lib.debugMessage import debugMessage
   from lib.errorMessage import errorMessage
   from lib.isWindows    import isWindows
   from lib.printMessage import printMessage
@@ -23,12 +24,10 @@ def runCommand(cmd, exitOnError=True):
     if lib.app.lastFile in cmd:
       lib.app.lastFile = ''
     if lib.app.verbosity:
-      sys.stdout.write('Skipping command: ' + cmd + '\n')
-      sys.stdout.flush()
+      sys.stderr.write(lib.app.colourConsole + 'Skipping command:' + lib.app.colourClear + ' ' + cmd + '\n')
     return
 
   # Vectorise the command string, preserving anything encased within quotation marks
-  # This will eventually allow the use of subprocess rather than os.system()
   # TODO Use shlex.split()?
   quotation_split = cmd.split('\"')
   if not len(quotation_split)%2:
@@ -71,15 +70,15 @@ def runCommand(cmd, exitOnError=True):
       if is_mrtrix_binary:
         if lib.app.mrtrixNThreads:
           new_cmdsplit.extend(lib.app.mrtrixNThreads.strip().split())
-        if lib.app.mrtrixQuiet:
-          new_cmdsplit.append(lib.app.mrtrixQuiet.strip())
+        if lib.app.mrtrixVerbosity:
+          new_cmdsplit.append(lib.app.mrtrixVerbosity.strip())
       next_is_binary = True
     new_cmdsplit.append(item)
   if is_mrtrix_binary:
     if lib.app.mrtrixNThreads:
       new_cmdsplit.extend(lib.app.mrtrixNThreads.strip().split())
-    if lib.app.mrtrixQuiet:
-      new_cmdsplit.append(lib.app.mrtrixQuiet.strip())
+    if lib.app.mrtrixVerbosity:
+      new_cmdsplit.append(lib.app.mrtrixVerbosity.strip())
   cmdsplit = new_cmdsplit
 
   # If the piping symbol appears anywhere, we need to split this into multiple commands and execute them separately
@@ -93,8 +92,9 @@ def runCommand(cmd, exitOnError=True):
   cmdstack.append(cmdsplit[prev:])
 
   if lib.app.verbosity:
-    sys.stdout.write(lib.app.colourConsole + 'Command:' + lib.app.colourClear + ' ' + cmd + '\n')
-    sys.stdout.flush()
+    sys.stderr.write(lib.app.colourConsole + 'Command:' + lib.app.colourClear + ' ' + cmd + '\n')
+
+  debugMessage('To execute: ' + str(cmdstack))
 
   # Execute all processes
   processes = [ ]
@@ -125,14 +125,16 @@ def runCommand(cmd, exitOnError=True):
         stderrdata += line
         if not line and process.poll() != None:
           break
-      (stdoutdata, nullstderrdata) = process.communicate()
-      stdoutdata = stdoutdata.decode('utf-8')
     else:
       process.wait()
-      (stdoutdata, stderrdata) = process.communicate()
-      stdoutdata = stdoutdata.decode('utf-8')
-      stderrdata = stderrdata.decode('utf-8')
 
+  # Let all commands complete before grabbing stdout data; querying the stdout data
+  #   immediately after command completion can intermittently prevent the data from
+  #   getting to the following command (e.g. MRtrix piping)
+  for process in processes:
+    (stdoutdata, stderrdata) = process.communicate()
+    stdoutdata = stdoutdata.decode('utf-8')
+    stderrdata = stderrdata.decode('utf-8')
     return_stdout += stdoutdata + '\n'
     return_stderr += stderrdata + '\n'
     if process.returncode:

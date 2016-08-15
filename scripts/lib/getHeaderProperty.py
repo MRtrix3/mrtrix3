@@ -1,5 +1,6 @@
 def getHeaderProperty(image_path, key):
   import lib.app, subprocess
+  from lib.debugMessage import debugMessage
   from lib.printMessage import printMessage
   command = [ 'mrinfo', image_path, '-property', key ]
   if lib.app.verbosity > 1:
