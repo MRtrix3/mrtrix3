@@ -25,7 +25,7 @@
 #include "registration/transform/affine.h"
 #include "registration/warp/compose.h"
 #include "registration/warp/convert.h"
-#include "registration/warp/utils.h"
+#include "registration/warp/helpers.h"
 #include "registration/warp/invert.h"
 #include "registration/metric/demons.h"
 #include "registration/metric/demons4D.h"

@@ -21,6 +21,7 @@
 #include "sparse/fixel_metric.h"
 #include "sparse/image.h"
 #include "adapter/jacobian.h"
+#include "registration/warp/helpers.h"
 
 using namespace MR;
 using namespace App;
@@ -61,10 +62,7 @@ typedef float value_type;
 void run ()
 {
   auto input = Image<value_type>::open (argument[0]).with_direct_io (3);
-  if (input.ndim() != 4)
-    throw Exception ("input deformation field is not a 4D image");
-  if (input.size(3) != 3)
-    throw Exception ("input deformation field should have 3 volumes in the 4th dimension");
+  Registration::Warp::check_warp (input);
 
   std::unique_ptr<Image<value_type> > jmatrix_output;
   std::unique_ptr<Image<value_type> > jdeterminant_output;

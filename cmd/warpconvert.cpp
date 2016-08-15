@@ -16,7 +16,7 @@
 
 #include "command.h"
 #include "image.h"
-#include "registration/warp/utils.h"
+#include "registration/warp/helpers.h"
 #include "registration/warp/compose.h"
 #include "registration/warp/convert.h"
 #include "adapter/extract.h"
@@ -92,10 +92,7 @@ void run ()
       WARN ("-from option ignored with deformation2displacement conversion type");
 
     auto deformation = Image<default_type>::open (argument[0]).with_direct_io (3);
-    if (deformation.ndim() != 4)
-      throw Exception ("invalid input image. The input deformation field image must be a 4D file.");
-    if (deformation.size(3) != 3)
-      throw Exception ("invalid input image. The input deformation field image must have 3 volumes (x,y,z) in the 4th dimension.");
+    Registration::Warp::check_warp (deformation);
 
     Header header (deformation);
     header.datatype() = DataType::from_command_line (DataType::Float32);
@@ -105,10 +102,7 @@ void run ()
   // displacement2deformation
   } else if (registration_type == 1) {
     auto displacement = Image<default_type>::open (argument[0]).with_direct_io (3);
-    if (displacement.ndim() != 4)
-      throw Exception ("invalid input image. The input displacement field image must be a 4D file.");
-    if (displacement.size(3) != 3)
-      throw Exception ("invalid input image. The input displacement field image must have 3 volumes (x,y,z) in the 4th dimension.");
+    Registration::Warp::check_warp (displacement);
 
     if (midway_space)
       WARN ("-midway_space option ignored with displacement2deformation conversion type");
@@ -126,12 +120,7 @@ void run ()
   } else if (registration_type == 2 || registration_type == 3) {
 
     auto warp = Image<default_type>::open (argument[0]).with_direct_io (3);
-    if (warp.ndim() != 5)
-      throw Exception ("invalid input image. The input warpfull field image must be a 5D file.");
-    if (warp.size(3) != 3)
-      throw Exception ("invalid input image. The input warpfull field image must have 3 volumes (x,y,z) in the 4th dimension.");
-    if (warp.size(4) != 4)
-      throw Exception ("invalid input image. The input warpfull field image must have 4 volumes in the 5th dimension.");
+    Registration::Warp::check_warp_full (warp);
 
     Image<default_type> warp_output;
     if (midway_space) {
