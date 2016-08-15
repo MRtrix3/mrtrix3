@@ -29,7 +29,7 @@ using namespace App;
 
 void usage ()
 {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) & Rami Tabarra (rami.tabarra@florey.edu.au)";
 
   DESCRIPTION
   + "Crop a fixel index image along with corresponding fixel data images";
