@@ -47,8 +47,8 @@ void GraphTheory::exclude( matrix_type& cm, const node_t& node ) const
   cm.conservativeResize( num_rows-1, num_cols );
 
   num_rows = cm.rows();
-  cm.block( 0, node  , num_rows, cm.cols()-node   ) =
-  cm.block( 0, node+1, num_rows, cm.cols()-node-1 );
+  cm.block( 0, node  , num_rows, num_cols-node   ) =
+  cm.block( 0, node+1, num_rows, num_cols-node-1 );
   cm.conservativeResize( num_rows, num_cols-1 );
 }
 
@@ -130,7 +130,7 @@ matrix_type GraphTheory::length_to_distance( const matrix_type& cm_length ) cons
       L.col( V ).fill( 0 );
       Eigen::RowVectorXd vec = L.row( V );
       auto nonzeros = nonzero_indices( vec );
-      for ( size_t index = 0; index < nonzeros.size(); index++ )
+      for ( uint32_t index = 0; index < nonzeros.size(); index++ )
       {
         double d = std::min( cm_distance( n, nonzeros[ index ] ),
                              cm_distance( n, V ) + L( V, nonzeros[ index ] ) );
@@ -159,6 +159,97 @@ matrix_type GraphTheory::length_to_distance( const matrix_type& cm_length ) cons
 metric_type GraphTheory::strength( const matrix_type& cm ) const
 {
   return cm.rowwise().sum();
+}
+
+
+metric_type GraphTheory::betweenness( const matrix_type& cm ) const
+{
+  node_t num_nodes = cm.rows();
+  metric_type node_betweenness = Eigen::MatrixXd::Zero( num_nodes, 1 );
+  matrix_type cm_length = weight_to_length( cm );
+  for ( node_t n = 0; n < num_nodes; n++ )
+  {
+    matrix_type L = cm_length;
+    metric_type D = Eigen::MatrixXd::Ones( num_nodes, 1 ) * Inf;
+    D( n ) = 0.0;
+    metric_type NP = Eigen::MatrixXd::Zero( num_nodes, 1 );
+    NP( n ) = 1.0;
+    std::vector< bool > S( num_nodes, true );
+    matrix_type P = Eigen::MatrixXd::Zero( num_nodes, num_nodes );
+    metric_type Q = Eigen::MatrixXd::Zero( num_nodes, 1 );
+    node_t q = num_nodes-1;
+
+    uint32_t V = n;
+    while ( 1 )
+    {
+      S[ V ] = false;
+      L.col( V ) = Eigen::MatrixXd::Zero( num_nodes, 1 );
+      uint32_t v = V;      
+      Q( q ) = v;
+      -- q;
+      auto W = nonzero_indices( L.row( v ) );
+      for ( auto w = W.begin(); w != W.end(); ++w )
+      {
+        double Dnw = D( v ) + L( v, *w );
+        if ( Dnw < D( *w ) )
+        {
+          D( *w ) = Dnw;
+          NP( *w ) = NP( v );
+          P.row( *w ) = Eigen::MatrixXd::Zero( 1, num_nodes );
+          P( *w, v ) = 1;
+        }
+        else if ( !nonzero( Dnw - D( *w ) ) )
+        {
+          NP( *w ) += NP( v );
+          P( *w, v ) = 1;
+        }
+      }      
+      double min_distance = Inf;
+      for ( node_t u = 0; u < num_nodes; u++ )
+      {
+        if ( S[ u ] )
+        {
+          min_distance = std::min( min_distance, D( u ) );
+        }
+      }
+      bool all_reached = true;
+      for ( auto s = S.begin(); s != S.end(); ++s )
+      {
+        if ( *s )
+        {
+          all_reached = false;
+          break;
+        }
+      }
+      if ( all_reached )
+      {
+        break;
+      }
+      else if ( std::isinf( min_distance ) )
+      {
+        auto infs = equal_indices( D, Inf );
+        for ( node_t qi = 0; qi < q; qi++ )
+        {
+          Q( qi ) = infs[ qi ];
+        }
+        break;
+      }
+      auto equals = equal_indices( D, min_distance );
+      V = equals[ 0 ];
+    }    
+    metric_type DP = Eigen::MatrixXd::Zero( num_nodes, 1 );
+    Eigen::RowVectorXd w = Q.head( num_nodes - 1 );
+    for ( uint32_t index = 0 ; index < w.cols(); index++ )
+    {
+      node_betweenness( w( index ) ) += DP( w( index ) );
+      auto v = nonzero_indices( P.row( w( index ) ) );
+      for ( auto vi = v.begin(); vi != v.end(); ++vi )
+      {
+        DP( *vi ) += ( 1.0 + DP( w( index ) ) ) * NP( *vi ) / NP( w( index ) );
+      }
+    }
+  }
+  return node_betweenness / ( ( num_nodes-1 ) * ( num_nodes-2 ) );
 }
 
 
@@ -270,14 +361,16 @@ void GraphTheory::write_matrix( const matrix_type& cm, const std::string& path )
 
 void GraphTheory::print_global( const matrix_type& cm ) const
 {
-  Eigen::MatrixXd global_metrics = Eigen::MatrixXd::Zero( 1, 6 );
+  Eigen::MatrixXd global_metrics = Eigen::MatrixXd::Zero( 1, 7 );
   global_metrics( 0 ) = strength( cm ).mean();
-  global_metrics( 1 ) = clustering_coefficient( cm ).mean();
-  global_metrics( 2 ) = characteristic_path_length( cm ).mean();
-  global_metrics( 3 ) = local_efficiency( cm ).mean();
-  global_metrics( 4 ) = global_efficiency( cm );
-  global_metrics( 5 ) = vulnerability( cm );
+  global_metrics( 1 ) = betweenness( cm ).mean();
+  global_metrics( 2 ) = clustering_coefficient( cm ).mean();
+  global_metrics( 3 ) = characteristic_path_length( cm ).mean();
+  global_metrics( 4 ) = local_efficiency( cm ).mean();
+  global_metrics( 5 ) = global_efficiency( cm );
+  global_metrics( 6 ) = vulnerability( cm );
   std::cout << std::setw( 12 ) << std::right << "Kw"
+            << std::setw( 12 ) << std::right << "Bw"
             << std::setw( 12 ) << std::right << "Cw"
             << std::setw( 12 ) << std::right << "Lw"
             << std::setw( 12 ) << std::right << "Ew-l"
@@ -293,10 +386,10 @@ bool GraphTheory::nonzero( const double& value ) const
 }
 
 
-std::vector< size_t > GraphTheory::nonzero_indices( const Eigen::RowVectorXd& vec ) const
+std::vector< uint32_t > GraphTheory::nonzero_indices( const Eigen::RowVectorXd& vec ) const
 {
-  std::vector< size_t > indices;
-  for ( size_t index = 0; index < vec.cols(); index++ )
+  std::vector< uint32_t > indices;
+  for ( uint32_t index = 0; index < vec.cols(); index++ )
   {
     if ( nonzero( vec( index ) ) )
     {
@@ -307,11 +400,11 @@ std::vector< size_t > GraphTheory::nonzero_indices( const Eigen::RowVectorXd& ve
 }
 
 
-std::vector< size_t > GraphTheory::equal_indices( const Eigen::RowVectorXd& vec,
-                                                  const double& value ) const
+std::vector< uint32_t > GraphTheory::equal_indices( const Eigen::RowVectorXd& vec,
+                                                    const double& value ) const
 {
-  std::vector< size_t > indices;
-  for ( size_t index = 0; index < vec.cols(); index++ )
+  std::vector< uint32_t > indices;
+  for ( uint32_t index = 0; index < vec.cols(); index++ )
   {
     if ( !nonzero( vec( index ) - value ) )
     {

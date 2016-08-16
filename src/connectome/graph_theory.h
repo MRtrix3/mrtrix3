@@ -69,8 +69,8 @@ class GraphTheory
     matrix_type length_to_distance( const matrix_type& cm_length ) const;
 
     bool nonzero( const double& value ) const;
-    std::vector< size_t > nonzero_indices( const Eigen::RowVectorXd& vec ) const;
-    std::vector< size_t > equal_indices( const Eigen::RowVectorXd& vec, const double& value ) const;
+    std::vector< uint32_t > nonzero_indices( const Eigen::RowVectorXd& vec ) const;
+    std::vector< uint32_t > equal_indices( const Eigen::RowVectorXd& vec, const double& value ) const;
 
 };
 
