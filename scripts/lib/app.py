@@ -180,7 +180,6 @@ def complete():
   import os, shutil, sys
   from lib.printMessage import printMessage
   global tempDir, workingDir
-  wdir_at_exit = os.getcwd()
   printMessage('Changing back to original directory (' + workingDir + ')')
   os.chdir(workingDir)
   if cleanup and tempDir:
@@ -191,7 +190,6 @@ def complete():
     if os.path.isfile(os.path.join(tempDir, 'error.txt')):
       with open(os.path.join(tempDir, 'error.txt'),'rb') as errortext:
         sys.stdout.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'Script failed while executing the command: ' + errortext.readline().rstrip() + colourClear + '\n')
-        sys.stdout.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'in the directory: ' + wdir_at_exit + colourClear + '\n')
       sys.stdout.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'For debugging, inspect contents of temporary directory: ' + tempDir + colourClear + '\n')
     else:
       sys.stdout.write(os.path.basename(sys.argv[0]) + ': ' + colourPrint + 'Contents of temporary directory kept, location: ' + tempDir + colourClear + '\n')
