@@ -31,9 +31,9 @@ namespace MR
             SparseFixel (const std::string& filename, Vector& fixel_tool) :
               FixelType (filename, fixel_tool)
             {
-              value_types = {"Unity", "Fixel size", "Associated value"};
-              colour_types = {"Direction", "Fixel size", "Associated value"};
-              threshold_types = {"Fixel size", "Associated value"};
+              value_types = {"unity", "fixel size", "associated value"};
+              colour_types = {"direction", "fixel size", "associated value"};
+              threshold_types = {"fixel size", "associated value"};
               fixel_values[value_types[1]];
               fixel_values[value_types[2]];
 

@@ -31,8 +31,8 @@ namespace MR
             FixelFolder (const std::string& filename, Vector& fixel_tool) :
               FixelType (FixelFormat::find_index_header (Path::dirname (filename)).name (), fixel_tool)
             {
-              value_types = {"Unity"};
-              colour_types = {"Direction"};
+              value_types = {"unity"};
+              colour_types = {"direction"};
 
               fixel_data.reset (new FixelIndexImageType (header.get_image<uint32_t> ()));
               load_image (filename);

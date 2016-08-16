@@ -147,8 +147,8 @@ namespace MR
             // Colouring
             colour_combobox = new ComboBoxWithErrorMsg (0, "  (variable)  ");
             hlayout->addWidget (new QLabel ("colour by "));
-            colour_combobox->addItem ("Direction");
-            colour_combobox->addItem ("Value");
+            colour_combobox->addItem ("direction");
+            colour_combobox->addItem ("value");
             hlayout->addWidget (colour_combobox, 0);
             connect (colour_combobox, SIGNAL (activated(int)), this, SLOT (colour_changed_slot(int)));
 
@@ -205,9 +205,9 @@ namespace MR
 
             hlayout->addWidget (new QLabel ("scale by "));
             length_combobox = new ComboBoxWithErrorMsg (0, "  (variable)  ");
-            length_combobox->addItem ("Unity");
-            length_combobox->addItem ("Fixel size");
-            length_combobox->addItem ("Associated value");
+            length_combobox->addItem ("unity");
+            length_combobox->addItem ("fixel size");
+            length_combobox->addItem ("associated value");
             hlayout->addWidget (length_combobox, 0);
             connect (length_combobox, SIGNAL (activated(int)), this, SLOT (length_type_slot(int)));
 

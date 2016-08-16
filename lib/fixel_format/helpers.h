@@ -49,6 +49,12 @@ namespace MR
       return in.ndim () == 3 && in.size (2) == 1;
     }
 
+    inline bool is_directions_image (const Header& in)
+    {
+      std::string basename (Path::basename (in.name()));
+      return in.ndim () == 3 && in.size (1) == 3 && in.size (2) == 1 && (basename.substr(0, basename.find_last_of(".")) == "directions");
+    }
+
 
     inline void check_data_image (const Header& in)
     {
@@ -57,12 +63,12 @@ namespace MR
     }
 
 
-    inline bool fixels_match (const Header& index_h, const Header& data_h)
+    inline bool fixels_match (const Header& index_header, const Header& data_header)
     {
       bool fixels_match (false);
 
-      if (is_index_image (index_h)) {
-        fixels_match = std::stoul(index_h.keyval ().at (n_fixels_key)) == (unsigned long)data_h.size (0);
+      if (is_index_image (index_header)) {
+        fixels_match = std::stoul(index_header.keyval ().at (n_fixels_key)) == (unsigned long)data_header.size (0);
       }
 
       return fixels_match;
@@ -85,7 +91,7 @@ namespace MR
 
       if (!(exists = Path::exists (path))) {
         if (create_if_missing) File::mkdir (path);
-        else throw Exception ("Fixel directory " + str(path) + " does not exist");
+        else throw Exception ("Fixel directory (" + str(path) + ") does not exist");
       }
       else if (!Path::is_dir (path))
         throw Exception (str(path) + " is not a directory");
@@ -129,15 +135,53 @@ namespace MR
       while ((fname = dir_walker.read_name ()).size ()) {
         auto full_path = Path::join (fixel_folder_path, fname);
         Header H;
-        if (Path::has_suffix (fname, FixelFormat::supported_fixel_formats)
-                && is_data_image (H = Header::open (full_path))
-                && fixels_match (index_header, H)) {
-          data_headers.emplace_back (std::move (H));
+        if (Path::has_suffix (fname, FixelFormat::supported_fixel_formats) && is_data_image (H = Header::open (full_path))) {
+          if (fixels_match (index_header, H)) {
+            if (!is_directions_image (H))
+              data_headers.emplace_back (std::move (H));
+          } else {
+            WARN ("fixel data file (" + fname + ") does not contain the same number of elements as fixels in the index file" );
+          }
         }
       }
 
       return data_headers;
     }
+
+
+    inline Header find_directions_header (const std::string &fixel_folder_path, const Header &index_header)
+    {
+
+      bool directions_found (false);
+      Header header;
+      check_fixel_folder (fixel_folder_path);
+
+      auto dir_walker = Path::Dir (fixel_folder_path);
+      std::string fname;
+      while ((fname = dir_walker.read_name ()).size ()) {
+        Header tmp_header;
+        auto full_path = Path::join (fixel_folder_path, fname);
+        if (Path::has_suffix (fname, FixelFormat::supported_fixel_formats)
+              && is_directions_image (tmp_header = Header::open (full_path))) {
+          if (is_directions_image (tmp_header)) {
+            if (fixels_match (index_header, tmp_header)) {
+              if (directions_found == true)
+                throw Exception ("multiple directions files found in fixel image folder: " + fixel_folder_path);
+              directions_found = true;
+              header = std::move(tmp_header);
+            } else {
+              WARN ("fixel directions file (" + fname + ") does not contain the same number of elements as fixels in the index file" );
+            }
+          }
+        }
+      }
+
+      if (!directions_found)
+        throw InvalidFixelDirectoryException ("Could not find directions image in directory " + fixel_folder_path);
+
+      return header;
+    }
+
   }
 }
 

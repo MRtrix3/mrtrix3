@@ -57,35 +57,25 @@ namespace MR
             }
           }
 
-          auto data_headers = FixelFormat::find_data_headers (Path::dirname (fixel_data->name ()), *fixel_data);
 
-          // Load fixel data direction images
-          // Currently only assuming one direction file exists
-          for (Header& header : data_headers) {
 
-            if (header.size (1) != 3) continue;
-
-            auto data_image = header.get_image<float> ().with_direct_io ();
-
-            data_image.index (1) = 0;
-            for (auto l = Loop(0, 3) (*fixel_data); l; ++l) {
-              fixel_data->index (3) = 0;
-              const size_t nfixels = fixel_data->value ();
-              fixel_data->index (3) = 1;
-              const size_t offset = fixel_data->value ();
-              for (size_t f = 0; f < nfixels; ++f) {
-                data_image.index (0) = offset + f;
-                dir_buffer_store.emplace_back (data_image.row (1));
-              }
+          // Load fixel direction images
+          auto directions_image = FixelFormat::find_directions_header (Path::dirname (fixel_data->name ()), *fixel_data).get_image<float> ().with_direct_io ();
+          std::cout << directions_image.name() << std::endl;
+          directions_image.index (1) = 0;
+          for (auto l = Loop(0, 3) (*fixel_data); l; ++l) {
+            fixel_data->index (3) = 0;
+            const size_t nfixels = fixel_data->value ();
+            fixel_data->index (3) = 1;
+            const size_t offset = fixel_data->value ();
+            for (size_t f = 0; f < nfixels; ++f) {
+              directions_image.index (0) = offset + f;
+              dir_buffer_store.emplace_back (directions_image.row (1));
             }
-
-            break;
           }
 
-          if (!dir_buffer_store.size ())
-            throw InvalidImageException ("Fixel index image " + fixel_data->name () + " has no associated directions file");
-
-          // Load fixel data value images
+          // Load fixel data images
+          auto data_headers = FixelFormat::find_data_headers (Path::dirname (fixel_data->name ()), *fixel_data);
           for (auto& header : data_headers) {
 
             if (header.size (1) != 1) continue;

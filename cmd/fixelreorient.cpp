@@ -21,6 +21,7 @@
 #include "sparse/fixel_metric.h"
 #include "sparse/image.h"
 #include "adapter/jacobian.h"
+#include "registration/warp/helpers.h"
 
 using namespace MR;
 using namespace App;
@@ -33,45 +34,71 @@ void usage ()
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   DESCRIPTION
-  + "Inplace reorientation of fixel directions using the local affine transformation (Jacobian matrix) at each voxel within an input warp.";
+  + "Reorient fixel directions. Reorientation is performed by transforming the vector representing "
+    "the fixel direction with the Jacobian (local affine transform) computed at each voxel in the warp, "
+    "then re-normalising the vector.";
 
   ARGUMENTS
   + Argument ("fixel_in", "the fixel folder").type_text ()
   + Argument ("warp", "a 4D deformation field used to perform reorientation. "
                       "Reorientation is performed by applying the Jacobian affine transform in each voxel in the warp, "
                       "then re-normalising the vector representing the fixel direction").type_image_in ()
-  + Argument ("dir_out", "the output fixel folder. If the the input and output folders are the same the directions file will "
-                         "replaced. If a new folder is supplied then all fixel data will be copied to the new folder.").type_text ();
+  + Argument ("fixel_out", "the output fixel folder. If the the input and output folders are the same, the existing directions file will "
+                           "be replaced (providing the --force option is supplied). If a new folder is supplied then all "
+                           "fixel data will be copied to the new folder.").type_text ();
 }
 
 
 void run ()
 {
-  const auto fixel_folder = argument[0];
-  FixelFormat::check_fixel_folder (fixel_folder);
+  std::string input_fixel_folder = argument[0];
+  FixelFormat::check_fixel_folder (input_fixel_folder);
 
-  Header warp_header = Header::open(argument[1]);
+  auto input_index_image = FixelFormat::find_index_header (input_fixel_folder).get_image <uint32_t>();
 
-  const auto out_fixel_folder = argument[2];
-  auto index_image = FixelFormat::find_index_header (fixel_folder).get_image <uint32_t> ();
-
-  check_dimensions (index_image, warp_header, 0, 3);
-
-  if (warp_header.ndim() != 4)
-    throw Exception ("The input deformation field image must be a 4D file.");
-  if (warp_header.size(3) != 3)
+  Header warp_header = Header::open (argument[1]);
+  Registration::Warp::check_warp (warp_header);
+  check_dimensions (input_index_image, warp_header, 0, 3);
   Adapter::Jacobian<Image<float> > jacobian (warp_header.get_image<float>());
 
+  std::string output_fixel_folder = argument[2];
+  FixelFormat::check_fixel_folder (output_fixel_folder, true);
 
-  Sparse::Image<FixelMetric> output_fixel (argument[2], input_header);
 
-  for (auto i = Loop ("reorienting fixel directions", input_fixel) (input_fixel, jacobian, output_fixel); i; ++i) {
-    output_fixel.value().set_size (input_fixel.value().size());
-    for (size_t f = 0; f != input_fixel.value().size(); ++f) {
-      output_fixel.value()[f] = input_fixel.value()[f];
-      Eigen::Vector3f subject_fixel_direction =  jacobian.value().inverse() * input_fixel.value()[f].dir;
-      subject_fixel_direction.normalize();
-      output_fixel.value()[f].dir = subject_fixel_direction;
+  // scratch buffer so inplace reorientation can be performed if desired
+  Image<float> input_directions_image;
+  std::string output_directions_filename;
+  {
+    auto tmp = FixelFormat::find_directions_header (input_fixel_folder, input_index_image).get_image<float>();
+    input_directions_image = Image<float>::scratch(tmp);
+    threaded_copy (tmp, input_directions_image);
+    output_directions_filename = Path::basename(tmp.name());
+  }
+
+  auto output_directions_image = Image<float>::create (Path::join(output_fixel_folder, output_directions_filename), input_directions_image).with_direct_io();
+
+  for (auto i = Loop ("reorienting fixel directions", input_index_image, 0, 3)(input_index_image, jacobian); i; ++i) {
+    input_index_image.index(3) = 0;
+    uint32_t num_fixels_in_voxel = input_index_image.value();
+    if (num_fixels_in_voxel) {
+      input_index_image.index(3) = 1;
+      uint32_t index = input_index_image.value();
+      Eigen::Matrix<float, 3, 3> transform = jacobian.value().inverse();
+      for (size_t f = 0; f < num_fixels_in_voxel; ++f) {
+        input_directions_image.index(0) = index + f;
+        output_directions_image.index(0) = index + f;
+        output_directions_image.row(1) = transform * input_directions_image.row(1);
+      }
+    }
+  }
+
+  if (output_fixel_folder != input_fixel_folder) {
+    auto output_index_image = Image<float>::create (Path::join (output_fixel_folder, Path::basename (input_index_image.name())), input_index_image);
+    threaded_copy (input_index_image, output_index_image);
+    for (auto& header : FixelFormat::find_data_headers (input_fixel_folder, input_index_image)) {
+      auto input = header.get_image<float>();
+      auto output = Image<float>::create (Path::join (output_fixel_folder, Path::basename (input.name())), input);
+      threaded_copy (input, output);
     }
   }
 }
