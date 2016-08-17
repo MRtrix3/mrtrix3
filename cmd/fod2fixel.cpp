@@ -306,14 +306,16 @@ void run ()
   Math::SH::check (H);
   auto fod_data = H.get_image<float>();
 
-  Segmented_FOD_receiver receiver (H);
+  const bool dir_as_peak = get_options ("dirpeak").size() ? true : false;
+
+  Segmented_FOD_receiver receiver (H, dir_as_peak);
 
   auto& fixel_folder_path  = argument[1];
   receiver.set_fixel_folder_output (fixel_folder_path);
 
   std::string file_extension (".mif");
   if (get_options ("nii").size())
-    file_extension = "nii";
+    file_extension = ".nii";
 
   static const std::string default_index_filename ("index" + file_extension);
   static const std::string default_directions_filename ("directions" + file_extension);
