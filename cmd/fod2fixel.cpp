@@ -143,9 +143,9 @@ class Segmented_FOD_receiver
         {
           for (const FOD_lobe& lobe : in) {
             if (asdf)
-              this->emplace_back (lobe.get_peak_dir(0), lobe.get_integral(), lobe.get_max_peak_value());
+              this->emplace_back (lobe.get_peak_dir(0).cast<float>(), lobe.get_integral(), lobe.get_max_peak_value());
             else
-              this->emplace_back (lobe.get_mean_dir(), lobe.get_integral(), lobe.get_max_peak_value());
+              this->emplace_back (lobe.get_mean_dir().cast<float>(), lobe.get_integral(), lobe.get_max_peak_value());
           }
         }
     };

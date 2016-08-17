@@ -284,7 +284,6 @@ namespace MR {
           }
         }
 
-        const default_type min_peak_amp = ratio_to_negative_lobe_mean_peak * (mean_neg_peak / default_type(neg_lobe_count));
         const default_type min_integral = ratio_to_negative_lobe_integral  * max_neg_integral;
 
         for (auto i = out.begin(); i != out.end();) { // Empty increment
