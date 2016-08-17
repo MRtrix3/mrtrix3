@@ -5,9 +5,11 @@ def getFSLEddyPath(cuda):
   from lib.warnMessage  import warnMessage
   if cuda:
     if binaryInPath('eddy_cuda'):
+      debugMessage('Selecting CUDA version of eddy')
       return 'eddy_cuda'
     else:
       warnMessage('CUDA version of eddy not found; running standard version')
+  debugMessage('Selecting non-CUDA version of eddy')
   if binaryInPath('eddy_openmp'):
     return 'eddy_openmp'
   if binaryInPath('eddy'):

@@ -17,10 +17,13 @@
 #include "command.h"
 #include "header.h"
 #include "image.h"
+#include "phase_encoding.h"
 #include "transform.h"
 #include "algo/threaded_copy.h"
 #include "adapter/extract.h"
 #include "adapter/permute_axes.h"
+#include "file/json_utils.h"
+#include "file/ofstream.h"
 #include "dwi/gradient.h"
 
 
@@ -77,12 +80,31 @@ void usage ()
             "effect for floating-point and binary images.")
   + Argument ("values").type_sequence_float()
 
+  + OptionGroup ("Options for handling JSON (JavaScript Object Notation) files")
+  + Option ("json_import", "import data from a JSON file into header key-value pairs")
+    + Argument ("file").type_file_in()
+  + Option ("json_export", "export data from an image header key-value pairs into a JSON file")
+    + Argument ("file").type_file_out()
+
+  + OptionGroup ("Options for manipulating image header key/value entries")
+  + Option ("header_cat", "concatenate a header key/value entry with the specified text").allow_multiple()
+    + Argument ("key").type_text()
+    + Argument ("value").type_text()
+  + Option ("header_erase", "erase a header key/value entry").allow_multiple()
+    + Argument ("key").type_text()
+  + Option ("header_set", "set a header key/value entry to the specified text (will erase any existing entry)").allow_multiple()
+    + Argument ("key").type_text()
+    + Argument ("value").type_text()
+
   + Stride::Options
 
   + DataType::options()
 
   + DWI::GradImportOptions (false)
-  + DWI::GradExportOptions();
+  + DWI::GradExportOptions()
+
+  + PhaseEncoding::ImportOptions
+  + PhaseEncoding::ExportOptions;
 }
 
 
@@ -100,12 +122,32 @@ void permute_DW_scheme (Header& H, const std::vector<int>& axes)
     permute(axes[axis], axis) = 1.0;
   const Eigen::Matrix3d R = T.scanner2voxel.rotation() * permute * T.voxel2scanner.rotation();
 
-  Eigen::MatrixXd out (in.rows(), 4);
-  out.col(3) = in.col(3); // Copy b-values
+  Eigen::MatrixXd out (in.rows(), in.cols());
+  out.block(0, 3, out.rows(), out.cols()-3) = in.block(0, 3, in.rows(), in.cols()-3); // Copy b-values (and anything else stored in dw_scheme)
   for (int row = 0; row != in.rows(); ++row)
     out.block<1,3>(row, 0) = in.block<1,3>(row, 0) * R;
 
   DWI::set_DW_scheme (H, out);
+}
+
+
+
+void permute_PE_scheme (Header& H, const std::vector<int>& axes)
+{
+  auto in = PhaseEncoding::parse_scheme (H);
+  if (!in.rows())
+    return;
+
+  Eigen::Matrix3d permute = Eigen::Matrix3d::Zero();
+  for (size_t axis = 0; axis != 3; ++axis)
+    permute(axes[axis], axis) = 1.0;
+
+  Eigen::MatrixXd out (in.rows(), in.cols());
+  out.block(0, 3, out.rows(), out.cols()-3) = in.block(0, 3, in.rows(), in.cols()-3); // Copy total readout times (and anything else stored in pe_scheme)
+  for (int row = 0; row != in.rows(); ++row)
+    out.block<1,3>(row, 0) = in.block<1,3>(row, 0) * permute;
+
+  PhaseEncoding::set_scheme (H, out);
 }
 
 
@@ -133,6 +175,7 @@ inline std::vector<int> set_header (Header& header, const ImageType& input)
       header.size(i) = axes[i] < 0 ? 1 : input.size (axes[i]);
     }
     permute_DW_scheme (header, axes);
+    permute_PE_scheme (header, axes);
   } else {
     header.ndim() = input.ndim();
     axes.assign (input.ndim(), 0);
@@ -173,6 +216,7 @@ inline void copy_permute (Header& header_in, Header& header_out, const std::vect
 
     auto out = Header::create (output_filename, header_out).get_image<T>();
     DWI::export_grad_commandline (out);
+    PhaseEncoding::export_commandline (out);
 
     auto perm = Adapter::make <Adapter::PermuteAxes> (in, axes); 
     threaded_copy_with_progress (perm, out, 0, std::numeric_limits<size_t>::max(), 2);
@@ -183,6 +227,7 @@ inline void copy_permute (Header& header_in, Header& header_out, const std::vect
     const auto axes = set_header (header_out, extract);
     auto out = Image<T>::create (output_filename, header_out);
     DWI::export_grad_commandline (out);
+    PhaseEncoding::export_commandline (out);
 
     auto perm = Adapter::make <Adapter::PermuteAxes> (extract, axes); 
     threaded_copy_with_progress (perm, out, 0, std::numeric_limits<size_t>::max(), 2);
@@ -213,7 +258,37 @@ void run ()
   if (get_options ("grad").size() || get_options ("fslgrad").size())
     DWI::set_DW_scheme (header_out, DWI::get_DW_scheme (header_in));
 
-  auto opt = get_options ("coord");
+  if (get_options ("import_pe_table").size() || get_options ("import_pe_eddy").size())
+    PhaseEncoding::set_scheme (header_out, PhaseEncoding::get_scheme (header_in));
+
+  auto opt = get_options ("json_import");
+  if (opt.size())
+    File::JSON::load (header_out, opt[0][0]);
+
+  {
+    opt = get_options ("header_cat");
+    for (size_t i = 0; i != opt.size(); ++i) {
+      auto entry = header_out.keyval().find (opt[i][0]);
+      if (entry == header_out.keyval().end())
+        header_out.keyval()[opt[i][0]] = std::string(opt[i][1]);
+      else
+        add_line (header_out.keyval()[opt[i][0]], std::string(opt[i][1]));
+    }
+    opt = get_options ("header_erase");
+    for (size_t i = 0; i != opt.size(); ++i) {
+      auto entry = header_out.keyval().find (opt[i][0]);
+      if (entry == header_out.keyval().end()) {
+        WARN ("No header key/value entry \"" + opt[i][0] + "\" found; ignored");
+      } else {
+        header_out.keyval().erase (entry);
+      }
+    }
+    opt = get_options ("header_set");
+    for (size_t i = 0; i != opt.size(); ++i)
+      header_out.keyval()[opt[i][0]] = std::string(opt[i][1]);
+  }
+
+  opt = get_options ("coord");
   std::vector<std::vector<int>> pos;
   if (opt.size()) {
     pos.assign (header_in.ndim(), std::vector<int>());
@@ -224,17 +299,31 @@ void run ()
       if (pos[axis].size())
         throw Exception ("\"coord\" option specified twice for axis " + str (axis));
       pos[axis] = parse_ints (opt[n][1], header_in.size(axis)-1);
-      auto grad = DWI::get_DW_scheme (header_out);
-      if (axis == 3 && grad.rows()) {
-        if ((ssize_t)grad.rows() != header_in.size(3)) {
-          WARN ("Diffusion encoding of input file does not match number of image volumes; omitting gradient information from output image");
-          header_out.keyval().erase ("dw_scheme");
+      if (axis == 3) {
+        const auto grad = DWI::get_DW_scheme (header_out);
+        if (grad.rows()) {
+          if ((ssize_t)grad.rows() != header_in.size(3)) {
+            WARN ("Diffusion encoding of input file does not match number of image volumes; omitting gradient information from output image");
+            header_out.keyval().erase ("dw_scheme");
+          }
+          else {
+            Eigen::MatrixXd extract_grad (pos[3].size(), grad.cols());
+            for (size_t dir = 0; dir != pos[3].size(); ++dir)
+              extract_grad.row (dir) = grad.row (pos[3][dir]);
+            DWI::set_DW_scheme (header_out, extract_grad);
+          }
         }
-        else {
-          Eigen::MatrixXd extract_grad (pos[3].size(), grad.cols());
-          for (size_t dir = 0; dir != pos[3].size(); ++dir)
-            extract_grad.row (dir) = grad.row (pos[3][dir]);
-          DWI::set_DW_scheme (header_out, extract_grad);
+        Eigen::MatrixXd pe_scheme;
+        try {
+          pe_scheme = PhaseEncoding::parse_scheme (header_out);
+        } catch (...) {
+          WARN ("Phase encoding scheme of input file does not match number of image volumes; omitting information from output image");
+        }
+        if (pe_scheme.rows()) {
+          Eigen::MatrixXd extract_scheme (pos[3].size(), pe_scheme.cols());
+          for (size_t vol = 0; vol != pos[3].size(); ++vol)
+            extract_scheme.row (vol) = pe_scheme.row (pos[3][vol]);
+          PhaseEncoding::set_scheme (header_out, extract_scheme);
         }
       }
     }
@@ -261,6 +350,11 @@ void run ()
     else
       WARN ("-scaling option has no effect for floating-point or binary images");
   }
+
+
+  opt = get_options ("json_export");
+  if (opt.size())
+    File::JSON::save (header_out, opt[0][0]);
 
 
   if (header_out.intensity_offset() == 0.0 && header_out.intensity_scale() == 1.0 && !header_out.datatype().is_floating_point()) {

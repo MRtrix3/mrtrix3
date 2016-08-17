@@ -32,19 +32,19 @@ namespace MR {
 
 
 
-      dir_t Set::get_min_linkage (const dir_t one, const dir_t two) const
+      index_type Set::get_min_linkage (const index_type one, const index_type two) const
       {
         if (one == two)
           return 0;
 
         std::vector<bool> processed (size(), 0);
-        std::vector<dir_t> to_expand;
+        std::vector<index_type> to_expand;
         processed[one] = true;
         to_expand.push_back (one);
-        dir_t min_linkage = 0;
+        index_type min_linkage = 0;
         do {
           ++min_linkage;
-          std::vector<dir_t> next_to_expand;
+          std::vector<index_type> next_to_expand;
           for (const auto& i : to_expand) {
             for (const auto& j : adj_dirs[i]) {
               if (j == two) {
@@ -57,7 +57,7 @@ namespace MR {
           }
           std::swap (to_expand, next_to_expand);
         } while (1);
-        return std::numeric_limits<dir_t>::max();
+        return std::numeric_limits<index_type>::max();
       }
 
 
@@ -81,7 +81,7 @@ namespace MR {
 
       void Set::initialise_adjacency()
       {
-        adj_dirs.assign (size(), std::vector<dir_t>());
+        adj_dirs.assign (size(), std::vector<index_type>());
 
         // New algorithm for determining direction adjacency
         // * Duplicate all directions to get a full spherical set
@@ -99,23 +99,23 @@ namespace MR {
 
         class Vertex {
           public:
-            Vertex (const Set& set, const dir_t index, const bool inverse) :
+            Vertex (const Set& set, const index_type index, const bool inverse) :
                 dir (set[index] * (inverse ? -1.0f : 1.0f)),
                 index (index) { }
-            const Eigen::Vector3f dir;
-            const dir_t index; // Indexes the underlying direction set
+            const Eigen::Vector3 dir;
+            const index_type index; // Indexes the underlying direction set
         };
 
         class Plane {
           public:
-            Plane (const std::vector<Vertex>& vertices, const dir_t one, const dir_t two, const dir_t three) :
+            Plane (const std::vector<Vertex>& vertices, const index_type one, const index_type two, const index_type three) :
                 indices {{ one, two, three }},
                 normal (((vertices[two].dir-vertices[one].dir).cross (vertices[three].dir-vertices[two].dir)).normalized()),
                 dist (std::max ( { vertices[one].dir.dot (normal), vertices[two].dir.dot (normal), vertices[three].dir.dot (normal) } ) ) { }
-            bool includes (const dir_t i) const { return (indices[0] == i || indices[1] == i || indices[2] == i); }
-            const std::array<dir_t,3> indices; // Indexes the vertices vector
-            const Eigen::Vector3f normal;
-            const float dist;
+            bool includes (const index_type i) const { return (indices[0] == i || indices[1] == i || indices[2] == i); }
+            const std::array<index_type,3> indices; // Indexes the vertices vector
+            const Eigen::Vector3 normal;
+            const default_type dist;
         };
 
         class PlaneComp
@@ -128,13 +128,13 @@ namespace MR {
 
         std::vector<Vertex> vertices;
         // Generate antipodal vertices
-        for (dir_t i = 0; i != size(); ++i) {
+        for (index_type i = 0; i != size(); ++i) {
           vertices.push_back (Vertex (*this, i, false));
           vertices.push_back (Vertex (*this, i, true));
         }
 
-        dir_t extremum_indices[3][2] = { {0, 0}, {0, 0}, {0, 0} };
-        float extremum_values[3][2] = { {1.0f, -1.0f}, {1.0f, -1.0f}, {1.0f, -1.0f} };
+        index_type extremum_indices[3][2] = { {0, 0}, {0, 0}, {0, 0} };
+        default_type extremum_values[3][2] = { {1.0, -1.0}, {1.0, -1.0}, {1.0, -1.0} };
         for (size_t i = 0; i != vertices.size(); ++i) {
           for (size_t axis = 0; axis != 3; ++axis) {
             if (vertices[i].dir[axis] < extremum_values[axis][0]) {
@@ -149,16 +149,16 @@ namespace MR {
         }
 
         // Find the two most distant points out of these six
-        std::vector<dir_t> all_extrema;
+        std::vector<index_type> all_extrema;
         for (size_t axis = 0; axis != 3; ++axis) {
           all_extrema.push_back (extremum_indices[axis][0]);
           all_extrema.push_back (extremum_indices[axis][1]);
         }
-        std::pair<dir_t, dir_t> distant_pair;
-        float max_dist_sq = 0.0f;
-        for (dir_t i = 0; i != 6; ++i) {
-          for (dir_t j = i + 1; j != 6; ++j) {
-            const float dist_sq = (vertices[all_extrema[j]].dir - vertices[all_extrema[i]].dir).squaredNorm();
+        std::pair<index_type, index_type> distant_pair;
+        default_type max_dist_sq = 0.0;
+        for (index_type i = 0; i != 6; ++i) {
+          for (index_type j = i + 1; j != 6; ++j) {
+            const default_type dist_sq = (vertices[all_extrema[j]].dir - vertices[all_extrema[i]].dir).squaredNorm();
             if (dist_sq > max_dist_sq) {
               max_dist_sq = dist_sq;
               distant_pair = std::make_pair (i, j);
@@ -168,11 +168,11 @@ namespace MR {
 
         // This forms the base line of the base triangle of the tetrahedon
         // Now from the remaining four extrema, find which one is farthest from this line
-        dir_t third_point = 6;
-        float max_dist = 0.0f;
-        for (dir_t i = 0; i != 6; ++i) {
+        index_type third_point = 6;
+        default_type max_dist = 0.0;
+        for (index_type i = 0; i != 6; ++i) {
           if (i != distant_pair.first && i != distant_pair.second) {
-            const float dist = (vertices[all_extrema[i]].dir - (vertices[all_extrema[distant_pair.first]].dir)).cross (vertices[all_extrema[i]].dir - vertices[all_extrema[distant_pair.second]].dir).norm() / (vertices[all_extrema[distant_pair.second]].dir - vertices[all_extrema[distant_pair.first]].dir).norm();
+            const default_type dist = (vertices[all_extrema[i]].dir - (vertices[all_extrema[distant_pair.first]].dir)).cross (vertices[all_extrema[i]].dir - vertices[all_extrema[distant_pair.second]].dir).norm() / (vertices[all_extrema[distant_pair.second]].dir - vertices[all_extrema[distant_pair.first]].dir).norm();
             if (dist > max_dist) {
               max_dist = dist;
               third_point = i;
@@ -185,11 +185,11 @@ namespace MR {
         planes.insert (Plane (vertices, all_extrema[distant_pair.first], all_extrema[distant_pair.second], all_extrema[third_point]));
         // Find the most distant point to this plane, and use it as the tip point of the tetrahedon
         const Plane base_plane = *planes.begin();
-        dir_t fourth_point = vertices.size();
-        max_dist = 0.0f;
-        for (dir_t i = 0; i != vertices.size(); ++i) {
+        index_type fourth_point = vertices.size();
+        max_dist = 0.0;
+        for (index_type i = 0; i != vertices.size(); ++i) {
           // Use the reverse of the base plane normal - searching the other hemisphere
-          const float dist = vertices[i].dir.dot (-base_plane.normal);
+          const default_type dist = vertices[i].dir.dot (-base_plane.normal);
           if (dist > max_dist) {
             max_dist = dist;
             fourth_point = i;
@@ -212,9 +212,9 @@ namespace MR {
         while (planes.size()) {
           Plane current (*planes.begin());
           auto max_index = unassigned.end();
-          float max_dist = current.dist;
+          default_type max_dist = current.dist;
           for (auto d = unassigned.begin(); d != unassigned.end(); ++d) {
-            const float dist = vertices[*d].dir.dot (current.normal);
+            const default_type dist = vertices[*d].dir.dot (current.normal);
             if (dist > max_dist) {
               max_dist = dist;
               max_index = d;
@@ -237,10 +237,10 @@ namespace MR {
 
             // Find the matching edges from multiple faces, and construct new triangles going up to the new point
             // Remove any shared edges; non-shared edges are the projection horizon
-            std::set<std::pair<dir_t, dir_t>> horizon;
+            std::set<std::pair<index_type, index_type>> horizon;
             for (auto& p : all_planes) {
               for (size_t edge_index = 0; edge_index != 3; ++edge_index) {
-                std::pair<dir_t, dir_t> edge;
+                std::pair<index_type, index_type> edge;
                 switch (edge_index) {
                   case 0: edge = std::make_pair (p->indices[0], p->indices[1]); break;
                   case 1: edge = std::make_pair (p->indices[1], p->indices[2]); break;
@@ -278,7 +278,7 @@ namespace MR {
           // Each of these three directions is adjacent
           // However: Each edge may have already been added from other triangles
           for (size_t edge = 0; edge != 6; ++edge) {
-            dir_t from = 0, to = 0;
+            index_type from = 0, to = 0;
             switch (edge) {
               case 0: from = vertices[current.indices[0]].index; to = vertices[current.indices[1]].index; break;
               case 1: from = vertices[current.indices[1]].index; to = vertices[current.indices[0]].index; break;
@@ -317,16 +317,16 @@ namespace MR {
 
 
 
-      dir_t FastLookupSet::select_direction (const Eigen::Vector3f& p) const
+      index_type FastLookupSet::select_direction (const Eigen::Vector3& p) const
       {
 
         const size_t grid_index = dir2gridindex (p);
 
-        dir_t best_dir = grid_lookup[grid_index].front();
-        float max_dp = std::abs (p.dot (get_dir (best_dir)));
+        index_type best_dir = grid_lookup[grid_index].front();
+        default_type max_dp = std::abs (p.dot (get_dir (best_dir)));
         for (size_t i = 1; i != grid_lookup[grid_index].size(); ++i) {
-          const dir_t this_dir = (grid_lookup[grid_index])[i];
-          const float this_dp = std::abs (p.dot (get_dir (this_dir)));
+          const index_type this_dir = (grid_lookup[grid_index])[i];
+          const default_type this_dp = std::abs (p.dot (get_dir (this_dir)));
           if (this_dp > max_dp) {
             max_dp = this_dp;
             best_dir = this_dir;
@@ -339,13 +339,13 @@ namespace MR {
 
 
 
-      dir_t FastLookupSet::select_direction_slow (const Eigen::Vector3f& p) const
+      index_type FastLookupSet::select_direction_slow (const Eigen::Vector3& p) const
       {
 
-        dir_t dir = 0;
-        float max_dot_product = std::abs (p.dot (unit_vectors[0]));
+        index_type dir = 0;
+        default_type max_dot_product = std::abs (p.dot (unit_vectors[0]));
         for (size_t i = 1; i != size(); ++i) {
-          const float this_dot_product = std::abs (p.dot (unit_vectors[i]));
+          const default_type this_dot_product = std::abs (p.dot (unit_vectors[i]));
           if (this_dot_product > max_dot_product) {
             max_dot_product = this_dot_product;
             dir = i;
@@ -361,10 +361,10 @@ namespace MR {
       void FastLookupSet::initialise()
       {
 
-        double adj_dot_product_sum = 0.0;
+        default_type adj_dot_product_sum = 0.0;
         size_t adj_dot_product_count = 0;
         for (size_t i = 0; i != size(); ++i) {
-          for (std::vector<dir_t>::const_iterator j = adj_dirs[i].begin(); j != adj_dirs[i].end(); ++j) {
+          for (std::vector<index_type>::const_iterator j = adj_dirs[i].begin(); j != adj_dirs[i].end(); ++j) {
             if (*j > i) {
               adj_dot_product_sum += std::abs (unit_vectors[i].dot (unit_vectors[*j]));
               ++adj_dot_product_count;
@@ -372,20 +372,20 @@ namespace MR {
           }
         }
 
-        const float min_dp = adj_dot_product_sum / double(adj_dot_product_count);
-        const float max_angle_step = acos (min_dp);
+        const default_type min_dp = adj_dot_product_sum / default_type(adj_dot_product_count);
+        const default_type max_angle_step = acos (min_dp);
 
         num_az_grids = ceil (2.0 * Math::pi / max_angle_step);
         num_el_grids = ceil (      Math::pi / max_angle_step);
         total_num_angle_grids = num_az_grids * num_el_grids;
 
-        az_grid_step = 2.0 * Math::pi / float(num_az_grids - 1);
-        el_grid_step =       Math::pi / float(num_el_grids - 1);
+        az_grid_step = 2.0 * Math::pi / default_type(num_az_grids - 1);
+        el_grid_step =       Math::pi / default_type(num_el_grids - 1);
 
         az_begin = -Math::pi;
         el_begin = 0.0;
 
-        grid_lookup.assign (total_num_angle_grids, std::vector<dir_t>());
+        grid_lookup.assign (total_num_angle_grids, std::vector<index_type>());
         for (size_t i = 0; i != size(); ++i) {
           const size_t grid_index = dir2gridindex (get_dir(i));
           grid_lookup[grid_index].push_back (i);
@@ -398,8 +398,8 @@ namespace MR {
 
           for (size_t point_index = 0; point_index != 4; ++point_index) {
 
-            float az = az_begin + (az_index * az_grid_step);
-            float el = el_begin + (el_index * el_grid_step);
+            default_type az = az_begin + (az_index * az_grid_step);
+            default_type el = el_begin + (el_index * el_grid_step);
             switch (point_index) {
               case 0: break;
               case 1: az += az_grid_step; break;
@@ -407,10 +407,10 @@ namespace MR {
               case 3: el += el_grid_step; break;
             }
 
-            const Eigen::Vector3f p (cos(az) * sin(el), sin(az) * sin(el), cos (el));
-            const dir_t nearest_dir = select_direction_slow (p);
+            const Eigen::Vector3 p (cos(az) * sin(el), sin(az) * sin(el), cos (el));
+            const index_type nearest_dir = select_direction_slow (p);
             bool dir_present = false;
-            for (std::vector<dir_t>::const_iterator d = grid_lookup[i].begin(); !dir_present && d != grid_lookup[i].end(); ++d)
+            for (std::vector<index_type>::const_iterator d = grid_lookup[i].begin(); !dir_present && d != grid_lookup[i].end(); ++d)
               dir_present = (*d == nearest_dir);
             if (!dir_present)
               grid_lookup[i].push_back (nearest_dir);
@@ -420,16 +420,16 @@ namespace MR {
         }
 
         for (size_t grid_index = 0; grid_index != total_num_angle_grids; ++grid_index) {
-          std::vector<dir_t>& this_grid (grid_lookup[grid_index]);
+          std::vector<index_type>& this_grid (grid_lookup[grid_index]);
           const size_t num_to_expand = this_grid.size();
           for (size_t index_to_expand = 0; index_to_expand != num_to_expand; ++index_to_expand) {
-            const dir_t dir_to_expand = this_grid[index_to_expand];
-            for (std::vector<dir_t>::const_iterator adj = get_adj_dirs(dir_to_expand).begin(); adj != get_adj_dirs(dir_to_expand).end(); ++adj) {
+            const index_type dir_to_expand = this_grid[index_to_expand];
+            for (std::vector<index_type>::const_iterator adj = get_adj_dirs(dir_to_expand).begin(); adj != get_adj_dirs(dir_to_expand).end(); ++adj) {
 
               // Size of lookup tables could potentially be reduced by being more prohibitive of adjacent direction inclusion in the lookup table for this grid
 
               bool is_present = false;
-              for (std::vector<dir_t>::const_iterator i = this_grid.begin(); !is_present && i != this_grid.end(); ++i)
+              for (std::vector<index_type>::const_iterator i = this_grid.begin(); !is_present && i != this_grid.end(); ++i)
                 is_present = (*i == *adj);
               if (!is_present)
                 this_grid.push_back (*adj);
@@ -443,11 +443,11 @@ namespace MR {
 
 
 
-      size_t FastLookupSet::dir2gridindex (const Eigen::Vector3f& p) const
+      size_t FastLookupSet::dir2gridindex (const Eigen::Vector3& p) const
       {
 
-        const float azimuth   = atan2(p[1], p[0]);
-        const float elevation = acos (p[2]);
+        const default_type azimuth   = atan2(p[1], p[0]);
+        const default_type elevation = acos (p[2]);
 
         const size_t azimuth_grid   = std::floor (( azimuth  - az_begin) / az_grid_step);
         const size_t elevation_grid = std::floor ((elevation - el_begin) / el_grid_step);
@@ -462,17 +462,17 @@ namespace MR {
       void FastLookupSet::test_lookup() const
       {
         Math::RNG rng;
-        std::normal_distribution<float> normal (0.0, 1.0);
+        std::normal_distribution<> normal (0.0, 1.0);
 
         size_t error_count = 0;
         const size_t checks = 1000000;
         for (size_t i = 0; i != checks; ++i) {
-          Eigen::Vector3f p (normal(rng), normal(rng), normal(rng));
+          Eigen::Vector3 p (normal(rng), normal(rng), normal(rng));
           p.normalize();
           if (select_direction (p) != select_direction_slow (p))
             ++error_count;
         }
-        const float error_rate = float(error_count) / float(checks);
+        const default_type error_rate = default_type(error_count) / default_type(checks);
         VAR (error_rate);
 
       }

@@ -284,6 +284,21 @@ List of MRtrix3 configuration file options
 
      A boolean value to indicate whether bitwise storage of binary data is permitted (most 3rd party software packages don't support bitwise data). If false (the default), data will be stored using more widely supported unsigned 8-bit integers.
 
+*  **NIFTI.AlwaysUseVer2**
+    *default: 0 (false)*
+
+     A boolean value to indicate whether NIfTI images should always be written in the new NIfTI-2 format. If false, images will be written in the older NIfTI-1 format by default, with the exception being files where the number of voxels along any axis exceeds the maximum permissible in that format (32767), in which case the output file will automatically switch to the NIfTI-2 format.
+
+*  **NIfTI.AutoLoadJSON**
+    *default: 0 (false)*
+
+     A boolean value to indicate whether, when opening NIfTI images, any corresponding JSON file should be automatically loaded
+
+*  **NIfTI.AutoSaveJSON**
+    *default: 0 (false)*
+
+     A boolean value to indicate whether, when writing NIfTI images, a corresponding JSON file should be automatically created in order to save any header entries that cannot be stored in the NIfTI header
+
 *  **NeedOpenGLCoreProfile**
     *default: 1 (true)*
 
@@ -348,4 +363,34 @@ List of MRtrix3 configuration file options
     *default: 0 (false)*
 
      Whether the screen update should synchronise with the monitor's vertical refresh (to avoid tearing artefacts).
+
+*  **reg_analyse_descent**
+    *default: 0 (false)*
+
+     Linear registration: write comma separated gradient descent parameters and gradients to stdout and verbose gradient descent output to stderr
+
+*  **reg_bbgd**
+    *default: 1 (true)*
+
+     Linear registration: use Barzilai Borwein gradient descent
+
+*  **reg_coherence_len**
+    *default: 3.0*
+
+     Linear registration: estimated spatial coherence length in voxel
+
+*  **reg_gdweight_matrix**
+    *default: 0.0003*
+
+     Linear registration: weight for optimisation of linear (3x3) matrix parameters
+
+*  **reg_gdweight_translation**
+    *default: 1*
+
+     Linear registration: weight for optimisation of translation parameters
+
+*  **reg_stop_len**
+    *default: 0.0001*
+
+     Linear registration: smallest step in fraction of voxel at which to stop registration
 

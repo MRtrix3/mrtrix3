@@ -16,68 +16,26 @@
 #include "header.h"
 #include "raw.h"
 #include "file/config.h"
+#include "file/json_utils.h"
+#include "file/nifti_utils.h"
 #include "file/nifti1_utils.h"
 
 namespace MR
 {
   namespace File
   {
-    namespace NIfTI
+    namespace NIfTI1
     {
-
-      namespace
-      {
-        bool  right_left_warning_issued = false;
-      }
-
-
-
-
-
-      transform_type adjust_transform (const Header& H, std::vector<size_t>& axes)
-      {
-        Stride::List strides = Stride::get (H);
-        strides.resize (3);
-        axes = Stride::order (strides);
-        bool flip[] = { strides[axes[0]] < 0, strides[axes[1]] < 0, strides[axes[2]] < 0 };
-
-        if (axes[0] == 0 && axes[1] == 1 && axes[2] == 2 &&
-            !flip[0] && !flip[1] && !flip[2])
-          return H.transform();
-
-        const auto& M_in = H.transform().matrix();
-        transform_type out (H.transform());
-        auto& M_out = out.matrix();
-
-        for (size_t i = 0; i < 3; i++)
-          M_out.col (i) = M_in.col (axes[i]);
-
-        auto translation = M_out.col(3);
-        for (size_t i = 0; i < 3; ++i) {
-          if (flip[i]) {
-            auto length = default_type (H.size (axes[i])-1) * H.spacing (axes[i]);
-            auto axis = M_out.col(i);
-            axis = -axis;
-            translation -= length * axis;
-          }
-        }
-
-        return out;
-      }
-
-
-
-
 
 
 
       size_t read (Header& H, const nifti_1_header& NH)
       {
         bool is_BE = false;
-        if (Raw::fetch_<int32_t> (&NH.sizeof_hdr, is_BE) != 348) {
+        if (Raw::fetch_<int32_t> (&NH.sizeof_hdr, is_BE) != header_size) {
           is_BE = true;
-          if (Raw::fetch_<int32_t> (&NH.sizeof_hdr, is_BE) != 348)
-            throw Exception ("image \"" + H.name() + "\" is not in NIfTI format (sizeof_hdr != 348)");
+          if (Raw::fetch_<int32_t> (&NH.sizeof_hdr, is_BE) != header_size)
+            throw Exception ("image \"" + H.name() + "\" is not in NIfTI-1.1 format (sizeof_hdr != " + str(header_size) + ")");
         }
 
         bool is_nifti = true;
@@ -96,16 +54,16 @@ namespace MR
         // data set dimensions:
         int ndim = Raw::fetch_<int16_t> (&NH.dim, is_BE);
         if (ndim < 1)
-          throw Exception ("too few dimensions specified in NIfTI image \"" + H.name() + "\"");
+          throw Exception ("too few dimensions specified in NIfTI-1.1 image \"" + H.name() + "\"");
         if (ndim > 7)
-          throw Exception ("too many dimensions specified in NIfTI image \"" + H.name() + "\"");
+          throw Exception ("too many dimensions specified in NIfTI-1.1 image \"" + H.name() + "\"");
         H.ndim() = ndim;
 
 
         for (int i = 0; i < ndim; i++) {
           H.size(i) = Raw::fetch_<int16_t> (&NH.dim[i+1], is_BE);
           if (H.size (i) < 0) {
-            INFO ("dimension along axis " + str (i) + " specified as negative in NIfTI image \"" + H.name() + "\" - taking absolute value");
+            INFO ("dimension along axis " + str (i) + " specified as negative in NIfTI-1.1 image \"" + H.name() + "\" - taking absolute value");
             H.size(i) = std::abs (H.size (i));
           }
           if (!H.size (i))
@@ -156,7 +114,7 @@ namespace MR
             dtype = DataType::CFloat64;
             break;
           default:
-            throw Exception ("unknown data type for Analyse image \"" + H.name() + "\"");
+            throw Exception ("unknown data type for NIfTI-1.1 image \"" + H.name() + "\"");
         }
 
         if (! (dtype.is (DataType::Bit) || dtype.is (DataType::UInt8) || dtype.is (DataType::Int8))) {
@@ -167,7 +125,7 @@ namespace MR
         }
 
         if (Raw::fetch_<int16_t> (&NH.bitpix, is_BE) != (int16_t) dtype.bits())
-          WARN ("bitpix field does not match data type in NIfTI image \"" + H.name() + "\" - ignored");
+          WARN ("bitpix field does not match data type in NIfTI-1.1 image \"" + H.name() + "\" - ignored");
 
         H.datatype() = dtype;
 
@@ -175,7 +133,7 @@ namespace MR
         for (int i = 0; i < ndim; i++) {
           H.spacing(i) = Raw::fetch_<float32> (&NH.pixdim[i+1], is_BE);
           if (H.spacing (i) < 0.0) {
-            INFO ("voxel size along axis " + str (i) + " specified as negative in NIfTI image \"" + H.name() + "\" - taking absolute value");
+            INFO ("voxel size along axis " + str (i) + " specified as negative in NIfTI-1.1 image \"" + H.name() + "\" - taking absolute value");
             H.spacing(i) = std::abs (H.spacing (i));
           }
         }
@@ -257,6 +215,24 @@ namespace MR
             if (qfac < 0.0) 
               H.transform().matrix().col(2) *= qfac;
           }
+
+          //CONF option: NIfTI.AutoLoadJSON
+          //CONF default: 0 (false)
+          //CONF A boolean value to indicate whether, when opening NIfTI images,
+          //CONF any corresponding JSON file should be automatically loaded
+          if (File::Config::get_bool ("NIfTI.AutoLoadJSON", false)) {
+            std::string json_path = H.name();
+            if (Path::has_suffix (json_path, ".nii.gz"))
+              json_path = json_path.substr (0, json_path.size()-7);
+            else if (Path::has_suffix (json_path, ".nii"))
+              json_path = json_path.substr (0, json_path.size()-4);
+            else
+              assert (0);
+            json_path += ".json";
+            if (Path::exists (json_path))
+              File::JSON::load (H, json_path);
+          }
+
         }
         else {
           H.transform()(0,0) = std::numeric_limits<default_type>::quiet_NaN();
@@ -267,9 +243,9 @@ namespace MR
           //CONF (when this is option is turned on).
           if (!File::Config::get_bool ("AnalyseLeftToRight", false))
             H.stride(0) = -H.stride (0);
-          if (!right_left_warning_issued) {
+          if (!File::NIfTI::right_left_warning_issued) {
             INFO ("assuming Analyse images are encoded " + std::string (H.stride (0) > 0 ? "left to right" : "right to left"));
-            right_left_warning_issued = true;
+            File::NIfTI::right_left_warning_issued = true;
           }
         }
 
@@ -282,62 +258,7 @@ namespace MR
 
 
 
-      void check (Header& H, bool has_nii_suffix)
-      {
-        for (size_t i = 0; i < H.ndim(); ++i)
-          if (H.size (i) < 1)
-            H.size(i) = 1;
-
-        // ensure first 3 axes correspond to spatial dimensions
-        // while preserving original strides as much as possible
-        ssize_t max_spatial_stride = 0;
-        for (size_t n = 0; n < 3; ++n)
-          if (std::abs(H.stride(n)) > max_spatial_stride)
-            max_spatial_stride = std::abs(H.stride(n));
-        for (size_t n = 3; n < H.ndim(); ++n)
-          H.stride(n) += H.stride(n) > 0 ? max_spatial_stride : -max_spatial_stride;
-        Stride::symbolise (H);
-
-        // if .img, reset all strides to defaults, since it can't be assumed
-        // that downstream software will be able to parse the NIfTI transform 
-        if (!has_nii_suffix) {
-          for (size_t i = 0; i < H.ndim(); ++i)
-            H.stride(i) = i+1;
-          bool analyse_left_to_right = File::Config::get_bool ("Analyse.LeftToRight", false);
-          if (analyse_left_to_right)
-            H.stride(0) = -H.stride (0);
-
-          if (!right_left_warning_issued) {
-            INFO ("assuming Analyse images are encoded " + std::string (analyse_left_to_right ? "left to right" : "right to left"));
-            right_left_warning_issued = true;
-          }
-        }
-
-        // by default, prevent output of bitwise data in NIfTI, since most 3rd
-        // party software package can't handle them
-
-        //CONF option: NIFTI.AllowBitwise
-        //CONF default: 0 (false)
-        //CONF A boolean value to indicate whether bitwise storage of binary
-        //CONF data is permitted (most 3rd party software packages don't
-        //CONF support bitwise data). If false (the default), data will be
-        //CONF stored using more widely supported unsigned 8-bit integers.
-        if (H.datatype() == DataType::Bit) 
-          if (!File::Config::get_bool ("NIFTI.AllowBitwise", false))
-            H.datatype() = DataType::UInt8;
-      }
-
-
-
-
-
-
-
-
-
-
-
-      void write (nifti_1_header& NH, const Header& H, bool has_nii_suffix)
+      void write (nifti_1_header& NH, const Header& H, const bool single_file)
       {
         if (H.ndim() > 7)
           throw Exception ("NIfTI-1.1 format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
@@ -345,13 +266,12 @@ namespace MR
         bool is_BE = H.datatype().is_big_endian();
 
         std::vector<size_t> axes;
-        auto M = adjust_transform (H, axes);
-
+        auto M = File::NIfTI::adjust_transform (H, axes);
 
         memset (&NH, 0, sizeof (NH));
 
         // magic number:
-        Raw::store<int32_t> (348, &NH.sizeof_hdr, is_BE);
+        Raw::store<int32_t> (header_size, &NH.sizeof_hdr, is_BE);
 
         const auto hit = H.keyval().find("comments");
         auto comments = split_lines (hit == H.keyval().end() ? std::string() : hit->second);
@@ -434,15 +354,15 @@ namespace MR
 
         Raw::store<int16_t> (dt, &NH.datatype, is_BE);
         Raw::store<int16_t> (H.datatype().bits(), &NH.bitpix, is_BE);
-        NH.pixdim[0] = 1.0;
 
+        Raw::store<float32> (1.0, &NH.pixdim[0], is_BE);
         // voxel sizes:
         for (size_t i = 0; i < 3; ++i)
           Raw::store<float32> (H.spacing (axes[i]), &NH.pixdim[i+1], is_BE);
         for (size_t i = 3; i < H.ndim(); ++i)
           Raw::store<float32> (H.spacing (i), &NH.pixdim[i+1], is_BE);
 
-        Raw::store<float32> (352.0, &NH.vox_offset, is_BE);
+        Raw::store<float32> (float32(header_with_ext_size), &NH.vox_offset, is_BE);
 
         // offset and scale:
         Raw::store<float32> (H.intensity_scale(), &NH.scl_slope, is_BE);
@@ -463,7 +383,7 @@ namespace MR
         Eigen::Matrix3d R = M.matrix().topLeftCorner<3,3>();
         if (R.determinant() < 0.0) {
           R.col(2) = -R.col(2);
-          NH.pixdim[0] = -1.0;
+          Raw::store<float32> (-1.0, &NH.pixdim[0], is_BE);
         }
         Eigen::Quaterniond Q (R);
 
@@ -496,7 +416,25 @@ namespace MR
         Raw::store<float32> (H.spacing (axes[2]) * M(2,2), &NH.srow_z[2], is_BE);
         Raw::store<float32> (M (2,3), &NH.srow_z[3], is_BE);
 
-        strncpy ( (char*) &NH.magic, has_nii_suffix ? "n+1\0" : "ni1\0", 4);
+        strncpy ( (char*) &NH.magic, single_file ? "n+1\0" : "ni1\0", 4);
+
+        //CONF option: NIfTI.AutoSaveJSON
+        //CONF default: 0 (false)
+        //CONF A boolean value to indicate whether, when writing NIfTI images,
+        //CONF a corresponding JSON file should be automatically created in order
+        //CONF to save any header entries that cannot be stored in the NIfTI
+        //CONF header
+        if (single_file && File::Config::get_bool ("NIfTI.AutoSaveJSON", false)) {
+          std::string json_path = H.name();
+          if (Path::has_suffix (json_path, ".nii.gz"))
+            json_path = json_path.substr (0, json_path.size()-7);
+          else if (Path::has_suffix (json_path, ".nii"))
+            json_path = json_path.substr (0, json_path.size()-4);
+          else
+            assert (0);
+          json_path += ".json";
+          File::JSON::save (H, json_path);
+        }
       }
 
 

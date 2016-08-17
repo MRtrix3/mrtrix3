@@ -195,7 +195,7 @@ namespace MR {
         Eigen::Matrix<default_type, Eigen::Dynamic, 1> values (dirs.size());
         transform->SH2A (values, in);
 
-        typedef std::multimap<default_type, dir_t, Max_abs> map_type;
+        typedef std::multimap<default_type, index_type, Max_abs> map_type;
         map_type data_in_order;
         for (size_t i = 0; i != size_t(values.size()); ++i)
           data_in_order.insert (std::make_pair (values[i], i));
@@ -203,7 +203,7 @@ namespace MR {
         if (data_in_order.begin()->first <= 0.0)
           return true;
 
-        std::vector< std::pair<dir_t, uint32_t> > retrospective_assignments;
+        std::vector< std::pair<index_type, uint32_t> > retrospective_assignments;
 
         for (const auto& i : data_in_order) {
 
@@ -292,9 +292,10 @@ namespace MR {
           if (i->is_negative() || i->get_max_peak_value() < peak_value_threshold || i->get_integral() < min_integral) {
             i = out.erase (i);
           } else {
+
             // Revise multiple peaks if present
             for (size_t peak_index = 0; peak_index != i->num_peaks(); ++peak_index) {
-              Eigen::Vector3f newton_peak = i->get_peak_dir (peak_index);
+              Eigen::Vector3 newton_peak = i->get_peak_dir (peak_index);
               const default_type new_peak_value = Math::SH::get_peak (in, lmax, newton_peak, &(*precomputer));
               if (std::isfinite (new_peak_value) && newton_peak.allFinite())
                 i->revise_peak (peak_index, newton_peak, new_peak_value);
@@ -329,15 +330,15 @@ namespace MR {
             NON_POD_VLA (new_assignments, std::vector<uint32_t>, dirs.size());
             while (!processed.full()) {
 
-              for (dir_t dir = 0; dir != dirs.size(); ++dir) {
+              for (index_type dir = 0; dir != dirs.size(); ++dir) {
                 if (!processed[dir]) {
-                  for (std::vector<dir_t>::const_iterator neighbour = dirs.get_adj_dirs (dir).begin(); neighbour != dirs.get_adj_dirs (dir).end(); ++neighbour) {
+                  for (std::vector<index_type>::const_iterator neighbour = dirs.get_adj_dirs (dir).begin(); neighbour != dirs.get_adj_dirs (dir).end(); ++neighbour) {
                     if (processed[*neighbour])
                       new_assignments[dir].push_back (out.lut[*neighbour]);
                   }
                 }
               }
-              for (dir_t dir = 0; dir != dirs.size(); ++dir) {
+              for (index_type dir = 0; dir != dirs.size(); ++dir) {
                 if (new_assignments[dir].size() == 1) {
 
                   out.lut[dir] = new_assignments[dir].front();

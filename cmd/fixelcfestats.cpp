@@ -22,9 +22,11 @@
 #include "sparse/fixel_metric.h"
 #include "sparse/keys.h"
 #include "sparse/image.h"
-#include "math/stats/permutation.h"
 #include "math/stats/glm.h"
+#include "math/stats/permutation.h"
+#include "math/stats/typedefs.h"
 #include "stats/cfe.h"
+#include "stats/enhance.h"
 #include "stats/permtest.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/scalar_file.h"
@@ -36,11 +38,11 @@
 using namespace MR;
 using namespace App;
 using namespace MR::DWI::Tractography::Mapping;
+using namespace MR::Math::Stats;
 using Sparse::FixelMetric;
+using Stats::CFE::direction_type;
+using Stats::CFE::connectivity_value_type;
 
-typedef float value_type;
-
-#define DEFAULT_PERMUTATIONS 5000
 #define DEFAULT_CFE_DH 0.1
 #define DEFAULT_CFE_E 2.0
 #define DEFAULT_CFE_H 3.0
@@ -48,7 +50,6 @@ typedef float value_type;
 #define DEFAULT_ANGLE_THRESHOLD 30.0
 #define DEFAULT_CONNECTIVITY_THRESHOLD 0.01
 #define DEFAULT_SMOOTHING_STD 10.0
-#define DEFAULT_PERMUTATIONS_NONSTATIONARITY 5000
 
 void usage ()
 {
@@ -84,13 +85,9 @@ void usage ()
 
   OPTIONS
 
-  + Option ("notest", "don't perform permutation testing and only output population statistics (effect size, stdev etc)")
+  + Stats::PermTest::Options (true)
 
-  + Option ("negative", "automatically test the negative (opposite) contrast. By computing the opposite contrast simultaneously "
-                        "the computation time is reduced.")
-
-  + Option ("nperms", "the number of permutations (default: " + str(DEFAULT_PERMUTATIONS) + ").")
-  + Argument ("num").type_integer (1)
+  + OptionGroup ("Parameters for the Connectivity-based Fixel Enhancement algorithm")
 
   + Option ("cfe_dh", "the height increment used in the cfe integration (default: " + str(DEFAULT_CFE_DH, 2) + ")")
   + Argument ("value").type_float (0.001, 1.0)
@@ -104,6 +101,11 @@ void usage ()
   + Option ("cfe_c", "cfe connectivity exponent (default: " + str(DEFAULT_CFE_C, 2) + ")")
   + Argument ("value").type_float (0.0, 100.0)
 
+  + OptionGroup ("Additional options for fixelcfestats")
+
+  + Option ("negative", "automatically test the negative (opposite) contrast. By computing the opposite contrast simultaneously "
+                        "the computation time is reduced.")
+
   + Option ("angle", "the max angle threshold for computing inter-subject fixel correspondence (Default: " + str(DEFAULT_ANGLE_THRESHOLD, 2) + " degrees)")
   + Argument ("value").type_float (0.0, 90.0)
 
@@ -111,12 +113,8 @@ void usage ()
   + Argument ("threshold").type_float (0.0, 1.0)
 
   + Option ("smooth", "smooth the fixel value along the fibre tracts using a Gaussian kernel with the supplied FWHM (default: " + str(DEFAULT_SMOOTHING_STD, 2) + "mm)")
-  + Argument ("FWHM").type_float (0.0, 200.0)
+  + Argument ("FWHM").type_float (0.0, 200.0);
 
-  + Option ("nonstationary", "do adjustment for non-stationarity")
-
-  + Option ("nperms_nonstationary", "the number of permutations used when precomputing the empirical statistic image for nonstationary correction (Default: " + str(DEFAULT_PERMUTATIONS_NONSTATIONARITY) + ")")
-  + Argument ("num").type_integer (1);
 }
 
 
@@ -126,7 +124,8 @@ void write_fixel_output (const std::string& filename,
                          const VectorType& data,
                          const Header& header,
                          Sparse::Image<FixelMetric>& mask_vox,
-                         Image<int32_t>& indexer_vox) {
+                         Image<int32_t>& indexer_vox)
+{
   Sparse::Image<FixelMetric> output (filename, header);
   for (auto i = Loop (mask_vox)(mask_vox, indexer_vox, output); i; ++i) {
     output.value().set_size (mask_vox.value().size());
@@ -146,20 +145,20 @@ void run() {
   auto opt = get_options ("negative");
   bool compute_negative_contrast = opt.size() ? true : false;
 
-  value_type cfe_dh = get_option_value ("cfe_dh", DEFAULT_CFE_DH);
-  value_type cfe_h = get_option_value ("cfe_h", DEFAULT_CFE_H);
-  value_type cfe_e = get_option_value ("cfe_e", DEFAULT_CFE_E);
-  value_type cfe_c = get_option_value ("cfe_c", DEFAULT_CFE_C);
-  int num_perms = get_option_value ("nperms", DEFAULT_PERMUTATIONS);
-  value_type angular_threshold = get_option_value ("angle", DEFAULT_ANGLE_THRESHOLD);
-  const float angular_threshold_dp = cos (angular_threshold * (Math::pi/180.0));
+  const value_type cfe_dh = get_option_value ("cfe_dh", DEFAULT_CFE_DH);
+  const value_type cfe_h = get_option_value ("cfe_h", DEFAULT_CFE_H);
+  const value_type cfe_e = get_option_value ("cfe_e", DEFAULT_CFE_E);
+  const value_type cfe_c = get_option_value ("cfe_c", DEFAULT_CFE_C);
+  const int num_perms = get_option_value ("nperms", DEFAULT_NUMBER_PERMUTATIONS);
+  const value_type angular_threshold = get_option_value ("angle", DEFAULT_ANGLE_THRESHOLD);
+  const value_type angular_threshold_dp = cos (angular_threshold * (Math::pi/180.0));
 
-  value_type connectivity_threshold = get_option_value ("connectivity", DEFAULT_CONNECTIVITY_THRESHOLD);
-  value_type smooth_std_dev = get_option_value ("smooth", DEFAULT_SMOOTHING_STD) / 2.3548;
+  const value_type connectivity_threshold = get_option_value ("connectivity", DEFAULT_CONNECTIVITY_THRESHOLD);
+  const value_type smooth_std_dev = get_option_value ("smooth", DEFAULT_SMOOTHING_STD) / 2.3548;
 
-  bool do_nonstationary_adjustment = get_options ("nonstationary").size();
+  const bool do_nonstationary_adjustment = get_options ("nonstationary").size();
 
-  int nperms_nonstationary = get_option_value ("nperms_nonstationary", DEFAULT_PERMUTATIONS_NONSTATIONARITY);
+  const int nperms_nonstationary = get_option_value ("nperms_nonstationary", DEFAULT_NUMBER_PERMUTATIONS_NONSTATIONARITY);
   
   // Read filenames
   std::vector<std::string> filenames;
@@ -179,12 +178,12 @@ void run() {
   }
 
   // Load design matrix:
-  Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> design = load_matrix<value_type> (argument[2]);
+  const matrix_type design = load_matrix (argument[2]);
   if (design.rows() != (ssize_t)filenames.size())
     throw Exception ("number of input files does not match number of rows in design matrix");
 
   // Load contrast matrix:
-  Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> contrast = load_matrix<value_type> (argument[3]);
+  const matrix_type contrast = load_matrix (argument[3]);
 
   if (contrast.cols() != design.cols())
     throw Exception ("the number of contrasts does not equal the number of columns in the design matrix");
@@ -203,7 +202,7 @@ void run() {
     fixel_index_image.value() = -1;
 
   std::vector<Eigen::Vector3> positions;
-  std::vector<Eigen::Vector3f> directions;
+  std::vector<direction_type> directions;
 
   Transform image_transform (mask_fixel_image);
   for (auto i = Loop (mask_fixel_image)(mask_fixel_image, fixel_index_image); i; ++i) {
@@ -211,24 +210,24 @@ void run() {
     fixel_index_image.value() = directions.size();
     int32_t fixel_count = 0;
     for (size_t f = 0; f != mask_fixel_image.value().size(); ++f, ++fixel_count) {
-      directions.push_back (mask_fixel_image.value()[f].dir);
-      Eigen::Vector3 pos (mask_fixel_image.index(0), mask_fixel_image.index(1), mask_fixel_image.index(2));
+      directions.push_back (mask_fixel_image.value()[f].dir.cast<default_type>());
+      const Eigen::Vector3 pos (mask_fixel_image.index(0), mask_fixel_image.index(1), mask_fixel_image.index(2));
       positions.push_back (image_transform.voxel2scanner * pos);
     }
     fixel_index_image.index(3) = 1;
     fixel_index_image.value() = fixel_count;
   }
 
-  uint32_t num_fixels = directions.size();
+  const uint32_t num_fixels = directions.size();
   CONSOLE ("number of fixels: " + str(num_fixels));
 
   // Compute fixel-fixel connectivity
   std::vector<std::map<int32_t, Stats::CFE::connectivity> > connectivity_matrix (num_fixels);
   std::vector<uint16_t> fixel_TDI (num_fixels, 0.0);
-  std::string track_filename = argument[4];
-  std::string output_prefix = argument[5];
+  const std::string track_filename = argument[4];
+  const std::string output_prefix = argument[5];
   DWI::Tractography::Properties properties;
-  DWI::Tractography::Reader<value_type> track_file (track_filename, properties);
+  DWI::Tractography::Reader<> track_file (track_filename, properties);
   // Read in tracts, and compute whole-brain fixel-fixel connectivity
   const size_t num_tracks = properties["count"].empty() ? 0 : to<int> (properties["count"]);
   if (!num_tracks)
@@ -253,7 +252,7 @@ void run() {
 
 
   // Normalise connectivity matrix and threshold, pre-compute fixel-fixel weights for smoothing.
-  std::vector<std::map<int32_t, value_type> > smoothing_weights (num_fixels);
+  std::vector<std::map<int32_t, Stats::CFE::connectivity> > smoothing_weights (num_fixels);
   bool do_smoothing = false;
   const value_type gaussian_const2 = 2.0 * smooth_std_dev * smooth_std_dev;
   value_type gaussian_const1 = 1.0;
@@ -266,17 +265,17 @@ void run() {
     for (unsigned int fixel = 0; fixel < num_fixels; ++fixel) {
       auto it = connectivity_matrix[fixel].begin();
       while (it != connectivity_matrix[fixel].end()) {
-        value_type connectivity = it->second.value / value_type (fixel_TDI[fixel]);
+        const value_type connectivity = it->second.value / value_type (fixel_TDI[fixel]);
         if (connectivity < connectivity_threshold)  {
           connectivity_matrix[fixel].erase (it++);
         } else {
           if (do_smoothing) {
-            value_type distance = std::sqrt (Math::pow2 (positions[fixel][0] - positions[it->first][0]) +
-                                             Math::pow2 (positions[fixel][1] - positions[it->first][1]) +
-                                             Math::pow2 (positions[fixel][2] - positions[it->first][2]));
-            value_type smoothing_weight = connectivity * gaussian_const1 * std::exp (-std::pow (distance, 2) / gaussian_const2);
-            if (smoothing_weight > connectivity_threshold)
-              smoothing_weights[fixel].insert (std::pair<int32_t, value_type> (it->first, smoothing_weight));
+            const value_type distance = std::sqrt (Math::pow2 (positions[fixel][0] - positions[it->first][0]) +
+                                                   Math::pow2 (positions[fixel][1] - positions[it->first][1]) +
+                                                   Math::pow2 (positions[fixel][2] - positions[it->first][2]));
+            const Stats::CFE::connectivity smoothing_weight (Stats::CFE::connectivity_value_type(connectivity * gaussian_const1 * std::exp (-std::pow (distance, 2) / gaussian_const2)));
+            if (smoothing_weight.value > connectivity_threshold)
+              smoothing_weights[fixel].insert (std::pair<int32_t, Stats::CFE::connectivity> (it->first, smoothing_weight));
           }
           // Here we pre-exponentiate each connectivity value by C
           it->second.value = std::pow (connectivity, cfe_c);
@@ -287,7 +286,7 @@ void run() {
       Stats::CFE::connectivity self_connectivity;
       self_connectivity.value = 1.0;
       connectivity_matrix[fixel].insert (std::pair<int32_t, Stats::CFE::connectivity> (fixel, self_connectivity));
-      smoothing_weights[fixel].insert (std::pair<int32_t, value_type> (fixel, gaussian_const1));
+      smoothing_weights[fixel].insert (std::pair<int32_t, Stats::CFE::connectivity> (fixel, gaussian_const1));
       progress++;
     }
   }
@@ -296,14 +295,14 @@ void run() {
   for (size_t fixel = 0; fixel < num_fixels; ++fixel) {
     value_type sum = 0.0;
     for (auto it = smoothing_weights[fixel].begin(); it != smoothing_weights[fixel].end(); ++it)
-      sum += it->second;
+      sum += it->second.value;
     value_type norm_factor = 1.0 / sum;
     for (auto it = smoothing_weights[fixel].begin(); it != smoothing_weights[fixel].end(); ++it)
-      it->second *= norm_factor;
+      it->second.value *= norm_factor;
   }
 
   // Load input data
-  Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> data (num_fixels, filenames.size());
+  matrix_type data (num_fixels, filenames.size());
   {
     ProgressBar progress ("loading input images", filenames.size());
     for (size_t subject = 0; subject < filenames.size(); subject++) {
@@ -314,16 +313,16 @@ void run() {
 
       for (auto voxel = Loop(fixel)(fixel, fixel_index_image); voxel; ++voxel) {
          fixel_index_image.index(3) = 0;
-         int32_t index = fixel_index_image.value();
+         const int32_t index = fixel_index_image.value();
          fixel_index_image.index(3) = 1;
-         int32_t number_fixels = fixel_index_image.value();
+         const int32_t number_fixels = fixel_index_image.value();
 
          // for each fixel in the mask, find the corresponding fixel in this subject voxel
          for (int32_t i = index; i < index + number_fixels; ++i) {
            value_type largest_dp = 0.0;
            int index_of_closest_fixel = -1;
            for (size_t f = 0; f != fixel.value().size(); ++f) {
-             value_type dp = std::abs (directions[i].dot(fixel.value()[f].dir));
+             const value_type dp = std::abs (directions[i].dot(fixel.value()[f].dir.cast<default_type>()));
              if (dp > largest_dp) {
                largest_dp = dp;
                index_of_closest_fixel = f;
@@ -337,9 +336,9 @@ void run() {
       // Smooth the data
       for (size_t fixel = 0; fixel < num_fixels; ++fixel) {
         value_type value = 0.0;
-        std::map<int32_t, value_type>::const_iterator it = smoothing_weights[fixel].begin();
+        std::map<int32_t, Stats::CFE::connectivity>::const_iterator it = smoothing_weights[fixel].begin();
         for (; it != smoothing_weights[fixel].end(); ++it)
-          value += temp_fixel_data[it->first] * it->second;
+          value += temp_fixel_data[it->first] * it->second.value;
         data (fixel, subject) = value;
       }
       progress++;
@@ -352,19 +351,22 @@ void run() {
   {
     ProgressBar progress ("outputting beta coefficients, effect size and standard deviation");
     auto temp = Math::Stats::GLM::solve_betas (data, design);
-    for (ssize_t i = 0; i < contrast.cols(); ++i)
+    for (ssize_t i = 0; i < contrast.cols(); ++i) {
       write_fixel_output (output_prefix + "beta" + str(i) + ".msf", temp.row(i), input_header, mask_fixel_image, fixel_index_image);
-    temp = Math::Stats::GLM::abs_effect_size (data, design, contrast);
-    write_fixel_output (output_prefix + "abs_effect.msf", temp.row(0), input_header, mask_fixel_image, fixel_index_image);
-    temp = Math::Stats::GLM::std_effect_size (data, design, contrast);
-    write_fixel_output (output_prefix + "std_effect.msf", temp.row(0), input_header, mask_fixel_image, fixel_index_image);
-    temp = Math::Stats::GLM::stdev (data, design);
+      ++progress;
+    }
+    temp = Math::Stats::GLM::abs_effect_size (data, design, contrast); ++progress;
+    write_fixel_output (output_prefix + "abs_effect.msf", temp.row(0), input_header, mask_fixel_image, fixel_index_image); ++progress;
+    temp = Math::Stats::GLM::std_effect_size (data, design, contrast); ++progress;
+    write_fixel_output (output_prefix + "std_effect.msf", temp.row(0), input_header, mask_fixel_image, fixel_index_image); ++progress;
+    temp = Math::Stats::GLM::stdev (data, design); ++progress;
     write_fixel_output (output_prefix + "std_dev.msf", temp.row(0), input_header, mask_fixel_image, fixel_index_image);
   }
 
   Math::Stats::GLMTTest glm_ttest (data, design, contrast);
-  Stats::CFE::Enhancer cfe_integrator (connectivity_matrix, cfe_dh, cfe_e, cfe_h);
-  std::shared_ptr<std::vector<double> > empirical_cfe_statistic;
+  std::shared_ptr<Stats::EnhancerBase> cfe_integrator;
+  cfe_integrator.reset (new Stats::CFE::Enhancer (connectivity_matrix, cfe_dh, cfe_e, cfe_h));
+  vector_type empirical_cfe_statistic;
 
   Header output_header (input_header);
   output_header.keyval()["num permutations"] = str(num_perms);
@@ -378,20 +380,19 @@ void run() {
 
   // If performing non-stationarity adjustment we need to pre-compute the empirical CFE statistic
   if (do_nonstationary_adjustment) {
-    empirical_cfe_statistic.reset(new std::vector<double> (num_fixels, 0.0));
-    Stats::PermTest::precompute_empirical_stat (glm_ttest, cfe_integrator, nperms_nonstationary, *empirical_cfe_statistic);
+    Stats::PermTest::precompute_empirical_stat (glm_ttest, cfe_integrator, nperms_nonstationary, empirical_cfe_statistic);
     output_header.keyval()["nonstationary adjustment"] = str(true);
-    write_fixel_output (output_prefix + "cfe_empirical.msf", *empirical_cfe_statistic, output_header, mask_fixel_image, fixel_index_image);
+    write_fixel_output (output_prefix + "cfe_empirical.msf", empirical_cfe_statistic, output_header, mask_fixel_image, fixel_index_image);
   } else {
     output_header.keyval()["nonstationary adjustment"] = str(false);
   }
 
   // Precompute default statistic and CFE statistic
-  std::vector<value_type> cfe_output (num_fixels, 0.0);
-  std::shared_ptr<std::vector<value_type> > cfe_output_neg;
-  std::vector<value_type> tvalue_output (num_fixels, 0.0);
+  vector_type cfe_output (num_fixels);
+  std::shared_ptr<vector_type> cfe_output_neg;
+  vector_type tvalue_output (num_fixels);
   if (compute_negative_contrast)
-    cfe_output_neg.reset (new std::vector<value_type> (num_fixels, 0.0));
+    cfe_output_neg.reset (new vector_type (num_fixels));
 
   Stats::PermTest::precompute_default_permutation (glm_ttest, cfe_integrator, empirical_cfe_statistic, cfe_output, cfe_output_neg, tvalue_output);
 
@@ -403,14 +404,14 @@ void run() {
   // Perform permutation testing
   opt = get_options ("notest");
   if (!opt.size()) {
-    Eigen::Matrix<value_type, Eigen::Dynamic, 1> perm_distribution (num_perms);
-    std::shared_ptr<Eigen::Matrix<value_type, Eigen::Dynamic, 1> > perm_distribution_neg;
-    std::vector<value_type> uncorrected_pvalues (num_fixels, 0.0);
-    std::shared_ptr<std::vector<value_type> > uncorrected_pvalues_neg;
+    vector_type perm_distribution (num_perms);
+    std::shared_ptr<vector_type> perm_distribution_neg;
+    vector_type uncorrected_pvalues (num_fixels);
+    std::shared_ptr<vector_type> uncorrected_pvalues_neg;
 
     if (compute_negative_contrast) {
-      perm_distribution_neg.reset (new Eigen::Matrix<value_type, Eigen::Dynamic, 1> (num_perms));
-      uncorrected_pvalues_neg.reset (new std::vector<value_type> (num_fixels, 0.0));
+      perm_distribution_neg.reset (new vector_type (num_perms));
+      uncorrected_pvalues_neg.reset (new vector_type (num_fixels));
     }
 
     Stats::PermTest::run_permutations (glm_ttest, cfe_integrator, num_perms, empirical_cfe_statistic,
@@ -419,18 +420,18 @@ void run() {
                                        uncorrected_pvalues, uncorrected_pvalues_neg);
 
     ProgressBar progress ("outputting final results");
-    save_matrix (perm_distribution, output_prefix + "perm_dist.txt");
+    save_matrix (perm_distribution, output_prefix + "perm_dist.txt"); ++progress;
 
-    std::vector<value_type> pvalue_output (num_fixels, 0.0);
-    Math::Stats::statistic2pvalue (perm_distribution, cfe_output, pvalue_output);
-    write_fixel_output (output_prefix + "fwe_pvalue.msf", pvalue_output, output_header, mask_fixel_image, fixel_index_image);
-    write_fixel_output (output_prefix + "uncorrected_pvalue.msf", uncorrected_pvalues, output_header, mask_fixel_image, fixel_index_image);
+    vector_type pvalue_output (num_fixels);
+    Math::Stats::Permutation::statistic2pvalue (perm_distribution, cfe_output, pvalue_output); ++progress;
+    write_fixel_output (output_prefix + "fwe_pvalue.msf", pvalue_output, output_header, mask_fixel_image, fixel_index_image); ++progress;
+    write_fixel_output (output_prefix + "uncorrected_pvalue.msf", uncorrected_pvalues, output_header, mask_fixel_image, fixel_index_image); ++progress;
 
     if (compute_negative_contrast) {
-      save_matrix (*perm_distribution_neg, output_prefix + "perm_dist_neg.txt");
-      std::vector<value_type> pvalue_output_neg (num_fixels, 0.0);
-      Math::Stats::statistic2pvalue (*perm_distribution_neg, *cfe_output_neg, pvalue_output_neg);
-      write_fixel_output (output_prefix + "fwe_pvalue_neg.msf", pvalue_output_neg, output_header, mask_fixel_image, fixel_index_image);
+      save_matrix (*perm_distribution_neg, output_prefix + "perm_dist_neg.txt"); ++progress;
+      vector_type pvalue_output_neg (num_fixels);
+      Math::Stats::Permutation::statistic2pvalue (*perm_distribution_neg, *cfe_output_neg, pvalue_output_neg); ++progress;
+      write_fixel_output (output_prefix + "fwe_pvalue_neg.msf", pvalue_output_neg, output_header, mask_fixel_image, fixel_index_image); ++progress;
       write_fixel_output (output_prefix + "uncorrected_pvalue_neg.msf", *uncorrected_pvalues_neg, output_header, mask_fixel_image, fixel_index_image);
     }
   }

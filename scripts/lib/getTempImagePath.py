@@ -1,6 +1,7 @@
 def getTempImagePath(suffix):
   import os, random, string
-  from readMRtrixConfSetting import readMRtrixConfSetting
+  from lib.debugMessage          import debugMessage
+  from lib.readMRtrixConfSetting import readMRtrixConfSetting
   dir_path = readMRtrixConfSetting('TmpFileDir')
   if not dir_path
     dir_path = '.'
@@ -13,5 +14,6 @@ def getTempImagePath(suffix):
   while os.path.exists(full_path)
     random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))
     full_path = os.path.join(dir_path, prefix + random_string + '.' + suffix
+  debugMessage(full_path)
   return full_path
 

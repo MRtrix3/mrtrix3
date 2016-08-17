@@ -11,15 +11,13 @@ Synopsis
     transformcalc [ options ]  input [ input ... ] operation output
 
 -  *input*: the input for the specified operation
--  *operation*: the operation to perform, one of: invert, half, rigid, header, average, interpolate.invert: invert the input transformation:matrix_in invert outputhalf: calculate the matrix square root of the input transformation:matrix_in half outputrigid: calculate the rigid transformation of the affine input transformation:matrix_in rigid outputheader: calculate the transformation matrix from an original image and an image with modified header:mov mapmovhdr header outputaverage: calculate the average affine matrix of all input matrices:input ... average outputinterpolate: create interpolated transformation matrix between input (t=0) and input2 (t=1). Based on matrix decomposition with linear interpolation of  translation, rotation and stretch described in  Shoemake, K., Hill, M., & Duff, T. (1992). Matrix Animation and Polar Decomposition.  Matrix, 92, 258-264. doi:10.1.1.56.1336input input2 interpolate output
+-  *operation*: the operation to perform, one of: invert, half, rigid, header, average, interpolate, decompose.invert: invert the input transformation:matrix_in invert outputhalf: calculate the matrix square root of the input transformation:matrix_in half outputrigid: calculate the rigid transformation of the affine input transformation:matrix_in rigid outputheader: calculate the transformation matrix from an original image and an image with modified header:mov mapmovhdr header outputaverage: calculate the average affine matrix of all input matrices:input ... average outputinterpolate: create interpolated transformation matrix between input (t=0) and input2 (t=1). Based on matrix decomposition with linear interpolation of  translation, rotation and stretch described in  Shoemake, K., Hill, M., & Duff, T. (1992). Matrix Animation and Polar Decomposition.  Matrix, 92, 258-264. doi:10.1.1.56.1336input input2 interpolate outputdecompose: decompose transformation matrix M into translation, rotation and stretch and shear (M = T * R * S). The output is a key-value text file scaling: vector of 3 scaling factors in x, y, z direction, shear: list of shear factors for xy, xz, yz axes, angles: list of Euler angles about static x, y, z axes in radians in the range [0:pi]x[-pi:pi]x[-pi:pi], angle_axis: angle in radians and rotation axis, translation : translation vector along x, y, z axes in mm, R: composed roation matrix (R = rot_x * rot_y * rot_z), S: composed scaling and shear matrix.matrix_in decompose output
 -  *output*: the output transformation matrix.
 
 Description
 -----------
 
-This command's function is to process linear transformation matrices.
-
-It allows to perform affine matrix operations or to convert the transformation matrix provided by FSL's flirt command to a format usable in MRtrix
+This command's function is to perform calculations on linear transformation matrices.
 
 Options
 -------

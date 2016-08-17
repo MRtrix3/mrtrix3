@@ -33,7 +33,7 @@ namespace MR {
 
 
 
-      typedef unsigned int dir_t;
+      typedef unsigned int index_type;
 
 
 
@@ -87,10 +87,10 @@ namespace MR {
           }
 
           size_t size () const { return unit_vectors.size(); }
-          const Eigen::Vector3f& get_dir (const size_t i) const { return unit_vectors[i]; }
-          const std::vector<dir_t>& get_adj_dirs (const size_t i) const { return adj_dirs[i]; }
+          const Eigen::Vector3& get_dir (const size_t i) const { return unit_vectors[i]; }
+          const std::vector<index_type>& get_adj_dirs (const size_t i) const { return adj_dirs[i]; }
 
-          bool dirs_are_adjacent (const dir_t one, const dir_t two) const {
+          bool dirs_are_adjacent (const index_type one, const index_type two) const {
             for (const auto& i : adj_dirs[one]) {
               if (i == two)
                 return true;
@@ -98,17 +98,16 @@ namespace MR {
             return false;
           }
 
-          dir_t get_min_linkage (const dir_t one, const dir_t two) const;
+          index_type get_min_linkage (const index_type one, const index_type two) const;
 
-          const std::vector<Eigen::Vector3f>& get_dirs() const { return unit_vectors; }
-          const Eigen::Vector3f& operator[] (const size_t i) const { return unit_vectors[i]; }
+          const std::vector<Eigen::Vector3>& get_dirs() const { return unit_vectors; }
+          const Eigen::Vector3& operator[] (const size_t i) const { return unit_vectors[i]; }
 
 
         protected:
 
-          // TODO Change to double
-          std::vector<Eigen::Vector3f> unit_vectors;
-          std::vector< std::vector<dir_t> > adj_dirs; // Note: not self-inclusive
+          std::vector<Eigen::Vector3> unit_vectors;
+          std::vector< std::vector<index_type> > adj_dirs; // Note: not self-inclusive
 
 
         private:
@@ -135,14 +134,14 @@ namespace MR {
         unit_vectors.resize (in.rows());
         if (in.cols() == 2) {
           for (size_t i = 0; i != size(); ++i) {
-            const float azimuth   = in(i, 0);
-            const float elevation = in(i, 1);
-            const float sin_elevation = std::sin (elevation);
+            const default_type azimuth   = in(i, 0);
+            const default_type elevation = in(i, 1);
+            const default_type sin_elevation = std::sin (elevation);
             unit_vectors[i] = { std::cos (azimuth) * sin_elevation, std::sin (azimuth) * sin_elevation, std::cos (elevation) };
           }
         } else if (in.cols() == 3) {
           for (size_t i = 0; i != size(); ++i)
-            unit_vectors[i] = { float(in(i,0)), float(in(i,1)), float(in(i,2)) };
+            unit_vectors[i] = { default_type(in(i,0)), default_type(in(i,1)), default_type(in(i,2)) };
         } else {
           assert (0);
         }
@@ -182,24 +181,24 @@ namespace MR {
               az_begin (that.az_begin),
               el_begin (that.el_begin) { }
 
-          dir_t select_direction (const Eigen::Vector3f&) const;
+          index_type select_direction (const Eigen::Vector3&) const;
 
 
 
         private:
 
-          std::vector< std::vector<dir_t> > grid_lookup;
+          std::vector< std::vector<index_type> > grid_lookup;
           unsigned int num_az_grids, num_el_grids, total_num_angle_grids;
-          float az_grid_step, el_grid_step;
-          float az_begin, el_begin;
+          default_type az_grid_step, el_grid_step;
+          default_type az_begin, el_begin;
 
           FastLookupSet ();
 
-          dir_t select_direction_slow (const Eigen::Vector3f&) const;
+          index_type select_direction_slow (const Eigen::Vector3&) const;
 
           void initialise();
 
-          size_t dir2gridindex (const Eigen::Vector3f&) const;
+          size_t dir2gridindex (const Eigen::Vector3&) const;
 
           void test_lookup() const;
 

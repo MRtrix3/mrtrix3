@@ -17,7 +17,7 @@ For more details, see www.mrtrix.org'''
 externalCitations = False
 lastFile = ''
 mrtrixForce = ''
-mrtrixQuiet = ' -quiet'
+mrtrixVerbosity = ' -quiet'
 mrtrixNThreads = ''
 parser = ''
 tempDir = ''
@@ -26,6 +26,7 @@ workingDir = ''
 
 colourClear = ''
 colourConsole = ''
+colourDebug = ''
 colourError = ''
 colourPrint = ''
 colourWarn = ''
@@ -45,8 +46,8 @@ def initialise():
   from lib.errorMessage          import errorMessage
   from lib.printMessage          import printMessage
   from lib.readMRtrixConfSetting import readMRtrixConfSetting
-  global args, citationList, cleanup, externalCitations, lastFile, mrtrixNThreads, mrtrixQuiet, parser, tempDir, verbosity, workingDir
-  global colourClear, colourConsole, colourError, colourPrint, colourWarn
+  global args, citationList, cleanup, externalCitations, lastFile, mrtrixNThreads, mrtrixVerbosity, parser, tempDir, verbosity, workingDir
+  global colourClear, colourConsole, colourDebug, colourError, colourPrint, colourWarn
 
   if not parser:
     errorMessage('Script error: Command-line parser must be initialised before app')
@@ -54,6 +55,10 @@ def initialise():
   if len(sys.argv) == 1:
     parser.print_help()
     sys.exit(0)
+
+  if sys.argv[-1] == '__print_usage_markdown__':
+    parser.printUsageMarkdown()
+    exit(0)
 
   if sys.argv[-1] == '__print_usage_rst__':
     parser.printUsageRst()
@@ -74,7 +79,8 @@ def initialise():
     use_colour = True 
   if use_colour:
     colourClear = '\033[0m'
-    colourConsole = '\033[03;34m'
+    colourConsole = '\033[03;36m'
+    colourDebug = '\033[03;34m'
     colourError = '\033[01;31m'
     colourPrint = '\033[03;32m'
     colourWarn = '\033[00;31m'
@@ -85,10 +91,13 @@ def initialise():
     mrtrixNThreads = ' -nthreads ' + args.nthreads
   if args.quiet:
     verbosity = 0
-    mrtrixQuiet = ' -quiet'
+    mrtrixVerbosity = ' -quiet'
   elif args.verbose:
     verbosity = 2
-    mrtrixQuiet = ''
+    mrtrixVerbosity = ''
+  elif args.debug:
+    verbosity = 3
+    mrtrixVerbosity = ' -info'
 
   if citationList:
     printMessage('')
@@ -194,25 +203,31 @@ def complete():
 
 def make_dir(dir):
   import os
+  from lib.debugMessage import debugMessage
   if not os.path.exists(dir):
     os.makedirs(dir)
+    debugMessage('Created directory ' + dir)
+  else:
+    debugMessage('Directory ' + dir + ' already exists')
 
 
 
 # determines the common postfix for a list of filenames (including the file extension)
 def getCommonPostfix(inputFiles):
- first = inputFiles[0];
- cursor = 0
- found = False;
- common = ''
- for i in reversed(first):
-   if found == False:
-     for j in inputFiles:
-       if j[len(j)-cursor-1] != first[len(first)-cursor-1]:
-         found = True
-         break
-     if found == False:
-       common = first[len(first)-cursor-1] + common
-     cursor += 1
- return common
+  from lib.debugMessage import debugMessage
+  first = inputFiles[0];
+  cursor = 0
+  found = False;
+  common = ''
+  for i in reversed(first):
+    if found == False:
+      for j in inputFiles:
+        if j[len(j)-cursor-1] != first[len(first)-cursor-1]:
+          found = True
+          break
+      if found == False:
+        common = first[len(first)-cursor-1] + common
+      cursor += 1
+  debugMessage('Common postfix of ' + str(len(inputFiles)) + ' is \'' + common + '\'')
+  return common
 

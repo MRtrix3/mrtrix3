@@ -48,6 +48,8 @@ Options
 
 -  **-property key** any text properties embedded in the image header under the specified key (use 'all' to list all keys found)
 
+-  **-json_export file** export header key/value entries to a JSON file
+
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -71,6 +73,13 @@ DW gradient table export options
 -  **-shells** list the average b-value of each shell
 
 -  **-shellcounts** list the number of volumes in each shell
+
+Options for exporting phase-encode tables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-export_pe_table file** export phase-encoding table to file
+
+-  **-export_pe_eddy config indices** export phase-encoding information to an EDDY-style config / index file pair
 
 Standard options
 ^^^^^^^^^^^^^^^^

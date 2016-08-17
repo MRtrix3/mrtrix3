@@ -654,7 +654,7 @@ namespace MR
         s += format_option (__standard_options[i]);
 
       if (REFERENCES.size()) { 
-        s += std::string ("#### References\n\n");
+        s += std::string ("## References\n\n");
         for (size_t i = 0; i < REFERENCES.size(); ++i)
           s += indent_newlines (REFERENCES[i]) + "\n\n";
       }
