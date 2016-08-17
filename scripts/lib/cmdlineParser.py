@@ -128,7 +128,7 @@ class Parser(argparse.ArgumentParser):
     s += w.fill(synopsis).replace(self.prog, underline(self.prog), 1) + '\n'
     s += '\n'
     if self._subparsers:
-      s += '        ' + w_arg.fill(self._subparsers._group_actions[0].dest + ' '*(max(13-len(self._subparsers._group_actions[0].dest), 1)) + self._subparsers._group_actions[0].help).replace (self._subparsers._group_actions[0].dest, underline(self._subparser._group_actions[0].dest), 1) + '\n'
+      s += '        ' + w_arg.fill(self._subparsers._group_actions[0].dest + ' '*(max(13-len(self._subparsers._group_actions[0].dest), 1)) + self._subparsers._group_actions[0].help).replace (self._subparsers._group_actions[0].dest, underline(self._subparsers._group_actions[0].dest), 1) + '\n'
       s += '\n'
     for arg in self._positionals._group_actions:
       line = '        '
@@ -160,9 +160,13 @@ class Parser(argparse.ArgumentParser):
             else:
               s += option.metavar
           elif option.nargs:
-            s += (' ' + option.dest.upper)*option.nargs
+            s += (' ' + option.dest.upper())*option.nargs
           elif option.type is not None:
             s += ' ' + option.type.__name__.upper()
+          elif option.default is None:
+            s += ' ' + option.dest.upper()
+          # Any options that haven't tripped one of the conditions above should be a store_true or store_false, and
+          #   therefore there's nothing to be appended to the option instruction
           s += '\n'
           s += w.fill(option.help) + '\n'
           s += '\n'

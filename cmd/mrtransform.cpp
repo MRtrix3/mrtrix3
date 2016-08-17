@@ -82,8 +82,8 @@ void usage ()
     + OptionGroup ("Affine transformation options")
 
     + Option ("linear",
-        "specify a 4x4 linear transform to apply, in the form "
-        "of a 4x4 ascii file. Note the standard 'reverse' convention "
+        "specify a linear transform to apply, in the form of a 3x4 "
+        "or 4x4 ascii file. Note the standard 'reverse' convention "
         "is used, where the transform maps points in the template image "
         "to the moving image. Note that the reverse convention is still "
         "assumed even if no -template image is supplied")
@@ -101,8 +101,12 @@ void usage ()
 
     + Option ("replace",
         "replace the linear transform of the original image by that specified, "
-        "rather than applying it to the original image. If no -linear transform is specified then "
-        "the header transform is replaced with an identity transform.")
+        "rather than applying it to the original image. The specified transform "
+        "can be either a template image, or a 3x4 or 4x4 ascii file.")
+    +   Argument ("file").type_file_in()
+
+    + Option ("identity",
+              "set the header transform of the image to the identity matrix")
 
     + OptionGroup ("Regridding options")
 
@@ -202,15 +206,28 @@ void run ()
   if (opt.size()) {
     linear = true;
     linear_transform = load_transform (opt[0][0]);
-  } else {
-    linear_transform.setIdentity();
   }
 
   // Replace
-  const bool replace = get_options ("replace").size();
-  if (replace && !linear) {
-    INFO ("no linear is supplied so replace with the default (identity) transform");
-    linear = true;
+  bool replace = false;
+  opt = get_options ("replace");
+  if (opt.size()) {
+    linear = replace = true;
+    try {
+      auto template_header = Header::open (opt[0][0]);
+      linear_transform = template_header.transform();
+    } catch (...) {
+      try {
+        linear_transform = load_transform (opt[0][0]);
+      } catch (...) {
+        throw Exception ("Unable to extract transform matrix from -replace file \"" + str(opt[0][0]) + "\"");
+      }
+    }
+  }
+
+  if (get_options ("identity").size()) {
+    linear = replace = true;
+    linear_transform.setIdentity();
   }
 
   // Template
@@ -219,6 +236,8 @@ void run ()
   if (opt.size()) {
     if (replace)
       throw Exception ("you cannot use the -replace option with the -template option");
+    if (!linear)
+      linear_transform.setIdentity();
     template_header = Header::open (opt[0][0]);
     for (size_t i = 0; i < 3; ++i) {
       output_header.size(i) = template_header.size(i);
@@ -266,6 +285,8 @@ void run ()
   if (inverse) {
     if (!(linear || warp.valid()))
       throw Exception ("no linear or warp transformation provided for option '-inverse'");
+    if (replace)
+      throw Exception ("cannot use -inverse option in conjunction with -replace or -identity options");
     if (warp.valid())
       if (warp.ndim() == 4)
         throw Exception ("cannot apply -inverse with the input -warp_df deformation field.");
@@ -277,12 +298,12 @@ void run ()
   if (half) {
     if (!(linear))
       throw Exception ("no linear transformation provided for option '-half'");
-    {
-      Eigen::Matrix<default_type, 4, 4> temp;
-      temp.row(3) << 0, 0, 0, 1.0;
-      temp.topLeftCorner(3,4) = linear_transform.matrix().topLeftCorner(3,4);
-      linear_transform.matrix() = temp.sqrt().topLeftCorner(3,4);
-    }
+    if (replace)
+      throw Exception ("cannot use -half option in conjunction with -replace or -identity options");
+    Eigen::Matrix<default_type, 4, 4> temp;
+    temp.row(3) << 0, 0, 0, 1.0;
+    temp.topLeftCorner(3,4) = linear_transform.matrix().topLeftCorner(3,4);
+    linear_transform.matrix() = temp.sqrt().topLeftCorner(3,4);
   }
 
   // Flip
@@ -299,8 +320,12 @@ void run ()
     }
     if (!replace)
       flip = input_header.transform() * flip * input_header.transform().inverse();
+    // For flipping an axis in the absence of any other linear transform
+    if (!linear) {
+      linear_transform.setIdentity();
+      linear = true;
+    }
     linear_transform = linear_transform * flip;
-    linear = true;
   }
 
   Stride::List stride = Stride::get (input_header);
@@ -481,7 +506,7 @@ void run ()
     Eigen::MatrixXd rotation = linear_transform.linear();
     Eigen::MatrixXd temp = rotation.transpose() * rotation;
     if (!temp.isIdentity (0.001))
-      WARN("the input linear transform is not orthonormal and therefore applying this without the -template"
+      WARN("the input linear transform is not orthonormal and therefore applying this without the -template "
            "option will mean the output header transform will also be not orthonormal");
 
     add_line (output_header.keyval()["comments"], std::string ("transform modified"));

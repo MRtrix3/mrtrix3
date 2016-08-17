@@ -44,24 +44,16 @@ using namespace App;
 
 const OptionGroup OutputOptions = OptionGroup ("Metric values for fixel-based sparse output images")
 
-  + Option ("index",
-            "store the index file")
-    + Argument ("image").type_image_out()
-
-  + Option ("dir",
-            "store the fixel directions")
-    + Argument ("image").type_image_out()
-
   + Option ("afd",
-            "store the total Apparent Fibre Density per fixel (integral of FOD lobe)")
+            "output the total Apparent Fibre Density per fixel (integral of FOD lobe)")
     + Argument ("image").type_image_out()
 
   + Option ("peak",
-            "store the peak FOD amplitude per fixel")
+            "output the peak FOD amplitude per fixel")
     + Argument ("image").type_image_out()
 
   + Option ("disp",
-            "store a measure of dispersion per fixel as the ratio between FOD lobe integral and peak amplitude")
+            "output a measure of dispersion per fixel as the ratio between FOD lobe integral and peak amplitude")
     + Argument ("image").type_image_out();
 
 
@@ -99,7 +91,11 @@ void usage ()
 
   + OutputOptions
 
-  + FMLSSegmentOption;
+  + FMLSSegmentOption
+
+  + Option ("nii", "output the directions and index file in nii format (instead of the default mif)")
+
+  + Option ("dirpeak", "define the fixel direction as the peak lobe direction as opposed to the lobe mean");
 
 }
 
@@ -109,8 +105,8 @@ class Segmented_FOD_receiver
 {
 
   public:
-    Segmented_FOD_receiver (const Header& header) :
-        H (header), n_fixels (0)
+    Segmented_FOD_receiver (const Header& header, bool dir_as_peak = false) :
+        H (header), n_fixels (0), dir_as_peak (dir_as_peak)
     {
     }
 
@@ -131,11 +127,11 @@ class Segmented_FOD_receiver
   private:
 
     struct Primitive_FOD_lobe {
-      Eigen::Vector3f mean_dir;
+      Eigen::Vector3f dir;
       float integral;
       float peak_value;
-      Primitive_FOD_lobe (Eigen::Vector3f mean_dir, float integral, float peak_value)
-        : mean_dir (mean_dir), integral (integral), peak_value (peak_value) {}
+      Primitive_FOD_lobe (Eigen::Vector3f dir, float integral, float peak_value)
+        : dir (dir), integral (integral), peak_value (peak_value) {}
     };
 
 
@@ -143,10 +139,13 @@ class Segmented_FOD_receiver
       public:
         Eigen::Array3i vox;
 
-        Primitive_FOD_lobes (const FOD_lobes& in) : vox (in.vox)
+        Primitive_FOD_lobes (const FOD_lobes& in, bool asdf) : vox (in.vox)
         {
           for (const FOD_lobe& lobe : in) {
-            this->emplace_back (lobe.get_mean_dir (), lobe.get_integral (), lobe.get_peak_value ());
+            if (asdf)
+              this->emplace_back (lobe.get_peak_dir(0), lobe.get_integral(), lobe.get_max_peak_value());
+            else
+              this->emplace_back (lobe.get_mean_dir(), lobe.get_integral(), lobe.get_max_peak_value());
           }
         }
     };
@@ -155,6 +154,7 @@ class Segmented_FOD_receiver
     std::string fixel_folder_path, index_path, dir_path, afd_path, peak_path, disp_path;
     std::vector<Primitive_FOD_lobes> lobes;
     uint64_t n_fixels;
+    bool dir_as_peak;
 };
 
 
@@ -176,7 +176,7 @@ bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
 {
 
   if (size_t n = in.size()) {
-    lobes.emplace_back (in);
+    lobes.emplace_back (in, dir_as_peak);
     n_fixels += n;
   }
 
@@ -265,7 +265,7 @@ void Segmented_FOD_receiver::commit ()
     if (dir_image) {
       for (size_t i = 0; i < n_vox_fixels; ++i) {
         dir_image->index (0) = offset + i;
-        dir_image->row (1) = vox_fixels[i].mean_dir;
+        dir_image->row (1) = vox_fixels[i].dir;
       }
     }
 
@@ -311,16 +311,16 @@ void run ()
   auto& fixel_folder_path  = argument[1];
   receiver.set_fixel_folder_output (fixel_folder_path);
 
-  static const std::string default_index_filename = "index.mif";
-  static const std::string default_directions_filename = "directions.mif";
+  std::string file_extension (".mif");
+  if (get_options ("nii").size())
+    file_extension = "nii";
+
+  static const std::string default_index_filename ("index" + file_extension);
+  static const std::string default_directions_filename ("directions" + file_extension);
   receiver.set_index_output (default_index_filename);
   receiver.set_directions_output (default_directions_filename);
 
-  bool set_directions_file (false);
-
   auto
-  opt = get_options ("index"); if (opt.size()) receiver.set_index_output (opt[0][0]);
-  opt = get_options ("dir"); if (opt.size()) { receiver.set_directions_output (opt[0][0]); set_directions_file = true; }
   opt = get_options ("afd");  if (opt.size()) receiver.set_afd_output (opt[0][0]);
   opt = get_options ("peak"); if (opt.size()) receiver.set_peak_output (opt[0][0]);
   opt = get_options ("disp"); if (opt.size()) receiver.set_disp_output (opt[0][0]);
@@ -337,9 +337,6 @@ void run ()
     throw Exception ("Nothing to do; please specify at least one output image type");
 
   FixelFormat::check_fixel_folder (fixel_folder_path, true, true);
-
-  if (!set_directions_file)
-    WARN ("No explicit directions image filename specified. Generating default " + default_directions_filename);
 
   std::unique_ptr <FMLS::FODQueueWriter> writer (new FMLS::FODQueueWriter(fod_data, mask));
 

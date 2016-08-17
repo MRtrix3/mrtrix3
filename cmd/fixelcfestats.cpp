@@ -123,7 +123,7 @@ void usage ()
 
 template <class VectorType>
 void write_fixel_output (const std::string& filename,
-                         const VectorType data,
+                         const VectorType& data,
                          const Header& header,
                          Sparse::Image<FixelMetric>& mask_vox,
                          Image<int32_t>& indexer_vox) {

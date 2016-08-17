@@ -49,6 +49,8 @@ namespace MR {
         {
           if (ratio <= 1 || tck.empty())
             return false;
+          if (tck.size() == 1)
+            return true;
           const size_t midpoint = tck.size()/2;
           size_t index_old = (((midpoint - 1) % ratio) + 1);
           size_t index_new = 1;

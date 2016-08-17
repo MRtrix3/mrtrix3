@@ -44,7 +44,7 @@ The `Multi-Shell Multi-Tissue (MSMT)
 CSD <http://www.sciencedirect.com/science/article/pii/S1053811914006442>`__
 method has now been incorporated into *MRtrix3*, and is provided as the
 :ref:`msdwi2fod` command. There are also instructions for its use provided
-in the `documentation <Multi-Tissue-CSD>`__.
+in the `documentation <multi_tissue_csd>`__.
 
 The image data include information on gradient non-linearities. Can I make use of this?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -241,42 +241,48 @@ provided, then an appropriate value will be determined automatically.
 The mechanisms by which this automatic determination of ``lmax`` occurs
 are as follows:
 
-- Determine the maximum value for ``lmax`` that is supported by the number
-of DWI volumes in the shell being processed (or the total number of
-non-*b*=0 volumes in a single-shell acquisition). This is the number of
-coefficients required to store an anitipodally-symmetric spherical
-harmonic function:
+-  Determine the maximum value for ``lmax`` that is supported by the number
+   of DWI volumes in the shell being processed (or the total number of
+   non-*b*=0 volumes in a single-shell acquisition). This is the number of
+   coefficients required to store an anitipodally-symmetric spherical
+   harmonic function:
 
 +------+------------------+
 | lmax | Required volumes |
-+------+------------------+
++======+==================+
 |    2 | 6                |
++------+------------------+
 |    4 | 15               |
++------+------------------+
 |    6 | 28               |
++------+------------------+
 |    8 | 45               |
++------+------------------+
 |   10 | 66               |
++------+------------------+
 |   12 | 91               |
++------+------------------+
 |  ... | ...              |
 +------+------------------+
 
-- If ``lmax`` exceeds 8, reduce to 8. This is primarily based on the
-findings in `this paper <http://onlinelibrary.wiley.com/doi/10.1002/nbm.3017/abstract>`__.
+-  If ``lmax`` exceeds 8, reduce to 8. This is primarily based on the
+   findings in `this paper <http://onlinelibrary.wiley.com/doi/10.1002/nbm.3017/abstract>`__.
 
-- Check the condition of the transformation between DWIs and spherical
-harmonics. If the transformation is ill-conditioned (usually indicating
-that the diffusion sensitisation gradient directions are not evenly
-distributed over the sphere or half-sphere), reduce ``lmax`` until the
-transformation is well-conditioned.
+-  Check the condition of the transformation between DWIs and spherical
+   harmonics. If the transformation is ill-conditioned (usually indicating
+   that the diffusion sensitisation gradient directions are not evenly
+   distributed over the sphere or half-sphere), reduce ``lmax`` until the
+   transformation is well-conditioned.
 
-As an example: concatenating two repeats of a 30 direction acquisition
-to produce 60 volumes will *not* support an ``lmax``=8 fit: the angular
-resolution of the data set is equivalent to 30 *unique* directions, and
-so ``lmax``=6 would be selected (and this would be accompanied by a
-command-line warning to the user).
+   As an example: concatenating two repeats of a 30 direction acquisition
+   to produce 60 volumes will *not* support an ``lmax``=8 fit: the angular
+   resolution of the data set is equivalent to 30 *unique* directions, and
+   so ``lmax``=6 would be selected (and this would be accompanied by a
+   command-line warning to the user).
 
-- In the case of spherical deconvolution, the ``lmax`` selected for FOD
-estimation will also be reduced if ``lmax`` of the provided response
-function is less than that calculated as above.
+-  In the case of spherical deconvolution, the ``lmax`` selected for FOD
+   estimation will also be reduced if ``lmax`` of the provided response
+   function is less than that calculated as above.
 
 Reduced ``lmax`` in particular subjects
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -294,23 +300,82 @@ Setting ``lmax`` in different applications
 The range of permissible values for ``lmax`` depends on the particular
 command being used; e.g.:
 
-- The way that response function estimation is currently implemented, it
-is impossible to set ``lmax`` to a value higher than that supported by the
-image data. The transformation from DWI data to spherical harmonics simply
-cannot be done in such a case, as the problem is under-determined. You can
-of course set ``lmax`` to a lower value than that supported by the data.
+-  The way that response function estimation is currently implemented, it
+   is impossible to set ``lmax`` to a value higher than that supported by the
+   image data. The transformation from DWI data to spherical harmonics simply
+   cannot be done in such a case, as the problem is under-determined. You can
+   of course set ``lmax`` to a lower value than that supported by the data.
 
-- In spherical deconvolution, it *is* possible to set a higher ``lmax``
-than that supported by the data - so-called *super-resolved* spherical
-deconvolution. Here, additional information is provided by the non-negativity
-constraint to make estimation of additional spherical harmonic coefficients
-possible. However this is not guaranteed: sometimes the algorithm will fail
-in particular voxels, in cases where there are an insufficient number of
-directions in which the initial FOD estimate is negative, as the problem
-remains under-determined.
+-  In spherical deconvolution, it *is* possible to set a higher ``lmax``
+   than that supported by the data - so-called *super-resolved* spherical
+   deconvolution. Here, additional information is provided by the non-negativity
+   constraint to make estimation of additional spherical harmonic coefficients
+   possible. However this is not guaranteed: sometimes the algorithm will fail
+   in particular voxels, in cases where there are an insufficient number of
+   directions in which the initial FOD estimate is negative, as the problem
+   remains under-determined.
 
-- If performing Track Orientation Density Imaging (TODI) using
-``tckgen -tod``, then the apodized point spread functions (aPSFs) can be
-generated at any value of ``lmax``, since the angular resolution of the
-original image data is not a limiting factor here.
+-  If performing Track Orientation Density Imaging (TODI) using
+   ``tckgen -tod``, then the apodized point spread functions (aPSFs) can be
+   generated at any value of ``lmax``, since the angular resolution of the
+   original image data is not a limiting factor here.
 
+Visualising streamlines terminations
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+I am frequently asked about Figures 5-7 in the `Anatomically-Constrained
+Tractography <http://www.sciencedirect.com/science/article/pii/S1053811912005824>`__
+article, which demonstrate the effects that the ACT method has on the
+locations of streamlines terminations. There are two different techniques
+used in these figures, which I'll explain here in full.
+
+-  Figure 6 shows *streamlines termination density maps*: these are 3D maps
+   where the intensity in each voxel reflects the number of streamlines
+   terminations within that voxel. So they're a bit like Track Density Images
+   (TDIs), except that it's only the streamlines termination points that
+   contribute to the map, rather than the entire streamline. The easiest way to
+   achieve this approach is with the ``tckmap`` command, using the
+   ``-ends_only`` option.
+   
+-  Figures 5 and 7 display large dots at the streamline endpoints lying within
+   the displayed slab, in conjunction with the streamlines themselves and a
+   background image. Unfortunately this functionality is not yet
+   implemented within *MRtrix3*, so duplicating this type of visualisation
+   requires a bit of manual manipulation and software gymnastics:
+   
+   -  Use the new ``tckresample`` command, with the ``-endpoints`` option,
+      to generate a new track file that contains only the two endpoints of
+      each streamline.
+   
+   -  Load this track file into the *old MRtrix 0.2 version of ``mrview``*.
+      This software can be acquired `here <https://github.com/jdtournier/mrtrix-0.2>`__.
+      Note that you will likely want to *not* run the installation component
+      of the build for this software; that way you should not encounter
+      issues with conflicting commmand names between MRtrix versions. This
+      does however mean that you will need to provide the full path to the
+      MRtrix 0.2 ``mrview`` executable in order to run it.
+      
+   -  Within the ``mrview`` tractography tool, enable the 'depth blend'
+      option. This will display each streamline point as a dot, rather than
+      drawing lines between the streamline points.
+   
+   -  Adjust the brightness / contrast of the background image so that it is
+      completely black.
+   
+   -  Take a screenshot.
+   
+   -  Remove the streamline endpoints track file from the tractography tool,
+      and disable the 'depth blend' option (it's best to disable the 'depth
+      blend' option before opening any larger track file).
+   
+   -  Reset the windowing of the main image, and/or load the complete tracks
+      file, and take an additional screenshot, making sure not to move the
+      view focus or resize the ``mrview`` window (so that the two screenshots
+      overlay on top of one another).
+   
+   -  The two screenshots are then combined using image editing software such
+      as GIMP. The colors of the termination points can also be modified
+      independently before they are combined with the second screenshot. One
+      trick I used in this manuscript was to rotate the hue of the termination
+      screenshot by 180 degrees: this provides a pseudo-random coloring of the
+      termination points that contrasts well against the tracks.

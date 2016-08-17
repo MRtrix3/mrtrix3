@@ -111,36 +111,17 @@ namespace MR {
 
 
 
-
-
-
-
-      Segmenter::Segmenter (const DWI::Directions::Set& directions, const size_t l) :
-          dirs                             (directions),
-          lmax                             (l),
-          transform                        (NULL),
-          precomputer                      (new Math::SH::PrecomputedAL<default_type> (lmax, 2 * dirs.size())),
-          ratio_to_negative_lobe_integral  (FMLS_RATIO_TO_NEGATIVE_LOBE_INTEGRAL_DEFAULT),
-          ratio_to_negative_lobe_mean_peak (FMLS_RATIO_TO_NEGATIVE_LOBE_MEAN_PEAK_DEFAULT),
-          peak_value_threshold             (FMLS_PEAK_VALUE_THRESHOLD),
-          ratio_of_peak_value_to_merge     (FMLS_RATIO_TO_PEAK_VALUE_DEFAULT),
-          create_null_lobe                 (false),
-          create_lookup_table              (true),
-          dilate_lookup_table              (false)
+      IntegrationWeights::IntegrationWeights (const DWI::Directions::Set& dirs) :
+          data (dirs.size())
       {
+        // Calibrate weights
+        const size_t calibration_lmax = Math::SH::LforN (dirs.size()) + 2;
         Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_el_pairs (dirs.size(), 2);
         for (size_t row = 0; row != dirs.size(); ++row) {
           const auto d = dirs.get_dir (row);
           az_el_pairs (row, 0) = std::atan2 (d[1], d[0]);
           az_el_pairs (row, 1) = std::acos  (d[2]);
         }
-        transform.reset (new Math::SH::Transform<default_type> (az_el_pairs, lmax));
-
-        // Calibrate weights
-        // These weights are applied to the amplitude along each direction as the integral for each lobe is summed,
-        //   in order to take into account the relative spacing between adjacent directions
-        weights.reset (new Eigen::Array<default_type, Eigen::Dynamic, 1> (dirs.size()));
-        const size_t calibration_lmax = Math::SH::LforN (dirs.size()) + 2;
         auto calibration_SH2A = Math::SH::init_transform (az_el_pairs, calibration_lmax);
         const size_t num_basis_fns = calibration_SH2A.cols();
 
@@ -158,7 +139,39 @@ namespace MR {
           SH_in[basis_fn_index] = 1.0;
           A.row (basis_fn_index) = calibration_SH2A * SH_in;
         }
-        *weights = A.fullPivLu().solve (integral_results);
+
+        data = A.householderQr().solve (integral_results);
+      }
+
+
+
+
+
+
+
+
+
+
+      Segmenter::Segmenter (const DWI::Directions::Set& directions, const size_t l) :
+          dirs                             (directions),
+          lmax                             (l),
+          precomputer                      (new Math::SH::PrecomputedAL<default_type> (lmax, 2 * dirs.size())),
+          ratio_to_negative_lobe_integral  (FMLS_RATIO_TO_NEGATIVE_LOBE_INTEGRAL_DEFAULT),
+          ratio_to_negative_lobe_mean_peak (FMLS_RATIO_TO_NEGATIVE_LOBE_MEAN_PEAK_DEFAULT),
+          peak_value_threshold             (FMLS_PEAK_VALUE_THRESHOLD),
+          ratio_of_peak_value_to_merge     (FMLS_RATIO_TO_PEAK_VALUE_DEFAULT),
+          create_null_lobe                 (false),
+          create_lookup_table              (true),
+          dilate_lookup_table              (false)
+      {
+        Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_el_pairs (dirs.size(), 2);
+        for (size_t row = 0; row != dirs.size(); ++row) {
+          const auto d = dirs.get_dir (row);
+          az_el_pairs (row, 0) = std::atan2 (d[1], d[0]);
+          az_el_pairs (row, 1) = std::acos  (d[2]);
+        }
+        transform.reset (new Math::SH::Transform<default_type> (az_el_pairs, lmax));
+        weights.reset (new IntegrationWeights (dirs));
       }
 
 
@@ -218,7 +231,7 @@ namespace MR {
             // Changed handling of lobe merges
             // Merge lobes as they appear to be merged, but update the
             //   contents of retrospective_assignments accordingly
-            if (std::abs (i.first) / out[adj_lobes.back()].get_peak_value() > ratio_of_peak_value_to_merge) {
+            if (std::abs (i.first) / out[adj_lobes.back()].get_max_peak_value() > ratio_of_peak_value_to_merge) {
 
               std::sort (adj_lobes.begin(), adj_lobes.end());
               for (size_t j = 1; j != adj_lobes.size(); ++j)
@@ -265,7 +278,7 @@ namespace MR {
         uint32_t neg_lobe_count = 0;
         for (const auto& i : out) {
           if (i.is_negative()) {
-            mean_neg_peak += i.get_peak_value();
+            mean_neg_peak += i.get_max_peak_value();
             ++neg_lobe_count;
             max_neg_integral = std::max (max_neg_integral, default_type(i.get_integral()));
           }
@@ -276,15 +289,17 @@ namespace MR {
 
         for (auto i = out.begin(); i != out.end();) { // Empty increment
 
-          if (i->is_negative() || i->get_peak_value() < peak_value_threshold || i->get_integral() < min_integral) {
+          if (i->is_negative() || i->get_max_peak_value() < peak_value_threshold || i->get_integral() < min_integral) {
             i = out.erase (i);
           } else {
-            const dir_t peak_bin (i->get_peak_dir_bin());
-            auto newton_peak = dirs.get_dir (peak_bin);
-            const default_type new_peak_value = Math::SH::get_peak (in, lmax, newton_peak, &(*precomputer));
-            if (std::isfinite (new_peak_value) && new_peak_value > i->get_peak_value() && std::isfinite (newton_peak[0]))
-              i->revise_peak (newton_peak, new_peak_value);
-            i->finalise();
+            // Revise multiple peaks if present
+            for (size_t peak_index = 0; peak_index != i->num_peaks(); ++peak_index) {
+              Eigen::Vector3f newton_peak = i->get_peak_dir (peak_index);
+              const default_type new_peak_value = Math::SH::get_peak (in, lmax, newton_peak, &(*precomputer));
+              if (std::isfinite (new_peak_value) && newton_peak.allFinite())
+                i->revise_peak (peak_index, newton_peak, new_peak_value);
+              i->finalise();
+            }
 #ifdef FMLS_OPTIMISE_MEAN_DIR
             optimise_mean_dir (*i);
 #endif

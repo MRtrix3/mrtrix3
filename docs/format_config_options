@@ -17,7 +17,9 @@ for line in sys.stdin:
 
 optionlist.sort()
 
-string =  '################\n'
+string = '.. _config_file_options:\n'
+string += '\n'
+string += '################\n'
 string += 'List of MRtrix3 configuration file options\n'
 string += '################\n\n'
 

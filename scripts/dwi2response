@@ -53,7 +53,6 @@ algorithm = getattr(dwi2response, lib.app.args.algorithm)
 # Check for prior existence of output files, and grab any input files, used by the particular algorithm
 lib.app.checkOutputFile(lib.app.args.voxels)
 algorithm.checkOutputFiles()
-algorithm.getInputFiles()
 
 
 # Sanitise some inputs, and get ready for data import
@@ -72,7 +71,7 @@ if lib.app.args.shell:
     shell_values = [ int(x) for x in lib.app.args.shell.split(',') ]
   except:
     errorMessage('-shell option should provide a comma-separated list of b-values')
-  if lib.app.args.single_shell and not len(lmax) == 1:
+  if lib.app.args.single_shell and not len(shell_values) == 1:
     errorMessage('Can only specify a single b-value shell for single-shell algorithms')
   shell_option = ' -shell ' + lib.app.args.shell
 
@@ -92,6 +91,7 @@ else: # Don't want to discard b=0 in multi-shell algorithms, which dwiextract wi
 if lib.app.args.mask:
   runCommand('mrconvert ' + getUserPath(lib.app.args.mask, True) + ' ' + os.path.join(lib.app.tempDir, 'mask.mif') + ' -datatype bit')
 
+algorithm.getInputFiles()
 
 lib.app.gotoTempDir()
 

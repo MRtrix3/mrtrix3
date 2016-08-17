@@ -178,15 +178,14 @@ void run () {
         if (stdev.size() != 1 && stdev.size() != 3)
           throw Exception ("unexpected number of elements specified in Gaussian stdev");
       } else {
-        stdev.resize (filter.ndim(), 0.0);
+        stdev.resize (3, 0.0);
         for (size_t dim = 0; dim != 3; ++dim)
           stdev[dim] = filter.spacing (dim);
       }
-      filter.set_stdev (stdev);
       filter.compute_wrt_scanner (get_options ("scanner").size() ? true : false);
       filter.set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]));
       Stride::set_from_command_line (filter);
-
+      filter.set_stdev (stdev);
       auto output = Image<float>::create (argument[2], filter);
       filter (input, output);
     break;
