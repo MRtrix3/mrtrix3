@@ -69,9 +69,8 @@ namespace MR
     {
       bool fixels_match (false);
 
-      if (is_index_image (index_header)) {
+      if (is_index_image (index_header))
         fixels_match = std::stoul(index_header.keyval ().at (n_fixels_key)) == (unsigned long)data_header.size (0);
-      }
 
       return fixels_match;
     }
