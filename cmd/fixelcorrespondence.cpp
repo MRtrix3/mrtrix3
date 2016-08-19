@@ -18,13 +18,11 @@
 #include "progressbar.h"
 #include "algo/loop.h"
 #include "image.h"
-#include "sparse/fixel_metric.h"
-#include "sparse/image.h"
+#include "fixel_format/helpers.h"
+#include "fixel_format/keys.h"
 
 using namespace MR;
 using namespace App;
-
-using Sparse::FixelMetric;
 
 #define DEFAULT_ANGLE_THRESHOLD 30.0
 
@@ -33,13 +31,15 @@ void usage ()
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   DESCRIPTION
-  + "Obtain angular correpondence by mapping subject fixels to a template fixel mask. "
-    "It is assumed that the subject image has already been spatially normalised and is aligned with the template.";
+  + "Obtain fixel-fixel correpondence between a subject fixel image and a template fixel mask."
+    "It is assumed that the subject image has already been spatially normalised and is aligned with the template. "
+    "The output fixel image will have the same fixels (and directions) of the template.";
 
   ARGUMENTS
-  + Argument ("subject", "the input subject fixel image.").type_image_in ()
-  + Argument ("template", "the input template fixel image.").type_image_in ()
-  + Argument ("output", "the output fixel image.").type_image_out ();
+  + Argument ("subject_fixel_data", "the input subject fixel data file. This should be a file inside the fixel folder").type_image_in ()
+  + Argument ("template_fixel_folder", "the input template fixel folder.").type_image_in ()
+  + Argument ("output_fixel_folder", "the output fixel folder. Any existing index file in the output folder will be checked that it matches the expected output.").type_text()
+  + Argument ("output_fixel_file", "the output fixel data file. This will be placed in the output fixel folder").type_image_out ();
 
   OPTIONS
   + Option ("angle", "the max angle threshold for computing inter-subject fixel correspondence (Default: " + str(DEFAULT_ANGLE_THRESHOLD, 2) + " degrees)")
@@ -49,37 +49,52 @@ void usage ()
 
 void run ()
 {
-
-  Sparse::Image<FixelMetric> subject_fixel (argument[0]);
-
-  auto template_header = Header::open (argument[1]);
-  Sparse::Image<FixelMetric> template_fixel (argument[1]);
-
-  check_dimensions (subject_fixel, template_fixel);
-
-  Sparse::Image<FixelMetric> output_fixel (argument[2], template_header);
-
   const float angular_threshold = get_option_value ("angle", DEFAULT_ANGLE_THRESHOLD);
   const float angular_threshold_dp = cos (angular_threshold * (Math::pi/180.0));
 
-  for (auto i = Loop ("mapping subject fixels to template fixels", subject_fixel) (subject_fixel, template_fixel, output_fixel); i; ++i) {
-    output_fixel.value().set_size (template_fixel.value().size());
-    for (size_t t = 0; t != template_fixel.value().size(); ++t) {
-      output_fixel.value()[t] = template_fixel.value()[t] ;
+  auto subject_index = FixelFormat::find_index_header (Path::dirname (argument[0])).get_image<uint32_t>();
+  auto subject_directions = FixelFormat::find_directions_header (Path::dirname (argument[0]), subject_index).get_image<float>().with_direct_io();
+  auto subject_data = Image<float>::open (argument[0]);
+  FixelFormat::check_fixel_size (subject_index, subject_data);
+
+  auto template_index = FixelFormat::find_index_header (argument[1]).get_image<uint32_t>();
+  auto template_directions = FixelFormat::find_directions_header (argument[1], template_index).get_image<float>().with_direct_io();
+
+  check_dimensions (subject_index, template_index);
+  std::string output_fixel_folder = argument[2];
+  FixelFormat::copy_index_file (Path::dirname (argument[1]), output_fixel_folder, true);
+  FixelFormat::copy_directions_file (Path::dirname (argument[1]), output_fixel_folder, true);
+
+  auto output_data = Image<float>::create (Path::join (output_fixel_folder, argument[3]), subject_data);
+
+  for (auto i = Loop ("mapping subject fixels to template fixels", template_index, 0, 3)(template_index, subject_index); i; ++i) {
+    template_index.index(3) = 0;
+    uint32_t nfixels_template = template_index.value();
+    template_index.index(3) = 1;
+    uint32_t template_offset = template_index.value();
+    for (size_t t = 0; t < nfixels_template; ++t) {
       float largest_dp = 0.0;
       int index_of_closest_fixel = -1;
-      for (size_t s = 0; s != subject_fixel.value().size(); ++s) {
-        float dp = std::abs (template_fixel.value()[t].dir.dot (subject_fixel.value()[s].dir));
+
+      subject_index.index(3) = 0;
+      uint32_t nfixels_subect = subject_index.value();
+      subject_index.index(3) = 1;
+      uint32_t subject_offset = subject_index.value();
+      template_directions.index(1) = template_offset + t;
+      for (size_t s = 0; s < nfixels_subect; ++s) {
+        subject_directions.index(1) = subject_offset + s;
+        float dp = std::abs (template_directions.row(1).dot (subject_directions.row(1)));
         if (dp > largest_dp) {
           largest_dp = dp;
           index_of_closest_fixel = s;
         }
       }
       if (largest_dp > angular_threshold_dp) {
-        output_fixel.value()[t].value  = subject_fixel.value()[index_of_closest_fixel].value;
+        output_data.index(1) = template_offset + t;
+        subject_data.index(1) = subject_offset + index_of_closest_fixel;
+        output_data.value() = subject_data.value();
       }
     }
   }
-
 }
 

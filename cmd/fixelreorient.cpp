@@ -18,8 +18,6 @@
 #include "progressbar.h"
 #include "algo/loop.h"
 #include "image.h"
-#include "sparse/fixel_metric.h"
-#include "sparse/image.h"
 #include "adapter/jacobian.h"
 #include "registration/warp/helpers.h"
 
@@ -64,7 +62,6 @@ void run ()
   std::string output_fixel_folder = argument[2];
   FixelFormat::check_fixel_folder (output_fixel_folder, true);
 
-
   // scratch buffer so inplace reorientation can be performed if desired
   Image<float> input_directions_image;
   std::string output_directions_filename;
@@ -93,13 +90,8 @@ void run ()
   }
 
   if (output_fixel_folder != input_fixel_folder) {
-    auto output_index_image = Image<float>::create (Path::join (output_fixel_folder, Path::basename (input_index_image.name())), input_index_image);
-    threaded_copy (input_index_image, output_index_image);
-    for (auto& header : FixelFormat::find_data_headers (input_fixel_folder, input_index_image)) {
-      auto input = header.get_image<float>();
-      auto output = Image<float>::create (Path::join (output_fixel_folder, Path::basename (input.name())), input);
-      threaded_copy (input, output);
-    }
+    FixelFormat::copy_index_file (input_fixel_folder, output_fixel_folder, false);
+    FixelFormat::copy_all_data_files (input_fixel_folder, output_fixel_folder, false);
   }
 }
 
