@@ -52,20 +52,11 @@ void usage ()
 
 void run ()
 {
+  auto in_data_image = FixelFormat::open_fixel_data_file<float> (argument[0]);
 
-  const std::string input_file (argument[0]);
-  if (Path::is_dir (input_file))
-    throw Exception ("please input the specific fixel data file to be converted (not the fixel folder)");
-
-  Header in_data_header = Header::open (input_file);
-  FixelFormat::check_data_file (in_data_header);
-  auto in_data_image = in_data_header.get_image<float>();
-
-  Header in_index_header = FixelFormat::find_index_header (Path::dirname (argument[0]));
-  if (input_file == in_index_header.name());
-    throw Exception ("input fixel data file cannot be the directions file");
-  auto in_index_image = in_index_header.get_image<uint32_t>();
-  auto in_directions_image = FixelFormat::find_directions_header (Path::dirname (argument[0]), in_index_header).get_image<float>().with_direct_io();
+  Header in_index_header = FixelFormat::find_index_header (FixelFormat::get_fixel_folder (argument[0]));
+  auto in_index_image =in_index_header.get_image<uint32_t>();
+  auto in_directions_image = FixelFormat::find_directions_header (FixelFormat::get_fixel_folder (argument[0]), in_index_header).get_image<float>().with_direct_io();
 
   size_t lmax = 8;
   auto opt = get_options ("lmax");

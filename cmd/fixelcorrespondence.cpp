@@ -56,8 +56,8 @@ void run ()
   if (Path::is_dir (input_file))
     throw Exception ("please input the specific fixel data file to be converted (not the fixel folder)");
 
-  auto subject_index = FixelFormat::find_index_header (Path::dirname (input_file)).get_image<uint32_t>();
-  auto subject_directions = FixelFormat::find_directions_header (Path::dirname (input_file), subject_index).get_image<float>().with_direct_io();
+  auto subject_index = FixelFormat::find_index_header (FixelFormat::get_fixel_folder (input_file)).get_image<uint32_t>();
+  auto subject_directions = FixelFormat::find_directions_header (FixelFormat::get_fixel_folder (input_file), subject_index).get_image<float>().with_direct_io();
 
   if (input_file == subject_directions.name())
     throw Exception ("input fixel data file cannot be the directions file");

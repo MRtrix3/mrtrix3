@@ -63,6 +63,13 @@ namespace MR
         throw InvalidImageException (in.name () + " is not a valid fixel data file. Expected a 3-dimensional image of size n x m x 1");
     }
 
+    inline std::string get_fixel_folder (const std::string& fixel_file) {
+      std::string fixel_folder = Path::dirname (fixel_file);
+      // assume the user is running the command from within the fixel directory
+      if (fixel_folder.empty())
+        fixel_folder = Path::cwd();
+      return fixel_folder;
+    }
 
     template <class IndexHeaderType, class DataHeaderType>
     inline bool fixels_match (const IndexHeaderType& index_header, const DataHeaderType& data_header)
@@ -88,6 +95,12 @@ namespace MR
 
     inline void check_fixel_folder (const std::string &path, bool create_if_missing = false, bool check_if_empty = false)
     {
+
+      // the user must be inside the fixel folder
+      if (path.empty()) {
+
+      }
+
       bool exists (true);
 
       if (!(exists = Path::exists (path))) {
@@ -233,6 +246,23 @@ namespace MR
     inline void copy_all_data_files (const std::string &input_folder, const std::string &output_folder, const bool check_existing_output = false) {
       for (auto& input_header : FixelFormat::find_data_headers (input_folder, FixelFormat::find_index_header (input_folder)))
         copy_fixel_file (input_header.name(), output_folder, check_existing_output);
+    }
+
+    //! open a data file. checks that a user has not input a fixel folder or index image
+    template <class ValueType>
+    Image<ValueType> open_fixel_data_file (const std::string& input_file) {
+      if (Path::is_dir (input_file))
+        throw Exception ("please input the specific fixel data file to be converted (not the fixel folder)");
+
+      Header in_data_header = Header::open (input_file);
+      FixelFormat::check_data_file (in_data_header);
+      auto in_data_image = in_data_header.get_image<ValueType>();
+
+      Header in_index_header = FixelFormat::find_index_header (FixelFormat::get_fixel_folder (input_file));
+      if (input_file == in_index_header.name())
+        throw Exception ("input fixel data file cannot be the index file");
+
+      return in_data_image;
     }
 
   }
