@@ -126,7 +126,7 @@ namespace MR
     }
 
 
-    inline std::vector<Header> find_data_headers (const std::string &fixel_folder_path, const Header &index_header)
+    inline std::vector<Header> find_data_headers (const std::string &fixel_folder_path, const Header &index_header, const bool include_directions = false)
     {
       check_index_image (index_header);
 
@@ -139,7 +139,7 @@ namespace MR
         Header H;
         if (Path::has_suffix (fname, FixelFormat::supported_fixel_formats) && is_data_image (H = Header::open (full_path))) {
           if (fixels_match (index_header, H)) {
-            if (!is_directions_image (H))
+            if (!is_directions_image (H) || include_directions)
               data_headers.emplace_back (std::move (H));
           } else {
             WARN ("fixel data file (" + fname + ") does not contain the same number of elements as fixels in the index file" );

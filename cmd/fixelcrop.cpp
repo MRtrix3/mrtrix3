@@ -32,97 +32,83 @@ void usage ()
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) & Rami Tabarra (rami.tabarra@florey.edu.au)";
 
   DESCRIPTION
-  + "Crop a fixel index image along with corresponding fixel data images";
+  + "Crop a fixel index image (i.e. remove fixels) using a fixel mask";
 
   ARGUMENTS
-  + Argument ("dir_in", "the input fixel folder").type_text ()
-  + Argument ("dir_out", "the output fixel folder").type_text ();
-
-  OPTIONS
-  + Option ("mask", "the threshold mask").required ()
-  + Argument ("image").type_image_in ()
-  + Option ("data", "specify a fixel data image filename (relative to the input fixel folder) to "
-                    "be cropped.").allow_multiple ()
-  + Argument ("image").type_image_in ();
+  + Argument ("input_fixel_folder", "the input fixel folder file to be cropped").type_text ()
+  + Argument ("input_fixel_data_mask", "the input fixel data file to be cropped").type_image_in ()
+  + Argument ("output_fixel_folder", "the output fixel folder").type_text ();
 }
 
 
 
 void run ()
 {
-  const auto fixel_folder = argument[0];
-  FixelFormat::check_fixel_folder (fixel_folder);
+  const auto in_folder = argument[0];
+  FixelFormat::check_fixel_folder (in_folder);
+  Header in_index_header = FixelFormat::find_index_header (in_folder);
+  auto in_index_image = in_index_header.get_image <uint32_t>();
 
-  const auto out_fixel_folder = argument[1];
-  auto index_image = FixelFormat::find_index_header (fixel_folder).get_image <uint32_t> ();
+  auto mask_image = Image<bool>::open (argument[1]);
+  FixelFormat::check_fixel_size (in_index_image, mask_image);
 
-  auto opt = get_options ("mask");
-  auto mask_image = Image<bool>::open (std::string (opt[0][0]));
-
-  FixelFormat::check_fixel_size (index_image, mask_image);
+  const auto out_fixel_folder = argument[2];
   FixelFormat::check_fixel_folder (out_fixel_folder, true);
 
-  Header out_header = Header (index_image);
+  Header out_header = Header (in_index_image);
   size_t total_nfixels = std::stoul (out_header.keyval ()[FixelFormat::n_fixels_key]);
 
-  // We need to do a first pass of the mask image to determine the cropped num. of fixels
+  // We need to do a first pass of the mask image to determine the number of cropped fixels
   for (auto l = Loop (0) (mask_image); l; ++l) {
-    if (!mask_image.value ())
+    if (!mask_image.value())
       total_nfixels --;
   }
 
   out_header.keyval ()[FixelFormat::n_fixels_key] = str (total_nfixels);
-  const auto index_image_basename = Path::basename (index_image.name ());
-  auto out_index_image = Image<uint32_t>::create (Path::join (out_fixel_folder, index_image_basename), out_header);
+  auto out_index_image = Image<uint32_t>::create (Path::join (out_fixel_folder, Path::basename (in_index_image.name())), out_header);
 
-  // Crop index image
-  mask_image.index (1) = 0;
-  for (auto l = Loop ("cropping index image: " + index_image_basename, 0, 3) (index_image, out_index_image); l; ++l) {
-    index_image.index (3) = 0;
-    size_t nfixels = index_image.value ();
 
-    index_image.index (3) = 1;
-    size_t offset = index_image.value ();
+  // Open all data images and create output date images with size equal to expected number of fixels
+  std::vector<Header> in_headers = FixelFormat::find_data_headers (in_folder, in_index_header, true);
+  std::vector<Image<float> > in_data_images;
+  std::vector<Image<float> > out_data_images;
+  for (auto& in_data_header : in_headers) {
+    in_data_images.push_back(in_data_header.get_image<float>().with_direct_io());
+    check_dimensions (in_data_images.back(), mask_image, {0, 2});
 
-    for (size_t i = 0, N = nfixels; i < N; ++i) {
-      mask_image.index (0) = offset + i;
-      if (!mask_image.value ())
-        nfixels--;
-    }
-
-    out_index_image.index (3) = 0;
-    out_index_image.value () = nfixels;
-
-    out_index_image.index (3) = 1;
-    out_index_image.value () = offset;
+    Header out_data_header (in_data_header);
+    out_data_header.size (0) = total_nfixels;
+    out_data_images.push_back(Image<float>::create (Path::join (out_fixel_folder, Path::basename (in_data_header.name())),
+                                                    out_data_header).with_direct_io());
   }
 
-  // Crop data images
-  opt = get_options ("data");
+  mask_image.index (1) = 0;
+  uint32_t out_offset = 0;
+  for (auto l = Loop ("cropping fixel image", 0, 3) (in_index_image, out_index_image); l; ++l) {
 
-  for (size_t n = 0, N = opt.size (); n < N; n++) {
-    const auto data_file = opt[n][0];
-    const auto data_file_path = Path::join (fixel_folder, data_file);
+    in_index_image.index(3) = 0;
+    size_t in_nfixels = in_index_image.value();
+    in_index_image.index(3) = 1;
+    uint32_t in_offset = in_index_image.value();
 
-    Header header = Header::open (data_file_path);
-    auto in_data = header.get_image <float> ();
-
-    check_dimensions (in_data, mask_image, {0, 2});
-
-    header.size (0) = total_nfixels;
-    auto out_data = Image<float>::create (Path::join (out_fixel_folder, data_file), header);
-
-    size_t offset(0);
-
-    for (auto l = Loop ("cropping data: " + data_file, 0) (mask_image, in_data); l; ++l) {
-      if (mask_image.value ()) {
-        out_data.index (1) = offset;
-        out_data.row (1) = in_data.row (1);
-        offset++;
+    size_t out_nfixels = 0;
+    for (size_t i = 0; i < in_nfixels; ++i) {
+      mask_image.index(0) = in_offset + i;
+      if (mask_image.value()) {
+        for (size_t d = 0; d < in_data_images.size(); ++d) {
+          out_data_images[d].index(0) = out_offset + out_nfixels;
+          in_data_images[d].index(0) = in_offset + i;
+          out_data_images[d].row(1) = in_data_images[d].row(1);
+        }
+        out_nfixels++;
       }
     }
 
+    out_index_image.index(3) = 0;
+    out_index_image.value() = out_nfixels;
+    out_index_image.index(3) = 1;
+    out_index_image.value() = (out_nfixels) ? out_offset : 0;
+    out_offset += out_nfixels;
   }
 
 }
-
