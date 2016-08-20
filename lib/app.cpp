@@ -22,6 +22,10 @@
 #include "file/path.h"
 #include "file/config.h"
 
+#ifndef MRTRIX_NO_SIGNAL_HANDLING
+#include "signals/signals.h"
+#endif
+
 #define MRTRIX_HELP_COMMAND "less -X"
 
 #define HELP_WIDTH  80
@@ -1027,6 +1031,10 @@ namespace MR
       // force stderr to be unbuffered, and stdout to be line-buffered:
       setvbuf (stderr, nullptr, _IONBF, 0);
       setvbuf (stdout, nullptr, _IOLBF, 0);
+#endif
+
+#ifndef MRTRIX_NO_SIGNAL_HANDLING
+      Signals::init();
 #endif
 
       terminal_use_colour = !ProgressBar::set_update_method();
