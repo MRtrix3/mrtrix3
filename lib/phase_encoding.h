@@ -32,6 +32,7 @@ namespace MR
 
 
     extern const App::OptionGroup ImportOptions;
+    extern const App::OptionGroup SelectOptions;
     extern const App::OptionGroup ExportOptions;
 
 
