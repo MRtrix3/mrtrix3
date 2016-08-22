@@ -19,9 +19,8 @@
 #include "algo/loop.h"
 
 #include "image.h"
-#include "sparse/fixel_metric.h"
-#include "sparse/keys.h"
-#include "sparse/image.h"
+#include "fixel_format/helpers.h"
+#include "fixel_format/keys.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/scalar_file.h"
@@ -34,11 +33,7 @@ using namespace MR;
 using namespace App;
 
 
-
-using Sparse::FixelMetric;
-
-
-#define DEFAULT_ANGULAR_THRESHOLD 30.0
+#define DEFAULT_ANGULAR_THRESHOLD 45.0
 
 
 
@@ -49,10 +44,10 @@ void usage ()
 
   DESCRIPTION
   + "Map fixel values to a track scalar file based on an input tractogram. "
-    "This is useful for visualising the output from fixelcfestats in 3D.";
+    "This is useful for visualising all brain fixels (e.g. the output from fixelcfestats) in 3D.";
 
   ARGUMENTS
-  + Argument ("fixel_in", "the input fixel image").type_image_in ()
+  + Argument ("fixel_in", "the input fixel data file").type_image_in ()
   + Argument ("tracks",   "the input track file ").type_tracks_in ()
   + Argument ("tsf",      "the output track scalar file").type_file_out ();
 
@@ -70,11 +65,16 @@ typedef DWI::Tractography::Mapping::SetVoxelDir SetVoxelDir;
 
 void run ()
 {
+  auto in_data_image = FixelFormat::open_fixel_data_file<float> (argument[0]);
+  if (in_data_image.size(2) != 1)
+    throw Exception ("Only a single scalar value for each fixel can be output as a track scalar file, "
+                     "therefore the input fixel data file must have dimension Nx1x1");
+
+  Header in_index_header = FixelFormat::find_index_header (FixelFormat::get_fixel_folder (argument[0]));
+  auto in_index_image = in_index_header.get_image<uint32_t>();
+  auto in_directions_image = FixelFormat::find_directions_header (FixelFormat::get_fixel_folder (argument[0]), in_index_header).get_image<float>().with_direct_io();
+
   DWI::Tractography::Properties properties;
-
-  auto input_header = Header::open (argument[0]);
-  Sparse::Image<FixelMetric> input_fixel (argument[0]);
-
   DWI::Tractography::Reader<float> reader (argument[1], properties);
   properties.comments.push_back ("Created using fixel2tsf");
   properties.comments.push_back ("Source fixel image: " + Path::basename (argument[0]));
@@ -83,17 +83,17 @@ void run ()
   DWI::Tractography::ScalarWriter<float> tsf_writer (argument[2], properties);
 
   float angular_threshold = get_option_value ("angle", DEFAULT_ANGULAR_THRESHOLD);
-  const float angular_threshold_dp = cos (angular_threshold * (Math::pi/180.0));
+  const float angular_threshold_dp = cos (angular_threshold * (Math::pi / 180.0));
 
   const size_t num_tracks = properties["count"].empty() ? 0 : to<int> (properties["count"]);
 
-  DWI::Tractography::Mapping::TrackMapperBase mapper (input_header);
+  DWI::Tractography::Mapping::TrackMapperBase mapper (in_index_image);
   mapper.set_use_precise_mapping (true);
 
   ProgressBar progress ("mapping fixel values to streamline points", num_tracks);
   DWI::Tractography::Streamline<float> tck;
 
-  Transform transform (input_fixel);
+  Transform transform (in_index_image);
   Eigen::Vector3 voxel_pos;
 
   while (reader (tck)) {
@@ -104,22 +104,31 @@ void run ()
       voxel_pos = transform.scanner2voxel * tck[p].cast<default_type> ();
       for (SetVoxelDir::const_iterator d = dixels.begin(); d != dixels.end(); ++d) {
         if ((int)round(voxel_pos[0]) == (*d)[0] && (int)round(voxel_pos[1]) == (*d)[1] && (int)round(voxel_pos[2]) == (*d)[2]) {
-          assign_pos_of (*d).to (input_fixel);
+          assign_pos_of (*d).to (in_index_image);
           Eigen::Vector3f dir = d->get_dir().cast<float>();
           dir.normalize();
           float largest_dp = 0.0;
           int32_t closest_fixel_index = -1;
-          for (size_t f = 0; f != input_fixel.value().size(); ++f) {
-            float dp = std::abs (dir.dot (input_fixel.value()[f].dir));
+
+          in_index_image.index(3) = 0;
+          uint32_t num_fixels_in_voxel = in_index_image.value();
+          in_index_image.index(3) = 1;
+          uint32_t offset = in_index_image.value();
+
+          for (size_t fixel = 0; fixel < num_fixels_in_voxel; ++fixel) {
+            in_directions_image.index(0) = offset + fixel;
+            float dp = std::abs (dir.dot (in_directions_image.row(1)));
             if (dp > largest_dp) {
               largest_dp = dp;
-              closest_fixel_index = f;
+              closest_fixel_index = fixel;
             }
           }
-          if (largest_dp > angular_threshold_dp)
-            scalars[p] = input_fixel.value()[closest_fixel_index].value;
-          else
+          if (largest_dp > angular_threshold_dp) {
+            in_data_image.index(0) = offset + closest_fixel_index;
+            scalars[p] = in_data_image.value();
+          } else {
             scalars[p] = 0.0;
+          }
           break;
         }
       }
