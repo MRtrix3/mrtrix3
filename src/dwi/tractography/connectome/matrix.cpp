@@ -170,15 +170,6 @@ void Matrix::remove_unassigned()
 
 
 
-void Matrix::zero_diagonal()
-{
-  if (is_vector()) return;
-  for (node_t i = 0; i != data.rows(); ++i)
-    data (i, i) = counts (i, i) = 0.0;
-}
-
-
-
 void Matrix::error_check (const std::set<node_t>& missing_nodes)
 {
   std::vector<default_type> node_counts (data.cols(), 0);
@@ -205,11 +196,6 @@ void Matrix::error_check (const std::set<node_t>& missing_nodes)
 
 
 
-void Matrix::write (const std::string& path) const
-{
-  MR::save_matrix (data, path);
-}
-
 void Matrix::write_assignments (const std::string& path) const
 {
   File::OFStream stream (path);
@@ -223,7 +209,6 @@ void Matrix::write_assignments (const std::string& path) const
     stream << "\n";
   }
 }
-
 
 
 
