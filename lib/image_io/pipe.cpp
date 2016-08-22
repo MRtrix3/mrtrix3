@@ -55,7 +55,9 @@ namespace MR
       if (!is_new && files.size() == 1) {
         DEBUG ("deleting piped image file \"" + files[0].name + "\"...");
         unlink (files[0].name.c_str());
+        App::signal_handler -= files[0].name;
       }
+
     }
 
   }

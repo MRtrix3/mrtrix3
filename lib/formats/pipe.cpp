@@ -13,12 +13,12 @@
  * 
  */
 
+#include "app.h"
 #include "file/utils.h"
 #include "file/path.h"
 #include "header.h"
 #include "image_io/pipe.h"
 #include "formats/list.h"
-#include "signals/signals.h"
 
 namespace MR
 {
@@ -40,9 +40,7 @@ namespace MR
       if (H.name().empty())
         throw Exception ("no filename supplied to standard input (broken pipe?)");
 
-#ifndef MRTRIX_NO_SIGNAL_HANDLING
-      Signals::pipe_in = H.name();
-#endif
+      App::signal_handler += H.name();
 
       if (!Path::has_suffix (H.name(), ".mif"))
         throw Exception ("MRtrix only supports the .mif format for command-line piping");
@@ -63,9 +61,7 @@ namespace MR
 
       H.name() = File::create_tempfile (0, "mif");
 
-#ifndef MRTRIX_NO_SIGNAL_HANDLING
-      Signals::pipe_out = H.name();
-#endif
+      App::signal_handler += H.name();
 
       return mrtrix_handler.check (H, num_axes);
     }

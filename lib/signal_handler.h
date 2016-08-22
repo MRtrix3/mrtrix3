@@ -13,17 +13,38 @@
  * 
  */
 
-#ifndef __signals_table_h__
-#define __signals_table_h__
+#ifndef __signal_handler_h__
+#define __signal_handler_h__
+
+#include <mutex>
+#include <string>
+#include <vector>
 
 namespace MR
 {
-  namespace Signals
+
+
+
+  class SignalHandler
   {
+    public:
+      SignalHandler();
+      SignalHandler (const SignalHandler&) = delete;
 
-    extern const char* table[];
+      void operator+= (const std::string&);
+      void operator-= (const std::string&);
 
-  }
+    private:
+      static std::vector<std::string> data;
+      static std::mutex mutex;
+
+      static void on_exit() noexcept;
+      static void handler (int) noexcept;
+
+  };
+
+
+
 }
 
 #endif

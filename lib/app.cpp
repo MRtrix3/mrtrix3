@@ -22,10 +22,6 @@
 #include "file/path.h"
 #include "file/config.h"
 
-#ifndef MRTRIX_NO_SIGNAL_HANDLING
-#include "signals/signals.h"
-#endif
-
 #define MRTRIX_HELP_COMMAND "less -X"
 
 #define HELP_WIDTH  80
@@ -83,6 +79,8 @@ namespace MR
 
     const char* project_version = nullptr;
     const char* build_date = __DATE__;
+
+    SignalHandler signal_handler;
 
     int argc = 0;
     char** argv = nullptr;
@@ -1031,10 +1029,6 @@ namespace MR
       // force stderr to be unbuffered, and stdout to be line-buffered:
       setvbuf (stderr, nullptr, _IONBF, 0);
       setvbuf (stdout, nullptr, _IOLBF, 0);
-#endif
-
-#ifndef MRTRIX_NO_SIGNAL_HANDLING
-      Signals::init();
 #endif
 
       terminal_use_colour = !ProgressBar::set_update_method();
