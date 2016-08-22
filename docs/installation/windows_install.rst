@@ -22,8 +22,7 @@ To install *MRtrix3*, you will need the following:
 
 -  a `C++11 <https://en.wikipedia.org/wiki/C%2B%2B11>`__ compliant
    compiler
--  `Python <https://www.python.org/>`__ version >= 2.6
--  `NumPy <http://www.numpy.org/>`__
+-  `Python <https://www.python.org/>`__ version >= 2.7
 -  The `zlib <http://www.zlib.net/>`__ compression library
 -  `Eigen <http://eigen.tuxfamily.org>`__ version 3.2 *(do not install the beta version)*
 -  `Qt <http://www.qt.io/>`__ version >= 4.7 *[GUI components only]*
@@ -56,6 +55,11 @@ Install and update MSYS2
    .. NOTE::
     Future versions of MSYS2 will drop ``update-core``. If your version came without ``update-core``, it is probably safe to skip this step.
 
+.. WARNING::
+    At time of writing, this MSYS2 system update will give a number of instructions, including: terminating the terminal when the update is
+    completed, and modifying the shortcuts for executing the shell(s). Although these instructions are not as prominent as they could be,
+    it is *vital* that they are followed correctly!
+
 4. Close the shell and start **'MinGW-w64 Win64 Shell'**
    
 5. Update the other packages:
@@ -71,7 +75,7 @@ Install *MRtrix3* dependencies
 
    ::
 
-       pacman -S git mingw-w64-x86_64-python3 mingw-w64-x86_64-python3-numpy pkg-config mingw-w64-x86_64-gcc mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5
+       pacman -S git python pkg-config mingw-w64-x86_64-gcc mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5
     
    Sometimes ``pacman`` may fail to find a particular package from any of
    the available mirrors. If this occurs, you can download the relevant
@@ -118,24 +122,38 @@ Build *MRtrix3*
 Set up *MRtrix3*
 --------------
 
-1. Set your PATH in the shell startup file:
 
+1. Update the shell startup file, so that the locations of *MRtrix3* commands
+   and scripts will be added to your ``PATH`` envionment variable.
+   
+   If you are not familiar or comfortable with modification of shell files,
+   *MRtrix3* now provides a convenience script that will perform this setup
+   for you (assuming that you are using ``bash`` or equivalent interpreter).
+   From the top level *MRtrix3* directory, run the following:
+   
    ::
 
-       echo "export PATH=$(pwd)/release/bin:$(pwd)/scripts:\$PATH" >> ~/.bashrc
-
-   Note that although the scripts provided with MRtrix will appear in
-   your path, many of these will not work on a Windows installation due
-   to their dependency on FSL; a virtual machine with both *MRtrix3* and
-   FSL installed would be required to run these scripts in this scenario.
+       ./set_path
 
 2. Close the terminal and start another one to ensure the startup file
-   is read
+   is read (or just type 'bash')
 
 3. Type ``mrview`` to check that everything works
 
-4. You may also want to have a look through the :ref:`mrtrix_config_options`, and set anything you think
-   might be required on your system.
+4. You may also want to have a look through the :ref:`mrtrix_config_options`
+   and set anything you think might be required on your system.
+   
+  .. NOTE:: 
+    The above assumes that your shell will read the ``~/.bashrc`` file
+    at startup time. This is not always guaranteed, depending on how your
+    system is configured. If you find that the above doesn't work (e.g. typing
+    ``mrview`` returns a 'command not found' error), try changing step 1 to
+    instruct the ``set_path`` script to update ``PATH`` within a different
+    file, for example ``~/.bash_profile`` or ``~/.profile``, e.g. as follows:
+
+    ::
+
+      ./set_path ~/.bash_profile
 
 Keeping *MRtrix3* up to date
 --------------------------

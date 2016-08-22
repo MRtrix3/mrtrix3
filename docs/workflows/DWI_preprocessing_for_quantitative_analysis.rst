@@ -79,5 +79,5 @@ As described `here <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`_, using the sa
     
 Alternatively, to ensure the response function is representative of your study population, a group average response function can be computed by first estimating a response function per subject, then averaging with the script::
 
-    average_response <input_response_files (muliple inputs accepted)> <output_group_average_response>
+    average_response <input_response_files (mulitple inputs accepted)> <output_group_average_response>
 

@@ -1,3 +1,5 @@
+.. _config_file_options:
+
 ################
 List of MRtrix3 configuration file options
 ################
@@ -180,7 +182,7 @@ List of MRtrix3 configuration file options
 *  **HelpCommand**
     *default: less*
 
-     the command to use to display each command's help page (leave empty to send directly to the terminal).
+     The command to use to display each command's help page (leave empty to send directly to the terminal).
 
 *  **IconSize**
     *default: 24*

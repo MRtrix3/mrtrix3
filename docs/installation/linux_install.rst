@@ -15,8 +15,7 @@ To install *MRtrix3*, you will need the following:
 
 -  a `C++11 <https://en.wikipedia.org/wiki/C%2B%2B11>`__ compliant
    compiler (GCC version >= 4.8, clang)
--  `Python <https://www.python.org/>`__ version >= 2.6
--  `NumPy <http://www.numpy.org/>`__
+-  `Python <https://www.python.org/>`__ version >= 2.7
 -  The `zlib <http://www.zlib.net/>`__ compression library
 -  `Eigen <http://eigen.tuxfamily.org>`__ version 3.2 *(do not install the beta version)*
 -  `Qt <http://www.qt.io/>`__ version >= 4.7 *[GUI components only]*
@@ -44,7 +43,7 @@ for hints on how to proceed in this case.
 
    ::
 
-       sudo apt-get install git g++ python numpy libeigen3-dev zlib1g-dev libqt4-opengl-dev libgl1-mesa-dev
+       sudo apt-get install git g++ python python-numpy libeigen3-dev zlib1g-dev libqt4-opengl-dev libgl1-mesa-dev
 
 -  RPM-based distros (Fedora, CentOS):
 
@@ -56,7 +55,7 @@ for hints on how to proceed in this case.
 
    ::
 
-       sudo pacman -Syu git python numpy gcc zlib eigen qt5-svg
+       sudo pacman -Syu git python python-numpy gcc zlib eigen qt5-svg
 
 If this doesn't work
 ^^^^^^^^^^^^^^^^^^^^
@@ -71,7 +70,7 @@ packages:
 
 -  your compiler (gcc 4.8 or above, or clang)
 
--  Python version >2.6
+-  Python version >2.7
 
 -  NumPy
 
@@ -153,20 +152,37 @@ Build *MRtrix3*
 Set up *MRtrix3*
 --------------
 
-1. Set your PATH in the shell startup file (amend if you use tcsh or
-   some other shell):
-
+1. Update the shell startup file, so that the locations of *MRtrix3* commands
+   and scripts will be added to your ``PATH`` envionment variable.
+   
+   If you are not familiar or comfortable with modification of shell files,
+   *MRtrix3* now provides a convenience script that will perform this setup
+   for you (assuming that you are using ``bash`` or equivalent interpreter).
+   From the top level *MRtrix3* directory, run the following:
+   
    ::
 
-       echo "export PATH=$(pwd)/release/bin:$(pwd)/scripts:\$PATH" >> ~/.bashrc
+       ./set_path
 
 2. Close the terminal and start another one to ensure the startup file
    is read (or just type 'bash')
 
 3. Type ``mrview`` to check that everything works
 
-4. You may also want to have a look through the :ref:`mrtrix_config_options` and set anything you think
-   might be required on your system.
+4. You may also want to have a look through the :ref:`mrtrix_config_options`
+   and set anything you think might be required on your system.
+   
+  .. NOTE:: 
+    The above assumes that your shell will read the ``~/.bashrc`` file at
+    startup time. This is not always guaranteed, depending on how your system
+    is configured. If you find that the above doesn't work (e.g. typing
+    ``mrview`` returns a 'command not found' error), try changing step 1 to
+    instruct the ``set_path`` script to update ``PATH`` within a different
+    file, for example ``~/.bash_profile`` or ``~/.profile``, e.g. as follows:
+
+    ::
+
+      ./set_path ~/.bash_profile
 
 Keeping *MRtrix3* up to date
 --------------------------
@@ -256,6 +272,24 @@ components, which rely on Qt.
 You can then copy the contents of the ``release/bin/`` folder onto target
 systems, make sure their location is listed in the ``PATH``, and start
 using these commands.
+
+If you also wish to be able to use the *MRtrix3* Python scripts, you can
+also copy the full contents of the ``scripts`` directory to the target
+system, and append their location to the ``PATH`` environment variable
+also. However, in order for certain functionalities of these scripts to
+work (for instance, controlling the command-line verbosity and
+multi-threading of invoked *MRtrix3* commands), the relative path between
+the scripts and binaries must be maintained; that is, the binaries must
+be located in ``../release/bin`` relative to ``scripts``. Therefore, the
+recommended solution is:
+
+1. Create an ``mrtrix3`` directory on the target system.
+2. Place the contents of ``release/bin`` into ``mrtrix3/release/bin``
+   on the target system.
+3. Place the contents of ``scripts`` (including all sub-directories) into
+   ``mrtrix3/scripts`` on the target system.
+4. Add ``mrtrix3/release/bin`` and ``mrtrix3/scripts`` to ``PATH`` on the
+   target system.
 
 Standalone packager
 ^^^^^^^^^^^
