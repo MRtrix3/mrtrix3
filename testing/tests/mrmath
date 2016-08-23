@@ -1,3 +1,3 @@
-mrmath dwi.mif mean -axis 3 - | testing_diff_data - mrmath/out1.mif 1e-15
-mrmath dwi.mif rms -axis 3 - | testing_diff_data - mrmath/out2.mif 1e-15
-mrconvert dwi.mif tmp-[].mif; mrmath tmp-??.mif median - | testing_diff_data - mrmath/out3.mif 1e-15
+mrmath dwi.mif mean -axis 3 - | testing_diff_data - mrmath/out1.mif -frac 1e-5
+mrmath dwi.mif rms -axis 3 - | testing_diff_data - mrmath/out2.mif -frac 1e-5
+mrconvert dwi.mif tmp-[].mif; mrmath tmp-??.mif median - | testing_diff_data - mrmath/out3.mif -frac 1e-5

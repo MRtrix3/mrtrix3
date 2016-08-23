@@ -1,6 +1,6 @@
-dwidenoise dwi.mif - | testing_diff_data - dwidenoise/dwi.mif 0.1
-dwidenoise dwi.mif -mask mask.mif - | testing_diff_data - dwidenoise/masked.mif 0.1
-dwidenoise dwi.mif -extent 3 - | testing_diff_data - dwidenoise/extent3.mif 0.1
-dwidenoise dwi.mif -extent 5,3,1 - | testing_diff_data - dwidenoise/extent531.mif 0.1
-dwidenoise dwi.mif -noise tmp-noise.mif - | testing_diff_data - dwidenoise/dwi.mif 0.1 && testing_diff_data tmp-noise.mif dwidenoise/noise.mif 0.1 
-dwidenoise dwi.mif -extent 3 -noise tmp-noise3.mif - | testing_diff_data - dwidenoise/extent3.mif 0.1 && testing_diff_data tmp-noise3.mif dwidenoise/noise3.mif 0.1 
+dwidenoise dwi.mif - | testing_diff_data - dwidenoise/dwi.mif -frac 1e-3
+dwidenoise dwi.mif -mask mask.mif - | testing_diff_data - dwidenoise/masked.mif -frac 1e-3
+dwidenoise dwi.mif -extent 3 - | testing_diff_data - dwidenoise/extent3.mif -frac 1e-3
+dwidenoise dwi.mif -extent 5,3,1 - | testing_diff_data - dwidenoise/extent531.mif -frac 1e-3
+dwidenoise dwi.mif -noise tmp-noise.mif - | testing_diff_data - dwidenoise/dwi.mif -frac 1e-3 && testing_diff_data tmp-noise.mif dwidenoise/noise.mif -frac 1e-3
+dwidenoise dwi.mif -extent 3 -noise tmp-noise3.mif - | testing_diff_data - dwidenoise/extent3.mif -frac 1e-3 && testing_diff_data tmp-noise3.mif dwidenoise/noise3.mif -frac 1e-3

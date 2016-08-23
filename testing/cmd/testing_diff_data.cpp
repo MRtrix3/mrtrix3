@@ -36,12 +36,17 @@ void usage ()
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and David Raffelt (david.raffelt@florey.edu.au)";
 
   DESCRIPTION
-  + "compare two images for differences, within specified tolerance.";
+  + "compare two images for differences, optionally with a specified tolerance.";
 
   ARGUMENTS
-  + Argument ("data1", "an image.").type_image_in ()
-  + Argument ("data2", "another image.").type_image_in ()
-  + Argument ("tolerance", "the amount of signal difference to consider acceptable").type_float (0.0);
+  + Argument ("data1", "an image.").type_image_in()
+  + Argument ("data2", "another image.").type_image_in();
+  
+  OPTIONS
+  + Option ("abs", "specify an absolute tolerance") 
+    + Argument ("tolerance").type_float (0.0)
+  + Option ("frac", "specify a fractional tolerance") 
+    + Argument ("tolerance").type_float (0.0);
 }
 
 
@@ -64,15 +69,33 @@ void run ()
     }
   }
 
-
-  double tol = argument[2];
-
-  ThreadedLoop (in1)
+  auto opt = get_options ("frac");
+  if (opt.size()) {
+  
+    const double tol = opt[0][0];
+    
+    ThreadedLoop (in1)
     .run ([&tol] (const decltype(in1)& a, const decltype(in2)& b) {
-        if (std::abs (a.value() - b.value()) > tol)
-        throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within specified precision of " + str(tol)
+        if (std::abs ((a.value() - b.value()) / (0.5 * (a.value() + b.value()))) > tol)
+        throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within fractional precision of " + str(tol)
              + " (" + str(cdouble (a.value())) + " vs " + str(cdouble (b.value())) + ")");
         }, in1, in2);
+  
+  } else {
+  
+    double tol = 0.0;
+    opt = get_options ("abs");
+    if (opt.size())
+      tol = opt[0][0];
+
+    ThreadedLoop (in1)
+    .run ([&tol] (const decltype(in1)& a, const decltype(in2)& b) {
+        if (std::abs (a.value() - b.value()) > tol)
+        throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within absolute precision of " + str(tol)
+             + " (" + str(cdouble (a.value())) + " vs " + str(cdouble (b.value())) + ")");
+        }, in1, in2);
+        
+  }
 
   CONSOLE ("data checked OK");
 }
