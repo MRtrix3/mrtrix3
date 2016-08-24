@@ -4,7 +4,7 @@ mrtrix_bin_path = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(o
 def getHeaderInfo(image_path, header_item):
   import lib.app, subprocess
   from lib.printMessage import printMessage
-  command = [ mrtrix_bin_path+'/mrinfo', image_path, '-' + header_item ]
+  command = [ os.path.join(mrtrix_bin_path, 'mrinfo'), image_path, '-' + header_item ]
   if lib.app.verbosity > 1:
     printMessage('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
   proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
