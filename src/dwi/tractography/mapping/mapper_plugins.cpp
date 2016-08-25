@@ -127,40 +127,40 @@ void TWIScalarImagePlugin::load_factors (const std::vector< Point<float> >& tck,
 
   } else if (statistic == ENDS_CORR) {
 
-    // Pearson correlation coefficient between the two endpoints
+    // Use trilinear interpolation
+    // Store values into local vectors, since it's a two-pass operation
     factors.assign (1, 0.0f);
-    input_voxel_type start (voxel), end (voxel);
-    const ssize_t start_index (get_end_index (tck, false));
-    if (start_index < 0) return;
-    Point<float> p = interp.scanner2voxel (tck[start_index]);
-    Point<int> v (std::round (p[0]), std::round (p[1]), std::round (p[2]));
-    Image::Nav::set_pos (start, v, 0, 3);
-    const ssize_t end_index (get_end_index (tck, true));
-    if (end_index < 0) return;
-    p = interp.scanner2voxel (tck[end_index]);
-    v.set (std::round (p[0]), std::round (p[1]), std::round (p[2]));
-    Image::Nav::set_pos (end, v, 0, 3);
-
-    double start_sum = 0.0, end_sum = 0.0;
-    for (start[3] = end[3] = 0; start[3] != start.dim (3); ++start[3], ++end[3]) {
-      start_sum += start.value();
-      end_sum   += end  .value();
+    std::vector<float> values[2];
+    for (size_t tck_end_index = 0; tck_end_index != 2; ++tck_end_index) {
+      const Point<float> endpoint = get_end_point (tck, tck_end_index);
+      if (!endpoint.valid())
+        return;
+      values[tck_end_index].reserve (interp.dim(3));
+      for (interp[3] = 0; interp[3] != interp.dim(3); ++interp[3])
+        values[tck_end_index].push_back (interp.value());
     }
-    const float start_mean = start_sum / double (start.dim (3));
-    const float end_mean   = end_sum   / double (end  .dim (3));
 
-    double product = 0.0, start_sum_variance = 0.0, end_sum_variance = 0.0;
-    for (start[3] = end[3] = 0; start[3] != start.dim (3); ++start[3], ++end[3]) {
-      product += ((start.value() - start_mean) * (end.value() - end_mean));
-      start_sum_variance += Math::pow2 (start.value() - start_mean);
-      end_sum_variance   += Math::pow2 (end  .value() - end_mean);
+    // Calculate the Pearson correlation coefficient
+    double sums[2] = { 0.0, 0.0 };
+    for (ssize_t i = 0; i != interp.dim(3); ++i) {
+      sums[0] += values[0][i];
+      sums[1] += values[1][i];
     }
-    const float product_expectation = product / double (start.dim(3));
-    const float start_stdev = std::sqrt (start_sum_variance / double(start.dim(3) - 1));
-    const float end_stdev   = std::sqrt (end_sum_variance   / double(end  .dim(3) - 1));
+    const double means[2] = { sums[0] / double(interp.dim(3)), sums[1] / double(interp.dim(3)) };
 
-    if (start_stdev && end_stdev)
-      factors[0] = product_expectation / (start_stdev * end_stdev);
+    double product = 0.0;
+    double variances[2] = { 0.0, 0.0 };
+    for (ssize_t i = 0; i != interp.dim(3); ++i) {
+      product += ((values[0][i] - means[0]) * (values[1][i] - means[i]));
+      variances[0] += Math::pow2 (values[0][i] - means[0]);
+      variances[1] += Math::pow2 (values[1][i] - means[1]);
+    }
+    const double product_expectation = product / double (interp.dim(3));
+    const double stdevs[2] = { std::sqrt (variances[0] / double(interp.dim(3)-1)),
+                              std::sqrt (variances[1] / double(interp.dim(3)-1)) };
+
+    if (stdevs[0] && stdevs[1])
+      factors[0] = product_expectation / (stdevs[0] * stdevs[1]);
 
   } else {
 

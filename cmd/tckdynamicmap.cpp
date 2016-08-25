@@ -125,11 +125,13 @@ class Mapper : public Mapping::TrackMapperBase
 {
 
     typedef Image::BufferPreload<float>::voxel_type input_voxel_type;
+    typedef Image::Interp::Linear<input_voxel_type> interp_type;
 
   public:
     Mapper (const Image::Header& header, const size_t upsample_ratio, Image::BufferPreload<float>& input_image, const std::vector<float>& windowing_function, const int timepoint, std::unique_ptr<Image::BufferScratch<bool>>& mask) :
         Mapping::TrackMapperBase (header),
-        in (input_image),
+        vox (input_image),
+        interp (vox),
         fmri_transform (input_image),
         kernel (windowing_function),
         kernel_centre (kernel.size() / 2),
@@ -141,7 +143,8 @@ class Mapper : public Mapping::TrackMapperBase
 
 
   private:
-    const input_voxel_type in; // Copy-construct from this rather than using it directly (one for each streamline endpoint)
+    input_voxel_type vox;
+    mutable interp_type interp;
     const Image::Transform fmri_transform;
     const std::vector<float>& kernel;
     const int kernel_centre, sample_centre;
@@ -155,7 +158,7 @@ class Mapper : public Mapping::TrackMapperBase
     //   it's only the per-factor streamline that changes
     bool preprocess (const Streamline<>&, SetVoxelExtras&) const override;
 
-    const Point<int> get_end_voxel (const std::vector< Point<float> >&, const bool) const;
+    const Point<float> get_end_point (const std::vector< Point<float> >&, const bool) const;
 
 };
 
@@ -163,42 +166,45 @@ class Mapper : public Mapping::TrackMapperBase
 
 bool Mapper::preprocess (const Streamline<>& tck, SetVoxelExtras& out) const
 {
-
   out.factor = 0.0;
 
-  input_voxel_type start_voxel (in), end_voxel (in);
-  const Point<int> v_start (get_end_voxel (tck, false));
-  if (v_start == Point<int> (-1, -1, -1))
-    return true;
-  Image::Nav::set_pos (start_voxel, v_start);
+  // Use trilinear interpolation
+  // Store values into local vectors, since it's a two-pass operation
+  std::vector<double> values[2];
+  for (size_t tck_end_index = 0; tck_end_index != 2; ++tck_end_index) {
+    const Point<float> endpoint = get_end_point (tck, tck_end_index);
+    if (!endpoint.valid())
+      return true;
+    values[tck_end_index].reserve (kernel.size());
+    for (size_t i = 0; i != kernel.size(); ++i) {
+      interp[3] = sample_centre - kernel_centre + int(i);
+      if (interp[3] >= 0 && interp[3] < interp.dim(3))
+        values[tck_end_index].push_back (interp.value());
+      else
+        values[tck_end_index].push_back (NAN);
+    }
+  }
 
-  const Point<int> v_end (get_end_voxel (tck, true));
-  if (v_end == Point<int> (-1, -1, -1))
-    return true;
-  Image::Nav::set_pos (end_voxel, v_end);
-
-  double start_mean = 0.0, end_mean = 0.0, kernel_sum = 0.0, kernel_sq_sum = 0.0;
+  // Calculate the Pearson correlation coefficient within the kernel window
+  double sums[2] = { 0.0, 0.0 };
+  double kernel_sum = 0.0, kernel_sq_sum = 0.0;
   for (size_t i = 0; i != kernel.size(); ++i) {
-    start_voxel[3] = end_voxel[3] = sample_centre - kernel_centre + int(i);
-    if (start_voxel[3] >= 0 && start_voxel[3] < start_voxel.dim(3)) {
-      start_mean += kernel[i] * start_voxel.value();
-      end_mean   += kernel[i] * end_voxel  .value();
+    if (std::isfinite (values[0][i])) {
+      sums[0] += kernel[i] * values[0][i];
+      sums[1] += kernel[i] * values[1][i];
       kernel_sum += kernel[i];
       kernel_sq_sum += Math::pow2 (kernel[i]);
     }
   }
-  start_mean /= kernel_sum;
-  end_mean   /= kernel_sum;
-
+  const double means[2] = { sums[0] / kernel_sum, sums[1] / kernel_sum };
   const double denom = kernel_sum - (kernel_sq_sum / kernel_sum);
 
   double corr = 0.0, start_variance = 0.0, end_variance = 0.0;
   for (size_t i = 0; i != kernel.size(); ++i) {
-    start_voxel[3] = end_voxel[3] = sample_centre - kernel_centre + int(i);
-    if (start_voxel[3] >= 0 && start_voxel[3] < start_voxel.dim(3)) {
-      corr           += kernel[i] * (start_voxel.value() - start_mean) * (end_voxel.value() - end_mean);
-      start_variance += kernel[i] * Math::pow2 (start_voxel.value() - start_mean);
-      end_variance   += kernel[i] * Math::pow2 (end_voxel  .value() - end_mean  );
+    if (std::isfinite (values[0][i])) {
+      corr           += kernel[i] * (values[0][i] - means[0]) * (values[1][i] - means[1]);
+      start_variance += kernel[i] * Math::pow2 (values[0][i] - means[0]);
+      end_variance   += kernel[i] * Math::pow2 (values[1][i] - means[1]);
     }
   }
   corr           /= denom;
@@ -208,16 +214,19 @@ bool Mapper::preprocess (const Streamline<>& tck, SetVoxelExtras& out) const
   if (start_variance && end_variance)
     out.factor = corr / std::sqrt (start_variance * end_variance);
   return true;
-
 }
 
 
 
-// This function selects a voxel position to sample for this streamline endpoint. If backtracking
+// This function selects a streamline position to sample for this streamline endpoint. If backtracking
 //   is enabled, and the endpoint voxel is either outside the FoV or doesn't contain a valid
 //   time series, trace back along the length of the streamline until a voxel with a valid
 //   time series is found.
-const Point<int> Mapper::get_end_voxel (const std::vector< Point<float> >& tck, const bool end) const
+// Note that because trilinear interpolation is used, theoretically a valid time series could be
+//   obtained for a point within a voxel with no time series; nevertheless, from an implementation
+//   perspective, it's easier to just require that the voxel in which the sample point resides
+//   has a valid time series
+const Point<float> Mapper::get_end_point (const std::vector< Point<float> >& tck, const bool end) const
 {
   int index = end ? tck.size() - 1 : 0;
   if (v_mask) {
@@ -228,19 +237,18 @@ const Point<int> Mapper::get_end_voxel (const std::vector< Point<float> >& tck, 
       const Point<float> p = fmri_transform.scanner2voxel (tck[index]);
       const Point<int> v (std::round (p[0]), std::round (p[1]), std::round (p[2]));
       // Is this point both within the FoV, and contains a valid time series?
-      if (Image::Nav::within_bounds (in, v) && Image::Nav::get_value_at_pos (*v_mask, v))
-        return v;
+      if (Image::Nav::within_bounds (vox, v) && Image::Nav::get_value_at_pos (*v_mask, v))
+        return tck[index];
     }
-
-    return Point<int> (-1, -1, -1);
+    return Point<float>();
 
   } else {
 
     const Point<float> p = fmri_transform.scanner2voxel (tck[index]);
     const Point<int> v (std::round (p[0]), std::round (p[1]), std::round (p[2]));
-    if (Image::Nav::within_bounds (in, v))
-      return v;
-    return Point<int> (-1, -1, -1);
+    if (Image::Nav::within_bounds (vox, v))
+      return tck[index];
+    return Point<float>();
 
   }
 
