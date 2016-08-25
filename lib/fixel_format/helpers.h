@@ -201,7 +201,7 @@ namespace MR
     //! then it is checked to make sure it's the same as the input (based on the number of fixels it contains)
     inline void copy_fixel_file (const std::string& input_file_path, const std::string &output_folder, const bool check_existing_output = false) {
       check_fixel_folder (output_folder, true);
-      std::string output_path = Path::join (output_folder, Path::basename (Path::basename(input_file_path)));
+      std::string output_path = Path::join (output_folder, Path::basename (input_file_path));
       Header input_header = Header::open (input_file_path);
 
       // do not need to copy if the file already exists and has the same number of fixels
@@ -264,6 +264,7 @@ namespace MR
 
       return in_data_image;
     }
+
 
   }
 }

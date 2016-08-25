@@ -75,7 +75,7 @@ void run ()
   std::vector<default_type> sh_values;
   Eigen::Matrix<default_type, Eigen::Dynamic, 1> apsf_values;
 
-  for (auto l1 = Loop ("converting fixel image to sherical harmonic image", in_index_image) (in_index_image, sh_image); l1; ++l1) {
+  for (auto l1 = Loop ("converting fixel image to spherical harmonic image", in_index_image) (in_index_image, sh_image); l1; ++l1) {
     sh_values.assign (n_sh_coeff, 0.0);
     in_index_image.index(3) = 0;
     uint32_t num_fixels_in_voxel = in_index_image.value();
