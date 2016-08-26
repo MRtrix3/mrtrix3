@@ -14,12 +14,12 @@ To duplicate our methods and results, you will need to download the
 appropriate files, accessible through the following steps:
 
 - https://db.humanconnectome.org/
-- WU-Minn HCP Data
-- 500 Subjects + MEG2
-- Download images
-- Single subject
+- WU-Minn HCP Data - 900 Subjects + 7T
+- Download Image Data: Single subject
+- Session Type: 3T MRI
 - Processing level: Preprocessed
-- Structural Preprocessed and Diffusion Preprocessed
+- Package Type: MSM-Sulc + MSM-All
+- add Structural Preprocessed and Diffusion Preprocessed to queue
 
 The actual files within these compressed downloads that we will make use
 of are:
