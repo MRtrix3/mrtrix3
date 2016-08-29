@@ -19,6 +19,7 @@
 #include "algo/copy.h"
 #include "gui/opengl/gl.h"
 #include "gui/opengl/lighting.h"
+#include "gui/dialog/dialog.h"
 #include "gui/dialog/file.h"
 #include "gui/dialog/opengl.h"
 #include "gui/dialog/progress.h"
@@ -232,6 +233,7 @@ namespace MR
         show_FPS (false) {
           main = this;
           GUI::App::set_main_window (this);
+          GUI::Dialog::init();
 
           setDockOptions (AllowTabbedDocks | VerticalTabs);
           setDocumentMode (true);
