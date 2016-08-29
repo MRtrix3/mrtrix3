@@ -19,7 +19,6 @@
 #include "adapter/subset.h"
 #include "filter/smooth.h"
 
-
 namespace MR
 {
   namespace Registration
@@ -38,17 +37,17 @@ namespace MR
       if (do_reorientation)
         size[3] = Math::SH::NforL (lmax);
       Adapter::Subset<ImageType> subset (input, from, size);
-
       Filter::Smooth smooth_filter (subset);
       std::vector<default_type> stdev(3);
       for (size_t dim = 0; dim < 3; ++dim)
         stdev[dim] = input.spacing(dim) / (2.0 * scale_factor);
 
       smooth_filter.set_stdev (stdev);
+      DEBUG ("creating scratch image for smoothing input image...");
       auto smoothed = ImageType::scratch (smooth_filter);
-
+      threaded_copy (subset, smoothed);
       DEBUG ("smoothing input image based on scale factor...");
-      smooth_filter (subset, smoothed);
+      smooth_filter (smoothed);
       return smoothed;
     }
   }

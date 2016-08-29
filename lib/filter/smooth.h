@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 
 #ifndef __image_filter_gaussian_h__
@@ -21,6 +21,7 @@
 #include "algo/copy.h"
 #include "algo/threaded_copy.h"
 #include "adapter/gaussian1D.h"
+#include "adapter/gaussian1D_buffered.h"
 #include "filter/base.h"
 
 namespace MR
@@ -51,6 +52,7 @@ namespace MR
             Base (in),
             extent (3, 0),
             stdev (3, 0.0),
+            stride_order (Stride::order (in)),
             zero_boundary (false)
         {
           for (int i = 0; i < 3; i++)
@@ -62,7 +64,8 @@ namespace MR
         Smooth (const HeaderType& in, const std::vector<default_type>& stdev_in):
             Base (in),
             extent (3, 0),
-            stdev (3, 0.0)
+            stdev (3, 0.0),
+            stride_order (Stride::order (in))
         {
           set_stdev (stdev_in);
           datatype() = DataType::Float32;
@@ -101,7 +104,7 @@ namespace MR
         //! This must be set as a single value to be used for the first 3 dimensions
         //! or separate values, one for each dimension. (Default: 1 voxel)
         void set_stdev (const std::vector<default_type>& std_dev)
-        { 
+        {
           for (size_t i = 0; i < std_dev.size(); ++i)
             if (stdev[i] < 0.0)
               throw Exception ("the Gaussian stdev values cannot be negative");
@@ -135,6 +138,7 @@ namespace MR
 
           for (size_t dim = 0; dim < 3; dim++) {
             if (stdev[dim] > 0) {
+              DEBUG ("creating scratch image for smoothing image along dimension " + str(dim));
               out = std::make_shared<Image<ValueType> > (Image<ValueType>::scratch (input));
               Adapter::Gaussian1D<Image<ValueType> > gaussian (*in, stdev[dim], dim, extent[dim], zero_boundary);
               threaded_copy (gaussian, *out, 0, input.ndim(), 2);
@@ -146,9 +150,41 @@ namespace MR
           threaded_copy (*in, output);
         }
 
+        //! Smooth the image in place
+        template <class ImageType>
+        void operator() (ImageType& in_and_output)
+        {
+          std::unique_ptr<ProgressBar> progress;
+          if (message.size()) {
+            size_t axes_to_smooth = 0;
+            for (std::vector<default_type>::const_iterator i = stdev.begin(); i != stdev.end(); ++i)
+              if (*i)
+                ++axes_to_smooth;
+            progress.reset (new ProgressBar (message, axes_to_smooth + 1));
+          }
+
+          for (size_t dim = 0; dim < 3; dim++) {
+            if (stdev[dim] > 0) {
+              Adapter::Gaussian1DBuffered<ImageType> gaussian (in_and_output, stdev[dim], dim, extent[dim], zero_boundary);
+              std::vector<size_t> axes (in_and_output.ndim(), dim);
+              size_t axdim = 1;
+              for (size_t i = 0; i < in_and_output.ndim(); ++i) {
+                if (stride_order[i] == dim)
+                  continue;
+                axes[axdim++] = stride_order[i];
+              }
+              DEBUG ("smoothing dimension " + str(dim) + " in place with stride order: " + str(axes));
+              threaded_copy (gaussian, in_and_output, axes, 1);
+              if (progress)
+                ++(*progress);
+            }
+          }
+        }
+
       protected:
         std::vector<int> extent;
         std::vector<default_type> stdev;
+        const std::vector<size_t> stride_order;
         bool zero_boundary;
     };
     //! @}
