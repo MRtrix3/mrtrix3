@@ -38,7 +38,7 @@ namespace MR
 
 
         bool is_duplicate (const std::vector<size_t>& perm,
-                                       const std::vector<std::vector<size_t> >& previous_permutations)
+                           const std::vector<std::vector<size_t> >& previous_permutations)
         {
           for (size_t p = 0; p < previous_permutations.size(); p++) {
             if (is_duplicate (perm, previous_permutations[p]))
@@ -50,9 +50,9 @@ namespace MR
 
 
         void generate (const size_t num_perms,
-                                    const size_t num_subjects,
-                                    std::vector<std::vector<size_t> >& permutations,
-                                    const bool include_default)
+                       const size_t num_subjects,
+                       std::vector<std::vector<size_t> >& permutations,
+                       const bool include_default)
         {
           permutations.clear();
           std::vector<size_t> default_labelling (num_subjects);

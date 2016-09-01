@@ -58,10 +58,10 @@ namespace MR
       class TrackProcessor {
 
         public:
-          TrackProcessor (Image<int32_t>& fixel_indexer,
+          TrackProcessor (Image<uint32_t>& fixel_indexer,
                           const std::vector<direction_type>& fixel_directions,
                           std::vector<uint16_t>& fixel_TDI,
-                          std::vector<std::map<int32_t, connectivity> >& connectivity_matrix,
+                          std::vector<std::map<uint32_t, connectivity> >& connectivity_matrix,
                           const value_type angular_threshold);
 
 
@@ -69,10 +69,10 @@ namespace MR
 
 
         private:
-          Image<int32_t> fixel_indexer;
+          Image<uint32_t> fixel_indexer;
           const std::vector<direction_type>& fixel_directions;
           std::vector<uint16_t>& fixel_TDI;
-          std::vector<std::map<int32_t, connectivity> >& connectivity_matrix;
+          std::vector<std::map<uint32_t, connectivity> >& connectivity_matrix;
           default_type angular_threshold_dp;
       };
 
@@ -81,7 +81,7 @@ namespace MR
 
       class Enhancer : public Stats::EnhancerBase {
         public:
-          Enhancer (const std::vector<std::map<int32_t, connectivity> >& connectivity_map,
+          Enhancer (const std::vector<std::map<uint32_t, connectivity> >& connectivity_map,
                     const value_type dh, const value_type E, const value_type H);
 
 
@@ -89,7 +89,7 @@ namespace MR
 
 
         protected:
-          const std::vector<std::map<int32_t, connectivity> >& connectivity_map;
+          const std::vector<std::map<uint32_t, connectivity> >& connectivity_map;
           const value_type dh, E, H;
       };
 

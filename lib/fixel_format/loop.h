@@ -13,8 +13,8 @@
  *
  */
 
-#ifndef __sparse_loop_h__
-#define __sparse_loop_h__
+#ifndef __fixelformat_loop_h__
+#define __fixelformat_loop_h__
 
 #include "formats/mrtrix_utils.h"
 
