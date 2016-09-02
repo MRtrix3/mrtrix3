@@ -23,10 +23,10 @@
 #include "filter/erode.h"
 #include "filter/median.h"
 
-
 using namespace MR;
 using namespace App;
 
+#define DEFAULT_CLEAN_SCALE 2
 
 
 const char* filters[] = { "clean", "connect", "dilate", "erode", "median", nullptr };
@@ -36,8 +36,8 @@ const char* filters[] = { "clean", "connect", "dilate", "erode", "median", nullp
 const OptionGroup CleanOption = OptionGroup ("Options for mask cleaning filter")
 
   + Option ("scale", "the maximum scale used to cut bridges. A certain maximum scale cuts "
-                     "bridges up to a width (in voxels) of 2x the provided scale. (Default: 2)")
-    + Argument ("value").type_integer (2, 1e6);
+                     "bridges up to a width (in voxels) of 2x the provided scale. (Default: " + str(DEFAULT_CLEAN_SCALE, 2) + ")")
+    + Argument ("value").type_integer (1, 1e6);
 
 
 
@@ -109,9 +109,7 @@ void run () {
   
   if (filter_index == 0) { // Mask clean
     Filter::MaskClean filter (input_image, std::string("applying mask cleaning filter to image ") + Path::basename (argument[0]));
-    auto opt = get_options ("scale");
-    if (opt.size())
-      filter.set_scale (int(opt[0][0]));
+    filter.set_scale(get_option_value ("scale", DEFAULT_CLEAN_SCALE));
 
     Stride::set_from_command_line (filter);
     filter.datatype() = DataType::Bit;

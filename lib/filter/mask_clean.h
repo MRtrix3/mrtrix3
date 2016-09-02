@@ -76,6 +76,9 @@ namespace MR
         {
 
           std::unique_ptr<ProgressBar> progress (message.size() ? new ProgressBar (message) : nullptr);
+          
+          if (progress)
+            ++(*progress);
 
           auto temp_in = Image<bool>::scratch (input, "temporary input mask");
           for (auto l = Loop (0,3) (input, temp_in); l; ++l)
