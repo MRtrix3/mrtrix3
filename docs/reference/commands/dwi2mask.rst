@@ -16,10 +16,12 @@ Synopsis
 Description
 -----------
 
-Generates an whole brain mask from a DWI image.All diffusion weighted and b=0 volumes are used to obtain a mask that includes both brain tissue and CSF.
+Generates an whole brain mask from a DWI image. All diffusion weighted and b=0 volumes are used to obtain a mask that includes both brain tissue and CSF. In a second step peninsula-like extensions, where the peninsula itself is wider than the bridge connecting it to the mask, are removed. This may help removing artefacts and non-brain parts, e.g. eyes, from the mask.
 
 Options
 -------
+
+-  **-clean_scale value** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. Setting this to 0 disables the mask cleaning step. (Default: 2)
 
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -53,7 +55,7 @@ Standard options
 
 
 
-**Author:** David Raffelt (david.raffelt@florey.edu.au)
+**Author:** David Raffelt (david.raffelt@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)
 
 **Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
 
