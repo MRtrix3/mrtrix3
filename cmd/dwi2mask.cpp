@@ -28,7 +28,7 @@ void usage () {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)";
 
 DESCRIPTION
-  + "Generates an whole brain mask from a DWI image. "
+  + "Generates a whole brain mask from a DWI image. "
     "All diffusion weighted and b=0 volumes are used to "
     "obtain a mask that includes both brain tissue and CSF. "
     "\nIn a second step peninsula-like extensions, where the "
@@ -36,6 +36,11 @@ DESCRIPTION
     "to the mask, are removed. This may help removing "
     "artefacts and non-brain parts, e.g. eyes, from "
     "the mask.";
+
+REFERENCES
+  + "Dhollander T, Raffelt D, Connelly A. " // Internal
+    "Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. "
+    "ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5.";
 
 ARGUMENTS
    + Argument ("image",

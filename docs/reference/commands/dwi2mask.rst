@@ -16,7 +16,7 @@ Synopsis
 Description
 -----------
 
-Generates an whole brain mask from a DWI image. All diffusion weighted and b=0 volumes are used to obtain a mask that includes both brain tissue and CSF. In a second step peninsula-like extensions, where the peninsula itself is wider than the bridge connecting it to the mask, are removed. This may help removing artefacts and non-brain parts, e.g. eyes, from the mask.
+Generates a whole brain mask from a DWI image. All diffusion weighted and b=0 volumes are used to obtain a mask that includes both brain tissue and CSF. In a second step peninsula-like extensions, where the peninsula itself is wider than the bridge connecting it to the mask, are removed. This may help removing artefacts and non-brain parts, e.g. eyes, from the mask.
 
 Options
 -------
@@ -50,6 +50,11 @@ Standard options
 -  **-help** display this information page and exit.
 
 -  **-version** display version information and exit.
+
+References
+^^^^^^^^^^
+
+Dhollander T, Raffelt D, Connelly A. Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5.
 
 --------------
 
