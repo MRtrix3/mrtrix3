@@ -28,7 +28,7 @@ void usage () {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)";
 
 DESCRIPTION
-  + "Generates an whole brain mask from a DWI image. "
+  + "Generates a whole brain mask from a DWI image. "
     "All diffusion weighted and b=0 volumes are used to "
     "obtain a mask that includes both brain tissue and CSF. "
     "\nIn a second step peninsula-like extensions, where the "
