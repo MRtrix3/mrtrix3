@@ -37,6 +37,11 @@ DESCRIPTION
     "artefacts and non-brain parts, e.g. eyes, from "
     "the mask.";
 
+REFERENCES
+  + "Dhollander T, Raffelt D, Connelly A. " // Internal
+    "Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. "
+    "ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5.";
+
 ARGUMENTS
    + Argument ("image",
     "the input DWI image containing volumes that are both diffusion weighted and b=0")

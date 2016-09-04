@@ -51,6 +51,11 @@ Standard options
 
 -  **-version** display version information and exit.
 
+References
+^^^^^^^^^^
+
+Dhollander T, Raffelt D, Connelly A. Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5.
+
 --------------
 
 
