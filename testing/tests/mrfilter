@@ -6,3 +6,10 @@ mrfilter dwi.mif smooth -stdev 1.4 -extent 5 - | testing_diff_data - mrfilter/ou
 mrfilter dwi.mif median - | testing_diff_data - mrfilter/out6.mif 0
 mrfilter dwi.mif median -extent 5,3,1 - | testing_diff_data - mrfilter/out7.mif 0.001
 mrfilter dwi.mif median -extent 5 - | testing_diff_data - mrfilter/out8.mif 0.001
+mrfilter dwi.mif smooth -stdev 1.5,2.5,3.5 - | testing_diff_data - mrfilter/out13.mif 0.001
+mrfilter dwi.mif gradient -stdev 1.5,2.5,3.5 - | testing_diff_data - mrfilter/out14.mif 0.001
+mrfilter dwi.mif gradient -stdev 1.5,2.5,3.5 -magnitude - | testing_diff_data - mrfilter/out15.mif 0.001
+mrfilter dwi.mif gradient -stdev 1.5,2.5,3.5 -scanner  - | testing_diff_data - mrfilter/out16.mif 0.001
+mrfilter dwi.mif gradient -stdev 1.5,2.5,3.5 -magnitude -scanner - | testing_diff_data - mrfilter/out17.mif 0.001
+testing_diff_data $(mrmath mrfilter/out14.mif  mrfilter/out14.mif product - | mrmath - sum -axis 3 - | mrconvert - -axes 0,1,2,4 - )  $(mrmath mrfilter/out15.mif mrfilter/out15.mif product - ) 0.1
+testing_diff_data $(mrmath mrfilter/out16.mif  mrfilter/out16.mif product - | mrmath - sum -axis 3 - | mrconvert - -axes 0,1,2,4 - )  $(mrmath mrfilter/out17.mif mrfilter/out17.mif product - ) 0.1

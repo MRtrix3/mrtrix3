@@ -17,7 +17,7 @@ from lib.runCommand       import runCommand
 from lib.warnMessage      import warnMessage
 
 
-lib.app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
+lib.app.author = 'Robert E. Smith (robert.smith@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)'
 lib.cmdlineParser.initialise('Estimate response function(s) for spherical deconvolution')
 
 # General options

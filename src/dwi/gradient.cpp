@@ -95,14 +95,22 @@ namespace MR
 
     Eigen::MatrixXd load_bvecs_bvals (const Header& header, const std::string& bvecs_path, const std::string& bvals_path)
     {
-      auto bvals = load_matrix<> (bvals_path);
-      auto bvecs = load_matrix<> (bvecs_path);
+      Eigen::MatrixXd bvals, bvecs;
+      try {
+        bvals = load_matrix<> (bvals_path);
+        bvecs = load_matrix<> (bvecs_path);
+      } catch (Exception& e) {
+        throw Exception (e, "Unable to import files \"" + bvecs_path + "\" and \"" + bvals_path + "\" as FSL bvecs/bvals pair");
+      }
 
-      if (bvals.rows() != 1) throw Exception ("bvals file must contain 1 row only");
-      if (bvecs.rows() != 3) throw Exception ("bvecs file must contain exactly 3 rows");
+      if (bvals.rows() != 1) throw Exception ("bvals file must contain 1 row only (file \"" + bvals_path + "\" has " + str(bvals.rows()) + ")");
+      if (bvecs.rows() != 3) throw Exception ("bvecs file must contain exactly 3 rows (file \"" + bvecs_path + "\" has " + str(bvecs.rows()) + ")");
 
-      if (bvals.cols() != bvecs.cols() || bvals.cols() != header.size (3))
-        throw Exception ("bvals and bvecs files must have same number of diffusion directions as DW-image");
+      if (bvals.cols() != bvecs.cols())
+        throw Exception ("bvecs and bvals files must have same number of diffusion directions (file \"" + bvecs_path + "\" has " + str(bvecs.cols()) + ", file \"" + bvals_path + "\" has " + str(bvals.cols()) + ")");
+
+      if (bvals.cols() != header.size (3))
+        throw Exception ("bvecs and bvals files must have same number of diffusion directions as DW-image (gradients: " + str(bvecs.cols()) + ", image: " + str(header.size(3)) + ")");
 
       // bvecs format actually assumes a LHS coordinate system even if image is
       // stored using RHS - x axis is flipped to make linear 3x3 part of
@@ -186,9 +194,8 @@ namespace MR
         if (!opt_mrtrix.size() && !opt_fsl.size())
           grad = parse_DW_scheme (header);
       }
-      catch (Exception& E) {
-        E.display (3);
-        throw Exception ("error importing diffusion gradient table for image \"" + header.name() + "\"");
+      catch (Exception& e) {
+        throw Exception (e, "error importing diffusion gradient table for image \"" + header.name() + "\"");
       }
 
       if (!grad.rows())
@@ -234,7 +241,7 @@ namespace MR
       }
       catch (Exception& e) {
         if (!nofail)
-          throw;
+          throw Exception (e, "unable to get valid diffusion gradient table for image \"" + header.name() + "\"");
       }
       return grad;
     }

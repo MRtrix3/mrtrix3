@@ -35,6 +35,7 @@ const char* operations[] = {
   "header",
   "average",
   "interpolate",
+  "decompose",
   NULL
 };
 
@@ -67,6 +68,17 @@ void usage ()
         " Shoemake, K., Hill, M., & Duff, T. (1992). Matrix Animation and Polar Decomposition. "
         " Matrix, 92, 258-264. doi:10.1.1.56.1336"
         "\ninput input2 interpolate output"
+
+    + "\n\ndecompose: decompose transformation matrix M into translation, rotation and stretch and shear (M = T * R * S). "
+        "The output is a key-value text file "
+        "scaling: vector of 3 scaling factors in x, y, z direction, "
+        "shear: list of shear factors for xy, xz, yz axes, "
+        "angles: list of Euler angles about static x, y, z axes in radians in the range [0:pi]x[-pi:pi]x[-pi:pi], "
+        "angle_axis: angle in radians and rotation axis, "
+        "translation : translation vector along x, y, z axes in mm, "
+        "R: composed roation matrix (R = rot_x * rot_y * rot_z), "
+        "S: composed scaling and shear matrix."
+        "\nmatrix_in decompose output"
     ).type_choice (operations)
   + Argument ("output", "the output transformation matrix.").type_file_out ();
 }
@@ -85,14 +97,14 @@ void run ()
     case 0: { // invert
       if (num_inputs != 1)
         throw Exception ("invert requires 1 input");
-      transform_type input = load_transform<default_type> (argument[0]);
+      transform_type input = load_transform (argument[0]);
       save_transform (input.inverse(), output_path);
       break;
     }
     case 1: { // half
       if (num_inputs != 1)
         throw Exception ("half requires 1 input");
-      Eigen::Transform<default_type, 3, Eigen::Projective> input = load_transform<default_type> (argument[0]);
+      Eigen::Transform<default_type, 3, Eigen::Projective> input = load_transform (argument[0]);
       transform_type output;
       Eigen::Matrix<default_type, 4, 4> half = input.matrix().sqrt();
       output.matrix() = half.topLeftCorner(3,4);
@@ -102,7 +114,7 @@ void run ()
     case 2: { // rigid
       if (num_inputs != 1)
         throw Exception ("rigid requires 1 input");
-      transform_type input = load_transform<default_type> (argument[0]);
+      transform_type input = load_transform (argument[0]);
       transform_type output (input);
       output.linear() = input.rotation();
       save_transform (output, output_path);
@@ -127,7 +139,7 @@ void run ()
       std::vector<Eigen::MatrixXd> matrices;
       for (size_t i = 0; i < num_inputs; i++) {
         DEBUG(str(argument[i]));
-        Tin = load_transform<default_type> (argument[i]);
+        Tin = load_transform (argument[i]);
         matrices.push_back(Tin.matrix());
       }
 
@@ -140,8 +152,8 @@ void run ()
     case 5: { // interpolate
       if (num_inputs != 3)
         throw Exception ("interpolation requires 3 inputs");
-      transform_type transform1 = load_transform<default_type> (argument[0]);
-      transform_type transform2 = load_transform<default_type> (argument[1]);
+      transform_type transform1 = load_transform (argument[0]);
+      transform_type transform2 = load_transform (argument[1]);
       default_type t = parse_floats(argument[2])[0];
 
       transform_type transform_out;
@@ -174,6 +186,46 @@ void run ()
       INFO("\n"+str(transform_out.matrix().format(
         Eigen::IOFormat(Eigen::FullPrecision, 0, ", ", ",\n", "[", "]", "[", "]"))));
       save_transform (transform_out, output_path);
+      break;
+    }
+    case 6: { // decompose
+      if (num_inputs != 1)
+        throw Exception ("decomposition requires 1 input");
+      transform_type transform = load_transform (argument[0]);
+
+      Eigen::MatrixXd M = transform.linear();
+      Eigen::Matrix3d R = transform.rotation();
+      Eigen::MatrixXd S = R.transpose() * M;
+      if (!M.isApprox(R*S))
+        WARN ("matrix decomposition might have failed");
+
+      Eigen::Vector3d euler_angles = R.eulerAngles(0, 1, 2);
+      assert (R.isApprox((Eigen::AngleAxisd(euler_angles[0], Eigen::Vector3d::UnitX())
+              * Eigen::AngleAxisd(euler_angles[1], Eigen::Vector3d::UnitY())
+              * Eigen::AngleAxisd(euler_angles[2], Eigen::Vector3d::UnitZ())).matrix()));
+
+      Eigen::RowVector4d angle_axis;
+      {
+        auto AA = Eigen::AngleAxis<default_type> (R);
+        angle_axis(0) = AA.angle();
+        angle_axis.block<1,3>(0,1) = AA.axis();
+      }
+
+
+      File::OFStream out (output_path);
+      Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "\n");
+      out << "scaling: "     << Eigen::RowVector3d(S(0,0), S(1,1), S(2,2)).format(fmt);
+      out << "shear: "       << Eigen::RowVector3d(S(0,1), S(0,2), S(1,2)).format(fmt);
+      out << "angles: "      << euler_angles.transpose().format(fmt);
+      out << "angle_axis: "   << angle_axis.format(fmt);
+      out << "translation: " << transform.translation().transpose().format(fmt);
+      out << "R: " << R.row(0).format(fmt);
+      out << "R: " << R.row(1).format(fmt);
+      out << "R: " << R.row(2).format(fmt);
+      out << "S: " << S.row(0).format(fmt);
+      out << "S: " << S.row(1).format(fmt);
+      out << "S: " << S.row(2).format(fmt);
+
       break;
     }
     default: assert (0);
