@@ -188,7 +188,7 @@ bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
     assign_pos_of (in.vox).to (*peak);
     peak->value().set_size (in.size());
     for (size_t i = 0; i != in.size(); ++i) {
-      FixelMetric this_fixel (in[i].get_peak_dir(), in[i].get_integral(), in[i].get_peak_value());
+      FixelMetric this_fixel (in[i].get_peak_dir(0), in[i].get_integral(), in[i].get_max_peak_value());
       peak->value()[i] = this_fixel;
     }
   }
@@ -197,7 +197,7 @@ bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
     assign_pos_of (in.vox).to (*disp);
     disp->value().set_size (in.size());
     for (size_t i = 0; i != in.size(); ++i) {
-      FixelMetric this_fixel (in[i].get_mean_dir(), in[i].get_integral(), in[i].get_integral() / in[i].get_peak_value());
+      FixelMetric this_fixel (in[i].get_mean_dir(), in[i].get_integral(), in[i].get_integral() / in[i].get_max_peak_value());
       disp->value()[i] = this_fixel;
     }
   }

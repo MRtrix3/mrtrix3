@@ -5,12 +5,12 @@ citationList = []
 cleanup = True
 copyright = '''Copyright (c) 2008-2016 the MRtrix3 contributors
 
-This Source Code Form is subject to the terms of the Mozilla Public 
-License, v. 2.0. If a copy of the MPL was not distributed with this 
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-MRtrix is distributed in the hope that it will be useful, 
-but WITHOUT ANY WARRANTY; without even the implied warranty of 
+MRtrix is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 For more details, see www.mrtrix.org'''
@@ -71,7 +71,7 @@ def initialise():
     use_colour = use_colour.lower() in ('yes', 'true', '1')
   else:
     # Windows now also gets coloured text terminal support, so make this the default
-    use_colour = True 
+    use_colour = True
   if use_colour:
     colourClear = '\033[0m'
     colourConsole = '\033[03;34m'
@@ -174,7 +174,7 @@ def gotoTempDir():
     printMessage('Changing to temporary directory (' + tempDir + ')')
   os.chdir(tempDir)
 
-  
+
 
 def complete():
   import os, shutil, sys
@@ -187,7 +187,12 @@ def complete():
     shutil.rmtree(tempDir)
   elif tempDir:
     # This needs to be printed even if the -quiet option is used
-    sys.stdout.write(os.path.basename(sys.argv[0]) + ': ' + colourPrint + 'Contents of temporary directory kept, location: ' + tempDir + colourClear + '\n')
+    if os.path.isfile(os.path.join(tempDir, 'error.txt')):
+      with open(os.path.join(tempDir, 'error.txt'),'rb') as errortext:
+        sys.stdout.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'Script failed while executing the command: ' + errortext.readline().rstrip() + colourClear + '\n')
+      sys.stdout.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'For debugging, inspect contents of temporary directory: ' + tempDir + colourClear + '\n')
+    else:
+      sys.stdout.write(os.path.basename(sys.argv[0]) + ': ' + colourPrint + 'Contents of temporary directory kept, location: ' + tempDir + colourClear + '\n')
     sys.stdout.flush()
 
 
