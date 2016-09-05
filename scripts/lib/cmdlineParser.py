@@ -86,10 +86,13 @@ class Parser(argparse.ArgumentParser):
                 count += 1
               break
       if count > 1:
-        sys.stderr.write('\nError: You cannot use more than one of the following options: ' + ', '.join([ '-' + o for o in group[0] ]) + '\n\n')
-        sys.exit(2)
+        sys.stderr.write('\nError: You cannot use more than one of the following options: ' + ', '.join([ '-' + o for o in group[0] ]) + '\n')
+        sys.stderr.write('(Consult the help page for more information: ' + self.prog + ' -help)\n\n')
+        sys.exit(1)
       if group[1] and not count:
-        sys.stderr.write('\nError: One of the following options must be provided: ' + ', '.join([ '-' + o for o in group[0] ]) + '\n\n')
+        sys.stderr.write('\nError: One of the following options must be provided: ' + ', '.join([ '-' + o for o in group[0] ]) + '\n')
+        sys.stderr.write('(Consult the help page for more information: ' + self.prog + ' -help)\n\n')
+        sys.exit(1)
     return args
 
 
