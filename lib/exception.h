@@ -98,6 +98,9 @@ namespace MR
       const std::string& operator[] (size_t n) const {
         return description[n];
       }
+      void push_back (const std::string& s) {
+        description.push_back (s);
+      }
 
       static void (*display_func) (const Exception& E, int log_level);
 

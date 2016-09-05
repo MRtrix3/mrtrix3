@@ -87,6 +87,15 @@ PE_dir = getPEDir(lib.app.args.pe_dir)
 
 lib.app.checkOutputFile(lib.app.args.output)
 
+# Export the gradient table to the path requested by the user if necessary
+grad_export_option = ''
+if lib.app.args.export_grad_mrtrix:
+  grad_export_option = ' -export_grad_mrtrix ' + getUserPath(lib.app.args.export_grad_mrtrix, True)
+  lib.app.checkOutputFile(getUserPath(lib.app.args.export_grad_mrtrix, True))
+elif lib.app.args.export_grad_fsl:
+  grad_export_option = ' -export_grad_fsl ' + getUserPath(lib.app.args.export_grad_fsl[0], True) + ' ' + getUserPath(lib.app.args.export_grad_fsl[1], True)
+  lib.app.checkOutputFile(getUserPath(lib.app.args.export_grad_fsl[0], True))
+  lib.app.checkOutputFile(getUserPath(lib.app.args.export_grad_fsl[1], True))
 
 # Convert all input images into MRtrix format and store in temprary directory first;
 #   that way getHeaderInfo() can be run multiple times without having to repeatedly parse e.g. DICOM data
@@ -165,13 +174,13 @@ if not PE_design == 'None':
   series2_path = 'series2.mif'
 
   # For any non-even axis sizes, crop the first voxel along that dimension
-  crop_option = ''        
+  crop_option = ''
   for axis, axis_size in enumerate(series_size[:3]):
     if int(axis_size)%2:
-      crop_option += ' -axis ' + str(axis) + ' 1 ' + str(int(axis_size)-1) 
+      crop_option += ' -axis ' + str(axis) + ' 1 ' + str(int(axis_size)-1)
 
   if crop_option:
-    warnMessage('Input images contain at least one non-even dimension; cropping images for topup / eddy compatibility') 
+    warnMessage('Input images contain at least one non-even dimension; cropping images for topup / eddy compatibility')
     runCommand('mrcrop series.mif series_crop.mif' + crop_option)
     delFile('series.mif')
     series_path = 'series_crop.mif'
@@ -209,7 +218,7 @@ elif PE_design == 'All':
 rpe_b0_count = [ 1, 0 ] # Always contains integers, _not_ strings
 if PE_design == 'Pair' or PE_design == 'All':
   rpe_b0_count[1] = 1
-  temp = getHeaderInfo(pair1_path, 'size').split()  
+  temp = getHeaderInfo(pair1_path, 'size').split()
   if len(temp) == 4:
     rpe_b0_count[0] = int(temp[3])
   temp = getHeaderInfo(pair2_path, 'size').split()
@@ -276,8 +285,8 @@ else:
     runCommand('mrcat dwi1_post_topup' + fsl_suffix + ' dwi2_post_topup' + fsl_suffix + ' dwi_post_topup' + fsl_suffix + ' -axis 3')
     delFile('dwi1_post_topup' + fsl_suffix)
     delFile('dwi2_post_topup' + fsl_suffix)
-    
-    
+
+
   # Create the diffusion encoding table in bvecs / bvals format;
   #   if 'All', need to manually perform the combination
   # Create the diffusion gradient table in FSL format
@@ -324,11 +333,11 @@ if PE_design == 'None' or PE_design == 'Pair':
 
   # Convert the resulting volume to the output image, and re-insert the diffusion encoding
   runCommand('mrconvert dwi_post_eddy' + fsl_suffix + ' result.mif' + stride_option + ' -fslgrad ' + bvecs_path + ' bvals')
-  
+
 else: # 'All'
 
   # Perform a manual combination of the volumes output by eddy, since LSR is disabled
-  
+
   # Generate appropriate bvecs / bvals files
   # Particularly if eddy has provided rotated bvecs, since we're combining two volumes into one that
   #   potentially have subject rotation between them (and therefore the sensitisation direction is
@@ -373,11 +382,7 @@ else: # 'All'
   field_map_image = 'field_map' + fsl_suffix
   if not imagesMatch('topup_in.nii', field_map_image):
     warnMessage('topup output field image has erroneous header; recommend updating FSL to version 5.0.8 or later')
-    input_transform_text = getHeaderInfo('topup_in.nii', 'transform')
-    with open( 'transform.txt', 'w' ) as f:
-      for line in input_transform_text:
-        f.write (line)
-    runCommand('mrtransform ' + field_map_image + ' -linear transform.txt -replace field_map_fix' + fsl_suffix)
+    runCommand('mrtransform ' + field_map_image + ' -replace topup_in.nii field_map_fix' + fsl_suffix)
     delFile(field_map_image)
     field_map_image = 'field_map_fix' + fsl_suffix
 
@@ -406,13 +411,6 @@ else: # 'All'
 
 
 # Finish!
-# Also export the gradient table to the path requested by the user if necessary
-grad_export_option = ''
-if lib.app.args.export_grad_mrtrix:
-  grad_export_option = ' -export_grad_mrtrix ' + getUserPath(lib.app.args.export_grad_mrtrix, True)
-elif lib.app.args.export_grad_fsl:
-  grad_export_option = ' -export_grad_fsl ' + getUserPath(lib.app.args.export_grad_fsl[0], True) + ' ' + getUserPath(lib.app.args.export_grad_fsl[1], True)
-
 runCommand('mrconvert result.mif ' + getUserPath(lib.app.args.output, True) + grad_export_option + lib.app.mrtrixForce)
 lib.app.complete()
 

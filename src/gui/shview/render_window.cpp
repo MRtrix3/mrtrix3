@@ -19,6 +19,7 @@
 #include "gui/dwi/render_frame.h"
 #include "gui/lighting_dock.h"
 #include "gui/dialog/file.h"
+#include "gui/dialog/dialog.h"
 #include "math/math.h"
 #include "math/SH.h"
 
@@ -35,6 +36,8 @@ namespace MR
         current (0),
         is_response (is_response_coefs)
       {
+        GUI::Dialog::init();
+
         setWindowIcon (QPixmap (":/mrtrix.png"));
         setMinimumSize (300, 300);
 

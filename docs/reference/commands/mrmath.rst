@@ -11,7 +11,7 @@ Synopsis
     mrmath [ options ]  input [ input ... ] operation output
 
 -  *input*: the input image(s).
--  *operation*: the operation to apply, one of: mean, median, sum, product, rms, var, std, min, max, absmax, magmax.
+-  *operation*: the operation to apply, one of: mean, median, sum, product, rms, norm, var, std, min, max, absmax, magmax.
 -  *output*: the output image.
 
 Description
@@ -19,7 +19,7 @@ Description
 
 compute summary statistic on image intensities either across images, or along a specified axis for a single image. Supported operations are:
 
-mean, median, sum, product, rms (root-mean-square value), var (unbiased variance), std (unbiased standard deviation), min, max, absmax (maximum absolute value), magmax (value with maximum absolute value, preserving its sign).
+mean, median, sum, product, rms (root-mean-square value), norm (vector 2-norm), var (unbiased variance), std (unbiased standard deviation), min, max, absmax (maximum absolute value), magmax (value with maximum absolute value, preserving its sign).
 
 See also 'mrcalc' to compute per-voxel operations.
 

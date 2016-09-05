@@ -33,7 +33,7 @@ namespace MR
         report_to_user_func (E.description[n], log_level);
   }
 
-  off_t __stderr_offset = 0;
+  bool __need_newline = false;
 
 
   namespace {
@@ -61,9 +61,9 @@ namespace MR
       "%s: \033[00;34m%s%s\033[0m\n"
     };
 
-    if (__stderr_offset) {
+    if (__need_newline) {
       __print_stderr ("\n");
-      __stderr_offset = 0;
+      __need_newline = false;
     }
 
     auto clamp = [](int t) { if (t < -1 || t > 3) t = -1; return t+1; };

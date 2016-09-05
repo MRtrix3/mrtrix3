@@ -35,6 +35,7 @@ const char* operations[] = {
   "sum",
   "product",
   "rms",
+  "norm",
   "var",
   "std",
   "min",
@@ -52,7 +53,7 @@ void usage ()
     + "compute summary statistic on image intensities either across images, "
     "or along a specified axis for a single image. Supported operations are:"
 
-    + "mean, median, sum, product, rms (root-mean-square value), var (unbiased variance), "
+    + "mean, median, sum, product, rms (root-mean-square value), norm (vector 2-norm), var (unbiased variance), "
     "std (unbiased standard deviation), min, max, absmax (maximum absolute value), "
     "magmax (value with maximum absolute value, preserving its sign)."
 
@@ -146,6 +147,24 @@ class RMS {
       if (!count)
         return NAN;
       return std::sqrt(sum / count);
+    }
+    double sum;
+    size_t count;
+};
+
+class NORM2 {
+  public:
+    NORM2() : sum (0.0), count (0) { }
+    void operator() (value_type val) {
+      if (std::isfinite (val)) {
+        sum += Math::pow2 (val);
+        ++count;
+      }
+    }
+    value_type result() const {
+      if (!count)
+        return NAN;
+      return std::sqrt(sum);
     }
     double sum;
     size_t count;
@@ -344,12 +363,13 @@ void run ()
       case 2: loop.run  (AxisKernel<Sum>    (axis), image_in, image_out); return;
       case 3: loop.run  (AxisKernel<Product>(axis), image_in, image_out); return;
       case 4: loop.run  (AxisKernel<RMS>    (axis), image_in, image_out); return;
-      case 5: loop.run  (AxisKernel<Var>    (axis), image_in, image_out); return;
-      case 6: loop.run  (AxisKernel<Std>    (axis), image_in, image_out); return;
-      case 7: loop.run  (AxisKernel<Min>    (axis), image_in, image_out); return;
-      case 8: loop.run  (AxisKernel<Max>    (axis), image_in, image_out); return;
-      case 9: loop.run  (AxisKernel<AbsMax> (axis), image_in, image_out); return;
-      case 10: loop.run (AxisKernel<MagMax> (axis), image_in, image_out); return;
+      case 5: loop.run  (AxisKernel<NORM2>  (axis), image_in, image_out); return;
+      case 6: loop.run  (AxisKernel<Var>    (axis), image_in, image_out); return;
+      case 7: loop.run  (AxisKernel<Std>    (axis), image_in, image_out); return;
+      case 8: loop.run  (AxisKernel<Min>    (axis), image_in, image_out); return;
+      case 9: loop.run  (AxisKernel<Max>    (axis), image_in, image_out); return;
+      case 10: loop.run  (AxisKernel<AbsMax> (axis), image_in, image_out); return;
+      case 11: loop.run (AxisKernel<MagMax> (axis), image_in, image_out); return;
       default: assert (0);
     }
 

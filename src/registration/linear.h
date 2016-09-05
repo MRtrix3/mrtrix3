@@ -65,16 +65,23 @@ namespace MR
           gd_repetitions (1, 1),
           scale_factor (3),
           loop_density (1, 1.0),
-          kernel_extent(3, 1),
-          grad_tolerance(1.0e-6),
-          step_tolerance(1.0e-10),
+          kernel_extent (3, 1),
+          grad_tolerance (1.0e-6),
+          step_tolerance (1.0e-10),
           log_stream (nullptr),
           init_translation_type (Transform::Init::mass),
           init_rotation_type (Transform::Init::none),
           robust_estimate (false),
           do_reorientation (false),
           fod_lmax (3),
+          //CONF option: reg_bbgd
+          //CONF default: 1 (true)
+          //CONF Linear registration: use Barzilai Borwein gradient descent
           reg_bbgd (File::Config::get_bool ("reg_bbgd", true)),
+          //CONF option: reg_analyse_descent
+          //CONF default: 0 (false)
+          //CONF Linear registration: write comma separated gradient descent parameters and gradients
+          //CONF to stdout and verbose gradient descent output to stderr
           analyse_descent (File::Config::get_bool ("reg_analyse_descent", false)) {
           scale_factor[0] = 0.25;
           scale_factor[1] = 0.5;
@@ -238,6 +245,9 @@ namespace MR
                 im1_image, im2_image, im1_mask, im2_mask, transform, init);
             }
 
+            INFO ("Transformation before registration:");
+            INFO (transform.info());
+
             // TODO global search
             // if (global_search) {
             //   GlobalSearch::GlobalSearch transformation_search;
@@ -288,6 +298,8 @@ namespace MR
             midway_image_header = compute_minimum_average_header (im1_image, im2_image, transform, midspace_voxel_subsampling, midspace_padding);
 
             for (size_t level = 0; level < scale_factor.size(); level++) {
+              if (max_iter[level] == 0)
+                continue;
               {
                 std::string st;
                 loop_density[level] < 1.0 ? st = ", loop density: " + str(loop_density[level]) : st = "";
@@ -298,7 +310,9 @@ namespace MR
                 }
               }
 
+              INFO("smoothing image 1");
               auto im1_smoothed = Registration::multi_resolution_lmax (im1_image, scale_factor[level], do_reorientation, fod_lmax[level]);
+              INFO("smoothing image 2");
               auto im2_smoothed = Registration::multi_resolution_lmax (im2_image, scale_factor[level], do_reorientation, fod_lmax[level]);
 
               Filter::Resize midway_resize_filter (midway_image_header);
@@ -306,7 +320,6 @@ namespace MR
               Header midway_resized (midway_resize_filter);
 
               ParamType parameters (transform, im1_smoothed, im2_smoothed, midway_resized, im1_mask, im2_mask);
-              INFO ("loop density: " + str(loop_density[level]));
               parameters.loop_density = loop_density[level];
               // if (robust_estimate)
               //   INFO ("using robust estimate");
@@ -329,8 +342,14 @@ namespace MR
                 midway_image_header.spacing(2));
               Eigen::Vector3d coherence(spacing);
               Eigen::Vector3d stop(spacing);
+              //CONF option: reg_coherence_len
+              //CONF default: 3.0
+              //CONF Linear registration: estimated spatial coherence length in voxel
               default_type reg_coherence_len = File::Config::get_float ("reg_coherence_len", 3.0); // = 3 stdev blur
               coherence *= reg_coherence_len * 1.0 / (2.0 * scale_factor[level]);
+              //CONF option: reg_stop_len
+              //CONF default: 0.0001
+              //CONF Linear registration: smallest step in fraction of voxel at which to stop registration
               default_type reg_stop_len = File::Config::get_float ("reg_stop_len", 0.0001);
               stop.array() *= reg_stop_len;
               DEBUG ("coherence length: " + str(coherence));
@@ -342,19 +361,19 @@ namespace MR
               if (do_reorientation && fod_lmax[level] > 0)
                 evaluate.set_directions (aPSF_directions);
 
-
+              INFO("linear registration...");
               for (auto gd_iteration = 0; gd_iteration < gd_repetitions[level]; ++gd_iteration){
-                if (max_iter[level] == 0)
-                  continue;
                 if (reg_bbgd) {
                   Math::GradientDescentBB<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
                     optim (evaluate, *transform.get_gradient_descent_updator());
                   optim.be_verbose (analyse_descent);
                   optim.precondition (optimiser_weights);
-                  if (analyse_descent)
+                  if (log_stream)
+                    optim.run (max_iter[level], grad_tolerance, log_stream);
+                  else if (analyse_descent)
                     optim.run (max_iter[level], grad_tolerance, std::cout.rdbuf());
                   else
-                    optim.run (max_iter[level], grad_tolerance);
+                      optim.run (max_iter[level], grad_tolerance);
                   DEBUG ("gradient descent ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
                   if (!is_finite(optim.state())) {
                     throw Exception ("registration failed: encountered NaN in parameters.");
@@ -366,10 +385,12 @@ namespace MR
                     optim (evaluate, *transform.get_gradient_descent_updator());
                   optim.be_verbose (analyse_descent);
                   optim.precondition (optimiser_weights);
-                  if (analyse_descent)
+                  if (log_stream)
+                    optim.run (max_iter[level], grad_tolerance, log_stream);
+                  else if (analyse_descent)
                     optim.run (max_iter[level], grad_tolerance, std::cout.rdbuf());
                   else
-                    optim.run (max_iter[level], grad_tolerance);
+                      optim.run (max_iter[level], grad_tolerance);
                   DEBUG ("gradient descent ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
                   if (!is_finite(optim.state())) {
                     throw Exception ("registration failed due to NaN in parameters");
@@ -388,6 +409,7 @@ namespace MR
               // update midway (affine average) space using the current transformations
               midway_image_header = compute_minimum_average_header(im1_image, im2_image, parameters.transformation, midspace_voxel_subsampling, midspace_padding);
             }
+            INFO("linear registration done");
           }
 
         template<class Im1ImageType, class Im2ImageType, class TransformType>

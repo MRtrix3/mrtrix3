@@ -139,7 +139,8 @@ namespace MR {
           SH_in[basis_fn_index] = 1.0;
           A.row (basis_fn_index) = calibration_SH2A * SH_in;
         }
-        data = A.fullPivLu().solve (integral_results);
+
+        data = A.householderQr().solve (integral_results);
       }
 
 
@@ -154,7 +155,6 @@ namespace MR {
       Segmenter::Segmenter (const DWI::Directions::Set& directions, const size_t l) :
           dirs                             (directions),
           lmax                             (l),
-          transform                        (NULL),
           precomputer                      (new Math::SH::PrecomputedAL<default_type> (lmax, 2 * dirs.size())),
           ratio_to_negative_lobe_integral  (FMLS_RATIO_TO_NEGATIVE_LOBE_INTEGRAL_DEFAULT),
           ratio_to_negative_lobe_mean_peak (FMLS_RATIO_TO_NEGATIVE_LOBE_MEAN_PEAK_DEFAULT),
