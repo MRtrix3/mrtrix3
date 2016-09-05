@@ -59,7 +59,7 @@ void run () {
   int axis = get_option_value ("axis", -1);
 
   int num_images = argument.size()-1;
-  std::vector<Header> in (num_images);
+  std::vector<Header, Eigen::aligned_allocator<Header>> in (num_images);
   in[0] = Header::open (argument[0]);
 
   int ndims = 0;
