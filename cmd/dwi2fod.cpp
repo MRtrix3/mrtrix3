@@ -252,6 +252,7 @@ void run ()
     shared.init();
 
     header_out.size(3) = shared.nSH();
+    DWI::stash_DW_scheme (header_out, shared.grad);
     auto fod = Image<float>::create (argument[3], header_out);
 
     CSD_Processor processor (shared, mask);
@@ -282,6 +283,8 @@ void run ()
     }
 
     shared.init();
+
+    DWI::stash_DW_scheme (header_out, shared.grad);
 
     std::vector< Image<float> > odfs;
     for (size_t i = 0; i < num_tissues; ++i) {
