@@ -50,6 +50,9 @@ References
    using random matrix theory.* Magn. Res. Med., early view (2016), 
    `doi: 10.1002/mrm.26059 <http://dx.doi.org/10.1002/mrm.26059>`__
 
-2. J. Veraart, D.S. Novikov, J. Sijbers, and E. Fieremans *Denoising of 
-   diffusion MRI data using Random Matrix Theory.* ISMRM, 24 (2016), p. 1047
+2. J. Veraart, D.S. Novikov, D. Christiaens, B. Ades-aron, J. Sijbers, and E. Fieremans 
+   *Denoising of diffusion MRI using random matrix theory.* NeuroImage, in press (2016), 
+   `doi: 10.1016/j.neuroimage.2016.08.016 <http://dx.doi.org/10.1016/j.neuroimage.2016.08.016>`__
+
+
 
