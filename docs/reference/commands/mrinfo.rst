@@ -42,7 +42,7 @@ Options
 
 -  **-multiplier** image intensity multiplier
 
--  **-transform** the image transform
+-  **-transform** the voxel to image transformation
 
 -  **-norealign** do not realign transform to near-default RAS coordinate system (the default behaviour on image load). This is useful to inspect the transform and strides as they are actually stored in the header, rather than as MRtrix interprets them.
 

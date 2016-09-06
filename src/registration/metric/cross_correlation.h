@@ -84,6 +84,8 @@ namespace MR
                 global_cnt += cnt;
               }
 
+              EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
+
               template <typename ProcessedImageType, typename MaskImageType>
                 void operator() (ProcessedImageType& pimage, MaskImageType& mask) {
                   assert(mask.index(0) == pimage.index(0));
