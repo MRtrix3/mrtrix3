@@ -166,8 +166,14 @@ namespace MR
         if ((*format_handler)->check (H, H.ndim() - Pdim.size()))
           break;
 
-      if (!*format_handler)
-        throw Exception ("unknown format for image \"" + image_name + "\"");
+      if (!*format_handler) {
+        const std::string basename = Path::basename (image_name);
+        const size_t extension_index = basename.find_last_of (".");
+        if (extension_index == std::string::npos)
+          throw Exception ("unknown format for image \"" + image_name + "\" (no file extension specified)");
+        else
+          throw Exception ("unknown format for image \"" + image_name + "\" (unsupported file extension: " + basename.substr (extension_index) + ")");
+      }
 
       H.datatype().set_byte_order_native();
       int a = 0;
