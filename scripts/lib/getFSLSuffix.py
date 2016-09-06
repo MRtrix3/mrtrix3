@@ -1,6 +1,7 @@
 def getFSLSuffix():
   import os, sys
-  from lib.warnMessage import warnMessage
+  from lib.debugMessage import debugMessage
+  from lib.warnMessage  import warnMessage
   fsl_output_type = os.environ.get('FSLOUTPUTTYPE', '')
   if fsl_output_type == 'NIFTI':
     debugMessage('NIFTI -> .nii')

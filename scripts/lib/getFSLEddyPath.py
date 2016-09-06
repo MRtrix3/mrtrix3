@@ -1,6 +1,7 @@
 def getFSLEddyPath(cuda):
   import os
   from lib.binaryInPath import binaryInPath
+  from lib.debugMessage import debugMessage
   from lib.errorMessage import errorMessage
   from lib.warnMessage  import warnMessage
   if cuda:

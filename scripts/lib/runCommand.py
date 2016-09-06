@@ -163,3 +163,4 @@ def runCommand(cmd, exitOnError=True):
       outfile.write(cmd + '\n')
 
   return (return_stdout, return_stderr)
+

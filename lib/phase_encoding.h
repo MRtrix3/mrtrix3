@@ -62,9 +62,9 @@ namespace MR
     void check (const Header& header, const MatrixType& PE)
     {
       check (PE);
-
-      if (((header.ndim() > 3) ? header.size (3) : 1) != (int) PE.rows())
-        throw Exception ("Number of volumes in image \"" + header.name() + "\" does not match that in phase encoding table");
+      const ssize_t num_volumes = (header.ndim() > 3) ? header.size (3) : 1;
+      if (num_volumes != PE.rows())
+        throw Exception ("Number of volumes in image \"" + header.name() + "\" (" + str(num_volumes) + ") does not match that in phase encoding table (" + str(PE.rows()) + ")");
     }
 
 
@@ -91,8 +91,8 @@ namespace MR
     {
       if (!PE.rows()) {
         header.keyval().erase ("pe_scheme");
-        header.keyval().erase ("PhaseEncodingDirection");
-        header.keyval().erase ("TotalReadoutTime");
+        header.keyval().erase ("phaseencodingdirection");
+        header.keyval().erase ("totalreadouttime");
         return;
       }
       PhaseEncoding::check (header, PE);
@@ -113,16 +113,16 @@ namespace MR
       }
       if (variation) {
         header.keyval()["pe_scheme"] = pe_scheme;
-        header.keyval().erase ("PhaseEncodingDirection");
-        header.keyval().erase ("TotalReadoutTime");
+        header.keyval().erase ("phaseencodingdirection");
+        header.keyval().erase ("totalreadouttime");
       } else {
         header.keyval().erase ("pe_scheme");
         const Eigen::Vector3 dir { PE(0, 0), PE(0, 1), PE(0, 2) };
-        header.keyval()["PhaseEncodingDirection"] = dir2id (dir);
+        header.keyval()["phaseencodingdirection"] = dir2id (dir);
         if (PE.cols() >= 4)
-          header.keyval()["TotalReadoutTime"] = PE(0, 3);
+          header.keyval()["totalreadouttime"] = str(PE(0, 3), 3);
         else
-          header.keyval().erase ("TotalReadoutTime");
+          header.keyval().erase ("totalreadouttime");
       }
     }
 

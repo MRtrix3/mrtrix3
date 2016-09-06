@@ -17,19 +17,21 @@
 import math, os, sys
 import lib.app, lib.cmdlineParser
 
-from lib.binaryInPath   import binaryInPath
-from lib.delFile        import delFile
-from lib.errorMessage   import errorMessage
-from lib.getFSLEddyPath import getFSLEddyPath
-from lib.getFSLSuffix   import getFSLSuffix
-from lib.getHeaderInfo  import getHeaderInfo
-from lib.getUserPath    import getUserPath
-from lib.getPEDir       import getPEDir
-from lib.imagesMatch    import imagesMatch
-from lib.isWindows      import isWindows
-from lib.printMessage   import printMessage
-from lib.runCommand     import runCommand
-from lib.warnMessage    import warnMessage
+from lib.binaryInPath      import binaryInPath
+from lib.delFile           import delFile
+from lib.errorMessage      import errorMessage
+from lib.getFSLEddyPath    import getFSLEddyPath
+from lib.getFSLSuffix      import getFSLSuffix
+from lib.getHeaderInfo     import getHeaderInfo
+from lib.getHeaderProperty import getHeaderProperty
+from lib.getUserPath       import getUserPath
+from lib.getPEDir          import getPEDir
+from lib.getPEScheme       import getPEScheme
+from lib.imagesMatch       import imagesMatch
+from lib.isWindows         import isWindows
+from lib.printMessage      import printMessage
+from lib.runCommand        import runCommand
+from lib.warnMessage       import warnMessage
 
 lib.app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
 lib.app.addCitation('', 'Andersson, J. L. & Sotiropoulos, S. N. An integrated approach to correction for off-resonance effects and subject movement in diffusion MR imaging. NeuroImage, 2015, 125, 1063-1078', True)
@@ -131,13 +133,15 @@ lib.app.gotoTempDir()
 
 # Get information on the input images, particularly so that their validity can be checked
 dwi_size = [ int(s) for s in getHeaderInfo('dwi.mif', 'size').split() ]
-dwi_pe_scheme = [ line.split() for line in getHeaderProperty('dwi.mif', 'pe_scheme').split('\n') ]
+dwi_pe_scheme = getPEScheme('dwi.mif')
 if lib.app.args.topup_images:
   topup_size = [ int[s] for s in getHeaderInfo('topup_in.mif', 'size').split() ]
   if not len(topup_size) == 4:
     errorMessage('File provided using -topup_images option must contain more than one image volume')
-  topup_pe_scheme = [ line.split() for line in getHeaderProperty('topup_in.mif', 'pe_scheme').split('\n') ]
-grad = [ float(f) for f in (line.split() for line in getHeaderInfo('dwi.mif', 'dwgrad').split('\n')) ]
+  topup_pe_scheme = getPEScheme('topup_in.mif')
+grad = getHeaderInfo('dwi.mif', 'dwgrad').split('\n')
+grad = [ line.split() for line in grad ]
+grad = [ (float(f) for f in line) for line in grad ]
 stride = getHeaderInfo('dwi.mif', 'stride')
 num_volumes = 1
 if len(dwi_size) == 4:
@@ -149,7 +153,7 @@ if len(dwi_size) == 4:
 #   such information is present in the header, let's grab it here
 manual_pe_dir = None
 if lib.app.args.pe_dir:
-  manual_pe_dir = getPEDir(lib.app.args.pe_dir)
+  manual_pe_dir = [ float(i) for i in getPEDir(lib.app.args.pe_dir) ]
 manual_trt = None
 if lib.app.args.readout_time:
   manual_trt = float(lib.app.args.readout_time)
@@ -164,7 +168,7 @@ if not len(grad) == num_volumes:
 
 
 
-do_topup = not PE_scheme == 'None'
+do_topup = not PE_design == 'None'
 
 
 
@@ -182,14 +186,14 @@ if manual_pe_dir:
 
   # Still construct the manual PE scheme even with 'None' or 'Pair':
   #   there may be information in the header that we need to compare against
-  if PE_scheme == 'None':
-    line = manual_pe_dir.extend(trt)
-    dwi_manual_pe_scheme = ' '.join(str(i) for i in line) * num_volumes
+  if PE_design == 'None':
+    line = manual_pe_dir
+    line.append(trt)
+    dwi_manual_pe_scheme = [ line ] * num_volumes
 
   # With 'Pair', also need to construct the manual scheme for topup_images
-  elif PE_scheme == 'Pair':
-    line = manual_pe_dir.extend(trt)
-    dwi_manual_pe_scheme = ' '.join(str(i) for i in line) * num_volumes
+  elif PE_design == 'Pair':
+    dwi_manual_pe_scheme = [ manual_pe_dir.append(trt) ] * num_volumes
     num_topup_volumes = topup_size[3]
     # Assume that first half of volumes have same direction as series;
     #   second half have the opposite direction
@@ -200,16 +204,17 @@ if manual_pe_dir:
   # If -rpe_all, need to scan through grad and figure out the pairings
   # This will be required if relying on user-specified phase encode direction
   # It will also be required at the end of the script for the manual recombination
-  elif PE_scheme == 'All':
+  elif PE_design == 'All':
     grad_matchings = [ num_volumes for row in grad ]
     grad_pairs = [ ]
     for index1 in enumerate(grad):
       if grad_matchings[index1] == num_volumes: # As yet unpaired
         for index2 in range(index1+1, num_volumes):
-          if grad[index1] == grad[index2]:
-            grad_matchings[index1] = index2;
-            grad_matchings[index2] = index1;
-            grad_pairs.append([index1, index2])
+          if grad_matchings[index2] == num_volumes: # Also as yet unpaired
+            if grad[index1] == grad[index2]:
+              grad_matchings[index1] = index2;
+              grad_matchings[index2] = index1;
+              grad_pairs.append([index1, index2])
     if not len(grad_pairs) == num_volumes/2:
       errorMessage('Unable to determine matching DWI volume pairs for reversed phase-encode combination')
     # Construct manual PE scheme here:
@@ -218,9 +223,14 @@ if manual_pe_dir:
     dwi_manual_pe_scheme = [ ]
     for index in range(0, num_volumes):
       if grad_matchings[index] > index:
-        dwi_manual_pe_scheme.append(manual_pe_dir.extend(trt))
+        dwi_manual_pe_scheme.append(manual_pe_dir.append(trt))
       else:
-        dwi_manual_pe_scheme.append( [ -i for i in manual_pe_dir ].extend(trt))
+        dwi_manual_pe_scheme.append( [ -i for i in manual_pe_dir ].append(trt))
+
+else: # No manual phase encode direction defined
+
+  if not PE_design == 'Header':
+    errorMessage('If not using -rpe_header, phase encoding direction must be provided using the -pe_dir option')
 
 
 
@@ -336,7 +346,7 @@ if lib.app.args.topup_images:
     if not topup_pe_scheme:
       errorMessage('No phase-encoding information present in topup image header');
 
-else: # No topup images explicitly provided: In some cases, can extract appropriate b=0 images from DWI
+elif not PE_design == 'None': # No topup images explicitly provided: In some cases, can extract appropriate b=0 images from DWI
 
   # If using 'All' or 'Header', and haven't been given any topup images, need to extract the b=0 volumes from the series,
   #   preserving phase-encoding information while doing so
@@ -349,19 +359,32 @@ else: # No topup images explicitly provided: In some cases, can extract appropri
         f.write(' '.join(str(i) for i in line))
     runCommand('mrconvert series.mif -import_pe_table series_manual_pe_scheme.txt - | dwiextract - topup_in.mif -bzero')
   elif PE_design == 'Header':
-    runCommand('dwiextract dwi.mif -bzero topup_in.mif')
-  else:
-    errorMessage('Script error: Shouldn\'t be here')
-  # If there's no contrast remaining in the phase-encoding scheme, it'll be written to
-  #   PhaseEncodingDirection and TotalReadoutTime rather than pe_scheme
-  if not getHeaderProperty('topup_in.mif', 'pe_scheme'):
-    runCommand('mrconvert bzeros.mif topup_in.nii -stride -1,+2,+3,+4 -export_pe_table topup_datain.txt')
-    delFile('topup_in.mif')
+    runCommand('dwiextract dwi.mif -bzero bzeros.mif')
+    # If there's no contrast remaining in the phase-encoding scheme, it'll be written to
+    #   PhaseEncodingDirection and TotalReadoutTime rather than pe_scheme
+    # In this scenario, we will be unable to run topup
+    if getHeaderProperty('bzeros.mif', 'pe_scheme'):
+      runCommand('mrconvert bzeros.mif topup_in.mif -stride -1,+2,+3,+4 -export_pe_table topup_datain.txt')
+    else:
+      warnMessage('DWI header indicates no phase encoding contrast in b=0 images; proceeding without inhomogeneity field estimation')
+      do_topup = False
+    delFile('bzeros.mif')
+
 
 
 
 # Need gradient table if running dwi2mask after applytopup to derive a brain mask for eddy
 runCommand('mrinfo dwi.mif -export_grad_mrtrix grad.b')
+
+
+
+import_dwi_pe_table_option = ''
+print (dwi_manual_pe_scheme)
+if dwi_manual_pe_scheme:
+  with open('dwi_manual_pe_scheme.txt', 'w') as f:
+    for line in dwi_manual_pe_scheme:
+      f.write(' '.join( [ str(f) for f in line ] ) + '\n')
+  import_dwi_pe_table_option = ' -import_pe_table dwi_manual_pe_scheme.txt'
 
 
 
@@ -392,12 +415,7 @@ if do_topup:
   # Apply the warp field to the input image series to get an initial corrected volume estimate
   # applytopup can't receive the complete DWI input and correct it as a whole, because the phase-encoding
   #   details may vary between volumes
-  import_dwi_pe_table_option = ''
   if dwi_manual_pe_scheme:
-    with open('dwi_manual_pe_scheme.txt', 'w') as f:
-      for line in dwi_manual_pe_scheme:
-        f.write(' '.join(line))
-    import_dwi_pe_table_option = ' -import_pe_table dwi_manual_pe_scheme.txt'
     runCommand('mrconvert dwi.mif' + import_dwi_pe_table_option + ' - | mrinfo - -export_pe_eddy applytopup_config.txt applytopup_indices.txt')
   else:
     runCommand('mrinfo ' + topup_in_path + ' -export_pe_eddy applytopup_config.txt applytopup_indices.txt')
@@ -452,16 +470,17 @@ if not os.path.isfile(bvecs_path):
 # This could be either due to use of -rpe_all option, or just due to the data provided with -rpe_header
 # Rather than trying to re-use the code that was used in the case of -rpe_all, run fresh code
 # The phase-encoding scheme needs to be checked also
-volume_matchings = [ num_volumes for row in grad ]
+volume_matchings = [ num_volumes ] * num_volumes
 volume_pairs = [ ]
-for index1 in enumerate(grad):
+for index1 in range(num_volumes):
   if volume_matchings[index1] == num_volumes: # As yet unpaired
     for index2 in range(index1+1, num_volumes):
-      # Here, need to check both gradient matching and reversed phase-encode direction
-      if not max(abs(dwi_pe_scheme[index1][0:3] + dwi_pe_scheme[index2][0:3])) and grad[index1] == grad[index2]:
-        volume_matchings[index1] = index2;
-        volume_matchings[index2] = index1;
-        volume_pairs.append([index1, index2])
+      if volume_matchings[index2] == num_volumes: # Also as yet unpaired
+        # Here, need to check both gradient matching and reversed phase-encode direction
+        if not max(abs(dwi_pe_scheme[index1][0:3] + dwi_pe_scheme[index2][0:3])) and grad[index1] == grad[index2]:
+          volume_matchings[index1] = index2;
+          volume_matchings[index2] = index1;
+          volume_pairs.append([index1, index2])
 
 if not len(volume_pairs) == num_volumes/2:
 
