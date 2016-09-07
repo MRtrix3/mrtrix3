@@ -2,7 +2,7 @@ mrtrix_bin_list = [ ]
 
 def runCommand(cmd, exitOnError=True):
 
-  import lib.app, os, subprocess, sys
+  import inspect, lib.app, os, subprocess, sys
   from lib.debugMessage import debugMessage
   from lib.errorMessage import errorMessage
   from lib.isWindows    import isWindows
@@ -143,8 +143,9 @@ def runCommand(cmd, exitOnError=True):
 
   if (error):
     if exitOnError:
+      caller = inspect.getframeinfo(inspect.stack()[1][0])
       printMessage('')
-      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + lib.app.colourError + '[ERROR] Command failed: ' + cmd + lib.app.colourClear + '\n')
+      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + lib.app.colourError + '[ERROR] Command failed: ' + cmd + lib.app.colourClear + lib.app.colourDebug + ' (' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')' + lib.app.colourClear + '\n')
       sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + lib.app.colourPrint + 'Output of failed command:' + lib.app.colourClear + '\n')
       sys.stderr.write(error_text)
       if not lib.app.cleanup and lib.app.tempDir:
