@@ -232,6 +232,7 @@ namespace MR
         Buffer (const Buffer& b) : 
           Header (b), fetch_func (b.fetch_func), store_func (b.store_func) { }
 
+      EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         FORCE_INLINE ValueType get_value (size_t offset) const {
           ssize_t nseg = offset / io->segment_size();
@@ -337,7 +338,7 @@ namespace MR
       if (!io->is_file_backed()) // this is a scratch image
         return io->segment(0);
 
-      // check wether we can still do direct IO
+      // check whether we can still do direct IO
       // if so, return address where mapped
       if (io->nsegments() == 1 && datatype() == DataType::from<ValueType>() && intensity_offset() == 0.0 && intensity_scale() == 1.0)
         return io->segment(0);
@@ -353,7 +354,7 @@ namespace MR
     {
       if (!valid())
         throw Exception ("FIXME: don't invoke get_image() with invalid Header!");
-      auto buffer = std::make_shared<typename Image<ValueType>::Buffer> (*this, read_write_if_existing);
+      std::shared_ptr<typename Image<ValueType>::Buffer> buffer (new typename Image<ValueType>::Buffer (*this, read_write_if_existing));
       return { buffer };
     }
 

@@ -379,11 +379,10 @@ void run ()
       throw Exception ("mrmath requires either multiple input images, or the -axis option to be provided");
 
     // Pre-load all image headers
-    std::vector<Header> headers_in;
-    // std::vector<std::unique_ptr<Header>> headers_in;
+    std::vector<Header, Eigen::aligned_allocator<Header>> headers_in (num_inputs);
 
     // Header of first input image is the template to which all other input images are compared
-    headers_in.push_back (Header::open (argument[0]));
+    headers_in[0] = Header::open (argument[0]);
     Header header (headers_in[0]);
     header.datatype() = DataType::from_command_line (DataType::Float32);
 
@@ -395,7 +394,7 @@ void run ()
     for (size_t i = 1; i != num_inputs; ++i) {
       const std::string path = argument[i];
       // headers_in.push_back (std::unique_ptr<Header> (new Header (Header::open (path))));
-      headers_in.push_back (Header::open (path));
+      headers_in[i] = Header::open (path);
       const Header& temp (headers_in[i]);
       if (temp.ndim() < header.ndim())
         throw Exception ("Image " + path + " has fewer axes than first imput image " + header.name());
@@ -431,6 +430,7 @@ void run ()
       ProgressBar progress (std::string("computing ") + operations[op] + " across " 
           + str(headers_in.size()) + " images", num_inputs);
       for (size_t i = 0; i != headers_in.size(); ++i) {
+        assert (headers_in[i].valid());
         assert (headers_in[i].is_file_backed());
         kernel->process (headers_in[i]);
         ++progress;
