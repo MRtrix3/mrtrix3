@@ -80,6 +80,11 @@ void run()
       if ((bzero && (grad (row, 3) < bzero_threshold)) || (!bzero && (grad (row, 3) > bzero_threshold)))
         volumes.push_back (row);
     }
+  } else {
+    // "pe" option has been provided - need to initialise list of volumes
+    //   to include all voxels, as the PE selection filters from this
+    for (int i = 0; i != grad.rows(); ++i)
+      volumes.push_back (i);
   }
 
   opt = get_options ("pe");
@@ -100,7 +105,7 @@ void run()
         }
       }
       if (filter.size() == 4) {
-        if (std::abs (pe_scheme(i, 3) - filter[3]) > 5e-4) {
+        if (std::abs (pe_scheme(i, 3) - filter[3]) > 5e-3) {
           keep = false;
           break;
         }

@@ -45,7 +45,7 @@ namespace MR
         for (auto i = json.cbegin(); i != json.cend(); ++i) {
           // Only load simple parameters at the first level
           if (i->is_primitive())
-            H.keyval().insert (std::make_pair (lowercase (i.key()), str(i.value())));
+            H.keyval().insert (std::make_pair (i.key(), str(i.value())));
         }
       }
 

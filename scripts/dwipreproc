@@ -135,13 +135,13 @@ lib.app.gotoTempDir()
 dwi_size = [ int(s) for s in getHeaderInfo('dwi.mif', 'size').split() ]
 dwi_pe_scheme = getPEScheme('dwi.mif')
 if lib.app.args.topup_images:
-  topup_size = [ int[s] for s in getHeaderInfo('topup_in.mif', 'size').split() ]
+  topup_size = [ int(s) for s in getHeaderInfo('topup_in.mif', 'size').split() ]
   if not len(topup_size) == 4:
     errorMessage('File provided using -topup_images option must contain more than one image volume')
   topup_pe_scheme = getPEScheme('topup_in.mif')
 grad = getHeaderInfo('dwi.mif', 'dwgrad').split('\n')
 grad = [ line.split() for line in grad ]
-grad = [ (float(f) for f in line) for line in grad ]
+grad = [ [ float(f) for f in line ] for line in grad ]
 stride = getHeaderInfo('dwi.mif', 'stride')
 num_volumes = 1
 if len(dwi_size) == 4:
@@ -187,27 +187,30 @@ if manual_pe_dir:
   # Still construct the manual PE scheme even with 'None' or 'Pair':
   #   there may be information in the header that we need to compare against
   if PE_design == 'None':
-    line = manual_pe_dir
+    line = manual_pe_dir.copy()
     line.append(trt)
     dwi_manual_pe_scheme = [ line ] * num_volumes
 
   # With 'Pair', also need to construct the manual scheme for topup_images
   elif PE_design == 'Pair':
-    dwi_manual_pe_scheme = [ manual_pe_dir.append(trt) ] * num_volumes
+    line = manual_pe_dir.copy()
+    line.append(trt)
+    dwi_manual_pe_scheme = [ line ] * num_volumes
     num_topup_volumes = topup_size[3]
     # Assume that first half of volumes have same direction as series;
     #   second half have the opposite direction
-    topup_manual_pe_scheme = ' '.join(str(i) for i in line) * (num_topup_volumes/2)
-    line = [ -i for i in manual_pe_dir].extend(trt)
-    topup_manual_pe_scheme.append(' '.join(str(i) for i in line) * (num_topup_volumes/2))
+    topup_manual_pe_scheme = [ line ] * int(num_topup_volumes/2)
+    line = [ (-i if i else 0.0) for i in manual_pe_dir ]
+    line.append(trt)
+    topup_manual_pe_scheme.extend( [ line ] * int(num_topup_volumes/2) )
 
   # If -rpe_all, need to scan through grad and figure out the pairings
   # This will be required if relying on user-specified phase encode direction
   # It will also be required at the end of the script for the manual recombination
   elif PE_design == 'All':
-    grad_matchings = [ num_volumes for row in grad ]
+    grad_matchings = [ num_volumes ] * num_volumes
     grad_pairs = [ ]
-    for index1 in enumerate(grad):
+    for index1 in range(num_volumes):
       if grad_matchings[index1] == num_volumes: # As yet unpaired
         for index2 in range(index1+1, num_volumes):
           if grad_matchings[index2] == num_volumes: # Also as yet unpaired
@@ -222,10 +225,11 @@ if manual_pe_dir:
     #   if there's one in the header, want to compare to the manually-generated one
     dwi_manual_pe_scheme = [ ]
     for index in range(0, num_volumes):
-      if grad_matchings[index] > index:
-        dwi_manual_pe_scheme.append(manual_pe_dir.append(trt))
-      else:
-        dwi_manual_pe_scheme.append( [ -i for i in manual_pe_dir ].append(trt))
+      line = manual_pe_dir.copy()
+      if grad_matchings[index] < index:
+        line = [ (-i if i else 0.0) for i in line ]
+      line.append(trt)
+      dwi_manual_pe_scheme.append(line)
 
 else: # No manual phase encode direction defined
 
@@ -267,7 +271,7 @@ if dwi_pe_scheme:
   if overwrite_scheme:
     dwi_pe_scheme = dwi_pe_manual_scheme # May be used later for triggering volume recombination
   else:
-    dwi_manual_pe_scheme = None # So that the scheme stored within the header will be used
+    dwi_manual_pe_scheme = None # To guarantee that the scheme stored within the header will be used
 else:
   # Nothing in the header; rely entirely on user specification
   if PE_design == 'Header':
@@ -276,6 +280,27 @@ else:
     errorMessage('No phase encoding information provided either in header or at command-line')
   if auto_trt_warning:
     warnMessage('Total readout time not provided at command-line; assuming sane default of ' + str(auto_trt))
+  dwi_pe_scheme = dwi_manual_pe_scheme # May be needed later for triggering volume recombination
+
+
+
+# This may be required by -rpe_all for extracting b=0 volumes while retaining phase-encoding information
+import_dwi_pe_table_option = ''
+if dwi_manual_pe_scheme:
+  with open('dwi_manual_pe_scheme.txt', 'w') as f:
+    for line in dwi_manual_pe_scheme:
+      f.write(' '.join( [ str(f) for f in line ] ) + '\n')
+  import_dwi_pe_table_option = ' -import_pe_table dwi_manual_pe_scheme.txt'
+
+
+
+# This may be required when setting up the topup call
+import_topup_pe_table_option = ''
+if topup_manual_pe_scheme:
+  with open('topup_manual_pe_scheme.txt', 'w') as f:
+    for line in topup_manual_pe_scheme:
+      f.write(' '.join( [ str(f) for f in line ] ) + '\n')
+  import_topup_pe_table_option = ' -import_pe_table topup_manual_pe_scheme.txt'
 
 
 
@@ -320,12 +345,13 @@ if lib.app.args.topup_images:
         if not manual_trt:
           auto_trt_warning = True
       else:
-        if not series_pe_scheme:
+        if not dwi_pe_scheme:
           errorMessage('Unable to determine phase-encoding design of topup images')
-        line = series_pe_scheme[0]
-        topup_manual_pe_scheme = ' '.join(str(i) for i in line) * (num_topup_volumes/2)
-        line = [ -i for i in line[0:3]].extend(trt)
-        topup_manual_pe_scheme.append(' '.join(str(i) for i in line) * (num_topup_volumes/2))
+        line = dwi_pe_scheme[0].copy()
+        topup_manual_pe_scheme = [ ' '.join(str(i) for i in line) ] * int(num_topup_volumes/2)
+        line = [ (-i if i else 0.0) for i in line[0:3] ]
+        line.append(trt)
+        topup_manual_pe_scheme.append( [ ' '.join(str(i) for i in line) ] * int(num_topup_volumes/2))
 
   elif PE_design == 'All':
     # Criteria:
@@ -354,10 +380,8 @@ elif not PE_design == 'None': # No topup images explicitly provided: In some cas
   # With -rpe_all, need to write inferred phase-encoding to file and import before using dwiextract so that the phase-encoding
   #   of the extracted b=0's is propagated to the generated b=0 series
   if PE_design == 'All':
-    with open('series_manual_pe_scheme.txt', 'w') as f:
-      for line in series_manual_pe_scheme:
-        f.write(' '.join(str(i) for i in line))
-    runCommand('mrconvert series.mif -import_pe_table series_manual_pe_scheme.txt - | dwiextract - topup_in.mif -bzero')
+    runCommand('mrconvert dwi.mif' + import_dwi_pe_table_option + ' - | dwiextract - topup_in.mif -bzero')
+    topup_size = [ int(s) for s in getHeaderInfo('topup_in.mif', 'size').split() ]
   elif PE_design == 'Header':
     runCommand('dwiextract dwi.mif -bzero bzeros.mif')
     # If there's no contrast remaining in the phase-encoding scheme, it'll be written to
@@ -365,6 +389,7 @@ elif not PE_design == 'None': # No topup images explicitly provided: In some cas
     # In this scenario, we will be unable to run topup
     if getHeaderProperty('bzeros.mif', 'pe_scheme'):
       runCommand('mrconvert bzeros.mif topup_in.mif -stride -1,+2,+3,+4 -export_pe_table topup_datain.txt')
+      topup_size = [ int(s) for s in getHeaderInfo('topup_in.mif', 'size').split() ]
     else:
       warnMessage('DWI header indicates no phase encoding contrast in b=0 images; proceeding without inhomogeneity field estimation')
       do_topup = False
@@ -372,19 +397,8 @@ elif not PE_design == 'None': # No topup images explicitly provided: In some cas
 
 
 
-
 # Need gradient table if running dwi2mask after applytopup to derive a brain mask for eddy
 runCommand('mrinfo dwi.mif -export_grad_mrtrix grad.b')
-
-
-
-import_dwi_pe_table_option = ''
-print (dwi_manual_pe_scheme)
-if dwi_manual_pe_scheme:
-  with open('dwi_manual_pe_scheme.txt', 'w') as f:
-    for line in dwi_manual_pe_scheme:
-      f.write(' '.join( [ str(f) for f in line ] ) + '\n')
-  import_dwi_pe_table_option = ' -import_pe_table dwi_manual_pe_scheme.txt'
 
 
 
@@ -407,7 +421,7 @@ if do_topup:
     topup_in_path = 'topup_in_crop.mif'
 
   # Do the conversion in preparation for topup
-  runCommand('mrconvert ' + topup_in_path + ' topup_in.nii -stride -1,+2,+3,+4 -export_pe_table topup_datain.txt')
+  runCommand('mrconvert ' + topup_in_path + ' topup_in.nii' + import_topup_pe_table_option + ' -stride -1,+2,+3,+4 -export_pe_table topup_datain.txt')
 
   # Run topup
   runCommand(topup_cmd + ' --imain=topup_in.nii --datain=topup_datain.txt --out=field --fout=field_map' + fsl_suffix + ' --config=' + topup_config_path)
@@ -425,9 +439,10 @@ if do_topup:
   index = 1
   with open('applytopup_config.txt', 'r') as f:
     for line in f:
-      applytopup_index_list.append (index)
       image_path = 'dwi_pe_' + str(index) + '.nii'
       runCommand('dwiextract dwi.mif' + import_dwi_pe_table_option + ' -pe ' + ','.join(line.split()) + ' ' + image_path)
+      applytopup_index_list.append(str(index))
+      applytopup_image_list.append(image_path)
       index += 1
 
   # Finally ready to run applytopup
@@ -477,10 +492,12 @@ for index1 in range(num_volumes):
     for index2 in range(index1+1, num_volumes):
       if volume_matchings[index2] == num_volumes: # Also as yet unpaired
         # Here, need to check both gradient matching and reversed phase-encode direction
-        if not max(abs(dwi_pe_scheme[index1][0:3] + dwi_pe_scheme[index2][0:3])) and grad[index1] == grad[index2]:
+        if not any(dwi_pe_scheme[index1][i] + dwi_pe_scheme[index2][i] for i in range(0,3)) and grad[index1] == grad[index2]:
           volume_matchings[index1] = index2;
           volume_matchings[index2] = index1;
           volume_pairs.append([index1, index2])
+
+
 
 if not len(volume_pairs) == num_volumes/2:
 
@@ -500,7 +517,7 @@ else:
   with open(bvecs_path, 'r') as f:
     for axis, line in enumerate(f):
       bvecs[axis] = line.split()
-  bvecs_combined_transpose = [ [] for volume in range(num_volumes) ]
+  bvecs_combined_transpose = [ [] * num_volumes ]
   for volume in range(0, num_volumes):
     bvec_sum = [ float(bvecs[0][volume]) + float(bvecs[0][volume+num_volumes]),
                  float(bvecs[1][volume]) + float(bvecs[1][volume+num_volumes]),

@@ -91,8 +91,8 @@ namespace MR
     {
       if (!PE.rows()) {
         header.keyval().erase ("pe_scheme");
-        header.keyval().erase ("phaseencodingdirection");
-        header.keyval().erase ("totalreadouttime");
+        header.keyval().erase ("PhaseEncodingDirection");
+        header.keyval().erase ("TotalReadoutTime");
         return;
       }
       PhaseEncoding::check (header, PE);
@@ -113,16 +113,16 @@ namespace MR
       }
       if (variation) {
         header.keyval()["pe_scheme"] = pe_scheme;
-        header.keyval().erase ("phaseencodingdirection");
-        header.keyval().erase ("totalreadouttime");
+        header.keyval().erase ("PhaseEncodingDirection");
+        header.keyval().erase ("TotalReadoutTime");
       } else {
         header.keyval().erase ("pe_scheme");
         const Eigen::Vector3 dir { PE(0, 0), PE(0, 1), PE(0, 2) };
-        header.keyval()["phaseencodingdirection"] = dir2id (dir);
+        header.keyval()["PhaseEncodingDirection"] = dir2id (dir);
         if (PE.cols() >= 4)
-          header.keyval()["totalreadouttime"] = str(PE(0, 3), 3);
+          header.keyval()["TotalReadoutTime"] = str(PE(0, 3), 3);
         else
-          header.keyval().erase ("totalreadouttime");
+          header.keyval().erase ("TotalReadoutTime");
       }
     }
 
@@ -160,24 +160,23 @@ namespace MR
       if (PE.cols() != 4)
         throw Exception ("Phase-encoding matrix requires 4 columns to convert to eddy format");
       config.resize (0, 0);
-      indices.resize (PE.rows());
+      indices = Eigen::Array<int, Eigen::Dynamic, 1>::Constant (PE.rows(), PE.rows());
       for (ssize_t PE_row = 0; PE_row != PE.rows(); ++PE_row) {
-
         for (ssize_t config_row = 0; config_row != config.rows(); ++config_row) {
-          if (PE.template block<1,3>(PE_row, 0).isApprox (config.block<1,3>(config_row, 0))
-              && ((std::abs(PE(PE_row, 3) - config(config_row, 3))) / (PE(PE_row, 3) + config(config_row, 3)) < 1e-3)) {
-
+          bool dir_match = PE.template block<1,3>(PE_row, 0).isApprox (config.block<1,3>(config_row, 0));
+          bool time_match = std::abs (PE(PE_row, 3) - config(config_row, 3)) < 1e-3;
+          if (dir_match && time_match) {
             // FSL-style index file indexes from 1
             indices[PE_row] = config_row + 1;
-            continue;
-
+            break;
           }
         }
-        // No corresponding match found in config matrix; create a new entry
-        config.conservativeResize (config.rows()+1, 4);
-        config.row(config.rows()-1) = PE.row(PE_row);
-        indices[PE_row] = config.rows();
-
+        if (indices[PE_row] == PE.rows()) {
+          // No corresponding match found in config matrix; create a new entry
+          config.conservativeResize (config.rows()+1, 4);
+          config.row(config.rows()-1) = PE.row(PE_row);
+          indices[PE_row] = config.rows();
+        }
       }
     }
 
@@ -201,7 +200,7 @@ namespace MR
         // Write phase-encode direction as integers; other information as floating-point
         out << PE.template block<1, 3>(row, 0).template cast<int>();
         if (PE.cols() > 3)
-          out << " " << PE.block(row, 0, 1, PE.cols()-3);
+          out << " " << PE.block(row, 3, 1, PE.cols()-3);
         out << "\n";
       }
     }

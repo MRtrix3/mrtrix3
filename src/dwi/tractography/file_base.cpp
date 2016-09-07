@@ -32,7 +32,7 @@ namespace MR {
         std::string data_file;
 
         while (kv.next()) {
-          std::string key = lowercase (kv.key());
+          const std::string key = lowercase (kv.key());
           if (key == "roi") {
             try {
               std::vector<std::string> V (split (kv.value(), " \t", true, 2));
@@ -45,7 +45,7 @@ namespace MR {
           else if (key == "comment") properties.comments.push_back (kv.value());
           else if (key == "file") data_file = kv.value();
           else if (key == "datatype") dtype = DataType::parse (kv.value());
-          else properties[key] = kv.value();
+          else properties[kv.key()] = kv.value();
         }
 
         if (dtype == DataType::Undefined)

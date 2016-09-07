@@ -101,8 +101,8 @@ namespace MR
         }
       } else {
         // Header entries are cast to lowercase at some point
-        const auto it_dir  = header.keyval().find ("phaseencodingdirection");
-        const auto it_time = header.keyval().find ("totalreadouttime");
+        const auto it_dir  = header.keyval().find ("PhaseEncodingDirection");
+        const auto it_time = header.keyval().find ("TotalReadoutTime");
         if (it_dir != header.keyval().end() && it_time != header.keyval().end()) {
           Eigen::Matrix<default_type, 4, 1> row;
           row.head<3>() = id2dir (it_dir->second);

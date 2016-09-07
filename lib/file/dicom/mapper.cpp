@@ -108,7 +108,7 @@ namespace MR {
         const Image& image (*(*series[0])[0]);
 
         if (std::isfinite (image.echo_time))
-          H.keyval()["echotime"] = str (0.001 * image.echo_time, 6);
+          H.keyval()["EchoTime"] = str (0.001 * image.echo_time, 6);
 
         size_t nchannels = image.frames.size() ? 1 : image.data_size / (image.dim[0] * image.dim[1] * (image.bits_alloc/8));
         if (nchannels > 1) 
