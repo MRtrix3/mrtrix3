@@ -42,8 +42,12 @@ void usage ()
   AUTHOR = "Daan Christiaens (daan.christiaens@kuleuven.be) & Jelle Veraart (jelle.veraart@nyumc.org) & J-Donald Tournier (jdtournier@gmail.com)";
   
   REFERENCES
-    + "Veraart, J.; Fieremans, E. & Novikov, D.S. "
-    "Diffusion MRI noise mapping using random matrix theory "
+    + "Veraart, J.; Novikov, D.S.; Christiaens, D.; Ades-aron, B.; Sijbers, J. & Fieremans, E. " // Internal
+    "Denoising of diffusion MRI using random matrix theory. "
+    "NeuroImage, 2016, in press, doi: 10.1016/j.neuroimage.2016.08.016"
+
+    + "Veraart, J.; Fieremans, E. & Novikov, D.S. " // Internal
+    "Diffusion MRI noise mapping using random matrix theory. "
     "Magn. Res. Med., 2016, early view, doi: 10.1002/mrm.26059";
   
   ARGUMENTS
