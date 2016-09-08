@@ -29,7 +29,6 @@
 #include "dwi/fmls.h"
 #include "dwi/directions/set.h"
 
-#include "gui/dialog/progress.h"
 #include "file/path.h"
 
 
