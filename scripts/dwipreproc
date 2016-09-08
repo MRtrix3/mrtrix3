@@ -432,7 +432,7 @@ if do_topup:
   if dwi_manual_pe_scheme:
     runCommand('mrconvert dwi.mif' + import_dwi_pe_table_option + ' - | mrinfo - -export_pe_eddy applytopup_config.txt applytopup_indices.txt')
   else:
-    runCommand('mrinfo ' + topup_in_path + ' -export_pe_eddy applytopup_config.txt applytopup_indices.txt')
+    runCommand('mrinfo dwi.mif -export_pe_eddy applytopup_config.txt applytopup_indices.txt')
 
   applytopup_index_list = [ ]
   applytopup_image_list = [ ]
@@ -513,6 +513,8 @@ else:
   # Particularly if eddy has provided rotated bvecs, since we're combining two volumes into one that
   #   potentially have subject rotation between them (and therefore the sensitisation direction is
   #   not precisely equivalent), the best we can do is take the mean of the two vectors.
+  # TODO Re-test LSR
+  # TODO Manual recombination of volumes needs to take into account the explicit volume matching
   bvecs = [ [] for axis in range(3) ]
   with open(bvecs_path, 'r') as f:
     for axis, line in enumerate(f):
