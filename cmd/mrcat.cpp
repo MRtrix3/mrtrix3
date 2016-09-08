@@ -168,8 +168,8 @@ void run () {
       scheme_out.resize (nrows, ncols);
       size_t row = 0;
       for (int n = 0; n != num_images; ++n)  {
-        for (ssize_t i = 0; i != input_grads[n].rows(); ++i, ++row)
-          scheme_out.row(row) = input_grads[n].row(i);
+        for (ssize_t i = 0; i != input_schemes[n].rows(); ++i, ++row)
+          scheme_out.row(row) = input_schemes[n].row(i);
       }
     }
     PhaseEncoding::set_scheme (header_out, scheme_out);
