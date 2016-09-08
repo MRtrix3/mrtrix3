@@ -43,6 +43,7 @@ using namespace App;
 
 
 #define AMP2RESPONSE_DEBUG
+#define AMP2RESPONSE_PERVOXEL_IMAGES
 
 
 
@@ -144,10 +145,10 @@ void run ()
 
   const size_t lmax = get_option_value ("lmax", Math::SH::LforN (volumes.size()));
 
-  auto image = header.get_image<default_type>();
+  auto image = header.get_image<float>();
   auto mask = Image<bool>::open (argument[1]);
   check_dimensions (image, mask, 0, 3);
-  auto dir_image = Image<default_type>::open (argument[2]);
+  auto dir_image = Image<float>::open (argument[2]);
   if (dir_image.ndim() < 4 || dir_image.size(3) < 3)
     throw Exception ("input direction image \"" + std::string (argument[2]) + "\" does not have expected dimensions");
   check_dimensions (image, dir_image, 0, 3);
@@ -168,14 +169,9 @@ void run ()
 
       // Grab the image data
       Eigen::VectorXd data (dirs_azel.rows());
-      if (volumes.size()) {
-        for (size_t i = 0; i != volumes.size(); ++i) {
-          image.index(3) = volumes[i];
-          data[i] = image.value();
-        }
-      } else {
-        for (image.index(3) = 0; image.index(3) != image.size(3); ++image.index(3))
-          data[image.index(3)] = image.value();
+      for (size_t i = 0; i != volumes.size(); ++i) {
+        image.index(3) = volumes[i];
+        data[i] = image.value();
       }
 
       // Grab the fibre direction
@@ -211,6 +207,34 @@ void run ()
           rotated_dirs_azel (i, 1) = Math::pi - rotated_dirs_azel (i, 1);
         }
       }
+
+#ifdef AMP2RESPONSE_PERVOXEL_IMAGES
+      // TODO For the sake of generating a figure, output the original and rotated signals to a dixel ODF image
+      Header rotated_header (header);
+      rotated_header.size(0) = rotated_header.size(1) = rotated_header.size(2) = 1;
+      rotated_header.size(3) = volumes.size();
+      Header nonrotated_header (rotated_header);
+      nonrotated_header.size(3) = header.size(3);
+      Eigen::MatrixXd rotated_grad (volumes.size(), 4);
+      for (size_t i = 0; i != volumes.size(); ++i) {
+        rotated_grad.block<1,3>(i, 0) = rotated_dirs_cartesian.row(i);
+        rotated_grad(i, 3) = 1000.0;
+      }
+      rotated_header.set_DW_scheme (rotated_grad);
+      Image<float> out_rotated = Image<float>::create ("rotated_amps_" + str(sf_counter) + ".mif", rotated_header);
+      Image<float> out_nonrotated = Image<float>::create ("nonrotated_amps_" + str(sf_counter) + ".mif", nonrotated_header);
+      out_rotated.index(0) = out_rotated.index(1) = out_rotated.index(2) = 0;
+      out_nonrotated.index(0) = out_nonrotated.index(1) = out_nonrotated.index(2) = 0;
+      for (size_t i = 0; i != volumes.size(); ++i) {
+        image.index(3) = volumes[i];
+        out_rotated.index(3) = i;
+        out_rotated.value() = image.value();
+      }
+      for (size_t i = 0; i != header.size(3); ++i) {
+        image.index(3) = out_nonrotated.index(3) = i;
+        out_nonrotated.value() = image.value();
+      }
+#endif
 
       // Generate the ZSH -> amplitude transform
       Eigen::MatrixXd transform = Math::ZSH::init_amp_transform<default_type> (rotated_dirs_azel.col(1), lmax);
