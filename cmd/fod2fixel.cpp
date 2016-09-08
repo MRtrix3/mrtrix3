@@ -339,17 +339,13 @@ void run ()
 
   FixelFormat::check_fixel_folder (fixel_folder_path, true, true);
 
-  std::unique_ptr <FMLS::FODQueueWriter> writer (new FMLS::FODQueueWriter(fod_data, mask));
+  FMLS::FODQueueWriter writer (fod_data, mask);
 
   const DWI::Directions::Set dirs (1281);
-  std::unique_ptr <Segmenter> fmls (new Segmenter (dirs, Math::SH::LforN (H.size(3))));
-  load_fmls_thresholds (*fmls);
+  Segmenter fmls (dirs, Math::SH::LforN (H.size(3)));
+  load_fmls_thresholds (fmls);
 
-  Thread::run_queue (*writer, Thread::batch (SH_coefs()), Thread::multi (*fmls), Thread::batch (FOD_lobes()), receiver);
-
-  writer.release ();
-  fmls.release ();
-
+  Thread::run_queue (writer, Thread::batch (SH_coefs()), Thread::multi (fmls), Thread::batch (FOD_lobes()), receiver);
   receiver.commit ();
 }
 
