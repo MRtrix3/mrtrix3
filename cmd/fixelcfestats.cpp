@@ -315,6 +315,8 @@ void run() {
         for (; it != smoothing_weights[fixel].end(); ++it)
           value += subject_data_vector[it->first] * it->second.value;
         data (fixel, subject) = value;
+        if (!std::isfinite(value))
+          std::cout << value << std::endl;
       }
       progress++;
     }

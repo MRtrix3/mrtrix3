@@ -47,7 +47,7 @@ void usage ()
     "This is useful for visualising all brain fixels (e.g. the output from fixelcfestats) in 3D.";
 
   ARGUMENTS
-  + Argument ("fixel_in", "the input fixel data file").type_image_in ()
+  + Argument ("fixel_in", "the input fixel data file (within the fixel folder)").type_image_in ()
   + Argument ("tracks",   "the input track file ").type_tracks_in ()
   + Argument ("tsf",      "the output track scalar file").type_file_out ();
 

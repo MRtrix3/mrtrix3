@@ -202,48 +202,48 @@ void Segmented_FOD_receiver::commit ()
 
   auto index_header (H);
   index_header.keyval()[FixelFormat::n_fixels_key] = str(n_fixels);
-  index_header.ndim () = 4;
-  index_header.size (3) = 2;
-  index_header.datatype () = DataType::from<uint32_t> ();
-  index_header.datatype ().set_byte_order_native ();
+  index_header.ndim() = 4;
+  index_header.size(3) = 2;
+  index_header.datatype() = DataType::from<uint32_t>();
+  index_header.datatype().set_byte_order_native();
   index_image = std::unique_ptr<IndexImage> (new IndexImage (IndexImage::create (index_filepath, index_header)));
 
   auto fixel_data_header (H);
-  fixel_data_header.ndim () = 3;
-  fixel_data_header.size (0) = n_fixels;
-  fixel_data_header.size (2) = 1;
-  fixel_data_header.datatype () = DataType::Float32;
-  fixel_data_header.datatype ().set_byte_order_native();
+  fixel_data_header.ndim() = 3;
+  fixel_data_header.size(0) = n_fixels;
+  fixel_data_header.size(2) = 1;
+  fixel_data_header.datatype() = DataType::Float32;
+  fixel_data_header.datatype().set_byte_order_native();
 
-  if (dir_path.size ()) {
+  if (dir_path.size()) {
     auto dir_header (fixel_data_header);
-    dir_header.size (1) = 3;
+    dir_header.size(1) = 3;
     dir_image = std::unique_ptr<DataImage> (new DataImage (DataImage::create (Path::join(fixel_folder_path, dir_path), dir_header)));
-    dir_image->index (1) = 0;
+    dir_image->index(1) = 0;
     FixelFormat::check_fixel_size (*index_image, *dir_image);
   }
 
-  if (afd_path.size ()) {
+  if (afd_path.size()) {
     auto afd_header (fixel_data_header);
-    afd_header.size (1) = 1;
+    afd_header.size(1) = 1;
     afd_image = std::unique_ptr<DataImage> (new DataImage (DataImage::create (Path::join(fixel_folder_path, afd_path), afd_header)));
-    afd_image->index (1) = 0;
+    afd_image->index(1) = 0;
     FixelFormat::check_fixel_size (*index_image, *afd_image);
   }
 
-  if (peak_path.size ()) {
-    auto peak_header (fixel_data_header);
-    peak_header.size (1) = 1;
+  if (peak_path.size()) {
+    auto peak_header(fixel_data_header);
+    peak_header.size(1) = 1;
     peak_image = std::unique_ptr<DataImage> (new DataImage (DataImage::create (Path::join(fixel_folder_path, peak_path), peak_header)));
-    peak_image->index (1) = 0;
+    peak_image->index(1) = 0;
     FixelFormat::check_fixel_size (*index_image, *peak_image);
   }
 
-  if (disp_path.size ()) {
+  if (disp_path.size()) {
     auto disp_header (fixel_data_header);
-    disp_header.size (1) = 1;
+    disp_header.size(1) = 1;
     disp_image = std::unique_ptr<DataImage> (new DataImage (DataImage::create (Path::join(fixel_folder_path, disp_path), disp_header)));
-    disp_image->index (1) = 0;
+    disp_image->index(1) = 0;
     FixelFormat::check_fixel_size (*index_image, *disp_image);
   }
 
@@ -255,37 +255,37 @@ void Segmented_FOD_receiver::commit ()
 
     assign_pos_of (vox_fixels.vox).to (*index_image);
 
-    index_image->index (3) = 0;
+    index_image->index(3) = 0;
     index_image->value () = n_vox_fixels;
 
-    index_image->index (3) = 1;
-    index_image->value () = offset;
+    index_image->index(3) = 1;
+    index_image->value() = offset;
 
     if (dir_image) {
       for (size_t i = 0; i < n_vox_fixels; ++i) {
-        dir_image->index (0) = offset + i;
-        dir_image->row (1) = vox_fixels[i].dir;
+        dir_image->index(0) = offset + i;
+        dir_image->row(1) = vox_fixels[i].dir;
       }
     }
 
     if (afd_image) {
       for (size_t i = 0; i < n_vox_fixels; ++i) {
-        afd_image->index (0) = offset + i;
-        afd_image->value () = vox_fixels[i].integral;
+        afd_image->index(0) = offset + i;
+        afd_image->value() = vox_fixels[i].integral;
       }
     }
 
     if (peak_image) {
       for (size_t i = 0; i < n_vox_fixels; ++i) {
-        peak_image->index (0) = offset + i;
-        peak_image->value () = vox_fixels[i].peak_value;
+        peak_image->index(0) = offset + i;
+        peak_image->value() = vox_fixels[i].peak_value;
       }
     }
 
     if (disp_image) {
       for (size_t i = 0; i < n_vox_fixels; ++i) {
-        disp_image->index (0) = offset + i;
-        disp_image->value () = vox_fixels[i].integral / vox_fixels[i].peak_value;
+        disp_image->index(0) = offset + i;
+        disp_image->value() = vox_fixels[i].integral / vox_fixels[i].peak_value;
       }
     }
 
