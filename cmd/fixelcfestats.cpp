@@ -298,7 +298,7 @@ void run() {
     for (size_t subject = 0; subject < identifiers.size(); subject++) {
       LogLevelLatch log_level (0);
 
-      auto subject_data = Image<float>::open (Path::join(input_fixel_folder, identifiers[subject])).with_direct_io();
+      auto subject_data = Image<float>::open (identifiers[subject]).with_direct_io();
       std::vector<value_type> subject_data_vector (num_fixels, 0.0);
       for (auto i = Loop (index_image)(index_image); i; ++i) {
         index_image.index(3) = 1;
