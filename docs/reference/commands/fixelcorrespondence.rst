@@ -8,21 +8,22 @@ Synopsis
 
 ::
 
-    fixelcorrespondence [ options ]  subject template output
+    fixelcorrespondence [ options ]  subject_data template_folder output_folder output_data
 
--  *subject*: the input subject fixel image.
--  *template*: the input template fixel image.
--  *output*: the output fixel image.
+-  *subject_data*: the input subject fixel data file. This should be a file inside the fixel folder
+-  *template_folder*: the input template fixel folder.
+-  *output_folder*: the output fixel folder. Any existing index file in the output folder will be checked that it matches the expected output.
+-  *output_data*: the name of the output fixel data file. This will be placed in the output fixel folder
 
 Description
 -----------
 
-Obtain angular correpondence by mapping subject fixels to a template fixel mask. It is assumed that the subject image has already been spatially normalised and is aligned with the template.
+Obtain fixel-fixel correpondence between a subject fixel image and a template fixel mask.It is assumed that the subject image has already been spatially normalised and is aligned with the template. The output fixel image will have the same fixels (and directions) of the template.
 
 Options
 -------
 
--  **-angle value** the max angle threshold for computing inter-subject fixel correspondence (Default: 30 degrees)
+-  **-angle value** the max angle threshold for computing inter-subject fixel correspondence (Default: 45 degrees)
 
 Standard options
 ^^^^^^^^^^^^^^^^
