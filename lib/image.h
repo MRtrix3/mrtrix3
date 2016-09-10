@@ -338,7 +338,7 @@ namespace MR
       if (!io->is_file_backed()) // this is a scratch image
         return io->segment(0);
 
-      // check wether we can still do direct IO
+      // check whether we can still do direct IO
       // if so, return address where mapped
       if (io->nsegments() == 1 && datatype() == DataType::from<ValueType>() && intensity_offset() == 0.0 && intensity_scale() == 1.0)
         return io->segment(0);
