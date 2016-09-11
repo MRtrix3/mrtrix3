@@ -45,7 +45,7 @@ namespace MR
       class connectivity {
         public:
           connectivity () : value (0.0) { }
-          connectivity (const connectivity_value_type v) : value (0.0) { }
+          connectivity (const connectivity_value_type v) : value (v) { }
           connectivity_value_type value;
       };
 

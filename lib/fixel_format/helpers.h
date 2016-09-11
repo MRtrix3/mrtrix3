@@ -95,23 +95,22 @@ namespace MR
 
     inline void check_fixel_folder (const std::string &path, bool create_if_missing = false, bool check_if_empty = false)
     {
-
+      std::string path_temp = path;
       // the user must be inside the fixel folder
-      if (path.empty()) {
-
-      }
+      if (path.empty())
+        path_temp = Path::cwd();
 
       bool exists (true);
 
-      if (!(exists = Path::exists (path))) {
-        if (create_if_missing) File::mkdir (path);
-        else throw Exception ("Fixel directory (" + str(path) + ") does not exist");
+      if (!(exists = Path::exists (path_temp))) {
+        if (create_if_missing) File::mkdir (path_temp);
+        else throw Exception ("Fixel directory (" + str(path_temp) + ") does not exist");
       }
-      else if (!Path::is_dir (path))
-        throw Exception (str(path) + " is not a directory");
+      else if (!Path::is_dir (path_temp))
+        throw Exception (str(path_temp) + " is not a directory");
 
-      if (check_if_empty && Path::Dir (path).read_name ().size () != 0)
-        throw Exception ("Expected fixel directory " + path + " to be empty.");
+      if (check_if_empty && Path::Dir (path_temp).read_name ().size () != 0)
+        throw Exception ("Expected fixel directory " + path_temp + " to be empty.");
     }
 
 
