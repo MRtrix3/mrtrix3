@@ -1,1 +1,1 @@
-fixel2sh fod2fixel/afd.msf - | testing_diff_data - fixel2sh/out.mif -frac 1e-3
+fixel2sh fod2fixel/afd.msf - | testing_diff_data - fixel2sh/out.mif -voxel 1e-5

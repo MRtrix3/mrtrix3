@@ -1,1 +1,1 @@
-dwiextract dwi.mif - | mrcalc - 2 -pow - | mrmath -axis 3 - mean tmp1.mif && amp2sh dwi.mif - | sh2power - - | testing_diff_data - tmp1.mif -frac 0.1
+#dwiextract dwi.mif - | mrcalc - 2 -pow - | mrmath -axis 3 - mean tmp1.mif && amp2sh dwi.mif - | sh2power - - | testing_diff_data - tmp1.mif -frac 0.1
