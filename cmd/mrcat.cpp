@@ -152,7 +152,7 @@ void run () {
       out.value() = in.value();
     };
 
-    ThreadedLoop ("concatenating \"" + image_in.name() + "\"...", image_in, 0, std::min<size_t> (image_in.ndim(), image_out.ndim()))
+    ThreadedLoop ("concatenating \"" + image_in.name() + "\"", image_in, 0, std::min<size_t> (image_in.ndim(), image_out.ndim()))
       .run (copy_func, image_in, image_out);
     if (axis < int(image_in.ndim()))
       axis_offset += image_in.size (axis);

@@ -1,10 +1,10 @@
-mrthreshold dwi_mean.mif - | testing_diff_data - mrthreshold/default.mif 0.5
-mrthreshold dwi_mean.mif - -invert | testing_diff_data - mrthreshold/invert.mif 0.5
-mrthreshold dwi_mean.mif - -abs 100 | testing_diff_data - mrthreshold/abs100.mif 0.5
-mrthreshold dwi_mean.mif - -histogram | testing_diff_data - mrthreshold/hist.mif 0.5
-mrthreshold dwi_mean.mif - -percentile 50 | testing_diff_data - mrthreshold/perc50.mif 0.5
-mrthreshold dwi_mean.mif - -top 20 | testing_diff_data - mrthreshold/top20.mif 0.5
-mrthreshold dwi_mean.mif - -bottom 20 | testing_diff_data - mrthreshold/bottom20.mif 0.5
-mrthreshold dwi_mean.mif - -toppercent 10 | testing_diff_data - mrthreshold/top10perc.mif 0.5
-mrthreshold dwi_mean.mif - -bottompercent 10 | testing_diff_data - mrthreshold/bottom10perc.mif 0.5
-mrthreshold dwi_mean.mif - -mask mask.mif | testing_diff_data - mrthreshold/masked.mif 0.5
+mrthreshold dwi_mean.mif - | testing_diff_data - mrthreshold/default.mif
+mrthreshold dwi_mean.mif - -invert | testing_diff_data - mrthreshold/invert.mif
+mrthreshold dwi_mean.mif - -abs 100 | testing_diff_data - mrthreshold/abs100.mif
+mrthreshold dwi_mean.mif - -histogram | testing_diff_data - mrthreshold/hist.mif
+mrthreshold dwi_mean.mif - -percentile 50 | testing_diff_data - mrthreshold/perc50.mif
+mrthreshold dwi_mean.mif - -top 20 | testing_diff_data - mrthreshold/top20.mif
+mrthreshold dwi_mean.mif - -bottom 20 | testing_diff_data - mrthreshold/bottom20.mif
+mrthreshold dwi_mean.mif - -toppercent 10 | testing_diff_data - mrthreshold/top10perc.mif
+mrthreshold dwi_mean.mif - -bottompercent 10 | testing_diff_data - mrthreshold/bottom10perc.mif
+mrthreshold dwi_mean.mif - -mask mask.mif | testing_diff_data - mrthreshold/masked.mif
