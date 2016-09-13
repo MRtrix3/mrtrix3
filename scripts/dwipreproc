@@ -461,6 +461,7 @@ else:
 
 
 # Run eddy
+# TODO Detect eddy version and use outlier replacement if available
 runCommand('mrconvert dwi.mif' + import_dwi_pe_table_option + ' dwi.nii -stride -1,+2,+3,+4 -export_grad_fsl bvecs bvals -export_pe_eddy eddy_config.txt eddy_indices.txt')
 delFile('dwi.mif')
 runCommand(eddy_cmd + ' --imain=dwi.nii --mask=mask.nii --acqp=eddy_config.txt --index=eddy_indices.txt --bvecs=bvecs --bvals=bvals' + eddy_in_topup_option + ' --out=dwi_post_eddy')
@@ -513,17 +514,20 @@ else:
   # Particularly if eddy has provided rotated bvecs, since we're combining two volumes into one that
   #   potentially have subject rotation between them (and therefore the sensitisation direction is
   #   not precisely equivalent), the best we can do is take the mean of the two vectors.
-  # TODO Re-test LSR
-  # TODO Manual recombination of volumes needs to take into account the explicit volume matching
+  # Manual recombination of volumes needs to take into account the explicit volume matching
+  # TODO Re-test eddy LSR
+
   bvecs = [ [] for axis in range(3) ]
   with open(bvecs_path, 'r') as f:
     for axis, line in enumerate(f):
       bvecs[axis] = line.split()
-  bvecs_combined_transpose = [ [] * num_volumes ]
-  for volume in range(0, num_volumes):
-    bvec_sum = [ float(bvecs[0][volume]) + float(bvecs[0][volume+num_volumes]),
-                 float(bvecs[1][volume]) + float(bvecs[1][volume+num_volumes]),
-                 float(bvecs[2][volume]) + float(bvecs[2][volume+num_volumes]) ]
+
+  bvecs_combined_transpose = [ [] * num_volumes/2 ]
+  bvals_combined = [] * num_volumes/2
+  for index, pair in enumerate(volume_pairs):
+    bvec_sum = [ float(bvecs[0][pair[0]]) + float(bvecs[0][pair[1]]),
+                 float(bvecs[1][pair[0]]) + float(bvecs[1][pair[1]]),
+                 float(bvecs[2][pair[0]]) + float(bvecs[2][pair[1]]) ]
     norm2 = bvec_sum[0]*bvec_sum[0] + bvec_sum[1]*bvec_sum[1] + bvec_sum[2]*bvec_sum[2]
     # Occasionally a bzero volume can have a zero vector
     if norm2:
@@ -531,7 +535,9 @@ else:
       new_vec = [ bvec_sum[0]*factor, bvec_sum[1]*factor, bvec_sum[2]*factor ]
     else:
       new_vec = [ 0.0, 0.0, 0.0 ]
-    bvecs_combined_transpose[volume] = new_vec
+    bvecs_combined_transpose[index] = new_vec
+    bvals_combined[index] = 0.5 * (grad[pair[0]][3] + grad[pair[1]][3])
+
   with open('bvecs_combined', 'w') as f:
     for axis in range(0, 3):
       axis_data = [ ]
@@ -539,12 +545,8 @@ else:
         axis_data.append(str(bvecs_combined_transpose[volume][axis]))
       f.write(' '.join(axis_data) + '\n')
 
-  bvals = [ ]
-  with open('bvals', 'r') as f:
-    bvals = f.read().split()
-  bvals = bvals[0:num_volumes]
   with open('bvals_combined', 'w') as f:
-    f.write(' '.join(bvals))
+    f.write(' '.join(bvals_combined))
 
 
 
@@ -570,24 +572,50 @@ else:
   # Scaling term for field map is identical to the bandwidth provided in the topup config file
   #   (converts Hz to pixel count; that way a simple image gradient can be used to get the Jacobians)
   # Let mrfilter apply the default 1 voxel size gaussian smoothing filter before calculating the field gradient
-  runCommand('mrcalc ' + field_map_image + ' 0.1 -mult - | mrfilter - gradient - | mrconvert - field_deriv_pe.mif -coord 3 1 -axes 0,1,2')
-  delFile(field_map_image)
-  runCommand('mrcalc 1.0 field_deriv_pe.mif -add 0.0 -max jacobian1.mif')
-  runCommand('mrcalc 1.0 field_deriv_pe.mif -sub 0.0 -max jacobian2.mif')
-  delFile('field_deriv_pe.mif')
-  runCommand('mrcalc jacobian1.mif jacobian1.mif -mult weight1.mif')
-  runCommand('mrcalc jacobian2.mif jacobian2.mif -mult weight2.mif')
-  delFile('jacobian1.mif')
-  delFile('jacobian2.mif')
-  runCommand('mrcalc weight1.mif weight2.mif -add sum_weights.mif')
+  #
+  #   The jacobian image may be different for any particular volume pair
+  #   The appropriate PE directions and total readout times can be acquired from the eddy-style config/index files
+  #   eddy_config.txt and eddy_indices.txt
 
+  eddy_config  = [ [ float(f) for f in line ] for line in open('eddy_config.txt',  'r').read().split('\n') ]
+  eddy_indices = [ int(i) for i in open('eddy_indices.txt', 'r').read() ]
 
+  # This section derives, for each phase encoding configuration present, the 'weight' to be applied
+  #   to the image during volume recombination, which is based on the Jacobian of the field in the
+  #   phase encoding direction
+  for index, config in enumerate(eddy_config):
+    pe_axis = [ i for i, e in enumerate(config[0:3]) if e != 0][0]
+    sign_multiplier = ' -1.0 -mult' if config[pe_axis] < 0 else ''
+    field_derivative_path = 'field_deriv_pe_' + str(index) + 'mif'
+    runCommand('mrcalc ' + field_map_image + ' ' + str(config[3]) + ' -mult' + sign_multiplier + ' - | mrfilter - gradient - | mrconvert - ' + field_derivative_path + ' -coord 3 ' + str(pe_axis) + ' -axes 0,1,2')
+    jacobian_path = 'jacobian_' + str(index) + '.mif'
+    runCommand('mrcalc 1.0 ' + field_derivative_path + ' -add 0.0 -max ' + jacobian_path)
+    delFile(field_derivative_path)
+    runCommand('mrcalc ' + jacobian_path + ' ' + jacobian_path + ' -mult weight' + str(index) + '.mif')
+    delFile(jacobian_path)
 
-  # Manually combine corresponding volumes from EDDY output
-  runCommand('mrconvert dwi_post_eddy' + fsl_suffix + ' corrected1.mif -coord 3 0:' + str(num_volumes-1))
-  runCommand('mrconvert dwi_post_eddy' + fsl_suffix + ' corrected2.mif -coord 3 ' + str(num_volumes) + ':' + str((num_volumes*2)-1))
-  delFile('dwi_post_eddy' + fsl_suffix)
-  runCommand('mrcalc corrected1.mif weight1.mif -mult corrected2.mif weight2.mif -mult -add sum_weights.mif -divide 0.0 -max - | mrconvert - result.mif -fslgrad bvecs_combined bvals_combined' + stride_option)
+  # This section extracts the two volumes corresponding to each reversed phase-encoded volume pair, and
+  #   derives a single image volume based on the recombination equation
+  combined_image_list = [ ]
+  for index, volumes in enumerate(volume_pairs):
+    config_lines = [ eddy_config[i] for i in volumes ]
+    runCommand('mrconvert dwi_post_eddy' + fsl_suffix + ' volume0.mif -coord 3 ' + volumes[0])
+    runCommand('mrconvert dwi_post_eddy' + fsl_suffix + ' volume1.mif -coord 3 ' + volumes[1])
+    # Volume recombination equation described in Skare and Bammer 2010
+    runCommand('mrcalc volume0.mif weight' + str(volumes[0]) + '.mif -mult volumes1.mif weight' + str(volumes[1]) + '.mif -mult -add weight' + str(volumes[0]) + '.mif weight' + str(volumes[1]) + '.mif -add -divide 0.0 -max combined' + str(index) + '.mif')
+    combined_image_list.append('combined' + str(index) + '.mif')
+    os.unlink('volume0.mif')
+    os.unlink('volume1.mif')
+
+  for index in range(0, len(eddy_config):
+    delFile('weight' + str(index) + '.mif')
+
+  # Finally the recombined volumes must be concatenated to produce the resulting image series
+  runCommand('mrcat ' + ' '.join(combined_image_list) + ' - -axis 3 | mrconvert - result.mif -fslgrad bvecs_combined bvals_combined' + stride_option)
+
+  for path in combined_image_list:
+    delFile(path)
+
 
 
 
