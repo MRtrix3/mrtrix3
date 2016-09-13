@@ -1,4 +1,4 @@
 tckconvert tracks.tck tmp.vtk -force && diff tmp.vtk tckconvert/out0.vtk
 tckconvert tracks.tck -scanner2voxel dwi.mif tmp.vtk -force && diff tmp.vtk tckconvert/out1.vtk
-tckedit tracks.tck -number 10 tmp.tck -nthread 0 && tckconvert tmp.tck tmp-[].txt && cat tmp-*.txt > tmp-all.txt && testing_diff_matrix tmp-all.txt tckconvert/out2-all.txt 1e-4
+tckedit tracks.tck -number 10 tmp.tck -nthread 0 && tckconvert tmp.tck tmp-[].txt && cat tmp-*.txt > tmp-all.txt && testing_diff_matrix tmp-all.txt tckconvert/out2-all.txt -frac 1e-5
 tckconvert tckconvert/out2-[2:9].txt tmp.tck -force && testing_diff_tck tmp.tck tckconvert/out3.tck 1e-4
