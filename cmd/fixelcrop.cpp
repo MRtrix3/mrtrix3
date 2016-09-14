@@ -32,11 +32,12 @@ void usage ()
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) & Rami Tabarra (rami.tabarra@florey.edu.au)";
 
   DESCRIPTION
-  + "Crop a fixel index image (i.e. remove fixels) using a fixel mask";
+  + "Crop/remove fixels from sparse fixel image using a binary fixel mask. The mask must be input as a "
+    "fixel data file the same dimensions as the fixel data file(s) to be cropped.";
 
   ARGUMENTS
   + Argument ("input_fixel_folder", "the input fixel folder file to be cropped").type_text ()
-  + Argument ("input_fixel_data_mask", "the input fixel data file to be cropped").type_image_in ()
+  + Argument ("input_fixel_mask", "the input fixel data file to be cropped").type_image_in ()
   + Argument ("output_fixel_folder", "the output fixel folder").type_text ();
 }
 
