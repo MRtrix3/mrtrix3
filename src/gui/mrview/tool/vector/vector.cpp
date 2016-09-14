@@ -522,8 +522,22 @@ namespace MR
 
           AbstractFixel* first_fixel = dynamic_cast<AbstractFixel*> (fixel_list_model->get_fixel_image (indices[0]));
 
-          if (n_images == 1 && reload_threshold_types)
+          bool has_val = first_fixel->has_values ();
+
+          if (n_images == 1 && reload_threshold_types && has_val)
             first_fixel->load_threshold_combobox_options (*threshold_combobox);
+
+          threshold_lower->setEnabled (has_val);
+          threshold_upper->setEnabled (has_val);
+          threshold_lower_box->setEnabled (has_val);
+          threshold_upper_box->setEnabled (has_val);
+          threshold_combobox->setEnabled (has_val);
+
+          if (!has_val) {
+            threshold_lower_box->setChecked (false);
+            threshold_upper_box->setChecked (false);
+            return;
+          }
 
           if (!std::isfinite (first_fixel->get_unscaled_threshold_lower ()))
             first_fixel->lessthan = first_fixel->intensity_min ();

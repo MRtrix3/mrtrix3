@@ -211,6 +211,10 @@ namespace MR
                 combo_box.setCurrentIndex (threshold_type_index);
               }
 
+              bool has_values () const {
+                return fixel_values.size();
+              }
+
             protected:
               struct IntPointHasher {
                 size_t operator () (const std::array<int, 3>& v) const {
@@ -226,15 +230,15 @@ namespace MR
               void update_interp_image_buffer (const Projection&, const MR::Header&, const MR::Transform&);
 
               inline FixelValue& current_fixel_value_state () const {
-                return fixel_values[value_types[scale_type_index]];
+                return fixel_values.size() ? fixel_values[value_types[scale_type_index]] : dummy_fixel_val_state;
               }
 
               inline FixelValue& current_fixel_threshold_state () const {
-                return fixel_values[threshold_types[threshold_type_index]];
+                return fixel_values.size() ? fixel_values[threshold_types[threshold_type_index]] : dummy_fixel_val_state;
               }
 
               inline FixelValue& current_fixel_colour_state () const {
-                return fixel_values[colour_types[colour_type_index]];
+                return fixel_values.size() ? fixel_values[colour_types[colour_type_index]] : dummy_fixel_val_state;
               }
 
               MR::Header header;
@@ -242,6 +246,7 @@ namespace MR
               std::vector<std::string> value_types;
               std::vector<std::string> threshold_types;
               mutable std::map<const std::string, FixelValue> fixel_values;
+              mutable FixelValue dummy_fixel_val_state;
 
               std::vector<Eigen::Vector3f> pos_buffer_store;
               std::vector<Eigen::Vector3f> dir_buffer_store;
