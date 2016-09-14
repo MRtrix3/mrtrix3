@@ -73,37 +73,70 @@ namespace MR
             }
           }
 
-          // Load fixel data images
+          // Load fixel data images keys
+          // We will load the actual fixel data lazily upon request
           auto data_headers = FixelFormat::find_data_headers (Path::dirname (fixel_data->name ()), *fixel_data);
           for (auto& header : data_headers) {
 
             if (header.size (1) != 1) continue;
 
-            auto data_image = header.get_image<float> ();
             const auto data_key = Path::basename (header.name ());
             fixel_values[data_key];
             value_types.push_back (data_key);
             colour_types.push_back (data_key);
             threshold_types.push_back (data_key);
-
-            data_image.index (1) = 0;
-            for (auto l = Loop(0, 3) (*fixel_data); l; ++l) {
-              fixel_data->index (3) = 0;
-              const size_t nfixels = fixel_data->value ();
-              fixel_data->index (3) = 1;
-              const size_t offset = fixel_data->value ();
-
-              for (size_t f = 0; f < nfixels; ++f) {
-                data_image.index (0) = offset + f;
-                float value = data_image.value ();
-                fixel_values[data_key].add_value (value);
-              }
-            }
-
           }
         }
 
+        void FixelFolder::lazy_load_fixel_value_file (const std::string& key) const {
+
+          // We're assuming the key corresponds to the fixel data filename
+          const auto data_filepath = Path::join(Path::dirname (fixel_data->name ()), key);
+          fixel_values[key].loaded = true;
+
+          if (!Path::exists (data_filepath))
+            return;
+
+          auto H = Header::open (data_filepath);
+
+          if (!FixelFormat::is_data_file (H))
+            return;
+
+          auto data_image = H.get_image<float> ();
+
+          data_image.index (1) = 0;
+          for (auto l = Loop(0, 3) (*fixel_data); l; ++l) {
+            fixel_data->index (3) = 0;
+            const size_t nfixels = fixel_data->value ();
+            fixel_data->index (3) = 1;
+            const size_t offset = fixel_data->value ();
+
+            for (size_t f = 0; f < nfixels; ++f) {
+              data_image.index (0) = offset + f;
+              float value = data_image.value ();
+              fixel_values[key].add_value (value);
+            }
+          }
+
+          fixel_values[key].initialise_windowing ();
+        }
+
+
+        FixelValue& FixelFolder::get_fixel_value (const std::string& key) const {
+          if (!has_values ())
+            return dummy_fixel_val_state;
+
+          FixelValue& fixel_val = fixel_values[key];
+          // Buffer hasn't been loaded yet -  we do this lazily
+          if (!fixel_val.loaded)
+            lazy_load_fixel_value_file (key);
+
+          return fixel_val;
+        }
+
       }
+
+
     }
   }
 }

@@ -230,15 +230,19 @@ namespace MR
               void update_interp_image_buffer (const Projection&, const MR::Header&, const MR::Transform&);
 
               inline FixelValue& current_fixel_value_state () const {
-                return fixel_values.size() ? fixel_values[value_types[scale_type_index]] : dummy_fixel_val_state;
+                return get_fixel_value (value_types[scale_type_index]);
               }
 
               inline FixelValue& current_fixel_threshold_state () const {
-                return fixel_values.size() ? fixel_values[threshold_types[threshold_type_index]] : dummy_fixel_val_state;
+                return get_fixel_value (threshold_types[threshold_type_index]);
               }
 
               inline FixelValue& current_fixel_colour_state () const {
-                return fixel_values.size() ? fixel_values[colour_types[colour_type_index]] : dummy_fixel_val_state;
+                return get_fixel_value (colour_types[colour_type_index]);
+              }
+
+              virtual FixelValue& get_fixel_value (const std::string& key) const {
+                return fixel_values[key];
               }
 
               MR::Header header;

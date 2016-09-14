@@ -39,6 +39,9 @@ namespace MR
             }
 
             void load_image_buffer () override;
+            FixelValue& get_fixel_value (const std::string& key) const override;
+          protected:
+            void lazy_load_fixel_value_file (const std::string& key) const;
         };
       }
     }
