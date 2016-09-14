@@ -101,9 +101,6 @@ namespace MR
             }
 
           }
-
-          if (!fixel_values.size ())
-            throw InvalidImageException ("Fixel index image " + fixel_data->name () + " has no associated image data files");
         }
 
       }

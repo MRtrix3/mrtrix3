@@ -30,8 +30,8 @@ namespace MR
         struct FixelValue {
           float value_min = std::numeric_limits<float>::max ();
           float value_max = std::numeric_limits<float>::min ();
-          float lessthan, greaterthan;
-          float current_min, current_max;
+          float lessthan = value_min, greaterthan = value_max;
+          float current_min = value_min, current_max = value_max;
           std::vector<float> buffer_store;
 
 

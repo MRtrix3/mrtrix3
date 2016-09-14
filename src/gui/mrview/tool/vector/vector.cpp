@@ -522,8 +522,22 @@ namespace MR
 
           AbstractFixel* first_fixel = dynamic_cast<AbstractFixel*> (fixel_list_model->get_fixel_image (indices[0]));
 
-          if (n_images == 1 && reload_threshold_types)
+          bool has_val = first_fixel->has_values ();
+
+          if (n_images == 1 && reload_threshold_types && has_val)
             first_fixel->load_threshold_combobox_options (*threshold_combobox);
+
+          threshold_lower->setEnabled (has_val);
+          threshold_upper->setEnabled (has_val);
+          threshold_lower_box->setEnabled (has_val);
+          threshold_upper_box->setEnabled (has_val);
+          threshold_combobox->setEnabled (has_val);
+
+          if (!has_val) {
+            threshold_lower_box->setChecked (false);
+            threshold_upper_box->setChecked (false);
+            return;
+          }
 
           if (!std::isfinite (first_fixel->get_unscaled_threshold_lower ()))
             first_fixel->lessthan = first_fixel->intensity_min ();
@@ -700,8 +714,10 @@ namespace MR
           if (threshold_lower_box->checkState() == Qt::PartiallyChecked) return;
           threshold_lower->setEnabled (threshold_lower_box->isChecked());
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-          for (int i = 0; i < indices.size(); ++i)
-            fixel_list_model->get_fixel_image (indices[i])->set_use_discard_lower (threshold_lower_box->isChecked());
+          for (int i = 0; i < indices.size(); ++i) {
+            auto& fixel_image = *fixel_list_model->get_fixel_image (indices[i]);
+            fixel_image.set_use_discard_lower (threshold_lower_box->isChecked() && fixel_image.has_values ());
+          }
           window().updateGL();
         }
 
@@ -711,8 +727,10 @@ namespace MR
           if (threshold_upper_box->checkState() == Qt::PartiallyChecked) return;
           threshold_upper->setEnabled (threshold_upper_box->isChecked());
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-          for (int i = 0; i < indices.size(); ++i)
-            fixel_list_model->get_fixel_image (indices[i])->set_use_discard_upper (threshold_upper_box->isChecked());
+          for (int i = 0; i < indices.size(); ++i) {
+            auto& fixel_image = *fixel_list_model->get_fixel_image (indices[i]);
+            fixel_image.set_use_discard_upper (threshold_upper_box->isChecked() && fixel_image.has_values ());
+          }
           window().updateGL();
         }
 
@@ -723,8 +741,11 @@ namespace MR
           if (threshold_lower_box->isChecked()) {
             QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
             for (int i = 0; i < indices.size(); ++i) {
-              fixel_list_model->get_fixel_image (indices[i])->set_threshold_lower (threshold_lower->value());
-              fixel_list_model->get_fixel_image (indices[i])->set_use_discard_lower (threshold_lower_box->isChecked());
+              auto& fixel_image = *fixel_list_model->get_fixel_image (indices[i]);
+              if (fixel_image.has_values ()) {
+                fixel_image.set_threshold_lower (threshold_lower->value());
+                fixel_image.set_use_discard_lower (threshold_lower_box->isChecked());
+              }
             }
             window().updateGL();
           }
@@ -737,8 +758,11 @@ namespace MR
           if (threshold_upper_box->isChecked()) {
             QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
             for (int i = 0; i < indices.size(); ++i) {
-              fixel_list_model->get_fixel_image (indices[i])->set_threshold_upper (threshold_upper->value());
-              fixel_list_model->get_fixel_image (indices[i])->set_use_discard_upper (threshold_upper_box->isChecked());
+              auto& fixel_image = *fixel_list_model->get_fixel_image (indices[i]);
+              if (fixel_image.has_values ()) {
+                fixel_image.set_threshold_upper (threshold_upper->value());
+                fixel_image.set_use_discard_upper (threshold_upper_box->isChecked());
+              }
             }
             window().updateGL();
           }

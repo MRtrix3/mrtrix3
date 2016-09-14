@@ -337,6 +337,7 @@ namespace MR
           const auto& val_buffer = current_fixel_value_state ().buffer_store;
           const auto& col_buffer = current_fixel_colour_state ().buffer_store;
           const auto& threshold_buffer = current_fixel_threshold_state ().buffer_store;
+          bool has_val = has_values ();
 
           for (int y = -ny; y <= ny; ++y) {
             for (int x = -nx; x <= nx; ++x) {
@@ -357,7 +358,8 @@ namespace MR
                   regular_grid_buffer_val.push_back (val_buffer[index]);
                 if (colour_type == CValue)
                   regular_grid_buffer_colour.push_back (col_buffer[index]);
-                regular_grid_buffer_threshold.push_back (threshold_buffer[index]);
+                if (has_val)
+                  regular_grid_buffer_threshold.push_back (threshold_buffer[index]);
               }
             }
           }
@@ -400,11 +402,13 @@ namespace MR
           }
 
           // fixel threshold
-          regular_grid_threshold_buffer.bind (gl::ARRAY_BUFFER);
-          gl::BufferData (gl::ARRAY_BUFFER, regular_grid_buffer_threshold.size () * sizeof(float),
+          if (has_val) {
+            regular_grid_threshold_buffer.bind (gl::ARRAY_BUFFER);
+            gl::BufferData (gl::ARRAY_BUFFER, regular_grid_buffer_threshold.size () * sizeof(float),
                           &regular_grid_buffer_threshold[0], gl::DYNAMIC_DRAW);
-          gl::EnableVertexAttribArray (4);
-          gl::VertexAttribPointer (4, 1, gl::FLOAT, gl::FALSE_, 0, (void*)0);
+            gl::EnableVertexAttribArray (4);
+            gl::VertexAttribPointer (4, 1, gl::FLOAT, gl::FALSE_, 0, (void*)0);
+          }
 
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
