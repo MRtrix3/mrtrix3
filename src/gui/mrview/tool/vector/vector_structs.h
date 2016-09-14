@@ -28,6 +28,7 @@ namespace MR
         enum FixelScaleType { Unity, Value };
 
         struct FixelValue {
+          bool loaded = false;
           float value_min = std::numeric_limits<float>::max ();
           float value_max = std::numeric_limits<float>::min ();
           float lessthan = value_min, greaterthan = value_max;
