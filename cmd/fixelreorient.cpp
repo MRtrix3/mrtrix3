@@ -90,8 +90,8 @@ void run ()
   }
 
   if (output_fixel_folder != input_fixel_folder) {
-    FixelFormat::copy_index_file (input_fixel_folder, output_fixel_folder, false);
-    FixelFormat::copy_all_data_files (input_fixel_folder, output_fixel_folder, false);
+    FixelFormat::copy_index_file (input_fixel_folder, output_fixel_folder);
+    FixelFormat::copy_all_data_files (input_fixel_folder, output_fixel_folder);
   }
 }
 

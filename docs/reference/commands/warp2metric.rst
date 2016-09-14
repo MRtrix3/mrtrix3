@@ -20,7 +20,7 @@ compute fixel or voxel-wise metrics from a 4D deformation field
 Options
 -------
 
--  **-fc input_template_fixel_folder output_fixel_folder output_fixel_data_name** use an input template fixel image to define fibre orientations and output a fixel image describing the change in fibre cross-section (FC) in the perpendicular plane to the fixel orientation
+-  **-fc template_fixel_folder output_fixel_folder output_fixel_data** use an input template fixel image to define fibre orientations and output a fixel image describing the change in fibre cross-section (FC) in the perpendicular plane to the fixel orientation. e.g. warp2metric warp.mif -fc fixel_template_folder output_fixel_folder fc.mif
 
 -  **-jmat output** output a Jacobian matrix image stored in column-major order along the 4th dimension.Note the output jacobian describes the warp gradient w.r.t the scanner space coordinate system
 

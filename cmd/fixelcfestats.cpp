@@ -123,7 +123,7 @@ void write_fixel_output (const std::string& filename,
                          const VectorType& data,
                          const Header& header)
 {
-  assert (data.size() = header.size(2));
+  assert (data.size() == header.size(2));
   auto output = Image<float>::create (filename, header);
   for (uint32_t i = 0; i < data.size(); ++i) {
     output.index(2) = i;

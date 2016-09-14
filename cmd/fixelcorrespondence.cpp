@@ -70,8 +70,8 @@ void run ()
 
   check_dimensions (subject_index, template_index);
   std::string output_fixel_folder = argument[2];
-  FixelFormat::copy_index_file (argument[1], output_fixel_folder, true);
-  FixelFormat::copy_directions_file (argument[1], output_fixel_folder, true);
+  FixelFormat::copy_index_file (argument[1], output_fixel_folder);
+  FixelFormat::copy_directions_file (argument[1], output_fixel_folder);
 
   Header output_data_header (template_directions);
   output_data_header.size(1) = 1;
