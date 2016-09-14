@@ -714,8 +714,10 @@ namespace MR
           if (threshold_lower_box->checkState() == Qt::PartiallyChecked) return;
           threshold_lower->setEnabled (threshold_lower_box->isChecked());
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-          for (int i = 0; i < indices.size(); ++i)
-            fixel_list_model->get_fixel_image (indices[i])->set_use_discard_lower (threshold_lower_box->isChecked());
+          for (int i = 0; i < indices.size(); ++i) {
+            auto& fixel_image = *fixel_list_model->get_fixel_image (indices[i]);
+            fixel_image.set_use_discard_lower (threshold_lower_box->isChecked() && fixel_image.has_values ());
+          }
           window().updateGL();
         }
 
@@ -725,8 +727,10 @@ namespace MR
           if (threshold_upper_box->checkState() == Qt::PartiallyChecked) return;
           threshold_upper->setEnabled (threshold_upper_box->isChecked());
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-          for (int i = 0; i < indices.size(); ++i)
-            fixel_list_model->get_fixel_image (indices[i])->set_use_discard_upper (threshold_upper_box->isChecked());
+          for (int i = 0; i < indices.size(); ++i) {
+            auto& fixel_image = *fixel_list_model->get_fixel_image (indices[i]);
+            fixel_image.set_use_discard_upper (threshold_upper_box->isChecked() && fixel_image.has_values ());
+          }
           window().updateGL();
         }
 
@@ -737,8 +741,11 @@ namespace MR
           if (threshold_lower_box->isChecked()) {
             QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
             for (int i = 0; i < indices.size(); ++i) {
-              fixel_list_model->get_fixel_image (indices[i])->set_threshold_lower (threshold_lower->value());
-              fixel_list_model->get_fixel_image (indices[i])->set_use_discard_lower (threshold_lower_box->isChecked());
+              auto& fixel_image = *fixel_list_model->get_fixel_image (indices[i]);
+              if (fixel_image.has_values ()) {
+                fixel_image.set_threshold_lower (threshold_lower->value());
+                fixel_image.set_use_discard_lower (threshold_lower_box->isChecked());
+              }
             }
             window().updateGL();
           }
@@ -751,8 +758,11 @@ namespace MR
           if (threshold_upper_box->isChecked()) {
             QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
             for (int i = 0; i < indices.size(); ++i) {
-              fixel_list_model->get_fixel_image (indices[i])->set_threshold_upper (threshold_upper->value());
-              fixel_list_model->get_fixel_image (indices[i])->set_use_discard_upper (threshold_upper_box->isChecked());
+              auto& fixel_image = *fixel_list_model->get_fixel_image (indices[i]);
+              if (fixel_image.has_values ()) {
+                fixel_image.set_threshold_upper (threshold_upper->value());
+                fixel_image.set_use_discard_upper (threshold_upper_box->isChecked());
+              }
             }
             window().updateGL();
           }
