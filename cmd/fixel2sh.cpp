@@ -24,6 +24,7 @@
 
 #include "fixel_format/helpers.h"
 #include "fixel_format/keys.h"
+#include "fixel_format/loop.h"
 
 using namespace MR;
 using namespace App;
@@ -77,15 +78,8 @@ void run ()
 
   for (auto l1 = Loop ("converting fixel image to spherical harmonic image", in_index_image) (in_index_image, sh_image); l1; ++l1) {
     sh_values.assign (n_sh_coeff, 0.0);
-    in_index_image.index(3) = 0;
-    uint32_t num_fixels_in_voxel = in_index_image.value();
-    in_index_image.index(3) = 1;
-    uint32_t offset = in_index_image.value();
-
-    for (size_t fixel = 0; fixel < num_fixels_in_voxel; ++fixel) {
-      in_directions_image.index(0) = offset + fixel;
+    for (auto f = FixelFormat::FixelLoop (in_index_image) (in_directions_image, in_data_image); f; ++f) {
       apsf_values = aPSF (apsf_values, in_directions_image.row(1));
-      in_data_image.index(0) = offset + fixel;
       const default_type scale_factor = in_data_image.value();
       for (size_t i = 0; i != n_sh_coeff; ++i)
         sh_values[i] += apsf_values[i] * scale_factor;
