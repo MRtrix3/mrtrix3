@@ -475,8 +475,8 @@ void run ()
     case 7:  loop.run ([](Image<uint32_t>& index, Image<float>& out) { // count
                           out.value() = index.value();
                        }, in_index_image, out); break;
-    case 8: loop.run (Complexity (in_data), in_index_image, out); break;
-    case 9: loop.run (SF         (in_data), in_index_image, out); break;
+    case 8:  loop.run (Complexity (in_data), in_index_image, out); break;
+    case 9:  loop.run (SF         (in_data), in_index_image, out); break;
     case 10: loop.run (DEC_unit   (in_data, in_vol, in_directions), in_index_image, out); break;
     case 11: loop.run (DEC_scaled (in_data, in_vol, in_directions), in_index_image, out); break;
     case 12: loop.run (SplitData  (in_data), in_index_image, out); break;

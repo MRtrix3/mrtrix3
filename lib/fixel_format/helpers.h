@@ -196,34 +196,33 @@ namespace MR
     }
 
 
-    //! Copy a file from one fixel folder into another. If the output folder already contains the same file
-    //! then it is checked to make sure it's the same as the input (based on the number of fixels it contains)
+    //! Copy a file from one fixel folder into another.
     inline void copy_fixel_file (const std::string& input_file_path, const std::string &output_folder) {
       check_fixel_folder (output_folder, true);
       std::string output_path = Path::join (output_folder, Path::basename (input_file_path));
       Header input_header = Header::open (input_file_path);
       auto input_image = input_header.get_image<float>();
-      auto output_directions_image = Image<float>::create (output_path, input_header);
-      threaded_copy (input_image, output_directions_image);
+      auto output_image = Image<float>::create (output_path, input_header);
+      threaded_copy (input_image, output_image);
     }
 
-    //! Copy the index file from one fixel folder into another. When check_existing_output
-    //! is true, it will check if existing output exists and NOT overwrite as long as the number of fixels in the file is the same
+    //! Copy the index file from one fixel folder into another
     inline void copy_index_file (const std::string &input_folder, const std::string &output_folder) {
       Header input_header = FixelFormat::find_index_header (input_folder);
-      copy_fixel_file (input_header.name(), output_folder);
+      check_fixel_folder (output_folder, true);
+      auto output_image = Image<uint32_t>::create (Path::join (output_folder, Path::basename (input_header.name())), input_header);
+      auto input_image = input_header.get_image<uint32_t>();
+      threaded_copy (input_image, output_image);
     }
 
-    //! Copy the directions file from one fixel folder into another. When check_existing_output
-    //! is true, it will check if existing output exists and NOT overwrite as long as the number of fixels in the file is the same
+    //! Copy the directions file from one fixel folder into another.
     inline void copy_directions_file (const std::string &input_folder, const std::string &output_folder) {
       Header input_header = FixelFormat::find_directions_header (input_folder, FixelFormat::find_index_header (input_folder));
       copy_fixel_file (input_header.name(), output_folder);
     }
 
 
-    //! Copy all data files in a fixel folder into another folder. Data files do not include the index or directions file. When check_existing_output
-    //! is true, it will check if existing outputs exist and NOT overwrite as long as the number of fixels in the file is the same
+    //! Copy all data files in a fixel folder into another folder. Data files do not include the index or directions file.
     inline void copy_all_data_files (const std::string &input_folder, const std::string &output_folder) {
       for (auto& input_header : FixelFormat::find_data_headers (input_folder, FixelFormat::find_index_header (input_folder)))
         copy_fixel_file (input_header.name(), output_folder);

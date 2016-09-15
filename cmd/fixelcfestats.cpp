@@ -152,32 +152,45 @@ void run() {
   Header index_header = FixelFormat::find_index_header (input_fixel_folder);
   auto index_image = index_header.get_image<uint32_t>();
   uint32_t num_fixels = std::stoul (index_image.keyval().at(FixelFormat::n_fixels_key));
+  CONSOLE ("number of fixels: " + str(num_fixels));
 
   std::vector<Eigen::Vector3> positions (num_fixels);
   std::vector<direction_type> directions (num_fixels);
 
-  {
-    auto directions_data = FixelFormat::find_directions_header (input_fixel_folder, index_image).get_image<float>().with_direct_io();
+  const std::string output_fixel_folder = argument[5];
+  FixelFormat::check_fixel_folder (output_fixel_folder, true);
 
+  {
+    TRACE;
+    // copy index to output folder  TODO why so long to copy here??
+    auto output_index_image = Image<uint32_t>::create (Path::join (output_fixel_folder, Path::basename (index_image.name())), index_image);
+    threaded_copy_with_progress_message ("copying fixel index into output folder", index_image, output_index_image);
+    auto directions_data = FixelFormat::find_directions_header (input_fixel_folder, index_image).get_image<float>().with_direct_io();
+    auto output_directions_data = Image<float>::create(Path::join (output_fixel_folder, Path::basename (directions_data.name())), directions_data);
+    threaded_copy_with_progress_message ("copying fixel directions into output folder", directions_data, output_directions_data);
+
+    TRACE;
+    // Load template fixel directions
     Transform image_transform (index_image);
-    for (auto i = Loop (index_image)(index_image); i; ++i) {
+    for (auto i = Loop ("loading template fixel directions and positions", index_image, 0, 3)(index_image); i; ++i) {
       const Eigen::Vector3 vox ((default_type)index_image.index(0), (default_type)index_image.index(1), (default_type)index_image.index(2));
       index_image.index(3) = 1;
       uint32_t offset = index_image.value();
       size_t fixel_index = 0;
-      for (auto f = FixelFormat::FixelLoop (index_image) (directions_data); f; ++f, ++fixel_index) {
+      for (auto f = FixelFormat::FixelLoop (index_image) (directions_data, output_directions_data); f; ++f, ++fixel_index) {
         directions[offset + fixel_index] = directions_data.row(1).cast<default_type>();
         positions[offset + fixel_index] = image_transform.voxel2scanner * vox;
       }
     }
   }
-  CONSOLE ("number of fixels: " + str(num_fixels));
 
 
   // Read identifiers and check files exist
   std::vector<std::string> identifiers;
   Header header;
   {
+    TRACE;
+    ProgressBar progress ("validating input files...");
     std::ifstream ifs (argument[1].c_str());
     std::string temp;
     while (getline (ifs, temp)) {
@@ -190,28 +203,30 @@ void run() {
       header = Header::open (filename);
       FixelFormat::fixels_match (index_header, header);
       identifiers.push_back (filename);
+      progress++;
     }
   }
+
+  TRACE;
 
   // Load design matrix:
   const matrix_type design = load_matrix (argument[2]);
   if (design.rows() != (ssize_t)identifiers.size())
     throw Exception ("number of input files does not match number of rows in design matrix");
 
+  TRACE;
 
   // Load contrast matrix:
   const matrix_type contrast = load_matrix (argument[3]);
+
+    TRACE;
 
   if (contrast.cols() != design.cols())
     throw Exception ("the number of contrasts does not equal the number of columns in the design matrix");
   if (contrast.rows() > 1)
     throw Exception ("only a single contrast vector (defined as a row) is currently supported");
 
-  // Copy index and directions over to output folder
-  const std::string output_fixel_folder = argument[5];
-  FixelFormat::copy_index_file (input_fixel_folder, output_fixel_folder);
-  FixelFormat::copy_directions_file (input_fixel_folder, output_fixel_folder);
-
+    TRACE;
 
   // Compute fixel-fixel connectivity
   std::vector<std::map<uint32_t, Stats::CFE::connectivity> > connectivity_matrix (num_fixels);
@@ -338,6 +353,9 @@ void run() {
   {
     ProgressBar progress ("outputting beta coefficients, effect size and standard deviation");
     auto temp = Math::Stats::GLM::solve_betas (data, design);
+
+    std::cout << temp.rows() << ", " << temp.cols();
+
     for (ssize_t i = 0; i < contrast.cols(); ++i) {
       write_fixel_output (Path::join (output_fixel_folder, "beta" + str(i) + ".mif"), temp.row(i), output_header);
       ++progress;
