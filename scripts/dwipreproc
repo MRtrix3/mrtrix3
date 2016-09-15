@@ -177,7 +177,6 @@ if not len(grad) == num_volumes:
 
 
 
-<<<<<<< HEAD
 do_topup = not PE_design == 'None'
 
 
@@ -282,73 +281,6 @@ if dwi_pe_scheme:
     dwi_pe_scheme = dwi_pe_manual_scheme # May be used later for triggering volume recombination
   else:
     dwi_manual_pe_scheme = None # To guarantee that the scheme stored within the header will be used
-=======
-  # For any non-even axis sizes, crop the first voxel along that dimension
-  crop_option = ''
-  for axis, axis_size in enumerate(series_size[:3]):
-    if int(axis_size)%2:
-      crop_option += ' -axis ' + str(axis) + ' 1 ' + str(int(axis_size)-1)
-
-  if crop_option:
-    warnMessage('Input images contain at least one non-even dimension; cropping images for topup / eddy compatibility')
-    runCommand('mrcrop series.mif series_crop.mif' + crop_option)
-    delFile('series.mif')
-    series_path = 'series_crop.mif'
-    if PE_design == 'Pair':
-      runCommand('mrcrop pair1.mif pair1_crop.mif' + crop_option)
-      delFile('pair1.mif')
-      pair1_path = 'pair1_crop.mif'
-      runCommand('mrcrop pair2.mif pair2_crop.mif' + crop_option)
-      delFile('pair2.mif')
-      pair2_path = 'pair2_crop.mif'
-    else: # 'All'
-      runCommand('mrcrop series2.mif series2_crop.mif' + crop_option)
-      delFile('series2.mif')
-      series2_path = 'series2_crop.mif'
-
-
-# Convert the input files as necessary for FSL tools
-if PE_design == 'None':
-  runCommand('mrconvert ' + series_path + ' dwi_pre_topup.nii -stride -1,+2,+3,+4')
-if PE_design == 'Pair':
-  runCommand('mrconvert ' + series_path + ' dwi_pre_topup.nii -stride -1,+2,+3,+4')
-  runCommand('mrcat ' + pair1_path + ' ' + pair2_path + ' - -axis 3 | mrconvert - topup_in.nii -stride -1,+2,+3,+4')
-elif PE_design == 'All':
-  runCommand('dwiextract ' + series_path + ' -bzero pair1.mif')
-  runCommand('dwiextract ' + series2_path + ' -bzero pair2.mif')
-  runCommand('mrcat pair1.mif pair2.mif - -axis 3 | mrconvert - topup_in.nii -stride -1,+2,+3,+4')
-  runCommand('mrconvert ' + series_path + ' dwi1_pre_topup.nii -stride -1,+2,+3,+4')
-  delFile(series_path)
-  runCommand('mrconvert ' + series2_path + ' dwi2_pre_topup.nii -stride -1,+2,+3,+4')
-  delFile(series2_path)
-  runCommand('mrcat dwi1_pre_topup.nii dwi2_pre_topup.nii dwi_pre_eddy.nii -axis 3')
-
-
-# Calculate how many b=0 volumes are present in each phase-encode direction
-rpe_b0_count = [ 1, 0 ] # Always contains integers, _not_ strings
-if PE_design == 'Pair' or PE_design == 'All':
-  rpe_b0_count[1] = 1
-  temp = getHeaderInfo(pair1_path, 'size').split()
-  if len(temp) == 4:
-    rpe_b0_count[0] = int(temp[3])
-  temp = getHeaderInfo(pair2_path, 'size').split()
-  if len(temp) == 4:
-    rpe_b0_count[1] = int(temp[3])
-
-
-# Construct a topup/eddy configuration file
-printMessage('Creating phase-encoding configuration file')
-config_file = open('config.txt', 'w')
-config_line = [ '0', '0', '0', '0.1' ]
-if PE_dir[1]:
-  config_line[PE_dir[0]] = '-1'
-else:
-  config_line[PE_dir[0]] = '1'
-for lines in range(0, rpe_b0_count[0]):
-  config_file.write(' '.join (config_line) + '\n')
-if PE_dir[1]:
-  config_line[PE_dir[0]] = '1'
->>>>>>> origin/master
 else:
   # Nothing in the header; rely entirely on user specification
   if PE_design == 'Header':
@@ -599,9 +531,10 @@ else:
     for axis, line in enumerate(f):
       bvecs[axis] = line.split()
 
-  bvecs_combined_transpose = [ [] * num_volumes/2 ]
-  bvals_combined = [] * num_volumes/2
-  for index, pair in enumerate(volume_pairs):
+  bvecs_combined_transpose = [ ]
+  bvals_combined = [ ]
+  
+  for pair in volume_pairs:
     bvec_sum = [ float(bvecs[0][pair[0]]) + float(bvecs[0][pair[1]]),
                  float(bvecs[1][pair[0]]) + float(bvecs[1][pair[1]]),
                  float(bvecs[2][pair[0]]) + float(bvecs[2][pair[1]]) ]
@@ -612,18 +545,18 @@ else:
       new_vec = [ bvec_sum[0]*factor, bvec_sum[1]*factor, bvec_sum[2]*factor ]
     else:
       new_vec = [ 0.0, 0.0, 0.0 ]
-    bvecs_combined_transpose[index] = new_vec
-    bvals_combined[index] = 0.5 * (grad[pair[0]][3] + grad[pair[1]][3])
+    bvecs_combined_transpose.append(new_vec)
+    bvals_combined.append(0.5 * (grad[pair[0]][3] + grad[pair[1]][3]))
 
   with open('bvecs_combined', 'w') as f:
     for axis in range(0, 3):
       axis_data = [ ]
-      for volume in range(0, num_volumes):
+      for volume in range(0, int(num_volumes/2)):
         axis_data.append(str(bvecs_combined_transpose[volume][axis]))
       f.write(' '.join(axis_data) + '\n')
 
   with open('bvals_combined', 'w') as f:
-    f.write(' '.join(bvals_combined))
+    f.write(' '.join( [ str(b) for b in bvals_combined ] ))
 
 
 
@@ -649,9 +582,12 @@ else:
   #   The jacobian image may be different for any particular volume pair
   #   The appropriate PE directions and total readout times can be acquired from the eddy-style config/index files
   #   eddy_config.txt and eddy_indices.txt
-
-  eddy_config  = [ [ float(f) for f in line ] for line in open('eddy_config.txt',  'r').read().split('\n') ]
-  eddy_indices = [ int(i) for i in open('eddy_indices.txt', 'r').read() ]
+  
+  eddy_config  = [ [ float(f) for f in line.split() ] for line in open('eddy_config.txt', 'r').read().split('\n')[:-1] ]
+  eddy_indices = [ int(i) for i in open('eddy_indices.txt', 'r').read().split() ]
+  
+  print (eddy_config)
+  print (eddy_indices)
 
   # This section derives, for each phase encoding configuration present, the 'weight' to be applied
   #   to the image during volume recombination, which is based on the Jacobian of the field in the
@@ -659,29 +595,29 @@ else:
   for index, config in enumerate(eddy_config):
     pe_axis = [ i for i, e in enumerate(config[0:3]) if e != 0][0]
     sign_multiplier = ' -1.0 -mult' if config[pe_axis] < 0 else ''
-    field_derivative_path = 'field_deriv_pe_' + str(index) + 'mif'
+    field_derivative_path = 'field_deriv_pe_' + str(index+1) + '.mif'
     runCommand('mrcalc ' + field_map_image + ' ' + str(config[3]) + ' -mult' + sign_multiplier + ' - | mrfilter - gradient - | mrconvert - ' + field_derivative_path + ' -coord 3 ' + str(pe_axis) + ' -axes 0,1,2')
-    jacobian_path = 'jacobian_' + str(index) + '.mif'
+    jacobian_path = 'jacobian_' + str(index+1) + '.mif'
     runCommand('mrcalc 1.0 ' + field_derivative_path + ' -add 0.0 -max ' + jacobian_path)
     delFile(field_derivative_path)
-    runCommand('mrcalc ' + jacobian_path + ' ' + jacobian_path + ' -mult weight' + str(index) + '.mif')
+    runCommand('mrcalc ' + jacobian_path + ' ' + jacobian_path + ' -mult weight' + str(index+1) + '.mif')
     delFile(jacobian_path)
 
   # This section extracts the two volumes corresponding to each reversed phase-encoded volume pair, and
   #   derives a single image volume based on the recombination equation
   combined_image_list = [ ]
   for index, volumes in enumerate(volume_pairs):
-    config_lines = [ eddy_config[i] for i in volumes ]
-    runCommand('mrconvert dwi_post_eddy' + fsl_suffix + ' volume0.mif -coord 3 ' + volumes[0])
-    runCommand('mrconvert dwi_post_eddy' + fsl_suffix + ' volume1.mif -coord 3 ' + volumes[1])
+    pe_indices = [ eddy_indices[i] for i in volumes ]
+    runCommand('mrconvert dwi_post_eddy' + fsl_suffix + ' volume0.mif -coord 3 ' + str(volumes[0]))
+    runCommand('mrconvert dwi_post_eddy' + fsl_suffix + ' volume1.mif -coord 3 ' + str(volumes[1]))
     # Volume recombination equation described in Skare and Bammer 2010
-    runCommand('mrcalc volume0.mif weight' + str(volumes[0]) + '.mif -mult volumes1.mif weight' + str(volumes[1]) + '.mif -mult -add weight' + str(volumes[0]) + '.mif weight' + str(volumes[1]) + '.mif -add -divide 0.0 -max combined' + str(index) + '.mif')
+    runCommand('mrcalc volume0.mif weight' + str(pe_indices[0]) + '.mif -mult volume1.mif weight' + str(pe_indices[1]) + '.mif -mult -add weight' + str(pe_indices[0]) + '.mif weight' + str(pe_indices[1]) + '.mif -add -divide 0.0 -max combined' + str(index) + '.mif')
     combined_image_list.append('combined' + str(index) + '.mif')
     os.unlink('volume0.mif')
     os.unlink('volume1.mif')
 
-  for index in range(0, len(eddy_config):
-    delFile('weight' + str(index) + '.mif')
+  for index in range(0, len(eddy_config)):
+    delFile('weight' + str(index+1) + '.mif')
 
   # Finally the recombined volumes must be concatenated to produce the resulting image series
   runCommand('mrcat ' + ' '.join(combined_image_list) + ' - -axis 3 | mrconvert - result.mif -fslgrad bvecs_combined bvals_combined' + stride_option)
