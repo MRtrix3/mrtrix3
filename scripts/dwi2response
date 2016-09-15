@@ -112,6 +112,8 @@ if os.path.exists('mask.mif'):
   mask_size = [ int(x) for x in getHeaderInfo('mask.mif', 'size').split() ]
   if not mask_size[:3] == dwi_size[:3]:
     errorMessage('Dimensions of provided mask image do not match DWI')
+  if int(getImageStat('mask.mif', 'count', 'mask.mif')) == 0:
+    errorMessage('Input mask does not contain any voxels')
 else:
   runCommand('dwi2mask dwi.mif mask.mif')
 
