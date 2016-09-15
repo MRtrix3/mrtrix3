@@ -18,15 +18,6 @@ def runCommand(cmd, exitOnError=True):
     # On Windows, strip the .exe's
     mrtrix_bin_list = [ os.path.splitext(name)[0] for name in os.listdir(mrtrix_bin_path) ]
 
-  if lib.app.lastFile:
-    # Check to see if the last file produced is produced by this command;
-    #   if it is, this will be the last called command that gets skipped
-    if lib.app.lastFile in cmd:
-      lib.app.lastFile = ''
-    if lib.app.verbosity:
-      sys.stderr.write(lib.app.colourConsole + 'Skipping command:' + lib.app.colourClear + ' ' + cmd + '\n')
-    return
-
   # Vectorise the command string, preserving anything encased within quotation marks
   # TODO Use shlex.split()?
   quotation_split = cmd.split('\"')
@@ -41,6 +32,26 @@ def runCommand(cmd, exitOnError=True):
         cmdsplit.append(item)
       else:
         cmdsplit.extend(item.split())
+
+  if lib.app.lastFile:
+    # Check to see if the last file produced in the previous script execution is
+    #   intended to be produced by this command; if it is, this will be the last
+    #   command that gets skipped by the -continue option
+    # It's possible that the file might be defined in a '--option=XXX' style argument
+    #  It's also possible that the filename in the command string has the file extension omitted
+    for entry in cmdsplit:
+      if entry.startswith('--') and '=' in entry:
+        cmdtotest = entry.split('=')[1]
+      else:
+        cmdtotest = entry
+      filetotest = [ lib.app.lastFile, os.path.splitext(lib.app.lastFile)[0] ]
+      if cmdtotest in filetotest:
+        debugMessage('Detected last file \'' + lib.app.lastFile + '\' in command \'' + cmd + '\'; this is the last runCommand() call that will be skipped')
+        lib.app.lastFile = ''
+        break
+    if lib.app.verbosity:
+      sys.stderr.write(lib.app.colourConsole + 'Skipping command:' + lib.app.colourClear + ' ' + cmd + '\n')
+    return
 
   # For any MRtrix commands, need to insert the nthreads and quiet calls
   new_cmdsplit = [ ]
