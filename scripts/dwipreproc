@@ -533,7 +533,7 @@ else:
 
   bvecs_combined_transpose = [ ]
   bvals_combined = [ ]
-  
+
   for pair in volume_pairs:
     bvec_sum = [ float(bvecs[0][pair[0]]) + float(bvecs[0][pair[1]]),
                  float(bvecs[1][pair[0]]) + float(bvecs[1][pair[1]]),
@@ -585,9 +585,6 @@ else:
   
   eddy_config  = [ [ float(f) for f in line.split() ] for line in open('eddy_config.txt', 'r').read().split('\n')[:-1] ]
   eddy_indices = [ int(i) for i in open('eddy_indices.txt', 'r').read().split() ]
-  
-  print (eddy_config)
-  print (eddy_indices)
 
   # This section derives, for each phase encoding configuration present, the 'weight' to be applied
   #   to the image during volume recombination, which is based on the Jacobian of the field in the
