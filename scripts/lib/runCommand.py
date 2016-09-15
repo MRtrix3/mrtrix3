@@ -142,13 +142,14 @@ def runCommand(cmd, exitOnError=True):
       error_text += stdoutdata + stderrdata
 
   if (error):
+    lib.app.cleanup = False
     if exitOnError:
       caller = inspect.getframeinfo(inspect.stack()[1][0])
       printMessage('')
       sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + lib.app.colourError + '[ERROR] Command failed: ' + cmd + lib.app.colourClear + lib.app.colourDebug + ' (' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')' + lib.app.colourClear + '\n')
       sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + lib.app.colourPrint + 'Output of failed command:' + lib.app.colourClear + '\n')
       sys.stderr.write(error_text)
-      if not lib.app.cleanup and lib.app.tempDir:
+      if lib.app.tempDir:
         with open(os.path.join(lib.app.tempDir, 'error.txt'), 'w') as outfile:
           outfile.write(cmd + '\n\n' + error_text + '\n')
       lib.app.complete()

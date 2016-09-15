@@ -14,12 +14,12 @@ To duplicate our methods and results, you will need to download the
 appropriate files, accessible through the following steps:
 
 - https://db.humanconnectome.org/
-- WU-Minn HCP Data
-- 500 Subjects + MEG2
-- Download images
-- Single subject
+- WU-Minn HCP Data - 900 Subjects + 7T
+- Download Image Data: Single subject
+- Session Type: 3T MRI
 - Processing level: Preprocessed
-- Structural Preprocessed and Diffusion Preprocessed
+- Package Type: MSM-Sulc + MSM-All
+- add Structural Preprocessed and Diffusion Preprocessed to queue
 
 The actual files within these compressed downloads that we will make use
 of are:
@@ -111,7 +111,7 @@ appropriateness of response function voxel selections)
 
 4. Perform Multi-Shell, Multi-Tissue Constrained Spherical Deconvolution:
 
-``dwi2fod msmt_5tt DWI.mif RF_WM.txt WM_FODs.mif RF_GM.txt GM.mif RF_CSF.txt CSF.mif -mask nodif_brain_mask.nii.gz``
+``dwi2fod msmt_csd DWI.mif RF_WM.txt WM_FODs.mif RF_GM.txt GM.mif RF_CSF.txt CSF.mif -mask nodif_brain_mask.nii.gz``
 
 ``mrconvert WM_FODs.mif - -coord 3 0 | mrcat CSF.mif GM.mif - tissueRGB.mif -axis 3``
 
@@ -128,12 +128,18 @@ Connectome generation
 
 1. Generate the initial tractogram:
 
-``tckgen WM_FODs.mif 100M.tck -act 5TT.mif -backtrack -crop_at_gmwmi -seed_dynamic WM_FODs.mif -maxlength 250 -number 100M``
+``tckgen WM_FODs.mif 100M.tck -act 5TT.mif -backtrack -crop_at_gmwmi -seed_dynamic WM_FODs.mif -maxlength 250 -number 100M -cutoff 0.06``
 
 Explicitly setting the maximum length is highly recommended for HCP
 data, as the default heuristic - 100 times the voxel size - would result
 in a maximum length of 125mm, which would preclude the reconstruction of
 some longer pathways.
+
+We also suggest a reduced FOD amplitude cutoff threshold for tracking when
+using the MSMT CSD algorithm in conjunction with ACT; this allows streamlines
+to reach the GM-WM interface more reliably, and does not result in
+significant false positives since the MSMT algorithm does not produce many
+erroneous small FOD lobes.
 
 2. Apply the `Spherical-deconvolution Informed Filtering of Tractograms
    (SIFT) <sift>`__ algorithm

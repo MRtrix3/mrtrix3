@@ -11,7 +11,7 @@ Synopsis
     maskfilter [ options ]  input filter output
 
 -  *input*: the input image.
--  *filter*: the type of filter to be applied (connect, dilate, erode, median)
+-  *filter*: the type of filter to be applied (clean, connect, dilate, erode, median)
 -  *output*: the output image.
 
 Description
@@ -19,12 +19,17 @@ Description
 
 Perform filtering operations on 3D / 4D mask images.
 
-The available filters are: connect, dilate, erode, median.
+The available filters are: clean, connect, dilate, erode, median.
 
 Each filter has its own unique set of optional parameters.
 
 Options
 -------
+
+Options for mask cleaning filter
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-scale value** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. (Default: 2)
 
 Options for connected-component filter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -73,7 +78,7 @@ Standard options
 
 
 
-**Author:** Robert E. Smith (robert.smith@florey.edu.au), David Raffelt (david.raffelt@florey.edu.au) and J-Donald Tournier (jdtournier@gmail.com)
+**Author:** Robert E. Smith (robert.smith@florey.edu.au), David Raffelt (david.raffelt@florey.edu.au), Thijs Dhollander (thijs.dhollander@gmail.com) and J-Donald Tournier (jdtournier@gmail.com)
 
 **Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
 

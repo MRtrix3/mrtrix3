@@ -109,6 +109,15 @@ eddy_cmd = getFSLEddyPath(lib.app.args.cuda)
 fsl_suffix = getFSLSuffix()
 lib.app.checkOutputFile(lib.app.args.output)
 
+# Export the gradient table to the path requested by the user if necessary
+grad_export_option = ''
+if lib.app.args.export_grad_mrtrix:
+  grad_export_option = ' -export_grad_mrtrix ' + getUserPath(lib.app.args.export_grad_mrtrix, True)
+  lib.app.checkOutputFile(getUserPath(lib.app.args.export_grad_mrtrix, True))
+elif lib.app.args.export_grad_fsl:
+  grad_export_option = ' -export_grad_fsl ' + getUserPath(lib.app.args.export_grad_fsl[0], True) + ' ' + getUserPath(lib.app.args.export_grad_fsl[1], True)
+  lib.app.checkOutputFile(getUserPath(lib.app.args.export_grad_fsl[0], True))
+  lib.app.checkOutputFile(getUserPath(lib.app.args.export_grad_fsl[1], True))
 
 
 # Convert all input images into MRtrix format and store in temprary directory first;
@@ -168,6 +177,7 @@ if not len(grad) == num_volumes:
 
 
 
+<<<<<<< HEAD
 do_topup = not PE_design == 'None'
 
 
@@ -272,6 +282,73 @@ if dwi_pe_scheme:
     dwi_pe_scheme = dwi_pe_manual_scheme # May be used later for triggering volume recombination
   else:
     dwi_manual_pe_scheme = None # To guarantee that the scheme stored within the header will be used
+=======
+  # For any non-even axis sizes, crop the first voxel along that dimension
+  crop_option = ''
+  for axis, axis_size in enumerate(series_size[:3]):
+    if int(axis_size)%2:
+      crop_option += ' -axis ' + str(axis) + ' 1 ' + str(int(axis_size)-1)
+
+  if crop_option:
+    warnMessage('Input images contain at least one non-even dimension; cropping images for topup / eddy compatibility')
+    runCommand('mrcrop series.mif series_crop.mif' + crop_option)
+    delFile('series.mif')
+    series_path = 'series_crop.mif'
+    if PE_design == 'Pair':
+      runCommand('mrcrop pair1.mif pair1_crop.mif' + crop_option)
+      delFile('pair1.mif')
+      pair1_path = 'pair1_crop.mif'
+      runCommand('mrcrop pair2.mif pair2_crop.mif' + crop_option)
+      delFile('pair2.mif')
+      pair2_path = 'pair2_crop.mif'
+    else: # 'All'
+      runCommand('mrcrop series2.mif series2_crop.mif' + crop_option)
+      delFile('series2.mif')
+      series2_path = 'series2_crop.mif'
+
+
+# Convert the input files as necessary for FSL tools
+if PE_design == 'None':
+  runCommand('mrconvert ' + series_path + ' dwi_pre_topup.nii -stride -1,+2,+3,+4')
+if PE_design == 'Pair':
+  runCommand('mrconvert ' + series_path + ' dwi_pre_topup.nii -stride -1,+2,+3,+4')
+  runCommand('mrcat ' + pair1_path + ' ' + pair2_path + ' - -axis 3 | mrconvert - topup_in.nii -stride -1,+2,+3,+4')
+elif PE_design == 'All':
+  runCommand('dwiextract ' + series_path + ' -bzero pair1.mif')
+  runCommand('dwiextract ' + series2_path + ' -bzero pair2.mif')
+  runCommand('mrcat pair1.mif pair2.mif - -axis 3 | mrconvert - topup_in.nii -stride -1,+2,+3,+4')
+  runCommand('mrconvert ' + series_path + ' dwi1_pre_topup.nii -stride -1,+2,+3,+4')
+  delFile(series_path)
+  runCommand('mrconvert ' + series2_path + ' dwi2_pre_topup.nii -stride -1,+2,+3,+4')
+  delFile(series2_path)
+  runCommand('mrcat dwi1_pre_topup.nii dwi2_pre_topup.nii dwi_pre_eddy.nii -axis 3')
+
+
+# Calculate how many b=0 volumes are present in each phase-encode direction
+rpe_b0_count = [ 1, 0 ] # Always contains integers, _not_ strings
+if PE_design == 'Pair' or PE_design == 'All':
+  rpe_b0_count[1] = 1
+  temp = getHeaderInfo(pair1_path, 'size').split()
+  if len(temp) == 4:
+    rpe_b0_count[0] = int(temp[3])
+  temp = getHeaderInfo(pair2_path, 'size').split()
+  if len(temp) == 4:
+    rpe_b0_count[1] = int(temp[3])
+
+
+# Construct a topup/eddy configuration file
+printMessage('Creating phase-encoding configuration file')
+config_file = open('config.txt', 'w')
+config_line = [ '0', '0', '0', '0.1' ]
+if PE_dir[1]:
+  config_line[PE_dir[0]] = '-1'
+else:
+  config_line[PE_dir[0]] = '1'
+for lines in range(0, rpe_b0_count[0]):
+  config_file.write(' '.join (config_line) + '\n')
+if PE_dir[1]:
+  config_line[PE_dir[0]] = '1'
+>>>>>>> origin/master
 else:
   # Nothing in the header; rely entirely on user specification
   if PE_design == 'Header':
@@ -558,11 +635,7 @@ else:
   field_map_image = 'field_map' + fsl_suffix
   if not imagesMatch('topup_in.nii', field_map_image):
     warnMessage('topup output field image has erroneous header; recommend updating FSL to version 5.0.8 or later')
-    input_transform_text = getHeaderInfo('topup_in.nii', 'transform')
-    with open( 'transform.txt', 'w' ) as f:
-      for line in input_transform_text:
-        f.write (line)
-    runCommand('mrtransform ' + field_map_image + ' -linear transform.txt -replace field_map_fix' + fsl_suffix)
+    runCommand('mrtransform ' + field_map_image + ' -replace topup_in.nii field_map_fix' + fsl_suffix)
     delFile(field_map_image)
     field_map_image = 'field_map_fix' + fsl_suffix
 
@@ -620,13 +693,6 @@ else:
 
 
 # Finish!
-# Also export the gradient table to the path requested by the user if necessary
-grad_export_option = ''
-if lib.app.args.export_grad_mrtrix:
-  grad_export_option = ' -export_grad_mrtrix ' + getUserPath(lib.app.args.export_grad_mrtrix, True)
-elif lib.app.args.export_grad_fsl:
-  grad_export_option = ' -export_grad_fsl ' + getUserPath(lib.app.args.export_grad_fsl[0], True) + ' ' + getUserPath(lib.app.args.export_grad_fsl[1], True)
-
 runCommand('mrconvert result.mif ' + getUserPath(lib.app.args.output, True) + grad_export_option + lib.app.mrtrixForce)
 lib.app.complete()
 

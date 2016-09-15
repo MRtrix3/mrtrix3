@@ -64,14 +64,14 @@ const OptionGroup AssignmentOptions = OptionGroup ("Structural connectome stream
 Tck2nodes_base* load_assignment_mode (Image<node_t>& nodes_data)
 {
 
-  Tck2nodes_base* tck2nodes = NULL;
+  Tck2nodes_base* tck2nodes = nullptr;
   for (size_t index = 0; modes[index]; ++index) {
     auto opt = get_options (modes[index]);
     if (opt.size()) {
 
       if (tck2nodes) {
         delete tck2nodes;
-        tck2nodes = NULL;
+        tck2nodes = nullptr;
         throw Exception ("Please only request one streamline assignment mechanism");
       }
 
