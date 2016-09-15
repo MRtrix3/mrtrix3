@@ -89,11 +89,8 @@ void run ()
     for (auto l = Loop (fixel_template_index, 0, 3) (fixel_template_index); l; ++l)
       num_fixels += fixel_template_index.value();
 
-    Header output_header (fixel_template_index);
-    output_header.ndim() = 3;
-    output_header.size(0) = num_fixels;
+    Header output_header (fixel_template_directions);
     output_header.size(1) = 1;
-    output_header.size(2) = 1;
     output_header.datatype() = DataType::Float32;
     output_header.datatype().set_byte_order_native();
     fc_output_data = Image<value_type>::create (Path::join(output_fixel_folder, opt[0][2]), output_header);
