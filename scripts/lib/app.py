@@ -197,7 +197,7 @@ def complete():
   elif tempDir:
     # This needs to be printed even if the -quiet option is used
     if os.path.isfile(os.path.join(tempDir, 'error.txt')):
-      with open(os.path.join(tempDir, 'error.txt'),'rb') as errortext:
+      with open(os.path.join(tempDir, 'error.txt'), 'r') as errortext:
         sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'Script failed while executing the command: ' + errortext.readline().rstrip() + colourClear + '\n')
       sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'For debugging, inspect contents of temporary directory: ' + tempDir + colourClear + '\n')
     else:
