@@ -38,7 +38,7 @@ void usage ()
   ARGUMENTS
   + Argument ("subject_data", "the input subject fixel data file. This should be a file inside the fixel folder").type_image_in ()
   + Argument ("template_folder", "the input template fixel folder.").type_image_in ()
-  + Argument ("output_folder", "the output fixel folder. Any existing index file in the output folder will be checked that it matches the expected output.").type_text()
+  + Argument ("output_folder", "the output fixel folder.").type_text()
   + Argument ("output_data", "the name of the output fixel data file. This will be placed in the output fixel folder").type_image_out ();
 
   OPTIONS
@@ -96,7 +96,12 @@ void run ()
       template_directions.index(0) = template_offset + t;
       for (size_t s = 0; s < nfixels_subject; ++s) {
         subject_directions.index(0) = subject_offset + s;
-        float dp = std::abs (template_directions.row(1).dot (subject_directions.row(1)));
+
+        Eigen::Vector3f templatedir = template_directions.row(1);
+        templatedir.normalize();
+        Eigen::Vector3f subjectdir = subject_directions.row(1);
+        subjectdir.normalize();
+        float dp = std::abs (templatedir.dot (subjectdir));
         if (dp > largest_dp) {
           largest_dp = dp;
           index_of_closest_fixel = s;
