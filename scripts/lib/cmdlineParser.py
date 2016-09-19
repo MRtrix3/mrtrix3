@@ -164,7 +164,12 @@ class Parser(argparse.ArgumentParser):
             else:
               s += option.metavar
           elif option.nargs:
-            s += (' ' + option.dest.upper())*option.nargs
+            if isinstance(option.nargs, int):
+              s += (' ' + option.dest.upper())*option.nargs
+            elif option.nargs == '+' or option.nargs == '*':
+              s += ' <space-separated list>'
+            elif option.nargs == '?':
+              s += ' <optional value>'
           elif option.type is not None:
             s += ' ' + option.type.__name__.upper()
           elif option.default is None:
