@@ -85,6 +85,7 @@ void run ()
         input_directions_image.index(0) = index + f;
         output_directions_image.index(0) = index + f;
         output_directions_image.row(1) = transform * input_directions_image.row(1);
+        output_directions_image.row(1).normalize();
       }
     }
   }
