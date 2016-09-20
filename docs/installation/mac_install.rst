@@ -42,6 +42,21 @@ Install Dependencies
    in our experience, this only leads to further conflicts, which won't help installing MRtrix3 *and* will make things 
    more difficult to fix later. Once you pick one of these options, we strongly recommend you stick with it, and 
    consult the `community forum <http://community.mrtrix.org>`__ if needed for advice and troubleshooting. 
+
+
+.. NOTE:: 
+    If you currently do not plan to contribute to the Mrtrix3 code, the most convenient way to install Mrtrix3 on MacOS X is to install it via homebrew. 
+ 
+    - If you do not have homebrew installed, you can install it via:
+    ``/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"``
+    - You need to add the MRtrix3 tap to homebrew: ``brew tap MRtrix3/mrtrix3``
+    - You can now install the latest version of MRtrix3 with: ``brew install mrtrix3``
+    
+    This should be all you need to do. For all installation options type ``brew info mrtrix3``.
+    
+    MRtrix3 will get upgraded when you upgrade all homebrew packages:
+    ``brew update && brew upgrade``
+    If you want to avoid upgrading MRtrix3 the next time you upgrade homebrew you can do so with ``brew pin mrtrix3``
    
    - With `Homebrew <http://brew.sh/>`__:
        - Install Eigen3: ``brew install eigen``
