@@ -123,10 +123,10 @@ void write_fixel_output (const std::string& filename,
                          const VectorType& data,
                          const Header& header)
 {
-  assert (data.size() == header.size(2));
+  assert (data.size() == header.size(0));
   auto output = Image<float>::create (filename, header);
   for (uint32_t i = 0; i < data.size(); ++i) {
-    output.index(2) = i;
+    output.index(0) = i;
     output.value() = data[i];
   }
 }
@@ -151,6 +151,8 @@ void run() {
   const std::string input_fixel_folder = argument[0];
   Header index_header = FixelFormat::find_index_header (input_fixel_folder);
   auto index_image = index_header.get_image<uint32_t>();
+
+
   uint32_t num_fixels = std::stoul (index_image.keyval().at(FixelFormat::n_fixels_key));
   CONSOLE ("number of fixels: " + str(num_fixels));
 
@@ -161,15 +163,13 @@ void run() {
   FixelFormat::check_fixel_folder (output_fixel_folder, true);
 
   {
-    TRACE;
     // copy index to output folder  TODO why so long to copy here??
     auto output_index_image = Image<uint32_t>::create (Path::join (output_fixel_folder, Path::basename (index_image.name())), index_image);
-    threaded_copy_with_progress_message ("copying fixel index into output folder", index_image, output_index_image);
+    threaded_copy_with_progress_message ("copying fixel index into output folder", index_image, output_index_image, 0, std::numeric_limits<size_t>::max(), 2);
     auto directions_data = FixelFormat::find_directions_header (input_fixel_folder, index_image).get_image<float>().with_direct_io();
     auto output_directions_data = Image<float>::create(Path::join (output_fixel_folder, Path::basename (directions_data.name())), directions_data);
     threaded_copy_with_progress_message ("copying fixel directions into output folder", directions_data, output_directions_data);
 
-    TRACE;
     // Load template fixel directions
     Transform image_transform (index_image);
     for (auto i = Loop ("loading template fixel directions and positions", index_image, 0, 3)(index_image); i; ++i) {
@@ -183,13 +183,10 @@ void run() {
       }
     }
   }
-
-
   // Read identifiers and check files exist
   std::vector<std::string> identifiers;
   Header header;
   {
-    TRACE;
     ProgressBar progress ("validating input files...");
     std::ifstream ifs (argument[1].c_str());
     std::string temp;
@@ -207,33 +204,25 @@ void run() {
     }
   }
 
-  TRACE;
-
   // Load design matrix:
   const matrix_type design = load_matrix (argument[2]);
   if (design.rows() != (ssize_t)identifiers.size())
     throw Exception ("number of input files does not match number of rows in design matrix");
 
-  TRACE;
-
   // Load contrast matrix:
   const matrix_type contrast = load_matrix (argument[3]);
-
-    TRACE;
 
   if (contrast.cols() != design.cols())
     throw Exception ("the number of contrasts does not equal the number of columns in the design matrix");
   if (contrast.rows() > 1)
     throw Exception ("only a single contrast vector (defined as a row) is currently supported");
 
-    TRACE;
-
   // Compute fixel-fixel connectivity
   std::vector<std::map<uint32_t, Stats::CFE::connectivity> > connectivity_matrix (num_fixels);
   std::vector<uint16_t> fixel_TDI (num_fixels, 0.0);
   const std::string track_filename = argument[4];
   DWI::Tractography::Properties properties;
-  DWI::Tractography::Reader<> track_file (track_filename, properties);
+  DWI::Tractography::Reader<float> track_file (track_filename, properties);
   // Read in tracts, and compute whole-brain fixel-fixel connectivity
   const size_t num_tracks = properties["count"].empty() ? 0 : to<int> (properties["count"]);
   if (!num_tracks)
@@ -273,7 +262,7 @@ void run() {
 
       auto it = connectivity_matrix[fixel].begin();
       while (it != connectivity_matrix[fixel].end()) {
-        const value_type connectivity = it->second.value / value_type (fixel_TDI[fixel]);
+        const connectivity_value_type connectivity = it->second.value / connectivity_value_type (fixel_TDI[fixel]);
         if (connectivity < connectivity_threshold)  {
           connectivity_matrix[fixel].erase (it++);
         } else {
@@ -282,7 +271,8 @@ void run() {
                                                    Math::pow2 (positions[fixel][1] - positions[it->first][1]) +
                                                    Math::pow2 (positions[fixel][2] - positions[it->first][2]));
             const float smoothing_weight = connectivity * gaussian_const1 * std::exp (-std::pow (distance, 2) / gaussian_const2);
-            smoothing_weights[fixel].insert (std::pair<uint32_t, float> (it->first, smoothing_weight));
+            if (smoothing_weight > 0.01)
+              smoothing_weights[fixel].insert (std::pair<uint32_t, float> (it->first, smoothing_weight));
           }
           // Here we pre-exponentiate each connectivity value by C
           it->second.value = std::pow (connectivity, cfe_c);
@@ -295,17 +285,27 @@ void run() {
 
       // Normalise smoothing weights
       value_type sum = 0.0;
-      for (auto it = smoothing_weights[fixel].begin(); it != smoothing_weights[fixel].end(); ++it)
-        sum += it->second;
+      for (auto smooth_it = smoothing_weights[fixel].begin(); smooth_it != smoothing_weights[fixel].end(); ++smooth_it) {
+        sum += smooth_it->second;
+      }
       value_type norm_factor = 1.0 / sum;
-      for (auto it = smoothing_weights[fixel].begin(); it != smoothing_weights[fixel].end(); ++it) {
-        it->second *= norm_factor;
-        if (it->second < 0.005)
-          smoothing_weights[fixel].erase (it++);
+      for (auto smooth_it = smoothing_weights[fixel].begin(); smooth_it != smoothing_weights[fixel].end(); ++smooth_it) {
+        smooth_it->second *= norm_factor;
       }
       progress++;
     }
   }
+
+  Header output_header (header);
+  output_header.keyval()["num permutations"] = str(num_perms);
+  output_header.keyval()["dh"] = str(cfe_dh);
+  output_header.keyval()["cfe_e"] = str(cfe_e);
+  output_header.keyval()["cfe_h"] = str(cfe_h);
+  output_header.keyval()["cfe_c"] = str(cfe_c);
+  output_header.keyval()["angular threshold"] = str(angular_threshold);
+  output_header.keyval()["connectivity threshold"] = str(connectivity_threshold);
+  output_header.keyval()["smoothing FWHM"] = str(smooth_std_dev * 2.3548);
+
 
   // Load input data
   matrix_type data (num_fixels, identifiers.size());
@@ -332,6 +332,7 @@ void run() {
           value += subject_data_vector[it->first] * it->second;
         data (fixel, subject) = value;
       }
+
       progress++;
     }
   }
@@ -339,22 +340,9 @@ void run() {
   if (!data.allFinite())
     throw Exception ("input data contains non-finite value(s)");
 
-
-  Header output_header (header);
-  output_header.keyval()["num permutations"] = str(num_perms);
-  output_header.keyval()["dh"] = str(cfe_dh);
-  output_header.keyval()["cfe_e"] = str(cfe_e);
-  output_header.keyval()["cfe_h"] = str(cfe_h);
-  output_header.keyval()["cfe_c"] = str(cfe_c);
-  output_header.keyval()["angular threshold"] = str(angular_threshold);
-  output_header.keyval()["connectivity threshold"] = str(connectivity_threshold);
-  output_header.keyval()["smoothing FWHM"] = str(smooth_std_dev * 2.3548);
-
   {
     ProgressBar progress ("outputting beta coefficients, effect size and standard deviation");
     auto temp = Math::Stats::GLM::solve_betas (data, design);
-
-    std::cout << temp.rows() << ", " << temp.cols();
 
     for (ssize_t i = 0; i < contrast.cols(); ++i) {
       write_fixel_output (Path::join (output_fixel_folder, "beta" + str(i) + ".mif"), temp.row(i), output_header);
@@ -372,7 +360,6 @@ void run() {
   std::shared_ptr<Stats::EnhancerBase> cfe_integrator;
   cfe_integrator.reset (new Stats::CFE::Enhancer (connectivity_matrix, cfe_dh, cfe_e, cfe_h));
   vector_type empirical_cfe_statistic;
-
 
   // If performing non-stationarity adjustment we need to pre-compute the empirical CFE statistic
   if (do_nonstationary_adjustment) {

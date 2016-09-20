@@ -12,7 +12,7 @@ Synopsis
 
 -  *subject_data*: the input subject fixel data file. This should be a file inside the fixel folder
 -  *template_folder*: the input template fixel folder.
--  *output_folder*: the output fixel folder. Any existing index file in the output folder will be checked that it matches the expected output.
+-  *output_folder*: the output fixel folder.
 -  *output_data*: the name of the output fixel data file. This will be placed in the output fixel folder
 
 Description

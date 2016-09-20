@@ -33,7 +33,7 @@ namespace MR
       typedef Math::Stats::value_type value_type;
       typedef Math::Stats::vector_type vector_type;
       typedef float connectivity_value_type;
-      typedef Eigen::Matrix<default_type, 3, 1> direction_type;
+      typedef Eigen::Matrix<value_type, 3, 1> direction_type;
       typedef Eigen::Array<connectivity_value_type, Eigen::Dynamic, 1> connectivity_vector_type;
       typedef DWI::Tractography::Mapping::SetVoxelDir SetVoxelDir;
 
@@ -73,7 +73,7 @@ namespace MR
           const std::vector<direction_type>& fixel_directions;
           std::vector<uint16_t>& fixel_TDI;
           std::vector<std::map<uint32_t, connectivity> >& connectivity_matrix;
-          default_type angular_threshold_dp;
+          const value_type angular_threshold_dp;
       };
 
 

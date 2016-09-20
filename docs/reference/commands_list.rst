@@ -17,6 +17,8 @@ List of MRtrix3 commands
 
    commands/5ttedit
 
+   commands/addnoise
+
    commands/afdconnectivity
 
    commands/amp2sh

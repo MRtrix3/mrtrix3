@@ -33,22 +33,23 @@ namespace MR
          fixel_directions (fixel_directions),
          fixel_TDI (fixel_TDI),
          connectivity_matrix (connectivity_matrix),
-         angular_threshold_dp (angular_threshold * (Math::pi/180.0)) { }
+         angular_threshold_dp (std::cos (angular_threshold * (Math::pi/180.0))) { }
 
 
 
-      bool TrackProcessor::operator () (const SetVoxelDir& in)
+      bool TrackProcessor::operator() (const SetVoxelDir& in)
       {
         // For each voxel tract tangent, assign to a fixel
-        std::vector<uint32_t> tract_fixel_indices;
+        std::vector<int32_t> tract_fixel_indices;
         for (SetVoxelDir::const_iterator i = in.begin(); i != in.end(); ++i) {
           assign_pos_of (*i).to (fixel_indexer);
           fixel_indexer.index(3) = 0;
-          uint32_t first_index = fixel_indexer.value();
-          if (first_index >= 0) {
+          uint32_t num_fibres = fixel_indexer.value();
+          if (num_fibres > 0) {
             fixel_indexer.index(3) = 1;
-            uint32_t last_index = first_index + fixel_indexer.value();
-            uint32_t closest_fixel_index = -1;
+            uint32_t first_index = fixel_indexer.value();
+            uint32_t last_index = first_index + num_fibres;
+            uint32_t closest_fixel_index = 0;
             value_type largest_dp = 0.0;
             const direction_type dir (i->get_dir().normalized());
             for (uint32_t j = first_index; j < last_index; ++j) {
