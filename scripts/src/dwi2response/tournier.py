@@ -64,16 +64,16 @@ def execute():
     # Get amplitudes of two largest peaks, and direction of largest
     # TODO Speed-test fod2fixel against sh2peaks
     # TODO Add maximum number of fixels per voxel option to fod2fixel?
-    runCommand('fod2fixel ' + prefix + 'FOD.mif -peak ' + prefix + 'peaks.msf -mask ' + mask_in_path + ' -fmls_no_thresholds')
+    runCommand('fod2fixel ' + prefix + 'FOD.mif ' + prefix + 'fixel -peak peaks.mif -mask ' + mask_in_path + ' -fmls_no_thresholds')
     delFile(prefix + 'FOD.mif')
     if iteration:
       delFile(mask_in_path)
-    runCommand('fixel2voxel ' + prefix + 'peaks.msf split_value ' + prefix + 'amps.mif')
+    runCommand('fixel2voxel ' + prefix + 'fixel/peaks.mif split_data ' + prefix + 'amps.mif')
     runCommand('mrconvert ' + prefix + 'amps.mif ' + prefix + 'first_peaks.mif -coord 3 0 -axes 0,1,2')
     runCommand('mrconvert ' + prefix + 'amps.mif ' + prefix + 'second_peaks.mif -coord 3 1 -axes 0,1,2')
     delFile(prefix + 'amps.mif')
-    runCommand('fixel2voxel ' + prefix + 'peaks.msf split_dir ' + prefix + 'all_dirs.mif')
-    delFile(prefix + 'peaks.msf')
+    runCommand('fixel2voxel ' + prefix + 'fixel/directions.mif split_dir ' + prefix + 'all_dirs.mif')
+    delfolder(prefix + 'fixel')
     runCommand('mrconvert ' + prefix + 'all_dirs.mif ' + prefix + 'first_dir.mif -coord 3 0:2')
     delFile(prefix + 'all_dirs.mif')
     # Calculate the 'cost function' Donald derived for selecting single-fibre voxels
