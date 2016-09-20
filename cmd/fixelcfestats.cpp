@@ -163,7 +163,6 @@ void run() {
   FixelFormat::check_fixel_folder (output_fixel_folder, true);
 
   {
-    // copy index to output folder  TODO why so long to copy here??
     auto output_index_image = Image<uint32_t>::create (Path::join (output_fixel_folder, Path::basename (index_image.name())), index_image);
     threaded_copy_with_progress_message ("copying fixel index into output folder", index_image, output_index_image, 0, std::numeric_limits<size_t>::max(), 2);
     auto directions_data = FixelFormat::find_directions_header (input_fixel_folder, index_image).get_image<float>().with_direct_io();

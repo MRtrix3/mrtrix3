@@ -33,34 +33,34 @@ namespace MR
   {
     inline bool is_index_image (const Header& in)
     {
-      return in.keyval ().count (n_fixels_key);
+      return (in.size(2) != 1) && in.keyval().count (n_fixels_key);
     }
 
 
     inline void check_index_image (const Header& in)
     {
-      if (!is_index_image (in))
+      if (!is_index_image(in))
         throw InvalidImageException (in.name () + " is not a valid fixel index image. Header key " + n_fixels_key + " not found");
     }
 
 
     inline bool is_data_file (const Header& in)
     {
-      return in.ndim () == 3 && in.size (2) == 1;
+      return in.ndim() == 3 && in.size(2) == 1;
     }
 
 
     inline bool is_directions_file (const Header& in)
     {
       std::string basename (Path::basename (in.name()));
-      return in.ndim () == 3 && in.size (1) == 3 && in.size (2) == 1 && (basename.substr(0, basename.find_last_of(".")) == "directions");
+      return in.ndim() == 3 && in.size(1) == 3 && in.size(2) == 1 && (basename.substr(0, basename.find_last_of(".")) == "directions");
     }
 
 
     inline void check_data_file (const Header& in)
     {
       if (!is_data_file (in))
-        throw InvalidImageException (in.name () + " is not a valid fixel data file. Expected a 3-dimensional image of size n x m x 1");
+        throw InvalidImageException (in.name() + " is not a valid fixel data file. Expected a 3-dimensional image of size n x m x 1");
     }
 
     inline std::string get_fixel_folder (const std::string& fixel_file) {
