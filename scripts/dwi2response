@@ -80,6 +80,8 @@ if lib.app.args.grad:
   grad_import_option = ' -grad ' + getUserPath(lib.app.args.grad, True)
 elif lib.app.args.fslgrad:
   grad_import_option = ' -fslgrad ' + getUserPath(lib.app.args.fslgrad[0], True) + ' ' + getUserPath(lib.app.args.fslgrad[1], True)
+elif not getHeaderInfo(getUserPath(lib.app.args.input, False), 'dwgrad'):
+  errorMessage('Script requires diffusion gradient table: either in image header, or using -grad / -fslgrad option')
 
 lib.app.makeTempDir()
 
@@ -94,15 +96,6 @@ if lib.app.args.mask:
 algorithm.getInputFiles()
 
 lib.app.gotoTempDir()
-
-
-# Make sure it's actually a DWI that's been passed
-size = getHeaderInfo('dwi.mif', 'size').split()
-if len(size) != 4:
-  errorMessage('Input image must be a 4D image')
-DW_scheme = getHeaderInfo('dwi.mif', 'dwgrad').split('\n')
-if len(DW_scheme) != int(size[3]):
-  errorMessage('Input image does not contain valid DW gradient scheme')
   
 
 # Generate a brain mask (if necessary)

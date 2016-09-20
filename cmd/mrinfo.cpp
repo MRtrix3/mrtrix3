@@ -243,7 +243,7 @@ void run ()
     if (offset)     std::cout << header.intensity_offset() << "\n";
     if (multiplier) std::cout << header.intensity_scale() << "\n";
     if (transform)  print_transform (header);
-    if (dwgrad)     std::cout << DWI::parse_DW_scheme (header) << "\n";
+    if (dwgrad)     std::cout << DWI::get_DW_scheme (header) << "\n";
     if (shells || shellcounts) print_shells (header, shells, shellcounts);
     if (petable)    std::cout << PhaseEncoding::get_scheme (header) << "\n";
 
