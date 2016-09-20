@@ -17,13 +17,8 @@
 #define __gui_app_h__
 
 #include "app.h"
-#include "progressbar.h"
 #include "file/config.h"
 #include "gui/opengl/gl.h"
-#include "gui/dialog/progress.h"
-#include "gui/dialog/report_exception.h"
-#include "gui/dialog/dicom.h"
-#include "gui/dialog/file.h"
 
 namespace MR
 {
@@ -69,13 +64,6 @@ namespace MR
           new QApplication (cmdline_argc, cmdline_argv);
           ::MR::App::init (cmdline_argc, cmdline_argv); 
           qApp->setAttribute (Qt::AA_DontCreateNativeWidgetSiblings);
-
-          ::MR::ProgressInfo::display_func = Dialog::ProgressBar::display;
-          ::MR::ProgressInfo::done_func = Dialog::ProgressBar::done;
-          ::MR::File::Dicom::select_func = Dialog::select_dicom;
-          ::MR::Exception::display_func = Dialog::display_exception;
-
-          ::MR::App::check_overwrite_files_func = Dialog::File::check_overwrite_files_func;
         }
 
         ~App () {

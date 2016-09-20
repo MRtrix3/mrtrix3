@@ -65,7 +65,7 @@ void usage ()
     +   Option ("stride", "data strides i.e. order and direction of axes data layout")
     +   Option ("offset", "image intensity offset")
     +   Option ("multiplier", "image intensity multiplier")
-    +   Option ("transform", "the image transform")
+    +   Option ("transform", "the voxel to image transformation")
     +   Option ("norealign",
           "do not realign transform to near-default RAS coordinate system (the "
           "default behaviour on image load). This is useful to inspect the transform "
@@ -129,6 +129,15 @@ void print_strides (const Header& header)
   std::cout << buffer << "\n";
 }
 
+void print_transform (const Header& header)
+{
+  Eigen::IOFormat fmt (Eigen::FullPrecision, 0, " ", "\n", "", "", "", "\n");
+  Eigen::Matrix<default_type, 4, 4> matrix;
+  matrix.topLeftCorner<3,4>() = header.transform().matrix();
+  matrix.row(3) << 0.0, 0.0, 0.0, 1.0;
+  std::cout << matrix.format (fmt);
+}
+
 void print_properties (const Header& header, const std::string& key)
 {
   if (lowercase (key) == "all") {
@@ -189,7 +198,6 @@ void run ()
     else if (export_grad || check_option_group (GradImportOptions) || dwgrad || shells || shellcounts)
       DWI::set_DW_scheme (header, DWI::get_valid_DW_scheme (header, true));
 
-    Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", "\n", "", "", "", "\n");
     if (format)     std::cout << header.format() << "\n";
     if (ndim)       std::cout << header.ndim() << "\n";
     if (size)       print_dimensions (header);
@@ -198,9 +206,9 @@ void run ()
     if (stride)     print_strides (header);
     if (offset)     std::cout << header.intensity_offset() << "\n";
     if (multiplier) std::cout << header.intensity_scale() << "\n";
-    if (transform)  std::cout << header.transform().matrix().format(fmt);
+    if (transform)  print_transform (header);
     if (dwgrad)     std::cout << DWI::parse_DW_scheme (header) << "\n";
-    if (shells || shellcounts)     {
+    if (shells || shellcounts) {
       DWI::Shells dwshells (DWI::parse_DW_scheme (header));
       if (shells) {
         for (size_t i = 0; i < dwshells.count(); i++)

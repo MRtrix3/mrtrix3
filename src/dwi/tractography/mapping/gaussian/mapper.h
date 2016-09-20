@@ -50,6 +50,7 @@ namespace MR {
             TrackMapper (const TrackMapper&) = default;
             ~TrackMapper() { }
 
+            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
             void set_gaussian_FWHM   (const float FWHM)
             {

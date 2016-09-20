@@ -1,4 +1,4 @@
-fixelcalc afd.msf add afd.msf tmp.msf --force; testing_diff_fixel tmp.msf fixelcalc/out1.msf 0
-fixelcalc afd.msf sub afd.msf tmp.msf --force; testing_diff_fixel tmp.msf fixelcalc/out2.msf 0
-fixelcalc afd.msf mult afd.msf tmp.msf --force; testing_diff_fixel tmp.msf fixelcalc/out3.msf 0
-fixelcalc afd.msf div afd.msf tmp.msf --force; testing_diff_fixel tmp.msf fixelcalc/out4.msf 0
+fixelcalc afd.msf add afd.msf tmp.msf -force && testing_diff_fixel tmp.msf fixelcalc/out1.msf 1e-5
+fixelcalc afd.msf sub afd.msf tmp.msf -force && testing_diff_fixel tmp.msf fixelcalc/out2.msf 1e-5
+fixelcalc afd.msf mult afd.msf tmp.msf -force && testing_diff_fixel tmp.msf fixelcalc/out3.msf 1e-5
+fixelcalc afd.msf div afd.msf tmp.msf -force && testing_diff_fixel tmp.msf fixelcalc/out4.msf 1e-5

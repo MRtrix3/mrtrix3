@@ -132,7 +132,8 @@ for struct in structure_map.keys():
     os.rename('parc_removed.mif', 'parc.mif')
 
 # Insert the new delineations of all SGM structures in a single call
-runCommand('mrcalc sgm_new_labels.mif 0.5 -gt sgm_new_labels.mif parc.mif -if result.mif')
+# Enforce unsigned integer datatype of output image
+runCommand('mrcalc sgm_new_labels.mif 0.5 -gt sgm_new_labels.mif parc.mif -if result.mif -datatype uint32')
 runCommand('mrconvert result.mif ' + getUserPath(lib.app.args.output, True) + lib.app.mrtrixForce)
 lib.app.complete()
 

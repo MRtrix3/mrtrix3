@@ -349,3 +349,33 @@ List of MRtrix3 configuration file options
 
      Whether the screen update should synchronise with the monitor's vertical refresh (to avoid tearing artefacts).
 
+*  **reg_analyse_descent**
+    *default: 0 (false)*
+
+     Linear registration: write comma separated gradient descent parameters and gradients to stdout and verbose gradient descent output to stderr
+
+*  **reg_bbgd**
+    *default: 1 (true)*
+
+     Linear registration: use Barzilai Borwein gradient descent
+
+*  **reg_coherence_len**
+    *default: 3.0*
+
+     Linear registration: estimated spatial coherence length in voxel
+
+*  **reg_gdweight_matrix**
+    *default: 0.0003*
+
+     Linear registration: weight for optimisation of linear (3x3) matrix parameters
+
+*  **reg_gdweight_translation**
+    *default: 1*
+
+     Linear registration: weight for optimisation of translation parameters
+
+*  **reg_stop_len**
+    *default: 0.0001*
+
+     Linear registration: smallest step in fraction of voxel at which to stop registration
+
