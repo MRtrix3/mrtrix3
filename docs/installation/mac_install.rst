@@ -57,7 +57,8 @@ Install Dependencies
     MRtrix3 will get upgraded when you upgrade all homebrew packages:
     ``brew update && brew upgrade``
     If you want to avoid upgrading MRtrix3 the next time you upgrade homebrew you can do so with ``brew pin mrtrix3``
-   
+
+
    - With `Homebrew <http://brew.sh/>`__:
        - Install Eigen3: ``brew install eigen``
        - Install Qt5: ``brew install qt5``
