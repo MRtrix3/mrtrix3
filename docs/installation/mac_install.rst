@@ -33,8 +33,7 @@ To install *MRtrix3* , you will need the following:
     
     - You can now install the latest version of MRtrix3 with: ``brew install mrtrix3``
     
-    This should be all you need to do. For all installation options type ``brew info mrtrix3``. MRtrix3 will get upgraded when you upgrade all homebrew packages: ``brew update && brew upgrade``
-    If you want to avoid upgrading MRtrix3 the next time you upgrade homebrew you can do so with ``brew pin mrtrix3``.
+    This should be all you need to do. For all installation options type ``brew info mrtrix3``. MRtrix3 will get upgraded when you upgrade all homebrew packages ``brew update && brew upgrade``. If you want to avoid upgrading MRtrix3 the next time you upgrade homebrew you can do so with ``brew pin mrtrix3``.
 
 Install Dependencies
 --------------------
