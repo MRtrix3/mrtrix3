@@ -1080,32 +1080,6 @@ if R_module:
 
 
 
-report ('Checking ability to handle system signals: ')
-try:
-  handle_signals = compile('''
-#include <signal.h>
-#include <cstdlib>
-void handler (int i) { std::_Exit(i); }
-int main ()
-{
-  struct sigaction act;
-  act.sa_handler = &handler;
-  sigemptyset (&act.sa_mask);
-  act.sa_flags = 0;
-  sigaction (1, &act, nullptr);
-  const int nsig = NSIG;
-  return 0;
-}
-''', cpp_flags, ld_flags)
-  report ('Yes\n')
-  cpp_flags += [ '-DMRTRIX_SIGNAL_HANDLING' ]
-
-except:
-  report ('No\n')
-
-
-
-
 
 
 

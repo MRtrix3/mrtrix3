@@ -17,9 +17,7 @@
 
 #include <cstdlib>
 #include <iostream>
-#ifdef MRTRIX_SIGNAL_HANDLING
 #include <signal.h>
-#endif
 
 #include "exception.h"
 #include "file/path.h"
@@ -36,7 +34,53 @@ namespace MR
 
   SignalHandler::SignalHandler()
   {
-#ifdef MRTRIX_SIGNAL_HANDLING
+#ifdef MRTRIX_WINDOWS
+    // Use signal() rather than sigaction() for Windows, as the latter is not supported
+    // Set the handler for a priori known signals only
+#ifdef SIGALRM
+    signal (SIGALRM, handler);
+#endif
+#ifdef SIGBUS
+    signal (SIGBUS,  handler);
+#endif
+#ifdef SIGFPE
+    signal (SIGFPE,  handler);
+#endif
+#ifdef SIGHUP
+    signal (SIGHUP,  handler);
+#endif
+#ifdef SIGILL // Note: Not generated under Windows
+    signal (SIGILL,  handler);
+#endif
+#ifdef SIGINT // Note: Not supported for any Win32 application
+    signal (SIGINT,  handler);
+#endif
+#ifdef SIGPIPE
+    signal (SIGPIPE, handler);
+#endif
+#ifdef SIGPWR
+    signal (SIGPWR,  handler);
+#endif
+#ifdef SIGQUIT
+    signal (SIGQUIT, handler);
+#endif
+#ifdef SIGSEGV
+    signal (SIGSEGV, handler);
+#endif
+#ifdef SIGSYS
+    signal (SIGSYS,  handler);
+#endif
+#ifdef SIGTERM // Note: Not generated under Windows
+    signal (SIGTERM, handler);
+#endif
+#ifdef SIGXCPU
+    signal (SIGXCPU, handler);
+#endif
+#ifdef SIGXFSZ
+    signal (SIGXFSZ, handler);
+#endif
+
+#else
 
     // Construct the signal structure
     struct sigaction act;
@@ -120,6 +164,14 @@ namespace MR
   {
     // Only show one signal error message if multi-threading
     std::lock_guard<std::mutex> lock (mutex);
+
+    // Try to do a tempfile cleanup before printing the error, since the latter's not guaranteed to work...
+    for (auto i : data) {
+      if (Path::exists (i))
+        // Don't use File::unlink: may throw an exception
+        ::unlink (i.c_str());
+    }
+
     // Don't attempt to use any terminal colouring
     switch (i) {
 #ifdef SIGALRM
@@ -196,11 +248,6 @@ namespace MR
         std::cerr << "\n" << App::NAME << ": [SYSTEM FATAL CODE: " << i << "] Unknown system signal\n";
     }
 
-    for (auto i : data) {
-      if (Path::exists (i))
-        // Don't use File::unlink: may throw an exception
-        ::unlink (i.c_str());
-    }
     std::_Exit (i);
   }
 
