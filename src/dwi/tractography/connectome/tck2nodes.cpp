@@ -47,7 +47,7 @@ node_t Tck2nodes_end_voxels::select_node (const Tractography::Streamline<>& tck,
 
 void Tck2nodes_radial::initialise_search ()
 {
-  const int max_axis_offset (std::floor ((max_dist + max_add_dist) / std::min (nodes.spacing(0), std::min (nodes.spacing(1), nodes.spacing(2)))));
+  const int max_axis_offset (std::ceil ((max_dist + max_add_dist) / std::min ( { nodes.spacing(0), nodes.spacing(1), nodes.spacing(2) } )));
   std::multimap<default_type, voxel_type> radial_search_map;
   voxel_type offset;
   for (offset[2] = -max_axis_offset; offset[2] <= +max_axis_offset; ++offset[2]) {
@@ -81,9 +81,6 @@ node_t Tck2nodes_radial::select_node (const Tractography::Streamline<>& tck, Ima
     const voxel_type this_voxel (centre + *offset);
     const Eigen::Vector3 p_voxel (transform->voxel2scanner * this_voxel.matrix().cast<default_type>());
     const default_type dist ((p - p_voxel).norm());
-
-    if (dist > max_dist + max_add_dist)
-      return node;
 
     if (dist < min_dist) {
       assign_pos_of (this_voxel).to (v);
