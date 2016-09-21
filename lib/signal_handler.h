@@ -16,7 +16,7 @@
 #ifndef __signal_handler_h__
 #define __signal_handler_h__
 
-#include <mutex>
+#include <atomic>
 #include <string>
 #include <vector>
 
@@ -36,7 +36,7 @@ namespace MR
 
     private:
       static std::vector<std::string> data;
-      static std::mutex mutex;
+      static std::atomic_flag flag;
 
       static void on_exit() noexcept;
       static void handler (int) noexcept;

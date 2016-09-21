@@ -22,13 +22,17 @@
 #include "exception.h"
 #include "file/path.h"
 
+#ifdef MRTRIX_WINDOWS
+#define STDERR_FILENO 2
+#endif
+
 namespace MR
 {
 
 
 
   std::vector<std::string> SignalHandler::data;
-  std::mutex SignalHandler::mutex;
+  std::atomic_flag SignalHandler::flag = ATOMIC_FLAG_INIT;
 
 
 
@@ -141,13 +145,14 @@ namespace MR
 
   void SignalHandler::operator+= (const std::string& s)
   {
-    std::lock_guard<std::mutex> lock (mutex);
+    while (!flag.test_and_set(std::memory_order_seq_cst));
     data.push_back (s);
+    flag.clear (std::memory_order_seq_cst);
   }
 
   void SignalHandler::operator-= (const std::string& s)
   {
-    std::lock_guard<std::mutex> lock (mutex);
+    while (!flag.test_and_set (std::memory_order_seq_cst));
     auto i = data.begin();
     while (i != data.end()) {
       if (*i == s)
@@ -155,6 +160,7 @@ namespace MR
       else
         ++i;
     }
+    flag.clear (std::memory_order_seq_cst);
   }
 
 
@@ -163,92 +169,85 @@ namespace MR
   void SignalHandler::handler (int i) noexcept
   {
     // Only show one signal error message if multi-threading
-    std::lock_guard<std::mutex> lock (mutex);
+    if (atomic_flag_test_and_set_explicit (&flag, std::memory_order_seq_cst)) {
 
-    // Try to do a tempfile cleanup before printing the error, since the latter's not guaranteed to work...
-    for (auto i : data) {
-      if (Path::exists (i))
+      // Try to do a tempfile cleanup before printing the error, since the latter's not guaranteed to work...
+      for (auto i : data) {
         // Don't use File::unlink: may throw an exception
         ::unlink (i.c_str());
-    }
+      }
 
-    // Don't attempt to use any terminal colouring
-    switch (i) {
+      // Don't use std::cerr << here: Use basic C string-handling functions and a write() call to STDERR_FILENO
+
+#define PRINT_SIGNAL(sig,msg) \
+        case sig: \
+          strcat (s, #sig); \
+          strcat (s, " ("); \
+          snprintf (i_string, 2, "%d", sig); \
+          strcat (s, i_string); \
+          strcat (s, ")] "); \
+          strcat (s, msg); \
+          break;
+
+
+      char s[128] = "\n";
+      strcat (s, App::NAME.c_str());
+      strcat (s, ": [SYSTEM FATAL CODE: ");
+      char i_string[3]; // Max 2 digits, plus null-terminator
+
+      // Don't attempt to use any terminal colouring
+      switch (i) {
 #ifdef SIGALRM
-      case SIGALRM:
-        std::cerr << "\n" << App::NAME << ": [SYSTEM FATAL CODE: SIGALRM (" << SIGALRM << ")] Timer expiration\n";
-        break;
+        PRINT_SIGNAL(SIGALRM,"Timer expiration");
 #endif
 #ifdef SIGBUS
-      case SIGBUS:
-        std::cerr << "\n" << App::NAME << ": [SYSTEM FATAL CODE: SIGBUS ("  << SIGBUS  << ")] Bus error: Accessing invalid address (out of storage space?)\n";
-        break;
+        PRINT_SIGNAL(SIGBUS,"Bus error: Accessing invalid address (out of storage space?)");
 #endif
 #ifdef SIGFPE
-      case SIGFPE:
-        std::cerr << "\n" << App::NAME << ": [SYSTEM FATAL CODE: SIGFPE ("  << SIGFPE  << ")] Floating-point arithmetic exception\n";
-        break;
+        PRINT_SIGNAL(SIGFPE,"Floating-point arithmetic exception");
 #endif
 #ifdef SIGHUP
-      case SIGHUP:
-        std::cerr << "\n" << App::NAME << ": [SYSTEM FATAL CODE: SIGHUP ("  << SIGHUP  << ")] Disconnection of terminal\n";
-        break;
+        PRINT_SIGNAL(SIGHUP,"Disconnection of terminal");
 #endif
 #ifdef SIGILL
-      case SIGILL:
-        std::cerr << "\n" << App::NAME << ": [SYSTEM FATAL CODE: SIGILL ("  << SIGILL  << ")] Illegal instruction (corrupt binary command file?)\n";
-        break;
+        PRINT_SIGNAL(SIGILL,"Illegal instruction (corrupt binary command file?)");
 #endif
 #ifdef SIGINT
-      case SIGINT:
-        std::cerr << "\n" << App::NAME << ": [SYSTEM FATAL CODE: SIGINT ("  << SIGINT  << ")] Program manually interrupted by terminal\n";
-        break;
+        PRINT_SIGNAL(SIGINT,"Program manually interrupted by terminal");
 #endif
 #ifdef SIGPIPE
-      case SIGPIPE:
-        std::cerr << "\n" << App::NAME << ": [SYSTEM FATAL CODE: SIGPIPE (" << SIGPIPE << ")] Nothing on receiving end of pipe\n";
-        break;
+        PRINT_SIGNAL(SIGPIPE,"Nothing on receiving end of pipe");
 #endif
 #ifdef SIGPWR
-      case SIGPWR:
-        std::cerr << "\n" << App::NAME << ": [SYSTEM FATAL CODE: SIGPWR ("  << SIGPWR  << ")] Power failure restart\n";
-        break;
+        PRINT_SIGNAL(SIGPWR,"Power failure restart");
 #endif
 #ifdef SIGQUIT
-      case SIGQUIT:
-        std::cerr << "\n" << App::NAME << ": [SYSTEM FATAL CODE: SIGQUIT (" << SIGQUIT << ")] Received terminal quit signal\n";
-        break;
+        PRINT_SIGNAL(SIGQUIT,"Received terminal quit signal");
 #endif
 #ifdef SIGSEGV
-      case SIGSEGV:
-        std::cerr << "\n" << App::NAME << ": [SYSTEM FATAL CODE: SIGSEGV (" << SIGSEGV << ")] Segmentation fault: Invalid memory reference\n";
-        break;
+        PRINT_SIGNAL(SIGSEGV,"Segmentation fault: Invalid memory reference");
 #endif
 #ifdef SIGSYS
-      case SIGSYS:
-        std::cerr << "\n" << App::NAME << ": [SYSTEM FATAL CODE: SIGSYS ("  << SIGSYS  << ")] Bad system call\n";
-        break;
+        PRINT_SIGNAL(SIGSYS,"Bad system call");
 #endif
 #ifdef SIGTERM
-      case SIGTERM:
-        std::cerr << "\n" << App::NAME << ": [SYSTEM FATAL CODE: SIGTERM (" << SIGTERM << ")] Terminated by kill command\n";
-        break;
+        PRINT_SIGNAL(SIGTERM,"Terminated by kill command");
 #endif
 #ifdef SIGXCPU
-      case SIGXCPU:
-        std::cerr << "\n" << App::NAME << ": [SYSTEM FATAL CODE: SIGXCPU (" << SIGXCPU << ")] CPU time limit exceeded\n";
-        break;
+        PRINT_SIGNAL(SIGXCPU,"CPU time limit exceeded");
 #endif
 #ifdef SIGXFSZ
-      case SIGXFSZ:
-        std::cerr << "\n" << App::NAME << ": [SYSTEM FATAL CODE: SIGXFSZ (" << SIGXFSZ << ")] File size limit exceeded\n";
-        break;
+        PRINT_SIGNAL(SIGXFSZ,"File size limit exceeded");
 #endif
-      default:
-        std::cerr << "\n" << App::NAME << ": [SYSTEM FATAL CODE: " << i << "] Unknown system signal\n";
-    }
+        default:
+          strcat (s, "?] Unknown fatal system signal");
+          break;
+      }
+      strcat (s, "\n");
+      write (STDERR_FILENO, s, sizeof(s) - 1);
 
-    std::_Exit (i);
+      std::_Exit (i);
+    }
   }
 
 
