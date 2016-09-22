@@ -150,10 +150,12 @@ void run() {
 
   const std::string input_fixel_folder = argument[0];
   Header index_header = FixelFormat::find_index_header (input_fixel_folder);
+  std::cout << index_header.valid() << std::endl;
+  std::cout << index_header << std::endl;
   auto index_image = index_header.get_image<uint32_t>();
+  TRACE;
 
-
-  uint32_t num_fixels = std::stoul (index_image.keyval().at(FixelFormat::n_fixels_key));
+  uint32_t num_fixels = FixelFormat::get_number_of_fixels (index_header);
   CONSOLE ("number of fixels: " + str(num_fixels));
 
   std::vector<Eigen::Vector3> positions (num_fixels);

@@ -18,6 +18,7 @@
 
 #include "formats/mrtrix_utils.h"
 #include "fixel_format/keys.h"
+#include "algo/loop.h"
 
 namespace MR
 {
@@ -33,14 +34,24 @@ namespace MR
   {
     inline bool is_index_image (const Header& in)
     {
-      return (in.size(2) != 1) && in.keyval().count (n_fixels_key);
+      bool is_index = false;
+      if (in.ndim() == 4) {
+        if (in.size(3) == 2) {
+          for (std::initializer_list<const std::string>::iterator it = FixelFormat::supported_fixel_formats.begin();
+               it != FixelFormat::supported_fixel_formats.end(); ++it) {
+            if (Path::basename (in.name()) == "index" + *it)
+              is_index = true;
+          }
+        }
+      }
+      return is_index;
     }
 
-
-    inline void check_index_image (const Header& in)
+    template <class IndexHeaderType>
+    inline void check_index_image (const IndexHeaderType& index)
     {
-      if (!is_index_image(in))
-        throw InvalidImageException (in.name () + " is not a valid fixel index image. Header key " + n_fixels_key + " not found");
+      if (!is_index_image (index))
+        throw InvalidImageException (index.name() + " is not a valid fixel index image. Image must be 4D with 2 volumes in the 4th dimension");
     }
 
 
@@ -71,13 +82,55 @@ namespace MR
       return fixel_folder;
     }
 
+
+    template <class IndexHeaderType>
+    inline uint32_t get_number_of_fixels (IndexHeaderType& index_header) {
+      check_index_image (index_header);
+      if (index_header.keyval().count (n_fixels_key)) {
+        return std::stoul (index_header.keyval().at(n_fixels_key));
+      } else {
+        auto index_image = Image<uint32_t>::open (index_header.name());
+        index_image.index(3) = 1;
+        uint32_t num_fixels = 0;
+        uint32_t max_offset = 0;
+        for (auto i = MR::Loop (index_image, 0, 3) (index_image); i; ++i) {
+          if (index_image.value() > max_offset) {
+            max_offset = index_image.value();
+            index_image.index(3) = 0;
+            num_fixels = index_image.value();
+            index_image.index(3) = 1;
+          }
+        }
+        return (max_offset + num_fixels);
+      }
+    }
+
+
+
     template <class IndexHeaderType, class DataHeaderType>
     inline bool fixels_match (const IndexHeaderType& index_header, const DataHeaderType& data_header)
     {
       bool fixels_match (false);
 
-      if (is_index_image (index_header))
-        fixels_match = std::stoul(index_header.keyval ().at (n_fixels_key)) == (unsigned long)data_header.size (0);
+      if (is_index_image (index_header)) {
+        if (index_header.keyval().count (n_fixels_key)) {
+          fixels_match = std::stoul (index_header.keyval().at(n_fixels_key)) == (uint32_t)data_header.size(0);
+        } else {
+          auto index_image = Image<uint32_t>::open (index_header.name());
+          index_image.index(3) = 1;
+          uint32_t num_fixels = 0;
+          uint32_t max_offset = 0;
+          for (auto i = MR::Loop (index_image, 0, 3) (index_image); i; ++i) {
+            if (index_image.value() > max_offset) {
+              max_offset = index_image.value();
+              index_image.index(3) = 0;
+              num_fixels = index_image.value();
+              index_image.index(3) = 1;
+            }
+          }
+          fixels_match = (max_offset + num_fixels) == (uint32_t)data_header.size(0);
+        }
+      }
 
       return fixels_match;
     }
@@ -116,31 +169,29 @@ namespace MR
 
     inline Header find_index_header (const std::string &fixel_folder_path)
     {
-      bool index_found (false);
-      Header H;
+      Header header;
       check_fixel_folder (fixel_folder_path);
 
-      auto dir_walker = Path::Dir (fixel_folder_path);
-      std::string fname;
-      while ((fname = dir_walker.read_name ()).size ()) {
-        auto full_path = Path::join (fixel_folder_path, fname);
-        if (Path::has_suffix (fname, FixelFormat::supported_fixel_formats) && is_index_image (H = Header::open (full_path))) {
-          index_found = true;
-          break;
+      for (std::initializer_list<const std::string>::iterator it = FixelFormat::supported_fixel_formats.begin();
+           it != FixelFormat::supported_fixel_formats.end(); ++it) {
+        std::string full_path = Path::join (fixel_folder_path, "index" + *it);
+        if (Path::exists(full_path)) {
+          if (header.valid())
+            throw InvalidFixelDirectoryException ("Multiple index images found in directory " + fixel_folder_path);
+          header = Header::open (full_path);
         }
       }
-
-      if (!index_found)
+      if (!header.valid())
         throw InvalidFixelDirectoryException ("Could not find index image in directory " + fixel_folder_path);
 
-      return H;
+      check_index_image (header);
+      return header;
     }
 
 
     inline std::vector<Header> find_data_headers (const std::string &fixel_folder_path, const Header &index_header, const bool include_directions = false)
     {
       check_index_image (index_header);
-
       std::vector<Header> data_headers;
 
       auto dir_walker = Path::Dir (fixel_folder_path);
@@ -153,7 +204,7 @@ namespace MR
             if (!is_directions_file (H) || include_directions)
               data_headers.emplace_back (std::move (H));
           } else {
-            WARN ("fixel data file (" + fname + ") does not contain the same number of elements as fixels in the index file" );
+            WARN ("fixel data file (" + fname + ") does not contain the same number of elements as fixels in the index file");
           }
         }
       }
