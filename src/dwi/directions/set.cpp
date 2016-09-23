@@ -20,7 +20,9 @@
 
 #include <list>
 #include <set>
+#include <vector>
 
+#include "bitset.h"
 #include "math/rng.h"
 
 
@@ -34,6 +36,8 @@ namespace MR {
 
       index_type Set::get_min_linkage (const index_type one, const index_type two) const
       {
+        assert (one < size());
+        assert (two < size());
         if (one == two)
           return 0;
 
@@ -100,7 +104,7 @@ namespace MR {
         class Vertex {
           public:
             Vertex (const Set& set, const index_type index, const bool inverse) :
-                dir (set[index] * (inverse ? -1.0f : 1.0f)),
+                dir (set[index] * (inverse ? -1.0 : 1.0)),
                 index (index) { }
             const Eigen::Vector3 dir;
             const index_type index; // Indexes the underlying direction set
@@ -181,8 +185,11 @@ namespace MR {
         }
         assert (third_point != 6);
 
-        std::multiset<Plane, PlaneComp> planes;
-        planes.insert (Plane (vertices, all_extrema[distant_pair.first], all_extrema[distant_pair.second], all_extrema[third_point]));
+        // Does this have to be done in order?
+        // It appears not - however random deletion of entries _is_ required
+        //std::multiset<Plane, PlaneComp> planes;
+        std::list<Plane> planes;
+        planes.push_back (Plane (vertices, all_extrema[distant_pair.first], all_extrema[distant_pair.second], all_extrema[third_point]));
         // Find the most distant point to this plane, and use it as the tip point of the tetrahedon
         const Plane base_plane = *planes.begin();
         index_type fourth_point = vertices.size();
@@ -196,42 +203,48 @@ namespace MR {
           }
         }
         assert (fourth_point != vertices.size());
-        planes.insert (Plane (vertices, base_plane.indices[0], fourth_point, base_plane.indices[1]));
-        planes.insert (Plane (vertices, base_plane.indices[1], fourth_point, base_plane.indices[2]));
-        planes.insert (Plane (vertices, base_plane.indices[2], fourth_point, base_plane.indices[0]));
+        planes.push_back (Plane (vertices, base_plane.indices[0], fourth_point, base_plane.indices[1]));
+        planes.push_back (Plane (vertices, base_plane.indices[1], fourth_point, base_plane.indices[2]));
+        planes.push_back (Plane (vertices, base_plane.indices[2], fourth_point, base_plane.indices[0]));
 
         std::vector<Plane> hull;
 
         // Speedup: Only test those directions that have not yet been incorporated into any plane
-        std::list<size_t> unassigned;
-        for (size_t i = 0; i != vertices.size(); ++i) {
-          if (!base_plane.includes (i) && fourth_point != i)
-            unassigned.push_back (i);
-        }
+        BitSet assigned (vertices.size());
+        assigned[base_plane.indices[0]] = true;
+        assigned[base_plane.indices[1]] = true;
+        assigned[base_plane.indices[2]] = true;
+        assigned[fourth_point] = true;
+        size_t assigned_counter = 4;
 
         while (planes.size()) {
-          Plane current (*planes.begin());
-          auto max_index = unassigned.end();
+          Plane current (planes.back());
+          index_type max_index = vertices.size();
           default_type max_dist = current.dist;
-          for (auto d = unassigned.begin(); d != unassigned.end(); ++d) {
-            const default_type dist = vertices[*d].dir.dot (current.normal);
-            if (dist > max_dist) {
-              max_dist = dist;
-              max_index = d;
+          for (size_t d = 0; d != vertices.size(); ++d) {
+            if (!assigned[d]) {
+              const default_type dist = vertices[d].dir.dot (current.normal);
+              if (dist > max_dist) {
+                max_dist = dist;
+                max_index = d;
+              }
             }
           }
 
-          if (max_index == unassigned.end()) {
+          if (max_index == vertices.size()) {
             hull.push_back (current);
-            planes.erase (planes.begin());
+            planes.pop_back();
           } else {
 
             // Identify all planes that this extremum point is above
             // More generally this would need to be constrained to only those faces adjacent to the
             //   current plane, but because the data are on the sphere a complete search should be fine
-            std::vector<std::multiset<Plane, PlaneComp>::iterator> all_planes;
-            for (std::multiset<Plane, PlaneComp>::iterator p = planes.begin(); p != planes.end(); ++p) {
-              if (!p->includes (*max_index) && vertices[*max_index].dir.dot (p->normal) > p->dist)
+
+            // TODO Using an alternative data structure, where both faces connected to each
+            //   edge are stored and tracked, would speed this up considerably
+            std::vector< std::list<Plane>::iterator > all_planes;
+            for (std::list<Plane>::iterator p = planes.begin(); p != planes.end(); ++p) {
+              if (!p->includes (max_index) && vertices[max_index].dir.dot (p->normal) > p->dist)
                 all_planes.push_back (p);
             }
 
@@ -262,14 +275,15 @@ namespace MR {
             }
 
             for (auto& h : horizon)
-              planes.insert (Plane (vertices, h.first, h.second, *max_index));
+              planes.push_back (Plane (vertices, h.first, h.second, max_index));
 
             // Delete the used faces
             for (auto i : all_planes)
               planes.erase (i);
 
             // This point no longer needs to be tested
-            unassigned.erase (max_index);
+            assigned[max_index] = true;
+            ++assigned_counter;
 
           }
         }
