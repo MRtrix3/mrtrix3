@@ -1,2 +1,2 @@
-dwiextract dwi.mif - | testing_diff_data - dwiextract/out1.mif 0
-dwiextract dwi.mif -bzero - | testing_diff_data - dwiextract/out2.mif 0
+dwiextract dwi.mif - | testing_diff_data - dwiextract/out1.mif
+dwiextract dwi.mif -bzero - | testing_diff_data - dwiextract/out2.mif

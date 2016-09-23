@@ -33,7 +33,7 @@ void usage ()
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   DESCRIPTION
-  + "compare two images for differences, within specified tolerance.";
+  + "compare two direction sets for differences, within specified tolerance.";
 
   ARGUMENTS
   + Argument ("dir1", "directions file").type_file_in ()
@@ -58,8 +58,8 @@ void run ()
   for (ssize_t i = 0; i < dir1.cols(); ++i) {
     for (ssize_t j = 0; j < dir1.rows(); ++j) {
       if (std::abs (dir1(i,j) - dir2(i,j)) > tol)
-        throw Exception ("directions \"" + str(argument[0]) + "\" and \"" + str(argument[1]) + "\" do not match within specified precision of " + str(tol)
-            + " (" + str(cdouble (dir1(i,j))) + " vs " + str(cdouble (dir2(i,j))) + ")");
+        throw Exception ("direction files \"" + str(argument[0]) + "\" and \"" + str(argument[1]) + "\" do not match within specified precision of " + str(tol)
+            + " (" + str(dir1(i,j)) + " vs " + str(dir2(i,j)) + ")");
     }
   }
 
