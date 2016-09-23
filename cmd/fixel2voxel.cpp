@@ -446,8 +446,7 @@ void run ()
 
   if (op == 10 || op == 11 || op == 13)  // dec or split_dir
     in_directions = FixelFormat::find_directions_header (
-                    FixelFormat::get_fixel_folder (in_data.name()),
-                    in_index_header).get_image<float>().with_direct_io();
+                    FixelFormat::get_fixel_folder (in_data.name())).get_image<float>().with_direct_io();
 
   Image<float> in_vol;
   auto opt = get_options ("weighted");

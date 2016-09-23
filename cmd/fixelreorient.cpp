@@ -66,7 +66,7 @@ void run ()
   Image<float> input_directions_image;
   std::string output_directions_filename;
   {
-    auto tmp = FixelFormat::find_directions_header (input_fixel_folder, input_index_image).get_image<float>();
+    auto tmp = FixelFormat::find_directions_header (input_fixel_folder).get_image<float>();
     input_directions_image = Image<float>::scratch(tmp);
     threaded_copy (tmp, input_directions_image);
     output_directions_filename = Path::basename(tmp.name());

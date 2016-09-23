@@ -8,11 +8,12 @@ Synopsis
 
 ::
 
-    voxel2fixel [ options ]  image_in fixel_in fixel_out
+    voxel2fixel [ options ]  image_in fixel_in fixel_out fixel_out
 
 -  *image_in*: the input image.
--  *fixel_in*: the input fixel image.
--  *fixel_out*: the output fixel image.
+-  *fixel_in*: the input fixel folder. Used to define the fixels and their directions
+-  *fixel_out*: the output fixel folder. This can be the same as the input folder if desired
+-  *fixel_out*: the name of the fixel data image.
 
 Description
 -----------

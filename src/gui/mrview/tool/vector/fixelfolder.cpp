@@ -60,7 +60,7 @@ namespace MR
 
 
           // Load fixel direction images
-          auto directions_image = FixelFormat::find_directions_header (Path::dirname (fixel_data->name ()), *fixel_data).get_image<float> ().with_direct_io ();
+          auto directions_image = FixelFormat::find_directions_header (Path::dirname (fixel_data->name())).get_image<float>().with_direct_io ();
           directions_image.index (1) = 0;
           for (auto l = Loop(0, 3) (*fixel_data); l; ++l) {
             fixel_data->index (3) = 0;

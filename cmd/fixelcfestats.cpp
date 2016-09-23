@@ -150,27 +150,19 @@ void run() {
 
   const std::string input_fixel_folder = argument[0];
   Header index_header = FixelFormat::find_index_header (input_fixel_folder);
-  std::cout << index_header.valid() << std::endl;
-  std::cout << index_header << std::endl;
   auto index_image = index_header.get_image<uint32_t>();
-  TRACE;
 
-  uint32_t num_fixels = FixelFormat::get_number_of_fixels (index_header);
+  const uint32_t num_fixels = FixelFormat::get_number_of_fixels (index_header);
   CONSOLE ("number of fixels: " + str(num_fixels));
 
   std::vector<Eigen::Vector3> positions (num_fixels);
   std::vector<direction_type> directions (num_fixels);
 
   const std::string output_fixel_folder = argument[5];
-  FixelFormat::check_fixel_folder (output_fixel_folder, true);
+  FixelFormat::copy_index_and_directions_file (input_fixel_folder, output_fixel_folder);
 
   {
-    auto output_index_image = Image<uint32_t>::create (Path::join (output_fixel_folder, Path::basename (index_image.name())), index_image);
-    threaded_copy_with_progress_message ("copying fixel index into output folder", index_image, output_index_image, 0, std::numeric_limits<size_t>::max(), 2);
-    auto directions_data = FixelFormat::find_directions_header (input_fixel_folder, index_image).get_image<float>().with_direct_io();
-    auto output_directions_data = Image<float>::create(Path::join (output_fixel_folder, Path::basename (directions_data.name())), directions_data);
-    threaded_copy_with_progress_message ("copying fixel directions into output folder", directions_data, output_directions_data);
-
+    auto directions_data = FixelFormat::find_directions_header (input_fixel_folder).get_image<float>().with_direct_io();
     // Load template fixel directions
     Transform image_transform (index_image);
     for (auto i = Loop ("loading template fixel directions and positions", index_image, 0, 3)(index_image); i; ++i) {
@@ -178,7 +170,7 @@ void run() {
       index_image.index(3) = 1;
       uint32_t offset = index_image.value();
       size_t fixel_index = 0;
-      for (auto f = FixelFormat::FixelLoop (index_image) (directions_data, output_directions_data); f; ++f, ++fixel_index) {
+      for (auto f = FixelFormat::FixelLoop (index_image) (directions_data); f; ++f, ++fixel_index) {
         directions[offset + fixel_index] = directions_data.row(1).cast<default_type>();
         positions[offset + fixel_index] = image_transform.voxel2scanner * vox;
       }
@@ -307,7 +299,6 @@ void run() {
   output_header.keyval()["connectivity threshold"] = str(connectivity_threshold);
   output_header.keyval()["smoothing FWHM"] = str(smooth_std_dev * 2.3548);
 
-
   // Load input data
   matrix_type data (num_fixels, identifiers.size());
   {
@@ -333,7 +324,6 @@ void run() {
           value += subject_data_vector[it->first] * it->second;
         data (fixel, subject) = value;
       }
-
       progress++;
     }
   }

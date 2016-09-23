@@ -70,13 +70,13 @@ void run ()
 
   Image<uint32_t> fixel_template_index;
   Image<value_type> fixel_template_directions;
-  Image<value_type>  fc_output_data;
+  Image<value_type> fc_output_data;
 
   auto opt = get_options ("fc");
   if (opt.size()) {
     std::string template_fixel_folder (opt[0][0]);
     fixel_template_index = FixelFormat::find_index_header (template_fixel_folder).get_image<uint32_t>();
-    fixel_template_directions = FixelFormat::find_directions_header (template_fixel_folder, fixel_template_index).get_image<value_type>().with_direct_io();
+    fixel_template_directions = FixelFormat::find_directions_header (template_fixel_folder).get_image<value_type>().with_direct_io();
 
     std::string output_fixel_folder (opt[0][1]);
     if (template_fixel_folder != output_fixel_folder) {
@@ -89,11 +89,7 @@ void run ()
     for (auto l = Loop (fixel_template_index, 0, 3) (fixel_template_index); l; ++l)
       num_fixels += fixel_template_index.value();
 
-    Header output_header (fixel_template_directions);
-    output_header.size(1) = 1;
-    output_header.datatype() = DataType::Float32;
-    output_header.datatype().set_byte_order_native();
-    fc_output_data = Image<value_type>::create (Path::join(output_fixel_folder, opt[0][2]), output_header);
+    fc_output_data = Image<value_type>::create (Path::join (output_fixel_folder, opt[0][2]), FixelFormat::data_header_from_index (fixel_template_index));
   }
 
 
