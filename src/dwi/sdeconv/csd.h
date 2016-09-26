@@ -20,6 +20,7 @@
 #include "header.h"
 #include "dwi/gradient.h"
 #include "math/SH.h"
+#include "math/ZSH.h"
 #include "dwi/directions/predefined.h"
 #include "math/least_squares.h"
 
@@ -108,7 +109,7 @@ namespace MR
               void set_response (const Eigen::MatrixBase<Derived>& in)
               {
                 response = in;
-                lmax_response = 2*(response.size()-1);
+                lmax_response = Math::ZSH::LforN (response.size());
               }
 
 
@@ -125,13 +126,11 @@ namespace MR
 
               if (!init_filter.size())
                 init_filter = Eigen::VectorXd::Ones(3);
-              init_filter.conservativeResize (size_t (lmax_response/2)+1);
+              init_filter.conservativeResizeLike (Eigen::VectorXd::Zero (Math::ZSH::NforL (lmax_response)));
 
               auto RH = SH2RH (response);
-              if (RH.size() < 1+lmax/2) {
-                RH.conservativeResize (1+lmax/2);
-                RH.tail (RH.size() - response.size()).setZero();
-              }
+              if (size_t(RH.size()) < Math::ZSH::NforL (lmax))
+                RH.conservativeResizeLike (Eigen::VectorXd::Zero (Math::ZSH::NforL (lmax)));
 
               // inverse sdeconv for initialisation:
               auto fconv = init_transform (DW_dirs, lmax_response);

@@ -23,6 +23,7 @@
 #include "math/constrained_least_squares.h"
 #include "math/math.h"
 #include "math/SH.h"
+#include "math/ZSH.h"
 
 #include "dwi/directions/predefined.h"
 #include "dwi/gradient.h"
@@ -103,7 +104,7 @@ namespace MR
                   if (size_t(responses[t].rows()) != num_shells())
                     throw Exception ("number of rows in response function must match number of b-value shells");
                   // Pad response functions out to the requested lmax for this tissue
-                  responses[t].conservativeResizeLike (Eigen::MatrixXd::Zero (num_shells(), lmax[t]/2+1));
+                  responses[t].conservativeResizeLike (Eigen::MatrixXd::Zero (num_shells(), Math::ZSH::NforL (lmax[t])));
                 }
 
                 //////////////////////////////////////////////////
@@ -232,7 +233,7 @@ namespace MR
                   // Store the lmax for each tissue based on their response functions;
                   //   if the user doesn't manually specify lmax, these will determine
                   //   the lmax of each tissue ODF output
-                  lmax_response.push_back ((r.cols()-1)*2);
+                  lmax_response.push_back (Math::ZSH::LforN (r.cols()));
                 }
               }
 
