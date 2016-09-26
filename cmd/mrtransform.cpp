@@ -19,6 +19,7 @@
 #include "progressbar.h"
 #include "image.h"
 #include "math/math.h"
+#include "math/sphere.h"
 #include "interp/nearest.h"
 #include "interp/linear.h"
 #include "interp/cubic.h"
@@ -351,7 +352,7 @@ void run ()
       directions_az_el = load_matrix (opt[0][0]);
     else
       directions_az_el = DWI::Directions::electrostatic_repulsion_300();
-    Math::SH::spherical2cartesian (directions_az_el, directions_cartesian);
+    Math::Sphere::spherical2cartesian (directions_az_el, directions_cartesian);
 
     // load with SH coeffients contiguous in RAM
     stride = Stride::contiguous_along_axis (3, input_header);

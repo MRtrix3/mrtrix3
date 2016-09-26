@@ -30,6 +30,8 @@
 
 #include "math/constrained_least_squares.h"
 #include "math/rng.h"
+#include "math/sphere.h"
+#include "math/SH.h"
 #include "math/ZSH.h"
 
 #include "dwi/gradient.h"
@@ -116,7 +118,6 @@ void run ()
   if (opt.size()) {
     dirs_azel = load_matrix (opt[0][0]);
     volumes = all_volumes (dirs_azel.rows());
-    // TODO Switch between az/el pairs and XYZ triplets
   } else {
     auto hit = header.keyval().find ("directions");
     if (hit != header.keyval().end()) {
@@ -140,10 +141,13 @@ void run ()
     }
   }
 
-  // TODO These functions should move
-  Eigen::MatrixXd dirs_cartesian = Math::SH::spherical2cartesian (dirs_azel);
+  Eigen::MatrixXd dirs_cartesian = Math::Sphere::spherical2cartesian (dirs_azel);
 
-  const size_t lmax = get_option_value ("lmax", Math::SH::LforN (volumes.size()));
+  // Because the amp->SH transform doesn't need to be applied per voxel,
+  //   lmax is effectively unconstrained. Therefore generate response at
+  //   lmax=8 regardless of number of input volumes, unless user
+  //   explicitly requests something else
+  const size_t lmax = get_option_value ("lmax", 8);
 
   auto image = header.get_image<float>();
   auto mask = Image<bool>::open (argument[1]);
@@ -175,7 +179,7 @@ void run ()
       }
 
       // Grab the fibre direction
-      // TODO Eventually, it might be possible to optimise these fibre directions
+      // Eventually, it might be possible to optimise these fibre directions
       //   during the response function fit; i.e. optimise (az,el) in each voxel
       //   to minimise SSE compared to the current RF estimate
       Eigen::Vector3 fibre_dir;
@@ -188,17 +192,17 @@ void run ()
       Eigen::Matrix<default_type, 3, 3> R = gen_rotation_matrix (fibre_dir);
       Eigen::Matrix<default_type, Eigen::Dynamic, 3> rotated_dirs_cartesian (dirs_cartesian.rows(), 3);
       Eigen::Vector3 vec (3), rot (3);
-      for (size_t row = 0; row != size_t(dirs_azel.rows()); ++row) {
+      for (ssize_t row = 0; row != dirs_azel.rows(); ++row) {
         vec = dirs_cartesian.row (row);
         rot = R * vec;
         rotated_dirs_cartesian.row (row) = rot;
       }
 
       // Convert directions from Euclidean space to azimuth/elevation pairs
-      Eigen::MatrixXd rotated_dirs_azel = Math::SH::cartesian2spherical (rotated_dirs_cartesian);
+      Eigen::MatrixXd rotated_dirs_azel = Math::Sphere::cartesian2spherical (rotated_dirs_cartesian);
 
       // Constrain elevations to between 0 and pi/2
-      for (size_t i = 0; i != size_t(rotated_dirs_azel.rows()); ++i) {
+      for (ssize_t i = 0; i != rotated_dirs_azel.rows(); ++i) {
         if (rotated_dirs_azel (i, 1) > Math::pi_2) {
           if (rotated_dirs_azel (i, 0) > Math::pi)
             rotated_dirs_azel (i, 0) -= Math::pi;
@@ -209,7 +213,7 @@ void run ()
       }
 
 #ifdef AMP2RESPONSE_PERVOXEL_IMAGES
-      // TODO For the sake of generating a figure, output the original and rotated signals to a dixel ODF image
+      // For the sake of generating a figure, output the original and rotated signals to a dixel ODF image
       Header rotated_header (header);
       rotated_header.size(0) = rotated_header.size(1) = rotated_header.size(2) = 1;
       rotated_header.size(3) = volumes.size();
@@ -220,7 +224,7 @@ void run ()
         rotated_grad.block<1,3>(i, 0) = rotated_dirs_cartesian.row(i);
         rotated_grad(i, 3) = 1000.0;
       }
-      rotated_header.set_DW_scheme (rotated_grad);
+      DWI::set_DW_scheme (rotated_header, rotated_grad);
       Image<float> out_rotated = Image<float>::create ("rotated_amps_" + str(sf_counter) + ".mif", rotated_header);
       Image<float> out_nonrotated = Image<float>::create ("nonrotated_amps_" + str(sf_counter) + ".mif", nonrotated_header);
       out_rotated.index(0) = out_rotated.index(1) = out_rotated.index(2) = 0;
@@ -230,7 +234,7 @@ void run ()
         out_rotated.index(3) = i;
         out_rotated.value() = image.value();
       }
-      for (size_t i = 0; i != header.size(3); ++i) {
+      for (ssize_t i = 0; i != header.size(3); ++i) {
         image.index(3) = out_nonrotated.index(3) = i;
         out_nonrotated.value() = image.value();
       }
@@ -262,7 +266,7 @@ void run ()
 #endif
 
   // Generate the constraint matrix
-  // We are going to both constrain the amplitudes to be positive, and constrain the derivatives to be positive
+  // We are going to both constrain the amplitudes to be non-negative, and constrain the derivatives to be non-negative
   const size_t num_angles_constraint = 90;
   Eigen::VectorXd els;
   els.resize (num_angles_constraint+1);
@@ -284,8 +288,7 @@ void run ()
   Eigen::VectorXd rf;
   const size_t niter = solver (rf, cat_data);
 
-  CONSOLE ("Response function [" + str(rf.transpose()) + " ] solved after " + str(niter) + " iterations from " + str(sf_counter) + " voxels");
+  INFO ("Response function [" + str(rf.transpose()) + " ] solved after " + str(niter) + " iterations from " + str(sf_counter) + " voxels");
 
   save_vector (rf, argument[3]);
-
 }
