@@ -182,13 +182,13 @@ namespace MR
 
             // get voxel sizes:
             for (size_t axis = 0; axis != 3; ++axis) {
-              if (ndim > axis)
+              if (size_t(ndim) > axis)
                 H.spacing(axis) = std::sqrt (Math::pow2 (M(0,axis)) + Math::pow2 (M(1,axis)) + Math::pow2 (M(2,axis)));
             }
 
             // normalize each transform axis:
             for (size_t axis = 0; axis != 3; ++axis) {
-              if (ndim > axis)
+              if (size_t(ndim) > axis)
                 M.col(axis).array() /= H.spacing (axis);
             }
 

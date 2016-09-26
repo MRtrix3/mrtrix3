@@ -18,6 +18,7 @@
 
 #include <assert.h>
 #include <initializer_list>
+#include <stddef.h>
 #include <stdint.h>
 
 namespace MR
