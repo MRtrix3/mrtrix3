@@ -30,6 +30,11 @@ namespace MR
       + Argument ("config").type_file_in()
       + Argument ("indices").type_file_in();
 
+    const OptionGroup SelectOptions = OptionGroup ("Options for selecting volumes based on phase-encoding")
+    + Option ("pe", "select volumes with a particular phase encoding; "
+                    "this can be three comma-separated values (for i,j,k components of vector direction) or four (direction & total readout time)")
+      + Argument ("desc").type_sequence_float();
+
     const OptionGroup ExportOptions = OptionGroup ("Options for exporting phase-encode tables")
     + Option ("export_pe_table", "export phase-encoding table to file")
       + Argument ("file").type_file_out()
@@ -95,6 +100,7 @@ namespace MR
             PE(row, col) = values[col];
         }
       } else {
+        // Header entries are cast to lowercase at some point
         const auto it_dir  = header.keyval().find ("PhaseEncodingDirection");
         const auto it_time = header.keyval().find ("TotalReadoutTime");
         if (it_dir != header.keyval().end() && it_time != header.keyval().end()) {

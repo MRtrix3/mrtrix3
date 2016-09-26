@@ -134,13 +134,14 @@ namespace MR
     T value;
     stream >> value;
     if (stream.fail()) {
-      if (lowercase (string) == "nan") 
+      const std::string lstring = lowercase (string);
+      if (lstring == "nan")
         return std::numeric_limits<T>::quiet_NaN();
-      else if (lowercase (string) == "-nan") 
+      else if (lstring == "-nan")
         return -std::numeric_limits<T>::quiet_NaN();
-      else if (lowercase (string) == "inf") 
+      else if (lstring == "inf")
         return std::numeric_limits<T>::infinity();
-      else if (lowercase (string) == "-inf")
+      else if (lstring == "-inf")
         return -std::numeric_limits<T>::infinity();
       throw Exception ("error converting string \"" + string + "\"");
     }

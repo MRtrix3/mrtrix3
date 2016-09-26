@@ -19,6 +19,7 @@
 
 #include "exception.h"
 #include "header.h"
+#include "mrtrix.h"
 #include "file/ofstream.h"
 
 namespace MR
@@ -38,13 +39,27 @@ namespace MR
         nlohmann::json json;
         try {
           in >> json;
-        } catch (...) {
-          throw Exception ("Error parsing JSON file \"" + path + "\"");
+        } catch (std::logic_error& e) {
+          throw Exception ("Error parsing JSON file \"" + path + "\": " + e.what());
         }
         for (auto i = json.cbegin(); i != json.cend(); ++i) {
-          // Only load simple parameters at the first level
-          if (i->is_primitive())
-            H.keyval().insert (std::make_pair (i.key(), str(i.value())));
+
+          if (i->is_boolean()) {
+            H.keyval().insert (std::make_pair (i.key(), i.value() ? "1" : "0"));
+          } else if (i->is_number_integer()) {
+            H.keyval().insert (std::make_pair (i.key(), str<int>(i.value())));
+          } else if (i->is_number_float()) {
+            H.keyval().insert (std::make_pair (i.key(), str<float>(i.value())));
+          } else if (i->is_array()) {
+            std::vector<std::string> s;
+            for (auto j = i->cbegin(); j != i->cend(); ++j)
+              s.push_back (str(*j));
+            H.keyval().insert (std::make_pair (i.key(), join(s, "\n")));
+          } else if (i->is_string()) {
+            const std::string s = i.value();
+            H.keyval().insert (std::make_pair (i.key(), s));
+          }
+
         }
       }
 

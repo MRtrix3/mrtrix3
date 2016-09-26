@@ -236,8 +236,8 @@ namespace MR
         scale_bvalue_by_G_squared (grad);
 
       try {
-        normalise_grad (grad);
         check_DW_scheme (header, grad);
+        normalise_grad (grad);
       }
       catch (Exception& e) {
         if (!nofail)

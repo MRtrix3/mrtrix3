@@ -94,7 +94,8 @@ void usage ()
     +   Option ("shells", "list the average b-value of each shell")
     +   Option ("shellcounts", "list the number of volumes in each shell")
 
-    + PhaseEncoding::ExportOptions;
+    + PhaseEncoding::ExportOptions
+    + Option ("petable", "print the phase encoding table");
 
 }
 
@@ -134,6 +135,21 @@ void print_strides (const Header& header)
     buffer += header.stride (i) ? str (strides[i]) : "?";
   }
   std::cout << buffer << "\n";
+}
+
+void print_shells (const Header& header, const bool shells, const bool shellcounts)
+{
+  DWI::Shells dwshells (DWI::parse_DW_scheme (header));
+  if (shells) {
+    for (size_t i = 0; i < dwshells.count(); i++)
+      std::cout << dwshells[i].get_mean() << " ";
+    std::cout << "\n";
+  }
+  if (shellcounts) {
+    for (size_t i = 0; i < dwshells.count(); i++)
+      std::cout << dwshells[i].count() << " ";
+    std::cout << "\n";
+  }
 }
 
 void print_transform (const Header& header)
@@ -204,10 +220,12 @@ void run ()
   const bool shells      = get_options("shells")        .size();
   const bool shellcounts = get_options("shellcounts")   .size();
   const bool raw_dwgrad  = get_options("raw_dwgrad")    .size();
+  const bool petable     = get_options("petable")       .size();
 
   const bool print_full_header = !(format || ndim || size || vox || datatype || stride ||
-      offset || multiplier || properties.size() || transform || dwgrad || export_grad || shells || shellcounts || export_pe);
+      offset || multiplier || properties.size() || transform || dwgrad || export_grad || shells || shellcounts || export_pe || petable);
 
+  Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", "\n", "", "", "", "\n");
 
   for (size_t i = 0; i < argument.size(); ++i) {
     auto header = Header::open (argument[i]);
@@ -225,20 +243,10 @@ void run ()
     if (offset)     std::cout << header.intensity_offset() << "\n";
     if (multiplier) std::cout << header.intensity_scale() << "\n";
     if (transform)  print_transform (header);
-    if (dwgrad)     std::cout << DWI::parse_DW_scheme (header) << "\n";
-    if (shells || shellcounts) {
-      DWI::Shells dwshells (DWI::parse_DW_scheme (header));
-      if (shells) {
-        for (size_t i = 0; i < dwshells.count(); i++)
-          std::cout << dwshells[i].get_mean() << " ";
-        std::cout << "\n";
-      }
-      if (shellcounts) {
-        for (size_t i = 0; i < dwshells.count(); i++)
-          std::cout << dwshells[i].count() << " ";
-        std::cout << "\n";
-      }
-    }
+    if (dwgrad)     std::cout << DWI::get_DW_scheme (header) << "\n";
+    if (shells || shellcounts) print_shells (header, shells, shellcounts);
+    if (petable)    std::cout << PhaseEncoding::get_scheme (header) << "\n";
+
     for (size_t n = 0; n < properties.size(); ++n)
       print_properties (header, properties[n][0]);
 

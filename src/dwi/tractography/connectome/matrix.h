@@ -62,14 +62,14 @@ class Matrix
 
     void finalize();
     void remove_unassigned();
-    void zero_diagonal();
 
     void error_check (const std::set<node_t>&);
 
-    void write (const std::string&) const;
     void write_assignments (const std::string&) const;
 
     bool is_vector() const { return (data.rows() == 1); }
+
+    const MR::Connectome::matrix_type get() const { return data; }
 
 
   private:

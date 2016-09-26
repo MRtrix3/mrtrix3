@@ -39,13 +39,14 @@ void usage ()
 
   ARGUMENTS
     + Argument ("input", "the input DW image.").type_image_in ()
-    + Argument ("output", "the output image (diffusion-weighted volumes by default.").type_image_out ();
+    + Argument ("output", "the output image (diffusion-weighted volumes by default).").type_image_out ();
 
   OPTIONS
     + Option ("bzero", "output b=0 volumes instead of the diffusion weighted volumes.")
     + DWI::GradImportOptions()
     + DWI::ShellOption
     + PhaseEncoding::ImportOptions
+    + PhaseEncoding::SelectOptions
     + Stride::Options;
 }
 
@@ -70,12 +71,49 @@ void run()
         volumes.push_back (v);
     }
     bzero = (shells.count() == 1 && shells[0].is_bzero());
-  } else {
+  // If no command-line options specified, then just grab all non-b=0 volumes
+  // If however we are selecting volumes according to phase-encoding, and
+  //   shells have not been explicitly selected, do NOT filter by b-value here
+  } else if (!get_options ("pe").size()) {
     const float bzero_threshold = File::Config::get_float ("BValueThreshold", 10.0);
     for (ssize_t row = 0; row != grad.rows(); ++row) {
       if ((bzero && (grad (row, 3) < bzero_threshold)) || (!bzero && (grad (row, 3) > bzero_threshold)))
         volumes.push_back (row);
     }
+  } else {
+    // "pe" option has been provided - need to initialise list of volumes
+    //   to include all voxels, as the PE selection filters from this
+    for (int i = 0; i != grad.rows(); ++i)
+      volumes.push_back (i);
+  }
+
+  opt = get_options ("pe");
+  const auto pe_scheme = PhaseEncoding::get_scheme (input_header);
+  if (opt.size()) {
+    if (!pe_scheme.rows())
+      throw Exception ("Cannot filter volumes by phase-encoding: No such information present");
+    const auto filter = parse_floats (opt[0][0]);
+    if (!(filter.size() == 3 || filter.size() == 4))
+      throw Exception ("Phase encoding filter must be a comma-separated list of either 3 or 4 numbers");
+    std::vector<int> new_volumes;
+    for (const auto i : volumes) {
+      bool keep = true;
+      for (size_t axis = 0; axis != 3; ++axis) {
+        if (pe_scheme(i, axis) != filter[axis]) {
+          keep = false;
+          break;
+        }
+      }
+      if (filter.size() == 4) {
+        if (std::abs (pe_scheme(i, 3) - filter[3]) > 5e-3) {
+          keep = false;
+          break;
+        }
+      }
+      if (keep)
+        new_volumes.push_back (i);
+    }
+    std::swap (volumes, new_volumes);
   }
 
   if (volumes.empty()) {
@@ -94,7 +132,6 @@ void run()
     new_grad.row (i) = grad.row (volumes[i]);
   DWI::set_DW_scheme (header, new_grad);
 
-  const auto pe_scheme = PhaseEncoding::get_scheme (input_header);
   if (pe_scheme.rows()) {
     Eigen::MatrixXd new_scheme (volumes.size(), pe_scheme.cols());
     for (size_t i = 0; i != volumes.size(); ++i)

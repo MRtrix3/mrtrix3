@@ -58,6 +58,7 @@ void usage ()
   OPTIONS
   + MR::DWI::Tractography::Connectome::AssignmentOptions
   + MR::DWI::Tractography::Connectome::MetricOptions
+  + MR::Connectome::MatrixOutputOptions
 
   + OptionGroup ("Other options for tck2connectome")
 
@@ -70,9 +71,6 @@ void usage ()
 
   + Option ("out_assignments", "output the node assignments of each streamline to a file")
     + Argument ("path").type_file_out()
-
-  + Option ("zero_diagonal", "set all diagonal entries in the matrix to zero \n"
-                             "(these represent streamlines that connect to the same node at both ends)")
 
   + Option ("vector", "output a vector representing connectivities from a given seed point to target nodes, "
                       "rather than a matrix of node-node connectivities");
@@ -155,10 +153,21 @@ void run ()
   if (!get_options ("keep_unassigned").size())
     connectome.remove_unassigned();
 
-  if (get_options ("zero_diagonal").size())
-    connectome.zero_diagonal();
+  MR::Connectome::matrix_type data = connectome.get();
 
-  connectome.write (argument[2]);
+  // These only modify the matrix as it is written to file
+  if (get_options ("symmetric").size()) {
+    if (vector_output) {
+      WARN ("Option -symmetric not applicable when generating connectivity vector");
+    } else {
+      MR::Connectome::to_symmetric (data);
+    }
+  }
+  if (get_options ("zero_diagonal").size())
+    data.matrix().diagonal().setZero();
+
+  save_matrix (data, argument[2]);
+
   opt = get_options ("out_assignments");
   if (opt.size())
     connectome.write_assignments (opt[0][0]);

@@ -81,6 +81,8 @@ Options for exporting phase-encode tables
 
 -  **-export_pe_eddy config indices** export phase-encoding information to an EDDY-style config / index file pair
 
+-  **-petable** print the phase encoding table
+
 Standard options
 ^^^^^^^^^^^^^^^^
 

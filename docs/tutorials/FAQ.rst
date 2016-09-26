@@ -208,11 +208,14 @@ of the location of those libraries; e.g.:
 (Replace the path to the *MRtrix3* scripts directory with the location of your
 own installation)
 
-``tck2connectome`` no longer has the ``-contrast mean_scalar`` option...?
+``tck2connectome`` no longer has the ``-contrast X`` option...?
 -------------------------------------------------------------------------
 
-The functionality previously provided by this command and option can now be
-achieved by instead splitting the operation into two independent steps:
+The functionalities previously provided by the ``-contrast`` option in
+this command can still be achieved, but through more explicit steps:
+
+``tck2connectome -contrast mean_scalar``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code::
 
@@ -226,6 +229,19 @@ second step then assigns the value associated with each streamline during
 connectome construction to be the values from this file, and finally
 calculates the value of each edge to be the *mean of the values for the
 streamlines in that edge*.
+
+``tck2connectome -contrast meanlength``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code::
+
+    tck2connectome tracks.tck nodes.mif connectome.csf -scale_length -stat_edge mean
+
+For each streamline, the contribution of that streamline to the relevant
+edge is *scaled by the length* of that streamline; so, in the absence of any
+other scaling, the contribution of that streamline will be equal to the length
+of the streamline in mm. Finally, for each edge, take the *mean* of the values
+contributed from all streamlines belonging to that edge.
 
 Maximum spherical harmonic degree ``lmax``
 ------------------------------------------
