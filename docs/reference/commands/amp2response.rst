@@ -1,0 +1,67 @@
+.. _amp2response:
+
+amp2response
+===========
+
+Synopsis
+--------
+
+::
+
+    amp2response [ options ]  amps mask directions response
+
+-  *amps*: the amplitudes image
+-  *mask*: the mask containing the voxels from which to estimate the response function
+-  *directions*: a 4D image containing the estimated fibre directions
+-  *response*: the output zonal spherical harmonic coefficients
+
+Description
+-----------
+
+test suite for new mechanisms for estimating spherical deconvolution response functions
+
+Options
+-------
+
+-  **-directions path** provide an external text file containing the directions along which the amplitudes are sampled
+
+DW Shell selection options
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-shell list** specify one or more diffusion-weighted gradient shells to use during processing, as a comma-separated list of the desired approximate b-values. Note that some commands are incompatible with multiple shells, and will throw an error if more than one b-value is provided.
+
+-  **-lmax value** specify the maximum harmonic degree of the response function to estimate
+
+Standard options
+^^^^^^^^^^^^^^^^
+
+-  **-info** display information messages.
+
+-  **-quiet** do not display information messages or progress status.
+
+-  **-debug** display debugging messages.
+
+-  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
+
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
+
+-  **-failonwarn** terminate program if a warning is produced
+
+-  **-help** display this information page and exit.
+
+-  **-version** display version information and exit.
+
+--------------
+
+
+
+**Author:** Robert E. Smith (robert.smith@florey.edu.au
+
+**Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
+
+This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/
+
+MRtrix is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+For more details, see www.mrtrix.org
+
