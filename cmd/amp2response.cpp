@@ -45,10 +45,14 @@ using namespace App;
 void usage ()
 {
 
-  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION 
-    + "test suite for new mechanisms for estimating spherical deconvolution response functions";
+    + "Estimate response function coefficients based on the DWI signal in single-fibre voxels. "
+      "This command uses the image data from all selected single-fibre voxels concurrently, "
+      "rather than simply averaging their individual spherical harmonic coefficients. It also "
+      "ensures that the response function is non-negative, and monotonic (i.e. its amplitude "
+      "must increase from the fibre direction out to the orthogonal plane).";
 
   ARGUMENTS
     + Argument ("amps", "the amplitudes image").type_image_in()

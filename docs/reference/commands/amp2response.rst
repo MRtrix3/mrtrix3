@@ -18,7 +18,7 @@ Synopsis
 Description
 -----------
 
-test suite for new mechanisms for estimating spherical deconvolution response functions
+Estimate response function coefficients based on the DWI signal in single-fibre voxels. This command uses the image data from all selected single-fibre voxels concurrently, rather than simply averaging their individual spherical harmonic coefficients. It also ensures that the response function is non-negative, and monotonic (i.e. its amplitude must increase from the fibre direction out to the orthogonal plane).
 
 Options
 -------
@@ -55,7 +55,7 @@ Standard options
 
 
 
-**Author:** Robert E. Smith (robert.smith@florey.edu.au
+**Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
 
