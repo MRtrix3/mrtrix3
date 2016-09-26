@@ -1,0 +1,8 @@
+dwi2tensor dwi.mif - | testing_diff_data - dwi2tensor/out.mif -frac 1e-5
+dwi2tensor dwi.mif -mask mask.mif - | testing_diff_data - dwi2tensor/out_mask.mif -frac 1e-5
+dwi2tensor dwi.mif -mask mask.mif -b0 - tmp_dt.mif | testing_diff_data - dwi2tensor/out_b0.mif -frac 1e-5
+dwi2tensor dwi.mif -mask mask.mif -iter 0 - | testing_diff_data - dwi2tensor/out_it0.mif -frac 1e-5
+dwi2tensor dwi.mif -mask mask.mif -iter 1 - | testing_diff_data - dwi2tensor/out_it1.mif -frac 1e-5
+dwi2tensor dwi.mif -mask mask.mif -iter 2 - | testing_diff_data - dwi2tensor/out_it2.mif -frac 1e-5
+dwi2tensor dwi.mif -mask mask.mif -iter 3 - | testing_diff_data - dwi2tensor/out_it3.mif -frac 1e-5
+dwi2tensor dwi.mif -mask mask.mif -iter 4 - | testing_diff_data - dwi2tensor/out_it4.mif -frac 1e-5

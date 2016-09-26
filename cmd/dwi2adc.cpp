@@ -29,6 +29,8 @@ using namespace std;
 
 void usage ()
 {
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
+
   DESCRIPTION 
     + "convert mean dwi (trace-weighted) images to mean adc maps";
 
@@ -97,7 +99,7 @@ void run () {
 
   Header header (dwi);
   header.datatype() = DataType::Float32;
-  header.set_ndim (4);
+  header.ndim() = 4;
   header.size(3) = 2;
 
   auto adc = Image<value_type>::create (argument[1], header);

@@ -28,7 +28,6 @@ namespace MR
       {
         namespace LightBoxViewControls
         {
-
           class LightBoxEditButton : public SpinBox
           {
             public:
@@ -38,19 +37,16 @@ namespace MR
               LightBoxEditButton(QWidget* parent,
                   int min = 1, int max = 100, int change_rate = 1,
                   const QString& suffix = nullptr) :
-                SpinBox(parent)
-            {
-              setMinimum(min);
-              setMaximum(max);
-              setSingleStep(change_rate);
-              setSuffix(suffix);
-
-              setMaximumWidth(80);
-            }
+                SpinBox(parent) {
+                setMinimum(min);
+                setMaximum(max);
+                setSingleStep(change_rate);
+                setSuffix(suffix);
+                setMaximumWidth(80);
+              }
           };
 
         }
-
       }
     }
   }

@@ -236,6 +236,14 @@ The special target 'doc' is used to update the command documentation, so that
 any modifications to the inline documentation in commands can be propagate
 through to the user documentation site.
 
+By default, 'build' will use all available cores to run a parallel build. In some
+instances, this can cause problems (notably out of RAM errors). You can control 
+how many jobs 'build' will run concurrently using the NUMBER_OF_PROCESSORS 
+environment variable. For example:
+
+  $ NUMBER_OF_PROCESSORS=1 ./build
+
+
 OPTIONS:
 
   -verbose               print each command as it is being invoked
@@ -334,21 +342,16 @@ environ = os.environ.copy()
 environ.update ({ 'PATH': PATH })
 
 target_bin_dir = os.path.join (mrtrix_dir[0], config_name, bin_dir);
-lib_dir = os.path.join (mrtrix_dir[-1], lib_dir)
 
 system = platform.system().lower()
 if system.startswith('mingw') or system.startswith('msys'):
-  target_lib_dir = target_bin_dir
+  target_lib_dir = os.path.join (mrtrix_dir[-1], config_name, bin_dir)
 else:
   target_lib_dir = os.path.join (mrtrix_dir[-1], config_name, lib_dir)
-
+lib_dir = os.path.join (mrtrix_dir[-1], lib_dir)
 
 if ld_enabled and len(runpath):
   ld_flags += [ runpath+os.path.relpath (target_lib_dir,target_bin_dir) ]
-
-if separate_project:
-  if ld_enabled and len(runpath):
-    ld_flags += [ runpath+os.path.relpath (target_lib_dir,target_bin_dir) ]
 
 
 # get version info:
@@ -443,7 +446,7 @@ class Entry:
 
   def set_executable (self):
     self.action = 'LB'
-    if len(exe_suffix) > 0: cc_file = self.name[:-len(exe_suffix)]
+    if len(exe_suffix) > 0 and self.name.endswith(exe_suffix): cc_file = self.name[:-len(exe_suffix)]
     else: cc_file = self.name
     cc_file = split_intermediate (cc_file)
     cc_file = os.path.normpath (os.path.join (cc_file[0], cmd_dir, os.sep.join (split_path(cc_file[2])[1:]) + cpp_suffix))
@@ -1048,12 +1051,11 @@ if len(todo):
 
 # generate development-specific files (if needed)
 # i.e. bash completion and user documentation
-
-if bash_completion and stop <= 1:
-  update_bash_completion()
-
-if command_doc and stop <= 1:
-  update_user_docs()
+if not separate_project and stop <= 1:
+  if bash_completion:
+    update_bash_completion()
+  if command_doc:
+    update_user_docs()
 
 sys.exit (stop > 1)
 

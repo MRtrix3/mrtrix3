@@ -99,7 +99,7 @@ namespace MR
           throw Exception ("too few dimensions specified in NIfTI image \"" + H.name() + "\"");
         if (ndim > 7)
           throw Exception ("too many dimensions specified in NIfTI image \"" + H.name() + "\"");
-        H.set_ndim (ndim);
+        H.ndim() = ndim;
 
 
         for (int i = 0; i < ndim; i++) {
@@ -260,15 +260,15 @@ namespace MR
         }
         else {
           H.transform()(0,0) = std::numeric_limits<default_type>::quiet_NaN();
-          //CONF option: Analyse.LeftToRight
+          //CONF option: AnalyseLeftToRight
           //CONF default: 0 (false)
           //CONF A boolean value to indicate whether images in Analyse format
           //CONF should be assumed to be in LAS orientation (default) or RAS
           //CONF (when this is option is turned on).
-          if (!File::Config::get_bool ("Analyse.LeftToRight", false))
+          if (!File::Config::get_bool ("AnalyseLeftToRight", false))
             H.stride(0) = -H.stride (0);
           if (!right_left_warning_issued) {
-            INFO ("assuming Analyse images are encoded " + std::string (H.stride (0) >0 ? "left to right" : "right to left"));
+            INFO ("assuming Analyse images are encoded " + std::string (H.stride (0) > 0 ? "left to right" : "right to left"));
             right_left_warning_issued = true;
           }
         }

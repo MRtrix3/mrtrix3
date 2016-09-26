@@ -313,80 +313,98 @@ namespace MR
         else if (cmap_name == "Complex") format = gl::RG;
         else format = gl::RED;
 
+        bool scale_to_float = false;
+
         if (cmap_name == "Complex") {
           internal_format = gl::RG32F;
           type = gl::FLOAT;
         }
         else {
 
-          switch (header().datatype() ()) {
-            case DataType::Bit:
-            case DataType::UInt8:
-              internal_format = ( format == gl::RED ? gl::R16F : gl::RGB16F );
-              type = gl::UNSIGNED_BYTE;
-              break;
-            case DataType::Int8:
-              internal_format = ( format == gl::RED ? gl::R16F : gl::RGB16F );
-              type = gl::BYTE;
-              break;
-            case DataType::UInt16LE:
-            case DataType::UInt16BE:
-              internal_format = ( format == gl::RED ? gl::R16F : gl::RGB16F );
-              type = gl::UNSIGNED_SHORT;
-              break;
-            case DataType::Int16LE:
-            case DataType::Int16BE:
-              internal_format = ( format == gl::RED ? gl::R16F : gl::RGB16F );
-              type = gl::SHORT;
-              break;
-            case DataType::UInt32LE:
-            case DataType::UInt32BE:
-              internal_format = ( format == gl::RED ? gl::R32F : gl::RGB32F );
-              type = gl::UNSIGNED_INT;
-              break;
-            case DataType::Int32LE:
-            case DataType::Int32BE:
-              internal_format = ( format == gl::RED ? gl::R32F : gl::RGB32F );
-              type = gl::INT;
-              break;
-            default:
-              internal_format = ( format == gl::RED ? gl::R32F : gl::RGB32F );
-              type = gl::FLOAT;
-              break;
+          if (header().intensity_offset() || (header().intensity_scale() != 1.0)) {
+            internal_format = ( format == gl::RED ? gl::R32F : gl::RGB32F );
+            type = gl::FLOAT;
+            scale_to_float = true;
+          } else {
+
+            switch (header().datatype() ()) {
+              case DataType::Bit:
+              case DataType::UInt8:
+                internal_format = ( format == gl::RED ? gl::R16F : gl::RGB16F );
+                type = gl::UNSIGNED_BYTE;
+                break;
+              case DataType::Int8:
+                internal_format = ( format == gl::RED ? gl::R16F : gl::RGB16F );
+                type = gl::BYTE;
+                break;
+              case DataType::UInt16LE:
+              case DataType::UInt16BE:
+                internal_format = ( format == gl::RED ? gl::R16F : gl::RGB16F );
+                type = gl::UNSIGNED_SHORT;
+                break;
+              case DataType::Int16LE:
+              case DataType::Int16BE:
+                internal_format = ( format == gl::RED ? gl::R16F : gl::RGB16F );
+                type = gl::SHORT;
+                break;
+              case DataType::UInt32LE:
+              case DataType::UInt32BE:
+                internal_format = ( format == gl::RED ? gl::R32F : gl::RGB32F );
+                type = gl::UNSIGNED_INT;
+                break;
+              case DataType::Int32LE:
+              case DataType::Int32BE:
+                internal_format = ( format == gl::RED ? gl::R32F : gl::RGB32F );
+                type = gl::INT;
+                break;
+              default:
+                internal_format = ( format == gl::RED ? gl::R32F : gl::RGB32F );
+                type = gl::FLOAT;
+                break;
+            }
+
           }
+
         }
 
         allocate();
         texture_mode_changed = false;
 
         if (format != gl::RG) {
-          switch (header().datatype() ()) {
-            case DataType::Bit:
-            case DataType::UInt8:
-              copy_texture_3D<uint8_t> ();
-              break;
-            case DataType::Int8:
-              copy_texture_3D<int8_t> ();
-              break;
-            case DataType::UInt16LE:
-            case DataType::UInt16BE:
-              copy_texture_3D<uint16_t> ();
-              break;
-            case DataType::Int16LE:
-            case DataType::Int16BE:
-              copy_texture_3D<int16_t> ();
-              break;
-            case DataType::UInt32LE:
-            case DataType::UInt32BE:
-              copy_texture_3D<uint32_t> ();
-              break;
-            case DataType::Int32LE:
-            case DataType::Int32BE:
-              copy_texture_3D<int32_t> ();
-              break;
-            default:
-              copy_texture_3D<float> ();
-              break;
+
+          if (scale_to_float) {
+            copy_texture_3D<float> ();
+          } else {
+
+            switch (header().datatype() ()) {
+              case DataType::Bit:
+              case DataType::UInt8:
+                copy_texture_3D<uint8_t> ();
+                break;
+              case DataType::Int8:
+                copy_texture_3D<int8_t> ();
+                break;
+              case DataType::UInt16LE:
+              case DataType::UInt16BE:
+                copy_texture_3D<uint16_t> ();
+                break;
+              case DataType::Int16LE:
+              case DataType::Int16BE:
+                copy_texture_3D<int16_t> ();
+                break;
+              case DataType::UInt32LE:
+              case DataType::UInt32BE:
+                copy_texture_3D<uint32_t> ();
+                break;
+              case DataType::Int32LE:
+              case DataType::Int32BE:
+                copy_texture_3D<int32_t> ();
+                break;
+              default:
+                copy_texture_3D<float> ();
+                break;
+            }
+
           }
         }
         else 
@@ -408,7 +426,6 @@ namespace MR
       template <typename ValueType>
         inline void Image::copy_texture_3D ()
         {
-
           struct WithType : public MR::Image<cfloat> {
             using MR::Image<cfloat>::data_offset;
             using MR::Image<cfloat>::buffer;
@@ -418,12 +435,11 @@ namespace MR
             } 
             FORCE_INLINE ValueType value () const {
               ssize_t nseg = data_offset / buffer->get_io()->segment_size();
-              return fetch_func (buffer->get_io()->segment (nseg), data_offset - nseg*buffer->get_io()->segment_size(), 0.0, 1.0);
+              return fetch_func (buffer->get_io()->segment (nseg), data_offset - nseg*buffer->get_io()->segment_size(), buffer->intensity_offset(), buffer->intensity_scale());
             }
             std::function<ValueType(const void*,size_t,default_type,default_type)> fetch_func;
             std::function<void(ValueType,void*,size_t,default_type,default_type)> store_func;
           } V (image);
-
 
           const size_t N = ( format == gl::RED ? 1 : 3 );
           std::vector<ValueType> data (N * V.size(0) * V.size(1));

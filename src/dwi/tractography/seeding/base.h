@@ -62,7 +62,7 @@ namespace MR
       uint32_t get_count (ImageType& data)
       {
         std::atomic<uint32_t> count (0);
-        ThreadedLoop (data).run ([&] (decltype(data)& v) { if (v.value()) count.fetch_add (1, std::memory_order_relaxed); }, data);
+        ThreadedLoop (data).run ([&] (ImageType& v) { if (v.value()) count.fetch_add (1, std::memory_order_relaxed); }, data);
         return count;
       }
 

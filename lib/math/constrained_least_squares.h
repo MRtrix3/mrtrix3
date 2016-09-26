@@ -82,6 +82,18 @@ namespace MR
               tol (tolerance),
               max_niter (max_iterations ? max_iterations : 10*problem_matrix.cols()) {
 
+                if (H.cols() != constraint_matrix.cols())
+                  throw Exception ("FIXME: dimensions of problem and constraint problem do not match (ICLS)");
+
+                if (solution_min_norm_regularisation < 0.0)
+                  throw Exception ("FIXME: solution norm regularisation is negative (ICLS)");
+
+                if (lambda_min_norm < 0.0)
+                  throw Exception ("FIXME: constraint norm regularisation is negative (ICLS)");
+
+                if (tolerance < 0.0)
+                  throw Exception ("FIXME: tolerance is negative (ICLS)");
+
                 // form quadratic problem matrix H'*H:
                 chol_HtH.setZero();
                 chol_HtH.template triangularView<Eigen::Lower>() = H.transpose() * H;
@@ -101,6 +113,10 @@ namespace MR
                 for (ssize_t n = 0; n < B.rows(); ++n) 
                   B.row(n).normalize();
               }
+
+            size_t num_parameters () const { return H.cols(); }
+            size_t num_measurements () const { return H.rows(); }
+            size_t num_constraints () const { return B.rows(); }
 
             matrix_type H, chol_HtH, B, b2d;
             value_type lambda_min_norm, tol;
@@ -241,6 +257,8 @@ namespace MR
               P.chol_HtH.template triangularView<Eigen::Lower>().transpose().solveInPlace (x);
               return niter;
             }
+
+            const Problem<value_type>& problem () const { return P; }
 
           protected:
             const Problem<value_type>& P;

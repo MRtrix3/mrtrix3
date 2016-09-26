@@ -14,6 +14,7 @@
  */
 
 #include <unistd.h>
+#include <fcntl.h>
 
 #include "app.h"
 #include "debug.h"
@@ -54,7 +55,7 @@ namespace MR
       + Option ("help", "display this information page and exit.")
       + Option ("version", "display version information and exit.");
 
-    const char* AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
+    const char* AUTHOR = nullptr;
     const char* COPYRIGHT =
        "Copyright (c) 2008-2016 the MRtrix3 contributors"
        "\n\n"
@@ -74,7 +75,6 @@ namespace MR
     std::vector<ParsedOption> option;
     int log_level = 1;
     bool fail_on_warn = false;
-    bool stderr_to_file = false;
     bool terminal_use_colour = true;
 
     const char* project_version = nullptr;
@@ -492,7 +492,7 @@ namespace MR
 
       //CONF option: HelpCommand
       //CONF default: less
-      //CONF the command to use to display each command's help page (leave
+      //CONF The command to use to display each command's help page (leave
       //CONF empty to send directly to the terminal).
       const std::string help_display_command = File::Config::get ("HelpCommand", MRTRIX_HELP_COMMAND); 
 
@@ -854,6 +854,9 @@ namespace MR
       argument.clear();
       option.clear();
 
+      if (!AUTHOR)
+        throw Exception ("No author specified for command " + std::string(NAME));
+
       if (argc == 2) {
         if (strcmp (argv[1], "__print_full_usage__") == 0) {
           print (full_usage ());
@@ -904,12 +907,35 @@ namespace MR
       }
 
       if (num_optional_arguments && num_args_required > argument.size())
-        throw Exception ("expected at least " + str (num_args_required)
+        throw Exception ("Expected at least " + str (num_args_required)
             + " arguments (" + str (argument.size()) + " supplied)");
 
-      if (num_optional_arguments == 0 && num_args_required != argument.size())
-        throw Exception ("expected exactly " + str (num_args_required)
+      if (num_optional_arguments == 0 && num_args_required != argument.size()) {
+        Exception e ("Expected exactly " + str (num_args_required)
             + " arguments (" + str (argument.size()) + " supplied)");
+        std::string s = "Usage: " + NAME;
+        for (const auto& a : ARGUMENTS)
+          s += " " + std::string(a.id);
+        e.push_back (s);
+        s = "Yours: " + NAME;
+        for (const auto& a : argument)
+          s += " " + std::string(a);
+        e.push_back (s);
+        if (argument.size() > num_args_required) {
+          std::vector<std::string> potential_options;
+          for (const auto& a : argument) {
+            for (const auto& og : OPTIONS) {
+              for (const auto& o : og) {
+                if (std::string(a) == std::string(o.id))
+                  potential_options.push_back ("'-" + a + "'");
+              }
+            }
+          }
+          if (potential_options.size())
+            e.push_back ("(Did you mean " + join(potential_options, " or ") + "?)");
+        }
+        throw e;
+      }
 
       size_t num_extra_arguments = argument.size() - num_args_required;
       size_t num_arg_per_multi = num_optional_arguments ? num_extra_arguments / num_optional_arguments : 0;
@@ -960,7 +986,7 @@ namespace MR
       //CONF option: TerminalColor
       //CONF default: 1 (true)
       //CONF A boolean value to indicate whether colours should be used in the terminal.
-      terminal_use_colour = stderr_to_file ? false : File::Config::get_bool ("TerminalColor", true);
+      terminal_use_colour = File::Config::get_bool ("TerminalColor", terminal_use_colour);
 
       // check for the existence of all specified input files (including optional ones that have been provided)
       // if necessary, also check for pre-existence of any output files with known paths
@@ -1003,12 +1029,7 @@ namespace MR
       setvbuf (stdout, nullptr, _IOLBF, 0);
 #endif
 
-      try {
-        stderr_to_file = Path::is_file (STDERR_FILENO);
-      } catch (...) {
-        DEBUG ("Unable to determine nature of stderr; assuming socket");
-        stderr_to_file = false;
-      }
+      terminal_use_colour = !ProgressBar::set_update_method();
 
       argc = cmdline_argc;
       argv = cmdline_argv;

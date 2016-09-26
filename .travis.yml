@@ -19,7 +19,7 @@ env:
   - python_version=3
 install: 
   - export NUMBER_OF_PROCESSORS=4
-  - export PATH=`pwd`/release/bin:${PATH}
+  - export PATH=`pwd`/release/bin:`pwd`/scripts:${PATH}
   - export EIGEN_CFLAGS=-I`pwd`/eigen
   - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8"; fi
   - (hg clone https://bitbucket.org/eigen/eigen/; cd eigen; hg update 3.2)
@@ -28,4 +28,5 @@ script:
 after_failure: 
   - cat configure.log
   - cat build.log
-  - cat testing/testing.log
+  - cat testing.log
+  - sleep 10

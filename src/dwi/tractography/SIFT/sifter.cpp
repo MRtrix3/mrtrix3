@@ -72,7 +72,12 @@ namespace MR
         std::random_shuffle (noncontributing_indices.begin(), noncontributing_indices.end());
 
         std::vector<Cost_fn_gradient_sort> gradient_vector;
-        gradient_vector.assign (num_tracks(), Cost_fn_gradient_sort (num_tracks(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max()));
+        try {
+          gradient_vector.assign (num_tracks(), Cost_fn_gradient_sort (num_tracks(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max()));
+        } catch (...) {
+          throw Exception ("Error assigning memory for SIFT gradient vector");
+        }
+
         unsigned int tracks_remaining = num_tracks();
 
         if (tracks_remaining < term_number)
@@ -165,7 +170,7 @@ namespace MR
               // Remove this streamline, and adjust all of the relevant quantities
               noncontributing_length_removed += contributions[to_remove]->get_total_length();
               delete contributions[to_remove];
-              contributions[to_remove] = NULL;
+              contributions[to_remove] = nullptr;
               ++removed_this_iteration;
               --tracks_remaining;
 
@@ -221,7 +226,7 @@ namespace MR
                 TD_sum -= candidate_contribution.get_total_contribution();
                 contributing_length_removed += candidate_contribution.get_total_length();
                 delete contributions[candidate_index];
-                contributions[candidate_index] = NULL;
+                contributions[candidate_index] = nullptr;
                 ++removed_this_iteration;
                 --tracks_remaining;
 

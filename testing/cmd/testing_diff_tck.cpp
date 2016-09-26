@@ -30,6 +30,8 @@ using namespace App;
 
 void usage ()
 {
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
+
   DESCRIPTION
   + "compare two track files for differences, within specified tolerance. "
     "This uses the symmetric Hausdorff distance to compare streamlines. For each "
@@ -52,11 +54,7 @@ inline bool within_haussdorf (const DWI::Tractography::Streamline<>& tck1, const
   for (const auto& a : tck1) {
     float distance = std::numeric_limits<float>::max();
     for (const auto& b : tck2)
-#ifdef MRTRIX_UPDATED_API
       distance = std::min (distance, (a - b).squaredNorm());
-#else
-      distance = std::min (distance, (a - b).norm2());
-#endif
     if (distance > tol)
       return false;
   }

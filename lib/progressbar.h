@@ -39,9 +39,11 @@ namespace MR
       ProgressInfo (const ProgressInfo& p) = delete;
       ProgressInfo (ProgressInfo&& p) = delete; 
 
-      FORCE_INLINE ProgressInfo (const std::string& text, size_t target) :
-        value (0), text (text), ellipsis ("... "), current_val (0), next_percent (0), next_time (0.0), multiplier (0.0), data (nullptr) {
-          set_max (target);
+      FORCE_INLINE ProgressInfo (const std::string& text, size_t target, bool display_immediately = true) :
+        value (0), text (text), ellipsis ("... "), 
+        current_val (0), next_percent (0), next_time (0.0), multiplier (0.0), 
+        text_has_been_modified (false), data (nullptr) {
+          set_max (target, display_immediately);
         }
 
       FORCE_INLINE ~ProgressInfo  () {
@@ -77,11 +79,16 @@ namespace MR
 
       //! used for busy indicator.
       Timer timer;
-      //
+
+      //! determines whether text can is being modified between updates
+      /*! this is important to determine the most appropriate mode of operation
+       * when redirecting output to file. */
+      bool text_has_been_modified;
+     
       //! a pointer to additional data required by alternative implementations
       void* data;
 
-      void set_max (size_t target) {
+      void set_max (size_t target, bool display_immediately = true) {
         if (target) {
           multiplier = 0.01 * target;
           next_percent = multiplier;
@@ -93,10 +100,12 @@ namespace MR
           next_time = BUSY_INTERVAL;
           timer.start();
         }
-        display_now();
+        if (display_immediately)
+          display_now();
       }
 
       FORCE_INLINE void set_text (const std::string& new_text) {
+        text_has_been_modified = true;
         if (new_text.size()) {
 #ifdef MRTRIX_WINDOWS
           size_t old_size = text.size();
@@ -107,7 +116,7 @@ namespace MR
             text.resize (old_size, ' ');
 #endif
 	}
-      };
+      }
 
       //! update text displayed and optionally increment counter
       template <class TextFunc> 
@@ -244,7 +253,7 @@ namespace MR
         text = new_text;
         if (show && prog)
           prog->set_text (new_text);
-      };
+      }
 
       //! update text displayed and optionally increment counter
       /*! This expects a function, functor or lambda function that should
@@ -271,7 +280,7 @@ namespace MR
         FORCE_INLINE void update (TextFunc&& text_func, bool increment = true) {
           if (show) {
             if (!prog) 
-              prog = std::unique_ptr<ProgressInfo> (new ProgressInfo (text, target));
+              prog = std::unique_ptr<ProgressInfo> (new ProgressInfo (text, target, false));
             prog->update (std::forward<TextFunc> (text_func), increment);
           }
         }
@@ -293,12 +302,18 @@ namespace MR
         prog.reset();
       }
 
+
+      static bool set_update_method ();
+
     private:
       const bool show;
       std::string text;
       size_t target;
       std::unique_ptr<ProgressInfo> prog;
   };
+
+
+
 
 }
 

@@ -20,7 +20,7 @@
 #include "dwi/gradient.h"
 #include "math/least_squares.h"
 #include "math/SH.h"
-#include "dwi/Sn_scale_estimator.h"
+#include "math/Sn_scale_estimator.h"
 
 
 namespace MR {
@@ -50,7 +50,7 @@ namespace MR {
                 for (auto l2 = Loop (3) (dwi); l2; ++l2) 
                   S(dwi.index(3), dwi.index(axis)) = dwi.value();
 
-              R.noalias() = H.selfadjointView<Lower>() * S - S;
+              R.noalias() = H.selfadjointView<Eigen::Lower>() * S - S;
 
               for (auto l = Loop (axis) (noise); l; ++l) {
                 R.col (noise.index (axis)).array() *= leverage.array();
@@ -63,7 +63,7 @@ namespace MR {
             OutputImageType noise;
             Eigen::MatrixXd H, S, R;
             Eigen::VectorXd leverage;
-            Sn_scale_estimator<default_type> scale_estimator;
+            Math::Sn_scale_estimator<default_type> scale_estimator;
             int axis;
         };
     }

@@ -5,28 +5,33 @@
 
 
 import os, sys
-import lib.app
+import lib.app, lib.cmdlineParser
 
 from lib.binaryInPath  import binaryInPath
 from lib.errorMessage  import errorMessage
 from lib.getFSLSuffix  import getFSLSuffix
 from lib.getHeaderInfo import getHeaderInfo
+from lib.getUserPath   import getUserPath
+from lib.imagesMatch   import imagesMatch
 from lib.isWindows     import isWindows
 from lib.runCommand    import runCommand
 
 lib.app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
-lib.app.initCitations([ 'fast', 'FSL', 'N4' ])
-lib.app.initParser('Perform B1 field inhomogeneity correction for a DWI volume series')
+lib.app.addCitation('If using -fast option', 'Zhang, Y.; Brady, M. & Smith, S. Segmentation of brain MR images through a hidden Markov random field model and the expectation-maximization algorithm. IEEE Transactions on Medical Imaging, 2001, 20, 45-57', True)
+lib.app.addCitation('If using -fast option', 'Smith, S. M.; Jenkinson, M.; Woolrich, M. W.; Beckmann, C. F.; Behrens, T. E.; Johansen-Berg, H.; Bannister, P. R.; De Luca, M.; Drobnjak, I.; Flitney, D. E.; Niazy, R. K.; Saunders, J.; Vickers, J.; Zhang, Y.; De Stefano, N.; Brady, J. M. & Matthews, P. M. Advances in functional and structural MR image analysis and implementation as FSL. NeuroImage, 2004, 23, S208-S219', True)
+lib.app.addCitation('If using -ants option', 'Tustison, N.; Avants, B.; Cook, P.; Zheng, Y.; Egan, A.; Yushkevich, P. & Gee, J. N4ITK: Improved N3 Bias Correction. IEEE Transactions on Medical Imaging, 2010, 29, 1310-1320', True)
+lib.cmdlineParser.initialise('Perform B1 field inhomogeneity correction for a DWI volume series')
 lib.app.parser.add_argument('input',  help='The input image series to be corrected')
 lib.app.parser.add_argument('output', help='The output corrected image series')
-lib.app.parser.add_argument('-mask', help='Manually provide a mask image for bias field estimation')
-lib.app.parser.add_argument('-bias', help='Output the estimated bias field')
-algorithms = lib.app.parser.add_mutually_exclusive_group(required=True)
-algorithms.add_argument('-ants', action='store_true', default=False, help='Use ANTS N4 to estimate the inhomogeneity field')
-algorithms.add_argument('-fsl', action='store_true', default=False, help='Use FSL FAST to estimate the inhomogeneity field')
-grad_import_group = lib.app.parser.add_mutually_exclusive_group()
-grad_import_group.add_argument('-grad', help='Pass the diffusion gradient table in MRtrix format')
-grad_import_group.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Pass the diffusion gradient table in FSL bvecs/bvals format')
+options = lib.app.parser.add_argument_group('Options for the dwibiascorrect script')
+options.add_argument('-mask', help='Manually provide a mask image for bias field estimation')
+options.add_argument('-bias', help='Output the estimated bias field')
+options.add_argument('-ants', action='store_true', help='Use ANTS N4 to estimate the inhomogeneity field')
+options.add_argument('-fsl', action='store_true', help='Use FSL FAST to estimate the inhomogeneity field')
+lib.cmdlineParser.flagMutuallyExclusiveOptions( [ 'ants', 'fsl' ] )
+options.add_argument('-grad', help='Pass the diffusion gradient table in MRtrix format')
+options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Pass the diffusion gradient table in FSL bvecs/bvals format')
+lib.cmdlineParser.flagMutuallyExclusiveOptions( [ 'grad', 'fslgrad' ] )
 lib.app.initialise()
 
 if lib.app.args.fsl:
@@ -60,16 +65,18 @@ else:
 
 grad_import_option = ''
 if lib.app.args.grad:
-  grad_import_option = ' -grad ' + lib.app.args.grad
+  grad_import_option = ' -grad ' + getUserPath(lib.app.args.grad, True)
 elif lib.app.args.fslgrad:
-  grad_import_option = ' -fslgrad ' + lib.app.args.fslgrad[0] + ' ' + lib.app.args.fslgrad[1]
+  grad_import_option = ' -fslgrad ' + getUserPath(lib.app.args.fslgrad[0], True) + ' ' + getUserPath(lib.app.args.fslgrad[1], True)
 
 lib.app.checkOutputFile(lib.app.args.output)
 lib.app.checkOutputFile(lib.app.args.bias)
 
-runCommand('mrconvert ' + lib.app.args.input + ' ' + os.path.join(lib.app.tempDir, 'in.mif') + grad_import_option)
+lib.app.makeTempDir()
+
+runCommand('mrconvert ' + getUserPath(lib.app.args.input, True) + ' ' + os.path.join(lib.app.tempDir, 'in.mif') + grad_import_option)
 if lib.app.args.mask:
-  runCommand('mrconvert ' + lib.app.args.mask + ' ' + os.path.join(lib.app.tempDir, 'mask.mif'))
+  runCommand('mrconvert ' + getUserPath(lib.app.args.mask, True) + ' ' + os.path.join(lib.app.tempDir, 'mask.mif'))
 
 lib.app.gotoTempDir()
 
@@ -98,6 +105,13 @@ if lib.app.args.fsl:
   runCommand(fast_cmd + ' -t 2 -o fast -n 3 -b mean_bzero_masked.nii')
   bias_path = 'fast_bias' + fast_suffix
 elif lib.app.args.ants:
+
+  # If the mask image was provided manually, and doesn't match the input image perfectly
+  #   (i.e. also transform and voxel sizes), N4 will fail
+  if lib.app.args.mask:
+    if not imagesMatch('mean_bzero.mif', 'mask.mif'):
+      errorMessage('Input mask header does not perfectly match DWI as required by N4')
+
   # Use the brain mask as a weights image rather than a mask; means that voxels at the edge of the mask
   #   will have a smoothly-varying bias field correction applied, rather than multiplying by 1.0 outside the mask
   runCommand('mrconvert mean_bzero.mif mean_bzero.nii -stride +1,+2,+3')
@@ -106,8 +120,8 @@ elif lib.app.args.ants:
   runCommand('N4BiasFieldCorrection -d 3 -i mean_bzero.nii -w mask.nii -o [corrected.nii,' + bias_path + '] -s 2 -b [150] -c [200x200,0.0]')
   
 runCommand('mrcalc in.mif ' + bias_path + ' -div result.mif')
-runCommand('mrconvert result.mif ' + os.path.join(lib.app.workingDir, lib.app.args.output) + lib.app.mrtrixForce)
+runCommand('mrconvert result.mif ' + getUserPath(lib.app.args.output, True) + lib.app.mrtrixForce)
 if lib.app.args.bias:
-  runCommand('mrconvert ' + bias_path + ' ' + os.path.join(lib.app.workingDir, lib.app.args.bias) + lib.app.mrtrixForce)
+  runCommand('mrconvert ' + bias_path + ' ' + getUserPath(lib.app.args.bias, True) + lib.app.mrtrixForce)
 lib.app.complete()
 

@@ -109,7 +109,7 @@ namespace MR
         for (size_t i = 0; i < H.ndim(); i++)
           if (H.stride(i))
             ++n;
-        H.set_ndim (n + num.size());
+        H.axes_.resize (n + num.size());
 
         for (size_t i = 0; i < num.size(); ++i) {
           while (H.stride(a)) ++a;
@@ -166,8 +166,14 @@ namespace MR
         if ((*format_handler)->check (H, H.ndim() - Pdim.size()))
           break;
 
-      if (!*format_handler)
-        throw Exception ("unknown format for image \"" + image_name + "\"");
+      if (!*format_handler) {
+        const std::string basename = Path::basename (image_name);
+        const size_t extension_index = basename.find_last_of (".");
+        if (extension_index == std::string::npos)
+          throw Exception ("unknown format for image \"" + image_name + "\" (no file extension specified)");
+        else
+          throw Exception ("unknown format for image \"" + image_name + "\" (unsupported file extension: " + basename.substr (extension_index) + ")");
+      }
 
       H.datatype().set_byte_order_native();
       int a = 0;
@@ -219,7 +225,7 @@ namespace MR
           }
         }
 
-        H.set_ndim (n + Pdim.size());
+        H.axes_.resize (n + Pdim.size());
 
         for (size_t i = 0; i < Pdim.size(); ++i) {
           while (H.stride(a)) 
@@ -384,7 +390,7 @@ namespace MR
   {
     if (ndim() < 3) {
       INFO ("image contains fewer than 3 dimensions - adding extra dimensions");
-      set_ndim (3);
+      axes_.resize (3);
     }
 
     if (!std::isfinite (spacing(0)) || !std::isfinite (spacing(1)) || !std::isfinite (spacing(2))) {
@@ -484,24 +490,5 @@ namespace MR
   }
 
 
-
-  Eigen::MatrixXd Header::parse_DW_scheme () const
-  {
-    Eigen::MatrixXd G;
-    const auto it = keyval().find ("dw_scheme");
-    if (it != keyval().end()) {
-      const auto lines = split_lines (it->second);
-      for (size_t row = 0; row < lines.size(); ++row) {
-        const auto values = parse_floats (lines[row]);
-        if (G.cols() == 0)
-          G.resize (lines.size(), values.size());
-        else if (G.cols() != ssize_t (values.size()))
-          throw Exception ("malformed DW scheme in image \"" + name() + "\" - uneven number of entries per row");
-        for (size_t col = 0; col < values.size(); ++col)
-          G(row, col) = values[col];
-      }
-    }
-    return G;
-  }
 
 }

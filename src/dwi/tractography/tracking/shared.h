@@ -18,13 +18,14 @@
 
 #include <vector>
 
-#include "memory.h"
 #include "header.h"
+#include "image.h"
+#include "memory.h"
 #include "transform.h"
 #include "dwi/tractography/properties.h"
-#include "dwi/tractography/resample.h"
 #include "dwi/tractography/roi.h"
 #include "dwi/tractography/ACT/shared.h"
+#include "dwi/tractography/resampling/downsampler.h"
 #include "dwi/tractography/tracking/types.h"
 
 #define MAX_TRIALS 1000
@@ -72,8 +73,8 @@ namespace MR
               implicit_max_num_attempts (properties.find ("max_num_attempts") == properties.end()),
               downsampler ()
 #ifdef DEBUG_TERMINATIONS
-            , debug_header (properties.find ("act") == properties.end() ? diff_path : properties["act"]),
-              transform  (debug_header)
+            , debug_header (Header::open (properties.find ("act") == properties.end() ? diff_path : properties["act"])),
+              transform (debug_header)
 #endif
               {
 
@@ -119,7 +120,7 @@ namespace MR
                   rejections[i] = 0;
 
 #ifdef DEBUG_TERMINATIONS
-                debug_header.set_ndim (3);
+                debug_header.ndim() = 3;
                 debug_header.datatype() = DataType::UInt32;
                 for (size_t i = 0; i != TERMINATION_REASON_COUNT; ++i) {
                   std::string name;
@@ -180,6 +181,7 @@ namespace MR
                 std::string reject_type;
                 bool to_print = false;
                 switch (i) {
+                  case NO_PROPAGATION_FROM_SEED:  reject_type = "No propagation from seed";        to_print = true;     break;
                   case TRACK_TOO_SHORT:           reject_type = "Shorter than minimum length";     to_print = true;     break;
                   case TRACK_TOO_LONG:            reject_type = "Longer than maximum length";      to_print = is_act(); break;
                   case ENTER_EXCLUDE_REGION:      reject_type = "Entered exclusion region";        to_print = properties.exclude.size(); break;
@@ -209,7 +211,7 @@ namespace MR
             float step_size, threshold, init_threshold;
             size_t max_seed_attempts;
             bool unidirectional, rk4, stop_on_all_include, implicit_max_num_attempts;
-            Downsampler downsampler;
+            DWI::Tractography::Resampling::Downsampler downsampler;
 
             // Additional members for ACT
             bool is_act() const { return bool (act_shared_additions); }
@@ -237,7 +239,7 @@ namespace MR
 
               float min_dist = is_act() ? (2.0 * vox()) : (5.0 * vox());
               properties.set (min_dist, "min_dist");
-              min_num_points = std::fmax (2, std::round (min_dist/step_size) + 1);
+              min_num_points = std::max (2, int(std::round (min_dist/step_size) + 1));
 
               max_angle = 90.0 * step_size / vox();
               properties.set (max_angle, "max_angle");
@@ -267,13 +269,13 @@ namespace MR
             void add_termination (const term_t i, const Eigen::Vector3f& p) const
             {
               ++terminations[i];
-              auto voxel debug_images[i]->voxel();
-              const auto pv = transform.scanner2voxel (p);
-              voxel[0] = ssize_t (std::round (pv[0]));
-              voxel[1] = ssize_t (std::round (pv[1]));
-              voxel[2] = ssize_t (std::round (pv[2]));
-              if (!is_out_of_bounds (voxel))
-                voxel.value() += 1;
+              Image<uint32_t> image (*debug_images[i]);
+              const auto pv = transform.scanner2voxel * p.cast<default_type>();
+              image.index(0) = ssize_t (std::round (pv[0]));
+              image.index(1) = ssize_t (std::round (pv[1]));
+              image.index(2) = ssize_t (std::round (pv[2]));
+              if (!is_out_of_bounds (image))
+                image.value() += 1;
             }
 #endif
 

@@ -15,10 +15,16 @@
 
 
 #include "command.h"
-#include "math/math.h"
 #include "image.h"
+#include "image_helpers.h"
+#include "memory.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/scalar_file.h"
+#include "dwi/tractography/mapping/mapper.h"
+#include "file/ofstream.h"
+#include "file/path.h"
+#include "math/median.h"
 
 
 
@@ -27,15 +33,21 @@ using namespace MR;
 using namespace App;
 
 
+enum stat_tck { MEAN, MEDIAN, MIN, MAX, NONE };
+const char* statistics[] = { "mean", "median", "min", "max", nullptr };
+
+
 void usage ()
 {
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
-  + "sample values of associated image at each location along tracks"
+  + "sample values of an associated image along tracks"
 
-  + "The values are written to the output file as ASCII text, in the same order "
-  "as the track vertices, with all values for each track on the same line (space "
-  "separated), and individual tracks on separate lines."; 
+  + "By default, the value of the underlying image at each point along the track "
+    "is written to either an ASCII file (with all values for each track on the same "
+    "line), or a track scalar file (.tsf). Alternatively, some statistic can be "
+    "taken from the values along each streamline and written to a vector file.";
 
   ARGUMENTS
   + Argument ("tracks", "the input track file").type_tracks_in()
@@ -43,270 +55,368 @@ void usage ()
   + Argument ("values", "the output sampled values").type_file_out();
 
   OPTIONS
-    + OptionGroup ("Streamline resampling options")
 
-    + Option ("resample", "resample tracks before sampling from the image, by "
-        "resampling the tracks at 'num' equidistant and comparable locations "
-        "along the tracks between 'start' and 'end' (specified as "
-          "comma-separated 3-vectors in scanner coordinates)")
-    +   Argument ("num").type_integer (2)
-    +   Argument ("start").type_sequence_float()
-    +   Argument ("end").type_sequence_float()
+  + Option ("stat_tck", "compute some statistic from the values along each streamline "
+                        "(options are: " + join(statistics, ",") + ")")
+    + Argument ("statistic").type_choice (statistics)
 
-    + Option ("waypoint", "[only used with -resample] together with the start "
-        "and end points, this defines an arc of a circle passing through all "
-        "points, along which resampling is to occur.")
-    +   Argument ("point").type_sequence_float()
+  + Option ("precise", "use the precise mechanism for mapping streamlines to voxels "
+                       "(obviates the need for trilinear interpolation) "
+                       "(only applicable if some per-streamline statistic is requested)")
 
-    + Option ("locations", "[only used with -resample] output a new track file "
-        "with vertices at the locations resampled by the algorithm.")
-    +   Argument ("file").type_tracks_out()
+  + Option ("use_tdi_fraction",
+            "each streamline is assigned a fraction of the image intensity "
+            "in each voxel based on the fraction of the track density "
+            "contributed by that streamline (this is only appropriate for "
+            "processing a whole-brain tractogram, and images for which the "
+            "quantiative parameter is additive)");
 
-    + Option ("warp", "[only used with -resample] specify an image containing "
-        "the warp field to the space in which the resampling is to take "
-        "place. The tracks will be resampled as per their locations in the "
-        "warped space, with sampling itself taking place in the original "
-        "space")
-    +   Argument ("image").type_image_in();
   
   // TODO add support for SH amplitude along tangent
+  // TODO add support for reading from fixel image
+  //   (this would supersede fixel2tsf when used without -precise or -stat_tck options)
+  //   (wait until fixel_twi is merged; should simplify)
+
+
 }
 
 
+
 typedef float value_type;
+typedef Eigen::VectorXf vector_type;
 
 
-template <class Interp>
-class Resampler {
-  private:
-    class Plane {
-      public:
-        Plane (const Eigen::Vector3f& pos, const Eigen::Vector3f& dir) : n (dir) { n.normalize(); d = n.dot (pos); }
-        value_type dist (const Eigen::Vector3f& pos) { return n.dot (pos) - d; }
-      private:
-        Eigen::Vector3f n;
-        value_type d;
-    };
 
-    std::vector<Plane> planes;
-
+class TDI : public Image<value_type>
+{
   public:
-    Interp* warp;
-    Eigen::Vector3f start, mid, end, start_dir, mid_dir, end_dir;
-    size_t nsamples, idx_start, idx_end;
+    TDI (const Header& H, const size_t num_tracks) :
+        Image<value_type> (Image<value_type>::scratch (H, "TDI scratch image")),
+        progress ("Generating initial TDI", num_tracks) { }
 
-    Eigen::Vector3f position_of (const Eigen::Vector3f& p) { 
-      if (!warp) return p;
-      warp->scanner (p);
-      Eigen::Vector3f ret;
-      if (!(*warp)) return ret;
-      for (warp->index(3) = 0; warp->index(3) < 3; warp->index(3)++)
-        ret[size_t (warp->index(3))] = warp->value();
-      return ret;
+    bool operator() (const DWI::Tractography::Mapping::SetVoxel& in)
+    {
+      for (const auto v : in) {
+        assign_pos_of (v, 0, 3).to (*this);
+        value() += v.get_length();
+      }
+      ++progress;
+      return true;
     }
 
-    int state (const Eigen::Vector3f& p) {
-      bool after_start = start_dir.dot (p - start) >= 0;
-      bool after_mid = mid_dir.dot (p - mid) > 0.0;
-      bool after_end = end_dir.dot (p - end) >= 0.0;
-      if (!after_start && !after_mid) return -1; // before start;
-      if (after_start && !after_mid) return 0; // after start;
-      if (after_mid && !after_end) return 1; // before end
-      return 2; // after end
+    void done() { progress.done(); }
+
+  protected:
+    ProgressBar progress;
+
+};
+
+
+
+// Guarantees thread-safety
+class Sampler {
+  public:
+    Sampler (Image<value_type>& image, const stat_tck statistic, const bool precise, std::unique_ptr<TDI>& precalc_tdi) :
+        interp ((!precise && !precalc_tdi) ? new Interp::Linear<Image<value_type>> (image) : nullptr),
+        mapper ((precise || precalc_tdi) ? new DWI::Tractography::Mapping::TrackMapperBase (image) : nullptr),
+        image  ((precise || precalc_tdi) ? new Image<value_type> (image) : nullptr),
+        tdi (precalc_tdi ? new TDI (*precalc_tdi) : nullptr),
+        statistic (statistic)
+    {
+      assert (!(statistic == stat_tck::NONE && precise));
+      if (mapper)
+        mapper->set_use_precise_mapping (precise);
     }
 
-    int limits (const DWI::Tractography::Streamline<value_type>& tck) {
-      idx_start = idx_end = 0;
-      size_t a (0), b (0);
+    bool operator() (DWI::Tractography::Streamline<>& tck, std::pair<size_t, value_type>& out)
+    {
+      assert (statistic != stat_tck::NONE);
+      out.first = tck.index;
+      value_type sum_lengths = value_type(0);
 
-      int prev_s = -1;
-      for (size_t i = 0; i < tck.size(); ++i) {
-        int s = state (position_of (tck[i]));
-        if (i) {
-          if (prev_s == -1 && s == 0) a = i-1;
-          if (prev_s == 0 && s == -1) a = i;
-          if (prev_s == 1 && s == 2) b = i;
-          if (prev_s == 2 && s == 1) b = i-1;
+      // Only if _not_ using precise mapping, and _not_ using a pre-calculated TDI
+      //   (in the latter case, the mapper will still be used, just without the precise mapping;
+      //   each traversed voxel will return a length of 1)
+      if (interp) {
 
-          if (a && b) {
-            if (b - a > idx_end - idx_start) {
-              idx_start = a;
-              idx_end = b;
+        std::pair<size_t, vector_type> values;
+        (*this) (tck, values);
+
+        if (statistic == MEAN) {
+          // Take distance between points into account in mean calculation
+          //   (Should help down-weight endpoints)
+          value_type integral = value_type(0), sum_lengths = value_type(0);
+          for (size_t i = 0; i != tck.size(); ++i) {
+            value_type length = value_type(0);
+            if (i)
+              length += (tck[i] - tck[i-1]).norm();
+            if (i < tck.size() - 1)
+              length += (tck[i+1] - tck[i]).norm();
+            length *= 0.5;
+            integral += values.second[i] * length;
+            sum_lengths += length;
+          }
+          out.second = sum_lengths ? (integral / sum_lengths) : 0.0;
+        } else {
+          sum_lengths = tck.calc_length();
+          if (statistic == MEDIAN) {
+            // Don't bother with a weighted median here
+            std::vector<value_type> data;
+            data.assign (values.second.data(), values.second.data() + values.second.size());
+            out.second = Math::median (data);
+          } else if (statistic == MIN) {
+            out.second = std::numeric_limits<value_type>::infinity();
+            for (size_t i = 0; i != tck.size(); ++i)
+              out.second = std::min (out.second, values.second[i]);
+          } else if (statistic == MAX) {
+            out.second = -std::numeric_limits<value_type>::infinity();
+            for (size_t i = 0; i != tck.size(); ++i)
+              out.second = std::max (out.second, values.second[i]);
+          } else {
+            assert (0);
+          }
+        }
+
+      } else {
+
+        DWI::Tractography::Mapping::SetVoxel voxels;
+        (*mapper) (tck, voxels);
+
+        if (statistic == MEAN) {
+          value_type integral = value_type(0.0);
+          for (const auto v : voxels) {
+            assign_pos_of (v).to (*image);
+            integral += v.get_length() * (image->value() * get_tdi_multiplier (v));
+            sum_lengths += v.get_length();
+          }
+          out.second = integral / sum_lengths;
+        } else if (statistic == MEDIAN) {
+          // Should be a weighted median...
+          // Just use the n.log(n) algorithm
+          class WeightSort {
+            public:
+              WeightSort (const DWI::Tractography::Mapping::Voxel& voxel, const value_type value) :
+                  value (value),
+                  length (voxel.get_length()) { }
+              bool operator< (const WeightSort& that) const { return value < that.value; }
+              value_type value, length;
+          };
+          std::vector<WeightSort> data;
+          for (const auto v : voxels) {
+            assign_pos_of (v).to (*image);
+            data.push_back (WeightSort (v, (image->value() * get_tdi_multiplier (v))));
+            sum_lengths += v.get_length();
+          }
+          std::sort (data.begin(), data.end());
+          const value_type target_length = 0.5 * sum_lengths;
+          sum_lengths = value_type(0.0);
+          value_type prev_value = data.front().value;
+          for (const auto d : data) {
+            if ((sum_lengths += d.length) > target_length) {
+              out.second = prev_value;
+              break;
             }
-            a = b = 0;
+            prev_value = d.value;
           }
-        }
-        prev_s = s;
-      }
-
-      ++idx_end;
-
-      return (idx_start && idx_end);
-    }
-
-    void init () {
-      for (size_t n = 0; n < nsamples; n++) {
-        value_type f = value_type(n) / value_type (nsamples-1);
-        planes.push_back (Plane ((1.0f-f) * start + f * end, (1.0f-f) * start_dir + f * end_dir));
-      }
-    }
-
-    void init (const Eigen::Vector3f& waypoint) {
-
-      Eigen::Matrix3f M;
-
-      M(0,0) = start[0] - waypoint[0];
-      M(0,1) = start[1] - waypoint[1];
-      M(0,2) = start[2] - waypoint[2];
-
-      M(1,0) = end[0] - waypoint[0];
-      M(1,1) = end[1] - waypoint[1];
-      M(1,2) = end[2] - waypoint[2];
-
-      Eigen::Vector3f n ((start-waypoint).cross (end-waypoint));
-      M(2,0) = n[0];
-      M(2,1) = n[1];
-      M(2,2) = n[2];
-
-      Eigen::Vector3f a;
-      a[0] = 0.5 * (start+waypoint).dot(start-waypoint);
-      a[1] = 0.5 * (end+waypoint).dot(end-waypoint);
-      a[2] = start.dot(n);
-
-      Eigen::Vector3f c = M.fullPivLu().solve(a);
-
-      Eigen::Vector3f x (start-c);
-      value_type R = x.norm();
-      
-      Eigen::Vector3f y (waypoint-c);
-      y -= y.dot(x)/(x.norm()*y.norm()) * x;
-      y *= R / y.norm();
-
-      Eigen::Vector3f e (end-c);
-      value_type ex (x.dot (e)), ey (y.dot (e));
-
-      value_type angle = std::atan2 (ey, ex);
-      if (angle < 0.0) angle += 2.0 * Math::pi;
-
-      for (size_t n = 0; n < nsamples; n++) {
-        value_type f = angle * value_type(n) / value_type (nsamples-1);
-        planes.push_back (Plane (c + x*cos(f) + y*sin(f), y*cos(f) - x*sin(f)));
-      }
-
-      start_dir = y;
-      end_dir = y*cos(angle) - x*sin(angle);
-    }
-
-
-    void operator() (std::vector<Eigen::Vector3f>& tck) {
-      assert (tck.size());
-      assert (planes.size());
-      bool reverse = idx_start > idx_end;
-      size_t i = idx_start;
-      std::vector<Eigen::Vector3f> rtck;
-
-      for (size_t n = 0; n < nsamples; n++) {
-        while (i != idx_end) {
-          value_type d = planes[n].dist (position_of (tck[i]));
-          if (d > 0.0) {
-            value_type f = d / (d - planes[n].dist (position_of (tck[reverse ? i+1 : i-1])));
-            rtck.push_back (f*tck[i-1] + (1.0f-f)*tck[i]);
-            break;
+        } else if (statistic == MIN) {
+          out.second = std::numeric_limits<value_type>::infinity();
+          for (const auto v : voxels) {
+            assign_pos_of (v).to (*image);
+            out.second = std::min (out.second, value_type (image->value() * get_tdi_multiplier (v)));
+            sum_lengths += v.get_length();
           }
-          reverse ? --i : ++i;
+        } else if (statistic == MAX) {
+          out.second = -std::numeric_limits<value_type>::infinity();
+          for (const auto v : voxels) {
+            assign_pos_of (v).to (*image);
+            out.second = std::max (out.second, value_type (image->value() * get_tdi_multiplier (v)));
+            sum_lengths += v.get_length();
+          }
+        } else {
+          assert (0);
         }
       }
-      tck = rtck;
+
+      if (!std::isfinite (out.second))
+        out.second = NaN;
+
+      return true;
+    }
+
+    bool operator() (const DWI::Tractography::Streamline<>& tck, std::pair<size_t, vector_type>& out)
+    {
+      assert (interp);
+      out.first = tck.index;
+      out.second.resize (tck.size());
+      for (size_t i = 0; i != tck.size(); ++i) {
+        if (interp->scanner (tck[i]))
+          out.second[i] = interp->value();
+        else
+          out.second[i] = std::numeric_limits<value_type>::quiet_NaN();
+      }
+      return true;
+    }
+
+  private:
+    MR::copy_ptr<Interp::Linear<Image<value_type>>> interp;
+    std::shared_ptr<DWI::Tractography::Mapping::TrackMapperBase> mapper;
+    MR::copy_ptr<Image<value_type>> image;
+    MR::copy_ptr<TDI> tdi;
+    const stat_tck statistic;
+
+    value_type get_tdi_multiplier (const DWI::Tractography::Mapping::Voxel& v)
+    {
+      if (!tdi)
+        return value_type(1);
+      assign_pos_of (v).to (*tdi);
+      assert (!is_out_of_bounds (*tdi));
+      return v.get_length() / tdi->value();
     }
 
 };
 
 
-template <class Streamline, class Interp>
-inline void sample (File::OFStream& out, Interp& interp, const Streamline& tck) 
-{
-  for (auto& pos : tck) {
-    interp.scanner (pos);
-    out << interp.value() << " ";
-  }
-  out << "\n";
-}
 
-inline Eigen::Vector3f get_pos (const std::vector<default_type>& s)
+class ReceiverBase
 {
-  if (s.size() != 3)
-    throw Exception ("position expected as a comma-seperated list of 3 values");
-  return { float(s[0]), float(s[1]), float(s[2]) };
-}
+  public:
+    ReceiverBase (const size_t num_tracks) :
+        received (0),
+        expected (num_tracks),
+        progress ("Sampling values underlying streamlines", num_tracks) { }
+
+    ReceiverBase (const ReceiverBase&) = delete;
+
+    virtual ~ReceiverBase() {
+      if (received != expected)
+        WARN ("Track file reports " + str(expected) + " tracks, but contains " + str(received));
+    }
+
+  protected:
+    void operator++ () {
+      ++received;
+      ++progress;
+    }
+
+    size_t received;
+
+  private:
+    const size_t expected;
+    ProgressBar progress;
+
+};
+
+
+class Receiver_Statistic : private ReceiverBase
+{
+  public:
+    Receiver_Statistic (const size_t num_tracks) :
+        ReceiverBase (num_tracks),
+        vector_data (vector_type::Zero (num_tracks)) { }
+    Receiver_Statistic (const Receiver_Statistic&) = delete;
+
+    bool operator() (std::pair<size_t, value_type>& in) {
+      if (in.first >= size_t(vector_data.size()))
+        vector_data.conservativeResizeLike (vector_type::Zero (in.first + 1));
+      vector_data[in.first] = in.second;
+      ++(*this);
+      return true;
+    }
+
+    void save (const std::string& path) {
+      MR::save_vector (vector_data, path);
+    }
+
+  private:
+    vector_type vector_data;
+};
+
+
+
+class Receiver_NoStatistic : private ReceiverBase
+{
+  public:
+    Receiver_NoStatistic (const std::string& path,
+                          const size_t num_tracks,
+                          const DWI::Tractography::Properties& properties) :
+        ReceiverBase (num_tracks)
+    {
+      if (Path::has_suffix (path, ".tsf"))
+        tsf.reset (new DWI::Tractography::ScalarWriter<value_type> (path, properties));
+      else
+        ascii.reset (new File::OFStream (path));
+    }
+    Receiver_NoStatistic (const Receiver_NoStatistic&) = delete;
+
+    bool operator() (std::pair<size_t, vector_type>& in)
+    {
+      // Requires preservation of order
+      assert (in.first == ReceiverBase::received);
+      if (ascii)
+        (*ascii) << in.second.transpose() << "\n";
+      else
+        (*tsf) (in.second);
+      ++(*this);
+      return true;
+    }
+
+  private:
+    std::unique_ptr<File::OFStream> ascii;
+    std::unique_ptr<DWI::Tractography::ScalarWriter<value_type>> tsf;
+};
 
 
 
 void run ()
 {
   DWI::Tractography::Properties properties;
-  DWI::Tractography::Reader<value_type> read (argument[0], properties);
+  DWI::Tractography::Reader<value_type> reader (argument[0], properties);
+  auto H = Header::open (argument[1]);
+  auto image = H.get_image<value_type>();
 
-  auto image = Image<value_type>::open (argument[1]);
-  auto interp = Interp::Linear< decltype(image) > (image);
+  auto opt = get_options ("stat_tck");
+  const stat_tck statistic = opt.size() ? stat_tck(int(opt[0][0])) : stat_tck::NONE;
+  const bool precise = get_options ("precise").size();
+  const size_t num_tracks = properties.find("count") == properties.end() ?
+                            0 :
+                            to<size_t>(properties["count"]);
 
-  File::OFStream out (argument[2]);
+  if (statistic == stat_tck::NONE && precise)
+    throw Exception ("Precise streamline mapping may only be used with per-streamline statistics");
 
-  std::unique_ptr< Interp::Linear< Image<value_type> > > warp;
-
-  Resampler<decltype(warp)::element_type> resample;
-  std::unique_ptr<DWI::Tractography::Writer<value_type>> writer;
-
-  auto opt = get_options ("resample");
-  bool resampling = opt.size();
-  if (resampling) {
-    resample.nsamples = opt[0][0];
-    resample.start = get_pos (opt[0][1].as_sequence_float());
-    resample.end = get_pos (opt[0][2].as_sequence_float());
-
-    resample.start_dir = resample.end - resample.start;
-    resample.start_dir.normalize();
-    resample.mid_dir = resample.end_dir = resample.start_dir;
-    resample.mid = 0.5f * (resample.start + resample.end);
-
-    opt = get_options ("warp");
-    if (opt.size()) {
-      warp.reset (new Interp::Linear< Image<value_type> >(Image<value_type>::open(opt[0][0]) ));
-      if (warp->ndim() < 4)
-        throw Exception ("warp image should contain at least 4 dimensions");
-      if (warp->size(3) < 3)
-        throw Exception ("4th dimension of warp image should have length 3");
-      resample.warp = warp.get();
-    }
-
-    opt = get_options ("waypoint");
-    if (opt.size()) 
-      resample.init (get_pos (opt[0][0].as_sequence_float()));
-    else 
-      resample.init ();
-
-    opt = get_options ("locations");
-    if (opt.size())
-      writer.reset (new DWI::Tractography::Writer<value_type> (opt[0][0], properties));
+  std::unique_ptr<TDI> tdi;
+  if (get_options ("use_tdi_fraction").size()) {
+    DWI::Tractography::Reader<value_type> tdi_reader (argument[0], properties);
+    DWI::Tractography::Mapping::TrackMapperBase mapper (H);
+    mapper.set_use_precise_mapping (precise);
+    tdi.reset (new TDI (H, num_tracks));
+    Thread::run_queue (tdi_reader,
+                       Thread::batch (DWI::Tractography::Streamline<value_type>()),
+                       Thread::multi (mapper),
+                       Thread::batch (DWI::Tractography::Mapping::SetVoxel()),
+                       *tdi);
+    tdi->done();
   }
 
-  size_t skipped = 0, count = 0;
-  auto progress_message = [&](){ return "sampling streamlines (count: " + str(count) + ", skipped: " + str(skipped) + ")"; };
-  ProgressBar progress ("sampling streamlines");
+  Sampler sampler (image, statistic, precise, tdi);
 
-  DWI::Tractography::Streamline<value_type> tck;
-  while (read (tck)) {
-    if (resampling) {
-      if (!resample.limits (tck)) { skipped++; continue; }
-      resample (tck);
-
-      if (writer) 
-        (*writer) (tck);
+  if (statistic == stat_tck::NONE) {
+    Receiver_NoStatistic receiver (argument[2], num_tracks, properties);
+    DWI::Tractography::Streamline<value_type> tck;
+    std::pair<size_t, vector_type> values;
+    while (reader (tck)) {
+      sampler (tck, values);
+      receiver (values);
     }
-    sample (out, interp, tck);
-
-    ++count;
-    progress.update (progress_message);
+  } else {
+    Receiver_Statistic receiver (num_tracks);
+    Thread::run_queue (reader,
+                       Thread::batch (DWI::Tractography::Streamline<value_type>()),
+                       Thread::multi (sampler),
+                       Thread::batch (std::pair<size_t, value_type>()),
+                       receiver);
+    receiver.save (argument[2]);
   }
-  progress.set_text (progress_message());
+
 }
 

@@ -25,26 +25,17 @@
 #include "progressbar.h"
 #include "datatype.h"
 
-#ifdef MRTRIX_UPDATED_API
+#include "image.h"
+#include "algo/threaded_loop.h"
  
-# include "image.h"
-# include "algo/threaded_loop.h"
- 
-#else
- 
-# include "point.h"
-# include "image/buffer.h"
-# include "image/voxel.h"
-# include "image/threaded_loop.h"
- 
-#endif
-
 
 using namespace MR;
 using namespace App;
 
 void usage ()
 {
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
+
   DESCRIPTION
   + "compare two peak images for differences, within specified tolerance.";
 
@@ -57,8 +48,6 @@ void usage ()
 
 void run ()
 {
-#ifdef MRTRIX_UPDATED_API
-
   auto in1 = Image<double>::open (argument[0]);
   auto in2 = Image<double>::open (argument[1]);
   check_dimensions (in1, in2);
@@ -100,51 +89,6 @@ void run ()
         throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within specified precision of " + str(tol) + " ( [" + str(veca.transpose().cast<float>()) + "] vs [" + str(vecb.transpose().cast<float>()) + "], norms [" + str(norma) + " " + str(normb) + "], dot product = " + str(dp) + ")");
     }
   }, in1, in2);
-
-#else
-
-  Image::Buffer<double> buffer1 (argument[0]);
-  Image::Buffer<double> buffer2 (argument[1]);
-  Image::check_dimensions (buffer1, buffer2);
-  if (buffer1.ndim() != 4)
-    throw Exception ("images \"" + buffer1.name() + "\" and \"" + buffer2.name() + "\" are not 4D");
-  if (buffer1.dim(3) % 3)
-    throw Exception ("images \"" + buffer1.name() + "\" and \"" + buffer2.name() + "\" do not contain XYZ peak directions");  
-  for (size_t i = 0; i < buffer1.ndim(); ++i) {
-    if (std::isfinite (buffer1.vox(i)))
-      if (buffer1.vox(i) != buffer2.vox(i))
-        throw Exception ("images \"" + buffer1.name() + "\" and \"" + buffer2.name() + "\" do not have matching voxel spacings " +
-                                       str(buffer1.vox(i)) + " vs " + str(buffer2.vox(i)));
-  }
-  for (size_t i  = 0; i < 4; ++i) {
-    for (size_t j  = 0; j < 4; ++j) {
-      if (std::abs (buffer1.transform()(i,j) - buffer2.transform()(i,j)) > 0.0001)
-        throw Exception ("images \"" + buffer1.name() + "\" and \"" + buffer2.name() + "\" do not have matching header transforms "
-                         + "\n" + str(buffer1.transform()) + "vs \n " + str(buffer2.transform()) + ")");
-    }
-  }
-
-  double tol = argument[2];
-
-  Image::ThreadedLoop (buffer1, 0, 3)
-  .run ([&tol] (decltype(buffer1.voxel())& a, decltype(buffer2.voxel())& b)
-  {
-    for (size_t i = 0; i != size_t(a.dim(3)); i += 3) {
-      Point<double> veca, vecb;
-      for (size_t axis = 0; axis != 3; ++axis) {
-        a[3] = b[3] = i + axis;
-        veca[axis] = a.value();
-        vecb[axis] = b.value();
-      }
-      const double norma = veca.norm(), normb = vecb.norm();
-      veca.normalise(); vecb.normalise();
-      const double dp = std::abs (veca.dot (vecb));
-      if (1.0 - dp > tol || std::abs (norma - normb) > tol)
-        throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within specified precision of " + str(tol) + " (" + str(veca) + " vs " + str(vecb) + ", norms [" + str(norma) + " " + str(normb) + "], dot product " + str(dp) + ")");
-    }
-  }, buffer1.voxel(), buffer2.voxel());
-
-#endif
 
   CONSOLE ("data checked OK");
 }

@@ -25,39 +25,36 @@
 #include "progressbar.h"
 #include "datatype.h"
 
-#ifdef MRTRIX_UPDATED_API
- 
-# include "image.h"
-# include "algo/threaded_loop.h"
- 
-#else
- 
-# include "image/buffer.h"
-# include "image/voxel.h"
-# include "image/threaded_loop.h"
- 
-#endif
-
+#include "image.h"
+#include "algo/loop.h"
+#include "algo/threaded_loop.h"
 
 using namespace MR;
 using namespace App;
 
 void usage ()
 {
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)";
+
   DESCRIPTION
-  + "compare two images for differences, within specified tolerance.";
+  + "compare two images for differences, optionally with a specified tolerance.";
 
   ARGUMENTS
-  + Argument ("data1", "an image.").type_image_in ()
-  + Argument ("data2", "another image.").type_image_in ()
-  + Argument ("tolerance", "the amount of signal difference to consider acceptable").type_float (0.0);
+  + Argument ("data1", "an image.").type_image_in()
+  + Argument ("data2", "another image.").type_image_in();
+  
+  OPTIONS
+  + Option ("abs", "specify an absolute tolerance") 
+    + Argument ("tolerance").type_float (0.0)
+  + Option ("frac", "specify a fractional tolerance") 
+    + Argument ("tolerance").type_float (0.0)
+  + Option ("voxel", "specify a fractional tolerance relative to the maximum value in the voxel")
+    + Argument ("tolerance").type_float (0.0);
 }
 
 
 void run ()
 {
-#ifdef MRTRIX_UPDATED_API
-
   auto in1 = Image<cdouble>::open (argument[0]);
   auto in2 = Image<cdouble>::open (argument[1]);
   check_dimensions (in1, in2);
@@ -75,45 +72,61 @@ void run ()
     }
   }
 
-
-  double tol = argument[2];
-
-  ThreadedLoop (in1)
+  auto opt = get_options ("frac");
+  if (opt.size()) {
+  
+    const double tol = opt[0][0];
+    
+    ThreadedLoop (in1)
     .run ([&tol] (const decltype(in1)& a, const decltype(in2)& b) {
-        if (std::abs (a.value() - b.value()) > tol)
-        throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within specified precision of " + str(tol)
+        if (std::abs ((a.value() - b.value()) / (0.5 * (a.value() + b.value()))) > tol)
+        throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within fractional precision of " + str(tol)
              + " (" + str(cdouble (a.value())) + " vs " + str(cdouble (b.value())) + ")");
         }, in1, in2);
 
-#else
+  } else {
 
-  Image::Buffer<cdouble> buffer1 (argument[0]);
-  Image::Buffer<cdouble> buffer2 (argument[1]);
-  Image::check_dimensions (buffer1, buffer2);
-  for (size_t i = 0; i < buffer1.ndim(); ++i) {
-    if (std::isfinite (buffer1.vox(i)))
-      if (buffer1.vox(i) != buffer2.vox(i))
-        throw Exception ("images \"" + buffer1.name() + "\" and \"" + buffer2.name() + "\" do not have matching voxel spacings " +
-                                       str(buffer1.vox(i)) + " vs " + str(buffer2.vox(i)));
-  }
-  for (size_t i  = 0; i < 4; ++i) {
-    for (size_t j  = 0; j < 4; ++j) {
-      if (std::abs (buffer1.transform()(i,j) - buffer2.transform()(i,j)) > 0.001)
-        throw Exception ("images \"" + buffer1.name() + "\" and \"" + buffer2.name() + "\" do not have matching header transforms "
-                         + "\n" + str(buffer1.transform()) + "vs \n " + str(buffer2.transform()) + ")");
+    opt = get_options ("voxel");
+    if (opt.size()) {
+
+      if (in1.ndim() != 4)
+        throw Exception ("Option -voxel only works for 4D images");
+
+      const double tol = opt[0][0];
+
+      auto func = [&tol] (decltype(in1)& a, decltype(in2)& b) {
+        double maxa = 0.0, maxb = 0.0;
+        for (auto l = Loop(3) (a, b); l; ++l) {
+          maxa = std::max (maxa, std::abs (cdouble(a.value())));
+          maxb = std::max (maxb, std::abs (cdouble(b.value())));
+        }
+        const double threshold = tol * 0.5 * (maxa + maxb);
+        for (auto l = Loop(3) (a, b); l; ++l) {
+          if (std::abs (cdouble (a.value()) - cdouble (b.value())) > threshold)
+            throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within " + str(tol) + " of maximal voxel value"
+                           + " (" + str(cdouble (a.value())) + " vs " + str(cdouble (b.value())) + ")");
+        }
+      };
+
+      ThreadedLoop (in1, 0, 3).run (func, in1, in2);
+  
+    } else {
+  
+      double tol = 0.0;
+      opt = get_options ("abs");
+      if (opt.size())
+        tol = opt[0][0];
+
+      ThreadedLoop (in1)
+      .run ([&tol] (const decltype(in1)& a, const decltype(in2)& b) {
+          if (std::abs (a.value() - b.value()) > tol)
+          throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within absolute precision of " + str(tol)
+               + " (" + str(cdouble (a.value())) + " vs " + str(cdouble (b.value())) + ")");
+          }, in1, in2);
+
     }
+        
   }
-
-  double tol = argument[2];
-
-  Image::ThreadedLoop (buffer1)
-    .run ([&tol] (const decltype(buffer1.voxel())& a, const decltype(buffer2.voxel())& b) {
-       if (std::abs (a.value() - b.value()) > tol)
-         throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within specified precision of " + str(tol) 
-             + " (" + str(cdouble (a.value())) + " vs " + str(cdouble (b.value())) + ")");
-     }, buffer1.voxel(), buffer2.voxel());
-
-#endif
 
   CONSOLE ("data checked OK");
 }

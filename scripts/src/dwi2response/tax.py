@@ -1,8 +1,10 @@
 def initParser(subparsers, base_parser):
   import argparse
-  parser = subparsers.add_parser('tax', parents=[base_parser], help='Use the Tax et al. (2014) recursive calibration algorithm')
-  argument = parser.add_argument_group('Positional argument specific to the \'tax\' algorithm')
-  argument.add_argument('output', help='The output response function text file')
+  import lib.app
+  lib.app.addCitation('If using \'tax\' algorithm', 'Tax, C. M.; Jeurissen, B.; Vos, S. B.; Viergever, M. A. & Leemans, A. Recursive calibration of the fiber response function for spherical deconvolution of diffusion MRI data. NeuroImage, 2014, 86, 67-80', False)
+  parser = subparsers.add_parser('tax', parents=[base_parser], add_help=False, description='Use the Tax et al. (2014) recursive calibration algorithm for single-fibre voxel selection and response function estimation')
+  parser.add_argument('input', help='The input DWI')
+  parser.add_argument('output', help='The output response function text file')
   options = parser.add_argument_group('Options specific to the \'tax\' algorithm')
   options.add_argument('-peak_ratio', type=float, default=0.1, help='Second-to-first-peak amplitude ratio threshold')
   options.add_argument('-max_iters', type=int, default=20, help='Maximum number of iterations')
@@ -27,6 +29,7 @@ def execute():
   import math, os, shutil
   import lib.app
   from lib.getImageStat import getImageStat
+  from lib.getUserPath  import getUserPath
   from lib.printMessage import printMessage
   from lib.runCommand   import runCommand
   
@@ -68,7 +71,7 @@ def execute():
       mask_in_path = 'iter' + str(iteration-1) + '_SF.mif'
   
     # Run CSD
-    runCommand('dwi2fod dwi.mif ' + RF_in_path + ' ' + prefix + 'FOD.mif -mask ' + mask_in_path)
+    runCommand('dwi2fod csd dwi.mif ' + RF_in_path + ' ' + prefix + 'FOD.mif -mask ' + mask_in_path)
     # Get amplitudes of two largest peaks, and directions of largest
     runCommand('fod2fixel ' + prefix + 'FOD.mif -peak ' + prefix + 'peaks.msf -mask ' + mask_in_path + ' -fmls_no_thresholds')
     runCommand('fixel2voxel ' + prefix + 'peaks.msf split_value ' + prefix + 'amps.mif')
@@ -114,5 +117,5 @@ def execute():
     shutil.copyfile('iter' + str(lib.app.args.max_iters-1) + '_RF.txt', 'response.txt')
     shutil.copyfile('iter' + str(lib.app.args.max_iters-1) + '_SF.mif', 'voxels.mif')
 
-  shutil.copyfile('response.txt', os.path.join(lib.app.workingDir, lib.app.args.output))
+  shutil.copyfile('response.txt', getUserPath(lib.app.args.output, False))
 

@@ -35,6 +35,7 @@ const char* operations[] = {
   "sum",
   "product",
   "rms",
+  "norm",
   "var",
   "std",
   "min",
@@ -46,11 +47,13 @@ const char* operations[] = {
 
 void usage ()
 {
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
+
   DESCRIPTION
     + "compute summary statistic on image intensities either across images, "
     "or along a specified axis for a single image. Supported operations are:"
 
-    + "mean, median, sum, product, rms (root-mean-square value), var (unbiased variance), "
+    + "mean, median, sum, product, rms (root-mean-square value), norm (vector 2-norm), var (unbiased variance), "
     "std (unbiased standard deviation), min, max, absmax (maximum absolute value), "
     "magmax (value with maximum absolute value, preserving its sign)."
 
@@ -144,6 +147,24 @@ class RMS {
       if (!count)
         return NAN;
       return std::sqrt(sum / count);
+    }
+    double sum;
+    size_t count;
+};
+
+class NORM2 {
+  public:
+    NORM2() : sum (0.0), count (0) { }
+    void operator() (value_type val) {
+      if (std::isfinite (val)) {
+        sum += Math::pow2 (val);
+        ++count;
+      }
+    }
+    value_type result() const {
+      if (!count)
+        return NAN;
+      return std::sqrt(sum);
     }
     double sum;
     size_t count;
@@ -342,12 +363,13 @@ void run ()
       case 2: loop.run  (AxisKernel<Sum>    (axis), image_in, image_out); return;
       case 3: loop.run  (AxisKernel<Product>(axis), image_in, image_out); return;
       case 4: loop.run  (AxisKernel<RMS>    (axis), image_in, image_out); return;
-      case 5: loop.run  (AxisKernel<Var>    (axis), image_in, image_out); return;
-      case 6: loop.run  (AxisKernel<Std>    (axis), image_in, image_out); return;
-      case 7: loop.run  (AxisKernel<Min>    (axis), image_in, image_out); return;
-      case 8: loop.run  (AxisKernel<Max>    (axis), image_in, image_out); return;
-      case 9: loop.run  (AxisKernel<AbsMax> (axis), image_in, image_out); return;
-      case 10: loop.run (AxisKernel<MagMax> (axis), image_in, image_out); return;
+      case 5: loop.run  (AxisKernel<NORM2>  (axis), image_in, image_out); return;
+      case 6: loop.run  (AxisKernel<Var>    (axis), image_in, image_out); return;
+      case 7: loop.run  (AxisKernel<Std>    (axis), image_in, image_out); return;
+      case 8: loop.run  (AxisKernel<Min>    (axis), image_in, image_out); return;
+      case 9: loop.run  (AxisKernel<Max>    (axis), image_in, image_out); return;
+      case 10: loop.run  (AxisKernel<AbsMax> (axis), image_in, image_out); return;
+      case 11: loop.run (AxisKernel<MagMax> (axis), image_in, image_out); return;
       default: assert (0);
     }
 
@@ -357,23 +379,22 @@ void run ()
       throw Exception ("mrmath requires either multiple input images, or the -axis option to be provided");
 
     // Pre-load all image headers
-    std::vector<Header> headers_in;
-    // std::vector<std::unique_ptr<Header>> headers_in;
+    std::vector<Header, Eigen::aligned_allocator<Header>> headers_in (num_inputs);
 
     // Header of first input image is the template to which all other input images are compared
-    headers_in.push_back (Header::open (argument[0]));
+    headers_in[0] = Header::open (argument[0]);
     Header header (headers_in[0]);
     header.datatype() = DataType::from_command_line (DataType::Float32);
 
     // Wipe any excess unary-dimensional axes
     while (header.size (header.ndim() - 1) == 1)
-      header.set_ndim (header.ndim() - 1);
+      header.ndim() = header.ndim() - 1;
 
     // Verify that dimensions of all input images adequately match
     for (size_t i = 1; i != num_inputs; ++i) {
       const std::string path = argument[i];
       // headers_in.push_back (std::unique_ptr<Header> (new Header (Header::open (path))));
-      headers_in.push_back (Header::open (path));
+      headers_in[i] = Header::open (path);
       const Header& temp (headers_in[i]);
       if (temp.ndim() < header.ndim())
         throw Exception ("Image " + path + " has fewer axes than first imput image " + header.name());
@@ -409,6 +430,7 @@ void run ()
       ProgressBar progress (std::string("computing ") + operations[op] + " across " 
           + str(headers_in.size()) + " images", num_inputs);
       for (size_t i = 0; i != headers_in.size(); ++i) {
+        assert (headers_in[i].valid());
         assert (headers_in[i].is_file_backed());
         kernel->process (headers_in[i]);
         ++progress;

@@ -176,7 +176,7 @@ namespace MR
       else if (Raw::fetch_<uint16_t> (fmap.address() + sizeof (uint32_t), is_BE) != 0x0001U)
         throw Exception ("MRI file \"" + H.name() + "\" is badly formed (invalid byte order specifier)");
 
-      H.set_ndim (4);
+      H.ndim() = 4;
 
       size_t data_offset = 0;
       char* c;
@@ -268,7 +268,7 @@ namespace MR
       if (H.ndim() > num_axes && num_axes != 4)
         throw Exception ("MRTools format can only support 4 dimensions");
 
-      H.set_ndim (num_axes);
+      H.ndim() = num_axes;
 
       return true;
     }

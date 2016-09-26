@@ -29,8 +29,14 @@ using namespace App;
 
 void usage ()
 {
+
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
+
   DESCRIPTION
-  + "estimate noise level voxel-wise using residuals from a truncated SH fit";
+  + "estimate noise level voxel-wise using residuals from a truncated SH fit"
+      
+  + "WARNING: This command is deprecated and may be removed in future releases. "
+    "Try using the dwidenoise command with the -noise option instead.";
 
   ARGUMENTS
   + Argument ("dwi",
@@ -60,10 +66,12 @@ typedef float value_type;
 
 void run ()
 {
+  WARN ("Command dwi2noise is deprecated. Try using dwidenoise with -noise option instead.");
+  
   auto dwi_in = Image<value_type>::open (argument[0]);
 
   auto header = Header (dwi_in);
-  header.set_ndim (3);
+  header.ndim() = 3;
   header.datatype() = DataType::Float32;
   auto noise = Image<value_type>::create (argument[1], header);
 

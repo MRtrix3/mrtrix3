@@ -42,7 +42,7 @@ using namespace App;
 void usage ()
 {
 
-  AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
     + "Generate a mask image appropriate for seeding streamlines on the grey matter - white matter interface";
@@ -146,7 +146,7 @@ void run ()
     H.datatype().set_byte_order_native();
   } else {
     H = input;
-    H.set_ndim (3);
+    H.ndim() = 3;
   }
   auto output = Image<float>::create (argument[1], H);
 

@@ -26,6 +26,8 @@ using namespace App;
 
 void usage ()
 {
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
+
   DESCRIPTION
   + "create an initial warp image, representing an identity transformation. "
     "This is useful to obtain the warp fields from other normalisation "
@@ -53,7 +55,7 @@ void run ()
   auto header = Header::open (argument[0]);
 
   header.datatype() = DataType::Float32;
-  header.set_ndim (4);
+  header.ndim() = 4;
   header.size(3) = 3;
   Stride::set (header, Stride::contiguous_along_axis (3));
 

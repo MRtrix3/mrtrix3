@@ -25,7 +25,7 @@ namespace MR
   namespace Adapter
   {
 
-    template <template <class AdapterType> class AdapterType, class ImageType, typename... Args>
+    template <template <class ImageType> class AdapterType, class ImageType, typename... Args>
       inline AdapterType<ImageType> make (const ImageType& parent, Args&&... args) {
         return AdapterType<ImageType> (parent, std::forward<Args> (args)...);
       }

@@ -25,6 +25,18 @@ namespace Connectome {
 
 
 
+const char* statistics[] = { "sum", "mean", "min", "max", NULL };
+
+const App::Option EdgeStatisticOption
+
+  = App::Option ("stat_edge",
+                 "statistic for combining the values from all streamlines in an edge "
+                 "into a single scale value for that edge "
+                 "(options are: " + join(statistics, ",") + "; default=sum)")
+    + App::Argument("statistic").type_choice (statistics);
+
+
+
 
 
 bool Matrix::operator() (const Mapped_track_nodepair& in)
@@ -33,14 +45,14 @@ bool Matrix::operator() (const Mapped_track_nodepair& in)
   assert (in.get_second_node() < data.rows());
   assert (assignments_lists.empty());
   if (is_vector()) {
-    data   (0, in.get_first_node())  += in.get_factor() * in.get_weight();
-    counts (0, in.get_first_node())  += in.get_weight();
-    data   (0, in.get_second_node()) += in.get_factor() * in.get_weight();
+    apply (data (0, in.get_first_node()), in.get_factor(), in.get_weight());
+    counts (0, in.get_first_node()) += in.get_weight();
+    apply (data (0, in.get_second_node()), in.get_factor(), in.get_weight());
     counts (0, in.get_second_node()) += in.get_weight();
   } else {
     const node_t row    = std::min (in.get_first_node(), in.get_second_node());
     const node_t column = std::max (in.get_first_node(), in.get_second_node());
-    data   (row, column) += in.get_factor() * in.get_weight();
+    apply (data (row, column), in.get_factor(), in.get_weight());
     counts (row, column) += in.get_weight();
   }
   if (in.get_track_index() == assignments_pairs.size()) {
@@ -65,27 +77,27 @@ bool Matrix::operator() (const Mapped_track_nodelist& in)
   }
   if (is_vector()) {
     if (list.empty()) {
-      data   (0, 0) += in.get_factor() * in.get_weight();
+      apply (data (0, 0), in.get_factor(), in.get_weight());
       counts (0, 0) += in.get_weight();
       list.push_back (0);
     } else {
       for (std::vector<node_t>::const_iterator n = list.begin(); n != list.end(); ++n) {
-        data   (0, *n) += in.get_factor() * in.get_weight();
+        apply (data (0, *n), in.get_factor(), in.get_weight());
         counts (0, *n) += in.get_weight();
       }
     }
   } else { // Matrix output
     if (list.empty()) {
-      data   (0, 0) += in.get_factor() * in.get_weight();
+      apply (data (0, 0), in.get_factor(), in.get_weight());
       counts (0, 0) += in.get_weight();
       list.push_back (0);
     } else if (list.size() == 1) {
-      data   (0, list.front()) += in.get_factor() * in.get_weight();
+      apply (data (0, list.front()), in.get_factor(), in.get_weight());
       counts (0, list.front()) += in.get_weight();
     } else {
       for (size_t i = 0; i != list.size(); ++i) {
         for (size_t j = i; j != list.size(); ++j) {
-          data   (list[i], list[j]) += in.get_factor() * in.get_weight();
+          apply (data (list[i], list[j]), in.get_factor(), in.get_weight());
           counts (list[i], list[j]) += in.get_weight();
         }
       }
@@ -106,15 +118,30 @@ bool Matrix::operator() (const Mapped_track_nodelist& in)
 
 
 
-void Matrix::scale_by_streamline_count()
+void Matrix::finalize()
 {
-  for (node_t i = 0; i != counts.rows(); ++i) {
-    for (node_t j = i; j != counts.cols(); ++j) {
-      if (counts (i, j)) {
-        data (i, j) /= counts (i, j);
-        counts (i, j) = 1;
+  switch (statistic) {
+    case stat_edge::SUM:
+      return;
+    case stat_edge::MEAN:
+      for (node_t i = 0; i != counts.rows(); ++i) {
+        for (node_t j = i; j != counts.cols(); ++j) {
+          if (counts (i, j)) {
+            data (i, j) /= counts (i, j);
+            counts (i, j) = 1;
+          }
+        }
       }
-    }
+      return;
+    case stat_edge::MIN:
+    case stat_edge::MAX:
+      for (node_t i = 0; i != counts.rows(); ++i) {
+        for (node_t j = i; j != counts.cols(); ++j) {
+          if (!std::isfinite (data (i, j)))
+            data (i, j) = std::numeric_limits<default_type>::quiet_NaN();
+        }
+      }
+      return;
   }
 }
 
@@ -194,6 +221,25 @@ void Matrix::write_assignments (const std::string& path) const
     for (size_t j = 1; j != i->size(); ++j)
       stream << " " << str((*i)[j]);
     stream << "\n";
+  }
+}
+
+
+
+
+void Matrix::apply (double& target, const double value, const double weight)
+{
+  switch (statistic) {
+    case stat_edge::SUM:
+    case stat_edge::MEAN:
+      target += value * weight;
+      return;
+    case stat_edge::MIN:
+      target = std::min (target, value);
+      break;
+    case stat_edge::MAX:
+      target = std::max (target, value);
+      break;
   }
 }
 

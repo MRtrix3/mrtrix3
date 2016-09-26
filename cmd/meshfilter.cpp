@@ -48,7 +48,7 @@ const OptionGroup smooth_option = OptionGroup ("Options for mesh smoothing filte
 void usage ()
 {
 
-	AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
   + "apply filter operations to meshes.";

@@ -16,8 +16,8 @@ capable of storing such additional information data in their header, and
 will hence always be supported for such applications. Most image formats
 however cannot carry additional information in their header (or at
 least, not easily) - this is in fact one of the main motivations for the
-development of the *MRtrix* image formats. In such cases, it would be
-necessary to use *MRtrix* format images. Alternatively, it may be
+development of the MRtrix image formats. In such cases, it would be
+necessary to use MRtrix format images. Alternatively, it may be
 necessary to provide the additional information using command-line
 arguments (this is the case particularly for the DW gradient table, when
 providing DWI data in NIfTI format for instance).
@@ -38,12 +38,12 @@ identify the full image.
 Coordinate system
 '''''''''''''''''
 
-All *MRtrix* applications will consistently use the same coordinate
+All *MRtrix3* applications will consistently use the same coordinate
 system, which is identical to the
 `NIfTI <http://nifti.nimh.nih.gov/nifti-1>`__ standard. Note that this
 frame of reference differs from the `DICOM
 standard <https://www.dabsoft.ch/dicom/3/C.7.6.2.1.1/>`__ (typically the
-x & y axis are reversed). The convention followed by *MRtrix* applications
+x & y axis are reversed). The convention followed by *MRtrix3* applications
 is as follows:
 
 +---------------+-----------------------------------------+
@@ -56,7 +56,7 @@ is as follows:
 | 2 (z)         | increasing from inferior to superior    |
 +---------------+-----------------------------------------+
 
-All coordinates or vector components supplied to MRtrix applications
+All coordinates or vector components supplied to *MRtrix3* applications
 should be provided with reference to this coordinate system.
 
 
@@ -67,7 +67,7 @@ Multi-file numbered image support
 '''''''''''''''''''''''''''''''''
 
 It is possible to access a numbered series of images as a single
-multi-dimensional dataset, using a syntax specific to *MRtrix*. For example::
+multi-dimensional dataset, using a syntax specific to MRtrix. For example::
 
     $ mrinfo MRI-volume-[].nii.gz
 
@@ -87,7 +87,7 @@ pattern and generate a single dataset with dimensionality two larger
 than its constituents.
 
 Finally, it is also possible to explicitly request specific numbers,
-using a :ref:`number_sequences`
+using :ref:`number_sequences`
 within the square brackets::
 
     $ mrconvert data-[10:20].nii combined.mif
@@ -99,16 +99,16 @@ within the square brackets::
 Data types
 ''''''''''
 
-*MRtrix* applications can read and write data in any of the common data types.
+*MRtrix3* applications can read and write data in any of the common data types.
 Many *MRtrix3* commands also support the ``-datatype`` option to specify the
 data type for the output image. For example::
 
     $ mrconvert DICOM_images/ -datatype float32 output.nii
 
 .. NOTE::
-  Not all image formats support all possible datatypes. The *MRtrix* image file
+  Not all image formats support all possible datatypes. The MRtrix image file
   formats are designed to handle all of the possibilities listed below, while
-  other image formats may only support a subset.  When a data type is requested
+  other image formats may only support a subset. When a data type is requested
   that isn't supported by the image format, a hopefully suitable alternative
   data type will be used instead.
 
@@ -366,7 +366,7 @@ available formats. In particular:
    making it simple to ensure for example that all FOD coefficients for
    a given voxel are stored contiguously on file.
 
-Note that *MRtrix* now includes *MatLab* functions to read and write MRtrix
+Note that *MRtrix3* now includes *MatLab* functions to read and write MRtrix
 image files, and to load MRtrix tracks files. These are located in the
 ``matlab`` subfolder.
 
@@ -411,15 +411,16 @@ with the expected format of the corresponding values.
 
 -  **dim** [required]
 
-the image dimensions, supplied as a comma-separated list of integers.
-The number of entries specifies the dimensionality of the image. For
-example: ``dim: 192,256,256`` specifies a 192×256×256 image.
+   the image dimensions, supplied as a comma-separated list of integers.
+   The number of entries specifies the dimensionality of the image. For
+   example: ``dim: 192,256,256`` specifies a 192×256×256 image.
 
 -  **vox** [required]
 
    the voxel size along each dimension, as a comma-separated list of
    floating-point values. The number of entries should match that given
    in the dim entry. For example: ``vox: 0.9,0.898438,0.898438``.
+   
 -  **layout** [required]
 
    specifies the organisation of the data on file. In simplest terms, it
@@ -470,7 +471,7 @@ example: ``dim: 192,256,256`` specifies a 192×256×256 image.
    as a comma-separated list of floating-point values, and only the
    first 12 such values will be used to fill the first 3 rows of the
    transform matrix. Multiple such entries can be provided to fill the
-   matrix; for example, MRtrix will normally produce 3 lines for the
+   matrix; for example, *MRtrix3* will normally produce 3 lines for the
    transform, with one row of 4 values per entry:
 
    ::

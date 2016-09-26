@@ -41,7 +41,7 @@ using namespace App;
 void usage ()
 {
 
-	AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
   + "generate an image for visualisation purposes from an ACT 5TT segmented anatomical image";
@@ -85,7 +85,7 @@ void run ()
   DWI::Tractography::ACT::verify_5TT_image (input);
 
   Header H (input);
-  H.set_ndim (3);
+  H.ndim() = 3;
 
   const float bg_multiplier   = get_option_value ("bg",   VALUE_DEFAULT_BG);
   const float cgm_multiplier  = get_option_value ("cgm",  VALUE_DEFAULT_CGM);

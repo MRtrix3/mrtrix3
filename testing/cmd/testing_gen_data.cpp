@@ -25,26 +25,16 @@
 #include "datatype.h"
 #include "math/rng.h"
 
-#ifdef MRTRIX_UPDATED_API
-
-# include "image.h"
-# include "algo/threaded_loop.h"
-
-#else
-
-# include "image/buffer.h"
-# include "image/voxel.h"
-# include "image/stride.h"
-# include "image/threaded_loop.h"
-
-#endif
-
+#include "image.h"
+#include "algo/threaded_loop.h"
 
 using namespace MR;
 using namespace App;
 
 void usage ()
 {
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
+
   DESCRIPTION
   + "generate a test image of random numbers";
 
@@ -53,11 +43,7 @@ void usage ()
   + Argument ("data", "the output image.").type_image_out ();
 
   OPTIONS
-#ifdef MRTRIX_UPDATED_API
     + Stride::Options
-#else
-    + Image::Stride::StrideOption
-#endif
     + DataType::options();
 }
 
@@ -66,11 +52,9 @@ void run ()
 {
   std::vector<int> dim = argument[0];
 
-#ifdef MRTRIX_UPDATED_API
-
   Header header;
 
-  header.set_ndim (dim.size());
+  header.ndim() = dim.size();
   for (size_t n = 0; n < dim.size(); ++n) {
     header.size(n) = dim[n];
     header.spacing(n) = 1.0f;
@@ -86,29 +70,5 @@ void run ()
     void operator() (decltype(image)& v) { v.value() = normal(rng); }
   };
   ThreadedLoop ("generating random data...", image).run (fill(), image);
-
-#else
-
-  Image::Header header;
-
-  header.set_ndim (dim.size());
-  for (size_t n = 0; n < dim.size(); ++n) {
-    header.dim(n) = dim[n];
-    header.vox(n) = 1.0f;
-  }
-  header.datatype() = DataType::from_command_line (DataType::Float32);
-  Image::Stride::set_from_command_line (header, Image::Stride::contiguous_along_spatial_axes (header));
-
-  Image::Buffer<float> buffer (argument[1], header);
-  auto vox = buffer.voxel();
-
-  struct fill {
-    Math::RNG rng;
-    std::normal_distribution<float> normal;
-    void operator() (decltype(vox)& v) { v.value() = normal(rng); }
-  };
-  Image::ThreadedLoop ("generating random data...", vox).run (fill(), vox);
-
-#endif
 }
 
