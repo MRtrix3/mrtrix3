@@ -128,7 +128,7 @@ namespace MR
                 init_filter = Eigen::VectorXd::Ones(3);
               init_filter.conservativeResizeLike (Eigen::VectorXd::Zero (Math::ZSH::NforL (lmax_response)));
 
-              auto RH = SH2RH (response);
+              auto RH = Math::ZSH::ZSH2RH (response);
               if (size_t(RH.size()) < Math::ZSH::NforL (lmax))
                 RH.conservativeResizeLike (Eigen::VectorXd::Zero (Math::ZSH::NforL (lmax)));
 

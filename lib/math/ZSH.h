@@ -231,7 +231,7 @@ namespace MR
         const size_t lmax = LforN (zsh.size());
         Eigen::Matrix<value_type,Eigen::Dynamic,1,0,64> AL (lmax+1);
         Legendre::Plm_sph (AL, lmax, 0, 1.0);
-        for (size_t l = 0; l <= lmax; ++l)
+        for (size_t l = 0; l <= lmax; l += 2)
           rh[index(l)] = zsh[index(l)] / AL[l];
         return rh;
       }
