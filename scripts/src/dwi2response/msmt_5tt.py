@@ -52,10 +52,7 @@ def execute():
   # May need to commit 5ttregrid...
 
   # Verify input 5tt image
-  sizes = [ int(x) for x in getHeaderInfo('5tt.mif', 'size').split() ]
-  datatype = getHeaderInfo('5tt.mif', 'datatype')
-  if not len(sizes) == 4 or not sizes[3] == 5 or not datatype.startswith('Float'):
-    errorMessage('Imported anatomical image ' + os.path.basename(lib.app.args.in_5tt) + ' is not in the 5TT format')
+  runCommand('5ttcheck 5tt.mif')
 
   # Get shell information
   shells = [ int(round(float(x))) for x in getHeaderInfo('dwi.mif', 'shells').split() ]

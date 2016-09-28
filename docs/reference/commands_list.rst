@@ -13,6 +13,8 @@ List of MRtrix3 commands
 
    commands/5tt2vis
 
+   commands/5ttcheck
+
    commands/5ttedit
 
    commands/afdconnectivity
