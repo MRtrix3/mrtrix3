@@ -1,13 +1,15 @@
 def initParser(subparsers, base_parser):
-  import argparse  
-  parser = subparsers.add_parser('fa', parents=[base_parser], help='Use the old FA-threshold heuristic')
-  argument = parser.add_argument_group('Positional argument specific to the \'fa\' algorithm')
-  argument.add_argument('output', help='The output response function text file')
+  import argparse
+  import lib.app, lib.cmdlineParser
+  lib.app.addCitation('If using \'fa\' algorithm', 'Tournier, J.-D.; Calamante, F.; Gadian, D. G. & Connelly, A. Direct estimation of the fiber orientation density function from diffusion-weighted MRI data using spherical deconvolution. NeuroImage, 2004, 23, 1176-1185', False)
+  parser = subparsers.add_parser('fa', parents=[base_parser], add_help=False, description='Use the old FA-threshold heuristic for single-fibre voxel selection and response function estimation')
+  parser.add_argument('input', help='The input DWI')
+  parser.add_argument('output', help='The output response function text file')
   options = parser.add_argument_group('Options specific to the \'fa\' algorithm')
   options.add_argument('-erode', type=int, default=3, help='Number of brain mask erosion steps to apply prior to threshold (not used if mask is provided manually)')
-  thresholds = options.add_mutually_exclusive_group()
-  thresholds.add_argument('-number', type=int, default=300, help='The number of highest-FA voxels to use')
-  thresholds.add_argument('-threshold', type=float, help='Apply a hard FA threshold, rather than selecting the top voxels')
+  options.add_argument('-number', type=int, default=300, help='The number of highest-FA voxels to use')
+  options.add_argument('-threshold', type=float, help='Apply a hard FA threshold, rather than selecting the top voxels')
+  lib.cmdlineParser.flagMutuallyExclusiveOptions( [ 'number', 'threshold' ] )
   parser.set_defaults(algorithm='fa')
   parser.set_defaults(single_shell=False)
   

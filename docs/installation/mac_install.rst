@@ -13,7 +13,7 @@ To install *MRtrix3* , you will need the following:
 
 -  a `C++11 <https://en.wikipedia.org/wiki/C%2B%2B11>`__ compliant
    compiler (e.g. `clang <http://clang.llvm.org/>`__ in Xcode)
--  `Python <https://www.python.org/>`__ version >= 2.6 (already included in MacOS X)
+-  `Python <https://www.python.org/>`__ version >= 2.7 (already included in MacOS X)
 -  The `zlib <http://www.zlib.net/>`__ compression library (already included in MacOS X)
 -  `Eigen <http://eigen.tuxfamily.org/>`__ version 3.2 *(do not install the beta version)*
 -  `Qt <http://www.qt.io/>`__ version >= 5.1 *[GUI components only]* -
@@ -23,6 +23,17 @@ To install *MRtrix3* , you will need the following:
     To run the GUI components of *MRtrix3*  (``mrview`` & ``shview``), you will also need:
 
     -  an `OpenGL <https://en.wikipedia.org/wiki/OpenGL>`__ 3.3 compliant graphics card and corresponding software driver - thankfully OpenGL 3.3 is supported across the entire MacOS X range with OS versions >= 10.9.
+    
+.. NOTE:: 
+    If you currently do not plan to contribute to the Mrtrix3 code, the most convenient way to install Mrtrix3 on MacOS X is to install it via homebrew. 
+ 
+    - If you do not have homebrew installed, you can install it via: ``/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"``
+    
+    - You need to add the MRtrix3 tap to homebrew: ``brew tap MRtrix3/mrtrix3``
+    
+    - You can now install the latest version of MRtrix3 with: ``brew install mrtrix3``
+    
+    This should be all you need to do. For all installation options type ``brew info mrtrix3``. MRtrix3 will get upgraded when you upgrade all homebrew packages ``brew update && brew upgrade``. If you want to avoid upgrading MRtrix3 the next time you upgrade homebrew you can do so with ``brew pin mrtrix3``.
 
 Install Dependencies
 --------------------
@@ -42,10 +53,11 @@ Install Dependencies
    in our experience, this only leads to further conflicts, which won't help installing MRtrix3 *and* will make things 
    more difficult to fix later. Once you pick one of these options, we strongly recommend you stick with it, and 
    consult the `community forum <http://community.mrtrix.org>`__ if needed for advice and troubleshooting. 
-   
+
    - With `Homebrew <http://brew.sh/>`__:
        - Install Eigen3: ``brew install eigen``
        - Install Qt5: ``brew install qt5``
+       - Install pkg-config: ``brew install pkg-config``
        - Add Qt's binaries to your path: ``export PATH=`brew --prefix`/opt/qt5/bin:$PATH``
       
    - With `MacPorts <http://macports.org/>`__:
@@ -116,24 +128,39 @@ Build *MRtrix3*
 Set up *MRtrix3* 
 --------------
 
-1. Set your PATH in the shell startup file:
-
+1. Update the shell startup file, so that the locations of *MRtrix3* commands
+   and scripts will be added to your ``PATH`` envionment variable.
+   
+   If you are not familiar or comfortable with modification of shell files,
+   *MRtrix3* now provides a convenience script that will perform this setup
+   for you (assuming that you are using ``bash`` or equivalent interpreter).
+   From the top level *MRtrix3* directory, run the following:
+   
    ::
 
-       echo "export PATH=$(pwd)/release/bin:$(pwd)/scripts:\$PATH" >> ~/.bash_profile
+       ./set_path
 
 2. Close the terminal and start another one to ensure the startup file
    is read (or just type 'bash')
 
-3. type ``mrview`` to check that everything works
+3. Type ``mrview`` to check that everything works
 
-4. You may also want to have a look through the `configuration file options <config_file_options>`_ and set anything you think might be required on your system.
-
+4. You may also want to have a look through the :ref:`mrtrix_config_options`
+   and set anything you think might be required on your system.
+   
   .. NOTE:: 
-    The above assumes that your shell will read the `~/.profile` file at startup time. This is not always guaranteed, depending on how your system is configured. If you find that the above doesn' work (e.g. typing `mrview` returns a 'command not found' error), try writing the updated PATH to a different file, for example `~/.bash_profile` or `~/.bashrc`. In other words, amend the command in step 1 to end with `... >> ~/.bash_profile`, and see whether this allows `mrview` to run from a fresh terminal. 
+    The above assumes that your shell will read the ``~/.bash_profile`` file
+    at startup time. This is not always guaranteed, depending on how your
+    system is configured. If you find that the above doesn't work (e.g. typing
+    ``mrview`` returns a 'command not found' error), try changing step 1 to
+    instruct the ``set_path`` script to update ``PATH`` within a different
+    file, for example ``~/.profile`` or ``~/.bashrc``, e.g. as follows:
 
+    ::
 
-Keeping *MRtrix3*  up to date
+      ./set_path ~/.profile
+
+Keeping *MRtrix3* up to date
 --------------------------
 
 1. You can update your installation at any time by opening a Git Bash

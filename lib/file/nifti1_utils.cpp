@@ -99,7 +99,7 @@ namespace MR
           throw Exception ("too few dimensions specified in NIfTI image \"" + H.name() + "\"");
         if (ndim > 7)
           throw Exception ("too many dimensions specified in NIfTI image \"" + H.name() + "\"");
-        H.set_ndim (ndim);
+        H.ndim() = ndim;
 
 
         for (int i = 0; i < ndim; i++) {

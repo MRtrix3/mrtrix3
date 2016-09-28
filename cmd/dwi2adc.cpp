@@ -99,7 +99,7 @@ void run () {
 
   Header header (dwi);
   header.datatype() = DataType::Float32;
-  header.set_ndim (4);
+  header.ndim() = 4;
   header.size(3) = 2;
 
   auto adc = Image<value_type>::create (argument[1], header);

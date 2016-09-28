@@ -30,7 +30,7 @@ Options
 Affine transformation options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-linear transform** specify a 4x4 linear transform to apply, in the form of a 4x4 ascii file. Note the standard 'reverse' convention is used, where the transform maps points in the template image to the moving image. Note that the reverse convention is still assumed even if no -template image is supplied
+-  **-linear transform** specify a linear transform to apply, in the form of a 3x4 or 4x4 ascii file. Note the standard 'reverse' convention is used, where the transform maps points in the template image to the moving image. Note that the reverse convention is still assumed even if no -template image is supplied
 
 -  **-flip axes** flip the specified axes, provided as a comma-separated list of indices (0:x, 1:y, 2:z).
 
@@ -38,7 +38,9 @@ Affine transformation options
 
 -  **-half** apply the matrix square root of the transformation. This can be combined with the inverse option.
 
--  **-replace** replace the linear transform of the original image by that specified, rather than applying it to the original image. If no -linear transform is specified then the header transform is replaced with an identity transform.
+-  **-replace file** replace the linear transform of the original image by that specified, rather than applying it to the original image. The specified transform can be either a template image, or a 3x4 or 4x4 ascii file.
+
+-  **-identity** set the header transform of the image to the identity matrix
 
 Regridding options
 ^^^^^^^^^^^^^^^^^^

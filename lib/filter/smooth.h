@@ -59,12 +59,12 @@ namespace MR
         }
 
         template <class HeaderType>
-        Smooth (const HeaderType& in, const std::vector<default_type>& stdev) :
+        Smooth (const HeaderType& in, const std::vector<default_type>& stdev_in):
             Base (in),
             extent (3, 0),
             stdev (3, 0.0)
         {
-          set_stdev (stdev);
+          set_stdev (stdev_in);
           datatype() = DataType::Float32;
         }
 
@@ -88,8 +88,8 @@ namespace MR
             extent = new_extent;
         }
 
-        void set_stdev (default_type stdev) {
-          set_stdev (std::vector<default_type> (3, stdev));
+        void set_stdev (default_type stdev_in) {
+          set_stdev (std::vector<default_type> (3, stdev_in));
         }
 
         //! ensure the image boundary remains zero. Used to constrain displacement fields during image registration
@@ -101,18 +101,19 @@ namespace MR
         //! This must be set as a single value to be used for the first 3 dimensions
         //! or separate values, one for each dimension. (Default: 1 voxel)
         void set_stdev (const std::vector<default_type>& std_dev)
-        {
+        { 
+          for (size_t i = 0; i < std_dev.size(); ++i)
+            if (stdev[i] < 0.0)
+              throw Exception ("the Gaussian stdev values cannot be negative");
           if (std_dev.size() == 1) {
             for (unsigned int i = 0; i < 3; i++)
               stdev[i] = std_dev[0];
           } else {
             if (std_dev.size() != 3)
               throw Exception ("Please supply a single standard deviation value, or three values (one for each spatial dimension)");
-            stdev = std_dev;
+            for (unsigned int i = 0; i < 3; i++)
+              stdev[i] = std_dev[i];
           }
-          for (size_t i = 0; i < stdev.size(); ++i)
-            if (stdev[i] < 0.0)
-              throw Exception ("the Gaussian stdev values cannot be negative");
         }
 
         //! Smooth the input image. Both input and output images can be the same image

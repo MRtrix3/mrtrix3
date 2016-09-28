@@ -120,7 +120,7 @@ namespace MR
                   rejections[i] = 0;
 
 #ifdef DEBUG_TERMINATIONS
-                debug_header.set_ndim (3);
+                debug_header.ndim() = 3;
                 debug_header.datatype() = DataType::UInt32;
                 for (size_t i = 0; i != TERMINATION_REASON_COUNT; ++i) {
                   std::string name;
@@ -181,6 +181,7 @@ namespace MR
                 std::string reject_type;
                 bool to_print = false;
                 switch (i) {
+                  case NO_PROPAGATION_FROM_SEED:  reject_type = "No propagation from seed";        to_print = true;     break;
                   case TRACK_TOO_SHORT:           reject_type = "Shorter than minimum length";     to_print = true;     break;
                   case TRACK_TOO_LONG:            reject_type = "Longer than maximum length";      to_print = is_act(); break;
                   case ENTER_EXCLUDE_REGION:      reject_type = "Entered exclusion region";        to_print = properties.exclude.size(); break;
@@ -238,7 +239,7 @@ namespace MR
 
               float min_dist = is_act() ? (2.0 * vox()) : (5.0 * vox());
               properties.set (min_dist, "min_dist");
-              min_num_points = std::fmax (2, std::round (min_dist/step_size) + 1);
+              min_num_points = std::max (2, int(std::round (min_dist/step_size) + 1));
 
               max_angle = 90.0 * step_size / vox();
               properties.set (max_angle, "max_angle");

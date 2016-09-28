@@ -1,16 +1,20 @@
+.. _dwiintensitynorm:
+
 dwiintensitynorm
-===========
+================
 
 Synopsis
 --------
 
+::
+
     dwiintensitynorm [ options ] input_dir mask_dir output_dir fa_template wm_mask
 
-- *input_dir*: The input directory containing all DWI images
-- *mask_dir*: Input directory containing brain masks, corresponding to one per input image (with the same file name prefix)
-- *output_dir*: The output directory containing all of the intensity normalised DWI images
-- *fa_template*: The output population specific FA template, which is threshold to estimate a white matter mask
-- *wm_mask*: The output white matter mask (in template space), used to estimate the median b=0 white matter value for normalisation
+-  *input_dir*: The input directory containing all DWI images
+-  *mask_dir*: Input directory containing brain masks, corresponding to one per input image (with the same file name prefix)
+-  *output_dir*: The output directory containing all of the intensity normalised DWI images
+-  *fa_template*: The output population specific FA template, which is threshold to estimate a white matter mask
+-  *wm_mask*: The output white matter mask (in template space), used to estimate the median b=0 white matter value for normalisation
 
 Description
 -----------
@@ -20,11 +24,13 @@ Performs a global DWI intensity normalisation on a group of subjects using the m
 Options
 -------
 
+Options for the dwiintensitynorm script
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 - **-fa_threshold** The threshold applied to the Fractional Anisotropy group template used to derive an approximate white matter mask
 
 Standard options
 ^^^^^^^^^^^^^^^^
-
 
 - **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
 
@@ -32,7 +38,7 @@ Standard options
 
 - **-help** Display help information for the script
 
-- **-nocleanup** Do not delete temporary directory at script completion
+- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
 
 - **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
 
@@ -42,24 +48,21 @@ Standard options
 
 - **-verbose** Display additional information for every command invoked
 
-References
-^^^^^^^^^^
+--------------
 
 
-
----
 
 **Author:** David Raffelt (david.raffelt@florey.edu.au)
 
-**Copyright:** 
-Copyright (c) 2008-2016 the MRtrix3 contributors
+**Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
 
-This Source Code Form is subject to the terms of the Mozilla Public 
+This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-MRtrix is distributed in the hope that it will be useful, 
-but WITHOUT ANY WARRANTY; without even the implied warranty of 
+MRtrix is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 For more details, see www.mrtrix.org
+

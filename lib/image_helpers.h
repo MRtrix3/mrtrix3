@@ -229,7 +229,7 @@ namespace MR
     FORCE_INLINE bool is_out_of_bounds (const ImageType& image, 
         size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
     {
-      for (size_t n = from_axis; n < std::min (to_axis, image.ndim()); ++n)
+      for (size_t n = from_axis; n < std::min<size_t> (to_axis, image.ndim()); ++n)
         if (image.index(n) < 0 || image.index(n) >= image.size(n))
           return true;
       return false;
@@ -239,7 +239,7 @@ namespace MR
     FORCE_INLINE bool is_out_of_bounds (const HeaderType& header, const VectorType& pos,
         size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
     {
-      for (size_t n = from_axis; n < std::min (to_axis, header.ndim()); ++n)
+      for (size_t n = from_axis; n < std::min<size_t> (to_axis, header.ndim()); ++n)
         if (pos[n] < 0 || pos[n] >= header.size(n))
           return true;
       return false;
@@ -405,7 +405,7 @@ namespace MR
     {
       size_t n = in.ndim();
       while (in.size(n-1) <= 1 && n > from_axis) --n;
-      in.set_ndim (n);
+      in.ndim() = n;
     }
 
 

@@ -87,6 +87,8 @@ namespace MR
               local_trafo.set_translation (offset);
             };
 
+            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
+
             typedef Metric::Params<Registration::Transform::Rigid,
                                      Image<default_type>,
                                      Image<default_type>,
@@ -109,7 +111,7 @@ namespace MR
 
               Header image1_midway_header (midway_image_header);
               image1_midway_header.datatype() = DataType::Float64;
-              image1_midway_header.set_ndim(im1.ndim());
+              image1_midway_header.ndim() = im1.ndim();
               for (size_t dim = 3; dim < im1.ndim(); ++dim){
                 image1_midway_header.spacing(dim) = im1.spacing(dim);
                 image1_midway_header.size(dim) = im1.size(dim);
@@ -117,7 +119,7 @@ namespace MR
               image1_midway = Image<default_type>::create (im1_path, image1_midway_header);
               Header image2_midway_header (midway_image_header);
               image2_midway_header.datatype() = DataType::Float64;
-              image2_midway_header.set_ndim(im2.ndim());
+              image2_midway_header.ndim() = im2.ndim();
               for (size_t dim = 3; dim < im2.ndim(); ++dim){
                 image2_midway_header.spacing(dim) = im2.spacing(dim);
                 image2_midway_header.size(dim) = im2.size(dim);

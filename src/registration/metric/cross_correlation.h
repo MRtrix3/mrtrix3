@@ -84,6 +84,8 @@ namespace MR
                 global_cnt += cnt;
               }
 
+              EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
+
               template <typename ProcessedImageType, typename MaskImageType>
                 void operator() (ProcessedImageType& pimage, MaskImageType& mask) {
                   assert(mask.index(0) == pimage.index(0));
@@ -211,7 +213,7 @@ namespace MR
               parameters.processed_mask = Header::scratch (midway_header).template get_image<bool>();
               // processed_image: 2 volumes: interpolated image1 value, interpolated image2 value if both masks' values are >= 0.5
               auto cc_header = Header::scratch (parameters.midway_image);
-              cc_header.set_ndim(4);
+              cc_header.ndim() = 4;
               cc_header.size(3) = 2;
               // PImageType cc_image = PImageType::scratch (cc_header);
               parameters.processed_image = PImageType::scratch (cc_header);

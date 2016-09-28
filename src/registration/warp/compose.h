@@ -36,6 +36,8 @@ namespace MR
             ComposeLinearDeformKernel (const transform_type& transform) :
                                        transform (transform) {}
 
+            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
+
             template <class InputDeformationFieldType, class OutputDeformationFieldType>
             void operator() (InputDeformationFieldType& deform_input, OutputDeformationFieldType& deform_output) {
               deform_output.row(3) = transform * deform_input.row(3).colwise().homogeneous();
@@ -53,6 +55,8 @@ namespace MR
                                      linear_transform (linear_transform),
                                      image_transform (disp_in) {}
 
+            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
+
             template <class DisplacementFieldType, class DeformationFieldType>
             void operator() (DisplacementFieldType& disp_input, DeformationFieldType& deform_output) {
               Eigen::Vector3 voxel (disp_input.index(0), disp_input.index(1), disp_input.index(2));
@@ -68,6 +72,8 @@ namespace MR
           public:
             ComposeDispKernel (Image<default_type>& disp_input1, Image<default_type>& disp_input2, default_type step) :
                                disp1_transform (disp_input1), disp2_interp (disp_input2), step (step) {}
+
+            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
             void operator() (Image<default_type>& disp_input1, Image<default_type>& disp_output) {
               Eigen::Vector3 voxel ((default_type)disp_input1.index(0), (default_type)disp_input1.index(1), (default_type)disp_input1.index(2));
@@ -99,6 +105,8 @@ namespace MR
               out_of_bounds.setOnes();
               out_of_bounds *= NaN;
             }
+
+            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
             void operator() (Image<default_type>& deform) {
               Eigen::Vector3 voxel ((default_type)deform.index(0), (default_type)deform.index(1), (default_type)deform.index(2));
@@ -192,7 +200,7 @@ namespace MR
 //          save (*scaled_update, std::string("composed_update.mif"), false);
 //          Adapter::Jacobian<Image<default_type> > jacobian (*scaled_update);
 //          Header header (*scaled_update);
-//          header.set_ndim(3);
+//          header.ndim() = 3;
 //          bool is_neg = false;
 //          auto jacobian_det = Image<default_type>::scratch (header);
 //          Eigen::MatrixXd ident = Eigen::MatrixXd::Identity (3,3);
@@ -237,7 +245,7 @@ namespace MR
       template <class WarpType>
       FORCE_INLINE WarpType compute_midway_deformation (WarpType& warp, const int from) {
         Header midway_header (warp);
-        midway_header.set_ndim(4);
+        midway_header.ndim() = 4;
         midway_header.size(3) = 3;
         WarpType deformation = WarpType::scratch (midway_header);
 
@@ -258,7 +266,7 @@ namespace MR
       template <class WarpType, class TemplateType>
       FORCE_INLINE WarpType compute_full_deformation (WarpType& warp, TemplateType& template_image, const int from) {
         Header deform_header (template_image);
-        deform_header.set_ndim(4);
+        deform_header.ndim() = 4;
         deform_header.size(3) = 3;
         WarpType deform = WarpType::scratch (deform_header);
 
