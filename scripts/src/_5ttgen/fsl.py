@@ -204,14 +204,14 @@ def execute():
 
   # Combine the tissue images into the 5TT format within the script itself
   # Step 1: Run LCC on the WM image
-  runCommand('mrthreshold ' + fast_output_prefix + '_pve_2' + fast_suffix + ' - -abs 0.001 | maskfilter - connect wm_mask.mif -largest')
+  runCommand('mrthreshold ' + fast_output_prefix + '_pve_2' + fast_suffix + ' - -abs 0.001 | maskfilter - connect - -connectivity | mrcalc 1 - 1 -gt -sub remove_unconnected_wm_mask.mif -datatype bit')
   # Step 2: Generate the images in the same fashion as the 5ttgen command
-  runCommand('mrconvert ' + fast_output_prefix + '_pve_0' + fast_suffix + ' csf.mif')
+  runCommand('mrcalc ' + fast_output_prefix + '_pve_0' + fast_suffix + ' remove_unconnected_wm_mask.mif -mult csf.mif')
   runCommand('mrcalc 1.0 csf.mif -sub all_sgms.mif -min sgm.mif')
   runCommand('mrcalc 1.0 csf.mif sgm.mif -add -sub ' + fast_output_prefix + '_pve_1' + fast_suffix + ' ' + fast_output_prefix + '_pve_2' + fast_suffix + ' -add -div multiplier.mif')
   runCommand('mrcalc multiplier.mif -finite multiplier.mif 0.0 -if multiplier_noNAN.mif')
-  runCommand('mrcalc ' + fast_output_prefix + '_pve_1' + fast_suffix + ' multiplier_noNAN.mif -mult cgm.mif')
-  runCommand('mrcalc ' + fast_output_prefix + '_pve_2' + fast_suffix + ' multiplier_noNAN.mif -mult wm_mask.mif -mult wm.mif')
+  runCommand('mrcalc ' + fast_output_prefix + '_pve_1' + fast_suffix + ' multiplier_noNAN.mif -mult remove_unconnected_wm_mask.mif -mult cgm.mif')
+  runCommand('mrcalc ' + fast_output_prefix + '_pve_2' + fast_suffix + ' multiplier_noNAN.mif -mult remove_unconnected_wm_mask.mif -mult wm.mif')
   runCommand('mrcalc 0 wm.mif -min path.mif')
   runCommand('mrcat cgm.mif sgm.mif wm.mif csf.mif path.mif - -axis 3 | mrconvert - combined_precrop.mif -stride +2,+3,+4,+1')
 
