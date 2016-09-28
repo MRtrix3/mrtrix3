@@ -189,7 +189,7 @@ def execute():
     vtk_temp_path = struct + '.vtk'
     if not os.path.exists(vtk_in_path):
       errorMessage('Missing .vtk file for structure ' + struct + '; run_first_all must have failed')
-    runCommand('meshconvert ' + vtk_in_path + ' ' + vtk_temp_path + ' -transform_first2real T1.nii')
+    runCommand('meshconvert ' + vtk_in_path + ' ' + vtk_temp_path + ' -transform first2real T1.nii')
     runCommand('mesh2pve ' + vtk_temp_path + ' ' + fast_t1_input + ' ' + pve_image_path)
     pve_image_list.append(pve_image_path)
   pve_cat = ' '.join(pve_image_list)
