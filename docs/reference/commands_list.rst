@@ -89,6 +89,8 @@ List of MRtrix3 commands
 
    commands/labelconvert
 
+   commands/maskdump
+
    commands/maskfilter
 
    commands/mesh2pve
@@ -110,6 +112,8 @@ List of MRtrix3 commands
    commands/mrconvert
 
    commands/mrcrop
+
+   commands/mredit
 
    commands/mrfilter
 

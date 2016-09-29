@@ -1,0 +1,57 @@
+/*
+ * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * 
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * For more details, see www.mrtrix.org
+ * 
+ */
+
+
+#include "command.h"
+#include "image.h"
+#include "algo/loop.h"
+
+using namespace MR;
+using namespace App;
+
+
+void usage ()
+{
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
+
+  DESCRIPTION
+  + "Print out the locations of all non-zero voxels in a mask image";
+
+  ARGUMENTS
+  + Argument ("input",  "the input image.").type_image_in();
+}
+
+
+void run ()
+{
+  auto H = Header::open (argument[0]);
+  if (H.datatype() != DataType::Bit)
+    WARN ("Input is not a genuine boolean mask image");
+  auto in = H.get_image<bool>();
+  std::vector< Eigen::ArrayXi > locations;
+  for (auto l = Loop(in) (in); l; ++l) {
+    if (in.value()) {
+      Eigen::ArrayXi this_voxel (in.ndim());
+      for (size_t axis = 0; axis != in.ndim(); ++axis)
+        this_voxel[axis] = in.index (axis);
+      locations.push_back (std::move (this_voxel));
+    }
+  }
+  Eigen::ArrayXXi prettyprint (locations.size(), in.ndim());
+  for (size_t row = 0; row != locations.size(); ++row)
+    prettyprint.row (row) = std::move (locations[row]);
+  INFO ("Printing locations of " + str(prettyprint.rows()) + " non-zero voxels");
+  std::cout << prettyprint;
+}
