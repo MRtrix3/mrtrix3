@@ -9,8 +9,6 @@ List of MRtrix3 commands
 
 
 
-   commands/3ttnormalise
-
    commands/5tt2gmwmi
 
    commands/5tt2vis
@@ -134,6 +132,8 @@ List of MRtrix3 commands
    commands/mrtransform
 
    commands/mrview
+
+   commands/mtnormalise
 
    commands/peaks2amp
 

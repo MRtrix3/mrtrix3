@@ -162,7 +162,7 @@ void run() {
   FixelFormat::copy_index_and_directions_file (input_fixel_folder, output_fixel_folder);
 
   {
-    auto directions_data = FixelFormat::find_directions_header (input_fixel_folder).get_image<float>().with_direct_io();
+    auto directions_data = FixelFormat::find_directions_header (input_fixel_folder).get_image<default_type>().with_direct_io();
     // Load template fixel directions
     Transform image_transform (index_image);
     for (auto i = Loop ("loading template fixel directions and positions", index_image, 0, 3)(index_image); i; ++i) {
@@ -171,7 +171,7 @@ void run() {
       uint32_t offset = index_image.value();
       size_t fixel_index = 0;
       for (auto f = FixelFormat::FixelLoop (index_image) (directions_data); f; ++f, ++fixel_index) {
-        directions[offset + fixel_index] = directions_data.row(1).cast<default_type>();
+        directions[offset + fixel_index] = directions_data.row(1);
         positions[offset + fixel_index] = image_transform.voxel2scanner * vox;
       }
     }
@@ -263,9 +263,9 @@ void run() {
             const value_type distance = std::sqrt (Math::pow2 (positions[fixel][0] - positions[it->first][0]) +
                                                    Math::pow2 (positions[fixel][1] - positions[it->first][1]) +
                                                    Math::pow2 (positions[fixel][2] - positions[it->first][2]));
-            const float smoothing_weight = connectivity * gaussian_const1 * std::exp (-std::pow (distance, 2) / gaussian_const2);
+            const connectivity_value_type smoothing_weight = connectivity * gaussian_const1 * std::exp (-std::pow (distance, 2) / gaussian_const2);
             if (smoothing_weight > 0.01)
-              smoothing_weights[fixel].insert (std::pair<uint32_t, float> (it->first, smoothing_weight));
+              smoothing_weights[fixel].insert (std::pair<uint32_t, connectivity_value_type> (it->first, smoothing_weight));
           }
           // Here we pre-exponentiate each connectivity value by C
           it->second.value = std::pow (connectivity, cfe_c);
@@ -274,7 +274,7 @@ void run() {
       }
       // Make sure the fixel is fully connected to itself
       connectivity_matrix[fixel].insert (std::pair<uint32_t, Stats::CFE::connectivity> (fixel, Stats::CFE::connectivity (1.0)));
-      smoothing_weights[fixel].insert (std::pair<uint32_t, float> (fixel, gaussian_const1));
+      smoothing_weights[fixel].insert (std::pair<uint32_t, connectivity_value_type> (fixel, gaussian_const1));
 
       // Normalise smoothing weights
       value_type sum = 0.0;
@@ -301,35 +301,37 @@ void run() {
 
   // Load input data
   matrix_type data (num_fixels, identifiers.size());
+  data.setZero();
   {
     ProgressBar progress ("loading input images", identifiers.size());
     for (size_t subject = 0; subject < identifiers.size(); subject++) {
       LogLevelLatch log_level (0);
 
-      auto subject_data = Image<float>::open (identifiers[subject]).with_direct_io();
+      auto subject_data = Image<value_type>::open (identifiers[subject]).with_direct_io();
       std::vector<value_type> subject_data_vector (num_fixels, 0.0);
-      for (auto i = Loop (index_image)(index_image); i; ++i) {
+      for (auto i = Loop (index_image, 0, 3)(index_image); i; ++i) {
         index_image.index(3) = 1;
         uint32_t offset = index_image.value();
         uint32_t fixel_index = 0;
-        for (auto f = FixelFormat::FixelLoop (index_image) (subject_data); f; ++f, ++fixel_index)
+        for (auto f = FixelFormat::FixelLoop (index_image) (subject_data); f; ++f, ++fixel_index) {
+          if (!std::isfinite(subject_data.value()))
+            throw Exception ("subject data file " + identifiers[subject] + " contains non-finite value: " + str(subject_data.value()));
           subject_data_vector[offset + fixel_index] = subject_data.value();
+        }
       }
 
       // Smooth the data
       for (size_t fixel = 0; fixel < num_fixels; ++fixel) {
         value_type value = 0.0;
-        std::map<uint32_t, float>::const_iterator it = smoothing_weights[fixel].begin();
-        for (; it != smoothing_weights[fixel].end(); ++it)
+        std::map<uint32_t, connectivity_value_type>::const_iterator it = smoothing_weights[fixel].begin();
+        for (; it != smoothing_weights[fixel].end(); ++it) {
           value += subject_data_vector[it->first] * it->second;
+        }
         data (fixel, subject) = value;
       }
       progress++;
     }
   }
-
-  if (!data.allFinite())
-    throw Exception ("input data contains non-finite value(s)");
 
   {
     ProgressBar progress ("outputting beta coefficients, effect size and standard deviation");

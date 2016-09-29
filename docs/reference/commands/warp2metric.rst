@@ -45,6 +45,11 @@ Standard options
 
 -  **-version** display version information and exit.
 
+References
+^^^^^^^^^^
+
+Raffelt, D.; Tournier, JD/; Smith, RE.; Vaughan, DN.; Jackson, G.; Ridgway, GR. Connelly, A.Investigating White Matter Fibre Density and Morphology using Fixel-Based Analysis. Neuroimage, 2016, 10.1016/j.neuroimage.2016.09.029
+
 --------------
 
 
