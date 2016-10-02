@@ -108,7 +108,7 @@ void run ()
     for (++i; i != missing_nodes.end(); ++i)
       list += ", " + str(*i);
     WARN (list);
-    WARN ("(This may indicate poor parcellation image preparation, use of incorrect config file in labelconfig, or very poor registration)");
+    WARN ("(This may indicate poor parcellation image preparation, use of incorrect or incomplete LUT file(s) in labelconvert, or very poor registration)");
   }
 
   // Are we generating a matrix or a vector?
