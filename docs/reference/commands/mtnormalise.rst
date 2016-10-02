@@ -8,24 +8,21 @@ Synopsis
 
 ::
 
-    mtnormalise [ options ]  wm gm csf wm_out gm_out csf_out
+    mtnormalise [ options ]  input output [ input output ... ]
 
--  *wm*: the white matter compartment (FOD) image
--  *gm*: the grey matter compartment image
--  *csf*: the cerebral spinal fluid comparment image
--  *wm_out*: the output white matter compartment (FOD) image
--  *gm_out*: the output grey matter compartment image
--  *csf_out*: the output cerebral spinal fluid comparment image
+-  *input output*: list of all input and output tissue compartment files. See example usage in the description. Note that any number of tissues can be normalised
 
 Description
 -----------
 
-Globally normalise three tissue (wm, gm, csf) comparments from multi-tissue CSD such that their sum within each voxel is as close to 1 as possible. This involves solving for a single scale factor for each compartment map.
+Multi-tissue normalise. Globally normalise multiple tissue compartments (e.g. WM, GM, CSF) from multi-tissue CSD such that their sum (of their DC terms) within each voxel is as close to a scalar as possible (Default: sqrt(1/(4*pi)). Normalisation is performed by solving for a single scale factor to adjust each tissue type. Example usage: mtnormalise wm.mif wm_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif
 
 Options
 -------
 
 -  **-mask image** define the mask to compute the normalisation within. If not supplied this is estimated automatically
+
+-  **-value number** specify the value to which the summed tissue compartments will be to (Default: sqrt(1/(4*pi) = 0.282)
 
 Standard options
 ^^^^^^^^^^^^^^^^

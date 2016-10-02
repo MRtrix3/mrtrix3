@@ -24,54 +24,65 @@
 using namespace MR;
 using namespace App;
 
-
+#define DEFAULT_NORM_VALUE 0.282094
 
 void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   DESCRIPTION
-  + "Globally normalise three tissue (wm, gm, csf) comparments from multi-tissue CSD "
-    "such that their sum within each voxel is as close to 1 as possible. "
-    "This involves solving for a single scale factor for each compartment map.";
+  + "Multi-tissue normalise. Globally normalise multiple tissue compartments (e.g. WM, GM, CSF) "
+    "from multi-tissue CSD such that their sum (of their DC terms) within each voxel is as close to a scalar as possible "
+    "(Default: sqrt(1/(4*pi)). Normalisation is performed by solving for a single scale factor to adjust each tissue type. \n\n"
+    "Example usage: mtnormalise wm.mif wm_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif";
 
   ARGUMENTS
-  + Argument ("wm", "the white matter compartment (FOD) image").type_image_in()
-  + Argument ("gm", "the grey matter compartment image").type_image_in()
-  + Argument ("csf", "the cerebral spinal fluid comparment image").type_image_in()
-  + Argument ("wm_out", "the output white matter compartment (FOD) image").type_image_out()
-  + Argument ("gm_out", "the output grey matter compartment image").type_image_out()
-  + Argument ("csf_out", "the output cerebral spinal fluid comparment image").type_image_out();
+  + Argument ("input output", "list of all input and output tissue compartment files. See example usage in the description. "
+                              "Note that any number of tissues can be normalised").type_image_in().allow_multiple();
 
   OPTIONS
   + Option ("mask", "define the mask to compute the normalisation within. If not supplied this is estimated automatically")
-    + Argument ("image").type_image_in ();
+    + Argument ("image").type_image_in ()
+  + Option ("value", "specify the value to which the summed tissue compartments will be to (Default: sqrt(1/(4*pi) = " + str(DEFAULT_NORM_VALUE, 3) + ")")
+    + Argument ("number").type_float ();
 }
 
 
 void run ()
 {
-  auto wm = Image<float>::open (argument[0]);
-  auto gm = Image<float>::open (argument[1]);
-  auto csf = Image<float>::open (argument[2]);
 
-  check_dimensions (wm, gm, 0, 3);
-  check_dimensions (csf, gm);
+  if (argument.size() % 2)
+    throw Exception ("The number of input arguments must be even. There must be an output file provided for every input tissue image");
 
-  auto wm_out = Image<float>::create (argument[3], wm);
-  auto gm_out = Image<float>::create (argument[4], gm);
-  auto csf_out = Image<float>::create (argument[5], csf);
+  std::vector<Image<float>> input_images;
+  std::vector<Image<float>> output_images;
 
-  auto wm_dc = Adapter::make<Adapter::Extract1D> (wm, 3, std::vector<int> (1, 0));
+  std::vector<size_t> sh_image_indexes;
+  for (size_t i = 0; i < argument.size(); i += 2) {
+    Header header = Header::open (argument[i]);
+    if (header.ndim() == 4 && header.size(3) > 1) { // assume SH image to extract DC term
+      auto dc = Adapter::make<Adapter::Extract1D> (header.get_image<float>(), 3, std::vector<int> (1, 0));
+      input_images.emplace_back (Image<float>::scratch(dc));
+      threaded_copy_with_progress_message ("loading image", dc, input_images[i / 2]);
+      sh_image_indexes.push_back(i / 2);
+    } else {
+      input_images.emplace_back (Image<float>::open(argument[i]));
+    }
+    if (i)
+      check_dimensions (input_images[0], input_images[i / 2], 0, 3);
+    output_images.emplace_back (Image<float>::create (argument[i + 1], header));
+  }
 
   Image<bool> mask;
   auto opt = get_options("mask");
   if (opt.size()) {
     mask = Image<bool>::open (opt[0][0]);
   } else {
-    auto summed = Image<float>::scratch (gm);
-    for (auto i = Loop (gm) (gm, csf, wm_dc, summed); i; ++i)
-      summed.value() = gm.value() + csf.value() + wm_dc.value();
+    auto summed = Image<float>::scratch (input_images[0]);
+    for (size_t j = 0; j < input_images.size(); ++j) {
+      for (auto i = Loop (summed) (summed, input_images[j]); i; ++i)
+        summed.value() += input_images[j].value();
+    }
     Filter::OptimalThreshold threshold_filter (summed);
     mask = Image<bool>::scratch (threshold_filter);
     threshold_filter (summed, mask);
@@ -82,29 +93,37 @@ void run ()
       num_voxels++;
   }
 
+  const float normalisation_value = get_option_value ("value", DEFAULT_NORM_VALUE);
+
   {
     ProgressBar progress ("normalising tissue compartments...");
-    Eigen::MatrixXf X (num_voxels, 3);
+    Eigen::MatrixXf X (num_voxels, input_images.size());
     Eigen::MatrixXf y (num_voxels, 1);
-    y.setOnes();
+    y.fill (normalisation_value);
     size_t counter = 0;
-    for (auto i = Loop (gm) (gm, csf, wm_dc, mask); i; ++i) {
+    for (auto i = Loop (mask) (mask); i; ++i) {
       if (mask.value()) {
-        X (counter, 0) = gm.value();
-        X (counter, 1) = csf.value();
-        X (counter++, 2) = wm_dc.value();
+        for (size_t j = 0; j < input_images.size(); ++j) {
+          assign_pos_of (mask, 0, 3).to (input_images[j]);
+          X (counter, j) = input_images[j].value();
+        }
+        ++counter;
       }
     }
     progress++;
     Eigen::MatrixXf w = X.jacobiSvd (Eigen::ComputeThinU | Eigen::ComputeThinV).solve(y);
     progress++;
-    for (auto i = Loop (gm) (gm, csf, gm_out, csf_out); i; ++i) {
-      gm_out.value() = gm.value() * w(0,0);
-      csf_out.value() = csf.value() * w(1,0);
+    for (size_t j = 0; j < input_images.size(); ++j) {
+      if (std::find (sh_image_indexes.begin(), sh_image_indexes.end(), j) != sh_image_indexes.end()) {
+        auto input = Image<float>::open (argument[j * 2]);
+        for (auto i = Loop (input) (input, output_images[j]); i; ++i)
+          output_images[j].value() = input.value() *  w(j,0);
+      } else {
+        for (auto i = Loop (input_images[j]) (input_images[j], output_images[j]); i; ++i)
+          output_images[j].value() = input_images[j].value() *  w(j,0);
+      }
+      progress++;
     }
-    progress++;
-    for (auto i = Loop (wm) (wm, wm_out); i; ++i)
-      wm_out.value() = wm.value() * w(2,0);
   }
 }
 
