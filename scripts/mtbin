@@ -70,7 +70,7 @@ for iteration in range(1, max_iterations + 1):
     else:
       files_to_sum.append(f)
   runCommand('mrmath ' + ' '.join(files_to_sum) + ' sum summed.mif -force')
-  runCommand('mrmodelfield ' + summed.mif + ' field.mif -force')
+  runCommand('mrmodelfield summed.mif field.mif -force')
 
   if iteration < max_iterations:
     files_to_bias_correct = input_files
