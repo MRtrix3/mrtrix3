@@ -1,0 +1,88 @@
+#!/usr/bin/env python
+
+import math, os, sys
+import lib.app, lib.cmdlineParser
+
+def abspath(*arg):
+  return os.path.abspath(os.path.join(*arg))
+
+def relpath(*arg):
+  return os.path.relpath(os.path.join(*arg),lib.app.workingDir)
+
+from lib.printMessage  import printMessage
+from lib.errorMessage  import errorMessage
+from lib.getHeaderInfo import getHeaderInfo
+from lib.getUserPath   import getUserPath
+from lib.runCommand    import runCommand
+
+lib.app.author = 'David Raffelt (david.raffelt@florey.edu.au)'
+lib.cmdlineParser.initialise('Multi-Tissue Bias field correction and Intensity Normalisation (MTBIN). This script inputs N number of tissue components '
+                             '(from multi-tissue CSD), and outputs N corrected tissue components. Intensity normalisation is performed using a single global scale factor for each tissue type. '
+                             'Example usage: mtbin wm.mif wm_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif')
+lib.app.parser.add_argument('input_output', nargs='*', help='list of all input and output tissue compartment files. See example usage in the description. '
+                            'Note that any number of tissues can be normalised')
+options = lib.app.parser.add_argument_group('Options for the mtbin script')
+options.add_argument('-mask',  help='define the mask to compute the normalisation within. If not supplied this is estimated automatically')
+options.add_argument('-value', help='specify the value to which the summed tissue compartments will be globally normalised to (Default: sqrt(1/(4*pi) = 0.282)')
+options.add_argument('-iter', default='4', help='bias field correction and intensity normalisation is performed iteratively. Specify the number of iterations (Default: 4)')
+lib.app.parser.add_argument('-bias', help='Output estimated bias field')
+
+
+lib.app.initialise()
+
+masking = ''
+if lib.app.args.mask:
+  masking = '-mask ' + relpath(lib.app.args.mask_dir)
+
+max_iterations = 4
+if lib.app.args.iter:
+  normalise_value = int(lib.app.args.iter)
+
+if (len(lib.app.args.input_output) % 2):
+  errorMessage ("The number of input arguments must be even. There must be an output file provided for every input tissue image")
+
+lib.app.makeTempDir()
+
+input_files = []
+output_files = []
+for i in range(0, len(lib.app.args.input_output)):
+  if i % 2:
+    lib.app.checkOutputFile(lib.app.args.input_output[i])
+    output_files.append(lib.app.args.input_output[i])
+  else:
+    input_files.append(os.path.basename(lib.app.args.input_output[i]))
+    runCommand('cp -r ' + lib.app.args.input_output[i] + ' ' + lib.app.tempDir)
+lib.app.gotoTempDir()
+
+files_to_normalise = input_files
+
+for iteration in range(1, max_iterations + 1):
+  printMessage('iteration: ' + str(iteration))
+  norm_files = ['norm_' + s for s in input_files]
+  runCommand('mtnormalise -force ' + ' '.join([x for t in zip(files_to_normalise, norm_files) for x in t]))
+  files_to_sum = []
+  for f in norm_files:
+    sizes = getHeaderInfo(f, 'size').split()
+    if len(sizes) > 3 and int(sizes[3]) > 1:
+      dc_file_name = 'dc_' + f
+      runCommand('mrconvert -force -coord 3 0 ' + f + ' ' + dc_file_name)
+      files_to_sum.append(dc_file_name)
+    else:
+      files_to_sum.append(f)
+  runCommand('mrmath ' + ' '.join(files_to_sum) + ' sum summed.mif -force')
+  runCommand('mrmodelfield ' + summed.mif + ' field.mif -force')
+
+  if iteration < max_iterations:
+    files_to_bias_correct = input_files
+  else:
+    files_to_bias_correct = norm_files
+
+  bias_corrected_files = ['bias_' + s for s in input_files]
+  for a, b in zip(files_to_bias_correct, bias_corrected_files):
+    runCommand('mrcalc -force ' + a + ' field.mif -divide ' + b)
+  files_to_normalise = bias_corrected_files
+
+for a, b in zip(bias_corrected_files, output_files):
+  runCommand('mrconvert ' + a + ' ' + getUserPath(b, True) + lib.app.mrtrixForce)
+
+lib.app.complete()

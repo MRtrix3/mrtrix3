@@ -78,9 +78,9 @@ void run ()
   if (opt.size()) {
     mask = Image<bool>::open (opt[0][0]);
   } else {
-    auto summed = Image<float>::scratch (input_images[0]);
+    auto summed = Image<float>::scratch (input_images[0], "summed image");
     for (size_t j = 0; j < input_images.size(); ++j) {
-      for (auto i = Loop (summed) (summed, input_images[j]); i; ++i)
+      for (auto i = Loop (summed, 0, 3) (summed, input_images[j]); i; ++i)
         summed.value() += input_images[j].value();
     }
     Filter::OptimalThreshold threshold_filter (summed);
@@ -100,7 +100,7 @@ void run ()
     Eigen::MatrixXf X (num_voxels, input_images.size());
     Eigen::MatrixXf y (num_voxels, 1);
     y.fill (normalisation_value);
-    size_t counter = 0;
+    uint32_t counter = 0;
     for (auto i = Loop (mask) (mask); i; ++i) {
       if (mask.value()) {
         for (size_t j = 0; j < input_images.size(); ++j) {
