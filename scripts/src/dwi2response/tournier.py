@@ -73,7 +73,7 @@ def execute():
     runCommand('mrconvert ' + prefix + 'amps.mif ' + prefix + 'second_peaks.mif -coord 3 1 -axes 0,1,2')
     delFile(prefix + 'amps.mif')
     runCommand('fixel2voxel ' + prefix + 'fixel/directions.mif split_dir ' + prefix + 'all_dirs.mif')
-    delfolder(prefix + 'fixel')
+    delFolder(prefix + 'fixel')
     runCommand('mrconvert ' + prefix + 'all_dirs.mif ' + prefix + 'first_dir.mif -coord 3 0:2')
     delFile(prefix + 'all_dirs.mif')
     # Calculate the 'cost function' Donald derived for selecting single-fibre voxels
