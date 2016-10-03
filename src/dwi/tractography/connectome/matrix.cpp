@@ -45,23 +45,31 @@ bool Matrix::operator() (const Mapped_track_nodepair& in)
   assert (in.get_second_node() < data.rows());
   assert (assignments_lists.empty());
   if (is_vector()) {
-    apply (data (0, in.get_first_node()), in.get_factor(), in.get_weight());
-    counts (0, in.get_first_node()) += in.get_weight();
+    assert (assignments_pairs.empty());
     apply (data (0, in.get_second_node()), in.get_factor(), in.get_weight());
     counts (0, in.get_second_node()) += in.get_weight();
+    if (in.get_track_index() == assignments_single.size()) {
+      assignments_single.push_back (in.get_second_node());
+    } else if (in.get_track_index() < assignments_single.size()) {
+      assignments_single[in.get_track_index()] = in.get_second_node();
+    } else {
+      assignments_single.resize (in.get_track_index() + 1, 0);
+      assignments_single[in.get_track_index()] = in.get_second_node();
+    }
   } else {
+    assert (assignments_singles.empty());
     const node_t row    = std::min (in.get_first_node(), in.get_second_node());
     const node_t column = std::max (in.get_first_node(), in.get_second_node());
     apply (data (row, column), in.get_factor(), in.get_weight());
     counts (row, column) += in.get_weight();
-  }
-  if (in.get_track_index() == assignments_pairs.size()) {
-    assignments_pairs.push_back (in.get_nodes());
-  } else if (in.get_track_index() < assignments_pairs.size()) {
-    assignments_pairs[in.get_track_index()] = in.get_nodes();
-  } else {
-    assignments_pairs.resize (in.get_track_index() + 1, std::make_pair<size_t, size_t> (0, 0));
-    assignments_pairs[in.get_track_index()] = in.get_nodes();
+    if (in.get_track_index() == assignments_pairs.size()) {
+      assignments_pairs.push_back (in.get_nodes());
+    } else if (in.get_track_index() < assignments_pairs.size()) {
+      assignments_pairs[in.get_track_index()] = in.get_nodes();
+    } else {
+      assignments_pairs.resize (in.get_track_index() + 1, std::make_pair<size_t, size_t> (0, 0));
+      assignments_pairs[in.get_track_index()] = in.get_nodes();
+    }
   }
   return true;
 }
@@ -70,6 +78,7 @@ bool Matrix::operator() (const Mapped_track_nodepair& in)
 
 bool Matrix::operator() (const Mapped_track_nodelist& in)
 {
+  assert (assignments_single.empty());
   assert (assignments_pairs.empty());
   std::vector<node_t> list (in.get_nodes());
   for (std::vector<node_t>::const_iterator i = list.begin(); i != list.end(); ++i) {
@@ -172,6 +181,11 @@ void Matrix::remove_unassigned()
 
 void Matrix::error_check (const std::set<node_t>& missing_nodes)
 {
+  // Don't bother looking for empty nodes if we're generating a
+  //   connectivity vector from a seed region rather than a
+  //   connectome from a whole-brain tractogram
+  if (counts.rows() == 1)
+    return;
   std::vector<default_type> node_counts (data.cols(), 0);
   for (node_t i = 0; i != counts.rows(); ++i) {
     for (node_t j = i; j != counts.cols(); ++j) {
@@ -199,6 +213,8 @@ void Matrix::error_check (const std::set<node_t>& missing_nodes)
 void Matrix::write_assignments (const std::string& path) const
 {
   File::OFStream stream (path);
+  for (auto i = assignments_single.begin(); i != assignments_single.end(); ++i)
+    stream << str(*i) << "\n";
   for (auto i = assignments_pairs.begin(); i != assignments_pairs.end(); ++i)
     stream << str(i->first) << " " << str(i->second) << "\n";
   for (auto i = assignments_lists.begin(); i != assignments_lists.end(); ++i) {
