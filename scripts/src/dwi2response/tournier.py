@@ -12,9 +12,9 @@ def initParser(subparsers, base_parser):
   options.add_argument('-max_iters', type=int, default=10, help='Maximum number of iterations')
   parser.set_defaults(algorithm='tournier')
   parser.set_defaults(single_shell=True)
-  
-  
-  
+
+
+
 def checkOutputFiles():
   import lib.app
   lib.app.checkOutputFile(lib.app.args.output)
@@ -29,12 +29,12 @@ def getInputFiles():
 def execute():
   import os, shutil
   import lib.app
-  from lib.delFile      import delFile
+  from lib.delFile      import delFile, delFolder
   from lib.getImageStat import getImageStat
   from lib.getUserPath  import getUserPath
   from lib.printMessage import printMessage
   from lib.runCommand   import runCommand
-  
+
   lmax_option = ''
   if lib.app.args.lmax:
     lmax_option = ' -lmax ' + lib.app.args.lmax
@@ -46,7 +46,7 @@ def execute():
 
   for iteration in range(0, lib.app.args.max_iters):
     prefix = 'iter' + str(iteration) + '_'
-  
+
     if iteration == 0:
       RF_in_path = 'init_RF.txt'
       mask_in_path = 'mask.mif'
@@ -112,6 +112,5 @@ def execute():
     printMessage('Exiting after maximum ' + str(lib.app.args.max_iters) + ' iterations')
     shutil.copyfile('iter' + str(lib.app.args.max_iters-1) + '_RF.txt', 'response.txt')
     shutil.move('iter' + str(lib.app.args.max_iters-1) + '_SF.mif', 'voxels.mif')
-    
-  shutil.copyfile('response.txt', getUserPath(lib.app.args.output, False))
 
+  shutil.copyfile('response.txt', getUserPath(lib.app.args.output, False))
