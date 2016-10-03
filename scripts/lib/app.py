@@ -24,6 +24,7 @@ tempDir = ''
 verbosity = 1
 workingDir = ''
 
+clearLine = ''
 colourClear = ''
 colourConsole = ''
 colourDebug = ''
@@ -78,6 +79,7 @@ def initialise():
     # Windows now also gets coloured text terminal support, so make this the default
     use_colour = True
   if use_colour:
+    clearLine = '\033[0K'
     colourClear = '\033[0m'
     colourConsole = '\033[03;36m'
     colourDebug = '\033[03;34m'
