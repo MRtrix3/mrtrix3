@@ -27,7 +27,7 @@ Options for the mtbin script
 
 - **-value** specify the value to which the summed tissue compartments will be globally normalised to (Default: sqrt(1/(4*pi) = 0.282)
 
-- **-iter** bias field correction and intensity normalisation is performed iteratively. Specify the number of iterations (Default: 5)
+- **-iter** bias field correction and intensity normalisation is performed iteratively. Specify the number of iterations (Default: 4)
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -49,6 +49,11 @@ Standard options
 - **-verbose** Display additional information and progress for every command invoked
 
 - **-debug** Display additional debugging information over and above the verbose output
+
+optional arguments
+^^^^^^^^^^^^^^^^^^
+
+- **-bias** Output estimated bias field
 
 --------------
 

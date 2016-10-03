@@ -55,7 +55,8 @@ void run ()
     throw Exception ("The number of input arguments must be even. There must be an output file provided for every input tissue image");
 
   std::vector<Image<float>> input_images;
-  std::vector<Image<float>> output_images;
+  std::vector<Header> output_headers;
+  std::vector<std::string> output_filenames;
 
   std::vector<size_t> sh_image_indexes;
   for (size_t i = 0; i < argument.size(); i += 2) {
@@ -64,13 +65,15 @@ void run ()
       auto dc = Adapter::make<Adapter::Extract1D> (header.get_image<float>(), 3, std::vector<int> (1, 0));
       input_images.emplace_back (Image<float>::scratch(dc));
       threaded_copy_with_progress_message ("loading image", dc, input_images[i / 2]);
-      sh_image_indexes.push_back(i / 2);
+      sh_image_indexes.push_back (i / 2);
     } else {
       input_images.emplace_back (Image<float>::open(argument[i]));
     }
     if (i)
       check_dimensions (input_images[0], input_images[i / 2], 0, 3);
-    output_images.emplace_back (Image<float>::create (argument[i + 1], header));
+    // we can't create the image yet if we want to put the scale factor into the output header
+    output_filenames.push_back (argument[i + 1]);
+    output_headers.emplace_back (header);
   }
 
   Image<bool> mask;
@@ -114,13 +117,19 @@ void run ()
     Eigen::MatrixXf w = X.jacobiSvd (Eigen::ComputeThinU | Eigen::ComputeThinV).solve(y);
     progress++;
     for (size_t j = 0; j < input_images.size(); ++j) {
+      float scale_factor = w(j,0);
+      // If scale factor already present, we accumulate (for use in mtbin script)
+      if (input_images[j].keyval().count("normalisation_scale_factor"))
+        scale_factor *= std::stof(input_images[j].keyval().at("normalisation_scale_factor"));
+      output_headers[j].keyval()["normalisation_scale_factor"] = str(scale_factor);
+      auto output_image = Image<float>::create (output_filenames[j], output_headers[j]);
       if (std::find (sh_image_indexes.begin(), sh_image_indexes.end(), j) != sh_image_indexes.end()) {
         auto input = Image<float>::open (argument[j * 2]);
-        for (auto i = Loop (input) (input, output_images[j]); i; ++i)
-          output_images[j].value() = input.value() *  w(j,0);
+        for (auto i = Loop (input) (input, output_image); i; ++i)
+          output_image.value() = input.value() * w(j,0);
       } else {
-        for (auto i = Loop (input_images[j]) (input_images[j], output_images[j]); i; ++i)
-          output_images[j].value() = input_images[j].value() *  w(j,0);
+        for (auto i = Loop (input_images[j]) (input_images[j], output_image); i; ++i)
+          output_image.value() = input_images[j].value() * w(j,0);
       }
       progress++;
     }
