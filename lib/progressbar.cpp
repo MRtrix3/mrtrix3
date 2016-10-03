@@ -16,11 +16,8 @@
 #include "app.h"
 #include "progressbar.h"
 
-#ifdef MRTRIX_WINDOWS
-# define CLEAR_LINE_CODE 
-#else
-# define CLEAR_LINE_CODE "\033[0K"
-#endif
+// MSYS2 supports VT100, and file redirection is handled explicitly so this can be used globally
+#define CLEAR_LINE_CODE "\033[0K"
 
 namespace MR
 {
