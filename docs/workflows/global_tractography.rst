@@ -79,8 +79,8 @@ increased computation time.
 
 Particle potential ``-ppot``: The particle potential essentially
 associates a *cost* to each particle, relative to its weight. As such,
-we are in fact trying to reconstruct the data as good as possible, with
-as little particles as needed. This ensures that there is sufficient
+we are in fact trying to reconstruct the data as well as possible, with
+as few particles as needed. This ensures that there is sufficient
 *proof* for each individual particle, and hence avoids that a bit of
 noise in the data spurs generation of new (random) particles. Think of
 it as a parameter that balances sensitivity versus specificity. A higher
