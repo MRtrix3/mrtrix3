@@ -40,7 +40,7 @@ The :code:`dwipreproc` script is provided for performing general pre-processing 
 
 Usage of this script varies depending on the specific nature of the DWI acquisition with respect to EPI phase encoding - full details are available within the :ref:`dwipreproc` help file. Here, only a simple example is provided, where a single DWI series is acquired where all volumes have an anterior-posterior (A>>P) phase encoding direction::
 
-  dwipreproc AP <input_dwi> <output_dwi> -rpe_none
+  dwipreproc <input_dwi> <output_dwi> -pe_dir AP -rpe_none
 
 
 3. Estimate a brain mask
