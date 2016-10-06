@@ -60,6 +60,7 @@ namespace MR
               Vertex v = in.vert(i);
               v = transform.scanner2image * v;
               v[0] = ((header.size(0)-1) * header.spacing(0)) - v[0];
+              vertices.push_back (std::move (v));
             }
             if (in.have_normals()) {
               for (size_t i = 0; i != V; ++i) {
