@@ -197,7 +197,7 @@ namespace MR
                 Image<default_type> im2_deform_field = Image<default_type>::scratch (field_header);
 
                 if (iteration > 1) {
-                  DEBUG ("updating displacement field field");
+                  DEBUG ("updating displacement field");
                   Warp::update_displacement_scaling_and_squaring (*im1_to_mid, *im1_update, *im1_to_mid_new, grad_step_altered);
                   Warp::update_displacement_scaling_and_squaring (*im2_to_mid, *im2_update, *im2_to_mid_new, grad_step_altered);
 

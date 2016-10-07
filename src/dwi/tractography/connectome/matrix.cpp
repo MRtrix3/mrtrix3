@@ -57,7 +57,7 @@ bool Matrix::operator() (const Mapped_track_nodepair& in)
       assignments_single[in.get_track_index()] = in.get_second_node();
     }
   } else {
-    assert (assignments_singles.empty());
+    assert (assignments_single.empty());
     const node_t row    = std::min (in.get_first_node(), in.get_second_node());
     const node_t column = std::max (in.get_first_node(), in.get_second_node());
     apply (data (row, column), in.get_factor(), in.get_weight());
