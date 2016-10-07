@@ -416,12 +416,13 @@ void run ()
       case 2:  kernel.reset (new ImageKernel<Sum>     (header)); break;
       case 3:  kernel.reset (new ImageKernel<Product> (header)); break;
       case 4:  kernel.reset (new ImageKernel<RMS>     (header)); break;
-      case 5:  kernel.reset (new ImageKernel<Var>     (header)); break;
-      case 6:  kernel.reset (new ImageKernel<Std>     (header)); break;
-      case 7:  kernel.reset (new ImageKernel<Min>     (header)); break;
-      case 8:  kernel.reset (new ImageKernel<Max>     (header)); break;
-      case 9:  kernel.reset (new ImageKernel<AbsMax>  (header)); break;
-      case 10: kernel.reset (new ImageKernel<MagMax>  (header)); break;
+      case 5:  kernel.reset (new ImageKernel<NORM2>   (header)); break;
+      case 6:  kernel.reset (new ImageKernel<Var>     (header)); break;
+      case 7:  kernel.reset (new ImageKernel<Std>     (header)); break;
+      case 8:  kernel.reset (new ImageKernel<Min>     (header)); break;
+      case 9:  kernel.reset (new ImageKernel<Max>     (header)); break;
+      case 10:  kernel.reset (new ImageKernel<AbsMax>  (header)); break;
+      case 11: kernel.reset (new ImageKernel<MagMax>  (header)); break;
       default: assert (0);
     }
 
