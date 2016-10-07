@@ -111,6 +111,8 @@ void run ()
 
   Transform transform (H);
   const bool scanner = get_options ("scanner").size();
+  if (scanner && H.ndim() < 3)
+    throw Exception ("Cannot specify scanner-space coordinates if image has less than 3 dimensions");
 
   size_t operation_count = 0;
 
@@ -185,11 +187,23 @@ void run ()
     const float value = v[1];
     if (position.size() != H.ndim())
       throw Exception ("Image has " + str(H.ndim()) + " dimensions, but -voxel option position " + std::string(v[0]) + " provides only " + str(position.size()) + " coordinates");
-    Eigen::Vector3 p (position[0], position[1], position[2]);
-    if (scanner)
+    if (scanner) {
+      Eigen::Vector3 p (position[0], position[1], position[2]);
       p = transform.scanner2voxel * p;
-    const Vox voxel (p);
-    assign_pos_of (voxel).to (out);
+      const Vox voxel (p);
+      assign_pos_of (voxel).to (out);
+      for (size_t axis = 3; axis != out.ndim(); ++axis) {
+        if (std::round (position[axis]) != position[axis])
+          throw Exception ("Non-spatial coordinates provided using -voxel option must be provided as integers");
+        out.index(axis) = position[axis];
+      }
+    } else {
+      for (size_t axis = 0; axis != out.ndim(); ++axis) {
+        if (std::round (position[axis]) != position[axis])
+          throw Exception ("Voxel coordinates provided using -voxel option must be provided as integers");
+        out.index(axis) = position[axis];
+      }
+    }
     out.value() = value;
   }
 
