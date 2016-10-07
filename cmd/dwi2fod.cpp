@@ -78,7 +78,6 @@ void usage ()
     "Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data "
     "NeuroImage, 2014, 103, 411-426"
 
-    // TODO Explicit sd algorithm?
     + "Tournier, J.-D.; Calamante, F., Gadian, D.G. & Connelly, A. " // Internal
     "Direct estimation of the fiber orientation density function from "
     "diffusion-weighted MRI data using spherical deconvolution."
