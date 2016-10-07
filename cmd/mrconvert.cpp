@@ -224,6 +224,9 @@ void run ()
       if (pos[axis].size())
         throw Exception ("\"coord\" option specified twice for axis " + str (axis));
       pos[axis] = parse_ints (opt[n][1], header_in.size(axis)-1);
+      auto minval = std::min_element(std::begin(pos[axis]), std::end(pos[axis]));
+      if (*minval < 0)
+        throw Exception ("coordinate position " + str(*minval) + " for axis " + str(axis) + " provided with -coord option is negative");
       auto maxval = std::max_element(std::begin(pos[axis]), std::end(pos[axis]));
       if (*maxval >= header_in.size(axis))
         throw Exception ("coordinate position " + str(*maxval) + " for axis " + str(axis) + " provided with -coord option is out of range of input image");
