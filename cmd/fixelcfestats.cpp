@@ -29,7 +29,6 @@
 #include "stats/enhance.h"
 #include "stats/permtest.h"
 #include "dwi/tractography/file.h"
-#include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/mapping/writer.h"
@@ -123,7 +122,6 @@ void write_fixel_output (const std::string& filename,
                          const VectorType& data,
                          const Header& header)
 {
-  assert (data.size() == header.size(0));
   auto output = Image<float>::create (filename, header);
   for (uint32_t i = 0; i < data.size(); ++i) {
     output.index(0) = i;
