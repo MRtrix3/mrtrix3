@@ -57,16 +57,32 @@ namespace MR
 
 
           float get_relative_threshold_lower (FixelValue& fixel_value) const {
-            float factor = (lessthan - value_min)/(value_max - value_min);
 
-            return (1 - factor) * fixel_value.value_min + factor * fixel_value.value_max;
+            float relative_min = std::numeric_limits<float>::max();
+
+            // Find min value based relative to lower-thresholded fixels
+            for(size_t i = 0, N = buffer_store.size(); i < N; ++i) {
+              if (buffer_store[i] > lessthan)
+                relative_min = std::min(relative_min, fixel_value.buffer_store[i]);
+            }
+
+            // Clamp our value to windowing
+            return std::max(relative_min, fixel_value.current_min);
           }
 
 
           float get_relative_threshold_upper (FixelValue& fixel_value) const {
-            float factor = (greaterthan - value_min)/(value_max - value_min);
 
-            return (1 - factor) * fixel_value.value_min + factor * fixel_value.value_max;
+            float relative_max = std::numeric_limits<float>::min();
+
+            // Find max value based relative to upper-thresholded fixels
+            for(size_t i = 0, N = buffer_store.size(); i < N; ++i) {
+              if (buffer_store[i] < greaterthan)
+                relative_max = std::max(relative_max, fixel_value.buffer_store[i]);
+            }
+
+            // Clamp our value to windowing
+            return std::min(relative_max, fixel_value.current_max);
           }
 
         };
