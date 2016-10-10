@@ -95,6 +95,7 @@ void run ()
     threshold_filter (input, mask);
   }
 
+
   size_t num_voxels = 0;
   for (auto i = Loop (mask) (mask); i; ++i) {
     if (mask.value())
@@ -104,7 +105,6 @@ void run ()
   Eigen::MatrixXf X (num_voxels, 18);
   Eigen::VectorXf y (num_voxels);
   y.setOnes();
-
 
   {
     ProgressBar progress ("fitting model...");
@@ -120,7 +120,7 @@ void run ()
     }
     progress++;
 
-    Eigen::VectorXf w = X.jacobiSvd (Eigen::ComputeThinU | Eigen::ComputeThinV).solve(y);
+    Eigen::VectorXf w = X.colPivHouseholderQr().solve(y);
 
     progress++;
     for (auto i = Loop (output) (output); i; ++i) {
