@@ -119,8 +119,6 @@ bool SceneModeller::nearestTissue( const Eigen::Vector3d& point,
 
     // increasing the stride until the nearest mesh tissue is found
     Eigen::Vector3i thisVoxel;
-    Intersection newIntersection;
-
     int32_t stride = 1;
     while ( intersection._tissue == 0 )
     {
@@ -141,12 +139,12 @@ bool SceneModeller::nearestTissue( const Eigen::Vector3d& point,
                 auto t = tissues.begin(), te = tissues.end();
                 while ( t != te )
                 {
+                  Intersection newIntersection;
                   intersectionAtVoxel( point, thisVoxel, *t, newIntersection );
                   if ( newIntersection._arcLength < intersection._arcLength )
                   {
                     // updating distance / tissue / polygon / projection point
                     intersection = newIntersection;
-                    intersection._tissue = *t;
                   }
                   ++ t;
                 }
@@ -269,7 +267,7 @@ double SceneModeller::pointToTriangleDistance(
   normal.normalize();
   double t = normal.dot( vertex1 - point );
   projectionPoint = point + normal * t;
-  // checking if the projection point is either inside the triangle or the edge
+  // checking if the projection point is inside the triangle or on the edge
   if ( ( ( ( projectionPoint - vertex1 ).cross( v12 ) ).
                                                dot( v13.cross( v12 ) ) >= 0 ) &&
        ( ( ( projectionPoint - vertex2 ).cross( v23 ) ).
@@ -285,13 +283,10 @@ double SceneModeller::pointToTriangleDistance(
     // case: the projection point is outside the triangle -> comparing the
     // distances between the projection point and each line segment defined
     // by the vertices
-    double pointToSegmentDistance = std::min( std::min(
+    distance = std::min( std::min(
                         pointToLineSegmentDistance( point, vertex1, vertex2 ),
                         pointToLineSegmentDistance( point, vertex2, vertex3 ) ),
                         pointToLineSegmentDistance( point, vertex3, vertex1 ) );
-    distance = std::sqrt( ( point - projectionPoint ).dot(
-                            point - projectionPoint ) +
-                            pointToSegmentDistance * pointToSegmentDistance );
   }
   if ( distance < 0 )
   {
