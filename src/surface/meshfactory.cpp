@@ -34,9 +34,8 @@ MeshFactory::~MeshFactory()
 }
 
 
-std::unique_ptr< Mesh >
-MeshFactory::box( const Eigen::Vector3d& lowerPoint,
-                  const Eigen::Vector3d& upperPoint ) const
+Mesh MeshFactory::box( const Eigen::Vector3d& lowerPoint,
+                       const Eigen::Vector3d& upperPoint ) const
 {
   VertexList vertices;
   vertices.push_back( Eigen::Vector3d( lowerPoint[ 0 ], lowerPoint[ 1 ], lowerPoint[ 2 ] ) );
@@ -62,16 +61,16 @@ MeshFactory::box( const Eigen::Vector3d& lowerPoint,
   triangles.push_back( std::vector< size_t >{ 2, 3, 1 } );
   triangles.push_back( std::vector< size_t >{ 0, 2, 1 } );
 
-  std::unique_ptr< Mesh > mesh( new Mesh() );
-  mesh->load( vertices, triangles );
+  Mesh mesh;
+  mesh.load( vertices, triangles );
   return mesh;
 }
 
 
-std::unique_ptr< Mesh >
-MeshFactory::sphere( const Eigen::Vector3d& centre, const double& radius ) const
+Mesh MeshFactory::sphere( const Eigen::Vector3d& centre,
+                          const double& radius,
+                          const size_t& level ) const
 {
-
   VertexList vertices;
 
   // create 12 vertices of a icosahedron
@@ -120,19 +119,99 @@ MeshFactory::sphere( const Eigen::Vector3d& centre, const double& radius ) const
   triangles.push_back( std::vector< size_t >{  8,  6,  7 } );
   triangles.push_back( std::vector< size_t >{  9,  8,  1 } );
 
-  /*
-   * can increase mesh resolution by
-   * a) looping over triangles
-   * b) get midpoints of three edges
-   * c) get the centre points of the triange
-   * d) refine vertices
-   * e) add 4 new sub-triangles per triangle
-   */
+  Mesh mesh;
+  mesh.load( vertices, triangles );
 
-  std::unique_ptr< Mesh > mesh( new Mesh() );
-  mesh->load( vertices, triangles );
+  if ( level )
+  {
+    // WIP : THIS DOES NOT WORK YET!!!
+    /*
+     * can increase mesh resolution by
+     * a) looping over triangles
+     * b) get midpoints of three edges
+     * c) get the centre points of the triange
+     * d) refine vertices
+     * e) add 4 new sub-triangles per triangle
+     */
+    size_t offset = mesh.num_vertices();
+    VertexList newVertices;
+    TriangleList newTriangles;
+    for ( size_t i = 0; i < level; i++ )
+    {
+      for ( auto t = triangles.begin(); t != triangles.end(); ++ t )
+      {
+        Eigen::Vector3d mid12 = ( mesh.vert( ( *t )[ 0 ] ) + 
+                                  mesh.vert( ( *t )[ 1 ] ) ) / 2.0;
+        uint32_t new_v12 = offset + 1;
+
+        Eigen::Vector3d mid23 = ( mesh.vert( ( *t )[ 1 ] ) + 
+                                  mesh.vert( ( *t )[ 2 ] ) ) / 2.0;
+        uint32_t new_v23 = offset + 2;
+
+        Eigen::Vector3d mid31 = ( mesh.vert( ( *t )[ 2 ] ) + 
+                                  mesh.vert( ( *t )[ 0 ] ) ) / 2.0;
+        uint32_t new_v31 = offset + 3;
+
+        newVertices.push_back( mid12 );
+        newVertices.push_back( mid23 );
+        newVertices.push_back( mid31 );
+
+        newTriangles.push_back( std::vector< size_t >{ ( *t )[ 0 ], new_v12, new_v31 } );
+        newTriangles.push_back( std::vector< size_t >{ ( *t )[ 1 ], new_v23, new_v12 } );
+        newTriangles.push_back( std::vector< size_t >{ ( *t )[ 2 ], new_v31, new_v23 } );
+        newTriangles.push_back( std::vector< size_t >{ new_v12, new_v23, new_v31 } );
+
+        offset += 3;
+      }
+      for ( auto v = newVertices.begin(); v != newVertices.end(); ++ v )
+      {
+        vertices.push_back( *v );
+      }
+      for ( auto t = newTriangles.begin(); t != newTriangles.end(); ++ t )
+      {
+        triangles.push_back( *t );
+      }
+      mesh.load( vertices, triangles );
+    }
+  }
   return mesh;
+}
 
+
+Mesh MeshFactory::concatenate( const std::vector< Mesh >& meshes ) const
+{
+  Surface::VertexList vertices;
+  Surface::TriangleList triangles;
+
+  size_t offset = 0;
+  for ( size_t m = 0; m < meshes.size(); m++ )
+  {
+    Surface::Mesh thisMesh = meshes[ m ];
+    auto v = thisMesh.get_vertices().begin(),
+         ve = thisMesh.get_vertices().end();
+    while ( v != ve )
+    {
+      vertices.push_back( *v );
+      ++ v;
+    }
+    auto t = thisMesh.get_triangles().begin(),
+         te = thisMesh.get_triangles().end();
+    while ( t != te )
+    {
+      Surface::Triangle triangle{ *t };
+      for ( size_t p = 0; p < 3; p++ )
+      {
+        triangle[ p ] += offset;
+      }
+      triangles.push_back( triangle );
+      ++ t;
+    }
+    offset += thisMesh.num_vertices();
+  }
+
+  Mesh mesh;
+  mesh.load( vertices, triangles );
+  return mesh;
 }
 
 

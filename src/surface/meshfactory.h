@@ -50,11 +50,13 @@ class MeshFactory : public Singleton< MeshFactory >
 
     ~MeshFactory();
 
-    std::unique_ptr< Mesh > box( const Eigen::Vector3d& lowerPoint,
-                                 const Eigen::Vector3d& upperPoint ) const;
+    Mesh box( const Eigen::Vector3d& lowerPoint,
+              const Eigen::Vector3d& upperPoint ) const;
 
-    std::unique_ptr< Mesh > sphere( const Eigen::Vector3d& centre,
-                                    const double& radius ) const;
+    Mesh sphere( const Eigen::Vector3d& centre, const double& radius,
+                 const size_t& level = 0 ) const;
+
+    Mesh concatenate( const std::vector< Mesh >& meshes ) const;
 
   protected:
   
