@@ -198,7 +198,7 @@ Mesh MeshFactory::concatenate( const std::vector< Mesh >& meshes ) const
          te = thisMesh.get_triangles().end();
     while ( t != te )
     {
-      Surface::Triangle triangle{ *t };
+      Surface::Triangle triangle( *t );
       for ( size_t p = 0; p < 3; p++ )
       {
         triangle[ p ] += offset;
