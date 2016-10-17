@@ -130,7 +130,7 @@ namespace MR
 
           if (fields.size()) {
             if (!count)
-              return;
+              throw Exception ("Cannot output statistic of interest; no values read (empty mask?)");
             for (size_t n = 0; n < fields.size(); ++n) {
               if (fields[n] == "mean") std::cout << str(mean) << " ";
               else if (fields[n] == "median") std::cout << Math::median (values) << " ";
