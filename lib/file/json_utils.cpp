@@ -14,12 +14,15 @@
  */
 
 #include <fstream>
+#include <vector>
 
 #include "file/json_utils.h"
+#include "file/nifti_utils.h"
 
 #include "exception.h"
 #include "header.h"
 #include "mrtrix.h"
+#include "phase_encoding.h"
 #include "file/ofstream.h"
 
 namespace MR
@@ -68,8 +71,28 @@ namespace MR
       void save (const Header& H, const std::string& path)
       {
         nlohmann::json json;
-        for (const auto& kv : H.keyval())
-          json[kv.first] = kv.second;
+        auto pe_scheme = PhaseEncoding::get_scheme (H);
+        std::vector<size_t> order;
+        File::NIfTI::adjust_transform (H, order);
+        if (pe_scheme.rows() && (order[0] != 0 || order[1] != 1 || order[2] != 2 || H.stride(0) < 0 || H.stride(1) < 0 || H.stride(2) < 0)) {
+          // Assume that image being written to disk is going to have its transform adjusted,
+          //   so modify the phase encoding scheme appropriately before writing to JSON
+          for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
+            auto new_line = pe_scheme.row (row);
+            for (ssize_t axis = 0; axis != 3; ++axis)
+              new_line[axis] = H.stride (order[axis]) > 0 ? pe_scheme(row, order[axis]) : -pe_scheme(row, order[axis]);
+            pe_scheme.row (row) = new_line;
+          }
+          Header H_adj (H);
+          PhaseEncoding::set_scheme (H_adj, pe_scheme);
+          for (const auto& kv : H_adj.keyval())
+            json[kv.first] = kv.second;
+          INFO ("Phase encoding information written to JSON file modified according to expected header transform realignment");
+        } else {
+          // Straight copy
+          for (const auto& kv : H.keyval())
+            json[kv.first] = kv.second;
+        }
         File::OFStream out (path);
         out << json.dump(4);
       }

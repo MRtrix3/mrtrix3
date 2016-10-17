@@ -492,17 +492,19 @@ namespace MR
     //   header, it's necessary here to update it according to the
     //   flips / permutations that have taken place
     auto pe_scheme = PhaseEncoding::get_scheme (*this);
-    if (!pe_scheme.rows()) return;
-    for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
-      Eigen::VectorXd new_line (pe_scheme.row (row));
-      for (ssize_t axis = 0; axis != 3; ++axis) {
-        new_line[axis] = pe_scheme(row, perm[axis]);
-        if (new_line[axis] && flip[axis])
-          new_line[axis] = -new_line[axis];
+    if (pe_scheme.rows()) {
+      for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
+        Eigen::VectorXd new_line (pe_scheme.row (row));
+        for (ssize_t axis = 0; axis != 3; ++axis) {
+          new_line[axis] = pe_scheme(row, perm[axis]);
+          if (new_line[axis] && flip[axis])
+            new_line[axis] = -new_line[axis];
+        }
+        pe_scheme.row (row) = new_line;
       }
-      pe_scheme.row (row) = new_line;
+      PhaseEncoding::set_scheme (*this, pe_scheme);
+      INFO ("Phase encoding scheme has been modified according to internal header transform realignment");
     }
-    PhaseEncoding::set_scheme (*this, pe_scheme);
   }
 
 
