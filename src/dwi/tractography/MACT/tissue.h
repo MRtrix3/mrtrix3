@@ -19,7 +19,6 @@
 
 
 #include "dwi/tractography/MACT/polygonlut.h"
-#include "surface/annotation.h"
 
 
 namespace MR
