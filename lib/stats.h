@@ -129,8 +129,14 @@ namespace MR
           std::sort (values.begin(), values.end());
 
           if (fields.size()) {
-            if (!count)
-              throw Exception ("Cannot output statistic of interest; no values read (empty mask?)");
+            if (!count) {
+              if (fields.size() == 1 && fields.front() == "count") {
+                std::cout << "0\n";
+                return;
+              } else {
+                throw Exception ("Cannot output statistic of interest; no values read (empty mask?)");
+              }
+            }
             for (size_t n = 0; n < fields.size(); ++n) {
               if (fields[n] == "mean") std::cout << str(mean) << " ";
               else if (fields[n] == "median") std::cout << Math::median (values) << " ";
