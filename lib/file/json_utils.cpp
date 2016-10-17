@@ -64,6 +64,23 @@ namespace MR
           }
 
         }
+
+        auto pe_scheme = PhaseEncoding::get_scheme (H);
+        std::vector<size_t> order;
+        File::NIfTI::adjust_transform (H, order);
+        if (pe_scheme.rows() && (order[0] != 0 || order[1] != 1 || order[2] != 2 || H.stride(0) < 0 || H.stride(1) < 0 || H.stride(2) < 0)) {
+          // The corresponding header may have been rotated on image load prior to the JSON
+          //   being loaded. If this is the case, the phase encoding scheme will need to be
+          //   correspondingly rotated on import.
+          for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
+            auto new_line = pe_scheme.row (row);
+            for (ssize_t axis = 0; axis != 3; ++axis)
+              new_line[order[axis]] = H.stride (order[axis]) > 0 ? pe_scheme(row,axis) : -pe_scheme(row,axis);
+            pe_scheme.row (row) = new_line;
+          }
+          PhaseEncoding::set_scheme (H, pe_scheme);
+          INFO ("Phase encoding information read from JSON file modified according to expected header transform realignment");
+        }
       }
 
 
