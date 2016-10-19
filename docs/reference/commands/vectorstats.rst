@@ -28,7 +28,9 @@ Options for permutation testing
 
 -  **-notest** don't perform permutation testing and only output population statistics (effect size, stdev etc)
 
--  **-nperms num** the number of permutations (Default: 5000)
+-  **-nperms** the number of permutations (Default: 5000)
+
+-  **-permutations num** manually define the permutations (relabelling). The input should be a text file defining a m x n matrix, where each relabelling is defined as a column vector of size    m, and the number of columns, n, defines the number of permutations. Can be generated with the palm_quickperms function in PALM (http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM)
 
 Standard options
 ^^^^^^^^^^^^^^^^

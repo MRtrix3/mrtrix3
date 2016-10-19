@@ -153,6 +153,8 @@ List of MRtrix3 commands
 
    commands/tck2connectome
 
+   commands/tck2fixel
+
    commands/tckconvert
 
    commands/tckedit

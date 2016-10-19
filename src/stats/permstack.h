@@ -43,6 +43,8 @@ namespace MR
         public:
           PermutationStack (const size_t num_permutations, const size_t num_samples, const std::string msg, const bool include_default = true);
 
+          PermutationStack (std::vector <std::vector<size_t> >& permutations, const size_t num_samples, const std::string msg, const bool include_default = true);
+
           bool operator() (Permutation&);
 
           const std::vector<size_t>& operator[] (size_t index) const {
