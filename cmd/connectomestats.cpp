@@ -166,7 +166,7 @@ void run()
       throw Exception ("Unknown enhancement algorithm");
   }
 
-  const size_t num_perms = get_option_value ("nperms", DEFAULT_NUMBER_PERMUTATIONS);
+  size_t num_perms = get_option_value ("nperms", DEFAULT_NUMBER_PERMUTATIONS);
   const bool do_nonstationary_adjustment = get_options ("nonstationary").size();
   const size_t nperms_nonstationary = get_option_value ("nperms_nonstationarity", DEFAULT_NUMBER_PERMUTATIONS_NONSTATIONARITY);
 
@@ -174,6 +174,16 @@ void run()
   const matrix_type design = load_matrix (argument[2]);
   if (size_t(design.rows()) != filenames.size())
     throw Exception ("number of subjects does not match number of rows in design matrix");
+
+  // Load permutations file if supplied
+  auto opt = get_options("permutations");
+  std::vector<std::vector<size_t> > permutations;
+  if (opt.size()) {
+    permutations = Math::Stats::Permutation::load_permutations_file (opt[0][0]);
+    num_perms = permutations.size();
+    if (permutations[0].size() != (size_t)design.rows())
+      throw Exception ("number of rows in the permutations file (" + str(opt[0][0]) + ") does not match number of rows in design matrix");
+  }
 
   // Load contrast matrix
   matrix_type contrast = load_matrix (argument[3]);
@@ -271,10 +281,17 @@ void run()
     vector_type null_distribution (num_perms);
     vector_type uncorrected_pvalues (num_edges);
 
-    Stats::PermTest::run_permutations (num_perms, glm_ttest, enhancer, empirical_statistic,
-                                       enhanced_output, std::shared_ptr<vector_type>(),
-                                       null_distribution, std::shared_ptr<vector_type>(),
-                                       uncorrected_pvalues, std::shared_ptr<vector_type>());
+    if (permutations.size()) {
+      Stats::PermTest::run_permutations (permutations, glm_ttest, enhancer, empirical_statistic,
+                                         enhanced_output, std::shared_ptr<vector_type>(),
+                                         null_distribution, std::shared_ptr<vector_type>(),
+                                         uncorrected_pvalues, std::shared_ptr<vector_type>());
+    } else {
+      Stats::PermTest::run_permutations (num_perms, glm_ttest, enhancer, empirical_statistic,
+                                         enhanced_output, std::shared_ptr<vector_type>(),
+                                         null_distribution, std::shared_ptr<vector_type>(),
+                                         uncorrected_pvalues, std::shared_ptr<vector_type>());
+    }
 
     save_vector (null_distribution, output_prefix + "_null_dist.txt");
     vector_type pvalue_output (num_edges);
