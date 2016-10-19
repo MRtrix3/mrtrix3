@@ -114,7 +114,7 @@ void run() {
   const value_type tfce_H = get_option_value ("tfce_h", DEFAULT_TFCE_H);
   const value_type tfce_E = get_option_value ("tfce_e", DEFAULT_TFCE_E);
   const bool use_tfce = !std::isfinite (cluster_forming_threshold);
-  const int num_perms = get_option_value ("nperms", DEFAULT_NUMBER_PERMUTATIONS);
+  int num_perms = get_option_value ("nperms", DEFAULT_NUMBER_PERMUTATIONS);
   const int nperms_nonstationary = get_option_value ("nperms_nonstationary", DEFAULT_NUMBER_PERMUTATIONS_NONSTATIONARITY);
   
   const bool do_26_connectivity = get_options("connectivity").size();
@@ -134,6 +134,16 @@ void run() {
   const matrix_type design = load_matrix<value_type> (argument[1]);
   if (design.rows() != (ssize_t)subjects.size())
     throw Exception ("number of input files does not match number of rows in design matrix");
+
+  // Load permutations file if supplied
+  auto opt = get_options("permutations");
+  std::vector<std::vector<size_t> > permutations;
+  if (opt.size()) {
+    permutations = Math::Stats::Permutation::load_permutations_file (opt[0][0]);
+    num_perms = permutations.size();
+    if (permutations[0].size() != (size_t)design.rows())
+       throw Exception ("number of rows in the permutations file (" + str(opt[0][0]) + ") does not match number of rows in design matrix");
+  }
 
   // Load contrast matrix
   const matrix_type contrast = load_matrix<value_type> (argument[2]);
@@ -258,10 +268,17 @@ void run() {
   }
 
   if (!get_options ("notest").size()) {
-    Stats::PermTest::run_permutations (glm, enhancer, num_perms, empirical_enhanced_statistic,
-                                       default_cluster_output, default_cluster_output_neg,
-                                       perm_distribution, perm_distribution_neg,
-                                       uncorrected_pvalue, uncorrected_pvalue_neg);
+    if (permutations.size()) {
+      Stats::PermTest::run_permutations (permutations, glm, enhancer, empirical_enhanced_statistic,
+                                         default_cluster_output, default_cluster_output_neg,
+                                         perm_distribution, perm_distribution_neg,
+                                         uncorrected_pvalue, uncorrected_pvalue_neg);
+    } else {
+      Stats::PermTest::run_permutations (num_perms, glm, enhancer, empirical_enhanced_statistic,
+                                         default_cluster_output, default_cluster_output_neg,
+                                         perm_distribution, perm_distribution_neg,
+                                         uncorrected_pvalue, uncorrected_pvalue_neg);
+    }
 
     save_matrix (perm_distribution, prefix + "perm_dist.txt");
     if (compute_negative_contrast)

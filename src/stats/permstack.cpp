@@ -29,8 +29,14 @@ namespace MR
           counter (0),
           progress (msg, num_permutations)
       {
-        Math::Stats::Permutation::generate (num_permutations, num_samples, data, include_default);
+        Math::Stats::Permutation::generate (num_permutations, num_samples, permutations, include_default);
       }
+
+      PermutationStack::PermutationStack (std::vector <std::vector<size_t> >& permutations, const std::string msg) :
+          num_permutations (permutations.size()),
+          permutations (permutations),
+          counter (0),
+          progress (msg, permutations.size()) { }
 
 
 
@@ -38,7 +44,7 @@ namespace MR
       {
         if (counter < num_permutations) {
           out.index = counter;
-          out.data = data[counter++];
+          out.data = permutations[counter++];
           ++progress;
           return true;
         } else {

@@ -14,6 +14,7 @@
  */
 
 #include "math/stats/permutation.h"
+#include "math/math.h"
 
 namespace MR
 {
@@ -96,6 +97,19 @@ namespace MR
               pvalues[i] = 0.0;
             }
           }
+        }
+
+
+        std::vector<std::vector<size_t> > load_permutations_file (std::string filename) {
+          std::vector<std::vector<size_t> > temp = load_matrix_2D_vector<size_t> (filename);
+          if (!temp.size())
+            throw Exception ("no data found in permutations file: " + str(filename));
+
+          std::vector<std::vector<size_t> > permutations (temp[0].size(), std::vector<size_t>(temp.size()));
+          for (std::vector<size_t>::size_type i = 0; i < temp[0].size(); i++)
+            for (std::vector<size_t>::size_type j = 0; j < temp.size(); j++)
+              permutations[i][j] = temp[j][i];
+          return permutations;
         }
 
 

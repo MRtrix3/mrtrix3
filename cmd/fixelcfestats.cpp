@@ -139,12 +139,13 @@ void run() {
   const value_type cfe_h = get_option_value ("cfe_h", DEFAULT_CFE_H);
   const value_type cfe_e = get_option_value ("cfe_e", DEFAULT_CFE_E);
   const value_type cfe_c = get_option_value ("cfe_c", DEFAULT_CFE_C);
-  const int num_perms = get_option_value ("nperms", DEFAULT_NUMBER_PERMUTATIONS);
+  int num_perms = get_option_value ("nperms", DEFAULT_NUMBER_PERMUTATIONS);
   const value_type smooth_std_dev = get_option_value ("smooth", DEFAULT_SMOOTHING_STD) / 2.3548;
   const value_type connectivity_threshold = get_option_value ("connectivity", DEFAULT_CONNECTIVITY_THRESHOLD);
   const bool do_nonstationary_adjustment = get_options ("nonstationary").size();
   const int nperms_nonstationary = get_option_value ("nperms_nonstationary", DEFAULT_NUMBER_PERMUTATIONS_NONSTATIONARITY);
   const value_type angular_threshold = get_option_value ("angle", DEFAULT_ANGLE_THRESHOLD);
+
 
   const std::string input_fixel_folder = argument[0];
   Header index_header = FixelFormat::find_index_header (input_fixel_folder);
@@ -199,6 +200,17 @@ void run() {
   const matrix_type design = load_matrix (argument[2]);
   if (design.rows() != (ssize_t)identifiers.size())
     throw Exception ("number of input files does not match number of rows in design matrix");
+
+  // Load permutations file if supplied
+  opt = get_options("permutations");
+  std::vector<std::vector<size_t> > permutations;
+  if (opt.size()) {
+    permutations = Math::Stats::Permutation::load_permutations_file (opt[0][0]);
+    num_perms = permutations.size();
+    if (permutations[0].size() != (size_t)design.rows())
+      throw Exception ("number of rows in the permutations file (" + str(opt[0][0]) + ") does not match number of rows in design matrix");
+  }
+
 
   // Load contrast matrix:
   const matrix_type contrast = load_matrix (argument[3]);
@@ -388,10 +400,17 @@ void run() {
       uncorrected_pvalues_neg.reset (new vector_type (num_fixels));
     }
 
-    Stats::PermTest::run_permutations (glm_ttest, cfe_integrator, num_perms, empirical_cfe_statistic,
-                                       cfe_output, cfe_output_neg,
-                                       perm_distribution, perm_distribution_neg,
-                                       uncorrected_pvalues, uncorrected_pvalues_neg);
+    if (permutations.size()) {
+      Stats::PermTest::run_permutations (permutations, glm_ttest, cfe_integrator, empirical_cfe_statistic,
+                                         cfe_output, cfe_output_neg,
+                                         perm_distribution, perm_distribution_neg,
+                                         uncorrected_pvalues, uncorrected_pvalues_neg);
+    } else {
+      Stats::PermTest::run_permutations (num_perms, glm_ttest, cfe_integrator, empirical_cfe_statistic,
+                                         cfe_output, cfe_output_neg,
+                                         perm_distribution, perm_distribution_neg,
+                                         uncorrected_pvalues, uncorrected_pvalues_neg);
+    }
 
     ProgressBar progress ("outputting final results");
     save_matrix (perm_distribution, Path::join (output_fixel_folder, "perm_dist.txt")); ++progress;

@@ -271,7 +271,7 @@ void run()
     vector_type null_distribution (num_perms);
     vector_type uncorrected_pvalues (num_edges);
 
-    Stats::PermTest::run_permutations (glm_ttest, enhancer, num_perms, empirical_statistic,
+    Stats::PermTest::run_permutations (num_perms, glm_ttest, enhancer, empirical_statistic,
                                        enhanced_output, std::shared_ptr<vector_type>(),
                                        null_distribution, std::shared_ptr<vector_type>(),
                                        uncorrected_pvalues, std::shared_ptr<vector_type>());
