@@ -208,15 +208,12 @@ namespace MR
         // Precompute the empircal test statistic for non-stationarity adjustment
         template <class StatsType>
           void precompute_empirical_stat (const StatsType& stats_calculator, const std::shared_ptr<EnhancerBase> enhancer,
-                                          const size_t num_permutations, vector_type& empirical_statistic)
+                                          PermutationStack& perm_stack, vector_type& empirical_statistic)
           {
             std::vector<size_t> global_enhanced_count (empirical_statistic.size(), 0);
-            PermutationStack permutations (num_permutations,
-                                           stats_calculator.num_subjects(),
-                                           "precomputing empirical statistic for non-stationarity adjustment...", false);
             {
               PreProcessor<StatsType> preprocessor (stats_calculator, enhancer, empirical_statistic, global_enhanced_count);
-              Thread::run_queue (permutations, Permutation(), Thread::multi (preprocessor));
+              Thread::run_queue (perm_stack, Permutation(), Thread::multi (preprocessor));
             }
             for (ssize_t i = 0; i < empirical_statistic.size(); ++i) {
               if (global_enhanced_count[i] > 0)

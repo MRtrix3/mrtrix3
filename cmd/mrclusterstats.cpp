@@ -115,7 +115,7 @@ void run() {
   const value_type tfce_E = get_option_value ("tfce_e", DEFAULT_TFCE_E);
   const bool use_tfce = !std::isfinite (cluster_forming_threshold);
   int num_perms = get_option_value ("nperms", DEFAULT_NUMBER_PERMUTATIONS);
-  const int nperms_nonstationary = get_option_value ("nperms_nonstationary", DEFAULT_NUMBER_PERMUTATIONS_NONSTATIONARITY);
+  int nperms_nonstationary = get_option_value ("nperms_nonstationary", DEFAULT_NUMBER_PERMUTATIONS_NONSTATIONARITY);
   
   const bool do_26_connectivity = get_options("connectivity").size();
   const bool do_nonstationary_adjustment = get_options ("nonstationary").size();
@@ -143,6 +143,16 @@ void run() {
     num_perms = permutations.size();
     if (permutations[0].size() != (size_t)design.rows())
        throw Exception ("number of rows in the permutations file (" + str(opt[0][0]) + ") does not match number of rows in design matrix");
+  }
+
+  // Load non-stationary correction permutations file if supplied
+  opt = get_options("permutations_nonstationary");
+  std::vector<std::vector<size_t> > permutations_nonstationary;
+  if (opt.size()) {
+    permutations_nonstationary = Math::Stats::Permutation::load_permutations_file (opt[0][0]);
+    nperms_nonstationary = permutations.size();
+    if (permutations_nonstationary[0].size() != (size_t)design.rows())
+      throw Exception ("number of rows in the nonstationary permutations file (" + str(opt[0][0]) + ") does not match number of rows in design matrix");
   }
 
   // Load contrast matrix
@@ -218,7 +228,14 @@ void run() {
   if (do_nonstationary_adjustment) {
     if (!use_tfce)
       throw Exception ("nonstationary adjustment is not currently implemented for threshold-based cluster analysis");
-    Stats::PermTest::precompute_empirical_stat (glm, enhancer, nperms_nonstationary, empirical_enhanced_statistic);
+    if (permutations_nonstationary.size()) {
+      Stats::PermTest::PermutationStack permutations (permutations_nonstationary, "precomputing empirical statistic for non-stationarity adjustment...");
+      Stats::PermTest::precompute_empirical_stat (glm, enhancer, permutations, empirical_enhanced_statistic);
+    } else {
+      Stats::PermTest::PermutationStack permutations (nperms_nonstationary, design.rows(), "precomputing empirical statistic for non-stationarity adjustment...", false);
+      Stats::PermTest::precompute_empirical_stat (glm, enhancer, permutations, empirical_enhanced_statistic);
+    }
+
     save_matrix (empirical_enhanced_statistic, prefix + "empirical.txt");
   }
 

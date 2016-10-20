@@ -168,7 +168,7 @@ void run()
 
   size_t num_perms = get_option_value ("nperms", DEFAULT_NUMBER_PERMUTATIONS);
   const bool do_nonstationary_adjustment = get_options ("nonstationary").size();
-  const size_t nperms_nonstationary = get_option_value ("nperms_nonstationarity", DEFAULT_NUMBER_PERMUTATIONS_NONSTATIONARITY);
+  size_t nperms_nonstationary = get_option_value ("nperms_nonstationarity", DEFAULT_NUMBER_PERMUTATIONS_NONSTATIONARITY);
 
   // Load design matrix
   const matrix_type design = load_matrix (argument[2]);
@@ -184,6 +184,17 @@ void run()
     if (permutations[0].size() != (size_t)design.rows())
       throw Exception ("number of rows in the permutations file (" + str(opt[0][0]) + ") does not match number of rows in design matrix");
   }
+
+  // Load non-stationary correction permutations file if supplied
+  opt = get_options("permutations_nonstationary");
+  std::vector<std::vector<size_t> > permutations_nonstationary;
+  if (opt.size()) {
+    permutations_nonstationary = Math::Stats::Permutation::load_permutations_file (opt[0][0]);
+    nperms_nonstationary = permutations.size();
+    if (permutations_nonstationary[0].size() != (size_t)design.rows())
+      throw Exception ("number of rows in the nonstationary permutations file (" + str(opt[0][0]) + ") does not match number of rows in design matrix");
+  }
+
 
   // Load contrast matrix
   matrix_type contrast = load_matrix (argument[3]);
@@ -260,7 +271,13 @@ void run()
   // If performing non-stationarity adjustment we need to pre-compute the empirical statistic
   vector_type empirical_statistic;
   if (do_nonstationary_adjustment) {
-    Stats::PermTest::precompute_empirical_stat (glm_ttest, enhancer, nperms_nonstationary, empirical_statistic);
+    if (permutations_nonstationary.size()) {
+      Stats::PermTest::PermutationStack perm_stack (permutations_nonstationary, "precomputing empirical statistic for non-stationarity adjustment...");
+      Stats::PermTest::precompute_empirical_stat (glm_ttest, enhancer, perm_stack, empirical_statistic);
+    } else {
+      Stats::PermTest::PermutationStack perm_stack (nperms_nonstationary, design.rows(), "precomputing empirical statistic for non-stationarity adjustment...", true);
+      Stats::PermTest::precompute_empirical_stat (glm_ttest, enhancer, perm_stack, empirical_statistic);
+    }
     save_matrix (mat2vec.V2M (empirical_statistic), output_prefix + "_empirical.csv");
   }
 

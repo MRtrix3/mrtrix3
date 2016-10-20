@@ -143,7 +143,7 @@ void run() {
   const value_type smooth_std_dev = get_option_value ("smooth", DEFAULT_SMOOTHING_STD) / 2.3548;
   const value_type connectivity_threshold = get_option_value ("connectivity", DEFAULT_CONNECTIVITY_THRESHOLD);
   const bool do_nonstationary_adjustment = get_options ("nonstationary").size();
-  const int nperms_nonstationary = get_option_value ("nperms_nonstationary", DEFAULT_NUMBER_PERMUTATIONS_NONSTATIONARITY);
+  int nperms_nonstationary = get_option_value ("nperms_nonstationary", DEFAULT_NUMBER_PERMUTATIONS_NONSTATIONARITY);
   const value_type angular_threshold = get_option_value ("angle", DEFAULT_ANGLE_THRESHOLD);
 
 
@@ -211,6 +211,15 @@ void run() {
       throw Exception ("number of rows in the permutations file (" + str(opt[0][0]) + ") does not match number of rows in design matrix");
   }
 
+  // Load non-stationary correction permutations file if supplied
+  opt = get_options("permutations_nonstationary");
+  std::vector<std::vector<size_t> > permutations_nonstationary;
+  if (opt.size()) {
+    permutations_nonstationary = Math::Stats::Permutation::load_permutations_file (opt[0][0]);
+    nperms_nonstationary = permutations.size();
+    if (permutations_nonstationary[0].size() != (size_t)design.rows())
+      throw Exception ("number of rows in the nonstationary permutations file (" + str(opt[0][0]) + ") does not match number of rows in design matrix");
+  }
 
   // Load contrast matrix:
   const matrix_type contrast = load_matrix (argument[3]);
@@ -366,7 +375,14 @@ void run() {
 
   // If performing non-stationarity adjustment we need to pre-compute the empirical CFE statistic
   if (do_nonstationary_adjustment) {
-    Stats::PermTest::precompute_empirical_stat (glm_ttest, cfe_integrator, nperms_nonstationary, empirical_cfe_statistic);
+
+    if (permutations_nonstationary.size()) {
+      Stats::PermTest::PermutationStack permutations (permutations_nonstationary, "precomputing empirical statistic for non-stationarity adjustment...");
+      Stats::PermTest::precompute_empirical_stat (glm_ttest, cfe_integrator, permutations, empirical_cfe_statistic);
+    } else {
+      Stats::PermTest::PermutationStack permutations (nperms_nonstationary, design.rows(), "precomputing empirical statistic for non-stationarity adjustment...", false);
+      Stats::PermTest::precompute_empirical_stat (glm_ttest, cfe_integrator, permutations, empirical_cfe_statistic);
+    }
     output_header.keyval()["nonstationary adjustment"] = str(true);
     write_fixel_output (Path::join (output_fixel_folder, "cfe_empirical.mif"), empirical_cfe_statistic, output_header);
   } else {
