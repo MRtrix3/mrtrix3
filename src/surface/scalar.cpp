@@ -30,21 +30,25 @@ namespace MR
 
     Scalar::Scalar (const std::string& path, const Mesh& mesh)
     {
+      DEBUG ("Attempting to load surface scalar file \"" + path + "\"...");
       try {
         load_vector (path);
-      } catch (...) {
+      } catch (Exception& e) {
+        DEBUG (e[0]);
         try {
           load_fs_w (path, mesh);
-        } catch (...) {
+        } catch (Exception& e) {
+          DEBUG (e[0]);
           try {
             load_fs_curv (path, mesh);
-          } catch (...) {
+          } catch (Exception& e) {
+            DEBUG (e[0]);
             throw Exception ("Input surface scalar file \"" + path + "\" not in supported format");
           }
         }
       }
       if (size_t(size()) != mesh.num_vertices())
-        throw Exception ("Input surface scalar file \"" + path + "\" has incorrect number of vertices");
+        throw Exception ("Input surface scalar file \"" + path + "\" has incorrect number of vertices (" + str(size()) + ", mesh has " + str (mesh.num_vertices()) + ")");
       name = Path::basename (path);
     }
 
@@ -70,7 +74,7 @@ namespace MR
         const int32_t index = FreeSurfer::get_int24_BE (in);
         const float value = FreeSurfer::get_BE<float> (in);
         if (size_t(index) >= mesh.num_vertices())
-          throw Exception ("Error opening file \"" + path + "\" as FreeSurfer w-file: invalid vertex index (" + str(index) + ")");
+          throw Exception ("Error opening file \"" + path + "\" as FreeSurfer w-file: invalid vertex index (" + str(index) + ", mesh has " + str(mesh.num_vertices()) + ")");
         if (!in.good())
           throw Exception ("Error opening file \"" + path + "\" as FreeSurfer w-file: truncated file");
         (*this)[index] = value;
@@ -90,11 +94,11 @@ namespace MR
 
         const int32_t num_vertices = FreeSurfer::get_BE<int32_t> (in);
         if (size_t(num_vertices) != mesh.num_vertices())
-          throw Exception ("Error opening file \"" + path + "\" as Freesurfer curv file: Incorrect number of vertices (" + str(num_vertices) + ")");
+          throw Exception ("Error opening file \"" + path + "\" as Freesurfer curv file: Incorrect number of vertices (" + str(num_vertices) + ", mesh has " + str(mesh.num_vertices()) + ")");
 
         const int32_t num_faces = FreeSurfer::get_BE<int32_t> (in);
         if (size_t(num_faces) != mesh.num_polygons())
-          throw Exception ("Error opening file \"" + path + "\" as Freesurfer curv file: Incorrect number of polygons (" + str(num_faces) + ")");
+          throw Exception ("Error opening file \"" + path + "\" as Freesurfer curv file: Incorrect number of polygons (" + str(num_faces) + ", mesh has " + str(mesh.num_polygons()) + ")");
 
         const int32_t vals_per_vertex = FreeSurfer::get_BE<int32_t> (in);
         if (vals_per_vertex != 1)
@@ -108,11 +112,11 @@ namespace MR
 
         const int32_t num_vertices = magic_number;
         if (size_t(num_vertices) != mesh.num_vertices())
-          throw Exception ("Error opening file \"" + path + "\" as Freesurfer curv file: Incorrect number of vertices");
+          throw Exception ("Error opening file \"" + path + "\" as Freesurfer curv file: Incorrect number of vertices (" + str(num_vertices) + ", mesh has " + str(mesh.num_vertices()) + ")");
 
         const int32_t num_faces = FreeSurfer::get_int24_BE (in);
         if (size_t(num_faces) != mesh.num_polygons())
-          throw Exception ("Error opening file \"" + path + "\" as Freesurfer curv file: Incorrect number of polygons");
+          throw Exception ("Error opening file \"" + path + "\" as Freesurfer curv file: Incorrect number of polygons (" + str(num_faces) + ", mesh has " + str(mesh.num_polygons()) + ")");
 
         (*this).resize (mesh.num_vertices());
         for (int32_t i = 0; i != num_vertices; ++i)

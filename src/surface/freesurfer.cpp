@@ -147,7 +147,7 @@ namespace MR
             vertices.resize (index+1, Vertex (NaN, NaN, NaN));
           }
           if (std::isfinite (scalar[index]))
-            throw Exception ("Error parsing FreeSurfer label file \"" + Path::basename (path) + "\": Duplicate indices");
+            throw Exception ("Error parsing FreeSurfer label file \"" + Path::basename (path) + "\": Duplicated index (" + str(scalar[index]) + ")");
           scalar[index] = value;
           vertices[index] = Vertex (x, y, z);
         }
