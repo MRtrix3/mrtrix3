@@ -235,13 +235,26 @@ streamlines in that edge*.
 
 .. code::
 
-    tck2connectome tracks.tck nodes.mif connectome.csf -scale_length -stat_edge mean
+    tck2connectome tracks.tck nodes.mif connectome.csv -scale_length -stat_edge mean
 
 For each streamline, the contribution of that streamline to the relevant
 edge is *scaled by the length* of that streamline; so, in the absence of any
 other scaling, the contribution of that streamline will be equal to the length
 of the streamline in mm. Finally, for each edge, take the *mean* of the values
 contributed from all streamlines belonging to that edge.
+
+``tck2connectome -contrast invlength_invnodevolume``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code::
+
+    tck2connectome tracks.tck nodes.mif connectome.csv -scale_invlength -scale_invnodevol
+
+Rather than acting as a single 'contrast', scaling the contribution of each
+streamline to the connectome by *both* the inverse of the streamline length
+*and* the inverse of the sum of node volumes is now handled using two
+separate command-line options. The behaviour is however identical to the
+old usage.
 
 Maximum spherical harmonic degree ``lmax``
 ------------------------------------------

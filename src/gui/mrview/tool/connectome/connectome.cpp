@@ -30,8 +30,7 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 
-#include "mesh/mesh.h"
-#include "mesh/vox2mesh.h"
+#include "surface/mesh_multi.h"
 
 namespace MR
 {
@@ -3787,7 +3786,7 @@ namespace MR
           // Request exemplar track file path from user
           const std::string path = GUI::Dialog::File::get_file (this, "Select file containing mesh for each node", "OBJ mesh files (*.obj)");
           if (!path.size()) return;
-          Mesh::MeshMulti meshes;
+          Surface::MeshMulti meshes;
           meshes.load (path);
           if (meshes.size() != nodes.size())
             throw Exception ("Mesh file contains " + str(meshes.size()) + " objects; expected " + str(nodes.size()));

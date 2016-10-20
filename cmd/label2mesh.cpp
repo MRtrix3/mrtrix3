@@ -15,6 +15,7 @@
 
 
 
+#include <mutex>
 #include <vector>
 
 #include "command.h"
@@ -25,13 +26,14 @@
 #include "algo/loop.h"
 #include "adapter/subset.h"
 
-#include "mesh/mesh.h"
-#include "mesh/vox2mesh.h"
+#include "surface/mesh.h"
+#include "surface/mesh_multi.h"
+#include "surface/algo/image2mesh.h"
 
 
 using namespace MR;
 using namespace App;
-using namespace MR::Mesh;
+using namespace MR::Surface;
 
 
 void usage ()
@@ -87,7 +89,7 @@ void run ()
     }
   }
 
-  MeshMulti meshes (lower_corners.size(), MR::Mesh::Mesh());
+  MeshMulti meshes (lower_corners.size(), MR::Surface::Mesh());
   meshes[0].set_name ("none");
   const bool blocky = get_options ("blocky").size();
 
@@ -110,10 +112,9 @@ void run ()
         scratch.value() = (subset.value() == in);
 
       if (blocky)
-        MR::Mesh::vox2mesh (scratch, meshes[in]);
+        MR::Surface::Algo::image2mesh_blocky (scratch, meshes[in]);
       else
-        MR::Mesh::vox2mesh_mc (scratch, 0.5, meshes[in]);
-      meshes[in].transform_voxel_to_realspace (scratch);
+        MR::Surface::Algo::image2mesh_mc (scratch, meshes[in], 0.5);
       meshes[in].set_name (str(in));
       std::lock_guard<std::mutex> lock (mutex);
       ++progress;

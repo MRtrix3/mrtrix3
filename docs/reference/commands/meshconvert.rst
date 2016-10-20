@@ -21,18 +21,9 @@ convert meshes between different formats, and apply transformations.
 Options
 -------
 
--  **-binary** write the output file in binary format
+-  **-binary** write the output mesh file in binary format (if supported)
 
-Options for applying spatial transformations to vertices
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
--  **-transform_first2real image** transform vertices from FSL FIRST's native corrdinate space to real space
-
--  **-transform_real2first image** transform vertices from FSL real space to FIRST's native corrdinate space
-
--  **-transform_voxel2real image** transform vertices from voxel space to real space
-
--  **-transform_real2voxel image** transform vertices from real space to voxel space
+-  **-transform mode image** transform vertices from one coordinate space to another, based on a template image; options are: first2real, real2first, voxel2real, real2voxel
 
 Standard options
 ^^^^^^^^^^^^^^^^
