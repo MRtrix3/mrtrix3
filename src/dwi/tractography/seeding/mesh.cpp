@@ -17,8 +17,6 @@
 #include "dwi/tractography/seeding/mesh.h"
 #include "dwi/tractography/rng.h"
 
-#include "surface/meshfactory.h"
-
 
 #define EPSILON std::numeric_limits< double >::epsilon()
 
