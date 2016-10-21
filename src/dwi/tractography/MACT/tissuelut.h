@@ -20,6 +20,7 @@
 
 #include "dwi/tractography/MACT/keycomp.h"
 #include "dwi/tractography/MACT/tissue.h"
+#include <set>
 
 
 namespace MR

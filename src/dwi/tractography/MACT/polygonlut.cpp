@@ -34,18 +34,18 @@ namespace MACT
 PolygonLut::PolygonLut( const std::shared_ptr< Tissue >& tissue )
            : _tissue( tissue )
 {
-  std::set< Eigen::Vector3i, Vector3iCompare > voxels;
-  for ( Polygon_i p = 0; p < tissue->polygonCount(); p++ )
-  {
-    auto mesh = tissue->mesh();
-    auto triangle = tissue->mesh().tri( p );
-    auto v1 = mesh.vert( triangle[ 0 ] );
-    auto v2 = mesh.vert( triangle[ 1 ] );
-    auto v3 = mesh.vert( triangle[ 2 ] );
+  Surface::VertexList vertices = tissue->mesh().get_vertices();
+  Surface::TriangleList polygons = tissue->mesh().get_triangles();
 
-    // collecting associated voxels using Bresenham's line algorithm
+  std::set< Eigen::Vector3i, Vector3iCompare > voxels;
+  auto p = polygons.begin(), pe = polygons.end();
+  while ( p != pe )
+  {
     _tissue->sceneModeller()->bresenhamLine().discTriangleVoxels(
-                       v1, v2, v3, _tissue->radiusOfInfluence(), voxels, true );
+                                   vertices[ ( *p )[ 0 ] ],
+                                   vertices[ ( *p )[ 1 ] ],
+                                   vertices[ ( *p )[ 2 ] ],
+                                   _tissue->radiusOfInfluence(), voxels, true );
     auto v = voxels.begin(), ve = voxels.end();
     while ( v != ve )
     {
@@ -53,16 +53,17 @@ PolygonLut::PolygonLut( const std::shared_ptr< Tissue >& tissue )
       {
         // LUT does not have this voxel :
         // initialise a new set of polygon indices and add to this voxel
-        std::set< Polygon_i > newPolygons{ p };
+        Surface::TriangleList newPolygons{ *p };
         _lut[ *v ] = newPolygons;
       }
       else
       {
         // LUT has this voxel --> add the polygon index to the list of the voxel
-        _lut[ *v ].insert( p );
+        _lut[ *v ].push_back( *p );
       }
       ++ v;
     }
+    ++ p;
   }
 }
 
@@ -72,12 +73,12 @@ PolygonLut::~PolygonLut()
 }
 
 
-std::set< Polygon_i >
+Surface::TriangleList
 PolygonLut::getTriangles( const Eigen::Vector3i& voxel ) const
 {
   if ( _lut.count( voxel ) == 0 )
   {
-    return std::set< Polygon_i >();
+    return Surface::TriangleList();
   }
   else
   {
@@ -86,7 +87,7 @@ PolygonLut::getTriangles( const Eigen::Vector3i& voxel ) const
 }
 
 
-std::set< Polygon_i >
+Surface::TriangleList
 PolygonLut::getTriangles( const Eigen::Vector3d& point ) const
 {
   Eigen::Vector3i voxel;

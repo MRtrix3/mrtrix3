@@ -43,9 +43,9 @@ struct Intersection
     Intersection( double arcLength,
                   const Eigen::Vector3d& point,
                   const Tissue_ptr& tissue,
-                  Polygon_i polygonIndex );
+                  Surface::Triangle triangle );
+
     Intersection( const Intersection& other );
-    
     Intersection& operator=( const Intersection& other );
 
     size_t nearestVertex() const;
@@ -53,7 +53,7 @@ struct Intersection
     double _arcLength;
     Eigen::Vector3d _point;
     Tissue_ptr _tissue;
-    Polygon_i _polygonIndex;
+    Surface::Triangle _triangle;
 
 };
 

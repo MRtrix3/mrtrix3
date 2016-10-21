@@ -46,30 +46,30 @@ Intersection::Intersection()
 Intersection::Intersection( double arcLength,
                             const Eigen::Vector3d& point,
                             const Tissue_ptr& tissue,
-                            Polygon_i polygonIndex )
+                            Surface::Triangle triangle )
              : _arcLength( arcLength ),
                _point( point ),
                _tissue( tissue ),
-               _polygonIndex( polygonIndex )
+               _triangle( triangle )
 {
 }
+
 
 Intersection::Intersection( const Intersection& other )
              : _arcLength( other._arcLength ),
                _point( other._point ),
                _tissue( other._tissue ),
-               _polygonIndex( other._polygonIndex )
+               _triangle( other._triangle )
 {
 }
 
 
-Intersection&
-Intersection::operator=( const Intersection& other )
+Intersection& Intersection::operator=( const Intersection& other )
 {
   _arcLength = other._arcLength;
   _point = other._point;
   _tissue = other._tissue;
-  _polygonIndex = other._polygonIndex;
+  _triangle = other._triangle;
   return *this;
 }
 
@@ -77,21 +77,20 @@ Intersection::operator=( const Intersection& other )
 size_t Intersection::nearestVertex() const
 {
   auto mesh = _tissue->mesh();
-  auto triangle = mesh.tri( _polygonIndex );
-  double distance0 = ( mesh.vert( triangle[ 0 ] ) - _point ).norm();
-  double distance1 = ( mesh.vert( triangle[ 1 ] ) - _point ).norm();
-  double distance2 = ( mesh.vert( triangle[ 2 ] ) - _point ).norm();
+  double distance0 = ( mesh.vert( _triangle[ 0 ] ) - _point ).norm();
+  double distance1 = ( mesh.vert( _triangle[ 1 ] ) - _point ).norm();
+  double distance2 = ( mesh.vert( _triangle[ 2 ] ) - _point ).norm();
   if ( distance0 <= distance1 && distance0 <= distance2 )
   {
-    return triangle[ 0 ];
+    return _triangle[ 0 ];
   }
   else if ( distance1 <= distance2 )
   {
-    return triangle[ 1 ];
+    return _triangle[ 1 ];
   }
   else
   {
-    return triangle[ 2 ];
+    return _triangle[ 2 ];
   }
   /*
   / Did not handle equal distances between the point and the vertices
@@ -117,7 +116,6 @@ IntersectionSet::IntersectionSet( const SceneModeller& sceneModeller,
 
   // looping over voxels and polygons to get interseting points & arc lengths
   std::set< double > arcLengths;
-  Eigen::Vector3d v1, v2, v3;
   Eigen::Vector3d intersectionPoint;
   Eigen::Vector3d fromIntersection;
   double fromIntersectionLength;
@@ -132,18 +130,16 @@ IntersectionSet::IntersectionSet( const SceneModeller& sceneModeller,
       auto  t = tissues.begin(), te = tissues.end();
       while ( t != te )
       {
-        auto polygonIndices = ( *t )->polygonLut().getTriangles( *v );
-        auto p = polygonIndices.begin(), pe = polygonIndices.end();
+        auto polygons = ( *t )->polygonLut().getTriangles( *v );
+        auto p = polygons.begin(), pe = polygons.end();
         while ( p != pe )
         {
-          // obtaining the vertices of this polygon
-          auto mesh = ( *t )->mesh();
-          auto triangle = ( *t )->mesh().tri( *p );
-          auto v1 = mesh.vert( triangle[ 0 ] );
-          auto v2 = mesh.vert( triangle[ 1 ] );
-          auto v3 = mesh.vert( triangle[ 2 ] );
           // perform ray/triangle intersection to find intersecting point
-          hasIntersection = rayTriangleIntersection( from, to, v1, v2, v3,
+          auto mesh = ( *t )->mesh();
+          hasIntersection = rayTriangleIntersection( from, to,
+                                                     mesh.vert( ( *p )[ 0 ] ),
+                                                     mesh.vert( ( *p )[ 1 ] ),
+                                                     mesh.vert( ( *p )[ 2 ] ),
                                                      intersectionPoint );
           if ( hasIntersection )
           {
@@ -197,7 +193,6 @@ IntersectionSet::IntersectionSet( const SceneModeller& sceneModeller,
 
   // looping over voxels and polygons to get interseting points & arc lengths
   std::set< double > arcLengths;
-  Eigen::Vector3d v1, v2, v3;
   Eigen::Vector3d intersectionPoint;
   Eigen::Vector3d fromIntersection;
   double fromIntersectionLength;
@@ -214,17 +209,16 @@ IntersectionSet::IntersectionSet( const SceneModeller& sceneModeller,
       {
         if ( ( *t )->name() == targetTissue->name() )
         {
-          auto polygonIndices = ( *t )->polygonLut().getTriangles( *v );
-          auto p = polygonIndices.begin(), pe = polygonIndices.end();
+          auto polygons = ( *t )->polygonLut().getTriangles( *v );
+          auto p = polygons.begin(), pe = polygons.end();
           while ( p != pe )
           {
-            auto mesh = ( *t )->mesh();
-            auto triangle = ( *t )->mesh().tri( *p );
-            auto v1 = mesh.vert( triangle[ 0 ] );
-            auto v2 = mesh.vert( triangle[ 1 ] );
-            auto v3 = mesh.vert( triangle[ 2 ] );
             // perform ray/triangle intersection to find intersecting point
-            hasIntersection = rayTriangleIntersection( from, to, v1, v2, v3,
+            auto mesh = ( *t )->mesh();
+            hasIntersection = rayTriangleIntersection( from, to,
+                                                       mesh.vert( ( *p )[ 0 ] ),
+                                                       mesh.vert( ( *p )[ 1 ] ),
+                                                       mesh.vert( ( *p )[ 2 ] ),
                                                        intersectionPoint );
             if ( hasIntersection )
             {

@@ -67,18 +67,18 @@ TissueLut::getTissues( const Eigen::Vector3d& point ) const
 
 void TissueLut::update( Tissue_ptr tissue )
 {
-  std::set< Eigen::Vector3i, Vector3iCompare > voxels;
-  for ( Polygon_i p = 0; p < tissue->polygonCount(); p++ )
-  {
-    auto mesh = tissue->mesh();
-    auto triangle = tissue->mesh().tri( p );
-    auto v1 = mesh.vert( triangle[ 0 ] );
-    auto v2 = mesh.vert( triangle[ 1 ] );
-    auto v3 = mesh.vert( triangle[ 2 ] );
+  Surface::VertexList vertices = tissue->mesh().get_vertices();
+  Surface::TriangleList polygons = tissue->mesh().get_triangles();
 
-    // collecting associated voxels using Bresenham line algorithm
+  std::set< Eigen::Vector3i, Vector3iCompare > voxels;
+  auto p = polygons.begin(), pe = polygons.end();
+  while ( p != pe )
+  {
     _sceneModeller->bresenhamLine().discTriangleVoxels(
-                        v1, v2, v3, tissue->radiusOfInfluence(), voxels, true );
+                                    vertices[ ( *p )[ 0 ] ],
+                                    vertices[ ( *p )[ 1 ] ],
+                                    vertices[ ( *p )[ 2 ] ],
+                                    tissue->radiusOfInfluence(), voxels, true );
     auto v = voxels.begin(), ve = voxels.end();
     while ( v != ve )
     {
@@ -110,6 +110,7 @@ void TissueLut::update( Tissue_ptr tissue )
       }
       ++ v;
     }
+    ++ p;
   }
 }
 

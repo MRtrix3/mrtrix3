@@ -20,7 +20,6 @@
 
 #include "dwi/tractography/MACT/keycomp.h"
 #include "surface/mesh.h"
-#include <set>
 
 
 namespace MR
@@ -39,7 +38,6 @@ namespace MACT
 class Tissue;
 
 typedef std::shared_ptr< Tissue > Tissue_ptr; /*tissue pointer*/
-typedef uint32_t Polygon_i; /*polygon index*/
 
 
 class PolygonLut
@@ -50,13 +48,13 @@ class PolygonLut
     PolygonLut( const Tissue_ptr& tissue );
     virtual ~PolygonLut();
 
-    std::set< Polygon_i > getTriangles( const Eigen::Vector3i& voxel ) const;
-    std::set< Polygon_i > getTriangles( const Eigen::Vector3d& point ) const;
+    Surface::TriangleList getTriangles( const Eigen::Vector3i& voxel ) const;
+    Surface::TriangleList getTriangles( const Eigen::Vector3d& point ) const;
 
   private:
 
     Tissue_ptr _tissue;
-    std::map< Eigen::Vector3i, std::set< Polygon_i >, Vector3iCompare > _lut;
+    std::map< Eigen::Vector3i, Surface::TriangleList, Vector3iCompare > _lut;
 
 };
 
