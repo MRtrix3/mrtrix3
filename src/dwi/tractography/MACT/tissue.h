@@ -39,7 +39,7 @@ class SceneModeller;
 
 enum TissueType
 {
-  OCGM, ICGM, SGM, CC, OCBM, ICBM, BSTM, CSF, UNKNOWN
+  CGM, SGM, WM, CSF, BST, OTHER
 };
 
 
@@ -50,7 +50,7 @@ class Tissue
 
     Tissue( const TissueType& type,
             const std::string& name,
-            const std::string& mesh,
+            const Surface::Mesh& mesh,
             const std::shared_ptr< SceneModeller >& sceneModeller,
             double radiusOfInfluence = 0.0 );
     virtual ~Tissue();

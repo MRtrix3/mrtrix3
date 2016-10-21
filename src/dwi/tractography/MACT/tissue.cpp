@@ -15,7 +15,6 @@
 
 
 #include "dwi/tractography/MACT/tissue.h"
-#include "dwi/tractography/MACT/scenemodeller.h"
 
 
 namespace MR
@@ -33,7 +32,7 @@ namespace MACT
 
 Tissue::Tissue( const TissueType& type,
                 const std::string& name,
-                const std::string& mesh,
+                const Surface::Mesh& mesh,
                 const std::shared_ptr< SceneModeller >& sceneModeller,
                 double radiusOfInfluence )
        : _type( type ),
