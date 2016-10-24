@@ -352,11 +352,6 @@ void run ()
   }
 
 
-  opt = get_options ("json_export");
-  if (opt.size())
-    File::JSON::save (header_out, opt[0][0]);
-
-
   if (header_out.intensity_offset() == 0.0 && header_out.intensity_scale() == 1.0 && !header_out.datatype().is_floating_point()) {
     switch (header_out.datatype()() & DataType::Type) {
       case DataType::Bit:
@@ -385,5 +380,9 @@ void run ()
       copy_permute<double> (header_in, header_out, pos, argument[1]);
   }
 
+
+  opt = get_options ("json_export");
+  if (opt.size())
+    File::JSON::save (header_out, opt[0][0]);
 }
 
