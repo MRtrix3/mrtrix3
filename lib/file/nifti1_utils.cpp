@@ -181,22 +181,16 @@ namespace MR
             M(2,3) = Raw::fetch_<float32> (&NH.srow_z[3], is_BE);
 
             // get voxel sizes:
-            H.spacing(0) = std::sqrt (Math::pow2 (M(0,0)) + Math::pow2 (M(1,0)) + Math::pow2 (M(2,0)));
-            H.spacing(1) = std::sqrt (Math::pow2 (M(0,1)) + Math::pow2 (M(1,1)) + Math::pow2 (M(2,1)));
-            H.spacing(2) = std::sqrt (Math::pow2 (M(0,2)) + Math::pow2 (M(1,2)) + Math::pow2 (M(2,2)));
+            for (size_t axis = 0; axis != 3; ++axis) {
+              if (size_t(ndim) > axis)
+                H.spacing(axis) = std::sqrt (Math::pow2 (M(0,axis)) + Math::pow2 (M(1,axis)) + Math::pow2 (M(2,axis)));
+            }
 
             // normalize each transform axis:
-            M (0,0) /= H.spacing (0);
-            M (1,0) /= H.spacing (0);
-            M (2,0) /= H.spacing (0);
-
-            M (0,1) /= H.spacing (1);
-            M (1,1) /= H.spacing (1);
-            M (2,1) /= H.spacing (1);
-
-            M (0,2) /= H.spacing (2);
-            M (1,2) /= H.spacing (2);
-            M (2,2) /= H.spacing (2);
+            for (size_t axis = 0; axis != 3; ++axis) {
+              if (size_t(ndim) > axis)
+                M.col(axis).array() /= H.spacing (axis);
+            }
 
           }
           else if (Raw::fetch_<int16_t> (&NH.qform_code, is_BE)) {

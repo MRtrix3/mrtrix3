@@ -22,12 +22,13 @@ current-induced distortions and inter-volume subject motion. Procedures
 for this correct are not yet implemented in *MRtrix3*, though we do provide
 a script for interfacing with the relevant FSL tools:
 
-``dwipreproc <PE direction> <Input DWI series> <Output corrected DWI series> [options]``
+``dwipreproc <Input DWI series> <Output corrected DWI series> [options]``
 
 For more details, see the :ref:`dwipreproc` help file. In
 particular, it is necessary to manually specify what type of reversed
-phase-encoding acquisition has taken place (if any), and provide the
-relevant input images.
+phase-encoding acquisition has taken place (if any), and potentially
+provide additional relevant input images or provide details of the 
+phase encoding scheme used in the acquisition.
 
 DWI brain mask estimation
 ~~~~~~~~~~~~~~~~~~~~~~~~~

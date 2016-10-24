@@ -68,11 +68,8 @@ void usage ()
     +   Option ("offset", "image intensity offset")
     +   Option ("multiplier", "image intensity multiplier")
     +   Option ("transform", "the voxel to image transformation")
-    +   Option ("norealign",
-          "do not realign transform to near-default RAS coordinate system (the "
-          "default behaviour on image load). This is useful to inspect the transform "
-          "and strides as they are actually stored in the header, rather than as "
-          "MRtrix interprets them.")
+
+    +   NoRealignOption
 
     + Option ("property", "any text properties embedded in the image header under the "
         "specified key (use 'all' to list all keys found)").allow_multiple()

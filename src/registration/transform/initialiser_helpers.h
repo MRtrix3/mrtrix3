@@ -88,7 +88,7 @@ namespace MR
                 sh1.setZero();
                 sh2.resize(N);
                 sh2.setZero();
-              };
+              }
 
             void run ();
 
@@ -122,7 +122,7 @@ namespace MR
               transform(transform),
               mask1(mask1),
               mask2(mask2),
-              use_mask_values_instead (mask_is_intensity) {};
+              use_mask_values_instead (mask_is_intensity) {}
 
             void run ();
           protected:

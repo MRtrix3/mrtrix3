@@ -289,7 +289,9 @@ void LUT::check_and_insert (const node_t index, const LUT_node& data)
 
 std::vector<node_t> get_lut_mapping (const LUT& in, const LUT& out)
 {
-  std::vector<node_t> map;
+  if (in.empty())
+    return std::vector<node_t>();
+  std::vector<node_t> map (in.rbegin()->first + 1, 0);
   for (const auto& node_in : in) {
     node_t target = 0;
     for (const auto& node_out : out) {
@@ -299,13 +301,11 @@ std::vector<node_t> get_lut_mapping (const LUT& in, const LUT& out)
           return std::vector<node_t> ();
         }
         target = node_out.first;
+        break;
       }
     }
-    if (target) {
-      if (node_in.first >= map.size())
-        map.resize (node_in.first + 1, 0);
+    if (target)
       map[node_in.first] = target;
-    }
   }
   return map;
 }

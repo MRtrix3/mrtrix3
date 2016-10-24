@@ -1866,7 +1866,11 @@ namespace MR
           + OptionGroup ("Debugging options")
 
           + Option ("fps", "Display frames per second, averaged over the last 10 frames. "
-              "The maximum over the last 3 seconds is also displayed.");
+              "The maximum over the last 3 seconds is also displayed.")
+
+          + OptionGroup ("Other options")
+
+          + NoRealignOption;
 
       }
 
