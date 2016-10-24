@@ -23,7 +23,7 @@ class progressBar:
     self._update()
 
   def done(self):
-    self.counter = target
+    self.counter = self.target
     sys.stderr.write('\r' + lib.app.colourPrint + os.path.basename(sys.argv[0]) + ': ' + lib.app.colourClear + '[100%] ' + self.message + lib.app.clearLine + '\n')
     lib.app.verbosity = self.orig_verbosity
     
