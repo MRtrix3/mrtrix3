@@ -18,6 +18,7 @@
 
 #include <map>
 
+#include "app.h"
 #include "debug.h"
 #include "types.h"
 #include "memory.h"
@@ -30,6 +31,8 @@
 
 namespace MR
 {
+
+  extern const App::Option NoRealignOption;
 
   /*! \defgroup ImageAPI Image access
    * \brief Classes and functions providing access to image data. 
