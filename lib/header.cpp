@@ -13,7 +13,6 @@
  * 
  */
 
-#include "app.h"
 #include "header.h"
 #include "phase_encoding.h"
 #include "stride.h"
@@ -25,6 +24,13 @@
 
 namespace MR
 {
+
+  const App::Option NoRealignOption
+  = App::Option ("norealign",
+                 "do not realign transform to near-default RAS coordinate system (the "
+                 "default behaviour on image load). This is useful to inspect the image "
+                 "and/or header contents as they are actually stored in the header, "
+                 "rather than as MRtrix interprets them.");
 
   bool Header::do_not_realign_transform = false;
 

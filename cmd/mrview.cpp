@@ -65,6 +65,9 @@ void run ()
   GUI::MRView::Window window;
   window.show();
 
+  if (MR::App::get_options ("norealign").size())
+    Header::do_not_realign_transform = true;
+
   if (argument.size()) {
     std::vector<std::unique_ptr<MR::Header>> list;
 
