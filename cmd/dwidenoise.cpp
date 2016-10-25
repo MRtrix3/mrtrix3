@@ -118,13 +118,13 @@ class DenoisingFunctor
     // Compute Eigendecomposition:
     Eigen::MatrixXf XtX (r,r);
     if (m <= n)
-      XtX.template triangularView<Eigen::Lower>() = X * X.transpose();
+      XtX.template triangularView<Eigen::Lower>() = X * X.adjoint();
     else 
-      XtX.template triangularView<Eigen::Lower>() = X.transpose() * X;
+      XtX.template triangularView<Eigen::Lower>() = X.adjoint() * X;
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXf> eig (XtX);
-    // eigenvalues provide squared singular values:
+    // eigenvalues provide squared singular values, sorted in increasing order:
     Eigen::VectorXf s = eig.eigenvalues();
-   
+
     // Marchenko-Pastur optimal threshold
     const double lam_r = s[0] / n;
     double clam = 0.0;
@@ -135,8 +135,8 @@ class DenoisingFunctor
       double lam = s[p] / n;
       clam += lam;
       double gam = double(m-r+p+1) / double(n);
-      double sigsq1 = clam / (p+1) / std::max (gam, 1.0);
-      double sigsq2 = (lam - lam_r) / 4 / std::sqrt(gam);
+      double sigsq1 = clam / ((p+1) * std::max (gam, 1.0));
+      double sigsq2 = (lam - lam_r) / (4.0 * std::sqrt(gam));
       // sigsq2 > sigsq1 if signal else noise
       if (sigsq2 < sigsq1) {
         sigma2 = sigsq1;
