@@ -196,13 +196,13 @@ if manual_pe_dir:
   # Still construct the manual PE scheme even with 'None' or 'Pair':
   #   there may be information in the header that we need to compare against
   if PE_design == 'None':
-    line = manual_pe_dir.copy()
+    line = list(manual_pe_dir) # Make a copy
     line.append(trt)
     dwi_manual_pe_scheme = [ line ] * num_volumes
 
   # With 'Pair', also need to construct the manual scheme for SE EPIs
   elif PE_design == 'Pair':
-    line = manual_pe_dir.copy()
+    line = list(manual_pe_dir)
     line.append(trt)
     dwi_manual_pe_scheme = [ line ] * num_volumes
     num_topup_volumes = topup_size[3]
@@ -234,7 +234,7 @@ if manual_pe_dir:
     #   if there's one in the header, want to compare to the manually-generated one
     dwi_manual_pe_scheme = [ ]
     for index in range(0, num_volumes):
-      line = manual_pe_dir.copy()
+      line = list(manual_pe_dir)
       if grad_matchings[index] < index:
         line = [ (-i if i else 0.0) for i in line ]
       line.append(trt)
@@ -356,7 +356,7 @@ if lib.app.args.se_epi:
       else:
         if not dwi_pe_scheme:
           errorMessage('Unable to determine phase-encoding design of topup images')
-        line = dwi_pe_scheme[0].copy()
+        line = list(dwi_pe_scheme[0])
         topup_manual_pe_scheme = [ ' '.join(str(i) for i in line) ] * int(num_topup_volumes/2)
         line = [ (-i if i else 0.0) for i in line[0:3] ]
         line.append(trt)
