@@ -98,7 +98,7 @@ class DenoisingFunctor
       m (dwi.size(3)),
       n (extent[0]*extent[1]*extent[2]),
       r ((m<n) ? m : n),
-      X (m,n), 
+      X (m,n),
       pos {{0, 0, 0}}, 
       mask (mask),
       noise (noise)
@@ -116,23 +116,23 @@ class DenoisingFunctor
     load_data (dwi);
 
     // Compute Eigendecomposition:
-    Eigen::MatrixXf XtX (r,r);
+    Eigen::MatrixXd XtX (r,r);
     if (m <= n)
       XtX.template triangularView<Eigen::Lower>() = X * X.adjoint();
     else 
       XtX.template triangularView<Eigen::Lower>() = X.adjoint() * X;
-    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXf> eig (XtX);
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eig (XtX);
     // eigenvalues provide squared singular values, sorted in increasing order:
-    Eigen::VectorXf s = eig.eigenvalues();
+    Eigen::VectorXd s = eig.eigenvalues();
 
     // Marchenko-Pastur optimal threshold
-    const double lam_r = s[0] / n;
+    const double lam_r = std::max(s[0], 0.0) / n;
     double clam = 0.0;
     sigma2 = NaN;
     ssize_t cutoff_p = 0;
     for (ssize_t p = 0; p < r; ++p)
     {
-      double lam = s[p] / n;
+      double lam = std::max(s[p], 0.0) / n;
       clam += lam;
       double gam = double(m-r+p+1) / double(n);
       double sigsq1 = clam / ((p+1) * std::max (gam, 1.0));
@@ -141,7 +141,7 @@ class DenoisingFunctor
       if (sigsq2 < sigsq1) {
         sigma2 = sigsq1;
         cutoff_p = p+1;
-      } 
+      }
     }
 
     if (cutoff_p > 0) {
@@ -176,7 +176,7 @@ class DenoisingFunctor
       for (dwi.index(1) = pos[1]-extent[1]; dwi.index(1) <= pos[1]+extent[1]; ++dwi.index(1))
         for (dwi.index(0) = pos[0]-extent[0]; dwi.index(0) <= pos[0]+extent[0]; ++dwi.index(0), ++k)
           if (! is_out_of_bounds(dwi))
-            X.col(k) = dwi.row(3).template cast<float>();
+            X.col(k) = dwi.row(3).template cast<double>();
     // reset image position
     dwi.index(0) = pos[0];
     dwi.index(1) = pos[1];
@@ -186,7 +186,7 @@ class DenoisingFunctor
 private:
   const std::array<ssize_t, 3> extent;
   const ssize_t m, n, r;
-  Eigen::MatrixXf X;
+  Eigen::MatrixXd X;
   std::array<ssize_t, 3> pos;
   double sigma2;
   Image<bool> mask;
