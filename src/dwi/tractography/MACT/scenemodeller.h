@@ -57,24 +57,13 @@ class SceneModeller
 
     // methods to find the nearest tissue from a given point
     bool nearestTissue( const Eigen::Vector3d& point,
-                        struct Intersection& intersection ) const;
+                        struct Intersection& intersection,
+                        size_t stride = std::numeric_limits< size_t >::max() ) const;
 
-    // methods to check whether if a point is inside a closed mesh
-    // bool insideTissue( const Eigen::Vector3d& point,
-    //                    const std::string& name ) const;
-    bool insideTissue( const Eigen::Vector3d& point,
-                       const Tissue_ptr& tissue ) const;
-
-    bool onTissueSurface( const Eigen::Vector3d& point,
-                          const Tissue_ptr& tissue ) const;
-
-    // methods to check whether a point is inside a target tissue type
-    bool in_tissue( const Eigen::Vector3d& point, TissueType type ) const;
-    bool in_cgm( const Eigen::Vector3d& point ) const;
-    bool in_sgm( const Eigen::Vector3d& point ) const;
-    bool in_wm ( const Eigen::Vector3d& point ) const;
-    bool in_csf( const Eigen::Vector3d& point ) const;
-    bool in_bst( const Eigen::Vector3d& point ) const;
+    // methods to check whether a point is inside/on a target tissue type
+    bool inTissue( const Eigen::Vector3d& point, const TissueType& type ) const;
+    bool onTissue( const Eigen::Vector3d& point, const TissueType& type,
+                   struct Intersection& intersection ) const;
 
   private:
 
@@ -82,8 +71,7 @@ class SceneModeller
     BoundingBox< int32_t > _integerBoundingBox;
     Eigen::Vector3i _lutSize;
     BresenhamLine _bresenhamLine;
-    // std::map< std::string, Tissue_ptr > _tissues;
-    std::map< TissueType, std::map< std::string, Tissue_ptr > > _tissues;
+    std::map< TissueType, Tissue_ptr > _tissues;
     TissueLut _tissueLut;
 
     void intersectionAtVoxel( const Eigen::Vector3d& point,

@@ -133,10 +133,7 @@ bool Mesh::get_seed( Eigen::Vector3f& point ) const
          ( ( ( proj_p - v3 ).cross( -v13 ) ).dot( v23.cross( v13 ) ) >= 0 ) )
     {
       // true: assign projection point to seed point
-      for ( size_t a = 0; a < 3; a++ )
-      {
-        point[ a ] = ( float )proj_p[ a ];
-      }
+      point = proj_p.cast< float >();
       return true;
     }
   } while ( 1 );

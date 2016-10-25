@@ -18,6 +18,7 @@
 
 
 #define EPSILON std::numeric_limits< double >::epsilon()
+#define CUSTOM_PRECISION 1e-5
 
 
 namespace MR
@@ -82,33 +83,16 @@ void SceneModeller::lutVoxel( const Eigen::Vector3d& point,
 }
 
 
-/*void SceneModeller::addTissues( const std::set< Tissue_ptr >& tissues )
-{
-  auto t = tissues.begin(), te = tissues.end();
-  while ( t != te )
-  {
-    if ( _tissues.find( ( *t )->name() ) != _tissues.end() )
-    {
-      throw Exception( "Duplicate tissue name" );
-    }
-    _tissues[ ( *t )->name() ] = *t;
-    _tissueLut.update( *t );
-    ++ t;
-  }
-}*/
-
-
 void SceneModeller::addTissues( const std::set< Tissue_ptr >& tissues )
 {
   auto t = tissues.begin(), te = tissues.end();
   while ( t != te )
   {
-    if ( _tissues[ ( *t )->type() ].find( ( *t )->name() ) !=
-         _tissues[ ( *t )->type() ].end() )
+    if ( _tissues.find( ( *t )->type() ) != _tissues.end() )
     {
-      throw Exception( "Duplicate tissue name for the same tissue type" );
+      throw Exception( "Add duplicate tissue type" );
     }
-    _tissues[ ( *t )->type() ][ ( *t )->name() ] = *t;
+    _tissues[ ( *t )->type() ] = *t;
     _tissueLut.update( *t );
     ++ t;
   }
@@ -122,7 +106,8 @@ const TissueLut& SceneModeller::tissueLut() const
 
 
 bool SceneModeller::nearestTissue( const Eigen::Vector3d& point,
-                                   Intersection& intersection ) const
+                                   Intersection& intersection,
+                                   size_t stride ) const
 {
   if ( _tissues.empty() )
   {
@@ -134,18 +119,19 @@ bool SceneModeller::nearestTissue( const Eigen::Vector3d& point,
     Eigen::Vector3i voxel;
     _bresenhamLine.point2voxel( point, voxel );
 
-    // increasing the stride until the nearest mesh tissue is found
+    // unless the range is specified, increasing the stride until the nearest
+    // mesh tissue is found (min search = 27 neighbouring grids)
     Eigen::Vector3i thisVoxel;
-    int32_t stride = 1;
-    while ( intersection._tissue == 0 )
+    int32_t s = 1;
+    do
     {
-      for ( int32_t x = -stride; x <= stride; x++ )
+      for ( int32_t x = -s; x <= s; x++ )
       {
         thisVoxel[ 0 ] = voxel[ 0 ] + x;
-        for ( int32_t y = -stride; y <= stride; y++ )
+        for ( int32_t y = -s; y <= s; y++ )
         {
           thisVoxel[ 1 ] = voxel[ 1 ] + y;
-          for ( int32_t z = -stride; z <= stride; z++ )
+          for ( int32_t z = -s; z <= s; z++ )
           {
             thisVoxel[ 2 ] = voxel[ 2 ] + z;
             if ( _integerBoundingBox.contains( thisVoxel ) )
@@ -170,73 +156,25 @@ bool SceneModeller::nearestTissue( const Eigen::Vector3d& point,
           }
         }
       }
-      ++ stride;
-    }
-    return true;
+      ++ s;
+    } while ( s < stride && !intersection._tissue );
+
+    return intersection._tissue ? true : false;
   }
 }
 
 
-// bool SceneModeller::insideTissue( const Eigen::Vector3d& point,
-//                                   const std::string& name ) const
-// {
-//   // ************ Note: the method only functions for a closed mesh ************
-//   if ( _tissues.find( name ) == _tissues.end() )
-//   {
-//     throw Exception( "Input tissue name not found" );
-//   }
-//   else
-//   {
-//     auto theTissue = _tissues.find( name )->second;
-//     Eigen::Vector3d projectionPoint( point );
-
-//     ////// casting a ray in +x or -x direction
-//     double upperX = _boundingBox.getUpperX();
-//     double lowerX = _boundingBox.getLowerX();
-//     projectionPoint[ 0 ] = ( upperX - point[ 0 ] ) <
-//                            ( point[ 0 ] - lowerX ) ? upperX : lowerX;
-//     IntersectionSet iX( *this, point, projectionPoint, theTissue );
-
-//     ////// casting a ray in +y or -y direction
-//     projectionPoint = point;
-//     double upperY = _boundingBox.getUpperY();
-//     double lowerY = _boundingBox.getLowerY();
-//     projectionPoint[ 1 ] = ( upperY - point[ 1 ] ) <
-//                            ( point[ 1 ] - lowerY ) ? upperY : lowerY;
-//     IntersectionSet iY( *this, point, projectionPoint, theTissue );
-
-//     ////// casting a ray in +z or -z direction
-//     projectionPoint = point;
-//     double upperZ = _boundingBox.getUpperZ();
-//     double lowerZ = _boundingBox.getLowerZ();
-//     projectionPoint[ 2 ] = ( upperZ - point[ 2 ] ) <
-//                            ( point[ 2 ] - lowerZ ) ? upperZ : lowerZ;
-//     IntersectionSet iZ( *this, point, projectionPoint, theTissue );
-
-//     if ( ( iX.count() % 2 ) && ( iY.count() % 2 ) && ( iZ.count() % 2 ) )
-//     {
-//       // an odd number of intersections --> inside
-//       return true;
-//     }
-//     else
-//     {
-//       // an even number of intersections --> outside
-//       return false;
-//     }
-//     /*
-//     / need method to handle the case where the point locates on the mesh
-//     / (need to deal with the numerical approximation problem)
-//     */
-//   }
-// }
-
-
-bool SceneModeller::insideTissue( const Eigen::Vector3d& point,
-                                  const Tissue_ptr& theTissue ) const
+bool SceneModeller::inTissue( const Eigen::Vector3d& point,
+                              const TissueType& type ) const
 {
   // ************ Note: the method only functions for a closed mesh ************
-  if ( theTissue )
+  if ( _tissues.find( type ) == _tissues.end() )
   {
+    throw Exception( "Input tissue type not found" );
+  }
+  else
+  {
+    auto theTissue = _tissues.find( type )->second;
     Eigen::Vector3d projectionPoint( point );
 
     ////// casting a ray in +x or -x direction
@@ -246,6 +184,7 @@ bool SceneModeller::insideTissue( const Eigen::Vector3d& point,
                            ( point[ 0 ] - lowerX ) ? upperX : lowerX;
     IntersectionSet iX( *this, point, projectionPoint, theTissue );
 
+    /* Theoretically the method can work by casting only one ray
     ////// casting a ray in +y or -y direction
     projectionPoint = point;
     double upperY = _boundingBox.getUpperY();
@@ -262,7 +201,8 @@ bool SceneModeller::insideTissue( const Eigen::Vector3d& point,
                            ( point[ 2 ] - lowerZ ) ? upperZ : lowerZ;
     IntersectionSet iZ( *this, point, projectionPoint, theTissue );
 
-    if ( ( iX.count() % 2 ) && ( iY.count() % 2 ) && ( iZ.count() % 2 ) )
+    if ( ( iX.count() % 2 ) && ( iY.count() % 2 ) && ( iZ.count() % 2 ) )*/
+    if ( iX.count() % 2 )
     {
       // an odd number of intersections --> inside
       return true;
@@ -273,79 +213,27 @@ bool SceneModeller::insideTissue( const Eigen::Vector3d& point,
       return false;
     }
   }
+}
+
+
+bool SceneModeller::onTissue( const Eigen::Vector3d& point,
+                              const TissueType& type,
+                              Intersection& intersection ) const
+{
+  if ( _tissues.find( type ) == _tissues.end() )
+  {
+    throw Exception( "Input tissue type not found" );
+  }
   else
   {
-    throw Exception( "checking a point with empty tissues" );
-  }
-}
-
-
-bool SceneModeller::onTissueSurface( const Eigen::Vector3d& point,
-                                     const Tissue_ptr& theTissue ) const
-{
-  if ( theTissue )
-  {
-    Eigen::Vector3i voxel;
-    _bresenhamLine.point2voxel( point, voxel );
-    if ( !_tissueLut.getTissues( voxel ).empty() )
+    nearestTissue( point, intersection, 1 ); /* onyl check 27 neighbours */ 
+    if ( intersection._tissue == _tissues.find( type )->second &&
+         intersection._arcLength < CUSTOM_PRECISION )
     {
-      Intersection intersection;
-      nearestTissue( point, intersection );
-      if ( intersection._tissue == theTissue &&
-           intersection._arcLength < std::numeric_limits< float >::epsilon() )
-      {
-        // the point locates on the tissue surface (with float precision)
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-
-bool SceneModeller::in_tissue( const Eigen::Vector3d& point,
-                               TissueType type ) const
-{
-  auto targetTissues = _tissues.find( type )->second;
-  for ( auto t = targetTissues.begin(); t != targetTissues.end(); ++ t )
-  {
-    if ( insideTissue( point, t->second ) )
-    {
-      // return true if inside ANY tissue of target type
       return true;
     }
+    return false;
   }
-  return false;
-}
-
-
-bool SceneModeller::in_cgm( const Eigen::Vector3d& point ) const
-{
-  return in_tissue( point, CGM ) ? true : false;
-}
-
-
-bool SceneModeller::in_sgm( const Eigen::Vector3d& point ) const
-{
-  return in_tissue( point, SGM ) ? true : false;
-}
-
-
-bool SceneModeller::in_wm ( const Eigen::Vector3d& point ) const
-{
-  return in_tissue( point, WM ) ? true : false;
-}
-
-
-bool SceneModeller::in_csf( const Eigen::Vector3d& point ) const
-{
-  return in_tissue( point, CSF ) ? true : false;
-}
-
-
-bool SceneModeller::in_bst( const Eigen::Vector3d& point ) const
-{
-  return in_tissue( point, BST ) ? true : false;
 }
 
 
