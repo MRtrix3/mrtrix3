@@ -136,7 +136,6 @@ namespace MR
 
             term_t iterate ()
             {
-
               const term_t method_term = (S.rk4 ? next_rk4() : method.next());
 
               if (method_term)
@@ -164,6 +163,49 @@ namespace MR
 
               return CONTINUE;
 
+            }
+
+
+            term_t iterate( GeneratedTrack& tck )
+            {
+              const term_t method_term = ( S.rk4 ? next_rk4() : method.next() );
+
+              if ( method_term )
+              {
+                return ( S.is_mact() && method.mact()._sgm_depth ) ? TERM_IN_SGM : method_term;
+              }
+
+              if ( S.is_mact() )
+              {
+                const term_t structural_term = method.mact().check_structural( tck.back(),
+                                                                               method.pos );
+                if ( structural_term )
+                {
+                  return structural_term;
+                }
+              }
+
+              if ( S.properties.mask.size() && !S.properties.mask.contains( method.pos ) )
+              {
+                return EXIT_MASK;
+              }
+              if ( S.properties.exclude.contains( method.pos ) )
+              {
+                return ENTER_EXCLUDE;
+              }
+
+              // If backtracking is not enabled, add streamline to include regions as it is generated
+              // If it is enabled, this check can only be performed after the streamline is completed
+              if ( !( S.is_mact() && S.mact().backtrack() ) )
+              {
+                S.properties.include.contains( method.pos, track_included );
+              }
+              if ( S.stop_on_all_include && traversed_all_include_regions() )
+              {
+                return TRAVERSE_ALL_INCLUDE;
+              }
+
+              return CONTINUE;
             }
 
 
@@ -197,9 +239,13 @@ namespace MR
                 }
 
               }
-
               if (S.is_act() && !unidirectional)
                 unidirectional = method.act().seed_is_unidirectional (method.pos, method.dir);
+
+              if ( S.is_mact() && !unidirectional )
+              {
+                unidirectional = method.mact().seed_is_unidirectional( method.pos, method.dir );
+              }
 
               S.properties.include.contains (method.pos, track_included);
 
@@ -229,7 +275,6 @@ namespace MR
               term_t termination = CONTINUE;
 
               if (S.is_act() && S.act().backtrack()) {
-
                 size_t revert_step = 1;
                 size_t max_size_at_backtrack = tck.size();
                 unsigned int revert_count = 0;
@@ -262,8 +307,73 @@ namespace MR
                   }
                 } while (!termination);
 
-              } else {
+              }
 
+              // else if ( S.is_mact() && S.mact().backtrack() )
+              else if ( S.is_mact() )
+              {
+                if ( S.mact().backtrack() )
+                {
+                  size_t revert_step = 1;
+                  size_t max_size_at_backtrack = tck.size();
+                  unsigned int revert_count = 0;
+                  do
+                  {
+                    termination = iterate( tck );
+                    if ( term_add_to_tck[ termination ] )
+                    {
+                      tck.push_back( method.pos );
+                    }
+                    if ( termination )
+                    {
+                      apply_priors( termination );
+                      if ( track_excluded && termination != ENTER_EXCLUDE )
+                      {
+                        if ( tck.size() > max_size_at_backtrack )
+                        {
+                          max_size_at_backtrack = tck.size();
+                          revert_step = 1;
+                          revert_count = 1;
+                        }
+                        else
+                        {
+                          if ( revert_count++ == ACT_BACKTRACK_ATTEMPTS )
+                          {
+                            revert_count = 1;
+                            ++revert_step;
+                          }
+                        }
+                        method.truncate_track( tck, max_size_at_backtrack, revert_step );
+                        if ( method.pos.allFinite() )
+                        {
+                          track_excluded = false;
+                          termination = CONTINUE;
+                        }
+                      }
+                    }
+                    else if ( tck.size() >= S.max_num_points )
+                    {
+                      termination = LENGTH_EXCEED;
+                    }
+                  } while ( !termination );
+                }
+                else
+                {
+                  do
+                  {
+                    termination = iterate( tck );
+                    if ( term_add_to_tck[ termination ] )
+                    {
+                      tck.push_back( method.pos );
+                    }
+                    if ( !termination && tck.size() >= S.max_num_points )
+                    {
+                      termination = LENGTH_EXCEED;
+                    }
+                  } while ( !termination );
+                }
+
+              } else {
                 do {
                   termination = iterate();
                   if (term_add_to_tck[termination])
@@ -273,9 +383,7 @@ namespace MR
                 } while (!termination);
 
               }
-
               apply_priors (termination);
-
               if (termination == EXIT_SGM) {
                 truncate_exit_sgm (tck);
                 method.pos = tck.back();
@@ -336,6 +444,28 @@ namespace MR
 
                 }
 
+              }
+
+              else if ( S.is_mact() )
+              {
+                switch ( termination )
+                {
+
+                  case CONTINUE:
+                    throw Exception ("\nFIXME: undefined termination of track in apply_priors()\n");
+
+                  case ENTER_CGM: case EXIT_IMAGE: case EXIT_MASK: case EXIT_SGM: case TERM_IN_SGM: case TRAVERSE_ALL_INCLUDE:
+                    break;
+
+                  case ENTER_CSF: case LENGTH_EXCEED: case ENTER_EXCLUDE:
+                    track_excluded = true;
+                    break;
+
+                  case CALIBRATE_FAIL: case BAD_SIGNAL: case HIGH_CURVATURE:
+                    track_excluded = true;
+                    break;
+                }
+
               } else {
 
                 switch (termination) {
@@ -390,6 +520,17 @@ namespace MR
                     S.properties.include.contains (i, track_included);
                 }
 
+              }
+
+              if ( S.is_mact() )
+              {
+                if ( S.mact().backtrack() )
+                {
+                  for ( const auto& i : tck )
+                  {
+                    S.properties.include.contains( i, track_included );
+                  }
+                }
               }
 
               if (!traversed_all_include_regions()) {

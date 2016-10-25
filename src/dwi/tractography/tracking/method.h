@@ -20,6 +20,7 @@
 #include "dwi/tractography/rng.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/ACT/method.h"
+#include "dwi/tractography/MACT/method.h"
 
 
 
@@ -43,6 +44,7 @@ namespace MR
               dir (0.0, 0.0, 1.0),
               S (shared),
               act_method_additions (S.is_act() ? new ACT::ACT_Method_additions (S) : nullptr),
+              mact_method_additions (S.is_mact() ? new MACT::MACT_Method_additions (S) : nullptr),
               values (shared.source.size(3)) { }
 
             MethodBase (const MethodBase& that) :
@@ -50,6 +52,7 @@ namespace MR
               dir (0.0, 0.0, 1.0),
               S (that.S),
               act_method_additions (S.is_act() ? new ACT::ACT_Method_additions (S) : nullptr),
+              mact_method_additions (S.is_mact() ? new MACT::MACT_Method_additions (S) : nullptr),
               uniform (that.uniform),
               values (that.values.size()) { }
 
@@ -62,7 +65,8 @@ namespace MR
 
               if ((S.properties.mask.size() && !S.properties.mask.contains (pos))
                   || (S.properties.exclude.contains (pos))
-                  || (S.is_act() && !act().check_seed (pos))) {
+                  || (S.is_act() && !act().check_seed (pos))
+                  || (S.is_mact() && !mact().check_seed (pos))) {
                 pos = { NaN, NaN, NaN };
                 return false;
               }
@@ -114,6 +118,7 @@ namespace MR
 
 
             ACT::ACT_Method_additions& act() const { return *act_method_additions; }
+            MACT::MACT_Method_additions& mact() const { return *mact_method_additions; }
 
             Eigen::Vector3f pos, dir;
 
@@ -121,7 +126,7 @@ namespace MR
           private:
             const SharedBase& S;
             std::unique_ptr<ACT::ACT_Method_additions> act_method_additions;
-
+            std::unique_ptr<MACT::MACT_Method_additions> mact_method_additions;
 
           protected:
             std::uniform_real_distribution<float> uniform;

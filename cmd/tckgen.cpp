@@ -26,6 +26,7 @@
 #include "dwi/tractography/tracking/tractography.h"
 
 #include "dwi/tractography/ACT/act.h"
+#include "dwi/tractography/MACT/mact.h"
 
 #include "dwi/tractography/algorithms/fact.h"
 #include "dwi/tractography/algorithms/iFOD1.h"
@@ -133,6 +134,8 @@ void usage ()
 
   + DWI::Tractography::ACT::ACTOption
 
+  + DWI::Tractography::MACT::MACTOption
+
   + DWI::Tractography::Seeding::SeedOption
   
   + DWI::GradImportOptions();
@@ -159,6 +162,8 @@ void run ()
   Tracking::load_streamline_properties (properties);
 
   ACT::load_act_properties (properties);
+
+  MACT::load_mact_properties (properties);
 
   Seeding::load_tracking_seeds (properties);
 

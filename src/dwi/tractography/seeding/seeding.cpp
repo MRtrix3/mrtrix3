@@ -56,6 +56,9 @@ namespace MR
       + Option ("seed_gmwmi", "seed from the grey matter - white matter interface (only valid if using ACT framework)").allow_multiple()
         + Argument ("seed_image").type_image_in()
 
+      + Option ("seed_mesh", "seed from surface mesh").allow_multiple()
+        + Argument ("mesh").type_file_in()
+
       + Option ("seed_dynamic", "determine seed points dynamically using the SIFT model (must not provide any other seeding mechanism). "
                                 "Note that while this seeding mechanism improves the distribution of reconstructed streamlines density, "
                                 "it should NOT be used as a substitute for the SIFT method itself.") // Don't allow multiple
@@ -119,6 +122,16 @@ namespace MR
           for (size_t i = 0; i < opt.size(); ++i) {
             GMWMI* seed = new GMWMI (opt[i][0], str(opt_act[0][0]));
             list.add (seed);
+          }
+        }
+
+        opt = get_options( "seed_mesh" );
+        if ( opt.size() )
+        {
+          for ( size_t i = 0; i < opt.size(); ++i)
+          {
+            Mesh* seed = new Mesh( opt[ i ][ 0 ] );
+            list.add( seed );
           }
         }
 

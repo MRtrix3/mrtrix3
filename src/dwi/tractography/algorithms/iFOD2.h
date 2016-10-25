@@ -321,7 +321,8 @@ end_init:
               sample_idx = S.num_samples;
 
               // Need to update sgm_depth appropriately, remembering that it is tracked by exec
-              act().sgm_depth = (act().sgm_depth > points_to_remove) ? act().sgm_depth - points_to_remove : 0;
+              if (S.is_act())
+                act().sgm_depth = (act().sgm_depth > points_to_remove) ? act().sgm_depth - points_to_remove : 0;
             }
 
 

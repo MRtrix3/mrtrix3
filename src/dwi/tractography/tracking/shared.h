@@ -25,6 +25,7 @@
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/roi.h"
 #include "dwi/tractography/ACT/shared.h"
+#include "dwi/tractography/MACT/shared.h"
 #include "dwi/tractography/resampling/downsampler.h"
 #include "dwi/tractography/tracking/types.h"
 
@@ -109,6 +110,15 @@ namespace MR
                   act_shared_additions.reset (new ACT::ACT_Shared_additions (properties["act"], property_set));
                   if (act().backtrack() && stop_on_all_include)
                     throw Exception ("Cannot use -stop option if ACT backtracking is enabled");
+                }
+
+                if (properties.find ("mact") != properties.end())
+                {
+                  mact_shared_additions.reset( new MACT::MACT_Shared_additions( property_set ) );
+                  if (mact().backtrack() && stop_on_all_include)
+                  {
+                    throw Exception ("Cannot use -stop option if ACT backtracking is enabled");
+                  }
                 }
 
                 if (properties.find ("downsample_factor") != properties.end())
@@ -217,6 +227,9 @@ namespace MR
             bool is_act() const { return bool (act_shared_additions); }
             const ACT::ACT_Shared_additions& act() const { return *act_shared_additions; }
 
+            // Additional members for MACT
+            bool is_mact() const { return bool (mact_shared_additions); }
+            const MACT::MACT_Shared_additions& mact() const { return *mact_shared_additions; }
 
 
             float vox () const
@@ -237,7 +250,7 @@ namespace MR
               properties.set (max_dist, "max_dist");
               max_num_points = std::round (max_dist/step_size) + 1;
 
-              float min_dist = is_act() ? (2.0 * vox()) : (5.0 * vox());
+              float min_dist = ( is_act() || is_mact() ) ? (2.0 * vox()) : (5.0 * vox());
               properties.set (min_dist, "min_dist");
               min_num_points = std::max (2, int(std::round (min_dist/step_size) + 1));
 
@@ -285,6 +298,7 @@ namespace MR
             mutable size_t rejections  [REJECTION_REASON_COUNT];
 
             std::unique_ptr<ACT::ACT_Shared_additions> act_shared_additions;
+            std::unique_ptr<MACT::MACT_Shared_additions> mact_shared_additions;
 
 #ifdef DEBUG_TERMINATIONS
             Header debug_header;

@@ -22,6 +22,7 @@
 #include "dwi/tractography/seeding/dynamic.h"
 #include "dwi/tractography/seeding/gmwmi.h"
 #include "dwi/tractography/seeding/list.h"
+#include "dwi/tractography/seeding/mesh.h"
 
 
 
