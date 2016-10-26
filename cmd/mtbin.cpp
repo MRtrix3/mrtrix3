@@ -48,11 +48,11 @@ void usage ()
 }
 
 
-Eigen::MatrixXf basis_function (Eigen::Vector3 pos) {
+Eigen::MatrixXd basis_function (Eigen::Vector3 pos) {
     float x = (float)pos[0];
     float y = (float)pos[1];
     float z = (float)pos[2];
-    Eigen::MatrixXf basis(19, 1);
+    Eigen::MatrixXd basis(19, 1);
     basis(0) = 1.0;
     basis(1) = x;
     basis(2) = y;
@@ -134,25 +134,26 @@ void run ()
       num_voxels++;
   }
 
+  save(mask, "computed_mask.mif");
+
   if (!num_voxels)
     throw Exception ("error in automatic mask generation. Mask contains no voxels");
 
   const float normalisation_value = get_option_value ("value", DEFAULT_NORM_VALUE);
 
   // Initialise bias field to 1
-  Eigen::MatrixXf bias_field_weights (19, 1);
+  Eigen::MatrixXd bias_field_weights (19, 1);
   bias_field_weights.setZero();
   bias_field_weights(0,0) = 1.0;
 
   Transform transform (mask);
 
-
   // Iterate until convergence or max iterations performed
   ProgressBar progress ("normalising tissue compartments and estimating biasfield...");
-  for (size_t iter = 0; iter < 4; ++iter) {
-    Eigen::MatrixXf scale_factors;
-    Eigen::MatrixXf X (num_voxels, input_images.size());
-    Eigen::MatrixXf y (num_voxels, 1);
+  for (size_t iter = 0; iter < 1; ++iter) {
+    Eigen::MatrixXd scale_factors;
+    Eigen::MatrixXd X (num_voxels, input_images.size());
+    Eigen::MatrixXd y (num_voxels, 1);
     y.fill (normalisation_value);
     uint32_t counter = 0;
     for (auto i = Loop (mask) (mask); i; ++i) {
@@ -163,7 +164,7 @@ void run ()
 
         for (size_t j = 0; j < input_images.size(); ++j) {
           assign_pos_of (mask, 0, 3).to (input_images[j]);
-          X (counter, j) = bias_field_value * input_images[j].value();
+          X (counter, j) = input_images[j].value() / bias_field_value;
         }
         ++counter;
       }
@@ -171,24 +172,26 @@ void run ()
     scale_factors = X.colPivHouseholderQr().solve(y);
     progress++;
 
-    Eigen::MatrixXf v (19, 1);
-    Eigen::MatrixXf A (19, 19);
-    Eigen::MatrixXf scale_factors_squared = scale_factors.array().pow(2);
+
+
+    Eigen::MatrixXd v (19, 1);
+    Eigen::MatrixXd A (19, 19);
+    Eigen::MatrixXd scale_factors_squared = scale_factors.array().pow(2);
 
     for (auto i = Loop (mask) (mask); i; ++i) {
       if (mask.value()) {
-        float summed = 0.0;
-        float summed_squared = 0.0;
         Eigen::Vector3 vox (mask.index(0), mask.index(1), mask.index(2));
         Eigen::Vector3 pos = transform.voxel2scanner * vox;
         auto basis = basis_function (pos);  // could precompute
 
+        double summed = 0.0;
+        double summed_squared = 0.0;
         for (size_t j = 0; j < input_images.size(); ++j) {
           assign_pos_of (mask, 0, 3).to (input_images[j]);
           summed += scale_factors(j,0) * input_images[j].value();
           summed_squared += scale_factors_squared(j,0) * input_images[j].value();
         }
-        Eigen::MatrixXf basis_mat = basis * basis.transpose();
+        Eigen::MatrixXd basis_mat = basis * basis.transpose();
         basis_mat.array() *= summed_squared;
         A.array() += basis_mat.array();
 
@@ -196,7 +199,12 @@ void run ()
         v.array() += basis.array();
       }
     }
-    bias_field_weights = A.colPivHouseholderQr().solve(v);
+
+    std::cout << "A" << A << std::endl;
+    std::cout << "v" << v << std::endl;
+    //bias_field_weights = A.colPivHouseholderQr().solve(v);
+    bias_field_weights  = A.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(v);
+    std::cout << "weights" << bias_field_weights << std::endl;
     progress++;
   }
 
