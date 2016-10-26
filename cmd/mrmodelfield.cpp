@@ -102,7 +102,7 @@ void run ()
       num_voxels++;
   }
 
-  Eigen::MatrixXf X (num_voxels, 18);
+  Eigen::MatrixXf X (num_voxels, 19);
   Eigen::VectorXf y (num_voxels);
   y.setOnes();
 
