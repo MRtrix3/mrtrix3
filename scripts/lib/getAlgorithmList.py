@@ -3,7 +3,7 @@ def getAlgorithmList():
   # Build an initial list of possible algorithms, found in the relevant scripts/src/ directory
   algorithm_list = []
   execpath=sys.argv[0]
-  while os.path.islink (execpath): execpath=os.readlink (execpath)
+  if os.path.islink (execpath): execpath=os.path.realpath (execpath)
   path = os.path.basename(execpath)
   if not path[0].isalpha():
     path = '_' + path
