@@ -162,10 +162,14 @@ namespace MR
       H.name() = image_name;
 
       const Formats::Base** format_handler = Formats::handlers;
+      const std::vector<ssize_t> strides (Stride::get_symbolic (H));
       for (; *format_handler; format_handler++)
         if ((*format_handler)->check (H, H.ndim() - Pdim.size()))
           break;
-
+      const std::vector<ssize_t> strides_aftercheck (Stride::get_symbolic (H));
+      if (! std::equal(strides.begin(), strides.end(), strides_aftercheck.begin())) {
+        WARN ("output strides "+str(strides_aftercheck)+" are different from specified strides "+str(strides));
+      }
       if (!*format_handler) {
         const std::string basename = Path::basename (image_name);
         const size_t extension_index = basename.find_last_of (".");
