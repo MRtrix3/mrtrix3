@@ -160,16 +160,12 @@ namespace MR
         Hdim[i] = H.size(i);
 
       H.name() = image_name;
+      const std::vector<ssize_t> strides (Stride::get_symbolic (H));
 
       const Formats::Base** format_handler = Formats::handlers;
-      const std::vector<ssize_t> strides (Stride::get_symbolic (H));
       for (; *format_handler; format_handler++)
         if ((*format_handler)->check (H, H.ndim() - Pdim.size()))
           break;
-      const std::vector<ssize_t> strides_aftercheck (Stride::get_symbolic (H));
-      if (! std::equal(strides.begin(), strides.end(), strides_aftercheck.begin())) {
-        INFO ("output strides "+str(strides_aftercheck)+" are different from specified strides "+str(strides));
-      }
       if (!*format_handler) {
         const std::string basename = Path::basename (image_name);
         const size_t extension_index = basename.find_last_of (".");
@@ -177,6 +173,16 @@ namespace MR
           throw Exception ("unknown format for image \"" + image_name + "\" (no file extension specified)");
         else
           throw Exception ("unknown format for image \"" + image_name + "\" (unsupported file extension: " + basename.substr (extension_index) + ")");
+      }
+
+      const std::vector<ssize_t> strides_aftercheck (Stride::get_symbolic (H));
+      if (! std::equal(strides.begin(), strides.end(), strides_aftercheck.begin())) {
+        const size_t extension_index = image_name.find_last_of (".");
+        if (extension_index != std::string::npos){
+          INFO("output strides for image "+image_name+" modified to "+str(strides_aftercheck)+" - requested strides "+str(strides)+" are not supported in "+ image_name.substr (extension_index)+" format");
+        } else {
+          INFO("output strides for image "+image_name+" modified to "+str(strides_aftercheck)+" - requested strides "+str(strides)+" are not supported");
+        }
       }
 
       H.datatype().set_byte_order_native();
