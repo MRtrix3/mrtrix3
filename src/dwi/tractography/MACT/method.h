@@ -47,6 +47,7 @@ class MACT_Method_additions
     MACT_Method_additions( const MACT_Method_additions& ) = delete;
     MACT_Method_additions() = delete;
 
+    size_t sgm_depth() const;
     const std::shared_ptr< SceneModeller >& sceneModeller() const;
 
     // term_t check_structural( const Eigen::Vector3f& pos );
@@ -54,22 +55,24 @@ class MACT_Method_additions
                              Eigen::Vector3f& new_pos );
 
     bool check_seed( const Eigen::Vector3f& pos );
-    bool seed_is_unidirectional( Eigen::Vector3f& pos, Eigen::Vector3f& dir );
+    bool seed_is_unidirectional( Eigen::Vector3f& pos,
+                                 Eigen::Vector3f& dir ) const;
 
     bool fetch_tissue_data( const Eigen::Vector3f& pos );
     bool in_pathology() const;
     void reverse_track();
 
     size_t _sgm_depth;
-    bool _seed_in_sgm;
-    bool _sgm_seed_to_wm;
 
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
   private:
 
-    std::shared_ptr< SceneModeller > _sceneModeller;
+    bool _seed_in_sgm;
+    bool _sgm_seed_to_wm;
+    bool _point_in_sgm;
     bool _crop_at_gmwmi;
+    std::shared_ptr< SceneModeller > _sceneModeller;
 
 };
 

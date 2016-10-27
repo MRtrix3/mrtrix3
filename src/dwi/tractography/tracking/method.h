@@ -91,7 +91,12 @@ namespace MR
               }
 
 
-            virtual void reverse_track() { if (act_method_additions) act().reverse_track(); }
+            virtual void reverse_track()
+            {
+              if (act_method_additions) act().reverse_track();
+              if (mact_method_additions) mact().reverse_track();
+            }
+
             bool init() { return false; }
             term_t next() { return term_t(); }
             float get_metric() { return NaN; }
@@ -114,6 +119,8 @@ namespace MR
               pos = tck.back();
               if (S.is_act())
                 act().sgm_depth = (act().sgm_depth > revert_step) ? act().sgm_depth - revert_step : 0;
+              if (S.is_mact())
+                mact()._sgm_depth = (mact()._sgm_depth > revert_step) ? mact()._sgm_depth - revert_step : 0;
             }
 
 

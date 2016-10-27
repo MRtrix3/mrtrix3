@@ -40,8 +40,9 @@ MACT_Method_additions::MACT_Method_additions( const SharedBase& shared )
                       : _sgm_depth( 0 ),
                         _seed_in_sgm( false ),
                         _sgm_seed_to_wm( false ),
-                        _sceneModeller( shared.mact()._sceneModeller ),
-                        _crop_at_gmwmi( shared.mact()._crop_at_gmwmi )
+                        _point_in_sgm( false ),
+                        _crop_at_gmwmi( shared.mact()._crop_at_gmwmi ),
+                        _sceneModeller( shared.mact()._sceneModeller )
 {
 }
 
@@ -94,17 +95,10 @@ term_t MACT_Method_additions::check_structural( const Eigen::Vector3f& old_pos,
   {
     auto firstIntersection = intersections.intersection( 0 );
     auto tissue = firstIntersection._tissue;
+
     if ( tissue->type() == CSF )
     {
-      return ENTER_CSF;
-    }
-    else if ( tissue->type() == SGM )
-    {
-      if ( _crop_at_gmwmi )
-      {
-        new_pos = firstIntersection._point.cast< float >();
-      }
-      return TERM_IN_SGM;
+      return _sgm_depth ? EXIT_SGM : ENTER_CSF;
     }
     else if ( tissue->type() == WM )
     {
@@ -113,6 +107,34 @@ term_t MACT_Method_additions::check_structural( const Eigen::Vector3f& old_pos,
         new_pos = firstIntersection._point.cast< float >();
       }
       return ENTER_CGM;
+    }
+    else if ( tissue->type() == SGM )
+    {
+      if ( _sgm_depth )
+      {
+        // the seed was already inside SGM
+        if ( _seed_in_sgm && !_sgm_seed_to_wm )
+        {
+          // the seed moves from sgm to wm
+          _sgm_seed_to_wm = true;
+          _sgm_depth = 0;
+          _point_in_sgm = false;
+          return CONTINUE;
+        }
+        return EXIT_SGM;
+      }
+      else if ( !_sgm_depth && _seed_in_sgm && !_sgm_seed_to_wm )
+      {
+        // the seed moves from sgm to wm at the first tracking step
+        _sgm_seed_to_wm = true;
+        _sgm_depth = 0;
+        _point_in_sgm = false;
+        return CONTINUE;
+      }
+      else
+      {
+        _point_in_sgm = true;
+      }
     }
     else if ( tissue->type() == CGM )
     {
@@ -125,6 +147,11 @@ term_t MACT_Method_additions::check_structural( const Eigen::Vector3f& old_pos,
       return ENTER_CGM;
     }
   }
+  if ( _point_in_sgm )
+  {
+    ++ _sgm_depth;
+  }
+
   return CONTINUE;
 }
 
@@ -132,7 +159,7 @@ term_t MACT_Method_additions::check_structural( const Eigen::Vector3f& old_pos,
 bool MACT_Method_additions::check_seed( const Eigen::Vector3f& pos )
 {
   Eigen::Vector3d point = pos.cast< double >();
-
+  _sgm_depth = 0;
   if ( _sceneModeller->inTissue( point, CSF ) )
   {
     return false;
@@ -141,16 +168,19 @@ bool MACT_Method_additions::check_seed( const Eigen::Vector3f& pos )
   {
     _seed_in_sgm = true;
     _sgm_seed_to_wm = false;
+    _point_in_sgm = true;
     return true;
   }
   _seed_in_sgm = false;
+  _sgm_seed_to_wm = false;
+  _point_in_sgm = false;
 
   return true;
 }
 
 
 bool MACT_Method_additions::seed_is_unidirectional( Eigen::Vector3f& pos,
-                                                    Eigen::Vector3f& dir )
+                                                    Eigen::Vector3f& dir ) const
 {
   Eigen::Vector3d p = pos.cast< double >();
   Eigen::Vector3d d = dir.cast< double >();
@@ -198,6 +228,7 @@ bool MACT_Method_additions::in_pathology() const
 
 void MACT_Method_additions::reverse_track()
 {
+  _sgm_depth = 0;
 }
 
 

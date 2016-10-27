@@ -462,7 +462,14 @@ namespace MR
                     break;
 
                   case CALIBRATE_FAIL: case BAD_SIGNAL: case HIGH_CURVATURE:
-                    track_excluded = true;
+                    if ( method.mact()._sgm_depth )
+                    {
+                      termination = TERM_IN_SGM;
+                    }
+                    else if ( !method.mact().in_pathology() )
+                    {
+                      track_excluded = true;
+                    }
                     break;
                 }
 
@@ -582,10 +589,12 @@ namespace MR
 
             void truncate_exit_sgm (std::vector<Eigen::Vector3f>& tck)
             {
-
               Interpolator<Image<float>>::type source (S.source);
-
-              const size_t sgm_start = tck.size() - method.act().sgm_depth;
+              size_t sgm_start = 0;
+              if (S.is_act())
+                sgm_start = tck.size() - method.act().sgm_depth;
+              else if (S.is_mact())
+                sgm_start = tck.size() - method.mact()._sgm_depth;
               assert (sgm_start >= 0 && sgm_start < tck.size());
               size_t best_termination = tck.size() - 1;
               float min_value = INFINITY;
