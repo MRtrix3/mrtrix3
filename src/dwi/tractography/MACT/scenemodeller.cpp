@@ -175,13 +175,14 @@ bool SceneModeller::inTissue( const Eigen::Vector3d& point,
   else
   {
     auto theTissue = _tissues.find( type )->second;
+    double r = _bresenhamLine.minResolution();
     Eigen::Vector3d projectionPoint( point );
 
     ////// casting a ray in +x or -x direction
     double upperX = _boundingBox.getUpperX();
     double lowerX = _boundingBox.getLowerX();
-    projectionPoint[ 0 ] = ( upperX - point[ 0 ] ) <
-                           ( point[ 0 ] - lowerX ) ? upperX : lowerX;
+    projectionPoint[ 0 ] = ( upperX - point[ 0 ] ) < ( point[ 0 ] - lowerX ) ?
+                           ( upperX + r ) : ( lowerX - r );
     IntersectionSet iX( *this, point, projectionPoint, theTissue );
 
     /* Theoretically the method can work by casting only one ray
