@@ -309,7 +309,6 @@ namespace MR
 
               }
 
-              // else if ( S.is_mact() && S.mact().backtrack() )
               else if ( S.is_mact() )
               {
                 if ( S.mact().backtrack() )
@@ -407,6 +406,11 @@ namespace MR
 
               if (S.is_act() && (termination == ENTER_CGM) && S.act().crop_at_gmwmi())
                 S.act().crop_at_gmwmi (tck);
+
+              /*if ( S.is_mact() && ( termination == ENTER_CGM ) && S.mact().crop_at_gmwmi() )
+              {
+                S.mact().crop_at_gmwmi( tck );
+              }*/
 
 #ifdef DEBUG_TERMINATIONS
               S.add_termination (termination, method.pos);

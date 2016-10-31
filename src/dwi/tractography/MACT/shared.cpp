@@ -106,6 +106,17 @@ bool MACT_Shared_additions::crop_at_gmwmi() const
 
 void MACT_Shared_additions::crop_at_gmwmi( std::vector< Eigen::Vector3f >& tck ) const
 {
+  Eigen::Vector3d last = ( *tck.rbegin() ).cast< double >();
+  Eigen::Vector3d second_to_last = ( *( ++tck.rbegin() ) ).cast< double >();
+  IntersectionSet intersections( *_sceneModeller, last, second_to_last );
+  if ( intersections.count() )
+  {
+    tck.back() = ( intersections.intersection( 0 )._point ).cast< float >();
+  }
+  else
+  {
+    throw Exception( "crop at gmwmi: missing intersection point" );
+  }
 }
 */
 
