@@ -47,7 +47,6 @@ class MACT_Method_additions
     MACT_Method_additions( const MACT_Method_additions& ) = delete;
     MACT_Method_additions() = delete;
 
-    size_t sgm_depth() const;
     const std::shared_ptr< SceneModeller >& sceneModeller() const;
 
     // term_t check_structural( const Eigen::Vector3f& pos );

@@ -146,6 +146,19 @@ term_t MACT_Method_additions::check_structural( const Eigen::Vector3f& old_pos,
       //   ENTER_CGM
       return ENTER_CGM;
     }
+    /* possible method to deal with cerebellum
+    else if ( tissue->type() == CBM )
+    {
+      if ( _sceneModeller->inTissue( from, CBM_WHITE ) )
+      {
+        // the track's coming from white matter of CBM -> keep the track
+        // return ENTER_CGM;
+      }
+      else
+      {
+        // the track's coming outside the brain -> reject the track
+      }
+    }*/
   }
   if ( _point_in_sgm )
   {
@@ -199,15 +212,16 @@ bool MACT_Method_additions::seed_is_unidirectional( Eigen::Vector3f& pos,
     {
       // normal and seed direction are pointing outward from the surface
       // --> change the polarity of dir
-      dir = -d.cast< float >();
       d = -d;
+      dir = d.cast< float >();
     }
     while ( n.dot( v1 - p ) < 0 )
     {
       // seed locates outside the surface
       // --> shift the seed until it crosses over the surface
-      p += d * CUSTOM_PRECISION;
+      p -= n * CUSTOM_PRECISION;
     }
+    pos = p.cast< float >();
     return true;
   }
   return false;
