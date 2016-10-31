@@ -1,6 +1,6 @@
-.. _mredit:
+.. _tck2fixel:
 
-mredit
+tck2fixel
 ===========
 
 Synopsis
@@ -8,26 +8,22 @@ Synopsis
 
 ::
 
-    mredit [ options ]  input[ output ]
+    tck2fixel [ options ]  tracks fixel_folder_in fixel_folder_out fixel_data_out
 
--  *input*: the input image
--  *output*: the (optional) output image
+-  *tracks*: the input tracks.
+-  *fixel_folder_in*: the input fixel folder. Used to define the fixels and their directions
+-  *fixel_folder_out*: the output fixel folder. This can be the same as the input folder if desired
+-  *fixel_data_out*: the name of the fixel data image.
 
 Description
 -----------
 
-Directly edit the intensities within an image from the command-line. A range of options are provided to enable direct editing of voxel intensities based on voxel / real-space coordinates. If only one image path is provided, the image will be edited in-place (use at own risk); if input and output image paths are provided, the output will contain the edited image, and the original image will not be modified in any way.
+compute a fixel TDI map from a tractogram
 
 Options
 -------
 
--  **-plane axis coord value** fill one or more planes on a particular image axis
-
--  **-sphere position radius value** draw a sphere with radius in mm
-
--  **-voxel position value** change the image value within a single voxel
-
--  **-scanner** indicate that coordinates are specified in scanner space, rather than as voxel coordinates
+-  **-angle value** the max angle threshold for assigning streamline tangents to fixels (Default: 45 degrees)
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -52,7 +48,7 @@ Standard options
 
 
 
-**Author:** Robert E. Smith (robert.smith@florey.edu.au)
+**Author:** David Raffelt (david.raffelt@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
 

@@ -139,6 +139,8 @@ List of MRtrix3 commands
 
    commands/mrview
 
+   commands/mtbin
+
    commands/mtnormalise
 
    commands/peaks2amp

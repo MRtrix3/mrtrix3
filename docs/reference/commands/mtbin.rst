@@ -1,6 +1,6 @@
-.. _mredit:
+.. _mtbin:
 
-mredit
+mtbin
 ===========
 
 Synopsis
@@ -8,26 +8,23 @@ Synopsis
 
 ::
 
-    mredit [ options ]  input[ output ]
+    mtbin [ options ]  input output [ input output ... ]
 
--  *input*: the input image
--  *output*: the (optional) output image
+-  *input output*: list of all input and output tissue compartment files. See example usage in the description. Note that any number of tissues can be normalised
 
 Description
 -----------
 
-Directly edit the intensities within an image from the command-line. A range of options are provided to enable direct editing of voxel intensities based on voxel / real-space coordinates. If only one image path is provided, the image will be edited in-place (use at own risk); if input and output image paths are provided, the output will contain the edited image, and the original image will not be modified in any way.
+
 
 Options
 -------
 
--  **-plane axis coord value** fill one or more planes on a particular image axis
+-  **-mask image** define the mask to compute the normalisation within. If not supplied this is estimated automatically
 
--  **-sphere position radius value** draw a sphere with radius in mm
+-  **-value number** specify the value to which the summed tissue compartments will be to (Default: sqrt(1/(4*pi) = 0.282)
 
--  **-voxel position value** change the image value within a single voxel
-
--  **-scanner** indicate that coordinates are specified in scanner space, rather than as voxel coordinates
+-  **-bias image** output the estimated bias field
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -52,7 +49,7 @@ Standard options
 
 
 
-**Author:** Robert E. Smith (robert.smith@florey.edu.au)
+**Author:** David Raffelt (david.raffelt@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
 
