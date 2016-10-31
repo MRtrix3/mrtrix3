@@ -61,7 +61,8 @@ class SceneModeller
                         size_t stride = std::numeric_limits< size_t >::max() ) const;
 
     // methods to check whether a point is inside/on a target tissue type
-    bool inTissue( const Eigen::Vector3d& point, const TissueType& type ) const;
+    bool inTissue( const Eigen::Vector3d& point, const TissueType& type,
+                   size_t axis = 0 ) const;
     bool onTissue( const Eigen::Vector3d& point, const TissueType& type,
                    struct Intersection& intersection ) const;
 

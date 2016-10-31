@@ -165,10 +165,15 @@ bool SceneModeller::nearestTissue( const Eigen::Vector3d& point,
 
 
 bool SceneModeller::inTissue( const Eigen::Vector3d& point,
-                              const TissueType& type ) const
+                              const TissueType& type,
+                              size_t axis ) const
 {
   // ************ Note: the method only functions for a closed mesh ************
-  if ( _tissues.find( type ) == _tissues.end() )
+  if ( axis > 2 )
+  {
+    throw Exception( "SceneModeller::inTissue : invalid ray axis" );
+  }
+  if ( _tissues.find( type ) == _tissues.end()  )
   {
     throw Exception( "Input tissue type not found" );
   }
@@ -177,42 +182,41 @@ bool SceneModeller::inTissue( const Eigen::Vector3d& point,
     auto theTissue = _tissues.find( type )->second;
     double r = _bresenhamLine.minResolution();
     Eigen::Vector3d projectionPoint( point );
-
-    ////// casting a ray in +x or -x direction
-    double upperX = _boundingBox.getUpperX();
-    double lowerX = _boundingBox.getLowerX();
-    projectionPoint[ 0 ] = ( upperX - point[ 0 ] ) < ( point[ 0 ] - lowerX ) ?
-                           ( upperX + r ) : ( lowerX - r );
-    IntersectionSet iX( *this, point, projectionPoint, theTissue );
-
-    /* Theoretically the method can work by casting only one ray
-    ////// casting a ray in +y or -y direction
-    projectionPoint = point;
-    double upperY = _boundingBox.getUpperY();
-    double lowerY = _boundingBox.getLowerY();
-    projectionPoint[ 1 ] = ( upperY - point[ 1 ] ) <
-                           ( point[ 1 ] - lowerY ) ? upperY : lowerY;
-    IntersectionSet iY( *this, point, projectionPoint, theTissue );
-
-    ////// casting a ray in +z or -z direction
-    projectionPoint = point;
-    double upperZ = _boundingBox.getUpperZ();
-    double lowerZ = _boundingBox.getLowerZ();
-    projectionPoint[ 2 ] = ( upperZ - point[ 2 ] ) <
-                           ( point[ 2 ] - lowerZ ) ? upperZ : lowerZ;
-    IntersectionSet iZ( *this, point, projectionPoint, theTissue );
-
-    if ( ( iX.count() % 2 ) && ( iY.count() % 2 ) && ( iZ.count() % 2 ) )*/
-    if ( iX.count() % 2 )
+    size_t intersectionCount = 0;
+    if ( axis == 0 )
     {
-      // an odd number of intersections --> inside
-      return true;
+      ////// casting a ray in +x or -x direction
+      double upperX = _boundingBox.getUpperX();
+      double lowerX = _boundingBox.getLowerX();
+      projectionPoint[ 0 ] = ( upperX - point[ 0 ] ) < ( point[ 0 ] - lowerX ) ?
+                             ( upperX + r ) : ( lowerX - r );
+      IntersectionSet iX( *this, point, projectionPoint, theTissue );
+      intersectionCount = iX.count();
     }
-    else
+    if ( axis == 1 )
     {
-      // an even number of intersections --> outside
-      return false;
+      ////// casting a ray in +y or -y direction
+      projectionPoint = point;
+      double upperY = _boundingBox.getUpperY();
+      double lowerY = _boundingBox.getLowerY();
+      projectionPoint[ 1 ] = ( upperY - point[ 1 ] ) < ( point[ 1 ] - lowerY ) ?
+                             ( upperY + r ) : ( lowerY - r );
+      IntersectionSet iY( *this, point, projectionPoint, theTissue );
+      intersectionCount = iY.count();
     }
+    if ( axis == 2 )
+    {
+      ////// casting a ray in +z or -z direction
+      projectionPoint = point;
+      double upperZ = _boundingBox.getUpperZ();
+      double lowerZ = _boundingBox.getLowerZ();
+      projectionPoint[ 2 ] = ( upperZ - point[ 2 ] ) < ( point[ 2 ] - lowerZ ) ?
+                             ( upperZ + r ) : ( lowerZ - r );
+      IntersectionSet iZ( *this, point, projectionPoint, theTissue );
+      intersectionCount = iZ.count();
+    }
+    // an odd number -> inside ; an even number -> outside
+    return ( intersectionCount % 2 ) ? true : false;
   }
 }
 
