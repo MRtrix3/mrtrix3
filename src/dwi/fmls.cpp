@@ -30,22 +30,16 @@ namespace MR {
 
       const App::OptionGroup FMLSSegmentOption = App::OptionGroup ("FOD FMLS segmenter options")
 
-        + App::Option ("fmls_ratio_integral_to_neg",
-            "threshold the ratio between the integral of a positive FOD lobe, and the integral of the largest negative lobe. "
-            "Any lobe that fails to exceed the integral dictated by this ratio will be discarded. "
-            "Default: " + str(FMLS_RATIO_TO_NEGATIVE_LOBE_INTEGRAL_DEFAULT, 2) + ".")
-        + App::Argument ("value").type_float (0.0)
-
-        + App::Option ("fmls_ratio_peak_to_mean_neg",
-            "threshold the ratio between the peak amplitude of a positive FOD lobe, and the mean peak amplitude of all negative lobes. "
-            "Any lobe that fails to exceed the peak amplitude dictated by this ratio will be discarded. "
-            "Default: " + str(FMLS_RATIO_TO_NEGATIVE_LOBE_MEAN_PEAK_DEFAULT, 2) + ".")
+        + App::Option ("fmls_integral",
+            "threshold absolute numerical integral of positive FOD lobes. "
+            "Any lobe for which the integral is smaller than this threshold will be discarded. "
+            "Default: " + str(FMLS_INTEGRAL_THRESHOLD_DEFAULT, 2) + ".")
         + App::Argument ("value").type_float (0.0)
 
         + App::Option ("fmls_peak_value",
             "threshold the raw peak amplitude of positive FOD lobes. "
             "Any lobe for which the peak amplitude is smaller than this threshold will be discarded. "
-            "Default: " + str(FMLS_PEAK_VALUE_THRESHOLD, 2) + ".")
+            "Default: " + str(FMLS_PEAK_VALUE_THRESHOLD_DEFAULT, 2) + ".")
         + App::Argument ("value").type_float (0.0)
 
         + App::Option ("fmls_no_thresholds",
@@ -55,7 +49,7 @@ namespace MR {
             "specify the amplitude ratio between a sample and the smallest peak amplitude of the adjoining lobes, above which the lobes will be merged. "
             "This is the relative amplitude between the smallest of two adjoining lobes, and the 'bridge' between the two lobes. "
             "A value of 1.0 will never merge two peaks into a single lobe; a value of 0.0 will always merge lobes unless they are bisected by a zero crossing. "
-            "Default: " + str(FMLS_RATIO_TO_PEAK_VALUE_DEFAULT, 2) + ".")
+            "Default: " + str(FMLS_RATIO_TO_PEAK_VALUE_TO_MERGE_DEFAULT, 2) + ".")
         + App::Argument ("value").type_float (0.0, 1.0);
 
 
@@ -68,26 +62,16 @@ namespace MR {
         auto opt = get_options ("fmls_no_thresholds");
         const bool no_thresholds = opt.size();
         if (no_thresholds) {
-          segmenter.set_ratio_to_negative_lobe_integral (0.0f);
-          segmenter.set_ratio_to_negative_lobe_mean_peak (0.0f);
-          segmenter.set_peak_value_threshold (0.0f);
+          segmenter.set_integral_threshold (0.0);
+          segmenter.set_peak_value_threshold (0.0);
         }
 
-        opt = get_options ("fmls_ratio_integral_to_neg");
+        opt = get_options ("fmls_integral");
         if (opt.size()) {
           if (no_thresholds) {
-            WARN ("Option -fmls_ratio_integral_to_neg ignored: -fmls_no_thresholds overrides this");
+            WARN ("Option -fmls_integral ignored: -fmls_no_thresholds overrides this");
           } else {
-            segmenter.set_ratio_to_negative_lobe_integral (default_type(opt[0][0]));
-          }
-        }
-
-        opt = get_options ("fmls_ratio_peak_to_mean_neg");
-        if (opt.size()) {
-          if (no_thresholds) {
-            WARN ("Option -fmls_ratio_peak_to_mean_neg ignored: -fmls_no_thresholds overrides this");
-          } else {
-            segmenter.set_ratio_to_negative_lobe_mean_peak (default_type(opt[0][0]));
+            segmenter.set_integral_threshold (default_type(opt[0][0]));
           }
         }
 
@@ -153,16 +137,15 @@ namespace MR {
 
 
       Segmenter::Segmenter (const DWI::Directions::Set& directions, const size_t l) :
-          dirs                             (directions),
-          lmax                             (l),
-          precomputer                      (new Math::SH::PrecomputedAL<default_type> (lmax, 2 * dirs.size())),
-          ratio_to_negative_lobe_integral  (FMLS_RATIO_TO_NEGATIVE_LOBE_INTEGRAL_DEFAULT),
-          ratio_to_negative_lobe_mean_peak (FMLS_RATIO_TO_NEGATIVE_LOBE_MEAN_PEAK_DEFAULT),
-          peak_value_threshold             (FMLS_PEAK_VALUE_THRESHOLD),
-          ratio_of_peak_value_to_merge     (FMLS_RATIO_TO_PEAK_VALUE_DEFAULT),
-          create_null_lobe                 (false),
-          create_lookup_table              (true),
-          dilate_lookup_table              (false)
+          dirs                         (directions),
+          lmax                         (l),
+          precomputer                  (new Math::SH::PrecomputedAL<default_type> (lmax, 2 * dirs.size())),
+          integral_threshold           (FMLS_INTEGRAL_THRESHOLD_DEFAULT),
+          peak_value_threshold         (FMLS_PEAK_VALUE_THRESHOLD_DEFAULT),
+          ratio_of_peak_value_to_merge (FMLS_RATIO_TO_PEAK_VALUE_TO_MERGE_DEFAULT),
+          create_null_lobe             (false),
+          create_lookup_table          (true),
+          dilate_lookup_table          (false)
       {
         Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_el_pairs (dirs.size(), 2);
         for (size_t row = 0; row != dirs.size(); ++row) {
@@ -274,22 +257,9 @@ namespace MR {
         for (const auto& i : retrospective_assignments)
           out[i.second].add (i.first, values[i.first], (*weights)[i.first]);
 
-        default_type mean_neg_peak = 0.0, max_neg_integral = 0.0;
-        uint32_t neg_lobe_count = 0;
-        for (const auto& i : out) {
-          if (i.is_negative()) {
-            mean_neg_peak += i.get_max_peak_value();
-            ++neg_lobe_count;
-            max_neg_integral = std::max (max_neg_integral, default_type(i.get_integral()));
-          }
-        }
-
-        const default_type min_peak_amp = ratio_to_negative_lobe_mean_peak * (mean_neg_peak / default_type(neg_lobe_count));
-        const default_type min_integral = ratio_to_negative_lobe_integral  * max_neg_integral;
-
         for (auto i = out.begin(); i != out.end();) { // Empty increment
 
-          if (i->is_negative() || i->get_max_peak_value() < std::max (min_peak_amp, peak_value_threshold) || i->get_integral() < min_integral) {
+          if (i->is_negative() || i->get_max_peak_value() < peak_value_threshold || i->get_integral() < integral_threshold) {
             i = out.erase (i);
           } else {
 
