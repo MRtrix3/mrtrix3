@@ -15,7 +15,7 @@ Synopsis
 Description
 -----------
 
-
+Multi-Tissue Bias field correction and Intensity Normalisation (MTBIN). This script inputs N number of tissue components (e.g. from multi-tissue CSD), and outputs N corrected tissue components. Intensity normalisation is performed by either normalising each tissue type independently with a single global scale factor per tissue or determining a normalise all tissues with the same scale factor (default). Example usage: mtbin wm.mif wm_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif. The estimated multiplicative bias field is guaranteed to have a mean of 1 over all voxels within the mask
 
 Options
 -------
@@ -25,6 +25,12 @@ Options
 -  **-value number** specify the value to which the summed tissue compartments will be to (Default: sqrt(1/(4*pi) = 0.282)
 
 -  **-bias image** output the estimated bias field
+
+-  **-independent** intensity normalise each tissue type independently
+
+-  **-maxiter number** set the maximum number of iterations. Default(100). It will stop before the max iterations if convergence is detected
+
+-  **-check image** check the automatically computed mask
 
 Standard options
 ^^^^^^^^^^^^^^^^

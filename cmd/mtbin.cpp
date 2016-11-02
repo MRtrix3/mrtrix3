@@ -20,6 +20,8 @@
 #include "algo/loop.h"
 #include "adapter/extract.h"
 #include "filter/optimal_threshold.h"
+#include "filter/mask_clean.h"
+#include "filter/connected_components.h"
 #include "transform.h"
 #include "math/least_squares.h"
 
@@ -59,38 +61,53 @@ void usage ()
 
     + Option ("maxiter", "set the maximum number of iterations. Default(" + str(DEFAULT_MAXITER_VALUE) + "). "
                          "It will stop before the max iterations if convergence is detected")
-    + Argument ("number").type_integer();
+    + Argument ("number").type_integer()
+
+    + Option ("check", "check the automatically computed mask")
+    + Argument ("image").type_image_out ();
 }
 
 
-Eigen::MatrixXd basis_function (Eigen::Vector3 pos) {
-    float x = (float)pos[0];
-    float y = (float)pos[1];
-    float z = (float)pos[2];
-    Eigen::MatrixXd basis(19, 1);
-    basis(0) = 1.0;
-    basis(1) = x;
-    basis(2) = y;
-    basis(3) = z;
-    basis(4) = x * y;
-    basis(5) = x * z;
-    basis(6) = y * z;
-    basis(7) = x * x;
-    basis(8) = y * y;
-    basis(9)= z * x;
-    basis(10)= x * x * y;
-    basis(11) = x * x * z;
-    basis(12) = y * y * x;
-    basis(13) = y * y * z;
-    basis(14) = z * z * x;
-    basis(15) = z * z * y;
-    basis(16) = x * x * x;
-    basis(17) = y * y * y;
-    basis(18) = z * z * z;
-    return basis;
+FORCE_INLINE Eigen::MatrixXd basis_function (const Eigen::Vector3 pos) {
+  float x = (float)pos[0];
+  float y = (float)pos[1];
+  float z = (float)pos[2];
+  Eigen::MatrixXd basis(19, 1);
+  basis(0) = 1.0;
+  basis(1) = x;
+  basis(2) = y;
+  basis(3) = z;
+  basis(4) = x * y;
+  basis(5) = x * z;
+  basis(6) = y * z;
+  basis(7) = x * x;
+  basis(8) = y * y;
+  basis(9)= z * x;
+  basis(10)= x * x * y;
+  basis(11) = x * x * z;
+  basis(12) = y * y * x;
+  basis(13) = y * y * z;
+  basis(14) = z * z * x;
+  basis(15) = z * z * y;
+  basis(16) = x * x * x;
+  basis(17) = y * y * y;
+  basis(18) = z * z * z;
+  return basis;
 }
 
 
+FORCE_INLINE void compute_mask (Image<float>& summed, Image<bool>& mask) {
+  LogLevelLatch level (0);
+  Filter::OptimalThreshold threshold_filter (summed);
+  if (!mask.valid())
+    mask = Image<bool>::scratch (threshold_filter);
+  threshold_filter (summed, mask);
+  Filter::ConnectedComponents connected_filter (mask);
+  connected_filter.set_largest_only (true);
+  connected_filter (mask, mask);
+  Filter::MaskClean clean_filter (mask);
+  clean_filter (mask, mask);
+}
 
 
 void run ()
@@ -101,14 +118,15 @@ void run ()
   if (argument.size() < 4)
     throw Exception ("At least two tissue types must be provided");
 
+  ProgressBar progress ("performing intensity normalisation and bias field correction...");
   std::vector<Image<float> > input_images;
   std::vector<Header> output_headers;
   std::vector<std::string> output_filenames;
 
 
-  // Load only first 3D volume of input images
+  // Open input images and check for output
   for (size_t i = 0; i < argument.size(); i += 2) {
-    Header header = Header::open (argument[i]);
+    progress++;
     input_images.emplace_back (Image<float>::open (argument[i]));
 
     // check if all inputs have the same dimensions
@@ -118,163 +136,174 @@ void run ()
     // TODO check for output and not -force
 
     // we can't create the image yet if we want to put the scale factor into the output header
+    output_headers.emplace_back (Header::open (argument[i]));
     output_filenames.push_back (argument[i + 1]);
-    output_headers.emplace_back (header);
   }
-
 
   // Load or compute a mask to work with
   Image<bool> mask;
+  bool user_supplied_mask = false;
   Header header_3D (input_images[0]);
   header_3D.ndim() = 3;
-  auto opt = get_options("mask");
+  auto opt = get_options ("mask");
   if (opt.size()) {
     mask = Image<bool>::open (opt[0][0]);
+    user_supplied_mask = true;
   } else {
-    auto summed = Image<float>::scratch (header_3D, "summed tissue compartment image");
+    auto summed = Image<float>::scratch (header_3D);
     for (size_t j = 0; j < input_images.size(); ++j) {
       for (auto i = Loop (summed, 0, 3) (summed, input_images[j]); i; ++i)
         summed.value() += input_images[j].value();
+      progress++;
     }
-    Filter::OptimalThreshold threshold_filter (summed);
-    mask = Image<bool>::scratch (threshold_filter);
-    threshold_filter (summed, mask);
+    compute_mask (summed, mask);
   }
   size_t num_voxels = 0;
   for (auto i = Loop (mask) (mask); i; ++i) {
     if (mask.value())
       num_voxels++;
   }
-
-  // TODO reject outliers
-
+  progress++;
 
   if (!num_voxels)
     throw Exception ("error in automatic mask generation. Mask contains no voxels");
 
   const float normalisation_value = get_option_value ("value", DEFAULT_NORM_VALUE);
+  const size_t max_iter = get_option_value ("maxiter", DEFAULT_MAXITER_VALUE);
 
-  // Initialise bias field to 1
+  // Initialise bias field
   Eigen::MatrixXd bias_field_weights (19, 1);
-  bias_field_weights.setZero();
-  bias_field_weights(0,0) = 1.0;
-
-  // Pre-compute bias field basis functions for all voxels
-  Transform transform (mask);
-  uint32_t index = 0;
-  Eigen::MatrixXd bias_field_basis (num_voxels, 19);
-  for (auto i = Loop(mask)(mask); i; ++i){
-    if (mask.value()) {
-      Eigen::Vector3 vox (mask.index(0), mask.index(1), mask.index(2));
-      Eigen::Vector3 pos = transform.voxel2scanner * vox;
-      bias_field_basis.row (index++) = basis_function (pos).col(0);
-    }
-  }
-
   auto bias_field = Image<float>::scratch (header_3D);
   for (auto i = Loop(bias_field)(bias_field); i; ++i)
     bias_field.value() = 1.0;
 
-  const size_t max_iter = get_option_value ("maxiter", DEFAULT_MAXITER_VALUE);
-
-  // Iterate until convergence or max iterations performed
   Eigen::MatrixXd scale_factors (input_images.size(), 1);
   Eigen::MatrixXd previous_scale_factors (input_images.size(), 1);
+  size_t iter = 0;
+  bool converged = false;
 
-  {
-    ProgressBar progress ("normalising tissue compartments and estimating biasfield...");
+  // Iterate until convergence or max iterations performed
+  while (!converged && iter < max_iter) {
 
-    // TODO check for convergence
-    size_t iter = 0;
-    bool converged = false;
-    while (!converged && iter < max_iter) {
-      Eigen::MatrixXd X (num_voxels, input_images.size());
-      Eigen::MatrixXd y (num_voxels, 1);
-      y.fill (normalisation_value);
-      index = 0;
-      for (auto i = Loop (mask) (mask, bias_field); i; ++i) {
-        if (mask.value()) {
-//          float bias_field_value = bias_field_basis.row (index).dot (bias_field_weights.col(0));
-          for (size_t j = 0; j < input_images.size(); ++j) {
-            assign_pos_of (mask, 0, 3).to (input_images[j]);
-            X (index, j) = input_images[j].value() / bias_field.value();
-          }
-          ++index;
-        }
+    DEBUG ("iteration: " + str(iter));
+
+    // Revaluate mask and reject outliers after 1st iteration
+    if (iter && !user_supplied_mask) {
+      auto summed = Image<float>::scratch (header_3D);
+      for (size_t j = 0; j < input_images.size(); ++j) {
+        for (auto i = Loop (summed, 0, 3) (summed, input_images[j], bias_field); i; ++i)
+          summed.value() += scale_factors(j, 0) * input_images[j].value() / bias_field.value();
       }
-      progress++;
-      scale_factors = X.colPivHouseholderQr().solve(y);
-      progress++;
+      compute_mask (summed, mask);
 
-      index = 0;
-      for (auto i = Loop (mask) (mask); i; ++i) {
-        if (mask.value()) {
-          double sum = 0.0;
-          for (size_t j = 0; j < input_images.size(); ++j) {
-            assign_pos_of (mask, 0, 3).to (input_images[j]);
-            sum += scale_factors(j,0) * input_images[j].value() ;
-          }
-          y(index++, 0) = sum / normalisation_value;
-        }
-      }
-      progress++;
-
-      bias_field_weights = bias_field_basis.colPivHouseholderQr().solve(y);
-      //bias_field_weights(0,0) = 1.0;  // TODO normalise whole field or only within mask?
-
-      progress++;
-
-      // Normalise the bias field within the mask
-      double mean = 0.0;
-      for (auto i = Loop (bias_field) (bias_field, mask); i; ++i) {
-        if (mask.value()) {
-          Eigen::Vector3 vox (bias_field.index(0), bias_field.index(1), bias_field.index(2));
-          Eigen::Vector3 pos = transform.voxel2scanner * vox;
-          bias_field.value() = basis_function (pos).col(0).dot (bias_field_weights.col(0));
-          mean += bias_field.value();
-        }
-      }
-      progress++;
-      mean /= num_voxels;
-      for (auto i = Loop (bias_field) (bias_field, mask); i; ++i) {
+      std::vector<float> summed_values;
+      for (auto i = Loop (mask) (mask, summed); i; ++i) {
         if (mask.value())
-          bias_field.value() /= mean;
+          summed_values.push_back (summed.value());
       }
-      iter++;
+      num_voxels = summed_values.size();
+      std::sort (summed_values.begin(), summed_values.end());
+      float lower_quartile = summed_values[std::round ((float)num_voxels * 0.25)];
+      float upper_quartile = summed_values[std::round ((float)num_voxels * 0.75)];
+      float upper_outlier_threshold = upper_quartile + 1.5 * (upper_quartile - lower_quartile);
+      float lower_outlier_threshold = lower_quartile - 1.5 * (upper_quartile - lower_quartile);
 
-      if (iter) {
-        Eigen::MatrixXd diff = (previous_scale_factors.array() - scale_factors.array());
-        for (size_t i = 0; i < diff.rows(); ++i)
-          diff(i,0) = std::abs(diff(i,0));
-        std::cout << "diff" << diff << std::endl;
+      for (auto i = Loop (mask) (mask, summed); i; ++i) {
+        if (mask.value()) {
+          if (summed.value() < lower_outlier_threshold || summed.value() > upper_outlier_threshold) {
+            mask.value() = 0;
+            num_voxels--;
+          }
+        }
       }
-      previous_scale_factors = scale_factors;
-//      float percent_change = diff.col(0).sum() / previous_scale_factors.col(0).sum();
-//      std::cout << "prevous" << previous_scale_factors << std::endl;
-//      std::cout << "percent change " << percent_change << std::endl;
-
-      progress++;
     }
+    progress++;
+
+    // Solve for tissue normalisation scale factors
+    Eigen::MatrixXd X (num_voxels, input_images.size());
+    Eigen::MatrixXd y (num_voxels, 1);
+    y.fill (normalisation_value);
+    uint32_t index = 0;
+    for (auto i = Loop (mask) (mask, bias_field); i; ++i) {
+      if (mask.value()) {
+        for (size_t j = 0; j < input_images.size(); ++j) {
+          assign_pos_of (mask, 0, 3).to (input_images[j]);
+          X (index, j) = input_images[j].value() / bias_field.value();
+        }
+        ++index;
+      }
+    }
+    progress++;
+    scale_factors = X.colPivHouseholderQr().solve(y);
+    progress++;
+
+
+    // Solve for bias field weights
+    Transform transform (mask);
+    Eigen::MatrixXd bias_field_basis (num_voxels, 19);
+    index = 0;
+    for (auto i = Loop (mask) (mask); i; ++i) {
+      if (mask.value()) {
+        Eigen::Vector3 vox (mask.index(0), mask.index(1), mask.index(2));
+        Eigen::Vector3 pos = transform.voxel2scanner * vox;
+        bias_field_basis.row (index) = basis_function (pos).col(0);
+
+        double sum = 0.0;
+        for (size_t j = 0; j < input_images.size(); ++j) {
+          assign_pos_of (mask, 0, 3).to (input_images[j]);
+          sum += scale_factors(j,0) * input_images[j].value() ;
+        }
+        y (index++, 0) = sum / normalisation_value;
+      }
+    }
+    progress++;
+    bias_field_weights = bias_field_basis.colPivHouseholderQr().solve(y);
+    progress++;
+
+
+    // Normalise the bias field within the mask
+    double mean = 0.0;
+    for (auto i = Loop (bias_field) (bias_field, mask); i; ++i) {
+        Eigen::Vector3 vox (bias_field.index(0), bias_field.index(1), bias_field.index(2));
+        Eigen::Vector3 pos = transform.voxel2scanner * vox;
+        bias_field.value() = basis_function (pos).col(0).dot (bias_field_weights.col(0));
+        if (mask.value())
+          mean += bias_field.value();
+    }
+    progress++;
+    mean /= num_voxels;
+    for (auto i = Loop (bias_field) (bias_field, mask); i; ++i)
+      bias_field.value() /= mean;
+
+    // Check for convergence
+    if (iter) {
+      Eigen::MatrixXd diff = previous_scale_factors.array() - scale_factors.array();
+      diff = diff.array().abs() / previous_scale_factors.array();
+      DEBUG ("percentage change in estimated scale factors: " + str(diff.mean() * 100));
+      if (diff.mean() < 0.001)
+        converged = true;
+    }
+    previous_scale_factors = scale_factors;
+    progress++;
+    iter++;
   }
 
-
-  // Construct entire bias field (including outside the mask)
-  Image<float> bias_field_output;
-  opt = get_options("bias");
-  if (opt.size())
-    bias_field_output = Image<float>::create (opt[0][0], header_3D);
-  else
-    bias_field_output = Image<float>::scratch (header_3D);
-
-  for (auto i = Loop (bias_field_output) (bias_field_output); i; ++i) {
-    Eigen::Vector3 vox (bias_field_output.index(0), bias_field_output.index(1), bias_field_output.index(2));
-    Eigen::Vector3 pos = transform.voxel2scanner * vox;
-    bias_field_output.value() = basis_function (pos).col(0).dot (bias_field_weights.col(0));
+  opt = get_options ("bias");
+  if (opt.size()) {
+    auto bias_field_output = Image<float>::create (opt[0][0], header_3D);
+    threaded_copy (bias_field, bias_field_output);
   }
+  progress++;
 
+  opt = get_options ("check");
+  if (opt.size()) {
+    auto mask_output = Image<float>::create (opt[0][0], mask);
+    threaded_copy (mask, mask_output);
+  }
+  progress++;
 
   // compute mean of all scale factors in the log domain
-  opt = get_options("independent");
+  opt = get_options ("independent");
   if (!opt.size()) {
     float mean = 0.0;
     for (int i = 0; i < scale_factors.size(); ++i)
@@ -284,16 +313,20 @@ void run ()
     scale_factors.fill (mean);
   }
 
-
   // output bias corrected and normalised tissue maps
-  ProgressBar progress ("writing output files", input_images.size());
+  uint32_t total_count = 0;
+  for (size_t i = 0; i < output_headers.size(); ++i) {
+    uint32_t count = 1;
+    for (size_t j = 0; j < output_headers[i].ndim(); ++j)
+      count *= output_headers[i].size(j);
+    total_count += count;
+  }
   for (size_t j = 0; j < output_filenames.size(); ++j) {
     output_headers[j].keyval()["normalisation_scale_factor"] = str(scale_factors(j, 0));
     auto output_image = Image<float>::create (output_filenames[j], output_headers[j]);
     for (auto i = Loop (output_image) (output_image, input_images[j]); i; ++i) {
-      assign_pos_of (output_image, 0, 3).to (bias_field_output);
-      output_image.value() = scale_factors(j, 0) * input_images[j].value() / bias_field_output.value();
+      assign_pos_of (output_image, 0, 3).to (bias_field);
+      output_image.value() = scale_factors(j, 0) * input_images[j].value() / bias_field.value();
     }
-    progress++;
   }
 }
