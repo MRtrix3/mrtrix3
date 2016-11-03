@@ -60,7 +60,7 @@ Dhollander T, Raffelt D, Connelly A. Unsupervised 3-tissue response function est
 
 
 
-**Author:** David Raffelt (david.raffelt@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)
+**Author:** David Raffelt (david.raffelt@florey.edu.au), Thijs Dhollander (thijs.dhollander@gmail.com) and Ben Jeurissen (ben.jeurissen@uantwerpen.be)
 
 **Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
 
