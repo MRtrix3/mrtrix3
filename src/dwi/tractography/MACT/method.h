@@ -53,7 +53,7 @@ class MACT_Method_additions
     term_t check_structural( const Eigen::Vector3f& old_pos,
                              Eigen::Vector3f& new_pos );
 
-    bool check_seed( const Eigen::Vector3f& pos );
+    bool check_seed( Eigen::Vector3f& pos );
     bool seed_is_unidirectional( Eigen::Vector3f& pos,
                                  Eigen::Vector3f& dir ) const;
 

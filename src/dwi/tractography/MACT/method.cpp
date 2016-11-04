@@ -112,10 +112,10 @@ term_t MACT_Method_additions::check_structural( const Eigen::Vector3f& old_pos,
     {
       if ( _sgm_depth )
       {
-        // the seed was already inside SGM
+        // the point has been tracking within sgm
         if ( _seed_in_sgm && !_sgm_seed_to_wm )
         {
-          // the seed moves from sgm to wm
+          // the point moves from sgm to wm
           _sgm_seed_to_wm = true;
           _sgm_depth = 0;
           _point_in_sgm = false;
@@ -123,18 +123,24 @@ term_t MACT_Method_additions::check_structural( const Eigen::Vector3f& old_pos,
         }
         return EXIT_SGM;
       }
-      else if ( !_sgm_depth && _seed_in_sgm && !_sgm_seed_to_wm )
-      {
-        // the seed moves from sgm to wm at the first tracking step
-        _sgm_seed_to_wm = true;
-        _sgm_depth = 0;
-        _point_in_sgm = false;
-        return CONTINUE;
-      }
       else
       {
-        _point_in_sgm = true;
+        if ( _seed_in_sgm && !_sgm_seed_to_wm )
+        {
+          // the seed moves from sgm to wm at the first tracking step
+          _sgm_seed_to_wm = true;
+          _sgm_depth = 0;
+          _point_in_sgm = false;
+          return CONTINUE;
+        }
+        if ( _seed_in_sgm && _sgm_seed_to_wm )
+        {
+          // the seed of sgm had moved from sgm to wm once
+          return EXIT_SGM;
+        }
       }
+      // the point moves from wm to sgm
+      _point_in_sgm = true;
     }
     else if ( tissue->type() == CGM )
     {
@@ -164,30 +170,47 @@ term_t MACT_Method_additions::check_structural( const Eigen::Vector3f& old_pos,
   {
     ++ _sgm_depth;
   }
-
   return CONTINUE;
 }
 
 
-bool MACT_Method_additions::check_seed( const Eigen::Vector3f& pos )
+bool MACT_Method_additions::check_seed( Eigen::Vector3f& pos )
 {
-  Eigen::Vector3d point = pos.cast< double >();
+  Eigen::Vector3d p = pos.cast< double >();
   _sgm_depth = 0;
-  if ( _sceneModeller->inTissue( point, CSF ) )
+
+  if ( _sceneModeller->inTissue( p, CSF ) )
   {
     return false;
   }
-  if ( _sceneModeller->inTissue( point, SGM ) )
+
+  // dealing with numerical precesion issues when seeding on sgm surface
+  Intersection intersection;
+  if ( _sceneModeller->onTissue( p, SGM, intersection ) )
   {
+    auto mesh = intersection._tissue->mesh();
+    auto v1 = mesh.vert( intersection._triangle[ 0 ] );
+    auto v2 = mesh.vert( intersection._triangle[ 1 ] );
+    auto v3 = mesh.vert( intersection._triangle[ 2 ] );
+    auto n = ( v2 - v1 ).cross( v3 - v1 );
+    n.normalize();
+    while ( n.dot( v1 - p ) < 0 )
+    {
+      // seed locates outside the surface
+      // --> shift the seed until it crosses over the surface
+      p -= n * CUSTOM_PRECISION;
+    }
+    pos = p.cast< float >();
+
     _seed_in_sgm = true;
     _sgm_seed_to_wm = false;
     _point_in_sgm = true;
     return true;
   }
+
   _seed_in_sgm = false;
   _sgm_seed_to_wm = false;
   _point_in_sgm = false;
-
   return true;
 }
 
@@ -243,6 +266,7 @@ bool MACT_Method_additions::in_pathology() const
 void MACT_Method_additions::reverse_track()
 {
   _sgm_depth = 0;
+  _point_in_sgm = _seed_in_sgm;
 }
 
 
