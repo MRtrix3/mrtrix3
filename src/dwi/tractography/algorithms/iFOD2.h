@@ -323,6 +323,9 @@ end_init:
               // Need to update sgm_depth appropriately, remembering that it is tracked by exec
               if (S.is_act())
                 act().sgm_depth = (act().sgm_depth > points_to_remove) ? act().sgm_depth - points_to_remove : 0;
+              if ( S.is_mact() )
+                mact()._sgm_depth = ( mact()._sgm_depth > points_to_remove) ? mact()._sgm_depth - points_to_remove : 0;
+
             }
 
 
