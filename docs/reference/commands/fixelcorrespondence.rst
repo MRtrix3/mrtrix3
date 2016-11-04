@@ -22,7 +22,7 @@ Obtain angular correpondence by mapping subject fixels to a template fixel mask.
 Options
 -------
 
--  **-angle value** the max angle threshold for computing inter-subject fixel correspondence (Default: 30 degrees)
+-  **-angle value** the max angle threshold for computing inter-subject fixel correspondence (Default: 45 degrees)
 
 Standard options
 ^^^^^^^^^^^^^^^^

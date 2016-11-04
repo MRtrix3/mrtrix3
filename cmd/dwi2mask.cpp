@@ -25,7 +25,7 @@ using namespace App;
 #define DEFAULT_CLEAN_SCALE 2
 
 void usage () {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au), Thijs Dhollander (thijs.dhollander@gmail.com) and Ben Jeurissen (ben.jeurissen@uantwerpen.be)";
 
 DESCRIPTION
   + "Generates a whole brain mask from a DWI image. "
@@ -66,6 +66,9 @@ void run () {
 
   auto input = Image<float>::open (argument[0]).with_direct_io (3);
   auto grad = DWI::get_DW_scheme (input);
+
+  if (input.ndim() != 4)
+    throw Exception ("input DWI image must be 4D");
 
   Filter::DWIBrainMask dwi_brain_mask_filter (input, grad);
   dwi_brain_mask_filter.set_message ("computing dwi brain mask");

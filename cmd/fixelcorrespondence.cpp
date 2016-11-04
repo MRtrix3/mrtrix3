@@ -26,7 +26,7 @@ using namespace App;
 
 using Sparse::FixelMetric;
 
-#define DEFAULT_ANGLE_THRESHOLD 30.0
+#define DEFAULT_ANGLE_THRESHOLD 45.0
 
 void usage ()
 {
@@ -68,8 +68,15 @@ void run ()
       output_fixel.value()[t] = template_fixel.value()[t] ;
       float largest_dp = 0.0;
       int index_of_closest_fixel = -1;
+
       for (size_t s = 0; s != subject_fixel.value().size(); ++s) {
-        float dp = std::abs (template_fixel.value()[t].dir.dot (subject_fixel.value()[s].dir));
+        Eigen::Vector3f template_dir = template_fixel.value()[t].dir;
+        template_dir.normalize();
+        Eigen::Vector3f subject_dir = subject_fixel.value()[s].dir;
+        subject_dir.normalize();
+
+        float dp = std::abs (template_dir.dot (subject_dir));
+
         if (dp > largest_dp) {
           largest_dp = dp;
           index_of_closest_fixel = s;
@@ -77,6 +84,8 @@ void run ()
       }
       if (largest_dp > angular_threshold_dp) {
         output_fixel.value()[t].value  = subject_fixel.value()[index_of_closest_fixel].value;
+      } else {
+        output_fixel.value()[t].value = 0.0;
       }
     }
   }
