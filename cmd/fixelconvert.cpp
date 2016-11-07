@@ -24,6 +24,7 @@
 
 #include "fixel_format/helpers.h"
 #include "fixel_format/keys.h"
+#include "fixel_format/loop.h"
 
 #include "sparse/fixel_metric.h"
 #include "sparse/keys.h"
@@ -39,26 +40,34 @@ using Sparse::FixelMetric;
 void usage ()
 {
 
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
-  + "convert an old format fixel image (*.msf) to the new fixel folder format";
+  + "convert between the old format fixel image (*.msf / *.msh) and the new fixel folder format";
 
   ARGUMENTS
-  + Argument ("fixel_in", "the input fixel file.").type_image_in ()
-  + Argument ("fixel_output", "the output fixel folder.").type_text();
+  + Argument ("fixel_in",  "the input fixel file / folder.").type_text()
+  + Argument ("fixel_out", "the output fixel file / folder.").type_text();
 
   OPTIONS
-  + Option ("name", "assign a different name to the value field output (Default: value). Do not include the file extension.")
+  + OptionGroup ("Options for converting from old to new format")
+    + Option ("name", "assign a different name to the value field output (Default: value). Do not include the file extension.")
       + Argument ("string").type_text()
+    + Option ("nii", "output the index, directions and data file in NIfTI format instead of *.mif")
+    + Option ("out_size", "also output the 'size' field from the old format")
 
-  + Option ("nii", "output the index, directions and data file in NifTI format instead of *.mif")
+  + OptionGroup ("Options for converting from new to old format")
+    + Option ("value", "nominate the data file to import to the 'value' field in the old format")
+      + Argument ("path").type_file_in()
+    + Option ("in_size", "import data for the 'size' field in the old format")
+      + Argument ("path").type_file_in();
 
-  + Option ("size", "also output the 'size' field from the old format");
 }
 
 
-void run ()
+
+
+void convert_old2new ()
 {
   Header header (Header::open (argument[0]));
   header.keyval().erase (Sparse::name_key);
@@ -66,18 +75,16 @@ void run ()
 
   Sparse::Image<FixelMetric> input (argument[0]);
 
-  std::string file_extension (".mif");
-  if (get_options ("nii").size())
-    file_extension = ".nii";
+  const std::string file_extension = get_options ("nii").size() ? ".nii" : ".mif";
 
   std::string value_name ("value");
   auto opt = get_options ("name");
   if (opt.size())
     value_name = std::string (opt[0][0]);
 
-  const bool output_size = get_options ("size").size();
+  const bool output_size = get_options ("out_size").size();
 
-  std::string output_fixel_folder = argument[1];
+  const std::string output_fixel_folder = argument[1];
   FixelFormat::check_fixel_folder (output_fixel_folder, true);
 
   uint32_t fixel_count = 0;
@@ -127,3 +134,92 @@ void run ()
     }
   }
 }
+
+
+
+void convert_new2old ()
+{
+  const std::string input_fixel_folder = argument[0];
+  auto opt = get_options ("value");
+  if (!opt.size())
+    throw Exception ("For converting from new to old formats, option -value is compulsory");
+  const std::string value_path = get_options ("value")[0][0];
+  opt = get_options ("in_size");
+  const std::string size_path = opt.size() ? std::string(opt[0][0]) : "";
+
+  Header H_index = FixelFormat::find_index_header (input_fixel_folder);
+  Header H_dirs = FixelFormat::find_directions_header (input_fixel_folder);
+  std::vector<Header> H_data = FixelFormat::find_data_headers (input_fixel_folder, H_index, false);
+  size_t size_index = H_data.size(), value_index = H_data.size();
+
+  for (size_t i = 0; i != H_data.size(); ++i) {
+    if (Path::basename (H_data[i].name()) == Path::basename (value_path))
+      value_index = i;
+    if (Path::basename (H_data[i].name()) == Path::basename (size_path))
+      size_index = i;
+  }
+  if (value_index == H_data.size())
+    throw Exception ("Could not find image in input fixel folder corresponding to -value option");
+
+  Header H_out (H_index);
+  H_out.ndim() = 3;
+  H_out.datatype() = DataType::UInt64;
+  H_out.datatype().set_byte_order_native();
+  H_out.keyval()[Sparse::name_key] = str(typeid(FixelMetric).name());
+  H_out.keyval()[Sparse::size_key] = str(sizeof(FixelMetric));
+  Sparse::Image<Sparse::FixelMetric> out_image (argument[1], H_out);
+
+  auto index_image = H_index.get_image<uint32_t>();
+  auto dirs_image = H_dirs.get_image<float>();
+  auto value_image = H_data[value_index].get_image<float>();
+  Image<float> size_image;
+  if (size_index != H_data.size())
+    size_image = H_data[size_index].get_image<float>();
+
+  for (auto l = Loop (out_image) (out_image, index_image); l; ++l) {
+    index_image.index(3) = 0;
+    const uint32_t num_fixels = index_image.value();
+    out_image.value().set_size (num_fixels);
+    for (auto f = FixelFormat::FixelLoop (index_image) (dirs_image, value_image); f; ++f) {
+      // Construct the direction
+      Eigen::Vector3f dir;
+      for (size_t axis = 0; axis != 3; ++axis) {
+        dirs_image.index(1) = axis;
+        dir[axis] = dirs_image.value();
+      }
+      Sparse::FixelMetric fixel (dir, value_image.value(), value_image.value());
+      if (size_image.valid()) {
+        assign_pos_of (value_image).to (size_image);
+        fixel.size = size_image.value();
+      }
+      out_image.value()[f.fixel_index] = fixel;
+    }
+  }
+}
+
+
+
+bool is_old_format (const std::string& path) {
+  return (Path::has_suffix (path, ".msf") || Path::has_suffix (path, ".msh"));
+}
+
+
+
+void run ()
+{
+  // Detect in which direction the conversion is occurring
+  if (is_old_format (argument[0])) {
+    if (is_old_format (argument[1]))
+      throw Exception ("fixelconvert can only be used to convert between old and new fixel formats; NOT to convert images within the old format");
+    convert_old2new ();
+  } else {
+    if (!is_old_format (argument[1]))
+      throw Exception ("fixelconvert can only be used to convert between old and new fixel formats; NOT to convert within the new format");
+    convert_new2old ();
+  }
+}
+
+
+
+
+
