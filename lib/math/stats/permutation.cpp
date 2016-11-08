@@ -100,15 +100,20 @@ namespace MR
         }
 
 
-        std::vector<std::vector<size_t> > load_permutations_file (std::string filename) {
+
+        std::vector<std::vector<size_t> > load_permutations_file (const std::string& filename) {
           std::vector<std::vector<size_t> > temp = load_matrix_2D_vector<size_t> (filename);
           if (!temp.size())
             throw Exception ("no data found in permutations file: " + str(filename));
 
           std::vector<std::vector<size_t> > permutations (temp[0].size(), std::vector<size_t>(temp.size()));
-          for (std::vector<size_t>::size_type i = 0; i < temp[0].size(); i++)
-            for (std::vector<size_t>::size_type j = 0; j < temp.size(); j++)
-              permutations[i][j] = temp[j][i];
+          for (std::vector<size_t>::size_type i = 0; i < temp[0].size(); i++) {
+            for (std::vector<size_t>::size_type j = 0; j < temp.size(); j++) {
+              if (!temp[j][i])
+                throw Exception ("Pre-defined permutation labelling file \"" + filename + "\" contains zeros; labels should be indexed from one");
+              permutations[i][j] = temp[j][i]-1;
+            }
+          }
           return permutations;
         }
 

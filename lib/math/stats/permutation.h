@@ -49,7 +49,7 @@ namespace MR
         void statistic2pvalue (const vector_type& perm_dist, const vector_type& stats, vector_type& pvalues);
 
 
-        std::vector<std::vector<size_t> > load_permutations_file (std::string filename);
+        std::vector<std::vector<size_t> > load_permutations_file (const std::string& filename);
 
 
 

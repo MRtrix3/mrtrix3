@@ -161,7 +161,7 @@ void run() {
   FixelFormat::copy_index_and_directions_file (input_fixel_folder, output_fixel_folder);
 
   {
-    auto directions_data = FixelFormat::find_directions_header (input_fixel_folder).get_image<default_type>().with_direct_io();
+    auto directions_data = FixelFormat::find_directions_header (input_fixel_folder).get_image<default_type>().with_direct_io ({+2,+1});
     // Load template fixel directions
     Transform image_transform (index_image);
     for (auto i = Loop ("loading template fixel directions and positions", index_image, 0, 3)(index_image); i; ++i) {
