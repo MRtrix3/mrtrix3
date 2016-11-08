@@ -34,10 +34,11 @@ namespace MR
 
 
 
-    List& sanitise (List& current, const List& desired)
+    List& sanitise (List& current, const List& desired, const std::vector<ssize_t>& dims)
     {
       // remove duplicates
       for (size_t i = 0; i < current.size()-1; ++i) {
+        if (dims[i] == 1) current[i] = 0;
         if (!current[i]) continue;
         for (size_t j = i+1; j < current.size(); ++j) {
           if (!current[j]) continue;
@@ -58,7 +59,7 @@ namespace MR
       in_max += desired_max + 1;
 
       for (size_t i = 0; i < current.size(); ++i) 
-        if (desired[i]) 
+        if (dims[i] > 1 && desired[i]) 
           current[i] = desired[i];
         else if (current[i])
           current[i] += current[i] < 0 ? -desired_max : desired_max;
