@@ -200,19 +200,30 @@ namespace MR
     FORCE_INLINE std::vector<Header> find_data_headers (const std::string &fixel_folder_path, const Header &index_header, const bool include_directions = false)
     {
       check_index_image (index_header);
-      std::vector<Header> data_headers;
-
       auto dir_walker = Path::Dir (fixel_folder_path);
-      std::string fname;
-      while ((fname = dir_walker.read_name ()).size ()) {
-        auto full_path = Path::join (fixel_folder_path, fname);
-        Header H;
-        if (Path::has_suffix (fname, FixelFormat::supported_fixel_formats) && is_data_file (H = Header::open (full_path))) {
-          if (fixels_match (index_header, H)) {
-            if (!is_directions_file (H) || include_directions)
-              data_headers.emplace_back (std::move (H));
-          } else {
-            WARN ("fixel data file (" + fname + ") does not contain the same number of elements as fixels in the index file");
+      std::vector<std::string> file_names;
+      {
+        std::string temp;
+        while ((temp = dir_walker.read_name()).size())
+          file_names.push_back (temp);
+      }
+      std::sort (file_names.begin(), file_names.end());
+
+      std::vector<Header> data_headers;
+      for (auto fname : file_names) {
+        if (Path::has_suffix (fname, FixelFormat::supported_fixel_formats)) {
+          try {
+            auto H = Header::open (Path::join (fixel_folder_path, fname));
+            if (is_data_file (H)) {
+              if (fixels_match (index_header, H)) {
+                if (!is_directions_file (H) || include_directions)
+                  data_headers.emplace_back (std::move (H));
+              } else {
+                WARN ("fixel data file (" + fname + ") does not contain the same number of elements as fixels in the index file");
+              }
+            }
+          } catch (...) {
+            WARN ("unable to open file \"" + fname + "\" as potential fixel data file");
           }
         }
       }
@@ -221,9 +232,9 @@ namespace MR
     }
 
 
+
     FORCE_INLINE Header find_directions_header (const std::string fixel_folder_path)
     {
-
       bool directions_found (false);
       Header header;
       check_fixel_folder (fixel_folder_path);
