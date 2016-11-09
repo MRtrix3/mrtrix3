@@ -41,6 +41,7 @@ namespace MR
 
     //! \cond skip
     typedef enum {
+      Undefined,
       Text,
       Boolean,
       Integer,
@@ -105,7 +106,10 @@ namespace MR
          * and description. If default arguments are used, the object corresponds
          * to the end-of-list specifier, as detailed in \ref command_line_parsing. */
         Argument (const char* name = nullptr, std::string description = std::string()) :
-          id (name), desc (description), type (Text), flags (None) { }
+          id (name), desc (description), type (Undefined), flags (None)
+        {
+          memset (&limits, 0x00, sizeof (limits));
+        }
 
         //! the argument name
         const char* id;
@@ -157,40 +161,40 @@ namespace MR
 
         //! specifies that the argument should be a text string */
         Argument& type_text () {
+          assert (type == Undefined);
           type = Text;
-          limits.choices = nullptr;
           return *this;
         }
 
         //! specifies that the argument should be an input image
         Argument& type_image_in () {
+          assert (type == Undefined);
           type = ImageIn;
-          limits.choices = nullptr;
           return *this;
         }
 
         //! specifies that the argument should be an output image
         Argument& type_image_out () {
+          assert (type == Undefined);
           type = ImageOut;
-          limits.choices = nullptr;
           return *this;
         }
 
         //! specifies that the argument should be an integer
         /*! if desired, a range of allowed values can be specified. */
         Argument& type_integer (const int64_t min = std::numeric_limits<int64_t>::min(), const int64_t max = std::numeric_limits<int64_t>::max()) {
+          assert (type == Undefined);
           type = Integer;
           limits.i.min = min;
           limits.i.max = max;
-          limits.choices = nullptr;
           return *this;
         }
 
         //! specifies that the argument should be a boolean
         /*! Valid responses are 0,no,false or any non-zero integer, yes, true. */
         Argument& type_bool () {
+          assert (type == Undefined);
           type = Boolean;
-          limits.choices = nullptr;
           return *this;
         }
 
@@ -198,10 +202,10 @@ namespace MR
         /*! if desired, a range of allowed values can be specified. */
         Argument& type_float (const default_type min = -std::numeric_limits<default_type>::infinity(),
                               const default_type max = std::numeric_limits<default_type>::infinity()) {
+          assert (type == Undefined);
           type = Float;
           limits.f.min = min;
           limits.f.max = max;
-          limits.choices = nullptr;
           return *this;
         }
 
@@ -217,6 +221,7 @@ namespace MR
          * \endcode
          * \note Each string in the list must be supplied in \b lowercase. */
         Argument& type_choice (const char* const* choices) {
+          assert (type == Undefined);
           type = Choice;
           limits.choices = choices;
           return *this;
@@ -224,43 +229,43 @@ namespace MR
 
         //! specifies that the argument should be an input file
         Argument& type_file_in () {
+          assert (type == Undefined);
           type = ArgFileIn;
-          limits.choices = nullptr;
           return *this;
         }
 
         //! specifies that the argument should be an output file
         Argument& type_file_out () {
+          assert (type == Undefined);
           type = ArgFileOut;
-          limits.choices = nullptr;
           return *this;
         }
 
         //! specifies that the argument should be a sequence of comma-separated integer values
         Argument& type_sequence_int () {
+          assert (type == Undefined);
           type = IntSeq;
-          limits.choices = nullptr;
           return *this;
         }
 
         //! specifies that the argument should be a sequence of comma-separated floating-point values.
         Argument& type_sequence_float () {
+          assert (type == Undefined);
           type = FloatSeq;
-          limits.choices = nullptr;
           return *this;
         }
 
         //! specifies that the argument should be an input tracks file
         Argument& type_tracks_in () {
+          assert (type == Undefined);
           type = TracksIn;
-          limits.choices = nullptr;
           return *this;
         }
 
         //! specifies that the argument should be an output tracks file
         Argument& type_tracks_out () {
+          assert (type == Undefined);
           type = TracksOut;
-          limits.choices = nullptr;
           return *this;
         }
 

@@ -124,7 +124,8 @@ LDLIB_ARGS      The arguments expected by the linker for generating a shared lib
                 "-shared LDLIB_FLAGS OBJECTS -o LIB"
 
 ARCH            the specific CPU architecture to compile for. This variable
-                will be passed to the compiler using -march=$ARCH.
+                will be passed to the compiler using -march=$ARCH. If set to
+                an empty string, no -march flag will be passed to the compiler.
                 The default is 'native'.
 
 CFLAGS          Any additional flags to the compiler.
@@ -516,8 +517,11 @@ elif system == 'darwin':
 
 if 'ARCH' in os.environ.keys():
   march = os.environ['ARCH']
-  report ('Machine architecture set by ARCH environment variable to: ' + march + '\n')
-  cpp_flags += [ '-march='+march ]
+  if march:
+    report ('Machine architecture set by ARCH environment variable to: ' + march + '\n')
+    cpp_flags += [ '-march='+march ]
+  else:
+    report ('Empty ARCH string found: will not pass -march flag to compiler.\n')
 else:
   if system != 'darwin':
     cpp_flags += [ '-march=native' ]

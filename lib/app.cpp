@@ -402,6 +402,9 @@ namespace MR
         << (flags & AllowMultiple ? '1' : '0') << " ";
 
       switch (type) {
+        case Undefined:
+          assert (0);
+          break;
         case Integer:
           stream << "INT " << limits.i.min << " " << limits.i.max;
           break;
@@ -1158,6 +1161,7 @@ namespace MR
 
     default_type App::ParsedArgument::as_float () const
     {
+      assert (arg->type == Float);
       const default_type retval = to<default_type> (p);
       const default_type min = arg->limits.f.min;
       const default_type max = arg->limits.f.max;
