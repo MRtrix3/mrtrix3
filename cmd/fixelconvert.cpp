@@ -55,6 +55,8 @@ void usage ()
       + Argument ("string").type_text()
     + Option ("nii", "output the index, directions and data file in NIfTI format instead of *.mif")
     + Option ("out_size", "also output the 'size' field from the old format")
+    + Option ("template", "specify an existing fixel directory (in the new format) to which the new output should conform")
+      + Argument ("path").type_text()
 
   + OptionGroup ("Options for converting from new to old format")
     + Option ("value", "nominate the data file to import to the 'value' field in the old format")
@@ -115,15 +117,47 @@ void convert_old2new ()
   if (output_size)
     size_image = Image<float>::create (Path::join (output_fixel_folder, "size" + file_extension), data_header);
 
-  int32_t offset = 0;
+  Image<uint32_t> template_index_image;
+  Image<float> template_directions_image;
+  opt = get_options ("template");
+  if (opt.size()) {
+    FixelFormat::check_fixel_folder (opt[0][0]);
+    template_index_image = FixelFormat::find_index_header (opt[0][0]).get_image<uint32_t>();
+    check_dimensions (index_image, template_index_image);
+    template_directions_image = FixelFormat::find_directions_header (opt[0][0]).get_image<float>();
+  }
+
+  uint32_t offset = 0;
   for (auto i = Loop ("converting fixel format", input, 0, 3) (input, index_image); i; ++i) {
+    const uint32_t num_fixels = input.value().size();
+    if (template_index_image.valid()) {
+      assign_pos_of (index_image).to (template_index_image);
+      template_index_image.index(3) = 0;
+      if (template_index_image.value() != num_fixels)
+        throw Exception ("Mismatch in number of fixels between input and template images");
+      template_index_image.index(3) = 1;
+      offset = template_index_image.value();
+    }
     index_image.index(3) = 0;
-    index_image.value() = (int32_t)input.value().size();
+    index_image.value() = num_fixels;
     index_image.index(3) = 1;
-    index_image.value() = offset;
-    for (size_t f = 0; f != input.value().size(); ++f) {
+    index_image.value() = num_fixels ? offset : 0;
+    for (size_t f = 0; f != num_fixels; ++f) {
       directions_image.index(0) = offset;
-      directions_image.row(1) = input.value()[f].dir;
+      for (size_t axis = 0; axis != 3; ++axis) {
+        directions_image.index(1) = axis;
+        directions_image.value() = input.value()[f].dir[axis];
+      }
+      if (template_directions_image.valid()) {
+        template_directions_image.index(0) = offset;
+        Eigen::Vector3f template_dir;
+        for (size_t axis = 0; axis != 3; ++axis) {
+          template_directions_image.index(1) = axis;
+          template_dir[axis] = template_directions_image.value();
+        }
+        if (input.value()[f].dir.dot (template_dir) < 0.999)
+          throw Exception ("Mismatch in fixel directions between input and template images");
+      }
       value_image.index(0) = offset;
       value_image.value() = input.value()[f].value;
       if (size_image.valid()) {

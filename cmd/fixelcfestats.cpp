@@ -216,7 +216,7 @@ void run() {
   std::vector<std::vector<size_t> > permutations_nonstationary;
   if (opt.size()) {
     permutations_nonstationary = Math::Stats::Permutation::load_permutations_file (opt[0][0]);
-    nperms_nonstationary = permutations.size();
+    nperms_nonstationary = permutations_nonstationary.size();
     if (permutations_nonstationary[0].size() != (size_t)design.rows())
       throw Exception ("number of rows in the nonstationary permutations file (" + str(opt[0][0]) + ") does not match number of rows in design matrix");
   }
@@ -225,7 +225,7 @@ void run() {
   const matrix_type contrast = load_matrix (argument[3]);
 
   if (contrast.cols() != design.cols())
-    throw Exception ("the number of contrasts does not equal the number of columns in the design matrix");
+    throw Exception ("the number of columns per contrast does not equal the number of columns in the design matrix");
   if (contrast.rows() > 1)
     throw Exception ("only a single contrast vector (defined as a row) is currently supported");
 
@@ -377,10 +377,10 @@ void run() {
   if (do_nonstationary_adjustment) {
 
     if (permutations_nonstationary.size()) {
-      Stats::PermTest::PermutationStack permutations (permutations_nonstationary, "precomputing empirical statistic for non-stationarity adjustment...");
+      Stats::PermTest::PermutationStack permutations (permutations_nonstationary, "precomputing empirical statistic for non-stationarity adjustment");
       Stats::PermTest::precompute_empirical_stat (glm_ttest, cfe_integrator, permutations, empirical_cfe_statistic);
     } else {
-      Stats::PermTest::PermutationStack permutations (nperms_nonstationary, design.rows(), "precomputing empirical statistic for non-stationarity adjustment...", false);
+      Stats::PermTest::PermutationStack permutations (nperms_nonstationary, design.rows(), "precomputing empirical statistic for non-stationarity adjustment", false);
       Stats::PermTest::precompute_empirical_stat (glm_ttest, cfe_integrator, permutations, empirical_cfe_statistic);
     }
     output_header.keyval()["nonstationary adjustment"] = str(true);
