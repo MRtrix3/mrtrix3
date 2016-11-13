@@ -106,12 +106,16 @@ namespace MR
           if (!temp.size())
             throw Exception ("no data found in permutations file: " + str(filename));
 
+          size_t min_value = *std::min_element (std::begin (temp[0]), std::end (temp[0]));
+          if (min_value > 1)
+            throw Exception ("indices for relabelling in permutations file must start from either 0 or 1");
+
           std::vector<std::vector<size_t> > permutations (temp[0].size(), std::vector<size_t>(temp.size()));
           for (std::vector<size_t>::size_type i = 0; i < temp[0].size(); i++) {
             for (std::vector<size_t>::size_type j = 0; j < temp.size(); j++) {
               if (!temp[j][i])
                 throw Exception ("Pre-defined permutation labelling file \"" + filename + "\" contains zeros; labels should be indexed from one");
-              permutations[i][j] = temp[j][i]-1;
+              permutations[i][j] = temp[j][i] - min_value;
             }
           }
           return permutations;
