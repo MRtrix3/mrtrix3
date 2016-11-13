@@ -19,5 +19,5 @@ exit 1
   
 fi
 
-find ${1} -mindepth 1 -maxdepth 2 \( -type l -o -type d \) '!' -exec test -e "{}/${2}" ';' -print
+find ${1} -mindepth 1 -maxdepth 1 \( -type l -o -type d \) '!' -exec test -e "{}/${2}" ';' -print
 
