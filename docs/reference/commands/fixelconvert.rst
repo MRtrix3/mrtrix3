@@ -8,24 +8,36 @@ Synopsis
 
 ::
 
-    fixelconvert [ options ]  fixel_in fixel_output
+    fixelconvert [ options ]  fixel_in fixel_out
 
--  *fixel_in*: the input fixel file.
--  *fixel_output*: the output fixel folder.
+-  *fixel_in*: the input fixel file / folder.
+-  *fixel_out*: the output fixel file / folder.
 
 Description
 -----------
 
-convert an old format fixel image (*.msf) to the new fixel folder format
+convert between the old format fixel image (*.msf / *.msh) and the new fixel folder format
 
 Options
 -------
 
+Options for converting from old to new format
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 -  **-name string** assign a different name to the value field output (Default: value). Do not include the file extension.
 
--  **-nii** output the index, directions and data file in NifTI format instead of *.mif
+-  **-nii** output the index, directions and data file in NIfTI format instead of *.mif
 
--  **-size** also output the 'size' field from the old format
+-  **-out_size** also output the 'size' field from the old format
+
+-  **-template path** specify an existing fixel directory (in the new format) to which the new output should conform
+
+Options for converting from new to old format
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-value path** nominate the data file to import to the 'value' field in the old format
+
+-  **-in_size path** import data for the 'size' field in the old format
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -50,7 +62,7 @@ Standard options
 
 
 
-**Author:** David Raffelt (david.raffelt@florey.edu.au)
+**Author:** David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
 

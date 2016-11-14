@@ -21,6 +21,4 @@ Python scripts provided with MRtrix3
 
    scripts/labelsgmfix
 
-   scripts/mtbin
-
    scripts/population_template

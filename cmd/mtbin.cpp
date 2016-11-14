@@ -51,7 +51,7 @@ void usage ()
     + Argument ("image").type_image_in ()
 
     + Option ("value", "specify the value to which the summed tissue compartments will be to "
-                       "(Default: sqrt(1/(4*pi) = " + str(DEFAULT_NORM_VALUE, 3) + ")")
+                       "(Default: sqrt(1/(4*pi)) = " + str(DEFAULT_NORM_VALUE, 3) + ")")
     + Argument ("number").type_float ()
 
     + Option ("bias", "output the estimated bias field")
@@ -67,12 +67,14 @@ void usage ()
     + Argument ("image").type_image_out ();
 }
 
+const int n_basis_vecs (20);
+
 
 FORCE_INLINE Eigen::MatrixXd basis_function (const Eigen::Vector3 pos) {
-  float x = (float)pos[0];
-  float y = (float)pos[1];
-  float z = (float)pos[2];
-  Eigen::MatrixXd basis(19, 1);
+  double x = pos[0];
+  double y = pos[1];
+  double z = pos[2];
+  Eigen::MatrixXd basis(n_basis_vecs, 1);
   basis(0) = 1.0;
   basis(1) = x;
   basis(2) = y;
@@ -92,6 +94,7 @@ FORCE_INLINE Eigen::MatrixXd basis_function (const Eigen::Vector3 pos) {
   basis(16) = x * x * x;
   basis(17) = y * y * y;
   basis(18) = z * z * z;
+  basis(19) = x * y * z;
   return basis;
 }
 
@@ -133,7 +136,8 @@ void run ()
     if (i)
       check_dimensions (input_images[0], input_images[i / 2], 0, 3);
 
-    // TODO check for output and not -force
+    if (Path::exists (argument[i + 1]) && !App::overwrite_files)
+      throw Exception ("output file \"" + argument[i] + "\" already exists (use -force option to force overwrite)");
 
     // we can't create the image yet if we want to put the scale factor into the output header
     output_headers.emplace_back (Header::open (argument[i]));
@@ -172,53 +176,20 @@ void run ()
   const size_t max_iter = get_option_value ("maxiter", DEFAULT_MAXITER_VALUE);
 
   // Initialise bias field
-  Eigen::MatrixXd bias_field_weights (19, 1);
+  Eigen::MatrixXd bias_field_weights (n_basis_vecs, 1);
   auto bias_field = Image<float>::scratch (header_3D);
   for (auto i = Loop(bias_field)(bias_field); i; ++i)
     bias_field.value() = 1.0;
 
   Eigen::MatrixXd scale_factors (input_images.size(), 1);
   Eigen::MatrixXd previous_scale_factors (input_images.size(), 1);
-  size_t iter = 0;
+  size_t iter = 1;
   bool converged = false;
 
   // Iterate until convergence or max iterations performed
   while (!converged && iter < max_iter) {
 
-    DEBUG ("iteration: " + str(iter));
-
-    // Revaluate mask and reject outliers after 1st iteration
-    if (iter && !user_supplied_mask) {
-      auto summed = Image<float>::scratch (header_3D);
-      for (size_t j = 0; j < input_images.size(); ++j) {
-        for (auto i = Loop (summed, 0, 3) (summed, input_images[j], bias_field); i; ++i)
-          summed.value() += scale_factors(j, 0) * input_images[j].value() / bias_field.value();
-      }
-      compute_mask (summed, mask);
-
-      std::vector<float> summed_values;
-      for (auto i = Loop (mask) (mask, summed); i; ++i) {
-        if (mask.value())
-          summed_values.push_back (summed.value());
-      }
-      num_voxels = summed_values.size();
-      std::sort (summed_values.begin(), summed_values.end());
-      float lower_quartile = summed_values[std::round ((float)num_voxels * 0.25)];
-      float upper_quartile = summed_values[std::round ((float)num_voxels * 0.75)];
-      float upper_outlier_threshold = upper_quartile + 1.5 * (upper_quartile - lower_quartile);
-      float lower_outlier_threshold = lower_quartile - 1.5 * (upper_quartile - lower_quartile);
-
-      for (auto i = Loop (mask) (mask, summed); i; ++i) {
-        if (mask.value()) {
-          if (summed.value() < lower_outlier_threshold || summed.value() > upper_outlier_threshold) {
-            mask.value() = 0;
-            num_voxels--;
-          }
-        }
-      }
-    }
-    progress++;
-
+    INFO ("iteration: " + str(iter));
     // Solve for tissue normalisation scale factors
     Eigen::MatrixXd X (num_voxels, input_images.size());
     Eigen::MatrixXd y (num_voxels, 1);
@@ -237,10 +208,12 @@ void run ()
     scale_factors = X.colPivHouseholderQr().solve(y);
     progress++;
 
+    INFO ("scale factors: " + str(scale_factors.transpose()));
+
 
     // Solve for bias field weights
     Transform transform (mask);
-    Eigen::MatrixXd bias_field_basis (num_voxels, 19);
+    Eigen::MatrixXd bias_field_basis (num_voxels, n_basis_vecs);
     index = 0;
     for (auto i = Loop (mask) (mask); i; ++i) {
       if (mask.value()) {
@@ -275,15 +248,57 @@ void run ()
     for (auto i = Loop (bias_field) (bias_field, mask); i; ++i)
       bias_field.value() /= mean;
 
+    progress++;
+
     // Check for convergence
-    if (iter) {
-      Eigen::MatrixXd diff = previous_scale_factors.array() - scale_factors.array();
+    Eigen::MatrixXd diff;
+    if (iter > 1) {
+      diff = previous_scale_factors.array() - scale_factors.array();
       diff = diff.array().abs() / previous_scale_factors.array();
-      DEBUG ("percentage change in estimated scale factors: " + str(diff.mean() * 100));
+      INFO ("percentage change in estimated scale factors: " + str(diff.mean() * 100));
       if (diff.mean() < 0.001)
         converged = true;
     }
+
+    // Revaluate mask
+    if (!converged && !user_supplied_mask) {
+      auto summed = Image<float>::scratch (header_3D);
+      for (size_t j = 0; j < input_images.size(); ++j) {
+        for (auto i = Loop (summed, 0, 3) (summed, input_images[j], bias_field); i; ++i)
+          summed.value() += scale_factors(j, 0) * input_images[j].value() / bias_field.value();
+      }
+      compute_mask (summed, mask);
+      std::vector<float> summed_values;
+      for (auto i = Loop (mask) (mask, summed); i; ++i) {
+        if (mask.value())
+          summed_values.push_back (summed.value());
+      }
+      num_voxels = summed_values.size();
+
+      // Reject outliers after a few iterations once the summed image is largely corrected for the bias field
+      if (iter > 2) {
+        INFO ("rejecting outliers");
+        std::sort (summed_values.begin(), summed_values.end());
+        float lower_quartile = summed_values[std::round ((float)num_voxels * 0.25)];
+        float upper_quartile = summed_values[std::round ((float)num_voxels * 0.75)];
+        float upper_outlier_threshold = upper_quartile + 1.6 * (upper_quartile - lower_quartile);
+        float lower_outlier_threshold = lower_quartile - 1.6 * (upper_quartile - lower_quartile);
+
+        for (auto i = Loop (mask) (mask, summed); i; ++i) {
+          if (mask.value()) {
+            if (summed.value() < lower_outlier_threshold || summed.value() > upper_outlier_threshold) {
+              mask.value() = 0;
+              num_voxels--;
+            }
+          }
+        }
+      }
+      if (log_level >= 3)
+        display (mask);
+    }
+
     previous_scale_factors = scale_factors;
+
     progress++;
     iter++;
   }

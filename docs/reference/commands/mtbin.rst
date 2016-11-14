@@ -22,7 +22,7 @@ Options
 
 -  **-mask image** define the mask to compute the normalisation within. If not supplied this is estimated automatically
 
--  **-value number** specify the value to which the summed tissue compartments will be to (Default: sqrt(1/(4*pi) = 0.282)
+-  **-value number** specify the value to which the summed tissue compartments will be to (Default: sqrt(1/(4*pi)) = 0.282)
 
 -  **-bias image** output the estimated bias field
 
