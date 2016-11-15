@@ -132,6 +132,20 @@ namespace MR
   }
 
 
+  namespace {
+    inline bool check_strides_match (const std::vector<ssize_t>& a, const std::vector<ssize_t>& b) 
+    {
+      size_t n = 0;
+      for (; n < std::min (a.size(), b.size()); ++n) 
+        if (a[n] != b[n]) return false; 
+      for (size_t i = n; i < a.size(); ++i) 
+        if (a[i] > 1) return false;
+      for (size_t i = n; i < b.size(); ++i) 
+        if (b[i] > 1) return false;
+      return true;
+    }
+
+  }
 
 
 
@@ -167,9 +181,9 @@ namespace MR
         if ((*format_handler)->check (H, H.ndim() - Pdim.size()))
           break;
       const std::vector<ssize_t> strides_aftercheck (Stride::get_symbolic (H));
-      if (! std::equal(strides.begin(), strides.end(), strides_aftercheck.begin())) {
-          INFO("output strides for image "+image_name+" modified to "+str(strides_aftercheck)+" - requested strides "+str(strides)+" are not supported in "+H.format()+" format");
-      }
+      if (!check_strides_match (strides, strides_aftercheck))
+        INFO("output strides for image " + image_name + " modified to " + str(strides_aftercheck) +
+            " - requested strides " + str(strides) + " are not supported in " + H.format() + " format");
 
       if (!*format_handler) {
         const std::string basename = Path::basename (image_name);
