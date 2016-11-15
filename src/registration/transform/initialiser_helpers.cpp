@@ -171,6 +171,7 @@ namespace MR
           if (mass == default_type(0.0))
             throw Exception("centre of mass initialisation not possible for empty image");
           centre_of_mass /= mass;
+          DEBUG ("centre of mass of " + im.name() + ": " + str(centre_of_mass.transpose()));
         }
 
         void initialise_using_rotation_search (

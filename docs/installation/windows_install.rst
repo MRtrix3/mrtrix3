@@ -73,15 +73,34 @@ Install *MRtrix3* dependencies
 
 1. From the **'MinGW-w64 Win64 Shell'** run:
 
-   ::
+    ::
 
-       pacman -S git python pkg-config mingw-w64-x86_64-gcc mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5
+        pacman -S git python pkg-config mingw-w64-x86_64-gcc mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5
     
-   Sometimes ``pacman`` may fail to find a particular package from any of
-   the available mirrors. If this occurs, you can download the relevant
-   package from `SourceForge <https://sourceforge.net/projects/msys2/files/REPOS/MINGW/x86_64/>`__:
-   place both the package file and corresponding .sig file into the
-   ``/var/cache/pacman/pkg`` directory, and repeat the ``pacman`` call above.
+    Sometimes ``pacman`` may fail to find a particular package from any of
+    the available mirrors. If this occurs, you can download the relevant
+    package from `SourceForge <https://sourceforge.net/projects/msys2/files/REPOS/MINGW/x86_64/>`__:
+    place both the package file and corresponding .sig file into the
+    ``/var/cache/pacman/pkg`` directory, and repeat the ``pacman`` call above.
+
+    Sometimes ``pacman`` may refuse to install a particular package, claiming e.g.:
+
+    ::
+
+        error: failed to commit transaction (conflicting files)
+        mingw-w64-x86_64-eigen3: /mingw64 exists in filesystem
+        Errors occurred, no packages were upgraded.
+
+    Firstly, if the offending existing target is something trivial that can
+    be deleted, this is all that should be required. Otherwise, it is possible
+    that MSYS2 may mistake a _file_ existing on the filesystem as a
+    pre-existing _directory_; a good example is that quoted above, where
+    ``pacman`` claims that directory ``/mingw64`` exists, but it is in fact the
+    two files ``/mingw64.exe`` and ``/mingw64.ini`` that cause the issue.
+    Temporarily renaming these two files, then changing their names back after
+    ``pacman`` has completed the installation, should solve the problem.
+
+
 
 Set up git and download *MRtrix3* sources
 ---------------------------------------
@@ -191,7 +210,7 @@ build script can be invoked with::
     ../mrtrix3/build
 
 If you really want a symbolic link, one solution is to use a standard Windows
-command prompt, with Administrator priveleges: In the file explorer, go to
+command prompt, with Administrator privileges: In the file explorer, go to
 ``C:\Windows\system32``, locate the file ``cmd.exe``, right-click and
 select 'Run as administrator'. Within this prompt, use the ``mklink``
 command (note that the argument order passed to ``mklink`` is reversed
@@ -206,3 +225,7 @@ target, e.g.:
 , and ``msys64`` should be able to interpret the softlink path correctly
 (confirm with ``ls -la``).
 
+I have also found recently that the build script will not correctly detect use
+of a softlink for compiling an external project when run under Python2, so
+Python3 must be used explicitly.
+ 
