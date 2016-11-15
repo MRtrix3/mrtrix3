@@ -215,7 +215,7 @@ global cpp, cpp_cmd, ld, ld_args, ld_cmd
 
 cxx = [ 'g++' ]
 cxx_args = '-c CFLAGS SRC -o OBJECT'.split()
-cpp_flags = [ '-std=c++11' ]
+cpp_flags = [ '-std=c++11', '-mno-avx' ]
 
 ld_args = 'OBJECTS LDFLAGS -o EXECUTABLE'.split()
 ld_flags = [ ]
