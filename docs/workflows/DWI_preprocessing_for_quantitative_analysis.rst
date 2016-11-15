@@ -23,19 +23,24 @@ Pre-processsing steps
 Below is a list of recommended pre-processing steps for quantitative analysis using FOD images. Note that for all MRtrix scripts and commands, additional information on the command usage and available command-line options can be found by invoking the command with the :code:`-help` option. 
 
 
-1. Susceptibility-induced distortion correction
+1. DWI denoising
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-If you have access to reversed phase-encode spin-echo echo planar imaging data, this can be used to correct the susceptibility-induced geometric distortions present in the diffusion images. Software for EPI distortion correction is not yet implemented in MRtrix, however we do provide a script for interfacing with `Topup <http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/TOPUP>`_, part of the `FSL <http://fsl.fmrib.ox.ac.uk/>`_ package. Note that :code:`dwipreproc` will also run `Eddy <http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/EDDY>`_ (see the next step)::
 
-  dwipreproc <input_dwi> <output_dwi> <phase_encode_direction>
+The effective SNR of diffusion data can be improved considerably by exploiting the redundancy in the data to reduce the effects of thermal noise. This functionality is provided in the command ``dwidenoise``::
 
-For more details, see the header of the :code:`scripts/dwipreproc` file. In particular, it is necessary to manually specify what type of reversed phase-encoding acquisition was performed (if any), and provide the relevant input images.
+  dwidenoise <input_dwi> <output_dwi>
 
-2. Eddy current induced distortion correction and motion correction 
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-The :code:`dwipreproc` script also interfaces with `FSL <http://fsl.fmrib.ox.ac.uk/>`_'s `Eddy <http://www.ncbi.nlm.nih.gov/pubmed/26481672>`_ for correcting eddy current-induced distortions and subject motion. Note that if you have reversed phase-encode images for EPI correction, the :code:`dwipreproc` script will simultaneously run `Eddy <http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/EDDY>`_ to ensure only a single interpolation is performed. If you don't have reversed phase-encode data, then `Eddy <http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/EDDY>`_ can be run without topup using::
+Note that this denoising step *must* be performed prior to any other image pre-processing: any form of image interpolation (e.g. re-gridding images following motion correction) will invalidate the statistical properties of the image data that are exploited by ``dwidenoise``, and make the denoising process prone to errors. Therefore this process is applied as the very first step.
 
-  dwipreproc -rpe_none AP <input_dwi> <output_dwi>
+
+2. DWI general pre-processing
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The :code:`dwipreproc` script is provided for performing general pre-processing of diffusion image data - this includes eddy current-induced distortion correction, motion correction, and (possibly) susceptibility-induced distortion correction. Commands for performing this pre-processing are not yet implemented in *MRtrix3*; the :code:`dwipreproc` script in its current form is in fact an interface to the relevant commands that are provided as part of the `FSL <http://fsl.fmrib.ox.ac.uk/>`_ package. Installation of FSL (including `eddy <http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/EDDY>`_) is therefore required to use this script, and citation of the relevant articles is also required (see the :ref:`dwipreproc` help page).
+
+Usage of this script varies depending on the specific nature of the DWI acquisition with respect to EPI phase encoding - full details are available within the :ref:`dwipreproc` help file. Here, only a simple example is provided, where a single DWI series is acquired where all volumes have an anterior-posterior (A>>P) phase encoding direction::
+
+  dwipreproc AP <input_dwi> <output_dwi> -rpe_none
 
 
 3. Estimate a brain mask
@@ -65,7 +70,7 @@ The dwiintensitynorm script also outputs the study-specific FA template and whit
 
 Keeping the FA template image and white matter mask is also handy if additional subjects are added to the study at a later date. New subjects can be intensity normalised in a single step by `piping <http://userdocs.mrtrix.org/en/latest/getting_started/command_line.html#unix-pipelines>`_ the following commands together::
 
-    dwi2tensor <input_dwi> -mask <input_brain_mask> - | tensor2metric - -fa - | mrregister <fa_template> - -mask2 <input_brain_mask> -nl_scale 0.5,0.75,1.0 -nl_niter 5,5,15 -nl_warp - | mrtransform <input_template_wm_mask> -template <input_dwi> -warp - - | dwinormalise <input_dwi> - <output_normalised_dwi>
+    dwi2tensor <input_dwi> -mask <input_brain_mask> - | tensor2metric - -fa - | mrregister <fa_template> - -mask2 <input_brain_mask> -nl_scale 0.5,0.75,1.0 -nl_niter 5,5,15 -nl_warp - tmp.mif | mrtransform <input_template_wm_mask> -template <input_dwi> -warp - - | dwinormalise <input_dwi> - <output_normalised_dwi>; rm tmp.mif
    
 .. NOTE:: The above command may also be useful if you wish to alter the mask then re-apply the intensity normalisation to all subjects in the study. For example you may wish to edit the mask using the ROI tool in :code:`mrview` to remove white matter regions that you hypothesise are affected by the disease (e.g. removing the corticospinal tract in a study of motor neurone disease due to T2 hyperintensity). You also may wish to redefine the mask completely, for example in an elderly population (with larger ventricles) it may be appropriate to intensity normalise using the median b=0 CSF. This could be performed by manually masking partial-volume-free CSF voxels, then running the above command with the CSF mask instead of the <input_template_wm_mask>.
 
@@ -79,5 +84,5 @@ As described `here <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`_, using the sa
     
 Alternatively, to ensure the response function is representative of your study population, a group average response function can be computed by first estimating a response function per subject, then averaging with the script::
 
-    average_response <input_response_files (muliple inputs accepted)> <output_group_average_response>
+    average_response <input_response_files (mulitple inputs accepted)> <output_group_average_response>
 

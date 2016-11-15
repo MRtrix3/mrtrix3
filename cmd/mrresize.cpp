@@ -27,6 +27,8 @@ const char* interp_choices[] = { "nearest", "linear", "cubic", "sinc", NULL };
 
 void usage ()
 {
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
+
   DESCRIPTION
   + "Resize an image by defining the new image resolution, voxel size or a scale factor."
   + "Note that if the image is 4D, then only the first 3 dimensions can be resized."
@@ -96,9 +98,6 @@ void run () {
     ++resize_option_count;
   }
 
-
-  Header output_header (resize_filter);
-  output_header.datatype() = DataType::from_command_line (output_header.datatype());
 
   int interp = 2;
   opt = get_options ("interp");

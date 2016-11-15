@@ -72,6 +72,7 @@ namespace MR {
           case 469:  az_el_pairs = tesselation_469 (); return;
           case 513:  az_el_pairs = tesselation_513 (); return;
           case 1281: az_el_pairs = tesselation_1281 (); return;
+          case 5000: az_el_pairs = electrostatic_repulsion_5000 (); return;
           default: throw Exception ("No pre-defined data set of " + str (i) + " directions");
         }
       }
@@ -277,7 +278,7 @@ namespace MR {
           // Each of these three directions is adjacent
           // However: Each edge may have already been added from other triangles
           for (size_t edge = 0; edge != 6; ++edge) {
-            dir_t from, to;
+            dir_t from = 0, to = 0;
             switch (edge) {
               case 0: from = vertices[current.indices[0]].index; to = vertices[current.indices[1]].index; break;
               case 1: from = vertices[current.indices[1]].index; to = vertices[current.indices[0]].index; break;

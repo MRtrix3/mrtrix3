@@ -18,6 +18,8 @@
 
 #include "types.h"
 
+#include "dwi/shells.h"
+
 namespace MR
 {
   namespace DWI
@@ -26,31 +28,47 @@ namespace MR
     template <typename T, class MatrixType> 
       inline Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> grad2bmatrix (const MatrixType& grad, bool dki = false)
     {
+      std::unique_ptr<DWI::Shells> shells;
+      try {
+        shells.reset (new DWI::Shells (grad));
+      } catch (...) {
+        WARN ("Unable to separate diffusion gradient table into shells; tensor estimation success uncertain");
+      }
+      if (shells) {
+        if (dki) {
+          if (shells->count() < 3)
+            throw Exception ("Kurtosis tensor estimation requires at least 3 b-value shells");
+        } else {
+          if (shells->count() < 2)
+            throw Exception ("Tensor estimation requires at least 2 b-values");
+        }
+      }
+
       Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> bmat (grad.rows(), (dki ? 22 : 7));
       for (ssize_t i = 0; i < grad.rows(); ++i) {
         bmat (i,0)  = grad(i,3) *  grad(i,0) * grad(i,0);
         bmat (i,1)  = grad(i,3) *  grad(i,1) * grad(i,1);
         bmat (i,2)  = grad(i,3) *  grad(i,2) * grad(i,2);
-        bmat (i,3)  = grad(i,3) *  grad(i,0) * grad(i,1) * 2;
-        bmat (i,4)  = grad(i,3) *  grad(i,0) * grad(i,2) * 2;
-        bmat (i,5)  = grad(i,3) *  grad(i,1) * grad(i,2) * 2;
-        bmat (i,6)  = -1.0;
+        bmat (i,3)  = grad(i,3) *  grad(i,0) * grad(i,1) * T(2.0);
+        bmat (i,4)  = grad(i,3) *  grad(i,0) * grad(i,2) * T(2.0);
+        bmat (i,5)  = grad(i,3) *  grad(i,1) * grad(i,2) * T(2.0);
+        bmat (i,6)  = T(-1.0);
         if (dki) {
-          bmat (i,7)  = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,0) * grad(i,0) * 1/6;
-          bmat (i,8)  = -grad(i,3) * grad(i,3) * grad(i,1) * grad(i,1) * grad(i,1) * grad(i,1) * 1/6;
-          bmat (i,9)  = -grad(i,3) * grad(i,3) * grad(i,2) * grad(i,2) * grad(i,2) * grad(i,2) * 1/6;
-          bmat (i,10) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,0) * grad(i,1) * 2/3;
-          bmat (i,11) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,0) * grad(i,2) * 2/3;
-          bmat (i,12) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,1) * grad(i,1) * grad(i,1) * 2/3;
-          bmat (i,13) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,2) * grad(i,2) * grad(i,2) * 2/3;
-          bmat (i,14) = -grad(i,3) * grad(i,3) * grad(i,1) * grad(i,1) * grad(i,1) * grad(i,2) * 2/3;
-          bmat (i,15) = -grad(i,3) * grad(i,3) * grad(i,1) * grad(i,2) * grad(i,2) * grad(i,2) * 2/3;
+          bmat (i,7)  = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,0) * grad(i,0) * T(1.0)/T(6.0);
+          bmat (i,8)  = -grad(i,3) * grad(i,3) * grad(i,1) * grad(i,1) * grad(i,1) * grad(i,1) * T(1.0)/T(6.0);
+          bmat (i,9)  = -grad(i,3) * grad(i,3) * grad(i,2) * grad(i,2) * grad(i,2) * grad(i,2) * T(1.0)/T(6.0);
+          bmat (i,10) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,0) * grad(i,1) * T(2.0)/T(3.0);
+          bmat (i,11) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,0) * grad(i,2) * T(2.0)/T(3.0);
+          bmat (i,12) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,1) * grad(i,1) * grad(i,1) * T(2.0)/T(3.0);
+          bmat (i,13) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,2) * grad(i,2) * grad(i,2) * T(2.0)/T(3.0);
+          bmat (i,14) = -grad(i,3) * grad(i,3) * grad(i,1) * grad(i,1) * grad(i,1) * grad(i,2) * T(2.0)/T(3.0);
+          bmat (i,15) = -grad(i,3) * grad(i,3) * grad(i,1) * grad(i,2) * grad(i,2) * grad(i,2) * T(2.0)/T(3.0);
           bmat (i,16) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,1) * grad(i,1);
           bmat (i,17) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,2) * grad(i,2);
           bmat (i,18) = -grad(i,3) * grad(i,3) * grad(i,1) * grad(i,1) * grad(i,2) * grad(i,2);
-          bmat (i,19) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,1) * grad(i,2) * 2;
-          bmat (i,20) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,1) * grad(i,1) * grad(i,2) * 2;
-          bmat (i,21) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,1) * grad(i,2) * grad(i,2) * 2;
+          bmat (i,19) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,1) * grad(i,2) * T(2.0);
+          bmat (i,20) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,1) * grad(i,1) * grad(i,2) * T(2.0);
+          bmat (i,21) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,1) * grad(i,2) * grad(i,2) * T(2.0);
         }
       }
       return bmat;

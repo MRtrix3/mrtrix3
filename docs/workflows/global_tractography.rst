@@ -56,7 +56,7 @@ estimated using:
 
 ::
     
-    dwi2response msmt_5tt dwi.mif 5tt.mif gm.txt wm.txt csf.txt
+    dwi2response msmt_5tt dwi.mif 5tt.mif wm.txt gm.txt csf.txt
 
 For a detailed explanation of different strategies for response function 
 estimation, have a look at `this page <http://mrtrix.readthedocs.org/en/latest/concepts/response_function_estimation.html#msmt-5tt>`__.
@@ -79,8 +79,8 @@ increased computation time.
 
 Particle potential ``-ppot``: The particle potential essentially
 associates a *cost* to each particle, relative to its weight. As such,
-we are in fact trying to reconstruct the data as good as possible, with
-as little particles as needed. This ensures that there is sufficient
+we are in fact trying to reconstruct the data as well as possible, with
+as few particles as needed. This ensures that there is sufficient
 *proof* for each individual particle, and hence avoids that a bit of
 noise in the data spurs generation of new (random) particles. Think of
 it as a parameter that balances sensitivity versus specificity. A higher

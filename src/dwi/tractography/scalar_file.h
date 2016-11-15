@@ -171,6 +171,7 @@ namespace MR
           using __WriterBase__<T>::create;
           using __WriterBase__<T>::update_counts;
           using __WriterBase__<T>::verify_stream;
+          using __WriterBase__<T>::open_success;
 
           ScalarWriter (const std::string& file, const Properties& properties) :
             __WriterBase__<T> (file),
@@ -178,10 +179,17 @@ namespace MR
             buffer (new value_type [buffer_capacity+1]),
             buffer_size (0)
           {
-            File::OFStream out (name, std::ios::out | std::ios::binary | std::ios::trunc);
+            File::OFStream out;
+            try {
+              out.open (name, std::ios::out | std::ios::binary | std::ios::trunc);
+            } catch (Exception& e) {
+              throw Exception (e, "Unable to create output track scalar file");
+            }
+
             // Do NOT set Properties timestamp here! (Must match corresponding .tck file)
             const_cast<Properties&> (properties).set_version_info();
             create (out, properties, "track scalars");
+            open_success = true;
             current_offset = out.tellp();
           }
 
@@ -198,6 +206,23 @@ namespace MR
 
               for (typename std::vector<value_type>::const_iterator i = tck_scalar.begin(); i != tck_scalar.end(); ++i)
                 add_scalar (*i);
+              add_scalar (delimiter());
+              ++count;
+            }
+            ++total_count;
+            return true;
+          }
+
+
+          template <typename matrix_type>
+          bool operator() (const Eigen::Matrix<matrix_type, Eigen::Dynamic, 1>& data)
+          {
+            if (data.size()) {
+              if (buffer_size + data.size() > buffer_capacity)
+                commit();
+
+              for (int i = 0; i != data.size(); ++i)
+                add_scalar (value_type(data[i]));
               add_scalar (delimiter());
               ++count;
             }
@@ -231,7 +256,7 @@ namespace MR
 
           void commit ()
           {
-            if (buffer_size == 0)
+            if (buffer_size == 0 || !open_success)
               return;
             File::OFStream out (name, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
             out.seekp (current_offset, out.beg);

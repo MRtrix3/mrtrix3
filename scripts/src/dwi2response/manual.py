@@ -1,9 +1,9 @@
 def initParser(subparsers, base_parser):
   import argparse
-  parser = subparsers.add_parser('manual', parents=[base_parser], help='Derive a response function using an input mask image alone (i.e. pre-selected voxels)')
-  arguments = parser.add_argument_group('Positional arguments specific to the \'manual\' algorithm')
-  arguments.add_argument('in_voxels', help='Input voxel selection mask')
-  arguments.add_argument('output', help='Output response function text file')
+  parser = subparsers.add_parser('manual', parents=[base_parser], add_help=False, description='Derive a response function using an input mask image alone (i.e. pre-selected voxels)')
+  parser.add_argument('input', help='The input DWI')
+  parser.add_argument('in_voxels', help='Input voxel selection mask')
+  parser.add_argument('output', help='Output response function text file')
   options = parser.add_argument_group('Options specific to the \'manual\' algorithm')
   options.add_argument('-dirs', help='Manually provide the fibre direction in each voxel (a tensor fit will be used otherwise)')
   parser.set_defaults(algorithm='manual')
@@ -20,15 +20,16 @@ def checkOutputFiles():
 def getInputFiles():
   import os
   import lib.app
+  from lib.getUserPath   import getUserPath
   from lib.runCommand  import runCommand
   from lib.warnMessage import warnMessage
   mask_path = os.path.join(lib.app.tempDir, 'mask.mif')
   if os.path.exists(mask_path):
     warnMessage('-mask option is ignored by algorithm \'manual\'')
     os.remove(mask_path)
-  runCommand('mrconvert ' + lib.app.args.in_voxels + ' ' + os.path.join(lib.app.tempDir, 'in_voxels.mif'))
+  runCommand('mrconvert ' + getUserPath(lib.app.args.in_voxels, True) + ' ' + os.path.join(lib.app.tempDir, 'in_voxels.mif'))
   if lib.app.args.dirs:
-    runCommand('mrconvert ' + lib.app.args.dirs + ' ' + os.path.join(lib.app.tempDir, 'dirs.mif') + ' -stride 0,0,0,1')
+    runCommand('mrconvert ' + getUserPath(lib.app.args.dirs, True) + ' ' + os.path.join(lib.app.tempDir, 'dirs.mif') + ' -stride 0,0,0,1')
 
 
 
@@ -37,6 +38,7 @@ def execute():
   import lib.app
   from lib.errorMessage  import errorMessage
   from lib.getHeaderInfo import getHeaderInfo
+  from lib.getUserPath   import getUserPath
   from lib.runCommand    import runCommand
   
   shells = [ int(round(float(x))) for x in getHeaderInfo('dwi.mif', 'shells').split() ]
@@ -74,6 +76,6 @@ def execute():
       line += ['0'] * (max_length - len(line))
       f.write(' '.join(line) + '\n')
 
-  shutil.copyfile('response.txt', os.path.join(lib.app.workingDir, lib.app.args.output))
+  shutil.copyfile('response.txt', getUserPath(lib.app.args.output, False))
   shutil.copyfile('in_voxels.mif', 'voxels.mif')
 

@@ -27,6 +27,7 @@ namespace MR {
 
       extern const default_type electrostatic_repulsion_60_data[];
       extern const default_type electrostatic_repulsion_300_data[];
+      extern const default_type electrostatic_repulsion_5000_data[];
       extern const default_type tesselation_129_data[];
       extern const default_type tesselation_321_data[];
       extern const default_type tesselation_469_data[];
@@ -48,6 +49,7 @@ namespace MR {
 
       inline Eigen::MatrixXd electrostatic_repulsion_60 () { return copy (electrostatic_repulsion_60_data, 60); }
       inline Eigen::MatrixXd electrostatic_repulsion_300 () { return copy (electrostatic_repulsion_300_data, 300); }
+      inline Eigen::MatrixXd electrostatic_repulsion_5000 () { return copy (electrostatic_repulsion_5000_data, 5000); }
 
       //! 3rd-order tessellation of an octahedron
       inline Eigen::MatrixXd tesselation_129 () { return copy (tesselation_129_data, 129); }

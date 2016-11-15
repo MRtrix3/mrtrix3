@@ -47,16 +47,10 @@ namespace MR {
         class MapWriterBase
         {
 
-          protected:
-            // counts needs to be floating-point to cover possibility of weighted streamlines
-            //typedef Image::BufferScratch<float> counts_buffer_type;
-            //typedef Image::BufferScratch<float>::voxel_type counts_voxel_type;
-
           public:
             MapWriterBase (const Header& header, const std::string& name, const vox_stat_t s = V_SUM, const writer_dim t = GREYSCALE) :
               H (header),
               output_image_name (name),
-              direct_dump (false),
               voxel_statistic (s),
               type (t) {
                 assert (type != UNDEFINED);
@@ -87,15 +81,14 @@ namespace MR {
           protected:
             const Header& H;
             const std::string output_image_name;
-            bool direct_dump;
             const vox_stat_t voxel_statistic;
             const writer_dim type;
 
             // This gets used with mean voxel statistic for some (but not all) writers,
             //   or if the output is a voxel_summed DEC image.
+            // counts needs to be floating-point to cover possibility of weighted streamlines
             // It's also hijacked to store per-voxel min/max factors in the case of TOD
             std::unique_ptr<Image<float>> counts;
-            //std::unique_ptr<counts_voxel_type > v_counts;
 
         };
 
@@ -108,16 +101,10 @@ namespace MR {
           class MapWriter : public MapWriterBase
         {
 
-          //typedef typename Image::Buffer<value_type> image_type;
-          //typedef typename Image::Buffer<value_type>::voxel_type image_voxel_type;
-          //typedef typename Mapping::BufferScratchDump<value_type> buffer_type;
-          //typedef typename Mapping::BufferScratchDump<value_type>::voxel_type buffer_voxel_type;
-
           public:
           MapWriter (const Header& header, const std::string& name, const vox_stat_t voxel_statistic = V_SUM, const writer_dim type = GREYSCALE) :
             MapWriterBase (header, name, voxel_statistic, type),
             buffer (Image<value_type>::scratch (header, "TWI " + str(writer_dims[type]) + " buffer"))
-            //v_buffer (buffer)
           {
             auto loop = Loop (buffer);
             if (type == DEC || type == TOD) {
@@ -155,7 +142,7 @@ namespace MR {
             {
               Header H_counts (header);
               if (type == DEC || type == TOD) 
-                H_counts.set_ndim (3);
+                H_counts.ndim() = 3;
               counts.reset (new Image<float> (Image<float>::scratch (H_counts, "TWI streamline count buffer")));
             }
           }
@@ -241,47 +228,6 @@ namespace MR {
             }
 
             save (buffer, output_image_name);
-            
-            /* TODO: pretty sure none of this is needed any longer, but need
-             * to check...
-
-            if (direct_dump) {
-
-              if (App::log_level)
-                std::cerr << App::NAME << ": dumping image contents to file... ";
-              buffer.dump_to_file (output_image_name, H);
-              if (App::log_level)
-                std::cerr << "done.\n";
-
-            } else {
-              try {
-            
-                image_type out (output_image_name, H);
-                if (type == DEC) {
-                  auto loop_out = Loop (out, "writing image to file...", 0, 3);
-                  for (auto l = loop_out (out, buffer); l; ++l) {
-                    point_type value (get_dec());
-                    out[3] = 0; out.value() = value[0];
-                    out[3] = 1; out.value() = value[1];
-                    out[3] = 2; out.value() = value[2];
-                  }
-                } else if (type == TOD) {
-                  auto loop_out = Loop (out, "writing image to file...", 0, 3);
-                  for (auto l = loop_out (out, buffer); l; ++l) {
-                    Math::Vector<float> value;
-                    get_tod (value);
-                    for (auto l2 = Loop (3)(out); l2; ++l2) 
-                      out.value() = value[size_t(out[3])];
-                  }
-                } else { // Greyscale and Dixel
-                  auto loop_out = Loop (out, "writing image to file...");
-                  for (auto l = loop_out (out, buffer); l; ++l)
-                    out.value() = buffer.value();
-                }
-            
-              } catch (Exception& e) {
-                e.display();
-            } */
           }
 
 

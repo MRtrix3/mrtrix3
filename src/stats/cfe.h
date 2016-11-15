@@ -61,7 +61,7 @@ namespace MR
             angular_threshold_dp = cos (angular_threshold * (Math::pi/180.0));
           }
 
-          bool operator () (SetVoxelDir& in)
+          bool operator() (SetVoxelDir& in)
           {
             // For each voxel tract tangent, assign to a fixel
             std::vector<int32_t> tract_fixel_indices;
@@ -90,13 +90,18 @@ namespace MR
               }
             }
 
-            for (size_t i = 0; i < tract_fixel_indices.size(); i++) {
-              for (size_t j = i + 1; j < tract_fixel_indices.size(); j++) {
-                connectivity_matrix[tract_fixel_indices[i]][tract_fixel_indices[j]].value++;
-                connectivity_matrix[tract_fixel_indices[j]][tract_fixel_indices[i]].value++;
+            try {
+              for (size_t i = 0; i < tract_fixel_indices.size(); i++) {
+                for (size_t j = i + 1; j < tract_fixel_indices.size(); j++) {
+                  connectivity_matrix[tract_fixel_indices[i]][tract_fixel_indices[j]].value++;
+                  connectivity_matrix[tract_fixel_indices[j]][tract_fixel_indices[i]].value++;
+                }
               }
+              return true;
+            } catch (...) {
+              throw Exception ("Error assigning memory for CFE connectivity matrix");
+              return false;
             }
-            return true;
           }
 
         private:

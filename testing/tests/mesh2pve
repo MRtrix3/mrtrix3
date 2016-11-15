@@ -1,1 +1,1 @@
-mesh2pve meshconvert/in.vtk meshconvert/image.mif.gz - | testing_diff_data - mesh2pve/out.mif.gz 0.0015
+mesh2pve meshconvert/in.vtk meshconvert/image.mif.gz - | testing_diff_data - mesh2pve/out.mif.gz -abs 1.5e-3

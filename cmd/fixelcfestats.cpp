@@ -45,7 +45,7 @@ typedef float value_type;
 #define DEFAULT_CFE_E 2.0
 #define DEFAULT_CFE_H 3.0
 #define DEFAULT_CFE_C 0.5
-#define DEFAULT_ANGLE_THRESHOLD 30.0
+#define DEFAULT_ANGLE_THRESHOLD 45.0
 #define DEFAULT_CONNECTIVITY_THRESHOLD 0.01
 #define DEFAULT_SMOOTHING_STD 10.0
 #define DEFAULT_PERMUTATIONS_NONSTATIONARITY 5000
@@ -123,7 +123,7 @@ void usage ()
 
 template <class VectorType>
 void write_fixel_output (const std::string& filename,
-                         const VectorType data,
+                         const VectorType& data,
                          const Header& header,
                          Sparse::Image<FixelMetric>& mask_vox,
                          Image<int32_t>& indexer_vox) {
@@ -196,7 +196,7 @@ void run() {
 
   // Create an image to store the fixel indices, if we had a fixel scratch buffer this would be cleaner
   Header index_header (input_header);
-  index_header.set_ndim(4);
+  index_header.ndim() = 4;
   index_header.size(3) = 2;
   auto fixel_index_image = Image<int32_t>::scratch (index_header);
   for (auto i = Loop ()(fixel_index_image);i; ++i)
@@ -302,6 +302,7 @@ void run() {
       it->second *= norm_factor;
   }
 
+
   // Load input data
   Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> data (num_fixels, filenames.size());
   {
@@ -345,6 +346,7 @@ void run() {
       progress++;
     }
   }
+
 
   if (!data.allFinite())
     throw Exception ("input data contains non-finite value(s)");

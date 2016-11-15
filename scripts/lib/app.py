@@ -1,19 +1,25 @@
-# Now have separate -quiet and -verbose options: 
-# * -quiet prints nothing until script completes (unless warnings occur)
-# * Default is to display command info, but no progress bars etc. (i.e. MRtrix still suppressed with -quiet)
-# * -verbose prints all commands and all command outputs
 
 args = ''
-author = 'No author specified'
-citationWarning = ''
+author = ''
+citationList = []
 cleanup = True
+copyright = '''Copyright (c) 2008-2016 the MRtrix3 contributors
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/
+
+MRtrix is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+For more details, see www.mrtrix.org'''
+externalCitations = False
 lastFile = ''
 mrtrixForce = ''
-mrtrixQuiet = '-quiet'
+mrtrixQuiet = ' -quiet'
 mrtrixNThreads = ''
 parser = ''
-refList = ''
-standardOptions = ''
 tempDir = ''
 verbosity = 1
 workingDir = ''
@@ -25,82 +31,38 @@ colourPrint = ''
 colourWarn = ''
 
 
-import argparse
-class Parser(argparse.ArgumentParser):
-  def error(self, message):
-    import sys
-    sys.stderr.write('\nError: %s\n\n' % message)
-    self.print_help()
-    sys.exit(2)
 
-
-
-# Based on a list of names of commands used in the script, produce both the help page epilog and the citation warning to print at the commencement of the script
-def initCitations(cmdlist):
-
-  import lib.citations
-  global refList, citationWarning
-  external_refs = False
-  for name in cmdlist:
-    entry = [item for item in lib.citations.list if item[0] == name][0]
-    if entry:
-      if entry[1]:
-        external_refs = True
-      # Construct string containing all relevant citations that will be fed to the argument parser epilog
-      if refList:
-        refList += '\n'
-      refList += entry[0] + ':\n' + entry[2] + '\n\n'
-
-  if refList:
-    citationWarning += 'Note that this script makes use of commands / algorithms that have relevant articles for citation'
-    if external_refs:
-      citationWarning += '; INCLUDING FROM EXTERNAL SOFTWARE PACKAGES'
-    citationWarning += '. Please consult the help page (-help option) for more information.'
-
-
-
-
-def initParser(desc):
-  import argparse
-  global parser, refList, standardOptions
-  epilog = ''
-  if refList:
-    epilog = 'Relevant citations for tools / algorithms used in this script:\n\n' + refList + '\n'
-  epilog += 'Author:\n' + author + '\n\nCopyright (C) 2008-2016 The MRtrix3 contributors. This is free software; see the source for copying conditions. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n'
-  parser = Parser(description=desc, epilog=epilog, add_help = False, formatter_class=argparse.RawDescriptionHelpFormatter)
-  standardOptions = parser.add_argument_group('standard options')
-  standardOptions.add_argument('-continue', nargs=2, dest='cont', metavar=('<TempDir>', '<LastFile>'), help='Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file')
-  standardOptions.add_argument('-force', action='store_true', help='Force overwrite of output files if pre-existing')
-  standardOptions.add_argument('-help', action='store_true', help='Display help information for the script')
-  standardOptions.add_argument('-nocleanup', action='store_true', help='Do not delete temporary directory at script completion')
-  standardOptions.add_argument('-nthreads', metavar='number', help='Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)')
-  standardOptions.add_argument('-tempdir', metavar='/path/to/tmp/', help='Manually specify the path in which to generate the temporary directory')
-  verbosity_group = standardOptions.add_mutually_exclusive_group()
-  verbosity_group.add_argument('-quiet',   action='store_true', help='Suppress all console output during script execution')
-  verbosity_group.add_argument('-verbose', action='store_true', help='Display additional information for every command invoked')
+def addCitation(condition, reference, is_external):
+  global citationList, externalCitations
+  citationList.append( (condition, reference) )
+  if is_external:
+    externalCitations = True
 
 
 
 def initialise():
-  import argparse, os, random, string, sys
+  import os, sys
+  from lib.errorMessage          import errorMessage
   from lib.printMessage          import printMessage
-  from lib.printUsageMarkdown    import printUsageMarkdown
-  from lib.printUsageRst         import printUsageRst
   from lib.readMRtrixConfSetting import readMRtrixConfSetting
-  global args, author, cleanup, lastFile, mrtrixNThreads, mrtrixQuiet, standardOptions, parser, refList, tempDir, verbosity, workingDir
+  global args, citationList, cleanup, externalCitations, lastFile, mrtrixNThreads, mrtrixQuiet, parser, tempDir, verbosity, workingDir
   global colourClear, colourConsole, colourError, colourPrint, colourWarn
-  
-  if len(sys.argv) == 2 and sys.argv[1] == '__print_usage_markdown__':
-    printUsageMarkdown(parser, standardOptions, refList, author)
+
+  if not parser:
+    errorMessage('Script error: Command-line parser must be initialised before app')
+
+  if len(sys.argv) == 1:
+    parser.print_help()
+    sys.exit(0)
+
+  if sys.argv[-1] == '__print_usage_rst__':
+    parser.printUsageRst()
     exit(0)
 
-  if len(sys.argv) == 2 and sys.argv[1] == '__print_usage_rst__':
-    printUsageRst(parser, standardOptions, refList, author)
-    exit(0)
-  
   workingDir = os.getcwd()
+
   args = parser.parse_args()
-  if args.help or len(sys.argv) == 1:
+  if args.help:
     parser.print_help()
     sys.exit(0)
 
@@ -108,7 +70,8 @@ def initialise():
   if use_colour:
     use_colour = use_colour.lower() in ('yes', 'true', '1')
   else:
-    use_colour = not sys.platform.startswith('win')
+    # Windows now also gets coloured text terminal support, so make this the default
+    use_colour = True
   if use_colour:
     colourClear = '\033[0m'
     colourConsole = '\033[03;34m'
@@ -119,45 +82,26 @@ def initialise():
   if args.nocleanup:
     cleanup = False
   if args.nthreads:
-    mrtrixNThreads = '-nthreads ' + args.nthreads
+    mrtrixNThreads = ' -nthreads ' + args.nthreads
   if args.quiet:
     verbosity = 0
-    mrtrixQuiet = '-quiet'
-  if args.verbose:
+    mrtrixQuiet = ' -quiet'
+  elif args.verbose:
     verbosity = 2
     mrtrixQuiet = ''
 
-  if citationWarning:
+  if citationList:
     printMessage('')
-    printMessage(citationWarning)
+    citation_warning = 'Note that this script makes use of commands / algorithms that have relevant articles for citation'
+    if externalCitations:
+      citation_warning += '; INCLUDING FROM EXTERNAL SOFTWARE PACKAGES'
+    citation_warning += '. Please consult the help page (-help option) for more information.'
+    printMessage(citation_warning)
     printMessage('')
 
   if args.cont:
     tempDir = os.path.abspath(args.cont[0])
     lastFile = args.cont[1]
-  else:
-    if args.tempdir:
-      dir_path = os.path.abspath(args.tempdir)
-    else:
-      dir_path = readMRtrixConfSetting('TmpFileDir')
-      if not dir_path:
-        if os.name == 'posix':
-          dir_path = '/tmp'
-        else:
-          dir_path = '.'
-    prefix = readMRtrixConfSetting('TmpFilePrefix')
-    if not prefix:
-      prefix = os.path.basename(sys.argv[0]) + '-tmp-'
-    tempDir = dir_path
-    while os.path.isdir(tempDir):
-      random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))
-      tempDir = os.path.join(dir_path, prefix + random_string) + os.sep
-    os.makedirs(tempDir)
-    printMessage('Generated temporary directory: ' + tempDir)
-    with open(os.path.join(tempDir, 'cwd.txt'), 'w') as outfile:
-      outfile.write(workingDir + '\n')
-    with open(os.path.join(tempDir, 'command.txt'), 'w') as outfile:
-      outfile.write(' '.join(sys.argv) + '\n')
 
 
 
@@ -169,41 +113,95 @@ def checkOutputFile(path):
   if not path:
     return
   if os.path.exists(path):
+    type = ''
+    if os.path.isfile(path):
+      type = ' file'
+    elif os.path.isdir(path):
+      type = ' directory'
     if args.force:
-      warnMessage('Output file ' + os.path.basename(path) + ' already exists; will be overwritten at script completion')
+      warnMessage('Output' + type + ' ' + os.path.basename(path) + ' already exists; will be overwritten at script completion')
       mrtrixForce = ' -force'
     else:
-      errorMessage('Output file ' + path + ' already exists (use -force to override)')
+      errorMessage('Output' + type + ' ' + path + ' already exists (use -force to override)')
       sys.exit(1)
+
+
+
+def makeTempDir():
+  import os, random, string, sys
+  from lib.errorMessage          import errorMessage
+  from lib.printMessage          import printMessage
+  from lib.readMRtrixConfSetting import readMRtrixConfSetting
+  global args, tempDir
+  if args.cont:
+    printMessage('Skipping temporary directory creation due to use of -continue option')
+    return
+  if tempDir:
+    errorMessage('Script error: Cannot use multiple temporary directories')
+  if args.tempdir:
+    dir_path = os.path.abspath(args.tempdir)
+  else:
+    dir_path = readMRtrixConfSetting('TmpFileDir')
+    if not dir_path:
+      if os.name == 'posix':
+        dir_path = '/tmp'
+      else:
+        dir_path = '.'
+  prefix = readMRtrixConfSetting('TmpFilePrefix')
+  if not prefix:
+    prefix = os.path.basename(sys.argv[0]) + '-tmp-'
+  tempDir = dir_path
+  while os.path.isdir(tempDir):
+    random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))
+    tempDir = os.path.join(dir_path, prefix + random_string) + os.sep
+  os.makedirs(tempDir)
+  printMessage('Generated temporary directory: ' + tempDir)
+  with open(os.path.join(tempDir, 'cwd.txt'), 'w') as outfile:
+    outfile.write(workingDir + '\n')
+  with open(os.path.join(tempDir, 'command.txt'), 'w') as outfile:
+    outfile.write(' '.join(sys.argv) + '\n')
 
 
 
 def gotoTempDir():
   import os
+  from lib.errorMessage import errorMessage
   from lib.printMessage import printMessage
+  global tempDir
+  if not tempDir:
+    errorMessage('Script error: No temporary directory location set')
   if verbosity:
     printMessage('Changing to temporary directory (' + tempDir + ')')
   os.chdir(tempDir)
 
-  
+
 
 def complete():
   import os, shutil, sys
   from lib.printMessage import printMessage
+  global tempDir, workingDir
   printMessage('Changing back to original directory (' + workingDir + ')')
   os.chdir(workingDir)
-  if cleanup:
+  if cleanup and tempDir:
     printMessage('Deleting temporary directory ' + tempDir)
     shutil.rmtree(tempDir)
-  else:
+  elif tempDir:
     # This needs to be printed even if the -quiet option is used
-    sys.stdout.write(os.path.basename(sys.argv[0]) + ': ' + colourPrint + 'Contents of temporary directory kept, location: ' + tempDir + colourClear + '\n')
+    if os.path.isfile(os.path.join(tempDir, 'error.txt')):
+      with open(os.path.join(tempDir, 'error.txt'),'rb') as errortext:
+        sys.stdout.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'Script failed while executing the command: ' + errortext.readline().rstrip() + colourClear + '\n')
+      sys.stdout.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'For debugging, inspect contents of temporary directory: ' + tempDir + colourClear + '\n')
+    else:
+      sys.stdout.write(os.path.basename(sys.argv[0]) + ': ' + colourPrint + 'Contents of temporary directory kept, location: ' + tempDir + colourClear + '\n')
     sys.stdout.flush()
 
+
+
 def make_dir(dir):
- import os
- if not os.path.exists(dir):
-   os.makedirs(dir)
+  import os
+  if not os.path.exists(dir):
+    os.makedirs(dir)
+
 
 
 # determines the common postfix for a list of filenames (including the file extension)
@@ -222,3 +220,4 @@ def getCommonPostfix(inputFiles):
        common = first[len(first)-cursor-1] + common
      cursor += 1
  return common
+

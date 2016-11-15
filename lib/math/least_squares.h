@@ -31,67 +31,6 @@ namespace MR
     /** @defgroup ls Least-squares & Moore-Penrose pseudo-inverse
       @{ */
 
-/*
-    namespace {
-      template <typename ValueType> inline CBLAS_TRANSPOSE __transpose () { return CblasTrans; } 
-#ifdef __math_complex_h__
-      template <> inline CBLAS_TRANSPOSE __transpose<cfloat> () { return CblasConjTrans; }
-      template <> inline CBLAS_TRANSPOSE __transpose<cdouble> () { return CblasConjTrans; }
-#endif
-    }
-
-
-    //! solve over-determined least-squares problem Mx = b
-    template <typename ValueType> 
-      inline Vector<ValueType>& solve_LS (Vector<ValueType>& x, const Matrix<ValueType>& M, const Vector<ValueType>& b, Matrix<ValueType>& work)
-    {
-      work.allocate (M.columns(), M.columns());
-      rankN_update (work, M, __transpose<ValueType>(), CblasLower);
-      Cholesky::decomp (work);
-      mult (x, ValueType (1.0), __transpose<ValueType>(), M, b);
-      return Cholesky::solve (x, work);
-    }
-
-
-
-    //! solve regularised least-squares problem |Mx-b|^2 + r|x|^2 
-    template <typename ValueType> 
-      inline Vector<ValueType>& solve_LS_reg (
-          Vector<ValueType>& x,
-          const Matrix<ValueType>& M,
-          const Vector<ValueType>& b,
-          double reg_weight, 
-          Matrix<ValueType>& work)
-    {
-      work.allocate (M.columns(), M.columns());
-      rankN_update (work, M, __transpose<ValueType>(), CblasLower);
-      work.diagonal() += ValueType (reg_weight);
-      Cholesky::decomp (work);
-      mult (x, ValueType (1.0), __transpose<ValueType>(), M, b);
-      return Cholesky::solve (x, work);
-    }
-
-    //! solve regularised least-squares problem |Mx-b|^2 + |diag(w).x|^2 
-    template <typename ValueType, typename RealValueType> 
-      inline Vector<ValueType>& solve_LS_reg (
-          Vector<ValueType>& x,
-          const Matrix<ValueType>& M,
-          const Vector<ValueType>& b,
-          const Vector<RealValueType>& weights,
-          Matrix<ValueType>& work)
-    {
-      work.allocate (M.columns(), M.columns());
-      rankN_update (work, M, __transpose<ValueType>(), CblasLower);
-      work.diagonal() += weights;
-      Cholesky::decomp (work);
-      mult (x, ValueType (1.0), __transpose<ValueType>(), M, b);
-      return Cholesky::solve (x, work);
-    }
-
-
-
-*/
-
 
 
     //! return Moore-Penrose pseudo-inverse of M
@@ -113,10 +52,6 @@ namespace MR
 
     /** @} */
     /** @} */
-
-
-
-
 
 
 

@@ -373,7 +373,7 @@ void run ()
   opt = get_options("eext");
   if (opt.size()) {
     INFO("Saving external energy to file");
-    header.set_ndim(3);
+    header.ndim() = 3;
     auto EextI = Image<float>::create (opt[0][0], header);
     threaded_copy(Eext->getEext(), EextI);
   }

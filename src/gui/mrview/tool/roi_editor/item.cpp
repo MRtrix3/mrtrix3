@@ -41,7 +41,7 @@ namespace MR
 
         //CONF option: NumberOfUndos
         //CONF default: 16
-        //CONF The number of undo operations permitted in the MRView ROI editor tool
+        //CONF The number of undo operations permitted in the MRView ROI editor tool.
         int ROI_Item::number_of_undos = MR::File::Config::get_int ("NumberOfUndos", 16);
         int ROI_Item::current_preset_colour = 0;
         int ROI_Item::new_roi_counter = 0;
@@ -60,10 +60,9 @@ namespace MR
           set_allowed_features (false, true, false);
           set_interpolate (false);
           set_use_transparency (true);
-          value_min = 0;
-          value_max = 1;
+          value_min = 0.0f; value_max = 1.0f;
+          set_windowing (0.0f, 1.0f);
           min_max_set();
-          set_windowing (-1.0f, 0.0f);
           alpha = 1.0f;
           colour = preset_colours[current_preset_colour++];
           if (current_preset_colour >= 6)

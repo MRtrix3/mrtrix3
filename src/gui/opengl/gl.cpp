@@ -28,7 +28,7 @@ namespace MR
         //CONF option: VSync
         //CONF default: 0 (false)
         //CONF Whether the screen update should synchronise with the monitor's
-        //CONF vertical refresh (to avoid tearing artefacts). 
+        //CONF vertical refresh (to avoid tearing artefacts).
         
         //CONF option: NeedOpenGLCoreProfile
         //CONF default: 1 (true)
@@ -39,7 +39,7 @@ namespace MR
         //CONF option: MSAA
         //CONF default: 0 (false)
         //CONF How many samples to use for multi-sample anti-aliasing (to
-        //CONF improve display quality). 
+        //CONF improve display quality).
 
         GL::Format f;
 #if QT_VERSION >= 0x050400

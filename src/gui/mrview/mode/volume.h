@@ -43,7 +43,7 @@ namespace MR
               }
 
             virtual void paint (Projection& projection);
-            virtual void slice_move_event (int x);
+            virtual void slice_move_event (float x);
             virtual void pan_event ();
             virtual void panthrough_event ();
             virtual void tilt_event ();

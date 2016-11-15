@@ -49,6 +49,7 @@ namespace MR
           fixels.push_back (Fixel());
         }
         Fixel_map (const Fixel_map&) = delete;
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         class MapVoxel;
         typedef Image<MapVoxel*> VoxelAccessor;
@@ -89,7 +90,7 @@ namespace MR
             HeaderHelper (const ::MR::Header& H) :
                 ::MR::Header (H)
             {
-              set_ndim (3);
+              ndim() = 3;
             }
             HeaderHelper() = default;
         } _header;
@@ -125,6 +126,7 @@ namespace MR
             lookup_table = nullptr;
           }
         }
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         size_t first_index() const { return first_fixel_index; }
         size_t num_fixels()  const { return count; }

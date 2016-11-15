@@ -355,7 +355,14 @@ void run ()
           throw Exception ("the requested -rigid_lmax exceeds the lmax of the input images");
   }
 
-
+  std::ofstream linear_logstream;
+  opt = get_options ("rigid_log");
+  if (opt.size()) {
+    if (!do_rigid)
+      throw Exception ("the -rigid_log option has been set when no rigid registration is requested");
+    linear_logstream.open (opt[0][0]);
+    rigid_registration.set_log_stream (linear_logstream.rdbuf());
+  }
   // ****** AFFINE REGISTRATION OPTIONS *******
   Registration::Linear affine_registration;
   opt = get_options ("affine");
@@ -496,6 +503,14 @@ void run ()
     for (size_t i = 0; i < affine_lmax.size (); ++i)
       if (affine_lmax[i] > image_lmax)
         throw Exception ("the requested -affine_lmax exceeds the lmax of the input images");
+  }
+
+  opt = get_options ("affine_log");
+  if (opt.size()) {
+    if (!do_affine)
+      throw Exception ("the -affine_log option has been set when no rigid registration is requested");
+    linear_logstream.open (opt[0][0]);
+    affine_registration.set_log_stream (linear_logstream.rdbuf());
   }
 
   // ****** LINEAR INITIALISATION OPTIONS *******
@@ -787,7 +802,7 @@ void run ()
 
     if (warp1_filename.size()) {
       Header output_header (im2_image);
-      output_header.set_ndim(4);
+      output_header.ndim() = 4;
       output_header.size(3) =3;
       nl_registration.write_params_to_header (output_header);
       output_header.datatype() = DataType::from_command_line (DataType::Float32);
@@ -800,7 +815,7 @@ void run ()
 
     if (warp2_filename.size()) {
       Header output_header (im1_image);
-      output_header.set_ndim(4);
+      output_header.ndim() = 4;
       output_header.size(3) = 3;
       nl_registration.write_params_to_header (output_header);
       output_header.datatype() = DataType::from_command_line (DataType::Float32);
@@ -819,7 +834,7 @@ void run ()
 
     if (do_nonlinear) {
       Header deform_header (im1_transformed);
-      deform_header.set_ndim(4);
+      deform_header.ndim() = 4;
       deform_header.size(3) = 3;
       Image<default_type> deform_field = Image<default_type>::scratch (deform_header);
       Registration::Warp::compute_full_deformation (nl_registration.get_im2_to_mid_linear().inverse(),
@@ -859,7 +874,7 @@ void run ()
     if (do_nonlinear) {
       Header midway_header (*nl_registration.get_im1_to_mid());
       midway_header.datatype() = DataType::from_command_line (DataType::Float32);
-      midway_header.set_ndim (im1_image.ndim());
+      midway_header.ndim() = im1_image.ndim();
       if (midway_header.ndim() == 4)
         midway_header.size(3) = im1_image.size(3);
 
@@ -886,4 +901,7 @@ void run ()
       rigid_registration.write_transformed_images (im1_image, im2_image, rigid, im1_midway_transformed_path, im2_midway_transformed_path, do_reorientation);
     }
   }
+
+  if (get_options ("affine_log").size() or get_options ("rigid_log").size())
+    linear_logstream.close();
 }

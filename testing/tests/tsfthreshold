@@ -1,2 +1,2 @@
-tsfthreshold afd.tsf 0.2 tmp.tsf -force; testing_diff_tsf tmp.tsf tsfthreshold/out.tsf 0
-tsfthreshold afd.tsf 0.2 -invert tmp.tsf -force; testing_diff_tsf tmp.tsf tsfthreshold/out2.tsf 0
+tsfthreshold afd.tsf 0.2 tmp.tsf -force && testing_diff_tsf tmp.tsf tsfthreshold/out.tsf
+tsfthreshold afd.tsf 0.2 -invert tmp.tsf -force && testing_diff_tsf tmp.tsf tsfthreshold/out2.tsf

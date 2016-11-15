@@ -14,36 +14,35 @@
  */
 
 
+#include <unsupported/Eigen/MatrixFunctions>
+#include <algorithm>
 #include "command.h"
 #include "math/math.h"
 #include "math/average_space.h"
 #include "image.h"
 #include "file/nifti1_utils.h"
 #include "transform.h"
-#include <unsupported/Eigen/MatrixFunctions>
+#include "file/key_value.h"
 
 
 using namespace MR;
 using namespace App;
 
 const char* operations[] = {
-  "flirt_import",
   "invert",
   "half",
   "rigid",
   "header",
   "average",
   "interpolate",
+  "decompose",
   NULL
 };
 
-// const char description_flirt_import[] = "flirt_import" + "convert the transformation matrix provided by FSL's flirt command to a format usable in MRtrix";
-
-  // VAR(join(description_flirt_import, ", "));
-  // VAR(join(description_flirt_import, ", ").c_str());
-
 void usage ()
 {
+  AUTHOR = "Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
+
   DESCRIPTION
   + "This command's function is to process linear transformation matrices."
 
@@ -53,11 +52,6 @@ void usage ()
   ARGUMENTS
   + Argument ("input", "the input for the specified operation").allow_multiple()
   + Argument ("operation", "the operation to perform, one of: " + join(operations, ", ") + "."
-    + "\n\nflirt_import: "
-    + "Convert a transformation matrix produced by FSL's flirt command into a format usable by MRtrix. "
-        "You'll need to provide as additional arguments the save NIfTI images that were passed to flirt "
-        "with the -in and -ref options:\nmatrix_in in ref flirt_import output"
-
     + "\n\ninvert: invert the input transformation:\nmatrix_in invert output"
 
     + "\n\nhalf: calculate the matrix square root of the input transformation:\nmatrix_in half output"
@@ -74,79 +68,24 @@ void usage ()
         " Shoemake, K., Hill, M., & Duff, T. (1992). Matrix Animation and Polar Decomposition. "
         " Matrix, 92, 258-264. doi:10.1.1.56.1336"
         "\ninput input2 interpolate output"
+
+    + "\n\ndecompose: decompose transformation matrix M into translation, rotation and stretch and shear (M = T * R * S). "
+        "The output is a key-value text file "
+        "scaling: vector of 3 scaling factors in x, y, z direction, "
+        "shear: list of shear factors for xy, xz, yz axes, "
+        "angles: list of Euler angles about static x, y, z axes in radians in the range [0:pi]x[-pi:pi]x[-pi:pi], "
+        "angle_axis: angle in radians and rotation axis, "
+        "translation : translation vector along x, y, z axes in mm, "
+        "R: composed roation matrix (R = rot_x * rot_y * rot_z), "
+        "S: composed scaling and shear matrix."
+        "\nmatrix_in decompose output"
     ).type_choice (operations)
   + Argument ("output", "the output transformation matrix.").type_file_out ();
 }
 
-
-transform_type get_flirt_transform (const Header& header)
-{
-  std::vector<size_t> axes;
-  transform_type nifti_transform = File::NIfTI::adjust_transform (header, axes);
-  if (nifti_transform.matrix().topLeftCorner<3,3>().determinant() < 0.0)
-    return nifti_transform;
-  transform_type coord_switch;
-  coord_switch.setIdentity();
-  coord_switch(0,0) = -1.0f;
-  coord_switch(0,3) = (header.size(axes[0])-1) * header.spacing(axes[0]);
-  return nifti_transform * coord_switch;
-}
-
-transform_type get_surfer_transform (const Header& header) {
-  // TODO
-  return transform_type();
-}
-
-//! read matrix data into a 2D vector \a filename
-template <class ValueType = default_type>
-  transform_type parse_surfer_transform (const std::string& filename) {
-    std::ifstream stream (filename, std::ios_base::in | std::ios_base::binary);
-    std::vector<std::vector<ValueType>> V;
-    std::string sbuf;
-    std::string file_version;
-    while (getline (stream, sbuf)) {
-      if (sbuf.substr (0,1) == "#")
-        continue;
-      if (sbuf.find("1 4 4") != std::string::npos)
-        break;
-      if (sbuf.find("type") == std::string::npos)
-        continue;
-      file_version = sbuf.substr (sbuf.find_first_of ('=')+1);
-    }
-    if (file_version.empty())
-      throw Exception ("not a surfer transformation");
-    // so far we only understand vox2vox transformations
-    // vox2vox = inverse(colrowslice_to_xyz(moving))*M*colrowslice_to_xyz(target)
-    if (stoi(file_version)!=0)
-      throw Exception ("not a vox2vox transformation");
-
-    for (auto i = 0; i<4 && getline (stream, sbuf); ++i){
-      // sbuf = strip (sbuf.substr (0, sbuf.find_first_of ('type')));
-      V.push_back (std::vector<ValueType>());
-      const auto elements = MR::split (sbuf, " ,;\t", true);
-      for (const auto& entry : elements)
-        V.back().push_back (to<ValueType> (entry));
-      if (V.size() > 1)
-        if (V.back().size() != V[0].size())
-          throw Exception ("uneven rows in matrix");
-    }
-    if (stream.bad())
-      throw Exception (strerror (errno));
-    if (!V.size())
-      throw Exception ("no data in file");
-
-    transform_type M;
-    for (ssize_t i = 0; i < 3; i++)
-      for (ssize_t j = 0; j < 4; j++)
-        M(i,j) = V[i][j];
-    return M;
-  }
-
 template <typename T> int sgn(T val) {
     return (T(0) < val) - (val < T(0));
 }
-
-
 
 void run ()
 {
@@ -155,54 +94,33 @@ void run ()
   const std::string& output_path = argument.back();
 
   switch (op) {
-    case 0: { // flirt_import
-      if (num_inputs != 3)
-        throw Exception ("flirt_import requires 3 inputs");
-      transform_type transform = load_transform<default_type> (argument[0]);
-      auto src_header = Header::open (argument[1]); // -in
-      auto dest_header = Header::open (argument[2]); // -ref
-
-      if (transform.matrix().topLeftCorner<3,3>().determinant() == float(0.0))
-          WARN ("Transformation matrix determinant is zero.");
-      if (transform.matrix().topLeftCorner<3,3>().determinant() < 0)
-          INFO ("Transformation matrix determinant is negative.");
-
-      transform_type src_flirt_to_scanner = get_flirt_transform (src_header);
-      transform_type dest_flirt_to_scanner = get_flirt_transform (dest_header);
-
-      transform_type forward_transform = dest_flirt_to_scanner * transform * src_flirt_to_scanner.inverse();
-      if (((forward_transform.matrix().array() != forward_transform.matrix().array())).any())
-        WARN ("NAN in transformation.");
-      save_transform (forward_transform.inverse(), output_path);
-      break;
-    }
-    case 1: { // invert
+    case 0: { // invert
       if (num_inputs != 1)
         throw Exception ("invert requires 1 input");
-      transform_type input = load_transform<default_type> (argument[0]);
+      transform_type input = load_transform (argument[0]);
       save_transform (input.inverse(), output_path);
       break;
     }
-    case 2: { // half
+    case 1: { // half
       if (num_inputs != 1)
         throw Exception ("half requires 1 input");
-      Eigen::Transform<default_type, 3, Eigen::Projective> input = load_transform<default_type> (argument[0]);
+      Eigen::Transform<default_type, 3, Eigen::Projective> input = load_transform (argument[0]);
       transform_type output;
       Eigen::Matrix<default_type, 4, 4> half = input.matrix().sqrt();
       output.matrix() = half.topLeftCorner(3,4);
       save_transform (output, output_path);
       break;
     }
-    case 3: { // rigid
+    case 2: { // rigid
       if (num_inputs != 1)
         throw Exception ("rigid requires 1 input");
-      transform_type input = load_transform<default_type> (argument[0]);
+      transform_type input = load_transform (argument[0]);
       transform_type output (input);
       output.linear() = input.rotation();
       save_transform (output, output_path);
       break;
     }
-    case 4: { // header
+    case 3: { // header
       if (num_inputs != 2)
         throw Exception ("header requires 2 inputs");
       auto orig_header = Header::open (argument[0]);
@@ -212,7 +130,7 @@ void run ()
       save_transform (forward_transform.inverse(), output_path);
       break;
     }
-    case 5: { // average
+    case 4: { // average
       if (num_inputs < 2)
         throw Exception ("average requires at least 2 inputs");
       transform_type transform_out;
@@ -221,7 +139,7 @@ void run ()
       std::vector<Eigen::MatrixXd> matrices;
       for (size_t i = 0; i < num_inputs; i++) {
         DEBUG(str(argument[i]));
-        Tin = load_transform<default_type> (argument[i]);
+        Tin = load_transform (argument[i]);
         matrices.push_back(Tin.matrix());
       }
 
@@ -231,11 +149,11 @@ void run ()
       save_transform (transform_out, output_path);
       break;
     }
-    case 6: { // interpolate
+    case 5: { // interpolate
       if (num_inputs != 3)
         throw Exception ("interpolation requires 3 inputs");
-      transform_type transform1 = load_transform<default_type> (argument[0]);
-      transform_type transform2 = load_transform<default_type> (argument[1]);
+      transform_type transform1 = load_transform (argument[0]);
+      transform_type transform2 = load_transform (argument[1]);
       default_type t = parse_floats(argument[2])[0];
 
       transform_type transform_out;
@@ -268,6 +186,46 @@ void run ()
       INFO("\n"+str(transform_out.matrix().format(
         Eigen::IOFormat(Eigen::FullPrecision, 0, ", ", ",\n", "[", "]", "[", "]"))));
       save_transform (transform_out, output_path);
+      break;
+    }
+    case 6: { // decompose
+      if (num_inputs != 1)
+        throw Exception ("decomposition requires 1 input");
+      transform_type transform = load_transform (argument[0]);
+
+      Eigen::MatrixXd M = transform.linear();
+      Eigen::Matrix3d R = transform.rotation();
+      Eigen::MatrixXd S = R.transpose() * M;
+      if (!M.isApprox(R*S))
+        WARN ("matrix decomposition might have failed");
+
+      Eigen::Vector3d euler_angles = R.eulerAngles(0, 1, 2);
+      assert (R.isApprox((Eigen::AngleAxisd(euler_angles[0], Eigen::Vector3d::UnitX())
+              * Eigen::AngleAxisd(euler_angles[1], Eigen::Vector3d::UnitY())
+              * Eigen::AngleAxisd(euler_angles[2], Eigen::Vector3d::UnitZ())).matrix()));
+
+      Eigen::RowVector4d angle_axis;
+      {
+        auto AA = Eigen::AngleAxis<default_type> (R);
+        angle_axis(0) = AA.angle();
+        angle_axis.block<1,3>(0,1) = AA.axis();
+      }
+
+
+      File::OFStream out (output_path);
+      Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "\n");
+      out << "scaling: "     << Eigen::RowVector3d(S(0,0), S(1,1), S(2,2)).format(fmt);
+      out << "shear: "       << Eigen::RowVector3d(S(0,1), S(0,2), S(1,2)).format(fmt);
+      out << "angles: "      << euler_angles.transpose().format(fmt);
+      out << "angle_axis: "   << angle_axis.format(fmt);
+      out << "translation: " << transform.translation().transpose().format(fmt);
+      out << "R: " << R.row(0).format(fmt);
+      out << "R: " << R.row(1).format(fmt);
+      out << "R: " << R.row(2).format(fmt);
+      out << "S: " << S.row(0).format(fmt);
+      out << "S: " << S.row(1).format(fmt);
+      out << "S: " << S.row(2).format(fmt);
+
       break;
     }
     default: assert (0);

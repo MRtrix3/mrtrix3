@@ -25,20 +25,15 @@
 #include "progressbar.h"
 #include "datatype.h"
 
-
-#ifdef MRTRIX_UPDATED_API
-#else
-# include "math/matrix.h"
-
-#endif
-
 using namespace MR;
 using namespace App;
 
 void usage ()
 {
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
+
   DESCRIPTION
-  + "compare two images for differences, within specified tolerance.";
+  + "compare two direction sets for differences, within specified tolerance.";
 
   ARGUMENTS
   + Argument ("dir1", "directions file").type_file_in ()
@@ -49,11 +44,7 @@ void usage ()
 
 void run ()
 {
-
-
   double tol = argument[2];
-
-#ifdef MRTRIX_UPDATED_API
 
   Eigen::MatrixXd dir1 = load_matrix (argument[0]);
   Eigen::MatrixXd dir2 = load_matrix (argument[1]);
@@ -61,32 +52,14 @@ void run ()
   if (dir1.cols() != dir2.cols())
     throw Exception ("number of columns is not the same");
 
-#else
-
-  Math::Matrix<float> dir1;
-  dir1.load(argument[0]);
-  Math::Matrix<float> dir2;
-  dir2.load(argument[1]);
-
-
-  if (dir1.columns() != dir2.columns())
-    throw Exception ("number of columns is not the same");
-
-#endif
-
   if (dir1.rows() != dir2.rows())
     throw Exception ("number of rows is not the same");
 
-#ifdef MRTRIX_UPDATED_API
   for (ssize_t i = 0; i < dir1.cols(); ++i) {
-      for (ssize_t j = 0; j < dir1.rows(); ++j) {
-#else
-  for (size_t i = 0; i < dir1.columns(); ++i) {
-    for (size_t j = 0; j < dir1.rows(); ++j) {
-#endif
+    for (ssize_t j = 0; j < dir1.rows(); ++j) {
       if (std::abs (dir1(i,j) - dir2(i,j)) > tol)
-        throw Exception ("directions \"" + str(argument[0]) + "\" and \"" + str(argument[1]) + "\" do not match within specified precision of " + str(tol)
-            + " (" + str(cdouble (dir1(i,j))) + " vs " + str(cdouble (dir2(i,j))) + ")");
+        throw Exception ("direction files \"" + str(argument[0]) + "\" and \"" + str(argument[1]) + "\" do not match within specified precision of " + str(tol)
+            + " (" + str(dir1(i,j)) + " vs " + str(dir2(i,j)) + ")");
     }
   }
 

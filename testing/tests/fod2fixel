@@ -1,3 +1,3 @@
-#fod2fixel dwi2fod/out.mif -afd fod2fixel/out_afd.msf -peak fod2fixel/out_peak.msf -disp fod2fixel/out_disp.msf -force && testing_diff_fixel fod2fixel/afd.msf fod2fixel/out_afd.msf 0.001 && testing_diff_fixel fod2fixel/peak.msf fod2fixel/out_peak.msf 0.001 && testing_diff_fixel fod2fixel/disp.msf fod2fixel/out_disp.msf 0.001
-#fod2fixel dwi2fod/out.mif -mask mask.mif -afd fod2fixel/out_masked.msf -force && testing_diff_fixel fod2fixel/masked.msf fod2fixel/out_masked.msf 0.001
-#fod2fixel dwi2fod/out.mif -fmls_no_thresholds -afd fod2fixel/out_nothresholds.msf -force && testing_diff_fixel fod2fixel/nothresholds.msf fod2fixel/out_nothresholds.msf 0.001
+#fod2fixel dwi2fod/out.mif -afd tmp_afd.msf -peak tmp_peak.msf -disp tmp_disp.msf -force && testing_diff_fixel tmp_afd.msf fod2fixel/afd.msf 1e-2 && testing_diff_fixel tmp_peak.msf fod2fixel/peak.msf 1e-2 && testing_diff_fixel tmp_disp.msf fod2fixel/disp.msf 1e-2
+#fod2fixel dwi2fod/out.mif -mask mask.mif -afd tmp.msf -force && testing_diff_fixel tmp.msf fod2fixel/masked.msf 1e-2
+#fod2fixel dwi2fod/out.mif -fmls_no_thresholds -afd tmp.msf -force && testing_diff_fixel tmp.msf fod2fixel/nothresholds.msf 1e-2

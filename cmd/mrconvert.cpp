@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 
 
@@ -29,6 +29,8 @@ using namespace App;
 
 void usage ()
 {
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
+
   DESCRIPTION
   + "perform conversion between different file types and optionally "
   "extract a subset of the input image."
@@ -103,7 +105,7 @@ void permute_DW_scheme (Header& H, const std::vector<int>& axes)
   for (int row = 0; row != in.rows(); ++row)
     out.block<1,3>(row, 0) = in.block<1,3>(row, 0) * R;
 
-  H.set_DW_scheme (out);
+  DWI::set_DW_scheme (H, out);
 }
 
 
@@ -112,7 +114,7 @@ void permute_DW_scheme (Header& H, const std::vector<int>& axes)
 template <class ImageType>
 inline std::vector<int> set_header (Header& header, const ImageType& input)
 {
-  header.set_ndim (input.ndim());
+  header.ndim() = input.ndim();
   for (size_t n = 0; n < header.ndim(); ++n) {
     header.size(n) = input.size(n);
     header.spacing(n) = input.spacing(n);
@@ -124,7 +126,7 @@ inline std::vector<int> set_header (Header& header, const ImageType& input)
   std::vector<int> axes;
   if (opt.size()) {
     axes = opt[0][0];
-    header.set_ndim (axes.size());
+    header.ndim() = axes.size();
     for (size_t i = 0; i < axes.size(); ++i) {
       if (axes[i] >= static_cast<int> (input.ndim()))
         throw Exception ("axis supplied to option -axes is out of bounds");
@@ -132,7 +134,7 @@ inline std::vector<int> set_header (Header& header, const ImageType& input)
     }
     permute_DW_scheme (header, axes);
   } else {
-    header.set_ndim (input.ndim());
+    header.ndim() = input.ndim();
     axes.assign (input.ndim(), 0);
     for (size_t i = 0; i < axes.size(); ++i) {
       axes[i] = i;
@@ -172,17 +174,17 @@ inline void copy_permute (Header& header_in, Header& header_out, const std::vect
     auto out = Header::create (output_filename, header_out).get_image<T>();
     DWI::export_grad_commandline (out);
 
-    auto perm = Adapter::make <Adapter::PermuteAxes> (in, axes); 
+    auto perm = Adapter::make <Adapter::PermuteAxes> (in, axes);
     threaded_copy_with_progress (perm, out, 0, std::numeric_limits<size_t>::max(), 2);
 
   } else {
 
-    auto extract = Adapter::make<Adapter::Extract> (in, pos); 
+    auto extract = Adapter::make<Adapter::Extract> (in, pos);
     const auto axes = set_header (header_out, extract);
     auto out = Image<T>::create (output_filename, header_out);
     DWI::export_grad_commandline (out);
 
-    auto perm = Adapter::make <Adapter::PermuteAxes> (extract, axes); 
+    auto perm = Adapter::make <Adapter::PermuteAxes> (extract, axes);
     threaded_copy_with_progress (perm, out, 0, std::numeric_limits<size_t>::max(), 2);
 
   }
@@ -209,7 +211,7 @@ void run ()
     WARN ("requested datatype is real but input datatype is complex - imaginary component will be ignored");
 
   if (get_options ("grad").size() || get_options ("fslgrad").size())
-    header_out.set_DW_scheme (DWI::get_DW_scheme (header_in));
+    DWI::set_DW_scheme (header_out, DWI::get_DW_scheme (header_in));
 
   auto opt = get_options ("coord");
   std::vector<std::vector<int>> pos;
@@ -222,6 +224,12 @@ void run ()
       if (pos[axis].size())
         throw Exception ("\"coord\" option specified twice for axis " + str (axis));
       pos[axis] = parse_ints (opt[n][1], header_in.size(axis)-1);
+      auto minval = std::min_element(std::begin(pos[axis]), std::end(pos[axis]));
+      if (*minval < 0)
+        throw Exception ("coordinate position " + str(*minval) + " for axis " + str(axis) + " provided with -coord option is negative");
+      auto maxval = std::max_element(std::begin(pos[axis]), std::end(pos[axis]));
+      if (*maxval >= header_in.size(axis))
+        throw Exception ("coordinate position " + str(*maxval) + " for axis " + str(axis) + " provided with -coord option is out of range of input image");
       auto grad = DWI::get_DW_scheme (header_out);
       if (axis == 3 && grad.rows()) {
         if ((ssize_t)grad.rows() != header_in.size(3)) {
@@ -232,7 +240,7 @@ void run ()
           Eigen::MatrixXd extract_grad (pos[3].size(), grad.cols());
           for (size_t dir = 0; dir != pos[3].size(); ++dir)
             extract_grad.row (dir) = grad.row (pos[3][dir]);
-          header_out.set_DW_scheme (extract_grad);
+          DWI::set_DW_scheme (header_out, extract_grad);
         }
       }
     }
@@ -251,7 +259,7 @@ void run ()
   if (opt.size()) {
     if (header_out.datatype().is_integer()) {
       std::vector<default_type> scaling = opt[0][0];
-      if (scaling.size() != 2) 
+      if (scaling.size() != 2)
         throw Exception ("-scaling option expects comma-separated 2-vector of floating-point values");
       header_out.intensity_offset() = scaling[0];
       header_out.intensity_scale()  = scaling[1];

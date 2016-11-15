@@ -16,6 +16,7 @@
 #include <Eigen/Geometry>
 
 #include "mrtrix.h"
+#include "file/path.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/tool/screen_capture.h"
@@ -343,7 +344,7 @@ namespace MR
               break;
 
             if (with_capture)
-              win.captureGL (folder + "/" + prefix + printf ("%04d.png", i));
+              win.captureGL (Path::join (folder, prefix + printf ("%04d.png", i)));
 
             // Rotation
             Math::Versorf orientation (win.orientation());
@@ -432,10 +433,10 @@ namespace MR
 
         void Capture::select_output_folder_slot ()
         {
-          directory->setPath(QFileDialog::getExistingDirectory (this, tr("Directory"), directory->path()));
-          QString path (shorten(directory->path().toUtf8().constData(), 20, 0).c_str());
+          const QString path = QFileDialog::getExistingDirectory (this, tr("Directory"), directory->path());
           if (!path.size()) return;
-          folder_button->setText(path);
+          directory->setPath (path);
+          folder_button->setText (shorten (path.toUtf8().constData(), 20, 0).c_str());
           on_output_update ();
         }
 

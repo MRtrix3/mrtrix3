@@ -56,7 +56,7 @@ namespace MR
             inverse (inverse),
             centre_zero_ (false)
         {
-          for (size_t axis = 0; axis != std::min (size_t(3), in.ndim()); ++axis)
+          for (size_t axis = 0; axis != std::min<size_t> (size_t(3), in.ndim()); ++axis)
             axes_to_process.push_back (axis);
           datatype_ = DataType::CFloat64;
           datatype_.set_byte_order_native();

@@ -261,7 +261,7 @@ namespace MR
                 input_value_type val = in.value();
                 out.value() = ( std::isfinite (val) && val > optimal_threshold ) ? 1 : 0;
               };
-              ThreadedLoop ("thresholding...", input) .run (f, input, output);
+              ThreadedLoop ("thresholding", input) .run (f, input, output);
             }
       };
       //! @}

@@ -42,8 +42,8 @@
 
 //CONF option: BZeroThreshold
 //CONF default: 10.0
-//CONF specifies the b-value threshold for determining those image
-//CONF volumes that correspond to b=0
+//CONF Specifies the b-value threshold for determining those image
+//CONF volumes that correspond to b=0.
 
 
 
@@ -54,8 +54,6 @@ namespace MR
 
   namespace DWI
   {
-    using namespace Eigen;
-
 
     extern const App::OptionGroup ShellOption;
 
@@ -72,7 +70,7 @@ namespace MR
       public:
 
         Shell() : mean (0.0), stdev (0.0), min (0.0), max (0.0) { }
-        Shell (const MatrixXd& grad, const std::vector<size_t>& indices);
+        Shell (const Eigen::MatrixXd& grad, const std::vector<size_t>& indices);
 
         const std::vector<size_t>& get_volumes() const { return volumes; }
         size_t count() const { return volumes.size(); }
@@ -108,7 +106,7 @@ namespace MR
     class Shells
     {
       public:
-        Shells (const MatrixXd& grad);
+        Shells (const Eigen::MatrixXd& grad);
 
         const Shell& operator[] (const size_t i) const { return shells[i]; }
         const Shell& smallest() const { return shells.front(); }
@@ -159,7 +157,7 @@ namespace MR
 
       private:
 
-        typedef decltype(std::declval<const MatrixXd>().col(0)) BValueList;
+        typedef decltype(std::declval<const Eigen::MatrixXd>().col(0)) BValueList;
 
         // Functions for current b-value clustering implementation
         size_t clusterBvalues (const BValueList&, std::vector<size_t>&) const;

@@ -26,13 +26,15 @@
 
 #include "dwi/directions/set.h"
 
-#include "dwi/tractography/resample.h"
+#include "dwi/tractography/resampling/upsampler.h"
 #include "dwi/tractography/streamline.h"
 
 #include "dwi/tractography/mapping/mapper_plugins.h"
 #include "dwi/tractography/mapping/mapping.h"
 #include "dwi/tractography/mapping/twi_stats.h"
 #include "dwi/tractography/mapping/voxel.h"
+
+#include "math/hermite.h"
 
 
 // Didn't bother making this a command-line option, since curvature contrast results were very poor regardless of smoothing
@@ -76,6 +78,8 @@ namespace MR {
 
             TrackMapperBase (const TrackMapperBase&) = default;
             TrackMapperBase (TrackMapperBase&&) = default;
+
+            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
             virtual ~TrackMapperBase() { }
 
@@ -148,7 +152,7 @@ namespace MR {
             //   each streamline to each voxel it traverses
             // Third version is the 'precise' mapping as described in the SIFT paper
             // Fourth method only maps the streamline endpoints
-            void voxelise         (const Streamline<>&, SetVoxel&) const;
+            void voxelise (const Streamline<>&, SetVoxel&) const;
             template <class Cont> void voxelise         (const Streamline<>&, Cont&) const;
             template <class Cont> void voxelise_precise (const Streamline<>&, Cont&) const;
             template <class Cont> void voxelise_ends    (const Streamline<>&, Cont&) const;
@@ -163,7 +167,7 @@ namespace MR {
             inline void add_to_set (SetDixel&   , const Eigen::Vector3i&, const Eigen::Vector3f&, const float) const;
             inline void add_to_set (SetVoxelTOD&, const Eigen::Vector3i&, const Eigen::Vector3f&, const float) const;
 
-            Upsampler upsampler;
+            DWI::Tractography::Resampling::Upsampler upsampler;
 
         };
 
@@ -354,7 +358,8 @@ namespace MR {
             TrackMapperTWI (const TrackMapperTWI& that) :
               TrackMapperBase       (static_cast<const TrackMapperBase&> (that)),
               contrast              (that.contrast),
-              track_statistic       (that.track_statistic) {
+              track_statistic       (that.track_statistic),
+              vector_data           (that.vector_data) {
                 if (that.image_plugin) {
                   if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT)
                     image_plugin.reset (new TWIScalarImagePlugin (*dynamic_cast<TWIScalarImagePlugin*> (that.image_plugin.get())));
@@ -365,10 +370,11 @@ namespace MR {
                 }
               }
 
+            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
             void add_scalar_image (const std::string&);
             void add_fod_image    (const std::string&);
-
+            void add_vector_data  (const std::string&);
 
 
           protected:
@@ -381,6 +387,9 @@ namespace MR {
 
             // Member for incorporating additional information from an external image into the TWI process
             std::unique_ptr<TWIImagePluginBase> image_plugin;
+
+            // Member for incorporating contrast from an external vector data file into the TWI process
+            std::shared_ptr<Eigen::VectorXf> vector_data;
 
 
           private:

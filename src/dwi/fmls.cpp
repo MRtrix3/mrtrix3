@@ -34,19 +34,19 @@ namespace MR {
             "threshold the ratio between the integral of a positive FOD lobe, and the integral of the largest negative lobe. "
             "Any lobe that fails to exceed the integral dictated by this ratio will be discarded. "
             "Default: " + str(FMLS_RATIO_TO_NEGATIVE_LOBE_INTEGRAL_DEFAULT, 2) + ".")
-        + App::Argument ("value").type_float (0.0, 1e6)
+        + App::Argument ("value").type_float (0.0)
 
         + App::Option ("fmls_ratio_peak_to_mean_neg",
             "threshold the ratio between the peak amplitude of a positive FOD lobe, and the mean peak amplitude of all negative lobes. "
             "Any lobe that fails to exceed the peak amplitude dictated by this ratio will be discarded. "
             "Default: " + str(FMLS_RATIO_TO_NEGATIVE_LOBE_MEAN_PEAK_DEFAULT, 2) + ".")
-        + App::Argument ("value").type_float (0.0, 1e6)
+        + App::Argument ("value").type_float (0.0)
 
         + App::Option ("fmls_peak_value",
             "threshold the raw peak amplitude of positive FOD lobes. "
             "Any lobe for which the peak amplitude is smaller than this threshold will be discarded. "
             "Default: " + str(FMLS_PEAK_VALUE_THRESHOLD, 2) + ".")
-        + App::Argument ("value").type_float (0.0, 1e6)
+        + App::Argument ("value").type_float (0.0)
 
         + App::Option ("fmls_no_thresholds",
             "disable all FOD lobe thresholding; every lobe with a positive FOD amplitude will be retained.")
@@ -111,6 +111,43 @@ namespace MR {
 
 
 
+      IntegrationWeights::IntegrationWeights (const DWI::Directions::Set& dirs) :
+          data (dirs.size())
+      {
+        // Calibrate weights
+        const size_t calibration_lmax = Math::SH::LforN (dirs.size()) + 2;
+        Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_el_pairs (dirs.size(), 2);
+        for (size_t row = 0; row != dirs.size(); ++row) {
+          const auto d = dirs.get_dir (row);
+          az_el_pairs (row, 0) = std::atan2 (d[1], d[0]);
+          az_el_pairs (row, 1) = std::acos  (d[2]);
+        }
+        auto calibration_SH2A = Math::SH::init_transform (az_el_pairs, calibration_lmax);
+        const size_t num_basis_fns = calibration_SH2A.cols();
+
+        // Integrating an FOD with constant amplitude 1 (l=0 term = sqrt(4pi) should produce a value of 2pi
+        //   every other integral should produce zero
+        Eigen::Matrix<default_type, Eigen::Dynamic, 1> integral_results = Eigen::Matrix<default_type, Eigen::Dynamic, 1>::Zero (num_basis_fns);
+        integral_results[0] = sqrt(Math::pi);
+
+        // Problem matrix: One row for each SH basis function, one column for each samping direction
+        Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> A;
+        A.resize (num_basis_fns, dirs.size());
+
+        for (size_t basis_fn_index = 0; basis_fn_index != num_basis_fns; ++basis_fn_index) {
+          Eigen::Matrix<default_type, Eigen::Dynamic, 1> SH_in = Eigen::Matrix<default_type, Eigen::Dynamic, 1>::Zero (num_basis_fns);
+          SH_in[basis_fn_index] = 1.0;
+          A.row (basis_fn_index) = calibration_SH2A * SH_in;
+        }
+
+        data = A.householderQr().solve (integral_results);
+      }
+
+
+
+
+
+
 
 
 
@@ -118,7 +155,6 @@ namespace MR {
       Segmenter::Segmenter (const DWI::Directions::Set& directions, const size_t l) :
           dirs                             (directions),
           lmax                             (l),
-          transform                        (NULL),
           precomputer                      (new Math::SH::PrecomputedAL<default_type> (lmax, 2 * dirs.size())),
           ratio_to_negative_lobe_integral  (FMLS_RATIO_TO_NEGATIVE_LOBE_INTEGRAL_DEFAULT),
           ratio_to_negative_lobe_mean_peak (FMLS_RATIO_TO_NEGATIVE_LOBE_MEAN_PEAK_DEFAULT),
@@ -135,6 +171,7 @@ namespace MR {
           az_el_pairs (row, 1) = std::acos  (d[2]);
         }
         transform.reset (new Math::SH::Transform<default_type> (az_el_pairs, lmax));
+        weights.reset (new IntegrationWeights (dirs));
       }
 
 
@@ -183,23 +220,23 @@ namespace MR {
 
           if (adj_lobes.empty()) {
 
-            out.push_back (FOD_lobe (dirs, i.second, i.first));
+            out.push_back (FOD_lobe (dirs, i.second, i.first, (*weights)[i.second]));
 
           } else if (adj_lobes.size() == 1) {
 
-            out[adj_lobes.front()].add (i.second, i.first);
+            out[adj_lobes.front()].add (i.second, i.first, (*weights)[i.second]);
 
           } else {
 
             // Changed handling of lobe merges
             // Merge lobes as they appear to be merged, but update the
             //   contents of retrospective_assignments accordingly
-            if (std::abs (i.first) / out[adj_lobes.back()].get_peak_value() > ratio_of_peak_value_to_merge) {
+            if (std::abs (i.first) / out[adj_lobes.back()].get_max_peak_value() > ratio_of_peak_value_to_merge) {
 
               std::sort (adj_lobes.begin(), adj_lobes.end());
               for (size_t j = 1; j != adj_lobes.size(); ++j)
                 out[adj_lobes[0]].merge (out[adj_lobes[j]]);
-              out[adj_lobes[0]].add (i.second, i.first);
+              out[adj_lobes[0]].add (i.second, i.first, (*weights)[i.second]);
               for (auto j = retrospective_assignments.begin(); j != retrospective_assignments.end(); ++j) {
                 bool modified = false;
                 for (size_t k = 1; k != adj_lobes.size(); ++k) {
@@ -235,13 +272,13 @@ namespace MR {
         }
 
         for (const auto& i : retrospective_assignments)
-          out[i.second].add (i.first, values[i.first]);
+          out[i.second].add (i.first, values[i.first], (*weights)[i.first]);
 
         default_type mean_neg_peak = 0.0, max_neg_integral = 0.0;
         uint32_t neg_lobe_count = 0;
         for (const auto& i : out) {
           if (i.is_negative()) {
-            mean_neg_peak += i.get_peak_value();
+            mean_neg_peak += i.get_max_peak_value();
             ++neg_lobe_count;
             max_neg_integral = std::max (max_neg_integral, default_type(i.get_integral()));
           }
@@ -252,15 +289,17 @@ namespace MR {
 
         for (auto i = out.begin(); i != out.end();) { // Empty increment
 
-          if (i->is_negative() || i->get_peak_value() < std::max (min_peak_amp, peak_value_threshold) || i->get_integral() < min_integral) {
+          if (i->is_negative() || i->get_max_peak_value() < std::max (min_peak_amp, peak_value_threshold) || i->get_integral() < min_integral) {
             i = out.erase (i);
           } else {
-            const dir_t peak_bin (i->get_peak_dir_bin());
-            auto newton_peak = dirs.get_dir (peak_bin);
-            float new_peak_value = Math::SH::get_peak (in, lmax, newton_peak, &(*precomputer));
-            if (std::isfinite (new_peak_value) && new_peak_value > i->get_peak_value() && std::isfinite (newton_peak[0]))
-              i->revise_peak (newton_peak, new_peak_value);
-            i->finalise();
+            // Revise multiple peaks if present
+            for (size_t peak_index = 0; peak_index != i->num_peaks(); ++peak_index) {
+              Eigen::Vector3f newton_peak = i->get_peak_dir (peak_index);
+              const default_type new_peak_value = Math::SH::get_peak (in, lmax, newton_peak, &(*precomputer));
+              if (std::isfinite (new_peak_value) && newton_peak.allFinite())
+                i->revise_peak (peak_index, newton_peak, new_peak_value);
+              i->finalise();
+            }
 #ifdef FMLS_OPTIMISE_MEAN_DIR
             optimise_mean_dir (*i);
 #endif

@@ -108,6 +108,7 @@ namespace MR
   template <class MatrixType>
     void save_matrix (const MatrixType& M, const std::string& filename)
     {
+      DEBUG ("saving " + str(M.rows()) + "x" + str(M.cols()) + " matrix to file \"" + filename + "\"...");
       File::OFStream out (filename);
       Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
       out << M.format(fmt);
@@ -130,18 +131,22 @@ namespace MR
         V.push_back (std::vector<ValueType>());
 
         const auto elements = MR::split (sbuf, " ,;\t", true);
-        for (const auto& entry : elements)
-          V.back().push_back (to<ValueType> (entry));
+        try {
+          for (const auto& entry : elements)
+            V.back().push_back (to<ValueType> (entry));
+        } catch (...) {
+          throw Exception ("File \"" + filename + "\" contains non-numerical data");
+        }
 
         if (V.size() > 1)
           if (V.back().size() != V[0].size())
-            throw Exception ("uneven rows in matrix");
+            throw Exception ("uneven rows in matrix file \"" + filename + "\"");
       }
       if (stream.bad())
         throw Exception (strerror (errno));
 
       if (!V.size())
-        throw Exception ("no data in file");
+        throw Exception ("no data in matrix file \"" + filename + "\"");
 
       return V;
     }
@@ -150,7 +155,13 @@ namespace MR
   template <class ValueType = default_type>
     Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> load_matrix (const std::string& filename)
     {
-      auto V = load_matrix_2D_vector<ValueType> (filename);
+      DEBUG ("loading matrix file \"" + filename + "\"...");
+      std::vector<std::vector<ValueType>> V;
+      try {
+        V = load_matrix_2D_vector<ValueType> (filename);
+      } catch (Exception& e) {
+        throw e;
+      }
 
       Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> M (V.size(), V[0].size());
 
@@ -158,30 +169,44 @@ namespace MR
         for (ssize_t j = 0; j < M.cols(); j++)
           M(i,j) = V[i][j];
 
+      DEBUG ("found " + str(M.rows()) + "x" + str(M.cols()) + " matrix in file \"" + filename + "\"");
       return M;
     }
 
-  //! read matrix data into a 4x4 Eigen::Tranform\a filename
-  template <class ValueType = default_type>
-    transform_type load_transform (const std::string& filename)
-    {
-      auto V = load_matrix_2D_vector<ValueType> (filename);
+  //! read matrix data from \a filename into an Eigen::Tranform class
+  inline transform_type load_transform (const std::string& filename)
+  {
+    DEBUG ("loading transform file \"" + filename + "\"...");
 
-      if (V.size() != 4 || V[0].size() != 4)
-        throw Exception ("transform in file " + filename + " is invalid. Does not contain 4x4 matrix.");
-
-      transform_type M;
-
-      for (ssize_t i = 0; i < 3; i++)
-        for (ssize_t j = 0; j < 4; j++)
-          M(i,j) = V[i][j];
-
-      return M;
+    std::vector<std::vector<default_type>> V;
+    try {
+      V = load_matrix_2D_vector<> (filename);
+    } catch (Exception& e) {
+      throw e;
     }
+
+    if (V.empty())
+      throw Exception ("transform in file " + filename + " is empty");
+
+    if (V[0].size() != 4)
+      throw Exception ("transform in file " + filename + " is invalid: does not contain 4 columns.");
+
+    if (V.size() != 3 && V.size() != 4)
+      throw Exception ("transform in file " + filename + " is invalid: must contain either 3 or 4 rows.");
+
+    transform_type M;
+
+    for (ssize_t i = 0; i < 3; i++)
+      for (ssize_t j = 0; j < 4; j++)
+        M(i,j) = V[i][j];
+
+    return M;
+  }
 
   //! write the transform \a M to file
   inline void save_transform (const transform_type& M, const std::string& filename)
   {
+    DEBUG ("saving transform to file \"" + filename + "\"...");
     File::OFStream out (filename);
     Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
     out << M.matrix().format(fmt);
@@ -192,6 +217,7 @@ namespace MR
   template <class VectorType>
     void save_vector (const VectorType& V, const std::string& filename)
     {
+      DEBUG ("saving vector of size " + str(V.size()) + " to file \"" + filename + "\"...");
       File::OFStream out (filename);
       for (decltype(V.size()) i = 0; i < V.size() - 1; i++)
         out << str(V[i], 10) << " ";

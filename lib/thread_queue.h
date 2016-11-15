@@ -551,15 +551,10 @@ namespace MR
           ++writer_count;
         }
         void unregister_writer () {
-          bool finish = false;
-          {
-            std::lock_guard<std::mutex> lock (mutex);
-            assert (writer_count);
-            --writer_count;
-            if (!writer_count) 
-              finish = true;
-          }
-          if (finish) {
+          std::lock_guard<std::mutex> lock (mutex);
+          assert (writer_count);
+          --writer_count;
+          if (!writer_count) {
             DEBUG ("no writers left on queue \"" + name + "\"");
             more_data.notify_all();
           }
@@ -569,15 +564,10 @@ namespace MR
           ++reader_count;
         }
         void unregister_reader () {
-          bool finish = false;
-          {
-            std::lock_guard<std::mutex> lock (mutex);
-            assert (reader_count);
-            --reader_count;
-            if (!reader_count) 
-              finish = true;
-          }
-          if (finish) {
+          std::lock_guard<std::mutex> lock (mutex);
+          assert (reader_count);
+          --reader_count;
+          if (!reader_count) {
             DEBUG ("no readers left on queue \"" + name + "\"");
             more_space.notify_all();
           }
@@ -601,37 +591,33 @@ namespace MR
         }
 
         FORCE_INLINE bool push (T*& item) {
-          {
-            std::unique_lock<std::mutex> lock (mutex);
-            more_space.wait (lock, [this]{ return !(full() && reader_count); });
-            if (!reader_count) return false;
-            *back = item;
-            back = inc (back);
-            if (item_stack.empty()) {
-              item = new T;
-              items.push_back (std::unique_ptr<T> (item));
-            }
-            else {
-              item = item_stack.top();
-              item_stack.pop();
-            }
+          std::unique_lock<std::mutex> lock (mutex);
+          more_space.wait (lock, [this]{ return !(full() && reader_count); });
+          if (!reader_count) return false;
+          *back = item;
+          back = inc (back);
+          if (item_stack.empty()) {
+            item = new T;
+            items.push_back (std::unique_ptr<T> (item));
+          }
+          else {
+            item = item_stack.top();
+            item_stack.pop();
           }
           more_data.notify_one();
           return true;
         }
 
         FORCE_INLINE bool pop (T*& item) {
-          {
-            std::unique_lock<std::mutex> lock (mutex);
-            if (item) 
-              item_stack.push (item);
-            item = nullptr;
-            more_data.wait (lock, [this]{ return !(empty() && writer_count); });
-            if (empty() && !writer_count) 
-              return false;
-            item = *front;
-            front = inc (front);
-          }
+          std::unique_lock<std::mutex> lock (mutex);
+          if (item)
+            item_stack.push (item);
+          item = nullptr;
+          more_data.wait (lock, [this]{ return !(empty() && writer_count); });
+          if (empty() && !writer_count)
+            return false;
+          item = *front;
+          front = inc (front);
           more_space.notify_one();
           return true;
         }

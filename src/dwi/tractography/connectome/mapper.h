@@ -19,8 +19,8 @@
 #define __dwi_tractography_connectome_mapper_h__
 
 #include "dwi/tractography/streamline.h"
-#include "dwi/tractography/connectome/edge_metrics.h"
 #include "dwi/tractography/connectome/mapped_track.h"
+#include "dwi/tractography/connectome/metric.h"
 #include "dwi/tractography/connectome/tck2nodes.h"
 
 
@@ -36,7 +36,7 @@ class Mapper
 {
 
   public:
-    Mapper (const Tck2nodes_base& a, const Metric_base& b) :
+    Mapper (const Tck2nodes_base& a, const Metric& b) :
       tck2nodes (a),
       metric (b) { }
 
@@ -70,7 +70,7 @@ class Mapper
 
   private:
     const Tck2nodes_base& tck2nodes;
-    const Metric_base& metric;
+    const Metric& metric;
 
 };
 

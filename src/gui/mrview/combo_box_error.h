@@ -33,7 +33,8 @@ namespace MR
           ComboBoxWithErrorMsg (QWidget* parent, const QString& msg);
 
           void setError ();
-
+          void clearError (int);
+          void clearError() { clearError (-1); } // Guaranteed to clear the error entry
 
         protected slots:
           void onSetIndex (int);
