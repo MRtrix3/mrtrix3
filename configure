@@ -764,7 +764,8 @@ int main (int argc, char* argv[])
 #ifdef EIGEN_DEFAULT_ALIGN_BYTES
   size_t default_align = std::numeric_limits<size_t>::max();
   for (size_t n = 0; n < 100; ++n) {
-    char* x = new char;
+    struct alignas(64) X { double c[8]; };
+    X* x = new X;
     size_t align = reinterpret_cast<size_t>(x) & 63U;
     if (align && align < default_align)
       default_align = align;
