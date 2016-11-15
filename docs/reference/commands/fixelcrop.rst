@@ -10,9 +10,9 @@ Synopsis
 
     fixelcrop [ options ]  input_fixel_directory input_fixel_mask output_fixel_directory
 
--  *input_fixel_directory*: the input fixel directory file to be cropped
--  *input_fixel_mask*: the input fixel data file to be cropped
--  *output_fixel_directory*: the output fixel directory
+-  *input_fixel_directory*: input fixel directory, all data files and directions file will be cropped and saved in the output fixel directory
+-  *input_fixel_mask*: the input fixel data file defining which fixels to crop. Fixels with zero values will be removed
+-  *output_fixel_directory*: the output directory to store the cropped directions and data files
 
 Description
 -----------

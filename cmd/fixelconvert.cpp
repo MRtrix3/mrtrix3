@@ -134,7 +134,7 @@ void convert_old2new ()
       assign_pos_of (index_image).to (template_index_image);
       template_index_image.index(3) = 0;
       if (template_index_image.value() != num_fixels)
-        throw Exception ("Mismatch in number of fixels between input and template images");
+        throw Exception ("mismatch in number of fixels between input and template images");
       template_index_image.index(3) = 1;
       offset = template_index_image.value();
     }
@@ -156,7 +156,7 @@ void convert_old2new ()
           template_dir[axis] = template_directions_image.value();
         }
         if (input.value()[f].dir.dot (template_dir) < 0.999)
-          throw Exception ("Mismatch in fixel directions between input and template images");
+          throw Exception ("mismatch in fixel directions between input and template images");
       }
       value_image.index(0) = offset;
       value_image.value() = input.value()[f].value;
@@ -176,7 +176,7 @@ void convert_new2old ()
   const std::string input_fixel_directory = argument[0];
   auto opt = get_options ("value");
   if (!opt.size())
-    throw Exception ("For converting from new to old formats, option -value is compulsory");
+    throw Exception ("for converting from new to old formats, option -value is compulsory");
   const std::string value_path = get_options ("value")[0][0];
   opt = get_options ("in_size");
   const std::string size_path = opt.size() ? std::string(opt[0][0]) : "";
@@ -193,7 +193,7 @@ void convert_new2old ()
       size_index = i;
   }
   if (value_index == H_data.size())
-    throw Exception ("Could not find image in input fixel directory corresponding to -value option");
+    throw Exception ("could not find image in input fixel directory corresponding to -value option");
 
   Header H_out (H_index);
   H_out.ndim() = 3;
