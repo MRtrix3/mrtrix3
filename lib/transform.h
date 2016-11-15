@@ -33,7 +33,6 @@ namespace MR
           image2scanner (header.transform()),
           scanner2image (image2scanner.inverse()) { }
 
-      EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
       Transform (const Transform&) = default;
       Transform (Transform&&) = default;

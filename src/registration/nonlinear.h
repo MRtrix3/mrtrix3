@@ -62,7 +62,6 @@ namespace MR
             fod_lmax[2] = 4;
         }
 
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         template <class TransformType, class Im1ImageType, class Im2ImageType, class Im1MaskType, class Im2MaskType>
           void run (TransformType linear_transform,

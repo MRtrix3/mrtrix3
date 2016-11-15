@@ -36,7 +36,6 @@ namespace MR
             ComposeLinearDeformKernel (const transform_type& transform) :
                                        transform (transform) {}
 
-            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
             template <class InputDeformationFieldType, class OutputDeformationFieldType>
             void operator() (InputDeformationFieldType& deform_input, OutputDeformationFieldType& deform_output) {
@@ -55,7 +54,6 @@ namespace MR
                                      linear_transform (linear_transform),
                                      image_transform (disp_in) {}
 
-            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
             template <class DisplacementFieldType, class DeformationFieldType>
             void operator() (DisplacementFieldType& disp_input, DeformationFieldType& deform_output) {
@@ -73,7 +71,6 @@ namespace MR
             ComposeDispKernel (Image<default_type>& disp_input1, Image<default_type>& disp_input2, default_type step) :
                                disp1_transform (disp_input1), disp2_interp (disp_input2), step (step) {}
 
-            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
             void operator() (Image<default_type>& disp_input1, Image<default_type>& disp_output) {
               Eigen::Vector3 voxel ((default_type)disp_input1.index(0), (default_type)disp_input1.index(1), (default_type)disp_input1.index(2));
@@ -106,7 +103,6 @@ namespace MR
               out_of_bounds *= NaN;
             }
 
-            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
             void operator() (Image<default_type>& deform) {
               Eigen::Vector3 voxel ((default_type)deform.index(0), (default_type)deform.index(1), (default_type)deform.index(2));

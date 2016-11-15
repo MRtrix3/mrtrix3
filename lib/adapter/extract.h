@@ -48,7 +48,6 @@ namespace MR
             this->indices.push_back (indices.back());
           }
 
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         void reset () {
           for (size_t n = 0; n < ndim(); ++n) 
@@ -130,7 +129,6 @@ namespace MR
             }
           }
 
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         ssize_t size (size_t axis) const { return sizes[axis]; }
 

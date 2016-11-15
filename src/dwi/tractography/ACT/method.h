@@ -52,7 +52,6 @@ namespace MR
             ACT_Method_additions (const ACT_Method_additions&) = delete;
             ACT_Method_additions() = delete;
 
-            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
             const Tissues& tissues() const { return tissue_values; }
 

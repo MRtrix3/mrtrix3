@@ -86,7 +86,6 @@ namespace MR
           assert (w % 2);
         }
 
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         //! Set the current position to <b>voxel space</b> position \a pos
         /*! See file interp/base.h for details. */

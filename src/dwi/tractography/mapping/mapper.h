@@ -79,7 +79,6 @@ namespace MR {
             TrackMapperBase (const TrackMapperBase&) = default;
             TrackMapperBase (TrackMapperBase&&) = default;
 
-            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
             virtual ~TrackMapperBase() { }
 
@@ -370,7 +369,6 @@ namespace MR {
                 }
               }
 
-            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
             void add_scalar_image (const std::string&);
             void add_fod_image    (const std::string&);

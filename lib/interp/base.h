@@ -78,7 +78,6 @@ namespace MR
             bounds { parent.size(0) - 0.5, parent.size(1) - 0.5, parent.size(2) - 0.5 },
             out_of_bounds (true) { }
 
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         //! Functions that must be defined by interpolation classes
         /*! The follwing functions must be defined by any derived

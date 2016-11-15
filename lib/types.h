@@ -108,6 +108,59 @@
 # define FORCE_INLINE inline
 #endif
 
+
+/*! \def MEMALIGN(classname)
+ * to be placed immediately after \e every class or struct definition, to
+ * ensure the class had appropriate alignment-aware new & delete operators.
+ * This is required to ensure correct operation with Eigen >= 3.3 (due to the
+ * 32-byte alignment requirement for AVX instructions). 
+ *
+ * A big problem with this is that \e every class that could contain
+ * fixed-sized Eigen types (e.g. Matrix4d) must have these operators defined in
+ * case any instances get allocated dynamically. The default new operator
+ * provides no alignment guarantees, even for types declared using alignas().
+ * It is very difficult to keep track of all such classes to make sure they are
+ * all appropriately defined. The approach here will only enforce memory
+ * alignment for those class that declare themselves are requirement wider
+ * alignment than that provided by the default new operator (typically 16 byte
+ * with gcc), using the default allocator otherwise. This means it can be used
+ * for \e all classes indiscriminately with no loss of performance or memory
+ * use efficiency, and under certain conditions makes it possible to largely
+ * automate the process of ensuring compliance, as long as all class or struct
+ * definitions all on the same line, for example:
+ * \code
+ * template <class X> class AlignMe { MEMALIGN(AlignMe) 
+ *   ... 
+ * };
+ * \endcode
+ * \warning This will insert a \c public: declaration at the head of the class
+ * or struct. While this is the default for struct, special care must be taken
+ * with class declarations since methods would otherwise be private by default.
+ * If you need to have a private section at the head of your class, make sure
+ * you use an explicit \c private: or \c protected: keyword as required. 
+ */
+#define MEMALIGN(classname) \
+  public: \
+    inline void* operator new (std::size_t size) { \
+      if (alignof(classname) <= MRTRIX_ALLOC_MEMALIGN) return ::operator new (size); \
+      std::cerr << __PRETTY_FUNCTION__ << ": new [" << size << "]\n"; \
+      auto* original = std::malloc (size + alignof(classname)); \
+      if (!original) throw std::bad_alloc(); \
+      void *aligned = reinterpret_cast<void*>((reinterpret_cast<std::size_t>(original) & ~(std::size_t(alignof(classname)-1))) + alignof(classname)); \
+      *(reinterpret_cast<void**>(aligned) - 1) = original; \
+      return aligned; \
+    } \
+    inline void* operator new[] (std::size_t size) { return classname::operator new (size); } \
+    inline void operator delete(void* ptr) { \
+      if (alignof(classname) <= MRTRIX_ALLOC_MEMALIGN) ::operator delete (ptr); \
+      else { \
+        std::cerr << __PRETTY_FUNCTION__ << ": delete\n"; \
+        if (ptr) std::free (*(reinterpret_cast<void**>(ptr) - 1)); \
+      } \
+    } \
+    inline void operator delete[](void* ptr, std::size_t sz) { classname::operator delete (ptr); } \
+    
+
 namespace MR
 {
 
@@ -181,4 +234,8 @@ namespace Eigen {
 }
 
 #endif
+
+
+
+
 

@@ -93,7 +93,6 @@ namespace MR
               centre.setZero();
           }
 
-          EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
           template <class OutPointType, class InPointType>
           inline void transform (OutPointType& out, const InPointType& in) const {

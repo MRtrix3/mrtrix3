@@ -76,7 +76,6 @@ namespace MR
         SplineInterpBase (const ImageType& parent, value_type value_when_out_of_bounds = Base<ImageType>::default_out_of_bounds_value()) :
             Base<ImageType> (parent, value_when_out_of_bounds),
             H { SplineType(PType), SplineType(PType), SplineType(PType) } { }
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
       protected:
         SplineType H[3];
@@ -106,7 +105,6 @@ namespace MR
     {
       public:
         using SplineBase = SplineInterpBase<ImageType, SplineType, Math::SplineProcessingType::Value>;
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         typedef typename SplineBase::value_type value_type;
         using SplineBase::P;
@@ -222,7 +220,6 @@ namespace MR
     {
       public:
         using SplineBase = SplineInterpBase<ImageType, SplineType, Math::SplineProcessingType::Derivative>;
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         typedef typename SplineBase::value_type value_type;
         using SplineBase::P;
@@ -369,7 +366,6 @@ namespace MR
     {
       public:
         using SplineBase = SplineInterpBase<ImageType, SplineType, Math::SplineProcessingType::ValueAndDerivative>;
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         typedef typename SplineBase::value_type value_type;
         using SplineBase::P;

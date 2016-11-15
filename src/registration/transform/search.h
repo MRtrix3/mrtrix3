@@ -87,7 +87,6 @@ namespace MR
               local_trafo.set_translation (offset);
             };
 
-            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
             typedef Metric::Params<Registration::Transform::Rigid,
                                      Image<default_type>,

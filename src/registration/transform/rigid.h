@@ -68,7 +68,6 @@ namespace MR
       class Rigid : public Base  {
         public:
           
-          EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
           typedef typename Base::ParameterType ParameterType;
           typedef RigidLinearNonSymmetricUpdate UpdateType;

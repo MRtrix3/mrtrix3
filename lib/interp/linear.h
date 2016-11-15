@@ -97,7 +97,6 @@ namespace MR
         using typename Base<ImageType>::value_type;
         typedef typename value_type_of<value_type>::type coef_type;
 
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         LinearInterpBase (const ImageType& parent, value_type value_when_out_of_bounds = Base<ImageType>::default_out_of_bounds_value()) :
             Base<ImageType> (parent, value_when_out_of_bounds),
@@ -132,7 +131,6 @@ namespace MR
     {
       public:
         using LinearBase = LinearInterpBase<ImageType, LinearInterpProcessingType::Value>;
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         typedef typename LinearBase::value_type value_type;
         typedef typename LinearBase::coef_type coef_type;
@@ -259,7 +257,6 @@ namespace MR
     {
       public:
         using LinearBase = LinearInterpBase<ImageType, LinearInterpProcessingType::Derivative>;
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         typedef typename LinearBase::value_type value_type;
         typedef typename LinearBase::coef_type coef_type;
@@ -409,7 +406,6 @@ namespace MR
     {
       public:
         using LinearBase = LinearInterpBase<ImageType, LinearInterpProcessingType::ValueAndDerivative>;
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         typedef typename LinearBase::value_type value_type;
         typedef typename LinearBase::coef_type coef_type;
