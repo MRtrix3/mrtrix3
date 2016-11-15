@@ -751,6 +751,51 @@ except:
 
 
 
+# check Eigen3 memory alignment:
+
+report('Checking Eigen 3 memory alignment requirements: ')
+try:
+  compile ('''
+#include <iostream>
+#include <Eigen/Core>
+
+int main (int argc, char* argv[]) 
+{
+#ifdef EIGEN_DEFAULT_ALIGN_BYTES
+  size_t default_align = std::numeric_limits<size_t>::max();
+  for (size_t n = 0; n < 100; ++n) {
+    char* x = new char;
+    size_t align = reinterpret_cast<size_t>(x) & 63U;
+    if (align && align < default_align)
+      default_align = align;
+  }
+
+  return default_align >= EIGEN_DEFAULT_ALIGN_BYTES;
+#else
+  return 0;
+#endif
+}
+
+''', [ '-v' ] + cpp_flags, ld_flags)
+
+  report ('OK\n')
+except CompileError:
+  error (''' error compiling Eigen application!
+
+  This shouldn't happen!''' + configure_log_hint)
+except LinkError:
+  error (''' error linking Eigen application!
+
+  This shouldn't happen!''' + configure_log_hint)
+except RuntimeError:
+  error (''' memory alignment of default allocator is not sufficient for Eigen3 to operate correctly!
+
+  Please report this to the MRtrix3 developer team, providing the full "configure.log" file\n''')
+except:
+  error ('unexpected exception!' + configure_log_hint)
+
+
+
 
 
 
