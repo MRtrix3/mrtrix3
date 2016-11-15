@@ -769,8 +769,9 @@ int main (int argc, char* argv[])
     if (align && align < default_align)
       default_align = align;
   }
+  std::cout << "allocator memory alignment: " << default_align << ", Eigen3 needs: " << EIGEN_DEFAULT_ALIGN_BYTES << "\\n";
 
-  return default_align >= EIGEN_DEFAULT_ALIGN_BYTES;
+  return default_align < EIGEN_DEFAULT_ALIGN_BYTES;
 #else
   return 0;
 #endif
