@@ -63,9 +63,10 @@ namespace MR {
           stats.incN('b');
           
           Point_t pos;
+          SpatialLock<float>::Guard spatial_guard (*lock);
           do {
             pos = getRandPosInMask();
-          } while (! lock->lockIfNotLocked(pos));
+          } while (! spatial_guard.try_lock(pos));
           Point_t dir = getRandDir();
           
           double dE = E->stageAdd(pos, dir);
@@ -78,7 +79,6 @@ namespace MR {
           else {
             E->clearChanges();
           }
-          lock->unlock(pos);
         }
         
         
@@ -88,12 +88,12 @@ namespace MR {
           stats.incN('d');
           
           Particle* par;
+          SpatialLock<float>::Guard spatial_guard (*lock);
           do {
             par = pGrid.getRandom();
             if (par == NULL || par->hasPredecessor() || par->hasSuccessor())
               return;
-          } while (! lock->lockIfNotLocked(par->getPosition()));
-          Point_t pos0 = par->getPosition();
+          } while (! spatial_guard.try_lock(par->getPosition()));
           
           double dE = E->stageRemove(par);
           double R = std::exp(-dE) * pGrid.getTotalCount() / props.density * props.p_birth / props.p_death;
@@ -105,8 +105,6 @@ namespace MR {
           else {
             E->clearChanges();
           }
-          
-          lock->unlock(pos0);
         }
         
         
@@ -116,18 +114,17 @@ namespace MR {
           stats.incN('r');
           
           Particle* par;
+          SpatialLock<float>::Guard spatial_guard (*lock);
           do {
             par = pGrid.getRandom();
             if (par == NULL)
               return;
-          } while (! lock->lockIfNotLocked(par->getPosition()));
-          Point_t pos0 = par->getPosition();
-          
+          } while (! spatial_guard.try_lock(par->getPosition()));
+
           Point_t pos, dir;
           moveRandom(par, pos, dir);
           
           if (!inMask(T.scanner2voxel.cast<float>() * pos)) {
-            lock->unlock(pos0);
             return;
           }
           double dE = E->stageShift(par, pos, dir);
@@ -140,8 +137,6 @@ namespace MR {
           else {
             E->clearChanges();
           }
-          
-          lock->unlock(pos0);
         }
         
         
@@ -151,17 +146,16 @@ namespace MR {
           stats.incN('o');
           
           Particle* par;
+          SpatialLock<float>::Guard spatial_guard (*lock);
           do {
             par = pGrid.getRandom();
             if (par == NULL)
               return;
-          } while (! lock->lockIfNotLocked(par->getPosition()));
-          Point_t pos0 = par->getPosition();
-          
+          } while (! spatial_guard.try_lock(par->getPosition()));
+
           Point_t pos, dir;
           bool moved = moveOptimal(par, pos, dir);
           if (!moved || !inMask(T.scanner2voxel.cast<float>() * pos)) {
-            lock->unlock(pos0);
             return;
           }
           
@@ -176,8 +170,6 @@ namespace MR {
           else {
             E->clearChanges();
           }
-          
-          lock->unlock(pos0);
         }
         
         
@@ -187,12 +179,13 @@ namespace MR {
           stats.incN('c');
           
           Particle* par;
+          SpatialLock<float>::Guard spatial_guard (*lock);
           do {
             par = pGrid.getRandom();
             if (par == NULL)
               return;
-          } while (! lock->lockIfNotLocked(par->getPosition()));
-          Point_t pos0 = par->getPosition();
+          } while (! spatial_guard.try_lock(par->getPosition()));
+
           int alpha0 = (rng_uniform() < 0.5) ? -1 : 1;
           ParticleEnd pe0;
           pe0.par = par;
@@ -220,8 +213,6 @@ namespace MR {
           else {
             E->clearChanges();
           }
-          
-          lock->unlock(pos0);
         }
         
         
