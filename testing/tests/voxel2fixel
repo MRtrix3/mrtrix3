@@ -1,1 +1,1 @@
-voxel2fixel dwi_mean.mif fixel_image voxel2fixel_tmp dwi_mean.mif -force && testing_diff_fixel voxel2fixel voxel2fixel_tmp -frac 1e-4
+voxel2fixel dwi_mean.mif fixel_image voxel2fixel_tmp dwi_mean.mif -force && testing_diff_fixel voxel2fixel voxel2fixel_tmp -frac 1e-4; rm -rf voxel2fixel_tmp
