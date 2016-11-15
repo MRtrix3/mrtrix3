@@ -36,9 +36,11 @@ void usage ()
     "fixel data file the same dimensions as the fixel data file(s) to be cropped.";
 
   ARGUMENTS
-  + Argument ("input_fixel_directory", "the input fixel directory file to be cropped").type_text ()
-  + Argument ("input_fixel_mask", "the input fixel data file to be cropped").type_image_in ()
-  + Argument ("output_fixel_directory", "the output fixel directory").type_text ();
+  + Argument ("input_fixel_directory", "input fixel directory, all data files and directions "
+                                       "file will be cropped and saved in the output fixel directory").type_text ()
+  + Argument ("input_fixel_mask", "the input fixel data file defining which fixels to crop. "
+                                  "Fixels with zero values will be removed").type_image_in ()
+  + Argument ("output_fixel_directory", "the output directory to store the cropped directions and data files").type_text ();
 }
 
 
