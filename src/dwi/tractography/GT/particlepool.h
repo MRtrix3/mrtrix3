@@ -16,8 +16,6 @@
 #ifndef __gt_particlepool_h__
 #define __gt_particlepool_h__
 
-#define PAGESIZE 10000
-
 #include <deque>
 #include <stack>
 #include <mutex>
