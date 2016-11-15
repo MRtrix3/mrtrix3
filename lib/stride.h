@@ -193,6 +193,7 @@ namespace MR
       {
         // remove duplicates
         for (size_t i = 0; i < header.ndim()-1; ++i) {
+          if (header.size (i) == 1) header.stride (i) = 0;
           if (!header.stride (i)) continue;
           for (size_t j = i+1; j < header.ndim(); ++j) {
             if (!header.stride (j)) continue;
@@ -207,7 +208,7 @@ namespace MR
 
         for (size_t i = 0; i < header.ndim(); ++i) {
           if (header.stride (i)) continue;
-          header.stride (i) = ++max;
+          if (header.size (i) > 1) header.stride (i) = ++max;
         }
       }
 
@@ -218,10 +219,10 @@ namespace MR
      * zero) or duplicate (absolute) strides, and assigning to each a
      * suitable value. The value chosen for each sanitised stride is the
      * lowest number greater than any of the currently valid strides. */
-    template <> 
-      inline void sanitise<List> (List& strides)
+    template <class HeaderType> 
+      inline void sanitise (List& strides, const HeaderType& header)
       {
-        Wrapper wrapper (strides);
+        InfoWrapper<HeaderType> wrapper (strides, header);
         sanitise (wrapper);
       }
 
@@ -231,7 +232,7 @@ namespace MR
      * zero) or duplicate (absolute) strides, and assigning to each a
      * suitable value. The value chosen for each sanitised stride is the
      * lowest number greater than any of the currently valid strides. */
-    List& sanitise (List& current, const List& desired);
+    List& sanitise (List& current, const List& desired, const std::vector<ssize_t>& header);
 
 
     //! convert strides from symbolic to actual strides
@@ -366,22 +367,19 @@ namespace MR
         List in (get_symbolic (current)), out (desired);
         out.resize (in.size(), 0);
 
+        std::vector<ssize_t> dims (current.ndim());
+        for (size_t n = 0; n < dims.size(); ++n)
+          dims[n] = current.size(n);
+
         for (size_t i = 0; i < out.size(); ++i) 
           if (out[i]) 
             if (std::abs (out[i]) != std::abs (in[i])) 
-              return sanitise (in, out);
+              return sanitise (in, out, dims);
 
-        sanitise (in);
+        sanitise (in, current);
         return in;
       }
 
-
-    template <> 
-      inline List get_nearest_match<List> (const List& strides, const List& desired) 
-      {
-        Wrapper wrapper (const_cast<List&> (strides));
-        return get_nearest_match (wrapper, desired);
-      }
 
 
 
