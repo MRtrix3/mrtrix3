@@ -43,11 +43,11 @@ void usage ()
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
-  + "convert between the old format fixel image (*.msf / *.msh) and the new fixel folder format";
+  + "convert between the old format fixel image (*.msf / *.msh) and the new fixel directory format";
 
   ARGUMENTS
-  + Argument ("fixel_in",  "the input fixel file / folder.").type_text()
-  + Argument ("fixel_out", "the output fixel file / folder.").type_text();
+  + Argument ("fixel_in",  "the input fixel file / directory.").type_text()
+  + Argument ("fixel_out", "the output fixel file / directory.").type_text();
 
   OPTIONS
   + OptionGroup ("Options for converting from old to new format")
@@ -86,8 +86,8 @@ void convert_old2new ()
 
   const bool output_size = get_options ("out_size").size();
 
-  const std::string output_fixel_folder = argument[1];
-  FixelFormat::check_fixel_folder (output_fixel_folder, true);
+  const std::string output_fixel_directory = argument[1];
+  FixelFormat::check_fixel_directory (output_fixel_directory, true);
 
   uint32_t fixel_count = 0;
   for (auto i = Loop (input) (input); i; ++i)
@@ -110,18 +110,18 @@ void convert_old2new ()
   header.datatype() = DataType::from<uint32_t>();
   header.datatype().set_byte_order_native();
 
-  auto index_image = Image<uint32_t>::create (Path::join (output_fixel_folder, "index" + file_extension), header);
-  auto directions_image = Image<float>::create (Path::join (output_fixel_folder, "directions" + file_extension), directions_header).with_direct_io();
-  auto value_image = Image<float>::create (Path::join (output_fixel_folder, value_name + file_extension), data_header);
+  auto index_image = Image<uint32_t>::create (Path::join (output_fixel_directory, "index" + file_extension), header);
+  auto directions_image = Image<float>::create (Path::join (output_fixel_directory, "directions" + file_extension), directions_header).with_direct_io();
+  auto value_image = Image<float>::create (Path::join (output_fixel_directory, value_name + file_extension), data_header);
   Image<float> size_image;
   if (output_size)
-    size_image = Image<float>::create (Path::join (output_fixel_folder, "size" + file_extension), data_header);
+    size_image = Image<float>::create (Path::join (output_fixel_directory, "size" + file_extension), data_header);
 
   Image<uint32_t> template_index_image;
   Image<float> template_directions_image;
   opt = get_options ("template");
   if (opt.size()) {
-    FixelFormat::check_fixel_folder (opt[0][0]);
+    FixelFormat::check_fixel_directory (opt[0][0]);
     template_index_image = FixelFormat::find_index_header (opt[0][0]).get_image<uint32_t>();
     check_dimensions (index_image, template_index_image);
     template_directions_image = FixelFormat::find_directions_header (opt[0][0]).get_image<float>();
@@ -173,7 +173,7 @@ void convert_old2new ()
 
 void convert_new2old ()
 {
-  const std::string input_fixel_folder = argument[0];
+  const std::string input_fixel_directory = argument[0];
   auto opt = get_options ("value");
   if (!opt.size())
     throw Exception ("For converting from new to old formats, option -value is compulsory");
@@ -181,9 +181,9 @@ void convert_new2old ()
   opt = get_options ("in_size");
   const std::string size_path = opt.size() ? std::string(opt[0][0]) : "";
 
-  Header H_index = FixelFormat::find_index_header (input_fixel_folder);
-  Header H_dirs = FixelFormat::find_directions_header (input_fixel_folder);
-  std::vector<Header> H_data = FixelFormat::find_data_headers (input_fixel_folder, H_index, false);
+  Header H_index = FixelFormat::find_index_header (input_fixel_directory);
+  Header H_dirs = FixelFormat::find_directions_header (input_fixel_directory);
+  std::vector<Header> H_data = FixelFormat::find_data_headers (input_fixel_directory, H_index, false);
   size_t size_index = H_data.size(), value_index = H_data.size();
 
   for (size_t i = 0; i != H_data.size(); ++i) {
@@ -193,7 +193,7 @@ void convert_new2old ()
       size_index = i;
   }
   if (value_index == H_data.size())
-    throw Exception ("Could not find image in input fixel folder corresponding to -value option");
+    throw Exception ("Could not find image in input fixel directory corresponding to -value option");
 
   Header H_out (H_index);
   H_out.ndim() = 3;

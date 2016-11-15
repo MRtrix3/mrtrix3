@@ -8,10 +8,10 @@ Synopsis
 
 ::
 
-    fod2fixel [ options ]  fod fixel_folder
+    fod2fixel [ options ]  fod fixel_directory
 
 -  *fod*: the input fod image.
--  *fixel_folder*: the output fixel folder
+-  *fixel_directory*: the output fixel directory
 
 Description
 -----------

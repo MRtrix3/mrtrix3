@@ -79,7 +79,7 @@ void usage ()
 
   ARGUMENTS
   + Argument ("fod", "the input fod image.").type_image_in ()
-  + Argument ("fixel_folder", "the output fixel folder").type_text();
+  + Argument ("fixel_directory", "the output fixel directory").type_text();
 
 
   OPTIONS
@@ -111,7 +111,7 @@ class Segmented_FOD_receiver
 
     void commit ();
 
-    void set_fixel_folder_output (const std::string& path) { fixel_folder_path = path; }
+    void set_fixel_directory_output (const std::string& path) { fixel_directory_path = path; }
     void set_index_output (const std::string& path) { index_path = path; }
     void set_directions_output (const std::string& path) { dir_path = path; }
     void set_afd_output  (const std::string& path) { afd_path = path; }
@@ -150,7 +150,7 @@ class Segmented_FOD_receiver
     };
 
     Header H;
-    std::string fixel_folder_path, index_path, dir_path, afd_path, peak_path, disp_path;
+    std::string fixel_directory_path, index_path, dir_path, afd_path, peak_path, disp_path;
     std::vector<Primitive_FOD_lobes> lobes;
     uint64_t n_fixels;
     bool dir_as_peak;
@@ -192,7 +192,7 @@ void Segmented_FOD_receiver::commit ()
   using DataImage = Image<float>;
   using IndexImage = Image<uint32_t>;
 
-  const auto index_filepath = Path::join (fixel_folder_path, index_path);
+  const auto index_filepath = Path::join (fixel_directory_path, index_path);
 
   std::unique_ptr<IndexImage> index_image (nullptr);
   std::unique_ptr<DataImage> dir_image (nullptr);
@@ -218,7 +218,7 @@ void Segmented_FOD_receiver::commit ()
   if (dir_path.size()) {
     auto dir_header (fixel_data_header);
     dir_header.size(1) = 3;
-    dir_image = std::unique_ptr<DataImage> (new DataImage (DataImage::create (Path::join(fixel_folder_path, dir_path), dir_header)));
+    dir_image = std::unique_ptr<DataImage> (new DataImage (DataImage::create (Path::join(fixel_directory_path, dir_path), dir_header)));
     dir_image->index(1) = 0;
     FixelFormat::check_fixel_size (*index_image, *dir_image);
   }
@@ -226,7 +226,7 @@ void Segmented_FOD_receiver::commit ()
   if (afd_path.size()) {
     auto afd_header (fixel_data_header);
     afd_header.size(1) = 1;
-    afd_image = std::unique_ptr<DataImage> (new DataImage (DataImage::create (Path::join(fixel_folder_path, afd_path), afd_header)));
+    afd_image = std::unique_ptr<DataImage> (new DataImage (DataImage::create (Path::join(fixel_directory_path, afd_path), afd_header)));
     afd_image->index(1) = 0;
     FixelFormat::check_fixel_size (*index_image, *afd_image);
   }
@@ -234,7 +234,7 @@ void Segmented_FOD_receiver::commit ()
   if (peak_path.size()) {
     auto peak_header(fixel_data_header);
     peak_header.size(1) = 1;
-    peak_image = std::unique_ptr<DataImage> (new DataImage (DataImage::create (Path::join(fixel_folder_path, peak_path), peak_header)));
+    peak_image = std::unique_ptr<DataImage> (new DataImage (DataImage::create (Path::join(fixel_directory_path, peak_path), peak_header)));
     peak_image->index(1) = 0;
     FixelFormat::check_fixel_size (*index_image, *peak_image);
   }
@@ -242,7 +242,7 @@ void Segmented_FOD_receiver::commit ()
   if (disp_path.size()) {
     auto disp_header (fixel_data_header);
     disp_header.size(1) = 1;
-    disp_image = std::unique_ptr<DataImage> (new DataImage (DataImage::create (Path::join(fixel_folder_path, disp_path), disp_header)));
+    disp_image = std::unique_ptr<DataImage> (new DataImage (DataImage::create (Path::join(fixel_directory_path, disp_path), disp_header)));
     disp_image->index(1) = 0;
     FixelFormat::check_fixel_size (*index_image, *disp_image);
   }
@@ -309,8 +309,8 @@ void run ()
 
   Segmented_FOD_receiver receiver (H, dir_as_peak);
 
-  auto& fixel_folder_path  = argument[1];
-  receiver.set_fixel_folder_output (fixel_folder_path);
+  auto& fixel_directory_path  = argument[1];
+  receiver.set_fixel_directory_output (fixel_directory_path);
 
   std::string file_extension (".mif");
   if (get_options ("nii").size())
@@ -337,7 +337,7 @@ void run ()
   if (!receiver.num_outputs ())
     throw Exception ("Nothing to do; please specify at least one output image type");
 
-  FixelFormat::check_fixel_folder (fixel_folder_path, true, true);
+  FixelFormat::check_fixel_directory (fixel_directory_path, true, true);
 
   FMLS::FODQueueWriter writer (fod_data, mask);
 

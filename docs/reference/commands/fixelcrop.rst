@@ -8,11 +8,11 @@ Synopsis
 
 ::
 
-    fixelcrop [ options ]  input_fixel_folder input_fixel_mask output_fixel_folder
+    fixelcrop [ options ]  input_fixel_directory input_fixel_mask output_fixel_directory
 
--  *input_fixel_folder*: the input fixel folder file to be cropped
+-  *input_fixel_directory*: the input fixel directory file to be cropped
 -  *input_fixel_mask*: the input fixel data file to be cropped
--  *output_fixel_folder*: the output fixel folder
+-  *output_fixel_directory*: the output fixel directory
 
 Description
 -----------

@@ -46,9 +46,9 @@ void usage ()
   OPTIONS
   + Option ("fc", "use an input template fixel image to define fibre orientations and output "
                   "a fixel image describing the change in fibre cross-section (FC) in the perpendicular "
-                  "plane to the fixel orientation. e.g. warp2metric warp.mif -fc fixel_template_folder output_fixel_folder fc.mif")
-    + Argument ("template_fixel_folder").type_image_in()
-    + Argument ("output_fixel_folder").type_text()
+                  "plane to the fixel orientation. e.g. warp2metric warp.mif -fc fixel_template_directory output_fixel_directory fc.mif")
+    + Argument ("template_fixel_directory").type_image_in()
+    + Argument ("output_fixel_directory").type_text()
     + Argument ("output_fixel_data").type_image_out()
 
   + Option ("jmat", "output a Jacobian matrix image stored in column-major order along the 4th dimension."
@@ -78,14 +78,14 @@ void run ()
 
   auto opt = get_options ("fc");
   if (opt.size()) {
-    std::string template_fixel_folder (opt[0][0]);
-    fixel_template_index = FixelFormat::find_index_header (template_fixel_folder).get_image<uint32_t>();
-    fixel_template_directions = FixelFormat::find_directions_header (template_fixel_folder).get_image<value_type>().with_direct_io();
+    std::string template_fixel_directory (opt[0][0]);
+    fixel_template_index = FixelFormat::find_index_header (template_fixel_directory).get_image<uint32_t>();
+    fixel_template_directions = FixelFormat::find_directions_header (template_fixel_directory).get_image<value_type>().with_direct_io();
 
-    std::string output_fixel_folder (opt[0][1]);
-    if (template_fixel_folder != output_fixel_folder) {
-      FixelFormat::copy_index_file (template_fixel_folder, output_fixel_folder);
-      FixelFormat::copy_directions_file (template_fixel_folder, output_fixel_folder);
+    std::string output_fixel_directory (opt[0][1]);
+    if (template_fixel_directory != output_fixel_directory) {
+      FixelFormat::copy_index_file (template_fixel_directory, output_fixel_directory);
+      FixelFormat::copy_directions_file (template_fixel_directory, output_fixel_directory);
     }
 
     uint32_t num_fixels = 0;
@@ -93,7 +93,7 @@ void run ()
     for (auto l = Loop (fixel_template_index, 0, 3) (fixel_template_index); l; ++l)
       num_fixels += fixel_template_index.value();
 
-    fc_output_data = Image<value_type>::create (Path::join (output_fixel_folder, opt[0][2]), FixelFormat::data_header_from_index (fixel_template_index));
+    fc_output_data = Image<value_type>::create (Path::join (output_fixel_directory, opt[0][2]), FixelFormat::data_header_from_index (fixel_template_index));
   }
 
 

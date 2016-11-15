@@ -67,10 +67,10 @@ void usage ()
     "NeuroImage, 2011, 54(3), 2006-19\n" ;
 
   ARGUMENTS
-  + Argument ("in_fixel_folder", "the fixel folder containing the data files for each subject (after obtaining fixel correspondence").type_file_in ()
+  + Argument ("in_fixel_directory", "the fixel directory containing the data files for each subject (after obtaining fixel correspondence").type_file_in ()
 
   + Argument ("subjects", "a text file listing the subject identifiers (one per line). This should correspond with the filenames "
-                          "in the fixel folder (including the file extension), and be listed in the same order as the rows of the design matrix.").type_image_in ()
+                          "in the fixel directory (including the file extension), and be listed in the same order as the rows of the design matrix.").type_image_in ()
 
   + Argument ("design", "the design matrix. Note that a column of 1's will need to be added for correlations.").type_file_in ()
 
@@ -78,7 +78,7 @@ void usage ()
 
   + Argument ("tracks", "the tracks used to determine fixel-fixel connectivity").type_tracks_in ()
 
-  + Argument ("out_fixel_folder", "the output folder where results will be saved. Will be created if it does not exist").type_text();
+  + Argument ("out_fixel_directory", "the output directory where results will be saved. Will be created if it does not exist").type_text();
 
 
   OPTIONS
@@ -147,8 +147,8 @@ void run() {
   const value_type angular_threshold = get_option_value ("angle", DEFAULT_ANGLE_THRESHOLD);
 
 
-  const std::string input_fixel_folder = argument[0];
-  Header index_header = FixelFormat::find_index_header (input_fixel_folder);
+  const std::string input_fixel_directory = argument[0];
+  Header index_header = FixelFormat::find_index_header (input_fixel_directory);
   auto index_image = index_header.get_image<uint32_t>();
 
   const uint32_t num_fixels = FixelFormat::get_number_of_fixels (index_header);
@@ -157,11 +157,11 @@ void run() {
   std::vector<Eigen::Vector3> positions (num_fixels);
   std::vector<direction_type> directions (num_fixels);
 
-  const std::string output_fixel_folder = argument[5];
-  FixelFormat::copy_index_and_directions_file (input_fixel_folder, output_fixel_folder);
+  const std::string output_fixel_directory = argument[5];
+  FixelFormat::copy_index_and_directions_file (input_fixel_directory, output_fixel_directory);
 
   {
-    auto directions_data = FixelFormat::find_directions_header (input_fixel_folder).get_image<default_type>().with_direct_io ({+2,+1});
+    auto directions_data = FixelFormat::find_directions_header (input_fixel_directory).get_image<default_type>().with_direct_io ({+2,+1});
     // Load template fixel directions
     Transform image_transform (index_image);
     for (auto i = Loop ("loading template fixel directions and positions", index_image, 0, 3)(index_image); i; ++i) {
@@ -183,7 +183,7 @@ void run() {
     std::ifstream ifs (argument[1].c_str());
     std::string temp;
     while (getline (ifs, temp)) {
-      std::string filename (Path::join (input_fixel_folder, temp));
+      std::string filename (Path::join (input_fixel_directory, temp));
       size_t p = filename.find_last_not_of(" \t");
       if (std::string::npos != p)
         filename.erase(p+1);
@@ -357,15 +357,15 @@ void run() {
     auto temp = Math::Stats::GLM::solve_betas (data, design);
 
     for (ssize_t i = 0; i < contrast.cols(); ++i) {
-      write_fixel_output (Path::join (output_fixel_folder, "beta" + str(i) + ".mif"), temp.row(i), output_header);
+      write_fixel_output (Path::join (output_fixel_directory, "beta" + str(i) + ".mif"), temp.row(i), output_header);
       ++progress;
     }
     temp = Math::Stats::GLM::abs_effect_size (data, design, contrast); ++progress;
-    write_fixel_output (Path::join (output_fixel_folder, "abs_effect.mif"), temp.row(0), output_header); ++progress;
+    write_fixel_output (Path::join (output_fixel_directory, "abs_effect.mif"), temp.row(0), output_header); ++progress;
     temp = Math::Stats::GLM::std_effect_size (data, design, contrast); ++progress;
-    write_fixel_output (Path::join (output_fixel_folder, "std_effect.mif"), temp.row(0), output_header); ++progress;
+    write_fixel_output (Path::join (output_fixel_directory, "std_effect.mif"), temp.row(0), output_header); ++progress;
     temp = Math::Stats::GLM::stdev (data, design); ++progress;
-    write_fixel_output (Path::join (output_fixel_folder, "std_dev.mif"), temp.row(0), output_header);
+    write_fixel_output (Path::join (output_fixel_directory, "std_dev.mif"), temp.row(0), output_header);
   }
 
   Math::Stats::GLMTTest glm_ttest (data, design, contrast);
@@ -384,7 +384,7 @@ void run() {
       Stats::PermTest::precompute_empirical_stat (glm_ttest, cfe_integrator, permutations, empirical_cfe_statistic);
     }
     output_header.keyval()["nonstationary adjustment"] = str(true);
-    write_fixel_output (Path::join (output_fixel_folder, "cfe_empirical.mif"), empirical_cfe_statistic, output_header);
+    write_fixel_output (Path::join (output_fixel_directory, "cfe_empirical.mif"), empirical_cfe_statistic, output_header);
   } else {
     output_header.keyval()["nonstationary adjustment"] = str(false);
   }
@@ -398,10 +398,10 @@ void run() {
 
   Stats::PermTest::precompute_default_permutation (glm_ttest, cfe_integrator, empirical_cfe_statistic, cfe_output, cfe_output_neg, tvalue_output);
 
-  write_fixel_output (Path::join (output_fixel_folder, "cfe.mif"), cfe_output, output_header);
-  write_fixel_output (Path::join (output_fixel_folder, "tvalue.mif"), tvalue_output, output_header);
+  write_fixel_output (Path::join (output_fixel_directory, "cfe.mif"), cfe_output, output_header);
+  write_fixel_output (Path::join (output_fixel_directory, "tvalue.mif"), tvalue_output, output_header);
   if (compute_negative_contrast)
-    write_fixel_output (Path::join (output_fixel_folder, "cfe_neg.mif"), *cfe_output_neg, output_header);
+    write_fixel_output (Path::join (output_fixel_directory, "cfe_neg.mif"), *cfe_output_neg, output_header);
 
   // Perform permutation testing
   opt = get_options ("notest");
@@ -429,19 +429,19 @@ void run() {
     }
 
     ProgressBar progress ("outputting final results");
-    save_matrix (perm_distribution, Path::join (output_fixel_folder, "perm_dist.txt")); ++progress;
+    save_matrix (perm_distribution, Path::join (output_fixel_directory, "perm_dist.txt")); ++progress;
 
     vector_type pvalue_output (num_fixels);
     Math::Stats::Permutation::statistic2pvalue (perm_distribution, cfe_output, pvalue_output); ++progress;
-    write_fixel_output (Path::join (output_fixel_folder, "fwe_pvalue.mif"), pvalue_output, output_header); ++progress;
-    write_fixel_output (Path::join (output_fixel_folder, "uncorrected_pvalue.mif"), uncorrected_pvalues, output_header); ++progress;
+    write_fixel_output (Path::join (output_fixel_directory, "fwe_pvalue.mif"), pvalue_output, output_header); ++progress;
+    write_fixel_output (Path::join (output_fixel_directory, "uncorrected_pvalue.mif"), uncorrected_pvalues, output_header); ++progress;
 
     if (compute_negative_contrast) {
-      save_matrix (*perm_distribution_neg, Path::join (output_fixel_folder, "perm_dist_neg.txt")); ++progress;
+      save_matrix (*perm_distribution_neg, Path::join (output_fixel_directory, "perm_dist_neg.txt")); ++progress;
       vector_type pvalue_output_neg (num_fixels);
       Math::Stats::Permutation::statistic2pvalue (*perm_distribution_neg, *cfe_output_neg, pvalue_output_neg); ++progress;
-      write_fixel_output (Path::join (output_fixel_folder, "fwe_pvalue_neg.mif"), pvalue_output_neg, output_header); ++progress;
-      write_fixel_output (Path::join (output_fixel_folder, "uncorrected_pvalue_neg.mif"), *uncorrected_pvalues_neg, output_header);
+      write_fixel_output (Path::join (output_fixel_directory, "fwe_pvalue_neg.mif"), pvalue_output_neg, output_header); ++progress;
+      write_fixel_output (Path::join (output_fixel_directory, "uncorrected_pvalue_neg.mif"), *uncorrected_pvalues_neg, output_header);
     }
   }
 }

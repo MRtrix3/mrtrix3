@@ -36,25 +36,25 @@ void usage ()
     "fixel data file the same dimensions as the fixel data file(s) to be cropped.";
 
   ARGUMENTS
-  + Argument ("input_fixel_folder", "the input fixel folder file to be cropped").type_text ()
+  + Argument ("input_fixel_directory", "the input fixel directory file to be cropped").type_text ()
   + Argument ("input_fixel_mask", "the input fixel data file to be cropped").type_image_in ()
-  + Argument ("output_fixel_folder", "the output fixel folder").type_text ();
+  + Argument ("output_fixel_directory", "the output fixel directory").type_text ();
 }
 
 
 
 void run ()
 {
-  const auto in_folder = argument[0];
-  FixelFormat::check_fixel_folder (in_folder);
-  Header in_index_header = FixelFormat::find_index_header (in_folder);
+  const auto in_directory = argument[0];
+  FixelFormat::check_fixel_directory (in_directory);
+  Header in_index_header = FixelFormat::find_index_header (in_directory);
   auto in_index_image = in_index_header.get_image <uint32_t>();
 
   auto mask_image = Image<bool>::open (argument[1]);
   FixelFormat::check_fixel_size (in_index_image, mask_image);
 
-  const auto out_fixel_folder = argument[2];
-  FixelFormat::check_fixel_folder (out_fixel_folder, true);
+  const auto out_fixel_directory = argument[2];
+  FixelFormat::check_fixel_directory (out_fixel_directory, true);
 
   Header out_header = Header (in_index_image);
   size_t total_nfixels = std::stoul (out_header.keyval ()[FixelFormat::n_fixels_key]);
@@ -66,11 +66,11 @@ void run ()
   }
 
   out_header.keyval ()[FixelFormat::n_fixels_key] = str (total_nfixels);
-  auto out_index_image = Image<uint32_t>::create (Path::join (out_fixel_folder, Path::basename (in_index_image.name())), out_header);
+  auto out_index_image = Image<uint32_t>::create (Path::join (out_fixel_directory, Path::basename (in_index_image.name())), out_header);
 
 
   // Open all data images and create output date images with size equal to expected number of fixels
-  std::vector<Header> in_headers = FixelFormat::find_data_headers (in_folder, in_index_header, true);
+  std::vector<Header> in_headers = FixelFormat::find_data_headers (in_directory, in_index_header, true);
   std::vector<Image<float> > in_data_images;
   std::vector<Image<float> > out_data_images;
   for (auto& in_data_header : in_headers) {
@@ -79,7 +79,7 @@ void run ()
 
     Header out_data_header (in_data_header);
     out_data_header.size (0) = total_nfixels;
-    out_data_images.push_back(Image<float>::create (Path::join (out_fixel_folder, Path::basename (in_data_header.name())),
+    out_data_images.push_back(Image<float>::create (Path::join (out_fixel_directory, Path::basename (in_data_header.name())),
                                                     out_data_header).with_direct_io());
   }
 

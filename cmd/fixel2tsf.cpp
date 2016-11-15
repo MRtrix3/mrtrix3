@@ -47,7 +47,7 @@ void usage ()
     "This is useful for visualising all brain fixels (e.g. the output from fixelcfestats) in 3D.";
 
   ARGUMENTS
-  + Argument ("fixel_in", "the input fixel data file (within the fixel folder)").type_image_in ()
+  + Argument ("fixel_in", "the input fixel data file (within the fixel directory)").type_image_in ()
   + Argument ("tracks",   "the input track file ").type_tracks_in ()
   + Argument ("tsf",      "the output track scalar file").type_file_out ();
 
@@ -70,9 +70,9 @@ void run ()
     throw Exception ("Only a single scalar value for each fixel can be output as a track scalar file, "
                      "therefore the input fixel data file must have dimension Nx1x1");
 
-  Header in_index_header = FixelFormat::find_index_header (FixelFormat::get_fixel_folder (argument[0]));
+  Header in_index_header = FixelFormat::find_index_header (FixelFormat::get_fixel_directory (argument[0]));
   auto in_index_image = in_index_header.get_image<uint32_t>();
-  auto in_directions_image = FixelFormat::find_directions_header (FixelFormat::get_fixel_folder (argument[0])).get_image<float>().with_direct_io();
+  auto in_directions_image = FixelFormat::find_directions_header (FixelFormat::get_fixel_directory (argument[0])).get_image<float>().with_direct_io();
 
   DWI::Tractography::Properties properties;
   DWI::Tractography::Reader<float> reader (argument[1], properties);

@@ -36,10 +36,10 @@ void usage ()
     "The output fixel image will have the same fixels (and directions) of the template.";
 
   ARGUMENTS
-  + Argument ("subject_data", "the input subject fixel data file. This should be a file inside the fixel folder").type_image_in ()
-  + Argument ("template_folder", "the input template fixel folder.").type_image_in ()
-  + Argument ("output_folder", "the output fixel folder.").type_text()
-  + Argument ("output_data", "the name of the output fixel data file. This will be placed in the output fixel folder").type_image_out ();
+  + Argument ("subject_data", "the input subject fixel data file. This should be a file inside the fixel directory").type_image_in ()
+  + Argument ("template_directory", "the input template fixel directory.").type_image_in ()
+  + Argument ("output_directory", "the output fixel directory.").type_text()
+  + Argument ("output_data", "the name of the output fixel data file. This will be placed in the output fixel directory").type_image_out ();
 
   OPTIONS
   + Option ("angle", "the max angle threshold for computing inter-subject fixel correspondence (Default: " + str(DEFAULT_ANGLE_THRESHOLD, 2) + " degrees)")
@@ -54,10 +54,10 @@ void run ()
 
   const std::string input_file (argument[0]);
   if (Path::is_dir (input_file))
-    throw Exception ("please input the specific fixel data file to be converted (not the fixel folder)");
+    throw Exception ("please input the specific fixel data file to be converted (not the fixel directory)");
 
-  auto subject_index = FixelFormat::find_index_header (FixelFormat::get_fixel_folder (input_file)).get_image<uint32_t>();
-  auto subject_directions = FixelFormat::find_directions_header (FixelFormat::get_fixel_folder (input_file)).get_image<float>().with_direct_io();
+  auto subject_index = FixelFormat::find_index_header (FixelFormat::get_fixel_directory (input_file)).get_image<uint32_t>();
+  auto subject_directions = FixelFormat::find_directions_header (FixelFormat::get_fixel_directory (input_file)).get_image<float>().with_direct_io();
 
   if (input_file == subject_directions.name())
     throw Exception ("input fixel data file cannot be the directions file");
@@ -69,14 +69,14 @@ void run ()
   auto template_directions = FixelFormat::find_directions_header (argument[1]).get_image<float>().with_direct_io();
 
   check_dimensions (subject_index, template_index);
-  std::string output_fixel_folder = argument[2];
-  FixelFormat::copy_index_and_directions_file (argument[1], output_fixel_folder);
+  std::string output_fixel_directory = argument[2];
+  FixelFormat::copy_index_and_directions_file (argument[1], output_fixel_directory);
 
   Header output_data_header (template_directions);
   output_data_header.size(1) = 1;
-  auto output_data = Image<float>::create (Path::join (output_fixel_folder, argument[3]), output_data_header);
+  auto output_data = Image<float>::create (Path::join (output_fixel_directory, argument[3]), output_data_header);
 
-  for (auto i = Loop ("mapping subject fixels to template fixels", template_index, 0, 3)(template_index, subject_index); i; ++i) {
+  for (auto i = Loop ("mapping subject fixels data to template fixels", template_index, 0, 3)(template_index, subject_index); i; ++i) {
     template_index.index(3) = 0;
     uint32_t nfixels_template = template_index.value();
     template_index.index(3) = 1;

@@ -8,12 +8,12 @@ Synopsis
 
 ::
 
-    fixelcorrespondence [ options ]  subject_data template_folder output_folder output_data
+    fixelcorrespondence [ options ]  subject_data template_directory output_directory output_data
 
--  *subject_data*: the input subject fixel data file. This should be a file inside the fixel folder
--  *template_folder*: the input template fixel folder.
--  *output_folder*: the output fixel folder.
--  *output_data*: the name of the output fixel data file. This will be placed in the output fixel folder
+-  *subject_data*: the input subject fixel data file. This should be a file inside the fixel directory
+-  *template_directory*: the input template fixel directory.
+-  *output_directory*: the output fixel directory.
+-  *output_data*: the name of the output fixel data file. This will be placed in the output fixel directory
 
 Description
 -----------

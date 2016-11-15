@@ -8,14 +8,14 @@ Synopsis
 
 ::
 
-    fixelcfestats [ options ]  in_fixel_folder subjects design contrast tracks out_fixel_folder
+    fixelcfestats [ options ]  in_fixel_directory subjects design contrast tracks out_fixel_directory
 
--  *in_fixel_folder*: the fixel folder containing the data files for each subject (after obtaining fixel correspondence
--  *subjects*: a text file listing the subject identifiers (one per line). This should correspond with the filenames in the fixel folder (including the file extension), and be listed in the same order as the rows of the design matrix.
+-  *in_fixel_directory*: the fixel directory containing the data files for each subject (after obtaining fixel correspondence
+-  *subjects*: a text file listing the subject identifiers (one per line). This should correspond with the filenames in the fixel directory (including the file extension), and be listed in the same order as the rows of the design matrix.
 -  *design*: the design matrix. Note that a column of 1's will need to be added for correlations.
 -  *contrast*: the contrast vector, specified as a single row of weights
 -  *tracks*: the tracks used to determine fixel-fixel connectivity
--  *out_fixel_folder*: the output folder where results will be saved. Will be created if it does not exist
+-  *out_fixel_directory*: the output directory where results will be saved. Will be created if it does not exist
 
 Description
 -----------

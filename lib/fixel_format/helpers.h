@@ -19,6 +19,7 @@
 #include "formats/mrtrix_utils.h"
 #include "fixel_format/keys.h"
 #include "algo/loop.h"
+#include "image_diff.h"
 
 namespace MR
 {
@@ -83,12 +84,12 @@ namespace MR
         throw InvalidImageException (in.name() + " is not a valid fixel data file. Expected a 3-dimensional image of size n x m x 1");
     }
 
-    FORCE_INLINE std::string get_fixel_folder (const std::string& fixel_file) {
-      std::string fixel_folder = Path::dirname (fixel_file);
+    FORCE_INLINE std::string get_fixel_directory (const std::string& fixel_file) {
+      std::string fixel_directory = Path::dirname (fixel_file);
       // assume the user is running the command from within the fixel directory
-      if (fixel_folder.empty())
-        fixel_folder = Path::cwd();
-      return fixel_folder;
+      if (fixel_directory.empty())
+        fixel_directory = Path::cwd();
+      return fixel_directory;
     }
 
 
@@ -154,10 +155,10 @@ namespace MR
     }
 
 
-    FORCE_INLINE void check_fixel_folder (const std::string &path, bool create_if_missing = false, bool check_if_empty = false)
+    FORCE_INLINE void check_fixel_directory (const std::string &path, bool create_if_missing = false, bool check_if_empty = false)
     {
       std::string path_temp = path;
-      // handle the use case when a fixel command is run from inside a fixel folder
+      // handle the use case when a fixel command is run from inside a fixel directory
       if (path.empty())
         path_temp = Path::cwd();
 
@@ -175,32 +176,32 @@ namespace MR
     }
 
 
-    FORCE_INLINE Header find_index_header (const std::string &fixel_folder_path)
+    FORCE_INLINE Header find_index_header (const std::string &fixel_directory_path)
     {
       Header header;
-      check_fixel_folder (fixel_folder_path);
+      check_fixel_directory (fixel_directory_path);
 
       for (std::initializer_list<const std::string>::iterator it = FixelFormat::supported_fixel_formats.begin();
            it != FixelFormat::supported_fixel_formats.end(); ++it) {
-        std::string full_path = Path::join (fixel_folder_path, "index" + *it);
+        std::string full_path = Path::join (fixel_directory_path, "index" + *it);
         if (Path::exists(full_path)) {
           if (header.valid())
-            throw InvalidFixelDirectoryException ("Multiple index images found in directory " + fixel_folder_path);
+            throw InvalidFixelDirectoryException ("Multiple index images found in directory " + fixel_directory_path);
           header = Header::open (full_path);
         }
       }
       if (!header.valid())
-        throw InvalidFixelDirectoryException ("Could not find index image in directory " + fixel_folder_path);
+        throw InvalidFixelDirectoryException ("Could not find index image in directory " + fixel_directory_path);
 
       check_index_image (header);
       return header;
     }
 
 
-    FORCE_INLINE std::vector<Header> find_data_headers (const std::string &fixel_folder_path, const Header &index_header, const bool include_directions = false)
+    FORCE_INLINE std::vector<Header> find_data_headers (const std::string &fixel_directory_path, const Header &index_header, const bool include_directions = false)
     {
       check_index_image (index_header);
-      auto dir_walker = Path::Dir (fixel_folder_path);
+      auto dir_walker = Path::Dir (fixel_directory_path);
       std::vector<std::string> file_names;
       {
         std::string temp;
@@ -213,7 +214,7 @@ namespace MR
       for (auto fname : file_names) {
         if (Path::has_suffix (fname, FixelFormat::supported_fixel_formats)) {
           try {
-            auto H = Header::open (Path::join (fixel_folder_path, fname));
+            auto H = Header::open (Path::join (fixel_directory_path, fname));
             if (is_data_file (H)) {
               if (fixels_match (index_header, H)) {
                 if (!is_directions_file (H) || include_directions)
@@ -233,24 +234,24 @@ namespace MR
 
 
 
-    FORCE_INLINE Header find_directions_header (const std::string fixel_folder_path)
+    FORCE_INLINE Header find_directions_header (const std::string fixel_directory_path)
     {
       bool directions_found (false);
       Header header;
-      check_fixel_folder (fixel_folder_path);
-      Header index_header = FixelFormat::find_index_header (fixel_folder_path);
+      check_fixel_directory (fixel_directory_path);
+      Header index_header = FixelFormat::find_index_header (fixel_directory_path);
 
-      auto dir_walker = Path::Dir (fixel_folder_path);
+      auto dir_walker = Path::Dir (fixel_directory_path);
       std::string fname;
       while ((fname = dir_walker.read_name ()).size ()) {
         Header tmp_header;
-        auto full_path = Path::join (fixel_folder_path, fname);
+        auto full_path = Path::join (fixel_directory_path, fname);
         if (Path::has_suffix (fname, FixelFormat::supported_fixel_formats)
               && is_directions_file (tmp_header = Header::open (full_path))) {
           if (is_directions_file (tmp_header)) {
             if (fixels_match (index_header, tmp_header)) {
               if (directions_found == true)
-                throw Exception ("multiple directions files found in fixel image folder: " + fixel_folder_path);
+                throw Exception ("multiple directions files found in fixel image directory: " + fixel_directory_path);
               directions_found = true;
               header = std::move(tmp_header);
             } else {
@@ -261,7 +262,7 @@ namespace MR
       }
 
       if (!directions_found)
-        throw InvalidFixelDirectoryException ("Could not find directions image in directory " + fixel_folder_path);
+        throw InvalidFixelDirectoryException ("Could not find directions image in directory " + fixel_directory_path);
 
       return header;
     }
@@ -287,54 +288,82 @@ namespace MR
       return header;
     }
 
-    //! Copy a file from one fixel folder into another.
-    FORCE_INLINE void copy_fixel_file (const std::string& input_file_path, const std::string& output_folder) {
-      check_fixel_folder (output_folder, true);
-      std::string output_path = Path::join (output_folder, Path::basename (input_file_path));
+    //! Copy a file from one fixel directory into another.
+    FORCE_INLINE void copy_fixel_file (const std::string& input_file_path, const std::string& output_directory) {
+      check_fixel_directory (output_directory, true);
+      std::string output_path = Path::join (output_directory, Path::basename (input_file_path));
       Header input_header = Header::open (input_file_path);
       auto input_image = input_header.get_image<float>();
       auto output_image = Image<float>::create (output_path, input_header);
       threaded_copy (input_image, output_image);
     }
 
-    //! Copy the index file from one fixel folder into another
-    FORCE_INLINE void copy_index_file (const std::string& input_folder, const std::string& output_folder) {
-      Header input_header = FixelFormat::find_index_header (input_folder);
-      check_fixel_folder (output_folder, true);
-      auto output_image = Image<uint32_t>::create (Path::join (output_folder, Path::basename (input_header.name())), input_header);
-      auto input_image = input_header.get_image<uint32_t>();
-      threaded_copy (input_image, output_image);
+    //! Copy the index file from one fixel directory into another
+    FORCE_INLINE void copy_index_file (const std::string& input_directory, const std::string& output_directory) {
+      Header input_header = FixelFormat::find_index_header (input_directory);
+      check_fixel_directory (output_directory, true);
+
+      std::string output_path = Path::join (output_directory, Path::basename (input_header.name()));
+
+      // If the index file already exists check it is the same as the input index file
+      if (Path::exists (output_path) && !App::overwrite_files) {
+        auto input_image = input_header.get_image<uint32_t>();
+        auto output_image = Image<uint32_t>::open (output_path);
+
+        if (!images_match_abs (input_image, output_image))
+          throw Exception ("output sparse image directory (" + output_directory + ") already contains index file, "
+                           "which is not the same as the expected output. Use -force to override if desired");
+
+      } else {
+        auto output_image = Image<uint32_t>::create (Path::join (output_directory, Path::basename (input_header.name())), input_header);
+        auto input_image = input_header.get_image<uint32_t>();
+        threaded_copy (input_image, output_image);
+      }
     }
 
-    //! Copy the directions file from one fixel folder into another.
-    FORCE_INLINE void copy_directions_file (const std::string& input_folder, const std::string& output_folder) {
-      Header directions_header = FixelFormat::find_directions_header (input_folder);
-      copy_fixel_file (directions_header.name(), output_folder);
+    //! Copy the directions file from one fixel directory into another.
+    FORCE_INLINE void copy_directions_file (const std::string& input_directory, const std::string& output_directory) {
+      Header input_header = FixelFormat::find_directions_header (input_directory);
+      std::string output_path = Path::join (output_directory, Path::basename (input_header.name()));
+
+      // If the index file already exists check it is the same as the input index file
+      if (Path::exists (output_path) && !App::overwrite_files) {
+        auto input_image = input_header.get_image<uint32_t>();
+        auto output_image = Image<uint32_t>::open (output_path);
+
+        if (!images_match_abs (input_image, output_image))
+          throw Exception ("output sparse image directory (" + output_directory + ") already contains a directions file, "
+                           "which is not the same as the expected output. Use -force to override if desired");
+
+      } else {
+        copy_fixel_file (input_header.name(), output_directory);
+      }
+
     }
 
-    FORCE_INLINE void copy_index_and_directions_file (const std::string& input_folder, const std::string &output_folder) {
-      copy_index_file (input_folder, output_folder);
-      copy_directions_file (input_folder, output_folder);
+    FORCE_INLINE void copy_index_and_directions_file (const std::string& input_directory, const std::string &output_directory) {
+      copy_index_file (input_directory, output_directory);
+      copy_directions_file (input_directory, output_directory);
     }
 
 
-    //! Copy all data files in a fixel folder into another folder. Data files do not include the index or directions file.
-    FORCE_INLINE void copy_all_data_files (const std::string &input_folder, const std::string &output_folder) {
-      for (auto& input_header : FixelFormat::find_data_headers (input_folder, FixelFormat::find_index_header (input_folder)))
-        copy_fixel_file (input_header.name(), output_folder);
+    //! Copy all data files in a fixel directory into another directory. Data files do not include the index or directions file.
+    FORCE_INLINE void copy_all_data_files (const std::string &input_directory, const std::string &output_directory) {
+      for (auto& input_header : FixelFormat::find_data_headers (input_directory, FixelFormat::find_index_header (input_directory)))
+        copy_fixel_file (input_header.name(), output_directory);
     }
 
-    //! open a data file. checks that a user has not input a fixel folder or index image
+    //! open a data file. checks that a user has not input a fixel directory or index image
     template <class ValueType>
     Image<ValueType> open_fixel_data_file (const std::string& input_file) {
       if (Path::is_dir (input_file))
-        throw Exception ("please input the specific fixel data file to be converted (not the fixel folder)");
+        throw Exception ("please input the specific fixel data file to be converted (not the fixel directory)");
 
       Header in_data_header = Header::open (input_file);
       FixelFormat::check_data_file (in_data_header);
       auto in_data_image = in_data_header.get_image<ValueType>();
 
-      Header in_index_header = FixelFormat::find_index_header (FixelFormat::get_fixel_folder (input_file));
+      Header in_index_header = FixelFormat::find_index_header (FixelFormat::get_fixel_directory (input_file));
       if (input_file == in_index_header.name())
         throw Exception ("input fixel data file cannot be the index file");
 

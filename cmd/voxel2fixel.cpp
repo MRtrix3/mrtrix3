@@ -37,8 +37,8 @@ void usage ()
 
   ARGUMENTS
   + Argument ("image_in",  "the input image.").type_image_in()
-  + Argument ("fixel_folder_in",  "the input fixel folder. Used to define the fixels and their directions").type_text()
-  + Argument ("fixel_folder_out", "the output fixel folder. This can be the same as the input folder if desired").type_text()
+  + Argument ("fixel_directory_in",  "the input fixel directory. Used to define the fixels and their directions").type_text()
+  + Argument ("fixel_directory_out", "the output fixel directory. This can be the same as the input directory if desired").type_text()
   + Argument ("fixel_data_out", "the name of the fixel data image.").type_image_out();
 }
 
@@ -46,20 +46,20 @@ void usage ()
 void run ()
 {
   auto scalar = Image<float>::open (argument[0]);
-  std::string input_fixel_folder = argument[1];
-  FixelFormat::check_fixel_folder (input_fixel_folder);
-  auto input_fixel_index = FixelFormat::find_index_header (input_fixel_folder).get_image<uint32_t>();
+  std::string input_fixel_directory = argument[1];
+  FixelFormat::check_fixel_directory (input_fixel_directory);
+  auto input_fixel_index = FixelFormat::find_index_header (input_fixel_directory).get_image<uint32_t>();
   check_dimensions (scalar, input_fixel_index, 0, 3);
 
-  std::string output_fixel_folder = argument[2];
-  if (input_fixel_folder != output_fixel_folder) {
-    ProgressBar progress ("copying fixel index and directions file into output folder");
+  std::string output_fixel_directory = argument[2];
+  if (input_fixel_directory != output_fixel_directory) {
+    ProgressBar progress ("copying fixel index and directions file into output directory");
     progress++;
-    FixelFormat::copy_index_and_directions_file (input_fixel_folder, output_fixel_folder);
+    FixelFormat::copy_index_and_directions_file (input_fixel_directory, output_fixel_directory);
     progress++;
   }
 
-  auto output_fixel_data = Image<float>::create (Path::join(output_fixel_folder, argument[3]), FixelFormat::data_header_from_index (input_fixel_index));
+  auto output_fixel_data = Image<float>::create (Path::join(output_fixel_directory, argument[3]), FixelFormat::data_header_from_index (input_fixel_index));
 
   for (auto v = Loop ("mapping voxel scalar values to fixels", 0, 3)(scalar, input_fixel_index); v; ++v) {
     for (auto f = FixelFormat::FixelLoop (input_fixel_index) (output_fixel_data); f; ++f)

@@ -416,7 +416,7 @@ void run ()
   if (in_data.size(2) != 1)
     throw Exception ("Input fixel data file must have a single scalar value per fixel (i.e. have dimensions Nx1x1)");
 
-  Header in_index_header = FixelFormat::find_index_header (FixelFormat::get_fixel_folder (argument[0]));
+  Header in_index_header = FixelFormat::find_index_header (FixelFormat::get_fixel_directory (argument[0]));
   auto in_index_image = in_index_header.get_image<uint32_t>();
 
   Image<float> in_directions;
@@ -446,7 +446,7 @@ void run ()
 
   if (op == 10 || op == 11 || op == 13)  // dec or split_dir
     in_directions = FixelFormat::find_directions_header (
-                    FixelFormat::get_fixel_folder (in_data.name())).get_image<float>().with_direct_io();
+                    FixelFormat::get_fixel_directory (in_data.name())).get_image<float>().with_direct_io();
 
   Image<float> in_vol;
   auto opt = get_options ("weighted");

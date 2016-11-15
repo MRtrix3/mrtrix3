@@ -10,7 +10,7 @@ Synopsis
 
     fixel2tsf [ options ]  fixel_in tracks tsf
 
--  *fixel_in*: the input fixel data file (within the fixel folder)
+-  *fixel_in*: the input fixel data file (within the fixel directory)
 -  *tracks*: the input track file 
 -  *tsf*: the output track scalar file
 

@@ -45,5 +45,4 @@ icons.cpp
 testing.log
 testing/build.log
 testing/release/
-testing/src/
 .__tmp.log
