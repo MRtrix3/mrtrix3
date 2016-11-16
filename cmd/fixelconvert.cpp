@@ -22,19 +22,19 @@
 
 #include "math/SH.h"
 
-#include "fixel_format/helpers.h"
-#include "fixel_format/keys.h"
-#include "fixel_format/loop.h"
-
-#include "sparse/fixel_metric.h"
+#include "sparse/helpers.h"
 #include "sparse/keys.h"
-#include "sparse/image.h"
+#include "sparse/loop.h"
+
+#include "sparse/legacy/fixel_metric.h"
+#include "sparse/legacy/keys.h"
+#include "sparse/legacy/image.h"
 
 
 using namespace MR;
 using namespace App;
 
-using Sparse::FixelMetric;
+using Sparse::Legacy::FixelMetric;
 
 
 void usage ()
@@ -72,10 +72,10 @@ void usage ()
 void convert_old2new ()
 {
   Header header (Header::open (argument[0]));
-  header.keyval().erase (Sparse::name_key);
-  header.keyval().erase (Sparse::size_key);
+  header.keyval().erase (Sparse::Legacy::name_key);
+  header.keyval().erase (Sparse::Legacy::size_key);
 
-  Sparse::Image<FixelMetric> input (argument[0]);
+  Sparse::Legacy::Image<FixelMetric> input (argument[0]);
 
   const std::string file_extension = get_options ("nii").size() ? ".nii" : ".mif";
 
@@ -87,7 +87,7 @@ void convert_old2new ()
   const bool output_size = get_options ("out_size").size();
 
   const std::string output_fixel_directory = argument[1];
-  FixelFormat::check_fixel_directory (output_fixel_directory, true);
+  Sparse::check_fixel_directory (output_fixel_directory, true);
 
   uint32_t fixel_count = 0;
   for (auto i = Loop (input) (input); i; ++i)
@@ -104,7 +104,7 @@ void convert_old2new ()
   Header directions_header (data_header);
   directions_header.size(1) = 3;
 
-  header.keyval()[FixelFormat::n_fixels_key] = str(fixel_count);
+  header.keyval()[Sparse::n_fixels_key] = str(fixel_count);
   header.ndim() = 4;
   header.size(3) = 2;
   header.datatype() = DataType::from<uint32_t>();
@@ -121,10 +121,10 @@ void convert_old2new ()
   Image<float> template_directions_image;
   opt = get_options ("template");
   if (opt.size()) {
-    FixelFormat::check_fixel_directory (opt[0][0]);
-    template_index_image = FixelFormat::find_index_header (opt[0][0]).get_image<uint32_t>();
+    Sparse::check_fixel_directory (opt[0][0]);
+    template_index_image = Sparse::find_index_header (opt[0][0]).get_image<uint32_t>();
     check_dimensions (index_image, template_index_image);
-    template_directions_image = FixelFormat::find_directions_header (opt[0][0]).get_image<float>();
+    template_directions_image = Sparse::find_directions_header (opt[0][0]).get_image<float>();
   }
 
   uint32_t offset = 0;
@@ -181,9 +181,9 @@ void convert_new2old ()
   opt = get_options ("in_size");
   const std::string size_path = opt.size() ? std::string(opt[0][0]) : "";
 
-  Header H_index = FixelFormat::find_index_header (input_fixel_directory);
-  Header H_dirs = FixelFormat::find_directions_header (input_fixel_directory);
-  std::vector<Header> H_data = FixelFormat::find_data_headers (input_fixel_directory, H_index, false);
+  Header H_index = Sparse::find_index_header (input_fixel_directory);
+  Header H_dirs = Sparse::find_directions_header (input_fixel_directory);
+  std::vector<Header> H_data = Sparse::find_data_headers (input_fixel_directory, H_index, false);
   size_t size_index = H_data.size(), value_index = H_data.size();
 
   for (size_t i = 0; i != H_data.size(); ++i) {
@@ -199,9 +199,9 @@ void convert_new2old ()
   H_out.ndim() = 3;
   H_out.datatype() = DataType::UInt64;
   H_out.datatype().set_byte_order_native();
-  H_out.keyval()[Sparse::name_key] = str(typeid(FixelMetric).name());
-  H_out.keyval()[Sparse::size_key] = str(sizeof(FixelMetric));
-  Sparse::Image<Sparse::FixelMetric> out_image (argument[1], H_out);
+  H_out.keyval()[Sparse::Legacy::name_key] = str(typeid(FixelMetric).name());
+  H_out.keyval()[Sparse::Legacy::size_key] = str(sizeof(FixelMetric));
+  Sparse::Legacy::Image<Sparse::Legacy::FixelMetric> out_image (argument[1], H_out);
 
   auto index_image = H_index.get_image<uint32_t>();
   auto dirs_image = H_dirs.get_image<float>();
@@ -214,14 +214,14 @@ void convert_new2old ()
     index_image.index(3) = 0;
     const uint32_t num_fixels = index_image.value();
     out_image.value().set_size (num_fixels);
-    for (auto f = FixelFormat::FixelLoop (index_image) (dirs_image, value_image); f; ++f) {
+    for (auto f = Sparse::FixelLoop (index_image) (dirs_image, value_image); f; ++f) {
       // Construct the direction
       Eigen::Vector3f dir;
       for (size_t axis = 0; axis != 3; ++axis) {
         dirs_image.index(1) = axis;
         dir[axis] = dirs_image.value();
       }
-      Sparse::FixelMetric fixel (dir, value_image.value(), value_image.value());
+      Sparse::Legacy::FixelMetric fixel (dir, value_image.value(), value_image.value());
       if (size_image.valid()) {
         assign_pos_of (value_image).to (size_image);
         fixel.size = size_image.value();

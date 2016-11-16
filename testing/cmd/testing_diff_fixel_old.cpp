@@ -25,7 +25,7 @@
 #include "sparse/fixel_metric.h"
 #include "image_helpers.h"
 #include "algo/threaded_loop.h"
-using MR::Sparse::FixelMetric;
+using MR::Sparse::Legacy::FixelMetric;
 
 using namespace MR;
 using namespace App;
@@ -46,8 +46,8 @@ void usage ()
 
 void run ()
 {
-  Sparse::Image<FixelMetric> buffer1 (argument[0]);
-  Sparse::Image<FixelMetric> buffer2 (argument[1]);
+  Sparse::Legacy::Image<FixelMetric> buffer1 (argument[0]);
+  Sparse::Legacy::Image<FixelMetric> buffer2 (argument[1]);
   check_dimensions (buffer1, buffer2);
   for (size_t i = 0; i < buffer1.ndim(); ++i) {
     if (std::isfinite (buffer1.spacing(i)))

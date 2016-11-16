@@ -22,9 +22,9 @@
 #include "transform.h"
 
 #include "algo/loop.h"
-#include "sparse/image.h"
-#include "sparse/fixel_metric.h"
-#include "fixel_format/helpers.h"
+#include "sparse/legacy/image.h"
+#include "sparse/legacy/fixel_metric.h"
+#include "sparse/helpers.h"
 
 #include "gui/mrview/displayable.h"
 #include "gui/mrview/tool/vector/vector.h"
@@ -319,7 +319,7 @@ namespace MR
             }
           };
 
-          typedef MR::Sparse::Image<MR::Sparse::FixelMetric> FixelSparseImageType;
+          typedef MR::Sparse::Legacy::Image<MR::Sparse::Legacy::FixelMetric> FixelSparseImageType;
           typedef MR::Image<float> FixelPackedImageType;
           typedef MR::Image<uint32_t> FixelIndexImageType;
        }

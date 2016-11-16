@@ -20,9 +20,9 @@
 
 #include "math/math.h"
 
-#include "sparse/fixel_metric.h"
-#include "sparse/image.h"
-#include "sparse/keys.h"
+#include "sparse/legacy/fixel_metric.h"
+#include "sparse/legacy/image.h"
+#include "sparse/legacy/keys.h"
 
 #include "dwi/tractography/SIFT2/coeff_optimiser.h"
 #include "dwi/tractography/SIFT2/fixel_updater.h"
@@ -384,20 +384,20 @@ namespace MR {
             maxs[i] = 0.0;
         }
 
-        using Sparse::FixelMetric;
+        using Sparse::Legacy::FixelMetric;
         Header H_fixel (Fixel_map<Fixel>::header());
         H_fixel.datatype() = DataType::UInt64;
         H_fixel.datatype().set_byte_order_native();
-        H_fixel.keyval()[Sparse::name_key] = str(typeid(FixelMetric).name());
-        H_fixel.keyval()[Sparse::size_key] = str(sizeof(FixelMetric));
+        H_fixel.keyval()[Sparse::Legacy::name_key] = str(typeid(FixelMetric).name());
+        H_fixel.keyval()[Sparse::Legacy::size_key] = str(sizeof(FixelMetric));
 
-        Sparse::Image<FixelMetric> count_image    (prefix + "_count.msf",        H_fixel);
-        Sparse::Image<FixelMetric> min_image      (prefix + "_coeff_min.msf",    H_fixel);
-        Sparse::Image<FixelMetric> mean_image     (prefix + "_coeff_mean.msf",   H_fixel);
-        Sparse::Image<FixelMetric> stdev_image    (prefix + "_coeff_stdev.msf",  H_fixel);
-        Sparse::Image<FixelMetric> max_image      (prefix + "_coeff_max.msf",    H_fixel);
-        Sparse::Image<FixelMetric> zeroed_image   (prefix + "_coeff_zeroed.msf", H_fixel);
-        Sparse::Image<FixelMetric> excluded_image (prefix + "_excluded.msf",     H_fixel);
+        Sparse::Legacy::Image<FixelMetric> count_image    (prefix + "_count.msf",        H_fixel);
+        Sparse::Legacy::Image<FixelMetric> min_image      (prefix + "_coeff_min.msf",    H_fixel);
+        Sparse::Legacy::Image<FixelMetric> mean_image     (prefix + "_coeff_mean.msf",   H_fixel);
+        Sparse::Legacy::Image<FixelMetric> stdev_image    (prefix + "_coeff_stdev.msf",  H_fixel);
+        Sparse::Legacy::Image<FixelMetric> max_image      (prefix + "_coeff_max.msf",    H_fixel);
+        Sparse::Legacy::Image<FixelMetric> zeroed_image   (prefix + "_coeff_zeroed.msf", H_fixel);
+        Sparse::Legacy::Image<FixelMetric> excluded_image (prefix + "_excluded.msf",     H_fixel);
 
         VoxelAccessor v (accessor());
         for (auto l = Loop(v) (v, count_image, min_image, mean_image, stdev_image, max_image, zeroed_image, excluded_image); l; ++l) {

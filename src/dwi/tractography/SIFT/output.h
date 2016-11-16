@@ -31,9 +31,9 @@
 
 #include "math/SH.h"
 
-#include "sparse/fixel_metric.h"
-#include "sparse/image.h"
-#include "sparse/keys.h"
+#include "sparse/legacy/fixel_metric.h"
+#include "sparse/legacy/image.h"
+#include "sparse/legacy/keys.h"
 
 
 namespace MR
@@ -98,13 +98,13 @@ namespace MR
       template <class Fixel>
       void ModelBase<Fixel>::output_target_image_fixel (const std::string& path) const
       {
-        using Sparse::FixelMetric;
+        using Sparse::Legacy::FixelMetric;
         Header H_fixel (Fixel_map<Fixel>::header());
         H_fixel.datatype() = DataType::UInt64;
         H_fixel.datatype().set_byte_order_native();
-        H_fixel.keyval()[Sparse::name_key] = str(typeid(FixelMetric).name());
-        H_fixel.keyval()[Sparse::size_key] = str(sizeof(FixelMetric));
-        Sparse::Image<FixelMetric> out (path, H_fixel);
+        H_fixel.keyval()[Sparse::Legacy::name_key] = str(typeid(FixelMetric).name());
+        H_fixel.keyval()[Sparse::Legacy::size_key] = str(sizeof(FixelMetric));
+        Sparse::Legacy::Image<FixelMetric> out (path, H_fixel);
         VoxelAccessor v (accessor());
         for (auto l = Loop (out) (out, v); l; ++l) {
           if (v.value()) {
@@ -192,14 +192,14 @@ namespace MR
       template <class Fixel>
       void ModelBase<Fixel>::output_tdi_fixel (const std::string& path) const
       {
-        using Sparse::FixelMetric;
+        using Sparse::Legacy::FixelMetric;
         const default_type current_mu = mu();
         Header H_fixel (Fixel_map<Fixel>::header());
         H_fixel.datatype() = DataType::UInt64;
         H_fixel.datatype().set_byte_order_native();
-        H_fixel.keyval()[Sparse::name_key] = str(typeid(FixelMetric).name());
-        H_fixel.keyval()[Sparse::size_key] = str(sizeof(FixelMetric));
-        Sparse::Image<FixelMetric> out (path, H_fixel);
+        H_fixel.keyval()[Sparse::Legacy::name_key] = str(typeid(FixelMetric).name());
+        H_fixel.keyval()[Sparse::Legacy::size_key] = str(sizeof(FixelMetric));
+        Sparse::Legacy::Image<FixelMetric> out (path, H_fixel);
         VoxelAccessor v (accessor());
         for (auto l = Loop (out) (out, v); l; ++l) {
           if (v.value()) {
@@ -244,15 +244,15 @@ namespace MR
       template <class Fixel>
       void ModelBase<Fixel>::output_error_fixel_images (const std::string& diff_path, const std::string& cost_path) const
       {
-        using Sparse::FixelMetric;
+        using Sparse::Legacy::FixelMetric;
         const default_type current_mu = mu();
         Header H_fixel (Fixel_map<Fixel>::header());
         H_fixel.datatype() = DataType::UInt64;
         H_fixel.datatype().set_byte_order_native();
-        H_fixel.keyval()[Sparse::name_key] = str(typeid(FixelMetric).name());
-        H_fixel.keyval()[Sparse::size_key] = str(sizeof(FixelMetric));
-        Sparse::Image<FixelMetric> out_diff (diff_path, H_fixel);
-        Sparse::Image<FixelMetric> out_cost (cost_path, H_fixel);
+        H_fixel.keyval()[Sparse::Legacy::name_key] = str(typeid(FixelMetric).name());
+        H_fixel.keyval()[Sparse::Legacy::size_key] = str(sizeof(FixelMetric));
+        Sparse::Legacy::Image<FixelMetric> out_diff (diff_path, H_fixel);
+        Sparse::Legacy::Image<FixelMetric> out_cost (cost_path, H_fixel);
         VoxelAccessor v (accessor());
         for (auto l = Loop (v) (v, out_diff, out_cost); l; ++l) {
           if (v.value()) {

@@ -20,8 +20,8 @@
 
 #include "image.h"
 
-#include "fixel_format/helpers.h"
-#include "fixel_format/keys.h"
+#include "sparse/helpers.h"
+#include "sparse/keys.h"
 
 using namespace MR;
 using namespace App;
@@ -48,18 +48,18 @@ void usage ()
 void run ()
 {
   const auto in_directory = argument[0];
-  FixelFormat::check_fixel_directory (in_directory);
-  Header in_index_header = FixelFormat::find_index_header (in_directory);
+  Sparse::check_fixel_directory (in_directory);
+  Header in_index_header = Sparse::find_index_header (in_directory);
   auto in_index_image = in_index_header.get_image <uint32_t>();
 
   auto mask_image = Image<bool>::open (argument[1]);
-  FixelFormat::check_fixel_size (in_index_image, mask_image);
+  Sparse::check_fixel_size (in_index_image, mask_image);
 
   const auto out_fixel_directory = argument[2];
-  FixelFormat::check_fixel_directory (out_fixel_directory, true);
+  Sparse::check_fixel_directory (out_fixel_directory, true);
 
   Header out_header = Header (in_index_image);
-  size_t total_nfixels = std::stoul (out_header.keyval ()[FixelFormat::n_fixels_key]);
+  size_t total_nfixels = std::stoul (out_header.keyval ()[Sparse::n_fixels_key]);
 
   // We need to do a first pass of the mask image to determine the number of cropped fixels
   for (auto l = Loop (0) (mask_image); l; ++l) {
@@ -67,12 +67,12 @@ void run ()
       total_nfixels --;
   }
 
-  out_header.keyval ()[FixelFormat::n_fixels_key] = str (total_nfixels);
+  out_header.keyval ()[Sparse::n_fixels_key] = str (total_nfixels);
   auto out_index_image = Image<uint32_t>::create (Path::join (out_fixel_directory, Path::basename (in_index_image.name())), out_header);
 
 
   // Open all data images and create output date images with size equal to expected number of fixels
-  std::vector<Header> in_headers = FixelFormat::find_data_headers (in_directory, in_index_header, true);
+  std::vector<Header> in_headers = Sparse::find_data_headers (in_directory, in_index_header, true);
   std::vector<Image<float> > in_data_images;
   std::vector<Image<float> > out_data_images;
   for (auto& in_data_header : in_headers) {

@@ -26,7 +26,7 @@ namespace MR
 
 
 
-    void Sparse::load (const Header& header, size_t)
+    void SparseLegacy::load (const Header& header, size_t)
     {
 
       Default::load (header,0);
@@ -77,7 +77,7 @@ namespace MR
 
 
 
-    void Sparse::unload (const Header& header)
+    void SparseLegacy::unload (const Header& header)
     {
 
       Default::unload (header);
@@ -103,7 +103,7 @@ namespace MR
 
 
 
-    uint64_t Sparse::set_numel (const uint64_t old_offset, const uint32_t numel)
+    uint64_t SparseLegacy::set_numel (const uint64_t old_offset, const uint32_t numel)
     {
       assert (is_image_readwrite());
 

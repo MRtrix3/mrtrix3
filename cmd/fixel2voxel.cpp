@@ -26,9 +26,9 @@
 
 #include "math/SH.h"
 
-#include "fixel_format/helpers.h"
-#include "fixel_format/keys.h"
-#include "fixel_format/loop.h"
+#include "sparse/helpers.h"
+#include "sparse/keys.h"
+#include "sparse/loop.h"
 
 using namespace MR;
 using namespace App;
@@ -99,7 +99,7 @@ class Mean
       default_type sum = 0.0;
       default_type sum_volumes = 0.0;
       if (vol.valid()) {
-        for (auto f = FixelFormat::FixelLoop (index) (data, vol); f; ++f) {
+        for (auto f = Sparse::FixelLoop (index) (data, vol); f; ++f) {
           sum += data.value() * vol.value();
           sum_volumes += vol.value();
         }
@@ -107,7 +107,7 @@ class Mean
       } else {
         index.index(3) = 0;
         size_t num_fixels = index.value();
-        for (auto f = FixelFormat::FixelLoop (index) (data); f; ++f)
+        for (auto f = Sparse::FixelLoop (index) (data); f; ++f)
           sum += data.value();
         out.value() = num_fixels ? (sum / default_type(num_fixels)) : 0.0;
       }
@@ -127,10 +127,10 @@ class Sum
     {
 
       if (vol.valid()) {
-        for (auto f = FixelFormat::FixelLoop (index) (data, vol); f; ++f)
+        for (auto f = Sparse::FixelLoop (index) (data, vol); f; ++f)
           out.value() += data.value() * vol.value();
       } else {
-        for (auto f = FixelFormat::FixelLoop (index) (data); f; ++f)
+        for (auto f = Sparse::FixelLoop (index) (data); f; ++f)
           out.value() += data.value();
       }
     }
@@ -176,7 +176,7 @@ class Min
     void operator() (Image<uint32_t>& index, Image<float>& out)
     {
       default_type min = std::numeric_limits<default_type>::infinity();
-      for (auto f = FixelFormat::FixelLoop (index) (data); f; ++f) {
+      for (auto f = Sparse::FixelLoop (index) (data); f; ++f) {
         if (data.value() < min)
           min = data.value();
       }
@@ -196,7 +196,7 @@ class Max
     void operator() (Image<uint32_t>& index, Image<float>& out)
     {
       default_type max = -std::numeric_limits<default_type>::infinity();
-      for (auto f = FixelFormat::FixelLoop (index) (data); f; ++f) {
+      for (auto f = Sparse::FixelLoop (index) (data); f; ++f) {
         if (data.value() > max)
           max = data.value();
       }
@@ -216,7 +216,7 @@ class AbsMax
     void operator() (Image<uint32_t>& index, Image<float>& out)
     {
       default_type absmax = -std::numeric_limits<default_type>::infinity();
-      for (auto f = FixelFormat::FixelLoop (index) (data); f; ++f) {
+      for (auto f = Sparse::FixelLoop (index) (data); f; ++f) {
         if (std::abs (data.value()) > absmax)
           absmax = std::abs (data.value());
       }
@@ -236,7 +236,7 @@ class MagMax
     void operator() (Image<uint32_t>& index, Image<float>& out)
     {
       default_type magmax = 0.0;
-      for (auto f = FixelFormat::FixelLoop (index) (data); f; ++f) {
+      for (auto f = Sparse::FixelLoop (index) (data); f; ++f) {
         if (std::abs (data.value()) > std::abs (magmax))
           magmax = data.value();
       }
@@ -263,7 +263,7 @@ class Complexity
       }
       default_type max = 0.0;
       default_type sum = 0.0;
-      for (auto f = FixelFormat::FixelLoop (index) (data); f; ++f) {
+      for (auto f = Sparse::FixelLoop (index) (data); f; ++f) {
         max = std::max (max, default_type(data.value()));
         sum += data.value();
       }
@@ -283,7 +283,7 @@ class SF
     {
       default_type max = 0.0;
       default_type sum = 0.0;
-      for (auto f = FixelFormat::FixelLoop (index) (data); f; ++f) {
+      for (auto f = Sparse::FixelLoop (index) (data); f; ++f) {
         max = std::max (max, default_type(data.value()));
         sum += data.value();
       }
@@ -304,10 +304,10 @@ class DEC_unit
     {
       Eigen::Vector3 sum_dec = {0.0, 0.0, 0.0};
       if (vol.valid()) {
-        for (auto f = FixelFormat::FixelLoop (index) (data, vol, dir); f; ++f)
+        for (auto f = Sparse::FixelLoop (index) (data, vol, dir); f; ++f)
           sum_dec += Eigen::Vector3 (std::abs (dir.row(1)[0]), std::abs (dir.row(1)[1]), std::abs (dir.row(1)[2])) * data.value() * vol.value();
       } else {
-        for (auto f = FixelFormat::FixelLoop (index) (data, dir); f; ++f)
+        for (auto f = Sparse::FixelLoop (index) (data, dir); f; ++f)
           sum_dec += Eigen::Vector3 (std::abs (dir.row(1)[0]), std::abs (dir.row(1)[1]), std::abs (dir.row(1)[2])) * data.value();
       }
       if ((sum_dec.array() != 0.0).any())
@@ -332,7 +332,7 @@ class DEC_scaled
       default_type sum_value = 0.0;
       if (vol.valid()) {
         default_type sum_volume = 0.0;
-        for (auto f = FixelFormat::FixelLoop (index) (data, vol, dir); f; ++f) {
+        for (auto f = Sparse::FixelLoop (index) (data, vol, dir); f; ++f) {
           sum_dec += Eigen::Vector3 (std::abs (dir.row(1)[0]), std::abs (dir.row(1)[1]), std::abs (dir.row(1)[2])) * data.value() * vol.value();
           sum_volume += vol.value();
           sum_value += vol.value() * data.value();
@@ -341,7 +341,7 @@ class DEC_scaled
           sum_dec.normalize();
         sum_dec *= (sum_value / sum_volume);
       } else {
-        for (auto f = FixelFormat::FixelLoop (index) (data, dir); f; ++f) {
+        for (auto f = Sparse::FixelLoop (index) (data, dir); f; ++f) {
           sum_dec += Eigen::Vector3 (std::abs (dir.row(1)[0]), std::abs (dir.row(1)[1]), std::abs (dir.row(1)[2])) * data.value();
           sum_value += data.value();
         }
@@ -390,7 +390,7 @@ class SplitDir
     void operator() (Image<uint32_t>& index, Image<float>& out)
     {
       out.index(3) = 0;
-      for (auto f = FixelFormat::FixelLoop (index) (dir); f; ++f) {
+      for (auto f = Sparse::FixelLoop (index) (dir); f; ++f) {
         for (size_t axis = 0; axis < 3; ++axis) {
           dir.index(1) = axis;
           out.value() = dir.value();
@@ -412,11 +412,11 @@ class SplitDir
 
 void run ()
 {
-  auto in_data = FixelFormat::open_fixel_data_file<float> (argument[0]);
+  auto in_data = Sparse::open_fixel_data_file<float> (argument[0]);
   if (in_data.size(2) != 1)
     throw Exception ("Input fixel data file must have a single scalar value per fixel (i.e. have dimensions Nx1x1)");
 
-  Header in_index_header = FixelFormat::find_index_header (FixelFormat::get_fixel_directory (argument[0]));
+  Header in_index_header = Sparse::find_index_header (Sparse::get_fixel_directory (argument[0]));
   auto in_index_image = in_index_header.get_image<uint32_t>();
 
   Image<float> in_directions;
@@ -426,7 +426,7 @@ void run ()
   Header H_out (in_index_header);
   H_out.datatype() = DataType::Float32;
   H_out.datatype().set_byte_order_native();
-  H_out.keyval().erase (FixelFormat::n_fixels_key);
+  H_out.keyval().erase (Sparse::n_fixels_key);
   if (op == 7) { // count
     H_out.datatype() = DataType::UInt8;
   } else if (op == 10 || op == 11) { // dec
@@ -445,8 +445,8 @@ void run ()
   }
 
   if (op == 10 || op == 11 || op == 13)  // dec or split_dir
-    in_directions = FixelFormat::find_directions_header (
-                    FixelFormat::get_fixel_directory (in_data.name())).get_image<float>().with_direct_io();
+    in_directions = Sparse::find_directions_header (
+                    Sparse::get_fixel_directory (in_data.name())).get_image<float>().with_direct_io();
 
   Image<float> in_vol;
   auto opt = get_options ("weighted");

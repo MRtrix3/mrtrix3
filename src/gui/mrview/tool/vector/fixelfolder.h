@@ -29,7 +29,7 @@ namespace MR
         {
           public:
             FixelFolder (const std::string& filename, Vector& fixel_tool) :
-              FixelType (FixelFormat::find_index_header (Path::dirname (filename)).name (), fixel_tool)
+              FixelType (Sparse::find_index_header (Path::dirname (filename)).name (), fixel_tool)
             {
               value_types = {"unity"};
               colour_types = {"direction"};

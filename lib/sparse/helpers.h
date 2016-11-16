@@ -13,11 +13,11 @@
  *
  */
 
-#ifndef __fixel_helpers_h__
-#define __fixel_helpers_h__
+#ifndef __sparse_helpers_h__
+#define __sparse_helpers_h__
 
 #include "formats/mrtrix_utils.h"
-#include "fixel_format/keys.h"
+#include "sparse/keys.h"
 #include "algo/loop.h"
 #include "image_diff.h"
 
@@ -31,15 +31,15 @@ namespace MR
         : Exception(previous_exception, msg) {}
   };
 
-  namespace FixelFormat
+  namespace Sparse
   {
     FORCE_INLINE bool is_index_image (const Header& in)
     {
       bool is_index = false;
       if (in.ndim() == 4) {
         if (in.size(3) == 2) {
-          for (std::initializer_list<const std::string>::iterator it = FixelFormat::supported_fixel_formats.begin();
-               it != FixelFormat::supported_fixel_formats.end(); ++it) {
+          for (std::initializer_list<const std::string>::iterator it = supported_sparse_formats.begin();
+               it != supported_sparse_formats.end(); ++it) {
             if (Path::basename (in.name()) == "index" + *it)
               is_index = true;
           }
@@ -67,8 +67,8 @@ namespace MR
       bool is_directions = false;
       if (in.ndim() == 3) {
         if (in.size(1) == 3 && in.size(2) == 1) {
-          for (std::initializer_list<const std::string>::iterator it = FixelFormat::supported_fixel_formats.begin();
-               it != FixelFormat::supported_fixel_formats.end(); ++it) {
+          for (std::initializer_list<const std::string>::iterator it = supported_sparse_formats.begin();
+               it != supported_sparse_formats.end(); ++it) {
             if (Path::basename (in.name()) == "directions" + *it)
               is_directions = true;
           }
@@ -181,8 +181,8 @@ namespace MR
       Header header;
       check_fixel_directory (fixel_directory_path);
 
-      for (std::initializer_list<const std::string>::iterator it = FixelFormat::supported_fixel_formats.begin();
-           it != FixelFormat::supported_fixel_formats.end(); ++it) {
+      for (std::initializer_list<const std::string>::iterator it = supported_sparse_formats.begin();
+           it !=supported_sparse_formats.end(); ++it) {
         std::string full_path = Path::join (fixel_directory_path, "index" + *it);
         if (Path::exists(full_path)) {
           if (header.valid())
@@ -212,7 +212,7 @@ namespace MR
 
       std::vector<Header> data_headers;
       for (auto fname : file_names) {
-        if (Path::has_suffix (fname, FixelFormat::supported_fixel_formats)) {
+        if (Path::has_suffix (fname, supported_sparse_formats)) {
           try {
             auto H = Header::open (Path::join (fixel_directory_path, fname));
             if (is_data_file (H)) {
@@ -239,14 +239,14 @@ namespace MR
       bool directions_found (false);
       Header header;
       check_fixel_directory (fixel_directory_path);
-      Header index_header = FixelFormat::find_index_header (fixel_directory_path);
+      Header index_header = Sparse::find_index_header (fixel_directory_path);
 
       auto dir_walker = Path::Dir (fixel_directory_path);
       std::string fname;
       while ((fname = dir_walker.read_name ()).size ()) {
         Header tmp_header;
         auto full_path = Path::join (fixel_directory_path, fname);
-        if (Path::has_suffix (fname, FixelFormat::supported_fixel_formats)
+        if (Path::has_suffix (fname, supported_sparse_formats)
               && is_directions_file (tmp_header = Header::open (full_path))) {
           if (is_directions_file (tmp_header)) {
             if (fixels_match (index_header, tmp_header)) {
@@ -300,7 +300,7 @@ namespace MR
 
     //! Copy the index file from one fixel directory into another
     FORCE_INLINE void copy_index_file (const std::string& input_directory, const std::string& output_directory) {
-      Header input_header = FixelFormat::find_index_header (input_directory);
+      Header input_header = Sparse::find_index_header (input_directory);
       check_fixel_directory (output_directory, true);
 
       std::string output_path = Path::join (output_directory, Path::basename (input_header.name()));
@@ -323,7 +323,7 @@ namespace MR
 
     //! Copy the directions file from one fixel directory into another.
     FORCE_INLINE void copy_directions_file (const std::string& input_directory, const std::string& output_directory) {
-      Header input_header = FixelFormat::find_directions_header (input_directory);
+      Header input_header = Sparse::find_directions_header (input_directory);
       std::string output_path = Path::join (output_directory, Path::basename (input_header.name()));
 
       // If the index file already exists check it is the same as the input index file
@@ -349,7 +349,7 @@ namespace MR
 
     //! Copy all data files in a fixel directory into another directory. Data files do not include the index or directions file.
     FORCE_INLINE void copy_all_data_files (const std::string &input_directory, const std::string &output_directory) {
-      for (auto& input_header : FixelFormat::find_data_headers (input_directory, FixelFormat::find_index_header (input_directory)))
+      for (auto& input_header : Sparse::find_data_headers (input_directory, Sparse::find_index_header (input_directory)))
         copy_fixel_file (input_header.name(), output_directory);
     }
 
@@ -360,10 +360,10 @@ namespace MR
         throw Exception ("please input the specific fixel data file to be converted (not the fixel directory)");
 
       Header in_data_header = Header::open (input_file);
-      FixelFormat::check_data_file (in_data_header);
+      Sparse::check_data_file (in_data_header);
       auto in_data_image = in_data_header.get_image<ValueType>();
 
-      Header in_index_header = FixelFormat::find_index_header (FixelFormat::get_fixel_directory (input_file));
+      Header in_index_header = Sparse::find_index_header (Sparse::get_fixel_directory (input_file));
       if (input_file == in_index_header.name())
         throw Exception ("input fixel data file cannot be the index file");
 
