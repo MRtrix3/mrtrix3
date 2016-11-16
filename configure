@@ -215,7 +215,7 @@ global cpp, cpp_cmd, ld, ld_args, ld_cmd
 
 cxx = [ 'g++' ]
 cxx_args = '-c CFLAGS SRC -o OBJECT'.split()
-cpp_flags = [ '-std=c++11', '-mno-avx' ]
+cpp_flags = [ '-std=c++11' ]
 
 ld_args = 'OBJECTS LDFLAGS -o EXECUTABLE'.split()
 ld_flags = [ ]
@@ -775,7 +775,7 @@ int main (int argc, char* argv[])
 
 ''', cpp_flags, ld_flags)
 
-  cpp_flags += [ '-DMRTRIX_ALLOC_MEMALIGN='+memalign ]
+  cpp_flags += [ '-DMRTRIX_ALLOC_MEM_ALIGN='+memalign ]
   report (memalign + ' byte\n')
 except CompileError:
   error (''' error compiling application!
