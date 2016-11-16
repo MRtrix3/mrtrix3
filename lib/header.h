@@ -42,8 +42,7 @@ namespace MR
 
   template <typename ValueType> class Image;
 
-  class Header 
-  {
+  class Header { MEM_ALIGN
     public:
       class Axis;
 

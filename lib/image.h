@@ -35,7 +35,7 @@ namespace MR
 
 
   template <typename ValueType>
-    class Image {
+    class Image { MEM_ALIGN
       public:
         typedef ValueType value_type;
         class Buffer;
@@ -214,6 +214,7 @@ namespace MR
         size_t data_offset;
     };
 
+  CHECK_MEM_ALIGN (Image<float>);
 
 
 
@@ -221,8 +222,7 @@ namespace MR
 
 
   template <typename ValueType> 
-    class Image<ValueType>::Buffer : public Header
-    {
+    class Image<ValueType>::Buffer : public Header { NO_MEM_ALIGN
       public:
         //! construct a Buffer object to access the data in the image specified
         Buffer (Header& H, bool read_write_if_existing = false);
@@ -257,6 +257,7 @@ namespace MR
         }
     };
 
+  CHECK_MEM_ALIGN (Image<float>::Buffer);
 
 
 
@@ -276,7 +277,7 @@ namespace MR
 
     // lightweight struct to copy data into:
     template <typename ValueType>
-      struct TmpImage {
+      struct TmpImage { NO_MEM_ALIGN
         typedef ValueType value_type;
 
         const typename Image<ValueType>::Buffer& b;
@@ -299,6 +300,8 @@ namespace MR
         FORCE_INLINE auto value () -> decltype (Helper::value (*this)) { return { *this }; }
         FORCE_INLINE void set_value (ValueType val) { Raw::store_native<ValueType> (val, data, offset); }
       };
+    
+    CHECK_MEM_ALIGN (TmpImage<float>);
 
   }
 

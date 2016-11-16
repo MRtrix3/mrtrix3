@@ -86,6 +86,7 @@ void run ()
 {
   auto sh_data = Image<value_type>::open(argument[0]);
   Math::SH::check (sh_data);
+  sh_data.__check_memalign();
 
   Header amp_header (sh_data);
 
