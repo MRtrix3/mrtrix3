@@ -45,4 +45,6 @@ icons.cpp
 testing.log
 testing/build.log
 testing/release/
+testing/src/project_version.h
+testing/build
 .__tmp.log

@@ -12,7 +12,7 @@ Synopsis
 
 -  *fixel_in*: the fixel directory
 -  *warp*: a 4D deformation field used to perform reorientation. Reorientation is performed by applying the Jacobian affine transform in each voxel in the warp, then re-normalising the vector representing the fixel direction
--  *fixel_out*: the output fixel directory. If the the input and output directorys are the same, the existing directions file will be replaced (providing the --force option is supplied). If a new directory is supplied then all fixel data will be copied to the new directory.
+-  *fixel_out*: the output fixel directory. If the the input and output directorys are the same, the existing directions file will be replaced (providing the --force option is supplied). If a new directory is supplied then the fixel directions and all other fixel data will be copied to the new directory.
 
 Description
 -----------
