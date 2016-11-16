@@ -67,7 +67,7 @@ namespace MR {
             }
 
             bool try_lock(const point_type& pos) {
-                return lock.try_lock(pos, idx);
+              return lock.try_lock(pos, idx);
             }
 
             bool operator!() const {
@@ -92,19 +92,22 @@ namespace MR {
             ssize_t i = 0;
             point_type d;
             for (auto& x : lockcentres) {
-              i++;
-              d = x.first - pos;
               if (x.second) {
+                d = x.first - pos;
                 if ((std::fabs(d[0]) < _tx) && (std::fabs(d[1]) < _ty) && (std::fabs(d[2]) < _tz))
                   return false;
               } else {
                 idx = i;
               }
+              i++;
             }
-            if (idx == -1)
+            if (idx == -1) {
+              idx = lockcentres.size();
               lockcentres.emplace_back(pos, true);
-            else
+            } else {
               lockcentres[idx].first = pos;
+              lockcentres[idx].second = true;
+            }
             return true;
           }
 
