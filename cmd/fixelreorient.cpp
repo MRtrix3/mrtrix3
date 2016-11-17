@@ -24,8 +24,8 @@
 using namespace MR;
 using namespace App;
 
-#include "sparse/helpers.h"
-#include "sparse/keys.h"
+#include "formats/fixel/helpers.h"
+#include "formats/fixel/keys.h"
 
 void usage ()
 {

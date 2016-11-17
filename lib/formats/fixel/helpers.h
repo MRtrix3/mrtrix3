@@ -13,11 +13,11 @@
  *
  */
 
-#ifndef __sparse_helpers_h__
-#define __sparse_helpers_h__
+#ifndef __formats_fixel_helpers_h__
+#define __formats_fixel_helpers_h__
 
 #include "formats/mrtrix_utils.h"
-#include "sparse/keys.h"
+#include "formats/fixel/keys.h"
 #include "algo/loop.h"
 #include "image_diff.h"
 

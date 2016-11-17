@@ -13,8 +13,8 @@
  * 
  */
 
-#ifndef __sparse_legacy_keys_h__
-#define __sparse_legacy_keys_h__
+#ifndef __formats_fixel_legacy_keys_h__
+#define __formats_fixel_legacy_keys_h__
 
 #include <string>
 

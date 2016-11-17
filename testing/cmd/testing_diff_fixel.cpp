@@ -18,7 +18,7 @@
 
 
 #include "image.h"
-#include "sparse/helpers.h"
+#include "formats/fixel/helpers.h"
 
 #include "diff_images.h"
 

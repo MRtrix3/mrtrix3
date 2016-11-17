@@ -21,9 +21,9 @@
 #include "dwi/tractography/rng.h"
 #include "dwi/tractography/seeding/dynamic.h"
 
-#include "sparse/legacy/fixel_metric.h"
-#include "sparse/legacy/keys.h"
-#include "sparse/legacy/image.h"
+#include "formats/fixel/legacy/fixel_metric.h"
+#include "formats/fixel/legacy/keys.h"
+#include "formats/fixel/legacy/image.h"
 
 
 

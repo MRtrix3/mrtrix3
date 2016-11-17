@@ -19,8 +19,8 @@
 
 #include "image.h"
 
-#include "sparse/keys.h"
-#include "sparse/helpers.h"
+#include "formats/fixel/keys.h"
+#include "formats/fixel/helpers.h"
 
 #include "math/SH.h"
 

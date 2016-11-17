@@ -13,18 +13,18 @@
  * 
  */
 
-#ifndef __sparse_legacy_image_h__
-#define __sparse_legacy_image_h__
+#ifndef __formats_fixel_legacy_image_h__
+#define __formats_fixel_legacy_image_h__
 
 #include <typeinfo>
 
 #include "image.h"
 #include "header.h"
 #include "image_io/sparse.h"
-#include "sparse/legacy/keys.h"
+#include "formats/fixel/legacy/keys.h"
 
 #ifndef __image_h__
-#error File that #includes "sparse/legacy/image.h" must explicitly #include "image.h" beforehand
+#error File that #includes "formats/fixel/legacy/image.h" must explicitly #include "image.h" beforehand
 #endif
 
 

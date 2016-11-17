@@ -13,8 +13,8 @@
  * 
  */
 
-#ifndef __sparse_legacy_metric_h__
-#define __sparse_legacy_metric_h__
+#ifndef __formats_fixel_legacy_metric_h__
+#define __formats_fixel_legacy_metric_h__
 
 #include "types.h"
 

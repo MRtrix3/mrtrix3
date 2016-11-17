@@ -22,9 +22,9 @@
 #include "transform.h"
 
 #include "algo/loop.h"
-#include "sparse/legacy/image.h"
-#include "sparse/legacy/fixel_metric.h"
-#include "sparse/helpers.h"
+#include "formats/fixel/legacy/image.h"
+#include "formats/fixel/legacy/fixel_metric.h"
+#include "formats/fixel/helpers.h"
 
 #include "gui/mrview/displayable.h"
 #include "gui/mrview/tool/vector/vector.h"

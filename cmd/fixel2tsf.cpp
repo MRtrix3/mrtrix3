@@ -19,8 +19,8 @@
 #include "algo/loop.h"
 
 #include "image.h"
-#include "sparse/helpers.h"
-#include "sparse/keys.h"
+#include "formats/fixel/helpers.h"
+#include "formats/fixel/keys.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/scalar_file.h"

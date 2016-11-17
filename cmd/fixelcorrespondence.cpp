@@ -18,8 +18,8 @@
 #include "progressbar.h"
 #include "algo/loop.h"
 #include "image.h"
-#include "sparse/helpers.h"
-#include "sparse/keys.h"
+#include "formats/fixel/helpers.h"
+#include "formats/fixel/keys.h"
 
 using namespace MR;
 using namespace App;

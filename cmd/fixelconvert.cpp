@@ -22,13 +22,13 @@
 
 #include "math/SH.h"
 
-#include "sparse/helpers.h"
-#include "sparse/keys.h"
-#include "sparse/loop.h"
+#include "formats/fixel/helpers.h"
+#include "formats/fixel/keys.h"
+#include "formats/fixel/loop.h"
 
-#include "sparse/legacy/fixel_metric.h"
-#include "sparse/legacy/keys.h"
-#include "sparse/legacy/image.h"
+#include "formats/fixel/legacy/fixel_metric.h"
+#include "formats/fixel/legacy/keys.h"
+#include "formats/fixel/legacy/image.h"
 
 
 using namespace MR;

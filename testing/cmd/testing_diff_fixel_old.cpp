@@ -21,8 +21,8 @@
 
 
 #include "image.h"
-#include "sparse/image.h"
-#include "sparse/fixel_metric.h"
+#include "formats/fixel/image.h"
+#include "formats/fixel/fixel_metric.h"
 #include "image_helpers.h"
 #include "algo/threaded_loop.h"
 using MR::Sparse::Legacy::FixelMetric;

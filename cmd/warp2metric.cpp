@@ -20,9 +20,9 @@
 #include "image.h"
 #include "adapter/jacobian.h"
 #include "registration/warp/helpers.h"
-#include "sparse/helpers.h"
-#include "sparse/keys.h"
-#include "sparse/loop.h"
+#include "formats/fixel/helpers.h"
+#include "formats/fixel/keys.h"
+#include "formats/fixel/loop.h"
 
 using namespace MR;
 using namespace App;

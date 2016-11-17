@@ -41,7 +41,7 @@ namespace MR
     // A quick description of how the sparse image data are currently stored:
     // * The data are either after the image data within the same file if extension is .msf, or
     //     in a separate file with the .sdat extension if the image extension if .msh
-    // * The image header must store the fields defined in lib/image/sparse/key.h
+    // * The image header must store the fields defined in lib/image/formats/fixel/key.h
     //     These are currently verified on construction of the BufferSparse class. This proved to
     //     be simpler than trying to verify class matching on every interaction with the handler
     //     using templated functions.
