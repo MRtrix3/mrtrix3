@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 
 
@@ -174,17 +174,17 @@ inline void copy_permute (Header& header_in, Header& header_out, const std::vect
     auto out = Header::create (output_filename, header_out).get_image<T>();
     DWI::export_grad_commandline (out);
 
-    auto perm = Adapter::make <Adapter::PermuteAxes> (in, axes); 
+    auto perm = Adapter::make <Adapter::PermuteAxes> (in, axes);
     threaded_copy_with_progress (perm, out, 0, std::numeric_limits<size_t>::max(), 2);
 
   } else {
 
-    auto extract = Adapter::make<Adapter::Extract> (in, pos); 
+    auto extract = Adapter::make<Adapter::Extract> (in, pos);
     const auto axes = set_header (header_out, extract);
     auto out = Image<T>::create (output_filename, header_out);
     DWI::export_grad_commandline (out);
 
-    auto perm = Adapter::make <Adapter::PermuteAxes> (extract, axes); 
+    auto perm = Adapter::make <Adapter::PermuteAxes> (extract, axes);
     threaded_copy_with_progress (perm, out, 0, std::numeric_limits<size_t>::max(), 2);
 
   }
@@ -224,6 +224,12 @@ void run ()
       if (pos[axis].size())
         throw Exception ("\"coord\" option specified twice for axis " + str (axis));
       pos[axis] = parse_ints (opt[n][1], header_in.size(axis)-1);
+      auto minval = std::min_element(std::begin(pos[axis]), std::end(pos[axis]));
+      if (*minval < 0)
+        throw Exception ("coordinate position " + str(*minval) + " for axis " + str(axis) + " provided with -coord option is negative");
+      auto maxval = std::max_element(std::begin(pos[axis]), std::end(pos[axis]));
+      if (*maxval >= header_in.size(axis))
+        throw Exception ("coordinate position " + str(*maxval) + " for axis " + str(axis) + " provided with -coord option is out of range of input image");
       auto grad = DWI::get_DW_scheme (header_out);
       if (axis == 3 && grad.rows()) {
         if ((ssize_t)grad.rows() != header_in.size(3)) {
@@ -253,7 +259,7 @@ void run ()
   if (opt.size()) {
     if (header_out.datatype().is_integer()) {
       std::vector<default_type> scaling = opt[0][0];
-      if (scaling.size() != 2) 
+      if (scaling.size() != 2)
         throw Exception ("-scaling option expects comma-separated 2-vector of floating-point values");
       header_out.intensity_offset() = scaling[0];
       header_out.intensity_scale()  = scaling[1];

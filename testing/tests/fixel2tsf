@@ -1,1 +1,1 @@
-fixel2tsf afd.msf tracks.tck tmp.tsf -force; testing_diff_tsf tmp.tsf fixel2tsf/out.tsf 0
+fixel2tsf afd.msf tracks.tck tmp.tsf -force && testing_diff_tsf tmp.tsf fixel2tsf/out.tsf -frac 1e-5

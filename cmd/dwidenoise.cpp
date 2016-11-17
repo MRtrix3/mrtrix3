@@ -42,27 +42,13 @@ void usage ()
   AUTHOR = "Daan Christiaens (daan.christiaens@kuleuven.be) & Jelle Veraart (jelle.veraart@nyumc.org) & J-Donald Tournier (jdtournier@gmail.com)";
   
   REFERENCES
-    + "Veraart, J.; Fieremans, E. & Novikov, D.S. "
-    "Diffusion MRI noise mapping using random matrix theory "
+    + "Veraart, J.; Novikov, D.S.; Christiaens, D.; Ades-aron, B.; Sijbers, J. & Fieremans, E. " // Internal
+    "Denoising of diffusion MRI using random matrix theory. "
+    "NeuroImage, 2016, in press, doi: 10.1016/j.neuroimage.2016.08.016"
+
+    + "Veraart, J.; Fieremans, E. & Novikov, D.S. " // Internal
+    "Diffusion MRI noise mapping using random matrix theory. "
     "Magn. Res. Med., 2016, early view, doi: 10.1002/mrm.26059";
-  
-  COPYRIGHT = "Copyright (c) 2016 New York University, University of Antwerp, and the MRtrix3 contributors \n \n"
-      "Permission is hereby granted, free of charge, to any non-commercial entity ('Recipient') obtaining a copy of this software and "
-      "associated documentation files (the 'Software'), to the Software solely for non-commercial research, including the rights to "
-      "use, copy and modify the Software, subject to the following conditions: \n \n"
-      "\t 1. The above copyright notice and this permission notice shall be included by Recipient in all copies or substantial portions of "
-      "the Software. \n \n"
-      "\t 2. THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES"
-      "OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE"
-      "LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR"
-      "IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. \n \n"
-      "\t 3. In no event shall NYU be liable for direct, indirect, special, incidental or consequential damages in connection with the Software. "
-      "Recipient will defend, indemnify and hold NYU harmless from any claims or liability resulting from the use of the Software by recipient. \n \n"
-      "\t 4. Neither anything contained herein nor the delivery of the Software to recipient shall be deemed to grant the Recipient any right or "
-      "licenses under any patents or patent application owned by NYU. \n \n"
-      "\t 5. The Software may only be used for non-commercial research and may not be used for clinical care. \n \n"
-      "\t 6. Any publication by Recipient of research involving the Software shall cite the references listed below.";
-    
   
   ARGUMENTS
   + Argument ("dwi", "the input diffusion-weighted image.").type_image_in ()
@@ -80,6 +66,23 @@ void usage ()
     + Option ("noise", "the output noise map.")
     +   Argument ("level").type_image_out();
 
+  COPYRIGHT = "Copyright (c) 2016 New York University, University of Antwerp, and the MRtrix3 contributors \n \n"
+      "Permission is hereby granted, free of charge, to any non-commercial entity ('Recipient') obtaining a copy of this software and "
+      "associated documentation files (the 'Software'), to the Software solely for non-commercial research, including the rights to "
+      "use, copy and modify the Software, subject to the following conditions: \n \n"
+      "\t 1. The above copyright notice and this permission notice shall be included by Recipient in all copies or substantial portions of "
+      "the Software. \n \n"
+      "\t 2. THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES"
+      "OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE"
+      "LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR"
+      "IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. \n \n"
+      "\t 3. In no event shall NYU be liable for direct, indirect, special, incidental or consequential damages in connection with the Software. "
+      "Recipient will defend, indemnify and hold NYU harmless from any claims or liability resulting from the use of the Software by recipient. \n \n"
+      "\t 4. Neither anything contained herein nor the delivery of the Software to recipient shall be deemed to grant the Recipient any right or "
+      "licenses under any patents or patent application owned by NYU. \n \n"
+      "\t 5. The Software may only be used for non-commercial research and may not be used for clinical care. \n \n"
+      "\t 6. Any publication by Recipient of research involving the Software shall cite the references listed below.";
+    
 }
 
 

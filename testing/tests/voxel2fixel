@@ -1,1 +1,1 @@
- voxel2fixel dwi_mean.mif afd.msf tmp.msf --force; testing_diff_fixel tmp.msf voxel2fixel/out.msf 0
+ voxel2fixel dwi_mean.mif afd.msf tmp.msf -force && testing_diff_fixel tmp.msf voxel2fixel/out.msf 1e-5

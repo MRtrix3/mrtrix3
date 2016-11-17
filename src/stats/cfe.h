@@ -61,7 +61,7 @@ namespace MR
             angular_threshold_dp = cos (angular_threshold * (Math::pi/180.0));
           }
 
-          bool operator () (SetVoxelDir& in)
+          bool operator() (SetVoxelDir& in)
           {
             // For each voxel tract tangent, assign to a fixel
             std::vector<int32_t> tract_fixel_indices;

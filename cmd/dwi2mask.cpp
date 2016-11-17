@@ -17,19 +17,30 @@
 #include "command.h"
 #include "image.h"
 #include "filter/dwi_brain_mask.h"
-
-
+#include "filter/mask_clean.h"
 
 using namespace MR;
 using namespace App;
 
+#define DEFAULT_CLEAN_SCALE 2
+
 void usage () {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au), Thijs Dhollander (thijs.dhollander@gmail.com) and Ben Jeurissen (ben.jeurissen@uantwerpen.be)";
 
 DESCRIPTION
-  + "Generates an whole brain mask from a DWI image."
+  + "Generates a whole brain mask from a DWI image. "
     "All diffusion weighted and b=0 volumes are used to "
-    "obtain a mask that includes both brain tissue and CSF.";
+    "obtain a mask that includes both brain tissue and CSF. "
+    "\nIn a second step peninsula-like extensions, where the "
+    "peninsula itself is wider than the bridge connecting it "
+    "to the mask, are removed. This may help removing "
+    "artefacts and non-brain parts, e.g. eyes, from "
+    "the mask.";
+
+REFERENCES
+  + "Dhollander T, Raffelt D, Connelly A. " // Internal
+    "Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. "
+    "ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5.";
 
 ARGUMENTS
    + Argument ("image",
@@ -41,15 +52,41 @@ ARGUMENTS
     .type_image_out ();
 
 OPTIONS
-  + DWI::GradImportOptions();
+
+   + Option ("clean_scale", "the maximum scale used to cut bridges. A certain maximum scale cuts "
+                            "bridges up to a width (in voxels) of 2x the provided scale. Setting "
+                            "this to 0 disables the mask cleaning step. (Default: " + str(DEFAULT_CLEAN_SCALE, 2) + ")")
+    + Argument ("value").type_integer (0, 1e6)
+
+   + DWI::GradImportOptions();
 }
 
 
 void run () {
+
   auto input = Image<float>::open (argument[0]).with_direct_io (3);
   auto grad = DWI::get_DW_scheme (input);
+
+  if (input.ndim() != 4)
+    throw Exception ("input DWI image must be 4D");
+
   Filter::DWIBrainMask dwi_brain_mask_filter (input, grad);
   dwi_brain_mask_filter.set_message ("computing dwi brain mask");
-  auto output = Image<bool>::create (argument[1], dwi_brain_mask_filter);
-  dwi_brain_mask_filter (input, output);
+  auto temp_mask = Image<bool>::scratch (dwi_brain_mask_filter, "brain mask");
+  dwi_brain_mask_filter (input, temp_mask);
+
+  auto output = Image<bool>::create (argument[1], temp_mask);
+
+  unsigned int scale = get_option_value ("clean_scale", DEFAULT_CLEAN_SCALE);
+
+  if (scale > 0) {
+    Filter::MaskClean clean_filter (temp_mask, std::string("applying mask cleaning filter"));
+    clean_filter.set_scale(scale);
+    clean_filter (temp_mask, output);
+  }
+  else {
+    for (auto l = Loop (0,3) (temp_mask, output); l; ++l)
+      output.value() = temp_mask.value();
+  }
+
 }

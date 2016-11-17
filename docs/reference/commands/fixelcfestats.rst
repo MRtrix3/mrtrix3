@@ -39,7 +39,7 @@ Options
 
 -  **-cfe_c value** cfe connectivity exponent (default: 0.5)
 
--  **-angle value** the max angle threshold for computing inter-subject fixel correspondence (Default: 30 degrees)
+-  **-angle value** the max angle threshold for computing inter-subject fixel correspondence (Default: 45 degrees)
 
 -  **-connectivity threshold** a threshold to define the required fraction of shared connections to be included in the neighbourhood (default: 0.01)
 

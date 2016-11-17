@@ -6,7 +6,7 @@ Introduction
 
 This tutorial explains how to perform fixel-based analysis using MRtrix commands. While the focus here is on the analysis of `Apparent Fibre Density (AFD) <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`_ derived from FODs, the majority of the steps in this tutorial are generic and therefore a similar process can be used to investigate other fixel-based measures derived from other diffusion MRI models. 
 
-.. WARNING:: This tutorial assumes you have already pre-processed your data to remove artefacts (e.g. eddy-current and magnetic suseptibility-induced distortions and subject motion). If performing analysis of AFD derived from FODs, then additional pre-processing is required and explained in `this tutorial <http://userdocs.mrtrix.org/en/latest/workflows/DWI_preprocessing_for_quantitative_analysis.html>`_. Please post any questions or issues on the `MRtrix community forum <http://community.mrtrix.org/>`_.
+.. WARNING:: This tutorial assumes you have already pre-processed your data to remove artefacts (e.g. eddy-current and magnetic suseptibility-induced distortions and subject motion). If performing analysis of AFD derived from FODs, then additional pre-processing is required and explained in `this tutorial <http://mrtrix.readthedocs.io/en/latest/workflows/DWI_preprocessing_for_quantitative_analysis.html>`_. Please post any questions or issues on the `MRtrix community forum <http://community.mrtrix.org/>`_.
 
 
 Fixel-based analysis steps
@@ -30,7 +30,7 @@ Compute a whole brain mask from the upsampled DW images::
 
 3. Fibre Orientation Distribution estimation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This command performs Constrained Spherical Deconvolution (CSD) using the group average response function `estimated previously  <http://userdocs.mrtrix.org/en/latest/workflows/DWI_preprocessing_for_quantitative_analysis.html>`_. Note that :code:`dwi2fod` can be used, however here we use :code:`msdwi2fod` (even with single shell data) to benefit from the hard non-negativity constraint::
+This command performs Constrained Spherical Deconvolution (CSD) using the group average response function `estimated previously  <http://userdocs.mrtrix.org/en/latest/workflows/DWI_preprocessing_for_quantitative_analysis.html>`_. Note that :code:`dwi2fod csd` can be used, however here we use :code:`dwi2fod msmt_csd` (even with single shell data) to benefit from the hard non-negativity constraint::
 
     dwiextract <input_upsampled_dwi> - | dwi2fod msmt_csd - <group_average_response_text_file> <output_fod_image> -mask <input_upsampled_mask>
 
