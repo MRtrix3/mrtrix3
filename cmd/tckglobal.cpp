@@ -143,11 +143,11 @@ void usage ()
 
   + Option ("fod", "Predicted fibre orientation distribution function (fODF).\n"
             "This fODF is estimated as part of the global track optimization, "
-            "and therefore incorporates the spatial regularization that these "
-            "tracks impose. Internally, the fODF is represented as a discrete "
+            "and therefore incorporates the spatial regularization that it "
+            "imposes. Internally, the fODF is represented as a discrete "
             "sum of apodized point spread functions (aPSF) oriented along the "
             "directions of all particles in the voxel, used to predict the DWI "
-            "signal upon every change to the particle configuration.")
+            "signal from the particle configuration.")
     + Argument ("odf").type_image_out()
   + Option ("noapo", "disable spherical convolution of fODF with apodized PSF, "
             "to output a sum of delta functions rather than a sum of aPSFs.")
@@ -173,7 +173,7 @@ void usage ()
     + Argument ("lambda").type_float(0.0)
 
   + Option ("prob", "set the probabilities of generating birth, death, randshift, optshift "
-            "and connect probabilities respectively. (default = "
+            "and connect proposals respectively. (default = "
             + str(DEFAULT_PROB_BIRTH, 2) + "," + str(DEFAULT_PROB_DEATH, 2) + ","
             + str(DEFAULT_PROB_RANDSHIFT, 2) + "," + str(DEFAULT_PROB_OPTSHIFT, 2) + ","
             + str(DEFAULT_PROB_CONNECT, 2) + ")")
