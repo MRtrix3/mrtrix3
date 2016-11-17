@@ -93,6 +93,8 @@ namespace MR
               centre.setZero();
           }
 
+          EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
+
           template <class OutPointType, class InPointType>
           inline void transform (OutPointType& out, const InPointType& in) const {
             out.noalias() = trafo * in;
@@ -173,10 +175,12 @@ namespace MR
 
           void set_centre_without_transform_update (const Eigen::Vector3& centre_in) {
             centre = centre_in;
+            DEBUG ("centre: " + str(centre.transpose()));
           }
 
           void set_centre (const Eigen::Vector3& centre_in) {
             centre = centre_in;
+            DEBUG ("centre: " + str(centre.transpose()));
             compute_offset();
             compute_halfspace_transformations();
           }
