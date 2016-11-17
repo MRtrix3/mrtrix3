@@ -11,7 +11,8 @@ def readMRtrixConfSetting(name):
     return ''
 
   try:
-    f = open ('.mrtrix.conf', 'r')
+    import os
+    f = open (os.path.join(os.path.expanduser("~"),'.mrtrix.conf'), 'r')
     value = findKey(f)
     if value:
       return value
