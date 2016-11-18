@@ -217,11 +217,11 @@ namespace MR
                 return;
               kernel.resize (2 * radius + 1);
               default_type norm_factor = 0.0;
-              for (size_t c = 0; c < kernel.size(); ++c) {
+              for (ssize_t c = 0; c < kernel.size(); ++c) {
                 kernel[c] = exp(-((c-radius) * (c-radius) * spacing * spacing)  / (2 * stdev * stdev));
                 norm_factor += kernel[c];
               }
-              for (size_t c = 0; c < kernel.size(); c++) {
+              for (ssize_t c = 0; c < kernel.size(); c++) {
                 kernel[c] /= norm_factor;
               }
             }
@@ -281,7 +281,6 @@ namespace MR
             Eigen::VectorXd kernel;
             const bool zero_boundary;
             const default_type spacing;
-            size_t m;
             ssize_t buffer_size;
             Eigen::VectorXd buffer;
           };
