@@ -21,7 +21,6 @@
 #include "algo/copy.h"
 #include "algo/threaded_copy.h"
 #include "adapter/gaussian1D.h"
-#include "adapter/gaussian1D_buffered.h"
 #include "filter/base.h"
 
 namespace MR
@@ -43,6 +42,7 @@ namespace MR
      *
      * \endcode
      */
+
     class Smooth : public Base
     {
 
@@ -165,7 +165,6 @@ namespace MR
 
           for (size_t dim = 0; dim < 3; dim++) {
             if (stdev[dim] > 0) {
-              Adapter::Gaussian1DBuffered<ImageType> gaussian (in_and_output, stdev[dim], dim, extent[dim], zero_boundary);
               std::vector<size_t> axes (in_and_output.ndim(), dim);
               size_t axdim = 1;
               for (size_t i = 0; i < in_and_output.ndim(); ++i) {
@@ -174,7 +173,8 @@ namespace MR
                 axes[axdim++] = stride_order[i];
               }
               DEBUG ("smoothing dimension " + str(dim) + " in place with stride order: " + str(axes));
-              threaded_copy (gaussian, in_and_output, axes, 1);
+              SmoothFunctor1D<ImageType> smooth (in_and_output, stdev[dim], dim, extent[dim], zero_boundary);
+              ThreadedLoop (in_and_output, axes, 1).run (smooth, in_and_output);
               if (progress)
                 ++(*progress);
             }
@@ -186,6 +186,105 @@ namespace MR
         std::vector<default_type> stdev;
         const std::vector<size_t> stride_order;
         bool zero_boundary;
+
+        template <class ImageType>
+          class SmoothFunctor1D {
+          public:
+            SmoothFunctor1D (ImageType& image,
+                           default_type stdev_in = 1.0,
+                           size_t axis_in = 0,
+                           size_t extent = 0,
+                           bool zero_boundary_in = false):
+                stdev (stdev_in),
+                axis (axis_in),
+                zero_boundary (zero_boundary_in),
+                spacing (image.spacing(axis_in)),
+                buffer_size (image.size(axis_in)) {
+                  buffer.resize(buffer_size);
+                  if (!extent)
+                    radius = ceil(2 * stdev / spacing);
+                  else if (extent == 1)
+                    radius = 0;
+                  else
+                    radius = (extent - 1) / 2;
+                  compute_kernel();
+              }
+
+            typedef typename ImageType::value_type value_type;
+
+            void compute_kernel() {
+              if ((radius < 1) || stdev <= 0.0)
+                return;
+              kernel.resize (2 * radius + 1);
+              default_type norm_factor = 0.0;
+              for (size_t c = 0; c < kernel.size(); ++c) {
+                kernel[c] = exp(-((c-radius) * (c-radius) * spacing * spacing)  / (2 * stdev * stdev));
+                norm_factor += kernel[c];
+              }
+              for (size_t c = 0; c < kernel.size(); c++) {
+                kernel[c] /= norm_factor;
+              }
+            }
+
+            // SmoothFunctor1D operator():
+            // the inner loop axis has to be the dimension the smoothing is applied to and
+            // the loop has to start with image.index (smooth_axis) == 0
+            void operator () (ImageType& image) {
+              if (!kernel.size())
+                return;
+
+              const ssize_t pos = image.index (axis);
+
+              // fill buffer for current image line if necessary
+              if (pos == 0) {
+                for (ssize_t k = 0; k < buffer_size; ++k) {
+                  image.index(axis) = k;
+                  buffer(k) = image.value();
+                }
+                image.index (axis) = pos;
+              }
+
+              if (zero_boundary)
+                if (pos == 0 || pos == image.size(axis) - 1) {
+                  image.value() = 0.0;
+                  return;
+                }
+
+              const ssize_t from = (pos < radius) ? 0 : pos - radius;
+              const ssize_t to = (pos + radius) >= image.size(axis) ? image.size(axis) - 1 : pos + radius;
+
+              ssize_t c = (pos < radius) ? radius - pos : 0;
+              ssize_t kernel_size = to - from + 1;
+
+              value_type result = kernel.segment(c, kernel_size).dot(buffer.segment(from, kernel_size));
+
+              if (!std::isfinite(result)) {
+                result = 0.0;
+                value_type av_weights = 0.0;
+                for (ssize_t k = from; k <= to; ++k, ++c) {
+                  value_type neighbour_value = buffer(k);
+                  if (std::isfinite (neighbour_value)) {
+                    av_weights += kernel[c];
+                    result += neighbour_value * kernel[c];
+                  }
+                }
+                result /= av_weights;
+              } else if (kernel_size != kernel.size())
+                  result /= kernel.segment(c, kernel_size).sum();
+              image.value() = result;
+            }
+
+          private:
+            const default_type stdev;
+            ssize_t radius;
+            size_t axis;
+            Eigen::VectorXd kernel;
+            const bool zero_boundary;
+            const default_type spacing;
+            size_t m;
+            ssize_t buffer_size;
+            Eigen::VectorXd buffer;
+          };
     };
     //! @}
   }
