@@ -16,12 +16,11 @@
 #ifndef __gt_particlepool_h__
 #define __gt_particlepool_h__
 
-#define PAGESIZE 10000
-
 #include <deque>
 #include <stack>
-
 #include <mutex>
+
+#include "math/rng.h"
 
 #include "dwi/tractography/GT/particle.h"
 
@@ -50,17 +49,14 @@ namespace MR {
           {
             std::lock_guard<std::mutex> lock (mutex);
             if (avail.empty()) {
-              // Create new particles
-              pool.resize(pool.size() + PAGESIZE);
-              std::deque<Particle>::reverse_iterator it = pool.rbegin();
-              for (unsigned int k = 0; k < PAGESIZE; ++it, ++k) {
-                avail.push( &(*it) );
-              }
+              pool.emplace_back(pos, dir);
+              return &pool.back();
+            } else {
+              Particle* p = avail.top();
+              p->init(pos, dir);
+              avail.pop();
+              return p;
             }
-            Particle* p = avail.top();
-            p->init(pos, dir);
-            avail.pop();
-            return p;
           }
           
           /**
@@ -72,10 +68,45 @@ namespace MR {
             avail.push(p);
           }
           
+          /**
+           * @brief Return number of Particles in the pool.
+           */
+          inline size_t size() const {
+            return pool.size() - avail.size();
+          }
+          
+          /**
+           * @brief Select random particle from the pool (uniformly).
+           */
+          Particle* random() {
+            std::lock_guard<std::mutex> lock (mutex);
+            if (pool.size() > avail.size())
+            {
+              std::uniform_int_distribution<size_t> dist(0, pool.size()-1);
+              for (int k = 0; k != 5; ++k) {
+                Particle* p = &pool[dist(rng)];
+                if (p->isAlive())
+                  return p;
+              }
+            }
+            return nullptr;
+          }
+          
+          /**
+           * @brief Clear pool.
+           */
+          void clear() {
+            std::lock_guard<std::mutex> lock (mutex);
+            pool.clear();
+            std::stack<Particle*> e {};
+            avail.swap(e);
+          }
+          
         protected:
           std::mutex mutex;
           std::deque<Particle> pool;
           std::stack<Particle*> avail;
+          Math::RNG rng;
         };
 
       }
