@@ -13,11 +13,11 @@
  *
  */
 
-#ifndef __formats_fixel_helpers_h__
-#define __formats_fixel_helpers_h__
+#ifndef __fixel_helpers_h__
+#define __fixel_helpers_h__
 
 #include "formats/mrtrix_utils.h"
-#include "formats/fixel/keys.h"
+#include "fixel/keys.h"
 #include "algo/loop.h"
 #include "image_diff.h"
 
@@ -31,7 +31,7 @@ namespace MR
         : Exception(previous_exception, msg) {}
   };
 
-  namespace Sparse
+  namespace Fixel
   {
     FORCE_INLINE bool is_index_image (const Header& in)
     {
@@ -239,7 +239,7 @@ namespace MR
       bool directions_found (false);
       Header header;
       check_fixel_directory (fixel_directory_path);
-      Header index_header = Sparse::find_index_header (fixel_directory_path);
+      Header index_header = Fixel::find_index_header (fixel_directory_path);
 
       auto dir_walker = Path::Dir (fixel_directory_path);
       std::string fname;
@@ -300,7 +300,7 @@ namespace MR
 
     //! Copy the index file from one fixel directory into another
     FORCE_INLINE void copy_index_file (const std::string& input_directory, const std::string& output_directory) {
-      Header input_header = Sparse::find_index_header (input_directory);
+      Header input_header = Fixel::find_index_header (input_directory);
       check_fixel_directory (output_directory, true);
 
       std::string output_path = Path::join (output_directory, Path::basename (input_header.name()));
@@ -323,7 +323,7 @@ namespace MR
 
     //! Copy the directions file from one fixel directory into another.
     FORCE_INLINE void copy_directions_file (const std::string& input_directory, const std::string& output_directory) {
-      Header input_header = Sparse::find_directions_header (input_directory);
+      Header input_header = Fixel::find_directions_header (input_directory);
       std::string output_path = Path::join (output_directory, Path::basename (input_header.name()));
 
       // If the index file already exists check it is the same as the input index file
@@ -349,7 +349,7 @@ namespace MR
 
     //! Copy all data files in a fixel directory into another directory. Data files do not include the index or directions file.
     FORCE_INLINE void copy_all_data_files (const std::string &input_directory, const std::string &output_directory) {
-      for (auto& input_header : Sparse::find_data_headers (input_directory, Sparse::find_index_header (input_directory)))
+      for (auto& input_header : Fixel::find_data_headers (input_directory, Fixel::find_index_header (input_directory)))
         copy_fixel_file (input_header.name(), output_directory);
     }
 
@@ -360,17 +360,15 @@ namespace MR
         throw Exception ("please input the specific fixel data file to be converted (not the fixel directory)");
 
       Header in_data_header = Header::open (input_file);
-      Sparse::check_data_file (in_data_header);
+      Fixel::check_data_file (in_data_header);
       auto in_data_image = in_data_header.get_image<ValueType>();
 
-      Header in_index_header = Sparse::find_index_header (Sparse::get_fixel_directory (input_file));
+      Header in_index_header = Fixel::find_index_header (Fixel::get_fixel_directory (input_file));
       if (input_file == in_index_header.name())
         throw Exception ("input fixel data file cannot be the index file");
 
       return in_data_image;
     }
-
-
   }
 }
 

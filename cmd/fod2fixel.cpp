@@ -19,8 +19,8 @@
 
 #include "image.h"
 
-#include "formats/fixel/keys.h"
-#include "formats/fixel/helpers.h"
+#include "fixel/keys.h"
+#include "fixel/helpers.h"
 
 #include "math/SH.h"
 
@@ -201,7 +201,7 @@ void Segmented_FOD_receiver::commit ()
   std::unique_ptr<DataImage> disp_image (nullptr);
 
   auto index_header (H);
-  index_header.keyval()[Sparse::n_fixels_key] = str(n_fixels);
+  index_header.keyval()[Fixel::n_fixels_key] = str(n_fixels);
   index_header.ndim() = 4;
   index_header.size(3) = 2;
   index_header.datatype() = DataType::from<uint32_t>();
@@ -220,7 +220,7 @@ void Segmented_FOD_receiver::commit ()
     dir_header.size(1) = 3;
     dir_image = std::unique_ptr<DataImage> (new DataImage (DataImage::create (Path::join(fixel_directory_path, dir_path), dir_header)));
     dir_image->index(1) = 0;
-    Sparse::check_fixel_size (*index_image, *dir_image);
+    Fixel::check_fixel_size (*index_image, *dir_image);
   }
 
   if (afd_path.size()) {
@@ -228,7 +228,7 @@ void Segmented_FOD_receiver::commit ()
     afd_header.size(1) = 1;
     afd_image = std::unique_ptr<DataImage> (new DataImage (DataImage::create (Path::join(fixel_directory_path, afd_path), afd_header)));
     afd_image->index(1) = 0;
-    Sparse::check_fixel_size (*index_image, *afd_image);
+    Fixel::check_fixel_size (*index_image, *afd_image);
   }
 
   if (peak_path.size()) {
@@ -236,7 +236,7 @@ void Segmented_FOD_receiver::commit ()
     peak_header.size(1) = 1;
     peak_image = std::unique_ptr<DataImage> (new DataImage (DataImage::create (Path::join(fixel_directory_path, peak_path), peak_header)));
     peak_image->index(1) = 0;
-    Sparse::check_fixel_size (*index_image, *peak_image);
+    Fixel::check_fixel_size (*index_image, *peak_image);
   }
 
   if (disp_path.size()) {
@@ -244,7 +244,7 @@ void Segmented_FOD_receiver::commit ()
     disp_header.size(1) = 1;
     disp_image = std::unique_ptr<DataImage> (new DataImage (DataImage::create (Path::join(fixel_directory_path, disp_path), disp_header)));
     disp_image->index(1) = 0;
-    Sparse::check_fixel_size (*index_image, *disp_image);
+    Fixel::check_fixel_size (*index_image, *disp_image);
   }
 
   size_t offset (0), lobe_index (0);
@@ -337,7 +337,7 @@ void run ()
   if (!receiver.num_outputs ())
     throw Exception ("Nothing to do; please specify at least one output image type");
 
-  Sparse::check_fixel_directory (fixel_directory_path, true, true);
+  Fixel::check_fixel_directory (fixel_directory_path, true, true);
 
   FMLS::FODQueueWriter writer (fod_data, mask);
 

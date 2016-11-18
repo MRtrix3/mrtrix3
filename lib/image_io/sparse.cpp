@@ -58,7 +58,7 @@ namespace MR
 
         // Writes a single uint32_t(0) to the start of the sparse data region
         // Any voxel that has its value initialised to 0 will point here, and therefore dereferencing of any
-        //   such voxel will yield a Sparse::Value with zero elements
+        //   such voxel will yield a Fixel::Value with zero elements
         memset (off2mem (0), 0x00, sizeof (uint32_t));
 
         data_end = sizeof(uint32_t);

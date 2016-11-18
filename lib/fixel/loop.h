@@ -13,14 +13,14 @@
  *
  */
 
-#ifndef __formats_fixel_loop_h__
-#define __formats_fixel_loop_h__
+#ifndef __fixel_loop_h__
+#define __fixel_loop_h__
 
 #include "formats/mrtrix_utils.h"
 
 namespace MR
 {
-  namespace Sparse {
+  namespace Fixel {
 
 
     namespace {
@@ -63,14 +63,13 @@ namespace MR
 
     template <class IndexType>
       FORCE_INLINE LoopFixelsInVoxel
-      FixelLoop (IndexType& index) {
+      Loop (IndexType& index) {
         index.index(3) = 0;
         size_t num_fixels = index.value();
         index.index(3) = 1;
         uint32_t offset = index.value();
         return { num_fixels, offset };
       }
-
   }
 }
 

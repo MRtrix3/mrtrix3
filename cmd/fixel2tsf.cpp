@@ -19,8 +19,8 @@
 #include "algo/loop.h"
 
 #include "image.h"
-#include "formats/fixel/helpers.h"
-#include "formats/fixel/keys.h"
+#include "fixel/helpers.h"
+#include "fixel/keys.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/scalar_file.h"
@@ -65,14 +65,14 @@ typedef DWI::Tractography::Mapping::SetVoxelDir SetVoxelDir;
 
 void run ()
 {
-  auto in_data_image = Sparse::open_fixel_data_file<float> (argument[0]);
+  auto in_data_image = Fixel::open_fixel_data_file<float> (argument[0]);
   if (in_data_image.size(2) != 1)
     throw Exception ("Only a single scalar value for each fixel can be output as a track scalar file, "
                      "therefore the input fixel data file must have dimension Nx1x1");
 
-  Header in_index_header = Sparse::find_index_header (Sparse::get_fixel_directory (argument[0]));
+  Header in_index_header = Fixel::find_index_header (Fixel::get_fixel_directory (argument[0]));
   auto in_index_image = in_index_header.get_image<uint32_t>();
-  auto in_directions_image = Sparse::find_directions_header (Sparse::get_fixel_directory (argument[0])).get_image<float>().with_direct_io();
+  auto in_directions_image = Fixel::find_directions_header (Fixel::get_fixel_directory (argument[0])).get_image<float>().with_direct_io();
 
   DWI::Tractography::Properties properties;
   DWI::Tractography::Reader<float> reader (argument[1], properties);

@@ -20,9 +20,9 @@
 #include "image.h"
 #include "adapter/jacobian.h"
 #include "registration/warp/helpers.h"
-#include "formats/fixel/helpers.h"
-#include "formats/fixel/keys.h"
-#include "formats/fixel/loop.h"
+#include "fixel/helpers.h"
+#include "fixel/keys.h"
+#include "fixel/loop.h"
 
 using namespace MR;
 using namespace App;
@@ -79,13 +79,13 @@ void run ()
   auto opt = get_options ("fc");
   if (opt.size()) {
     std::string template_fixel_directory (opt[0][0]);
-    fixel_template_index = Sparse::find_index_header (template_fixel_directory).get_image<uint32_t>();
-    fixel_template_directions = Sparse::find_directions_header (template_fixel_directory).get_image<value_type>().with_direct_io();
+    fixel_template_index = Fixel::find_index_header (template_fixel_directory).get_image<uint32_t>();
+    fixel_template_directions = Fixel::find_directions_header (template_fixel_directory).get_image<value_type>().with_direct_io();
 
     std::string output_fixel_directory (opt[0][1]);
     if (template_fixel_directory != output_fixel_directory) {
-      Sparse::copy_index_file (template_fixel_directory, output_fixel_directory);
-      Sparse::copy_directions_file (template_fixel_directory, output_fixel_directory);
+      Fixel::copy_index_file (template_fixel_directory, output_fixel_directory);
+      Fixel::copy_directions_file (template_fixel_directory, output_fixel_directory);
     }
 
     uint32_t num_fixels = 0;
@@ -93,7 +93,7 @@ void run ()
     for (auto l = Loop (fixel_template_index, 0, 3) (fixel_template_index); l; ++l)
       num_fixels += fixel_template_index.value();
 
-    fc_output_data = Image<value_type>::create (Path::join (output_fixel_directory, opt[0][2]), Sparse::data_header_from_index (fixel_template_index));
+    fc_output_data = Image<value_type>::create (Path::join (output_fixel_directory, opt[0][2]), Fixel::data_header_from_index (fixel_template_index));
   }
 
 
@@ -121,7 +121,7 @@ void run ()
 
     if (fc_output_data.valid()) {
       assign_pos_of (jacobian, 0, 3).to (fixel_template_index);
-      for (auto f = Sparse::FixelLoop (fixel_template_index) (fixel_template_directions, fc_output_data); f; ++f) {
+      for (auto f = Fixel::Loop (fixel_template_index) (fixel_template_directions, fc_output_data); f; ++f) {
         Eigen::Vector3f fixel_direction = fixel_template_directions.row(1);
         fixel_direction.normalize();
         Eigen::Vector3f fixel_direction_transformed = jacobian_matrix * fixel_direction;

@@ -19,9 +19,9 @@
 #include "algo/loop.h"
 #include "image.h"
 
-#include "formats/fixel/helpers.h"
-#include "formats/fixel/keys.h"
-#include "formats/fixel/loop.h"
+#include "fixel/helpers.h"
+#include "fixel/keys.h"
+#include "fixel/loop.h"
 
 using namespace MR;
 using namespace App;
@@ -47,22 +47,22 @@ void run ()
 {
   auto scalar = Image<float>::open (argument[0]);
   std::string input_fixel_directory = argument[1];
-  Sparse::check_fixel_directory (input_fixel_directory);
-  auto input_fixel_index = Sparse::find_index_header (input_fixel_directory).get_image<uint32_t>();
+  Fixel::check_fixel_directory (input_fixel_directory);
+  auto input_fixel_index = Fixel::find_index_header (input_fixel_directory).get_image<uint32_t>();
   check_dimensions (scalar, input_fixel_index, 0, 3);
 
   std::string output_fixel_directory = argument[2];
   if (input_fixel_directory != output_fixel_directory) {
     ProgressBar progress ("copying fixel index and directions file into output directory");
     progress++;
-    Sparse::copy_index_and_directions_file (input_fixel_directory, output_fixel_directory);
+    Fixel::copy_index_and_directions_file (input_fixel_directory, output_fixel_directory);
     progress++;
   }
 
-  auto output_fixel_data = Image<float>::create (Path::join(output_fixel_directory, argument[3]), Sparse::data_header_from_index (input_fixel_index));
+  auto output_fixel_data = Image<float>::create (Path::join(output_fixel_directory, argument[3]), Fixel::data_header_from_index (input_fixel_index));
 
   for (auto v = Loop ("mapping voxel scalar values to fixels", 0, 3)(scalar, input_fixel_index); v; ++v) {
-    for (auto f = Sparse::FixelLoop (input_fixel_index) (output_fixel_data); f; ++f)
+    for (auto f = Fixel::Loop (input_fixel_index) (output_fixel_data); f; ++f)
       output_fixel_data.value() = scalar.value();
   }
 }

@@ -24,8 +24,8 @@
 using namespace MR;
 using namespace App;
 
-#include "formats/fixel/helpers.h"
-#include "formats/fixel/keys.h"
+#include "fixel/helpers.h"
+#include "fixel/keys.h"
 
 void usage ()
 {
@@ -50,9 +50,9 @@ void usage ()
 void run ()
 {
   std::string input_fixel_directory = argument[0];
-  Sparse::check_fixel_directory (input_fixel_directory);
+  Fixel::check_fixel_directory (input_fixel_directory);
 
-  auto input_index_image = Sparse::find_index_header (input_fixel_directory).get_image <uint32_t>();
+  auto input_index_image = Fixel::find_index_header (input_fixel_directory).get_image <uint32_t>();
 
   Header warp_header = Header::open (argument[1]);
   Registration::Warp::check_warp (warp_header);
@@ -60,13 +60,13 @@ void run ()
   Adapter::Jacobian<Image<float> > jacobian (warp_header.get_image<float>());
 
   std::string output_fixel_directory = argument[2];
-  Sparse::check_fixel_directory (output_fixel_directory, true);
+  Fixel::check_fixel_directory (output_fixel_directory, true);
 
   // scratch buffer so inplace reorientation can be performed if desired
   Image<float> input_directions_image;
   std::string output_directions_filename;
   {
-    auto tmp = Sparse::find_directions_header (input_fixel_directory).get_image<float>();
+    auto tmp = Fixel::find_directions_header (input_fixel_directory).get_image<float>();
     input_directions_image = Image<float>::scratch(tmp);
     threaded_copy (tmp, input_directions_image);
     output_directions_filename = Path::basename(tmp.name());
@@ -91,8 +91,8 @@ void run ()
   }
 
   if (output_fixel_directory != input_fixel_directory) {
-    Sparse::copy_index_file (input_fixel_directory, output_fixel_directory);
-    Sparse::copy_all_data_files (input_fixel_directory, output_fixel_directory);
+    Fixel::copy_index_file (input_fixel_directory, output_fixel_directory);
+    Fixel::copy_all_data_files (input_fixel_directory, output_fixel_directory);
   }
 }
 

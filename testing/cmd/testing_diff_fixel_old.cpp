@@ -21,11 +21,11 @@
 
 
 #include "image.h"
-#include "formats/fixel/image.h"
-#include "formats/fixel/fixel_metric.h"
+#include "fixel/legacy/image.h"
+#include "fixel/legacy/fixel_metric.h"
 #include "image_helpers.h"
 #include "algo/threaded_loop.h"
-using MR::Sparse::Legacy::FixelMetric;
+using MR::Fixel::Legacy::FixelMetric;
 
 using namespace MR;
 using namespace App;
@@ -46,8 +46,8 @@ void usage ()
 
 void run ()
 {
-  Sparse::Legacy::Image<FixelMetric> buffer1 (argument[0]);
-  Sparse::Legacy::Image<FixelMetric> buffer2 (argument[1]);
+  Fixel::Legacy::Image<FixelMetric> buffer1 (argument[0]);
+  Fixel::Legacy::Image<FixelMetric> buffer2 (argument[1]);
   check_dimensions (buffer1, buffer2);
   for (size_t i = 0; i < buffer1.ndim(); ++i) {
     if (std::isfinite (buffer1.spacing(i)))

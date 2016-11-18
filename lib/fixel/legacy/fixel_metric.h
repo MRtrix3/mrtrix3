@@ -13,15 +13,16 @@
  * 
  */
 
-#ifndef __formats_fixel_legacy_metric_h__
-#define __formats_fixel_legacy_metric_h__
+#ifndef __fixel_legacy_metric_h__
+#define __fixel_legacy_metric_h__
 
 #include "types.h"
 
 namespace MR
 {
-  namespace Sparse
+  namespace Fixel
   {
+
     namespace Legacy
     {
 
@@ -47,7 +48,6 @@ namespace MR
           float size;
           float value;
       };
-
 
     }
   }

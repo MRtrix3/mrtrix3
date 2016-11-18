@@ -18,7 +18,7 @@
 
 
 #include "image.h"
-#include "formats/fixel/helpers.h"
+#include "fixel/helpers.h"
 
 #include "diff_images.h"
 
@@ -45,9 +45,9 @@ void usage ()
 void run ()
 {
   std::string fixel_directory1 = argument[0];
-  Sparse::check_fixel_directory (fixel_directory1);
+  Fixel::check_fixel_directory (fixel_directory1);
   std::string fixel_directory2 = argument[1];
-  Sparse::check_fixel_directory (fixel_directory2);
+  Fixel::check_fixel_directory (fixel_directory2);
 
   if (fixel_directory1 == fixel_directory2)
     throw Exception ("Input fixel directorys are the same");

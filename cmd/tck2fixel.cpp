@@ -19,9 +19,9 @@
 #include "algo/loop.h"
 #include "image.h"
 
-#include "formats/fixel/helpers.h"
-#include "formats/fixel/keys.h"
-#include "formats/fixel/loop.h"
+#include "fixel/helpers.h"
+#include "fixel/keys.h"
+#include "fixel/loop.h"
 
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/loader.h"
@@ -126,10 +126,10 @@ void write_fixel_output (const std::string& filename,
 void run ()
 {
   const std::string input_fixel_folder = argument[1];
-  Header index_header = Sparse::find_index_header (input_fixel_folder);
+  Header index_header = Fixel::find_index_header (input_fixel_folder);
   auto index_image = index_header.get_image<uint32_t>();
 
-  const uint32_t num_fixels = Sparse::get_number_of_fixels (index_header);
+  const uint32_t num_fixels = Fixel::get_number_of_fixels (index_header);
 
   const float angular_threshold = get_option_value ("angle", DEFAULT_ANGLE_THRESHOLD);
 
@@ -137,10 +137,10 @@ void run ()
   std::vector<Eigen::Vector3> directions (num_fixels);
 
   const std::string output_fixel_folder = argument[2];
-  Sparse::copy_index_and_directions_file (input_fixel_folder, output_fixel_folder);
+  Fixel::copy_index_and_directions_file (input_fixel_folder, output_fixel_folder);
 
   {
-    auto directions_data = Sparse::find_directions_header (input_fixel_folder).get_image<default_type>().with_direct_io();
+    auto directions_data = Fixel::find_directions_header (input_fixel_folder).get_image<default_type>().with_direct_io();
     // Load template fixel directions
     Transform image_transform (index_image);
     for (auto i = Loop ("loading template fixel directions and positions", index_image, 0, 3)(index_image); i; ++i) {
@@ -148,7 +148,7 @@ void run ()
       index_image.index(3) = 1;
       uint32_t offset = index_image.value();
       size_t fixel_index = 0;
-      for (auto f = Sparse::FixelLoop (index_image) (directions_data); f; ++f, ++fixel_index) {
+      for (auto f = Fixel::Loop (index_image) (directions_data); f; ++f, ++fixel_index) {
         directions[offset + fixel_index] = directions_data.row(1);
         positions[offset + fixel_index] = image_transform.voxel2scanner * vox;
       }
@@ -180,7 +180,7 @@ void run ()
   }
   track_file.close();
 
-  Header output_header (Sparse::data_header_from_index (index_image));
+  Header output_header (Fixel::data_header_from_index (index_image));
 
   write_fixel_output (Path::join (output_fixel_folder, argument[3]), fixel_TDI, output_header);
 

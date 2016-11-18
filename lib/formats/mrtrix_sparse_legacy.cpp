@@ -26,7 +26,7 @@
 #include "image_io/sparse.h"
 #include "formats/list.h"
 #include "formats/mrtrix_utils.h"
-#include "formats/fixel/legacy/keys.h"
+#include "fixel/legacy/keys.h"
 
 
 
@@ -62,11 +62,11 @@ namespace MR
       if (H.datatype() != dt)
         throw Exception ("Cannot open sparse image file " + H.name() + " due to type mismatch; expect " + dt.description() + ", file is " + H.datatype().description());
 
-      const auto name_it = H.keyval().find (Sparse::Legacy::name_key);
+      const auto name_it = H.keyval().find (Fixel::Legacy::name_key);
       if (name_it == H.keyval().end())
         throw Exception ("sparse data class name not specified in sparse image header " + H.name());
 
-      const auto size_it = H.keyval().find (Sparse::Legacy::size_key);
+      const auto size_it = H.keyval().find (Fixel::Legacy::size_key);
       if (size_it == H.keyval().end())
         throw Exception ("sparse data class size not specified in sparse image header " + H.name());
 
@@ -97,8 +97,8 @@ namespace MR
           !Path::has_suffix (H.name(), ".msf"))
         return false;
 
-      if (H.keyval().find (Sparse::Legacy::name_key) == H.keyval().end() ||
-          H.keyval().find (Sparse::Legacy::size_key) == H.keyval().end())
+      if (H.keyval().find (Fixel::Legacy::name_key) == H.keyval().end() ||
+          H.keyval().find (Fixel::Legacy::size_key) == H.keyval().end())
         return false;
 
       H.ndim() = num_axes;
@@ -117,11 +117,11 @@ namespace MR
     std::unique_ptr<ImageIO::Base> MRtrix_sparse::create (Header& H) const
     {
 
-      const auto name_it = H.keyval().find (Sparse::Legacy::name_key);
+      const auto name_it = H.keyval().find (Fixel::Legacy::name_key);
       if (name_it == H.keyval().end())
         throw Exception ("Cannot create sparse image " + H.name() + "; no knowledge of underlying data class type");
 
-      const auto size_it = H.keyval().find (Sparse::Legacy::size_key);
+      const auto size_it = H.keyval().find (Fixel::Legacy::size_key);
       if (size_it == H.keyval().end())
         throw Exception ("Cannot create sparse image " + H.name() + "; no knowledge of underlying data class size");
 

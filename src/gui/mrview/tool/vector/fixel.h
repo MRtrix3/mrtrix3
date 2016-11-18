@@ -22,9 +22,9 @@
 #include "transform.h"
 
 #include "algo/loop.h"
-#include "formats/fixel/legacy/image.h"
-#include "formats/fixel/legacy/fixel_metric.h"
-#include "formats/fixel/helpers.h"
+#include "fixel/legacy/image.h"
+#include "fixel/legacy/fixel_metric.h"
+#include "fixel/helpers.h"
 
 #include "gui/mrview/displayable.h"
 #include "gui/mrview/tool/vector/vector.h"
@@ -319,7 +319,7 @@ namespace MR
             }
           };
 
-          typedef MR::Sparse::Legacy::Image<MR::Sparse::Legacy::FixelMetric> FixelSparseImageType;
+          typedef MR::Fixel::Legacy::Image<MR::Fixel::Legacy::FixelMetric> FixelSparseImageType;
           typedef MR::Image<float> FixelPackedImageType;
           typedef MR::Image<uint32_t> FixelIndexImageType;
        }

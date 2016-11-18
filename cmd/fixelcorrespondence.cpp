@@ -18,8 +18,8 @@
 #include "progressbar.h"
 #include "algo/loop.h"
 #include "image.h"
-#include "formats/fixel/helpers.h"
-#include "formats/fixel/keys.h"
+#include "fixel/helpers.h"
+#include "fixel/keys.h"
 
 using namespace MR;
 using namespace App;
@@ -56,21 +56,21 @@ void run ()
   if (Path::is_dir (input_file))
     throw Exception ("please input the specific fixel data file to be converted (not the fixel directory)");
 
-  auto subject_index = Sparse::find_index_header (Sparse::get_fixel_directory (input_file)).get_image<uint32_t>();
-  auto subject_directions = Sparse::find_directions_header (Sparse::get_fixel_directory (input_file)).get_image<float>().with_direct_io();
+  auto subject_index = Fixel::find_index_header (Fixel::get_fixel_directory (input_file)).get_image<uint32_t>();
+  auto subject_directions = Fixel::find_directions_header (Fixel::get_fixel_directory (input_file)).get_image<float>().with_direct_io();
 
   if (input_file == subject_directions.name())
     throw Exception ("input fixel data file cannot be the directions file");
 
   auto subject_data = Image<float>::open (input_file);
-  Sparse::check_fixel_size (subject_index, subject_data);
+  Fixel::check_fixel_size (subject_index, subject_data);
 
-  auto template_index = Sparse::find_index_header (argument[1]).get_image<uint32_t>();
-  auto template_directions = Sparse::find_directions_header (argument[1]).get_image<float>().with_direct_io();
+  auto template_index = Fixel::find_index_header (argument[1]).get_image<uint32_t>();
+  auto template_directions = Fixel::find_directions_header (argument[1]).get_image<float>().with_direct_io();
 
   check_dimensions (subject_index, template_index);
   std::string output_fixel_directory = argument[2];
-  Sparse::copy_index_and_directions_file (argument[1], output_fixel_directory);
+  Fixel::copy_index_and_directions_file (argument[1], output_fixel_directory);
 
   Header output_data_header (template_directions);
   output_data_header.size(1) = 1;

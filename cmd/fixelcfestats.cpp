@@ -19,9 +19,9 @@
 #include "algo/loop.h"
 #include "transform.h"
 #include "image.h"
-#include "formats/fixel/helpers.h"
-#include "formats/fixel/keys.h"
-#include "formats/fixel/loop.h"
+#include "fixel/helpers.h"
+#include "fixel/keys.h"
+#include "fixel/loop.h"
 #include "math/stats/glm.h"
 #include "math/stats/permutation.h"
 #include "math/stats/typedefs.h"
@@ -148,20 +148,20 @@ void run() {
 
 
   const std::string input_fixel_directory = argument[0];
-  Header index_header = Sparse::find_index_header (input_fixel_directory);
+  Header index_header = Fixel::find_index_header (input_fixel_directory);
   auto index_image = index_header.get_image<uint32_t>();
 
-  const uint32_t num_fixels = Sparse::get_number_of_fixels (index_header);
+  const uint32_t num_fixels = Fixel::get_number_of_fixels (index_header);
   CONSOLE ("number of fixels: " + str(num_fixels));
 
   std::vector<Eigen::Vector3> positions (num_fixels);
   std::vector<direction_type> directions (num_fixels);
 
   const std::string output_fixel_directory = argument[5];
-  Sparse::copy_index_and_directions_file (input_fixel_directory, output_fixel_directory);
+  Fixel::copy_index_and_directions_file (input_fixel_directory, output_fixel_directory);
 
   {
-    auto directions_data = Sparse::find_directions_header (input_fixel_directory).get_image<default_type>().with_direct_io ({+2,+1});
+    auto directions_data = Fixel::find_directions_header (input_fixel_directory).get_image<default_type>().with_direct_io ({+2,+1});
     // Load template fixel directions
     Transform image_transform (index_image);
     for (auto i = Loop ("loading template fixel directions and positions", index_image, 0, 3)(index_image); i; ++i) {
@@ -169,7 +169,7 @@ void run() {
       index_image.index(3) = 1;
       uint32_t offset = index_image.value();
       size_t fixel_index = 0;
-      for (auto f = Sparse::FixelLoop (index_image) (directions_data); f; ++f, ++fixel_index) {
+      for (auto f = Fixel::Loop (index_image) (directions_data); f; ++f, ++fixel_index) {
         directions[offset + fixel_index] = directions_data.row(1);
         positions[offset + fixel_index] = image_transform.voxel2scanner * vox;
       }
@@ -190,7 +190,7 @@ void run() {
       if (!MR::Path::exists (filename))
         throw Exception ("input fixel image not found: " + filename);
       header = Header::open (filename);
-      Sparse::fixels_match (index_header, header);
+      Fixel::fixels_match (index_header, header);
       identifiers.push_back (filename);
       progress++;
     }
@@ -332,7 +332,7 @@ void run() {
         index_image.index(3) = 1;
         uint32_t offset = index_image.value();
         uint32_t fixel_index = 0;
-        for (auto f = Sparse::FixelLoop (index_image) (subject_data); f; ++f, ++fixel_index) {
+        for (auto f = Fixel::Loop (index_image) (subject_data); f; ++f, ++fixel_index) {
           if (!std::isfinite(subject_data.value()))
             throw Exception ("subject data file " + identifiers[subject] + " contains non-finite value: " + str(subject_data.value()));
           subject_data_vector[offset + fixel_index] = subject_data.value();
