@@ -18,8 +18,7 @@
 
 #include <Eigen/Dense>
 #include <mutex>
-#include <set>
-#include <algorithm>
+#include <vector>
 
 
 namespace MR {
@@ -27,18 +26,6 @@ namespace MR {
     namespace Tractography {
       namespace GT {
         
-        template <typename T>
-        struct vec_compare
-        {
-            bool operator()(const T& v, const T& w) const
-            {
-              for (int i = 0; i < v.size(); ++i) {
-                if (v[i] < w[i]) return true;
-                if (v[i] > w[i]) return false;
-              }
-              return false;
-            }
-        };
 
         /**
          * @brief SpatialLock manages a mutex lock on n positions in 3D space.
@@ -67,30 +54,70 @@ namespace MR {
             _ty = ty;
             _tz = tz;
           }
-          
-          bool lockIfNotLocked(const point_type& pos) {
-            std::lock_guard<std::mutex> lock (mutex);
-            point_type d;
-            for (auto& x : lockcentres) {
-              d = x - pos;
-              if ((std::fabs(d[0]) < _tx) && (std::fabs(d[1]) < _ty) && (std::fabs(d[2]) < _tz))
-                return false;
+
+
+          struct Guard
+          {
+          public:
+            Guard(SpatialLock& l) : lock(l), idx(-1) { }
+
+            ~Guard() {
+              if (idx >= 0)
+                lock.unlock(idx);
             }
-            lockcentres.insert(pos);
-            return true;
-          }
-          
-          void unlock(const point_type& pos) {
-            std::lock_guard<std::mutex> lock (mutex);
-            lockcentres.erase(pos);
-          }
+
+            bool try_lock(const point_type& pos) {
+              return lock.try_lock(pos, idx);
+            }
+
+            bool operator!() const {
+              return (idx == -1);
+            }
+
+          private:
+            SpatialLock& lock;
+            ssize_t idx;
+
+          };
+
           
         protected:
           std::mutex mutex;
-          std::set<point_type, vec_compare<point_type> > lockcentres;
+          std::vector< std::pair<point_type, bool> > lockcentres;
           value_type _tx, _ty, _tz;
-          
+
+          bool try_lock(const point_type& pos, ssize_t& idx) {
+            std::lock_guard<std::mutex> lock (mutex);
+            idx = -1;
+            ssize_t i = 0;
+            point_type d;
+            for (auto& x : lockcentres) {
+              if (x.second) {
+                d = x.first - pos;
+                if ((std::fabs(d[0]) < _tx) && (std::fabs(d[1]) < _ty) && (std::fabs(d[2]) < _tz))
+                  return false;
+              } else {
+                idx = i;
+              }
+              i++;
+            }
+            if (idx == -1) {
+              idx = lockcentres.size();
+              lockcentres.emplace_back(pos, true);
+            } else {
+              lockcentres[idx].first = pos;
+              lockcentres[idx].second = true;
+            }
+            return true;
+          }
+
+          void unlock(const size_t idx) {
+            lockcentres[idx].second = false;
+          }
+
+
         };
+
 
       }
     }
