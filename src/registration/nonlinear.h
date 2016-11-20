@@ -189,8 +189,8 @@ namespace MR
                   DEBUG ("smoothing update fields");
                   Filter::Smooth smooth_filter (*im1_update);
                   smooth_filter.set_stdev (update_smoothing_mm);
-                  smooth_filter (*im1_update, *im1_update);
-                  smooth_filter (*im2_update, *im2_update);
+                  smooth_filter (*im1_update);
+                  smooth_filter (*im2_update);
                 }
 
                 Image<default_type> im1_deform_field = Image<default_type>::scratch (field_header);
@@ -205,8 +205,8 @@ namespace MR
                   Filter::Smooth smooth_filter (*im1_to_mid_new);
                   smooth_filter.set_stdev (disp_smoothing_mm);
                   smooth_filter.set_zero_boundary (true);
-                  smooth_filter (*im1_to_mid_new, *im1_to_mid_new);
-                  smooth_filter (*im2_to_mid_new, *im2_to_mid_new);
+                  smooth_filter (*im1_to_mid_new);
+                  smooth_filter (*im2_to_mid_new);
 
                   Registration::Warp::compose_linear_displacement (im1_to_mid_linear, *im1_to_mid_new, im1_deform_field);
                   Registration::Warp::compose_linear_displacement (im2_to_mid_linear, *im2_to_mid_new, im2_deform_field);
