@@ -17,6 +17,7 @@
 #define __header_h__
 
 #include <map>
+#include <functional>
 
 #include "debug.h"
 #include "types.h"
@@ -42,7 +43,7 @@ namespace MR
 
   template <typename ValueType> class Image;
 
-  class Header { MEM_ALIGN
+  class Header { MEMALIGN (Header)
     public:
       class Axis;
 
@@ -356,6 +357,8 @@ namespace MR
         Stride::actualise (*this);
       }
   };
+
+  CHECK_MEM_ALIGN (Header);
 
 
 

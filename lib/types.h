@@ -121,6 +121,9 @@ template <class T> class __has_custom_new_operator {
     enum { value = sizeof(test<T>(nullptr)) == sizeof(char) };
 };
 
+
+template <class T> inline constexpr bool __need_to_mem_align () { return alignof (T) > MRTRIX_ALLOC_MEM_ALIGN; }
+
 inline void* __aligned_alloc (std::size_t size) {
   auto* original = std::malloc (size + EIGEN_DEFAULT_ALIGN_BYTES); 
   if (!original) throw std::bad_alloc(); 
@@ -131,35 +134,13 @@ inline void* __aligned_alloc (std::size_t size) {
 
 inline void __aligned_delete (void* ptr) { if (ptr) std::free (*(reinterpret_cast<void**>(ptr) - 1)); }
 
-/*! \def NO_MEM_ALIGN
- * used to signal that the class does not have special alignment
- * requirements, and so does not need a custom operator new method.
- *
- * The compiler will check whether this is indeed the case, and fail with an
- * appropriate warning if this is not true. In this case, you need to replace
- * NO_MEM_ALIGN with MEM_ALIGN.
- * \sa MEM_ALIGN
- * \sa CHECK_MEM_ALIGN
- */
-#define NO_MEM_ALIGN \
-  void __check_memalign () { static_assert (alignof(*this) <= MRTRIX_ALLOC_MEM_ALIGN, "please change to MEM_ALIGN for this class"); }
 
-/*! \def MEM_ALIGN
- * used to signal that the class has special alignment requirements, and so
- * needs a custom memory-aligned operator new method.
- *
- * The compiler will check whether this is indeed needed, and fail with an
- * appropriate warning if this is not true. In this case, you need to replace
- * MEM_ALIGN with NO_MEM_ALIGN. While it is technically safe to use an
- * over-aligned allocator in this case, it will impact performance and memory
- * efficiency, and so is to be avoided. 
- * \sa NO_MEM_ALIGN
- * \sa CHECK_MEM_ALIGN
- */
-#define MEM_ALIGN \
-  void __check_memalign () { static_assert (alignof(*this) > MRTRIX_ALLOC_MEM_ALIGN, "no need to MEM_ALIGN: use NO_MEM_ALIGN here."); }\
-  public: \
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#define MEMALIGN(T) public: \
+  void* operator new (std::size_t size) { return (alignof(T)>MRTRIX_ALLOC_MEM_ALIGN) ? __aligned_alloc (size) : ::operator new (size); } \
+  void* operator new[] (std::size_t size) { return (alignof(T)>MRTRIX_ALLOC_MEM_ALIGN) ? __aligned_alloc (size) : ::operator new[] (size); } \
+  void operator delete (void* ptr) { if (alignof(T)>MRTRIX_ALLOC_MEM_ALIGN) __aligned_delete (ptr); else ::operator delete (ptr); } \
+  void operator delete[] (void* ptr) { if (alignof(T)>MRTRIX_ALLOC_MEM_ALIGN) __aligned_delete (ptr); else ::operator delete[] (ptr); }
+
 
 /*! \def CHECK_MEM_ALIGN
  * used to verify that the class is set up approriately for memory alignment
@@ -177,17 +158,7 @@ inline void __aligned_delete (void* ptr) { if (ptr) std::free (*(reinterpret_cas
  */
 #define CHECK_MEM_ALIGN(classname) \
     static_assert ( (alignof(classname) <= MRTRIX_ALLOC_MEM_ALIGN ) || __has_custom_new_operator<classname>::value, \
-        "memory alignment not guaranteed\n\n" \
-        "    Memory alignment requirement for this class is larger than that guaranteed\n" \
-        "    by default allocator, and no custom operator new has been defined.\n" \
-        "    This can cause unexpected runtime errors with Eigen.\n" \
-        "    Please replace NO_MEM_ALIGN with MEM_ALIGN for this class.\n"); \
-    static_assert ( (alignof(classname) > MRTRIX_ALLOC_MEM_ALIGN ) || !__has_custom_new_operator<classname>::value, \
-        "unnecessary use of MEM_ALIGN\n\n" \
-        "    Memory alignment requirement for this class is already catered for by default allocator.\n" \
-        "    While this program will run fine as-is, using the non-default allocator does incur\n" \
-        "    a performance overhead. Please replace MEM_ALIGN with NO_MEM_ALIGN for this class.\n")
-
+        "class requires over-alignment, but no operator new defined! Please insert MEMALIGN() into class definition.") 
 
 
 namespace MR

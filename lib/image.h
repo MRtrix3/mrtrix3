@@ -35,7 +35,7 @@ namespace MR
 
 
   template <typename ValueType>
-    class Image { MEM_ALIGN
+    class Image { MEMALIGN (Image<ValueType>)
       public:
         typedef ValueType value_type;
         class Buffer;
@@ -201,9 +201,9 @@ namespace MR
           return Header::scratch (template_header, label).get_image<ValueType>();
         }
 
-      protected:
         //! shared reference to header/buffer
         std::shared_ptr<Buffer> buffer;
+      protected:
         //! pointer to data address whether in RAM or MMap
         void* data_pointer;
         //! voxel indices
@@ -222,8 +222,9 @@ namespace MR
 
 
   template <typename ValueType> 
-    class Image<ValueType>::Buffer : public Header { NO_MEM_ALIGN
+    class Image<ValueType>::Buffer : public Header { MEMALIGN (Image<ValueType>::Buffer)
       public:
+        Buffer() {} // TODO: delete this line! Only for testing memory alignment issues.
         //! construct a Buffer object to access the data in the image specified
         Buffer (Header& H, bool read_write_if_existing = false);
         Buffer (Buffer&&) = default;
@@ -277,7 +278,7 @@ namespace MR
 
     // lightweight struct to copy data into:
     template <typename ValueType>
-      struct TmpImage { NO_MEM_ALIGN
+      struct TmpImage { MEMALIGN (TmpImage<ValueType>)
         typedef ValueType value_type;
 
         const typename Image<ValueType>::Buffer& b;
