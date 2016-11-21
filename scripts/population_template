@@ -69,7 +69,11 @@ def check_linear_transformation (transformation, max_scaling = 0.5, max_shear = 
 
   bGood = True
   runCommand ('transformcalc ' + transformation + ' decompose ' + transformation + 'decomp')
-  data = load_key_value(transformation + 'decomp')
+  if os.path.isfile(transformation + 'decomp'): # does not exist if run with -continue option
+    data = load_key_value(transformation + 'decomp')
+  else:
+    printMessage(transformation + 'decomp not found. skipping check')
+    return True
   os.remove(transformation + 'decomp')
   scaling = [float(x) for x in data['scaling']]
   if any([x < 0 for x in scaling]) or any([x > (1 + max_scaling) for x in scaling]) or any([x < (1 - max_scaling) for x in scaling]):
@@ -96,8 +100,10 @@ class Input:
     self.mask_filename = mask_filename
     self.mask_directory = mask_directory
 
-linear_scales = [0.3,0.4,0.6,0.8,1.0,1.0]
-linear_lmax =   [2,2,2,4,4,4]
+rigid_scales  = [0.3,0.4,0.6,0.8,1.0,1.0]
+rigid_lmax    = [2,2,2,4,4,4]
+affine_scales = [0.3,0.4,0.6,0.8,1.0,1.0]
+affine_lmax   = [2,2,2,4,4,4]
 
 nl_scales = [0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0]
 nl_niter =  [5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5  ,5  ,5  ,5  ,5  ]
@@ -109,26 +115,35 @@ lib.cmdlineParser.initialise('Generates an unbiased group-average template from 
 lib.app.parser.add_argument('input_dir', help='The input directory containing all images used to build the template')
 lib.app.parser.add_argument('template', help='The output template image')
 
-options = lib.app.parser.add_argument_group('Options for the population_template script')
+linoptions = lib.app.parser.add_argument_group('Options for the linear registration')
+linoptions.add_argument('-linear_type', help='Specifiy the linear registration mode. Options are "affine" (perform affine registration only), "rigid" (perform rigid registration only, this should be used for intra-subject registration in longitudinal analysis) and "rigid_affine" (perform rigid registration followed by affine registration, default).', default='rigid_affine')
+linoptions.add_argument('-linear_no_pause', action='store_true', help='Do not pause the script if a linear registration seems implausible')
+linoptions.add_argument('-linear_estimator', help='Choose estimator for intensity difference metric. Valid choices are: l1 (least absolute: |x|), l2 (ordinary least squares), lp (least powers: |x|^1.2), Default: l2')
+linoptions.add_argument('-initial_alignment', default='mass', help='Method of alignment to form the initial template. Options are "mass" (default), "geometric" and "none".')
+linoptions.add_argument('-rigid_scale', help='Specifiy the multi-resolution pyramid used to build the rigid template, in the form of a list of scale factors (default: %s). This and affine_scale implicitly  define the number of template levels' % ','.join([str(x) for x in rigid_scales]))
+linoptions.add_argument('-rigid_lmax', help='Specifiy the lmax used for rigid registration for each scale factor, in the form of a list of integers (default: %s). The list must be the same length as the linear_scale factor list' % ','.join([str(x) for x in rigid_lmax]))
+linoptions.add_argument('-rigid_niter', help='Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:50 for each scale). This must be a single number or a list of same length as the linear_scale factor list')
+linoptions.add_argument('-affine_scale', help='Specifiy the multi-resolution pyramid used to build the affine template, in the form of a list of scale factors (default: %s). This and rigid_scale implicitly define the number of template levels' % ','.join([str(x) for x in affine_scales]))
+linoptions.add_argument('-affine_lmax', help='Specifiy the lmax used for affine registration for each scale factor, in the form of a list of integers (default: %s). The list must be the same length as the linear_scale factor list' % ','.join([str(x) for x in affine_lmax]))
+linoptions.add_argument('-affine_niter', help='Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:500 for each scale). This must be a single number or a list of same length as the linear_scale factor list')
+
+nloptions = lib.app.parser.add_argument_group('Options for the non-linear registration')
+nloptions.add_argument('-nl_scale', help='Specifiy the multi-resolution pyramid used to build the non-linear template, in the form of a list of scale factors (default: %s). This implicitly defines the number of template levels' % ','.join([str(x) for x in nl_scales]))
+nloptions.add_argument('-nl_lmax', help='Specifiy the lmax used for non-linear registration for each scale factor, in the form of a list of integers (default: %s). The list must be the same length as the nl_scale factor list' % ','.join([str(x) for x in nl_lmax]))
+nloptions.add_argument('-nl_niter', help='Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default: %s). The list must be the same length as the nl_scale factor list' % ','.join([str(x) for x in nl_niter]))
+nloptions.add_argument('-nl_update_smooth', default='2.0', help='Regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 2.0 x voxel_size)')
+nloptions.add_argument('-nl_disp_smooth', default='1.0', help='Regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0 x voxel_size)')
+nloptions.add_argument('-nl_grad_step', default='0.5', help='The gradient step size for non-linear registration (Default: 0.5)')
+
+options = lib.app.parser.add_argument_group('Optional input and output and general options')
 options.add_argument('-mask_dir', help='Optionally input a set of masks inside a single directory, one per input image (with the same file name prefix). Using masks will speed up registration significantly')
 options.add_argument('-warp_dir', help='Output a directory containing warps from each input to the template. If the folder does not exist it will be created')
 options.add_argument('-transformed_dir', help='Output a directory containing the input images transformed to the template. If the folder does not exist it will be created')
 options.add_argument('-linear_transformations_dir', help='Output a directory containing the linear transformations used to generate the template. If the folder does not exist it will be created')
 options.add_argument('-template_mask', help='Output a template mask. Only works in -mask_dir has been input. The template mask is computed as the intersection of all subject masks in template space.')
-options.add_argument('-rigid', action='store_true', help='perform rigid registration instead of affine. This should be used for intra-subject registration in longitudinal analysis')
-options.add_argument('-linear_no_pause', action='store_true', help='Do not pause the script if a linear registration seems implausible')
-options.add_argument('-linear_scale', help='Specifiy the multi-resolution pyramid used to build the rigid or affine template, in the form of a list of scale factors (default: %s). This implicitly defines the number of template levels' % ','.join([str(x) for x in linear_scales]))
-options.add_argument('-linear_lmax', help='Specifiy the lmax used for rigid or affine registration for each scale factor, in the form of a list of integers (default: %s). The list must be the same length as the linear_scale factor list' % ','.join([str(x) for x in linear_lmax]))
-options.add_argument('-linear_niter', help='Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:500 for each scale). The must be a single number or a list of same length as the linear_scale factor list')
-options.add_argument('-linear_estimator', help='Choose estimator for intensity difference metric. Valid choices are: l1 (least absolute: |x|), l2 (ordinary least squares), lp (least powers: |x|^1.2), Default: l2')
-options.add_argument('-nl_scale', help='Specifiy the multi-resolution pyramid used to build the non-linear template, in the form of a list of scale factors (default: %s). This implicitly defines the number of template levels' % ','.join([str(x) for x in nl_scales]))
-options.add_argument('-nl_lmax', help='Specifiy the lmax used for non-linear registration for each scale factor, in the form of a list of integers (default: %s). The list must be the same length as the nl_scale factor list' % ','.join([str(x) for x in nl_lmax]))
-options.add_argument('-nl_niter', help='Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default: %s). The list must be the same length as the nl_scale factor list' % ','.join([str(x) for x in nl_niter]))
-options.add_argument('-nl_update_smooth', default='2.0', help='Regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 2.0 x voxel_size)')
-options.add_argument('-nl_disp_smooth', default='1.0', help='Regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0 x voxel_size)')
-options.add_argument('-nl_grad_step', default='0.5', help='The gradient step size for non-linear registration (Default: 0.5)')
 options.add_argument('-noreorientation', action='store_true', help='Turn off FOD reorientation in mrregister. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc')
-options.add_argument('-initial_alignment', default='mass', help='Method of alignment to form the initial template. Options are "mass" (default), "geometric" and "none".')
+
+
 
 lib.app.initialise()
 
@@ -186,7 +201,12 @@ for i in inFiles:
 
 
 noreorientation = lib.app.args.noreorientation
-dorigid = lib.app.args.rigid
+
+dorigid = "rigid" in lib.app.args.linear_type
+doaffine = "affine" in lib.app.args.linear_type
+if not lib.app.args.linear_type in ["rigid", "affine", "rigid_affine"]:
+  errorMessage("linear_type must be one of " + str(["rigid", "affine", "rigid_affine"]))
+
 do_pause_on_warn = True
 if lib.app.args.linear_no_pause:
   do_pause_on_warn = False
@@ -219,21 +239,53 @@ if len(image_size) == 4:
     do_fod_registration = True
 
 
-if lib.app.args.linear_scale:
-  linear_scales = [float(x) for x in lib.app.args.linear_scale.split(',')]
-if lib.app.args.linear_lmax:
-  linear_lmax = [int(x) for x in lib.app.args.linear_lmax.split(',')]
-linear_niter =   [500] * len(linear_scales)
-if lib.app.args.linear_niter:
-  linear_niter = [int(x) for x in lib.app.args.linear_niter.split(',')]
-  if len(linear_niter) == 1:
-    linear_niter = linear_niter * len(linear_scales)
-  elif len(linear_scales) != len(linear_niter):
-      errorMessage('linear_scales and linear_niter schedules are not equal in length')
+if lib.app.args.affine_scale:
+  affine_scales = [float(x) for x in lib.app.args.affine_scale.split(',')]
+if lib.app.args.affine_lmax:
+  affine_lmax = [int(x) for x in lib.app.args.affine_lmax.split(',')]
+affine_niter =   [500] * len(affine_scales)
+if lib.app.args.affine_niter:
+  if not doaffine:
+    errorMessage("affine_niter specified when no affine registration is performed")
+  affine_niter = [int(x) for x in lib.app.args.affine_niter.split(',')]
+  if len(affine_niter) == 1:
+    affine_niter = affine_niter * len(affine_scales)
+  elif len(affine_scales) != len(affine_niter):
+      errorMessage('affine_scales and affine_niter schedules are not equal in length')
 
-if do_fod_registration:
-  if len(linear_scales) != len(linear_lmax):
-    errorMessage('linear_scales and linear_lmax schedules are not equal in length')
+
+if lib.app.args.rigid_scale:
+  rigid_scales = [float(x) for x in lib.app.args.rigid_scale.split(',')]
+if lib.app.args.rigid_lmax:
+  rigid_lmax = [int(x) for x in lib.app.args.rigid_lmax.split(',')]
+rigid_niter =   [50] * len(rigid_scales)
+if lib.app.args.rigid_niter:
+  if not dorigid:
+    errorMessage("rigid_niter specified when no rigid registration is performed")
+  rigid_niter = [int(x) for x in lib.app.args.rigid_niter.split(',')]
+  if len(rigid_niter) == 1:
+    rigid_niter = rigid_niter * len(rigid_scales)
+  elif len(rigid_scales) != len(rigid_niter):
+      errorMessage('rigid_scales and rigid_niter schedules are not equal in length')
+
+linear_scales = []
+linear_lmax   = []
+linear_niter  = []
+linear_type   = []
+if dorigid:
+  linear_scales += rigid_scales
+  linear_lmax   += rigid_lmax
+  linear_niter  += rigid_niter
+  linear_type   += ['rigid'] * len(rigid_scales)
+  if do_fod_registration and len(rigid_scales) != len(rigid_lmax):
+    errorMessage('rigid_scales and rigid_lmax schedules are not equal in length')
+if doaffine:
+  linear_scales += affine_scales
+  linear_lmax   += affine_lmax
+  linear_niter  += affine_niter
+  linear_type   += ['affine'] * len(affine_scales)
+  if do_fod_registration and len(affine_scales) != len(affine_lmax):
+    errorMessage('affine_scales and affine_lmax schedules are not equal in length')
 
 datatype = ' -datatype float32'
 
@@ -378,7 +430,7 @@ for level in range(0, len(linear_scales)):
     lmax = ''
     metric = ''
     mrregister_log = ''
-    if dorigid:
+    if linear_type[level] == 'rigid':
       scale = ' -rigid_scale ' + str(linear_scales[level])
       niter = ' -rigid_niter ' + str(linear_niter[level])
       regtype = ' -type rigid'
@@ -426,7 +478,7 @@ for level in range(0, len(linear_scales)):
 
   # Here we ensure the template doesn't drift or scale
   runCommand('transformcalc ' + allindir('linear_transforms_%i' % level) + ' average linear_transform_average.txt -force -quiet')
-  if dorigid:
+  if linear_type[level] == 'rigid':
     runCommand('transformcalc linear_transform_average.txt rigid linear_transform_average.txt -force -quiet')
   runCommand('transformcalc linear_transform_average.txt invert linear_transform_average_inv.txt -force -quiet')
 
@@ -471,7 +523,7 @@ for level in range(0, len(nl_scales)):
       scale = ''
     else:
       scale = ' -nl_scale ' + str(nl_scales[level])
-      if dorigid:
+      if not doaffine:
         initialise = ' -rigid_init_matrix linear_transforms/' + i.prefix + '.txt'
       else:
         initialise = ' -affine_init_matrix linear_transforms/' + i.prefix + '.txt'
