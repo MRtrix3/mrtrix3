@@ -27,8 +27,8 @@
 #include "fixel/helpers.h"
 
 #include "gui/mrview/displayable.h"
-#include "gui/mrview/tool/vector/vector.h"
-#include "gui/mrview/tool/vector/vector_structs.h"
+#include "gui/mrview/tool/fixel/fixel.h"
+#include "gui/mrview/tool/fixel/vector_structs.h"
 
 
 namespace MR
@@ -39,10 +39,11 @@ namespace MR
     {
       namespace Tool
       {
-        class AbstractFixel : public Displayable {
+
+        class BaseFixel : public Displayable {
           public:
-            AbstractFixel (const std::string&, Vector&);
-            ~AbstractFixel();
+            BaseFixel (const std::string&, Fixel&);
+            ~BaseFixel();
 
               class Shader : public Displayable::Shader {
                 public:
@@ -280,7 +281,7 @@ namespace MR
               bool threshold_buffer_dirty;
               bool dir_buffer_dirty;
             private:
-              Vector& fixel_tool;
+              Fixel& fixel_tool;
               GL::VertexBuffer vertex_buffer;
               GL::VertexBuffer direction_buffer;
               GL::VertexBuffer colour_buffer;
@@ -303,11 +304,11 @@ namespace MR
 
         // Wrapper to generically store fixel data
 
-        template <typename ImageType> class FixelType : public AbstractFixel
+        template <typename ImageType> class FixelType : public BaseFixel
         {
           public:
-            FixelType (const std::string& filename, Vector& fixel_tool) :
-            AbstractFixel (filename, fixel_tool),
+            FixelType (const std::string& filename, Fixel& fixel_tool) :
+            BaseFixel (filename, fixel_tool),
               transform (header) { }
 
           protected:
@@ -319,8 +320,8 @@ namespace MR
             }
           };
 
-          typedef MR::Fixel::Legacy::Image<MR::Fixel::Legacy::FixelMetric> FixelSparseImageType;
-          typedef MR::Image<float> FixelPackedImageType;
+          typedef MR::Fixel::Legacy::Image<MR::Fixel::Legacy::FixelMetric> FixelLegacyType;
+          typedef MR::Image<float> FixelImage4DType;
           typedef MR::Image<uint32_t> FixelIndexImageType;
        }
     }

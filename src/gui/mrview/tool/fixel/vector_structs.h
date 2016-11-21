@@ -13,8 +13,8 @@
  *
  */
 
-#ifndef __gui_mrview_tool_vector_structs_h__
-#define __gui_mrview_tool_vector_structs_h__
+#ifndef __gui_mrview_tool_fixel_structs_h__
+#define __gui_mrview_tool_fixel_structs_h__
 
 namespace MR
 {

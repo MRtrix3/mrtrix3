@@ -13,14 +13,14 @@
  * 
  */
 
-#include "gui/mrview/tool/vector/vector.h"
+#include "gui/mrview/tool/fixel/fixel.h"
 
 #include "mrtrix.h"
 #include "gui/mrview/window.h"
-#include "gui/mrview/tool/vector/fixel.h"
-#include "gui/mrview/tool/vector/sparsefixel.h"
-#include "gui/mrview/tool/vector/packedfixel.h"
-#include "gui/mrview/tool/vector/fixelfolder.h"
+#include "gui/mrview/tool/fixel/base_fixel.h"
+#include "gui/mrview/tool/fixel/legacy.h"
+#include "gui/mrview/tool/fixel/directory.h"
+#include "gui/mrview/tool/fixel/image4D.h"
 #include "gui/dialog/file.h"
 #include "gui/mrview/tool/list_model_base.h"
 #include "math/rng.h"
@@ -35,31 +35,31 @@ namespace MR
       {
 
 
-        class Vector::Model : public ListModelBase
+        class Fixel::Model : public ListModelBase
         {
 
           public:
             Model (QObject* parent) :
               ListModelBase (parent) { }
 
-            void add_items (std::vector<std::string>& filenames, Vector& fixel_tool) {
+            void add_items (std::vector<std::string>& filenames, Fixel& fixel_tool) {
 
               size_t old_size = items.size();
               for (size_t i = 0, N = filenames.size(); i < N; ++i) {
-                AbstractFixel* fixel_image(nullptr);
+                BaseFixel* fixel_image(nullptr);
 
                 try
                 {
                   if(Path::has_suffix (filenames[i], {".msf", ".msh"}))
-                    fixel_image = new SparseFixel (filenames[i], fixel_tool);
+                    fixel_image = new Legacy (filenames[i], fixel_tool);
                   else
-                    fixel_image = new FixelFolder (filenames[i], fixel_tool);
+                    fixel_image = new Directory (filenames[i], fixel_tool);
                 }
                 catch (InvalidFixelDirectoryException &)
                 {
                   try
                   {
-                    fixel_image = new PackedFixel (filenames[i], fixel_tool);
+                    fixel_image = new Image4D (filenames[i], fixel_tool);
                   }
                   catch (InvalidImageException& e)
                   {
@@ -80,14 +80,14 @@ namespace MR
               endInsertRows ();
             }
 
-            AbstractFixel* get_fixel_image (QModelIndex& index) {
-              return dynamic_cast<AbstractFixel*>(items[index.row()].get());
+            BaseFixel* get_fixel_image (QModelIndex& index) {
+              return dynamic_cast<BaseFixel*>(items[index.row()].get());
             }
         };
 
 
 
-        Vector::Vector (Dock* parent) :
+        Fixel::Fixel (Dock* parent) :
           Base (parent),
           do_lock_to_grid (true),
           do_crop_to_slice (true),
@@ -256,35 +256,35 @@ namespace MR
 
 
 
-        void Vector::draw (const Projection& transform, bool is_3D, int, int)
+        void Fixel::draw (const Projection& transform, bool is_3D, int, int)
         {
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           not_3D = !is_3D;
           for (int i = 0; i < fixel_list_model->rowCount(); ++i) {
             if (fixel_list_model->items[i]->show && !hide_all_button->isChecked())
-              dynamic_cast<AbstractFixel*>(fixel_list_model->items[i].get())->render (transform);
+              dynamic_cast<BaseFixel*>(fixel_list_model->items[i].get())->render (transform);
           }
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
-        void Vector::draw_colourbars ()
+        void Fixel::draw_colourbars ()
         {
           if(hide_all_button->isChecked()) return;
 
           for (size_t i = 0, N = fixel_list_model->rowCount(); i < N; ++i) {
             if (fixel_list_model->items[i]->show)
-              dynamic_cast<AbstractFixel*>(fixel_list_model->items[i].get())->request_render_colourbar(*this);
+              dynamic_cast<BaseFixel*>(fixel_list_model->items[i].get())->request_render_colourbar(*this);
           }
         }
 
 
-        size_t Vector::visible_number_colourbars () {
+        size_t Fixel::visible_number_colourbars () {
            size_t total_visible(0);
 
            if(!hide_all_button->isChecked()) {
              for (size_t i = 0, N = fixel_list_model->rowCount(); i < N; ++i) {
-               AbstractFixel* fixel = dynamic_cast<AbstractFixel*>(fixel_list_model->items[i].get());
+               BaseFixel* fixel = dynamic_cast<BaseFixel*>(fixel_list_model->items[i].get());
                if (fixel && fixel->show && !ColourMap::maps[fixel->colourmap].special)
                  total_visible += 1;
              }
@@ -295,7 +295,7 @@ namespace MR
 
 
 
-        void Vector::render_fixel_colourbar(const Tool::AbstractFixel& fixel)
+        void Fixel::render_fixel_colourbar (const Tool::BaseFixel& fixel)
         {
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           float min_value = fixel.use_discard_lower() ?
@@ -314,7 +314,7 @@ namespace MR
         }
 
 
-        void Vector::fixel_open_slot ()
+        void Fixel::fixel_open_slot ()
         {
           std::vector<std::string> list = Dialog::File::get_files (this,
                                                                    "Select fixel images to open",
@@ -323,7 +323,7 @@ namespace MR
         }
 
 
-        void Vector::add_images (std::vector<std::string> &list)
+        void Fixel::add_images (std::vector<std::string> &list)
         {
           if (list.empty())
             return;
@@ -343,7 +343,7 @@ namespace MR
         }
 
 
-        void Vector::dropEvent (QDropEvent* event)
+        void Fixel::dropEvent (QDropEvent* event)
         {
           static constexpr int max_files = 32;
 
@@ -364,7 +364,7 @@ namespace MR
         }
 
 
-        void Vector::fixel_close_slot ()
+        void Fixel::fixel_close_slot ()
         {
           QModelIndexList indexes = fixel_list_view->selectionModel()->selectedIndexes();
           while (indexes.size()) {
@@ -375,7 +375,7 @@ namespace MR
         }
 
 
-        void Vector::toggle_shown_slot (const QModelIndex& index, const QModelIndex& index2)
+        void Fixel::toggle_shown_slot (const QModelIndex& index, const QModelIndex& index2)
         {
           if (index.row() == index2.row()) {
             fixel_list_view->setCurrentIndex(index);
@@ -391,13 +391,13 @@ namespace MR
         }
 
 
-        void Vector::hide_all_slot ()
+        void Fixel::hide_all_slot ()
         {
           window().updateGL();
         }
 
 
-        void Vector::update_gui_controls ()
+        void Fixel::update_gui_controls ()
         {
           update_gui_scaling_controls ();
           update_gui_threshold_controls ();
@@ -405,7 +405,7 @@ namespace MR
         }
 
 
-        void Vector::update_gui_colour_controls (bool reload_colour_types)
+        void Fixel::update_gui_colour_controls (bool reload_colour_types)
         {
           QModelIndexList indices = fixel_list_view->selectionModel ()->selectedIndexes ();
           size_t n_images (indices.size ());
@@ -429,7 +429,7 @@ namespace MR
 
           int colourmap_index = -2;
           for (size_t i = 0; i < n_images; ++i) {
-            AbstractFixel* fixel = dynamic_cast<AbstractFixel*> (fixel_list_model->get_fixel_image (indices[i]));
+            BaseFixel* fixel = dynamic_cast<BaseFixel*> (fixel_list_model->get_fixel_image (indices[i]));
             if (colourmap_index != int (fixel->colourmap)) {
               if (colourmap_index == -2)
                 colourmap_index = fixel->colourmap;
@@ -455,7 +455,7 @@ namespace MR
             colourmap_button->colourmap_actions[colourmap_index]->setChecked (true);
           }
 
-          AbstractFixel* first_fixel = dynamic_cast<AbstractFixel*> (fixel_list_model->get_fixel_image (indices[0]));
+          BaseFixel* first_fixel = dynamic_cast<BaseFixel*> (fixel_list_model->get_fixel_image (indices[0]));
 
           if (n_images == 1 && reload_colour_types)
             first_fixel->load_colourby_combobox_options (*colour_combobox);
@@ -477,7 +477,7 @@ namespace MR
         }
 
 
-        void Vector::update_gui_scaling_controls (bool reload_scaling_types)
+        void Fixel::update_gui_scaling_controls (bool reload_scaling_types)
         {
           QModelIndexList indices = fixel_list_view->selectionModel ()->selectedIndexes ();
           size_t n_images (indices.size ());
@@ -490,7 +490,7 @@ namespace MR
             return;
           }
 
-          AbstractFixel* first_fixel = dynamic_cast<AbstractFixel*> (fixel_list_model->get_fixel_image (indices[0]));
+          BaseFixel* first_fixel = dynamic_cast<BaseFixel*> (fixel_list_model->get_fixel_image (indices[0]));
 
           if (n_images == 1 && reload_scaling_types)
             first_fixel->load_scaleby_combobox_options (*length_combobox);
@@ -502,7 +502,7 @@ namespace MR
         }
 
 
-        void Vector::update_gui_threshold_controls (bool reload_threshold_types)
+        void Fixel::update_gui_threshold_controls (bool reload_threshold_types)
         {
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
           size_t n_images (indices.size ());
@@ -520,7 +520,7 @@ namespace MR
             return;
           }
 
-          AbstractFixel* first_fixel = dynamic_cast<AbstractFixel*> (fixel_list_model->get_fixel_image (indices[0]));
+          BaseFixel* first_fixel = dynamic_cast<BaseFixel*> (fixel_list_model->get_fixel_image (indices[0]));
 
           bool has_val = first_fixel->has_values ();
 
@@ -558,14 +558,14 @@ namespace MR
         }
 
 
-        void Vector::opacity_slot (int opacity)
+        void Fixel::opacity_slot (int opacity)
         {
           line_opacity = Math::pow2 (static_cast<float>(opacity)) / 1.0e6f;
           window().updateGL();
         }
 
 
-        void Vector::line_thickness_slot (int thickness)
+        void Fixel::line_thickness_slot (int thickness)
         {
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i)
@@ -574,7 +574,7 @@ namespace MR
         }
 
 
-        void Vector::length_multiplier_slot ()
+        void Fixel::length_multiplier_slot ()
         {
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i)
@@ -583,7 +583,7 @@ namespace MR
         }
 
 
-        void Vector::length_type_slot (int selection)
+        void Fixel::length_type_slot (int selection)
         {
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
 
@@ -598,7 +598,7 @@ namespace MR
         }
 
 
-        void Vector::threshold_type_slot (int selection)
+        void Fixel::threshold_type_slot (int selection)
         {
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
 
@@ -613,20 +613,20 @@ namespace MR
         }
 
 
-        void Vector::selection_changed_slot (const QItemSelection &, const QItemSelection &)
+        void Fixel::selection_changed_slot (const QItemSelection &, const QItemSelection &)
         {
           update_gui_controls ();
         }
 
 
-        void Vector::on_lock_to_grid_slot(bool is_checked)
+        void Fixel::on_lock_to_grid_slot(bool is_checked)
         {
           do_lock_to_grid = is_checked;
           window().updateGL();
         }
 
 
-        void Vector::on_crop_to_slice_slot (bool is_checked)
+        void Fixel::on_crop_to_slice_slot (bool is_checked)
         {
           do_crop_to_slice = is_checked;         
           lock_to_grid->setEnabled(do_crop_to_slice);
@@ -635,7 +635,7 @@ namespace MR
         }
 
 
-        void Vector::toggle_show_colour_bar (bool visible, const ColourMapButton&)
+        void Fixel::toggle_show_colour_bar (bool visible, const ColourMapButton&)
         {
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i)
@@ -644,7 +644,7 @@ namespace MR
         }
 
 
-        void Vector::selected_colourmap (size_t index, const ColourMapButton&)
+        void Fixel::selected_colourmap (size_t index, const ColourMapButton&)
         {
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i) {
@@ -653,7 +653,7 @@ namespace MR
           window().updateGL();
         }
 
-        void Vector::selected_custom_colour(const QColor& colour, const ColourMapButton&)
+        void Fixel::selected_custom_colour(const QColor& colour, const ColourMapButton&)
         {
           if (colour.isValid()) {
             QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
@@ -665,7 +665,7 @@ namespace MR
           }
         }
 
-        void Vector::reset_colourmap (const ColourMapButton&)
+        void Fixel::reset_colourmap (const ColourMapButton&)
         {
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i)
@@ -675,7 +675,7 @@ namespace MR
         }
 
 
-        void Vector::toggle_invert_colourmap (bool inverted, const ColourMapButton&)
+        void Fixel::toggle_invert_colourmap (bool inverted, const ColourMapButton&)
         {
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i)
@@ -684,7 +684,7 @@ namespace MR
         }
 
 
-        void Vector::colour_changed_slot (int selection)
+        void Fixel::colour_changed_slot (int selection)
         {
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
 
@@ -700,7 +700,7 @@ namespace MR
         }
 
 
-        void Vector::on_set_scaling_slot ()
+        void Fixel::on_set_scaling_slot ()
         {
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i)
@@ -709,7 +709,7 @@ namespace MR
         }
 
 
-        void Vector::threshold_lower_changed (int)
+        void Fixel::threshold_lower_changed (int)
         {
           if (threshold_lower_box->checkState() == Qt::PartiallyChecked) return;
           threshold_lower->setEnabled (threshold_lower_box->isChecked());
@@ -722,7 +722,7 @@ namespace MR
         }
 
 
-        void Vector::threshold_upper_changed (int)
+        void Fixel::threshold_upper_changed (int)
         {
           if (threshold_upper_box->checkState() == Qt::PartiallyChecked) return;
           threshold_upper->setEnabled (threshold_upper_box->isChecked());
@@ -735,7 +735,7 @@ namespace MR
         }
 
 
-        void Vector::threshold_lower_value_changed ()
+        void Fixel::threshold_lower_value_changed ()
         {
           if (threshold_lower_box->checkState() == Qt::PartiallyChecked) return;
           if (threshold_lower_box->isChecked()) {
@@ -752,7 +752,7 @@ namespace MR
         }
 
 
-        void Vector::threshold_upper_value_changed ()
+        void Fixel::threshold_upper_value_changed ()
         {
           if (threshold_upper_box->checkState() == Qt::PartiallyChecked) return;
           if (threshold_upper_box->isChecked()) {
@@ -769,19 +769,19 @@ namespace MR
         }
 
 
-        void Vector::add_commandline_options (MR::App::OptionList& options) 
+        void Fixel::add_commandline_options (MR::App::OptionList& options)
         { 
           using namespace MR::App;
           options
-            + OptionGroup ("Vector plot tool options")
+            + OptionGroup ("Fixel plot tool options")
 
-            + Option ("vector.load", "Load the specified MRtrix sparse image file (.msf) into the fixel tool.")
+            + Option ("fixel.load", "Load a fixel file (any file inside a fixel directory, or an old *.msf legacy format file) into the fixel tool.")
             +   Argument ("image").type_image_in();
         }
 
-        bool Vector::process_commandline_option (const MR::App::ParsedOption& opt) 
+        bool Fixel::process_commandline_option (const MR::App::ParsedOption& opt)
         {
-          if (opt.opt->is ("vector.load")) {
+          if (opt.opt->is ("fixel.load")) {
             std::vector<std::string> list (1, std::string(opt[0]));
             try { fixel_list_model->add_items (list , *this); }
             catch (Exception& E) { E.display(); }

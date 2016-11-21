@@ -12,10 +12,10 @@
  * For more details, see www.mrtrix.org
  *
  */
-#ifndef __gui_mrview_tool_vector_fixelfolder_h__
-#define __gui_mrview_tool_vector_fixelfolder_h__
+#ifndef __gui_mrview_tool_fixel_directory_h__
+#define __gui_mrview_tool_fixel_directory_h__
 
-#include "gui/mrview/tool/vector/fixel.h"
+#include "gui/mrview/tool/fixel/base_fixel.h"
 
 namespace MR
 {
@@ -25,11 +25,11 @@ namespace MR
     {
       namespace Tool
       {
-        class FixelFolder : public FixelType<FixelIndexImageType>
+        class Directory : public FixelType<FixelIndexImageType>
         {
           public:
-            FixelFolder (const std::string& filename, Vector& fixel_tool) :
-              FixelType (Fixel::find_index_header (Path::dirname (filename)).name (), fixel_tool)
+            Directory (const std::string& filename, Fixel& fixel_tool) :
+              FixelType (MR::Fixel::find_index_header (Path::dirname (filename)).name (), fixel_tool)
             {
               value_types = {"unity"};
               colour_types = {"direction"};

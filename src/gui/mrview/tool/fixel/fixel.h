@@ -13,14 +13,15 @@
  * 
  */
 
-#ifndef __gui_mrview_tool_vector_h__
-#define __gui_mrview_tool_vector_h__
+#ifndef __gui_mrview_tool_fixel_h__
+#define __gui_mrview_tool_fixel_h__
 
 #include "gui/mrview/tool/base.h"
 #include "gui/projection.h"
 #include "gui/mrview/adjust_button.h"
 #include "gui/mrview/combo_box_error.h"
 #include "gui/mrview/colourmap_button.h"
+
 
 namespace MR
 {
@@ -30,30 +31,30 @@ namespace MR
     {
       namespace Tool
       {
-        class Vector : public Base, public ColourMapButtonObserver, public DisplayableVisitor
+        class Fixel : public Base, public ColourMapButtonObserver, public DisplayableVisitor
         {
             Q_OBJECT
 
           public:
             class Model;
 
-            Vector (Dock* parent);
+            Fixel (Dock* parent);
 
-            virtual ~Vector () {}
+            virtual ~Fixel () {}
 
             void draw (const Projection& transform, bool is_3D, int, int) override;
             void draw_colourbars () override;
             size_t visible_number_colourbars () override;
-            void render_fixel_colourbar(const Tool::AbstractFixel& fixel) override;
+            void render_fixel_colourbar (const Tool::BaseFixel& fixel) override;
 
             static void add_commandline_options (MR::App::OptionList& options);
             virtual bool process_commandline_option (const MR::App::ParsedOption& opt) override;
 
-            void selected_colourmap(size_t index, const ColourMapButton&) override;
-            void selected_custom_colour(const QColor& colour, const ColourMapButton&) override;
-            void toggle_show_colour_bar(bool, const ColourMapButton&) override;
-            void toggle_invert_colourmap(bool, const ColourMapButton&) override;
-            void reset_colourmap(const ColourMapButton&) override;
+            void selected_colourmap (size_t index, const ColourMapButton&) override;
+            void selected_custom_colour (const QColor& colour, const ColourMapButton&) override;
+            void toggle_show_colour_bar (bool, const ColourMapButton&) override;
+            void toggle_invert_colourmap (bool, const ColourMapButton&) override;
+            void reset_colourmap (const ColourMapButton&) override;
 
             QPushButton* hide_all_button;
             bool do_lock_to_grid, do_crop_to_slice;

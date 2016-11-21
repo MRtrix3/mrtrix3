@@ -13,7 +13,7 @@
  *
  */
 
-#include "gui/mrview/tool/vector/packedfixel.h"
+#include "gui/mrview/tool/fixel/image4D.h"
 
 namespace MR
 {
@@ -23,7 +23,8 @@ namespace MR
     {
       namespace Tool
       {
-        void PackedFixel::load_image_buffer()
+
+        void Image4D::load_image_buffer()
         {
           size_t ndim = fixel_data->ndim ();
 
@@ -86,7 +87,6 @@ namespace MR
             }
           }
         }
-
       }
     }
   }

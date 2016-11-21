@@ -13,7 +13,7 @@
  *
  */
 
-#include "gui/mrview/tool/vector/sparsefixel.h"
+#include "gui/mrview/tool/fixel/legacy.h"
 
 namespace MR
 {
@@ -23,7 +23,8 @@ namespace MR
     {
       namespace Tool
       {
-        void SparseFixel::load_image_buffer()
+
+        void Legacy::load_image_buffer()
         {
           for (size_t axis = 0; axis < 3; ++axis) {
             const size_t axis_size = fixel_data->size (axis);
@@ -66,7 +67,6 @@ namespace MR
             }
           }
         }
-
       }
     }
   }

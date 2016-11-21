@@ -19,7 +19,7 @@
 #include "gui/mrview/tool/roi_editor/roi.h"
 #include "gui/mrview/tool/overlay.h"
 #include "gui/mrview/tool/odf/odf.h"
-#include "gui/mrview/tool/vector/vector.h"
+#include "gui/mrview/tool/fixel/fixel.h"
 #include "gui/mrview/tool/screen_capture.h"
 #include "gui/mrview/tool/tractography/tractography.h"
 #include "gui/mrview/tool/connectome/connectome.h"
@@ -36,7 +36,7 @@ TOOL(Overlay, Overlay, Overlay other images over the current image)
 TOOL(ROI, ROI editor, View & edit regions of interest)
 TOOL(Tractography, Tractography, Display tracks over the current image)
 TOOL(ODF, ODF Display, Display orientation density functions)
-TOOL(Vector, Vector Plot, Plot vector images)
+TOOL(Fixel, Fixel Plot, Plot fixel images)
 TOOL(Connectome, Connectome, Plot connectome properties)
 TOOL(Capture, Screen capture, Capture the screen as a png file)
 

@@ -13,7 +13,7 @@
  *
  */
 
-#include "gui/mrview/tool/vector/fixelfolder.h"
+#include "gui/mrview/tool/fixel/directory.h"
 
 namespace MR
 {
@@ -23,7 +23,7 @@ namespace MR
     {
       namespace Tool
       {
-        void FixelFolder::load_image_buffer()
+        void Directory::load_image_buffer()
         {
           for (size_t axis = 0; axis < 3; ++axis) {
             slice_fixel_indices[axis].resize (fixel_data->size (axis));
@@ -60,7 +60,7 @@ namespace MR
 
 
           // Load fixel direction images
-          auto directions_image = Fixel::find_directions_header (Path::dirname (fixel_data->name())).get_image<float>().with_direct_io ();
+          auto directions_image = MR::Fixel::find_directions_header (Path::dirname (fixel_data->name())).get_image<float>().with_direct_io ();
           directions_image.index (1) = 0;
           for (auto l = Loop(0, 3) (*fixel_data); l; ++l) {
             fixel_data->index (3) = 0;
@@ -75,7 +75,7 @@ namespace MR
 
           // Load fixel data images keys
           // We will load the actual fixel data lazily upon request
-          auto data_headers = Fixel::find_data_headers (Path::dirname (fixel_data->name ()), *fixel_data);
+          auto data_headers = MR::Fixel::find_data_headers (Path::dirname (fixel_data->name ()), *fixel_data);
           for (auto& header : data_headers) {
 
             if (header.size (1) != 1) continue;
@@ -88,7 +88,7 @@ namespace MR
           }
         }
 
-        void FixelFolder::lazy_load_fixel_value_file (const std::string& key) const {
+        void Directory::lazy_load_fixel_value_file (const std::string& key) const {
 
           // We're assuming the key corresponds to the fixel data filename
           const auto data_filepath = Path::join(Path::dirname (fixel_data->name ()), key);
@@ -99,7 +99,7 @@ namespace MR
 
           auto H = Header::open (data_filepath);
 
-          if (!Fixel::is_data_file (H))
+          if (!MR::Fixel::is_data_file (H))
             return;
 
           auto data_image = H.get_image<float> ();
@@ -122,7 +122,7 @@ namespace MR
         }
 
 
-        FixelValue& FixelFolder::get_fixel_value (const std::string& key) const {
+        FixelValue& Directory::get_fixel_value (const std::string& key) const {
           if (!has_values ())
             return dummy_fixel_val_state;
 
@@ -135,8 +135,6 @@ namespace MR
         }
 
       }
-
-
     }
   }
 }

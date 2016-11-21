@@ -12,10 +12,10 @@
  * For more details, see www.mrtrix.org
  *
  */
-#ifndef __gui_mrview_tool_vector_packedfixel_h__
-#define __gui_mrview_tool_vector_packedfixel_h__
+#ifndef __gui_mrview_tool_fixel_legacy_h__
+#define __gui_mrview_tool_fixel_legacy_h__
 
-#include "gui/mrview/tool/vector/fixel.h"
+#include "gui/mrview/tool/fixel/base_fixel.h"
 
 namespace MR
 {
@@ -25,18 +25,19 @@ namespace MR
     {
       namespace Tool
       {
-        class PackedFixel : public FixelType<FixelPackedImageType>
+        class Legacy : public FixelType<FixelLegacyType>
         {
           public:
-            PackedFixel (const std::string& filename, Vector& fixel_tool) :
+            Legacy (const std::string& filename, Fixel& fixel_tool) :
               FixelType (filename, fixel_tool)
             {
-              value_types = {"Unity", "Length"};
-              colour_types = {"Direction", "Length"};
-              threshold_types = {"Length"};
+              value_types = {"unity", "fixel size", "associated value"};
+              colour_types = {"direction", "fixel size", "associated value"};
+              threshold_types = {"fixel size", "associated value"};
               fixel_values[value_types[1]];
-              fixel_data.reset (new FixelPackedImageType (header.get_image<float> ()));
+              fixel_values[value_types[2]];
 
+              fixel_data.reset (new FixelLegacyType (header));
               load_image (filename);
             }
 

@@ -13,7 +13,7 @@
  * 
  */
 
-#include "gui/mrview/tool/vector/fixel.h"
+#include "gui/mrview/tool/fixel/base_fixel.h"
 
 
 namespace MR
@@ -24,9 +24,7 @@ namespace MR
     {
       namespace Tool
       {
-
-
-        AbstractFixel::AbstractFixel (const std::string& filename, Vector& fixel_tool) :
+        BaseFixel::BaseFixel (const std::string& filename, Fixel& fixel_tool) :
           Displayable (filename),
           header (MR::Header::open (filename)),
           slice_fixel_indices (3),
@@ -52,7 +50,7 @@ namespace MR
           voxel_size_length_multipler = 0.45 * (header.spacing(0) + header.spacing(1) + header.spacing(2)) / 3;
         }
 
-        AbstractFixel::~AbstractFixel()
+        BaseFixel::~BaseFixel()
         {
           MRView::GrabContext context;
           vertex_buffer.clear ();
@@ -66,7 +64,7 @@ namespace MR
           regular_grid_val_buffer.clear ();
         }
 
-        std::string AbstractFixel::Shader::vertex_shader_source (const Displayable&)
+        std::string BaseFixel::Shader::vertex_shader_source (const Displayable&)
         {
           std::string source =
                "layout (location = 0) in vec3 centre;\n"
@@ -90,7 +88,7 @@ namespace MR
         }
 
 
-        std::string AbstractFixel::Shader::geometry_shader_source (const Displayable& fixel)
+        std::string BaseFixel::Shader::geometry_shader_source (const Displayable& fixel)
         {
           std::string source =
               "layout(points) in;\n"
@@ -176,7 +174,7 @@ namespace MR
         }
 
 
-        std::string AbstractFixel::Shader::fragment_shader_source (const Displayable&)
+        std::string BaseFixel::Shader::fragment_shader_source (const Displayable&)
         {
           std::string source =
               "out vec3 outColour;\n"
@@ -188,9 +186,9 @@ namespace MR
         }
 
 
-        bool AbstractFixel::Shader::need_update (const Displayable& object) const
+        bool BaseFixel::Shader::need_update (const Displayable& object) const
         {
-          const AbstractFixel& fixel (dynamic_cast<const AbstractFixel&> (object));
+          const BaseFixel& fixel (dynamic_cast<const BaseFixel&> (object));
           if (color_type != fixel.colour_type)
             return true;
           else if (scale_type != fixel.scale_type)
@@ -199,9 +197,9 @@ namespace MR
         }
 
 
-        void AbstractFixel::Shader::update (const Displayable& object)
+        void BaseFixel::Shader::update (const Displayable& object)
         {
-          const AbstractFixel& fixel (dynamic_cast<const AbstractFixel&> (object));
+          const BaseFixel& fixel (dynamic_cast<const BaseFixel&> (object));
           do_crop_to_slice = fixel.fixel_tool.do_crop_to_slice;
           color_type = fixel.colour_type;
           scale_type = fixel.scale_type;
@@ -209,7 +207,7 @@ namespace MR
         }
 
 
-        void AbstractFixel::render (const Projection& projection)
+        void BaseFixel::render (const Projection& projection)
         {
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           start (fixel_shader);
@@ -268,7 +266,7 @@ namespace MR
         }
 
 
-        void AbstractFixel::update_image_buffers ()
+        void BaseFixel::update_image_buffers ()
         {
           if (dir_buffer_dirty)
             reload_directions_buffer ();
@@ -289,9 +287,9 @@ namespace MR
         }
 
 
-        void AbstractFixel::update_interp_image_buffer (const Projection& projection,
-                                                        const MR::Header &fixel_header,
-                                                        const MR::Transform &transform)
+        void BaseFixel::update_interp_image_buffer (const Projection& projection,
+                                               const MR::Header &fixel_header,
+                                               const MR::Transform &transform)
         {
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           // Code below "inspired" by ODF::draw
@@ -414,7 +412,7 @@ namespace MR
         }
 
 
-        void AbstractFixel::load_image (const std::string& filename)
+        void BaseFixel::load_image (const std::string& filename)
         {
           // Make sure to set graphics context!
           // We're setting up vertex array objects
@@ -470,7 +468,7 @@ namespace MR
         }
 
 
-        void AbstractFixel::reload_directions_buffer ()
+        void BaseFixel::reload_directions_buffer ()
         {
           MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
@@ -487,7 +485,7 @@ namespace MR
         }
 
 
-        void AbstractFixel::reload_values_buffer ()
+        void BaseFixel::reload_values_buffer ()
         {
           MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
@@ -510,7 +508,7 @@ namespace MR
         }
 
 
-        void AbstractFixel::reload_colours_buffer ()
+        void BaseFixel::reload_colours_buffer ()
         {
           MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
@@ -533,7 +531,7 @@ namespace MR
         }
 
 
-        void AbstractFixel::reload_threshold_buffer ()
+        void BaseFixel::reload_threshold_buffer ()
         {
           MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
@@ -551,7 +549,6 @@ namespace MR
 
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
-
       }
     }
   }
