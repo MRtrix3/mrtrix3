@@ -192,19 +192,19 @@ if lib.app.args.linear_no_pause:
   do_pause_on_warn = False
 
 lib.app.args.template = relpath(lib.app.args.template)
-lib.app.checkOutputFile(lib.app.args.template)
+lib.app.checkOutputImg(lib.app.args.template)
 
 if lib.app.args.warp_dir:
   lib.app.args.warp_dir = relpath(lib.app.args.warp_dir)
-  lib.app.checkOutputFile(lib.app.args.warp_dir)
+  lib.app.checkOutputDir(lib.app.args.warp_dir)
 
 if lib.app.args.transformed_dir:
   lib.app.args.transformed_dir = relpath(lib.app.args.transformed_dir)
-  lib.app.checkOutputFile(lib.app.args.transformed_dir)
+  lib.app.checkOutputDir(lib.app.args.transformed_dir)
 
 if lib.app.args.linear_transformations_dir:
   lib.app.args.linear_transformations_dir = relpath(lib.app.args.linear_transformations_dir)
-  lib.app.checkOutputFile(lib.app.args.linear_transformations_dir)
+  lib.app.checkOutputDir(lib.app.args.linear_transformations_dir)
 
 
 # automatically detect SH series

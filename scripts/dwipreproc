@@ -85,7 +85,7 @@ eddy_cmd = getFSLEddyPath(lib.app.args.cuda)
 fsl_suffix = getFSLSuffix()
 PE_dir = getPEDir(lib.app.args.pe_dir)
 
-lib.app.checkOutputFile(lib.app.args.output)
+lib.app.checkOutputImg(lib.app.args.output)
 
 # Export the gradient table to the path requested by the user if necessary
 grad_export_option = ''

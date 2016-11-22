@@ -66,9 +66,9 @@ for i in inFiles:
   index = maskPrefixes.index(prefix)
   input.append(Input(i, prefix, lib.app.workingDir + '/' + inputDir + '/', maskFiles[index], lib.app.workingDir + '/' + maskDir + '/'))
 
-lib.app.checkOutputFile (lib.app.args.fa_template)
-lib.app.checkOutputFile (lib.app.args.wm_mask)
-lib.app.checkOutputFile (lib.app.args.output_dir)
+lib.app.checkOutputImg (lib.app.args.fa_template)
+lib.app.checkOutputImg (lib.app.args.wm_mask)
+lib.app.checkOutputDir (lib.app.args.output_dir)
 lib.app.make_dir(lib.app.args.output_dir)
 
 lib.app.makeTempDir()

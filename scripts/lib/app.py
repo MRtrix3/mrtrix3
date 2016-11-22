@@ -103,9 +103,7 @@ def initialise():
     tempDir = os.path.abspath(args.cont[0])
     lastFile = args.cont[1]
 
-
-
-def checkOutputFile(path):
+def checkOutput(path, force_type = False):
   import os
   from lib.errorMessage import errorMessage
   from lib.warnMessage  import warnMessage
@@ -115,17 +113,35 @@ def checkOutputFile(path):
   if os.path.exists(path):
     type = ''
     if os.path.isfile(path):
-      type = ' file'
+      type = 'file'
     elif os.path.isdir(path):
-      type = ' directory'
+      type = 'directory'
+    if force_type and type != force_type:
+      errorMessage('Output ' + type + ' ' + path + ' is not a ' + force_type)
+      sys.exit(1)
     if args.force:
-      warnMessage('Output' + type + ' ' + os.path.basename(path) + ' already exists; will be overwritten at script completion')
+      warnMessage('Output ' + type + ' ' + os.path.basename(path) + ' already exists; will be overwritten at script completion')
       mrtrixForce = ' -force'
     else:
-      errorMessage('Output' + type + ' ' + path + ' already exists (use -force to override)')
+      errorMessage('Output ' + type + ' ' + path + ' already exists (use -force to override)')
       sys.exit(1)
 
+def checkOutputFile(path):
+  checkOutput (path, force_type = 'file')
 
+def checkOutputDir (path):
+  checkOutput (path, force_type = 'directory')
+
+def checkOutputImg(path):
+  from lib.errorMessage import errorMessage
+  valid_extensions=[".mih",".mif",".mif.gz",".img",".nii",".nii.gz"]
+  # ".bfloat",".bshort",".mri",".mgh",".mgz",".mgh.gz",".msf",".msh",".dcm",
+  for ext in valid_extensions:
+    if path.endswith(ext):
+      checkOutputFile(path)
+      return
+  errorMessage('Output image path ' + path + ' is not a valid image')
+  sys.exit(1)
 
 def makeTempDir():
   import os, random, string, sys
