@@ -90,8 +90,7 @@ typedef float value_type;
 
 
 template <class ImageType>
-class DenoisingFunctor
-{
+class DenoisingFunctor { MEMALIGN(DenoisingFunctor)
   public:
   DenoisingFunctor (ImageType& dwi, std::vector<int> extent, Image<bool>& mask, ImageType& noise)
     : extent {{extent[0]/2, extent[1]/2, extent[2]/2}},

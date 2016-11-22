@@ -89,7 +89,7 @@ void usage ()
 
 typedef float value_type;
 
-class Amp2SHCommon {
+class Amp2SHCommon { MEMALIGN(Amp2SHCommon)
   public:
     template <class MatrixType>
       Amp2SHCommon (const MatrixType& sh2amp,
@@ -112,7 +112,7 @@ class Amp2SHCommon {
 
 
 
-class Amp2SH {
+class Amp2SH { MEMALIGN(Amp2SH)
   public:
     Amp2SH (const Amp2SHCommon& common) : 
       C (common), 

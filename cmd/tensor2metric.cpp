@@ -107,8 +107,7 @@ void usage ()
     "Proc Intl Soc Mag Reson Med, 1997, 5, 1742";
 }
 
-class Processor
-{
+class Processor { MEMALIGN(Processor)
   public:
     Processor (Image<bool>& mask_img, Image<value_type>& adc_img, Image<value_type>& fa_img, Image<value_type>& ad_img, Image<value_type>& rd_img, Image<value_type>& cl_img, Image<value_type>& cp_img, Image<value_type>& cs_img, Image<value_type>& value_img, Image<value_type>& vector_img, std::vector<int> vals, int modulate) :
       mask_img (mask_img),

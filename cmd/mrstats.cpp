@@ -62,8 +62,7 @@ OPTIONS
 typedef Stats::value_type value_type;
 typedef Stats::complex_type complex_type;
 
-class Volume_loop
-{
+class Volume_loop { NOMEMALIGN
   public:
     Volume_loop (Image<complex_type>& in) :
         image (in),

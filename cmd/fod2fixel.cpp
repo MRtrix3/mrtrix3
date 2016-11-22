@@ -102,8 +102,7 @@ void usage ()
 
 
 
-class Segmented_FOD_receiver
-{
+class Segmented_FOD_receiver { MEMALIGN(Segmented_FOD_receiver)
 
   public:
     Segmented_FOD_receiver (const Header& header) :

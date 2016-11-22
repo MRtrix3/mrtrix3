@@ -62,7 +62,7 @@ void usage ()
 }
 
 
-class Tag {
+class Tag { NOMEMALIGN
   public:
     Tag (uint16_t group, uint16_t element, const std::string& newvalue) :
       group (group), element (element), newvalue (newvalue) { }

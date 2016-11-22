@@ -87,8 +87,7 @@ typedef Eigen::VectorXf vector_type;
 
 
 
-class TDI : public Image<value_type>
-{
+class TDI : public Image<value_type> { MEMALIGN(TDI)
   public:
     TDI (const Header& H, const size_t num_tracks) :
         Image<value_type> (Image<value_type>::scratch (H, "TDI scratch image")),
@@ -114,7 +113,7 @@ class TDI : public Image<value_type>
 
 
 // Guarantees thread-safety
-class Sampler {
+class Sampler { MEMALIGN(Sampler)
   public:
     Sampler (Image<value_type>& image, const stat_tck statistic, const bool precise, std::unique_ptr<TDI>& precalc_tdi) :
         interp ((!precise && !precalc_tdi) ? new Interp::Linear<Image<value_type>> (image) : nullptr),
@@ -193,7 +192,7 @@ class Sampler {
         } else if (statistic == MEDIAN) {
           // Should be a weighted median...
           // Just use the n.log(n) algorithm
-          class WeightSort {
+          class WeightSort { NOMEMALIGN
             public:
               WeightSort (const DWI::Tractography::Mapping::Voxel& voxel, const value_type value) :
                   value (value),
@@ -277,8 +276,7 @@ class Sampler {
 
 
 
-class ReceiverBase
-{
+class ReceiverBase { MEMALIGN(ReceiverBase)
   public:
     ReceiverBase (const size_t num_tracks) :
         received (0),
@@ -307,8 +305,7 @@ class ReceiverBase
 };
 
 
-class Receiver_Statistic : private ReceiverBase
-{
+class Receiver_Statistic : private ReceiverBase { MEMALIGN(Receiver_Statistic)
   public:
     Receiver_Statistic (const size_t num_tracks) :
         ReceiverBase (num_tracks),
@@ -333,8 +330,7 @@ class Receiver_Statistic : private ReceiverBase
 
 
 
-class Receiver_NoStatistic : private ReceiverBase
-{
+class Receiver_NoStatistic : private ReceiverBase { MEMALIGN(Receiver_NoStatistic)
   public:
     Receiver_NoStatistic (const std::string& path,
                           const size_t num_tracks,

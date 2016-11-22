@@ -182,7 +182,7 @@ void usage ()
 
 
 template<typename T>
-class __copy_fod {
+class __copy_fod { MEMALIGN(__copy_fod<T>)
   public:
     __copy_fod (const int lmax, const double weight, const bool apodise) 
       : w(weight), a(apodise), apo (lmax), SH_out (Math::SH::NforL(lmax)) { }

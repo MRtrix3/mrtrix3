@@ -58,7 +58,7 @@ typedef Eigen::Vector3d vector3_type;
 
 
 
-class Shared {
+class Shared { MEMALIGN(Shared)
   public:
     Shared (const Eigen::MatrixXd& directions, size_t target_num_permutations) :
       directions (directions), target_num_permutations (target_num_permutations), num_permutations(0),
@@ -108,7 +108,7 @@ class Shared {
 
 
 
-class Processor {
+class Processor { MEMALIGN(Processor)
   public:
     Processor (Shared& shared) :
       shared (shared),

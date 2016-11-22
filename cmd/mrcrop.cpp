@@ -79,7 +79,7 @@ void run ()
       bounds[axis][1] = 0;
     }
 
-    struct BoundsCheck {
+    struct BoundsCheck { NOMEMALIGN
       std::vector<std::vector<ssize_t>>& overall_bounds;
       std::vector<std::vector<ssize_t>> bounds;
       BoundsCheck (std::vector<std::vector<ssize_t>>& overall_bounds) : overall_bounds (overall_bounds), bounds (overall_bounds) { }

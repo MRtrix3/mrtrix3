@@ -82,7 +82,7 @@ void usage ()
 typedef float value_type;
 const value_type UNIT = 1.0 / std::sqrt(3.0);
 
-class DecTransform {
+class DecTransform { MEMALIGN(DecTransform)
 
   public:
 
@@ -97,7 +97,7 @@ class DecTransform {
 
 };
 
-class DecComputer {
+class DecComputer { MEMALIGN(DecComputer)
 
   private:
 
@@ -156,7 +156,7 @@ class DecComputer {
 
 };
 
-class DecWeighter {
+class DecWeighter { MEMALIGN(DecWeighter)
 
   private:
 

@@ -67,7 +67,7 @@ void usage ()
 
 
 class Processor
-{
+{ MEMALIGN(Processor)
 
   public:
     Processor (const Image<bool>& mask) : mask (mask) { }

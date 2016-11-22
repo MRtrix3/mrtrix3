@@ -149,14 +149,16 @@ inline void __aligned_delete (void* ptr) { if (ptr) std::free (*(reinterpret_cas
  *
  * The compiler will check whether this is indeed needed, and fail with an
  * appropriate warning if this is not true. In this case, you need to replace
- * MEM_ALIGN with NO_MEM_ALIGN.
- * \sa NO_MEM_ALIGN
- * \sa MEM_ALIGN
+ * MEMALIGN with NOMEMALIGN.
+ * \sa NOMEMALIGN
+ * \sa MEMALIGN
  */
 #define CHECK_MEM_ALIGN(classname) \
     static_assert ( (alignof(classname) <= MRTRIX_ALLOC_MEM_ALIGN ) || __has_custom_new_operator<classname>::value, \
         "class requires over-alignment, but no operator new defined! Please insert MEMALIGN() into class definition.") 
 
+
+#define NOMEMALIGN
 
 namespace MR
 {
@@ -167,7 +169,7 @@ namespace MR
   typedef std::complex<float> cfloat;
 
   template <typename T>
-    struct container_cast : public T {
+    struct container_cast : public T { MEMALIGN(container_cast<T>)
       template <typename U>
         container_cast (const U& x) : 
         T (x.begin(), x.end()) { }
@@ -184,14 +186,14 @@ namespace MR
 
 
   //! check whether type is complex:
-  template <class ValueType> struct is_complex : std::false_type { };
-  template <class ValueType> struct is_complex<std::complex<ValueType>> : std::true_type { };
+  template <class ValueType> struct is_complex : std::false_type { NOMEMALIGN };
+  template <class ValueType> struct is_complex<std::complex<ValueType>> : std::true_type { NOMEMALIGN };
 
 
   //! check whether type is compatible with MRtrix3's file IO backend:
   template <class ValueType> 
     struct is_data_type : 
-      std::integral_constant<bool, std::is_arithmetic<ValueType>::value || is_complex<ValueType>::value> { };
+      std::integral_constant<bool, std::is_arithmetic<ValueType>::value || is_complex<ValueType>::value> { NOMEMALIGN };
 
 
 }

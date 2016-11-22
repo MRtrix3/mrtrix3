@@ -48,7 +48,7 @@ typedef double value_type;
 typedef std::array<value_type,3> Direction;
 typedef std::vector<Direction> DirectionSet;
 
-struct OutDir {
+struct OutDir { MEMALIGN(OutDir)
   Direction d;
   size_t b;
   size_t pe;

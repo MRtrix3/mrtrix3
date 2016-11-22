@@ -65,8 +65,7 @@ void usage ()
 }
 
 
-class VTKWriter: public WriterInterface<float>
-{
+class VTKWriter: public WriterInterface<float> { MEMALIGN(VTKWriter)
 public:
     VTKWriter(const std::string& file) : VTKout (file) {
         // create and write header of VTK output file:
@@ -123,8 +122,7 @@ private:
 
 
 
-class ASCIIReader: public ReaderInterface<float>
-{
+class ASCIIReader: public ReaderInterface<float> { MEMALIGN(ASCIIReader)
 public:
     ASCIIReader(const std::string& file) {
         auto num = list.parse_scan_check(file);
@@ -151,8 +149,7 @@ private:
 };
 
 
-class ASCIIWriter: public WriterInterface<float>
-{
+class ASCIIWriter: public WriterInterface<float> { MEMALIGN(ASCIIWriter)
 public:
     ASCIIWriter(const std::string& file) {
         count.push_back(0);
