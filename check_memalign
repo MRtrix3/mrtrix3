@@ -1,0 +1,26 @@
+#/bin/bash
+
+for f in $(find . -type f -name '*.h' -o -name '*.cpp' | grep -v '_moc.cpp'); do 
+
+  res=$( \
+    cat $f | \
+    grep -v '^#' | \
+    perl -pe 's|//.*$||' | \
+    tr '\n' ' ' | \
+    perl -pe 's|\s+| |g' | \
+    perl -pe 's|/\*.*?\*/||g' | \
+    perl -pe 's|<[^{};<]*?>||g' | \
+    perl -pe 's|<[^{};<]*?>||g' | \
+    perl -pe 's|<[^{};<]*?>||g' | \
+    perl -pe 's|<[^{};<]*?>||g' | \
+    grep -Eo '\b(class|struct)\b[^;{]*?{(\s*(MEMALIGN\s*\([^\)]*\)|NOMEMALIGN))?' | \
+    grep -Ev '\b(class|struct)\b[^;{]*?{(\s*(MEMALIGN\s*\([^\)]*\)|NOMEMALIGN))'
+  )
+
+  if [[ ! -z $res ]]; then 
+    echo "################################### $f"
+    echo "$res"
+  fi 
+
+done
+
