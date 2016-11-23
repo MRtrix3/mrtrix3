@@ -41,18 +41,6 @@ namespace MR
         }
 
 
-        bool GMWMI_finder::is_cgm (const Eigen::Vector3f& p) const
-        {
-          Interp interp (interp_template);
-          // TODO: this is no-op, what was it doing here?!?
-          // interp.scanner2voxel (p);
-          const Tissues tissues (interp);
-          return (tissues.valid() && (tissues.get_sgm() > tissues.get_cgm()));
-        }
-
-
-
-
 
         Eigen::Vector3f GMWMI_finder::find_interface (const vector< Eigen::Vector3f >& tck, const bool end) const
         {
