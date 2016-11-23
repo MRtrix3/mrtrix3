@@ -928,6 +928,29 @@ namespace MR
             calculate_edge_sizes();
           if (edge_alpha == edge_alpha_t::CONNECTOME)
             calculate_edge_alphas();
+
+          // Also need to update limits on UI controls
+          QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
+          if (list.size()) {
+            const FileDataVector& data (matrix_list_model->get (list[0]));
+            if (node_visibility == node_visibility_t::CONNECTOME)
+              update_controls_node_visibility (data.get_min(), data.get_mean(), data.get_max());
+            if (node_colour == node_colour_t::CONNECTOME)
+              update_controls_node_colour (data.get_min(), data.get_mean(), data.get_max());
+            if (node_size == node_size_t::CONNECTOME)
+              update_controls_node_size (data.get_min(), data.get_mean(), data.get_max());
+            if (node_alpha == node_alpha_t::CONNECTOME)
+              update_controls_node_alpha (data.get_min(), data.get_mean(), data.get_max());
+            if (edge_visibility == edge_visibility_t::CONNECTOME)
+              update_controls_edge_visibility (data.get_min(), data.get_mean(), data.get_max());
+            if (edge_colour == edge_colour_t::CONNECTOME)
+              update_controls_edge_colour (data.get_min(), data.get_mean(), data.get_max());
+            if (edge_size == edge_size_t::CONNECTOME)
+              update_controls_edge_size (data.get_min(), data.get_mean(), data.get_max());
+            if (edge_alpha == edge_alpha_t::CONNECTOME)
+              update_controls_edge_alpha (data.get_min(), data.get_mean(), data.get_max());
+          }
+
           window().updateGL();
         }
 
@@ -1574,12 +1597,7 @@ namespace MR
         }
         void Connectome::node_colour_parameter_slot()
         {
-          node_colour_lower_button->blockSignals (true);
-          node_colour_upper_button->blockSignals (true);
-          node_colour_lower_button->setMax (node_colour_upper_button->value());
-          node_colour_upper_button->setMin (node_colour_lower_button->value());
-          node_colour_lower_button->blockSignals (false);
-          node_colour_upper_button->blockSignals (false);
+          limit_min_max_controls (node_colour_lower_button, node_colour_upper_button);
           calculate_node_colours();
           window().updateGL();
         }
@@ -1602,12 +1620,7 @@ namespace MR
         }
         void Connectome::node_size_parameter_slot()
         {
-          node_size_lower_button->blockSignals (true);
-          node_size_upper_button->blockSignals (true);
-          node_size_lower_button->setMax (node_size_upper_button->value());
-          node_size_upper_button->setMin (node_size_lower_button->value());
-          node_size_lower_button->blockSignals (false);
-          node_size_upper_button->blockSignals (false);
+          limit_min_max_controls (node_size_lower_button, node_size_upper_button);
           calculate_node_sizes();
           window().updateGL();
         }
@@ -1634,12 +1647,7 @@ namespace MR
         }
         void Connectome::node_alpha_parameter_slot()
         {
-          node_alpha_lower_button->blockSignals (true);
-          node_alpha_upper_button->blockSignals (true);
-          node_alpha_lower_button->setMax (node_alpha_upper_button->value());
-          node_alpha_upper_button->setMin (node_alpha_lower_button->value());
-          node_alpha_lower_button->blockSignals (false);
-          node_alpha_upper_button->blockSignals (false);
+          limit_min_max_controls (node_alpha_lower_button, node_alpha_upper_button);
           calculate_node_alphas();
           if (edge_visibility_by_nodes_checkbox->isChecked())
             calculate_edge_visibility();
@@ -1972,12 +1980,7 @@ namespace MR
         }
         void Connectome::edge_colour_parameter_slot()
         {
-          edge_colour_lower_button->blockSignals (true);
-          edge_colour_upper_button->blockSignals (true);
-          edge_colour_lower_button->setMax (edge_colour_upper_button->value());
-          edge_colour_upper_button->setMin (edge_colour_lower_button->value());
-          edge_colour_lower_button->blockSignals (false);
-          edge_colour_upper_button->blockSignals (false);
+          limit_min_max_controls (edge_colour_lower_button, edge_colour_upper_button);
           calculate_edge_colours();
           window().updateGL();
         }
@@ -1988,12 +1991,7 @@ namespace MR
         }
         void Connectome::edge_size_parameter_slot()
         {
-          edge_size_lower_button->blockSignals (true);
-          edge_size_upper_button->blockSignals (true);
-          edge_size_lower_button->setMax (edge_size_upper_button->value());
-          edge_size_upper_button->setMin (edge_size_lower_button->value());
-          edge_size_lower_button->blockSignals (false);
-          edge_size_upper_button->blockSignals (false);
+          limit_min_max_controls (edge_size_lower_button, edge_size_upper_button);
           calculate_edge_sizes();
           window().updateGL();
         }
@@ -2004,12 +2002,7 @@ namespace MR
         }
         void Connectome::edge_alpha_parameter_slot()
         {
-          edge_alpha_lower_button->blockSignals (true);
-          edge_alpha_upper_button->blockSignals (true);
-          edge_alpha_lower_button->setMax (edge_alpha_upper_button->value());
-          edge_alpha_upper_button->setMin (edge_alpha_lower_button->value());
-          edge_alpha_lower_button->blockSignals (false);
-          edge_alpha_upper_button->blockSignals (false);
+          limit_min_max_controls (edge_alpha_lower_button, edge_alpha_upper_button);
           calculate_edge_alphas();
           window().updateGL();
         }
@@ -2780,7 +2773,6 @@ namespace MR
           calculate_edge_colours();
           calculate_edge_sizes();
           calculate_edge_alphas();
-
         }
 
 
@@ -3707,71 +3699,73 @@ namespace MR
 
         void Connectome::update_controls_node_visibility (const float min, const float mean, const float max)
         {
-          node_visibility_threshold_button->setRate (0.001 * (max - min));
-          node_visibility_threshold_button->setMin (min);
-          node_visibility_threshold_button->setMax (max);
-          node_visibility_threshold_button->setValue (mean);
+          update_control (node_visibility_threshold_button, min, mean, max);
         }
         void Connectome::update_controls_node_colour     (const float min, const float mean, const float max)
         {
-          node_colour_lower_button->setValue (min);
-          node_colour_upper_button->setValue (max);
-          node_colour_lower_button->setMax (max);
-          node_colour_upper_button->setMin (min);
-          node_colour_lower_button->setRate (0.01f * (mean - min));
-          node_colour_upper_button->setRate (0.01f * (max - mean));
+          update_controls (node_colour_lower_button, node_colour_upper_button, min, mean, max);
         }
         void Connectome::update_controls_node_size       (const float min, const float mean, const float max)
         {
-          node_size_lower_button->setValue (min);
-          node_size_upper_button->setValue (max);
-          node_size_lower_button->setMax (max);
-          node_size_upper_button->setMin (min);
-          node_size_lower_button->setRate (0.01f * (mean - min));
-          node_size_upper_button->setRate (0.01f * (max - mean));
+          update_controls (node_size_lower_button, node_size_upper_button, min, mean, max);
         }
         void Connectome::update_controls_node_alpha      (const float min, const float mean, const float max)
         {
-          node_alpha_lower_button->setValue (min);
-          node_alpha_upper_button->setValue (max);
-          node_alpha_lower_button->setMax (max);
-          node_alpha_upper_button->setMin (min);
-          node_alpha_lower_button->setRate (0.01f * (mean - min));
-          node_alpha_upper_button->setRate (0.01f * (max - mean));
+          update_controls (node_alpha_lower_button, node_alpha_upper_button, min, mean, max);
         }
         void Connectome::update_controls_edge_visibility (const float min, const float mean, const float max)
         {
-          edge_visibility_threshold_button->setRate (0.001 * (max - min));
-          edge_visibility_threshold_button->setMin (min);
-          edge_visibility_threshold_button->setMax (max);
-          edge_visibility_threshold_button->setValue (mean);
+          update_control (edge_visibility_threshold_button, min, mean, max);
         }
         void Connectome::update_controls_edge_colour     (const float min, const float mean, const float max)
         {
-          edge_colour_lower_button->setValue (min);
-          edge_colour_upper_button->setValue (max);
-          edge_colour_lower_button->setMax (max);
-          edge_colour_upper_button->setMin (min);
-          edge_colour_lower_button->setRate (0.01f * (mean - min));
-          edge_colour_upper_button->setRate (0.01f * (max - mean));
+          update_controls (edge_colour_lower_button, edge_colour_upper_button, min, mean, max);
         }
         void Connectome::update_controls_edge_size       (const float min, const float mean, const float max)
         {
-          edge_size_lower_button->setValue (min);
-          edge_size_upper_button->setValue (max);
-          edge_size_lower_button->setMax (max);
-          edge_size_upper_button->setMin (min);
-          edge_size_lower_button->setRate (0.01f * (mean - min));
-          edge_size_upper_button->setRate (0.01f * (max - mean));
+          update_controls (edge_size_lower_button, edge_size_upper_button, min, mean, max);
         }
         void Connectome::update_controls_edge_alpha      (const float min, const float mean, const float max)
         {
-          edge_alpha_lower_button->setValue (min);
-          edge_alpha_upper_button->setValue (max);
-          edge_alpha_lower_button->setMax (max);
-          edge_alpha_upper_button->setMin (min);
-          edge_alpha_lower_button->setRate (0.01f * (mean - min));
-          edge_alpha_upper_button->setRate (0.01f * (max - mean));
+          update_controls (edge_alpha_lower_button, edge_alpha_upper_button, min, mean, max);
+        }
+
+
+
+
+
+
+
+
+        void Connectome::limit_min_max_controls (AdjustButton* const lower_button, AdjustButton* const upper_button) const
+        {
+          lower_button->blockSignals (true);
+          upper_button->blockSignals (true);
+          lower_button->setMax (upper_button->value());
+          upper_button->setMin (lower_button->value());
+          lower_button->blockSignals (false);
+          upper_button->blockSignals (false);
+        }
+
+
+
+
+        void Connectome::update_control (AdjustButton* const button, const float min, const float mean, const float max)
+        {
+          button->setRate (0.001f * (max - min));
+          button->setMin (min);
+          button->setMax (max);
+          button->setValue (mean);
+        }
+
+        void Connectome::update_controls (AdjustButton* const lower_button, AdjustButton* const upper_button, const float min, const float mean, const float max)
+        {
+          lower_button->setValue (min);
+          upper_button->setValue (max);
+          lower_button->setMax (max);
+          upper_button->setMin (min);
+          lower_button->setRate (0.01f * (mean - min));
+          upper_button->setRate (0.01f * (max - mean));
         }
 
 
