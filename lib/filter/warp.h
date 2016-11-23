@@ -30,7 +30,7 @@ namespace MR
 
 
   // TODO if there is a use for this elsewhere then we should have threaded_copy4D convenience functions
-  class CopyKernel4D {
+  class CopyKernel4D { NOMEMALIGN
     public:
       template <class InputImageType, class OutputImageType>
         FORCE_INLINE void operator() (InputImageType& in, OutputImageType& out) const {

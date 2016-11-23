@@ -36,8 +36,7 @@ namespace MR
     typedef cfloat complex_type;
 
 
-    class CalibrateHistogram
-    {
+    class CalibrateHistogram { NOMEMALIGN
       public:
         CalibrateHistogram (int nbins) : min (std::numeric_limits<value_type>::infinity()), max (-std::numeric_limits<value_type>::infinity()), width (0.0), bins (nbins) { }
 
@@ -61,8 +60,7 @@ namespace MR
 
 
 
-    class Stats
-    {
+    class Stats { NOMEMALIGN
       public:
         Stats (bool is_complex = false) :
           mean (0.0, 0.0),
@@ -118,7 +116,7 @@ namespace MR
           }
         }
 
-        template <class Set> void print (Set& ima, const std::vector<std::string>& fields) {
+        template <class ImageType> void print (ImageType& ima, const std::vector<std::string>& fields) {
 
           if (count) {
             mean /= double (count);

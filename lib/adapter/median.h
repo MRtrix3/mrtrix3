@@ -26,7 +26,7 @@ namespace MR
 
 
     template <class ImageType>
-      class Median : public Base<ImageType> {
+      class Median : public Base<ImageType> { MEMALIGN(Median<ImageType>)
       public:
         Median (const ImageType& parent) :
           Base<ImageType> (parent) {

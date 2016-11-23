@@ -65,7 +65,7 @@ namespace MR
      */
 
     template <class ImageType> class Base : public ImageType, public Transform
-    {
+    { MEMALIGN(Base<ImageType>)
       public:
         typedef typename ImageType::value_type value_type;
 

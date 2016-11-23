@@ -158,7 +158,7 @@ namespace MR
         }
 
       template <typename ValueType>
-      class Transform {
+      class Transform { MEMALIGN(Transform<ValueType>)
         public:
           typedef Eigen::Matrix<ValueType,Eigen::Dynamic,Eigen::Dynamic> matrix_type;
 
@@ -343,7 +343,7 @@ namespace MR
 
 
       namespace {
-        template <typename> struct __dummy { typedef int type; };
+        template <typename> struct __dummy { NOMEMALIGN typedef int type; };
       }
 
 
@@ -451,7 +451,7 @@ namespace MR
 
       //! used to speed up SH calculation
       template <typename ValueType> class PrecomputedFraction
-      {
+      { NOMEMALIGN
         public:
           PrecomputedFraction () : f1 (0.0), f2 (0.0) { }
           ValueType f1, f2;
@@ -466,7 +466,7 @@ namespace MR
 
       //! Precomputed Associated Legrendre Polynomials - used to speed up SH calculation
       template <typename ValueType> class PrecomputedAL
-      {
+      { NOMEMALIGN
         public:
           typedef ValueType value_type;
 
@@ -720,7 +720,7 @@ namespace MR
 
       //! a class to hold the coefficients for an apodised point-spread function.
       template <typename ValueType> class aPSF
-      {
+      { MEMALIGN(aPSF<ValueType>)
         public:
           aPSF (const size_t lmax) :
             lmax (lmax),

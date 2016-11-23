@@ -39,8 +39,7 @@ namespace MR
      *
      * \endcode
      */
-    class Normalise : public Base
-    {
+    class Normalise : public Base { MEMALIGN(Normalise)
 
       public:
         template <class HeaderType>

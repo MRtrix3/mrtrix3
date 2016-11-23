@@ -39,8 +39,7 @@ namespace MR
      *
      * \endcode
      */
-    class Median : public Base
-    {
+    class Median : public Base { MEMALIGN(Median)
 
       public:
         template <class HeaderType>

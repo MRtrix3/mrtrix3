@@ -24,7 +24,7 @@ namespace MR
   {
 
     template <class ImageType>
-      class Gaussian1D : public Base<ImageType> {
+      class Gaussian1D : public Base<ImageType> { MEMALIGN (Gaussian1D<ImageType>)
       public:
         Gaussian1D (const ImageType& parent,
                     default_type stdev_in = 1.0,

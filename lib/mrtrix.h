@@ -57,22 +57,22 @@ namespace MR
 
 
   template <typename X, typename ReturnType = int>
-    struct max_digits {
+    struct max_digits { NOMEMALIGN
       static constexpr int value () { return 0; }
     };
 
   template <typename X>
-    struct max_digits<X, typename std::enable_if<std::is_fundamental<X>::value, int>::type> {
+    struct max_digits<X, typename std::enable_if<std::is_fundamental<X>::value, int>::type> { NOMEMALIGN
       static constexpr int value () { return std::numeric_limits<X>::max_digits10; }
     };
 
   template <typename X>
-    struct max_digits<X, typename std::enable_if<std::is_fundamental<typename X::Scalar>::value, int>::type> {
+    struct max_digits<X, typename std::enable_if<std::is_fundamental<typename X::Scalar>::value, int>::type> { NOMEMALIGN
       static constexpr int value () { return std::numeric_limits<typename X::Scalar>::max_digits10; }
     };
 
   template <typename X>
-    struct max_digits<X, typename std::enable_if<std::is_fundamental<typename X::value_type>::value && !std::is_fundamental<typename X::Scalar>::value, int>::type> {
+    struct max_digits<X, typename std::enable_if<std::is_fundamental<typename X::value_type>::value && !std::is_fundamental<typename X::Scalar>::value, int>::type> { NOMEMALIGN
       static constexpr int value () { return std::numeric_limits<typename X::value_type>::max_digits10; }
     };
 

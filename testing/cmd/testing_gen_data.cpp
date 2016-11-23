@@ -64,7 +64,7 @@ void run ()
 
   auto image = Header::create (argument[1], header).get_image<float>();
 
-  struct fill {
+  struct fill { NOMEMALIGN
     Math::RNG rng;
     std::normal_distribution<float> normal;
     void operator() (decltype(image)& v) { v.value() = normal(rng); }

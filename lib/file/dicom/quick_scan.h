@@ -22,7 +22,7 @@ namespace MR {
   namespace File {
     namespace Dicom {
 
-      class QuickScan {
+      class QuickScan { NOMEMALIGN
 
         public:
           bool read (const std::string& file_name, bool print_DICOM_fields = false, bool print_CSA_fields = false, bool force_read = false);

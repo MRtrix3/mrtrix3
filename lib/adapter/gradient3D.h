@@ -32,7 +32,7 @@ namespace MR
   {
 
     template <class ImageType>
-      class Gradient3D : public Gradient1D<ImageType> {
+      class Gradient3D : public Gradient1D<ImageType> { MEMALIGN(Gradient3D<ImageType>)
 
       public:
         typedef typename ImageType::value_type value_type;

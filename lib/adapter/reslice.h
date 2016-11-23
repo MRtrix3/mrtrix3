@@ -71,8 +71,7 @@ namespace MR
      * \sa Interp::reslice()
      */
     template <template <class ImageType> class Interpolator, class ImageType>
-      class Reslice
-    {
+      class Reslice { MEMALIGN (Reslice<Interpolator, ImageType>)
       public:
         typedef typename ImageType::value_type value_type;
 

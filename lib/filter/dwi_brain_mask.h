@@ -51,8 +51,7 @@ namespace MR
      *
      * \endcode
      */
-    class DWIBrainMask : public Base
-    {
+    class DWIBrainMask : public Base { MEMALIGN(DWIBrainMask)
 
       public:
 

@@ -24,7 +24,7 @@ namespace MR
   {
 
     template <typename T = float> class Sinc
-    {
+    { NOMEMALIGN
       public:
         typedef T value_type;
 

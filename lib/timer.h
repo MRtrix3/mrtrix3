@@ -18,11 +18,12 @@
 
 #include <chrono>
 
+#define NOMEMALIGN
+
 namespace MR
 {
 
-  class Timer
-  {
+  class Timer { NOMEMALIGN
     public:
       Timer () {
         start();
@@ -47,8 +48,7 @@ namespace MR
 
 
   // a class to help perform operations at given time intervals
-  class IntervalTimer : protected Timer
-  {
+  class IntervalTimer : protected Timer { NOMEMALIGN
     public:
       //! by default, fire at ~30 Hz - most monitors are 60Hz
       IntervalTimer (double time_interval = 0.0333333) :

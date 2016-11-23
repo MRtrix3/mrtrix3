@@ -64,7 +64,7 @@ namespace MR
 
 
     class Sparse : public Default
-    {
+    { NOMEMALIGN
       public:
 
         Sparse (const Header& header, const std::string& sparse_class_name, const size_t sparse_class_size, const File::Entry& entry) :

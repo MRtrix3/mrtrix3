@@ -32,7 +32,7 @@ namespace MR
 
     template <class ImageType>
       class NeighbourhoodCoord : public Base<ImageType>
-    {
+    { MEMALIGN (NeighbourhoodCoord<ImageType>)
       public:
         typedef typename ImageType::value_type value_type;
 

@@ -24,7 +24,7 @@ namespace MR {
   namespace File {
     namespace Dicom {
 
-        class CSAEntry {
+        class CSAEntry { NOMEMALIGN
           public:
             CSAEntry (const uint8_t* start_p, const uint8_t* end_p, bool output_fields = false) :
               start (start_p),

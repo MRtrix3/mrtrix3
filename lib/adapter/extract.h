@@ -24,7 +24,7 @@ namespace MR
   {
 
     template <class ImageType> class Extract1D : public Base<ImageType>
-    {
+    { MEMALIGN (Extract1D<ImageType>)
       public:
         using Base<ImageType>::ndim;
         using Base<ImageType>::spacing;
@@ -104,7 +104,7 @@ namespace MR
 
 
     template <class ImageType> class Extract : public Base<ImageType>
-    {
+    { MEMALIGN (Extract<ImageType>)
       public:
         using Base<ImageType>::ndim;
         using Base<ImageType>::spacing;

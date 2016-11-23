@@ -17,9 +17,9 @@
 #define __file_dicom_element_h__
 
 #include <vector>
+#include <unordered_map>
 
 #include "memory.h"
-#include "hash_map.h"
 #include "raw.h"
 #include "file/mmap.h"
 #include "file/dicom/definitions.h"
@@ -29,7 +29,7 @@ namespace MR {
     namespace Dicom {
 
 
-      class Sequence {
+      class Sequence { NOMEMALIGN
         public:
           Sequence (uint16_t group, uint16_t element, uint8_t* end) : group (group), element (element), end (end) { }
           uint16_t group, element;
@@ -40,7 +40,7 @@ namespace MR {
 
 
 
-      class Element {
+      class Element { NOMEMALIGN
         public:
           typedef enum _Type {
             INVALID,
@@ -126,7 +126,7 @@ namespace MR {
             return ByteOrder::BE (d.i);
           }
 
-          static UnorderedMap<uint32_t, const char*>::Type dict;
+          static std::unordered_map<uint32_t, const char*> dict;
           static void init_dict();
 
           void report_unknown_tag_with_implicit_syntax () const {

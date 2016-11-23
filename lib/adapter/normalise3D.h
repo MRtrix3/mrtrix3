@@ -25,7 +25,7 @@ namespace MR
 
 
     template <class ImageType>
-      class Normalise3D : public Base<ImageType> {
+      class Normalise3D : public Base<ImageType> { MEMALIGN(Normalise3D<ImageType>)
       public:
         Normalise3D (const ImageType& parent) :
           Base<ImageType> (parent) {

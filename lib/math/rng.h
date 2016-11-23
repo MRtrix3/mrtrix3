@@ -41,7 +41,7 @@ namespace MR
      * multi-threading. */
     // TODO consider switch to std::mt19937_64
     class RNG : public std::mt19937
-    {
+    { NOMEMALIGN
       public:
         RNG () : std::mt19937 (get_seed()) { }
         RNG (std::mt19937::result_type seed) : std::mt19937 (seed) { }
@@ -79,7 +79,7 @@ namespace MR
 
 
     template <typename ValueType>
-      class RNG::Uniform {
+      class RNG::Uniform { NOMEMALIGN
         public:
           RNG rng;
           typedef ValueType result_type;
@@ -90,7 +90,7 @@ namespace MR
       };
 
     template <typename ValueType>
-      class RNG::Normal {
+      class RNG::Normal { NOMEMALIGN
         public:
           RNG rng;
           typedef ValueType result_type;
@@ -99,7 +99,7 @@ namespace MR
       };
 
       template <typename ValueType>
-        class RNG::Integer {
+        class RNG::Integer { NOMEMALIGN
           public:
             Integer (const ValueType max) :
                 dist (0, max) { }

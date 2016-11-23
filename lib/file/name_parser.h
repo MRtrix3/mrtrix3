@@ -28,11 +28,9 @@ namespace MR
   {
 
     //! a class to interpret numbered filenames
-    class NameParser
-    {
+    class NameParser { NOMEMALIGN
       public:
-        class Item
-        {
+        class Item { NOMEMALIGN
           public:
             Item () : seq_length (0) { }
 
@@ -149,13 +147,12 @@ namespace MR
 
 
     //! a class to hold a parsed image filename
-    class ParsedName
-    {
+    class ParsedName { NOMEMALIGN
       public:
         ParsedName (const std::string& name, const std::vector<int>& index) : indices (index), filename (name) { }
 
         //! a class to hold a set of parsed image filenames
-        class List { 
+        class List { NOMEMALIGN
           public:
             std::vector<int> parse_scan_check (const std::string& specifier, 
                 size_t max_num_sequences = std::numeric_limits<size_t>::max());

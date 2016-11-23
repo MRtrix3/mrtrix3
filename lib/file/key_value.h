@@ -24,8 +24,7 @@ namespace MR
   namespace File
   {
 
-    class KeyValue
-    {
+    class KeyValue { NOMEMALIGN
       public:
         KeyValue () { }
         KeyValue (const std::string& file, const char* first_line = NULL) {

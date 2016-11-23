@@ -98,8 +98,7 @@ namespace MR
      * as multiple (see allow_multiple() function). Note that in this case only
      * one such argument can be optional and/or multiple, since more than one
      * such argument would lead to ambiguities when parsing the command-line.  */
-    class Argument
-    {
+    class Argument { NOMEMALIGN
       public:
         //! constructor
         /*! this is used to construct a command-line argument object, with a name
@@ -123,10 +122,10 @@ namespace MR
         //! a structure to store the various parameters of the Argument
         union {
           const char* const* choices;
-          struct {
+          struct { NOMEMALIGN
             int64_t min, max;
           } i;
-          struct {
+          struct { NOMEMALIGN
             default_type min, max;
           } f;
         } limits;
@@ -316,7 +315,7 @@ namespace MR
      * Options can also be specified as required (see required() function), or
      * as multiple (see allow_multiple() function).
      */
-    class Option : public std::vector<Argument> {
+    class Option : public std::vector<Argument> { NOMEMALIGN
       public:
         Option () : id (nullptr), flags (Optional) { }
 
@@ -391,7 +390,7 @@ namespace MR
      * }
      * \endcode
      */  
-    class OptionGroup : public std::vector<Option> {
+    class OptionGroup : public std::vector<Option> { NOMEMALIGN
       public:
         OptionGroup (const char* group_name = "OPTIONS") : name (group_name) { }
         const char* name;

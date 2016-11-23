@@ -67,8 +67,7 @@ namespace MR
     // @{
 
     //! vector of strings to hold the command-line description
-    class Description : public std::vector<const char*>
-    {
+    class Description : public std::vector<const char*> { NOMEMALIGN
       public:
         Description& operator+ (const char* text) {
           push_back (text);
@@ -82,7 +81,7 @@ namespace MR
 
 
     //! a class to hold the list of Argument's
-    class ArgumentList : public std::vector<Argument> {
+    class ArgumentList : public std::vector<Argument> { NOMEMALIGN
       public:
         ArgumentList& operator+ (const Argument& argument) {
           push_back (argument);
@@ -97,7 +96,7 @@ namespace MR
 
 
     //! a class to hold the list of option groups
-    class OptionList : public std::vector<OptionGroup> {
+    class OptionList : public std::vector<OptionGroup> { NOMEMALIGN
       public:
         OptionList& operator+ (const OptionGroup& option_group) {
           push_back (option_group);
@@ -161,8 +160,7 @@ namespace MR
 
 
 
-    class ParsedArgument
-    {
+    class ParsedArgument { NOMEMALIGN
       public:
         operator std::string () const { return p; }
 
@@ -231,8 +229,7 @@ namespace MR
     //! object storing information about option parsed from command-line
     /*! this is the object stored in the App::options vector, and the type
      * returned by App::get_options(). */
-    class ParsedOption
-    {
+    class ParsedOption { NOMEMALIGN
       public:
         ParsedOption (const Option* option, const char* const* arguments) :
           opt (option), args (arguments) { }

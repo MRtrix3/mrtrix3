@@ -138,8 +138,7 @@ namespace MR
       /** \addtogroup Statistics
       @{ */
       /*! A class to compute t-statistics using a General Linear Model. */
-      class GLMTTest
-      {
+      class GLMTTest { NOMEMALIGN
         public:
           /*!
           * @param measurements a matrix storing the measured data for each subject in a column //TODO

@@ -30,8 +30,7 @@ namespace MR
   namespace Filter
   {
 
-    class cluster
-    {
+    class cluster { NOMEMALIGN
       public:
         uint32_t label;
         uint32_t size;
@@ -47,7 +46,7 @@ namespace MR
     }
 
 
-    class Connector {
+    class Connector { NOMEMALIGN
 
       public:
         Connector (bool do_26_connectivity) :
@@ -263,8 +262,7 @@ namespace MR
      *
      * \endcode
      */
-    class ConnectedComponents : public Base
-    {
+    class ConnectedComponents : public Base { MEMALIGN(ConnectedComponents)
       public:
 
       template <class HeaderType>

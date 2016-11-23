@@ -44,7 +44,7 @@ namespace MR
   //
   //
   class NeighbourhoodIterator
-  {
+  { MEMALIGN(NeighbourhoodIterator)
     public:
       NeighbourhoodIterator() = delete;
       template <class IteratorType>

@@ -26,7 +26,7 @@ namespace MR {
       class Series; 
       class Patient;
 
-      class Tree : public std::vector<std::shared_ptr<Patient>> { 
+      class Tree : public std::vector<std::shared_ptr<Patient>> { NOMEMALIGN
         public:
           std::string description;
           void read (const std::string& filename);

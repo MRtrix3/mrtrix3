@@ -110,7 +110,9 @@
 # define EIGEN_DEFAULT_ALIGN_BYTES 16
 #endif
 
-template <class T> class __has_custom_new_operator {
+#define NOMEMALIGN
+
+template <class T> class __has_custom_new_operator { NOMEMALIGN
     template <typename C> static inline char test (decltype(C::operator new (sizeof(C)))) ;
     template <typename C> static inline long test (...);    
   public:
@@ -152,10 +154,9 @@ inline void __aligned_free (void* ptr) { if (ptr) std::free (*(reinterpret_cast<
  */
 #define CHECK_MEM_ALIGN(...) \
     static_assert ( (alignof(__VA_ARGS__) <= MRTRIX_ALLOC_MEM_ALIGN ) || __has_custom_new_operator<__VA_ARGS__>::value, \
-        "class requires over-alignment, but no operator new defined! Please insert MEMALIGN() into class definition.") 
+        "class requires over-alignment; but no operator new defined! Please insert MEMALIGN() into class definition.");
 
 
-#define NOMEMALIGN
 
 namespace MR
 {

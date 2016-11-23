@@ -27,8 +27,8 @@ namespace MR {
 
 
     template <typename ValueType>
-    class Versor : public Eigen::Quaternion<ValueType>
-    {
+    class Versor : public Eigen::Quaternion<ValueType> 
+    { MEMALIGN(Versor<ValueType>)
 
         typedef ValueType value_type;
 

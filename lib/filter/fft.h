@@ -46,8 +46,7 @@ namespace MR
      *
      * \endcode
      */
-    class FFT : public Base
-    {
+    class FFT : public Base { MEMALIGN(FFT)
       public:
 
         template <class HeaderType>
@@ -128,7 +127,7 @@ namespace MR
         bool centre_zero_;
 
         template <class ComplexImageType>
-        class FFTKernel {
+        class FFTKernel { MEMALIGN(FFTKernel)
           public:
             FFTKernel (const ComplexImageType& voxel, const size_t FFT_axis, const bool inverse_FFT) :
                 vox (voxel),
@@ -168,7 +167,7 @@ namespace MR
           if (axis == axes[n])
             axes.erase (axes.begin() + n);
 
-        struct Kernel {
+        struct Kernel { MEMALIGN(Kernel)
           Kernel (const ImageType& v, size_t axis, bool inverse) :
             data_in (v.size (axis)), data_out (data_in.size()), axis (axis), inverse (inverse) { }
 

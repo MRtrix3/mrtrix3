@@ -24,8 +24,7 @@ namespace MR
   namespace Adapter {
 
     template <class ImageType>
-      class Subset : public Base<ImageType>
-    {
+      class Subset : public Base<ImageType> { MEMALIGN(Subset<ImageType>)
       public:
         typedef typename ImageType::value_type value_type;
 

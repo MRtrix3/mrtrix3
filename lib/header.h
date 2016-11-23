@@ -186,7 +186,7 @@ namespace MR
       //! get/set the 4x4 affine transformation matrix mapping image to world coordinates
       transform_type& transform () { return transform_; }
 
-      class NDimProxy {
+      class NDimProxy { NOMEMALIGN
         public:
           NDimProxy (std::vector<Axis>& axes) : axes (axes) { }
           NDimProxy (NDimProxy&&) = default;
@@ -224,7 +224,7 @@ namespace MR
       //! get/set the stride between adjacent voxels along axis
       ssize_t& stride (size_t axis);
 
-      class DataTypeProxy : public DataType {
+      class DataTypeProxy : public DataType { NOMEMALIGN
         public:
           DataTypeProxy (Header& H) : DataType (H.datatype_), H (H) { }
           DataTypeProxy (DataTypeProxy&&) = default;
@@ -366,7 +366,7 @@ namespace MR
 
 
   //! a class to hold attributes about each axis
-  class Header::Axis {
+  class Header::Axis { NOMEMALIGN
     public:
       Axis () noexcept : size (1), spacing (std::numeric_limits<default_type>::quiet_NaN()), stride (0) { }
       ssize_t size;

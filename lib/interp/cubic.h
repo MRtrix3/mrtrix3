@@ -69,7 +69,7 @@ namespace MR
 
     template <class ImageType, class SplineType, Math::SplineProcessingType PType>
     class SplineInterpBase : public Base<ImageType>
-    {
+    { MEMALIGN(SplineInterpBase<ImageType,SplineType,PType>)
       public:
         using typename Base<ImageType>::value_type;
 
@@ -91,7 +91,7 @@ namespace MR
 
     template <class ImageType, class SplineType, Math::SplineProcessingType PType>
     class SplineInterp : public SplineInterpBase <ImageType, SplineType, PType>
-    {
+    { MEMALIGN(SplineInterp<ImageType,SplineType,PType>)
       private:
         SplineInterp ();
     };
@@ -102,7 +102,7 @@ namespace MR
     template <class ImageType, class SplineType>
     class SplineInterp<ImageType, SplineType, Math::SplineProcessingType::Value>:
         public SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::Value>
-    {
+    { MEMALIGN(SplineInterp<ImageType,SplineType,Math::SplineProcessingType::Value>)
       public:
         using SplineBase = SplineInterpBase<ImageType, SplineType, Math::SplineProcessingType::Value>;
 
@@ -217,7 +217,7 @@ namespace MR
     template <class ImageType, class SplineType>
     class SplineInterp<ImageType, SplineType, Math::SplineProcessingType::Derivative>:
         public SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::Derivative>
-    {
+    { MEMALIGN(SplineInterp<ImageType,SplineType,Math::SplineProcessingType::Derivative>)
       public:
         using SplineBase = SplineInterpBase<ImageType, SplineType, Math::SplineProcessingType::Derivative>;
 
@@ -363,7 +363,7 @@ namespace MR
     template <class ImageType, class SplineType>
     class SplineInterp<ImageType, SplineType, Math::SplineProcessingType::ValueAndDerivative>:
         public SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::ValueAndDerivative>
-    {
+    { MEMALIGN(SplineInterp<ImageType,SplineType,Math::SplineProcessingType::ValueAndDerivative>)
       public:
         using SplineBase = SplineInterpBase<ImageType, SplineType, Math::SplineProcessingType::ValueAndDerivative>;
 

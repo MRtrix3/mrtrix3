@@ -28,7 +28,7 @@ namespace MR {
       class Series;
       class Element;
 
-      class Frame { 
+      class Frame { MEMALIGN(Frame)
         public:
           Frame () { 
             acq_dim[0] = acq_dim[1] = dim[0] = dim[1] = instance = series_num = acq = sequence = UINT_MAX;
@@ -106,7 +106,7 @@ namespace MR {
 
 
 
-      class Image : public Frame {
+      class Image : public Frame { MEMALIGN(Image)
 
         public:
           Image (Series* parent = NULL) : 

@@ -42,8 +42,7 @@ namespace MR
      * gradient_filter (input, output);
      * \endcode
      */
-    class Gradient : public Base
-    {
+    class Gradient : public Base { MEMALIGN(Gradient)
       public:
         template <class HeaderType>
         Gradient (const HeaderType& in, const bool magnitude = false) :

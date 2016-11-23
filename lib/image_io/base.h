@@ -41,7 +41,7 @@ namespace MR
   {
 
     class Base
-    {
+    { NOMEMALIGN
       public:
         Base (const Header& header);
         Base (Base&&) noexcept = default;

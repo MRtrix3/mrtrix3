@@ -42,8 +42,7 @@ namespace MR
      *
      * \endcode
      */
-    class Smooth : public Base
-    {
+    class Smooth : public Base { MEMALIGN(Smooth)
 
       public:
         template <class HeaderType>
