@@ -395,6 +395,13 @@ namespace MR
             void update_controls_edge_size       (const float, const float, const float);
             void update_controls_edge_alpha      (const float, const float, const float);
 
+            // Uses the value of the maximum control to set the maximal limit of the
+            //   minimum control, and vice-versa
+            void limit_min_max_controls (AdjustButton* const, AdjustButton* const) const;
+            // Update the values & limits of controls based on statistics of input data
+            void update_control (AdjustButton* const, const float, const float, const float);
+            void update_controls (AdjustButton* const, AdjustButton* const, const float, const float, const float);
+
             void get_meshes();
             void get_exemplars();
             void get_streamtubes();

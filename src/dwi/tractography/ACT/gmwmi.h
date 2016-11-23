@@ -68,7 +68,6 @@ namespace MR
 
             bool find_interface (Eigen::Vector3f&) const;
             Eigen::Vector3f normal (const Eigen::Vector3f&) const;
-            bool is_cgm (const Eigen::Vector3f&) const;
 
 
             Eigen::Vector3f find_interface (const std::vector<Eigen::Vector3f>&, const bool) const;
