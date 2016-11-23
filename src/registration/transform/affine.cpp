@@ -31,7 +31,7 @@ namespace MR
     {
       // TODO: implement gradient descent oscillation detection via DoubleExpSmoothSlopeCheck
       class DoubleExpSmoothSlopeCheck
-      {
+      { MEMALIGN(DoubleExpSmoothSlopeCheck)
         public:
           DoubleExpSmoothSlopeCheck (const Eigen::Matrix<default_type, Eigen::Dynamic, 1> slope_threshold,
             default_type alpha = 0.8,

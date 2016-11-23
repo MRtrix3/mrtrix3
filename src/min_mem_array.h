@@ -24,6 +24,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "types.h"
+
 
 namespace MR {
 
@@ -36,7 +38,7 @@ namespace MR {
 //   to construct a Min_mem_array<>
 
 template <class T>
-class Min_mem_array {
+class Min_mem_array { MEMALIGN(Min_mem_array<T>)
 
   public:
     Min_mem_array () :

@@ -57,7 +57,7 @@ namespace MR
       typedef Eigen::Quaternion<default_type> QuatType;
 
       template <class MetricType = Registration::Metric::MeanSquaredNoGradient>
-        class ExhaustiveRotationSearch {
+        class ExhaustiveRotationSearch { MEMALIGN(ExhaustiveRotationSearch<MetricType>)
           public:
             ExhaustiveRotationSearch (
               Image<default_type>& image1,

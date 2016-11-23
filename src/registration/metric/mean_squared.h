@@ -24,7 +24,7 @@ namespace MR
   {
     namespace Metric
     {
-      class MeanSquared {
+      class MeanSquared { MEMALIGN(MeanSquared)
 
         public:
           template <class Params>
@@ -58,7 +58,7 @@ namespace MR
           }
       };
 
-      class MeanSquaredNoGradient {
+      class MeanSquaredNoGradient { MEMALIGN(MeanSquaredNoGradient)
         public:
           template <class Params>
             default_type operator() (Params& params,
@@ -84,7 +84,7 @@ namespace MR
       };
 
       template <class Im1Type, class Im2Type>
-        class MeanSquared4D {
+        class MeanSquared4D { MEMALIGN(MeanSquared4D<Im1Type,Im2Type>)
           public:
             MeanSquared4D ( ) {}
             template <class Params>
@@ -132,7 +132,7 @@ namespace MR
         };
 
       template <class Im1Type, class Im2Type>
-        class MeanSquaredNoGradient4D {
+        class MeanSquaredNoGradient4D { MEMALIGN(MeanSquaredNoGradient4D<Im1Type,Im2Type>)
           public:
             MeanSquaredNoGradient4D ( ) {}
 
@@ -161,7 +161,7 @@ namespace MR
         };
 
       template <class Im1Type, class Im2Type>
-        class MeanSquaredVectorNoGradient4D {
+        class MeanSquaredVectorNoGradient4D { MEMALIGN(MeanSquaredVectorNoGradient4D<Im1Type,Im2Type>)
           private:
             const ssize_t volumes;
             Eigen::Matrix<default_type, Eigen::Dynamic, 1> res;

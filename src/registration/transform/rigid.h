@@ -30,7 +30,7 @@ namespace MR
     namespace Transform
     {
 
-      class RigidLinearNonSymmetricUpdate {
+      class RigidLinearNonSymmetricUpdate { MEMALIGN(RigidLinearNonSymmetricUpdate)
         public:
           bool operator() (Eigen::Matrix<default_type, Eigen::Dynamic, 1>& newx,
               const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x,
@@ -49,7 +49,7 @@ namespace MR
           Eigen::Matrix<default_type, 4, 1> stop_len, recip_spacing;
       };
 
-      class RigidRobustEstimator {
+      class RigidRobustEstimator { MEMALIGN(RigidRobustEstimator)
         public:
           inline bool operator() (Eigen::Matrix<default_type, Eigen::Dynamic, 1>& newx,
               const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x,
@@ -65,7 +65,7 @@ namespace MR
       /*! A 3D rigid transformation class for registration.
        *
        */
-      class Rigid : public Base  {
+      class Rigid : public Base  { MEMALIGN(Rigid)
         public:
           
 

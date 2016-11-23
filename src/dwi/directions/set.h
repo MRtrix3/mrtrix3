@@ -37,7 +37,7 @@ namespace MR {
 
 
 
-      class Set {
+      class Set { MEMALIGN(Set)
 
         public:
 
@@ -155,7 +155,7 @@ namespace MR {
 
 
 
-      class FastLookupSet : public Set {
+      class FastLookupSet : public Set { MEMALIGN(FastLookupSet)
 
         public:
 

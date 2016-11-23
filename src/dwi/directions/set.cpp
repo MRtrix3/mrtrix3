@@ -97,7 +97,7 @@ namespace MR {
         //   * Generate new triangles using this point, and the outer border of the planes
         //   * Append these to the list of planes to process
 
-        class Vertex {
+        class Vertex { MEMALIGN(Vertex)
           public:
             Vertex (const Set& set, const dir_t index, const bool inverse) :
                 dir (set[index] * (inverse ? -1.0f : 1.0f)),
@@ -106,7 +106,7 @@ namespace MR {
             const dir_t index; // Indexes the underlying direction set
         };
 
-        class Plane {
+        class Plane { MEMALIGN(Plane)
           public:
             Plane (const std::vector<Vertex>& vertices, const dir_t one, const dir_t two, const dir_t three) :
                 indices {{ one, two, three }},
@@ -118,8 +118,7 @@ namespace MR {
             const float dist;
         };
 
-        class PlaneComp
-        {
+        class PlaneComp { MEMALIGN(PlaneComp)
           public:
             bool operator() (const Plane& one, const Plane& two) const {
               return (one.dist < two.dist);

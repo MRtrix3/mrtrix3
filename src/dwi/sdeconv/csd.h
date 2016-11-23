@@ -39,11 +39,10 @@ namespace MR
 
     extern const App::OptionGroup CSD_options;
 
-    class CSD
-    {
+    class CSD { MEMALIGN(CSD)
       public:
-        class Shared
-        {
+
+        class Shared { MEMALIGN(Shared)
           public:
 
             Shared (const Header& dwi_header) :

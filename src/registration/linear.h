@@ -54,7 +54,7 @@ namespace MR
     enum LinearRobustMetricEstimatorType {L1, L2, LP, None};
 
     class Linear
-    {
+    { MEMALIGN(Linear)
 
       public:
 

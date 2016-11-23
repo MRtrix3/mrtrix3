@@ -65,7 +65,7 @@ namespace MR
                           default_type& mu020,
                           default_type& mu002);
 
-        class FODInitialiser {
+        class FODInitialiser { MEMALIGN(FODInitialiser)
           public:
             FODInitialiser (Image<default_type>& image1,
                                 Image<default_type>& image2,
@@ -110,7 +110,7 @@ namespace MR
             Eigen::Matrix<default_type, Eigen::Dynamic, 1> sh1, sh2;
         };
 
-        class MomentsInitialiser {
+        class MomentsInitialiser { MEMALIGN(MomentsInitialiser)
           public:
             MomentsInitialiser (Image<default_type>& image1,
                                 Image<default_type>& image2,

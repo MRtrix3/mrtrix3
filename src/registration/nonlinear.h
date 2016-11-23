@@ -41,7 +41,7 @@ namespace MR
 
 
     class NonLinear
-    {
+    { MEMALIGN(NonLinear)
 
       public:
 

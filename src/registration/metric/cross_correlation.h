@@ -25,7 +25,7 @@ namespace MR
   {
     namespace Metric
     {
-      class CrossCorrelationNoGradient {
+      class CrossCorrelationNoGradient { MEMALIGN(CrossCorrelationNoGradient)
 
         private:
           default_type mean1;
@@ -44,7 +44,7 @@ namespace MR
             typename Im1MaskInterpolatorType,
             typename Im2MaskInterpolatorType
             >
-            struct CCNoGradientPrecomputeFunctor {
+            struct CCNoGradientPrecomputeFunctor { MEMALIGN(CCNoGradientPrecomputeFunctor)
               CCNoGradientPrecomputeFunctor (
                 const LinearTrafoType& transformation,
                 ImageType1& im1,

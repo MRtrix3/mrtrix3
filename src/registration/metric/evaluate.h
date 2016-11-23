@@ -32,34 +32,34 @@ namespace MR
       //! \cond skip
       namespace {
         template<class T>
-        struct Void2 {
+        struct Void2 { NOMEMALIGN
           typedef void type;
         };
 
         template <class MetricType, typename U = void>
-        struct metric_requires_precompute {
+        struct metric_requires_precompute { NOMEMALIGN
           typedef int no;
         };
 
         template <class MetricType>
-        struct metric_requires_precompute<MetricType, typename Void2<typename MetricType::requires_precompute>::type> {
+        struct metric_requires_precompute<MetricType, typename Void2<typename MetricType::requires_precompute>::type> { NOMEMALIGN
           typedef int yes;
         };
 
         template <class MetricType, typename U = void>
-        struct metric_requires_initialisation {
+        struct metric_requires_initialisation { NOMEMALIGN
           typedef int no;
         };
 
         template <class MetricType>
-        struct metric_requires_initialisation<MetricType, typename Void2<typename MetricType::requires_initialisation>::type> {
+        struct metric_requires_initialisation<MetricType, typename Void2<typename MetricType::requires_initialisation>::type> { NOMEMALIGN
           typedef int yes;
         };
       }
       //! \endcond
 
       template <class MetricType, class ParamType>
-        class Evaluate {
+        class Evaluate { MEMALIGN(Evaluate<MetricType,ParamType>)
           public:
 
             typedef typename ParamType::TransformParamType TransformParamType;
@@ -111,7 +111,7 @@ namespace MR
               return overall_cost_function(0);
             }
 
-            struct ThreadFunctor {
+            struct ThreadFunctor { MEMALIGN(ThreadFunctor)
               public:
                 ThreadFunctor (
                     const std::vector<size_t>& inner_axes,

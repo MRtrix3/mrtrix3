@@ -64,7 +64,7 @@ namespace MR
       void load_fmls_thresholds (Segmenter&);
 
 
-      class FOD_lobe {
+      class FOD_lobe { MEMALIGN(FOD_lobe)
 
         public:
           FOD_lobe (const DWI::Directions::Set& dirs, const dir_t seed, const default_type value, const default_type weight) :
@@ -167,14 +167,14 @@ namespace MR
 
 
 
-      class FOD_lobes : public std::vector<FOD_lobe> {
+      class FOD_lobes : public std::vector<FOD_lobe> { MEMALIGN(FOD_lobes)
         public:
           Eigen::Array3i vox;
           std::vector<uint8_t> lut;
       };
 
 
-      class SH_coefs : public Eigen::Matrix<default_type, Eigen::Dynamic, 1> {
+      class SH_coefs : public Eigen::Matrix<default_type, Eigen::Dynamic, 1> { MEMALIGN(SH_coefs)
         public:
           SH_coefs() :
               vox (-1, -1, -1) { }
@@ -184,8 +184,8 @@ namespace MR
           Eigen::Array3i vox;
       };
 
-      class FODQueueWriter
-      {
+      class FODQueueWriter 
+      { MEMALIGN (FODQueueWriter)
 
           typedef Image<float> FODImageType;
           typedef Image<float> MaskImageType;
@@ -226,8 +226,8 @@ namespace MR
       // Store a vector of weights to be applied when computing integrals, to account for non-uniformities in direction distribution
       // These weights are applied to the amplitude along each direction as the integral for each lobe is summed,
       //   in order to take into account the relative spacing between adjacent directions
-      class IntegrationWeights
-      {
+      class IntegrationWeights 
+      { MEMALIGN (IntegrationWeights)
         public:
           IntegrationWeights (const DWI::Directions::Set& dirs);
           default_type operator[] (const size_t i) { assert (i < size_t(data.size())); return data[i]; }
@@ -238,7 +238,7 @@ namespace MR
 
 
 
-      class Segmenter {
+      class Segmenter { MEMALIGN(Segmenter)
 
         public:
           Segmenter (const DWI::Directions::Set&, const size_t);

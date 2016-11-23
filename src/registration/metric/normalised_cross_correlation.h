@@ -30,7 +30,7 @@ namespace MR
     namespace Metric
     {
       template <typename ImageType1, typename ImageType2>
-      struct NCCPrecomputeFunctorMasked_DEBUG {
+      struct NCCPrecomputeFunctorMasked_DEBUG { MEMALIGN(NCCPrecomputeFunctorMasked_DEBUG<ImageType1,ImageType2>)
         template <typename MaskType, typename ImageType3>
         void operator() (MaskType& mask, ImageType3& out) {
           out.index(0) = mask.index(0);
@@ -87,7 +87,7 @@ namespace MR
       };
 
       template <typename ImageType1, typename ImageType2>
-      struct NCCPrecomputeFunctorMasked_Naive {
+      struct NCCPrecomputeFunctorMasked_Naive { MEMALIGN(NCCPrecomputeFunctorMasked_Naive<ImageType1,ImageType2>)
         template <typename MaskType, typename ImageType3>
         void operator() (MaskType& mask, ImageType3& out) {
           if (!mask.value())
@@ -204,7 +204,7 @@ namespace MR
           ImageType2 in2;
       };
 
-      class NormalisedCrossCorrelation {
+      class NormalisedCrossCorrelation { MEMALIGN(NormalisedCrossCorrelation)
           private:
             transform_type midway_v2s;
 

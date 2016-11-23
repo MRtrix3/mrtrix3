@@ -38,11 +38,10 @@ namespace MR
 
 
 
-      class MSMT_CSD {
+      class MSMT_CSD { MEMALIGN(MSMT_CSD)
         public:
 
-          class Shared
-          {
+          class Shared { MEMALIGN(Shared)
             public:
               Shared (const Header& dwi_header) :
                   grad (DWI::get_valid_DW_scheme (dwi_header)),

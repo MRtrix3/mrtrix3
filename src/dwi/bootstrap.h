@@ -25,10 +25,10 @@ namespace MR {
 
     template <class ImageType, class Functor, size_t NUM_VOX_PER_CHUNK = 256> 
       class Bootstrap : public Adapter::Base<ImageType>
-    {
+    { MEMALIGN(Bootstrap<ImageType,Functor,NUM_VOX_PER_CHUNK>)
       public:
 
-        class IndexCompare {
+        class IndexCompare { NOMEMALIGN
           public:
             bool operator() (const Eigen::Vector3i& a, const Eigen::Vector3i& b) const {
               if (a[0] < b[0]) return true;

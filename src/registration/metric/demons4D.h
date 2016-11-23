@@ -25,8 +25,8 @@ namespace MR
     namespace Metric
     {
 
-      template <class Im1ImageType, class Im2ImageType, class Im1MaskType, class Im2MaskType>
-      class Demons4D {
+      template <class Im1ImageType, class Im2ImageType, class Im1MaskType, class Im2MaskType> 
+      class Demons4D { MEMALIGN(Demons4D<Im1ImageType,Im2ImageType,Im1MaskType,Im2MaskType>)
         public:
           Demons4D (default_type& global_energy, size_t& global_voxel_count,
                      const Im1ImageType& im1_image, const Im2ImageType& im2_image, const Im1MaskType im1_mask, const Im2MaskType im2_mask) :
