@@ -119,9 +119,7 @@ template <class T> class __has_custom_new_operator {
 };
 
 
-template <class T> inline constexpr bool __need_to_mem_align () { return alignof (T) > MRTRIX_ALLOC_MEM_ALIGN; }
-
-inline void* __aligned_alloc (std::size_t size) {
+inline void* __aligned_malloc (std::size_t size) {
   auto* original = std::malloc (size + EIGEN_DEFAULT_ALIGN_BYTES); 
   if (!original) throw std::bad_alloc(); 
   void *aligned = reinterpret_cast<void*>((reinterpret_cast<std::size_t>(original) & ~(std::size_t(EIGEN_DEFAULT_ALIGN_BYTES-1))) + EIGEN_DEFAULT_ALIGN_BYTES);
@@ -129,14 +127,14 @@ inline void* __aligned_alloc (std::size_t size) {
   return aligned; 
 }
 
-inline void __aligned_delete (void* ptr) { if (ptr) std::free (*(reinterpret_cast<void**>(ptr) - 1)); }
+inline void __aligned_free (void* ptr) { if (ptr) std::free (*(reinterpret_cast<void**>(ptr) - 1)); }
 
 
 #define MEMALIGN(T) public: \
-  void* operator new (std::size_t size) { return (alignof(T)>MRTRIX_ALLOC_MEM_ALIGN) ? __aligned_alloc (size) : ::operator new (size); } \
-  void* operator new[] (std::size_t size) { return (alignof(T)>MRTRIX_ALLOC_MEM_ALIGN) ? __aligned_alloc (size) : ::operator new[] (size); } \
-  void operator delete (void* ptr) { if (alignof(T)>MRTRIX_ALLOC_MEM_ALIGN) __aligned_delete (ptr); else ::operator delete (ptr); } \
-  void operator delete[] (void* ptr) { if (alignof(T)>MRTRIX_ALLOC_MEM_ALIGN) __aligned_delete (ptr); else ::operator delete[] (ptr); }
+  FORCE_INLINE void* operator new (std::size_t size) { return (alignof(T)>MRTRIX_ALLOC_MEM_ALIGN) ? __aligned_malloc (size) : ::operator new (size); } \
+  FORCE_INLINE void* operator new[] (std::size_t size) { return (alignof(T)>MRTRIX_ALLOC_MEM_ALIGN) ? __aligned_malloc (size) : ::operator new[] (size); } \
+  FORCE_INLINE void operator delete (void* ptr) { if (alignof(T)>MRTRIX_ALLOC_MEM_ALIGN) __aligned_free (ptr); else ::operator delete (ptr); } \
+  FORCE_INLINE void operator delete[] (void* ptr) { if (alignof(T)>MRTRIX_ALLOC_MEM_ALIGN) __aligned_free (ptr); else ::operator delete[] (ptr); }
 
 
 /*! \def CHECK_MEM_ALIGN
