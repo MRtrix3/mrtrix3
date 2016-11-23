@@ -23,7 +23,6 @@
 #include <iostream>
 #include <vector>
 
-// These lines are to silence deprecation warnings with Eigen & GCC v5
 #include <Eigen/Geometry>
 
 /*! \defgroup VLA Variable-length array macros
@@ -130,11 +129,11 @@ inline void* __aligned_malloc (std::size_t size) {
 inline void __aligned_free (void* ptr) { if (ptr) std::free (*(reinterpret_cast<void**>(ptr) - 1)); }
 
 
-#define MEMALIGN(T) public: \
-  FORCE_INLINE void* operator new (std::size_t size) { return (alignof(T)>MRTRIX_ALLOC_MEM_ALIGN) ? __aligned_malloc (size) : ::operator new (size); } \
-  FORCE_INLINE void* operator new[] (std::size_t size) { return (alignof(T)>MRTRIX_ALLOC_MEM_ALIGN) ? __aligned_malloc (size) : ::operator new[] (size); } \
-  FORCE_INLINE void operator delete (void* ptr) { if (alignof(T)>MRTRIX_ALLOC_MEM_ALIGN) __aligned_free (ptr); else ::operator delete (ptr); } \
-  FORCE_INLINE void operator delete[] (void* ptr) { if (alignof(T)>MRTRIX_ALLOC_MEM_ALIGN) __aligned_free (ptr); else ::operator delete[] (ptr); }
+#define MEMALIGN(...) public: \
+  FORCE_INLINE void* operator new (std::size_t size) { return (alignof(__VA_ARGS__)>MRTRIX_ALLOC_MEM_ALIGN) ? __aligned_malloc (size) : ::operator new (size); } \
+  FORCE_INLINE void* operator new[] (std::size_t size) { return (alignof(__VA_ARGS__)>MRTRIX_ALLOC_MEM_ALIGN) ? __aligned_malloc (size) : ::operator new[] (size); } \
+  FORCE_INLINE void operator delete (void* ptr) { if (alignof(__VA_ARGS__)>MRTRIX_ALLOC_MEM_ALIGN) __aligned_free (ptr); else ::operator delete (ptr); } \
+  FORCE_INLINE void operator delete[] (void* ptr) { if (alignof(__VA_ARGS__)>MRTRIX_ALLOC_MEM_ALIGN) __aligned_free (ptr); else ::operator delete[] (ptr); }
 
 
 /*! \def CHECK_MEM_ALIGN
@@ -151,8 +150,8 @@ inline void __aligned_free (void* ptr) { if (ptr) std::free (*(reinterpret_cast<
  * \sa NOMEMALIGN
  * \sa MEMALIGN
  */
-#define CHECK_MEM_ALIGN(classname) \
-    static_assert ( (alignof(classname) <= MRTRIX_ALLOC_MEM_ALIGN ) || __has_custom_new_operator<classname>::value, \
+#define CHECK_MEM_ALIGN(...) \
+    static_assert ( (alignof(__VA_ARGS__) <= MRTRIX_ALLOC_MEM_ALIGN ) || __has_custom_new_operator<__VA_ARGS__>::value, \
         "class requires over-alignment, but no operator new defined! Please insert MEMALIGN() into class definition.") 
 
 
