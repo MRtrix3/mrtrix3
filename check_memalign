@@ -58,5 +58,6 @@ else
   
   echo "" >> $LOG
   echo "Please add MEMALIGN() macro to the class declarations identified above" >> $LOG
+  exit 1
 fi
 

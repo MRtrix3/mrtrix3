@@ -56,7 +56,7 @@ namespace MR {
 
 
           struct Guard
-          {
+          { NOMEMALIGN
           public:
             Guard(SpatialLock& l) : lock(l), idx(-1) { }
 
