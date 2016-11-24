@@ -37,7 +37,7 @@ namespace Connectome {
 // Class for storing any useful information regarding a parcellation node that
 //   may be imported from a lookup table
 class LUT_node
-{
+{ MEMALIGN(LUT_node)
 
   public:
 
@@ -93,7 +93,7 @@ class LUT_node
 
 
 class LUT : public std::multimap<node_t, LUT_node>
-{
+{ MEMALIGN(LUT)
     enum file_format { LUT_NONE, LUT_BASIC, LUT_FREESURFER, LUT_AAL, LUT_ITKSNAP, LUT_MRTRIX };
   public:
     typedef std::multimap<node_t, LUT_node> map_type;

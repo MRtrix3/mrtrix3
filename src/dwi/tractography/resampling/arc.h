@@ -28,11 +28,11 @@ namespace MR {
 
 
         // Also handles resampling along a fixed line
-        class Arc : public Base {
+        class Arc : public Base { MEMALIGN(Arc)
             typedef float value_type;
             typedef Eigen::Vector3f point_type;
           private:
-            class Plane {
+            class Plane { MEMALIGN(Plane)
               public:
                 Plane (const point_type& pos, const point_type& dir) :
                     n (dir)

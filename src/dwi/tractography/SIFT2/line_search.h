@@ -40,12 +40,12 @@ namespace MR {
       // New line search functor for when per-streamline projections and per-fixel correlation terms are not calculated
       // Instead, the correlation term for the line search is derived using the TD fraction only
       class LineSearchFunctor
-      {
+      { MEMALIGN(LineSearchFunctor)
 
         public:
 
           class Result
-          {
+          { NOMEMALIGN
             public:
             Result() : cost (0.0), first_deriv (0.0), second_deriv (0.0), third_deriv (0.0) { }
             Result& operator+= (const Result& that) { cost += that.cost; first_deriv += that.first_deriv; second_deriv += that.second_deriv; third_deriv += that.third_deriv; return *this; }
@@ -66,7 +66,7 @@ namespace MR {
 
           // Necessary information for those fixels traversed by this streamline
           class Fixel
-          {
+          { NOMEMALIGN
             public:
             Fixel (const SIFT::Track_fixel_contribution&, const TckFactor&, const double, const double);
             //void set_damping (const double i) { dTD_dFs *= i; }

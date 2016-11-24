@@ -42,7 +42,7 @@ namespace MR
       }
 
       class ImageBase : public Volume
-      {
+      { MEMALIGN(ImageBase)
         public:
           ImageBase (MR::Header&&);
           virtual ~ImageBase();
@@ -62,7 +62,7 @@ namespace MR
       };
 
       class Image : public ImageBase
-      {
+      { MEMALIGN(Image)
         public:
           Image (MR::Header&&);
 

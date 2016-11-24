@@ -33,7 +33,7 @@ namespace MR
       class Connectome;
 
 
-      class ShaderBase : public GL::Shader::Program {
+      class ShaderBase : public GL::Shader::Program { MEMALIGN(ShaderBase)
         public:
           ShaderBase() : GL::Shader::Program () { }
           virtual ~ShaderBase() { }
@@ -61,8 +61,8 @@ namespace MR
 
 
 
-      class NodeShader : public ShaderBase
-      {
+      class NodeShader : public ShaderBase 
+      { MEMALIGN(NodeShader)
         public:
           NodeShader() : ShaderBase () { }
           ~NodeShader() { }
@@ -78,7 +78,7 @@ namespace MR
 
 
       class EdgeShader : public ShaderBase
-      {
+      { MEMALIGN(EdgeShader)
         public:
           EdgeShader() : ShaderBase () { }
           ~EdgeShader() { }

@@ -40,7 +40,7 @@ namespace Connectome {
 
 // Provides a common interface for assigning a streamline to the relevant parcellation node pair
 // Note that this class is NOT copy-constructed, so derivative classes must be thread-safe
-class Tck2nodes_base {
+class Tck2nodes_base { MEMALIGN(Tck2nodes_base)
 
   public:
     Tck2nodes_base (const Image<node_t>& nodes_data, const bool pair) :
@@ -86,7 +86,7 @@ class Tck2nodes_base {
     }
 
     class voxel_type : public Eigen::Array<int,3,1>
-    {
+    { MEMALIGN(voxel_type)
       public:
         using Eigen::Array<int,3,1>::Array;
         bool operator< (const Eigen::Array<int,3,1>& that) const {
@@ -102,7 +102,7 @@ class Tck2nodes_base {
 // Specific implementations of assignment methodologies
 
 // Most basic: look up the voxel value at the voxel containing the streamline endpoint
-class Tck2nodes_end_voxels : public Tck2nodes_base {
+class Tck2nodes_end_voxels : public Tck2nodes_base { MEMALIGN(Tck2nodes_end_voxels)
 
   public:
     Tck2nodes_end_voxels (const Image<node_t>& nodes_data) :
@@ -123,7 +123,7 @@ class Tck2nodes_end_voxels : public Tck2nodes_base {
 
 
 // Radial search
-class Tck2nodes_radial : public Tck2nodes_base {
+class Tck2nodes_radial : public Tck2nodes_base { MEMALIGN(Tck2nodes_radial)
 
   public:
     Tck2nodes_radial (const Image<node_t>& nodes_data, const default_type radius) :
@@ -160,8 +160,8 @@ class Tck2nodes_radial : public Tck2nodes_base {
 
 
 // Do a reverse-search from the track endpoints inwards
-class Tck2nodes_revsearch : public Tck2nodes_base
-{
+class Tck2nodes_revsearch : public Tck2nodes_base 
+{ MEMALIGN (Tck2nodes_revsearch)
 
   public:
     Tck2nodes_revsearch (const Image<node_t>& nodes_data, const default_type length) :
@@ -185,7 +185,7 @@ class Tck2nodes_revsearch : public Tck2nodes_base
 
 // Forward search - form a diamond-like shape emanating from the streamline endpoint in the direction of the tangent
 class Tck2nodes_forwardsearch : public Tck2nodes_base
-{
+{ MEMALIGN(Tck2nodes_forwardsearch)
 
   public:
     Tck2nodes_forwardsearch (const Image<node_t>& nodes_data, const default_type length) :
@@ -216,7 +216,7 @@ class Tck2nodes_forwardsearch : public Tck2nodes_base
 
 // Class that obtains a list of all nodes overlapped by the streamline
 class Tck2nodes_all_voxels : public Tck2nodes_base
-{
+{ MEMALIGN(Tck2nodes_all_voxels)
   public:
     Tck2nodes_all_voxels (const Image<node_t>& nodes_data) :
         Tck2nodes_base (nodes_data, false) { }

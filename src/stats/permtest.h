@@ -33,7 +33,7 @@ namespace MR
 
 
 
-      class PermutationStack {
+      class PermutationStack { MEMALIGN(PermutationStack)
         public:
           PermutationStack (size_t num_permutations, size_t num_samples, std::string msg, bool include_default = true) :
             num_permutations (num_permutations),
@@ -67,7 +67,7 @@ namespace MR
 
       /*! A class to pre-compute the empirical TFCE or CFE statistic image for non-stationarity correction */
       template <class StatsType, class EnchancementType>
-        class PreProcessor {
+        class PreProcessor { MEMALIGN(PreProcessor<StatsType,EnchancementType>)
           public:
             PreProcessor (PermutationStack& permutation_stack, const StatsType& stats_calculator,
                           const EnchancementType& enhancer, std::vector<double>& global_enhanced_sum,
@@ -126,7 +126,7 @@ namespace MR
 
         /*! A class to perform the permutation testing */
         template <class StatsType, class EnhancementType>
-          class Processor {
+          class Processor { MEMALIGN(Processor<StatsType,EnhancementType>)
             public:
               Processor (PermutationStack& permutation_stack, const StatsType& stats_calculator,
                          const EnhancementType& enhancer, const std::shared_ptr<std::vector<double> >& empirical_enhanced_statistics,

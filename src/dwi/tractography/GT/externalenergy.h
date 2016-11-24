@@ -31,7 +31,7 @@ namespace MR {
       namespace GT {
         
         class ExternalEnergyComputer : public EnergyComputer
-        {
+        { MEMALIGN(ExternalEnergyComputer)
         public:
           
           ExternalEnergyComputer(Stats& stat, const Image<float>& dwimage, const Properties& props);

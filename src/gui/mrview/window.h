@@ -50,13 +50,13 @@ namespace MR
 
 
       class Window : public QMainWindow, ColourMapButtonObserver
-      {
+      { MEMALIGN(Window)
           Q_OBJECT
 
         private:
           Cursor cursors_do_not_use;
 
-          class GLArea : public GL::Area {
+          class GLArea : public GL::Area { MEMALIGN(GLArea)
             public:
               GLArea (Window& parent);
               QSize sizeHint () const override;
@@ -334,7 +334,7 @@ namespace MR
       };
 
 
-      class GrabContext : private Context::Grab {
+      class GrabContext : private Context::Grab { NOMEMALIGN
         public:
           GrabContext () : Context::Grab (Window::main->glarea) { }
       };

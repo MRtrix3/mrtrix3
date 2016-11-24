@@ -32,9 +32,9 @@ namespace MR
 
         using namespace MR::DWI::Tractography::Tracking;
 
-        class Tensor_Prob : public Tensor_Det {
+        class Tensor_Prob : public Tensor_Det { MEMALIGN(Tensor_Prob)
           public:
-            class Shared : public Tensor_Det::Shared {
+            class Shared : public Tensor_Det::Shared { MEMALIGN(Shared)
               public:
                 Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
                   Tensor_Det::Shared (diff_path, property_set) {
@@ -88,7 +88,7 @@ namespace MR
 
           protected:
 
-            class WildBootstrap {
+            class WildBootstrap { MEMALIGN(WildBootstrap)
               public:
                 WildBootstrap (const Eigen::MatrixXf& hat_matrix) :
                   H (hat_matrix),
@@ -115,7 +115,7 @@ namespace MR
             };
 
 
-            class Interp : public Interpolator<Bootstrap<Image<float>,WildBootstrap>>::type {
+            class Interp : public Interpolator<Bootstrap<Image<float>,WildBootstrap>>::type { MEMALIGN(Interp)
               public:
                 Interp (const Bootstrap<Image<float>,WildBootstrap>& bootstrap_vox) :
                   Interpolator<Bootstrap<Image<float>,WildBootstrap> >::type (bootstrap_vox) {

@@ -44,7 +44,7 @@ namespace MR
         class ODF_Preview;
 
         class ODF : public Base
-        {
+        { MEMALIGN(ODF)
             Q_OBJECT
 
           public:

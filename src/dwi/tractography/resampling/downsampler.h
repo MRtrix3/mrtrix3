@@ -30,7 +30,7 @@ namespace MR {
 
 
         class Downsampler : public Base
-        {
+        { MEMALIGN(Downsampler)
 
           public:
             Downsampler () : ratio (1) { }

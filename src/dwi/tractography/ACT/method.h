@@ -40,7 +40,7 @@ namespace MR
 
       using namespace MR::DWI::Tractography::Tracking;
 
-        class ACT_Method_additions {
+        class ACT_Method_additions { MEMALIGN(ACT_Method_additions)
 
           public:
             ACT_Method_additions (const SharedBase& shared) :

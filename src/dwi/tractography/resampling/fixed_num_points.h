@@ -27,8 +27,8 @@ namespace MR {
 
 
 
-        class FixedNumPoints : public Base
-        {
+        class FixedNumPoints : public Base 
+        { NOMEMALIGN
 
           public:
             FixedNumPoints () :

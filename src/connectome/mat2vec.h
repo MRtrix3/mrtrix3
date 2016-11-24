@@ -31,7 +31,7 @@ namespace Connectome {
 
 
 class Mat2Vec
-{
+{ MEMALIGN(Mat2Vec)
 
   public:
     Mat2Vec (const node_t);

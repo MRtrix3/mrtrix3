@@ -29,7 +29,7 @@ namespace MR
         namespace LightBoxViewControls
         {
           class LightBoxEditButton : public SpinBox
-          {
+          { NOMEMALIGN
             public:
               LightBoxEditButton(QWidget* parent, const QString &suffix)
                 : LightBoxEditButton(parent, 1, 100, 1, suffix) {}

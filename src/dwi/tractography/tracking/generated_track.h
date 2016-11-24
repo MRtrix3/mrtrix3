@@ -34,7 +34,7 @@ namespace MR
 
 
     class GeneratedTrack : public std::vector<Eigen::Vector3f>
-    {
+    { MEMALIGN(GeneratedTrack)
 
         typedef std::vector<Eigen::Vector3f> BaseType;
 

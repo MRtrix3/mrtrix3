@@ -35,7 +35,7 @@ namespace MR
 
 
       class Fixel : public FixelBase
-      {
+      { MEMALIGN(Fixel)
 
         public:
           Fixel () :

@@ -65,7 +65,7 @@ namespace MR
 
 
       template <typename T = float> class ScalarReader : public __ReaderBase__
-      {
+      { NOMEMALIGN
         public:
           typedef T value_type;
 
@@ -160,7 +160,7 @@ namespace MR
        * */
       template <typename T = float>
       class ScalarWriter : public __WriterBase__<T>
-      {
+      { NOMEMALIGN
         public:
           typedef T value_type;
           using __WriterBase__<T>::count;

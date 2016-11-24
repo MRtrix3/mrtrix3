@@ -42,7 +42,7 @@ namespace MR
 #endif
 
 
-      struct Grab {
+      struct Grab { NOMEMALIGN
         decltype (current()) previous_context;
         Grab (QWidget* window = nullptr) : previous_context (makeCurrent (window)) { }
         ~Grab () { restore (previous_context); }
@@ -51,7 +51,7 @@ namespace MR
 
 
 
-    class App : public QObject {
+    class App : public QObject { NOMEMALIGN
       Q_OBJECT
 
       public:

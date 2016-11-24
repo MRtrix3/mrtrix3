@@ -38,7 +38,7 @@ namespace MR
       void load_rois (Properties& properties);
 
 
-      class Mask : public Image<bool> {
+      class Mask : public Image<bool> { MEMALIGN(Mask)
         public:
           typedef Eigen::Transform<float, 3, Eigen::AffineCompact> transform_type;
           Mask (const Mask&) = default;
@@ -56,7 +56,7 @@ namespace MR
 
 
 
-      class ROI {
+      class ROI { MEMALIGN(ROI)
         public:
           ROI (const Eigen::Vector3f& sphere_pos, float sphere_radius) :
             pos (sphere_pos), radius (sphere_radius), radius2 (Math::pow2 (radius)) { }
@@ -123,7 +123,7 @@ namespace MR
 
 
 
-      class ROISet {
+      class ROISet { MEMALIGN(ROISet)
         public:
           ROISet () { }
 

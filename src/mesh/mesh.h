@@ -40,7 +40,7 @@ namespace MR
     typedef std::vector<Vertex> VertexList;
 
     class Vox : public Eigen::Array3i
-    {
+    { MEMALIGN(Vox)
       public:
         using Eigen::Array3i::Array3i;
         bool operator< (const Vox& i) const
@@ -52,7 +52,7 @@ namespace MR
 
     template <uint32_t vertices = 3>
     class Polygon
-    {
+    { MEMALIGN(Polygon)
 
       public:
 
@@ -98,7 +98,7 @@ namespace MR
 
 
 
-    class Mesh {
+    class Mesh { MEMALIGN(Mesh)
 
       public:
         Mesh (const std::string&);
@@ -232,7 +232,7 @@ namespace MR
     //   everything being ASCII as in .obj)
 
     class MeshMulti : public std::vector<Mesh>
-    {
+    { MEMALIGN(MeshMulti)
       public:
         using std::vector<Mesh>::vector;
 

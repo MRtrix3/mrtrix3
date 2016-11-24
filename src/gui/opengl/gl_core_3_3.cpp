@@ -17,6 +17,8 @@
 #include <stddef.h>
 #include "gui/opengl/gl_core_3_3.h"
 
+#define NOMEMALIGN
+
 #if defined(__APPLE__)
 #include <dlfcn.h>
 
@@ -2933,7 +2935,7 @@ namespace gl
 	namespace 
 	{
 		struct InitializeVariables
-		{
+		{ NOMEMALIGN
 			InitializeVariables()
 			{
 				// Extension: 1.0
@@ -3319,20 +3321,20 @@ namespace gl
 			}
 			
 			struct MapEntry
-			{
+			{ NOMEMALIGN
 				const char *extName;
 				bool *extVariable;
 			};
 			
 			struct MapCompare
-			{
+			{ NOMEMALIGN
 				MapCompare(const char *test_) : test(test_) {}
 				bool operator()(const MapEntry &other) { return strcmp(test, other.extName) == 0; }
 				const char *test;
 			};
 			
 			struct ClearEntry
-			{
+			{ NOMEMALIGN
 			  void operator()(MapEntry &entry) { *(entry.extVariable) = false;}
 			};
 			

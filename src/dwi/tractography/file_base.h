@@ -37,7 +37,7 @@ namespace MR
 
       //! \cond skip
       class __ReaderBase__
-      {
+      { NOMEMALIGN
         public:
           ~__ReaderBase__ () {
             if (in.is_open())
@@ -57,7 +57,7 @@ namespace MR
 
       template <typename ValueType = float>
         class __WriterBase__
-        {
+        { NOMEMALIGN
           public:
             typedef ValueType value_type;
 

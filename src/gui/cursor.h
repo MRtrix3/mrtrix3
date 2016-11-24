@@ -23,7 +23,7 @@ namespace MR
   namespace GUI
   {
     class Cursor
-    {
+    { NOMEMALIGN
       public:
         Cursor ();
 

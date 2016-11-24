@@ -33,7 +33,7 @@ namespace Connectome {
 
 
 class Mapper
-{
+{ MEMALIGN(Mapper)
 
   public:
     Mapper (const Tck2nodes_base& a, const Metric& b) :

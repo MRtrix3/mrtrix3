@@ -46,7 +46,7 @@ namespace MR
 
 
         template <class ImageType>
-          class Interpolator {
+          class Interpolator { MEMALIGN(Interpolator<ImageType>)
             public:
               typedef Interp::Linear<ImageType> type;
           };

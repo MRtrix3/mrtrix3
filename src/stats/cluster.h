@@ -30,7 +30,7 @@ namespace MR
 
       /** \addtogroup Statistics
       @{ */
-      class ClusterSize {
+      class ClusterSize { MEMALIGN(ClusterSize)
         public:
           ClusterSize (const Filter::Connector& connector, value_type cluster_forming_threshold) :
                        connector (connector), cluster_forming_threshold (cluster_forming_threshold) { }

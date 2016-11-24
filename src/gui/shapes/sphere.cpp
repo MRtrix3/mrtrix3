@@ -88,7 +88,7 @@ namespace MR
 
 
       class Triangle
-      {
+      { NOMEMALIGN
         public:
           Triangle () { }
           Triangle (const GLuint x[3]) {
@@ -114,7 +114,7 @@ namespace MR
       };
 
       class Edge
-      {
+      { NOMEMALIGN
         public:
           Edge (const Edge& E) {
             set (E.i1, E.i2);

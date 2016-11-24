@@ -32,7 +32,7 @@ namespace MR
 
       template <typename ValueType = float>
         class Streamline : public std::vector<Eigen::Matrix<ValueType,3,1>>
-      {
+      { MEMALIGN(Streamline<ValueType>)
         public:
           typedef Eigen::Matrix<ValueType,3,1> point_type;
           typedef ValueType value_type;

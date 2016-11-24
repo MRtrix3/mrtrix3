@@ -34,7 +34,7 @@ namespace Connectome {
 
 
 class Exemplar : private Tractography::Streamline<float>
-{
+{ MEMALIGN(Exemplar)
   public:
     using Tractography::Streamline<float>::point_type;
     Exemplar (const size_t length, const NodePair& nodes, const std::pair<point_type, point_type>& COMs) :

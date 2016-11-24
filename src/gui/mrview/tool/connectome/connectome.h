@@ -66,7 +66,7 @@ namespace MR
       {
 
         class Connectome : public Base
-        {
+        { MEMALIGN(Connectome)
             Q_OBJECT
 
             enum class node_visibility_matrix_operator_t { ANY, ALL };

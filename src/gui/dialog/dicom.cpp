@@ -28,7 +28,7 @@ namespace MR
       {
 
         class Item
-        {
+        { NOMEMALIGN
           public:
             Item () : parentItem (NULL) { }
             Item (Item* parent, const std::shared_ptr<Patient>& p) :
@@ -82,7 +82,7 @@ namespace MR
 
 
         class Model : public QAbstractItemModel
-        {
+        { NOMEMALIGN
           public:
             Model (QObject* parent) : QAbstractItemModel (parent) {
               QList<QVariant> rootData;
@@ -148,7 +148,7 @@ namespace MR
 
 
         class DicomSelector : public QDialog
-        {
+        { NOMEMALIGN
           public:
             DicomSelector (const Tree& tree) : QDialog (NULL) {
               Model* model = new Model (this);

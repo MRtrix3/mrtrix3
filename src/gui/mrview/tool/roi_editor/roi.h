@@ -46,7 +46,7 @@ namespace MR
 
 
         class ROI : public Base
-        {
+        { MEMALIGN(ROI)
             Q_OBJECT
 
           public:

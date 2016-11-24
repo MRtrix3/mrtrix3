@@ -30,7 +30,7 @@ namespace MR {
 
 
         class Upsampler : public Base
-        {
+        { MEMALIGN(Upsampler)
 
           public:
             Upsampler () :

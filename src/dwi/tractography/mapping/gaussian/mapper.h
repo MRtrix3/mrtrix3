@@ -35,7 +35,7 @@ namespace MR {
 
 
           class TrackMapper : public Mapping::TrackMapperTWI
-          {
+          { MEMALIGN(TrackMapper)
 
             typedef Mapping::TrackMapperTWI BaseMapper;
 

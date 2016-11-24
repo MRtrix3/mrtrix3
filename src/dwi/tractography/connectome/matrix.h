@@ -43,7 +43,7 @@ extern const App::Option EdgeStatisticOption;
 
 
 class Matrix
-{
+{ MEMALIGN(Matrix)
 
   public:
     Matrix (const node_t max_node_index, const stat_edge stat, const bool vector_output = false) :

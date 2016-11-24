@@ -31,7 +31,7 @@ namespace MR
 
     namespace {
       // Little class needed for face data reading for OBJ files
-      struct FaceData {
+      struct FaceData { NOMEMALIGN
           uint32_t vertex, texture, normal;
       };
     }

@@ -27,7 +27,7 @@ namespace MR
       namespace Mode
       {
         class LightBox : public Slice
-        {
+        { MEMALIGN(LightBox)
             Q_OBJECT
             using proj_focusdelta = std::pair<Projection,float>;
           public:

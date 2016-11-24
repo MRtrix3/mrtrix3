@@ -60,7 +60,7 @@ namespace MR
 
 
         class FixelBase
-        {
+        { MEMALIGN(FixelBase)
 
           public:
             FixelBase () :
@@ -124,7 +124,7 @@ namespace MR
 
         template <class Fixel>
         class ModelBase : public Mapping::Fixel_TD_map<Fixel>
-        {
+        { MEMALIGN(ModelBase<Fixel>)
 
           protected:
             typedef typename Fixel_map<Fixel>::MapVoxel MapVoxel;

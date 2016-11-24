@@ -33,7 +33,7 @@ namespace MR
     {
 
 
-      class Properties : public std::map<std::string, std::string> {
+      class Properties : public std::map<std::string, std::string> { MEMALIGN(Properties)
         public:
 
           Properties () { 

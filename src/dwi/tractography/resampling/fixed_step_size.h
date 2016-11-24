@@ -28,7 +28,7 @@ namespace MR {
 
 
         class FixedStepSize : public Base
-        {
+        { MEMALIGN(FixedStepSize)
 
           public:
             FixedStepSize () :

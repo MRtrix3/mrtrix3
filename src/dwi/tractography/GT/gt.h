@@ -39,7 +39,7 @@ namespace MR {
         
         
         struct Properties
-        {
+        { MEMALIGN(Properties)
           float p_birth;
           float p_death;
           float p_shift;
@@ -64,7 +64,7 @@ namespace MR {
         
         
         class Stats
-        {
+        { MEMALIGN(Stats)
         public:
           
           Stats(const double T0, const double T1, const uint64_t maxiter) 

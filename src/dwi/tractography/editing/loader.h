@@ -35,7 +35,7 @@ namespace MR {
 
 
         class Loader
-        {
+        { MEMALIGN(Loader)
 
           public:
             Loader (const std::vector<std::string>& files) :

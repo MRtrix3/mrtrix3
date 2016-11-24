@@ -42,7 +42,7 @@ namespace MR
 
 
         class Node_list_model : public QAbstractItemModel
-        {
+        { MEMALIGN(Node_list_model)
           public:
 
             Node_list_model (Connectome* parent);
@@ -87,7 +87,7 @@ namespace MR
 
 
         class Node_list_view : public QTableView
-        {
+        { NOMEMALIGN
           public:
             Node_list_view (QWidget* parent) :
                 QTableView (parent) { }
@@ -102,7 +102,7 @@ namespace MR
 
 
         class Node_list : public Tool::Base
-        {
+        { MEMALIGN(Node_list)
 
             Q_OBJECT
 

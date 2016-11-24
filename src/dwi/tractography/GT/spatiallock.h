@@ -29,7 +29,7 @@ namespace MR {
         
         template <typename T>
         struct vec_compare
-        {
+        { NOMEMALIGN
             bool operator()(const T& v, const T& w) const
             {
               for (int i = 0; i < v.size(); ++i) {
@@ -45,7 +45,7 @@ namespace MR {
          */
         template <typename T = float >
         class SpatialLock
-        {
+        { MEMALIGN(SpatialLock)
         public:
           typedef T value_type;
           typedef Eigen::Matrix<value_type, 3, 1> point_type;

@@ -39,7 +39,7 @@ namespace MR
 
 
       class Cost_fn_gradient_sort
-      {
+      { MEMALIGN(Cost_fn_gradient_sort)
         public:
           Cost_fn_gradient_sort (const track_t i, const double g, const double gpul) :
             tck_index            (i),
@@ -80,12 +80,12 @@ namespace MR
       //     be filtered in a single iteration, provided the gradient is less than that of the candidate streamline
       //     from all other blocks
       class MT_gradient_vector_sorter
-      {
+      { MEMALIGN(MT_gradient_vector_sorter)
 
           typedef std::vector<Cost_fn_gradient_sort> VecType;
           typedef VecType::iterator VecItType;
 
-          class Comparator {
+          class Comparator { NOMEMALIGN
             public:
               bool operator() (const VecItType& a, const VecItType& b) const { return (a->get_gradient_per_unit_length() < b->get_gradient_per_unit_length()); }
           };
@@ -109,7 +109,7 @@ namespace MR
 
 
           class BlockSender
-          {
+          { MEMALIGN(BlockSender)
             public:
               BlockSender (const track_t count, const track_t size) :
                 num_tracks (count),
@@ -132,7 +132,7 @@ namespace MR
           };
 
           class Sorter
-          {
+          { MEMALIGN(Sorter)
             public:
               Sorter (VecType& in) :
                 data  (in) { }

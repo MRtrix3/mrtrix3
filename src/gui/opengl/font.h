@@ -25,7 +25,7 @@ namespace MR
     namespace GL
     {
 
-      class Font {
+      class Font { MEMALIGN(Font)
         public:
           Font (const QFont& font) :
             metric (font),

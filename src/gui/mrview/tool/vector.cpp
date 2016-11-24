@@ -33,7 +33,7 @@ namespace MR
 
 
         class Vector::Model : public ListModelBase
-        {
+        { MEMALIGN(Vector::Model)
 
           public:
             Model (QObject* parent) :

@@ -68,7 +68,7 @@ LUT::file_format LUT::guess_file_format (const std::string& path)
 {
 
   class Column
-  {
+  { NOMEMALIGN
     public:
       Column () :
           numeric (true),

@@ -30,7 +30,7 @@ namespace MR
       {
 
 
-        class ACT_Shared_additions {
+        class ACT_Shared_additions { MEMALIGN(ACT_Shared_additions)
 
           public:
             ACT_Shared_additions (const std::string& path, Properties& property_set) :

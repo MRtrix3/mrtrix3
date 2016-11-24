@@ -29,7 +29,7 @@ namespace MR {
 
 
         class Mapped_track_base
-        {
+        { MEMALIGN(Mapped_track_base)
 
           public:
             Mapped_track_base() :
@@ -52,7 +52,7 @@ namespace MR {
 
 
         class Mapped_track_nodepair : public Mapped_track_base
-        {
+        { MEMALIGN(Mapped_track_nodepair)
 
           public:
             Mapped_track_nodepair() :
@@ -74,7 +74,7 @@ namespace MR {
 
 
         class Mapped_track_nodelist : public Mapped_track_base
-        {
+        { MEMALIGN(Mapped_track_nodelist)
 
           public:
             Mapped_track_nodelist() :

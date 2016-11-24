@@ -57,7 +57,7 @@ namespace MR
 
       template <class Fixel>
       class Model : public ModelBase<Fixel>
-      {
+      { MEMALIGN(Model<Fixel>)
 
         protected:
         typedef typename Fixel_map<Fixel>::MapVoxel MapVoxel;
@@ -107,7 +107,7 @@ namespace MR
         private:
           // Some member classes to support multi-threaded processes
           class MappedTrackReceiver
-          {
+          { MEMALIGN(MappedTrackReceiver)
             public:
               MappedTrackReceiver (Model& i) :
                 master (i),
@@ -129,7 +129,7 @@ namespace MR
           };
 
           class FixelRemapper
-          {
+          { MEMALIGN(FixelRemapper)
             public:
               FixelRemapper (Model& i, std::vector<size_t>& r) :
                 master   (i),

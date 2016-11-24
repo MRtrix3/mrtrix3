@@ -28,7 +28,7 @@ namespace MR
       {
 
         class ListModelBase : public QAbstractItemModel
-        {
+        { NOMEMALIGN
           public:
 
             ListModelBase (QObject* parent) :

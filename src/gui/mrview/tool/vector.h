@@ -31,7 +31,7 @@ namespace MR
       namespace Tool
       {
         class Vector : public Base, public ColourMapButtonObserver, public DisplayableVisitor
-        {
+        { MEMALIGN(Vector)
             Q_OBJECT
 
           public:

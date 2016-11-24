@@ -28,7 +28,7 @@ namespace MR {
 
 
         class Endpoints : public Base
-        {
+        { NOMEMALIGN
 
           public:
             Endpoints() { }

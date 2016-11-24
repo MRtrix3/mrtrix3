@@ -40,7 +40,7 @@ namespace MR
         enum class TrackThresholdType { None, UseColourFile, SeparateFile };
 
         class Tractogram : public Displayable
-        {
+        { MEMALIGN(Tractogram)
           Q_OBJECT
 
           public:
@@ -93,7 +93,7 @@ namespace MR
             std::string intensity_scalar_filename;
             std::string threshold_scalar_filename;
 
-            class Shader : public Displayable::Shader {
+            class Shader : public Displayable::Shader { MEMALIGN(Shader)
               public:
                 Shader () :
                     do_crop_to_slab (false),

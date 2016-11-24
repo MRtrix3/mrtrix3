@@ -39,8 +39,7 @@ namespace MR {
 
 
 
-        class Base
-        {
+        class Base { NOMEMALIGN
           public:
             Base() { }
 

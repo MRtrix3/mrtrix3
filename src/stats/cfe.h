@@ -34,7 +34,7 @@ namespace MR
       @{ */
 
 
-      class connectivity {
+      class connectivity { MEMALIGN(connectivity)
         public:
           connectivity () : value (0.0) { }
           value_type value;
@@ -46,7 +46,7 @@ namespace MR
       /**
        * Process each track by converting each streamline to a set of dixels, and map these to fixels.
        */
-      class TrackProcessor {
+      class TrackProcessor { MEMALIGN(TrackProcessor)
 
         public:
           TrackProcessor (Image<int32_t>& fixel_indexer,
@@ -115,7 +115,7 @@ namespace MR
 
 
 
-      class Enhancer {
+      class Enhancer { MEMALIGN(Enhancer)
         public:
           Enhancer (const std::vector<std::map<int32_t, connectivity> >& connectivity_map,
                     const value_type dh, const value_type E, const value_type H) :

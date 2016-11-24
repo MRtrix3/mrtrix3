@@ -23,7 +23,7 @@ namespace MR
     namespace
     {
       class OrientationLabel
-      {
+      { MEMALIGN(OrientationLabel)
         public:
           OrientationLabel () { }
           OrientationLabel (const Eigen::Vector3f& direction, const char textlabel) :

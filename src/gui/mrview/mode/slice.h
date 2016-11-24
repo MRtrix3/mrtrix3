@@ -29,7 +29,7 @@ namespace MR
       {
 
         class Slice : public Base
-        {
+        { MEMALIGN(Slice)
           public:
             Slice () :
               Base (FocusContrast | MoveTarget | TiltRotate) { }
@@ -37,7 +37,7 @@ namespace MR
 
             virtual void paint (Projection& with_projection);
 
-            class Shader : public Displayable::Shader {
+            class Shader : public Displayable::Shader { MEMALIGN(Shader)
               public:
                 virtual std::string vertex_shader_source (const Displayable& object);
                 virtual std::string fragment_shader_source (const Displayable& object);

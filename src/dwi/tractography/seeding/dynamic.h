@@ -71,7 +71,7 @@ namespace MR
 
 
       class Fixel_TD_seed : public SIFT::FixelBase
-      {
+      { MEMALIGN(Fixel_TD_seed)
 
         public:
           Fixel_TD_seed (const FMLS::FOD_lobe& lobe) :
@@ -180,7 +180,7 @@ namespace MR
 
 
       class Dynamic_ACT_additions
-      {
+      { MEMALIGN(Dynamic_ACT_additions)
 
         public:
           Dynamic_ACT_additions (const std::string& path) :
@@ -201,7 +201,7 @@ namespace MR
 
 
       class Dynamic : public Base, public SIFT::ModelBase<Fixel_TD_seed>
-        {
+        { MEMALIGN(Dynamic)
           private:
 
             typedef Fixel_TD_seed Fixel;
@@ -279,7 +279,7 @@ namespace MR
 
 
       class WriteKernelDynamic : public Tracking::WriteKernel
-        {
+        { MEMALIGN(WriteKernelDynamic)
           public:
             WriteKernelDynamic (const Tracking::SharedBase& shared, const std::string& output_file, const Properties& properties) :
               Tracking::WriteKernel (shared, output_file, properties) { }

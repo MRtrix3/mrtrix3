@@ -42,7 +42,7 @@ namespace Connectome {
 
 // Provide a common interface for calculating the contribution from a
 //   particular streamline to a particular edge of the connectome
-class Metric {
+class Metric { MEMALIGN(Metric)
 
   public:
     Metric() :

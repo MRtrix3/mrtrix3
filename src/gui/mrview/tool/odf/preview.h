@@ -32,11 +32,11 @@ namespace MR
       {
 
         class ODF_Preview : public QWidget
-        {
+        { MEMALIGN(ODF_Preview)
             Q_OBJECT
 
-            class RenderFrame : public DWI::RenderFrame
-            {
+            class RenderFrame : public DWI::RenderFrame 
+            { MEMALIGN(RenderFrame)
               public:
                 RenderFrame (QWidget* parent);
                 

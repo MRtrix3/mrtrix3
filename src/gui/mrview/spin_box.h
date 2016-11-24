@@ -24,7 +24,7 @@ namespace MR
   {
 
     class SpinBox : public QSpinBox
-    {
+    { NOMEMALIGN
         Q_OBJECT
 
       public:

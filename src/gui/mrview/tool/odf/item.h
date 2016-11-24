@@ -38,7 +38,7 @@ namespace MR
 
 
 
-        class ODF_Item {
+        class ODF_Item { MEMALIGN(ODF_Item)
           public:
             ODF_Item (MR::Header&& H, const odf_type_t type, const float scale, const bool hide_negative, const bool color_by_direction);
 
@@ -51,7 +51,7 @@ namespace MR
             bool hide_negative, color_by_direction;
 
             class DixelPlugin
-            {
+            { MEMALIGN(DixelPlugin)
               public:
                 enum dir_t { DW_SCHEME, HEADER, INTERNAL, NONE, FILE };
 

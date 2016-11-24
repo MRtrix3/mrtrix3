@@ -35,7 +35,7 @@ namespace MR
 
 
         class ClipPlane 
-        {
+        { MEMALIGN (ClipPlane)
           public:
             GL::vec4 plane;
             bool active;
@@ -43,7 +43,7 @@ namespace MR
         };
 
         class View : public Base, public Mode::ModeGuiVisitor
-        {
+        { MEMALIGN(View)
           Q_OBJECT
           public:
             View (Dock* parent);

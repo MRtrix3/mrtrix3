@@ -36,7 +36,7 @@ namespace MR {
          * @brief The ParticleGrid class
          */
         class ParticleGrid
-        {
+        { MEMALIGN(ParticleGrid)
         public:
           
           typedef std::vector<Particle*> ParticleVectorType;

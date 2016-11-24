@@ -32,7 +32,7 @@ namespace MR
       /** \addtogroup Statistics
       @{ */
 
-      class Enhancer {
+      class Enhancer { MEMALIGN(Enhancer)
         public:
           Enhancer (const Filter::Connector& connector, const value_type dh, const value_type E, const value_type H) :
                     connector (connector), dh (dh), E (E), H (H) {}

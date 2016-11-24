@@ -32,8 +32,8 @@ namespace MR {
     namespace Tractography {
       namespace GT {
         
-        class InternalEnergyComputer : public EnergyComputer
-        {
+        class InternalEnergyComputer : public EnergyComputer 
+        { MEMALIGN(InternalEnergyComputer)
         public:
           
           InternalEnergyComputer(Stats& s, ParticleGrid& pgrid)

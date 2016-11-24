@@ -45,7 +45,7 @@ namespace MR
 
 
         class Dock : public QDockWidget
-        {
+        { NOMEMALIGN
           public:
             Dock (const QString& name) :
               QDockWidget (name, Window::main), tool (nullptr) { }
@@ -61,7 +61,7 @@ namespace MR
 
 
 
-        class Base : public QFrame {
+        class Base : public QFrame { NOMEMALIGN
           public:
             Base (Dock* parent);
             Window& window () const { return *Window::main; }
@@ -82,7 +82,7 @@ namespace MR
               }
             }
 
-            class HBoxLayout : public QHBoxLayout {
+            class HBoxLayout : public QHBoxLayout { NOMEMALIGN
               public:
                 HBoxLayout () : QHBoxLayout () { init(); }
                 HBoxLayout (QWidget* parent) : QHBoxLayout (parent) { init(); }
@@ -93,7 +93,7 @@ namespace MR
                 }
             };
 
-            class VBoxLayout : public QVBoxLayout {
+            class VBoxLayout : public QVBoxLayout { NOMEMALIGN
               public:
                 VBoxLayout () : QVBoxLayout () { init(); }
                 VBoxLayout (QWidget* parent) : QVBoxLayout (parent) { init(); }
@@ -104,7 +104,7 @@ namespace MR
                 }
             };
 
-            class GridLayout : public QGridLayout {
+            class GridLayout : public QGridLayout { NOMEMALIGN
               public:
                 GridLayout () : QGridLayout () { init(); }
                 GridLayout (QWidget* parent) : QGridLayout (parent) { init(); }
@@ -116,7 +116,7 @@ namespace MR
             };
 
 
-            class FormLayout : public QFormLayout {
+            class FormLayout : public QFormLayout { NOMEMALIGN
               public:
                 FormLayout () : QFormLayout () { init(); }
                 FormLayout (QWidget* parent) : QFormLayout (parent) { init(); }
@@ -164,7 +164,7 @@ namespace MR
 
 
         class __Action__ : public QAction
-        {
+        { NOMEMALIGN
           public:
             __Action__ (QActionGroup* parent,
                         const char* const name,
@@ -201,7 +201,7 @@ namespace MR
 
         template <class T>
           class Action : public __Action__
-        {
+        { NOMEMALIGN
           public:
             Action (QActionGroup* parent,
                 const char* const name,

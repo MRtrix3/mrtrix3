@@ -38,7 +38,7 @@ namespace MR {
 
 
         class DixelMappingPlugin
-        {
+        { MEMALIGN(DixelMappingPlugin)
           public:
             DixelMappingPlugin (const DWI::Directions::FastLookupSet& directions) :
               dirs (directions) { }
@@ -52,7 +52,7 @@ namespace MR {
 
 
         class TODMappingPlugin
-        {
+        { MEMALIGN(TODMappingPlugin)
           public:
             TODMappingPlugin (const size_t N) :
               generator (new Math::SH::aPSF<float> (Math::SH::LforN (N))) { }
@@ -67,7 +67,7 @@ namespace MR {
 
 
         class TWIImagePluginBase
-        {
+        { MEMALIGN(TWIImagePluginBase)
 
           public:
             TWIImagePluginBase (const std::string& input_image) :
@@ -93,7 +93,7 @@ namespace MR {
 
 
         class TWIScalarImagePlugin : public TWIImagePluginBase
-        {
+        { MEMALIGN(TWIScalarImagePlugin)
           public:
             TWIScalarImagePlugin (const std::string& input_image, const tck_stat_t track_statistic) :
               TWIImagePluginBase (input_image),
@@ -126,7 +126,7 @@ namespace MR {
 
 
         class TWIFODImagePlugin : public TWIImagePluginBase
-        {
+        { MEMALIGN(TWIFODImagePlugin)
           public:
             TWIFODImagePlugin (const std::string& input_image) :
               TWIImagePluginBase (input_image),

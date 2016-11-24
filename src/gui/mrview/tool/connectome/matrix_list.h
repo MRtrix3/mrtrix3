@@ -41,7 +41,7 @@ namespace MR
 
 
         class Matrix_list_model : public QAbstractItemModel
-        {
+        { MEMALIGN(Matrix_list_model)
           public:
 
             Matrix_list_model (Connectome* parent);

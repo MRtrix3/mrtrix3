@@ -47,7 +47,7 @@ namespace MR {
 
 
       class CoefficientOptimiserBase
-      {
+      { MEMALIGN(CoefficientOptimiserBase)
         public:
           CoefficientOptimiserBase (TckFactor&, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, double&);
           CoefficientOptimiserBase (const CoefficientOptimiserBase&);
@@ -96,7 +96,7 @@ namespace MR {
 
       // Golden Section Search within the permitted range
       class CoefficientOptimiserGSS : public CoefficientOptimiserBase
-      {
+      { MEMALIGN(CoefficientOptimiserGSS)
 
         public:
           CoefficientOptimiserGSS (TckFactor&, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, double&);
@@ -116,7 +116,7 @@ namespace MR {
       // Does not requre derivatives; only needs 3 seed points (two extremities and 0.0)
       // Note however if that these extremities are large, the initial CF evaluation may be NAN!
       class CoefficientOptimiserQLS : public CoefficientOptimiserBase
-      {
+      { MEMALIGN(CoefficientOptimiserQLS)
 
         public:
           CoefficientOptimiserQLS (TckFactor&, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, double&);
@@ -136,7 +136,7 @@ namespace MR {
       // Coefficient optimiser based on iterative root-finding Newton / Halley
       // Early exit if outside the permitted coefficient step range and moving further away
       class CoefficientOptimiserIterative : public CoefficientOptimiserBase
-      {
+      { MEMALIGN(CoefficientOptimiserIterative)
 
         public:
           CoefficientOptimiserIterative (TckFactor&, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, double&);

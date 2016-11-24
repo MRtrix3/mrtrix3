@@ -37,7 +37,7 @@ namespace MR {
          * @brief The MHSampler class
          */
         class MHSampler
-        {
+        { MEMALIGN(MHSampler)
         public:
           MHSampler(const Image<float>& dwi, Properties &p, Stats &s, ParticleGrid &pgrid, 
                     EnergyComputer* e, Image<bool>& m)

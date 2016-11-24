@@ -29,11 +29,11 @@ namespace Algorithms {
 
 using namespace MR::DWI::Tractography::Tracking;
 
-class Seedtest : public MethodBase {
+class Seedtest : public MethodBase { MEMALIGN(Seedtest)
 
   public:
 
-  class Shared : public SharedBase {
+  class Shared : public SharedBase { MEMALIGN(Shared)
     public:
     Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
         SharedBase (diff_path, property_set)

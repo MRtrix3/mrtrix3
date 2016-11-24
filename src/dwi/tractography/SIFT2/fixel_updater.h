@@ -34,7 +34,7 @@ namespace MR {
 
 
       class FixelUpdater
-      {
+      { MEMALIGN(FixelUpdater)
 
         public:
           FixelUpdater (TckFactor&);

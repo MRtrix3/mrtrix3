@@ -26,7 +26,7 @@ namespace MR
     {
 
       class OpenGL : public QDialog
-      {
+      { NOMEMALIGN
         public:
           OpenGL (QWidget* parent, const GL::Format& format);
       };

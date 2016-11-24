@@ -35,7 +35,7 @@ namespace MR {
          *        minimizing the no. calls to new/delete.
          */
         class ParticlePool
-        {
+        { MEMALIGN(ParticlePool)
         public:
           ParticlePool() { }
           

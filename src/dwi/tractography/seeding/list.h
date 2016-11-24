@@ -36,7 +36,7 @@ namespace MR
 
 
       class List
-      {
+      { MEMALIGN(List)
 
         public:
           List() :
