@@ -478,32 +478,32 @@ namespace MR
           show_crosshairs_action = menu->addAction (tr ("Show focus"), glarea, SLOT (update()));
           show_crosshairs_action->setShortcut (tr("F"));
           show_crosshairs_action->setCheckable (true);
-          show_crosshairs_action->setChecked (true);
+          show_crosshairs_action->setChecked (File::Config::get_bool("MRViewShowFocus",true));
           addAction (show_crosshairs_action);
 
           show_comments_action = menu->addAction (tr ("Show comments"), glarea, SLOT (update()));
           show_comments_action->setToolTip (tr ("Show/hide image comments\n\nShortcut: H"));
           show_comments_action->setShortcut (tr("H"));
           show_comments_action->setCheckable (true);
-          show_comments_action->setChecked (true);
+          show_comments_action->setChecked (File::Config::get_bool("MRViewShowComments",true));
           addAction (show_comments_action);
 
           show_voxel_info_action = menu->addAction (tr ("Show voxel information"), glarea, SLOT (update()));
           show_voxel_info_action->setShortcut (tr("V"));
           show_voxel_info_action->setCheckable (true);
-          show_voxel_info_action->setChecked (true);
+          show_voxel_info_action->setChecked (File::Config::get_bool("MRViewShowVoxelInfomration",true));
           addAction (show_voxel_info_action);
 
           show_orientation_labels_action = menu->addAction (tr ("Show orientation labels"), glarea, SLOT (update()));
           show_orientation_labels_action->setShortcut (tr("O"));
           show_orientation_labels_action->setCheckable (true);
-          show_orientation_labels_action->setChecked (true);
+          show_orientation_labels_action->setChecked (File::Config::get_bool("MRViewShowOrientationLabel",true));
           addAction (show_orientation_labels_action);
 
           show_colourbar_action = menu->addAction (tr ("Show colour bar"), glarea, SLOT (update()));
           show_colourbar_action->setShortcut (tr("B"));
           show_colourbar_action->setCheckable (true);
-          show_colourbar_action->setChecked (true);
+          show_colourbar_action->setChecked (File::Config::get_bool("MRViewShowColourbar",true));
           addAction (show_colourbar_action);
 
           menu->addSeparator();
