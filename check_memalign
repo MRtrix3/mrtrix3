@@ -2,21 +2,37 @@
 
 for f in $(find . -type f -name '*.h' -o -name '*.cpp' | grep -v '_moc.cpp'); do 
 
+  [[ $(basename $f) == "icons.cpp" ]] && continue
+
   res=$( \
     cat $f | \
+# remove C preprocessor macros:
     grep -v '^#' | \
+# remove C++ single-line comments:
     perl -pe 's|//.*$||' | \
+# remove all newlines to make file one long line:
     tr '\n' ' ' | \
+# remove any duplicate spaces:
     perl -pe 's|\s+| |g' | \
+# remove C-style comments:
     perl -pe 's|/\*.*?\*/||g' | \
+# remove quoted strings:
+    perl -pe 's/(")(\\"|.)*?"//g' | \
+# remove any text within a template declaration (i.e. within <>):
+    perl -pe 's|<[^{};<]*?>||g' | \
+# and do it multiple times to handle nested declarations:
     perl -pe 's|<[^{};<]*?>||g' | \
     perl -pe 's|<[^{};<]*?>||g' | \
     perl -pe 's|<[^{};<]*?>||g' | \
-    perl -pe 's|<[^{};<]*?>||g' | \
-    grep -Eo '\b(class|struct)\b[^;{]*?{(\s*(MEMALIGN\s*\([^\)]*\)|NOMEMALIGN))?' | \
+# match for the parts we're interested in and output just the bits that match:
+    grep -Eo '(enum\s*)?\b(class|struct)\b[^;{]*?{(\s*(MEMALIGN\s*\([^\)]*\)|NOMEMALIGN))?' | \
+# remove matches that correspond to an enum class declaration:
+    grep -Ev '\benum\s*class\b' | \
+# remove matches that are properly specified:
     grep -Ev '\b(class|struct)\b[^;{]*?{(\s*(MEMALIGN\s*\([^\)]*\)|NOMEMALIGN))'
   )
 
+# if anything is left after that, show it:
   if [[ ! -z $res ]]; then 
     echo "################################### $f"
     echo "$res"

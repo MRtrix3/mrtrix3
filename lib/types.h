@@ -154,7 +154,7 @@ inline void __aligned_free (void* ptr) { if (ptr) std::free (*(reinterpret_cast<
  */
 #define CHECK_MEM_ALIGN(...) \
     static_assert ( (alignof(__VA_ARGS__) <= MRTRIX_ALLOC_MEM_ALIGN ) || __has_custom_new_operator<__VA_ARGS__>::value, \
-        "class requires over-alignment; but no operator new defined! Please insert MEMALIGN() into class definition.");
+        "class requires over-alignment, but no operator new defined! Please insert MEMALIGN() into class definition.")
 
 
 
