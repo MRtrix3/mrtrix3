@@ -1,13 +1,12 @@
 #!/bin/bash
-
 cat <<EOF
 This script collates all the executables and runtime dependencies needed for
 MRtrix3, and creates a GZ compressed archive suitable for deployment on other
 systems. It takes all executables found in the bin/ folder and the MRtrix3
 library from the lib/ folder. It is up to the user to ./configure and ./build
-the software first. 
+the software first.
 
-       Stand-alone installation on systems without necessary dependencies 
+       Stand-alone installation on systems without necessary dependencies
 ================================================================================
 
 If the -standalone option is also supplied, this script will also attempt to
@@ -31,23 +30,25 @@ $ ARCH='x86-64' ./configure
 $ ./build
 $ ./package_mrtrix [-standalone]
 
-For a 32-bit build, ARCH='i686' or similar should suffice. 
+For a 32-bit build, ARCH='i686' or similar should suffice.
 
 EOF
 
 echo -n "Press enter to proceed (or Ctrl-C to abort)..."
 read
 
-( 
+(
   echo - collating MRtrix3 executables and library...
   set -e
   mkdir -p _package/mrtrix3/
-  cp -r bin/ _package/mrtrix3/
-  mkdir -p _package/mrtrix3/lib
-  cp lib/libmrtrix* _package/mrtrix3/lib/
-  
+  mkdir -p _package/mrtrix3/release
+  cp -r release/bin/ _package/mrtrix3/release/
+  cp -r scripts _package/mrtrix3/
+  mkdir -p _package/mrtrix3/release/lib
+  cp release/lib/libmrtrix* _package/mrtrix3/release/lib/ || echo "no shared library found"
+
   [ ${1:-"x"} == "-standalone" ] && (
-    mv _package/mrtrix3/{bin,exe}
+    mv _package/mrtrix3/{release/bin,release/exe}
     cat > _package/mrtrix3/launcher <<"EOF"
 #!/bin/bash
 PREFIX="$(dirname $0)/.."
@@ -55,18 +56,19 @@ COMMAND="$(basename $0)"
 "$PREFIX"/lib/ld-*.so* "$PREFIX"/exe/"$COMMAND" "$@"
 EOF
     chmod a+x _package/mrtrix3/launcher
-    mkdir _package/mrtrix3/bin
-    ( 
-      cd _package/mrtrix3/bin
-      for n in ../exe/*; do ln -s ../launcher $(basename $n); done
+    mkdir -p  _package/mrtrix3/release
+    mkdir -p _package/mrtrix3/release/bin
+    (
+      cd _package/mrtrix3/release/bin
+      for n in ../exe/*; do ln -s ../../launcher $(basename $n); done
     )
 
     echo - collating dependent system libraries...
-    LIBS=$(for n in bin/*; do ldd $n; done | sed 's/(.*)$//g' | sed 's/^.*=>//g' | sort | uniq | grep -v 'mrtrix\|vdso\|libGL.so\|libEGL.so\|nvidia\|fglrx' | xargs)
-    echo '    libraries identified:' 
+    LIBS=$(for n in release/bin/*; do ldd $n; done | sed 's/(.*)$//g' | sed 's/^.*=>//g' | sort | uniq | grep -v 'mrtrix\|vdso\|libGL.so\|libEGL.so\|nvidia\|fglrx' | xargs)
+    echo '    libraries identified:'
     for n in $LIBS; do echo '        '$n; done
-    cp $LIBS _package/mrtrix3/lib/
-    
+    cp $LIBS _package/mrtrix3/release/lib/
+
     QTCORE=$(for n in $LIBS; do echo $n; done | grep 'libQt.*Core')
     [[ $QTCORE ]] && ( # sort out Qt:
       QTPLUGDIR=$(strings $QTCORE | sed -n 's/qt_plugpath=\(.*\)$/\1/p')
@@ -76,14 +78,14 @@ EOF
       echo '    additional libraries required for Qt:'
       for n in $QTLIBS; do echo '        '$n; done
 
-      cp $QTLIBS _package/mrtrix3/lib/
-      cp -r $QTPLUGDIR _package/mrtrix3/lib/
-      cat > _package/mrtrix3/lib/qt.conf << EOF
+      cp $QTLIBS _package/mrtrix3/release/lib/
+      cp -r $QTPLUGDIR _package/mrtrix3/release/lib/
+      cat > _package/mrtrix3/release/lib/qt.conf << EOF
 [Paths]
 Prefix = .
 EOF
 
-      
+
     )
 
   )
@@ -102,7 +104,7 @@ On your target system, unpack mrtrix3.tar.gz using:
 
 $ tar xfz mrtrix3.tar.gz
 
-You should also add the mrtrix3/bin folder to your PATH to finalise the
-installation.
+You should also add the mrtrix3/release/bin and mrtrix3/scripits folders to your PATH to finalise
+the installation.
 EOF
 
