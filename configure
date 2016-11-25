@@ -109,7 +109,8 @@ Alternatively:
 Multiple environment variables can be set this way as needed. 
 The following environment variables are available:
 
-CXX             The compiler command to use. The default is "g++" ("clang" on MacOSX)
+CXX             The compiler command to use. The default is "clang++", falling
+                back to "g++" if not found. 
 
 CXX_ARGS        The arguments expected by the compiler. The default is:
                 "-c CFLAGS SRC -o OBJECT"
@@ -213,7 +214,7 @@ report ('\n\n')
 
 global cpp, cpp_cmd, ld, ld_args, ld_cmd
 
-cxx = [ 'g++' ]
+cxx = [ 'clang++', 'g++' ]
 cxx_args = '-c CFLAGS SRC -o OBJECT'.split()
 cpp_flags = [ '-std=c++11' ]
 
@@ -505,7 +506,6 @@ elif system == 'darwin':
   else:
     macosx_version =  ('.'.join(execute([ 'sw_vers', '-productVersion' ], RuntimeError)[1].split('.')[:2]))
   report ('OS X deployment target: ' +  macosx_version + '\n')
-  cxx = [ 'clang++' ]
   cpp_flags += [ '-DMRTRIX_MACOSX', '-fPIC', '-mmacosx-version-min='+macosx_version ]
   ld_flags += [ '-mmacosx-version-min='+macosx_version ]
   ld_lib_flags += [ '-dynamiclib', '-install_name', '@rpath/LIBNAME', '-mmacosx-version-min='+macosx_version ]
@@ -530,17 +530,12 @@ else:
 
 
 # set CPP compiler:
-
+ld_cmdline = None
 if 'CXX' in os.environ.keys(): cxx = shlex.split (os.environ['CXX'])
 if 'CXX_ARGS' in os.environ.keys(): cxx_args = shlex.split (os.environ['CXX_ARGS'])
-ld = copy.copy(cxx)
-if 'LD' in os.environ.keys(): ld = shlex.split (os.environ['LD'])
+if 'LD' in os.environ.keys(): ld_cmdline = shlex.split (os.environ['LD'])
 if 'LD_ARGS' in os.environ.keys(): ld_args = shlex.split (os.environ['LD_ARGS'])
 if 'LDLIB_ARGS' in os.environ.keys(): ld_lib_args = shlex.split (os.environ['LDLIB_ARGS'])
-
-cpp = cxx + cxx_args
-ld_lib = ld + ld_lib_args
-ld += ld_args
 
 
 
@@ -552,20 +547,26 @@ if 'LDFLAGS' in os.environ.keys(): ld_flags += shlex.split (os.environ['LDFLAGS'
 ld_lib_flags += ld_flags
 if 'LDLIB_FLAGS' in os.environ.keys(): ld_lib_flags += shlex.split (os.environ['LDLIB_FLAGS'])
 
+for candidate in cxx:
+  report ('Checking for C++11 compliant compiler [' + candidate + ']: ')
+  cpp = [ candidate ] + cxx_args
+  if ld_cmdline: 
+    ld = ld_cmdline
+  else:
+    ld = copy.copy([ candidate ])
+  ld_lib = ld + ld_lib_args
+  ld += ld_args
 
+  try:
+    compiler_version = execute ([ cpp[0], '-dumpversion' ], CompileError)[1]
+    if len(compiler_version) == 0: report ('(no version information)')
+    else: report (compiler_version)
+  except:
+    report ('not found\n')
+    continue
 
-report ('Checking for C++11 compliant compiler [' + cpp[0] + ']: ')
-try:
-  compiler_version = execute ([ cpp[0], '-dumpversion' ], CompileError)[1]
-  if len(compiler_version) == 0: report ('(no version information)')
-  else: report (compiler_version)
-except:
-  error ('''compiler not found!
-
-  MRtrix3 was unable to find an appropriate C++11 compiler.''' + compiler_hint ('compiler', 'CXX', '/usr/bin/g++-5.5') + configure_log_hint)
-
-try:
-  compile ('''
+  try:
+    compile ('''
 struct Base {
     Base (int);
 };
@@ -578,18 +579,18 @@ int main() {
   return (0);
 }
 ''', cpp_flags, ld_flags)
-  report (' - tested ok\n')
-except CompileError:
-  error ('''compiler test failed!
+    report (' - tested ok\n')
+  except (CompileError, LinkError, RuntimeError):
+    report (' - test failed (see configure.log for details)\n')
+  except:
+    error (' unexpected exception!' + configure_log_hint)
+  else:
+    break
 
-  MRtrix3 was unable to compile a simple C++ program.''' + compiler_hint ('compiler', 'CXX', '/usr/bin/g++-5.5', 'CXX_ARGS', '"-c CFLAGS SRC -o OBJECT"') + configure_log_hint)
-except (LinkError, RuntimeError):
-  error ('''linking error!
+else:
+  error ('''no suitable compiler found! 
 
-  MRtrix3 was unable to find an appropriate C++ linker.''' + compiler_hint ('linker', 'LD', '/usr/bin/g++-5.5', 'LD_ARGS', '"LDFLAGS OBJECTS -o EXECUTABLE"') + configure_log_hint)
-except:
-  error (' unexpected exception!' + configure_log_hint)
-
+''' + compiler_hint ('compiler', 'CXX', '/usr/bin/g++-5.5', 'CXX_ARGS', '"-c CFLAGS SRC -o OBJECT"') + configure_log_hint)
 
 
 
@@ -1031,13 +1032,13 @@ int main() { Foo f; }
       cmd = [ moc, 'qt.h', '-o', 'qt_moc.cpp' ]
       execute (cmd, QMOCError, cwd=qt_dir.name) #process = subprocess.Popen (cmd, cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-      cmd = cxx + [ '-c' ] + cpp_flags + qt_cflags + [ 'qt.cpp', '-o', 'qt.o' ]
+      cmd = [ cpp[0], '-c' ] + cpp_flags + qt_cflags + [ 'qt.cpp', '-o', 'qt.o' ]
       execute (cmd, CompileError, cwd=qt_dir.name)
 
-      cmd = cxx + [ '-c' ] + cpp_flags + qt_cflags + [ 'qt_moc.cpp', '-o', 'qt_moc.o' ]
+      cmd = [ cpp[0], '-c' ] + cpp_flags + qt_cflags + [ 'qt_moc.cpp', '-o', 'qt_moc.o' ]
       execute (cmd, CompileError, cwd=qt_dir.name)
 
-      cmd = cxx + ld_flags + [ 'qt_moc.o', 'qt.o', '-o', 'qt' ] + qt_ldflags
+      cmd = [ cpp[0] ] + ld_flags + [ 'qt_moc.o', 'qt.o', '-o', 'qt' ] + qt_ldflags
       execute (cmd, LinkError, cwd=qt_dir.name)
 
       cmd = [ os.path.join(qt_dir.name, 'qt') ]
@@ -1135,10 +1136,7 @@ if profile:
   ld_flags += [ '-g', '-pg' ]
   ld_lib_flags += [ '-g', '-pg' ]
 elif debug:
-  if os.path.basename(cxx[0]).startswith('g++'):
-    cpp_flags += [ '-Og' ]
-  else:
-    cpp_flags += [ '-O0' ]
+  cpp_flags += [ '-Og' ]
   cpp_flags += [ '-g' ]
   ld_flags += [ '-g' ]
   ld_lib_flags += [ '-g' ]
