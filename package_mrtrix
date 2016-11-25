@@ -44,7 +44,7 @@ read
   cp -r release/bin/ _package/mrtrix3/
   cp -r scripts _package/mrtrix3/
   mkdir -p _package/mrtrix3/lib
-  cp release/lib/libmrtrix* _package/mrtrix3/lib/ || echo "error: no shared library found"
+  cp release/lib/libmrtrix* _package/mrtrix3/lib/ || echo "no shared library found"
 
   [ ${1:-"x"} == "-standalone" ] && (
     mv _package/mrtrix3/{bin,exe}
@@ -62,7 +62,6 @@ EOF
     )
 
     echo - collating dependent system libraries...
-    echo `pwd`
     LIBS=$(for n in release/bin/*; do ldd $n; done | sed 's/(.*)$//g' | sed 's/^.*=>//g' | sort | uniq | grep -v 'mrtrix\|vdso\|libGL.so\|libEGL.so\|nvidia\|fglrx' | xargs)
     echo '    libraries identified:'
     for n in $LIBS; do
