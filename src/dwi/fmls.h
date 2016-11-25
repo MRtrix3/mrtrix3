@@ -120,9 +120,6 @@ namespace MR
 
           void finalise()
           {
-            // 2pi == solid angle of halfsphere in steradians
-            //integral *= 2.0 * Math::pi / default_type(mask.size());
-            // No longer needed: Segmenter::weights should deal with this
             // This is calculated as the lobe is built; just needs to be set to unit length
             mean_dir.normalize();
           }
