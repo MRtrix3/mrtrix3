@@ -79,33 +79,36 @@ namespace MR
             voxel (-1, -1, -1),
             TD (SIFT::FixelBase::TD),
             update (true),
-            updating (ATOMIC_FLAG_INIT),
             old_prob (DYNAMIC_SEED_INITIAL_PROB),
             applied_prob (old_prob),
             track_count_at_last_update (0),
-            seed_count (0) { }
+            seed_count (0) {
+              updating.clear();
+            }
 
           Fixel_TD_seed (const Fixel_TD_seed& that) :
             SIFT::FixelBase (that),
             voxel (that.voxel),
             TD (double(that.TD)),
             update (that.update),
-            updating (ATOMIC_FLAG_INIT),
             old_prob (that.old_prob),
             applied_prob (that.applied_prob),
             track_count_at_last_update (that.track_count_at_last_update),
-            seed_count (that.seed_count) { }
+            seed_count (that.seed_count) { 
+              updating.clear();
+            }
 
           Fixel_TD_seed() :
             SIFT::FixelBase (),
             voxel (-1, -1, -1),
             TD (0.0),
             update (true),
-            updating (ATOMIC_FLAG_INIT),
             old_prob (DYNAMIC_SEED_INITIAL_PROB),
             applied_prob (old_prob),
             track_count_at_last_update (0),
-            seed_count (0) { }
+            seed_count (0) { 
+              updating.clear();
+            }
 
 
           double         get_TD     ()                    const { return TD.load (std::memory_order_relaxed); }
