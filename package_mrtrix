@@ -41,14 +41,13 @@ read
   echo - collating MRtrix3 executables and library...
   set -e
   mkdir -p _package/mrtrix3/
-  mkdir -p _package/mrtrix3/release
-  cp -r release/bin/ _package/mrtrix3/release/
+  cp -r release/bin/ _package/mrtrix3/
   cp -r scripts _package/mrtrix3/
-  mkdir -p _package/mrtrix3/release/lib
-  cp release/lib/libmrtrix* _package/mrtrix3/release/lib/ || echo "no shared library found"
+  mkdir -p _package/mrtrix3/lib
+  cp release/lib/libmrtrix* _package/mrtrix3/lib/ || echo "error: no shared library found"
 
   [ ${1:-"x"} == "-standalone" ] && (
-    mv _package/mrtrix3/{release/bin,release/exe}
+    mv _package/mrtrix3/{bin,exe}
     cat > _package/mrtrix3/launcher <<"EOF"
 #!/bin/bash
 PREFIX="$(dirname $0)/.."
@@ -56,18 +55,24 @@ COMMAND="$(basename $0)"
 "$PREFIX"/lib/ld-*.so* "$PREFIX"/exe/"$COMMAND" "$@"
 EOF
     chmod a+x _package/mrtrix3/launcher
-    mkdir -p  _package/mrtrix3/release
-    mkdir -p _package/mrtrix3/release/bin
+    mkdir -p _package/mrtrix3/bin
     (
-      cd _package/mrtrix3/release/bin
-      for n in ../exe/*; do ln -s ../../launcher $(basename $n); done
+      cd _package/mrtrix3/bin
+      for n in ../exe/*; do ln -s ../launcher $(basename $n); done
     )
 
     echo - collating dependent system libraries...
+    echo `pwd`
     LIBS=$(for n in release/bin/*; do ldd $n; done | sed 's/(.*)$//g' | sed 's/^.*=>//g' | sort | uniq | grep -v 'mrtrix\|vdso\|libGL.so\|libEGL.so\|nvidia\|fglrx' | xargs)
     echo '    libraries identified:'
-    for n in $LIBS; do echo '        '$n; done
-    cp $LIBS _package/mrtrix3/release/lib/
+    for n in $LIBS; do
+      if [ ! -e $n ]; then
+        echo "warning: not all executables have dynamic libraries. Possibly skipping dependent libraries for some commands. This is expected if you built with -static";
+      else
+        echo '        '$n;
+        cp $n _package/mrtrix3/lib/
+      fi
+    done
 
     QTCORE=$(for n in $LIBS; do echo $n; done | grep 'libQt.*Core')
     [[ $QTCORE ]] && ( # sort out Qt:
@@ -78,9 +83,9 @@ EOF
       echo '    additional libraries required for Qt:'
       for n in $QTLIBS; do echo '        '$n; done
 
-      cp $QTLIBS _package/mrtrix3/release/lib/
-      cp -r $QTPLUGDIR _package/mrtrix3/release/lib/
-      cat > _package/mrtrix3/release/lib/qt.conf << EOF
+      cp $QTLIBS _package/mrtrix3/lib/
+      cp -r $QTPLUGDIR _package/mrtrix3/lib/
+      cat > _package/mrtrix3/lib/qt.conf << EOF
 [Paths]
 Prefix = .
 EOF
@@ -104,7 +109,7 @@ On your target system, unpack mrtrix3.tar.gz using:
 
 $ tar xfz mrtrix3.tar.gz
 
-You should also add the mrtrix3/release/bin and mrtrix3/scripits folders to your PATH to finalise
+You should also add the mrtrix3/bin and mrtrix3/scripts folders to your PATH to finalise
 the installation.
 EOF
 
