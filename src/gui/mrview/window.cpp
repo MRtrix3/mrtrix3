@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 #include "app.h"
 #include "timer.h"
@@ -51,12 +51,12 @@ namespace MR
 */
 
       Window* Window::main = nullptr;
-      
+
       namespace {
 
         Qt::KeyboardModifiers get_modifier (const char* key, Qt::KeyboardModifiers default_key) {
           std::string value = lowercase (MR::File::Config::get (key));
-          if (value.empty()) 
+          if (value.empty())
             return default_key;
 
           if (value == "shift") return Qt::ShiftModifier;
@@ -67,7 +67,7 @@ namespace MR
 #else
           if (value == "ctrl") return Qt::ControlModifier;
           if (value == "meta" || value == "win") return Qt::MetaModifier;
-#endif 
+#endif
 
           throw Exception ("no such modifier \"" + value + "\" (parsed from config file)");
           return Qt::NoModifier;
@@ -97,7 +97,7 @@ namespace MR
 
 
       // GLArea definitions:
-      
+
       Window::GLArea::GLArea (Window& parent) :
         GL::Area (&parent) {
           setCursor (Cursor::crosshair);
@@ -187,18 +187,18 @@ namespace MR
 
 
 
-      //CONF option: MRViewFocusModifierKey 
-      //CONF default: meta (cmd on MacOSX) 
+      //CONF option: MRViewFocusModifierKey
+      //CONF default: meta (cmd on MacOSX)
       //CONF Modifier key to select focus mode in MRView. Valid
       //CONF choices include shift, alt, ctrl, meta (on MacOSX: shift, alt,
       //CONF ctrl, cmd).
-      
+
       //CONF option: MRViewMoveModifierKey
       //CONF default: shift
       //CONF Modifier key to select move mode in MRView. Valid
       //CONF choices include shift, alt, ctrl, meta (on MacOSX: shift, alt,
       //CONF ctrl, cmd).
-      
+
       //CONF option: MRViewRotateModifierKey
       //CONF default: ctrl
       //CONF Modifier key to select rotate mode in MRView. Valid
@@ -228,7 +228,7 @@ namespace MR
         colourbar_position (ColourMap::Position::BottomRight),
         tools_colourbar_position (ColourMap::Position::TopRight),
         snap_to_image_axes_and_voxel (true),
-        tool_has_focus (nullptr), 
+        tool_has_focus (nullptr),
         best_FPS (NAN),
         show_FPS (false) {
           main = this;
@@ -243,7 +243,7 @@ namespace MR
           //CONF The size of the icons in the main MRView toolbar.
           setWindowTitle (tr ("MRView"));
           setWindowIcon (QPixmap (":/mrtrix.png"));
-          { 
+          {
             int iconsize = MR::File::Config::get_int ("IconSize", 24);
             setIconSize (QSize (iconsize, iconsize));
           }
@@ -404,6 +404,9 @@ namespace MR
           reset_windowing_action->setShortcut (tr ("Esc"));
           addAction (reset_windowing_action);
 
+          //CONF option: ImageInterpolation
+          //CONF default: true
+          //CONF Interpolation switched on in the main image
           image_interpolate_action = colourmap_menu->addAction (tr ("Interpolate"), this, SLOT (image_interpolate_slot()));
           image_interpolate_action->setShortcut (tr ("I"));
           image_interpolate_action->setCheckable (true);
@@ -475,12 +478,18 @@ namespace MR
           action->setShortcut (tr("Space"));
           addAction (action);
 
+          //CONF option: MRViewShowFocus
+          //CONF default: true
+          //CONF Focus cross hair shown in main image
           show_crosshairs_action = menu->addAction (tr ("Show focus"), glarea, SLOT (update()));
           show_crosshairs_action->setShortcut (tr("F"));
           show_crosshairs_action->setCheckable (true);
           show_crosshairs_action->setChecked (File::Config::get_bool("MRViewShowFocus",true));
           addAction (show_crosshairs_action);
 
+          //CONF option: MRViewShowComments
+          //CONF default: true
+          //CONF Comments shown in main image overlay
           show_comments_action = menu->addAction (tr ("Show comments"), glarea, SLOT (update()));
           show_comments_action->setToolTip (tr ("Show/hide image comments\n\nShortcut: H"));
           show_comments_action->setShortcut (tr("H"));
@@ -488,18 +497,27 @@ namespace MR
           show_comments_action->setChecked (File::Config::get_bool("MRViewShowComments",true));
           addAction (show_comments_action);
 
+          //CONF option: MRViewShowVoxelInformation
+          //CONF default: true
+          //CONF Voxel information shown in main image overlay
           show_voxel_info_action = menu->addAction (tr ("Show voxel information"), glarea, SLOT (update()));
           show_voxel_info_action->setShortcut (tr("V"));
           show_voxel_info_action->setCheckable (true);
           show_voxel_info_action->setChecked (File::Config::get_bool("MRViewShowVoxelInformation",true));
           addAction (show_voxel_info_action);
 
+          //CONF option: MRViewShowOrientationLabel
+          //CONF default: true
+          //CONF Anatomical orientation information shown in main image overlay
           show_orientation_labels_action = menu->addAction (tr ("Show orientation labels"), glarea, SLOT (update()));
           show_orientation_labels_action->setShortcut (tr("O"));
           show_orientation_labels_action->setCheckable (true);
           show_orientation_labels_action->setChecked (File::Config::get_bool("MRViewShowOrientationLabel",true));
           addAction (show_orientation_labels_action);
 
+          //CONF option: MRViewShowColourbar
+          //CONF default: true
+          //CONF Colourbar shown in main image overlay
           show_colourbar_action = menu->addAction (tr ("Show colour bar"), glarea, SLOT (update()));
           show_colourbar_action->setShortcut (tr("B"));
           show_colourbar_action->setCheckable (true);
@@ -623,7 +641,7 @@ namespace MR
 
           toolbar->addSeparator();
 
-          snap_to_image_action = toolbar->addAction (QIcon (":/lock.svg"), 
+          snap_to_image_action = toolbar->addAction (QIcon (":/lock.svg"),
               tr ("Snap to image"), this, SLOT (snap_to_image_slot()));
           snap_to_image_action->setToolTip (tr (
                 "Snap focus and view orientation to\n"
@@ -704,11 +722,11 @@ namespace MR
       {
         glarea->makeCurrent();
         QList<QAction*> tools = tool_group->actions();
-        for (QAction* action : tools) 
+        for (QAction* action : tools)
           delete action;
         mode.reset();
         QList<QAction*> images = image_group->actions();
-        for (QAction* action : images) 
+        for (QAction* action : images)
           delete action;
       }
 
@@ -841,7 +859,7 @@ namespace MR
       void Window::select_mouse_mode_slot (QAction* action)
       {
         bool rotate_button_checked = mode_action_group->actions().indexOf (action) == 2;
-        if (rotate_button_checked) 
+        if (rotate_button_checked)
           set_snap_to_image (false);
         snap_to_image_action->setEnabled (!rotate_button_checked);
         set_cursor();
@@ -925,7 +943,7 @@ namespace MR
       {
         if (image()) {
           snap_to_image_axes_and_voxel = snap_to_image_action->isChecked();
-          if (snap_to_image_axes_and_voxel) 
+          if (snap_to_image_axes_and_voxel)
             mode->reset_orientation();
           glarea->update();
         }
@@ -934,7 +952,7 @@ namespace MR
 
 
 
-      void Window::on_scaling_changed () 
+      void Window::on_scaling_changed ()
       {
         emit scalingChanged();
       }
@@ -942,8 +960,8 @@ namespace MR
 
 
 
-      void Window::updateGL () 
-      { 
+      void Window::updateGL ()
+      {
         glarea->update();
       }
 
@@ -998,7 +1016,7 @@ namespace MR
         glarea->update();
       }
 
-      void Window::zoom_out_slot () 
+      void Window::zoom_out_slot ()
       {
         set_FOV (FOV() * std::exp (0.1));
         glarea->update();
@@ -1052,17 +1070,17 @@ namespace MR
 
 
 
-      void Window::slice_next_slot () 
+      void Window::slice_next_slot ()
       {
         assert (mode);
-        if (image()) 
+        if (image())
           mode->slice_move_event (1);
       }
 
-      void Window::slice_previous_slot () 
+      void Window::slice_previous_slot ()
       {
         assert (mode);
-        if (image()) 
+        if (image())
           mode->slice_move_event (-1);
       }
 
@@ -1089,7 +1107,7 @@ namespace MR
 
 
 
-      void Window::image_next_volume_slot () 
+      void Window::image_next_volume_slot ()
       {
         size_t vol = image()->image.index(3)+1;
         set_image_volume (3, vol);
@@ -1109,7 +1127,7 @@ namespace MR
 
 
 
-      void Window::image_next_volume_group_slot () 
+      void Window::image_next_volume_group_slot ()
       {
         size_t vol = image()->image.index(4)+1;
         set_image_volume (4, vol);
@@ -1166,7 +1184,7 @@ namespace MR
           show_colourbar_action->setChecked (false);
         }
         else {
-          if (!annotations) 
+          if (!annotations)
             annotations = 0xFFFFFFFF;
           show_crosshairs_action->setChecked (annotations & 0x00000001);
           show_comments_action->setChecked (annotations & 0x00000002);
@@ -1195,7 +1213,7 @@ namespace MR
       int Window::get_mouse_mode ()
       {
         if (mouse_action == NoAction && modifiers_ != Qt::NoModifier) {
-          if (modifiers_ == FocusModifier && ( mode->features & Mode::FocusContrast )) 
+          if (modifiers_ == FocusModifier && ( mode->features & Mode::FocusContrast ))
             return 1;
           else if (modifiers_ == MoveModifier && ( mode->features & Mode::MoveTarget ))
             return 2;
@@ -1203,7 +1221,7 @@ namespace MR
             return 3;
         }
 
-        if (mouse_action == NoAction) 
+        if (mouse_action == NoAction)
           return mode_action_group->actions().indexOf (mode_action_group->checkedAction()) + 1;
 
         return 0;
@@ -1251,7 +1269,7 @@ namespace MR
         mode_action_group->actions()[2]->setEnabled (mode->features & Mode::TiltRotate);
         if (!mode_action_group->checkedAction()->isEnabled())
           mode_action_group->actions()[0]->setChecked (true);
-        if (image()) 
+        if (image())
           image()->set_allowed_features (
               mode->features & Mode::ShaderThreshold,
               mode->features & Mode::ShaderTransparency,
@@ -1300,16 +1318,16 @@ namespace MR
 
       void Window::about_slot ()
       {
-        std::string message = 
+        std::string message =
           std::string ("<h1>MRView</h1>The MRtrix viewer, version ") + MR::App::mrtrix_version + "<br>"
-          "<em>" + str (8*sizeof (size_t)) + " bit " 
+          "<em>" + str (8*sizeof (size_t)) + " bit "
 #ifdef NDEBUG
           "release"
 #else
           "debug"
 #endif
           " version, built " + MR::App::build_date +  "</em><p>"
-          "<h4>Authors:</h4>" + MR::join (MR::split (MR::App::AUTHOR, ",;&\n", true), "<br>") + 
+          "<h4>Authors:</h4>" + MR::join (MR::split (MR::App::AUTHOR, ",;&\n", true), "<br>") +
           "<p><em>" + MR::App::COPYRIGHT + "</em>";
 
         QMessageBox::about (this, tr ("About MRView"), message.c_str());
@@ -1330,7 +1348,7 @@ namespace MR
         GL_CHECK_ERROR;
         gl::ClearColor (background_colour[0], background_colour[1], background_colour[2], 1.0);
 
-        if (glarea->format().samples() > 1) 
+        if (glarea->format().samples() > 1)
           gl::Enable (gl::MULTISAMPLE);
 
         GL_CHECK_ERROR;
@@ -1359,7 +1377,7 @@ namespace MR
               best_FPS_time = render_times.back();
             }
           }
-          else 
+          else
             best_FPS = NAN;
 
           if (std::isfinite (best_FPS))
@@ -1373,7 +1391,7 @@ namespace MR
         // need to clear alpha channel when using QOpenGLWidget (Qt >= 5.4)
         // otherwise we get transparent windows...
 #if QT_VERSION >= 0x050400
-        gl::ColorMask (false, false, false, true); 
+        gl::ColorMask (false, false, false, true);
         gl::Clear (gl::COLOR_BUFFER_BIT);
         glColorMask (true, true, true, true);
 #endif
@@ -1397,7 +1415,7 @@ namespace MR
         mode.reset (dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create());
         set_mode_features();
 
-        if (MR::App::option.size()) 
+        if (MR::App::option.size())
           QTimer::singleShot (0, this, SLOT (process_commandline_options()));
         ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
       }
@@ -1422,7 +1440,7 @@ namespace MR
       }
 
 
-      void Window::keyPressEvent (QKeyEvent* event) 
+      void Window::keyPressEvent (QKeyEvent* event)
       {
         modifiers_ = event->modifiers() & ( FocusModifier | MoveModifier | RotateModifier );
         set_cursor();
@@ -1441,7 +1459,7 @@ namespace MR
         assert (mode);
 
         grab_mouse_state (event);
-        if (image()) 
+        if (image())
           mode->mouse_press_event();
 
         if (tool_has_focus && modifiers_ == Qt::NoModifier) {
@@ -1454,7 +1472,7 @@ namespace MR
 
         int group = get_mouse_mode();
 
-        if (buttons_ == Qt::MidButton) 
+        if (buttons_ == Qt::MidButton)
           mouse_action = Pan;
         else if (group == 1) {
           if (buttons_ == Qt::LeftButton) {
@@ -1462,19 +1480,19 @@ namespace MR
             if (image())
               mode->set_focus_event();
           }
-          else if (buttons_ == Qt::RightButton) 
+          else if (buttons_ == Qt::RightButton)
             mouse_action = Contrast;
         }
         else if (group == 2) {
-          if (buttons_ == Qt::LeftButton) 
+          if (buttons_ == Qt::LeftButton)
             mouse_action = Pan;
-          else if (buttons_ == Qt::RightButton) 
+          else if (buttons_ == Qt::RightButton)
             mouse_action = PanThrough;
         }
         else if (group == 3) {
-          if (buttons_ == Qt::LeftButton) 
+          if (buttons_ == Qt::LeftButton)
             mouse_action = Tilt;
-          else if (buttons_ == Qt::RightButton) 
+          else if (buttons_ == Qt::RightButton)
             mouse_action = Rotate;
         }
 
@@ -1486,14 +1504,14 @@ namespace MR
       void Window::mouseMoveEventGL (QMouseEvent* event)
       {
         assert (mode);
-        if (!image()) 
+        if (!image())
           return;
 
         update_mouse_state (event);
 
         if (mouse_action == NoAction) {
-          if (tool_has_focus) 
-            if (tool_has_focus->mouse_move_event()) 
+          if (tool_has_focus)
+            if (tool_has_focus->mouse_move_event())
               event->accept();
           return;
         }
@@ -1517,8 +1535,8 @@ namespace MR
         assert (mode);
         mode->mouse_release_event();
 
-        if (tool_has_focus && mouse_action == NoAction) 
-          if (tool_has_focus->mouse_release_event()) 
+        if (tool_has_focus && mouse_action == NoAction)
+          if (tool_has_focus->mouse_release_event())
             return;
 
         mouse_action = NoAction;
@@ -1556,7 +1574,7 @@ namespace MR
 
               float dx = delta.y()/120.0;
               if (modifiers_ == Qt::ShiftModifier) dx *= 10.0;
-              else if (modifiers_ != Qt::NoModifier) 
+              else if (modifiers_ != Qt::NoModifier)
                 return;
 
               mode->slice_move_event (dx);
@@ -1580,7 +1598,7 @@ namespace MR
 
 
 
-      bool Window::gestureEventGL (QGestureEvent* event) 
+      bool Window::gestureEventGL (QGestureEvent* event)
       {
         assert (mode);
 
@@ -1589,7 +1607,7 @@ namespace MR
           mouse_displacement_ = QPoint (e->delta().x(), -e->delta().y());
           mode->pan_event();
         }
-      
+
         if (QGesture* pinch = event->gesture(Qt::PinchGesture)) {
           QPinchGesture* e = static_cast<QPinchGesture*> (pinch);
           QPinchGesture::ChangeFlags changeFlags = e->changeFlags();
@@ -1606,7 +1624,7 @@ namespace MR
 
 
 
-      void Window::closeEvent (QCloseEvent* event) 
+      void Window::closeEvent (QCloseEvent* event)
       {
         qApp->quit();
         event->accept();
@@ -1643,7 +1661,7 @@ namespace MR
 
 
             // process general options:
-            if (opt.opt->is ("mode")) { 
+            if (opt.opt->is ("mode")) {
               int n = int(opt[0]) - 1;
               if (n < 0 || n >= mode_group->actions().size())
                 throw Exception ("invalid mode index \"" + str(n) + "\" in batch command");
@@ -1651,7 +1669,7 @@ namespace MR
               continue;
             }
 
-            if (opt.opt->is ("size")) { 
+            if (opt.opt->is ("size")) {
               std::vector<int> glsize = opt[0];
               if (glsize.size() != 2)
                 throw Exception ("invalid argument \"" + std::string(opt.args[0]) + "\" to view.size batch command");
@@ -1666,26 +1684,26 @@ namespace MR
               continue;
             }
 
-            else if (opt.opt->is ("fov")) { 
+            else if (opt.opt->is ("fov")) {
               float fov = opt[0];
               set_FOV (fov);
               glarea->update();
               continue;
             }
 
-            if (opt.opt->is ("focus")) { 
+            if (opt.opt->is ("focus")) {
               std::vector<default_type> pos = parse_floats (opt[0]);
-              if (pos.size() != 3) 
+              if (pos.size() != 3)
                 throw Exception ("-focus option expects a comma-separated list of 3 floating-point values");
               set_focus (Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
               glarea->update();
               continue;
             }
 
-            if (opt.opt->is ("voxel")) { 
+            if (opt.opt->is ("voxel")) {
               if (image()) {
                 std::vector<default_type> pos = parse_floats (opt[0]);
-                if (pos.size() != 3) 
+                if (pos.size() != 3)
                   throw Exception ("-voxel option expects a comma-separated list of 3 floating-point values");
                 set_focus (image()->transform().voxel2scanner.cast<float>() *  Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
                 glarea->update();
@@ -1693,21 +1711,21 @@ namespace MR
               continue;
             }
 
-            if (opt.opt->is ("fov")) { 
+            if (opt.opt->is ("fov")) {
               float fov = opt[0];
               set_FOV (fov);
               glarea->update();
               continue;
             }
 
-            if (opt.opt->is ("plane")) { 
+            if (opt.opt->is ("plane")) {
               int n = opt[0];
               set_plane (n);
               glarea->update();
               continue;
             }
 
-            if (opt.opt->is ("lock")) { 
+            if (opt.opt->is ("lock")) {
               bool n = opt[0];
               snap_to_image_action->setChecked (n);
               snap_to_image_slot();
@@ -1722,7 +1740,7 @@ namespace MR
               continue;
             }
 
-            if (opt.opt->is ("load")) { 
+            if (opt.opt->is ("load")) {
               std::vector<std::unique_ptr<MR::Header>> list;
               try { list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (opt[0])))); }
               catch (Exception& e) { e.display(); }
@@ -1735,7 +1753,7 @@ namespace MR
               continue;
             }
 
-            if (opt.opt->is ("colourmap")) { 
+            if (opt.opt->is ("colourmap")) {
               int n = int(opt[0]) - 1;
               if (n < 0 || n >= static_cast<int>(colourmap_button->colourmap_actions.size()))
                 throw Exception ("invalid image colourmap index \"" + str(n+1) + "\" requested in batch command");
@@ -1753,10 +1771,10 @@ namespace MR
               image_interpolate_slot();
             }
 
-            if (opt.opt->is ("intensity_range")) { 
+            if (opt.opt->is ("intensity_range")) {
               if (image()) {
                 std::vector<default_type> param = parse_floats (opt[0]);
-                if (param.size() != 2) 
+                if (param.size() != 2)
                   throw Exception ("-intensity_range options expects comma-separated list of two floating-point values");
                 image()->set_windowing (param[0], param[1]);
                 glarea->update();
@@ -1764,7 +1782,7 @@ namespace MR
               continue;
             }
 
-            if (opt.opt->is ("position")) { 
+            if (opt.opt->is ("position")) {
               std::vector<int> pos = opt[0];
               if (pos.size() != 2)
                 throw Exception ("invalid argument \"" + std::string(opt[0]) + "\" to -position option");
@@ -1772,7 +1790,7 @@ namespace MR
               continue;
             }
 
-            if (opt.opt->is ("fullscreen")) { 
+            if (opt.opt->is ("fullscreen")) {
               full_screen_action->setChecked (true);
               full_screen_slot();
               continue;
@@ -1802,9 +1820,9 @@ namespace MR
       }
 
 
-      void Window::add_commandline_options (MR::App::OptionList& options) 
+      void Window::add_commandline_options (MR::App::OptionList& options)
       {
-        options 
+        options
           + OptionGroup ("View options")
 
           + Option ("mode", "Switch to view mode specified by the integer index. as per the view menu.")
