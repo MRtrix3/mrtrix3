@@ -1014,6 +1014,7 @@ int main() { Foo f; }
         if entry[2:].startswith('..'):
           qt_includes[index] = '-I' + os.path.abspath(qt_dir.name + '/' + entry[2:])
 
+      qt_cflags = [e for e in qt_cflags if e != '-O2']
       qt = qt_cflags + qt_defines + qt_includes
       qt_cflags = []
       for entry in qt:
@@ -1141,7 +1142,7 @@ elif debug:
   ld_flags += [ '-g' ]
   ld_lib_flags += [ '-g' ]
 else:
-  cpp_flags += [ '-O2' ]
+  cpp_flags += [ '-O3' ]
 
 if asserts:
   cpp_flags += [ '-D_GLIBCXX_DEBUG=1', '-D_GLIBCXX_DEBUG_PEDANTIC=1' ]
