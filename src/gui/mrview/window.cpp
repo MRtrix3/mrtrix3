@@ -491,7 +491,7 @@ namespace MR
           show_voxel_info_action = menu->addAction (tr ("Show voxel information"), glarea, SLOT (update()));
           show_voxel_info_action->setShortcut (tr("V"));
           show_voxel_info_action->setCheckable (true);
-          show_voxel_info_action->setChecked (File::Config::get_bool("MRViewShowVoxelInfomration",true));
+          show_voxel_info_action->setChecked (File::Config::get_bool("MRViewShowVoxelInformation",true));
           addAction (show_voxel_info_action);
 
           show_orientation_labels_action = menu->addAction (tr ("Show orientation labels"), glarea, SLOT (update()));
