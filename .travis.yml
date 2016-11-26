@@ -9,8 +9,8 @@ addons:
     packages:
       - zlib1g-dev
       - libgsl0-dev
-      - libqt4-opengl-dev
       - g++-4.8
+      - libqt4-opengl-dev
       - python3
 compiler:
   - clang
@@ -21,7 +21,6 @@ install:
   - export NUMBER_OF_PROCESSORS=4
   - export PATH=`pwd`/release/bin:`pwd`/scripts:${PATH}
   - export EIGEN_CFLAGS=-I`pwd`/../eigen
-  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8"; fi
   - (cd ..; hg clone https://bitbucket.org/eigen/eigen/; cd eigen; hg update 3.3)
 script:
         - ./check_memalign && if [ ${python_version} = "3" ]; then python3 ./configure -assert && python3 ./build -nowarnings && ./run_tests; else ./configure -assert && ./build -nowarnings && ./run_tests; fi
