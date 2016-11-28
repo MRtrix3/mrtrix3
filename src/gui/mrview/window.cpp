@@ -1798,27 +1798,27 @@ namespace MR
 
             if (opt.opt->is ("focus_off")) {
               show_crosshairs_action->setChecked (false);
-              image_interpolate_slot();
+              glarea->update();
             }
 
             if (opt.opt->is ("comments_off")) {
               show_comments_action->setChecked (false);
-              image_interpolate_slot();
+              glarea->update();
             }
 
             if (opt.opt->is ("voxelinfo_off")) {
               show_voxel_info_action->setChecked (false);
-              image_interpolate_slot();
+              glarea->update();
             }
 
             if (opt.opt->is ("orientationlabel_off")) {
               show_orientation_labels_action->setChecked (false);
-              image_interpolate_slot();
+              glarea->update();
             }
 
             if (opt.opt->is ("colourbar_off")) {
               show_colourbar_action->setChecked (false);
-              image_interpolate_slot();
+              glarea->update();
             }
 
             if (opt.opt->is ("fps")) {
