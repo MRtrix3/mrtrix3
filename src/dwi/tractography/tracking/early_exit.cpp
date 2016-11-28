@@ -16,6 +16,8 @@
 
 #include "dwi/tractography/tracking/early_exit.h"
 
+#include "file/config.h"
+
 
 namespace MR
 {
@@ -32,6 +34,16 @@ namespace MR
         {
           if (++counter != next_test)
             return false;
+
+          //CONF option: TckgenEarlyExit
+          //CONF default: 0 (false)
+          //CONF Specifies whether tckgen should be terminated prematurely
+          //CONF in cases where it appears as though the target number of
+          //CONF accepted streamlines is not going to be met.
+          if (!File::Config::get_bool ("TckgenEarlyExit", false)) {
+            next_test = 0;
+            return false;
+          }
 
           const size_t num_attempts = writer.total_count;
           const size_t num_tracks = writer.count;

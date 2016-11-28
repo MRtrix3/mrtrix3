@@ -334,6 +334,11 @@ List of MRtrix3 configuration file options
 
      The default intensity for the specular light in OpenGL renders.
 
+*  **TckgenEarlyExit**
+    *default: 0 (false)*
+
+     Specifies whether tckgen should be terminated prematurely in cases where it appears as though the target number of accepted streamlines is not going to be met.
+
 *  **TerminalColor**
     *default: 1 (true)*
 
