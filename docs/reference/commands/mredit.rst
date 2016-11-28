@@ -16,12 +16,18 @@ Synopsis
 Description
 -----------
 
-Edit the intensities within an image from the command-line. If only one image path is provided, the image will be edited in-place. If input and output image paths are provided, the original image will not be modified.
+Directly edit the intensities within an image from the command-line. A range of options are provided to enable direct editing of voxel intensities based on voxel / real-space coordinates. If only one image path is provided, the image will be edited in-place (use at own risk); if input and output image paths are provided, the output will contain the edited image, and the original image will not be modified in any way.
 
 Options
 -------
 
--  **-voxel position value** Change the intensity of a single voxel
+-  **-plane axis coord value** fill one or more planes on a particular image axis
+
+-  **-sphere position radius value** draw a sphere with radius in mm
+
+-  **-voxel position value** change the image value within a single voxel
+
+-  **-scanner** indicate that coordinates are specified in scanner space, rather than as voxel coordinates
 
 Standard options
 ^^^^^^^^^^^^^^^^

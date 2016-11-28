@@ -26,7 +26,7 @@ Options for specifying the acquisition phase-encoding design; note that one of t
 
 - **-rpe_none** Specify that no reversed phase-encoding image data is being provided; eddy will perform eddy current and motion correction only
 
-- **-rpe_pair** Specify that a set of images will be provided for use in inhomogeneity field estimation (using the -topup_images option), where it is assumed that the FIRST volume(s) of this image has the same phase-encoding direction as the input DWIs, and the LAST volume(s) has precisely the OPPOSITE phase encoding
+- **-rpe_pair** Specify that a set of images will be provided for use in inhomogeneity field estimation (using the -se_epi option), where it is assumed that the FIRST volume(s) of this image has the same phase-encoding direction as the input DWIs, and the LAST volume(s) has precisely the OPPOSITE phase encoding
 
 - **-rpe_all** Specify that all DWIs have been acquired with opposing phase-encoding, where it is assumed that the second half of the volumes in the input DWIs have corresponding diffusion sensitisation directions to the first half, but were acquired using the opposite phase-encoding direction
 
@@ -39,7 +39,7 @@ Other options for the dwipreproc script
 
 - **-readout_time time** Manually specify the total readout time of the input series (in seconds)
 
-- **-topup_images file** Provide an additional image series that is to be used exclusively by topup for estimating the inhomogeneity field (i.e. it will not form part of the output image series)
+- **-se_epi file** Provide an additional image series consisting of spin-echo EPI images, which is to be used exclusively by topup for estimating the inhomogeneity field (i.e. it will not form part of the output image series)
 
 - **-json_import JSON_file** Import image header information from an associated JSON file (may be necessary to determine phase encoding information)
 
