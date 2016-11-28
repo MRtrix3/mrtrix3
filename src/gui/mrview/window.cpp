@@ -1796,8 +1796,28 @@ namespace MR
               continue;
             }
 
-            if (opt.opt->is ("nointerpolation")) {
-              image_interpolate_action->setChecked (false);
+            if (opt.opt->is ("focus_off")) {
+              show_crosshairs_action->setChecked (false);
+              image_interpolate_slot();
+            }
+
+            if (opt.opt->is ("comments_off")) {
+              show_comments_action->setChecked (false);
+              image_interpolate_slot();
+            }
+
+            if (opt.opt->is ("voxelinfo_off")) {
+              show_voxel_info_action->setChecked (false);
+              image_interpolate_slot();
+            }
+
+            if (opt.opt->is ("orientationlabel_off")) {
+              show_orientation_labels_action->setChecked (false);
+              image_interpolate_slot();
+            }
+
+            if (opt.opt->is ("colourbar_off")) {
+              show_colourbar_action->setChecked (false);
               image_interpolate_slot();
             }
 
@@ -1856,16 +1876,24 @@ namespace MR
 
           + Option ("autoscale", "Reset the image scaling to automatically determined range.")
 
-          + Option ("interpolation_on", "Enable the image interpolation.")
-
-          + Option ("interpolation_off", "Disable the image interpolation.")
+          + Option ("interpolation_on", "Enable image interpolation in main image.")
+          + Option ("interpolation_off", "Disable image interpolation in main image.")
 
           + Option ("colourmap", "Switch the image colourmap to that specified, as per the colourmap menu.")
           +   Argument ("index").type_integer (0)
 
+          + Option ("focus_off", "Hide focus cross hair.")
+
+          + Option ("comments_off", "Hide image comments overlay.")
+
+          + Option ("voxelinfo_off", "Hide voxel information overlay")
+
+          + Option ("orientationlabel_off", "Hide orientation label overlay.")
+
+          + Option ("colourbar_off", "Hide colourbar overlay.")
+
           + Option ("intensity_range", "Set the image intensity range to that specified")
           +   Argument ("min,max").type_sequence_int()
-
 
           + OptionGroup ("Window management options")
 
@@ -1876,8 +1904,6 @@ namespace MR
           +   Argument ("x,y").type_sequence_int()
 
           + Option ("fullscreen", "Start fullscreen.")
-
-          + Option ("nointerpolation", "Disable interpolation of the image.")
 
           + Option ("exit", "quit MRView")
 
