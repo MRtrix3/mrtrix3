@@ -16,15 +16,22 @@
 #ifndef __dwi_tractography_tracking_early_exit_h__
 #define __dwi_tractography_tracking_early_exit_h__
 
+#include <Eigen/Core>
+
+#if EIGEN_VERSION_AT_LEAST(3,3,0)
+#define TCKGEN_EARLY_EXIT_USE_FULL_BINOMIAL
 #include <unsupported/Eigen/SpecialFunctions>
+#define TCKGEN_EARLY_EXIT_PROB_THRESHOLD 0.001
+#else
+#define TCKGEN_EARLY_EXIT_PROB_THRESHOLD 1e-6
+#define TCKGEN_EARLY_EXIT_ZVALUE -4.753408 // For a p-value of 1e-6; should be negative
+#endif
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/tracking/shared.h"
 
 
-#define TCKGEN_EARLY_EXIT_PROB_THRESHOLD 0.01
-#define TCKGEN_EARLY_EXIT_STOP_TESTING_PERCENTAGE 0.25
-
+#define TCKGEN_EARLY_EXIT_STOP_TESTING_PERCENTAGE 0.20
 
 
 namespace MR
@@ -51,7 +58,6 @@ namespace MR
           private:
             const size_t max_num_attempts, max_num_tracks;
             size_t counter, next_test;
-
         };
 
 
