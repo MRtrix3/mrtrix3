@@ -46,7 +46,7 @@ def runCommand(cmd, exitOnError=True):
         cmdtotest = entry
       filetotest = [ lib.app.lastFile, os.path.splitext(lib.app.lastFile)[0] ]
       if cmdtotest in filetotest:
-        debugMessage('Detected last file \'' + lib.app.lastFile + '\' in command \'' + cmd + '\'; this is the last runCommand() call that will be skipped')
+        debugMessage('Detected last file \'' + lib.app.lastFile + '\' in command \'' + cmd + '\'; this is the last runCommand() / runFunction() call that will be skipped')
         lib.app.lastFile = ''
         break
     if lib.app.verbosity:

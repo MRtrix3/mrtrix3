@@ -610,8 +610,8 @@ else:
     # Volume recombination equation described in Skare and Bammer 2010
     runCommand('mrcalc volume0.mif weight' + str(pe_indices[0]) + '.mif -mult volume1.mif weight' + str(pe_indices[1]) + '.mif -mult -add weight' + str(pe_indices[0]) + '.mif weight' + str(pe_indices[1]) + '.mif -add -divide 0.0 -max combined' + str(index) + '.mif')
     combined_image_list.append('combined' + str(index) + '.mif')
-    os.unlink('volume0.mif')
-    os.unlink('volume1.mif')
+    delFile('volume0.mif')
+    delFile('volume1.mif')
 
   for index in range(0, len(eddy_config)):
     delFile('weight' + str(index+1) + '.mif')

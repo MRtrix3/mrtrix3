@@ -31,6 +31,7 @@ def execute():
   import lib.app
   from lib.getUserPath import getUserPath
   from lib.runCommand  import runCommand
+  from lib.runFunction import runFunction
   lmax_option = ''
   if lib.app.args.lmax:
     lmax_option = ' -lmax ' + lib.app.args.lmax
@@ -48,5 +49,5 @@ def execute():
   runCommand('amp2sh dwi.mif dwiSH.mif' + lmax_option)
   runCommand('sh2response dwiSH.mif voxels.mif vector.mif response.txt' + lmax_option)
 
-  shutil.copyfile('response.txt', getUserPath(lib.app.args.output, False))
+  runFunction(shutil.copyfile, 'response.txt', getUserPath(lib.app.args.output, False))
 

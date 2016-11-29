@@ -148,8 +148,8 @@ if initial_alignment not in ["mass", "geometric", "none"]:
 
 linear_estimator = lib.app.args.linear_estimator
 if linear_estimator:
-  if lib.app.args.linear_estimator not in ["l1", "l1", "lp"]:
-    errorMessage('linear_estimator must be one of ' + " ".join(["l1", "l1", "lp"]));
+  if lib.app.args.linear_estimator not in ["l1", "l2", "lp"]:
+    errorMessage('linear_estimator must be one of ' + " ".join(["l1", "l2", "lp"]));
 
 useMasks = False
 if lib.app.args.mask_dir:

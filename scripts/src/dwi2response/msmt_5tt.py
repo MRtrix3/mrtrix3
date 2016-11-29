@@ -40,13 +40,15 @@ def getInputFiles():
 def execute():
   import math, os, shutil
   import lib.app
+  from lib.errorMessage  import errorMessage
   from lib.getHeaderInfo import getHeaderInfo
   from lib.getImageStat  import getImageStat
   from lib.getUserPath   import getUserPath
   from lib.printMessage  import printMessage
   from lib.runCommand    import runCommand
+  from lib.runFunction   import runFunction
   from lib.warnMessage   import warnMessage
-  from lib.errorMessage  import errorMessage
+
   
   # Ideally want to use the oversampling-based regridding of the 5TT image from the SIFT model, not mrtransform
   # May need to commit 5ttregrid...
@@ -73,7 +75,7 @@ def execute():
 
   runCommand('dwi2tensor dwi.mif - -mask mask.mif | tensor2metric - -fa fa.mif -vector vector.mif')
   if not os.path.exists('dirs.mif'):
-    shutil.copy('vector.mif', 'dirs.mif')
+    runFunction(shutil.copy, 'vector.mif', 'dirs.mif')
   runCommand('mrtransform 5tt.mif 5tt_regrid.mif -template fa.mif -interp linear')
 
   # Basic tissue masks
@@ -146,9 +148,9 @@ def execute():
     for line in csf_responses:
       f.write(line + '\n')
 
-  shutil.copyfile('wm.txt',  getUserPath(lib.app.args.out_wm,  False))
-  shutil.copyfile('gm.txt',  getUserPath(lib.app.args.out_gm,  False))
-  shutil.copyfile('csf.txt', getUserPath(lib.app.args.out_csf, False))
+  runFunction(shutil.copyfile, 'wm.txt',  getUserPath(lib.app.args.out_wm,  False))
+  runFunction(shutil.copyfile, 'gm.txt',  getUserPath(lib.app.args.out_gm,  False))
+  runFunction(shutil.copyfile, 'csf.txt', getUserPath(lib.app.args.out_csf, False))
 
   # Generate output 4D binary image with voxel selections; RGB as in MSMT-CSD paper
   runCommand('mrcat csf_mask.mif gm_mask.mif wm_sf_mask.mif voxels.mif -axis 3')

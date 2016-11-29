@@ -34,13 +34,15 @@ def getInputFiles():
 def execute():
   import math, os, shutil
   import lib.app
+  from lib.errorMessage  import errorMessage
   from lib.getHeaderInfo import getHeaderInfo
   from lib.getImageStat  import getImageStat
   from lib.getUserPath   import getUserPath
   from lib.printMessage  import printMessage
   from lib.runCommand    import runCommand
+  from lib.runFunction   import runFunction
   from lib.warnMessage   import warnMessage
-  from lib.errorMessage  import errorMessage
+
   
 
 
@@ -201,9 +203,9 @@ def execute():
   with open('response_csf.txt', 'w') as f:
     for line in csf_responses:
       f.write(line + '\n')
-  shutil.copyfile('response_sfwm.txt', getUserPath(lib.app.args.out_sfwm, False))
-  shutil.copyfile('response_gm.txt', getUserPath(lib.app.args.out_gm, False))
-  shutil.copyfile('response_csf.txt', getUserPath(lib.app.args.out_csf, False))
+  runFunction(shutil.copyfile, 'response_sfwm.txt', getUserPath(lib.app.args.out_sfwm, False))
+  runFunction(shutil.copyfile, 'response_gm.txt', getUserPath(lib.app.args.out_gm, False))
+  runFunction(shutil.copyfile, 'response_csf.txt', getUserPath(lib.app.args.out_csf, False))
 
 
   # Generate 4D binary images with voxel selection at major stages in algorithm (RGB as in MSMT-CSD paper).

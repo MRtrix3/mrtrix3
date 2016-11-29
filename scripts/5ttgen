@@ -13,7 +13,7 @@ import lib.app, lib.cmdlineParser
 from lib.getAlgorithmList import getAlgorithmList
 from lib.getUserPath      import getUserPath
 from lib.runCommand       import runCommand
-from lib.warnMessage     import warnMessage
+from lib.warnMessage      import warnMessage
 
 lib.app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
 lib.app.addCitation('', 'Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. NeuroImage, 2012, 62, 1924-1938', False)
