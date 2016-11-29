@@ -89,7 +89,7 @@ void run ()
     if (in1.ndim() != 4)
       throw Exception ("Option -voxel only works for 4D images");
 
-    struct RunKernel {
+    struct RunKernel { NOMEMALIGN
       RunKernel (double& largest_diff, size_t& count, double tol) : 
         largest_diff (largest_diff), count (count), tol (tol), max_diff (0.0), n (0) { }
 
