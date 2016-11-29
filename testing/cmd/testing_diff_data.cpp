@@ -41,15 +41,13 @@ void usage ()
 
   ARGUMENTS
   + Argument ("data1", "an image.").type_image_in()
-  + Argument ("data2", "another image.").type_image_in();
+  + Argument ("data2", "another image.").type_image_in()
+  + Argument ("tolerance", "the tolerance value (default = 0.0).").type_float(0.0).optional();
   
   OPTIONS
-  + Option ("abs", "specify an absolute tolerance") 
-    + Argument ("tolerance").type_float (0.0)
-  + Option ("frac", "specify a fractional tolerance") 
-    + Argument ("tolerance").type_float (0.0)
-  + Option ("voxel", "specify a fractional tolerance relative to the maximum value in the voxel")
-    + Argument ("tolerance").type_float (0.0);
+  + Option ("abs", "test for absolute difference (the default)") 
+  + Option ("frac", "test for fractional absolute difference") 
+  + Option ("voxel", "test for fractional absolute difference relative to the maximum value in the voxel");
 }
 
 
@@ -72,29 +70,30 @@ void run ()
     }
   }
 
-  auto opt = get_options ("frac");
-  if (opt.size()) {
-  
-    const double tol = opt[0][0];
-    
-    ThreadedLoop (in1)
-    .run ([&tol] (const decltype(in1)& a, const decltype(in2)& b) {
-        if (std::abs ((a.value() - b.value()) / (0.5 * (a.value() + b.value()))) > tol)
-        throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within fractional precision of " + str(tol)
-             + " (" + str(cdouble (a.value())) + " vs " + str(cdouble (b.value())) + ")");
-        }, in1, in2);
+  const double tol = argument.size() == 3 ? argument[2] : 0.0;
 
-  } else {
+  const bool absolute = get_options ("abs").size();
+  const bool fractional = get_options ("frac").size();
+  const bool per_voxel = get_options ("voxel").size();
 
-    opt = get_options ("voxel");
-    if (opt.size()) {
+  double largest_diff = 0.0;
+  size_t count = 0;
 
-      if (in1.ndim() != 4)
-        throw Exception ("Option -voxel only works for 4D images");
+  if (absolute + fractional + per_voxel > 1)
+    throw Exception ("options \"-abs\", \"-frac\", and \"-voxel\" are mutually exclusive");
 
-      const double tol = opt[0][0];
 
-      auto func = [&tol] (decltype(in1)& a, decltype(in2)& b) {
+  // per-voxel:
+  if (per_voxel) {
+
+    if (in1.ndim() != 4)
+      throw Exception ("Option -voxel only works for 4D images");
+
+    struct RunKernel {
+      RunKernel (double& largest_diff, size_t& count, double tol) : 
+        largest_diff (largest_diff), count (count), tol (tol), max_diff (0.0), n (0) { }
+
+      void operator() (decltype(in1)& a, decltype(in2)& b) {
         double maxa = 0.0, maxb = 0.0;
         for (auto l = Loop(3) (a, b); l; ++l) {
           maxa = std::max (maxa, std::abs (cdouble(a.value())));
@@ -102,30 +101,57 @@ void run ()
         }
         const double threshold = tol * 0.5 * (maxa + maxb);
         for (auto l = Loop(3) (a, b); l; ++l) {
-          if (std::abs (cdouble (a.value()) - cdouble (b.value())) > threshold)
-            throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within " + str(tol) + " of maximal voxel value"
-                           + " (" + str(cdouble (a.value())) + " vs " + str(cdouble (b.value())) + ")");
+          auto diff = std::abs (cdouble (a.value()) - cdouble (b.value()));
+          if (diff > threshold) {
+            ++n;
+            max_diff = std::max (max_diff, diff);
+          }
         }
-      };
+      }
 
-      ThreadedLoop (in1, 0, 3).run (func, in1, in2);
-  
-    } else {
-  
-      double tol = 0.0;
-      opt = get_options ("abs");
-      if (opt.size())
-        tol = opt[0][0];
+      double& largest_diff;
+      size_t& count;
+      const double tol;
+      double max_diff;
+      size_t n;
+    };
 
-      ThreadedLoop (in1)
-      .run ([&tol] (const decltype(in1)& a, const decltype(in2)& b) {
-          if (std::abs (a.value() - b.value()) > tol)
-          throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within absolute precision of " + str(tol)
-               + " (" + str(cdouble (a.value())) + " vs " + str(cdouble (b.value())) + ")");
-          }, in1, in2);
+    ThreadedLoop (in1, 0, 3).run (RunKernel (largest_diff, count, tol), in1, in2);
+    if (count)
+      throw Exception ("images \"" + in1.name() + "\" and \"" + in2.name() + "\" do not match within " + str(tol) + " of maximal voxel value"
+          + " (" + str(count) + " voxels over threshold, maximum per-voxel relative difference = " + str(largest_diff) + ")");
+  } 
+  else { // frac or abs:
 
-    }
-        
+    struct RunKernel { NOMEMALIGN
+      RunKernel (double& largest_diff, size_t& count, double tol, bool fractional) : 
+        largest_diff (largest_diff), count (count), tol (tol), fractional (fractional), max_diff (0.0), n (0) { }
+
+      ~RunKernel() { largest_diff = std::max (largest_diff, max_diff); count += n; }
+
+      void operator() (const decltype(in1)& a, const decltype(in2)& b) {
+        auto diff = std::abs (a.value() - b.value());
+        if (fractional)
+          diff /= 0.5 * std::abs (a.value() + b.value()); 
+        if (diff > tol) {
+          ++n;
+          max_diff = std::max (max_diff, diff);
+        }
+      }
+
+      double& largest_diff;
+      size_t& count;
+      const double tol;
+      const bool fractional;
+      double max_diff;
+      size_t n;
+    };
+
+    ThreadedLoop (in1).run (RunKernel (largest_diff, count, tol, fractional), in1, in2);
+    if (count)
+      throw Exception ("images \"" + in1.name() + "\" and \"" + in2.name() + "\" do not match within " 
+          + ( fractional ? "relative" : "absolute" ) + " precision of " + str(tol)
+          + " (" + str(count) + " voxels over threshold, maximum absolute difference = " + str(largest_diff) + ")");
   }
 
   CONSOLE ("data checked OK");
