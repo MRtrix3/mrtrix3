@@ -194,6 +194,24 @@ namespace MR
       std::integral_constant<bool, std::is_arithmetic<ValueType>::value || is_complex<ValueType>::value> { NOMEMALIGN };
 
 
+  template <typename X, int N=(alignof(X)>MRTRIX_ALLOC_MEM_ALIGN)>
+    class memalign_vector { NOMEMALIGN
+      public:
+        memalign_vector() = delete;
+        memalign_vector(const memalign_vector&) = delete;
+        memalign_vector(memalign_vector&&) = delete;
+        typedef std::vector<X, Eigen::aligned_allocator<X>> type;
+    };
+
+  template <typename X>
+    class memalign_vector<X,0> { NOMEMALIGN
+      public:
+        memalign_vector() = delete;
+        memalign_vector(const memalign_vector&) = delete;
+        memalign_vector(memalign_vector&&) = delete;
+        typedef std::vector<X> type;
+    };
+
 }
 
 namespace std 
