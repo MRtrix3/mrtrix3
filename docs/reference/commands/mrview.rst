@@ -69,6 +69,11 @@ Debugging options
 
 -  **-fps** Display frames per second, averaged over the last 10 frames. The maximum over the last 3 seconds is also displayed.
 
+Other options
+^^^^^^^^^^^^^
+
+-  **-norealign** do not realign transform to near-default RAS coordinate system (the default behaviour on image load). This is useful to inspect the image and/or header contents as they are actually stored in the header, rather than as MRtrix interprets them.
+
 Overlay tool options
 ^^^^^^^^^^^^^^^^^^^^
 
