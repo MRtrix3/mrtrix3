@@ -10,4 +10,3 @@ fod2dec fod.mif - -outputmap anat.mif -threshold 0.06 | testing_diff_data - fod2
 fod2dec fod.mif - -outputmap anat.mif -no-weight | testing_diff_data - fod2dec/out/dec-anat_noweig.mif -voxel 1e-5
 fod2dec fod.mif - -outputmap anat.mif -lum | testing_diff_data - fod2dec/out/dec-anat_lum.mif -voxel 1e-5
 fod2dec fod.mif - -outputmap anat.mif -mask roi.mif -threshold 0.07 -lum | testing_diff_data - fod2dec/out/dec-anat_combo.mif -voxel 1e-5
-
