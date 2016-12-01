@@ -1,4 +1,26 @@
 #!/bin/bash
+
+if [ $# -eq 0 ]; then
+  cat <<HELP_PAGE
+This script applies mrmath to each shell in the input image. The output is 
+concatenated in a 4-D image, where the 4th axis contains e.g. the per-shell 
+mean in order of increasing b-value.
+
+USAGE: 
+  $ mathpershell <in.mif> <operation> <out.mif>
+
+  For example: 
+    $ mathpershell dwi.mif mean dc.mif
+  will output the mean diffusion-weighted volume per shell.
+
+AVAILABLE OPERATIONS: 
+  mean, median, sum, product, rms, norm, var, std, min, max, absmax, magmax.
+
+HELP_PAGE
+
+  exit 1
+fi
+
 c=1
 for b in `mrinfo $1 -shells`;
 do
