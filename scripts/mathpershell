@@ -1,0 +1,10 @@
+#!/bin/bash
+c=1
+for b in `mrinfo $1 -shells`;
+do
+    dwiextract -shell $b $1 - -quiet | mrmath -axis 3 - $2 tmp-$c.mif -force -quiet
+    ((c++))
+done
+mrcat -axis 3 tmp-*.mif $3 -quiet
+rm tmp-*.mif
+
