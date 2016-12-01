@@ -349,13 +349,21 @@ namespace MR
               coherence *= reg_coherence_len * 1.0 / (2.0 * scale_factor[level]);
               //CONF option: reg_stop_len
               //CONF default: 0.0001
-              //CONF Linear registration: smallest step in fraction of voxel at which to stop registration
+              //CONF Linear registration: smallest gradient descent step measured in fraction of a voxel at which to stop registration
               default_type reg_stop_len = File::Config::get_float ("reg_stop_len", 0.0001);
               stop.array() *= reg_stop_len;
               DEBUG ("coherence length: " + str(coherence));
               DEBUG ("stop length:      " + str(stop));
-              transform.get_gradient_descent_updator()->set_control_points(
-                parameters.control_points, coherence, stop, spacing);
+              transform.get_gradient_descent_updator()->set_control_points (parameters.control_points, coherence, stop, spacing);
+
+              // convergence check using slope of smoothed parameter trajectories
+              Eigen::VectorXd slope_threshold = Eigen::VectorXd::Ones (12);
+              slope_threshold.fill (MR::File::Config::get_float ("reg_gd_conv_slope_threshold", 5e-4f));
+              const default_type alpha (MR::File::Config::get_float ("reg_gd_conv_alpha", 0.8));
+              const default_type beta (MR::File::Config::get_float ("reg_gd_conv_beta", 0.55));
+              size_t buffer_len (MR::File::Config::get_float ("reg_gd_conv_buffer_len", 4));
+              size_t min_iter (MR::File::Config::get_float ("reg_gd_conv_min_iter", 10));
+              transform.get_gradient_descent_updator()->set_convergence_check (slope_threshold, alpha, beta, buffer_len, min_iter);
 
               Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
               if (do_reorientation && fod_lmax[level] > 0)

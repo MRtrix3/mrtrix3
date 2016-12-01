@@ -45,6 +45,8 @@ namespace MR
 
       class AffineUpdate {
         public:
+          AffineUpdate (): use_convergence_check (false) { }
+
           bool operator() (Eigen::Matrix<default_type, Eigen::Dynamic, 1>& newx,
               const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x,
               const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& g,
@@ -56,7 +58,16 @@ namespace MR
             const Eigen::Vector3d& stop_length,
             const Eigen::Vector3d& voxel_spacing );
 
+          void set_convergence_check (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& slope_threshold,
+                                      default_type alpha,
+                                      default_type beta,
+                                      size_t buffer_len,
+                                      size_t min_iter) {
+            use_convergence_check = false; // TODO
+          }
+
         private:
+          bool use_convergence_check;
           Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> control_points;
           Eigen::Vector3d coherence_distance;
           Eigen::Matrix<default_type, 4, 1> stop_len, recip_spacing;

@@ -18,7 +18,6 @@
 
 #include "registration/transform/base.h"
 #include "types.h"
-#include "file/config.h"
 #include "math/math.h"
 
 using namespace MR::Math;
@@ -30,8 +29,12 @@ namespace MR
     namespace Transform
     {
 
-      class RigidLinearNonSymmetricUpdate {
+      class RigidLinearNonSymmetricUpdate
+      {
         public:
+          RigidLinearNonSymmetricUpdate ( ):
+            use_convergence_check (false) {  }
+
           bool operator() (Eigen::Matrix<default_type, Eigen::Dynamic, 1>& newx,
               const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x,
               const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& g,
@@ -43,10 +46,23 @@ namespace MR
             const Eigen::Vector3d& stop_length,
             const Eigen::Vector3d& voxel_spacing );
 
+          void set_convergence_check (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& slope_threshold,
+                                      default_type alpha,
+                                      default_type beta,
+                                      size_t buffer_len,
+                                      size_t min_iter) {
+            // convergence check using double exponential smoothing of parameters
+            // TODO: take gdweight into account or alternatively use control points
+            convergence_check.set_parameters (slope_threshold, alpha, beta, buffer_len, min_iter);
+            use_convergence_check = true;
+          }
+
         private:
+          bool use_convergence_check = false;
           Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> control_points;
           Eigen::Vector3d coherence_distance;
           Eigen::Matrix<default_type, 4, 1> stop_len, recip_spacing;
+          DoubleExpSmoothSlopeCheck convergence_check;
       };
 
       class RigidRobustEstimator {
@@ -67,7 +83,7 @@ namespace MR
        */
       class Rigid : public Base  {
         public:
-          
+
           EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
           typedef typename Base::ParameterType ParameterType;

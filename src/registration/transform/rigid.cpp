@@ -184,7 +184,13 @@ namespace MR
 //               VAR(step_size);
 //             }
 // #endif
-            return !(newx.isApprox(x));
+            if (newx.isApprox(x))
+              return false;
+            if (use_convergence_check and !convergence_check.go_on(newx)) {
+              INFO("convergence_check: converged");
+              return false;
+            }
+            return true;
           }
 
           void RigidLinearNonSymmetricUpdate::set_control_points (
