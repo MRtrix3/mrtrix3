@@ -403,7 +403,10 @@ namespace MR
           mean_vox_size += spacing(i);
         }
       }
-      mean_vox_size /= num_valid_vox;
+      if (num_valid_vox) 
+        mean_vox_size /= num_valid_vox;
+      else 
+        mean_vox_size = 1.0;
       for (size_t i = 0; i < 3; ++i) 
         if (!std::isfinite(spacing(i))) 
           spacing(i) = mean_vox_size;
