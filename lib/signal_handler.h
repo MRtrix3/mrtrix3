@@ -20,6 +20,12 @@
 #include <string>
 #include <vector>
 
+
+#ifdef MRTRIX_WINDOWS
+# include <windows.h>
+# include <wincon.h>
+#endif
+
 namespace MR
 {
 
@@ -41,6 +47,9 @@ namespace MR
       static void on_exit() noexcept;
       static void handler (int) noexcept;
 
+#ifdef MRTRIX_WINDOWS
+      static BOOL WINAPI WindowsCtrlHandler (DWORD CtrlType);
+#endif
   };
 
 
