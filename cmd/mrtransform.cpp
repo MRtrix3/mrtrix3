@@ -368,7 +368,7 @@ void run ()
 
   // Rotate/Flip gradient directions if present
   if (linear && input_header.ndim() == 4 && !warp && !fod_reorientation) {
-    Eigen::MatrixXd rotation = linear_transform.linear();
+    Eigen::MatrixXd rotation = linear_transform.linear().inverse();
     Eigen::MatrixXd test = rotation.transpose() * rotation;
     test = test.array() / test.diagonal().mean();
     if (!test.isIdentity (0.001)) {
