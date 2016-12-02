@@ -344,7 +344,7 @@ namespace MR
               Eigen::Vector3d stop(spacing);
               //CONF option: reg_coherence_len
               //CONF default: 3.0
-              //CONF Linear registration: estimated spatial coherence length in voxel
+              //CONF Linear registration: estimated spatial coherence length in voxels
               default_type reg_coherence_len = File::Config::get_float ("reg_coherence_len", 3.0); // = 3 stdev blur
               coherence *= reg_coherence_len * 1.0 / (2.0 * scale_factor[level]);
               //CONF option: reg_stop_len
@@ -358,11 +358,12 @@ namespace MR
 
               // convergence check using slope of smoothed parameter trajectories
               Eigen::VectorXd slope_threshold = Eigen::VectorXd::Ones (12);
-              slope_threshold.fill (MR::File::Config::get_float ("reg_gd_conv_slope_threshold", 5e-4f));
-              const default_type alpha (MR::File::Config::get_float ("reg_gd_conv_alpha", 0.8));
-              const default_type beta (MR::File::Config::get_float ("reg_gd_conv_beta", 0.55));
-              size_t buffer_len (MR::File::Config::get_float ("reg_gd_conv_buffer_len", 4));
-              size_t min_iter (MR::File::Config::get_float ("reg_gd_conv_min_iter", 10));
+              slope_threshold.fill (spacing.mean() * File::Config::get_float ("reg_gd_convergence_thresh", 5e-3f));
+              DEBUG ("convergence slope threshold: " + str(slope_threshold[0]));
+              const default_type alpha (MR::File::Config::get_float ("reg_gd_convergence_data_smooth", 0.8));
+              const default_type beta (MR::File::Config::get_float ("reg_gd_convergence_slope_smooth", 0.1));
+              size_t buffer_len (MR::File::Config::get_float ("reg_gd_convergence_buffer_len", 4));
+              size_t min_iter (MR::File::Config::get_float ("reg_gd_convergence_min_iter", 10));
               transform.get_gradient_descent_updator()->set_convergence_check (slope_threshold, alpha, beta, buffer_len, min_iter);
 
               Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);

@@ -52,7 +52,7 @@ namespace MR
           assert (g.size() == 12);
 
           Eigen::Matrix<default_type, 12, 1> delta;
-          Eigen::Matrix<default_type, 4, 4> X, Delta, G, A, Asqrt, B, Bsqrt, Bsqrtinv, Xnew, P, Diff;
+          Eigen::Matrix<default_type, 4, 4> X, Delta, G, A, Asqrt, B, Bsqrt, Bsqrtinv, Xnew, P, Diff, XnewP;
           Registration::Transform::param_vec2mat(g, G);
           Registration::Transform::param_vec2mat(x, X);
 
@@ -157,41 +157,43 @@ namespace MR
             T_new = L.sqrt() * centroid + T_affine - R.sqrt() * centroid;
             Xnew.template block<3,1>(0,3) = T_new;
           }
+
           Registration::Transform::param_mat2vec(Xnew, newx);
 
-          // stop criterion based on max shift of control points
+          if (newx.isApprox(x)) {
+            DEBUG ("parameters unchanged");
+            return false;
+          }
+
           if (control_points.size()) {
-            Diff.noalias() = ((Xnew) * P - X * P).cwiseAbs();
+            XnewP = (Xnew * P).eval();
+
+            // stop criterion based on slope of smoothed control point trajectories
+            if (use_convergence_check) {
+              Registration::Transform::param_mat2vec (XnewP, new_control_points_vec);
+              if (MR::File::Config::get_bool ("reg_gd_convergence_debug", false))
+                convergence_check.debug(new_control_points_vec);
+              if (!convergence_check.go_on (new_control_points_vec)) {
+                DEBUG ("control point trajectories converged");
+                return false;
+              }
+            }
+
+            // stop criterion based on maximum shift of control points
+            Diff.noalias() = (XnewP - X * P).cwiseAbs();
             Diff.row(0) *= recip_spacing(0);
             Diff.row(1) *= recip_spacing(1);
             Diff.row(2) *= recip_spacing(2);
             Diff.colwise() -= stop_len;
             if (Diff.template block<3,4>(0,0).maxCoeff() <= 0.0) {
-              DEBUG("max control point movement (" + str(Diff.template block<3,4>(0,0).maxCoeff()) +
+              DEBUG ("max control point movement (" + str(Diff.template block<3,4>(0,0).maxCoeff()) +
               ") smaller than tolerance" );
               return false;
             }
           }
-// #ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG
-//             if (newx.isApprox(x)){
-//               ValueType debug = 0;
-//               for (ssize_t i=0; i<newx.size(); ++i){
-//                 debug += std::abs(newx[i]-x[i]);
-//               }
-//               INFO("rigid update parameter cumulative change: " + str(debug));
-//               VEC(newx);
-//               VEC(g);
-//               VAR(step_size);
-//             }
-// #endif
-            if (newx.isApprox(x))
-              return false;
-            if (use_convergence_check and !convergence_check.go_on(newx)) {
-              INFO("convergence_check: converged");
-              return false;
-            }
-            return true;
-          }
+
+          return true;
+        }
 
           void RigidLinearNonSymmetricUpdate::set_control_points (
             const Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic>& points,

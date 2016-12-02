@@ -63,7 +63,8 @@ namespace MR
                                       default_type beta,
                                       size_t buffer_len,
                                       size_t min_iter) {
-            use_convergence_check = false; // TODO
+            convergence_check.set_parameters (slope_threshold, alpha, beta, buffer_len, min_iter);
+            use_convergence_check = true;
           }
 
         private:
@@ -71,6 +72,8 @@ namespace MR
           Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> control_points;
           Eigen::Vector3d coherence_distance;
           Eigen::Matrix<default_type, 4, 1> stop_len, recip_spacing;
+          DoubleExpSmoothSlopeCheck convergence_check;
+          Eigen::Matrix<default_type, Eigen::Dynamic, 1> new_control_points_vec;
       };
 
       class AffineRobustEstimator {

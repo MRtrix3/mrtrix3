@@ -32,6 +32,7 @@ namespace MR
       class RigidLinearNonSymmetricUpdate
       {
         public:
+          EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
           RigidLinearNonSymmetricUpdate ( ):
             use_convergence_check (false) {  }
 
@@ -63,6 +64,7 @@ namespace MR
           Eigen::Vector3d coherence_distance;
           Eigen::Matrix<default_type, 4, 1> stop_len, recip_spacing;
           DoubleExpSmoothSlopeCheck convergence_check;
+          Eigen::Matrix<default_type, Eigen::Dynamic, 1> new_control_points_vec;
       };
 
       class RigidRobustEstimator {

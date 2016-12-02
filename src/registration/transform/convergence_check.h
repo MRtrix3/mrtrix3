@@ -52,6 +52,8 @@ namespace MR
 
             bool last_s (Eigen::Matrix<default_type, Eigen::Dynamic, 1>& s) const;
 
+            void debug (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& vec) const;
+
         private:
           size_t stop_cnt;
           default_type alpha, beta;
