@@ -1693,9 +1693,20 @@ namespace MR
 
             if (opt.opt->is ("focus")) {
               std::vector<default_type> pos = parse_floats (opt[0]);
-              if (pos.size() != 3)
-                throw Exception ("-focus option expects a comma-separated list of 3 floating-point values");
-              set_focus (Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
+              try {
+                auto pos = parse_floats (opt[0]);
+                if (pos.size() != 3)
+                   throw Exception ("-focus option expects a comma-separated list of 3 floating-point values");
+                set_focus (Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
+              }
+              catch (Exception& E) {
+                try {
+                  show_crosshairs_action->setChecked (to<bool> (opt[0]));
+                }
+                catch (Exception& E2) {
+                  throw Exception ("-focus option expects a boolean or a comma-separated list of 3 floating-point values");
+                }
+              }
               glarea->update();
               continue;
             }
@@ -1761,13 +1772,14 @@ namespace MR
               continue;
             }
 
-            if (opt.opt->is ("interpolation_on")) {
-              image_interpolate_action->setChecked(true);
-              image_interpolate_slot();
-            }
-
-            if (opt.opt->is ("interpolation_off")) {
-              image_interpolate_action->setChecked(false);
+            if (opt.opt->is ("interpolation")) {
+              try {
+                  VAR(to<bool> (opt[0]));
+                  image_interpolate_action->setChecked (to<bool> (opt[0]));
+                }
+                catch (Exception& E) {
+                  throw Exception ("-interpolation option expects a boolean");
+                }
               image_interpolate_slot();
             }
 
@@ -1796,28 +1808,51 @@ namespace MR
               continue;
             }
 
-            if (opt.opt->is ("focus_off")) {
-              show_crosshairs_action->setChecked (false);
+            if (opt.opt->is ("noannotations")) {
+              toggle_annotations_slot ();
+            }
+
+            if (opt.opt->is ("comments")) {
+              try {
+                  VAR(to<bool> (opt[0]));
+                  show_comments_action->setChecked (to<bool> (opt[0]));
+                }
+                catch (Exception& E) {
+                  throw Exception ("-comments option expects a boolean");
+                }
               glarea->update();
             }
 
-            if (opt.opt->is ("comments_off")) {
-              show_comments_action->setChecked (false);
+            if (opt.opt->is ("voxelinfo")) {
+              try {
+                  VAR(to<bool> (opt[0]));
+                  show_voxel_info_action->setChecked (to<bool> (opt[0]));
+                }
+                catch (Exception& E) {
+                  throw Exception ("-voxelinfo option expects a boolean");
+                }
               glarea->update();
             }
 
-            if (opt.opt->is ("voxelinfo_off")) {
-              show_voxel_info_action->setChecked (false);
+            if (opt.opt->is ("orientationlabel")) {
+              try {
+                  VAR(to<bool> (opt[0]));
+                  show_orientation_labels_action->setChecked (to<bool> (opt[0]));
+                }
+                catch (Exception& E) {
+                  throw Exception ("-orientationlabel option expects a boolean");
+                }
               glarea->update();
             }
 
-            if (opt.opt->is ("orientationlabel_off")) {
-              show_orientation_labels_action->setChecked (false);
-              glarea->update();
-            }
-
-            if (opt.opt->is ("colourbar_off")) {
-              show_colourbar_action->setChecked (false);
+            if (opt.opt->is ("colourbar")) {
+              try {
+                  VAR(to<bool> (opt[0]));
+                  show_colourbar_action->setChecked (to<bool> (opt[0]));
+                }
+                catch (Exception& E) {
+                  throw Exception ("-colourbar option expects a boolean");
+                }
               glarea->update();
             }
 
@@ -1856,9 +1891,10 @@ namespace MR
           + Option ("fov", "Set the field of view, in mm.")
           +   Argument ("value").type_float()
 
-          + Option ("focus", "Set the position of the crosshairs in scanner coordinates, "
-              "with the new position supplied as a comma-separated list of floating-point values.")
-          +   Argument ("x,y,z").type_sequence_float()
+          + Option ("focus", "Either set the position of the crosshairs in scanner coordinates, "
+              "with the new position supplied as a comma-separated list of floating-point values or "
+              "show or hide the focus cross hair using a boolean value as argument.").allow_multiple()
+          +   Argument ("x,y,z or boolean").type_sequence_float()
 
           + Option ("voxel", "Set the position of the crosshairs in voxel coordinates, "
               "relative the image currently displayed. The new position should be supplied "
@@ -1876,21 +1912,25 @@ namespace MR
 
           + Option ("autoscale", "Reset the image scaling to automatically determined range.")
 
-          + Option ("interpolation_on", "Enable image interpolation in main image.")
-          + Option ("interpolation_off", "Disable image interpolation in main image.")
+          + Option ("interpolation", "Enable or disable image interpolation in main image.")
+          +   Argument ("boolean").type_bool ()
 
           + Option ("colourmap", "Switch the image colourmap to that specified, as per the colourmap menu.")
           +   Argument ("index").type_integer (0)
 
-          + Option ("focus_off", "Hide focus cross hair.")
+          + Option ("noannotations", "Hide all image annotation overlays")
 
-          + Option ("comments_off", "Hide image comments overlay.")
+          + Option ("comments", "Show of hide image comments overlay.")
+          +   Argument ("boolean").type_bool ()
 
-          + Option ("voxelinfo_off", "Hide voxel information overlay")
+          + Option ("voxelinfo", "Show or hide voxel information overlay")
+          +   Argument ("boolean").type_bool ()
 
-          + Option ("orientationlabel_off", "Hide orientation label overlay.")
+          + Option ("orientationlabel", "Show or hide orientation label overlay.")
+          +   Argument ("boolean").type_bool ()
 
-          + Option ("colourbar_off", "Hide colourbar overlay.")
+          + Option ("colourbar", "Show or hide colourbar overlay.")
+          +   Argument ("boolean").type_bool ()
 
           + Option ("intensity_range", "Set the image intensity range to that specified")
           +   Argument ("min,max").type_sequence_int()
