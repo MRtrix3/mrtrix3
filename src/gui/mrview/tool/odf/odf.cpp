@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 
 #include "mrtrix.h"
@@ -103,7 +103,7 @@ namespace MR
             show_preview_button->setToolTip (tr ("Inspect ODF at focus<br>(opens separate window)"));
             connect (show_preview_button, SIGNAL (clicked()), this, SLOT (show_preview_slot ()));
             main_box->addWidget (show_preview_button, 1);
-            
+
 
             QGroupBox* group_box = new QGroupBox (tr("Display settings"));
             main_box->addWidget (group_box);
@@ -159,11 +159,11 @@ namespace MR
             label->setAlignment (Qt::AlignHCenter);
             box_layout->addWidget (label, 2, 0);
             scale = new AdjustButton (this, 1.0);
-            scale->setValue (1.0);
+            scale->setValue (MR::File::Config::get_float ("MRViewOdfScale", 1.0));
             scale->setMin (0.0);
             connect (scale, SIGNAL (valueChanged()), this, SLOT (adjust_scale_slot()));
             box_layout->addWidget (scale, 2, 1, 1, 3);
-            
+
             interpolation_box = new QCheckBox ("interpolation");
             interpolation_box->setChecked (true);
             connect (interpolation_box, SIGNAL (stateChanged(int)), this, SLOT (updateGL()));
@@ -250,7 +250,7 @@ namespace MR
         void ODF::draw (const Projection& projection, bool is_3D, int, int)
         {
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
-          if (is_3D) 
+          if (is_3D)
             return;
 
           ODF_Item* settings = get_image();
@@ -276,7 +276,7 @@ namespace MR
 
             renderer->set_mode (settings->odf_type);
 
-            renderer->start (projection, *lighting, settings->scale, 
+            renderer->start (projection, *lighting, settings->scale,
                 use_lighting_box->isChecked(), settings->color_by_direction, settings->hide_negative, true);
 
             gl::Enable (gl::DEPTH_TEST);
@@ -566,7 +566,7 @@ namespace MR
 
 
 
-        void ODF::colour_by_direction_slot (int) 
+        void ODF::colour_by_direction_slot (int)
         {
           if (colour_by_direction_box->isChecked()) {
             colour_by_direction_box->setText ("colour by direction");
@@ -595,7 +595,7 @@ namespace MR
           if (!settings)
             return;
           settings->hide_negative = hide_negative_values_box->isChecked();
-          if (preview) 
+          if (preview)
             preview->render_frame->set_hide_neg_values (hide_negative_values_box->isChecked());
           updateGL();
           update_preview();
@@ -617,14 +617,14 @@ namespace MR
 
 
 
-        void ODF::lmax_slot (int) 
-        { 
+        void ODF::lmax_slot (int)
+        {
           ODF_Item* settings = get_image();
           if (!settings)
             return;
           assert (settings->odf_type == odf_type_t::SH);
           settings->lmax = lmax_selector->value();
-          if (preview) 
+          if (preview)
             preview->render_frame->set_lmax (lmax_selector->value());
           updateGL();
         }
@@ -731,7 +731,7 @@ namespace MR
 
         void ODF::use_lighting_slot (int)
         {
-          if (preview) 
+          if (preview)
             preview->render_frame->set_use_lighting (use_lighting_box->isChecked());
           updateGL();
           update_preview();
@@ -756,7 +756,7 @@ namespace MR
 
         void ODF::close_event ()
         {
-          if (preview) 
+          if (preview)
             preview->hide();
           if (lighting_dock)
             lighting_dock->hide();
@@ -764,7 +764,7 @@ namespace MR
 
 
 
-        void ODF::updateGL () 
+        void ODF::updateGL ()
         {
           if (!hide_all_button->isChecked())
             window().updateGL();
@@ -772,7 +772,7 @@ namespace MR
 
         void ODF::update_preview()
         {
-          if (!preview) 
+          if (!preview)
             return;
           if (!preview->isVisible())
             return;
@@ -848,8 +848,8 @@ namespace MR
 
 
 
-        void ODF::add_commandline_options (MR::App::OptionList& options) 
-        { 
+        void ODF::add_commandline_options (MR::App::OptionList& options)
+        {
           using namespace MR::App;
           options
             + OptionGroup ("ODF tool options")
@@ -862,14 +862,14 @@ namespace MR
 
             + Option ("odf.load_dixel", "Loads the specified dixel-based image on the ODF tool.").allow_multiple()
             +   Argument ("image").type_image_in();
-            
+
         }
 
 
 
 
 
-        bool ODF::process_commandline_option (const MR::App::ParsedOption& opt) 
+        bool ODF::process_commandline_option (const MR::App::ParsedOption& opt)
         {
           if (opt.opt->is ("odf.load_sh")) {
             try {
