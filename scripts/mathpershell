@@ -21,12 +21,11 @@ HELP_PAGE
   exit 1
 fi
 
-c=1
-for b in `mrinfo $1 -shells`;
+tmpfiles=""
+for b in $(mrinfo "$1" -shells);
 do
-    dwiextract -shell $b $1 - -quiet | mrmath -axis 3 - $2 tmp-$c.mif -force -quiet
-    ((c++))
+  tmpfiles="$tmpfiles "$(dwiextract -shell $b "$1" - | mrmath -axis 3 - $2 - )
 done
-mrcat -axis 3 tmp-*.mif $3 -quiet
-rm tmp-*.mif
+mrcat -axis 3 $tmpfiles "$3"
+
 
