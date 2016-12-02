@@ -42,14 +42,14 @@ namespace MR
       do {
 
         if (header.ndim() == 3 || config == PLANARCONFIG_CONTIG) {
-          for (size_t row = 0; row < header.size(1); ++row) {
+          for (ssize_t row = 0; row < header.size(1); ++row) {
             tif.read_scanline (data, row);
             data += scanline_size;
           }
         }
         else if (config == PLANARCONFIG_SEPARATE) {
-          for (size_t s = 0; s < header.size(3); s++) {
-            for (size_t row = 0; row < header.size(1); ++row) {
+          for (ssize_t s = 0; s < header.size(3); s++) {
+            for (ssize_t row = 0; row < header.size(1); ++row) {
               tif.read_scanline (data, row, s);
               data += scanline_size;
             }
