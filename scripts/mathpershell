@@ -24,8 +24,9 @@ fi
 tmpfiles=""
 for b in $(mrinfo "$1" -shells);
 do
-  tmpfiles="$tmpfiles "$(dwiextract -shell $b "$1" - | mrmath -axis 3 - $2 - )
+  echo "Extracting $2 of the b=$b shell."
+  tmpfiles="$tmpfiles "$(dwiextract -shell $b "$1" - -quiet | mrmath -axis 3 - $2 - -quiet)
 done
-mrcat -axis 3 $tmpfiles "$3"
+mrcat -axis 3 $tmpfiles "$3" -quiet
 
 
