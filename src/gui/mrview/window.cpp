@@ -1692,7 +1692,6 @@ namespace MR
             }
 
             if (opt.opt->is ("focus")) {
-              std::vector<default_type> pos = parse_floats (opt[0]);
               try {
                 auto pos = parse_floats (opt[0]);
                 if (pos.size() != 3)
@@ -1774,7 +1773,6 @@ namespace MR
 
             if (opt.opt->is ("interpolation")) {
               try {
-                  VAR(to<bool> (opt[0]));
                   image_interpolate_action->setChecked (to<bool> (opt[0]));
                 }
                 catch (Exception& E) {
@@ -1814,7 +1812,6 @@ namespace MR
 
             if (opt.opt->is ("comments")) {
               try {
-                  VAR(to<bool> (opt[0]));
                   show_comments_action->setChecked (to<bool> (opt[0]));
                 }
                 catch (Exception& E) {
@@ -1825,7 +1822,6 @@ namespace MR
 
             if (opt.opt->is ("voxelinfo")) {
               try {
-                  VAR(to<bool> (opt[0]));
                   show_voxel_info_action->setChecked (to<bool> (opt[0]));
                 }
                 catch (Exception& E) {
@@ -1836,7 +1832,6 @@ namespace MR
 
             if (opt.opt->is ("orientationlabel")) {
               try {
-                  VAR(to<bool> (opt[0]));
                   show_orientation_labels_action->setChecked (to<bool> (opt[0]));
                 }
                 catch (Exception& E) {
@@ -1847,7 +1842,6 @@ namespace MR
 
             if (opt.opt->is ("colourbar")) {
               try {
-                  VAR(to<bool> (opt[0]));
                   show_colourbar_action->setChecked (to<bool> (opt[0]));
                 }
                 catch (Exception& E) {
@@ -1894,7 +1888,7 @@ namespace MR
           + Option ("focus", "Either set the position of the crosshairs in scanner coordinates, "
               "with the new position supplied as a comma-separated list of floating-point values or "
               "show or hide the focus cross hair using a boolean value as argument.").allow_multiple()
-          +   Argument ("x,y,z or boolean").type_sequence_float()
+          +   Argument ("x,y,z or boolean")
 
           + Option ("voxel", "Set the position of the crosshairs in voxel coordinates, "
               "relative the image currently displayed. The new position should be supplied "
