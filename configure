@@ -144,6 +144,10 @@ ZLIB_CFLAGS     Any flags required to compile with the zlib compression library.
 
 ZLIB_LDFLAGS    Any flags required to link with the zlib compression library.
 
+TIFF_CFLAGS     Any flags required to compile with the TIFF library.
+
+TIFF_LDFLAGS    Any flags required to link with the TIFF library.
+
 QMAKE           The command to invoke Qt's qmake (default: qmake). 
 
 MOC             The command to invoke Qt's meta-object compile (default: moc)
@@ -230,6 +234,9 @@ eigen_cflags = []
 
 zlib_cflags = []
 zlib_ldflags = [ '-lz' ]
+
+tiff_cflags = []
+tiff_ldflags = [ '-ltiff' ]
 
 
 class TempFile:
@@ -705,6 +712,30 @@ cpp_flags += zlib_cflags
 ld_flags += zlib_ldflags
 ld_lib_flags += zlib_ldflags
 
+
+# TIFF:
+
+report ('Checking for TIFF library: ')
+
+if 'TIFF_CFLAGS' in os.environ.keys(): tiff_cflags = shlex.split (os.environ['TIFF_CFLAGS'])
+if 'TIFF_LDFLAGS' in os.environ.keys(): tiff_ldflags = shlex.split (os.environ['TIFF_LDFLAGS'])
+
+try:
+  tiff_version = compile ('''
+#include <iostream>
+#include <tiffio.h>
+
+int main() {
+  std::cout << TIFFGetVersion();
+  return (0);
+}
+''', cpp_flags + tiff_cflags, ld_flags + tiff_ldflags)
+  report (tiff_version.splitlines()[0] + '\n')
+  cpp_flags += [ '-DMRTRIX_TIFF_SUPPORT' ] + tiff_cflags
+  ld_flags += tiff_ldflags
+  ld_lib_flags += tiff_ldflags
+except:
+  report ('not found - TIFF support disabled\n');
 
 
 
