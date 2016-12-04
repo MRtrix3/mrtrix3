@@ -7,10 +7,10 @@ concatenated in a 4-D image, where the 4th axis contains e.g. the per-shell
 mean in order of increasing b-value.
 
 USAGE: 
-  $ mathpershell <in.mif> <operation> <out.mif>
+  $ dwishellmath <in.mif> <operation> <out.mif>
 
   For example: 
-    $ mathpershell dwi.mif mean dc.mif
+    $ dwishellmath dwi.mif mean dc.mif
   will output the mean diffusion-weighted volume per shell.
 
 AVAILABLE OPERATIONS: 
