@@ -354,6 +354,10 @@ namespace MR
           prev_image_volume_action->setShortcut (tr ("Left"));
           addAction (prev_image_volume_action);
 
+          goto_image_volume_action = image_menu->addAction (tr ("Go to volume..."), this, SLOT (image_goto_volume_slot()));
+          goto_image_volume_action->setShortcut (tr ("Shift+g"));
+          addAction (goto_image_volume_action);
+
           next_image_volume_group_action = image_menu->addAction (tr ("Next volume group"), this, SLOT (image_next_volume_group_slot()));
           next_image_volume_group_action->setShortcut (tr ("Shift+Right"));
           addAction (next_image_volume_group_action);
@@ -1125,6 +1129,18 @@ namespace MR
       }
 
 
+      void Window::image_goto_volume_slot ()
+      {
+        size_t maxvol = image()->image.size(3) - 1;
+        auto label = std::string ("volume (0...") + str(maxvol) + std::string (")");
+        bool ok;
+        size_t vol = QInputDialog::getInt (this, tr("Go to..."),
+          label.c_str(), image()->image.index(3), 0, maxvol, 1, &ok);
+        if (ok) {
+          set_image_volume (3, vol);
+          emit volumeChanged(vol);
+        }
+      }
 
 
       void Window::image_next_volume_group_slot ()
@@ -1279,11 +1295,12 @@ namespace MR
 
       void Window::set_image_navigation_menu ()
       {
-        bool show_next_volume (false), show_prev_volume (false);
+        bool show_next_volume (false), show_goto_volume (false), show_prev_volume (false);
         bool show_next_volume_group (false), show_prev_volume_group (false);
         Image* imagep = image();
         if (imagep) {
           if (imagep->image.ndim() > 3) {
+            show_goto_volume = true;
             if (imagep->image.index(3) > 0)
               show_prev_volume = true;
             if (imagep->image.index(3) < imagep->image.size(3)-1)
@@ -1299,6 +1316,7 @@ namespace MR
         }
         prev_image_volume_action->setEnabled (show_prev_volume);
         next_image_volume_action->setEnabled (show_next_volume);
+        goto_image_volume_action->setEnabled (show_goto_volume);
         prev_image_volume_group_action->setEnabled (show_prev_volume_group);
         next_image_volume_group_action->setEnabled (show_next_volume_group);
       }
