@@ -194,6 +194,11 @@ List of MRtrix3 configuration file options
 
      Define default interplation setting for image and image overlay.
 
+*  **ImageInterpolation**
+    *default: true*
+
+     Interpolation switched on in the main image
+
 *  **InitialToolBarPosition**
     *default: top*
 
@@ -263,6 +268,31 @@ List of MRtrix3 configuration file options
     *default: ctrl*
 
      Modifier key to select rotate mode in MRView. Valid choices include shift, alt, ctrl, meta (on MacOSX: shift, alt, ctrl, cmd).
+
+*  **MRViewShowColourbar**
+    *default: true*
+
+     Colourbar shown in main image overlay
+
+*  **MRViewShowComments**
+    *default: true*
+
+     Comments shown in main image overlay
+
+*  **MRViewShowFocus**
+    *default: true*
+
+     Focus cross hair shown in main image
+
+*  **MRViewShowOrientationLabel**
+    *default: true*
+
+     Anatomical orientation information shown in main image overlay
+
+*  **MRViewShowVoxelInformation**
+    *default: true*
+
+     Voxel information shown in main image overlay
 
 *  **MRViewToolFontSize**
     *default: 2 points less than the standard system font*
