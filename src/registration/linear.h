@@ -369,14 +369,14 @@ namespace MR
               //CONF Linear registration: control point trajectory smoothing value used in convergence check
               //CONF parameter range: [0...1]
               const default_type alpha (MR::File::Config::get_float ("reg_gd_convergence_data_smooth", 0.8));
-              if ( alpha < 0.0f | alpha > 1.0f )
+              if ( (alpha < 0.0f ) || (alpha > 1.0f) )
                 throw Exception ("config file option reg_gd_convergence_data_smooth has to be in the range: [0...1]");
               //CONF option: reg_gd_convergence_slope_smooth
               //CONF default: 0.1
               //CONF Linear registration: control point trajectory slope smoothing value used in convergence check
               //CONF parameter range: [0...1]
               const default_type beta (MR::File::Config::get_float ("reg_gd_convergence_slope_smooth", 0.1));
-              if ( beta < 0.0f | beta > 1.0f )
+              if ( (beta < 0.0f ) || (beta > 1.0f) )
                 throw Exception ("config file option reg_gd_convergence_slope_smooth has to be in the range: [0...1]");
               size_t buffer_len (MR::File::Config::get_float ("reg_gd_convergence_buffer_len", 4));
               //CONF option: reg_gd_convergence_min_iter
