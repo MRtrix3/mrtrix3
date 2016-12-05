@@ -52,13 +52,14 @@ namespace MR
                                       default_type beta,
                                       size_t buffer_len,
                                       size_t min_iter) {
-            // convergence check using double exponential smoothing of parameters
+            // convergence check using double exponential smoothing
             convergence_check.set_parameters (slope_threshold, alpha, beta, buffer_len, min_iter);
             use_convergence_check = true;
+            new_control_points_vec.resize(12);
           }
 
         private:
-          bool use_convergence_check = false;
+          bool use_convergence_check;
           Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> control_points;
           Eigen::Vector3d coherence_distance;
           Eigen::Matrix<default_type, 4, 1> stop_len, recip_spacing;

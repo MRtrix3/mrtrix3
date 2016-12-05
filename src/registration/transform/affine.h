@@ -65,6 +65,7 @@ namespace MR
                                       size_t min_iter) {
             convergence_check.set_parameters (slope_threshold, alpha, beta, buffer_len, min_iter);
             use_convergence_check = true;
+            new_control_points_vec.resize(12);
           }
 
         private:
