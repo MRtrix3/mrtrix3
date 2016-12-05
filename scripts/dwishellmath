@@ -7,10 +7,10 @@ concatenated in a 4-D image, where the 4th axis contains e.g. the per-shell
 mean in order of increasing b-value.
 
 USAGE: 
-  $ mathpershell <in.mif> <operation> <out.mif>
+  $ dwishellmath <in.mif> <operation> <out.mif>
 
   For example: 
-    $ mathpershell dwi.mif mean dc.mif
+    $ dwishellmath dwi.mif mean dc.mif
   will output the mean diffusion-weighted volume per shell.
 
 AVAILABLE OPERATIONS: 
@@ -21,12 +21,12 @@ HELP_PAGE
   exit 1
 fi
 
-c=1
-for b in `mrinfo $1 -shells`;
+tmpfiles=""
+for b in $(mrinfo "$1" -shells);
 do
-    dwiextract -shell $b $1 - -quiet | mrmath -axis 3 - $2 tmp-$c.mif -force -quiet
-    ((c++))
+  echo "Extracting $2 of the b=$b shell."
+  tmpfiles="$tmpfiles "$(dwiextract -shell $b "$1" - -quiet | mrmath -axis 3 - $2 - -quiet)
 done
-mrcat -axis 3 tmp-*.mif $3 -quiet
-rm tmp-*.mif
+mrcat -axis 3 $tmpfiles "$3" -quiet
+
 
