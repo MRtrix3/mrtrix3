@@ -53,7 +53,6 @@ namespace MR
                                       size_t buffer_len,
                                       size_t min_iter) {
             // convergence check using double exponential smoothing of parameters
-            // TODO: take gdweight into account or alternatively use control points
             convergence_check.set_parameters (slope_threshold, alpha, beta, buffer_len, min_iter);
             use_convergence_check = true;
           }

@@ -358,11 +358,30 @@ namespace MR
 
               // convergence check using slope of smoothed parameter trajectories
               Eigen::VectorXd slope_threshold = Eigen::VectorXd::Ones (12);
+              //CONF option: reg_gd_convergence_thresh
+              //CONF default: 5e-3
+              //CONF Linear registration: threshold for convergence check using the smoothed control point trajectories
+              //CONF measured in fraction of a voxel
               slope_threshold.fill (spacing.mean() * File::Config::get_float ("reg_gd_convergence_thresh", 5e-3f));
               DEBUG ("convergence slope threshold: " + str(slope_threshold[0]));
+              //CONF option: reg_gd_convergence_data_smooth
+              //CONF default: 0.8
+              //CONF Linear registration: control point trajectory smoothing value used in convergence check
+              //CONF parameter range: [0...1]
               const default_type alpha (MR::File::Config::get_float ("reg_gd_convergence_data_smooth", 0.8));
+              if ( alpha < 0.0f | alpha > 1.0f )
+                throw Exception ("config file option reg_gd_convergence_data_smooth has to be in the range: [0...1]");
+              //CONF option: reg_gd_convergence_slope_smooth
+              //CONF default: 0.1
+              //CONF Linear registration: control point trajectory slope smoothing value used in convergence check
+              //CONF parameter range: [0...1]
               const default_type beta (MR::File::Config::get_float ("reg_gd_convergence_slope_smooth", 0.1));
+              if ( beta < 0.0f | beta > 1.0f )
+                throw Exception ("config file option reg_gd_convergence_slope_smooth has to be in the range: [0...1]");
               size_t buffer_len (MR::File::Config::get_float ("reg_gd_convergence_buffer_len", 4));
+              //CONF option: reg_gd_convergence_min_iter
+              //CONF default: 10
+              //CONF Linear registration: minumum number of iterations until convergence check is activated
               size_t min_iter (MR::File::Config::get_float ("reg_gd_convergence_min_iter", 10));
               transform.get_gradient_descent_updator()->set_convergence_check (slope_threshold, alpha, beta, buffer_len, min_iter);
 
