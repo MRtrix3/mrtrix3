@@ -498,7 +498,7 @@ namespace MR
                   // Calculate the precise position of this vertex, based on the
                   //   image intensities in the two relevant voxels
                   const default_type alpha = (threshold - in_vertex_values[vertex_indices[0]]) / (in_vertex_values[vertex_indices[1]] - in_vertex_values[vertex_indices[0]]);
-                  const Vertex pos_voxelspace = vertex_positions[0].cast<default_type>() + ((1.0 - alpha) * (vertex_positions[1] - vertex_positions[0]).cast<default_type>());
+                  const Vertex pos_voxelspace = vertex_positions[0].cast<default_type>() + (alpha * (vertex_positions[1] - vertex_positions[0]).cast<default_type>());
                   vertices.push_back (transform.voxel2scanner * pos_voxelspace);
                 } else {
                   edge_to_output_vertex[edge_index] = existing_zero->second;
