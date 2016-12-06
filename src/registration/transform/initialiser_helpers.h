@@ -92,6 +92,8 @@ namespace MR
 
             void run ();
 
+            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3
+
           protected:
             void init (Image<default_type>& image,
               Image<default_type>& mask,
@@ -125,6 +127,9 @@ namespace MR
               use_mask_values_instead (mask_is_intensity) {}
 
             void run ();
+
+            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3
+
           protected:
             bool calculate_eigenvectors (
               Image<default_type>& image_1,

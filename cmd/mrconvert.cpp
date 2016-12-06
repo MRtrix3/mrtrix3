@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 
 
@@ -218,18 +218,18 @@ inline void copy_permute (Header& header_in, Header& header_out, const std::vect
     DWI::export_grad_commandline (out);
     PhaseEncoding::export_commandline (out);
 
-    auto perm = Adapter::make <Adapter::PermuteAxes> (in, axes); 
+    auto perm = Adapter::make <Adapter::PermuteAxes> (in, axes);
     threaded_copy_with_progress (perm, out, 0, std::numeric_limits<size_t>::max(), 2);
 
   } else {
 
-    auto extract = Adapter::make<Adapter::Extract> (in, pos); 
+    auto extract = Adapter::make<Adapter::Extract> (in, pos);
     const auto axes = set_header (header_out, extract);
     auto out = Image<T>::create (output_filename, header_out);
     DWI::export_grad_commandline (out);
     PhaseEncoding::export_commandline (out);
 
-    auto perm = Adapter::make <Adapter::PermuteAxes> (extract, axes); 
+    auto perm = Adapter::make <Adapter::PermuteAxes> (extract, axes);
     threaded_copy_with_progress (perm, out, 0, std::numeric_limits<size_t>::max(), 2);
 
   }
@@ -299,14 +299,19 @@ void run ()
       if (pos[axis].size())
         throw Exception ("\"coord\" option specified twice for axis " + str (axis));
       pos[axis] = parse_ints (opt[n][1], header_in.size(axis)-1);
+      auto minval = std::min_element(std::begin(pos[axis]), std::end(pos[axis]));
+      if (*minval < 0)
+        throw Exception ("coordinate position " + str(*minval) + " for axis " + str(axis) + " provided with -coord option is negative");
+      auto maxval = std::max_element(std::begin(pos[axis]), std::end(pos[axis]));
+      if (*maxval >= header_in.size(axis))
+        throw Exception ("coordinate position " + str(*maxval) + " for axis " + str(axis) + " provided with -coord option is out of range of input image");
       if (axis == 3) {
         const auto grad = DWI::get_DW_scheme (header_out);
         if (grad.rows()) {
           if ((ssize_t)grad.rows() != header_in.size(3)) {
             WARN ("Diffusion encoding of input file does not match number of image volumes; omitting gradient information from output image");
             header_out.keyval().erase ("dw_scheme");
-          }
-          else {
+          } else {
             Eigen::MatrixXd extract_grad (pos[3].size(), grad.cols());
             for (size_t dir = 0; dir != pos[3].size(); ++dir)
               extract_grad.row (dir) = grad.row (pos[3][dir]);
@@ -316,14 +321,15 @@ void run ()
         Eigen::MatrixXd pe_scheme;
         try {
           pe_scheme = PhaseEncoding::parse_scheme (header_out);
+          if (pe_scheme.rows()) {
+            Eigen::MatrixXd extract_scheme (pos[3].size(), pe_scheme.cols());
+            for (size_t vol = 0; vol != pos[3].size(); ++vol)
+              extract_scheme.row (vol) = pe_scheme.row (pos[3][vol]);
+            PhaseEncoding::set_scheme (header_out, extract_scheme);
+          }
         } catch (...) {
           WARN ("Phase encoding scheme of input file does not match number of image volumes; omitting information from output image");
-        }
-        if (pe_scheme.rows()) {
-          Eigen::MatrixXd extract_scheme (pos[3].size(), pe_scheme.cols());
-          for (size_t vol = 0; vol != pos[3].size(); ++vol)
-            extract_scheme.row (vol) = pe_scheme.row (pos[3][vol]);
-          PhaseEncoding::set_scheme (header_out, extract_scheme);
+          PhaseEncoding::set_scheme (header_out, pe_scheme);
         }
       }
     }
@@ -342,7 +348,7 @@ void run ()
   if (opt.size()) {
     if (header_out.datatype().is_integer()) {
       std::vector<default_type> scaling = opt[0][0];
-      if (scaling.size() != 2) 
+      if (scaling.size() != 2)
         throw Exception ("-scaling option expects comma-separated 2-vector of floating-point values");
       header_out.intensity_offset() = scaling[0];
       header_out.intensity_scale()  = scaling[1];

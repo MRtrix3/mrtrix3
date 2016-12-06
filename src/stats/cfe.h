@@ -64,9 +64,7 @@ namespace MR
                           std::vector<std::map<int32_t, connectivity> >& connectivity_matrix,
                           const value_type angular_threshold);
 
-
           bool operator () (const SetVoxelDir& in);
-
 
         private:
           Image<int32_t> fixel_indexer;

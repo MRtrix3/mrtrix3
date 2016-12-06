@@ -231,8 +231,7 @@ namespace MR
           HR_amps (shared.HR_trans.rows()),
           Mt_b (shared.HR_trans.cols()),
           llt (work.rows()),
-          old_neg (shared.HR_trans.rows()),
-          computed_once (false) { }
+          old_neg (shared.HR_trans.rows()) { }
 
         CSD (const CSD&) = default;
 
@@ -242,8 +241,7 @@ namespace MR
           void set (const VectorType& DW_signals) {
             F.head (shared.rconv.rows()) = shared.rconv * DW_signals;
             F.tail (F.size()-shared.rconv.rows()).setZero();
-            old_neg.assign (shared.HR_trans.rows(), -1);
-            computed_once = false;
+            old_neg.assign (1, -1);
 
             Mt_b = shared.M.transpose() * DW_signals;
           }
@@ -255,9 +253,8 @@ namespace MR
             if (HR_amps[n] < shared.threshold)
               neg.push_back (n);
 
-          if (computed_once && old_neg == neg)
-            if (old_neg == neg)
-              return true;
+          if (old_neg == neg)
+            return true;
 
           work.triangularView<Eigen::Lower>() = shared.Mt_M.triangularView<Eigen::Lower>();
 
@@ -270,7 +267,6 @@ namespace MR
 
           F.noalias() = llt.compute (work.triangularView<Eigen::Lower>()).solve (Mt_b);
 
-          computed_once = true;
           old_neg = neg;
 
           return false;
@@ -286,7 +282,6 @@ namespace MR
         Eigen::VectorXd F, init_F, HR_amps, Mt_b;
         Eigen::LLT<Eigen::MatrixXd> llt;
         std::vector<int> neg, old_neg;
-        bool computed_once;
     };
 
 
