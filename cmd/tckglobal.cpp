@@ -81,8 +81,9 @@ void usage ()
   
   + "in which dwi.mif is the input image, wmr.txt is an anisotropic, multi-shell response function for WM, "
     "and csfr.txt and gmr.txt are isotropic response functions for CSF and GM. The output tractogram is "
-    "saved to tracks.tck; ancillary output images fod.mif and fiso.mif contain the WM fODF and isotropic "
-    "tissue fractions of CSF and GM respectively.";
+    "saved to tracks.tck. Optional output images fod.mif and fiso.mif contain the predicted WM fODF and "
+    "isotropic tissue fractions of CSF and GM respectively, estimated as part of the global optimization "
+    "and thus affected by spatial regularization.";
   
   REFERENCES
   + "Christiaens, D.; Reisert, M.; Dhollander, T.; Sunaert, S.; Suetens, P. & Maes, F. " // Internal
@@ -140,14 +141,22 @@ void usage ()
 
   + OptionGroup("Output options")
 
-  + Option ("fod", "filename of the resulting fODF image.")
+  + Option ("fod", "Predicted fibre orientation distribution function (fODF).\n"
+            "This fODF is estimated as part of the global track optimization, "
+            "and therefore incorporates the spatial regularization that it "
+            "imposes. Internally, the fODF is represented as a discrete "
+            "sum of apodized point spread functions (aPSF) oriented along the "
+            "directions of all particles in the voxel, used to predict the DWI "
+            "signal from the particle configuration.")
     + Argument ("odf").type_image_out()
-  + Option ("noapo", "disable spherical convolution of fODF with apodized PSF.")
+  + Option ("noapo", "disable spherical convolution of fODF with apodized PSF, "
+            "to output a sum of delta functions rather than a sum of aPSFs.")
 
-  + Option ("fiso", "filename of the resulting isotropic fractions image.")
+  + Option ("fiso", "Predicted isotropic fractions of the tissues for which response "
+            "functions were provided with -riso. Typically, these are CSF and GM.")
     + Argument ("iso").type_image_out()
 
-  + Option ("eext", "filename of the resulting image of the residual external energy.")
+  + Option ("eext", "Residual external energy in every voxel.")
     + Argument ("eext").type_image_out()
 
   + Option ("etrend", "internal and external energy trend and cooling statistics.")
@@ -156,7 +165,7 @@ void usage ()
 
   + OptionGroup("Advanced parameters, if you really know what you're doing")
   
-  + Option ("balance", "balance internal and external energy. (default = " + str(DEFAULT_BALANCE, 2) + "\n"
+  + Option ("balance", "balance internal and external energy. (default = " + str(DEFAULT_BALANCE, 2) + ")\n"
             "Negative values give more weight to the internal energy, positive to the external energy.")
     + Argument ("b").type_float(-100.0, 100.0)
 
@@ -164,7 +173,7 @@ void usage ()
     + Argument ("lambda").type_float(0.0)
 
   + Option ("prob", "set the probabilities of generating birth, death, randshift, optshift "
-            "and connect probabilities respectively. (default = "
+            "and connect proposals respectively. (default = "
             + str(DEFAULT_PROB_BIRTH, 2) + "," + str(DEFAULT_PROB_DEATH, 2) + ","
             + str(DEFAULT_PROB_RANDSHIFT, 2) + "," + str(DEFAULT_PROB_OPTSHIFT, 2) + ","
             + str(DEFAULT_PROB_CONNECT, 2) + ")")

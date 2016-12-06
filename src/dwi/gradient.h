@@ -148,7 +148,10 @@ namespace MR
           }
           add_line (dw_scheme, line);
         }
-        header.keyval()["dw_scheme"] = dw_scheme;
+        if (dw_scheme.size()) 
+          header.keyval()["dw_scheme"] = dw_scheme;
+        else
+          WARN ("attempt to add empty DW scheme to header - ignored");
       }
 
 
