@@ -13,8 +13,8 @@
  * 
  */
 
-#ifndef __image_io_sparse_h__
-#define __image_io_sparse_h__
+#ifndef __image_io_sparse_legacy_h__
+#define __image_io_sparse_legacy_h__
 
 #include <cassert>
 #include <cstring>
@@ -41,7 +41,7 @@ namespace MR
     // A quick description of how the sparse image data are currently stored:
     // * The data are either after the image data within the same file if extension is .msf, or
     //     in a separate file with the .sdat extension if the image extension if .msh
-    // * The image header must store the fields defined in lib/image/sparse/key.h
+    // * The image header must store the fields defined in lib/image/fixel/key.h
     //     These are currently verified on construction of the BufferSparse class. This proved to
     //     be simpler than trying to verify class matching on every interaction with the handler
     //     using templated functions.
@@ -63,11 +63,11 @@ namespace MR
 
 
 
-    class Sparse : public Default
+    class SparseLegacy : public Default
     {
       public:
 
-        Sparse (const Header& header, const std::string& sparse_class_name, const size_t sparse_class_size, const File::Entry& entry) :
+        SparseLegacy (const Header& header, const std::string& sparse_class_name, const size_t sparse_class_size, const File::Entry& entry) :
           Default (header),
           class_name (sparse_class_name),
           class_size (sparse_class_size),

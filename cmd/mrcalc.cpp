@@ -138,6 +138,7 @@ OPTIONS
 
 typedef float real_type;
 typedef cfloat complex_type;
+static bool transform_mis_match_reported (false);
 
 
 /**********************************************************************
@@ -587,6 +588,10 @@ void get_header (const StackEntry& entry, Header& header)
   for (size_t n = 0; n < std::min<size_t> (header.ndim(), entry.image->ndim()); ++n) {
     if (header.size(n) > 1 && entry.image->size(n) > 1 && header.size(n) != entry.image->size(n))
       throw Exception ("dimensions of input images do not match - aborting");
+    if (!transforms_match (header, *(entry.image)) && !transform_mis_match_reported) {
+      WARN ("header transformations of input images do not match");
+      transform_mis_match_reported = true;
+    }
     header.size(n) = std::max (header.size(n), entry.image->size(n));
     if (!std::isfinite (header.spacing(n))) 
       header.spacing(n) = entry.image->spacing(n);

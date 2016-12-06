@@ -33,7 +33,7 @@ namespace MR
       typedef Math::Stats::value_type value_type;
       typedef Math::Stats::vector_type vector_type;
       typedef float connectivity_value_type;
-      typedef Eigen::Matrix<default_type, 3, 1> direction_type;
+      typedef Eigen::Matrix<value_type, 3, 1> direction_type;
       typedef Eigen::Array<connectivity_value_type, Eigen::Dynamic, 1> connectivity_vector_type;
       typedef DWI::Tractography::Mapping::SetVoxelDir SetVoxelDir;
 
@@ -45,7 +45,7 @@ namespace MR
       class connectivity {
         public:
           connectivity () : value (0.0) { }
-          connectivity (const connectivity_value_type v) : value (0.0) { }
+          connectivity (const connectivity_value_type v) : value (v) { }
           connectivity_value_type value;
       };
 
@@ -58,20 +58,20 @@ namespace MR
       class TrackProcessor {
 
         public:
-          TrackProcessor (Image<int32_t>& fixel_indexer,
+          TrackProcessor (Image<uint32_t>& fixel_indexer,
                           const std::vector<direction_type>& fixel_directions,
                           std::vector<uint16_t>& fixel_TDI,
-                          std::vector<std::map<int32_t, connectivity> >& connectivity_matrix,
+                          std::vector<std::map<uint32_t, connectivity> >& connectivity_matrix,
                           const value_type angular_threshold);
 
           bool operator () (const SetVoxelDir& in);
 
         private:
-          Image<int32_t> fixel_indexer;
+          Image<uint32_t> fixel_indexer;
           const std::vector<direction_type>& fixel_directions;
           std::vector<uint16_t>& fixel_TDI;
-          std::vector<std::map<int32_t, connectivity> >& connectivity_matrix;
-          default_type angular_threshold_dp;
+          std::vector<std::map<uint32_t, connectivity> >& connectivity_matrix;
+          const value_type angular_threshold_dp;
       };
 
 
@@ -79,7 +79,7 @@ namespace MR
 
       class Enhancer : public Stats::EnhancerBase {
         public:
-          Enhancer (const std::vector<std::map<int32_t, connectivity> >& connectivity_map,
+          Enhancer (const std::vector<std::map<uint32_t, connectivity> >& connectivity_map,
                     const value_type dh, const value_type E, const value_type H);
 
 
@@ -87,7 +87,7 @@ namespace MR
 
 
         protected:
-          const std::vector<std::map<int32_t, connectivity> >& connectivity_map;
+          const std::vector<std::map<uint32_t, connectivity> >& connectivity_map;
           const value_type dh, E, H;
       };
 

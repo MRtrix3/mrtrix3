@@ -109,10 +109,10 @@ namespace MR {
         auto calibration_SH2A = Math::SH::init_transform (az_el_pairs, calibration_lmax);
         const size_t num_basis_fns = calibration_SH2A.cols();
 
-        // Integrating an FOD with constant amplitude 1 (l=0 term = sqrt(4pi) should produce a value of 2pi
-        //   every other integral should produce zero
+        // Integrating an FOD with constant amplitude 1 (l=0 term = sqrt(4pi) should produce a value of 4pi
+        // Every other integral should produce zero
         Eigen::Matrix<default_type, Eigen::Dynamic, 1> integral_results = Eigen::Matrix<default_type, Eigen::Dynamic, 1>::Zero (num_basis_fns);
-        integral_results[0] = sqrt(Math::pi);
+        integral_results[0] = 2.0 * sqrt(Math::pi);
 
         // Problem matrix: One row for each SH basis function, one column for each samping direction
         Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> A;

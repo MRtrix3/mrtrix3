@@ -63,21 +63,15 @@ List of MRtrix3 commands
 
    commands/fixel2voxel
 
-   commands/fixelcalc
-
    commands/fixelcfestats
+
+   commands/fixelconvert
 
    commands/fixelcorrespondence
 
-   commands/fixelhistogram
-
-   commands/fixellog
+   commands/fixelcrop
 
    commands/fixelreorient
-
-   commands/fixelstats
-
-   commands/fixelthreshold
 
    commands/fod2dec
 
@@ -129,6 +123,8 @@ List of MRtrix3 commands
 
    commands/mrmetric
 
+   commands/mrmodelfield
+
    commands/mrpad
 
    commands/mrregister
@@ -142,6 +138,10 @@ List of MRtrix3 commands
    commands/mrtransform
 
    commands/mrview
+
+   commands/mtbin
+
+   commands/mtnormalise
 
    commands/peaks2amp
 
@@ -161,6 +161,8 @@ List of MRtrix3 commands
 
    commands/tck2connectome
 
+   commands/tck2fixel
+
    commands/tckconvert
 
    commands/tckedit
@@ -179,9 +181,9 @@ List of MRtrix3 commands
 
    commands/tcksample
 
-   commands/tcksift
-
    commands/tcksift2
+
+   commands/tcksift
 
    commands/tckstats
 

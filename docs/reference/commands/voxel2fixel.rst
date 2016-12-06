@@ -8,16 +8,17 @@ Synopsis
 
 ::
 
-    voxel2fixel [ options ]  image_in fixel_in fixel_out
+    voxel2fixel [ options ]  image_in fixel_directory_in fixel_directory_out fixel_data_out
 
 -  *image_in*: the input image.
--  *fixel_in*: the input fixel image.
--  *fixel_out*: the output fixel image.
+-  *fixel_directory_in*: the input fixel directory. Used to define the fixels and their directions
+-  *fixel_directory_out*: the output fixel directory. This can be the same as the input directory if desired
+-  *fixel_data_out*: the name of the fixel data image.
 
 Description
 -----------
 
-map the scalar value in each voxel to all fixels within that voxel. This could be used to enable CFE-based statistical analysis to be performed on voxel-wise measures
+map the scalar value in each voxel to all fixels within that voxel. This is designed to enable CFE-based statistical analysis to be performed on voxel-wise measures
 
 Options
 -------

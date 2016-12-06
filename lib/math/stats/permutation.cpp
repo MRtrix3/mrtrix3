@@ -14,6 +14,7 @@
  */
 
 #include "math/stats/permutation.h"
+#include "math/math.h"
 
 namespace MR
 {
@@ -38,7 +39,7 @@ namespace MR
 
 
         bool is_duplicate (const std::vector<size_t>& perm,
-                                       const std::vector<std::vector<size_t> >& previous_permutations)
+                           const std::vector<std::vector<size_t> >& previous_permutations)
         {
           for (size_t p = 0; p < previous_permutations.size(); p++) {
             if (is_duplicate (perm, previous_permutations[p]))
@@ -50,9 +51,9 @@ namespace MR
 
 
         void generate (const size_t num_perms,
-                                    const size_t num_subjects,
-                                    std::vector<std::vector<size_t> >& permutations,
-                                    const bool include_default)
+                       const size_t num_subjects,
+                       std::vector<std::vector<size_t> >& permutations,
+                       const bool include_default)
         {
           permutations.clear();
           std::vector<size_t> default_labelling (num_subjects);
@@ -96,6 +97,28 @@ namespace MR
               pvalues[i] = 0.0;
             }
           }
+        }
+
+
+
+        std::vector<std::vector<size_t> > load_permutations_file (const std::string& filename) {
+          std::vector<std::vector<size_t> > temp = load_matrix_2D_vector<size_t> (filename);
+          if (!temp.size())
+            throw Exception ("no data found in permutations file: " + str(filename));
+
+          size_t min_value = *std::min_element (std::begin (temp[0]), std::end (temp[0]));
+          if (min_value > 1)
+            throw Exception ("indices for relabelling in permutations file must start from either 0 or 1");
+
+          std::vector<std::vector<size_t> > permutations (temp[0].size(), std::vector<size_t>(temp.size()));
+          for (std::vector<size_t>::size_type i = 0; i < temp[0].size(); i++) {
+            for (std::vector<size_t>::size_type j = 0; j < temp.size(); j++) {
+              if (!temp[j][i])
+                throw Exception ("Pre-defined permutation labelling file \"" + filename + "\" contains zeros; labels should be indexed from one");
+              permutations[i][j] = temp[j][i] - min_value;
+            }
+          }
+          return permutations;
         }
 
 

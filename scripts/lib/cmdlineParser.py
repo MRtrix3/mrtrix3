@@ -112,7 +112,7 @@ class Parser(argparse.ArgumentParser):
     w = textwrap.TextWrapper(width=80, initial_indent='     ', subsequent_indent='     ')
     w_arg = textwrap.TextWrapper(width=80, initial_indent='', subsequent_indent='                     ')
 
-    s = '     ' + bold(self.prog) + ': Script using the MRtrix3 Python libraries\n'
+    s = '     ' + bold(self.prog) + ': Script using the MRtrix3 Python library\n'
     s += '\n'
     s += bold('SYNOPSIS') + '\n'
     s += '\n'

@@ -207,16 +207,20 @@ void run ()
     im2_midway_transformed_path = str(opt[0][1]);
   }
 
-  opt = get_options ("mask2");
-  Image<value_type> im2_mask;
-  if (opt.size ())
-    im2_mask = Image<value_type>::open(opt[0][0]);
-
   opt = get_options ("mask1");
   Image<value_type> im1_mask;
-  if (opt.size ())
+  if (opt.size ()) {
     im1_mask = Image<value_type>::open(opt[0][0]);
+    check_dimensions (im1_image, im1_mask, 0, 3);
+  }
 
+
+  opt = get_options ("mask2");
+  Image<value_type> im2_mask;
+  if (opt.size ()) {
+    im2_mask = Image<value_type>::open(opt[0][0]);
+    check_dimensions (im2_image, im2_mask, 0, 3);
+  }
 
 
   // ****** RIGID REGISTRATION OPTIONS *******

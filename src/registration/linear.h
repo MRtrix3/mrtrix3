@@ -361,7 +361,7 @@ namespace MR
               if (do_reorientation && fod_lmax[level] > 0)
                 evaluate.set_directions (aPSF_directions);
 
-              INFO("linear registration...");
+              INFO ("linear registration...");
               for (auto gd_iteration = 0; gd_iteration < gd_repetitions[level]; ++gd_iteration){
                 if (reg_bbgd) {
                   Math::GradientDescentBB<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>

@@ -22,6 +22,7 @@
 #include "gui/projection.h"
 #include "gui/mrview/colourmap.h"
 
+
 namespace MR
 {
   class ProgressBar;
@@ -45,15 +46,15 @@ namespace MR
       const uint32_t LightingEnabled = 0x00800000;
 
       class Image;
-      namespace Tool { class AbstractFixel; }
+      namespace Tool { class BaseFixel; }
       namespace Tool { class Connectome; }
       namespace Tool { class Tractogram; }
       class DisplayableVisitor
       {
         public:
-          virtual void render_image_colourbar(const Image&) {}
-          virtual void render_fixel_colourbar(const Tool::AbstractFixel&) {}
-          virtual void render_tractogram_colourbar(const Tool::Tractogram&) {}
+          virtual void render_image_colourbar (const Image&) {}
+          virtual void render_fixel_colourbar (const Tool::BaseFixel&) {}
+          virtual void render_tractogram_colourbar (const Tool::Tractogram&) {}
       };
 
       class Displayable : public QAction

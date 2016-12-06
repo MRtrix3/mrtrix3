@@ -40,13 +40,17 @@ namespace MR
 
         // Note that this function does not take into account grouping of subjects and therefore generated
         // permutations are not guaranteed to be unique wrt the computed test statistic.
-        // If the number of subjects is large then the likelihood of generating duplicates is low.
+        // Providing the number of subjects is large then the likelihood of generating duplicates is low.
         void generate (const size_t num_perms,
                        const size_t num_subjects,
                        std::vector<std::vector<size_t> >& permutations,
                        const bool include_default);
 
         void statistic2pvalue (const vector_type& perm_dist, const vector_type& stats, vector_type& pvalues);
+
+
+        std::vector<std::vector<size_t> > load_permutations_file (const std::string& filename);
+
 
 
 

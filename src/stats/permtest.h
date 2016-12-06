@@ -52,7 +52,6 @@ namespace MR
       const App::OptionGroup Options (const bool include_nonstationarity);
 
 
-
       /*! A class to pre-compute the empirical enhanced statistic image for non-stationarity correction */
       template <class StatsType>
         class PreProcessor {
@@ -209,15 +208,12 @@ namespace MR
         // Precompute the empircal test statistic for non-stationarity adjustment
         template <class StatsType>
           void precompute_empirical_stat (const StatsType& stats_calculator, const std::shared_ptr<EnhancerBase> enhancer,
-                                          const size_t num_permutations, vector_type& empirical_statistic)
+                                          PermutationStack& perm_stack, vector_type& empirical_statistic)
           {
             std::vector<size_t> global_enhanced_count (empirical_statistic.size(), 0);
-            PermutationStack permutations (num_permutations,
-                                           stats_calculator.num_subjects(),
-                                           "precomputing empirical statistic for non-stationarity adjustment...", false);
             {
               PreProcessor<StatsType> preprocessor (stats_calculator, enhancer, empirical_statistic, global_enhanced_count);
-              Thread::run_queue (permutations, Permutation(), Thread::multi (preprocessor));
+              Thread::run_queue (perm_stack, Permutation(), Thread::multi (preprocessor));
             }
             for (ssize_t i = 0; i < empirical_statistic.size(); ++i) {
               if (global_enhanced_count[i] > 0)
@@ -259,46 +255,79 @@ namespace MR
               }
             }
 
-
-
-
-        template <class StatsType>
-          inline void run_permutations (const StatsType& stats_calculator,
-                                        const std::shared_ptr<EnhancerBase> enhancer,
-                                        const size_t num_permutations,
-                                        const vector_type& empirical_enhanced_statistic,
-                                        const vector_type& default_enhanced_statistics,
-                                        const std::shared_ptr<vector_type> default_enhanced_statistics_neg,
-                                        vector_type& perm_dist_pos,
-                                        std::shared_ptr<vector_type> perm_dist_neg,
-                                        vector_type& uncorrected_pvalues,
-                                        std::shared_ptr<vector_type> uncorrected_pvalues_neg)
-          {
-            std::vector<size_t> global_uncorrected_pvalue_count (stats_calculator.num_elements(), 0);
-            std::shared_ptr< std::vector<size_t> > global_uncorrected_pvalue_count_neg;
-            if (perm_dist_neg)
-              global_uncorrected_pvalue_count_neg.reset (new std::vector<size_t> (stats_calculator.num_elements(), 0));
-
+          template <class StatsType>
+            inline void run_permutations (PermutationStack& perm_stack,
+                                          const StatsType& stats_calculator,
+                                          const std::shared_ptr<EnhancerBase> enhancer,
+                                          const vector_type& empirical_enhanced_statistic,
+                                          const vector_type& default_enhanced_statistics,
+                                          const std::shared_ptr<vector_type> default_enhanced_statistics_neg,
+                                          vector_type& perm_dist_pos,
+                                          std::shared_ptr<vector_type> perm_dist_neg,
+                                          vector_type& uncorrected_pvalues,
+                                          std::shared_ptr<vector_type> uncorrected_pvalues_neg)
             {
-              PermutationStack permutations (num_permutations,
-                                             stats_calculator.num_subjects(),
-                                             "running " + str(num_permutations) + " permutations");
-
-              Processor<StatsType> processor (stats_calculator, enhancer,
-                                              empirical_enhanced_statistic,
-                                              default_enhanced_statistics, default_enhanced_statistics_neg,
-                                              perm_dist_pos, perm_dist_neg,
-                                              global_uncorrected_pvalue_count, global_uncorrected_pvalue_count_neg);
-              Thread::run_queue (permutations, Permutation(), Thread::multi (processor));
-            }
-
-            for (size_t i = 0; i < stats_calculator.num_elements(); ++i) {
-              uncorrected_pvalues[i] = global_uncorrected_pvalue_count[i] / default_type(num_permutations);
+              std::vector<size_t> global_uncorrected_pvalue_count (stats_calculator.num_elements(), 0);
+              std::shared_ptr< std::vector<size_t> > global_uncorrected_pvalue_count_neg;
               if (perm_dist_neg)
-                (*uncorrected_pvalues_neg)[i] = (*global_uncorrected_pvalue_count_neg)[i] / default_type(num_permutations);
+                global_uncorrected_pvalue_count_neg.reset (new std::vector<size_t> (stats_calculator.num_elements(), 0));
+
+              {
+                Processor<StatsType> processor (stats_calculator, enhancer,
+                                                empirical_enhanced_statistic,
+                                                default_enhanced_statistics, default_enhanced_statistics_neg,
+                                                perm_dist_pos, perm_dist_neg,
+                                                global_uncorrected_pvalue_count, global_uncorrected_pvalue_count_neg);
+                Thread::run_queue (perm_stack, Permutation(), Thread::multi (processor));
+              }
+
+              for (size_t i = 0; i < stats_calculator.num_elements(); ++i) {
+                uncorrected_pvalues[i] = global_uncorrected_pvalue_count[i] / default_type(perm_stack.num_permutations);
+                if (perm_dist_neg)
+                  (*uncorrected_pvalues_neg)[i] = (*global_uncorrected_pvalue_count_neg)[i] / default_type(perm_stack.num_permutations);
+              }
+
             }
 
-          }
+
+            template <class StatsType>
+              inline void run_permutations (std::vector<std::vector<size_t>>& permutations,
+                                            const StatsType& stats_calculator,
+                                            const std::shared_ptr<EnhancerBase> enhancer,
+                                            const vector_type& empirical_enhanced_statistic,
+                                            const vector_type& default_enhanced_statistics,
+                                            const std::shared_ptr<vector_type> default_enhanced_statistics_neg,
+                                            vector_type& perm_dist_pos,
+                                            std::shared_ptr<vector_type> perm_dist_neg,
+                                            vector_type& uncorrected_pvalues,
+                                            std::shared_ptr<vector_type> uncorrected_pvalues_neg)
+              {
+                PermutationStack perm_stack (permutations, "running " + str(permutations.size()) + " permutations");
+
+                run_permutations (perm_stack, stats_calculator, enhancer, empirical_enhanced_statistic, default_enhanced_statistics, default_enhanced_statistics_neg,
+                                  perm_dist_pos, perm_dist_neg, uncorrected_pvalues, uncorrected_pvalues_neg);
+              }
+
+
+            template <class StatsType>
+              inline void run_permutations (const size_t num_permutations,
+                                            const StatsType& stats_calculator,
+                                            const std::shared_ptr<EnhancerBase> enhancer,
+                                            const vector_type& empirical_enhanced_statistic,
+                                            const vector_type& default_enhanced_statistics,
+                                            const std::shared_ptr<vector_type> default_enhanced_statistics_neg,
+                                            vector_type& perm_dist_pos,
+                                            std::shared_ptr<vector_type> perm_dist_neg,
+                                            vector_type& uncorrected_pvalues,
+                                            std::shared_ptr<vector_type> uncorrected_pvalues_neg)
+              {
+                PermutationStack perm_stack (num_permutations, stats_calculator.num_subjects(), "running " + str(num_permutations) + " permutations");
+
+                run_permutations (perm_stack, stats_calculator, enhancer, empirical_enhanced_statistic, default_enhanced_statistics, default_enhanced_statistics_neg,
+                                  perm_dist_pos, perm_dist_neg, uncorrected_pvalues, uncorrected_pvalues_neg);
+              }
+
+
           //! @}
 
     }

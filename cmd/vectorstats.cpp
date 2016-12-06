@@ -88,12 +88,22 @@ void run()
   const vector_type example_data = load_vector (filenames.front());
   const size_t num_elements = example_data.size();
 
-  const size_t num_perms = get_option_value ("nperms", DEFAULT_NUMBER_PERMUTATIONS);
+  size_t num_perms = get_option_value ("nperms", DEFAULT_NUMBER_PERMUTATIONS);
 
   // Load design matrix
   const matrix_type design = load_matrix (argument[2]);
   if (size_t(design.rows()) != filenames.size())
     throw Exception ("number of subjects does not match number of rows in design matrix");
+
+  // Load permutations file if supplied
+  auto opt = get_options("permutations");
+  std::vector<std::vector<size_t> > permutations;
+  if (opt.size()) {
+    permutations = Math::Stats::Permutation::load_permutations_file (opt[0][0]);
+    num_perms = permutations.size();
+    if (permutations[0].size() != (size_t)design.rows())
+      throw Exception ("number of rows in the permutations file (" + str(opt[0][0]) + ") does not match number of rows in design matrix");
+  }
 
   // Load contrast matrix
   matrix_type contrast = load_matrix (argument[3]);
@@ -171,10 +181,17 @@ void run()
     vector_type null_distribution (num_perms), uncorrected_pvalues (num_perms);
     vector_type empirical_distribution;
 
-    Stats::PermTest::run_permutations (glm_ttest, enhancer, num_perms, empirical_distribution,
-                                       default_tvalues, std::shared_ptr<vector_type>(),
-                                       null_distribution, std::shared_ptr<vector_type>(),
-                                       uncorrected_pvalues, std::shared_ptr<vector_type>());
+    if (permutations.size()) {
+      Stats::PermTest::run_permutations (permutations, glm_ttest, enhancer, empirical_distribution,
+                                         default_tvalues, std::shared_ptr<vector_type>(),
+                                         null_distribution, std::shared_ptr<vector_type>(),
+                                         uncorrected_pvalues, std::shared_ptr<vector_type>());
+    } else {
+      Stats::PermTest::run_permutations (num_perms, glm_ttest, enhancer, empirical_distribution,
+                                         default_tvalues, std::shared_ptr<vector_type>(),
+                                         null_distribution, std::shared_ptr<vector_type>(),
+                                         uncorrected_pvalues, std::shared_ptr<vector_type>());
+    }
 
     vector_type default_pvalues (num_elements);
     Math::Stats::Permutation::statistic2pvalue (null_distribution, default_tvalues, default_pvalues);

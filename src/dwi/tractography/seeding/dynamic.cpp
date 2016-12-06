@@ -21,9 +21,9 @@
 #include "dwi/tractography/rng.h"
 #include "dwi/tractography/seeding/dynamic.h"
 
-#include "sparse/fixel_metric.h"
-#include "sparse/keys.h"
-#include "sparse/image.h"
+#include "fixel/legacy/fixel_metric.h"
+#include "fixel/legacy/keys.h"
+#include "fixel/legacy/image.h"
 
 
 
@@ -136,9 +136,9 @@ namespace MR
         H.info() = info();
         H.datatype() = DataType::UInt64;
         H.datatype().set_byte_order_native();
-        H[Image::Sparse::name_key] = str(typeid(Image::Sparse::FixelMetric).name());
-        H[Image::Sparse::size_key] = str(sizeof(Image::Sparse::FixelMetric));
-        Image::BufferSparse<Image::Sparse::FixelMetric> buffer_probs ("final_seed_probs.msf", H), buffer_logprobs ("final_seed_logprobs.msf", H), buffer_ratios ("final_fixel_ratios.msf", H);
+        H[Image::Fixel::Legacy::name_key] = str(typeid(Image::Fixel::Legacy::FixelMetric).name());
+        H[Image::Fixel::Legacy::size_key] = str(sizeof(Image::Fixel::Legacy::FixelMetric));
+        Image::BufferSparse<Image::Fixel::Legacy::FixelMetric> buffer_probs ("final_seed_probs.msf", H), buffer_logprobs ("final_seed_logprobs.msf", H), buffer_ratios ("final_fixel_ratios.msf", H);
         auto out_probs = buffer_probs.voxel(), out_logprobs = buffer_logprobs.voxel(), out_ratios = buffer_ratios.voxel();
         VoxelAccessor v (accessor);
         Image::Loop loop;
@@ -149,7 +149,7 @@ namespace MR
             out_ratios  .value().set_size ((*v.value()).num_fixels());
             size_t index = 0;
             for (Fixel_map<Fixel_TD_seed>::ConstIterator i = begin (v); i; ++i, ++index) {
-              Image::Sparse::FixelMetric fixel (i().get_dir(), i().get_FOD(), i().get_old_prob());
+              Image::Fixel::Legacy::FixelMetric fixel (i().get_dir(), i().get_FOD(), i().get_old_prob());
               out_probs.value()[index] = fixel;
               fixel.value = log10 (fixel.value);
               out_logprobs.value()[index] = fixel;
@@ -286,9 +286,9 @@ namespace MR
         H.info() = info();
         H.datatype() = DataType::UInt64;
         H.datatype().set_byte_order_native();
-        H[Image::Sparse::name_key] = str(typeid(Image::Sparse::FixelMetric).name());
-        H[Image::Sparse::size_key] = str(sizeof(Image::Sparse::FixelMetric));
-        Image::BufferSparse<Image::Sparse::FixelMetric> buffer_probs ("mid_seed_probs.msf", H), buffer_logprobs ("mid_seed_logprobs.msf", H), buffer_ratios ("mid_fixel_ratios.msf", H), buffer_FDs ("mid_FDs.msf", H), buffer_TDs ("mid_TDs.msf", H);
+        H[Image::Fixel::Legacy::name_key] = str(typeid(Image::Fixel::Legacy::FixelMetric).name());
+        H[Image::Fixel::Legacy::size_key] = str(sizeof(Image::Fixel::Legacy::FixelMetric));
+        Image::BufferSparse<Image::Fixel::Legacy::FixelMetric> buffer_probs ("mid_seed_probs.msf", H), buffer_logprobs ("mid_seed_logprobs.msf", H), buffer_ratios ("mid_fixel_ratios.msf", H), buffer_FDs ("mid_FDs.msf", H), buffer_TDs ("mid_TDs.msf", H);
         auto out_probs = buffer_probs.voxel(), out_logprobs = buffer_logprobs.voxel(), out_ratios = buffer_ratios.voxel(), out_FDs = buffer_FDs.voxel(), out_TDs = buffer_TDs.voxel();
         VoxelAccessor v (accessor);
         Image::Loop loop;
@@ -301,7 +301,7 @@ namespace MR
             out_TDs     .value().set_size ((*v.value()).num_fixels());
             size_t index = 0;
             for (Fixel_map<Fixel_TD_seed>::ConstIterator i = begin (v); i; ++i, ++index) {
-              Image::Sparse::FixelMetric fixel (i().get_dir(), i().get_FOD(), i().get_old_prob());
+              Image::Fixel::Legacy::FixelMetric fixel (i().get_dir(), i().get_FOD(), i().get_old_prob());
               out_probs.value()[index] = fixel;
               fixel.value = log10 (fixel.value);
               out_logprobs.value()[index] = fixel;
@@ -341,9 +341,9 @@ namespace MR
         H.info() = info();
         H.datatype() = DataType::UInt64;
         H.datatype().set_byte_order_native();
-        H[Image::Sparse::name_key] = str(typeid(Image::Sparse::FixelMetric).name());
-        H[Image::Sparse::size_key] = str(sizeof(Image::Sparse::FixelMetric));
-        Image::BufferSparse<Image::Sparse::FixelMetric> buffer ("fixel_mask.msf", H);
+        H[Image::Fixel::Legacy::name_key] = str(typeid(Image::Fixel::Legacy::FixelMetric).name());
+        H[Image::Fixel::Legacy::size_key] = str(sizeof(Image::Fixel::Legacy::FixelMetric));
+        Image::BufferSparse<Image::Fixel::Legacy::FixelMetric> buffer ("fixel_mask.msf", H);
         auto out = buffer.voxel();
         VoxelAccessor v (accessor);
         Image::Loop loop;
@@ -352,7 +352,7 @@ namespace MR
             out.value().set_size ((*v.value()).num_fixels());
             size_t index = 0;
             for (Fixel_map<Fixel_TD_seed>::ConstIterator f = begin(v); f; ++f, ++index) {
-              Image::Sparse::FixelMetric fixel (f().get_dir(), f().get_FOD(), (f().can_update() ? 1.0f : 0.0f));
+              Image::Fixel::Legacy::FixelMetric fixel (f().get_dir(), f().get_FOD(), (f().can_update() ? 1.0f : 0.0f));
               out.value()[index] = fixel;
             }
           }

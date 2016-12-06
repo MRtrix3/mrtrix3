@@ -21,6 +21,7 @@ from lib.getUserPath   import getUserPath
 from lib.printMessage  import printMessage
 from lib.runCommand    import runCommand
 from lib.warnMessage   import warnMessage
+from lib.delFile       import delFile
 
 try:
   from numpy import loadtxt, savetxt, dot
@@ -180,9 +181,9 @@ for i in inFiles:
     if prefix not in maskPrefixes:
       errorMessage ('no matching mask image was found for input image ' + i)
     index = maskPrefixes.index(prefix)
-    input.append(Input(i, prefix, lib.app.workingDir + '/' + inputDir + '/', maskFiles[index], lib.app.workingDir + '/' + maskDir + '/'))
+    input.append(Input(i, prefix, os.path.join(lib.app.workingDir, inputDir), maskFiles[index], os.path.join(lib.app.workingDir, maskDir)))
   else:
-    input.append(Input(i, prefix, lib.app.workingDir + '/' + inputDir + '/'))
+    input.append(Input(i, prefix, os.path.join(lib.app.workingDir, inputDir)))
 
 
 noreorientation = lib.app.args.noreorientation
@@ -282,26 +283,26 @@ if useMasks:
   mask_filenames = []
   for i in input:
     runCommand('mrtransform ' + abspath(i.mask_directory, i.mask_filename) +
-      ' -interp nearest -template average_header.mif masks_transformed/' + i.mask_filename)
-    mask_filenames.append('masks_transformed/' + i.mask_filename)
+      ' -interp nearest -template average_header.mif ' + os.path.join('masks_transformed', i.mask_filename))
+    mask_filenames.append(os.path.join('masks_transformed', i.mask_filename))
   runCommand('mrmath ' + ' '.join(mask_filenames) + ' max mask_initial.mif' )
   runCommand('mrcrop ' + 'average_header.mif -mask mask_initial.mif average_header_cropped.mif')
-  runCommand('rm -f mask_initial.mif')
-  runCommand('rm -f average_header.mif')
-  runCommand('mv average_header_cropped.mif average_header.mif')
+  delFile('mask_initial.mif')
+  delFile('average_header.mif')
+  shutil.move('average_header_cropped.mif',  'average_header.mif')
   for mask in mask_filenames:
-    runCommand('rm ' + mask)
+    delFile(mask)
 
 
 if initial_alignment == 'none':
   for i in input:
-    runCommand('mrtransform ' + abspath(i.directory, i.filename) + ' -interp linear -template average_header.mif input_transformed/' + i.prefix + '.mif' + datatype)
+    runCommand('mrtransform ' + abspath(i.directory, i.filename) + ' -interp linear -template average_header.mif ' + os.path.join('input_transformed', i.prefix + '.mif') + datatype)
 else:
   mask = ''
   for i in input:
     if useMasks:
       mask = ' -mask1 ' + abspath(i.mask_directory, i.mask_filename)
-    output = ' -rigid linear_transforms_initial/' + i.prefix + '.txt'
+    output = ' -rigid ' + os.path.join('linear_transforms_initial', i.prefix + '.txt')
     runCommand('mrregister ' + abspath(i.directory, i.filename) + ' average_header.mif' +
                 mask +
                 ' -rigid_scale 1 ' +
@@ -313,53 +314,52 @@ else:
                 output)
     # translate input images to centre of mass without interpolation
     runCommand('mrtransform ' + abspath(i.directory, i.filename) +
-                ' -linear linear_transforms_initial/' + i.prefix + '.txt' +
+                ' -linear ' + os.path.join('linear_transforms_initial', i.prefix + '.txt') +
                 datatype +
-                ' input_transformed/' + i.prefix + '_translated.mif')
+                ' ' + os.path.join('input_transformed', i.prefix + '_translated.mif'))
     if useMasks:
       runCommand('mrtransform ' + abspath(i.mask_directory, i.mask_filename) +
-             ' -linear linear_transforms_initial/' + i.prefix + '.txt' +
+             ' -linear ' + os.path.join('linear_transforms_initial', i.prefix + '.txt') +
              datatype +
-             ' masks_transformed/' + i.prefix + '_translated.mif')
+             ' ' + os.path.join('masks_transformed', i.prefix + '_translated.mif'))
   # update average space to new extent
-  runCommand('mraverageheader ' + ' '.join(['input_transformed/' + i.prefix + '_translated.mif' for i in input]) + ' average_header_tight.mif')
+  runCommand('mraverageheader ' + ' '.join([os.path.join('input_transformed', i.prefix + '_translated.mif') for i in input]) + ' average_header_tight.mif')
   runCommand('mrpad -uniform 10 average_header_tight.mif average_header.mif -force')
-  runCommand('rm -f average_header_tight.mif')
+  delFile('average_header_tight.mif')
   if useMasks:
     # reslice masks
     for i in input:
       runCommand('mrtransform ' +
-               ' masks_transformed/' + i.prefix + '_translated.mif' +
-               ' masks_transformed/' + i.prefix + '.mif' +
+               ' ' + os.path.join('masks_transformed', i.prefix + '_translated.mif') +
+               ' ' + os.path.join('masks_transformed', i.prefix + '.mif') +
                ' -interp nearest -template average_header.mif' +
                datatype)
     # crop average space to extent defined by translated masks
     mask_filenames = []
     for i in input:
-      mask_filenames.append('masks_transformed/' + i.prefix + '.mif')
+      mask_filenames.append(os.path.join('masks_transformed', i.prefix + '.mif'))
     runCommand('mrmath ' + ' '.join(mask_filenames) + ' max mask_translated.mif' )
-    runCommand('rm -f mask_translated_smooth.mif')
     runCommand('mrcrop ' + 'average_header.mif -mask mask_translated.mif average_header_cropped.mif')
     # pad average space to allow for deviation from centre of mass alignment
     runCommand('mrpad -uniform 10 average_header_cropped.mif -force average_header.mif')
-    runCommand('rm -f average_header_cropped.mif')
+    delFile('average_header_cropped.mif')
     for i in input:
       runCommand('mrtransform ' +
-                 ' masks_transformed/' + i.prefix + '_translated.mif' +
-                 ' masks_transformed/' + i.prefix + '.mif' +
+                 ' ' + os.path.join('masks_transformed', i.prefix + '_translated.mif') +
+                 ' ' + os.path.join('masks_transformed', i.prefix + '.mif') +
                  ' -interp nearest -template average_header.mif' +
                  datatype +
                  ' -force')
-      runCommand('rm -f masks_transformed/' + i.prefix + '_translated.mif')
-    runCommand('rm -f mask_translated.mif')
+      delFile(os.path.join('masks_transformed', i.prefix + '_translated.mif'))
+    delFile('mask_translated.mif')
   # reslice input images
   for i in input:
     runCommand('mrtransform ' +
-               ' input_transformed/' + i.prefix + '_translated.mif' +
-               ' input_transformed/' + i.prefix + '.mif' +
+               ' ' + os.path.join('input_transformed', i.prefix + '_translated.mif') +
+               ' ' + os.path.join('input_transformed', i.prefix + '.mif') +
                ' -interp linear -template average_header.mif' +
                datatype)
-    runCommand('rm -f input_transformed/' + i.prefix + '_translated.mif')
+    delFile(os.path.join('input_transformed', i.prefix + '_translated.mif'))
 
 
 runCommand('mrmath ' + allindir('input_transformed') + ' mean initial_template.mif')
@@ -382,9 +382,9 @@ for level in range(0, len(linear_scales)):
       scale = ' -rigid_scale ' + str(linear_scales[level])
       niter = ' -rigid_niter ' + str(linear_niter[level])
       regtype = ' -type rigid'
-      output = ' -rigid linear_transforms_%i/%s.txt' % (level, i.prefix)
+      output = ' -rigid ' + os.path.join('linear_transforms_' + str(level), i.prefix + '.txt')
       if level > 0:
-        initialise = ' -rigid_init_matrix linear_transforms_%i/%s.txt' % (level-1, i.prefix)
+        initialise = ' -rigid_init_matrix ' + os.path.join('linear_transforms_' + str(level-1), i.prefix + '.txt')
       if do_fod_registration:
         lmax = ' -rigid_lmax ' + str(linear_lmax[level])
       else:
@@ -392,14 +392,14 @@ for level in range(0, len(linear_scales)):
       if linear_estimator:
         metric = ' -rigid_metric.diff.estimator ' + linear_estimator
       if lib.app.args.verbose:
-        mrregister_log = ' -info -rigid_log ' + 'log/' + i.filename + "_" + str(level) + '.log'
+        mrregister_log = ' -info -rigid_log ' + os.path.join('log', i.filename + "_" + str(level) + '.log')
     else:
       scale = ' -affine_scale ' + str(linear_scales[level])
       niter = ' -affine_niter ' + str(linear_niter[level])
       regtype = ' -type affine'
-      output = ' -affine linear_transforms_%i/%s.txt' % (level, i.prefix)
+      output = ' -affine ' + os.path.join('linear_transforms_' + str(level), i.prefix + '.txt')
       if level > 0:
-        initialise = ' -affine_init_matrix linear_transforms_%i/%s.txt' % (level-1, i.prefix)
+        initialise = ' -affine_init_matrix ' +  os.path.join('linear_transforms_' + str(level-1), i.prefix + '.txt')
       if do_fod_registration:
         lmax = ' -affine_lmax ' + str(linear_lmax[level])
       else:
@@ -407,7 +407,7 @@ for level in range(0, len(linear_scales)):
       if linear_estimator:
         metric = ' -affine_metric.diff.estimator ' + linear_estimator
       if lib.app.args.verbose:
-        mrregister_log = ' -info -affine_log ' + 'log/' + i.filename + "_" + str(level) + '.log'
+        mrregister_log = ' -info -affine_log ' +  os.path.join('log', i.filename + "_" + str(level) + '.log')
 
 
     runCommand('mrregister ' + abspath(i.directory, i.filename) + ' ' + current_template +
@@ -422,7 +422,7 @@ for level in range(0, len(linear_scales)):
                  datatype +
                  output +
                  mrregister_log)
-    check_linear_transformation('linear_transforms_%i/%s.txt' % (level, i.prefix), pause_on_warn=do_pause_on_warn)
+    check_linear_transformation( os.path.join('linear_transforms_' + str(level), i.prefix + '.txt'), pause_on_warn=do_pause_on_warn)
 
   # Here we ensure the template doesn't drift or scale
   runCommand('transformcalc ' + allindir('linear_transforms_%i' % level) + ' average linear_transform_average.txt -force -quiet')
@@ -432,22 +432,22 @@ for level in range(0, len(linear_scales)):
 
   average_inv = loadtxt('linear_transform_average_inv.txt')
   for i in input:
-    transform = dot(loadtxt('linear_transforms_%i/%s.txt' % (level, i.prefix)), average_inv)
-    savetxt('linear_transforms_%i/%s.txt'% (level, i.prefix), transform)
+    transform = dot(loadtxt(os.path.join('linear_transforms_' + str(level), i.prefix + '.txt')), average_inv)
+    savetxt(os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix), transform)
 
   for i in input:
     runCommand('mrtransform ' + abspath(i.directory, i.filename) +
                ' -template ' + current_template +
-               ' -linear linear_transforms_%i/%s.txt' % (level, i.prefix) +
-               ' input_transformed/' + i.prefix + '.mif' +
+               ' -linear ' + os.path.join('linear_transforms_' + str(level), i.prefix + '.txt') +
+               ' input_transformed' + os.path.join(i.prefix + '.mif') +
                datatype +
                ' -force')
 
   runCommand ('mrmath ' + allindir('input_transformed') + ' mean linear_template' + str(level) + '.mif -force')
   current_template = 'linear_template' + str(level) + '.mif'
 
-
-runCommand('cp ' + allindir('linear_transforms_%i' % level) + ' linear_transforms/')
+for filename in os.listdir('linear_transforms_%i' % level):
+  shutil.copy(os.path.join('linear_transforms_%i' % level, filename), 'linear_transforms')
 
 # Create a template mask for nl registration by taking the intersection of all transformed input masks and dilating
 if useMasks:
@@ -455,8 +455,8 @@ if useMasks:
     runCommand('mrtransform ' + abspath(i.mask_directory, i.mask_filename) +
                ' -template ' + current_template +
                ' -interp nearest' +
-               ' -linear linear_transforms/%s.txt' % i.prefix +
-               ' masks_transformed/%s.mif' % i.prefix +
+               ' -linear ' + os.path.join('linear_transforms', str(i.prefix) + '.txt') +
+               ' ' + os.path.join('masks_transformed', '%s.mif' % i.prefix) +
                ' -force')
   runCommand ('mrmath ' + allindir('masks_transformed') + ' min - | maskfilter - median - | maskfilter - dilate -npass 5 init_nl_template_mask.mif -force')
   current_template_mask = 'init_nl_template_mask.mif'
@@ -467,14 +467,14 @@ lib.app.make_dir('warps')
 for level in range(0, len(nl_scales)):
   for i in input:
     if level > 0:
-      initialise = ' -nl_init warps_%i/%s.mif' % (level-1, i.prefix)
+      initialise = ' -nl_init ' + os.path.join('warps_' + str(level-1), i.prefix + '.mif')
       scale = ''
     else:
       scale = ' -nl_scale ' + str(nl_scales[level])
       if dorigid:
-        initialise = ' -rigid_init_matrix linear_transforms/' + i.prefix + '.txt'
+        initialise = ' -rigid_init_matrix ' + os.path.join('linear_transforms', i.prefix + '.txt')
       else:
-        initialise = ' -affine_init_matrix linear_transforms/' + i.prefix + '.txt'
+        initialise = ' -affine_init_matrix ' + os.path.join('linear_transforms', i.prefix + '.txt')
 
     if useMasks:
       mask = ' -mask1 ' + abspath(i.mask_directory, i.mask_filename) + ' -mask2 ' + current_template_mask
@@ -489,8 +489,8 @@ for level in range(0, len(nl_scales)):
     runCommand('mrregister ' + abspath(i.directory, i.filename) + ' ' + current_template +
                ' -type nonlinear' +
                ' -nl_niter ' + str(nl_niter[level]) +
-               ' -nl_warp_full warps_%i/%s.mif' % (level, i.prefix) +
-               ' -transformed input_transformed/' + i.prefix + '.mif' +
+               ' -nl_warp_full ' + os.path.join('warps_' + str(level), '%s.mif' % i.prefix) +
+               ' -transformed ' + os.path.join('input_transformed', i.prefix + '.mif') +
                ' -nl_update_smooth ' +  lib.app.args.nl_update_smooth +
                ' -nl_disp_smooth ' +  lib.app.args.nl_disp_smooth +
                ' -nl_grad_step ' +  lib.app.args.nl_grad_step +
@@ -501,12 +501,12 @@ for level in range(0, len(nl_scales)):
                  datatype +
                  lmax)
     if level > 0:
-      runCommand('rm warps_%i/%s.mif' % (level-1, i.prefix))
+      delFile(os.path.join('warps_' + str(level-1), i.prefix + '.mif'))
     if useMasks:
       runCommand('mrtransform ' + abspath(i.mask_directory, i.mask_filename) +
                  ' -template ' + current_template +
-                 ' -warp_full warps_%i/%s.mif' % (level, i.prefix) +
-                 ' masks_transformed/' + i.prefix + '.mif' +
+                 ' -warp_full ' + os.path.join('warps_%i' % level, '%s.mif' % i.prefix) +
+                 ' ' + os.path.join('masks_transformed', i.prefix + '.mif') +
                  ' -interp nearest ' +
                  ' -force')
 
@@ -521,11 +521,11 @@ for level in range(0, len(nl_scales)):
     if (nl_scales[level] < nl_scales[level + 1]):
       upsample_factor = nl_scales[level + 1] / nl_scales[level]
       for i in input:
-        runCommand('mrresize warps_%i/%s.mif -scale %f tmp.mif' % (level, i.prefix, upsample_factor))
-        runCommand('mv tmp.mif warps_%i/%s.mif' % (level, i.prefix))
+        runCommand('mrresize ' + os.path.join('warps_%i' % level, '%s.mif' % i.prefix) + ' -scale %f tmp.mif' % upsample_factor)
+        shutil.move('tmp.mif', os.path.join('warps_' + str(level), '%s.mif' % i.prefix))
   else:
     for i in input:
-      shutil.move('warps_%i/%s.mif'  % (level, i.prefix), 'warps/')
+      shutil.move(os.path.join('warps_' + str(level), '%s.mif' % i.prefix), 'warps')
 
 
 runCommand('mrconvert ' + current_template + ' ' + getUserPath(lib.app.args.template, True) + lib.app.mrtrixForce)
@@ -534,22 +534,21 @@ if lib.app.args.warp_dir:
   warp_path = getUserPath(lib.app.args.warp_dir, False)
   if os.path.exists(warp_path):
     shutil.rmtree(warp_path)
-  shutil.copytree('warps/', warp_path)
+  shutil.copytree('warps', warp_path)
 
 if lib.app.args.linear_transformations_dir:
   linear_transformations_path = getUserPath(lib.app.args.linear_transformations_dir, False)
   if os.path.exists(linear_transformations_path):
     shutil.rmtree(linear_transformations_path)
-  shutil.copytree('linear_transforms/', linear_transformations_path)
+  shutil.copytree('linear_transforms', linear_transformations_path)
 
 if lib.app.args.transformed_dir:
   transformed_path = getUserPath(lib.app.args.transformed_dir, False)
   if os.path.exists(transformed_path):
     shutil.rmtree(transformed_path)
-  shutil.copytree('input_transformed/', transformed_path)
+  shutil.copytree('input_transformed', transformed_path)
 
 if lib.app.args.template_mask:
   runCommand('mrconvert ' + current_template_mask + ' ' + getUserPath(lib.app.args.template_mask, True) + lib.app.mrtrixForce)
 
 lib.app.complete()
-
