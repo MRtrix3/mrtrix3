@@ -712,8 +712,7 @@ void run ()
 
     if (do_rigid) {
       affine.set_centre (rigid.get_centre());
-      affine.set_translation (rigid.get_translation());
-      affine.set_matrix (rigid.get_matrix());
+      affine.set_transform (rigid.get_transform());
       affine_registration.set_init_translation_type (Registration::Transform::Init::none);
     }
 

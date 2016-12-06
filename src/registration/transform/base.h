@@ -21,6 +21,8 @@
 #include <Eigen/SVD>
 #include <Eigen/Geometry> // Eigen::Translation
 #include "datatype.h" // debug
+#include "file/config.h"
+#include "registration/transform/convergence_check.h"
 
 namespace MR
 {
@@ -85,13 +87,13 @@ namespace MR
 
           typedef default_type ParameterType;
           Base (size_t number_of_parameters) :
-            number_of_parameters(number_of_parameters),
-            optimiser_weights (number_of_parameters) {
+              number_of_parameters (number_of_parameters),
+              optimiser_weights (number_of_parameters) {
               trafo.matrix().setIdentity();
               trafo_half.matrix().setIdentity();
               trafo_half_inverse.matrix().setIdentity();
               centre.setZero();
-          }
+            }
 
           EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
@@ -135,7 +137,7 @@ namespace MR
           }
 
           template <class TrafoType>
-          void set_transform (TrafoType& transform) {
+          void set_transform (const TrafoType& transform) {
             trafo.matrix().template block<3,4>(0,0) = transform.matrix().template block<3,4>(0,0);
             compute_halfspace_transformations();
           }
@@ -147,17 +149,17 @@ namespace MR
           }
 
           // set_matrix updates the 3x3 matrix and also updates the translation
-          void set_matrix (const Eigen::Matrix<ParameterType, 3, 3>& mat) {
-            transform_type Tc2, To, R0;
-            Tc2.setIdentity();
-            To.setIdentity();
-            R0.setIdentity();
-            To.translation() = offset;
-            Tc2.translation() = centre - 0.5 * offset;
-            R0.linear() = mat;
-            trafo = Tc2 * To * R0 * Tc2.inverse();
-            compute_halfspace_transformations();
-          }
+          // void set_matrix (const Eigen::Matrix<ParameterType, 3, 3>& mat) {
+          //   transform_type Tc2, To, R0;
+          //   Tc2.setIdentity();
+          //   To.setIdentity();
+          //   R0.setIdentity();
+          //   To.translation() = offset;
+          //   Tc2.translation() = centre - 0.5 * offset;
+          //   R0.linear() = mat;
+          //   trafo = Tc2 * To * R0 * Tc2.inverse();
+          //   compute_halfspace_transformations();
+          // }
 
           const Eigen::Matrix<ParameterType, 3, 3> get_matrix () const {
             return trafo.linear();
@@ -259,16 +261,11 @@ namespace MR
           }
 
           size_t number_of_parameters;
-          // TODO matrix, translation and offset are only here for the rigid class. to be removed
-          Eigen::Matrix<ParameterType, 3, 3> matrix;
-          Eigen::Vector3 translation;
-          Eigen::Vector3 offset;
           Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo;
           Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo_half;
           Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo_half_inverse;
           Eigen::Vector3 centre;
           Eigen::VectorXd optimiser_weights;
-
       };
       //! @}
     }
