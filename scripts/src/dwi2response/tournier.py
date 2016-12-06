@@ -112,14 +112,8 @@ def execute():
   # If terminating due to running out of iterations, still need to put the results in the appropriate location
   if not os.path.exists('response.txt'):
     printMessage('Exiting after maximum ' + str(lib.app.args.max_iters) + ' iterations')
-<<<<<<< HEAD
     runFunction(shutil.copyfile, 'iter' + str(lib.app.args.max_iters-1) + '_RF.txt', 'response.txt')
     runFunction(shutil.move, 'iter' + str(lib.app.args.max_iters-1) + '_SF.mif', 'voxels.mif')
     
   runFunction(shutil.copyfile, 'response.txt', getUserPath(lib.app.args.output, False))
-=======
-    shutil.copyfile('iter' + str(lib.app.args.max_iters-1) + '_RF.txt', 'response.txt')
-    shutil.move('iter' + str(lib.app.args.max_iters-1) + '_SF.mif', 'voxels.mif')
->>>>>>> fixel_format
 
-  shutil.copyfile('response.txt', getUserPath(lib.app.args.output, False))
