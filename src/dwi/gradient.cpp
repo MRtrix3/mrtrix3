@@ -216,6 +216,8 @@ namespace MR
     Eigen::MatrixXd get_valid_DW_scheme (const Header& header, bool nofail)
     {
       auto grad = get_DW_scheme (header);
+      if (grad.rows() == 0) 
+        throw Exception ("no diffusion encoding information found in image \"" + header.name() + "\"");
 
       //CONF option: BValueScaling
       //CONF default: 1 (true)

@@ -34,6 +34,7 @@
 #include "registration/warp/utils.h"
 #include "registration/warp/compose.h"
 #include "math/average_space.h"
+#include "math/SH.h"
 
 
 
@@ -367,18 +368,19 @@ void run ()
 
   // Rotate/Flip gradient directions if present
   if (linear && input_header.ndim() == 4 && !warp && !fod_reorientation) {
+    Eigen::MatrixXd rotation = linear_transform.linear().inverse();
+    Eigen::MatrixXd test = rotation.transpose() * rotation;
+    test = test.array() / test.diagonal().mean();
+    if (!test.isIdentity (0.001)) {
+      WARN ("the input linear transform contains shear or anisotropic scaling and "
+            "therefore should not be used to reorient directions / diffusion gradients");
+    }
+    if (replace)
+      rotation = linear_transform.linear() * input_header.transform().linear().inverse();
     try {
       auto grad = DWI::get_DW_scheme (input_header);
       if (input_header.size(3) == (ssize_t) grad.rows()) {
         INFO ("DW gradients detected and will be reoriented");
-        Eigen::MatrixXd rotation = linear_transform.linear();
-        Eigen::MatrixXd test = rotation.transpose() * rotation;
-        test = test.array() / test.diagonal().mean();
-        if (!test.isIdentity (0.001))
-        WARN ("the input linear transform contains shear or anisotropic scaling and "
-              "therefore should not be used to reorient diffusion gradients");
-        if (replace)
-          rotation = linear_transform.linear() * input_header.transform().linear().inverse();
         for (ssize_t n = 0; n < grad.rows(); ++n) {
           Eigen::Vector3 grad_vector = grad.block<1,3>(n,0);
           grad.block<1,3>(n,0) = rotation * grad_vector;
@@ -388,6 +390,47 @@ void run ()
     }
     catch (Exception& e) {
       e.display (2);
+      WARN ("DW gradients not correctly reoriented");
+    }
+    // Also look for key 'directions', and rotate those if present
+    auto hit = input_header.keyval().find ("directions");
+    if (hit != input_header.keyval().end()) {
+      INFO ("Header entry \"directions\" detected and will be reoriented");
+      try {
+        const auto lines = split_lines (hit->second);
+        if (lines.size() != size_t(input_header.size(3)))
+          throw Exception ("Number of lines in header entry \"directions\" (" + str(lines.size()) + ") does not match number of volumes in image (" + str(input_header.size(3)) + ")");
+        Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> result;
+        for (size_t l = 0; l != lines.size(); ++l) {
+          const auto v = parse_floats (lines[l]);
+          if (!result.cols()) {
+            if (!(v.size() == 2 || v.size() == 3))
+              throw Exception ("Malformed \"directions\" field (expected matrix with 2 or 3 columns; data has " + str(v.size()) + " columns)");
+            result.resize (lines.size(), v.size());
+          } else {
+            if (v.size() != size_t(result.cols()))
+              throw Exception ("Inconsistent number of columns in \"directions\" field");
+          }
+          if (result.cols() == 2) {
+            Eigen::Matrix<default_type, 2, 1> azel (v.data());
+            Eigen::Vector3 dir;
+            Math::SH::spherical2cartesian (azel, dir);
+            dir = rotation * dir;
+            Math::SH::cartesian2spherical (dir, azel);
+            result.row (l) = azel;
+          } else {
+            const Eigen::Vector3 dir = rotation * Eigen::Vector3 (v.data());
+            result.row (l) = dir;
+          }
+          std::stringstream s;
+          Eigen::IOFormat format (6, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
+          s << result.format (format);
+          output_header.keyval()["directions"] = s.str();
+        }
+      } catch (Exception& e) {
+        e.display (2);
+        WARN ("Header entry \"directions\" not correctly reoriented");
+      }
     }
   }
 

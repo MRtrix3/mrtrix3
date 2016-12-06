@@ -47,7 +47,7 @@ using Stats::CFE::connectivity_value_type;
 #define DEFAULT_CFE_E 2.0
 #define DEFAULT_CFE_H 3.0
 #define DEFAULT_CFE_C 0.5
-#define DEFAULT_ANGLE_THRESHOLD 30.0
+#define DEFAULT_ANGLE_THRESHOLD 45.0
 #define DEFAULT_CONNECTIVITY_THRESHOLD 0.01
 #define DEFAULT_SMOOTHING_STD 10.0
 
@@ -301,6 +301,7 @@ void run() {
       it->second.value *= norm_factor;
   }
 
+
   // Load input data
   matrix_type data (num_fixels, filenames.size());
   {
@@ -344,6 +345,7 @@ void run() {
       progress++;
     }
   }
+
 
   if (!data.allFinite())
     throw Exception ("input data contains non-finite value(s)");

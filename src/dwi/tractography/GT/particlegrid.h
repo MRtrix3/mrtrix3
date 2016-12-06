@@ -66,21 +66,23 @@ namespace MR {
             clear();
           }
           
-          unsigned int getTotalCount() const {
-            return list.size();
+          inline unsigned int getTotalCount() const {
+            return pool.size();
           }
           
           void add(const Point_t& pos, const Point_t& dir);
           
           void shift(Particle* p, const Point_t& pos, const Point_t& dir);
           
-          void remove(const size_t idx);
+          void remove(Particle* p);
           
           void clear();
           
           const ParticleVectorType* at(const ssize_t x, const ssize_t y, const ssize_t z) const;
           
-          Particle* getRandom(size_t& idx);
+          inline Particle* getRandom() {
+            return pool.random();
+          }
           
           void exportTracks(Tractography::Writer<float>& writer);
           
@@ -88,7 +90,6 @@ namespace MR {
         protected:
           std::mutex mutex;
           ParticlePool pool;
-          ParticleVectorType list;
           std::vector<ParticleVectorType> grid;
           Math::RNG rng;
           transform_type T_s2g;

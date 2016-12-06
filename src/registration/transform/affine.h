@@ -86,6 +86,8 @@ namespace MR
           typedef AffineRobustEstimator RobustEstimatorType;
           typedef int has_robust_estimator;
 
+          EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
+
           Affine () : Base (12) {
             //CONF option: reg_gdweight_matrix
             //CONF default: 0.0003

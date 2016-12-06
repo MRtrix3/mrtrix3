@@ -91,7 +91,7 @@ namespace MR
 
         auto DW_scheme = DWI::parse_DW_scheme (H);
         if (DW_scheme.rows()) {
-          if (DW_scheme.cols() != 4) {
+          if (DW_scheme.cols() < 4) {
             root->appendChild (new TreeItem ("Diffusion scheme", "(invalid)", root));
           }
           else {
