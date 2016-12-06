@@ -80,6 +80,8 @@ namespace MR
     const char* project_version = nullptr;
     const char* build_date = __DATE__;
 
+    SignalHandler signal_handler;
+
     int argc = 0;
     char** argv = nullptr;
 

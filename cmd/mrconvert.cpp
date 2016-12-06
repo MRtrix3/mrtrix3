@@ -313,8 +313,7 @@ void run ()
           if ((ssize_t)grad.rows() != header_in.size(3)) {
             WARN ("Diffusion encoding of input file does not match number of image volumes; omitting gradient information from output image");
             header_out.keyval().erase ("dw_scheme");
-          }
-          else {
+          } else {
             Eigen::MatrixXd extract_grad (pos[3].size(), grad.cols());
             for (size_t dir = 0; dir != pos[3].size(); ++dir)
               extract_grad.row (dir) = grad.row (pos[3][dir]);
@@ -324,14 +323,15 @@ void run ()
         Eigen::MatrixXd pe_scheme;
         try {
           pe_scheme = PhaseEncoding::parse_scheme (header_out);
+          if (pe_scheme.rows()) {
+            Eigen::MatrixXd extract_scheme (pos[3].size(), pe_scheme.cols());
+            for (size_t vol = 0; vol != pos[3].size(); ++vol)
+              extract_scheme.row (vol) = pe_scheme.row (pos[3][vol]);
+            PhaseEncoding::set_scheme (header_out, extract_scheme);
+          }
         } catch (...) {
           WARN ("Phase encoding scheme of input file does not match number of image volumes; omitting information from output image");
-        }
-        if (pe_scheme.rows()) {
-          Eigen::MatrixXd extract_scheme (pos[3].size(), pe_scheme.cols());
-          for (size_t vol = 0; vol != pos[3].size(); ++vol)
-            extract_scheme.row (vol) = pe_scheme.row (pos[3][vol]);
-          PhaseEncoding::set_scheme (header_out, extract_scheme);
+          PhaseEncoding::set_scheme (header_out, pe_scheme);
         }
       }
     }

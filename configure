@@ -1046,7 +1046,7 @@ int main() { Foo f; }
 
       cmd = [ os.path.join(qt_dir.name, 'qt') ]
       ret = execute (cmd, RuntimeError)
-      report (ret[1])
+      report (ret[1] + '\n')
 
 
   except QMakeError:
@@ -1126,6 +1126,10 @@ if R_module:
 
   ld_flags = ld_lib_flags
   exe_suffix = lib_suffix
+
+
+
+
 
 
 
