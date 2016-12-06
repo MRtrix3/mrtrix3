@@ -25,10 +25,10 @@ namespace MR
 
     namespace {
       struct set_offset {
-        FORCE_INLINE set_offset (u_int32_t offset) : offset (offset) { }
+        FORCE_INLINE set_offset (uint32_t offset) : offset (offset) { }
         template <class DataType>
           FORCE_INLINE void operator() (DataType& data) { data.index(0) = offset; }
-        u_int32_t offset;
+        uint32_t offset;
       };
 
       struct inc_fixel {
