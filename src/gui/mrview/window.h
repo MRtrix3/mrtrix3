@@ -202,6 +202,7 @@ namespace MR
           void image_previous_volume_slot ();
           void image_goto_volume_slot ();
           void image_next_volume_group_slot ();
+          void image_goto_volume_group_slot ();
           void image_previous_volume_group_slot ();
           void image_reset_slot ();
           void image_interpolate_slot ();
@@ -278,6 +279,7 @@ namespace MR
                   *reset_view_action,
                   *next_image_volume_group_action,
                   *prev_image_volume_group_action,
+                  *goto_image_volume_group_action,
                   *image_list_area,
 
                   *reset_windowing_action,
