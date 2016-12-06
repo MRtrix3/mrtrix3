@@ -3,13 +3,19 @@ DWI distortion correction using ``dwipreproc``
 
 The ``dwipreproc`` script, responsible for performing general pre-processing of DWI series, has been completely re-designed as part of the *MRtrix3* 0.3.16 update. Although the 'guts' of the script are completely new, the fundamental operation - eddy current-induced distortion correction, motion correction, and (optionally) susceptibility-induced distortion correction, using FSL's ``eddy`` / ``topup`` / ``applytopup`` tools, remains the same. While the user interface remains reasonably similar to that provided previously (examples to come), they are slightly different.
 
-The major benefit of the new design is that *MRtrix3* is now capable of not only *capturing the relevant phase encoding information* from DICOM headers, but also *using that information* within ``dwipreproc`` to internally generate the necessary phase encoding table files in order to run these FSL tools. This makes it possible to acquire and process a wider range of DWI acquisition designs, without requiring that the user laboriously construct the phase encoding tables that these FSL tools require. It also means that automated pre-processing pipelines (e.g. these two `works <https://github.com/BIDS-Apps/FibreDensityAndCrosssection>`_ -in- `progress <https://github.com/BIDS-Apps/MRtrix3_connectome>`_ ) can be applied to provided data without requiring manual intervention to specify this information.
+The major benefit of the new design is that *MRtrix3* is now capable of not only *capturing the relevant phase encoding information* from DICOM headers, but also *using that information* within ``dwipreproc`` to internally generate the necessary phase encoding table files in order to run these FSL tools. This comes with a number of benefits:
 
-  .. NOTE::
+-  It makes it possible to acquire and process a wider range of DWI acquisition designs, without requiring that the user laboriously manually construct the phase encoding tables that these FSL tools require.
+
+- It means that automated pre-processing pipelines (e.g. these two `works <https://github.com/BIDS-Apps/FibreDensityAndCrosssection>`_ -in- `progress <https://github.com/BIDS-Apps/MRtrix3_connectome>`_ ) can be applied to provided data without requiring manual intervention to specify this information.
+
+- Over time, as *MRtrix* 0.3.16 code is used to import DICOMs (and hence capture the phase encoding information) and the relevant code is thoroughly tested, there will be less onus on users to track and specify the type of phase encoding acquisition performed.
+
+.. NOTE::
   
   Although the ``dwipreproc`` script is provided as part of *MRtrix3* in the hope that users will find it useful, the major image processing steps undertaken by this script are still performed using tools developed at FMRIB and provided as part of FSL. It is therefore *essential* that the appropriate references be cited whenever this script is used!
 
-The ``dwipreproc`` script now has four major 'modes' of operation, that can be selected at the command-line using the ``-rpe_*`` options:
+The ``dwipreproc`` script now has four major 'modes' of operation, that can be selected at the command-line using the ``-rpe_*`` options. Note that exactly *one* of these options ***must*** be provided:
 
 1. **No variation in phase encoding**
 
@@ -17,40 +23,52 @@ The ``dwipreproc`` script now has four major 'modes' of operation, that can be s
 
   *Old usage* (i.e. prior to *MRtrix* 0.3.16):
 
-    dwipreproc AP <input_DWI> <output_DWI> -rpe_none
+    ::
+
+        dwipreproc AP <input_DWI> <output_DWI> -rpe_none
 
   *New usage*:
 
-    dwipreproc <input_DWI> <output_DWI> -rpe_none -pe_dir AP [-readout_time 0.1]
+    ::
 
-2. **Reversed phase encode *b*=0 pair(s)**
+        dwipreproc <input_DWI> <output_DWI> -rpe_none -pe_dir AP [-readout_time 0.1]
+
+2. **Reversed phase encode _b_=0 pair(s)**
 
   All DWI volumes are acquired with precisely the same phase encoding direction and EPI readout time. In addition, one or more pairs of spin-echo *b*=0 EPI volumes are provided, where half of these volumes have the same phase encoding direction and readout time as the DWIs, and the other half have precisely the *opposite* phase encoding direction (but the same readout time). These additional images are therefore used to estimate the inhomogeneity field, but do not form part of the output DWI series.
 
   *Old usage* (i.e. prior to *MRtrix* 0.3.16):
 
-    dwipreproc AP <input_DWI> <output_DWI> -rpe_pair <AP_b=0_image(s)> <PA_b=0_image(s)>
+    ::
+
+        dwipreproc AP <input_DWI> <output_DWI> -rpe_pair <AP_b=0_image(s)> <PA_b=0_image(s)>
 
   *New usage*:
 
-    mrcat <AP_b=0_image(s)> <PA_b=0_image(s)> b0s.mif -axis 3
-    dwipreproc <input_DWI> <output_DWI> -pe_dir AP -rpe_pair -se_epi b0s.mif [-readout_time 0.1]
+    ::
+    
+        mrcat <AP_b=0_image(s)> <PA_b=0_image(s)> b0s.mif -axis 3
+        dwipreproc <input_DWI> <output_DWI> -pe_dir AP -rpe_pair -se_epi b0s.mif [-readout_time 0.1]
 
-3. Reversed phase encoding for all DWIs
+3. **Reversed phase encoding for all DWIs**
   For all diffusion gradient directions & *b*-values, two image volumes are obtained, with the opposite phase encoding direction with respect to one another. This allows for the combination of the two volumes corresponding to each unique diffusion gradient direction & strength into a single volume, where the relative compression / expansion of signal between the two volumes is exploited.
 
   *Old usage* (i.e. prior to *MRtrix* 0.3.16):
 
-    dwipreproc AP <AP_input_DWI> <output_DWI> -rpe_all <PA_input_DWI>
+    ::
+    
+        dwipreproc AP <AP_input_DWI> <output_DWI> -rpe_all <PA_input_DWI>
 
   *New usage*:
 
-    mrcat <AP_input_DWI> <PA_input_DWI> all_DWIs.mif -axis 3
-    dwipreproc all_DWIs.mif <output_DWI> -pe_dir AP -rpe_all [-readout_time 0.1]
+    ::
+    
+        mrcat <AP_input_DWI> <PA_input_DWI> all_DWIs.mif -axis 3
+        dwipreproc all_DWIs.mif <output_DWI> -pe_dir AP -rpe_all [-readout_time 0.1]
     
   Note that in this particular example, the dwipreproc script will in fact extract the *b*=0 volumes from the input DWIs and use those to estimate the inhomogeneity field with topup. If additional *b*=0 images are also acquired, and it is desired to instead use those images to estimate the inhomogeneity field only, the ``-se_epi`` option can be used.
 
-4. Arbitrary phase encoding acquisition
+4. **Arbitrary phase encoding acquisition**
 
   In cases where either: 
 
@@ -62,7 +80,9 @@ The ``dwipreproc`` script now has four major 'modes' of operation, that can be s
 
   *Usage*:
 
-    dwipreproc <all_input_DWIs> <output_DWI> -rpe_header [-se_epi <extra_b=0_volumes>]
+    ::
+
+        dwipreproc <all_input_DWIs> <output_DWI> -rpe_header [-se_epi <extra_b=0_volumes>]
 
   .. WARNING::
 
