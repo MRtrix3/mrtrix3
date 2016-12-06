@@ -11,7 +11,7 @@ Synopsis
     dwiextract [ options ]  input output
 
 -  *input*: the input DW image.
--  *output*: the output image (diffusion-weighted volumes by default.
+-  *output*: the output image (diffusion-weighted volumes by default).
 
 Description
 -----------
@@ -36,6 +36,18 @@ DW Shell selection options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-shell list** specify one or more diffusion-weighted gradient shells to use during processing, as a comma-separated list of the desired approximate b-values. Note that some commands are incompatible with multiple shells, and will throw an error if more than one b-value is provided.
+
+Options for importing phase-encode tables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-import_pe_table file** import a phase-encoding table from file
+
+-  **-import_pe_eddy config indices** import phase-encoding information from an EDDY-style config / index file pair
+
+Options for selecting volumes based on phase-encoding
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-pe desc** select volumes with a particular phase encoding; this can be three comma-separated values (for i,j,k components of vector direction) or four (direction & total readout time)
 
 Stride options
 ^^^^^^^^^^^^^^

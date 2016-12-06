@@ -139,6 +139,10 @@ namespace MR
     template <class MatrixType> 
       void set_DW_scheme (Header& header, const MatrixType& G)
       {
+        if (!G.rows()) {
+          header.keyval().erase ("dw_scheme");
+          return;
+        }
         std::string dw_scheme;
         for (ssize_t row = 0; row < G.rows(); ++row) {
           std::string line;

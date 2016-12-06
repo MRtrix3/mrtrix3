@@ -13,6 +13,8 @@ List of MRtrix3 commands
 
    commands/5tt2vis
 
+   commands/5ttcheck
+
    commands/5ttedit
 
    commands/afdconnectivity
@@ -20,6 +22,8 @@ List of MRtrix3 commands
    commands/amp2sh
 
    commands/connectome2tck
+
+   commands/connectomestats
 
    commands/dcmedit
 
@@ -65,6 +69,8 @@ List of MRtrix3 commands
 
    commands/fixelcorrespondence
 
+   commands/fixelhistogram
+
    commands/fixellog
 
    commands/fixelreorient
@@ -82,6 +88,8 @@ List of MRtrix3 commands
    commands/label2mesh
 
    commands/labelconvert
+
+   commands/maskdump
 
    commands/maskfilter
 
@@ -105,7 +113,13 @@ List of MRtrix3 commands
 
    commands/mrcrop
 
+   commands/mredit
+
    commands/mrfilter
+
+   commands/mrhistmatch
+
+   commands/mrhistogram
 
    commands/mrinfo
 
@@ -165,9 +179,9 @@ List of MRtrix3 commands
 
    commands/tcksample
 
-   commands/tcksift2
-
    commands/tcksift
+
+   commands/tcksift2
 
    commands/tckstats
 
@@ -186,6 +200,8 @@ List of MRtrix3 commands
    commands/tsfsmooth
 
    commands/tsfthreshold
+
+   commands/vectorstats
 
    commands/voxel2fixel
 

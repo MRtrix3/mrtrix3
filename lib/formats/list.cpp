@@ -29,8 +29,10 @@ namespace MR
     MRtrix        mrtrix_handler;
     MRtrix_GZ     mrtrix_gz_handler;
     MRI           mri_handler;
-    NIfTI         nifti_handler;
-    NIfTI_GZ      nifti_gz_handler;
+    NIfTI1        nifti1_handler;
+    NIfTI2        nifti2_handler;
+    NIfTI1_GZ     nifti1_gz_handler;
+    NIfTI2_GZ     nifti2_gz_handler;
     Analyse       analyse_handler;
     XDS           xds_handler;
     DICOM         dicom_handler;
@@ -47,8 +49,10 @@ namespace MR
       &dicom_handler,
       &mrtrix_handler,
       &mrtrix_gz_handler,
-      &nifti_handler,
-      &nifti_gz_handler,
+      &nifti1_handler,
+      &nifti2_handler,
+      &nifti1_gz_handler,
+      &nifti2_gz_handler,
       &analyse_handler,
       &mri_handler,
       &xds_handler,

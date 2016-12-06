@@ -21,8 +21,9 @@ def initialise(desc):
   standard_options.add_argument('-nthreads', metavar='number', help='Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)')
   standard_options.add_argument('-tempdir', metavar='/path/to/tmp/', help='Manually specify the path in which to generate the temporary directory')
   standard_options.add_argument('-quiet',   action='store_true', help='Suppress all console output during script execution')
-  standard_options.add_argument('-verbose', action='store_true', help='Display additional information for every command invoked')
-  flagMutuallyExclusiveOptions( [ 'quiet', 'verbose' ] )
+  standard_options.add_argument('-verbose', action='store_true', help='Display additional information and progress for every command invoked')
+  standard_options.add_argument('-debug', action='store_true', help='Display additional debugging information over and above the verbose output')
+  flagMutuallyExclusiveOptions( [ 'quiet', 'verbose', 'debug' ] )
 
 
 
@@ -85,10 +86,13 @@ class Parser(argparse.ArgumentParser):
                 count += 1
               break
       if count > 1:
-        sys.stderr.write('\nError: You cannot use more than one of the following options: ' + ', '.join([ '-' + o for o in group[0] ]) + '\n\n')
-        sys.exit(2)
+        sys.stderr.write('\nError: You cannot use more than one of the following options: ' + ', '.join([ '-' + o for o in group[0] ]) + '\n')
+        sys.stderr.write('(Consult the help page for more information: ' + self.prog + ' -help)\n\n')
+        sys.exit(1)
       if group[1] and not count:
-        sys.stderr.write('\nError: One of the following options must be provided: ' + ', '.join([ '-' + o for o in group[0] ]) + '\n\n')
+        sys.stderr.write('\nError: One of the following options must be provided: ' + ', '.join([ '-' + o for o in group[0] ]) + '\n')
+        sys.stderr.write('(Consult the help page for more information: ' + self.prog + ' -help)\n\n')
+        sys.exit(1)
     return args
 
 
@@ -160,7 +164,12 @@ class Parser(argparse.ArgumentParser):
             else:
               s += option.metavar
           elif option.nargs:
-            s += (' ' + option.dest.upper())*option.nargs
+            if isinstance(option.nargs, int):
+              s += (' ' + option.dest.upper())*option.nargs
+            elif option.nargs == '+' or option.nargs == '*':
+              s += ' <space-separated list>'
+            elif option.nargs == '?':
+              s += ' <optional value>'
           elif option.type is not None:
             s += ' ' + option.type.__name__.upper()
           elif option.default is None:
@@ -195,6 +204,70 @@ class Parser(argparse.ArgumentParser):
         print (s)
     else:
       print (s)
+
+
+
+  def printUsageMarkdown(self):
+    import sys
+    import lib.app
+    if self._subparsers and len(sys.argv) == 3:
+      for alg in self._subparsers._group_actions[0].choices:
+        if alg == sys.argv[1]:
+          self._subparsers._group_actions[0].choices[alg].printUsageMarkdown()
+          return
+      self.error('Invalid subparser nominated')
+    print ('## Synopsis')
+    print ('')
+    print ('    ' + self.format_usage())
+    print ('')
+    if self._subparsers:
+      print ('-  *' + self._subparsers._group_actions[0].dest + '*: ' + self._subparsers._group_actions[0].help)
+    for arg in self._positionals._group_actions:
+      if arg.metavar:
+        name = arg.metavar
+      else:
+        name = arg.dest
+      print ('-  *' + name + '*: ' + arg.help)
+    print ('')
+    print ('## Description')
+    print ('')
+    print (self.description)
+    print ('')
+    print ('## Options')
+    print ('')
+    for group in reversed(self._action_groups):
+      if group._group_actions and not (len(group._group_actions) == 1 and isinstance(group._group_actions[0], argparse._SubParsersAction)) and not group == self._positionals:
+        print ('#### ' + group.title)
+        print ('')
+        for option in group._group_actions:
+          text = '/'.join(option.option_strings)
+          if option.metavar:
+            text += ' '
+            if isinstance(option.metavar, tuple):
+              text += ' '.join(option.metavar)
+            else:
+              text += option.metavar
+          print ('+ **-' + text + '**<br>' + option.help)
+          print ('')
+    if lib.app.citationList:
+      print ('## References')
+      print ('')
+      for ref in lib.app.citationList:
+        text = ''
+        if ref[0]:
+          text += ref[0] + ': '
+        text += ref[1]
+        print (text)
+        print ('')
+    print ('---')
+    print ('')
+    print ('**Author:** ' + lib.app.author)
+    print ('')
+    print ('**Copyright:** ' + lib.app.copyright)
+    print ('')
+    if self._subparsers:
+      for alg in getAlgorithmList():
+        proc = subprocess.call ([ self.prog, alg, '__print_usage_markdown__' ])
 
 
 

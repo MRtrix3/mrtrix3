@@ -80,9 +80,10 @@ namespace MR
 
 
         // Perform connected components on data with the defined threshold. Assumes adjacency is the same as the mask.
+        template <class VectorType>
         void run (std::vector<cluster>& clusters,
                   std::vector<uint32_t>& labels,
-                  const std::vector<float>& data,
+                  const VectorType& data,
                   const float threshold) const {
           labels.resize (adjacent_indices.size(), 0);
           uint32_t current_label = 1;
@@ -176,9 +177,10 @@ namespace MR
         }
 
 
+        template <class VectorType>
         bool next_neighbour (uint32_t& node,
                              std::vector<uint32_t>& labels,
-                             const std::vector<float>& data,
+                             const VectorType& data,
                              const float threshold) const {
           for (size_t n = 0; n < adjacent_indices[node].size(); n++) {
             if (labels[adjacent_indices[node][n]] == 0 && data[adjacent_indices[node][n]] > threshold) {
@@ -214,10 +216,11 @@ namespace MR
         }
 
         // use a non-recursive depth first search to agglomerate adjacent voxels
+        template <class VectorType>
         void depth_first_search (uint32_t root,
                                  cluster& cluster,
                                  std::vector<uint32_t>& labels,
-                                 const std::vector<float>& data,
+                                 const VectorType& data,
                                  const float threshold) const {
           uint32_t node = root;
           std::stack<uint32_t> stack;

@@ -15,7 +15,6 @@
 
 
 #include "command.h"
-#include "progressbar.h"
 #include "algo/loop.h"
 
 #include "stats.h"
@@ -50,67 +49,19 @@ void run ()
 {
   Sparse::Image<FixelMetric> input (argument[0]);
 
-  std::unique_ptr<File::OFStream> dumpstream, hist_stream, position_stream;
-
-  auto opt = get_options ("histogram");
-  if (opt.size())
-    hist_stream.reset (new File::OFStream (opt[0][0]));
-
-  int nbins = DEFAULT_HISTOGRAM_BINS;
-  opt = get_options ("bins");
-  if (opt.size())
-    nbins = opt[0][0];
-  Stats::CalibrateHistogram calibrate (nbins);
-
-  opt = get_options ("dump");
-  if (opt.size())
-    dumpstream.reset (new File::OFStream (opt[0][0]));
-
-  opt = get_options ("position");
-  if (opt.size())
-    position_stream.reset (new File::OFStream (opt[0][0]));
-
-  std::vector<std::string> fields;
-  opt = get_options ("output");
-  for (size_t n = 0; n < opt.size(); ++n)
-    fields.push_back (opt[n][0]);
-
-  bool header_shown (!App::log_level || fields.size());
-
-  opt = get_options("mask");
+  auto opt = get_options("mask");
   std::unique_ptr<Sparse::Image<FixelMetric> > mask_ptr;
   if (opt.size()) {
     mask_ptr.reset (new Sparse::Image<FixelMetric> (opt[0][0]));
     check_dimensions (input, *mask_ptr);
   }
 
-
-  if (hist_stream) {
-    for (auto i = Loop (input) (input); i; ++i) {
-      if (mask_ptr) {
-        assign_pos_of (input).to (*mask_ptr);
-        if (input.value().size() != mask_ptr->value().size())
-          throw Exception ("the input fixel image and mask image to not have corrresponding fixels");
-      }
-      for (size_t fixel = 0; fixel != input.value().size(); ++fixel) {
-        if (mask_ptr) {
-          if (mask_ptr->value()[fixel].value > 0.5)
-            calibrate (input.value()[fixel].value);
-        } else {
-          calibrate (input.value()[fixel].value);
-        }
-      }
-    }
-    calibrate.init (*hist_stream);
-  }
+  std::vector<std::string> fields;
+  opt = get_options ("output");
+  for (size_t n = 0; n < opt.size(); ++n)
+    fields.push_back (opt[n][0]);
 
   Stats::Stats stats (false);
-
-  if (dumpstream)
-    stats.dump_to (*dumpstream);
-
-  if (hist_stream)
-    stats.generate_histogram (calibrate);
 
   for (auto i = Loop (input) (input); i; ++i) {
     if (mask_ptr) {
@@ -129,13 +80,6 @@ void run ()
     }
   }
 
-  if (!header_shown)
-    Stats::print_header (false);
-  header_shown = true;
-
+  Stats::print_header (false);
   stats.print (input, fields);
-
-  if (hist_stream)
-    stats.write_histogram (*hist_stream);
-
 }

@@ -51,6 +51,8 @@ Options to make SIFT provide additional output files
 
 -  **-csv file** output statistics of execution per iteration to a .csv file
 
+-  **-out_mu file** output the final value of SIFT proportionality coefficient mu to a text file
+
 -  **-output_debug** provide various output images for assessing & debugging performace etc.
 
 -  **-out_selection path** output a text file containing the binary selection of streamlines

@@ -37,6 +37,10 @@ namespace MR
             }
             writer (tck);
             progress.update ([&](){ return printf ("%8" PRIu64 " generated, %8" PRIu64 " selected", writer.total_count, writer.count); }, always_increment ? true : tck.size());
+            if (early_exit (writer)) {
+              WARN ("Track generation terminating prematurely: Highly unlikely to reach target number of streamlines (p<" + str(TCKGEN_EARLY_EXIT_PROB_THRESHOLD,1) + ")");
+              return false;
+            }
             return true;
           }
 

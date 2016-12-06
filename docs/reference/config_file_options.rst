@@ -284,6 +284,21 @@ List of MRtrix3 configuration file options
 
      A boolean value to indicate whether bitwise storage of binary data is permitted (most 3rd party software packages don't support bitwise data). If false (the default), data will be stored using more widely supported unsigned 8-bit integers.
 
+*  **NIFTI.AlwaysUseVer2**
+    *default: 0 (false)*
+
+     A boolean value to indicate whether NIfTI images should always be written in the new NIfTI-2 format. If false, images will be written in the older NIfTI-1 format by default, with the exception being files where the number of voxels along any axis exceeds the maximum permissible in that format (32767), in which case the output file will automatically switch to the NIfTI-2 format.
+
+*  **NIfTI.AutoLoadJSON**
+    *default: 0 (false)*
+
+     A boolean value to indicate whether, when opening NIfTI images, any corresponding JSON file should be automatically loaded
+
+*  **NIfTI.AutoSaveJSON**
+    *default: 0 (false)*
+
+     A boolean value to indicate whether, when writing NIfTI images, a corresponding JSON file should be automatically created in order to save any header entries that cannot be stored in the NIfTI header
+
 *  **NeedOpenGLCoreProfile**
     *default: 1 (true)*
 
@@ -318,6 +333,11 @@ List of MRtrix3 configuration file options
     *default: 0.4*
 
      The default intensity for the specular light in OpenGL renders.
+
+*  **TckgenEarlyExit**
+    *default: 0 (false)*
+
+     Specifies whether tckgen should be terminated prematurely in cases where it appears as though the target number of accepted streamlines is not going to be met.
 
 *  **TerminalColor**
     *default: 1 (true)*

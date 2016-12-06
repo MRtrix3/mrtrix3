@@ -17,15 +17,17 @@ For more details, see www.mrtrix.org'''
 externalCitations = False
 lastFile = ''
 mrtrixForce = ''
-mrtrixQuiet = ' -quiet'
+mrtrixVerbosity = ' -quiet'
 mrtrixNThreads = ''
 parser = ''
 tempDir = ''
 verbosity = 1
 workingDir = ''
 
+clearLine = ''
 colourClear = ''
 colourConsole = ''
+colourDebug = ''
 colourError = ''
 colourPrint = ''
 colourWarn = ''
@@ -45,8 +47,8 @@ def initialise():
   from lib.errorMessage          import errorMessage
   from lib.printMessage          import printMessage
   from lib.readMRtrixConfSetting import readMRtrixConfSetting
-  global args, citationList, cleanup, externalCitations, lastFile, mrtrixNThreads, mrtrixQuiet, parser, tempDir, verbosity, workingDir
-  global colourClear, colourConsole, colourError, colourPrint, colourWarn
+  global args, citationList, cleanup, externalCitations, lastFile, mrtrixNThreads, mrtrixVerbosity, parser, tempDir, verbosity, workingDir
+  global colourClear, colourConsole, colourDebug, colourError, colourPrint, colourWarn
 
   if not parser:
     errorMessage('Script error: Command-line parser must be initialised before app')
@@ -54,6 +56,10 @@ def initialise():
   if len(sys.argv) == 1:
     parser.print_help()
     sys.exit(0)
+
+  if sys.argv[-1] == '__print_usage_markdown__':
+    parser.printUsageMarkdown()
+    exit(0)
 
   if sys.argv[-1] == '__print_usage_rst__':
     parser.printUsageRst()
@@ -73,8 +79,10 @@ def initialise():
     # Windows now also gets coloured text terminal support, so make this the default
     use_colour = True
   if use_colour:
+    clearLine = '\033[0K'
     colourClear = '\033[0m'
-    colourConsole = '\033[03;34m'
+    colourConsole = '\033[03;36m'
+    colourDebug = '\033[03;34m'
     colourError = '\033[01;31m'
     colourPrint = '\033[03;32m'
     colourWarn = '\033[00;31m'
@@ -85,10 +93,13 @@ def initialise():
     mrtrixNThreads = ' -nthreads ' + args.nthreads
   if args.quiet:
     verbosity = 0
-    mrtrixQuiet = ' -quiet'
+    mrtrixVerbosity = ' -quiet'
   elif args.verbose:
     verbosity = 2
-    mrtrixQuiet = ''
+    mrtrixVerbosity = ''
+  elif args.debug:
+    verbosity = 3
+    mrtrixVerbosity = ' -info'
 
   if citationList:
     printMessage('')
@@ -179,7 +190,7 @@ def gotoTempDir():
 def complete():
   import os, shutil, sys
   from lib.printMessage import printMessage
-  global tempDir, workingDir
+  global colourClear, colourPrint, colourWarn, tempDir, workingDir
   printMessage('Changing back to original directory (' + workingDir + ')')
   os.chdir(workingDir)
   if cleanup and tempDir:
@@ -188,36 +199,41 @@ def complete():
   elif tempDir:
     # This needs to be printed even if the -quiet option is used
     if os.path.isfile(os.path.join(tempDir, 'error.txt')):
-      with open(os.path.join(tempDir, 'error.txt'),'rb') as errortext:
-        sys.stdout.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'Script failed while executing the command: ' + errortext.readline().rstrip() + colourClear + '\n')
-      sys.stdout.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'For debugging, inspect contents of temporary directory: ' + tempDir + colourClear + '\n')
+      with open(os.path.join(tempDir, 'error.txt'), 'r') as errortext:
+        sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'Script failed while executing the command: ' + errortext.readline().rstrip() + colourClear + '\n')
+      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'For debugging, inspect contents of temporary directory: ' + tempDir + colourClear + '\n')
     else:
-      sys.stdout.write(os.path.basename(sys.argv[0]) + ': ' + colourPrint + 'Contents of temporary directory kept, location: ' + tempDir + colourClear + '\n')
-    sys.stdout.flush()
+      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourPrint + 'Contents of temporary directory kept, location: ' + tempDir + colourClear + '\n')
 
 
 
 def make_dir(dir):
   import os
+  from lib.debugMessage import debugMessage
   if not os.path.exists(dir):
     os.makedirs(dir)
+    debugMessage('Created directory ' + dir)
+  else:
+    debugMessage('Directory ' + dir + ' already exists')
 
 
 
 # determines the common postfix for a list of filenames (including the file extension)
 def getCommonPostfix(inputFiles):
- first = inputFiles[0];
- cursor = 0
- found = False;
- common = ''
- for i in reversed(first):
-   if found == False:
-     for j in inputFiles:
-       if j[len(j)-cursor-1] != first[len(first)-cursor-1]:
-         found = True
-         break
-     if found == False:
-       common = first[len(first)-cursor-1] + common
-     cursor += 1
- return common
+  from lib.debugMessage import debugMessage
+  first = inputFiles[0];
+  cursor = 0
+  found = False;
+  common = ''
+  for i in reversed(first):
+    if found == False:
+      for j in inputFiles:
+        if j[len(j)-cursor-1] != first[len(first)-cursor-1]:
+          found = True
+          break
+      if found == False:
+        common = first[len(first)-cursor-1] + common
+      cursor += 1
+  debugMessage('Common postfix of ' + str(len(inputFiles)) + ' is \'' + common + '\'')
+  return common
 

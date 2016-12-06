@@ -13,30 +13,35 @@
  * 
  */
 
-#ifndef __mesh_vox2mesh_h__
-#define __mesh_vox2mesh_h__
+#ifndef __surface_algo_image2mesh_h__
+#define __surface_algo_image2mesh_h__
 
 #include <array>
 #include <map>
+#include <vector>
 
-#include "progressbar.h"
+#include "image_helpers.h"
+#include "transform.h"
 
-#include "mesh/mesh.h"
+#include "surface/mesh.h"
+#include "surface/types.h"
 
 
 
 namespace MR
 {
-  namespace Mesh
+  namespace Surface
   {
-
-
-    // Function to convert a binary image into a mesh
-    // Note that this produces a 'hard mesh' that follows the voxel boundaries exactly;
-    //   it therefore appears very 'blocky'
-    template <class ImageType>
-    void vox2mesh (const ImageType& input_image, Mesh& out)
+    namespace Algo
     {
+
+
+      // Function to convert a binary image into a mesh
+      // Note that this produces a mesh that follows the voxel boundaries exactly;
+      //   it therefore appears very 'blocky'
+      template <class ImageType>
+      void image2mesh_blocky (const ImageType& input_image, Mesh& out)
+      {
 
         static const Vox steps[6] = { Vox ( 0,  0, -1),
                                       Vox ( 0, -1,  0),
@@ -45,34 +50,35 @@ namespace MR
                                       Vox ( 0,  1,  0),
                                       Vox ( 1,  0,  0) };
 
-        static const int plane_axes[6][2] = { {0, 1},
+        static const int plane_axes[6][2] = { {1, 0},
                                               {0, 2},
-                                              {1, 2},
+                                              {2, 1},
                                               {0, 1},
-                                              {0, 2},
+                                              {2, 0},
                                               {1, 2} };
 
         if (input_image.ndim() != 3)
           throw Exception ("Voxel-to-mesh conversion only works for 3D images");
 
-        ImageType in (input_image), neighbour (input_image);
+        ImageType voxel (input_image), neighbour (input_image);
         VertexList vertices;
-        TriangleList polygons;
-        std::map< Vox, size_t > vox2vertindex;
+        TriangleList triangles;
+        std::map<Vox, size_t> vox2vertindex;
 
         // Perform all initial calculations in voxel space;
-        //   only after the data has been written to a Mesh class will the conversion to
-        //   real space take place
-        //
+        //   only once the final vertex position in voxel space is determined
+        //   is it transformed to real space for the final output
+        Transform transform (input_image);
+
         // Also, for initial calculations, do this such that a voxel location actually
         //   refers to the lower corner of the voxel; that way searches for existing
         //   vertices can be done using a simple map
 
         Vox pos;
-        for (auto loop = Loop(in) (in); loop; ++loop) {
-          if (in.value()) {
+        for (auto loop = Loop(voxel) (voxel); loop; ++loop) {
+          if (voxel.value()) {
 
-            assign_pos_of (in).to (pos);
+            assign_pos_of (voxel).to (pos);
 
             for (size_t adj = 0; adj != 6; ++adj) {
 
@@ -115,12 +121,13 @@ namespace MR
                     const auto existing = vox2vertindex.find (voxels[in_vertex]);
                     if (existing == vox2vertindex.end()) {
                       triangle_vertices[out_vertex] = vertices.size();
-                      vertices.push_back (Vertex (float(voxels[in_vertex][0]) - 0.5f, float(voxels[in_vertex][1]) - 0.5f, float(voxels[in_vertex][2]) - 0.5f));
+                      Eigen::Vector3 pos_voxelspace (default_type(voxels[in_vertex][0]) - 0.5, default_type(voxels[in_vertex][1]) - 0.5, default_type(voxels[in_vertex][2]) - 0.5);
+                      vertices.push_back (transform.voxel2scanner * pos_voxelspace);
                     } else {
                       triangle_vertices[out_vertex] = existing->second;
                     }
                   }
-                  polygons.push_back (triangle_vertices);
+                  triangles.push_back (triangle_vertices);
                 }
 
               } // End checking for interface
@@ -129,15 +136,15 @@ namespace MR
         } } // End looping over image
 
         // Write the result to the output class
-        out.load (vertices, polygons);
+        out.load (vertices, triangles);
 
     }
 
 
 
-    // vox2mesh function using the Marching Cubes algorithm
+    // Image-to-mesh conversion function using the Marching Cubes algorithm
     template <class ImageType>
-    void vox2mesh_mc (const ImageType& input_image, const float threshold, Mesh& out)
+    void image2mesh_mc (const ImageType& input_image, Mesh& out, const default_type threshold)
     {
       static const Vox neighbour_offsets[] = { Vox (0, 0, 0),
                                                Vox (1, 0, 0),
@@ -430,7 +437,9 @@ namespace MR
         {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1} };
 
       VertexList vertices;
-      TriangleList polygons;
+      TriangleList triangles;
+
+      Transform transform (input_image);
 
       ImageType voxel (input_image);
       float in_vertex_values[8];
@@ -488,9 +497,9 @@ namespace MR
                   edge_to_output_vertex[edge_index] = vertices.size();
                   // Calculate the precise position of this vertex, based on the
                   //   image intensities in the two relevant voxels
-                  const float alpha = (threshold - in_vertex_values[vertex_indices[0]]) / (in_vertex_values[vertex_indices[1]] - in_vertex_values[vertex_indices[0]]);
-                  const Vertex pos = vertex_positions[0].cast<default_type>() + ((1.0f - alpha) * (vertex_positions[1] - vertex_positions[0]).cast<default_type>());
-                  vertices.push_back (pos);
+                  const default_type alpha = (threshold - in_vertex_values[vertex_indices[0]]) / (in_vertex_values[vertex_indices[1]] - in_vertex_values[vertex_indices[0]]);
+                  const Vertex pos_voxelspace = vertex_positions[0].cast<default_type>() + ((1.0 - alpha) * (vertex_positions[1] - vertex_positions[0]).cast<default_type>());
+                  vertices.push_back (transform.voxel2scanner * pos_voxelspace);
                 } else {
                   edge_to_output_vertex[edge_index] = existing_zero->second;
                 }
@@ -506,18 +515,18 @@ namespace MR
             //   to calculate the correct surface normals
             for (const int8_t* first_edge = cube_triangle_table[code]; *first_edge >= 0; first_edge += 3) {
               const uint32_t indices[3] { edge_to_output_vertex[*first_edge], edge_to_output_vertex[*(first_edge+2)], edge_to_output_vertex[*(first_edge+1)] };
-              polygons.push_back (Triangle (indices));
+              triangles.push_back (Triangle (indices));
             }
 
       } } } // Finished looping over all voxels in the input image
 
       // Write the result to the output class
-      out.load (vertices, polygons);
+      out.load (vertices, triangles);
 
     }
 
 
-
+    }
   }
 }
 

@@ -30,10 +30,12 @@ def execute():
   import os, shutil
   import lib.app
   from lib.delFile      import delFile
+  from lib.errorMessage import errorMessage
   from lib.getImageStat import getImageStat
   from lib.getUserPath  import getUserPath
   from lib.printMessage import printMessage
   from lib.runCommand   import runCommand
+  from lib.runFunction  import runFunction
   
   lmax_option = ''
   if lib.app.args.lmax:
@@ -96,8 +98,8 @@ def execute():
       if int(max_diff) == 0:
         printMessage('Convergence of SF voxel selection detected at iteration ' + str(iteration))
         delFile(prefix + 'CF.mif')
-        shutil.copyfile(prefix + 'RF.txt', 'response.txt')
-        shutil.move(prefix + 'SF.mif', 'voxels.mif')
+        runFunction(shutil.copyfile, prefix + 'RF.txt', 'response.txt')
+        runFunction(shutil.move, prefix + 'SF.mif', 'voxels.mif')
         break
 
     # Select a greater number of top single-fibre voxels, and dilate (within bounds of initial mask);
@@ -110,8 +112,8 @@ def execute():
   # If terminating due to running out of iterations, still need to put the results in the appropriate location
   if not os.path.exists('response.txt'):
     printMessage('Exiting after maximum ' + str(lib.app.args.max_iters) + ' iterations')
-    shutil.copyfile('iter' + str(lib.app.args.max_iters-1) + '_RF.txt', 'response.txt')
-    shutil.move('iter' + str(lib.app.args.max_iters-1) + '_SF.mif', 'voxels.mif')
+    runFunction(shutil.copyfile, 'iter' + str(lib.app.args.max_iters-1) + '_RF.txt', 'response.txt')
+    runFunction(shutil.move, 'iter' + str(lib.app.args.max_iters-1) + '_SF.mif', 'voxels.mif')
     
-  shutil.copyfile('response.txt', getUserPath(lib.app.args.output, False))
+  runFunction(shutil.copyfile, 'response.txt', getUserPath(lib.app.args.output, False))
 

@@ -2,7 +2,8 @@ mrtrix_bin_list = [ ]
 
 def runCommand(cmd, exitOnError=True):
 
-  import lib.app, os, subprocess, sys
+  import inspect, lib.app, os, subprocess, sys
+  from lib.debugMessage import debugMessage
   from lib.errorMessage import errorMessage
   from lib.isWindows    import isWindows
   from lib.printMessage import printMessage
@@ -17,18 +18,7 @@ def runCommand(cmd, exitOnError=True):
     # On Windows, strip the .exe's
     mrtrix_bin_list = [ os.path.splitext(name)[0] for name in os.listdir(mrtrix_bin_path) ]
 
-  if lib.app.lastFile:
-    # Check to see if the last file produced is produced by this command;
-    #   if it is, this will be the last called command that gets skipped
-    if lib.app.lastFile in cmd:
-      lib.app.lastFile = ''
-    if lib.app.verbosity:
-      sys.stdout.write('Skipping command: ' + cmd + '\n')
-      sys.stdout.flush()
-    return
-
   # Vectorise the command string, preserving anything encased within quotation marks
-  # This will eventually allow the use of subprocess rather than os.system()
   # TODO Use shlex.split()?
   quotation_split = cmd.split('\"')
   if not len(quotation_split)%2:
@@ -42,6 +32,26 @@ def runCommand(cmd, exitOnError=True):
         cmdsplit.append(item)
       else:
         cmdsplit.extend(item.split())
+
+  if lib.app.lastFile:
+    # Check to see if the last file produced in the previous script execution is
+    #   intended to be produced by this command; if it is, this will be the last
+    #   command that gets skipped by the -continue option
+    # It's possible that the file might be defined in a '--option=XXX' style argument
+    #  It's also possible that the filename in the command string has the file extension omitted
+    for entry in cmdsplit:
+      if entry.startswith('--') and '=' in entry:
+        cmdtotest = entry.split('=')[1]
+      else:
+        cmdtotest = entry
+      filetotest = [ lib.app.lastFile, os.path.splitext(lib.app.lastFile)[0] ]
+      if cmdtotest in filetotest:
+        debugMessage('Detected last file \'' + lib.app.lastFile + '\' in command \'' + cmd + '\'; this is the last runCommand() / runFunction() call that will be skipped')
+        lib.app.lastFile = ''
+        break
+    if lib.app.verbosity:
+      sys.stderr.write(lib.app.colourConsole + 'Skipping command:' + lib.app.colourClear + ' ' + cmd + '\n')
+    return
 
   # For any MRtrix commands, need to insert the nthreads and quiet calls
   new_cmdsplit = [ ]
@@ -71,15 +81,15 @@ def runCommand(cmd, exitOnError=True):
       if is_mrtrix_binary:
         if lib.app.mrtrixNThreads:
           new_cmdsplit.extend(lib.app.mrtrixNThreads.strip().split())
-        if lib.app.mrtrixQuiet:
-          new_cmdsplit.append(lib.app.mrtrixQuiet.strip())
+        if lib.app.mrtrixVerbosity:
+          new_cmdsplit.append(lib.app.mrtrixVerbosity.strip())
       next_is_binary = True
     new_cmdsplit.append(item)
   if is_mrtrix_binary:
     if lib.app.mrtrixNThreads:
       new_cmdsplit.extend(lib.app.mrtrixNThreads.strip().split())
-    if lib.app.mrtrixQuiet:
-      new_cmdsplit.append(lib.app.mrtrixQuiet.strip())
+    if lib.app.mrtrixVerbosity:
+      new_cmdsplit.append(lib.app.mrtrixVerbosity.strip())
   cmdsplit = new_cmdsplit
 
   # If the piping symbol appears anywhere, we need to split this into multiple commands and execute them separately
@@ -93,49 +103,61 @@ def runCommand(cmd, exitOnError=True):
   cmdstack.append(cmdsplit[prev:])
 
   if lib.app.verbosity:
-    sys.stdout.write(lib.app.colourConsole + 'Command:' + lib.app.colourClear + ' ' + cmd + '\n')
-    sys.stdout.flush()
+    sys.stderr.write(lib.app.colourConsole + 'Command:' + lib.app.colourClear + ' ' + cmd + '\n')
 
+  debugMessage('To execute: ' + str(cmdstack))
+
+  # Execute all processes
+  processes = [ ]
+  for index, command in enumerate(cmdstack):
+    if index > 0:
+      proc_in = processes[index-1].stdout
+    else:
+      proc_in = None
+    process = subprocess.Popen (command, stdin=proc_in, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    processes.append(process)
+
+  return_stdout = ''
+  return_stderr = ''
   error = False
   error_text = ''
-  # TODO If script is running in verbose mode, ideally want to duplicate stderr output in the terminal
-  if len(cmdstack) == 1:
-    process = subprocess.Popen(cmdstack[0], stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+  # Wait for all commands to complete
+  for process in processes:
+
+    # Switch how we monitor running processes / wait for them to complete
+    #   depending on whether or not the user has specified -verbose option
+    if lib.app.verbosity > 1:
+      stderrdata = ''
+      while True:
+        # Have to read one character at a time: Waiting for a newline character using e.g. readline() will prevent MRtrix progressbars from appearing
+        line = process.stderr.read(1).decode('utf-8')
+        sys.stderr.write(line)
+        stderrdata += line
+        if not line and process.poll() != None:
+          break
+    else:
+      process.wait()
+
+  # Let all commands complete before grabbing stdout data; querying the stdout data
+  #   immediately after command completion can intermittently prevent the data from
+  #   getting to the following command (e.g. MRtrix piping)
+  for process in processes:
     (stdoutdata, stderrdata) = process.communicate()
+    stdoutdata = stdoutdata.decode('utf-8')
+    stderrdata = stderrdata.decode('utf-8')
+    return_stdout += stdoutdata + '\n'
+    return_stderr += stderrdata + '\n'
     if process.returncode:
       error = True
-      error_text = stdoutdata.decode('utf-8') + stderrdata.decode('utf-8')
-  else:
-    processes = [ ]
-    for index, command in enumerate(cmdstack):
-      if index > 0:
-        proc_in = processes[index-1].stdout
-      else:
-        proc_in = None
-      process = subprocess.Popen (command, stdin=proc_in, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-      processes.append(process)
-
-    # Wait for all commands to complete
-    for index, process in enumerate(processes):
-      if index < len(cmdstack)-1:
-        # Only capture the output if the command failed; otherwise, let it pipe to the next command
-        process.wait()
-        if process.returncode:
-          error = True
-          (stdoutdata, stderrdata) = process.communicate()
-          error_text = error_text + stdoutdata.decode('utf-8') + stderrdata.decode('utf-8')
-      else:
-        (stdoutdata, stderrdata) = process.communicate()
-        if process.returncode:
-          error = True
-          error_text = error_text + stdoutdata.decode('utf-8') + stderrdata.decode('utf-8')
-
+      error_text += stdoutdata + stderrdata
 
   if (error):
     lib.app.cleanup = False
     if exitOnError:
+      caller = inspect.getframeinfo(inspect.stack()[1][0])
       printMessage('')
-      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + lib.app.colourError + '[ERROR] Command failed: ' + cmd + lib.app.colourClear + '\n')
+      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + lib.app.colourError + '[ERROR] Command failed: ' + cmd + lib.app.colourClear + lib.app.colourDebug + ' (' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')' + lib.app.colourClear + '\n')
       sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + lib.app.colourPrint + 'Output of failed command:' + lib.app.colourClear + '\n')
       sys.stderr.write(error_text)
       if lib.app.tempDir:
@@ -152,3 +174,6 @@ def runCommand(cmd, exitOnError=True):
   if lib.app.tempDir:
     with open(os.path.join(lib.app.tempDir, 'log.txt'), 'a') as outfile:
       outfile.write(cmd + '\n')
+
+  return (return_stdout, return_stderr)
+

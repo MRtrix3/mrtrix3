@@ -49,7 +49,7 @@ using namespace MR::DWI::Tractography::Connectome;
 const char* file_outputs[] = { "per_edge", "per_node", "single", NULL };
 
 
-const OptionGroup OutputOptions = OptionGroup ("Options for determining the content / format of output files")
+const OptionGroup TrackOutputOptions = OptionGroup ("Options for determining the content / format of output files")
 
     + Option ("nodes", "only select tracks that involve a set of nodes of interest (provide as a comma-separated list of integers)")
       + Argument ("list").type_sequence_int()
@@ -99,7 +99,7 @@ void usage ()
 
 
   OPTIONS
-  + OutputOptions
+  + TrackOutputOptions
   + TrackWeightsOptions;
 
 }

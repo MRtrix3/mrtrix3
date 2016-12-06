@@ -200,7 +200,7 @@ namespace MR
 
           class Dixel : public ModeBase
           {
-              typedef MR::DWI::Directions::dir_t dir_t;
+              typedef MR::DWI::Directions::index_type dir_t;
             public:
               Dixel (Renderer& parent) :
                   ModeBase (parent),

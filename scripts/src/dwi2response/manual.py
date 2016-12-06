@@ -20,7 +20,7 @@ def checkOutputFiles():
 def getInputFiles():
   import os
   import lib.app
-  from lib.getUserPath   import getUserPath
+  from lib.getUserPath import getUserPath
   from lib.runCommand  import runCommand
   from lib.warnMessage import warnMessage
   mask_path = os.path.join(lib.app.tempDir, 'mask.mif')
@@ -40,6 +40,7 @@ def execute():
   from lib.getHeaderInfo import getHeaderInfo
   from lib.getUserPath   import getUserPath
   from lib.runCommand    import runCommand
+  from lib.runFunction   import runFunction
   
   shells = [ int(round(float(x))) for x in getHeaderInfo('dwi.mif', 'shells').split() ]
   
@@ -76,6 +77,6 @@ def execute():
       line += ['0'] * (max_length - len(line))
       f.write(' '.join(line) + '\n')
 
-  shutil.copyfile('response.txt', getUserPath(lib.app.args.output, False))
-  shutil.copyfile('in_voxels.mif', 'voxels.mif')
+  runFunction(shutil.copyfile, 'response.txt', getUserPath(lib.app.args.output, False))
+  runFunction(shutil.copyfile, 'in_voxels.mif', 'voxels.mif')
 

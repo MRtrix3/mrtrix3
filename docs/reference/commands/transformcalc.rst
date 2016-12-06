@@ -17,9 +17,7 @@ Synopsis
 Description
 -----------
 
-This command's function is to process linear transformation matrices.
-
-It allows to perform affine matrix operations or to convert the transformation matrix provided by FSL's flirt command to a format usable in MRtrix
+This command's function is to perform calculations on linear transformation matrices.
 
 Options
 -------

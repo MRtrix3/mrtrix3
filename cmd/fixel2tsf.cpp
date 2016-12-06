@@ -105,7 +105,7 @@ void run ()
       for (SetVoxelDir::const_iterator d = dixels.begin(); d != dixels.end(); ++d) {
         if ((int)round(voxel_pos[0]) == (*d)[0] && (int)round(voxel_pos[1]) == (*d)[1] && (int)round(voxel_pos[2]) == (*d)[2]) {
           assign_pos_of (*d).to (input_fixel);
-          Eigen::Vector3f dir = d->get_dir();
+          Eigen::Vector3f dir = d->get_dir().cast<float>();
           dir.normalize();
           float largest_dp = 0.0;
           int32_t closest_fixel_index = -1;

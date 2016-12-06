@@ -19,6 +19,7 @@ from lib.getUserPath  import getUserPath
 from lib.isWindows    import isWindows
 from lib.printMessage import printMessage
 from lib.runCommand   import runCommand
+from lib.runFunction  import runFunction
 
 lib.app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
 lib.app.addCitation('', 'Patenaude, B.; Smith, S. M.; Kennedy, D. N. & Jenkinson, M. A Bayesian model of shape and appearance for subcortical brain segmentation. NeuroImage, 2011, 56, 907-922', True)
@@ -104,13 +105,13 @@ for key, value in structure_map.items():
   runCommand('meshconvert ' + vtk_in_path + ' transformed.vtk -transform_first2real T1.nii')
   runCommand('mesh2pve transformed.vtk parc.mif - | mrthreshold - ' + image_path + ' -abs 0.5')
   if not lib.app.lastFile:
-    os.remove('transformed.vtk')
+    runFunction(os.remove, 'transformed.vtk')
   # Add to the SGM image; don't worry about overlap for now
   node_index = sgm_lut[value]
   runCommand('mrcalc ' + image_path + ' ' + node_index + ' sgm.mif -if sgm_new.mif')
   if not lib.app.lastFile:
-    os.remove('sgm.mif')
-    os.rename('sgm_new.mif', 'sgm.mif')
+    runFunction(os.remove, 'sgm.mif')
+    runFunction(os.rename, 'sgm_new.mif', 'sgm.mif')
 
 # Detect any overlapping voxels between the SGM masks, and set to zero
 runCommand('mrmath ' + ' '.join(mask_list) + ' sum - | mrcalc - 1 -gt sgm_overlap_mask.mif')
@@ -128,8 +129,8 @@ for struct in structure_map.keys():
   index = getImageStat('sgm_new_labels.mif', 'median', image_path)
   runCommand('mrcalc parc.mif ' + index + ' -eq 0 parc.mif -if parc_removed.mif')
   if not lib.app.lastFile:
-    os.remove('parc.mif')
-    os.rename('parc_removed.mif', 'parc.mif')
+    runFunction(os.remove, 'parc.mif')
+    runFunction(os.rename, 'parc_removed.mif', 'parc.mif')
 
 # Insert the new delineations of all SGM structures in a single call
 # Enforce unsigned integer datatype of output image

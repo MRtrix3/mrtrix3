@@ -34,9 +34,7 @@ Metric values for fixel-based sparse output images
 FOD FMLS segmenter options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-fmls_ratio_integral_to_neg value** threshold the ratio between the integral of a positive FOD lobe, and the integral of the largest negative lobe. Any lobe that fails to exceed the integral dictated by this ratio will be discarded. Default: 0.
-
--  **-fmls_ratio_peak_to_mean_neg value** threshold the ratio between the peak amplitude of a positive FOD lobe, and the mean peak amplitude of all negative lobes. Any lobe that fails to exceed the peak amplitude dictated by this ratio will be discarded. Default: 1.
+-  **-fmls_integral value** threshold absolute numerical integral of positive FOD lobes. Any lobe for which the integral is smaller than this threshold will be discarded. Default: 0.
 
 -  **-fmls_peak_value value** threshold the raw peak amplitude of positive FOD lobes. Any lobe for which the peak amplitude is smaller than this threshold will be discarded. Default: 0.1.
 

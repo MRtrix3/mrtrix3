@@ -66,20 +66,20 @@ namespace MR
         std::string dtype, layout;
         std::vector<int> dim;
         std::vector<default_type> vox, scaling;
-        std::vector<std::vector<default_type>> transform, dw_scheme;
+        std::vector<std::vector<default_type>> transform;
 
         std::string key, value;
         while (next_keyvalue (kv, key, value)) {
-          key = lowercase (key);
-          if (key == "dim") dim = parse_ints (value);
-          else if (key == "vox") vox = parse_floats (value);
-          else if (key == "layout") layout = value;
-          else if (key == "datatype") dtype = value;
-          else if (key == "scaling") scaling = parse_floats (value);
-          else if (key == "transform")
+          const std::string lkey = lowercase (key);
+          if (lkey == "dim") dim = parse_ints (value);
+          else if (lkey == "vox") vox = parse_floats (value);
+          else if (lkey == "layout") layout = value;
+          else if (lkey == "datatype") dtype = value;
+          else if (lkey == "scaling") scaling = parse_floats (value);
+          else if (lkey == "transform")
             transform.push_back (parse_floats (value));
           else if (key.size() && value.size())
-            add_line (H.keyval()[key], value);
+            add_line (H.keyval()[key], value); // Preserve capitalization if not a compulsory key
         }
 
         if (dim.empty())

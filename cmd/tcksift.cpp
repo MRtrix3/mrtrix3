@@ -144,6 +144,12 @@ void run ()
 
   }
 
+  opt = get_options ("out_mu");
+  if (opt.size()) {
+    File::OFStream out_mu (opt[0][0]);
+    out_mu << sifter.mu();
+  }
+
 }
 
 

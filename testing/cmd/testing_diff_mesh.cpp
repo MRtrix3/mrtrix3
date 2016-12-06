@@ -24,7 +24,8 @@
 #include "progressbar.h"
 
 #include "types.h"
-#include "mesh/mesh.h"
+#include "surface/mesh.h"
+#include "surface/mesh_multi.h"
 
 using namespace MR;
 using namespace App;
@@ -49,18 +50,18 @@ void run ()
 {
   const default_type dist_sq = Math::pow2 (default_type(argument[2]));
 
-  MR::Mesh::MeshMulti multi_in1, multi_in2;
+  MR::Surface::MeshMulti multi_in1, multi_in2;
 
   // Read in the mesh data
   try {
-    MR::Mesh::Mesh mesh (argument[0]);
+    MR::Surface::Mesh mesh (argument[0]);
     multi_in1.push_back (mesh);
   } catch (...) {
     multi_in1.load (argument[0]);
   }
   
   try {
-    MR::Mesh::Mesh mesh (argument[1]);
+    MR::Surface::Mesh mesh (argument[1]);
     multi_in2.push_back (mesh);
   } catch (...) {
     multi_in2.load (argument[1]);
@@ -71,8 +72,8 @@ void run ()
   
   for (size_t mesh_index = 0; mesh_index != multi_in1.size(); ++mesh_index) {
   
-    const MR::Mesh::Mesh& in1 (multi_in1[mesh_index]);
-    const MR::Mesh::Mesh& in2 (multi_in2[mesh_index]);
+    const MR::Surface::Mesh& in1 (multi_in1[mesh_index]);
+    const MR::Surface::Mesh& in2 (multi_in2[mesh_index]);
 
   // Can't test this: Some formats have to duplicate the vertex positions
   //if (in1.num_vertices() != in2.num_vertices())
