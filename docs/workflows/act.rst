@@ -21,9 +21,7 @@ Pre-processing steps
 DWI distortion correction
 ^^^^
 
-For the anatomical information to be incorporated accurately during the tractography reconstruction process, any geometric distortions present in the diffusion images must be corrected. The FSL 5.0 commands ``topup`` and ``eddy`` are effective in performing this correction based on a reversed phase-encode acquisition, though their interfaces can be difficult to figure out.
-
-A common strategy is to acquire a pair of *b=0* images, the first with phase encode A>>P and the second P>>A, followed by the DWI acquisition with phase encode A>>P; the provided script ``dwipreproc`` using the ``-rpe_pair`` option interfaces with FSL to perform the distortion correction in this particular case. For alternative acquisitions, see the help page of the ``dwipreproc`` script.
+For the anatomical information to be incorporated accurately during the tractography reconstruction process, any geometric distortions present in the diffusion images must be corrected. The FSL 5.0 commands ``topup`` and ``eddy`` are effective in performing this correction based on a reversed phase-encode acquisition, though their interfaces can be daunting. We therefore provide a wrapper script, ``dwipreproc``, which interfaces with these tools to perform correction of multiple forms of image distortion (motion, eddy current and inhomogeneity). Please read the :ref:`DWI distortion correction using ``dwipreproc`` ` page, and the :ref:``dwipreproc`` help page for further details.
 
 Image registration
 ^^^^

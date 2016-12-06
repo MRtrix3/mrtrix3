@@ -41,6 +41,7 @@ Welcome to the MRtrix user documentation!
    
    tutorials/basic_dwi_processing
    tutorials/denoising
+   tutorials/dwipreproc
    tutorials/hcp_connectome
    tutorials/connectome_tool
    tutorials/labelconvert
