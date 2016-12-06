@@ -27,13 +27,13 @@ namespace MR
       TrackProcessor::TrackProcessor (Image<uint32_t>& fixel_indexer,
                                       const std::vector<direction_type>& fixel_directions,
                                       std::vector<uint16_t>& fixel_TDI,
-                                      std::vector<std::map<int32_t, connectivity> >& connectivity_matrix,
+                                      std::vector<std::map<uint32_t, connectivity> >& connectivity_matrix,
                                       const value_type angular_threshold) :
-          fixel_indexer        (fixel_indexer) ,
-          fixel_directions     (fixel_directions),
-          fixel_TDI            (fixel_TDI),
-          connectivity_matrix  (connectivity_matrix),
-          angular_threshold_dp (std::cos (angular_threshold * (Math::pi/180.0))) { }
+                                        fixel_indexer        (fixel_indexer) ,
+                                        fixel_directions     (fixel_directions),
+                                        fixel_TDI            (fixel_TDI),
+                                        connectivity_matrix  (connectivity_matrix),
+                                        angular_threshold_dp (std::cos (angular_threshold * (Math::pi/180.0))) { }
 
 
 
