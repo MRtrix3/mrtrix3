@@ -65,6 +65,8 @@ void usage ()
     + Argument ("response", "the output zonal spherical harmonic coefficients").type_file_out();
 
   OPTIONS
+    + Option ("noconstraint", "disable the non-negativity and monotonicity constraints")
+
     + Option ("directions", "provide an external text file containing the directions along which the amplitudes are sampled")
       + Argument("path").type_file_in()
 
@@ -300,31 +302,44 @@ void run ()
 
     Eigen::VectorXd rf;
     shell_desc = (shells && shells->count() > 1) ? ("Shell b=" + str(int(std::round((*shells)[shell_index].get_mean()))) + ": ") : "";
+    // Is this anything other than an isotropic response?
     if (lmax[shell_index]) {
 
-      // Generate the constraint matrix
-      // We are going to both constrain the amplitudes to be non-negative, and constrain the derivatives to be non-negative
-      const size_t num_angles_constraint = 90;
-      Eigen::VectorXd els;
-      els.resize (num_angles_constraint+1);
-      for (size_t i = 0; i <= num_angles_constraint; ++i)
-        els[i] = default_type(i) * Math::pi / 180.0;
-      Eigen::MatrixXd amp_transform   = Math::ZSH::init_amp_transform  <default_type> (els, lmax[shell_index]);
-      Eigen::MatrixXd deriv_transform = Math::ZSH::init_deriv_transform<default_type> (els, lmax[shell_index]);
+      if (get_options("noconstraint").size()) {
 
-      Eigen::MatrixXd constraints;
-      constraints.resize (amp_transform.rows() + deriv_transform.rows(), amp_transform.cols());
-      constraints.block (0, 0, amp_transform.rows(), amp_transform.cols()) = amp_transform;
-      constraints.block (amp_transform.rows(), 0, deriv_transform.rows(), deriv_transform.cols()) = deriv_transform;
+        // Get an ordinary least squares solution
+        Eigen::FullPivLU<Eigen::MatrixXd> solver (cat_transforms);
+        rf = solver.solve (cat_data);
 
-      // Initialise the problem solver
-      auto problem = Math::ICLS::Problem<default_type> (cat_transforms, constraints, 1e-10, 1e-10);
-      auto solver  = Math::ICLS::Solver <default_type> (problem);
+        CONSOLE (shell_desc + "Response function [" + str(rf.transpose().cast<float>()) + "] solved via ordinary least-squares from " + str(sf_counter) + " voxels");
 
-      // Estimate the solution
-      const size_t niter = solver (rf, cat_data);
+      } else {
 
-      INFO (shell_desc + "Response function [" + str(rf.transpose().cast<float>()) + " ] solved after " + str(niter) + " iterations from " + str(sf_counter) + " voxels");
+        // Generate the constraint matrix
+        // We are going to both constrain the amplitudes to be non-negative, and constrain the derivatives to be non-negative
+        Eigen::MatrixXd constraints;
+        const size_t num_angles_constraint = 90;
+        Eigen::VectorXd els;
+        els.resize (num_angles_constraint+1);
+        for (size_t i = 0; i <= num_angles_constraint; ++i)
+          els[i] = default_type(i) * Math::pi / 180.0;
+        Eigen::MatrixXd amp_transform   = Math::ZSH::init_amp_transform  <default_type> (els, lmax[shell_index]);
+        Eigen::MatrixXd deriv_transform = Math::ZSH::init_deriv_transform<default_type> (els, lmax[shell_index]);
+
+        constraints.resize (amp_transform.rows() + deriv_transform.rows(), amp_transform.cols());
+        constraints.block (0, 0, amp_transform.rows(), amp_transform.cols()) = amp_transform;
+        constraints.block (amp_transform.rows(), 0, deriv_transform.rows(), deriv_transform.cols()) = deriv_transform;
+
+        // Initialise the problem solver
+        auto problem = Math::ICLS::Problem<default_type> (cat_transforms, constraints, 1e-10, 1e-10);
+        auto solver  = Math::ICLS::Solver <default_type> (problem);
+
+        // Estimate the solution
+        const size_t niter = solver (rf, cat_data);
+
+        CONSOLE (shell_desc + "Response function [" + str(rf.transpose().cast<float>()) + " ] solved after " + str(niter) + " constraint iterations from " + str(sf_counter) + " voxels");
+
+      }
 
     } else {
 
@@ -332,7 +347,7 @@ void run ()
       rf.resize(1);
       rf[0] = cat_data.mean() * std::sqrt(4*Math::pi);
 
-      INFO (shell_desc + "Response function [ " + str(float(rf[0])) + " ] from average of " + str(sf_counter) + " voxels");
+      CONSOLE (shell_desc + "Response function [ " + str(float(rf[0])) + " ] from average of " + str(sf_counter) + " voxels");
 
     }
 

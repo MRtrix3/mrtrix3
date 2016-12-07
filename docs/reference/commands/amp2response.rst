@@ -18,10 +18,12 @@ Synopsis
 Description
 -----------
 
-Estimate response function coefficients based on the DWI signal in single-fibre voxels. This command uses the image data from all selected single-fibre voxels concurrently, rather than simply averaging their individual spherical harmonic coefficients. It also ensures that the response function is non-negative, and monotonic (i.e. its amplitude must increase from the fibre direction out to the orthogonal plane).
+Estimate response function coefficients based on the DWI signal in single-fibre voxels. This command uses the image data from all selected single-fibre voxels concurrently, rather than simply averaging their individual spherical harmonic coefficients. It also ensures that the response function is non-negative, and monotonic (i.e. its amplitude must increase from the fibre direction out to the orthogonal plane). If multi-shell data are provided, and one or more b-value shells are not explicitly requested, the command will generate a response function for every b-value shell.
 
 Options
 -------
+
+-  **-noconstraint** disable the non-negativity and monotonicity constraints
 
 -  **-directions path** provide an external text file containing the directions along which the amplitudes are sampled
 
