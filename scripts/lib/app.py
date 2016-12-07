@@ -143,7 +143,7 @@ def makeTempDir():
   from lib.errorMessage          import errorMessage
   from lib.printMessage          import printMessage
   from lib.readMRtrixConfSetting import readMRtrixConfSetting
-  global args, tempDir
+  global args, tempDir, workingDir
   if args.cont:
     printMessage('Skipping temporary directory creation due to use of -continue option')
     return
@@ -157,7 +157,7 @@ def makeTempDir():
       if os.name == 'posix':
         dir_path = '/tmp'
       else:
-        dir_path = '.'
+        dir_path = workingDir
   prefix = readMRtrixConfSetting('TmpFilePrefix')
   if not prefix:
     prefix = os.path.basename(sys.argv[0]) + '-tmp-'
@@ -171,6 +171,7 @@ def makeTempDir():
     outfile.write(workingDir + '\n')
   with open(os.path.join(tempDir, 'command.txt'), 'w') as outfile:
     outfile.write(' '.join(sys.argv) + '\n')
+  open(os.path.join(tempDir, 'log.txt'), 'w').close()
 
 
 
@@ -221,9 +222,9 @@ def make_dir(dir):
 # determines the common postfix for a list of filenames (including the file extension)
 def getCommonPostfix(inputFiles):
   from lib.debugMessage import debugMessage
-  first = inputFiles[0];
+  first = inputFiles[0]
   cursor = 0
-  found = False;
+  found = False
   common = ''
   for i in reversed(first):
     if found == False:
