@@ -15,62 +15,86 @@ The major benefit of the new design is that *MRtrix3* is now capable of not only
   
   Although the ``dwipreproc`` script is provided as part of *MRtrix3* in the hope that users will find it useful, the major image processing steps undertaken by this script are still performed using tools developed at FMRIB and provided as part of FSL. It is therefore *essential* that the appropriate references be cited whenever this script is used!
 
-The ``dwipreproc`` script now has four major 'modes' of operation, that can be selected at the command-line using the ``-rpe_*`` options. Note that exactly *one* of these options ***must*** be provided:
+The ``dwipreproc`` script now has four major 'modes' of operation, that can be selected at the command-line using the ``-rpe_*`` options. Note that exactly *one* of these options ***must*** be provided. The following are example use cases; specific parameters, file names etc. may need to be altered to reflect your particular data.
 
 1. **No variation in phase encoding**
 
   All DWI volumes are acquired with precisely the same phase encoding direction and EPI readout time, and no additional spin-echo *b*=0 images are acquired over and above those interleaved within the DWI acquisition. It is therefore impossible to estimate the inhomogeneity field using ``topup``, and `eddy` will perform motion and eddy current correction only.
 
+  *Example DICOM image data*:
+  
+    ::
+    
+        002_-_DWI_phaseAP/
+
   *Old usage* (i.e. prior to *MRtrix* 0.3.16):
 
     ::
 
-        dwipreproc AP <input_DWI> <output_DWI> -rpe_none
+        dwipreproc AP 002_-_DWI_phaseAP/ dwi_preprocessed.mif -rpe_none
 
   *New usage*:
 
     ::
 
-        dwipreproc <input_DWI> <output_DWI> -rpe_none -pe_dir AP [-readout_time 0.1]
+        dwipreproc 002_-_DWI_phaseAP/ dwi_preprocessed.mif -rpe_none -pe_dir AP [ -readout_time 0.1 ]
 
-2. **Reversed phase encode _b_=0 pair(s)**
+  Note that here (and in subsequent examples), providing the EPI readout time manually is optional (if omitted, the 'sane' default of 0.1s will be assumed). The precise scaling of this parameter is not expected to influence results provided that the readout time is equivalent for all *b*=0 / DWI volumes.
 
-  All DWI volumes are acquired with precisely the same phase encoding direction and EPI readout time. In addition, one or more pairs of spin-echo *b*=0 EPI volumes are provided, where half of these volumes have the same phase encoding direction and readout time as the DWIs, and the other half have precisely the *opposite* phase encoding direction (but the same readout time). These additional images are therefore used to estimate the inhomogeneity field, but do not form part of the output DWI series.
+2. **Reversed phase encode b=0 pair(s)**
+
+  All DWI volumes are acquired with precisely the same phase encoding direction and EPI readout time. In addition, one or more pairs of spin-echo b=0 EPI volumes are provided, where half of these volumes have the same phase encoding direction and readout time as the DWIs, and the other half have precisely the *opposite* phase encoding direction (but the same readout time). These additional images are therefore used to estimate the inhomogeneity field, but do not form part of the output DWI series.
+
+  *Example DICOM image data*:
+
+    ::
+
+        002_-_ep2dse_phaseAP/
+        003_-_ep2dse_phasePA/
+        004_-_DWI_phaseAP/
 
   *Old usage* (i.e. prior to *MRtrix* 0.3.16):
 
     ::
 
-        dwipreproc AP <input_DWI> <output_DWI> -rpe_pair <AP_b=0_image(s)> <PA_b=0_image(s)>
+        dwipreproc AP 004_-_DWI_phaseAP/ dwi_preprocessed.mif -rpe_pair 002_-_ep2dse_phaseAP/ 003_-_ep2dse_phasePA/
 
   *New usage*:
 
     ::
     
-        mrcat <AP_b=0_image(s)> <PA_b=0_image(s)> b0s.mif -axis 3
-        dwipreproc <input_DWI> <output_DWI> -pe_dir AP -rpe_pair -se_epi b0s.mif [-readout_time 0.1]
+        mrcat 002_-_ep2dse_phaseAP/ 003_-_ep2dse_phasePA/ b0s.mif -axis 3
+        dwipreproc 004_-_DWI_phaseAP/ dwi_preprocessed.mif -pe_dir AP -rpe_pair -se_epi b0s.mif [ -readout_time 0.1 ]
 
 3. **Reversed phase encoding for all DWIs**
+
   For all diffusion gradient directions & *b*-values, two image volumes are obtained, with the opposite phase encoding direction with respect to one another. This allows for the combination of the two volumes corresponding to each unique diffusion gradient direction & strength into a single volume, where the relative compression / expansion of signal between the two volumes is exploited.
+
+  *Example DICOM image data*:
+
+    ::
+
+        002_-_DWI_64dir_phaseLR/
+        003_-_DWI_64dir_phaseRL/
 
   *Old usage* (i.e. prior to *MRtrix* 0.3.16):
 
     ::
     
-        dwipreproc AP <AP_input_DWI> <output_DWI> -rpe_all <PA_input_DWI>
+        dwipreproc LR 002_-_DWI_64dir_phaseLR/ dwi_preprocessed.mif -rpe_all 003_-_DWI_64dir_phaseRL/
 
   *New usage*:
 
     ::
     
-        mrcat <AP_input_DWI> <PA_input_DWI> all_DWIs.mif -axis 3
-        dwipreproc all_DWIs.mif <output_DWI> -pe_dir AP -rpe_all [-readout_time 0.1]
+        mrcat 002_-_DWI_64dir_phaseLR/ 003_-_DWI_64dir_phaseRL/ all_DWIs.mif -axis 3
+        dwipreproc all_DWIs.mif dwi_preprocessed.mif -pe_dir LR -rpe_all [ -readout_time 0.1 ]
     
   Note that in this particular example, the dwipreproc script will in fact extract the *b*=0 volumes from the input DWIs and use those to estimate the inhomogeneity field with topup. If additional *b*=0 images are also acquired, and it is desired to instead use those images to estimate the inhomogeneity field only, the ``-se_epi`` option can be used.
 
 4. **Arbitrary phase encoding acquisition**
 
-  In cases where either: 
+  In cases where either:
 
   - An up-to-date version of *MRtrix3* has been used to convert from DICOM, such that phase encoding information is embedded in the image header; or:
 
@@ -82,7 +106,9 @@ The ``dwipreproc`` script now has four major 'modes' of operation, that can be s
 
     ::
 
-        dwipreproc <all_input_DWIs> <output_DWI> -rpe_header [-se_epi <extra_b=0_volumes>]
+        mrcat <all_input_DWIs> all_dwis.mif -axis 3
+        mrcat <all_extra_b=0_volumes> all_b0s.mif -axis 3   (optional)
+        dwipreproc all_dwis.mif dwi_preprocessed.mif -rpe_header [ -se_epi all_b0s.mif ]
 
   .. WARNING::
 

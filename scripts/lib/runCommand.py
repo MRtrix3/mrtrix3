@@ -1,4 +1,6 @@
-mrtrix_bin_list = [ ]
+_env = None
+_mrtrix_bin_list = [ ]
+_mrtrix_bin_path = ''
 
 def runCommand(cmd, exitOnError=True):
 
@@ -10,13 +12,24 @@ def runCommand(cmd, exitOnError=True):
   from lib.warnMessage  import warnMessage
   import distutils
   from distutils.spawn import find_executable
-  global mrtrix_bin_list
-  global mrtrix_bin_path
 
-  if not mrtrix_bin_list:
-    mrtrix_bin_path = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(os.path.realpath(__file__))), os.pardir, os.pardir, 'release', 'bin'));
+  global _env
+  global _mrtrix_bin_list
+  global _mrtrix_bin_path
+
+  if not _env:
+    _env = os.environ.copy()
+    # Prevent _any_ SGE-compatible commands from running in SGE mode;
+    #   this is a simpler solution than trying to monitor a queued job
+    # If one day somebody wants to use this scripting framework to execute queued commands,
+    #   an alternative solution will need to be found
+    if os.environ.get('SGE_ROOT'):
+      del _env['SGE_ROOT']
+
+  if not _mrtrix_bin_list:
+    _mrtrix_bin_path = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(os.path.realpath(__file__))), os.pardir, os.pardir, 'release', 'bin'));
     # On Windows, strip the .exe's
-    mrtrix_bin_list = [ os.path.splitext(name)[0] for name in os.listdir(mrtrix_bin_path) ]
+    _mrtrix_bin_list = [ os.path.splitext(name)[0] for name in os.listdir(_mrtrix_bin_path) ]
 
   # Vectorise the command string, preserving anything encased within quotation marks
   # TODO Use shlex.split()?
@@ -59,11 +72,11 @@ def runCommand(cmd, exitOnError=True):
   next_is_binary = True
   for item in cmdsplit:
     if next_is_binary:
-      is_mrtrix_binary = item in mrtrix_bin_list
+      is_mrtrix_binary = item in _mrtrix_bin_list
       # Make sure we're not accidentally running an MRtrix command from a different installation to the script
       if is_mrtrix_binary:
         binary_sys = find_executable(item)
-        binary_manual = os.path.join(mrtrix_bin_path, item)
+        binary_manual = os.path.join(_mrtrix_bin_path, item)
         if (isWindows()):
           binary_manual = binary_manual + '.exe'
         use_manual_binary_path = not binary_sys
@@ -114,7 +127,7 @@ def runCommand(cmd, exitOnError=True):
       proc_in = processes[index-1].stdout
     else:
       proc_in = None
-    process = subprocess.Popen (command, stdin=proc_in, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    process = subprocess.Popen (command, stdin=proc_in, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=_env)
     processes.append(process)
 
   return_stdout = ''
