@@ -1,1 +1,2 @@
-population_template population_template/in population_template/out.mif.gz -type rigid_nonlinear -rigid_scale 0.2,0.3 -rigid_niter 20,20 -nl_scale 0.2,0.3 -nl_niter 1,1 -force; rm population_template/out.mif.gz  
+population_template population_template/in population_template/out.mif.gz -type rigid_nonlinear -rigid_scale 0.2,0.3 -rigid_niter 20,20 -nl_scale 0.2,0.3 -nl_niter 1,1 -force && rm population_template/out.mif.gz  
+population_template population_template/in population_template/out.mif.gz -type nonlinear -nl_scale 0.2,0.3 -nl_niter 1,1 -force && rm population_template/out.mif.gz  

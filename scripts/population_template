@@ -599,7 +599,7 @@ else:
     runCommand ('mrmath ' + allindir('input_transformed') + ' mean linear_template' + str(level) + '.mif -force')
     current_template = 'linear_template' + str(level) + '.mif'
 
-  for filename in os.listdir('linear_transforms' % level):
+  for filename in os.listdir('linear_transforms_%i' % level):
     runFunction(copy, os.path.join('linear_transforms_%i' % level, filename), 'linear_transforms')
 
 # Create a template mask for nl registration by taking the intersection of all transformed input masks and dilating
