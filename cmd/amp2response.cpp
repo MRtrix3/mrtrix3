@@ -308,7 +308,7 @@ void run ()
       if (get_options("noconstraint").size()) {
 
         // Get an ordinary least squares solution
-        Eigen::FullPivLU<Eigen::MatrixXd> solver (cat_transforms);
+        Eigen::HouseholderQR<Eigen::MatrixXd> solver (cat_transforms);
         rf = solver.solve (cat_data);
 
         CONSOLE (shell_desc + "Response function [" + str(rf.transpose().cast<float>()) + "] solved via ordinary least-squares from " + str(sf_counter) + " voxels");
