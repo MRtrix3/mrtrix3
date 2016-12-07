@@ -37,13 +37,13 @@ The ``dwipreproc`` script now has four major 'modes' of operation, that can be s
 
     ::
 
-        dwipreproc <input_DWI> <output_DWI> -rpe_none -pe_dir AP [ -readout_time 0.1 ]
+        dwipreproc 002_-_DWI_phaseAP/ dwi_preprocessed.mif -rpe_none -pe_dir AP [ -readout_time 0.1 ]
 
   Note that here (and in subsequent examples), providing the EPI readout time manually is optional (if omitted, the 'sane' default of 0.1s will be assumed). The precise scaling of this parameter is not expected to influence results provided that the readout time is equivalent for all *b*=0 / DWI volumes.
 
-2. **Reversed phase encode _b_=0 pair(s)**
+2. **Reversed phase encode b=0 pair(s)**
 
-  All DWI volumes are acquired with precisely the same phase encoding direction and EPI readout time. In addition, one or more pairs of spin-echo *b*=0 EPI volumes are provided, where half of these volumes have the same phase encoding direction and readout time as the DWIs, and the other half have precisely the *opposite* phase encoding direction (but the same readout time). These additional images are therefore used to estimate the inhomogeneity field, but do not form part of the output DWI series.
+  All DWI volumes are acquired with precisely the same phase encoding direction and EPI readout time. In addition, one or more pairs of spin-echo b=0 EPI volumes are provided, where half of these volumes have the same phase encoding direction and readout time as the DWIs, and the other half have precisely the *opposite* phase encoding direction (but the same readout time). These additional images are therefore used to estimate the inhomogeneity field, but do not form part of the output DWI series.
 
   *Example DICOM image data*:
 
