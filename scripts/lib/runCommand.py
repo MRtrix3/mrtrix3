@@ -1,4 +1,6 @@
 mrtrix_bin_list = [ ]
+mrtrix_bin_path = [ ]
+_processes = [ ]
 
 def runCommand(cmd, exitOnError=True):
 
@@ -12,6 +14,7 @@ def runCommand(cmd, exitOnError=True):
   from distutils.spawn import find_executable
   global mrtrix_bin_list
   global mrtrix_bin_path
+  global _processes
 
   if not mrtrix_bin_list:
     mrtrix_bin_path = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(os.path.realpath(__file__))), os.pardir, os.pardir, 'release', 'bin'));
@@ -108,14 +111,14 @@ def runCommand(cmd, exitOnError=True):
   debugMessage('To execute: ' + str(cmdstack))
 
   # Execute all processes
-  processes = [ ]
+  _processes = [ ]
   for index, command in enumerate(cmdstack):
     if index > 0:
-      proc_in = processes[index-1].stdout
+      proc_in = _processes[index-1].stdout
     else:
       proc_in = None
-    process = subprocess.Popen (command, stdin=proc_in, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    processes.append(process)
+    process = subprocess.Popen (command, stdin=proc_in, stdout=subprocess.PIPE, stderr=subprocess.PIPE)#, close_fds=True)#, preexec_fn=os.setsid)
+    _processes.append(process)
 
   return_stdout = ''
   return_stderr = ''
@@ -123,7 +126,7 @@ def runCommand(cmd, exitOnError=True):
   error_text = ''
 
   # Wait for all commands to complete
-  for process in processes:
+  for process in _processes:
 
     # Switch how we monitor running processes / wait for them to complete
     #   depending on whether or not the user has specified -verbose option
@@ -142,7 +145,7 @@ def runCommand(cmd, exitOnError=True):
   # Let all commands complete before grabbing stdout data; querying the stdout data
   #   immediately after command completion can intermittently prevent the data from
   #   getting to the following command (e.g. MRtrix piping)
-  for process in processes:
+  for process in _processes:
     (stdoutdata, stderrdata) = process.communicate()
     stdoutdata = stdoutdata.decode('utf-8')
     stderrdata = stderrdata.decode('utf-8')
@@ -151,6 +154,8 @@ def runCommand(cmd, exitOnError=True):
     if process.returncode:
       error = True
       error_text += stdoutdata + stderrdata
+    process = [ ]
+  _processes = [ ]
 
   if (error):
     lib.app.cleanup = False
