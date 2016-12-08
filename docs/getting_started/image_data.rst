@@ -269,7 +269,7 @@ To simplify the specification of these strides, *MRtrix3* typically expects and
 provides *symbolic* strides. For example, the RAS strides above would be
 expressed as ``1,2,3``, since this is sufficient to deduce the actual strides once
 the image dimensions are known. Likewise, LAS would correspond to strides of
-``-1,2,3``, PIR to ``-2,-3,1``, etc. This has the advantage that the
+``-1,2,3``, PIR to ``3,-1,-2``, etc. This has the advantage that the
 specification of the strides is then independent of the image dimensions. 
 
 Using strides to specify ordering also allows the specification to
