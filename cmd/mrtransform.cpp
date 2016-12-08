@@ -410,9 +410,9 @@ void run ()
           if (result.cols() == 2) {
             Eigen::Matrix<default_type, 2, 1> azel (v.data());
             Eigen::Vector3 dir;
-            Math::SH::spherical2cartesian (azel, dir);
+            Math::Sphere::spherical2cartesian (azel, dir);
             dir = rotation * dir;
-            Math::SH::cartesian2spherical (dir, azel);
+            Math::Sphere::cartesian2spherical (dir, azel);
             result.row (l) = azel;
           } else {
             const Eigen::Vector3 dir = rotation * Eigen::Vector3 (v.data());
