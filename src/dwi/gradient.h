@@ -164,7 +164,7 @@ namespace MR
 
     //! 'stash' the DW gradient table
     /*! Store the _used_ DW gradient table to Header::keyval() key
-     *  'basis_dw_scheme', and delete the key 'dw_scheme' if it exists.
+     *  'prior_dw_scheme', and delete the key 'dw_scheme' if it exists.
      *  This means that the scheme will no longer be identified by function
      *  parse_DW_scheme(), but still resides within the header data and
      *  can be extracted manually. This should be used when
@@ -176,7 +176,7 @@ namespace MR
     {
       set_DW_scheme (header, grad);
       auto dw_scheme = header.keyval().find ("dw_scheme");
-      header.keyval()["basis_dw_scheme"] = dw_scheme->second;
+      header.keyval()["prior_dw_scheme"] = dw_scheme->second;
       header.keyval().erase (dw_scheme);
     }
 
