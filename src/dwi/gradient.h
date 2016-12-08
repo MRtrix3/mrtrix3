@@ -27,6 +27,7 @@
 #include "file/path.h"
 #include "file/config.h"
 #include "header.h"
+#include "math/sphere.h"
 #include "math/SH.h"
 #include "dwi/shells.h"
 
@@ -90,7 +91,7 @@ namespace MR
       if (dirs.cols() == 2) // spherical coordinates:
         g = dirs;
       else // Cartesian to spherical:
-        g = Math::SH::cartesian2spherical (dirs).leftCols(2);
+        g = Math::Sphere::cartesian2spherical (dirs).leftCols(2);
 
       auto v = Eigen::JacobiSVD<Eigen::MatrixXd> (Math::SH::init_transform (g, lmax)).singularValues();
       return v[0] / v[v.size()-1];

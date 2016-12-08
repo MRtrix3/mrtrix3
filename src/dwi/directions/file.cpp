@@ -14,6 +14,8 @@
  */
 #include "dwi/directions/file.h"
 
+#include "math/math.h"
+
 namespace MR {
   namespace DWI { 
     namespace Directions {
@@ -22,7 +24,7 @@ namespace MR {
       {
         auto directions = load_matrix<> (filename);
         if (directions.cols() == 2) 
-          directions = Math::SH::spherical2cartesian (directions);
+          directions = Math::Sphere::spherical2cartesian (directions);
         else {
           if (directions.cols() != 3)
             throw Exception ("unexpected number of columns for directions file \"" + filename + "\"");

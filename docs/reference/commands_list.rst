@@ -19,6 +19,8 @@ List of MRtrix3 commands
 
    commands/afdconnectivity
 
+   commands/amp2response
+
    commands/amp2sh
 
    commands/connectome2tck

@@ -17,7 +17,7 @@
 #ifndef __dwi_directions_load_h__
 #define __dwi_directions_load_h__
 
-#include "math/SH.h"
+#include "math/sphere.h"
 
 namespace MR {
   namespace DWI {
@@ -29,7 +29,7 @@ namespace MR {
         inline void save_cartesian (const MatrixType& directions, const std::string& filename) 
         {
           if (directions.cols() == 2) 
-            save_matrix (Math::SH::spherical2cartesian (directions), filename);
+            save_matrix (Math::Sphere::spherical2cartesian (directions), filename);
           else 
             save_matrix (directions, filename);
         }
@@ -38,7 +38,7 @@ namespace MR {
         inline void save_spherical (const MatrixType& directions, const std::string& filename) 
         {
           if (directions.cols() == 3) 
-            save_matrix (Math::SH::cartesian2spherical (directions), filename);
+            save_matrix (Math::Sphere::cartesian2spherical (directions), filename);
           else 
             save_matrix (directions, filename);
         }

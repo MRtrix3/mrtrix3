@@ -83,7 +83,7 @@ namespace MR
               max_niter (max_iterations ? max_iterations : 10*problem_matrix.cols()) {
 
                 if (H.cols() != constraint_matrix.cols())
-                  throw Exception ("FIXME: dimensions of problem and constraint problem do not match (ICLS)");
+                  throw Exception ("FIXME: dimensions of problem and constraint matrices do not match (ICLS)");
 
                 if (solution_min_norm_regularisation < 0.0)
                   throw Exception ("FIXME: solution norm regularisation is negative (ICLS)");
