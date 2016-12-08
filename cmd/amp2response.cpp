@@ -56,7 +56,8 @@ void usage ()
       "must increase from the fibre direction out to the orthogonal plane). "
 
       "If multi-shell data are provided, and one or more b-value shells are not explicitly "
-      "requested, the command will generate a response function for every b-value shell.";
+      "requested, the command will generate a response function for every b-value shell "
+      "(including b=0 if present).";
 
   ARGUMENTS
     + Argument ("amps", "the amplitudes image").type_image_in()
