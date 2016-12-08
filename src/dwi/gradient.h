@@ -169,6 +169,26 @@ namespace MR
 
 
 
+    //! 'stash' the DW gradient table
+    /*! Store the _used_ DW gradient table to Header::keyval() key
+     *  'prior_dw_scheme', and delete the key 'dw_scheme' if it exists.
+     *  This means that the scheme will no longer be identified by function
+     *  parse_DW_scheme(), but still resides within the header data and
+     *  can be extracted manually. This should be used when
+     *  diffusion-weighted images are used to generate something that is
+     *  _not_ diffusion_weighted volumes.
+     */
+    template <class MatrixType>
+    void stash_DW_scheme (Header& header, const MatrixType& grad)
+    {
+      set_DW_scheme (header, grad);
+      auto dw_scheme = header.keyval().find ("dw_scheme");
+      header.keyval()["prior_dw_scheme"] = dw_scheme->second;
+      header.keyval().erase (dw_scheme);
+    }
+
+
+
 
     //! get the DW gradient encoding matrix
     /*! attempts to find the DW gradient encoding matrix, using the following
