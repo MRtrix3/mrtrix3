@@ -31,7 +31,7 @@ The ``dwipreproc`` script now has four major 'modes' of operation, that can be s
 
     ::
 
-        dwipreproc AP 002_-_DWI/ dwi_preprocessed.mif -rpe_none
+        dwipreproc AP 002_-_DWI_phaseAP/ dwi_preprocessed.mif -rpe_none
 
   *New usage*:
 

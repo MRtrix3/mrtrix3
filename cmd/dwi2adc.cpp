@@ -101,6 +101,7 @@ void run () {
   header.datatype() = DataType::Float32;
   header.ndim() = 4;
   header.size(3) = 2;
+  DWI::stash_DW_scheme (header, grad);
 
   auto adc = Image<value_type>::create (argument[1], header);
 

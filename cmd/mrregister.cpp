@@ -27,8 +27,9 @@
 #include "registration/transform/affine.h"
 #include "registration/transform/rigid.h"
 #include "dwi/directions/predefined.h"
-#include "math/SH.h"
 #include "math/average_space.h"
+#include "math/SH.h"
+#include "math/sphere.h"
 
 
 using namespace MR;
@@ -165,7 +166,7 @@ void run ()
   Eigen::MatrixXd directions_cartesian;
   opt = get_options ("directions");
   if (opt.size())
-    directions_cartesian = Math::SH::spherical2cartesian (load_matrix (opt[0][0])).transpose();
+    directions_cartesian = Math::Sphere::spherical2cartesian (load_matrix (opt[0][0])).transpose();
 
   int image_lmax = 0;
 
@@ -182,7 +183,7 @@ void run ()
       CONSOLE ("SH series detected, performing FOD registration");
       do_reorientation = true;
       if (!directions_cartesian.cols())
-        directions_cartesian = Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_60()).transpose();
+        directions_cartesian = Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_60()).transpose();
     } else {
       do_reorientation = false;
       if (directions_cartesian.cols())
@@ -851,7 +852,7 @@ void run ()
         Registration::Transform::reorient_warp ("reorienting FODs",
                                                 im1_transformed,
                                                 deform_field,
-                                                Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+                                                Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
 
     } else if (do_affine) {
       Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, affine.get_transform(), Adapter::AutoOverSample, 0.0);
@@ -860,7 +861,7 @@ void run ()
                                            im1_transformed,
                                            im1_transformed,
                                            affine.get_transform(),
-                                           Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+                                           Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
     } else { // rigid
       Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, rigid.get_transform(), Adapter::AutoOverSample, 0.0);
       if (do_reorientation)
@@ -868,7 +869,7 @@ void run ()
                                            im1_transformed,
                                            im1_transformed,
                                            rigid.get_transform(),
-                                           Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+                                           Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
     }
   }
 
@@ -888,7 +889,7 @@ void run ()
       Filter::warp<Interp::Cubic> (im1_image, im1_midway, im1_deform_field, 0.0);
       if (do_reorientation)
         Registration::Transform::reorient_warp ("reorienting FODs", im1_midway, im1_deform_field,
-                                                Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+                                                Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
 
       Image<default_type> im2_deform_field = Image<default_type>::scratch (*(nl_registration.get_im2_to_mid()));
       Registration::Warp::compose_linear_deformation (nl_registration.get_im2_to_mid_linear(), *(nl_registration.get_im2_to_mid()), im2_deform_field);
@@ -896,7 +897,7 @@ void run ()
       Filter::warp<Interp::Cubic> (im2_image, im2_midway, im2_deform_field, 0.0);
       if (do_reorientation)
         Registration::Transform::reorient_warp ("reorienting FODs", im2_midway, im2_deform_field,
-                                                Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+                                                Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
 
     } else if (do_affine) {
       affine_registration.write_transformed_images (im1_image, im2_image, affine, im1_midway_transformed_path, im2_midway_transformed_path, do_reorientation);

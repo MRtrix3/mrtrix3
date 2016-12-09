@@ -19,6 +19,7 @@
 #include "progressbar.h"
 #include "image.h"
 #include "math/math.h"
+#include "math/sphere.h"
 #include "interp/nearest.h"
 #include "interp/linear.h"
 #include "interp/cubic.h"
@@ -347,7 +348,7 @@ void run ()
       directions_az_el = load_matrix (opt[0][0]);
     else
       directions_az_el = DWI::Directions::electrostatic_repulsion_300();
-    Math::SH::spherical2cartesian (directions_az_el, directions_cartesian);
+    Math::Sphere::spherical2cartesian (directions_az_el, directions_cartesian);
 
     // load with SH coeffients contiguous in RAM
     stride = Stride::contiguous_along_axis (3, input_header);
@@ -409,9 +410,9 @@ void run ()
           if (result.cols() == 2) {
             Eigen::Matrix<default_type, 2, 1> azel (v.data());
             Eigen::Vector3 dir;
-            Math::SH::spherical2cartesian (azel, dir);
+            Math::Sphere::spherical2cartesian (azel, dir);
             dir = rotation * dir;
-            Math::SH::cartesian2spherical (dir, azel);
+            Math::Sphere::cartesian2spherical (dir, azel);
             result.row (l) = azel;
           } else {
             const Eigen::Vector3 dir = rotation * Eigen::Vector3 (v.data());

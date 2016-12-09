@@ -180,9 +180,14 @@ namespace MR
 
       } else {
 
-        if (force_single_shell && !is_single_shell())
+        if (force_single_shell && !is_single_shell()) {
           WARN ("Multiple non-zero b-value shells detected; automatically selecting b=" + str(largest().get_mean()) + " with " + str(largest().count()) + " volumes");
-        to_retain[shells.size()-1] = true;
+          to_retain[shells.size()-1] = true;
+        } else {
+          // Not restricted to single-shell processing, no -shells option:
+          //   keep all shells
+          to_retain.clear (true);
+        }
 
       }
 

@@ -218,6 +218,8 @@ void run ()
         dirs(i/2, 0) = dir_vector[i];
         dirs(i/2, 1) = dir_vector[i+1];
       }
+      header.keyval()["basis_directions"] = hit->second;
+      header.keyval().erase (hit);
     } 
     else {
       auto grad = DWI::get_valid_DW_scheme (amp);
@@ -227,6 +229,7 @@ void run ()
         bzeros = shells.smallest().get_volumes();
       dwis = shells.largest().get_volumes();
       dirs = DWI::gen_direction_matrix (grad, dwis);
+      DWI::stash_DW_scheme (header, grad);
     }
   }
 
