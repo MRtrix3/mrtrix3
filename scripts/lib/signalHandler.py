@@ -38,14 +38,13 @@ def _handler(signum, frame):
   global _data
   # First, kill any child processes
   for p in _processes:
-    os.killpg(p.pid, signum)
-    p = [ ]
+    p.terminate()
   _processes = [ ]
   msg = '[SYSTEM FATAL CODE: '
   signal_found = False
-  for (key, value) in signals.items():
+  for (key, value) in _data.items():
     if hasattr(signal, key) and signum == getattr(signal, key):
-      msg += key + ' (' + str(int(getattr(signal, key))) + ')] ' + s.value
+      msg += key + ' (' + str(int(getattr(signal, key))) + ')] ' + value
       signal_found = True
       break
   if not signal_found:
@@ -53,5 +52,5 @@ def _handler(signum, frame):
   sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + lib.app.colourError + msg + lib.app.colourClear + '\n')
   lib.app.complete()
   exit(signum)
-  
-  
+
+
