@@ -202,7 +202,7 @@ namespace MR
                 buffer_size (image.size(axis_in)) {
                   buffer.resize(buffer_size);
                   if (!extent)
-                    radius = ceil(2 * stdev / spacing);
+                    radius = std::ceil(2 * stdev / spacing);
                   else if (extent == 1)
                     radius = 0;
                   else
