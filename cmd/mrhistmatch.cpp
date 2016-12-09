@@ -1,5 +1,6 @@
 
 #include <algorithm>
+#include <cmath>
 #include <vector>
 
 #include "command.h"
@@ -95,7 +96,7 @@ void run ()
   H.datatype().set_byte_order_native();
   auto output = Image<float>::create (argument[2], H);
   for (auto l = Loop(input) (input, output); l; ++l) {
-    if (std::isfinite (input.value())) {
+    if (std::isfinite(static_cast<float>(input.value()))) {
       output.value() = matcher (input.value());
     } else {
       output.value() = 0.0;

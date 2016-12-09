@@ -1,22 +1,23 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 
 #ifndef __algo_histogram_h__
 #define __algo_histogram_h__
 
 #include <vector>
+#include <cmath>
 
 #include "image_helpers.h"
 #include "algo/loop.h"
@@ -45,7 +46,7 @@ namespace MR
 
           template <typename value_type>
           bool operator() (const value_type val) {
-            if (std::isfinite (val) && !(ignore_zero && val == 0.0)) {
+            if ((val == val) && (val > min) && (val < max) && !(ignore_zero && val == 0.0)) { //std::isfinite bug
               min = std::min (min, default_type(val));
               max = std::max (max, default_type(val));
               if (!num_bins)
@@ -92,11 +93,13 @@ namespace MR
 
           Data (const Calibrator& calibrate) :
               info (calibrate),
-              list (vector_type::Zero (info.get_num_bins())) { }
+              list (vector_type::Zero (info.get_num_bins())),
+              min (std::numeric_limits<default_type>::infinity()),
+              max (-std::numeric_limits<default_type>::infinity()) { }
 
           template <typename value_type>
           bool operator() (const value_type val) {
-            if (std::isfinite (val) && !(info.get_ignore_zero() && val == 0.0)) {
+            if ((val == val) && (val > min) && (val < max) && !(info.get_ignore_zero() && val == 0.0)) { // std::isfinite bug
               const size_t pos = bin (val);
               if (pos != size_t(list.size()))
                 ++list[pos];
@@ -107,7 +110,6 @@ namespace MR
           template <typename value_type>
           size_t bin (const value_type val) const {
             size_t pos = std::floor ((val - info.get_min()) / info.get_bin_width());
-            if (pos < 0) return size();
             if (pos > size_t(list.size())) return size();
             return pos;
           }
@@ -133,6 +135,7 @@ namespace MR
           const Calibrator info;
           vector_type list;
           friend class Kernel;
+          default_type min, max;
       };
 
 
