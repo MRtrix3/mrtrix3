@@ -264,6 +264,11 @@ List of MRtrix3 configuration file options
 
      Modifier key to select move mode in MRView. Valid choices include shift, alt, ctrl, meta (on MacOSX: shift, alt, ctrl, cmd).
 
+*  **MRViewOdfScale**
+    *default: 1.0*
+
+     The factor by which the ODF overlay is scaled
+
 *  **MRViewRotateModifierKey**
     *default: ctrl*
 

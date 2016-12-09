@@ -114,10 +114,10 @@ ODF tool options
 
 -  **-odf.load_dixel image** Loads the specified dixel-based image on the ODF tool.
 
-Vector plot tool options
-^^^^^^^^^^^^^^^^^^^^^^^^
+Fixel plot tool options
+^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-vector.load image** Load the specified MRtrix sparse image file (.msf) into the fixel tool.
+-  **-fixel.load image** Load a fixel file (any file inside a fixel directory, or an old *.msf legacy format file) into the fixel tool.
 
 Connectome tool options
 ^^^^^^^^^^^^^^^^^^^^^^^
