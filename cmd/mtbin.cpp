@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 
 
@@ -38,8 +38,8 @@ void usage ()
   DESCRIPTION
    + "Multi-Tissue Bias field correction and Intensity Normalisation (MTBIN). This script inputs N number of tissue components "
      "(e.g. from multi-tissue CSD), and outputs N corrected tissue components. Intensity normalisation is performed by either normalising "
-     "each tissue type independently with a single global scale factor per tissue or determining a normalise all tissues with the same scale "
-     "factor (default). Example usage: mtbin wm.mif wm_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif. "
+     "each tissue type independently with a single tissue-sepcific global scale factor or by determining a common normalisation factor "
+     "for all tissue types (default). Example usage: mtbin wm.mif wm_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif. "
      "The estimated multiplicative bias field is guaranteed to have a mean of 1 over all voxels within the mask";
 
   ARGUMENTS
@@ -50,8 +50,8 @@ void usage ()
     + Option ("mask", "define the mask to compute the normalisation within. If not supplied this is estimated automatically")
     + Argument ("image").type_image_in ()
 
-    + Option ("value", "specify the value to which the summed tissue compartments will be to "
-                       "(Default: sqrt(1/(4*pi)) = " + str(DEFAULT_NORM_VALUE, 3) + ")")
+    + Option ("value", "specify the value to which the summed tissue compartments will be normalised to "
+                       "(Default: sqrt(1/(4*pi)) = " + str(DEFAULT_NORM_VALUE, 6) + ")")
     + Argument ("number").type_float ()
 
     + Option ("bias", "output the estimated bias field")
