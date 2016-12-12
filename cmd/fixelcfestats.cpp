@@ -334,7 +334,7 @@ void run() {
         uint32_t offset = index_image.value();
         uint32_t fixel_index = 0;
         for (auto f = Fixel::Loop (index_image) (subject_data); f; ++f, ++fixel_index) {
-          if (!std::isfinite(subject_data.value()))
+          if (!std::isfinite(static_cast<value_type>(subject_data.value())))
             throw Exception ("subject data file " + identifiers[subject] + " contains non-finite value: " + str(subject_data.value()));
           subject_data_vector[offset + fixel_index] = subject_data.value();
         }
