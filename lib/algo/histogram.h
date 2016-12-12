@@ -44,15 +44,23 @@ namespace MR
               num_bins (number_of_bins),
               ignore_zero (ignorezero) { }
 
+          // template <class T, class  = typename T::value_type>
+          // template <class T> bool operator() (const T val);
+
           template <typename value_type>
-          bool operator() (const value_type val) {
-            if ((val == val) && (val > min) && (val < max) && !(ignore_zero && val == 0.0)) { //std::isfinite bug
+          typename std::enable_if<std::is_arithmetic<value_type>::value, bool>::type operator() (const value_type val) {
+            if (std::isfinite(val) && !(ignore_zero && val == 0.0)) {
               min = std::min (min, default_type(val));
               max = std::max (max, default_type(val));
               if (!num_bins)
                 data.push_back (default_type(val));
             }
             return true;
+          }
+
+          template <class T>
+          FORCE_INLINE typename std::enable_if<!std::is_arithmetic<T>::value, bool>::type operator() (const T& val) {
+            return (*this) (typename T::value_type (val));
           }
 
           void from_file (const std::string&);
@@ -93,13 +101,11 @@ namespace MR
 
           Data (const Calibrator& calibrate) :
               info (calibrate),
-              list (vector_type::Zero (info.get_num_bins())),
-              min (std::numeric_limits<default_type>::infinity()),
-              max (-std::numeric_limits<default_type>::infinity()) { }
+              list (vector_type::Zero (info.get_num_bins())) { }
 
           template <typename value_type>
           bool operator() (const value_type val) {
-            if ((val == val) && (val > min) && (val < max) && !(info.get_ignore_zero() && val == 0.0)) { // std::isfinite bug
+            if (std::isfinite(val) && !(info.get_ignore_zero() && val == 0.0)) {
               const size_t pos = bin (val);
               if (pos != size_t(list.size()))
                 ++list[pos];
@@ -135,7 +141,6 @@ namespace MR
           const Calibrator info;
           vector_type list;
           friend class Kernel;
-          default_type min, max;
       };
 
 
