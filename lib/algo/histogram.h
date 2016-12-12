@@ -44,9 +44,6 @@ namespace MR
               num_bins (number_of_bins),
               ignore_zero (ignorezero) { }
 
-          // template <class T, class  = typename T::value_type>
-          // template <class T> bool operator() (const T val);
-
           template <typename value_type>
           typename std::enable_if<std::is_arithmetic<value_type>::value, bool>::type operator() (const value_type val) {
             if (std::isfinite(val) && !(ignore_zero && val == 0.0)) {
