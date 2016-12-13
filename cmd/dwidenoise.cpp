@@ -89,10 +89,14 @@ void usage ()
 typedef float value_type;
 
 
-template <class ImageType>
+template <class ImageType, typename F = float>
 class DenoisingFunctor
 {
   public:
+
+  typedef Eigen::Matrix<F, Eigen::Dynamic, Eigen::Dynamic> MatrixX;
+  typedef Eigen::Matrix<F, Eigen::Dynamic, 1> VectorX;
+
   DenoisingFunctor (ImageType& dwi, std::vector<int> extent, Image<bool>& mask, ImageType& noise)
     : extent {{extent[0]/2, extent[1]/2, extent[2]/2}},
       m (dwi.size(3)),
@@ -116,23 +120,23 @@ class DenoisingFunctor
     load_data (dwi);
 
     // Compute Eigendecomposition:
-    Eigen::MatrixXd XtX (r,r);
+    MatrixX XtX (r,r);
     if (m <= n)
       XtX.template triangularView<Eigen::Lower>() = X * X.adjoint();
     else 
       XtX.template triangularView<Eigen::Lower>() = X.adjoint() * X;
-    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eig (XtX);
+    Eigen::SelfAdjointEigenSolver<MatrixX> eig (XtX);
     // eigenvalues provide squared singular values, sorted in increasing order:
-    Eigen::VectorXd s = eig.eigenvalues();
+    VectorX s = eig.eigenvalues();
 
     // Marchenko-Pastur optimal threshold
-    const double lam_r = std::max(s[0], 0.0) / n;
+    const double lam_r = std::max(double(s[0]), 0.0) / n;
     double clam = 0.0;
     sigma2 = NaN;
     ssize_t cutoff_p = 0;
     for (ssize_t p = 0; p < r; ++p)
     {
-      double lam = std::max(s[p], 0.0) / n;
+      double lam = std::max(double(s[p]), 0.0) / n;
       clam += lam;
       double gam = double(m-r+p+1) / double(n);
       double sigsq1 = clam / ((p+1) * std::max (gam, 1.0));
@@ -157,7 +161,7 @@ class DenoisingFunctor
     // Store output
     assign_pos_of(dwi).to(out);
     for (auto l = Loop (3) (out); l; ++l)
-      out.value() = X(out.index(3), n/2);
+      out.value() = value_type (X(out.index(3), n/2));
 
     // store noise map if requested:
     if (noise.valid()) {
@@ -176,7 +180,7 @@ class DenoisingFunctor
       for (dwi.index(1) = pos[1]-extent[1]; dwi.index(1) <= pos[1]+extent[1]; ++dwi.index(1))
         for (dwi.index(0) = pos[0]-extent[0]; dwi.index(0) <= pos[0]+extent[0]; ++dwi.index(0), ++k)
           if (! is_out_of_bounds(dwi))
-            X.col(k) = dwi.row(3).template cast<double>();
+            X.col(k) = dwi.row(3).template cast<F>();
     // reset image position
     dwi.index(0) = pos[0];
     dwi.index(1) = pos[1];
@@ -186,7 +190,7 @@ class DenoisingFunctor
 private:
   const std::array<ssize_t, 3> extent;
   const ssize_t m, n, r;
-  Eigen::MatrixXd X;
+  MatrixX X;
   std::array<ssize_t, 3> pos;
   double sigma2;
   Image<bool> mask;
