@@ -149,9 +149,9 @@ class DenoisingFunctor
       s.head (cutoff_p).setZero();
       s.tail (r-cutoff_p).setOnes();
       if (m <= n) 
-        X.col (n/2) = eig.eigenvectors() * s.asDiagonal() * eig.eigenvectors().adjoint() * X.col(n/2);
+        X.col (n/2) = eig.eigenvectors() * ( s.asDiagonal() * ( eig.eigenvectors().adjoint() * X.col(n/2) ));
       else 
-        X.col (n/2) = X * eig.eigenvectors() * s.asDiagonal() * eig.eigenvectors().adjoint().col(n/2);
+        X.col (n/2) = X * ( eig.eigenvectors() * ( s.asDiagonal() * eig.eigenvectors().adjoint().col(n/2) ));
     }
 
     // Store output

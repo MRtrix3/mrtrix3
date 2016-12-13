@@ -28,7 +28,12 @@ The most common use will be:
     tckglobal dwi.mif wmr.txt -riso csfr.txt -riso gmr.txt -mask mask.mif -niter 1e8 -fod fod.mif -fiso fiso.mif tracks.tck
 
 In this example, ``dwi.mif`` is the input dataset, including the
-gradient table, and ``tracks.tck`` is the output tractogram.
+gradient table, and ``tracks.tck`` is the output tractogram. ``wmr.txt``, 
+``gmr.txt`` and ``csfr.txt`` are tissue response functions (cf. next 
+section). Optional output images fod.mif and fiso.mif contain the 
+predicted WM fODF and isotropic tissue fractions of CSF and GM 
+respectively, estimated as part of the global optimization and thus 
+affected by spatial regularization. 
 
 Input response functions
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -94,12 +99,16 @@ increase connectivity, at the cost of increased invalid connections.
 Ancillary outputs
 ~~~~~~~~~~~~~~~~~
 
-``-fod``: Outputs the fODF as an image of spherical harmonics
-coefficients. The fODF is obtained by adding apodised PSFs along the
-directions of all segments in a voxel, akin to track orientation
-distribution imaging (TODI, `Dhollander et al., 2014 <#references>`__).
-However, as global tractography matches the track density to the
-underlying data, the distinction between both is mute.
+``-fod``: Outputs the predicted fibre orientation distribution function 
+(fODF) as an image of spherical harmonics coefficients. 
+This fODF is estimated as part of the global track optimization, and
+therefore incorporates the spatial regularization that it imposes.
+Internally, the fODF is represented as a discrete sum of apodized point
+spread functions (aPSF) oriented along the directions of all particles in
+the voxel, akin to track orientation distribution imaging (TODI, 
+`Dhollander et al., 2014 <#references>`__). This internal representation 
+is used to predict the DWI signal upon every change to the particle 
+configuration.
 
 ``-fiso``: Outputs the estimated density of all isotropic tissue
 components, as multiple volumes in one 4-D image in the same order as

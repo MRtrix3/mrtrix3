@@ -28,6 +28,7 @@ def getInputFiles():
 def execute():
   import math, os, shutil
   import lib.app
+  from lib.errorMessage import errorMessage
   from lib.getImageStat import getImageStat
   from lib.getUserPath  import getUserPath
   from lib.printMessage import printMessage
