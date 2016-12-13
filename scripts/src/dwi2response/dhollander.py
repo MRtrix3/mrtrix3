@@ -80,10 +80,8 @@ def execute():
   errcmd = 'mrcalc'
   zeropath = 'mean_b' + str(bvalues[0]) + '.mif'
   for i, b in enumerate(bvalues):
-    dwipath = 'dwi_b' + str(b) + '.mif'
-    runCommand('dwiextract dwi.mif -shell ' + str(b) + ' ' + dwipath)
     meanpath = 'mean_b' + str(b) + '.mif'
-    runCommand('mrmath ' + dwipath + ' mean ' + meanpath + ' -axis 3')
+    runCommand('dwiextract dwi.mif -shell ' + str(b) + ' - | mrmath - mean ' + meanpath + ' -axis 3')
     errpath = 'err_b' + str(b) + '.mif'
     runCommand('mrcalc ' + meanpath + ' -finite ' + meanpath + ' 0 -if 0 -le ' + errpath + ' -datatype bit')
     errcmd += ' ' + errpath
@@ -175,40 +173,19 @@ def execute():
 
 
   # Generate single-fibre WM, GM and CSF responses
-  sfwm_responses  = [ ]
-  gm_responses  = [ ]
-  csf_responses = [ ]
-  max_length = 0
-  for index, b in enumerate(bvalues):
-    dwipath = 'dwi_b' + str(b) + '.mif'
-    this_b_lmax_option = ''
-    if sfwm_lmax:
-      this_b_lmax_option = ' -lmax ' + str(sfwm_lmax[index])
-    runCommand('amp2sh ' + dwipath + ' - | sh2response - voxels_sfwm.mif safe_vecs.mif _respsfwmb' + str(b) + '.txt' + this_b_lmax_option)
-    sfwm_response = open('_respsfwmb' + str(b) + '.txt', 'r').read().split()
-    sfwm_responses.append(sfwm_response)
-    max_length = max(max_length, len(sfwm_response))
-    meanpath = 'mean_b' + str(b) + '.mif'
-    gm_mean = float(getImageStat(meanpath, 'mean', 'voxels_gm.mif'))
-    csf_mean = float(getImageStat(meanpath, 'mean', 'voxels_csf.mif'))
-    gm_responses.append(str(gm_mean * math.sqrt(4.0 * math.pi)))
-    csf_responses.append(str(csf_mean * math.sqrt(4.0 * math.pi)))
-  with open('response_sfwm.txt', 'w') as f:
-    for line in sfwm_responses:
-      line += ['0'] * (max_length - len(line))
-      f.write(' '.join(line) + '\n')
-  with open('response_gm.txt', 'w') as f:
-    for line in gm_responses:
-      f.write(line + '\n')
-  with open('response_csf.txt', 'w') as f:
-    for line in csf_responses:
-      f.write(line + '\n')
+  bvalues_option = ' -shell ' + ','.join(map(str,bvalues))
+  sfwm_lmax_option = ''
+  if sfwm_lmax:
+    sfwm_lmax_option = ' -lmax ' + ','.join(map(str,sfwm_lmax))
+  runCommand('amp2response dwi.mif voxels_sfwm.mif safe_vecs.mif response_sfwm.txt' + bvalues_option + sfwm_lmax_option)
+  runCommand('amp2response dwi.mif voxels_gm.mif safe_vecs.mif response_gm.txt' + bvalues_option + ' -isotropic')
+  runCommand('amp2response dwi.mif voxels_csf.mif safe_vecs.mif response_csf.txt' + bvalues_option + ' -isotropic')
   runFunction(shutil.copyfile, 'response_sfwm.txt', getUserPath(lib.app.args.out_sfwm, False))
   runFunction(shutil.copyfile, 'response_gm.txt', getUserPath(lib.app.args.out_gm, False))
   runFunction(shutil.copyfile, 'response_csf.txt', getUserPath(lib.app.args.out_csf, False))
 
 
-  # Generate 4D binary images with voxel selection at major stages in algorithm (RGB as in MSMT-CSD paper).
+  # Generate 4D binary images with voxel selections at major stages in algorithm (RGB as in MSMT-CSD paper).
   runCommand('mrcat crude_csf.mif crude_gm.mif crude_wm.mif crude.mif -axis 3')
   runCommand('mrcat refined_csf.mif refined_gm.mif refined_wm.mif refined.mif -axis 3')
   runCommand('mrcat voxels_csf.mif voxels_gm.mif voxels_sfwm.mif voxels.mif -axis 3')
