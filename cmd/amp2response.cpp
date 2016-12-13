@@ -66,6 +66,8 @@ void usage ()
     + Argument ("response", "the output zonal spherical harmonic coefficients").type_file_out();
 
   OPTIONS
+    + Option ("isotropic", "estimate an isotropic response function (lmax=0 for all shells)")
+
     + Option ("noconstraint", "disable the non-negativity and monotonicity constraints")
 
     + Option ("directions", "provide an external text file containing the directions along which the amplitudes are sampled")
@@ -154,7 +156,11 @@ void run ()
   std::vector<int> lmax;
   int max_lmax = 0;
   opt = get_options ("lmax");
-  if (opt.size()) {
+  if (get_options("isotropic").size()) {
+    for (size_t i = 0; i != dirs_azel.size(); ++i)
+      lmax.push_back (0);
+    max_lmax = 0;
+  } else if (opt.size()) {
     lmax = parse_ints (opt[0][0]);
     if (lmax.size() != dirs_azel.size())
       throw Exception ("Number of lmax\'s specified (" + str(lmax.size()) + ") does not match number of b-value shells (" + str(dirs_azel.size()) + ")");
@@ -169,15 +175,15 @@ void run ()
     // Auto-fill lmax
     // Because the amp->SH transform doesn't need to be applied per voxel,
     //   lmax is effectively unconstrained. Therefore generate response at
-    //   lmax=8 regardless of number of input volumes.
+    //   lmax=10 regardless of number of input volumes.
     // - UNLESS it's b=0, in which case force lmax=0
     for (size_t i = 0; i != dirs_azel.size(); ++i) {
       if (!i && shells && shells->smallest().is_bzero())
         lmax.push_back (0);
       else
-        lmax.push_back (8);
+        lmax.push_back (10);
     }
-    max_lmax = (shells && shells->smallest().is_bzero() && lmax.size() == 1) ? 0 : 8;
+    max_lmax = (shells && shells->smallest().is_bzero() && lmax.size() == 1) ? 0 : 10;
   }
 
   auto image = header.get_image<float>();
