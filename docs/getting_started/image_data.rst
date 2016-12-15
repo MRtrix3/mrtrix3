@@ -674,7 +674,7 @@ A major benefit of the directory-based format is that existing commands for oper
 
   mrthreshold patient01/fixel_directory/afd.mif -abs 0.1 patient01/fixel_directory/afd_mask.mif
 
-To compute the mean dispersion over all fixels in the mask::
+Other command like `mrhistogram`, `mrcalc`, `mrstats` can also be used on Fixel Data Files. For example, to compute the mean dispersion over all fixels in a mask::
 
   mrstats -output mean -mask patient01/fixel_directory/afd_mask.mif patient01/fixel_directory/dispersion.mif
 
