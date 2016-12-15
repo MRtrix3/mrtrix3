@@ -1,5 +1,5 @@
 Orthonormal Spherical Harmonic basis
-===============
+====================================
 
 An important change between the old and new versions of MRtrix is a
 modification to the Spherical Harmonic (SH) basis functions. This change
