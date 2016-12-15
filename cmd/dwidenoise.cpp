@@ -246,12 +246,14 @@ void run ()
   }
 
   opt = get_options("datatype");
-  if (opt.size() && (int(opt[0][0]) == 0)) {
+  if (!opt.size() || (int(opt[0][0]) == 0)) {
+    DEBUG("Computing SVD with single precision.");
     DenoisingFunctor< Image<value_type> , float > func (dwi_in, extent, mask, noise);
     ThreadedLoop ("running MP-PCA denoising", dwi_in, 0, 3)
       .run (func, dwi_in, dwi_out);
   }
   else if (int(opt[0][0]) == 1) {
+    DEBUG("Computing SVD with double precision.");
     DenoisingFunctor< Image<value_type> , double > func (dwi_in, extent, mask, noise);
     ThreadedLoop ("running MP-PCA denoising", dwi_in, 0, 3)
       .run (func, dwi_in, dwi_out);
