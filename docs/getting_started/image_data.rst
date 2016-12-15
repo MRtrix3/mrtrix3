@@ -591,17 +591,17 @@ appropriately according to the standard.
 Fixel image format 
 ''''''''''''''''''''
 
-Images for representing multi-fibre models are sparse in nature (i.e. different voxels may have different numbers of discrete
+Images for representing discrete multi-fibre models are sparse in nature (i.e. different voxels may have different numbers of
 fibre populations - a.k.a fixels), and different models have different parameter requirements per fixel (e.g. orientation,
-volume fraction, fanning, tensors etc). The fixel image format overcomes several issues in storing
+volume fraction, fanning, tensors etc). This fixel image format overcomes several issues in storing
 such data in either traditional 4D images or a custom format (such as the legacy :ref:`legacy_mrtrix_sparse_format`).
 It as been designed with the following requirements in mind.
 
 Requirements
 .............
-* **Space saving**. Because different voxels may have different numbers of fibres, it is inefficient to store data using 4-dimensional images, since the size of the 4th dimension must accommodate the voxel with the highest number of fibres. A sparse representation on disk is therefore more efficient.
+* **Space saving**. Because different voxels may have different numbers of fixels, it is inefficient to store data using 4-dimensional images, since the size of the 4th dimension must accommodate the voxel with the highest number of fixels. A sparse representation on disk is therefore more efficient.
 * **Easily read and written** by other software packages to enable inter-operability of fixel-based DWI models.
-* **Flexible** enough to allow for both fibre-specific model parameters (e.g. volume fractions, fanning), and voxel-specific parameters (e.g. hindered isotropic compartment). The format should also support any number of model parameters.
+* **Flexible** enough to allow for both fixel-specific model parameters (e.g. volume fractions, fanning), and voxel-specific parameters (e.g. hindered isotropic compartment). The format should also support any number of model parameters.
 * **Self documenting**. Users should be able to easily infer what kind of data is included in the model. Developers should also easily understand the data layout, without having to read in special fields in the image header.
 * **Minimise the need for supporting commands**. We wanted to avoid the need to have dedicated commands for performing basic operations on the data (e.g. math/calculator operations, thresholding, histogram generation etc).
 * **Extendability**. Users should be able to add components to an existing sparse image. E.g. a mask to label fixels of interest, or additional test-statistic output from a group analysis.
@@ -625,7 +625,7 @@ Index File
 ...............
 * 4D image (i x j x k x 2)
 * The index file is required, with fixed naming (index.nii)
-* The first 3D volume in the 4th dimension stores the number of elements (fibres) per voxel
+* The first 3D volume in the 4th dimension stores the number of elements (fixels) per voxel
 * The second volume in the 4th dimension stores the sparse data file offset (index) to the first element in that voxel
 
 Fixel Data File
@@ -640,7 +640,7 @@ Fixel Data File
 Fixel Direction File
 ......................
 * **All DWI models must specify the direction of each fixel**.
-* Directions for each fixel must be saved within a single file named either direction.nii or direction.mif
+* Directions for each fixel must be saved within a single file named either directions.nii or directions.mif
 * This can be considered as a special type of fixel data file, with dimensions (n x 3 x 1).
 * Directions are specified with respect to the scanner coordinate frame in cartesian coordinates
 
@@ -658,23 +658,31 @@ Voxel Data File
 Usage
 ................
 Because the fixel format leverages the file system to store all fixel data within a single directory,
-interacting with fixel data in MRtrix may require user input and output arguments to be either the entire directory or
-specific fixel data files within the directory. For example :code:`fod2fixel` requires the name of the containing directory
+interacting with fixel data in MRtrix may require user input and output arguments to be either 1) the entire directory or
+2) specific fixel data files within the directory. For example :code:`fod2fixel` requires the name of the containing directory
 *and* the names of the output fixel data files stored inside the directory::
 
-  fod2fixel patient01/fod.mif patient01/fixel_directory -afd afd_metric.mif -disp dispersion.mif
+  fod2fixel patient01/fod.mif patient01/fixel_directory -afd afd.mif -disp dispersion.mif
+
+In this example the fixel-specific measures (AFD and dispersion) are saved inside the fixel_directory. The directions file is automatically generated because this is required and the filename is set.
 
 Other commands, such as :code:`fixel2foxel`, may only require the fixel data file::
 
   fixel2voxel patient01/fixel_directory/afd.mif sum patient01/total_afd.mif
 
+A major benefit of the directory-based format is that existing commands for operating on traditional images can be used to manipulate fixel data. For example, to threshold fixels based on their AFD value::
 
+  mrthreshold patient01/fixel_directory/afd.mif -abs 0.1 patient01/fixel_directory/afd_mask.mif
 
-Benefits, mrcalc example
+To compute the mean dispersion over all fixels in the mask::
 
+  mrstats -output mean -mask patient01/fixel_directory/afd_mask.mif patient01/fixel_directory/dispersion.mif
 
 Viewing Fixel data in mrview
 .....................................
+Fixel images can be visualised using the "Fixel Plot" tool in MRview. Any image within the fixel directory can be opened by the file chooser. By default the fixels will be coloured based on the file selected when loaded (e.g. if you select a directions.mif file, fixels will be colour coded by direction, or if afd.mif is selected they will be coloured by AFD value). Irrespective of the file selected to view the fixel file, all other fixel file types in the fixel directory will be detected and available for colour-coding and thresholding via a combo box in the Fixel Plot tool. This enables you to perform operations such as thresholding by p-value and while colour-coding by effect size.
+
+
 
 .. _legacy_mrtrix_sparse_format:
 
