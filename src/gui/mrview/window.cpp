@@ -117,6 +117,9 @@ namespace MR
         }
 
       QSize Window::GLArea::sizeHint () const {
+        //CONF option: MRViewInitWindowSize
+        //CONF initial window size of MRView in pixels
+        //CONF default: 512,512
         std::string init_size_string = lowercase (MR::File::Config::get ("MRViewInitWindowSize"));
         std::vector<int> init_window_size;
         if (init_size_string.length())

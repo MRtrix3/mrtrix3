@@ -254,6 +254,11 @@ List of MRtrix3 configuration file options
 
      The default image background colour in the main MRView window.
 
+*  **MRViewInitWindowSize**
+    *default: 512,512*
+
+     initial window size of MRView in pixels
+
 *  **MRViewMaxNumColourmapRows**
     *default: 3*
 
