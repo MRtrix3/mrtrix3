@@ -680,7 +680,7 @@ Other command like `mrhistogram`, `mrcalc`, `mrstats` can also be used on Fixel 
 
 Viewing Fixel data in mrview
 .....................................
-Fixel images can be visualised using the "Fixel Plot" tool in MRview. Any image within the fixel directory can be opened by the file chooser. By default the fixels will be coloured based on the file selected when loaded (e.g. if you select a directions.mif file, fixels will be colour coded by direction, or if afd.mif is selected they will be coloured by AFD value). Irrespective of the file selected to view the fixel file, all other fixel file types in the fixel directory will be detected and available for colour-coding and thresholding via a combo box in the Fixel Plot tool. This enables you to perform operations such as thresholding by p-value and while colour-coding by effect size.
+Fixel images can be visualised using the "Fixel Plot" tool in MRview. Any image within the fixel directory can be opened by the file chooser. By default the fixels will be coloured based on the file selected when loaded (e.g. if you select a directions.mif file, fixels will be colour coded by direction, or if afd.mif is selected they will be coloured by AFD value). Irrespective of the file selected to view the fixel file, all other fixel file types in the fixel directory will be detected and available for colour-coding and thresholding via a combo box in the Fixel Plot tool. This enables operations such as thresholding fixels by p-value and while colour-coding by effect size.
 
 
 
