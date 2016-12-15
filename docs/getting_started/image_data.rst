@@ -493,19 +493,200 @@ with the expected format of the corresponding values.
    Default is ``0,1`` (no modification).
 
 
+
+
+
+.. _dicom_format:
+
+DICOM (folder or ``.dcm``)
+''''''''''''''''''''''''''
+
+DICOM format is only supported for reading. *MRtrix3* applications will assume
+an image is in DICOM format if the image specifier provided corresponds to a
+folder or ends with the ``.dcm`` extension. For a folder, the application will
+scan the entire folder and its subfolders for DICOM files and generate a list
+of DICOM patients, studies and series. If a single series is found within the
+folder, this data set will be accessed with no further interaction required.
+Otherwise, the user will be prompted to select the series of interest.
+*MRtrix3* supports data from all major manufacturers, including Siemens mosaics
+and the newer single-file multi-frame format.
+
+A separate application, :ref:`dcminfo`, is provided to view all DICOM header
+elements within a particular DICOM file, including Siemens' custom shadow
+attributes (CSA).
+
+Note that no support is provided for reading the ``DICOMDIR`` entry due to
+case-sensitivity issues. DICOM data are typically stored on CD or DVD on a
+case-insensitive filesystem. However, Unix systems will typically not access
+these filesystems in a case-insensitive manner, and will fail to find the
+appropriate files if the case of filenames supplied in the DICOMDIR file does
+not match the case of the files found on the CD or DVD.
+
+
+
+.. _nifti_format:
+
+NIfTI (``.nii``)
+''''''''''''''''
+
+This file format is supported both for reading and writing, and allows
+interoperation with other packages such as `SPM <http://www.fil.ion.ucl.ac.uk/spm/>`__ 
+or `FSL <http://fsl.fmrib.ox.ac.uk/fsl/>`__. 
+
+.. NOTE::
+  if both qform and sform orientation fields are present, the qform fields are ignored. Obviously, the qform fields will be used if they are present on their own.
+
+
+Compressed NIfTI (``.nii.gz``)
+..............................
+
+*MRtrix3* also supports compressed NIfTI images both for reading and writing.
+
+.. NOTE::
+  While this can reduce file sizes, it does incur a runtime cost when reading or
+  writing the image (a process that can often take longer than the operation to
+  be performed), and will require the entire image to be loaded uncompressed into
+  RAM (*MRtrix3* can otherwise make use of 
+  `memory-mapping <https://en.wikipedia.org/wiki/Memory-mapped_file>`__ to keep RAM
+  requirements to a minimum). For large files, these costs can become
+  considerable; you may find that *MRtrix3* can process a large uncompressed
+  image, yet run out of RAM when presented with the equivalent compressed
+  version (in such cases, you can try using ``gunzip`` to uncompress the file
+  manually before invoking the relevant *MRtrix3* command). 
+
+
+.. _mgh_formats:
+
+FreeSurfer formats (``.mgh / .mgz``)
+''''''''''''''''''''''''''''''''''''
+
+*MRtrix3* supports both of these formats for reading and writing.
+
+
+
+.. _analyze_format:
+
+Analyse format (``.img / .hdr``)
+''''''''''''''''''''''''''''''''
+
+This file format is supported both for reading and writing. However, when
+writing, the newer NIfTI standard will be used, since the Analyse format cannot
+store crucial information such as the image transform, and is hence deprecated.
+If these images are actually stored as NIfTI, they will be handled
+appropriately according to the standard. 
+
+.. NOTE::
+  In order to specify an Analyse format image on the command line, type the name
+  of its *data* file (``*.img``), *not* the header file.
+
+.. WARNING::
+  By default, Analyse format images will be assumed to be stored using RAS
+  (radiological) convention. This can modified in the :ref:`mrtrix_config`, by
+  setting the ``Analyse.LeftToRight`` entry to ``true``.
+
+
 .. _mrtrix_sparse_format:
+.. _fixel_format:
 
-MRtrix sparse image formats (``.msh / .msf``)
-'''''''''''''''''''''''''''''''''''''''''''''
+Fixel image format 
+''''''''''''''''''''
 
-These new image formats are designed for applications where the number
-of discrete elements within a voxel may vary between voxels. The most
-likely use case here is where each voxel contains some number of
-discrete fibre populations ('fixels'), and some information associated
-with each of these elements must be stored. Since only as many elements
-are as required for any particular voxel are actually stored, rather
-than having to store the maximum possible number for all voxels and
-padding with empty data, the format is referred to as 'sparse'.
+Images for representing multi-fibre models are sparse in nature (i.e. different voxels may have different numbers of discrete
+fibre populations - a.k.a fixels), and different models have different parameter requirements per fixel (e.g. orientation,
+volume fraction, fanning, tensors etc). The fixel image format overcomes several issues in storing
+such data in either traditional 4D images or a custom format (such as the legacy :ref:`legacy_mrtrix_sparse_format`).
+It as been designed with the following requirements in mind.
+
+Requirements
+.............
+* **Space saving**. Because different voxels may have different numbers of fibres, it is inefficient to store data using 4-dimensional images, since the size of the 4th dimension must accommodate the voxel with the highest number of fibres. A sparse representation on disk is therefore more efficient.
+* **Easily read and written** by other software packages to enable inter-operability of fixel-based DWI models.
+* **Flexible** enough to allow for both fibre-specific model parameters (e.g. volume fractions, fanning), and voxel-specific parameters (e.g. hindered isotropic compartment). The format should also support any number of model parameters.
+* **Self documenting**. Users should be able to easily infer what kind of data is included in the model. Developers should also easily understand the data layout, without having to read in special fields in the image header.
+* **Minimise the need for supporting commands**. We wanted to avoid the need to have dedicated commands for performing basic operations on the data (e.g. math/calculator operations, thresholding, histogram generation etc).
+* **Extendability**. Users should be able to add components to an existing sparse image. E.g. a mask to label fixels of interest, or additional test-statistic output from a group analysis.
+
+Specifications
+...............
+In the fixel format we have opted to leverage the file system by storing data belonging to a single sparse DWI model inside a single directory/folder
+(in contrast to the old :ref:`legacy_mrtrix_sparse_format` where all data is stored inside the file). Effectively the directory becomes the ‘dataset’. While this
+implies that all data files must be kept together inside the directory, and can be tampered with (or accidently deleted) by users, we believe
+the transparency and accessibility of the data is beneficial and enables all of the above requirements to be met.
+
+All files types saved inside the format are in either NIfTI-2 format (for maximum compatibility with other packages) or :ref:`mrtrix_image_formats`. To help describe the format and the layout of the files within the directory, we have used an example of how a ball and racket-like model may be stored:
+
+.. image:: fixel_format.png
+   :scale: 25 %
+   :align: center
+
+Fixel format file types
+.......................
+Index File
+...............
+* 4D image (i x j x k x 2)
+* The index file is required, with fixed naming (index.nii)
+* The first 3D volume in the 4th dimension stores the number of elements (fibres) per voxel
+* The second volume in the 4th dimension stores the sparse data file offset (index) to the first element in that voxel
+
+Fixel Data File
+.................
+* 3D image (n x p x 1) where n is the total number of elements in the image, and p is the number of parameters per element (e.g. 3 for direction.nii, for volume.nii, or 6 for a multi-tensor model)
+* Easily identified as a data file type because the size of the image is 1 in the 3rd dimension
+* Data files must be stored in a NIfTI-2 format to support n > 65535
+* Any number of Fixel Data File types may be present in the directory. In this example the volume and fanning have been saved as separate files, however the format is flexible and may allow for multiple parameters, p, per element.
+* Fixel Data Files may can have flexible naming (with the exception of the directions file (see below)).
+
+
+Fixel Direction File
+......................
+* **All DWI models must specify the direction of each fixel**.
+* Directions for each fixel must be saved within a single file named either direction.nii or direction.mif
+* This can be considered as a special type of fixel data file, with dimensions (n x 3 x 1).
+* Directions are specified with respect to the scanner coordinate frame in cartesian coordinates
+
+
+
+Voxel Data File
+................
+* 3D or 4D image
+* Any number of Voxel Data Files may be stored in the directory
+* Must have the same resolution and header transform as the index image
+* Naming of files is flexible
+* The 4th dimension is optional, but allows for multiple parameters per voxel to be stored (e.g. 6 tensor coefficients of the ‘hindered’ compartment in CHARMED)
+
+
+Usage
+................
+Because the fixel format leverages the file system to store all fixel data within a single directory,
+interacting with fixel data in MRtrix may require user input and output arguments to be either the entire directory or
+specific fixel data files within the directory. For example :code:`fod2fixel` requires the name of the containing directory
+*and* the names of the output fixel data files stored inside the directory::
+
+  fod2fixel patient01/fod.mif patient01/fixel_directory -afd afd_metric.mif -disp dispersion.mif
+
+Other commands, such as :code:`fixel2foxel`, may only require the fixel data file::
+
+  fixel2voxel patient01/fixel_directory/afd.mif sum patient01/total_afd.mif
+
+
+
+Benefits, mrcalc example
+
+
+Viewing Fixel data in mrview
+.....................................
+
+.. _legacy_mrtrix_sparse_format:
+
+MRtrix Sparse Format (``.msh / .msf``)
+''''''''''''''''''''''''''''''''''''''''
+
+This is an old lecacy format prevously used for applications where the number
+of discrete elements within a voxel may vary between voxels 
+(typically used to store fixels). This format has been superseded by the 
+new directory-based :ref:`fixel_format`. While all fixel-related 
+commands now only use the new format, files stored in the legacy format
+can still be viewed in :ref:`mrview`.
 
 Much like the standard MRtrix image formats (.mif and .mih), there are
 two different image file extensions available. One (.msh) separates the
@@ -565,98 +746,6 @@ number of discrete elements stored. This is followed by data to fill
 precisely that number of instances of the sparse data class. Note that
 no endianness conversion can be performed on this data; data is read and
 written using a straight memory copy.
-
-
-
-.. _dicom_format:
-
-DICOM (folder or ``.dcm``)
-''''''''''''''''''''''''''
-
-DICOM format is only supported for reading. *MRtrix3* applications will assume
-an image is in DICOM format if the image specifier provided corresponds to a
-folder or ends with the ``.dcm`` extension. For a folder, the application will
-scan the entire folder and its subfolders for DICOM files and generate a list
-of DICOM patients, studies and series. If a single series is found within the
-folder, this data set will be accessed with no further interaction required.
-Otherwise, the user will be prompted to select the series of interest.
-*MRtrix3* supports data from all major manufacturers, including Siemens mosaics
-and the newer single-file multi-frame format.
-
-A separate application, :ref:`dcminfo`, is provided to view all DICOM header
-elements within a particular DICOM file, including Siemens' custom shadow
-attributes (CSA).
-
-Note that no support is provided for reading the ``DICOMDIR`` entry due to
-case-sensitivity issues. DICOM data are typically stored on CD or DVD on a
-case-insensitive filesystem. However, Unix systems will typically not access
-these filesystems in a case-insensitive manner, and will fail to find the
-appropriate files if the case of filenames supplied in the DICOMDIR file does
-not match the case of the files found on the CD or DVD.
-
-
-
-.. _nifti_format:
-
-NIfTI (``.nii``)
-''''''''''''''''
-
-This file format is supported both for reading and writing, and allows
-interoperation with other packages such as `SPM <http://www.fil.ion.ucl.ac.uk/spm/>`__ 
-or `FSL <http://fsl.fmrib.ox.ac.uk/fsl/>`__. 
-
-.. NOTE::
-if both qform and sform orientation fields are present, the qform fields are
-ignored. Obviously, the qform fields will be used if they are present on their
-own.
-
-
-Compressed NIfTI (``.nii.gz``)
-..............................
-
-*MRtrix3* also supports compressed NIfTI images both for reading and writing.
-
-.. NOTE::
-  While this can reduce file sizes, it does incur a runtime cost when reading or
-  writing the image (a process that can often take longer than the operation to
-  be performed), and will require the entire image to be loaded uncompressed into
-  RAM (*MRtrix3* can otherwise make use of 
-  `memory-mapping <https://en.wikipedia.org/wiki/Memory-mapped_file>`__ to keep RAM
-  requirements to a minimum). For large files, these costs can become
-  considerable; you may find that *MRtrix3* can process a large uncompressed
-  image, yet run out of RAM when presented with the equivalent compressed
-  version (in such cases, you can try using ``gunzip`` to uncompress the file
-  manually before invoking the relevant *MRtrix3* command). 
-
-
-.. _mgh_formats:
-
-FreeSurfer formats (``.mgh / .mgz``)
-''''''''''''''''''''''''''''''''''''
-
-*MRtrix3* supports both of these formats for reading and writing.
-
-
-
-.. _analyze_format:
-
-Analyse format (``.img / .hdr``)
-''''''''''''''''''''''''''''''''
-
-This file format is supported both for reading and writing. However, when
-writing, the newer NIfTI standard will be used, since the Analyse format cannot
-store crucial information such as the image transform, and is hence deprecated.
-If these images are actually stored as NIfTI, they will be handled
-appropriately according to the standard. 
-
-.. NOTE::
-  In order to specify an Analyse format image on the command line, type the name
-  of its *data* file (``*.img``), *not* the header file.
-
-.. WARNING::
-  By default, Analyse format images will be assumed to be stored using RAS
-  (radiological) convention. This can modified in the `configuration`_ file, by
-  setting the ``Analyse.LeftToRight`` entry to ``true``.
 
 
 

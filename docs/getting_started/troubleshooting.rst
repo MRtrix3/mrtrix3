@@ -1,10 +1,10 @@
 Troubleshooting
-=====
+===============
 
 .. _remote_display:
 
 Remote display issues
----------
+---------------------
 
 The GUI components in *MRtrix3* (``mrview`` & ``shview``) use the OpenGL
 3.3 API to make full use of modern graphics cards. Unfortunately, X11
@@ -40,7 +40,7 @@ So it is not possible to use ``mrview`` or ``shview`` over a standard
 remote X11 connection.
 
 Why does *MRtrix3* use OpenGL 3.3 if it come with such limitations?
-^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Because it's clearly the most future-proof option. The `older OpenGL
 versions are
@@ -51,7 +51,7 @@ provide better performance. Finally, as explained above, X11 will
 eventually be phased out anyway...
 
 What can be done about this?
-^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 There are a number of options available to deal with this, each with
 their own idiosyncraties. The simplest is to render locally (option 1),
@@ -84,7 +84,7 @@ already have an SSH account), and is readily available on all platforms
 `OSXFuse <http://osxfuse.github.io/>`__ on MacOSX).
 
 2. Use an OpenGL-capable VNC server
-""""""""""""""""""""""""""""""""""
+"""""""""""""""""""""""""""""""""""
 
 Using the `VNC
 protocol <http://en.wikipedia.org/wiki/Virtual_Network_Computing>`__,

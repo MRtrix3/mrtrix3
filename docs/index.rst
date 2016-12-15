@@ -13,7 +13,7 @@ Welcome to the MRtrix user documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: 
+   :caption:
 
 .. toctree::
    :maxdepth: 2
