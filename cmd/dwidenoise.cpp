@@ -24,6 +24,7 @@
 using namespace MR;
 using namespace App;
 
+const char* const dtypes[] = { "float32", "float64", NULL };
 
 void usage ()
 {
@@ -64,7 +65,11 @@ void usage ()
     +   Argument ("window").type_sequence_int ()
 
     + Option ("noise", "the output noise map.")
-    +   Argument ("level").type_image_out();
+    +   Argument ("level").type_image_out()
+
+    + Option ("datatype", "datatype for SVD (float32 or float64).")
+    +   Argument ("spec").type_choice(dtypes);
+
 
   COPYRIGHT = "Copyright (c) 2016 New York University, University of Antwerp, and the MRtrix3 contributors \n \n"
       "Permission is hereby granted, free of charge, to any non-commercial entity ('Recipient') obtaining a copy of this software and "
@@ -235,9 +240,21 @@ void run ()
     noise = Image<value_type>::create (opt[0][0], header);
   }
 
-  DenoisingFunctor< Image<value_type> > func (dwi_in, extent, mask, noise);
-  ThreadedLoop ("running MP-PCA denoising", dwi_in, 0, 3)
-    .run (func, dwi_in, dwi_out);
+  opt = get_options("datatype");
+  if (opt.size() && (int(opt[0][0]) == 0)) {
+    DenoisingFunctor< Image<value_type> , float > func (dwi_in, extent, mask, noise);
+    ThreadedLoop ("running MP-PCA denoising", dwi_in, 0, 3)
+      .run (func, dwi_in, dwi_out);
+  }
+  else if (int(opt[0][0]) == 1) {
+    DenoisingFunctor< Image<value_type> , double > func (dwi_in, extent, mask, noise);
+    ThreadedLoop ("running MP-PCA denoising", dwi_in, 0, 3)
+      .run (func, dwi_in, dwi_out);
+  }
+  else {
+    assert(0);
+  }
+
 }
 
 
