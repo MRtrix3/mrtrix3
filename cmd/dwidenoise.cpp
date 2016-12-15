@@ -108,6 +108,7 @@ class DenoisingFunctor
       n (extent[0]*extent[1]*extent[2]),
       r ((m<n) ? m : n),
       X (m,n),
+      Xm (m),
       pos {{0, 0, 0}}, 
       mask (mask),
       noise (noise)
@@ -135,16 +136,16 @@ class DenoisingFunctor
     VectorX s = eig.eigenvalues();
 
     // Marchenko-Pastur optimal threshold
-    const double lam_r = std::max(double(s[0]), 0.0) / n;
+    const double lam_r = std::max(double(s[1]), 0.0) / n;
     double clam = 0.0;
     sigma2 = NaN;
     ssize_t cutoff_p = 0;
-    for (ssize_t p = 0; p < r; ++p)
+    for (ssize_t p = 1; p < r; ++p)
     {
       double lam = std::max(double(s[p]), 0.0) / n;
       clam += lam;
       double gam = double(m-r+p+1) / double(n);
-      double sigsq1 = clam / ((p+1) * std::max (gam, 1.0));
+      double sigsq1 = clam / (p * std::max (gam, 1.0));
       double sigsq2 = (lam - lam_r) / (4.0 * std::sqrt(gam));
       // sigsq2 > sigsq1 if signal else noise
       if (sigsq2 < sigsq1) {
@@ -166,7 +167,7 @@ class DenoisingFunctor
     // Store output
     assign_pos_of(dwi).to(out);
     for (auto l = Loop (3) (out); l; ++l)
-      out.value() = value_type (X(out.index(3), n/2));
+      out.value() = value_type (X(out.index(3), n/2) + Xm(out.index(3)));
 
     // store noise map if requested:
     if (noise.valid()) {
@@ -186,6 +187,9 @@ class DenoisingFunctor
         for (dwi.index(0) = pos[0]-extent[0]; dwi.index(0) <= pos[0]+extent[0]; ++dwi.index(0), ++k)
           if (! is_out_of_bounds(dwi))
             X.col(k) = dwi.row(3).template cast<F>();
+    // data centring
+    Xm = X.rowwise().mean();
+    X.colwise() -= Xm;
     // reset image position
     dwi.index(0) = pos[0];
     dwi.index(1) = pos[1];
@@ -196,6 +200,7 @@ private:
   const std::array<ssize_t, 3> extent;
   const ssize_t m, n, r;
   MatrixX X;
+  VectorX Xm;
   std::array<ssize_t, 3> pos;
   double sigma2;
   Image<bool> mask;
