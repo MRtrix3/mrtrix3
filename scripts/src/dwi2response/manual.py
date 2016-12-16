@@ -60,22 +60,12 @@ def execute():
   if not os.path.exists('dirs.mif'):
     runCommand('dwi2tensor dwi.mif - -mask in_voxels.mif | tensor2metric - -vector dirs.mif')
 
-  # Loop over shells
-  response = [ ]
-  max_length = 0
-  for index, b in enumerate(shells):
-    lmax_option = ''
-    if lmax:
-      lmax_option = ' -lmax ' + str(lmax[index])
-    runCommand('dwiextract dwi.mif - -shell ' + str(b) + ' | amp2sh - - | sh2response - in_voxels.mif dirs.mif response_b' + str(b) + '.txt' + lmax_option)
-    shell_response = open('response_b' + str(b) + '.txt', 'r').read().split()
-    response.append(shell_response)
-    max_length = max(max_length, len(shell_response))
-
-  with open('response.txt', 'w') as f:
-    for line in response:
-      line += ['0'] * (max_length - len(line))
-      f.write(' '.join(line) + '\n')
+  # Get response function
+  bvalues_option = ' -shell ' + ','.join(map(str,shells))
+  lmax_option = ''
+  if lmax:
+    lmax_option = ' -lmax ' + ','.join(map(str,lmax))
+  runCommand('amp2response dwi.mif in_voxels.mif dirs.mif response.txt' + bvalues_option + lmax_option)
 
   runFunction(shutil.copyfile, 'response.txt', getUserPath(lib.app.args.output, False))
   runFunction(shutil.copyfile, 'in_voxels.mif', 'voxels.mif')
