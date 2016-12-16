@@ -1,5 +1,5 @@
-Fixel-Based Analysis (FBA)
-==========================
+Fibre Density and Cross-section - Single Shell DWI
+==================================================
 
 Introduction
 -------------

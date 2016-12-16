@@ -1,5 +1,5 @@
 Welcome to the MRtrix user documentation!
-==================================
+=========================================
 
 *MRtrix* provides a set of tools to perform diffusion-weighted MRI white matter tractography in the presence of crossing fibres, using Constrained Spherical Deconvolution (`Tournier et al.. 2004`_; `Tournier et al. 2007`_), and a probabilisitic streamlines algorithm (`Tournier et al., 2012`_). These applications have been written from scratch in C++, using the functionality provided by `Eigen`_, and `Qt`_. The software is currently capable of handling DICOM, NIfTI and AnalyseAVW image formats, amongst others. The source code is distributed under the `Mozilla Public License`_.
 
@@ -13,7 +13,7 @@ Welcome to the MRtrix user documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: 
+   :caption:
 
 .. toctree::
    :maxdepth: 2
@@ -34,32 +34,57 @@ Welcome to the MRtrix user documentation!
    getting_started/image_data
    getting_started/command_line
    getting_started/troubleshooting
+   getting_started/FAQ
+
+
+.. toctree::
+   :maxdepth: 2
+   :caption: DWI Pre-processing
+
+   dwi_preprocessing/denoising
+   dwi_preprocessing/dwipreproc   
    
 .. toctree::
    :maxdepth: 2
-   :caption: Tutorials
+   :caption: DWI Model Fitting
+
+   dwi_model_fitting/response_function_estimation
+   dwi_model_fitting/multi_tissue_csd
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Quantitative Structural Connectivity
+
+   quantitative_structural_connectivity/act
+   quantitative_structural_connectivity/sift
+   quantitative_structural_connectivity/structural_connectome
+   quantitative_structural_connectivity/labelconvert
+   quantitative_structural_connectivity/connectome_tool
+   
+.. toctree::
+   :maxdepth: 2
+   :caption: Fixel-Based Analysis
+
+   fixel_based_analysis/ss_fibre_density_cross-section
+   fixel_based_analysis/ms_fibre_density_cross-section
+   fixel_based_analysis/fba_of_other_measures
+   fixel_based_analysis/computing_effect_size_wrt_controls
+   fixel_based_analysis/displaying_results_with_streamlines
+   
+.. toctree::
+   :maxdepth: 2
+   :caption: Spatial Normalisation
+
+   spatial_normalisation/warping_images_with_warps_from_other_packages   
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Misc Tutorials
    
    tutorials/basic_dwi_processing
-   tutorials/denoising
-   tutorials/dwipreproc
+   tutorials/global_tractography
    tutorials/hcp_connectome
-   tutorials/connectome_tool
-   tutorials/labelconvert
-   tutorials/advanced_debugging
-   tutorials/warping_images_with_warps_from_other_packages
-   tutorials/FAQ
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Workflows
-
-   workflows/DWI_preprocessing_for_quantitative_analysis
-   workflows/fixel_based_analysis
-   workflows/act
-   workflows/sift
-   workflows/structural_connectome
-   workflows/global_tractography
-   workflows/multi_tissue_csd
+   tutorials/advanced_debugging  
 
 .. toctree::
    :maxdepth: 2
@@ -68,7 +93,6 @@ Welcome to the MRtrix user documentation!
    concepts/orthonormal_basis
    concepts/dixels_fixels
    concepts/afd_connectivity
-   concepts/response_function_estimation
 
 .. toctree::
    :maxdepth: 1
