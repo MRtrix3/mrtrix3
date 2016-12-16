@@ -75,7 +75,7 @@ Welcome to the MRtrix user documentation!
    :maxdepth: 2
    :caption: Spatial Normalisation
 
-   spatial_normalisation/warping_images_with_warps_from_other_packages-section   
+   spatial_normalisation/warping_images_with_warps_from_other_packages   
 
 .. toctree::
    :maxdepth: 2
@@ -93,7 +93,6 @@ Welcome to the MRtrix user documentation!
    concepts/orthonormal_basis
    concepts/dixels_fixels
    concepts/afd_connectivity
-   concepts/response_function_estimation
 
 .. toctree::
    :maxdepth: 1
