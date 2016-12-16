@@ -1,4 +1,4 @@
-DWI distortion correction using ``dwipreproc``
+DWI distortion correction using dwipreproc
 ==============================================
 
 The ``dwipreproc`` script, responsible for performing general pre-processing of DWI series, has been completely re-designed as part of the *MRtrix3* 0.3.16 update. Although the 'guts' of the script are completely new, the fundamental operation - eddy current-induced distortion correction, motion correction, and (optionally) susceptibility-induced distortion correction, using FSL's ``eddy`` / ``topup`` / ``applytopup`` tools, remains the same. While the user interface remains reasonably similar to that provided previously (examples to come), they are slightly different.
