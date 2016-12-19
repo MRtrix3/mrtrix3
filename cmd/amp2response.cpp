@@ -145,7 +145,7 @@ void run ()
     } else {
       auto grad = DWI::get_valid_DW_scheme (header);
       shells.reset (new DWI::Shells (grad));
-      shells->select_shells (false, false);
+      shells->select_shells (false, false, false);
       for (size_t i = 0; i != shells->count(); ++i) {
         volumes.push_back ((*shells)[i].get_volumes());
         dirs_azel.push_back (DWI::gen_direction_matrix (grad, volumes.back()));
