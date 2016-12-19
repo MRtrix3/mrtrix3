@@ -71,7 +71,7 @@ void run()
       for (const auto v : shells[s].get_volumes()) 
         volumes.push_back (v);
     }
-    bzero = (shells.count() == 1 && shells[0].is_bzero());
+    bzero = (shells.count() == 1 && shells.has_bzero());
   // If no command-line options specified, then just grab all non-b=0 volumes
   // If however we are selecting volumes according to phase-encoding, and
   //   shells have not been explicitly selected, do NOT filter by b-value here

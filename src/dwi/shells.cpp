@@ -72,7 +72,7 @@ namespace MR
       if (force_without_bzero && force_with_bzero)
         throw Exception ("Incompatible constraints: command tries to enforce proceeding both with and without b=0");
 
-      BitSet to_retain (shells.size(), false);
+      BitSet to_retain (count(), false);
 
       auto opt = App::get_options ("shell");
       if (opt.size()) {
@@ -111,7 +111,7 @@ namespace MR
             // * Assume each is a Poisson distribution, see if there's a clear winner
             // Prompt warning if decision is slightly askew, exception if ambiguous
             bool shell_selected = false;
-            for (size_t s = 0; s != shells.size(); ++s) {
+            for (size_t s = 0; s != count(); ++s) {
               if ((*b >= shells[s].get_min()) && (*b <= shells[s].get_max())) {
                 if (!to_retain[s]) {
                   to_retain[s] = true;
@@ -128,7 +128,7 @@ namespace MR
               // Check to see if we can unambiguously select a shell based on b-value integer rounding
               size_t best_shell = 0;
               bool ambiguous = false;
-              for (size_t s = 0; s != shells.size(); ++s) {
+              for (size_t s = 0; s != count(); ++s) {
                 if (std::abs (*b - shells[s].get_mean()) <= 1.0) {
                   if (shell_selected) {
                     ambiguous = true;
@@ -161,7 +161,7 @@ namespace MR
                 size_t best_shell = 0;
                 default_type best_num_stdevs = std::numeric_limits<default_type>::max();
                 bool ambiguous = false;
-                for (size_t s = 0; s != shells.size(); ++s) {
+                for (size_t s = 0; s != count(); ++s) {
                   const default_type stdev = (shells[s].is_bzero() ? 0.5 * bzero_threshold() : (zero_stdev ? std::sqrt (shells[s].get_mean()) : shells[s].get_stdev()));
                   const default_type num_stdev = std::abs ((*b - shells[s].get_mean()) / stdev);
                   if (num_stdev < best_num_stdevs) {
@@ -175,7 +175,7 @@ namespace MR
 
                 if (ambiguous) {
                   std::string bvalues;
-                  for (size_t s = 0; s != shells.size(); ++s) {
+                  for (size_t s = 0; s != count(); ++s) {
                     if (bvalues.size())
                       bvalues += ", ";
                     bvalues += str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev());
@@ -211,8 +211,10 @@ namespace MR
       } else {
 
         if (force_singleshell && !is_single_shell()) {
+          if (count() == 1 && has_bzero())
+            throw Exception ("No non b=0 data found, but the command requires a non b=0 shell");
           WARN ("Multiple non-zero b-value shells detected; automatically selecting b=" + str(largest().get_mean()) + " with " + str(largest().count()) + " volumes");
-          to_retain[shells.size()-1] = true;
+          to_retain[count()-1] = true;
           if (has_bzero())
             to_retain[0] = true;
         } else {
@@ -235,7 +237,7 @@ namespace MR
 
       // Erase the unwanted shells
       std::vector<Shell> new_shells;
-      for (size_t s = 0; s != shells.size(); ++s) {
+      for (size_t s = 0; s != count(); ++s) {
         if (to_retain[s])
           new_shells.push_back (shells[s]);
       }

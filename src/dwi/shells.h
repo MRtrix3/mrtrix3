@@ -138,7 +138,8 @@ namespace MR
         Shells& reject_small_shells (const size_t min_volumes = DWI_SHELLS_MIN_DIRECTIONS);
 
         bool is_single_shell() const {
-          return ((shells.size() == 1) || (shells.size() == 2 && smallest().is_bzero()));
+          // only if exactly 1 non-bzero shell
+          return ((count() == 1 && !has_bzero()) || (count() == 2 && has_bzero()));
         }
 
         bool has_bzero() const {
