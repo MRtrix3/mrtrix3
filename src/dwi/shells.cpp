@@ -63,22 +63,23 @@ namespace MR
 
 
 
-    Shells& Shells::select_shells (const bool keep_bzero, const bool force_single_shell)
+    Shells& Shells::select_shells (const bool force_singleshell, const bool force_with_bzero, const bool force_without_bzero)
     {
 
       // Easiest way to restrict processing to particular shells is to simply erase
       //   the unwanted shells; makes it command independent
 
+      if (force_without_bzero && force_with_bzero)
+        throw Exception ("Incompatible constraints: command tries to enforce proceeding both with and without b=0");
+
       BitSet to_retain (shells.size(), false);
-      if (keep_bzero && smallest().is_bzero())
-        to_retain[0] = true;
 
       auto opt = App::get_options ("shell");
       if (opt.size()) {
 
         std::vector<default_type> desired_bvalues = opt[0][0];
-        if (desired_bvalues.size() > 1 && !(desired_bvalues.front() == 0) && force_single_shell)
-          throw Exception ("Command not compatible with multiple non-zero b-shells");
+        bool bzero_selected = false;
+        size_t nonbzero_selected_count = 0;
 
         for (std::vector<default_type>::const_iterator b = desired_bvalues.begin(); b != desired_bvalues.end(); ++b) {
 
@@ -88,11 +89,16 @@ namespace MR
           // Automatically select a b=0 shell if the requested b-value is zero
           if (*b <= bzero_threshold()) {
 
-            if (smallest().is_bzero()) {
-              to_retain[0] = true;
-              DEBUG ("User requested b-value " + str(*b) + "; got b=0 shell : " + str(smallest().get_mean()) + " +- " + str(smallest().get_stdev()) + " with " + str(smallest().count()) + " volumes");
+            if (has_bzero()) {
+              if (!bzero_selected) {
+                to_retain[0] = true;
+                bzero_selected = true;
+                DEBUG ("User requested b-value " + str(*b) + "; got b=0 shell : " + str(smallest().get_mean()) + " +- " + str(smallest().get_stdev()) + " with " + str(smallest().count()) + " volumes");
+              } else {
+                throw Exception ("User selected b=0 shell more than once");
+              }
             } else {
-              throw Exception ("User selected b=0 shell, but no such data exists");
+              throw Exception ("User selected b=0 shell, but no such data was found");
             }
 
           } else {
@@ -107,9 +113,14 @@ namespace MR
             bool shell_selected = false;
             for (size_t s = 0; s != shells.size(); ++s) {
               if ((*b >= shells[s].get_min()) && (*b <= shells[s].get_max())) {
-                to_retain[s] = true;
-                shell_selected = true;
-                DEBUG ("User requested b-value " + str(*b) + "; got shell " + str(s) + ": " + str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev()) + " with " + str(shells[s].count()) + " volumes");
+                if (!to_retain[s]) {
+                  to_retain[s] = true;
+                  nonbzero_selected_count++;
+                  shell_selected = true;
+                  DEBUG ("User requested b-value " + str(*b) + "; got shell " + str(s) + ": " + str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev()) + " with " + str(shells[s].count()) + " volumes");
+                } else {
+                  throw Exception ("User selected a shell more than once: " + str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev()) + " with " + str(shells[s].count()) + " volumes");
+                }
               }
             }
             if (!shell_selected) {
@@ -128,8 +139,13 @@ namespace MR
                 }
               }
               if (shell_selected && !ambiguous) {
-                to_retain[best_shell] = true;
-                DEBUG ("User requested b-value " + str(*b) + "; got shell " + str(best_shell) + ": " + str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell].get_stdev()) + " with " + str(shells[best_shell].count()) + " volumes");
+                if (!to_retain[best_shell]) {
+                  to_retain[best_shell] = true;
+                  nonbzero_selected_count++;
+                  DEBUG ("User requested b-value " + str(*b) + "; got shell " + str(best_shell) + ": " + str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell].get_stdev()) + " with " + str(shells[best_shell].count()) + " volumes");
+                } else {
+                  throw Exception ("User selected a shell more than once: " + str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell].get_stdev()) + " with " + str(shells[best_shell].count()) + " volumes");
+                }
               } else {
 
                 // First, check to see if all non-zero shells have (effectively) non-zero standard deviation
@@ -167,7 +183,12 @@ namespace MR
                   throw Exception ("Unable to robustly select desired shell b=" + str(*b) + " (detected shells are: " + bvalues + ")");
                 } else {
                   WARN ("User requested shell b=" + str(*b) + "; have selected shell " + str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell].get_stdev()));
-                  to_retain[best_shell] = true;
+                  if (!to_retain[best_shell]) {
+                    to_retain[best_shell] = true;
+                    nonbzero_selected_count++;
+                  } else {
+                    throw Exception ("User selected a shell more than once: " + str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell].get_stdev()) + " with " + str(shells[best_shell].count()) + " volumes");
+                  }
                 }
 
               } // End checking if the requested b-value is within 1.0 of a shell mean
@@ -178,16 +199,32 @@ namespace MR
 
         } // End looping over list of requested b-value shells
 
+        if (force_singleshell && nonbzero_selected_count != 1)
+          throw Exception ("User selected " + str(nonbzero_selected_count) + " non b=0 shells, but the command requires single-shell data");
+
+        if (force_with_bzero && !bzero_selected)
+          throw Exception ("User did not select b=0 shell, but the command requires the presence of b=0 data");
+
+        if (force_without_bzero && bzero_selected)
+          throw Exception ("User selected b=0 shell, but the command is not compatible with b=0 data");
+
       } else {
 
         if (force_single_shell && !is_single_shell()) {
           WARN ("Multiple non-zero b-value shells detected; automatically selecting b=" + str(largest().get_mean()) + " with " + str(largest().count()) + " volumes");
           to_retain[shells.size()-1] = true;
+          if (has_bzero())
+            to_retain[0] = true;
         } else {
-          // Not restricted to single-shell processing, no -shells option:
-          //   keep all shells
+          // default: keep everything
           to_retain.clear (true);
         }
+        
+        if (force_with_bzero && !has_bzero())
+          throw Exception ("No b=0 data found, but the command requires the presence of b=0 data");
+
+        if (force_without_bzero && has_bzero())
+          to_retain[0] = false;
 
       }
 
