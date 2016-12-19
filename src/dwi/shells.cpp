@@ -210,7 +210,7 @@ namespace MR
 
       } else {
 
-        if (force_single_shell && !is_single_shell()) {
+        if (force_singleshell && !is_single_shell()) {
           WARN ("Multiple non-zero b-value shells detected; automatically selecting b=" + str(largest().get_mean()) + " with " + str(largest().count()) + " volumes");
           to_retain[shells.size()-1] = true;
           if (has_bzero())
