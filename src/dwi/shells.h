@@ -138,9 +138,12 @@ namespace MR
         Shells& reject_small_shells (const size_t min_volumes = DWI_SHELLS_MIN_DIRECTIONS);
 
         bool is_single_shell() const {
-          return ((shells.size() == 1) || ((shells.size() == 2 && smallest().is_bzero())));
+          return ((shells.size() == 1) || (shells.size() == 2 && smallest().is_bzero()));
         }
 
+        bool has_bzero() const {
+          return smallest().is_bzero();
+        }
 
         friend std::ostream& operator<< (std::ostream& stream, const Shells& S)
         {
