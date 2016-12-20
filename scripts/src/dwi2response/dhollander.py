@@ -14,7 +14,6 @@ def initParser(subparsers, base_parser):
   options.add_argument('-gm', type=float, default=2.0, help='Number of GM voxels to select, as a percentage of refined GM. (default: 2 per cent)')
   options.add_argument('-csf', type=float, default=10.0, help='Number of CSF voxels to select, as a percentage of refined CSF. (default: 10 per cent)')
   parser.set_defaults(algorithm='dhollander')
-  parser.set_defaults(single_shell=False)
   
   
   

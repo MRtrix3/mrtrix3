@@ -14,7 +14,6 @@ def initParser(subparsers, base_parser):
   options.add_argument('-pvf', type=float, default=0.95, help='Partial volume fraction threshold for tissue voxel selection')
   options.add_argument('-wm_algo', metavar='algorithm', default='tournier', help='dwi2response algorithm to use for WM single-fibre voxel selection')
   parser.set_defaults(algorithm='msmt_5tt')
-  parser.set_defaults(single_shell=False)
   
   
   

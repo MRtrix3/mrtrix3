@@ -12,6 +12,7 @@ def initParser(subparsers, base_parser):
   lib.cmdlineParser.flagMutuallyExclusiveOptions( [ 'number', 'threshold' ] )
   parser.set_defaults(algorithm='fa')
   parser.set_defaults(single_shell=True)
+  parser.set_defaults(needs_bzero=True)
   
   
   
@@ -40,7 +41,7 @@ def execute():
     mask_path = 'mask_eroded.mif'
   else:
     mask_path = 'mask.mif'
-  runCommand('dwi2tensor dwi.mif -mask ' + mask_path + ' tensor.mif')
+  runCommand('mrcat bzero.mif dwi.mif - -axis 3 | dwi2tensor - -mask ' + mask_path + ' tensor.mif')
   runCommand('tensor2metric tensor.mif -fa fa.mif -vector vector.mif -mask ' + mask_path)
   if lib.app.args.threshold:
     runCommand('mrthreshold fa.mif voxels.mif -abs ' + str(lib.app.args.threshold))

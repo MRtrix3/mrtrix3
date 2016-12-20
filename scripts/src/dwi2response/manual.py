@@ -7,7 +7,6 @@ def initParser(subparsers, base_parser):
   options = parser.add_argument_group('Options specific to the \'manual\' algorithm')
   options.add_argument('-dirs', help='Manually provide the fibre direction in each voxel (a tensor fit will be used otherwise)')
   parser.set_defaults(algorithm='manual')
-  parser.set_defaults(single_shell=False)
   
   
   

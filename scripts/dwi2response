@@ -30,6 +30,8 @@ common_options.add_argument('-voxels', help='Output an image showing the final v
 common_options.add_argument('-grad', help='Pass the diffusion gradient table in MRtrix format')
 common_options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Pass the diffusion gradient table in FSL bvecs/bvals format')
 lib.cmdlineParser.flagMutuallyExclusiveOptions( [ 'grad', 'fslgrad' ] )
+base_parser.set_defaults(single_shell=False)
+base_parser.set_defaults(needs_bzero=False)
 
 algorithm_list = getAlgorithmList()
 # Subparsers for individual algorithms
@@ -93,6 +95,8 @@ if lib.app.args.single_shell or shell_option:
   runCommand('mrconvert ' + getUserPath(lib.app.args.input, True) + ' - -stride 0,0,0,1' + grad_import_option + ' | dwiextract - ' + os.path.join(lib.app.tempDir, 'dwi.mif') + shell_option + singleshell_option)
 else: # Don't want to discard b=0 in multi-shell algorithms, which dwiextract will do
   runCommand('mrconvert ' + getUserPath(lib.app.args.input, True) + ' ' + os.path.join(lib.app.tempDir, 'dwi.mif') + ' -stride 0,0,0,1' + grad_import_option)
+if lib.app.args.needs_bzero:
+  runCommand('mrconvert ' + getUserPath(lib.app.args.input, True) + ' - -stride 0,0,0,1' + grad_import_option + ' | dwiextract - ' + os.path.join(lib.app.tempDir, 'bzero.mif') + " -bzero")
 if lib.app.args.mask:
   runCommand('mrconvert ' + getUserPath(lib.app.args.mask, True) + ' ' + os.path.join(lib.app.tempDir, 'mask.mif') + ' -datatype bit')
 
