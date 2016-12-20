@@ -74,6 +74,9 @@ if lib.app.args.shell:
   if lib.app.args.single_shell and not len(shell_values) == 1:
     errorMessage('Can only specify a single b-value shell for single-shell algorithms')
   shell_option = ' -shell ' + lib.app.args.shell
+singleshell_option = ''
+if lib.app.args.single_shell:
+  singleshell_option = ' -singleshell -no-bzero'
 
 grad_import_option = ''
 if lib.app.args.grad:
@@ -87,7 +90,7 @@ lib.app.makeTempDir()
 
 # Get standard input data into the temporary directory
 if lib.app.args.single_shell or shell_option:
-  runCommand('mrconvert ' + getUserPath(lib.app.args.input, True) + ' - -stride 0,0,0,1' + grad_import_option + ' | dwiextract - ' + os.path.join(lib.app.tempDir, 'dwi.mif') + shell_option)
+  runCommand('mrconvert ' + getUserPath(lib.app.args.input, True) + ' - -stride 0,0,0,1' + grad_import_option + ' | dwiextract - ' + os.path.join(lib.app.tempDir, 'dwi.mif') + shell_option + singleshell_option)
 else: # Don't want to discard b=0 in multi-shell algorithms, which dwiextract will do
   runCommand('mrconvert ' + getUserPath(lib.app.args.input, True) + ' ' + os.path.join(lib.app.tempDir, 'dwi.mif') + ' -stride 0,0,0,1' + grad_import_option)
 if lib.app.args.mask:
