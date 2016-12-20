@@ -28,7 +28,7 @@ def getInputFiles():
 def execute():
   import math, os, shutil
   import lib.app
-  from lib.delFile      import delFile
+  from lib.delFile      import delFile, delFolder
   from lib.errorMessage import errorMessage
   from lib.getImageStat import getImageStat
   from lib.getUserPath  import getUserPath
@@ -54,7 +54,6 @@ def execute():
     if iteration == 0:
       RF_in_path = 'init_RF.txt'
       mask_in_path = 'mask.mif'
-      # TODO This can be changed once #71 is implemented (mrstats statistics across volumes)
       volume_means = [float(x) for x in getImageStat('dwi.mif', 'mean', 'mask.mif').split()]
       mean = sum(volume_means) / float(len(volume_means))
       volume_stds = [float(x) for x in getImageStat('dwi.mif', 'std', 'mask.mif').split()]
@@ -74,14 +73,14 @@ def execute():
     # Run CSD
     runCommand('dwi2fod csd dwi.mif ' + RF_in_path + ' ' + prefix + 'FOD.mif -mask ' + mask_in_path)
     # Get amplitudes of two largest peaks, and directions of largest
-    runCommand('fod2fixel ' + prefix + 'FOD.mif -peak ' + prefix + 'peaks.msf -mask ' + mask_in_path + ' -fmls_no_thresholds')
+    runCommand('fod2fixel ' + prefix + 'FOD.mif ' + prefix + 'fixel -peak peaks.mif -mask ' + mask_in_path + ' -fmls_no_thresholds')
     delFile(prefix + 'FOD.mif')
-    runCommand('fixel2voxel ' + prefix + 'peaks.msf split_value ' + prefix + 'amps.mif')
+    runCommand('fixel2voxel ' + prefix + 'fixel/peaks.mif split_data ' + prefix + 'amps.mif')
     runCommand('mrconvert ' + prefix + 'amps.mif ' + prefix + 'first_peaks.mif -coord 3 0 -axes 0,1,2')
     runCommand('mrconvert ' + prefix + 'amps.mif ' + prefix + 'second_peaks.mif -coord 3 1 -axes 0,1,2')
     delFile(prefix + 'amps.mif')
-    runCommand('fixel2voxel ' + prefix + 'peaks.msf split_dir ' + prefix + 'all_dirs.mif')
-    delFile(prefix + 'peaks.msf')
+    runCommand('fixel2voxel ' + prefix + 'fixel/directions.mif split_dir ' + prefix + 'all_dirs.mif')
+    delFolder(prefix + 'fixel')
     runCommand('mrconvert ' + prefix + 'all_dirs.mif ' + prefix + 'first_dir.mif -coord 3 0:2')
     delFile(prefix + 'all_dirs.mif')
     # Revise single-fibre voxel selection based on ratio of tallest to second-tallest peak
