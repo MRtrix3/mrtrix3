@@ -51,7 +51,7 @@ namespace MR
         return __number_of_threads;
       }
 
-      __number_of_threads = std::thread::hardware_concurrency();
+      __number_of_threads = File::Config::get_int ("NumberOfThreads", std::thread::hardware_concurrency());
       return __number_of_threads;
     }
 
