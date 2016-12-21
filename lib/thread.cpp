@@ -40,7 +40,18 @@ namespace MR
       if (__number_of_threads)
         return __number_of_threads;
       auto opt = App::get_options ("nthreads");
-      __number_of_threads = opt.size() ? opt[0][0] : File::Config::get_int ("NumberOfThreads", std::thread::hardware_concurrency());
+      if (opt.size()) {
+        __number_of_threads = opt[0][0];
+        return __number_of_threads;
+      }
+
+      const char* from_env = getenv ("MRTRIX_NTHREADS");
+      if (from_env) {
+        __number_of_threads = to<size_t> (from_env);
+        return __number_of_threads;
+      }
+
+      __number_of_threads = std::thread::hardware_concurrency();
       return __number_of_threads;
     }
 
