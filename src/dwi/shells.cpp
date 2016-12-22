@@ -62,7 +62,30 @@ namespace MR
 
 
 
-
+    // Use to select the shells the user may have requested via the "-shell" option,
+    // and additionally enforce certain constraints related to the presence of shells.
+    //
+    // The optional constraints are:
+    // - force_singleshell: enforces the presence of exactly 1 (no more, no less) non-bzero shell;
+    //                      doesn't influence the presence (or not) of bzeros, i.e., if they're present,
+    //                      they're simply left in.
+    // - force_with_bzero: enforces the presence of bzeros.
+    // - force_without_bzero: enforces the absence of bzeros; typical usecase would be in conjunction
+    //                        with "force_singleshell", to obtain a "pure" single shell.
+    //
+    // When the "-shell" option is present, it is first applied, and next the constraints (if any are requested)
+    // are checked. If any constraint is violated, an error (exception) occurs. The logic is that the user's
+    // "-shell" selection is a conscious choice that should always be honoured, and no unexpected modifications
+    // (e.g. including the bzeros) are made to it.
+    //
+    // When the "-shell" option is not present, by default all shells are included. If constraints are requested,
+    // they are made true for the convenience of the user, if possible (e.g. just selecting the highest b-value
+    // shell if "force_singleshell" is requested, excluding the bzeros if "force_without_bzero" is present, etc.).
+    // However, if they simply can't be made true (e.g. "force_with_bzero" when there are no bzeros in the dataset),
+    // an error (exception) will still occur.
+    //
+    // So long story short: multi-shell (as in "all shells") is default, but constraints can be specified
+    // if strictly required for certain commands or algorithms.
     Shells& Shells::select_shells (const bool force_singleshell, const bool force_with_bzero, const bool force_without_bzero)
     {
 
