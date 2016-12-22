@@ -16,12 +16,16 @@ Synopsis
 Description
 -----------
 
-Extract either diffusion-weighted volumes or b=0 volumes from an image containing both
+Extract diffusion-weighted volumes, b=0 volumes, or certain shells from a DWI dataset.
 
 Options
 -------
 
--  **-bzero** output b=0 volumes instead of the diffusion weighted volumes.
+-  **-bzero** Output b=0 volumes (instead of the diffusion weighted volumes, if -singleshell is not specified).
+
+-  **-no-bzero** Output only non b=0 volumes (default, if -singleshell is not specified).
+
+-  **-singleshell** Force a single-shell (single non b=0 shell) output. This will include b=0 volumes, if present. Use with -bzero to enforce presence of b=0 volumes (error if not present) or with -no-bzero to exclude them.
 
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -77,7 +81,7 @@ Standard options
 
 
 
-**Author:** David Raffelt (david.raffelt@florey.edu.au)
+**Author:** David Raffelt (david.raffelt@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)
 
 **Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
 

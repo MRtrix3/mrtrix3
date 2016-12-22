@@ -23,6 +23,8 @@ Estimate response function coefficients based on the DWI signal in single-fibre 
 Options
 -------
 
+-  **-isotropic** estimate an isotropic response function (lmax=0 for all shells)
+
 -  **-noconstraint** disable the non-negativity and monotonicity constraints
 
 -  **-directions path** provide an external text file containing the directions along which the amplitudes are sampled
