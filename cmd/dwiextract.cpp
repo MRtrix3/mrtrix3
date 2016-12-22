@@ -32,17 +32,19 @@ typedef float value_type;
 void usage ()
 {
 
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)";
 
   DESCRIPTION
-    + "Extract either diffusion-weighted volumes or b=0 volumes from an image containing both";
+    + "Extract diffusion-weighted volumes, b=0 volumes, or certain shells from a DWI dataset.";
 
   ARGUMENTS
     + Argument ("input", "the input DW image.").type_image_in ()
     + Argument ("output", "the output image (diffusion-weighted volumes by default).").type_image_out ();
 
   OPTIONS
-    + Option ("bzero", "output b=0 volumes instead of the diffusion weighted volumes.")
+    + Option ("bzero", "Output b=0 volumes (instead of the diffusion weighted volumes, if -singleshell is not specified).")
+    + Option ("no-bzero", "Output only non b=0 volumes (default, if -singleshell is not specified).")
+    + Option ("singleshell", "Force a single-shell (single non b=0 shell) output. This will include b=0 volumes, if present. Use with -bzero to enforce presence of b=0 volumes (error if not present) or with -no-bzero to exclude them.")
     + DWI::GradImportOptions()
     + DWI::ShellOption
     + PhaseEncoding::ImportOptions
@@ -61,16 +63,15 @@ void run()
   //   of all dwis or all bzeros i.e. don't initialise the Shells class
   std::vector<int> volumes;
   bool bzero = get_options ("bzero").size();
-  auto opt = get_options ("shell");
-  if (opt.size()) {
+  if (get_options ("shell").size() || get_options ("singleshell").size()) {
     DWI::Shells shells (grad);
-    shells.select_shells (false, false);
+    shells.select_shells (get_options ("singleshell").size(),get_options ("bzero").size(),get_options ("no-bzero").size());
     for (size_t s = 0; s != shells.count(); ++s) {
       DEBUG ("Including data from shell b=" + str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev()));
       for (const auto v : shells[s].get_volumes()) 
         volumes.push_back (v);
     }
-    bzero = (shells.count() == 1 && shells[0].is_bzero());
+    bzero = (shells.count() == 1 && shells.has_bzero());
   // If no command-line options specified, then just grab all non-b=0 volumes
   // If however we are selecting volumes according to phase-encoding, and
   //   shells have not been explicitly selected, do NOT filter by b-value here
@@ -87,7 +88,7 @@ void run()
       volumes.push_back (i);
   }
 
-  opt = get_options ("pe");
+  auto opt = get_options ("pe");
   const auto pe_scheme = PhaseEncoding::get_scheme (input_header);
   if (opt.size()) {
     if (!pe_scheme.rows())

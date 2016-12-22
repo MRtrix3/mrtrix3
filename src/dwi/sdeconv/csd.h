@@ -56,7 +56,7 @@ namespace MR
                 grad = DWI::get_valid_DW_scheme (dwi_header);
                 // Discard b=0 (b=0 normalisation not supported in this version)
                 // Only allow selection of one non-zero shell from command line
-                dwis = DWI::Shells (grad).select_shells (false, true).largest().get_volumes();
+                dwis = DWI::Shells (grad).select_shells (true, false, true).largest().get_volumes();
                 DW_dirs = DWI::gen_direction_matrix (grad, dwis);
 
                 lmax_data = Math::SH::LforN (dwis.size()); 

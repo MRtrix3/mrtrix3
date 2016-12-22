@@ -224,7 +224,7 @@ void run ()
     else {
       auto grad = DWI::get_valid_DW_scheme (amp);
       DWI::Shells shells (grad);
-      shells.select_shells (true, true);
+      shells.select_shells (true, false, false);
       if (shells.smallest().is_bzero())
         bzeros = shells.smallest().get_volumes();
       dwis = shells.largest().get_volumes();

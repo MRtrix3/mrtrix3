@@ -44,8 +44,6 @@ def execute():
   if lib.app.args.max_iters < 2:
     errorMessage('Number of iterations must be at least 2')
 
-  runCommand('amp2sh dwi.mif dwiSH.mif' + lmax_option)
-
   for iteration in range(0, lib.app.args.max_iters):
     prefix = 'iter' + str(iteration) + '_'
 
@@ -87,7 +85,7 @@ def execute():
     # Select the top-ranked voxels
     runCommand('mrthreshold ' + prefix + 'CF.mif -top ' + str(lib.app.args.sf_voxels) + ' ' + prefix + 'SF.mif')
     # Generate a new response function based on this selection
-    runCommand('sh2response dwiSH.mif ' + prefix + 'SF.mif ' + prefix + 'first_dir.mif ' + prefix + 'RF.txt' + iter_lmax_option)
+    runCommand('amp2response dwi.mif ' + prefix + 'SF.mif ' + prefix + 'first_dir.mif ' + prefix + 'RF.txt' + iter_lmax_option)
     delFile(prefix + 'first_dir.mif')
     # Should we terminate?
     if iteration > 0:

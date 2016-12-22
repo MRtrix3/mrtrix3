@@ -14,7 +14,6 @@ def initParser(subparsers, base_parser):
   options.add_argument('-pvf', type=float, default=0.95, help='Partial volume fraction threshold for tissue voxel selection')
   options.add_argument('-wm_algo', metavar='algorithm', default='tournier', help='dwi2response algorithm to use for WM single-fibre voxel selection')
   parser.set_defaults(algorithm='msmt_5tt')
-  parser.set_defaults(single_shell=False)
   
   
   
@@ -112,42 +111,13 @@ def execute():
     errorMessage(message)
 
   # For each of the three tissues, generate a multi-shell response
-  # Since here we're guaranteeing that GM and CSF will be isotropic in all shells, let's use mrstats rather than sh2response (seems a bit weird passing a directions file to sh2response with lmax=0...)
-
-  wm_responses  = [ ]
-  gm_responses  = [ ]
-  csf_responses = [ ]
-  max_length = 0
-
-  for index, b in enumerate(shells):
-    dwi_path = 'dwi_b' + str(b) + '.mif'
-    # dwiextract will yield a 4D image, even if there's only a single volume in a shell
-    runCommand('dwiextract dwi.mif -shell ' + str(b) + ' ' + dwi_path)
-    this_b_lmax_option = ''
-    if wm_lmax:
-      this_b_lmax_option = ' -lmax ' + str(wm_lmax[index])
-    runCommand('amp2sh ' + dwi_path + ' - | sh2response - wm_sf_mask.mif dirs.mif wm_response_b' + str(b) + '.txt' + this_b_lmax_option)
-    wm_response = open('wm_response_b' + str(b) + '.txt', 'r').read().split()
-    wm_responses.append(wm_response)
-    max_length = max(max_length, len(wm_response))
-    mean_dwi_path = 'dwi_b' + str(b) + '_mean.mif'
-    runCommand('mrmath ' + dwi_path + ' mean ' + mean_dwi_path + ' -axis 3')
-    gm_mean  = float(getImageStat(mean_dwi_path, 'mean', 'gm_mask.mif'))
-    csf_mean = float(getImageStat(mean_dwi_path, 'mean', 'csf_mask.mif'))
-    gm_responses .append( str(gm_mean  * math.sqrt(4.0 * math.pi)) )
-    csf_responses.append( str(csf_mean * math.sqrt(4.0 * math.pi)) )
-
-  with open('wm.txt', 'w') as f:
-    for line in wm_responses:
-      line += ['0'] * (max_length - len(line))
-      f.write(' '.join(line) + '\n')
-  with open('gm.txt', 'w') as f:
-    for line in gm_responses:
-      f.write(line + '\n')
-  with open('csf.txt', 'w') as f:
-    for line in csf_responses:
-      f.write(line + '\n')
-
+  bvalues_option = ' -shell ' + ','.join(map(str,shells))
+  sfwm_lmax_option = ''
+  if wm_lmax:
+    sfwm_lmax_option = ' -lmax ' + ','.join(map(str,wm_lmax))
+  runCommand('amp2response dwi.mif wm_sf_mask.mif dirs.mif wm.txt' + bvalues_option + sfwm_lmax_option)
+  runCommand('amp2response dwi.mif gm_mask.mif dirs.mif gm.txt' + bvalues_option + ' -isotropic')
+  runCommand('amp2response dwi.mif csf_mask.mif dirs.mif csf.txt' + bvalues_option + ' -isotropic')
   runFunction(shutil.copyfile, 'wm.txt',  getUserPath(lib.app.args.out_wm,  False))
   runFunction(shutil.copyfile, 'gm.txt',  getUserPath(lib.app.args.out_gm,  False))
   runFunction(shutil.copyfile, 'csf.txt', getUserPath(lib.app.args.out_csf, False))

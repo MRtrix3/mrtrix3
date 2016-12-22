@@ -74,7 +74,7 @@ void run ()
   std::vector<size_t> dwis;
   Eigen::MatrixXd mapping;
   {
-    dwis = DWI::Shells (grad).select_shells (true, true).largest().get_volumes();
+    dwis = DWI::Shells (grad).select_shells (true, false, true).largest().get_volumes();
     const auto dirs = DWI::gen_direction_matrix (grad, dwis);
     mapping = DWI::compute_SH2amp_mapping (dirs);
   }
