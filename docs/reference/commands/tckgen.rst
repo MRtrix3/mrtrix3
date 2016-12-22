@@ -91,7 +91,7 @@ Tractography seeding options
 
 -  **-seed_rejection image** seed from an image using rejection sampling (higher values = more probable to seed from)
 
--  **-seed_gmwmi seed_image** seed from the grey matter - white matter interface (only valid if using ACT framework)
+-  **-seed_gmwmi image** seed from the grey matter - white matter interface (only valid if using ACT framework). Input image should be a 3D seeding volume; seeds drawn within this image will be optimised to the interface using the 5TT image provided using the -act option.
 
 -  **-seed_dynamic fod_image** determine seed points dynamically using the SIFT model (must not provide any other seeding mechanism). Note that while this seeding mechanism improves the distribution of reconstructed streamlines density, it should NOT be used as a substitute for the SIFT method itself.
 
