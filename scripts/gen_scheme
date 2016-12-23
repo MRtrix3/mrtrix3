@@ -1,0 +1,68 @@
+#!/bin/bash
+
+set -e
+
+if [ "$#" -eq 0 ]; then
+    echo "usage: gen_scheme numPE [ bvalue ndir ]..."
+    exit 1
+else
+
+  nPE=$1
+  if [ $nPE -ne 1 ] && [ $nPE -ne 2 ] && [ $nPE -ne 4 ]; then
+    echo "ERROR: numPE should be one of 1, 2, 4"
+    exit 1
+  fi
+
+  shift
+  # store args for re-use:
+  ARGS=( "$@" )
+
+  # print parsed info for sanity-checking:
+  echo "generating scheme with $nPE phase-encode directions, with:"
+  while [ ! -z "$1" ]; do
+    echo "    b = $1: $2 directions"
+    shift 2
+  done
+
+  perm="" #"-perm 1000"
+
+  # reset args:
+  set -- "${ARGS[@]}"
+  merge=""
+
+  while [ ! -z "$1" ]; do
+    echo "====================================="
+    echo "generating directions for b = $1..."
+    echo "====================================="
+
+    merge=$merge" "$1
+
+    dirgen $2 dirs-b$1-$2.txt -force
+    if [ $nPE -gt 1 ]; then
+      dirsplit dirs-b$1-$2.txt dirs-b$1-$2-{1..2}.txt -force $perm
+      if [ $nPE -gt 2 ]; then
+        dirsplit dirs-b$1-$2-1.txt dirs-b$1-$2-1{1..2}.txt -force $perm
+        dirsplit dirs-b$1-$2-2.txt dirs-b$1-$2-2{1..2}.txt -force $perm
+	# TODO: the rest...
+	for n in dirs-b$1-$2-{1,2}{1,2}.txt; do
+          dirflip $n ${n%.txt}-flip.txt -force $perm
+	  merge=$merge" "${n%.txt}-flip.txt
+        done
+      else 
+        for n in dirs-b$1-$2-{1,2}.txt; do
+          dirflip $n ${n%.txt}-flip.txt -force $perm
+          merge=$merge" "${n%.txt}-flip.txt
+	done
+      fi
+    else
+      dirflip dirs-b$1-$2.txt dirs-b$1-$2-flip.txt -force $perm
+      merge=$merge" "dirs-b$1-$2-flip.txt
+    fi
+
+    shift 2
+  done
+
+  echo $merge
+  dirmerge $nPE $merge dw_scheme.txt -force
+fi
+
