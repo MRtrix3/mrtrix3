@@ -3,7 +3,71 @@
 set -e
 
 if [ "$#" -eq 0 ]; then
-    echo "usage: gen_scheme numPE [ bvalue ndir ]..."
+    echo "
+    gen_scheme: part of the MRtrix package
+
+SYNOPSIS
+
+    gen_scheme numPE [ bvalue ndir ]...
+
+       numPE        the number of phase-encoding directions to be included in
+                    the scheme (most scanners will only support a single PE
+                    direction per sequence, so this will typically be 1). 
+
+       bvalue       the b-value of the shell
+
+       ndir         the number of directions to include in the shell
+
+
+DESCRIPTION
+
+    This script generates a diffusion gradient table according to the
+    parameters specified. For most users, something like the following would be
+    appropriate:
+    
+        gen_scheme 1 0 5 750 20 3000 60
+
+    which will geneate a multi-shell diffusion gradient table with a single
+    phase-encode direction, consisting of 5 b=0, 20 b=750, and 60 b=3000
+    volumes.
+
+    The gradient table is generated using the following procedure:
+    
+    - The directions for each shell are optimally distributed using a bipolar
+      electrostatic repulsion model (using the command 'dirgen'). 
+
+    - These are then split into numPE sets (if numPE != 1) using a brute-force
+      random search for the most optimally-distributed subsets (using the command
+      'dirsplit'). 
+
+    - Each of the resulting sets is then rearranged by inversion of individual
+      directions through the origin (i.e. direction vector x => -x) using a
+      brute-force random search to find the most optimal combination in terms
+      of unipolar repulsion: this ensures near-uniform distribution over the
+      sphere to avoid biases in terms of eddy-current distortions, as
+      recommended for FSL's EDDY command (this step uses the 'dirflip' command).
+
+    - Finally, all the individual subsets are merged (using the 'dirmerge'
+      command) into a single gradient table, in such a way as to maintain
+      near-uniformity upon truncation (in as much as is possible), in both
+      b-value and directional domains. In other words, the approach aims to
+      ensure that if the acquisition is cut short, the set of volumes acquired
+      nonetheless contains the same relative proportions of b-values as
+      specified, with directions that are near-uniformly distributed. 
+
+    The primary output of this command is a file called 'dw_scheme.txt',
+    consisting of a 5-column table, with one line per volume. Each column
+    consists of [ x y z b PE ], where [ x y z ] is the unit direction vector, b
+    is the b-value in unit of s/mm², and PE is a integer ID from 1 to numPE. 
+    
+    The command also retains all of the subsets generated along the way, which
+    you can safely delete once the command has completed. Since this can
+    consist of quite a few files, it is recommended to run this command within
+    its own temporary folder.
+
+    See also the 'dirstat' command to obtain simple metrics of quality for the
+    set produced.
+"
     exit 1
 else
 
