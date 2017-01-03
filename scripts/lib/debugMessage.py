@@ -7,4 +7,5 @@ def debugMessage(message):
   except: # Prior to Version 3.5
     fname = stack[3]
   sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + lib.app.colourDebug + '[DEBUG] ' + fname + '(): ' + message + lib.app.colourClear + '\n')
+  sys.stderr.flush()
 

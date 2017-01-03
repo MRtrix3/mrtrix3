@@ -31,6 +31,7 @@ def flagMutuallyExclusiveOptions(options, required=False):
   import sys
   if not type(options) is list or not type(options[0]) is str:
     sys.stderr.write('Script error: cmdlineParser.flagMutuallyExclusiveOptions() only accepts a list of strings\n')
+    sys.stderr.flush()
     sys.exit(1)
   mutuallyExclusiveOptionGroups.append( (options, required) )
 
@@ -51,6 +52,7 @@ class Parser(argparse.ArgumentParser):
     sys.stderr.write('\nError: %s\n' % message)
     sys.stderr.write('Usage: ' + self.format_usage() + '\n')
     sys.stderr.write('Usage: (Run ' + self.prog + ' -help for more information)\n\n')
+    sys.stderr.flush()
     sys.exit(2)
 
 
@@ -88,10 +90,12 @@ class Parser(argparse.ArgumentParser):
       if count > 1:
         sys.stderr.write('\nError: You cannot use more than one of the following options: ' + ', '.join([ '-' + o for o in group[0] ]) + '\n')
         sys.stderr.write('(Consult the help page for more information: ' + self.prog + ' -help)\n\n')
+        sys.stderr.flush()
         sys.exit(1)
       if group[1] and not count:
         sys.stderr.write('\nError: One of the following options must be provided: ' + ', '.join([ '-' + o for o in group[0] ]) + '\n')
         sys.stderr.write('(Consult the help page for more information: ' + self.prog + ' -help)\n\n')
+        sys.stderr.flush()
         sys.exit(1)
     return args
 

@@ -22,10 +22,12 @@ def runFunction(fn, *args):
         break
     if lib.app.verbosity:
       sys.stderr.write(lib.app.colourConsole + 'Skipping function:' + lib.app.colourClear + ' ' + fnstring + '\n')
+      sys.stderr.flush()
     return
 
   if lib.app.verbosity:
     sys.stderr.write(lib.app.colourConsole + 'Function:' + lib.app.colourClear + ' ' + fnstring + '\n')
+    sys.stderr.flush()
 
   # Now we need to actually execute the requested function
   result = fn(*args)

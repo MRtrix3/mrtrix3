@@ -5,7 +5,10 @@ def delFile(path):
     return
   if lib.app.verbosity > 1:
     printMessage('Deleting file: ' + path)
-  os.remove(path)
+  try:
+    os.remove(path)
+  except OSError:
+    pass
 
 
 def delFolder(path):

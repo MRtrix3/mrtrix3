@@ -14,6 +14,7 @@ def getFSLSuffix():
     return '.img'
   if fsl_output_type == 'NIFTI_PAIR_GZ':
     sys.stderr.write('MRtrix does not support compressed NIFTI pairs; please set FSLOUTPUTTYPE to something else\n')
+    sys.stderr.flush()
     exit(1)
   warnMessage('Environment variable FSLOUTPUTTYPE not set; FSL commands may fail\n')
   return '.nii.gz'

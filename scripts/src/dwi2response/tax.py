@@ -100,10 +100,10 @@ def execute():
     # Detect convergence
     # Look for a change > some percentage - don't bother looking at the masks
     if iteration > 0:
-      old_RF_file = open(RF_in_path, 'r')
-      old_RF = [ float(x) for x in old_RF_file.read().split() ]
-      new_RF_file = open(prefix + 'RF.txt', 'r')
-      new_RF = [ float(x) for x in new_RF_file.read().split() ]
+      with open(RF_in_path, 'r') as old_RF_file:
+        old_RF = [ float(x) for x in old_RF_file.read().split() ]
+      with open(prefix + 'RF.txt', 'r') as new_RF_file:
+        new_RF = [ float(x) for x in new_RF_file.read().split() ]
       reiterate = False
       for index in range(0, len(old_RF)):
         mean = 0.5 * (old_RF[index] + new_RF[index])

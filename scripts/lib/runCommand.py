@@ -64,6 +64,7 @@ def runCommand(cmd, exitOnError=True):
         break
     if lib.app.verbosity:
       sys.stderr.write(lib.app.colourConsole + 'Skipping command:' + lib.app.colourClear + ' ' + cmd + '\n')
+      sys.stderr.flush()
     return
 
   # For any MRtrix commands, need to insert the nthreads and quiet calls
@@ -117,6 +118,7 @@ def runCommand(cmd, exitOnError=True):
 
   if lib.app.verbosity:
     sys.stderr.write(lib.app.colourConsole + 'Command:' + lib.app.colourClear + ' ' + cmd + '\n')
+    sys.stderr.flush()
 
   debugMessage('To execute: ' + str(cmdstack))
 
@@ -146,6 +148,7 @@ def runCommand(cmd, exitOnError=True):
         # Have to read one character at a time: Waiting for a newline character using e.g. readline() will prevent MRtrix progressbars from appearing
         line = process.stderr.read(1).decode('utf-8')
         sys.stderr.write(line)
+        sys.stderr.flush()
         stderrdata += line
         if not line and process.poll() != None:
           break
@@ -173,6 +176,7 @@ def runCommand(cmd, exitOnError=True):
       sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + lib.app.colourError + '[ERROR] Command failed: ' + cmd + lib.app.colourClear + lib.app.colourDebug + ' (' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')' + lib.app.colourClear + '\n')
       sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + lib.app.colourPrint + 'Output of failed command:' + lib.app.colourClear + '\n')
       sys.stderr.write(error_text)
+      sys.stderr.flush()
       if lib.app.tempDir:
         with open(os.path.join(lib.app.tempDir, 'error.txt'), 'w') as outfile:
           outfile.write(cmd + '\n\n' + error_text + '\n')

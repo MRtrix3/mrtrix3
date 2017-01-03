@@ -6,6 +6,7 @@ class progressBar:
 
   def _update(self):
     sys.stderr.write('\r' + lib.app.colourPrint + os.path.basename(sys.argv[0]) + ': ' + lib.app.colourClear + '[{0:>3}%] '.format(int(round(100.0*self.counter/self.target))) + self.message + '...' + lib.app.clearLine + self.newline)
+    sys.stderr.flush()
 
   def __init__(self, msg, target):
     self.counter = 0
@@ -25,5 +26,6 @@ class progressBar:
   def done(self):
     self.counter = self.target
     sys.stderr.write('\r' + lib.app.colourPrint + os.path.basename(sys.argv[0]) + ': ' + lib.app.colourClear + '[100%] ' + self.message + lib.app.clearLine + '\n')
+    sys.stderr.flush()
     lib.app.verbosity = self.orig_verbosity
     
