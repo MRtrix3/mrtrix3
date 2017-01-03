@@ -64,6 +64,7 @@ void run ()
 {
   GUI::MRView::Window window;
   window.show();
+  qApp->processEvents();
 
   if (argument.size()) {
     std::vector<std::unique_ptr<MR::Header>> list;
@@ -80,6 +81,8 @@ void run ()
     if (list.size())
       window.add_images (list);
   }
+
+  window.process_commandline_options();
 
   if (qApp->exec())
     throw Exception ("error running Qt application");

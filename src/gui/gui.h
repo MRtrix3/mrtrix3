@@ -74,12 +74,6 @@ namespace MR
 
         static QWidget* main_window;
         static App* application;
-
-      public slots:
-        void startProgressBar ();
-        void displayProgressBar (QString text, int value, bool bounded);
-        void doneProgressBar ();
-
     };
 
 #ifndef NDEBUG
