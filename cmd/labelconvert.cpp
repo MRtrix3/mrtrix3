@@ -95,8 +95,16 @@ void run ()
   auto out = Image<node_t>::create (argument[3], H);
 
   // Fill the output image with data
-  for (auto l = Loop (in) (in, out); l; ++l)
-    out.value() = mapping[in.value()];
+  bool user_warn = false;
+  for (auto l = Loop (in) (in, out); l; ++l) {
+    const node_t orig = in.value();
+    if (orig >= 0 && orig < mapping.size())
+      out.value() = mapping[orig];
+    else
+      user_warn = true;
+  }
+  if (user_warn)
+    WARN ("Unexpected values detected in input image (negative values?); suggest checking input image thoroughly");
 
   // Need to manually search through the output LUT to see if the
   //   'Spinal_column' node is in there, and appears only once
