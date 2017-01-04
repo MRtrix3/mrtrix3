@@ -71,7 +71,7 @@ void usage ()
     + "* Reference for 'complexity' operation:\n"
     "Riffert, T. W.; Schreiber, J.; Anwander, A. & Knosche, T. R. "
     "Beyond Fractional Anisotropy: Extraction of bundle-specific structural metrics from crossing fibre models. "
-    "NeuroImage, 2014 (in press)";
+    "NeuroImage, 2014, 100, 176-191";
 
   ARGUMENTS
   + Argument ("fixel_in", "the input fixel data file").type_image_in ()
