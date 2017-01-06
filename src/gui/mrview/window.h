@@ -82,6 +82,7 @@ namespace MR
           ~Window();
 
           void add_images (std::vector<std::unique_ptr<MR::Header>>& list);
+          void process_commandline_options ();
 
           const QPoint& mouse_position () const { return mouse_position_; }
           const QPoint& mouse_displacement () const { return mouse_displacement_; }
@@ -214,8 +215,6 @@ namespace MR
           void OpenGL_slot ();
           void about_slot ();
           void aboutQt_slot ();
-
-          void process_commandline_options ();
 
 
 

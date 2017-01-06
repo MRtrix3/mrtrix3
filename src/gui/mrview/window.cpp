@@ -1453,8 +1453,6 @@ namespace MR
         mode.reset (dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create());
         set_mode_features();
 
-        if (MR::App::option.size())
-          QTimer::singleShot (0, this, SLOT (process_commandline_options()));
         ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
       }
 
