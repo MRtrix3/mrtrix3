@@ -64,6 +64,7 @@ void run ()
 {
   GUI::MRView::Window window;
   window.show();
+  qApp->processEvents();
 
   if (MR::App::get_options ("norealign").size())
     Header::do_not_realign_transform = true;
@@ -83,6 +84,8 @@ void run ()
     if (list.size())
       window.add_images (list);
   }
+
+  window.process_commandline_options();
 
   if (qApp->exec())
     throw Exception ("error running Qt application");

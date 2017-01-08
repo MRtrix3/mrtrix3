@@ -16,6 +16,7 @@
 #include "file/dicom/tree.h"
 #include "gui/dialog/list.h"
 #include "gui/dialog/dicom.h"
+#include "gui/gui.h"
 
 namespace MR
 {
@@ -150,7 +151,7 @@ namespace MR
         class DicomSelector : public QDialog
         {
           public:
-            DicomSelector (const Tree& tree) : QDialog (NULL) {
+            DicomSelector (const Tree& tree) : QDialog (GUI::App::main_window) {
               Model* model = new Model (this);
 
               Item* root = model->rootItem;
