@@ -32,7 +32,7 @@
 
 
 // If this is enabled, images will be output in the current directory showing the density of streamline terminations due to different termination mechanisms throughout the brain
-#define DEBUG_TERMINATIONS
+//#define DEBUG_TERMINATIONS
 
 
 namespace MR
