@@ -179,7 +179,7 @@ namespace MR
         }
 
         if (max_val <= 0.0)
-          return CALIBRATE_FAIL;
+          return CALIBRATOR;
 
         max_val *= calibrate_ratio;
 
