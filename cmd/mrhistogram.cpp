@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 
 
@@ -133,6 +133,12 @@ void run ()
                          header.datatype().is_integer() && header.intensity_offset() == 0.0 && header.intensity_scale() == 1.0);
   }
   nbins = calibrator.get_num_bins();
+  if (nbins == 0) {
+    std::string message;
+    message.append(std::string("Zero bins selected") + (get_options ("ignorezero").size() or get_options ("bins").size()?
+      "." :", you might want to use the -ignorezero or -bins option."));
+    WARN(message);
+  }
 
   for (size_t i = 0; i != nbins; ++i)
     output << (calibrator.get_min() + ((i+0.5) * calibrator.get_bin_width())) << ",";
