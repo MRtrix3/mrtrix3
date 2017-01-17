@@ -104,7 +104,7 @@ These applications have been written from scratch in C++, using the functionalit
    concepts/afd_connectivity
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Troubleshooting
 
    troubleshooting/troubleshooting
