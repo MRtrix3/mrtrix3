@@ -1,5 +1,9 @@
 .. _remote_display:
 
+Display issues
+=====================
+
+
 Remote display issues
 ======================
 
@@ -116,7 +120,7 @@ has been reported to work well with *MRtrix3*.
 
 
 OpenGL version 3.3 not supported
-=================================
+---------------------------------
 
 This will typically lead to ``mrview`` crashing with a message such as:
 
@@ -173,8 +177,23 @@ setting::
 may resolve the problem.
 
 
+Conflicts with previous versions of Qt
+--------------------------------------
+
+If previous versions of Qt were already installed on the system, they
+can sometimes conflict with the installation of *MRtrix3*. This can
+manifest in many ways, but the two most obvious one are:
+
+-  ``./configure`` reports using the older version, but ``./build``
+   completes without errors. However, MRView crashes, complaining about
+   OpenGL version not being sufficient.
+-  ``./configure`` reports the correct version of Qt, but ``./build``
+   fails with various error messages (typically related to redefined
+   macros, with previous definitions elsewhere in the code).
+
+
 Unusual symbols on terminal
----------------------------
+===========================
 
 When running *MRtrix3* commands on certain terminal emulators, you may see
 unusual characters appearing in the terminal output, that look something
@@ -214,7 +233,7 @@ system-wide or user config file to disable these advanced terminal features:
 
 
 Hanging on network file system when writing images
---------------------------------------------------
+==================================================
 
 When any *MRtrix3* command must read or write image data, there are two
 primary mechanisms by which this is performed:
@@ -253,24 +272,8 @@ encounter this issue, please report to the developers the hardware
 configuration and file system type in use.
 
 
-Conflicts with previous versions of Qt
---------------------------------------
-
-If previous versions of Qt were already installed on the system, they
-can sometimes conflict with the installation of *MRtrix3*. This can
-manifest in many ways, but the two most obvious one are:
-
--  ``./configure`` reports using the older version, but ``./build``
-   completes without errors. However, MRView crashes, complaining about
-   OpenGL version not being sufficient.
--  ``./configure`` reports the correct version of Qt, but ``./build``
-   fails with various error messages (typically related to redefined
-   macros, with previous definitions elsewhere in the code).
-
-
-
 Compiler error during build
----------------------------
+===========================
 
 If you encounter an error during the build process that resembles the following::
 
