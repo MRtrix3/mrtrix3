@@ -1,10 +1,7 @@
-Troubleshooting
-===============
-
 .. _remote_display:
 
 Remote display issues
----------------------
+======================
 
 The GUI components in *MRtrix3* (``mrview`` & ``shview``) use the OpenGL
 3.3 API to make full use of modern graphics cards. Unfortunately, X11
@@ -119,7 +116,7 @@ has been reported to work well with *MRtrix3*.
 
 
 OpenGL version 3.3 not supported
---------------------------------
+=================================
 
 This will typically lead to ``mrview`` crashing with a message such as:
 

@@ -44,7 +44,6 @@ These applications have been written from scratch in C++, using the functionalit
    getting_started/config
    getting_started/image_data
    getting_started/command_line
-   getting_started/troubleshooting
    getting_started/FAQ
 
 
@@ -95,7 +94,6 @@ These applications have been written from scratch in C++, using the functionalit
    tutorials/basic_dwi_processing
    tutorials/global_tractography
    tutorials/hcp_connectome
-   tutorials/advanced_debugging  
 
 .. toctree::
    :maxdepth: 2
@@ -104,6 +102,13 @@ These applications have been written from scratch in C++, using the functionalit
    concepts/orthonormal_basis
    concepts/dixels_fixels
    concepts/afd_connectivity
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Troubleshooting
+
+   troubleshooting/troubleshooting
+   troubleshooting/advanced_debugging
 
 .. toctree::
    :maxdepth: 1
