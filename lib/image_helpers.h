@@ -421,7 +421,6 @@ namespace MR
           Index (const Index&) = delete;
           FORCE_INLINE Index (Index&&) = default;
 
-          FORCE_INLINE ssize_t get () const { const ImageType& _i (image); return _i.index (axis); }
           FORCE_INLINE operator ssize_t () const { return get (); }
           FORCE_INLINE ssize_t operator++ () { move( 1); return get(); }
           FORCE_INLINE ssize_t operator-- () { move(-1); return get(); }
@@ -435,6 +434,7 @@ namespace MR
         protected:
           ImageType& image;
           const size_t axis;
+          FORCE_INLINE ssize_t get () const { return image.get_index (axis); }
           FORCE_INLINE void move (ssize_t amount) { image.move_index (axis, amount); }
       };
 
@@ -448,11 +448,10 @@ namespace MR
           FORCE_INLINE Value (Value&&) = default;
 
           FORCE_INLINE Value (ImageType& parent) : image (parent) { }
-          FORCE_INLINE value_type get () const { const ImageType& _i (image); return _i.value(); }
           FORCE_INLINE operator value_type () const { return get(); }
           FORCE_INLINE value_type operator= (value_type value) { return set (value); }
           template <typename OtherType>
-            FORCE_INLINE value_type operator= (Value<OtherType>&& V) { return set (V.get()); }
+            FORCE_INLINE value_type operator= (Value<OtherType>&& V) { return set (typename OtherType::value_type (V)); }
           FORCE_INLINE value_type operator+= (value_type value) { return set (get() + value); }
           FORCE_INLINE value_type operator-= (value_type value) { return set (get() - value); }
           FORCE_INLINE value_type operator*= (value_type value) { return set (get() * value); }
@@ -460,6 +459,7 @@ namespace MR
           friend std::ostream& operator<< (std::ostream& stream, const Value& V) { stream << V.get(); return stream; }
       private:
         ImageType& image;
+        FORCE_INLINE value_type get () const { return image.get_value(); }
         FORCE_INLINE value_type set (value_type value) { image.set_value (value); return value; }
     };
 
@@ -477,8 +477,23 @@ namespace MR
         return { image };
       }
 
-
   }
+
+
+    template <class Derived, typename ValueType>
+      class ImageBase { 
+        public:
+          typedef ValueType value_type;
+
+          FORCE_INLINE Helper::Index<Derived> index (size_t axis) { return { static_cast<Derived&> (*this), axis }; }
+          FORCE_INLINE ssize_t index (size_t axis) const { return static_cast<const Derived*>(this)->get_index (axis); }
+
+          FORCE_INLINE Helper::Value<Derived> value () { return { static_cast<Derived&> (*this) }; }
+          FORCE_INLINE ValueType value () const { return static_cast<const Derived*>(this)->get_value(); }
+      };
+
+
+
 }
 
 #endif

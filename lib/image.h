@@ -35,7 +35,7 @@ namespace MR
 
 
   template <typename ValueType>
-    class Image {
+    class Image : public ImageBase<Image<ValueType>, ValueType> {
       public:
         typedef ValueType value_type;
         class Buffer;
@@ -70,25 +70,22 @@ namespace MR
         //! reset index to zero (origin)
         FORCE_INLINE void reset () {
           for (size_t n = 0; n < ndim(); ++n)
-            index(n) = 0;
+            this->index(n) = 0;
         }
 
         //! get position of current voxel location along \a axis
-        FORCE_INLINE ssize_t index (size_t axis) const { return x[axis]; }
-
-        //! get/set position of current voxel location along \a axis
-        FORCE_INLINE auto index (size_t axis) -> decltype (Helper::index (*this, axis)) { return { *this, axis }; }
+        FORCE_INLINE ssize_t get_index (size_t axis) const { return x[axis]; }
+        //! move position of current voxel location along \a axis
         FORCE_INLINE void move_index (size_t axis, ssize_t increment) { data_offset += stride (axis) * increment; x[axis] += increment; }
 
         FORCE_INLINE bool is_direct_io () const { return data_pointer; }
 
         //! get voxel value at current location
-        FORCE_INLINE ValueType value () const {
+        FORCE_INLINE ValueType get_value () const {
           if (data_pointer) return Raw::fetch_native<ValueType> (data_pointer, data_offset);
           return buffer->get_value (data_offset);
         }
-        //! get/set voxel value at current location
-        FORCE_INLINE auto value () -> decltype (Helper::value (*this)) { return { *this }; }
+        //! set voxel value at current location
         FORCE_INLINE void set_value (ValueType val) {
           if (data_pointer) Raw::store_native<ValueType> (val, data_pointer, data_offset);
           else buffer->set_value (data_offset, val);
@@ -98,7 +95,7 @@ namespace MR
         FORCE_INLINE Eigen::Map<Eigen::Matrix<value_type, Eigen::Dynamic, 1 >, Eigen::Unaligned, Eigen::InnerStride<> > row (size_t axis)
         {
           assert (is_direct_io() && "Image::row() method can only be used on Images loaded using Image::with_direct_io()");
-          index (axis) = 0;
+          this->index (axis) = 0;
           return Eigen::Map<Eigen::Matrix<value_type, Eigen:: Dynamic, 1 >, Eigen::Unaligned, Eigen::InnerStride<> >
                    (address(), size (axis), Eigen::InnerStride<> (stride (axis)));
         }
@@ -277,8 +274,12 @@ namespace MR
 
     // lightweight struct to copy data into:
     template <typename ValueType>
-      struct TmpImage {
+      struct TmpImage : public ImageBase<TmpImage<ValueType>, ValueType> {
         typedef ValueType value_type;
+
+        TmpImage (const typename Image<ValueType>::Buffer& b, void* const data, 
+            std::vector<ssize_t> x, const Stride::List& strides, size_t offset) :
+          b (b), data (data), x (x), strides (strides), offset (offset) { }
 
         const typename Image<ValueType>::Buffer& b;
         void* const data;
@@ -292,12 +293,10 @@ namespace MR
         FORCE_INLINE ssize_t size (size_t axis) const { return b.size(axis); }
         FORCE_INLINE ssize_t stride (size_t axis) const { return strides[axis]; }
 
-        FORCE_INLINE ssize_t index (size_t axis) const { return x[axis]; }
-        FORCE_INLINE auto index (size_t axis) -> decltype (Helper::index (*this, axis)) { return { *this, axis }; }
+        FORCE_INLINE ssize_t get_index (size_t axis) const { return x[axis]; }
         FORCE_INLINE void move_index (size_t axis, ssize_t increment) { offset += stride (axis) * increment; x[axis] += increment; }
 
-        FORCE_INLINE value_type value () const { return Raw::fetch_native<ValueType> (data, offset); } 
-        FORCE_INLINE auto value () -> decltype (Helper::value (*this)) { return { *this }; }
+        FORCE_INLINE value_type get_value () const { return Raw::fetch_native<ValueType> (data, offset); } 
         FORCE_INLINE void set_value (ValueType val) { Raw::store_native<ValueType> (val, data, offset); }
       };
 
