@@ -104,7 +104,7 @@ class DecComputer {
   const DecTransform& dectrans;
   Image<bool> mask_img;
   Image<value_type> int_img;
-  Eigen::VectorXd amps;
+  Eigen::VectorXd amps, fod;
   Eigen::RowVector3d dec;
   double ampsum;
   double decnorm;
@@ -115,26 +115,28 @@ class DecComputer {
     dectrans (dectrans),
     mask_img (mask_img),
     int_img (int_img),
-    amps (dectrans.sht.rows()) { }
+    amps (dectrans.sht.rows()),
+    fod (dectrans.sht.cols()) { }
 
   void operator() (Image<value_type>& fod_img, Image<value_type>& dec_img) {
 
     if (mask_img.valid()) {
       assign_pos_of(fod_img, 0, 3).to(mask_img);
       if (!mask_img.value()) {
-        dec_img.row(3).fill(UNIT);
+        dec_img.row(3) = UNIT;
         return;
       }
     }
 
-    amps.noalias() = dectrans.sht * fod_img.row(3).cast<double>();
+    fod = fod_img.row(3);
+    amps.noalias() = dectrans.sht * fod;
 
     dec.setZero();
     ampsum = 0.0;
     for (ssize_t i = 0; i < amps.rows(); i++) {
       if (!std::isnan(dectrans.thresh) && amps(i) < dectrans.thresh)
         continue;
-      dec += dectrans.decs.row(i) * amps(i);
+      dec += Eigen::Vector3(dectrans.decs.row(i)) * amps(i);
       ampsum += amps(i);
     }
     dec = dec.cwiseMax(0.0);
@@ -143,9 +145,9 @@ class DecComputer {
     decnorm = dec.norm();
 
     if (decnorm == 0.0)
-      dec_img.row(3).fill(UNIT);
+      dec_img.row(3) = UNIT;
     else
-      dec_img.row(3) = (dec / decnorm).cast<value_type>();
+      dec_img.row(3) = dec / decnorm;
 
     if (int_img.valid()) {
       assign_pos_of(fod_img, 0, 3).to(int_img);

@@ -68,8 +68,8 @@ namespace MR
             if (im1_image.index(0) == 0 || im1_image.index(0) == im1_image.size(0) - 1 ||
                 im1_image.index(1) == 0 || im1_image.index(1) == im1_image.size(1) - 1 ||
                 im1_image.index(2) == 0 || im1_image.index(2) == im1_image.size(2) - 1) {
-              im1_update.row(3).setZero();
-              im2_update.row(3).setZero();
+              im1_update.row(3) = 0.0;
+              im2_update.row(3) = 0.0;
               return;
             }
 
@@ -79,8 +79,8 @@ namespace MR
               assign_pos_of (im1_image, 0, 3).to (im1_mask);
               im1_mask_value = im1_mask.value();
               if (im1_mask_value < 0.1) {
-                im1_update.row(3).setZero();
-                im2_update.row(3).setZero();
+                im1_update.row(3) = 0.0;
+                im2_update.row(3) = 0.0;
                 return;
               }
             }
@@ -90,8 +90,8 @@ namespace MR
               assign_pos_of (im2_image, 0, 3).to (im2_mask);
               im2_mask_value = im2_mask.value();
               if (im2_mask_value < 0.1) {
-                im1_update.row(3).setZero();
-                im2_update.row(3).setZero();
+                im1_update.row(3) = 0.0;
+                im2_update.row(3) = 0.0;
                 return;
               }
             }

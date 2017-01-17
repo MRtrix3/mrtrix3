@@ -16,7 +16,20 @@
 #ifndef __mrtrix_types_h__
 #define __mrtrix_types_h__
 
+namespace MR {
+  namespace Helper {
+    template <class ImageType> class ConstRow;
+    template <class ImageType> class Row;
+  }
+}
+
 #define EIGEN_DONT_PARALLELIZE
+#define EIGEN_DENSEBASE_PLUGIN "eigen_plugins/dense_base.h"
+#define EIGEN_MATRIXBASE_PLUGIN "eigen_plugins/dense_base.h"
+#define EIGEN_ARRAYBASE_PLUGIN "eigen_plugins/dense_base.h"
+#define EIGEN_MATRIX_PLUGIN "eigen_plugins/matrix.h"
+#define EIGEN_ARRAY_PLUGIN "eigen_plugins/array.h"
+
 
 #include <stdint.h>
 #include <complex>

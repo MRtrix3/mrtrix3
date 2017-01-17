@@ -104,7 +104,7 @@ namespace MR
           if (value_in1 != value_in1){ // nan in image 1, update mask
             DEBUG("nan in image 1.");
             mask.value() = false;
-            out.row(3) << 0, 0, 0, 0, 0;
+            out.row(3) = 0.0;
             return;
           }
           in2.index(0) = mask.index(0);
@@ -114,7 +114,7 @@ namespace MR
           if (value_in2 != value_in2){ // nan in image 2, update mask
             DEBUG("nan in image 2.");
             mask.value() = false;
-            out.row(3) << 0, 0, 0, 0, 0;
+            out.row(3) = 0.0;
             return;
           }
           auto niter = NeighbourhoodIterator(mask, extent);
@@ -182,7 +182,7 @@ namespace MR
           // out.index(3) = 4;
           // out.value() = v2_2;
 
-          out.row(3) << value_in1 - mean1, value_in2 - mean2, v1_v2, v1_2, v2_2;
+          out.row(3) = ( Eigen::Matrix<default_type,5,1>() << value_in1 - mean1, value_in2 - mean2, v1_v2, v1_2, v2_2 ).finished();
           // HACK for debug:
           // in2.index(0) = out.index(0);
           // in2.index(1) = out.index(1);

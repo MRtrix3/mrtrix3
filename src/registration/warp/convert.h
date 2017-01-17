@@ -34,7 +34,7 @@ namespace MR
         MR::Transform transform (input);
         auto kernel = [&] (ImageType& input, ImageType& output) {
           Eigen::Vector3 voxel ((default_type)input.index(0), (default_type)input.index(1), (default_type)input.index(2));
-          output.row(3) = (transform.voxel2scanner * voxel).template cast<typename ImageType::value_type> () + input.row(3);
+          output.row(3) = (transform.voxel2scanner * voxel).template cast<typename ImageType::value_type> () + Eigen::Vector3 (input.row(3));
         };
         ThreadedLoop (input, 0, 3).run (kernel, input, output);
       }
@@ -44,7 +44,7 @@ namespace MR
         MR::Transform transform (input);
         auto kernel = [&] (ImageType& input, ImageType& output) {
           Eigen::Vector3 voxel ((default_type)input.index(0), (default_type)input.index(1), (default_type)input.index(2));
-          output.row(3) = input.row(3) - (transform.voxel2scanner * voxel).template cast<typename ImageType::value_type> ();
+          output.row(3) = Eigen::Vector3(input.row(3)) - transform.voxel2scanner * voxel;
         };
         ThreadedLoop (input, 0, 3).run (kernel, input, output);
       }
