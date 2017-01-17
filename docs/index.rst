@@ -1,11 +1,22 @@
 Welcome to the MRtrix user documentation!
 =========================================
 
-*MRtrix* provides a set of tools to perform diffusion-weighted MRI white matter tractography in the presence of crossing fibres, using Constrained Spherical Deconvolution (`Tournier et al.. 2004`_; `Tournier et al. 2007`_), and a probabilisitic streamlines algorithm (`Tournier et al., 2012`_). These applications have been written from scratch in C++, using the functionality provided by `Eigen`_, and `Qt`_. The software is currently capable of handling DICOM, NIfTI and AnalyseAVW image formats, amongst others. The source code is distributed under the `Mozilla Public License`_.
+*MRtrix* provides a set of tools to perform analysis of white matter using diffusion-weighted MRI. Features include the estimation of Fibre Orientation Distributions using Constrained Spherical Deconvolution (`Tournier et al.. 2004`_; `Tournier et al. 2007`_; `Jeurissen et al., 2014`_), a probabilisitic streamlines algorithm for fibre tractography of white matter (`Tournier et al., 2012`_), fixel-based analysis of apparent fibre density and fibre cross-section (`Raffelt et al., 2012`_;`Raffelt et al., 2015`_;`Raffelt et al., 2016`_), quantitative structural connectivity (`Smith et al., 2012`_;`Smith et al., 2013`_;`Smith et al., 2015`_; `Christiaens et al., 2015`_), non-linear registration of fibre orientation distribution images (`Raffelt et al., 2011`_).
+
+These applications have been written from scratch in C++, using the functionality provided by `Eigen`_, and `Qt`_. The software is currently capable of handling DICOM, NIfTI and AnalyseAVW image formats, amongst others. The source code is distributed under the `Mozilla Public License`_.
 
 .. _Tournier et al.. 2004: http://www.ncbi.nlm.nih.gov/pubmed/15528117
 .. _Tournier et al. 2007: http://www.ncbi.nlm.nih.gov/pubmed/17379540
 .. _Tournier et al., 2012: http://onlinelibrary.wiley.com/doi/10.1002/ima.22005/abstract
+.. _Jeurissen et al., 2014: https://www.ncbi.nlm.nih.gov/pubmed/25109526
+.. _Raffelt et al., 2011: https://www.ncbi.nlm.nih.gov/pubmed/21316463
+.. _Raffelt et al., 2012: https://www.ncbi.nlm.nih.gov/pubmed/22036682
+.. _Raffelt et al., 2015: https://www.ncbi.nlm.nih.gov/pubmed/26004503
+.. _Raffelt et al., 2016: https://www.ncbi.nlm.nih.gov/pubmed/27639350
+.. _Smith et al., 2012: https://www.ncbi.nlm.nih.gov/pubmed/22705374
+.. _Smith et al., 2013: https://www.ncbi.nlm.nih.gov/pubmed/23238430
+.. _Smith et al., 2015: https://www.ncbi.nlm.nih.gov/pubmed/26163802
+.. _Christiaens et al., 2015: https://www.ncbi.nlm.nih.gov/pubmed/26272729
 .. _Eigen: http://eigen.tuxfamily.org/
 .. _Qt: http://qt-project.org/
 .. _Mozilla Public License: http://mozilla.org/MPL/2.0/
