@@ -35,181 +35,183 @@ namespace MR
 
 
   template <typename ValueType>
-    class Image : public ImageBase<Image<ValueType>, ValueType> {
-      public:
-        typedef ValueType value_type;
-        class Buffer;
+    class Image :
+      public ImageBase<Image<ValueType>, ValueType> 
+  {
+    public:
+      typedef ValueType value_type;
+      class Buffer;
 
-        Image ();
-        FORCE_INLINE Image (const Image&) = default;
-        FORCE_INLINE Image (Image&&) = default;
-        FORCE_INLINE Image& operator= (const Image& image) = default;
-        FORCE_INLINE Image& operator= (Image&&) = default;
-        ~Image();
+      Image ();
+      FORCE_INLINE Image (const Image&) = default;
+      FORCE_INLINE Image (Image&&) = default;
+      FORCE_INLINE Image& operator= (const Image& image) = default;
+      FORCE_INLINE Image& operator= (Image&&) = default;
+      ~Image();
 
-        //! used internally to instantiate Image objects
-        Image (const std::shared_ptr<Buffer>&, const Stride::List& = Stride::List());
+      //! used internally to instantiate Image objects
+      Image (const std::shared_ptr<Buffer>&, const Stride::List& = Stride::List());
 
-        FORCE_INLINE bool valid () const { return bool(buffer); }
-        FORCE_INLINE bool operator! () const { return !valid(); }
+      FORCE_INLINE bool valid () const { return bool(buffer); }
+      FORCE_INLINE bool operator! () const { return !valid(); }
 
-        //! get generic key/value text attributes
-        FORCE_INLINE const std::map<std::string, std::string>& keyval () const { return buffer->keyval(); }
+      //! get generic key/value text attributes
+      FORCE_INLINE const std::map<std::string, std::string>& keyval () const { return buffer->keyval(); }
 
-        FORCE_INLINE const std::string& name() const { return buffer->name(); }
-        FORCE_INLINE const transform_type& transform() const { return buffer->transform(); }
+      FORCE_INLINE const std::string& name() const { return buffer->name(); }
+      FORCE_INLINE const transform_type& transform() const { return buffer->transform(); }
 
-        FORCE_INLINE size_t  ndim () const { return buffer->ndim(); }
-        FORCE_INLINE ssize_t size (size_t axis) const { return buffer->size (axis); }
-        FORCE_INLINE default_type spacing (size_t axis) const { return buffer->spacing (axis); }
-        FORCE_INLINE ssize_t stride (size_t axis) const { return strides[axis]; }
+      FORCE_INLINE size_t  ndim () const { return buffer->ndim(); }
+      FORCE_INLINE ssize_t size (size_t axis) const { return buffer->size (axis); }
+      FORCE_INLINE default_type spacing (size_t axis) const { return buffer->spacing (axis); }
+      FORCE_INLINE ssize_t stride (size_t axis) const { return strides[axis]; }
 
-        //! offset to current voxel from start of data
-        FORCE_INLINE size_t offset () const { return data_offset; }
+      //! offset to current voxel from start of data
+      FORCE_INLINE size_t offset () const { return data_offset; }
 
-        //! reset index to zero (origin)
-        FORCE_INLINE void reset () {
-          for (size_t n = 0; n < ndim(); ++n)
-            this->index(n) = 0;
-        }
+      //! reset index to zero (origin)
+      FORCE_INLINE void reset () {
+        for (size_t n = 0; n < ndim(); ++n)
+          this->index(n) = 0;
+      }
 
-        //! get position of current voxel location along \a axis
-        FORCE_INLINE ssize_t get_index (size_t axis) const { return x[axis]; }
-        //! move position of current voxel location along \a axis
-        FORCE_INLINE void move_index (size_t axis, ssize_t increment) { data_offset += stride (axis) * increment; x[axis] += increment; }
+      //! get position of current voxel location along \a axis
+      FORCE_INLINE ssize_t get_index (size_t axis) const { return x[axis]; }
+      //! move position of current voxel location along \a axis
+      FORCE_INLINE void move_index (size_t axis, ssize_t increment) { data_offset += stride (axis) * increment; x[axis] += increment; }
 
-        FORCE_INLINE bool is_direct_io () const { return data_pointer; }
+      FORCE_INLINE bool is_direct_io () const { return data_pointer; }
 
-        //! get voxel value at current location
-        FORCE_INLINE ValueType get_value () const {
-          if (data_pointer) return Raw::fetch_native<ValueType> (data_pointer, data_offset);
-          return buffer->get_value (data_offset);
-        }
-        //! set voxel value at current location
-        FORCE_INLINE void set_value (ValueType val) {
-          if (data_pointer) Raw::store_native<ValueType> (val, data_pointer, data_offset);
-          else buffer->set_value (data_offset, val);
-        }
+      //! get voxel value at current location
+      FORCE_INLINE ValueType get_value () const {
+        if (data_pointer) return Raw::fetch_native<ValueType> (data_pointer, data_offset);
+        return buffer->get_value (data_offset);
+      }
+      //! set voxel value at current location
+      FORCE_INLINE void set_value (ValueType val) {
+        if (data_pointer) Raw::store_native<ValueType> (val, data_pointer, data_offset);
+        else buffer->set_value (data_offset, val);
+      }
 
-        //! get set/set a row of values at the current index position along the specified axis
-        FORCE_INLINE Eigen::Map<Eigen::Matrix<value_type, Eigen::Dynamic, 1 >, Eigen::Unaligned, Eigen::InnerStride<> > row (size_t axis)
-        {
-          assert (is_direct_io() && "Image::row() method can only be used on Images loaded using Image::with_direct_io()");
-          this->index (axis) = 0;
-          return Eigen::Map<Eigen::Matrix<value_type, Eigen:: Dynamic, 1 >, Eigen::Unaligned, Eigen::InnerStride<> >
-                   (address(), size (axis), Eigen::InnerStride<> (stride (axis)));
-        }
+      //! get set/set a row of values at the current index position along the specified axis
+      FORCE_INLINE Eigen::Map<Eigen::Matrix<value_type, Eigen::Dynamic, 1 >, Eigen::Unaligned, Eigen::InnerStride<> > row (size_t axis)
+      {
+        assert (is_direct_io() && "Image::row() method can only be used on Images loaded using Image::with_direct_io()");
+        this->index (axis) = 0;
+        return Eigen::Map<Eigen::Matrix<value_type, Eigen:: Dynamic, 1 >, Eigen::Unaligned, Eigen::InnerStride<> >
+          (address(), size (axis), Eigen::InnerStride<> (stride (axis)));
+      }
 
-        //! use for debugging
-        friend std::ostream& operator<< (std::ostream& stream, const Image& V) {
-          stream << "\"" << V.name() << "\", datatype " << DataType::from<Image::value_type>().specifier() << ", index [ ";
-          for (size_t n = 0; n < V.ndim(); ++n) stream << V.index(n) << " ";
-          stream << "], current offset = " << V.offset() << ", value = " << V.value();
-          if (!V.data_pointer) stream << " (using indirect IO)";
-          else stream << " (using direct IO, data at " << V.data_pointer << ")";
-          return stream;
-        }
+      //! use for debugging
+      friend std::ostream& operator<< (std::ostream& stream, const Image& V) {
+        stream << "\"" << V.name() << "\", datatype " << DataType::from<Image::value_type>().specifier() << ", index [ ";
+        for (size_t n = 0; n < V.ndim(); ++n) stream << V.index(n) << " ";
+        stream << "], current offset = " << V.offset() << ", value = " << V.value();
+        if (!V.data_pointer) stream << " (using indirect IO)";
+        else stream << " (using direct IO, data at " << V.data_pointer << ")";
+        return stream;
+      }
 
-        //! write out the contents of a direct IO image to file 
-        /*! 
-         * returns the name of the image - needed by display() to get the
-         * name of the temporary file to supply to MRView. 
-         *
-         * \note this is \e not the recommended way to save an image - only use
-         * this function when you absolutely need to minimise RAM usage on
-         * write-out (this avoids any further buffering before write-out).
-         *
-         * \note this will only work for images accessed using direct IO (i.e.
-         * opened as a scratch image, or using with_direct_io(), and only
-         * supports output to MRtrix format images (*.mif / *.mih). There is a
-         * chance that images opened in other ways may also use direct IO (e.g.
-         * if the datatype & strides match, and the image is single-file), you
-         * can check using the is_direct_io() method. If there is any
-         * possibility that this image might use indirect IO, you should use
-         * the save() function instead (and even then, it should only be used
-         * for debugging purposes). */
-        std::string dump_to_mrtrix_file (std::string filename, bool use_multi_threading = true) const;
+      //! write out the contents of a direct IO image to file 
+      /*! 
+       * returns the name of the image - needed by display() to get the
+       * name of the temporary file to supply to MRView. 
+       *
+       * \note this is \e not the recommended way to save an image - only use
+       * this function when you absolutely need to minimise RAM usage on
+       * write-out (this avoids any further buffering before write-out).
+       *
+       * \note this will only work for images accessed using direct IO (i.e.
+       * opened as a scratch image, or using with_direct_io(), and only
+       * supports output to MRtrix format images (*.mif / *.mih). There is a
+       * chance that images opened in other ways may also use direct IO (e.g.
+       * if the datatype & strides match, and the image is single-file), you
+       * can check using the is_direct_io() method. If there is any
+       * possibility that this image might use indirect IO, you should use
+       * the save() function instead (and even then, it should only be used
+       * for debugging purposes). */
+      std::string dump_to_mrtrix_file (std::string filename, bool use_multi_threading = true) const;
 
-        //! return a new Image using direct IO
-        /*! 
-         * this will preload the data into RAM if the datatype on file doesn't
-         * match that on file (or if any scaling is applied to the data). The
-         * optional \a with_strides argument is used to additionally enforce
-         * preloading if the strides aren't compatible with those specified. 
-         *
-         * Example:
-         * \code
-         * auto image = Header::open (argument[0]).get_image().with_direct_io();
-         * \endcode 
-         * \note this invalidate the invoking Image - do not use the original
-         * image in subsequent code.*/
-        Image with_direct_io (Stride::List with_strides = Stride::List());
+      //! return a new Image using direct IO
+      /*! 
+       * this will preload the data into RAM if the datatype on file doesn't
+       * match that on file (or if any scaling is applied to the data). The
+       * optional \a with_strides argument is used to additionally enforce
+       * preloading if the strides aren't compatible with those specified. 
+       *
+       * Example:
+       * \code
+       * auto image = Header::open (argument[0]).get_image().with_direct_io();
+       * \endcode 
+       * \note this invalidate the invoking Image - do not use the original
+       * image in subsequent code.*/
+      Image with_direct_io (Stride::List with_strides = Stride::List());
 
-        //! return a new Image using direct IO
-        /*! 
-         * this is a convenience function, performing the same function as
-         * with_direct_io(Stride::List). The difference is that the \a axis
-         * argument specifies which axis should be contiguous, or if \a axis is
-         * negative, that the spatial axes should be contiguous (the \c
-         * SpatiallyContiguous constexpr, set to -1, is provided for clarity).
-         * In other words:
-         * \code 
-         * auto image = Image<float>::open (filename).with_direct_io (3);
-         * \endcode
-         * is equivalent to:
-         * \code 
-         * auto header = Header::open (filename);
-         * auto image = header.get_image<float>().with_direct_io (Stride::contiguous_along_axis (3, header));
-         * \endcode
-         * and
-         * \code 
-         * auto image = Image<float>::open (filename).with_direct_io (-1);
-         * // or;
-         * auto image = Image<float>::open (filename).with_direct_io (SpatiallyContiguous);
-         * \endcode
-         * is equivalent to:
-         * \code 
-         * auto header = Header::open (filename);
-         * auto image = header.get_image<float>().with_direct_io (Stride::contiguous_along_spatial_axes (header));
-         * \endcode
-         */
-        Image with_direct_io (int axis) {
-          return with_direct_io ( axis < 0 ?
-              Stride::contiguous_along_spatial_axes (*buffer) :
-              Stride::contiguous_along_axis (axis, *buffer) );
-        }
+      //! return a new Image using direct IO
+      /*! 
+       * this is a convenience function, performing the same function as
+       * with_direct_io(Stride::List). The difference is that the \a axis
+       * argument specifies which axis should be contiguous, or if \a axis is
+       * negative, that the spatial axes should be contiguous (the \c
+       * SpatiallyContiguous constexpr, set to -1, is provided for clarity).
+       * In other words:
+       * \code 
+       * auto image = Image<float>::open (filename).with_direct_io (3);
+       * \endcode
+       * is equivalent to:
+       * \code 
+       * auto header = Header::open (filename);
+       * auto image = header.get_image<float>().with_direct_io (Stride::contiguous_along_axis (3, header));
+       * \endcode
+       * and
+       * \code 
+       * auto image = Image<float>::open (filename).with_direct_io (-1);
+       * // or;
+       * auto image = Image<float>::open (filename).with_direct_io (SpatiallyContiguous);
+       * \endcode
+       * is equivalent to:
+       * \code 
+       * auto header = Header::open (filename);
+       * auto image = header.get_image<float>().with_direct_io (Stride::contiguous_along_spatial_axes (header));
+       * \endcode
+       */
+      Image with_direct_io (int axis) {
+        return with_direct_io ( axis < 0 ?
+            Stride::contiguous_along_spatial_axes (*buffer) :
+            Stride::contiguous_along_axis (axis, *buffer) );
+      }
 
 
-        //! return RAM address of current voxel
-        /*! \note this will only work if image access is direct (i.e. for a
-         * scratch image, with preloading, or when the data type is native and
-         * without scaling. */
-        ValueType* address () const { 
-          assert (data_pointer != nullptr && "Image::address() can only be used when image access is via direct RAM access");
-          return data_pointer ? static_cast<ValueType*>(data_pointer) + data_offset : nullptr; }
+      //! return RAM address of current voxel
+      /*! \note this will only work if image access is direct (i.e. for a
+       * scratch image, with preloading, or when the data type is native and
+       * without scaling. */
+      ValueType* address () const { 
+        assert (data_pointer != nullptr && "Image::address() can only be used when image access is via direct RAM access");
+        return data_pointer ? static_cast<ValueType*>(data_pointer) + data_offset : nullptr; }
 
-        static Image open (const std::string& image_name, bool read_write_if_existing = false) {
-          return Header::open (image_name).get_image<ValueType> (read_write_if_existing);
-        }
-        static Image create (const std::string& image_name, const Header& template_header) {
-          return Header::create (image_name, template_header).get_image<ValueType>();
-        }
-        static Image scratch (const Header& template_header, const std::string& label = "scratch image") {
-          return Header::scratch (template_header, label).get_image<ValueType>();
-        }
+      static Image open (const std::string& image_name, bool read_write_if_existing = false) {
+        return Header::open (image_name).get_image<ValueType> (read_write_if_existing);
+      }
+      static Image create (const std::string& image_name, const Header& template_header) {
+        return Header::create (image_name, template_header).get_image<ValueType>();
+      }
+      static Image scratch (const Header& template_header, const std::string& label = "scratch image") {
+        return Header::scratch (template_header, label).get_image<ValueType>();
+      }
 
-      protected:
-        //! shared reference to header/buffer
-        std::shared_ptr<Buffer> buffer;
-        //! pointer to data address whether in RAM or MMap
-        void* data_pointer;
-        //! voxel indices
-        std::vector<ssize_t> x;
-        //! voxel indices
-        Stride::List strides;
-        //! offset to currently pointed-to voxel
-        size_t data_offset;
-    };
+    protected:
+      //! shared reference to header/buffer
+      std::shared_ptr<Buffer> buffer;
+      //! pointer to data address whether in RAM or MMap
+      void* data_pointer;
+      //! voxel indices
+      std::vector<ssize_t> x;
+      //! voxel indices
+      Stride::List strides;
+      //! offset to currently pointed-to voxel
+      size_t data_offset;
+  };
 
 
 
@@ -229,7 +231,7 @@ namespace MR
         Buffer (const Buffer& b) : 
           Header (b), fetch_func (b.fetch_func), store_func (b.store_func) { }
 
-      EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         FORCE_INLINE ValueType get_value (size_t offset) const {
           ssize_t nseg = offset / io->segment_size();
@@ -274,31 +276,33 @@ namespace MR
 
     // lightweight struct to copy data into:
     template <typename ValueType>
-      struct TmpImage : public ImageBase<TmpImage<ValueType>, ValueType> {
-        typedef ValueType value_type;
+      struct TmpImage : 
+        public ImageBase<TmpImage<ValueType>, ValueType> 
+    {
+      typedef ValueType value_type;
 
-        TmpImage (const typename Image<ValueType>::Buffer& b, void* const data, 
-            std::vector<ssize_t> x, const Stride::List& strides, size_t offset) :
-          b (b), data (data), x (x), strides (strides), offset (offset) { }
+      TmpImage (const typename Image<ValueType>::Buffer& b, void* const data, 
+          std::vector<ssize_t> x, const Stride::List& strides, size_t offset) :
+        b (b), data (data), x (x), strides (strides), offset (offset) { }
 
-        const typename Image<ValueType>::Buffer& b;
-        void* const data;
-        std::vector<ssize_t> x;
-        const Stride::List& strides;
-        size_t offset;
+      const typename Image<ValueType>::Buffer& b;
+      void* const data;
+      std::vector<ssize_t> x;
+      const Stride::List& strides;
+      size_t offset;
 
-        bool valid () const { return true; }
-        const std::string name () const { return "direct IO buffer"; }
-        FORCE_INLINE size_t ndim () const { return b.ndim(); }
-        FORCE_INLINE ssize_t size (size_t axis) const { return b.size(axis); }
-        FORCE_INLINE ssize_t stride (size_t axis) const { return strides[axis]; }
+      bool valid () const { return true; }
+      const std::string name () const { return "direct IO buffer"; }
+      FORCE_INLINE size_t ndim () const { return b.ndim(); }
+      FORCE_INLINE ssize_t size (size_t axis) const { return b.size(axis); }
+      FORCE_INLINE ssize_t stride (size_t axis) const { return strides[axis]; }
 
-        FORCE_INLINE ssize_t get_index (size_t axis) const { return x[axis]; }
-        FORCE_INLINE void move_index (size_t axis, ssize_t increment) { offset += stride (axis) * increment; x[axis] += increment; }
+      FORCE_INLINE ssize_t get_index (size_t axis) const { return x[axis]; }
+      FORCE_INLINE void move_index (size_t axis, ssize_t increment) { offset += stride (axis) * increment; x[axis] += increment; }
 
-        FORCE_INLINE value_type get_value () const { return Raw::fetch_native<ValueType> (data, offset); } 
-        FORCE_INLINE void set_value (ValueType val) { Raw::store_native<ValueType> (val, data, offset); }
-      };
+      FORCE_INLINE value_type get_value () const { return Raw::fetch_native<ValueType> (data, offset); } 
+      FORCE_INLINE void set_value (ValueType val) { Raw::store_native<ValueType> (val, data, offset); }
+    };
 
   }
 
@@ -487,7 +491,7 @@ namespace MR
       if (!out.good())
         throw Exception ("error writing back contents of file \"" + data_filename + "\": " + strerror(errno));
       out.close();
-     
+
       // If data_size exceeds some threshold, ostream artificially increases the file size beyond that required at close()
       // TODO check whether this is still needed...?
       File::resize (data_filename, offset + data_size);

@@ -414,7 +414,8 @@ namespace MR
   {
 
     template <class ImageType>
-      class Index {
+      class Index 
+      {
         public:
           FORCE_INLINE Index (ImageType& image, size_t axis) : image (image), axis (axis) { assert (axis < image.ndim()); }
           Index () = delete;
@@ -481,7 +482,8 @@ namespace MR
 
 
     template <class Derived, typename ValueType>
-      class ImageBase { 
+      class ImageBase 
+      { 
         public:
           typedef ValueType value_type;
 
