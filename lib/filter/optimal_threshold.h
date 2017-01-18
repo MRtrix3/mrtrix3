@@ -256,7 +256,7 @@ namespace MR
               typedef typename InputImageType::value_type input_value_type;
 
               input_value_type optimal_threshold = estimate_optimal_threshold (input, mask);
-              
+
               auto f = [&](decltype(input) in, decltype(output) out) {
                 input_value_type val = in.value();
                 out.value() = ( std::isfinite (val) && val > optimal_threshold ) ? 1 : 0;

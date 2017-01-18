@@ -17,6 +17,7 @@
 #include "command.h"
 #include "image.h"
 #include "algo/threaded_loop.h"
+#include "registration/warp/helpers.h"
 
 
 using namespace MR;
@@ -44,11 +45,7 @@ typedef float value_type;
 void run ()
 {
   auto input = Image<value_type>::open (argument[0]).with_direct_io (3);
-  if (input.ndim() != 4)
-    throw Exception ("input warp is not a 4D image");
-
-  if (input.size(3) != 3)
-    throw Exception ("input warp should have 3 volumes in the 4th dimension");
+  Registration::Warp::check_warp (input);
 
   auto output = Image<value_type>::create (argument[1], input);
 

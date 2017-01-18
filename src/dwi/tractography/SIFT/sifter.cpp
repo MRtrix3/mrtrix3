@@ -34,7 +34,7 @@
 
 #include "math/rng.h"
 
-#include "sparse/image.h"
+#include "fixel/legacy/image.h"
 
 
 

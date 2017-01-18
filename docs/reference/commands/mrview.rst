@@ -75,6 +75,11 @@ Debugging options
 
 -  **-fps** Display frames per second, averaged over the last 10 frames. The maximum over the last 3 seconds is also displayed.
 
+Other options
+^^^^^^^^^^^^^
+
+-  **-norealign** do not realign transform to near-default RAS coordinate system (the default behaviour on image load). This is useful to inspect the image and/or header contents as they are actually stored in the header, rather than as MRtrix interprets them.
+
 Overlay tool options
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -109,10 +114,10 @@ ODF tool options
 
 -  **-odf.load_dixel image** Loads the specified dixel-based image on the ODF tool.
 
-Vector plot tool options
-^^^^^^^^^^^^^^^^^^^^^^^^
+Fixel plot tool options
+^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-vector.load image** Load the specified MRtrix sparse image file (.msf) into the fixel tool.
+-  **-fixel.load image** Load a fixel file (any file inside a fixel directory, or an old *.msf legacy format file) into the fixel tool.
 
 Connectome tool options
 ^^^^^^^^^^^^^^^^^^^^^^^

@@ -41,17 +41,6 @@ void usage ()
     "image header or using the -gradient or -directions option. Note that if a direction set "
     "and DW gradient scheme can be found, the direction set will be used by default."
 
-  + "Note that this program makes use of implied symmetries in the diffusion "
-    "profile. First, the fact the signal attenuation profile is real implies "
-    "that it has conjugate symmetry, i.e. Y(l,-m) = Y(l,m)* (where * denotes the "
-    "complex conjugate). Second, the diffusion profile should be antipodally "
-    "symmetric (i.e. S(x) = S(-x)), implying that all odd l components should be "
-    "zero. Therefore, this program only computes the even elements."
-
-  + "Note that the spherical harmonics equations used here differ slightly from "
-    "those conventionally used, in that the (-1)^m factor has been omitted. This "
-    "should be taken into account in all subsequent calculations."
-
   + Math::SH::encoding_description;
 
   ARGUMENTS
@@ -229,15 +218,18 @@ void run ()
         dirs(i/2, 0) = dir_vector[i];
         dirs(i/2, 1) = dir_vector[i+1];
       }
+      header.keyval()["basis_directions"] = hit->second;
+      header.keyval().erase (hit);
     } 
     else {
       auto grad = DWI::get_valid_DW_scheme (amp);
       DWI::Shells shells (grad);
-      shells.select_shells (true, true);
+      shells.select_shells (true, false, false);
       if (shells.smallest().is_bzero())
         bzeros = shells.smallest().get_volumes();
       dwis = shells.largest().get_volumes();
       dirs = DWI::gen_direction_matrix (grad, dwis);
+      DWI::stash_DW_scheme (header, grad);
     }
   }
 

@@ -46,8 +46,8 @@ namespace MR
             const Functor& functor, const double voxel_density, const std::vector<size_t> dimensions, ImageType&... voxels) :
           outer_axes (outer_axes),
           loop (Loop (inner_axes)),
-          func (functor), 
-          density (voxel_density), 
+          func (functor),
+          density (voxel_density),
           dims(dimensions),
           vox (voxels...) { }
 
@@ -96,10 +96,10 @@ namespace MR
           loop (Loop (inner_axes)),
           func (functor),
           density (voxel_density),
-          dims (dimensions) { 
+          dims (dimensions) {
             assert (inner_axes.size() == 1);
-            // VAR(inner_axes); 
-            // VAR(outer_axes); 
+            // VAR(inner_axes);
+            // VAR(outer_axes);
             Math::RNG rng;
             typename std::default_random_engine::result_type seed = rng.get_seed();
             random_engine = std::default_random_engine{static_cast<std::default_random_engine::result_type>(seed)};
@@ -113,7 +113,7 @@ namespace MR
           it = std::begin(idx);
           stop = std::end(idx);
           max_cnt = //size_t (density * dims[inner[0]]);
-          (size_t) ceil (density * dims[inner[0]]);
+          (size_t) std::ceil (density * dims[inner[0]]);
           // VAR(max_cnt);
           for (size_t i = 0; i < max_cnt; ++i){
             pos.index(inner[0]) = *it;
@@ -142,11 +142,11 @@ namespace MR
         std::vector<size_t> inner_axes;
 
         //! invoke \a functor (const Iterator& pos) per voxel <em> in the outer axes only</em>
-        template <class Functor> 
+        template <class Functor>
           void run_outer (Functor&& functor, const double voxel_density, const std::vector<size_t>& dimensions)
           {
             if (Thread::number_of_threads() == 0) {
-              for (auto i = outer_loop (iterator); i; ++i){ 
+              for (auto i = outer_loop (iterator); i; ++i){
                 // std::cerr << "outer: " << str(iterator) << " " << voxel_density << " " << dimensions << std::endl;
                 functor (iterator);
               }
@@ -188,9 +188,9 @@ namespace MR
         template <class Functor, class... ImageType>
           void run (Functor&& functor, const double voxel_density, std::vector<size_t> dimensions, ImageType&&... vox)
           {
-            RandomThreadedLoopRunInner< 
+            RandomThreadedLoopRunInner<
               sizeof...(ImageType),
-              typename std::remove_reference<Functor>::type, 
+              typename std::remove_reference<Functor>::type,
               typename std::remove_reference<ImageType>::type...
                 > loop_thread (outer_loop.axes, inner_axes, functor, voxel_density, dimensions, vox...);
             run_outer (loop_thread, voxel_density, dimensions);
@@ -219,7 +219,7 @@ namespace MR
         const HeaderType& source,
         const std::vector<size_t>& axes,
         size_t num_inner_axes = 1) {
-      return { source, Loop (get_outer_axes (axes, num_inner_axes)), get_inner_axes (axes, num_inner_axes) }; 
+      return { source, Loop (get_outer_axes (axes, num_inner_axes)), get_inner_axes (axes, num_inner_axes) };
     }
 
   template <class HeaderType>
@@ -228,8 +228,8 @@ namespace MR
         size_t from_axis = 0,
         size_t to_axis = std::numeric_limits<size_t>::max(),
         size_t num_inner_axes = 1) {
-      return { source, 
-        Loop (get_outer_axes (source, num_inner_axes, from_axis, to_axis)), 
+      return { source,
+        Loop (get_outer_axes (source, num_inner_axes, from_axis, to_axis)),
         get_inner_axes (source, num_inner_axes, from_axis, to_axis) };
       }
 
@@ -248,7 +248,7 @@ namespace MR
         const HeaderType& source,
         const std::vector<size_t>& axes,
         size_t num_inner_axes = 1) {
-      return { source, 
+      return { source,
         Loop (progress_message, get_outer_axes (axes, num_inner_axes)),
         get_inner_axes (axes, num_inner_axes) };
       }
@@ -258,7 +258,7 @@ namespace MR
         const std::string& progress_message,
         const HeaderType& source,
         size_t from_axis = 0,
-        size_t to_axis = std::numeric_limits<size_t>::max(), 
+        size_t to_axis = std::numeric_limits<size_t>::max(),
         size_t num_inner_axes = 1) {
       return { source,
         Loop (progress_message, get_outer_axes (source, num_inner_axes, from_axis, to_axis)),

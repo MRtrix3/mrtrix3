@@ -21,26 +21,23 @@
 #include "algo/loop.h"
 #include "algo/threaded_loop.h"
 
-#include "sparse/fixel_metric.h"
-#include "sparse/image.h"
-#include "sparse/keys.h"
+#include "dwi/tractography/file.h"
+#include "dwi/tractography/scalar_file.h"
 
 #include "math/SH.h"
 
+#include "fixel/helpers.h"
+#include "fixel/keys.h"
+#include "fixel/loop.h"
 
 using namespace MR;
 using namespace App;
 
 
-using Sparse::FixelMetric;
-
 const char* operations[] = {
   "mean",
   "sum",
   "product",
-  "rms",
-  "var",
-  "std",
   "min",
   "max",
   "absmax",
@@ -50,8 +47,7 @@ const char* operations[] = {
   "sf",
   "dec_unit",
   "dec_scaled",
-  "split_size",
-  "split_value",
+  "split_data",
   "split_dir",
   NULL
 };
@@ -59,580 +55,354 @@ const char* operations[] = {
 
 void usage ()
 {
-  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au) & David Raffelt (david.raffelt@florey.edu.au)";
 
   DESCRIPTION
   + "convert a fixel-based sparse-data image into some form of scalar image. "
     "This could be: \n"
-    "- Some statistic computed across all fixel values within a voxel: mean, sum, product, rms, var, std, min, max, absmax, magmax\n"
+    "- Some statistic computed across all fixel values within a voxel: mean, sum, product, min, max, absmax, magmax\n"
     "- The number of fixels in each voxel: count\n"
     "- Some measure of crossing-fibre organisation: complexity, sf ('single-fibre')\n"
     "- A 4D directionally-encoded colour image: dec_unit, dec_scaled\n"
-    "- A 4D scalar image with one 3D volume per fixel: split_size, split_value\n"
-    "- A 4D image with three 3D volumes per fixel direction: split_dir";
+    "- A 4D scalar image of fixel values with one 3D volume per fixel: split_data\n"
+    "- A 4D image of fixel directions, stored as three 3D volumes per fixel direction: split_dir";
 
   REFERENCES 
     + "* Reference for 'complexity' operation:\n"
     "Riffert, T. W.; Schreiber, J.; Anwander, A. & Knosche, T. R. "
     "Beyond Fractional Anisotropy: Extraction of bundle-specific structural metrics from crossing fibre models. "
-    "NeuroImage, 2014 (in press)";
+    "NeuroImage, 2014, 100, 176-191";
 
   ARGUMENTS
-  + Argument ("fixel_in",  "the input sparse fixel image.").type_image_in ()
+  + Argument ("fixel_in", "the input fixel data file").type_image_in ()
   + Argument ("operation", "the operation to apply, one of: " + join(operations, ", ") + ".").type_choice (operations)
   + Argument ("image_out", "the output scalar image.").type_image_out ();
 
   OPTIONS
-  + Option ("weighted", "weight the contribution of each fixel to the per-voxel result according to its volume "
-                        "(note that this option is not applicable for all operations, and should be avoided if the "
-                        "value stored in the fixel image is itself the estimated fibre volume)");
+  + Option ("weighted", "weight the contribution of each fixel to the per-voxel result according to its volume. "
+                        "E.g. when estimating a voxel-based measure of mean axon diameter, a fixel's mean axon diameter "
+                        "should be weigthed by its relative volume within the voxel. Note that AFD can be used as a psuedomeasure of fixel volume.")
+      + Argument ("fixel_in").type_image_in ();
 
 }
 
 
 
-class OpBase
-{
-  protected:
-    typedef Sparse::Image<FixelMetric> in_type;
-    typedef Image<float> out_type;
-
-  public:
-    OpBase (const bool weighted) :
-        weighted (weighted) { }
-    OpBase (const OpBase& that) :
-        weighted (that.weighted) { }
-    virtual ~OpBase() { }
-    virtual bool operator() (in_type&, out_type&) = 0;
-  protected:
-    const bool weighted;
-};
-
-
-class Mean : public OpBase
+class Mean
 {
   public:
-    Mean (const bool weighted) :
-        OpBase (weighted),
-        sum (0.0f),
-        sum_volumes (0.0f) { }
-    Mean (const Mean& that) :
-        OpBase (that),
-        sum (0.0f),
-        sum_volumes (0.0f) { }
-    bool operator() (in_type& in, out_type& out)
+    Mean (Image<float>& data, Image<float>& vol) :
+        data (data), vol (vol) {}
+
+    void operator() (Image<uint32_t>& index, Image<float>& out)
     {
-      sum = sum_volumes = 0.0;
-      if (weighted) {
-        for (size_t i = 0; i != in.value().size(); ++i) {
-          sum += in.value()[i].size * in.value()[i].value;
-          sum_volumes += in.value()[i].size;
+      default_type sum = 0.0;
+      default_type sum_volumes = 0.0;
+      if (vol.valid()) {
+        for (auto f = Fixel::Loop (index) (data, vol); f; ++f) {
+          sum += data.value() * vol.value();
+          sum_volumes += vol.value();
         }
         out.value() = sum_volumes ? (sum / sum_volumes) : 0.0;
       } else {
-        for (size_t i = 0; i != in.value().size(); ++i)
-          sum += in.value()[i].value;
-        out.value() = in.value().size() ? (sum / default_type(in.value().size())) : 0.0;
+        index.index(3) = 0;
+        size_t num_fixels = index.value();
+        for (auto f = Fixel::Loop (index) (data); f; ++f)
+          sum += data.value();
+        out.value() = num_fixels ? (sum / default_type(num_fixels)) : 0.0;
       }
-      return true;
     }
-  private:
-    default_type sum, sum_volumes;
+  protected:
+    Image<float> data, vol;
 };
 
-class Sum : public OpBase
+
+class Sum
 {
   public:
-    Sum (const bool weighted) :
-        OpBase (weighted),
-        sum (0.0) { }
-    Sum (const Sum& that) :
-        OpBase (that),
-        sum (0.0) { }
-    bool operator() (in_type& in, out_type& out)
+    Sum (Image<float>& data, Image<float>& vol) :
+      data (data), vol (vol) {}
+
+    void operator() (Image<uint32_t>& index, Image<float>& out)
     {
-      sum = 0.0;
-      if (weighted) {
-        for (size_t i = 0; i != in.value().size(); ++i)
-          sum += in.value()[i].size * in.value()[i].value;
-        out.value() = sum;
+
+      if (vol.valid()) {
+        for (auto f = Fixel::Loop (index) (data, vol); f; ++f)
+          out.value() += data.value() * vol.value();
       } else {
-        for (size_t i = 0; i != in.value().size(); ++i)
-          sum += in.value()[i].value;
-        out.value() = sum;
+        for (auto f = Fixel::Loop (index) (data); f; ++f)
+          out.value() += data.value();
       }
-      return true;
     }
-  private:
-    default_type sum;
+  protected:
+    Image<float> data, vol;
 };
 
-class Product : public OpBase
+
+class Product
 {
   public:
-    Product (const bool weighted) :
-        OpBase (weighted),
-        product (0.0)
+    Product (Image<float>& data) :
+      data (data) {}
+
+    void operator() (Image<uint32_t>& index, Image<float>& out)
     {
-      if (weighted)
-        WARN ("Option -weighted has no meaningful interpretation for product operation; ignoring");
-    }
-    Product (const Product& that) :
-        OpBase (that),
-        product (0.0) { }
-    bool operator() (in_type& in, out_type& out)
-    {
-      if (!in.value().size()) {
+      index.index(3) = 0;
+      uint32_t num_fixels = index.value();
+      if (!num_fixels) {
         out.value() = 0.0;
-        return true;
+        return;
       }
-      product = in.value()[0].value;
-      for (size_t i = 1; i != in.value().size(); ++i)
-        product *= in.value()[i].value;
-      out.value() = product;
-      return true;
+      index.index(3) = 1;
+      uint32_t offset = index.value();
+      data.index(0) = offset;
+      out.value() = data.value();
+      for (size_t f = 1; f != num_fixels; ++f) {
+        data.index(0)++;
+        out.value() *= data.value();
+      }
     }
-  private:
-    default_type product;
+  protected:
+    Image<float> data;
 };
 
-class RMS : public OpBase
-{
-  public:
-    RMS (const bool weighted) :
-        OpBase (weighted),
-        sum (0.0),
-        sum_volumes (0.0) { }
-    RMS (const RMS& that) :
-        OpBase (that),
-        sum (0.0),
-        sum_volumes (0.0) { }
-    bool operator() (in_type& in, out_type& out)
-    {
-      sum = sum_volumes = 0.0;
-      if (weighted) {
-        for (size_t i = 0; i != in.value().size(); ++i) {
-          sum *= in.value()[i].size * Math::pow2 (in.value()[i].value);
-          sum_volumes += in.value()[i].size;
-        }
-        out.value() = std::sqrt (sum / sum_volumes);
-      } else {
-        for (size_t i = 0; i != in.value().size(); ++i)
-          sum += Math::pow2 (in.value()[i].value);
-        out.value() = std::sqrt (sum / default_type(in.value().size()));
-      }
-      return true;
-    }
-  private:
-    default_type sum, sum_volumes;
-};
 
-class Var : public OpBase
+class Min
 {
   public:
-    Var (const bool weighted) :
-        OpBase (weighted),
-        sum (0.0f),
-        weighted_mean (0.0),
-        sum_volumes (0.0),
-        sum_volumes_sqr (0.0),
-        sum_sqr (0.0) { }
-    Var (const Var& that) :
-        OpBase (that),
-        sum (0.0),
-        weighted_mean (0.0),
-        sum_volumes (0.0),
-        sum_volumes_sqr (0.0),
-        sum_sqr (0.0) { }
-    bool operator() (in_type& in, out_type& out)
-    {
-      if (!in.value().size()) {
-        out.value() = NAN;
-        return true;
-      } else if (in.value().size() == 1) {
-        out.value() = 0.0;
-        return true;
-      }
-      if (weighted) {
-        sum = sum_volumes = 0.0;
-        for (size_t i = 0; i != in.value().size(); ++i) {
-          sum += in.value()[i].size * in.value()[i].value;
-          sum_volumes += in.value()[i].size;
-        }
-        weighted_mean = sum / sum_volumes;
-        sum = sum_volumes_sqr = 0.0;
-        for (size_t i = 0; i != in.value().size(); ++i) {
-          sum += in.value()[i].size * Math::pow2 (weighted_mean - in.value()[i].value);
-          sum_volumes_sqr += Math::pow2 (in.value()[i].size);
-        }
-        // Unbiased variance estimator in the presence of weighting
-        out.value() = sum / (sum_volumes - (sum_volumes_sqr / sum_volumes));
-      } else {
-        sum = sum_sqr = 0.0;
-        for (size_t i = 0; i != in.value().size(); ++i) {
-          sum += in.value()[i].value;
-          sum_sqr += Math::pow2 (in.value()[i].value);
-        }
-        out.value() = (sum_sqr - (Math::pow2 (sum) / default_type(in.value().size()))) / default_type(in.value().size() - 1);
-      }
-      return true;
-    }
-  private:
-    // Used for both calculations
-    default_type sum;
-    // Used for weighted calculations
-    default_type weighted_mean, sum_volumes, sum_volumes_sqr;
-    // Used for unweighted calculations
-    default_type sum_sqr;
-};
+    Min (Image<float>& data) :
+      data (data) {}
 
-class Std : public Var
-{
-  public:
-    Std (const bool weighted) :
-        Var (weighted) { }
-    Std (const Std& that) :
-        Var (that) { }
-    bool operator() (in_type& in, out_type& out)
+    void operator() (Image<uint32_t>& index, Image<float>& out)
     {
-      Var::operator() (in, out);
-      out.value() = std::sqrt (out.value());
-      return true;
-    }
-};
-
-class Min : public OpBase
-{
-  public:
-    Min (const bool weighted) :
-        OpBase (weighted),
-        min (std::numeric_limits<default_type>::infinity())
-    {
-      if (weighted)
-        WARN ("Option -weighted has no meaningful interpretation for min operation; ignoring");
-    }
-    Min (const Min& that) :
-        OpBase (that),
-        min (std::numeric_limits<default_type>::infinity()) { }
-    bool operator() (in_type& in, out_type& out)
-    {
-      min = std::numeric_limits<default_type>::infinity();
-      for (size_t i = 0; i != in.value().size(); ++i) {
-        if (in.value()[i].value < min)
-          min = in.value()[i].value;
+      default_type min = std::numeric_limits<default_type>::infinity();
+      for (auto f = Fixel::Loop (index) (data); f; ++f) {
+        if (data.value() < min)
+          min = data.value();
       }
       out.value() = std::isfinite (min) ? min : NAN;
-      return true;
     }
-  private:
-    default_type min;
+  protected:
+    Image<float> data;
 };
 
-class Max : public OpBase
+
+class Max
 {
   public:
-    Max (const bool weighted) :
-        OpBase (weighted),
-        max (-std::numeric_limits<default_type>::infinity())
+    Max (Image<float>& data) :
+      data (data) {}
+
+    void operator() (Image<uint32_t>& index, Image<float>& out)
     {
-      if (weighted)
-        WARN ("Option -weighted has no meaningful interpretation for max operation; ignoring");
-    }
-    Max (const Max& that) :
-        OpBase (that),
-        max (-std::numeric_limits<default_type>::infinity()) { }
-    bool operator() (in_type& in, out_type& out)
-    {
-      max = -std::numeric_limits<default_type>::infinity();
-      for (size_t i = 0; i != in.value().size(); ++i) {
-        if (in.value()[i].value > max)
-          max = in.value()[i].value;
+      default_type max = -std::numeric_limits<default_type>::infinity();
+      for (auto f = Fixel::Loop (index) (data); f; ++f) {
+        if (data.value() > max)
+          max = data.value();
       }
       out.value() = std::isfinite (max) ? max : NAN;
-      return true;
     }
-  private:
-    default_type max;
+  protected:
+    Image<float> data;
 };
 
-class AbsMax : public OpBase
+
+class AbsMax
 {
   public:
-    AbsMax (const bool weighted) :
-        OpBase (weighted),
-        max (0.0f)
+    AbsMax (Image<float>& data) :
+      data (data) {}
+
+    void operator() (Image<uint32_t>& index, Image<float>& out)
     {
-      if (weighted)
-        WARN ("Option -weighted has no meaningful interpretation for absmax operation; ignoring");
-    }
-    AbsMax (const AbsMax& that) :
-        OpBase (that),
-        max (0.0f) { }
-    bool operator() (in_type& in, out_type& out)
-    {
-      max = 0.0f;
-      for (size_t i = 0; i != in.value().size(); ++i) {
-        if (std::abs (in.value()[i].value) > max)
-          max = std::abs (in.value()[i].value);
+      default_type absmax = -std::numeric_limits<default_type>::infinity();
+      for (auto f = Fixel::Loop (index) (data); f; ++f) {
+        if (std::abs (data.value()) > absmax)
+          absmax = std::abs (data.value());
       }
-      out.value() = max;
-      return true;
+      out.value() = std::isfinite (absmax) ? absmax : 0.0;
     }
-  private:
-    default_type max;
+  protected:
+    Image<float> data;
 };
 
-class MagMax : public OpBase
+
+class MagMax
 {
   public:
-    MagMax (const bool weighted) :
-        OpBase (weighted),
-        max (0.0)
+    MagMax (Image<float>& data) :
+      data (data) {}
+
+    void operator() (Image<uint32_t>& index, Image<float>& out)
     {
-      if (weighted)
-        WARN ("Option -weighted has no meaningful interpretation for magmax operation; ignoring");
-    }
-    MagMax (const AbsMax& that) :
-        OpBase (that),
-        max (0.0) { }
-    bool operator() (in_type& in, out_type& out)
-    {
-      max = 0.0;
-      for (size_t i = 0; i != in.value().size(); ++i) {
-        if (std::abs (in.value()[i].value) > std::abs (max))
-          max = in.value()[i].value;
+      default_type magmax = 0.0;
+      for (auto f = Fixel::Loop (index) (data); f; ++f) {
+        if (std::abs (data.value()) > std::abs (magmax))
+          magmax = data.value();
       }
-      out.value() = max;
-      return true;
+      out.value() = std::isfinite (magmax) ? magmax : 0.0;
     }
-  private:
-    default_type max;
+  protected:
+    Image<float> data;
 };
 
-class Count : public OpBase
-{
-  public:
-    Count (const bool weighted) :
-        OpBase (weighted)
-    {
-      if (weighted)
-        WARN ("Option -weighted has no meaningful interpretation for count operation; ignoring");
-    }
-    Count (const Count& that) :
-        OpBase (that) { }
-    bool operator() (in_type& in, out_type& out)
-    {
-      out.value() = in.value().size();
-      return true;
-    }
-};
 
-class Complexity : public OpBase
+class Complexity
 {
   public:
-    Complexity (const bool weighted) :
-        OpBase (weighted),
-        max (0.0),
-        sum (0.0)
+    Complexity (Image<float>& data) :
+      data (data) {}
+
+    void operator() (Image<uint32_t>& index, Image<float>& out)
     {
-      if (weighted)
-        WARN ("Option -weighted has no meaningful interpretation for complexity operation; ignoring");
-    }
-    Complexity (const Complexity& that) :
-        OpBase (that),
-        max (0.0f),
-        sum (0.0f) { }
-    bool operator() (in_type& in, out_type& out)
-    {
-      if (in.value().size() <= 1) {
+      index.index(3) = 0;
+      uint32_t num_fixels = index.value();
+      if (num_fixels <= 1) {
         out.value() = 0.0;
-        return true;
+        return;
       }
-      max = sum = 0.0;
-      for (size_t i = 0; i != in.value().size(); ++i) {
-        max = std::max (max, default_type(in.value()[i].value));
-        sum += in.value()[i].value;
+      default_type max = 0.0;
+      default_type sum = 0.0;
+      for (auto f = Fixel::Loop (index) (data); f; ++f) {
+        max = std::max (max, default_type(data.value()));
+        sum += data.value();
       }
-      out.value() = (default_type(in.value().size()) / default_type(in.value().size()-1.0)) * (1.0 - (max / sum));
-      return true;
+      out.value() = (default_type(num_fixels) / default_type(num_fixels-1.0)) * (1.0 - (max / sum));
     }
-  private:
-    default_type max, sum;
+  protected:
+    Image<float> data;
 };
 
-class SF : public OpBase
+
+class SF
 {
   public:
-    SF (const bool weighted) :
-        OpBase (weighted),
-        max (0.0),
-        sum (0.0)
+    SF (Image<float>& data) : data (data) {}
+
+    void operator() (Image<uint32_t>& index, Image<float>& out)
     {
-      if (weighted)
-        WARN ("Option -weighted has no meaningful interpretation for sf operation; ignoring");
-    }
-    SF (const Complexity& that) :
-        OpBase (that),
-        max (0.0),
-        sum (0.0) { }
-    bool operator() (in_type& in, out_type& out)
-    {
-      max = sum = 0.0f;
-      for (size_t i = 0; i != in.value().size(); ++i) {
-        max = std::max (max, default_type(in.value()[i].value));
-        sum += in.value()[i].value;
+      default_type max = 0.0;
+      default_type sum = 0.0;
+      for (auto f = Fixel::Loop (index) (data); f; ++f) {
+        max = std::max (max, default_type(data.value()));
+        sum += data.value();
       }
-      out.value() = sum ? (max / sum) : 0.0f;
-      return true;
+      out.value() = sum ? (max / sum) : 0.0;
     }
-  private:
-    default_type max, sum;
+  protected:
+    Image<float> data;
 };
 
-class DEC_unit : public OpBase
+
+class DEC_unit
 {
   public:
-    DEC_unit (const bool weighted) :
-        OpBase (weighted),
-        sum_dec {0.0, 0.0, 0.0} { }
-    DEC_unit (const DEC_unit& that) :
-        OpBase (that),
-        sum_dec {0.0, 0.0, 0.0} { }
-    bool operator() (in_type& in, out_type& out)
+    DEC_unit (Image<float>& data, Image<float>& vol, Image<float>& dir) :
+      data (data), vol (vol), dir (dir) {}
+
+    void operator() (Image<uint32_t>& index, Image<float>& out)
     {
-      sum_dec = {0.0, 0.0, 0.0};
-      if (weighted) {
-        for (size_t i = 0; i != in.value().size(); ++i)
-          sum_dec += Eigen::Vector3 (std::abs (in.value()[i].dir[0]), std::abs (in.value()[i].dir[1]), std::abs (in.value()[i].dir[2])) * in.value()[i].value * in.value()[i].size;
+      Eigen::Vector3 sum_dec = {0.0, 0.0, 0.0};
+      if (vol.valid()) {
+        for (auto f = Fixel::Loop (index) (data, vol, dir); f; ++f)
+          sum_dec += Eigen::Vector3 (std::abs (dir.row(1)[0]), std::abs (dir.row(1)[1]), std::abs (dir.row(1)[2])) * data.value() * vol.value();
       } else {
-        for (size_t i = 0; i != in.value().size(); ++i)
-          sum_dec += Eigen::Vector3 (std::abs (in.value()[i].dir[0]), std::abs (in.value()[i].dir[1]), std::abs (in.value()[i].dir[2])) * in.value()[i].value;
+        for (auto f = Fixel::Loop (index) (data, dir); f; ++f)
+          sum_dec += Eigen::Vector3 (std::abs (dir.row(1)[0]), std::abs (dir.row(1)[1]), std::abs (dir.row(1)[2])) * data.value();
       }
-      sum_dec.normalize();
+      if ((sum_dec.array() != 0.0).any())
+        sum_dec.normalize();
       for (out.index(3) = 0; out.index(3) != 3; ++out.index(3))
         out.value() = sum_dec[size_t(out.index(3))];
-      return true;
     }
-  private:
-    Eigen::Vector3 sum_dec;
+  protected:
+    Image<float> data, vol, dir;
 };
 
-class DEC_scaled : public OpBase
+
+class DEC_scaled
 {
   public:
-    DEC_scaled (const bool weighted) :
-        OpBase (weighted),
-        sum_dec {0.0, 0.0, 0.0},
-        sum_volume (0.0),
-        sum_value (0.0) { }
-    DEC_scaled (const DEC_scaled& that) :
-        OpBase (that),
-        sum_dec {0.0, 0.0, 0.0},
-        sum_volume (0.0),
-        sum_value (0.0) { }
-    bool operator() (in_type& in, out_type& out)
+    DEC_scaled (Image<float>& data, Image<float>& vol, Image<float>& dir) :
+      data (data), vol (vol), dir (dir) {}
+
+    void operator() (Image<uint32_t>& index, Image<float>& out)
     {
-      sum_dec = {0.0, 0.0, 0.0};
-      sum_value = 0.0;
-      if (weighted) {
-        sum_volume = 0.0;
-        for (size_t i = 0; i != in.value().size(); ++i) {
-          sum_dec += Eigen::Vector3 (std::abs (in.value()[i].dir[0]), std::abs (in.value()[i].dir[1]), std::abs (in.value()[i].dir[2])) * in.value()[i].value * in.value()[i].size;
-          sum_volume += in.value()[i].size;
-          sum_value += in.value()[i].size * in.value()[i].value;
+      Eigen::Vector3 sum_dec = {0.0, 0.0, 0.0};
+      default_type sum_value = 0.0;
+      if (vol.valid()) {
+        default_type sum_volume = 0.0;
+        for (auto f = Fixel::Loop (index) (data, vol, dir); f; ++f) {
+          sum_dec += Eigen::Vector3 (std::abs (dir.row(1)[0]), std::abs (dir.row(1)[1]), std::abs (dir.row(1)[2])) * data.value() * vol.value();
+          sum_volume += vol.value();
+          sum_value += vol.value() * data.value();
         }
-        sum_dec.normalize();
+        if ((sum_dec.array() != 0.0).any())
+          sum_dec.normalize();
         sum_dec *= (sum_value / sum_volume);
       } else {
-        for (size_t i = 0; i != in.value().size(); ++i) {
-          sum_dec += Eigen::Vector3 (std::abs (in.value()[i].dir[0]), std::abs (in.value()[i].dir[1]), std::abs (in.value()[i].dir[2])) * in.value()[i].value;
-          sum_value += in.value()[i].value;
+        for (auto f = Fixel::Loop (index) (data, dir); f; ++f) {
+          sum_dec += Eigen::Vector3 (std::abs (dir.row(1)[0]), std::abs (dir.row(1)[1]), std::abs (dir.row(1)[2])) * data.value();
+          sum_value += data.value();
         }
-        sum_dec.normalize();
+        if ((sum_dec.array() != 0.0).any())
+          sum_dec.normalize();
         sum_dec *= sum_value;
       }
       for (out.index(3) = 0; out.index(3) != 3; ++out.index(3))
         out.value() = sum_dec[size_t(out.index(3))];
-      return true;
     }
-  private:
-    Eigen::Vector3 sum_dec;
-    default_type sum_volume, sum_value;
+  protected:
+    Image<float> data, vol, dir;
 };
 
-class SplitSize : public OpBase
+
+class SplitData
 {
   public:
-    SplitSize (const bool weighted) :
-        OpBase (weighted)
+    SplitData (Image<float>& data) : data (data) {}
+
+    void operator() (Image<uint32_t>& index, Image<float>& out)
     {
-      if (weighted)
-        WARN ("Option -weighted has no meaningful interpretation for split_amp operation; ignoring");
-    }
-    SplitSize (const SplitSize& that) :
-        OpBase (that) { }
-    bool operator() (in_type& in, out_type& out)
-    {
+      index.index(3) = 0;
+      int num_fixels = (int)index.value();
+      index.index(3) = 1;
+      uint32_t offset = index.value();
       for (out.index(3) = 0; out.index(3) < out.size(3); ++out.index(3)) {
-        if (out.index(3) < in.value().size())
-          out.value() = in.value()[out.index(3)].size;
-        else
+        if (out.index(3) < num_fixels) {
+          data.index(0) = offset + out.index(3);
+          out.value() = data.value();
+        } else {
           out.value() = 0.0;
+        }
       }
-      return true;
     }
+  protected:
+    Image<float> data;
 };
 
-class SplitValue : public OpBase
-{
-  public:
-    SplitValue (const bool weighted) :
-        OpBase (weighted)
-    {
-      if (weighted)
-        WARN ("Option -weighted has no meaningful interpretation for split_value operation; ignoring");
-    }
-    SplitValue (const SplitValue& that) :
-        OpBase (that) { }
-    bool operator() (in_type& in, out_type& out)
-    {
-      for (out.index(3) = 0; out.index(3) < out.size(3); ++out.index(3)) {
-        if (out.index(3) < in.value().size())
-          out.value() = in.value()[out.index(3)].value;
-        else
-          out.value() = 0.0;
-      }
-      return true;
-    }
-};
 
-class SplitDir : public OpBase
+class SplitDir
 {
   public:
-    SplitDir (const bool weighted) :
-        OpBase (weighted)
+    SplitDir (Image<float>& dir) : dir (dir) {}
+
+    void operator() (Image<uint32_t>& index, Image<float>& out)
     {
-      if (weighted)
-        WARN ("Option -weighted has no meaningful interpretation for split_dir operation; ignoring");
-    }
-    SplitDir (const SplitDir& that) :
-        OpBase (that) { }
-    bool operator() (in_type& in, out_type& out)
-    {
-      size_t index;
       out.index(3) = 0;
-      for (index = 0; index != in.value().size(); ++index) {
-        for (size_t axis = 0; axis != 3; ++axis) {
-          out.value() = in.value()[index].dir[axis];
+      for (auto f = Fixel::Loop (index) (dir); f; ++f) {
+        for (size_t axis = 0; axis < 3; ++axis) {
+          dir.index(1) = axis;
+          out.value() = dir.value();
           ++out.index(3);
         }
       }
-      for (; out.index(3) != out.size(3); ++out.index(3))
-        out.value() = NAN;
-      return true;
+      for (; out.index(3) < out.size(3); ++out.index(3))
+        out.value() = 0.0;
     }
+  protected:
+    Image<float> dir;
 };
-
 
 
 
@@ -642,58 +412,74 @@ class SplitDir : public OpBase
 
 void run ()
 {
-  Header H_in = Header::open (argument[0]);
-  Sparse::Image<FixelMetric> in (H_in);
+  auto in_data = Fixel::open_fixel_data_file<float> (argument[0]);
+  if (in_data.size(2) != 1)
+    throw Exception ("Input fixel data file must have a single scalar value per fixel (i.e. have dimensions Nx1x1)");
+
+  Header in_index_header = Fixel::find_index_header (Fixel::get_fixel_directory (argument[0]));
+  auto in_index_image = in_index_header.get_image<uint32_t>();
+
+  Image<float> in_directions;
 
   const int op = argument[1];
 
-  Header H_out (H_in);
+  Header H_out (in_index_header);
   H_out.datatype() = DataType::Float32;
   H_out.datatype().set_byte_order_native();
-  H_out.keyval().erase (Sparse::name_key);
-  H_out.keyval().erase (Sparse::size_key);
-  if (op == 10) { // count
+  H_out.keyval().erase (Fixel::n_fixels_key);
+  if (op == 7) { // count
     H_out.datatype() = DataType::UInt8;
-  } else if (op == 13 || op == 14) { // dec
+  } else if (op == 10 || op == 11) { // dec
     H_out.ndim() = 4;
     H_out.size (3) = 3;
-  } else if (op == 15 || op == 16 || op == 17) { // split_*
+  } else if (op == 12 || op == 13) { // split_*
     H_out.ndim() = 4;
     uint32_t max_count = 0;
-    for (auto l = Loop ("determining largest fixel count", in) (in); l; ++l)
-      max_count = std::max (max_count, in.value().size());
+    for (auto l = Loop ("determining largest fixel count", in_index_image, 0, 3) (in_index_image); l; ++l)
+      max_count = std::max (max_count, (uint32_t)in_index_image.value());
     if (max_count == 0)
       throw Exception ("fixel image is empty");
+
     // 3 volumes per fixel if performing split_dir
-    H_out.size(3) = (op == 17) ? (3 * max_count) : max_count;
+    H_out.size(3) = (op == 13) ? (3 * max_count) : max_count;
+  }
+
+  if (op == 10 || op == 11 || op == 13)  // dec or split_dir
+    in_directions = Fixel::find_directions_header (
+                    Fixel::get_fixel_directory (in_data.name())).get_image<float>().with_direct_io();
+
+  Image<float> in_vol;
+  auto opt = get_options ("weighted");
+  if (opt.size())
+    in_vol = Image<float>::open(opt[0][0]);
+
+  if (op == 2 || op == 3 || op == 4 || op == 5 || op == 6 ||
+      op == 7 || op == 8 || op == 9 || op == 12 || op == 13) {
+    if (in_vol.valid())
+      WARN ("Option -weighted has no meaningful interpretation for the operation specified; ignoring");
   }
 
   auto out = Image<float>::create (argument[2], H_out);
 
-  auto opt = get_options ("weighted");
-  const bool weighted = opt.size();
-
-  auto loop = ThreadedLoop ("converting sparse fixel data to scalar image", in);
+  auto loop = ThreadedLoop ("converting sparse fixel data to scalar image", in_index_image, 0, 3);
 
   switch (op) {
-    case 0:  loop.run (Mean       (weighted), in, out); break;
-    case 1:  loop.run (Sum        (weighted), in, out); break;
-    case 2:  loop.run (Product    (weighted), in, out); break;
-    case 3:  loop.run (RMS        (weighted), in, out); break;
-    case 4:  loop.run (Var        (weighted), in, out); break;
-    case 5:  loop.run (Std        (weighted), in, out); break;
-    case 6:  loop.run (Min        (weighted), in, out); break;
-    case 7:  loop.run (Max        (weighted), in, out); break;
-    case 8:  loop.run (AbsMax     (weighted), in, out); break;
-    case 9:  loop.run (MagMax     (weighted), in, out); break;
-    case 10: loop.run (Count      (weighted), in, out); break;
-    case 11: loop.run (Complexity (weighted), in, out); break;
-    case 12: loop.run (SF         (weighted), in, out); break;
-    case 13: loop.run (DEC_unit   (weighted), in, out); break;
-    case 14: loop.run (DEC_scaled (weighted), in, out); break;
-    case 15: loop.run (SplitSize  (weighted), in, out); break;
-    case 16: loop.run (SplitValue (weighted), in, out); break;
-    case 17: loop.run (SplitDir   (weighted), in, out); break;
+    case 0:  loop.run (Mean       (in_data, in_vol), in_index_image, out); break;
+    case 1:  loop.run (Sum        (in_data, in_vol), in_index_image, out); break;
+    case 2:  loop.run (Product    (in_data), in_index_image, out); break;
+    case 3:  loop.run (Min        (in_data), in_index_image, out); break;
+    case 4:  loop.run (Max        (in_data), in_index_image, out); break;
+    case 5:  loop.run (AbsMax     (in_data), in_index_image, out); break;
+    case 6:  loop.run (MagMax     (in_data), in_index_image, out); break;
+    case 7:  loop.run ([](Image<uint32_t>& index, Image<float>& out) { // count
+                          out.value() = index.value();
+                       }, in_index_image, out); break;
+    case 8:  loop.run (Complexity (in_data), in_index_image, out); break;
+    case 9:  loop.run (SF         (in_data), in_index_image, out); break;
+    case 10: loop.run (DEC_unit   (in_data, in_vol, in_directions), in_index_image, out); break;
+    case 11: loop.run (DEC_scaled (in_data, in_vol, in_directions), in_index_image, out); break;
+    case 12: loop.run (SplitData  (in_data), in_index_image, out); break;
+    case 13: loop.run (SplitDir   (in_directions), in_index_image, out); break;
   }
 
 }

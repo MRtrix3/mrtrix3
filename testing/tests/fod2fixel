@@ -1,3 +1,5 @@
-#fod2fixel dwi2fod/out.mif -afd tmp_afd.msf -peak tmp_peak.msf -disp tmp_disp.msf -force && testing_diff_fixel tmp_afd.msf fod2fixel/afd.msf 1e-2 && testing_diff_fixel tmp_peak.msf fod2fixel/peak.msf 1e-2 && testing_diff_fixel tmp_disp.msf fod2fixel/disp.msf 1e-2
-#fod2fixel dwi2fod/out.mif -mask mask.mif -afd tmp.msf -force && testing_diff_fixel tmp.msf fod2fixel/masked.msf 1e-2
-#fod2fixel dwi2fod/out.mif -fmls_no_thresholds -afd tmp.msf -force && testing_diff_fixel tmp.msf fod2fixel/nothresholds.msf 1e-2
+fod2fixel -nthread 1 fod.mif fod2fixel_tmp -afd afd.mif -peak peak.mif -disp disp.mif -force && testing_diff_fixel -frac 10e-5 fod2fixel/out1 fod2fixel_tmp && rm -rf fod2fixel_tmp
+
+fod2fixel -nthread 1 fod.mif -mask mask.mif fod2fixel_tmp -afd afd.mif -peak peak.mif -disp disp.mif -force && testing_diff_fixel -frac 10e-5 fod2fixel/out2 fod2fixel_tmp && rm -rf fod2fixel_tmp
+
+fod2fixel -nthread 1 -fmls_no_thresholds fod.mif fod2fixel_tmp -afd afd.mif -peak peak.mif -disp disp.mif -force && testing_diff_fixel -frac 10e-5 fod2fixel/out3 fod2fixel_tmp && rm -rf fod2fixel_tmp

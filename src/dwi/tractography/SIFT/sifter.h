@@ -91,7 +91,6 @@ namespace MR
 
         using MapType::FOD_sum;
         using MapType::TD_sum;
-        using MapType::mu;
         using MapType::proc_mask;
         using MapType::num_tracks;
 

@@ -18,6 +18,7 @@
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
 #include "math/SH.h"
+#include "math/ZSH.h"
 #include "algo/loop.h"
 
 
@@ -69,16 +70,16 @@ namespace MR {
           Ak.setZero();
           
           Eigen::VectorXd delta_vec (ncols);
-          Eigen::VectorXd wmr_sh (lmax/2+1), wmr_rh (lmax/2+1);
-          wmr_sh.setZero();
+          Eigen::VectorXd wmr_zsh (Math::ZSH::NforL (lmax)), wmr_rh (Math::ZSH::NforL (lmax));
+          wmr_zsh.setZero();
           Eigen::Vector3d unit_dir;
           double wmr0;
           
           for (size_t s = 0; s < shells.count(); s++)
           {
-            for (int l = 0; l <= lmax/2; l++)
-              wmr_sh[l] = (l < props.resp_WM.cols()) ? props.resp_WM(s, l) : 0.0;
-            wmr_rh = Math::SH::SH2RH(wmr_sh);
+            for (int i = 0; i < int(Math::ZSH::NforL (lmax)); ++i)
+              wmr_zsh[i] = (i < props.resp_WM.cols()) ? props.resp_WM(s, i) : 0.0;
+            wmr_rh = Math::ZSH::ZSH2RH (wmr_zsh);
             wmr0 = props.resp_WM(s,0) / std::sqrt(M_4PI);
             
             for (size_t r : shells[s].get_volumes())

@@ -51,6 +51,9 @@ const OptionGroup SIFTOutputOption = OptionGroup ("Options to make SIFT provide 
   + Option ("csv", "output statistics of execution per iteration to a .csv file")
     + Argument ("file").type_file_out()
 
+  + Option ("out_mu", "output the final value of SIFT proportionality coefficient mu to a text file")
+    + Argument ("file").type_file_out()
+
   + Option ("output_debug", "provide various output images for assessing & debugging performace etc.");
 
 

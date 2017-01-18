@@ -8,16 +8,16 @@ Synopsis
 
 ::
 
-    fixelreorient [ options ]  input warp output
+    fixelreorient [ options ]  fixel_in warp fixel_out
 
--  *input*: the input fixel image.
+-  *fixel_in*: the fixel directory
 -  *warp*: a 4D deformation field used to perform reorientation. Reorientation is performed by applying the Jacobian affine transform in each voxel in the warp, then re-normalising the vector representing the fixel direction
--  *output*: the output fixel image.
+-  *fixel_out*: the output fixel directory. If the the input and output directorys are the same, the existing directions file will be replaced (providing the --force option is supplied). If a new directory is supplied then the fixel directions and all other fixel data will be copied to the new directory.
 
 Description
 -----------
 
-Reorient fixel directions using the local affine transformation (Jacobian matrix) of an input warp.
+Reorient fixel directions. Reorientation is performed by transforming the vector representing the fixel direction with the Jacobian (local affine transform) computed at each voxel in the warp, then re-normalising the vector.
 
 Options
 -------

@@ -16,6 +16,9 @@
 #ifndef __registration_metric_demons4D_h__
 #define __registration_metric_demons4D_h__
 
+#include <mutex>
+
+#include "image_helpers.h"
 #include "adapter/gradient3D.h"
 
 namespace MR
@@ -34,6 +37,7 @@ namespace MR
                        global_voxel_count (global_voxel_count),
                        thread_cost (0.0),
                        thread_voxel_count (0),
+                       mutex (new std::mutex),
                        normaliser (0.0),
                        robustness_parameter (-1.e12),
                        intensity_difference_threshold (0.001),
@@ -47,6 +51,7 @@ namespace MR
           }
 
           ~Demons4D () {
+            std::lock_guard<std::mutex> lock (*mutex);
             global_cost += thread_cost;
             global_voxel_count += thread_voxel_count;
           }
@@ -132,6 +137,7 @@ namespace MR
             size_t& global_voxel_count;
             default_type thread_cost;
             size_t thread_voxel_count;
+            std::shared_ptr<std::mutex> mutex;
             default_type normaliser;
             const default_type robustness_parameter;
             const default_type intensity_difference_threshold;

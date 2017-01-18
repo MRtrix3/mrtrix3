@@ -159,6 +159,9 @@ namespace MR
             label->setAlignment (Qt::AlignHCenter);
             box_layout->addWidget (label, 2, 0);
             scale = new AdjustButton (this, 1.0);
+            //CONF option: MRViewOdfScale
+            //CONF default: 1.0
+            //CONF The factor by which the ODF overlay is scaled
             scale->setValue (MR::File::Config::get_float ("MRViewOdfScale", 1.0));
             scale->setMin (0.0);
             connect (scale, SIGNAL (valueChanged()), this, SLOT (adjust_scale_slot()));

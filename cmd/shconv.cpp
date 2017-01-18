@@ -20,6 +20,7 @@
 #include "algo/threaded_loop.h"
 #include "image.h"
 #include "math/SH.h"
+#include "math/ZSH.h"
 
 using namespace MR;
 using namespace App;
@@ -83,9 +84,9 @@ void run() {
   auto image_in = Image<value_type>::open (argument[0]).with_direct_io (3);
   Math::SH::check (image_in);
 
-  auto responseSH = load_vector<value_type>(argument[1]);
+  auto responseZSH = load_vector<value_type>(argument[1]);
   Eigen::Matrix<value_type, Eigen::Dynamic, 1> responseRH;
-  Math::SH::SH2RH (responseRH, responseSH);
+  Math::ZSH::ZSH2RH (responseRH, responseZSH);
 
   auto mask = Image<bool>();
   auto opt = get_options ("mask");

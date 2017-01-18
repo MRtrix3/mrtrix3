@@ -72,6 +72,7 @@ namespace MR
 
             Header header (input);
             header.ndim() = 3;
+            DWI::stash_DW_scheme (header, grad);
 
             // Generate a 'master' scratch buffer mask, to which all shells will contribute
             auto mask_image = Image<bool>::scratch (header, "DWI mask");

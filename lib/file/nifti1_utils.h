@@ -24,15 +24,14 @@ namespace MR
 
   namespace File
   {
-    namespace NIfTI
+    namespace NIfTI1
     {
 
-      transform_type adjust_transform (const Header& H, std::vector<size_t>& order);
+      constexpr size_t header_size = 348;
+      constexpr size_t header_with_ext_size = 352;
 
-      void check (Header& H, bool single_file);
       size_t read (Header& H, const nifti_1_header& NH);
-      void check (Header& H, bool single_file);
-      void write (nifti_1_header& NH, const Header& H, bool single_file);
+      void write (nifti_1_header& NH, const Header& H, const bool single_file);
 
     }
   }

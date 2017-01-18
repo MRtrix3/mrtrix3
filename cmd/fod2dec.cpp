@@ -20,6 +20,7 @@
 #include "progressbar.h"
 #include "algo/threaded_loop.h"
 #include "image.h"
+#include "math/sphere.h"
 #include "math/SH.h"
 #include "dwi/directions/predefined.h"
 #include "filter/reslice.h"
@@ -92,7 +93,7 @@ class DecTransform {
 
   DecTransform (int lmax, const Eigen::Matrix<double, Eigen::Dynamic, 2>& dirs, double thresh) :
     sht (Math::SH::init_transform(dirs, lmax)),
-    decs (Math::SH::spherical2cartesian(dirs).cwiseAbs()),
+    decs (Math::Sphere::spherical2cartesian(dirs).cwiseAbs()),
     thresh (thresh) { }
 
 };

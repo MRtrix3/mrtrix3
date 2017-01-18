@@ -46,6 +46,13 @@ Structural connectome metric options
 
 -  **-scale_file path** scale each contribution to the connectome edge according to the values in a vector file
 
+Options for outputting connectome matrices
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-symmetric** Make matrices symmetric on output
+
+-  **-zero_diagonal** Set matrix diagonal to zero on output
+
 Other options for tck2connectome
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -56,8 +63,6 @@ Other options for tck2connectome
 -  **-keep_unassigned** By default, the program discards the information regarding those streamlines that are not successfully assigned to a node pair. Set this option to keep these values (will be the first row/column in the output matrix)
 
 -  **-out_assignments path** output the node assignments of each streamline to a file
-
--  **-zero_diagonal** set all diagonal entries in the matrix to zero (these represent streamlines that connect to the same node at both ends)
 
 -  **-vector** output a vector representing connectivities from a given seed point to target nodes, rather than a matrix of node-node connectivities
 

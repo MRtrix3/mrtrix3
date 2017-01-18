@@ -33,7 +33,7 @@ namespace MR
 
 
 
-        enum term_t { CONTINUE, ENTER_CGM, CALIBRATE_FAIL, EXIT_IMAGE, ENTER_CSF, BAD_SIGNAL, HIGH_CURVATURE, LENGTH_EXCEED, TERM_IN_SGM, EXIT_SGM, EXIT_MASK, ENTER_EXCLUDE, TRAVERSE_ALL_INCLUDE };
+        enum term_t { CONTINUE, ENTER_CGM, CALIBRATOR, EXIT_IMAGE, ENTER_CSF, BAD_SIGNAL, HIGH_CURVATURE, LENGTH_EXCEED, TERM_IN_SGM, EXIT_SGM, EXIT_MASK, ENTER_EXCLUDE, TRAVERSE_ALL_INCLUDE };
 #define TERMINATION_REASON_COUNT 13
 
         // This lookup table specifies whether or not the most recent position should be added to the end of the streamline,

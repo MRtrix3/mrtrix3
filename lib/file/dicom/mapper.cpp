@@ -14,6 +14,7 @@
  */
 
 #include "header.h"
+#include "phase_encoding.h"
 #include "image_io/default.h"
 #include "image_io/mosaic.h"
 #include "file/dicom/mapper.h"
@@ -36,8 +37,8 @@ namespace MR {
         Patient* patient (series[0]->study->patient);
         std::string sbuf = ( patient->name.size() ? patient->name : "unnamed" );
         sbuf += " " + format_ID (patient->ID);
-        if (series[0]->modality.size()) sbuf 
-          += std::string (" [") + series[0]->modality + "]";
+        if (series[0]->modality.size())
+          sbuf += std::string (" [") + series[0]->modality + "]";
         if (series[0]->name.size()) 
           sbuf += std::string (" ") + series[0]->name;
         add_line (H.keyval()["comments"], sbuf);
@@ -104,11 +105,10 @@ namespace MR {
           add_line (H.keyval()["comments"], sbuf);
         }
 
-
-
-
-
         const Image& image (*(*series[0])[0]);
+
+        if (std::isfinite (image.echo_time))
+          H.keyval()["EchoTime"] = str (0.001 * image.echo_time, 6);
 
         size_t nchannels = image.frames.size() ? 1 : image.data_size / (image.dim[0] * image.dim[1] * (image.bits_alloc/8));
         if (nchannels > 1) 
@@ -186,8 +186,7 @@ namespace MR {
             H.keyval()["dw_scheme"] = dw_scheme;
         }
 
-
-
+        PhaseEncoding::set_scheme (H, Frame::get_PE_scheme (frames, dim[1]));
 
         for (size_t n = 1; n < frames.size(); ++n) // check consistency of data scaling:
           if (frames[n]->scale_intercept != frames[n-1]->scale_intercept ||

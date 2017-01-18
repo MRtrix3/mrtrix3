@@ -21,8 +21,12 @@ Generates an unbiased group-average template from a series of images. First a te
 Options
 -------
 
-Options for the population_template script
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Input, output and general options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-type** Specifiy the types of registration stages to perform. Options are "rigid" (perform rigid registration only which might be useful for intra-subject registration in longitudinal analysis), "affine" (perform affine registration) and "nonlinear" as well as cominations of registration types: "rigid_affine", "rigid_nonlinear", "affine_nonlinear", "rigid_affine_nonlinear". Default: rigid_affine_nonlinear
+
+- **-initial_alignment** Method of alignment to form the initial template. Options are "mass" (default), "geometric" and "none".
 
 - **-mask_dir** Optionally input a set of masks inside a single directory, one per input image (with the same file name prefix). Using masks will speed up registration significantly
 
@@ -34,17 +38,10 @@ Options for the population_template script
 
 - **-template_mask** Output a template mask. Only works in -mask_dir has been input. The template mask is computed as the intersection of all subject masks in template space.
 
-- **-rigid** perform rigid registration instead of affine. This should be used for intra-subject registration in longitudinal analysis
+- **-noreorientation** Turn off FOD reorientation in mrregister. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc
 
-- **-linear_no_pause** Do not pause the script if a linear registration seems implausible
-
-- **-linear_scale** Specifiy the multi-resolution pyramid used to build the rigid or affine template, in the form of a list of scale factors (default: 0.3,0.4,0.6,0.8,1.0,1.0). This implicitly defines the number of template levels
-
-- **-linear_lmax** Specifiy the lmax used for rigid or affine registration for each scale factor, in the form of a list of integers (default: 2,2,2,4,4,4). The list must be the same length as the linear_scale factor list
-
-- **-linear_niter** Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:500 for each scale). The must be a single number or a list of same length as the linear_scale factor list
-
-- **-linear_estimator** Choose estimator for intensity difference metric. Valid choices are: l1 (least absolute: |x|), l2 (ordinary least squares), lp (least powers: |x|^1.2), Default: l2
+Options for the non-linear registration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nl_scale** Specifiy the multi-resolution pyramid used to build the non-linear template, in the form of a list of scale factors (default: 0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0). This implicitly defines the number of template levels
 
@@ -58,9 +55,24 @@ Options for the population_template script
 
 - **-nl_grad_step** The gradient step size for non-linear registration (Default: 0.5)
 
-- **-noreorientation** Turn off FOD reorientation in mrregister. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc
+Options for the linear registration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-initial_alignment** Method of alignment to form the initial template. Options are "mass" (default), "geometric" and "none".
+- **-linear_no_pause** Do not pause the script if a linear registration seems implausible
+
+- **-linear_estimator** Choose estimator for intensity difference metric. Valid choices are: l1 (least absolute: |x|), l2 (ordinary least squares), lp (least powers: |x|^1.2), Default: l2
+
+- **-rigid_scale** Specifiy the multi-resolution pyramid used to build the rigid template, in the form of a list of scale factors (default: 0.3,0.4,0.6,0.8,1.0,1.0). This and affine_scale implicitly  define the number of template levels
+
+- **-rigid_lmax** Specifiy the lmax used for rigid registration for each scale factor, in the form of a list of integers (default: 2,2,2,4,4,4). The list must be the same length as the linear_scale factor list
+
+- **-rigid_niter** Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:50 for each scale). This must be a single number or a list of same length as the linear_scale factor list
+
+- **-affine_scale** Specifiy the multi-resolution pyramid used to build the affine template, in the form of a list of scale factors (default: 0.3,0.4,0.6,0.8,1.0,1.0). This and rigid_scale implicitly define the number of template levels
+
+- **-affine_lmax** Specifiy the lmax used for affine registration for each scale factor, in the form of a list of integers (default: 2,2,2,4,4,4). The list must be the same length as the linear_scale factor list
+
+- **-affine_niter** Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:500 for each scale). This must be a single number or a list of same length as the linear_scale factor list
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -79,7 +91,9 @@ Standard options
 
 - **-quiet** Suppress all console output during script execution
 
-- **-verbose** Display additional information for every command invoked
+- **-verbose** Display additional information and progress for every command invoked
+
+- **-debug** Display additional debugging information over and above the verbose output
 
 --------------
 
