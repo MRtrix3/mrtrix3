@@ -81,7 +81,7 @@ void usage ()
 }
 
 typedef float value_type;
-constexpr value_type UNIT = 1.0 / std::sqrt(3.0);
+constexpr value_type UNIT = 0.577350269189626;
 
 class DecTransform {
 
