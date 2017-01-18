@@ -43,7 +43,8 @@ def addCitation(condition, reference, is_external):
 
 
 def initialise():
-  import os, sys
+  import os, signal, sys
+  import lib.signalHandler
   from lib.errorMessage          import errorMessage
   from lib.printMessage          import printMessage
   from lib.readMRtrixConfSetting import readMRtrixConfSetting
@@ -109,6 +110,8 @@ def initialise():
     citation_warning += '. Please consult the help page (-help option) for more information.'
     printMessage(citation_warning)
     printMessage('')
+
+  lib.signalHandler.initialise()
 
   if args.cont:
     tempDir = os.path.abspath(args.cont[0])
