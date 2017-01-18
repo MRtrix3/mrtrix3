@@ -460,10 +460,10 @@ void run ()
 
     if (get_options ("midway_space").size()) {
       INFO("regridding to midway space");
-      std::vector<Header> headers;
+      memalign_vector<Header>::type headers;
       headers.push_back(input_header);
       headers.push_back(template_header);
-      std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>> void_trafo;
+      memalign_vector<Eigen::Transform<default_type, 3, Eigen::Projective>>::type void_trafo;
       auto padding = Eigen::Matrix<double, 4, 1>(1.0, 1.0, 1.0, 1.0);
       int subsampling = 1;
       auto midway_header = compute_minimum_average_header (headers, subsampling, padding, void_trafo);

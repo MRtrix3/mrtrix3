@@ -75,7 +75,7 @@ namespace MR
               im2_to_mid_linear = linear_transform.get_transform_half_inverse();
 
               INFO ("Estimating halfway space");
-              std::vector<Eigen::Transform<double, 3, Eigen::Projective> > init_transforms;
+              memalign_vector<Eigen::Transform<double, 3, Eigen::Projective>>::type init_transforms;
               // define transfomations that will be applied to the image header when the common space is calculated
               {
                 Eigen::Transform<double, 3, Eigen::Projective> init_trafo_2 = linear_transform.get_transform_half();
@@ -85,7 +85,7 @@ namespace MR
               }
 
               auto padding = Eigen::Matrix<default_type, 4, 1>(0.0, 0.0, 0.0, 0.0);
-              std::vector<Header> headers;
+              memalign_vector<Header>::type headers;
               headers.push_back (Header (im2_image));
               headers.push_back (Header (im1_image));
               midway_image_header = compute_minimum_average_header(headers, 1, padding, init_transforms);
