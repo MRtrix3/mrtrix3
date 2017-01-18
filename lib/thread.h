@@ -140,7 +140,7 @@ namespace MR
         class __multi_thread : public __thread_base { NOMEMALIGN
           public:
             __multi_thread (Functor& functor, size_t nthreads, const std::string& name = "unnamed") :
-              __thread_base (name), functors (nthreads-1, functor) { 
+              __thread_base (name), functors ( (nthreads>0 ? nthreads-1 : 0), functor) { 
                 DEBUG ("launching " + str (nthreads) + " threads \"" + name + "\"...");
                 typedef typename std::remove_reference<Functor>::type F;
                 threads.reserve (nthreads);

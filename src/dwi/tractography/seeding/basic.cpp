@@ -149,8 +149,10 @@ namespace MR
           max (0.0)
         {
           auto vox = Image<float>::open (in);
-          std::vector<size_t> bottom (vox.ndim(), 0), top (vox.ndim(), 0);
-          std::fill_n (bottom.begin(), 3, std::numeric_limits<size_t>::max());
+          if (!(vox.ndim() == 3 || (vox.ndim() == 4 && vox.size(3) == 1)))
+            throw Exception ("Seed image must be a 3D image");
+          std::vector<size_t> bottom (3, std::numeric_limits<size_t>::max());
+          std::vector<size_t> top    (3, 0);
 
           for (auto i = Loop (0,3) (vox); i; ++i) {
             const float value = vox.value();
@@ -186,7 +188,7 @@ namespace MR
           auto buf = Image<float>::scratch (header);
           volume *= buf.spacing(0) * buf.spacing(1) * buf.spacing(2);
 
-          copy (sub, buf);
+          copy (sub, buf, 0, 3);
 #ifdef REJECTION_SAMPLING_USE_INTERPOLATION
           interp = Interp::Linear<Image<float>> (buf);
 #else

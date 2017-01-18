@@ -40,7 +40,7 @@ DESCRIPTION
   "(specified using options) operating on the top-most entries "
   "(i.e. images or values) in the stack. Operands (values or "
   "images) are pushed onto the stack in the order they appear "
-  "(as arguments) on the command-line, and operands (specified "
+  "(as arguments) on the command-line, and operators (specified "
   "as options) operate on and consume the top-most entries in "
   "the stack, and push their output as a new entry on the stack. "
   "For example:"

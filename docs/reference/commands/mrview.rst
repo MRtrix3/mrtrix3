@@ -31,7 +31,7 @@ View options
 
 -  **-fov value** Set the field of view, in mm.
 
--  **-focus x,y,z** Set the position of the crosshairs in scanner coordinates, with the new position supplied as a comma-separated list of floating-point values.
+-  **-focus x,y,z or boolean** Either set the position of the crosshairs in scanner coordinates, with the new position supplied as a comma-separated list of floating-point values or show or hide the focus cross hair using a boolean value as argument.
 
 -  **-voxel x,y,z** Set the position of the crosshairs in voxel coordinates, relative the image currently displayed. The new position should be supplied as a comma-separated list of floating-point values.
 
@@ -43,11 +43,19 @@ View options
 
 -  **-autoscale** Reset the image scaling to automatically determined range.
 
--  **-interpolation_on** Enable the image interpolation.
-
--  **-interpolation_off** Disable the image interpolation.
+-  **-interpolation boolean** Enable or disable image interpolation in main image.
 
 -  **-colourmap index** Switch the image colourmap to that specified, as per the colourmap menu.
+
+-  **-noannotations** Hide all image annotation overlays
+
+-  **-comments boolean** Show of hide image comments overlay.
+
+-  **-voxelinfo boolean** Show or hide voxel information overlay
+
+-  **-orientationlabel boolean** Show or hide orientation label overlay.
+
+-  **-colourbar boolean** Show or hide colourbar overlay.
 
 -  **-intensity_range min,max** Set the image intensity range to that specified
 
@@ -59,8 +67,6 @@ Window management options
 -  **-position x,y** Set the position of the main window, in pixel units.
 
 -  **-fullscreen** Start fullscreen.
-
--  **-nointerpolation** Disable interpolation of the image.
 
 -  **-exit** quit MRView
 

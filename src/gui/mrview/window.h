@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 #ifndef __gui_mrview_window_h__
 #define __gui_mrview_window_h__
@@ -82,6 +82,7 @@ namespace MR
           ~Window();
 
           void add_images (std::vector<std::unique_ptr<MR::Header>>& list);
+          void process_commandline_options ();
 
           const QPoint& mouse_position () const { return mouse_position_; }
           const QPoint& mouse_displacement () const { return mouse_displacement_; }
@@ -200,7 +201,9 @@ namespace MR
           void image_previous_slot ();
           void image_next_volume_slot ();
           void image_previous_volume_slot ();
+          void image_goto_volume_slot ();
           void image_next_volume_group_slot ();
+          void image_goto_volume_group_slot ();
           void image_previous_volume_group_slot ();
           void image_reset_slot ();
           void image_interpolate_slot ();
@@ -212,8 +215,6 @@ namespace MR
           void OpenGL_slot ();
           void about_slot ();
           void aboutQt_slot ();
-
-          void process_commandline_options ();
 
 
 
@@ -271,11 +272,13 @@ namespace MR
                   *prev_image_action,
                   *next_image_volume_action,
                   *prev_image_volume_action,
+                  *goto_image_volume_action,
                   *next_slice_action,
                   *prev_slice_action,
                   *reset_view_action,
                   *next_image_volume_group_action,
                   *prev_image_volume_group_action,
+                  *goto_image_volume_group_action,
                   *image_list_area,
 
                   *reset_windowing_action,
@@ -342,7 +345,7 @@ namespace MR
 
 #ifndef NDEBUG
 # define ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT ASSERT_GL_CONTEXT_IS_CURRENT (::MR::GUI::MRView::Window::main->glwidget())
-#else 
+#else
 # define ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT
 #endif
 

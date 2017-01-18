@@ -53,8 +53,10 @@ namespace MR
       + Option ("seed_rejection", "seed from an image using rejection sampling (higher values = more probable to seed from)").allow_multiple()
         + Argument ("image").type_image_in()
 
-      + Option ("seed_gmwmi", "seed from the grey matter - white matter interface (only valid if using ACT framework)").allow_multiple()
-        + Argument ("seed_image").type_image_in()
+      + Option ("seed_gmwmi", "seed from the grey matter - white matter interface (only valid if using ACT framework). "
+                              "Input image should be a 3D seeding volume; seeds drawn within this image will be optimised to the "
+                              "interface using the 5TT image provided using the -act option.").allow_multiple()
+        + Argument ("image").type_image_in()
 
       + Option ("seed_dynamic", "determine seed points dynamically using the SIFT model (must not provide any other seeding mechanism). "
                                 "Note that while this seeding mechanism improves the distribution of reconstructed streamlines density, "

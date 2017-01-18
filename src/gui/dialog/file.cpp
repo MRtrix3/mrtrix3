@@ -39,7 +39,7 @@ namespace MR
 
 
 
-        std::string get_folder ( QWidget* parent, const std::string& caption, const std::string& folder) 
+        std::string get_folder (QWidget* parent, const std::string& caption, const std::string& folder) 
         {
           QString qstring = QFileDialog::getExistingDirectory (parent, caption.c_str(), folder.size() ? QString(folder.c_str()) : QString(), QFileDialog::ShowDirsOnly | FILE_DIALOG_OPTIONS);
           if (qstring.size()) {
