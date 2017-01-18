@@ -41,7 +41,7 @@ These applications have been written from scratch in C++, using the functionalit
    :caption: Getting started
    
    getting_started/key_features
-   getting_started/mrtrix_commands_and_scripts
+   getting_started/commands_and_scripts
    getting_started/config
    getting_started/image_data
    getting_started/command_line
