@@ -1,4 +1,4 @@
-.. list-of-mrtrix3-commands:
+.. _list-of-mrtrix3-commands:
 
 ########################
 List of MRtrix3 commands

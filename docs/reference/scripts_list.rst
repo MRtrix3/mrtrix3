@@ -1,4 +1,4 @@
-.. list-of-mrtrix3-scripts:
+.. _list-of-mrtrix3-scripts:
 
 #######################
 List of MRtrix3 scripts

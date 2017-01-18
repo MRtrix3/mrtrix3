@@ -1,5 +1,5 @@
 Global Intensity Normalisation
-============================================
+==============================
 
 This tutorial explains the required pre-processing steps for downstream applications that depend on FOD images for quantitative analysis (e.g. `Fixel-Based Analysis <http://userdocs.mrtrix.org/en/latest/workflows/fixel_based_analysis.html>`_ of Apparent Fibre Density, as well as `SIFT <http://userdocs.mrtrix.org/en/latest/workflows/sift.html>`_-based connectome analysis). 
 

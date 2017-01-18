@@ -1,4 +1,4 @@
-.. command-line-interface:
+.. _command-line-interface:
 
 Command-line usage
 ==================
