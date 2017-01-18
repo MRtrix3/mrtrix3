@@ -30,24 +30,12 @@
 namespace MR
 {
 
-#ifdef MRTRIX_WINDOWS
-  BOOL WINAPI SignalHandler::WindowsCtrlHandler (DWORD CtrlType)
-  {
-    switch (CtrlType) {
-      case CTRL_C_EVENT: handler (SIGINT); break;
-      default: handler (SIGTERM); break;
-    }
-    return false; // set to true if no other handlers to be invoked
-  }
-#endif
-
   std::vector<std::string> SignalHandler::data;
   std::atomic_flag SignalHandler::flag = ATOMIC_FLAG_INIT;
 
   SignalHandler::SignalHandler()
   {
 #ifdef MRTRIX_WINDOWS
-    SetConsoleCtrlHandler (WindowsCtrlHandler, true);
     // Use signal() rather than sigaction() for Windows, as the latter is not supported
 # define __SIGNAL(SIG,MSG) signal (SIG, handler)
 #else
@@ -64,6 +52,7 @@ namespace MR
 
 #undef __SIGNAL
   }
+
 
 
 
