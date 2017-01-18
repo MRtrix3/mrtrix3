@@ -175,7 +175,7 @@ class DenoisingFunctor
     for (dwi.index(2) = pos[2]-extent[2]; dwi.index(2) <= pos[2]+extent[2]; ++dwi.index(2))
       for (dwi.index(1) = pos[1]-extent[1]; dwi.index(1) <= pos[1]+extent[1]; ++dwi.index(1))
         for (dwi.index(0) = pos[0]-extent[0]; dwi.index(0) <= pos[0]+extent[0]; ++dwi.index(0), ++k)
-          if (! is_out_of_bounds(dwi))
+          if (! is_out_of_bounds(dwi,0,3))
             X.col(k) = dwi.row(3);
     // reset image position
     dwi.index(0) = pos[0];
