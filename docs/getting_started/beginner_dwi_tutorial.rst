@@ -1,5 +1,5 @@
-Basic DWI processing
-====================
+Beginner DWI tutorial
+=====================
 
 This tutorial will hopefully provide enough information for a novice
 user to get from the raw DW image data to performing some streamlines

@@ -5,7 +5,8 @@ List of MRtrix3 commands
 
 
 .. toctree::
-   :maxdepth: 0
+   :maxdepth: 1
+   :titlesonly:
 
 
 
