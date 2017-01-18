@@ -1,3 +1,5 @@
+.. command_line_usage:
+
 Command-line usage
 ==================
 

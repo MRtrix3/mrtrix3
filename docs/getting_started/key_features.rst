@@ -1,6 +1,6 @@
-======
+============
 Key features
-======
+============
 
 While *MRtrix3* is primarily intended to be used for the analysis of
 diffusion MRI data, at its fundamental level it is designed as a

@@ -1,7 +1,7 @@
 Welcome to the MRtrix user documentation!
 =========================================
 
-*MRtrix* provides a set of tools to perform analysis of white matter using diffusion-weighted MRI. Features include the estimation of fibre orientation distributions using constrained spherical deconvolution (`Tournier et al.. 2004`_; `Tournier et al., 2007`_; `Jeurissen et al., 2014`_), a probabilisitic streamlines algorithm for fibre tractography of white matter (`Tournier et al., 2012`_), fixel-based analysis of apparent fibre density and fibre cross-section (`Raffelt et al., 2012`_; `Raffelt et al., 2015`_; `Raffelt et al., 2016`_), quantitative structural connectivity analysis (`Smith et al., 2012`_; `Smith et al., 2013`_; `Smith et al., 2015`_; `Christiaens et al., 2015`_), and non-linear spatial registration of fibre orientation distribution images (`Raffelt et al., 2011`_).
+*MRtrix* provides a large suite of tools for image processing, analysis and visualisation, with a focus on the analysis of white matter using diffusion-weighted MRI Features include the estimation of fibre orientation distributions using constrained spherical deconvolution (`Tournier et al.. 2004`_; `Tournier et al., 2007`_; `Jeurissen et al., 2014`_), a probabilisitic streamlines algorithm for fibre tractography of white matter (`Tournier et al., 2012`_), fixel-based analysis of apparent fibre density and fibre cross-section (`Raffelt et al., 2012`_; `Raffelt et al., 2015`_; `Raffelt et al., 2016`_), quantitative structural connectivity analysis (`Smith et al., 2012`_; `Smith et al., 2013`_; `Smith et al., 2015`_; `Christiaens et al., 2015`_), and non-linear spatial registration of fibre orientation distribution images (`Raffelt et al., 2011`_).
 
 These applications have been written from scratch in C++, using the functionality provided by `Eigen`_, and `Qt`_. The software is currently capable of handling DICOM, NIfTI and AnalyseAVW image formats, amongst others. The source code is distributed under the `Mozilla Public License`_.
 
@@ -41,6 +41,7 @@ These applications have been written from scratch in C++, using the functionalit
    :caption: Getting started
    
    getting_started/key_features
+   getting_started/mrtrix3_commands_and_scripts
    getting_started/config
    getting_started/image_data
    getting_started/command_line
