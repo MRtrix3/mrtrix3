@@ -80,7 +80,7 @@ void usage ()
 }
 
 typedef float value_type;
-const value_type UNIT = 1.0 / std::sqrt(3.0);
+constexpr value_type UNIT = 1.0 / std::sqrt(3.0);
 
 class DecTransform {
 
@@ -105,9 +105,6 @@ class DecComputer {
   Image<bool> mask_img;
   Image<value_type> int_img;
   Eigen::VectorXd amps, fod;
-  Eigen::RowVector3d dec;
-  double ampsum;
-  double decnorm;
 
   public:
 
@@ -131,18 +128,18 @@ class DecComputer {
     fod = fod_img.row(3);
     amps.noalias() = dectrans.sht * fod;
 
-    dec.setZero();
-    ampsum = 0.0;
+    Eigen::Vector3d dec = Eigen::Vector3d::Zero();
+    double ampsum = 0.0;
     for (ssize_t i = 0; i < amps.rows(); i++) {
       if (!std::isnan(dectrans.thresh) && amps(i) < dectrans.thresh)
         continue;
-      dec += Eigen::Vector3(dectrans.decs.row(i)) * amps(i);
+      dec += dectrans.decs.row(i).transpose() * amps(i);
       ampsum += amps(i);
     }
     dec = dec.cwiseMax(0.0);
     ampsum = std::max(ampsum, 0.0);
 
-    decnorm = dec.norm();
+    double decnorm = dec.norm();
 
     if (decnorm == 0.0)
       dec_img.row(3) = UNIT;
@@ -166,9 +163,6 @@ class DecWeighter {
   value_type gamma;
   Image<value_type> w_img;
   value_type grey;
-  Eigen::Array<value_type, 3, 1> dec;
-  value_type w;
-  value_type br;
 
   public:
 
@@ -180,7 +174,7 @@ class DecWeighter {
 
   void operator() (Image<value_type>& dec_img) {
 
-    w = 1.0;
+    value_type w = 1.0;
     if (w_img.valid()) {
       assign_pos_of(dec_img, 0, 3).to(w_img);
       w = w_img.value();
@@ -191,12 +185,13 @@ class DecWeighter {
       }
     }
 
+    Eigen::Array<value_type, 3, 1> dec;
     for (auto l = Loop (3) (dec_img); l; ++l)
       dec[dec_img.index(3)] = dec_img.value();
 
     dec = dec.cwiseMax(0.0);
 
-    br = std::pow((dec.pow(gamma) * coefs).sum() , 1.0 / gamma);
+    value_type br = std::pow((dec.pow(gamma) * coefs).sum() , 1.0 / gamma);
 
     if (br == 0.0)
       dec.fill(grey * w);
