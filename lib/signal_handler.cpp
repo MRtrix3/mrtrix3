@@ -108,8 +108,10 @@ namespace MR
       char str[256];
       str[255] = '\0';
       snprintf (str, 255, "\n%s: [SYSTEM FATAL CODE: %s (%d)] %s\n", App::NAME.c_str(), sig, i, msg);
-      write (STDERR_FILENO, str, strnlen(str,256));
-      std::_Exit (i);
+      if (write (STDERR_FILENO, str, strnlen(str,256)) == 0)
+        std::_Exit (i);
+      else
+        std::_Exit (i);
     }
   }
 
