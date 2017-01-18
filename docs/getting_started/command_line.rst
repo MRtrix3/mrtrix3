@@ -1,4 +1,4 @@
-.. command_line_usage:
+.. command-line-usage:
 
 Command-line usage
 ==================
