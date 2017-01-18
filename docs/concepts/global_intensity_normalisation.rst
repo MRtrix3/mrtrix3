@@ -1,8 +1,6 @@
-DWI Pre-processing for Quantitative Analysis
+Global Intensity Normalisation
 ============================================
 
-Introduction
-------------
 This tutorial explains the required pre-processing steps for downstream applications that depend on FOD images for quantitative analysis (e.g. `Fixel-Based Analysis <http://userdocs.mrtrix.org/en/latest/workflows/fixel_based_analysis.html>`_ of Apparent Fibre Density, as well as `SIFT <http://userdocs.mrtrix.org/en/latest/workflows/sift.html>`_-based connectome analysis). 
 
 Most DWI models derive quantitative measures by using the ratio of the DW signal to the b=0 signal within each voxel. This voxel-wise b=0 normalisation implicitly removes intensity variations due to T2-weighting and RF inhomogeneity. However, unless all compartments within white matter are modelled accurately (e.g. intra- and extra-axonal space, myelin, cerebral spinal fluid (CSF) and grey matter partial volumes), the proportion of one compartment in a voxel may influence another. For example, if CSF partial volume at the border of white matter and the ventricles is not taken into account, then a voxel-wise normalisation performed by dividing by the b=0 (which has a long T2 and appears brighter in CSF than white matter in the T2-weighted b=0 image), will artificially reduce the DW signal from the white matter intra-axonal (restricted) compartment, ultimately changing the derived quantiative measures. Multi-compartment diffusion MRI models aspire to model multiple compartments to mitigate these issues. However, in practice current models are limited by restrictions/assumptions placed on the different compartments, and all require multiple b-value acquisitions and therefore longer scan times. 
