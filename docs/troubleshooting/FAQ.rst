@@ -80,26 +80,6 @@ great detail, but I would very much like to hear if users have
 discovered more optimal parameters for FAST, or alternative segmentation
 software, for which they have been impressed by the results.
 
-Why does SIFT crash on my system even though it's got heaps of RAM?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The main memory requirement for `SIFT <SIFT>`_ is that for every streamline,
-it must store a list of every `fixel <Dixels-and-Fixels>`__ traversed, with
-an associated streamline length through each voxel. With a spatial
-resolution approximately double that of 'standard' DWI, the number of
-unique fixels traversed by each streamline will go up by a factor of
-around 3, with a corresponding increase in RAM usage. There is literally
-nothing I can do to reduce the RAM usage of SIFT; it's fully optimised.
-
-One thing you can do however, is just down-scale the FOD image prior to
-running :ref:`tcksift`: ``mrresize in.mif out.mif -scale 0.5 -interp sinc``.
-This will reduce the RAM usage to more manageable levels, and realistically
-probably won't have that much influence on the algorithm anyway.
-Importantly you can still use the high-resolution data for tracking (or
-indeed anything else); it's only the SIFT step that has the high RAM
-usage. And using ``mrresize`` rather than some other software to do the
-downsampling will ensure that the down-sampled image is still properly
-aligned with the high-resolution image in scanner space.
 
 Generating Track-weighted Functional Connectivity (TW-FC) maps
 --------------------------------------------------------------

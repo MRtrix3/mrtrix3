@@ -58,9 +58,9 @@ These applications have been written from scratch in C++, using the functionalit
    :maxdepth: 2
    :caption: Constrained Spherical Deconvolution
 
-   csd/response_function_estimation
-   csd/lmax
-   csd/multi_tissue_csd
+   constrained_spherical_deconvolution/response_function_estimation
+   constrained_spherical_deconvolution/lmax
+   constrained_spherical_deconvolution/multi_tissue_csd
 
 .. toctree::
    :maxdepth: 2
@@ -89,20 +89,13 @@ These applications have been written from scratch in C++, using the functionalit
    :maxdepth: 2
    :caption: Spatial Normalisation
 
-   spatial_normalisation/warping_images_with_warps_from_other_packages   
    spatial_normalisation/warp_file_formats
+   spatial_normalisation/warping_images_with_warps_from_other_packages      
    spatial_normalisation/transforming_streamlines
 
 .. toctree::
    :maxdepth: 2
-   :caption: Misc Tutorials
-   
-   tutorials/basic_dwi_processing
-   tutorials/hcp_connectome
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Concepts 0
+   :caption: Concepts
   
    concepts/global_intensity_normalisation
    concepts/orthonormal_basis
