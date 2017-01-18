@@ -236,7 +236,7 @@ namespace MR
     }
 
   template <class HeaderType, class VectorType>
-    FORCE_INLINE typename std::enable_if<!std::is_arithmetic<VectorType>::type, bool>::type is_out_of_bounds (const HeaderType& header, const VectorType& pos,
+    FORCE_INLINE typename std::enable_if<!std::is_arithmetic<VectorType>::value, bool>::type is_out_of_bounds (const HeaderType& header, const VectorType& pos,
         size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
     {
       for (size_t n = from_axis; n < std::min<size_t> (to_axis, header.ndim()); ++n)
