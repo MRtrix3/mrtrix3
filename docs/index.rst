@@ -1,7 +1,7 @@
 Welcome to the MRtrix user documentation!
 =========================================
 
-*MRtrix* provides a set of tools to perform analysis of white matter using diffusion-weighted MRI. Features include the estimation of fibre orientation distributions using constrained spherical deconvolution (`Tournier et al.. 2004`_; `Tournier et al., 2007`_; `Jeurissen et al., 2014`_), a probabilisitic streamlines algorithm for fibre tractography of white matter (`Tournier et al., 2012`_), fixel-based analysis of apparent fibre density and fibre cross-section (`Raffelt et al., 2012`_; `Raffelt et al., 2015`_; `Raffelt et al., 2016`_), quantitative structural connectivity (`Smith et al., 2012`_; `Smith et al., 2013`_; `Smith et al., 2015`_; `Christiaens et al., 2015`_), and non-linear registration of fibre orientation distribution images (`Raffelt et al., 2011`_).
+*MRtrix* provides a set of tools to perform analysis of white matter using diffusion-weighted MRI. Features include the estimation of fibre orientation distributions using constrained spherical deconvolution (`Tournier et al.. 2004`_; `Tournier et al., 2007`_; `Jeurissen et al., 2014`_), a probabilisitic streamlines algorithm for fibre tractography of white matter (`Tournier et al., 2012`_), fixel-based analysis of apparent fibre density and fibre cross-section (`Raffelt et al., 2012`_; `Raffelt et al., 2015`_; `Raffelt et al., 2016`_), quantitative structural connectivity analysis (`Smith et al., 2012`_; `Smith et al., 2013`_; `Smith et al., 2015`_; `Christiaens et al., 2015`_), and non-linear spatial registration of fibre orientation distribution images (`Raffelt et al., 2011`_).
 
 These applications have been written from scratch in C++, using the functionality provided by `Eigen`_, and `Qt`_. The software is currently capable of handling DICOM, NIfTI and AnalyseAVW image formats, amongst others. The source code is distributed under the `Mozilla Public License`_.
 
@@ -44,7 +44,7 @@ These applications have been written from scratch in C++, using the functionalit
    getting_started/config
    getting_started/image_data
    getting_started/command_line
-   getting_started/FAQ
+   getting_started/beginner_dwi_tutorial
 
 
 .. toctree::
@@ -56,10 +56,11 @@ These applications have been written from scratch in C++, using the functionalit
    
 .. toctree::
    :maxdepth: 2
-   :caption: DWI Model Fitting
+   :caption: Constrained Spherical Deconvolution
 
-   dwi_model_fitting/response_function_estimation
-   dwi_model_fitting/multi_tissue_csd
+   csd/response_function_estimation
+   csd/lmax
+   csd/multi_tissue_csd
 
 .. toctree::
    :maxdepth: 2
@@ -70,6 +71,9 @@ These applications have been written from scratch in C++, using the functionalit
    quantitative_structural_connectivity/structural_connectome
    quantitative_structural_connectivity/labelconvert
    quantitative_structural_connectivity/connectome_tool
+   quantitative_structural_connectivity/label_convert
+   quantitative_structural_connectivity/global_tractography
+   quantitative_structural_connectivity/ismrm_hcp_tutorial
    
 .. toctree::
    :maxdepth: 2
@@ -86,19 +90,21 @@ These applications have been written from scratch in C++, using the functionalit
    :caption: Spatial Normalisation
 
    spatial_normalisation/warping_images_with_warps_from_other_packages   
+   spatial_normalisation/warp_file_formats
+   spatial_normalisation/transforming_streamlines
 
 .. toctree::
    :maxdepth: 2
    :caption: Misc Tutorials
    
    tutorials/basic_dwi_processing
-   tutorials/global_tractography
    tutorials/hcp_connectome
 
 .. toctree::
    :maxdepth: 2
-   :caption: Concepts
+   :caption: Concepts 0
   
+   concepts/global_intensity_normalisation
    concepts/orthonormal_basis
    concepts/dixels_fixels
    concepts/afd_connectivity
@@ -107,7 +113,10 @@ These applications have been written from scratch in C++, using the functionalit
    :maxdepth: 3
    :caption: Troubleshooting
 
-   troubleshooting/troubleshooting
+   troubleshooting/FAQ
+   troubleshooting/display_issues
+   troubleshooting/compiler_error_during_build
+   troubleshooting/hanging_or_crashing
    troubleshooting/advanced_debugging
 
 .. toctree::
