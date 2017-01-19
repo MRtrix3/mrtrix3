@@ -1,3 +1,6 @@
+.. _global-intensity-normalisation:
+
+
 Global intensity normalisation
 ==============================
 
