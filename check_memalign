@@ -11,6 +11,7 @@ for f in $(find . -type f -name '*.h' -o -name '*.cpp' | grep -v '_moc.cpp'); do
 
   [[ $(basename $f) == "icons.cpp" ]] && continue
 
+# detect classes not declared MEMALIGN or NOMEMALIGN:
   res=$( \
     cat $f | \
 # remove C preprocessor macros:
@@ -39,6 +40,32 @@ for f in $(find . -type f -name '*.h' -o -name '*.cpp' | grep -v '_moc.cpp'); do
     grep -Ev '\b(class|struct)\b[^;{]*?{(\s*(MEMALIGN\s*\([^\)]*\)|NOMEMALIGN))'
   )
 
+
+# detect any instances of std::vector:
+  res="$res"$( \
+    cat $f | \
+# remove C preprocessor macros:
+    grep -v '^#' | \
+# remove C++ single-line comments:
+    perl -pe 's|//.*$||' | \
+# remove all newlines to make file one long line:
+    tr '\n' ' ' | \
+# remove any duplicate spaces:
+    perl -pe 's|\s+| |g' | \
+# remove C-style comments:
+    perl -pe 's|/\*.*?\*/||g' | \
+# remove quoted strings:
+    perl -pe 's/(")(\\"|.)*?"//g' | \
+# remove any text within a template declaration (i.e. within <>):
+    perl -pe 's|<[^{};<]*?>||g' | \
+# and do it multiple times to handle nested declarations:
+    perl -pe 's|<[^{};<]*?>||g' | \
+    perl -pe 's|<[^{};<]*?>||g' | \
+    perl -pe 's|<[^{};<]*?>||g' | \
+# match for the parts we're interested in and output just the bits that match:
+    grep -Eo '(?<!::)std::vector\>' 
+  )
+
 # if anything is left after that, show it:
   if [[ ! -z $res ]]; then 
     echo "################################### $f" >> $LOG
@@ -57,7 +84,8 @@ else
   echo "FAIL"
   
   echo "" >> $LOG
-  echo "Please add MEMALIGN() macro to the class declarations identified above" >> $LOG
+  echo "Please add MEMALIGN() macro to the class declarations identified above
+and replace all occurrences of std::vector with MR::vector" >> $LOG
   exit 1
 fi
 
