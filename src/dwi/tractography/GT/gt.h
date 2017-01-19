@@ -57,7 +57,7 @@ namespace MR {
           double ppot;
           
           Eigen::MatrixXf resp_WM;
-          std::vector< Eigen::VectorXf > resp_ISO;
+          vector< Eigen::VectorXf > resp_ISO;
           
         };
         

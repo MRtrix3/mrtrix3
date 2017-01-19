@@ -61,7 +61,7 @@ void usage ()
 
 
 transform_type get_flirt_transform (const Header& header) {
-  std::vector<size_t> axes;
+  vector<size_t> axes;
   transform_type nifti_transform = File::NIfTI::adjust_transform (header, axes);
   if (nifti_transform.matrix().topLeftCorner<3,3>().determinant() < 0.0)
     return nifti_transform;
@@ -81,7 +81,7 @@ transform_type get_flirt_transform (const Header& header) {
 // template <class ValueType = default_type>
 //   transform_type parse_surfer_transform (const std::string& filename) {
 //     std::ifstream stream (filename, std::ios_base::in | std::ios_base::binary);
-//     std::vector<std::vector<ValueType>> V;
+//     vector<vector<ValueType>> V;
 //     std::string sbuf;
 //     std::string file_version;
 //     while (getline (stream, sbuf)) {
@@ -102,7 +102,7 @@ transform_type get_flirt_transform (const Header& header) {
 
 //     for (auto i = 0; i<4 && getline (stream, sbuf); ++i){
 //       // sbuf = strip (sbuf.substr (0, sbuf.find_first_of ('type')));
-//       V.push_back (std::vector<ValueType>());
+//       V.push_back (vector<ValueType>());
 //       const auto elements = MR::split (sbuf, " ,;\t", true);
 //       for (const auto& entry : elements)
 //         V.back().push_back (to<ValueType> (entry));
@@ -129,7 +129,7 @@ transform_type get_flirt_transform (const Header& header) {
 template <typename TransformationType>
 void parse_itk_trafo (const std::string& itk_file, TransformationType& transformation, Eigen::Vector3d& centre_of_rotation) {
   const std::string first_line = "#Insight Transform File V1.0";
-  std::vector<std::string> supported_transformations = {"MatrixOffsetTransformBase_double_3_3",
+  vector<std::string> supported_transformations = {"MatrixOffsetTransformBase_double_3_3",
                                                         "MatrixOffsetTransformBase_float_3_3",
                                                         "AffineTransform_double_3_3",
                                                         "AffineTransform_float_3_3"
@@ -150,7 +150,7 @@ void parse_itk_trafo (const std::string& itk_file, TransformationType& transform
     else if (file.key() == "Parameters") {
       line = file.value();
       std::replace (line.begin(), line.end(), ' ', ',');
-      std::vector<default_type> parameters (parse_floats (line));
+      vector<default_type> parameters (parse_floats (line));
       if (parameters.size() != 12)
         throw Exception ("Expected itk file with 12 parameters but has " + str(parameters.size()) + " parameters.");
       transformation.linear().row(0) << parameters[0], parameters[1], parameters[2];
@@ -162,7 +162,7 @@ void parse_itk_trafo (const std::string& itk_file, TransformationType& transform
     else if (file.key() == "FixedParameters") {
       line = file.value();
       std::replace (line.begin(), line.end(), ' ', ',');
-      std::vector<default_type> fixed_parameters (parse_floats (line));
+      vector<default_type> fixed_parameters (parse_floats (line));
       centre_of_rotation << fixed_parameters[0], fixed_parameters[1], fixed_parameters[2];
       invalid--;
     }

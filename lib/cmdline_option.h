@@ -315,7 +315,7 @@ namespace MR
      * Options can also be specified as required (see required() function), or
      * as multiple (see allow_multiple() function).
      */
-    class Option : public std::vector<Argument> { NOMEMALIGN
+    class Option : public vector<Argument> { NOMEMALIGN
       public:
         Option () : id (nullptr), flags (Optional) { }
 
@@ -390,7 +390,7 @@ namespace MR
      * }
      * \endcode
      */  
-    class OptionGroup : public std::vector<Option> { NOMEMALIGN
+    class OptionGroup : public vector<Option> { NOMEMALIGN
       public:
         OptionGroup (const char* group_name = "OPTIONS") : name (group_name) { }
         const char* name;
@@ -409,7 +409,7 @@ namespace MR
         Option& back () {
           if (empty())
             push_back (Option());
-          return std::vector<Option>::back();
+          return vector<Option>::back();
         }
 
         std::string header (int format) const;

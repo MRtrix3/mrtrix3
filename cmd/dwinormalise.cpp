@@ -68,14 +68,14 @@ void run () {
   auto grad = DWI::get_DW_scheme (input);
   DWI::Shells grad_shells (grad);
 
-  std::vector<size_t> bzeros;
+  vector<size_t> bzeros;
   for (size_t s = 0; s < grad_shells.count(); ++s) {
     if (grad_shells[s].is_bzero()) {
       bzeros = grad_shells[s].get_volumes();
     }
   }
 
-  std::vector<float> bzero_mask_values;
+  vector<float> bzero_mask_values;
   float intensity = get_option_value ("intensity", DEFAULT_TARGET_INTENSITY);
   int percentile = get_option_value ("percentile", 50);
 

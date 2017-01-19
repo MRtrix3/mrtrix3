@@ -82,7 +82,7 @@ namespace MR {
           
         protected:
           std::mutex mutex;
-          std::vector< std::pair<point_type, bool> > lockcentres;
+          vector< std::pair<point_type, bool> > lockcentres;
           value_type _tx, _ty, _tz;
 
           bool try_lock(const point_type& pos, ssize_t& idx) {

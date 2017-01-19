@@ -34,14 +34,14 @@
  * function is called recursively. They can be used safely in cases where the
  * size of the array is expected to be small, and the function will not be
  * called recursively, and in these cases may avoid the overhead of allocation
- * that might be incurred by the use of e.g. a std::vector. 
+ * that might be incurred by the use of e.g. a vector. 
  */
 
 //! \{
 
 /*! \def VLA
  * define a variable-length array (VLA) if supported by the compiler, or a
- * std::vector otherwise. This may have performance implications in the latter
+ * vector otherwise. This may have performance implications in the latter
  * case if this forms part of a tight loop.
  * \sa VLA_MAX
  */
@@ -59,7 +59,7 @@
 
 #ifdef MRTRIX_NO_VLA
 # define VLA(name, type, num) \
-  std::vector<type> __vla__ ## name(num); \
+  vector<type> __vla__ ## name(num); \
   type* name = &__vla__ ## name[0]
 # define VLA_MAX(name, type, num, max) type name[max]
 #else
@@ -70,7 +70,7 @@
 
 /*! \def NON_POD_VLA
  * define a variable-length array of non-POD data if supported by the compiler,
- * or a std::vector otherwise. This may have performance implications in the
+ * or a vector otherwise. This may have performance implications in the
  * latter case if this forms part of a tight loop.  
  * \sa VLA_MAX
  */
@@ -88,7 +88,7 @@
 
 #ifdef MRTRIX_NO_NON_POD_VLA
 # define NON_POD_VLA(name, type, num) \
-  std::vector<type> __vla__ ## name(num); \
+  vector<type> __vla__ ## name(num); \
   type* name = &__vla__ ## name[0]
 # define NON_POD_VLA_MAX(name, type, num, max) type name[max]
 #else
@@ -195,15 +195,15 @@ namespace MR
 
 
   template <typename X, int N=(alignof(X)>MRTRIX_ALLOC_MEM_ALIGN)>
-    class vector : public std::vector<X, Eigen::aligned_allocator<X>> { NOMEMALIGN
+    class vector : public ::std::vector<X, Eigen::aligned_allocator<X>> { NOMEMALIGN
       public:
-        using std::vector<X,Eigen::aligned_allocator<X>>::vector;
+        using ::std::vector<X,Eigen::aligned_allocator<X>>::vector;
     };
 
   template <typename X>
-    class vector<X,0> : public std::vector<X> { NOMEMALIGN
+    class vector<X,0> : public ::std::vector<X> { NOMEMALIGN
       public:
-        using std::vector<X>::vector;
+        using ::std::vector<X>::vector;
     };
 
 }

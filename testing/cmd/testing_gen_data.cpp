@@ -50,7 +50,7 @@ void usage ()
 
 void run ()
 {
-  std::vector<int> dim = argument[0];
+  vector<int> dim = argument[0];
 
   Header header;
 

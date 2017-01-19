@@ -75,7 +75,7 @@ namespace MR
           get_axes (plane, x, y);
           const ssize_t xsize = data.size (x), ysize = data.size (y);
 
-          std::vector<float> texture_data;
+          vector<float> texture_data;
           texture_data.resize (4*xsize*ysize, 0.0f);
           if (tex_positions[plane] >= 0 && tex_positions[plane] < data.size (plane)) {
             data.index(plane) = slice;

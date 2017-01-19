@@ -532,8 +532,8 @@ namespace MR
         T** back;
         size_t capacity;
         size_t writer_count, reader_count;
-        std::stack<T*,std::vector<T*> > item_stack;
-        std::vector<std::unique_ptr<T>> items;
+        std::stack<T*,vector<T*> > item_stack;
+        vector<std::unique_ptr<T>> items;
         std::string name;
 
         Queue (const Queue&) = delete;
@@ -631,7 +631,7 @@ namespace MR
 
     template <class T> class Queue<__Batch<T>> { NOMEMALIGN
       private:
-        typedef std::vector<T> BatchType;
+        typedef vector<T> BatchType;
         typedef Queue<BatchType> BatchQueue;
 
       public:

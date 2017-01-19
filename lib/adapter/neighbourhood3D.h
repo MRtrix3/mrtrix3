@@ -79,7 +79,7 @@ namespace MR
 
       protected:
         using Base<ImageType>::parent;
-        std::vector<ssize_t> from_, size_;
+        vector<ssize_t> from_, size_;
         Iterator iter_;
         transform_type transform_;
     };

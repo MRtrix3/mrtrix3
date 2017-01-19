@@ -70,7 +70,7 @@ void run ()
   H_out.size (sh_dim) = N;
 
   auto sh = Image<float>::create (argument[1], H_out);
-  std::vector<default_type> values;
+  vector<default_type> values;
   Eigen::Matrix<default_type, Eigen::Dynamic, 1> apsf_values;
 
   for (auto l1 = Loop("converting sparse fixel data to SH image", fixel) (fixel, sh); l1; ++l1) {

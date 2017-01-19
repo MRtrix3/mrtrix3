@@ -207,7 +207,7 @@ namespace MR
         //! pointer to data address whether in RAM or MMap
         void* data_pointer;
         //! voxel indices
-        std::vector<ssize_t> x;
+        vector<ssize_t> x;
         //! voxel indices
         Stride::List strides;
         //! offset to currently pointed-to voxel
@@ -283,7 +283,7 @@ namespace MR
 
         const typename Image<ValueType>::Buffer& b;
         void* const data;
-        std::vector<ssize_t> x;
+        vector<ssize_t> x;
         const Stride::List& strides;
         size_t offset;
 
@@ -397,7 +397,7 @@ namespace MR
         if (buffer->get_io()) {
           if (buffer->get_io()->is_image_readwrite() && buffer->data_buffer) {
             auto data_buffer = std::move (buffer->data_buffer);
-            TmpImage<ValueType> src = { *buffer, data_buffer.get(), std::vector<ssize_t> (ndim(), 0), strides, Stride::offset (*this) };
+            TmpImage<ValueType> src = { *buffer, data_buffer.get(), vector<ssize_t> (ndim(), 0), strides, Stride::offset (*this) };
             Image<ValueType> dest (buffer);
             threaded_copy_with_progress_message ("writing back direct IO buffer for \"" + name() + "\"", src, dest); 
           }
@@ -441,7 +441,7 @@ namespace MR
       }
       else {
         auto src (*this);
-        TmpImage<ValueType> dest = { *buffer, buffer->data_buffer.get(), std::vector<ssize_t> (ndim(), 0), with_strides, Stride::offset (with_strides, *this) };
+        TmpImage<ValueType> dest = { *buffer, buffer->data_buffer.get(), vector<ssize_t> (ndim(), 0), with_strides, Stride::offset (with_strides, *this) };
         threaded_copy_with_progress_message ("preloading data for \"" + name() + "\"", src, dest); 
       }
 

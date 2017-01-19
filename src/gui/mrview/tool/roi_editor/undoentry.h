@@ -59,7 +59,7 @@ namespace MR
 
           std::array<GLint,3> from, size;
           std::array<GLint,2> tex_size, slice_axes;
-          std::vector<GLubyte> before, after;
+          vector<GLubyte> before, after;
 
           class Shared
           { MEMALIGN(Shared)

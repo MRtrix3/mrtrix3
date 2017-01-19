@@ -173,7 +173,7 @@ namespace MR
         const ssize_t xsize = header().size (x), ysize = header().size (y);
 
         type = gl::FLOAT;
-        std::vector<float> data;
+        vector<float> data;
 
         std::string cmap_name = ColourMap::maps[colourmap].name;
 
@@ -442,7 +442,7 @@ namespace MR
           } V (image);
 
           const size_t N = ( format == gl::RED ? 1 : 3 );
-          std::vector<ValueType> data (N * V.size(0) * V.size(1));
+          vector<ValueType> data (N * V.size(0) * V.size(1));
 
           ProgressBar progress ("loading image data", V.size(2));
 
@@ -512,7 +512,7 @@ namespace MR
 
       inline void Image::copy_texture_3D_complex ()
       {
-        std::vector<float> data (2 * image.size (0) * image.size (1));
+        vector<float> data (2 * image.size (0) * image.size (1));
 
         ProgressBar progress ("loading image data", image.size (2));
 

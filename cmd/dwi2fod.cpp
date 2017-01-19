@@ -167,7 +167,7 @@ class CSD_Processor { MEMALIGN(CSD_Processor)
 
 class MSMT_Processor { MEMALIGN (MSMT_Processor)
   public:
-    MSMT_Processor (const DWI::SDeconv::MSMT_CSD::Shared& shared, Image<bool>& mask_image, std::vector< Image<float> > odf_images) :
+    MSMT_Processor (const DWI::SDeconv::MSMT_CSD::Shared& shared, Image<bool>& mask_image, vector< Image<float> > odf_images) :
         sdeconv (shared),
         mask_image (mask_image),
         odf_images (odf_images),
@@ -204,7 +204,7 @@ class MSMT_Processor { MEMALIGN (MSMT_Processor)
   private:
     DWI::SDeconv::MSMT_CSD sdeconv;
     Image<bool> mask_image;
-    std::vector< Image<float> > odf_images;
+    vector< Image<float> > odf_images;
     Eigen::VectorXd dwi_data;
     Eigen::VectorXd output_data;
 };
@@ -265,8 +265,8 @@ void run ()
     shared.parse_cmdline_options();
 
     const size_t num_tissues = (argument.size()-2)/2;
-    std::vector<std::string> response_paths;
-    std::vector<std::string> odf_paths;
+    vector<std::string> response_paths;
+    vector<std::string> odf_paths;
     for (size_t i = 0; i < num_tissues; ++i) {
       response_paths.push_back (argument[i*2+2]);
       odf_paths.push_back (argument[i*2+3]);
@@ -280,7 +280,7 @@ void run ()
 
     shared.init();
 
-    std::vector< Image<float> > odfs;
+    vector< Image<float> > odfs;
     for (size_t i = 0; i < num_tissues; ++i) {
       header_out.size (3) = Math::SH::NforL (shared.lmax[i]);
       odfs.push_back (Image<float> (Image<float>::create (odf_paths[i], header_out)));

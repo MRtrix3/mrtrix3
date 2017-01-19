@@ -103,7 +103,7 @@ namespace MR
 
       static void (*display_func) (const Exception& E, int log_level);
 
-      std::vector<std::string> description;
+      vector<std::string> description;
   };
 
   class InvalidImageException : public Exception { NOMEMALIGN

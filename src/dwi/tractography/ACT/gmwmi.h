@@ -71,8 +71,8 @@ namespace MR
             bool is_cgm (const Eigen::Vector3f&) const;
 
 
-            Eigen::Vector3f find_interface (const std::vector<Eigen::Vector3f>&, const bool) const;
-            void crop_track (std::vector<Eigen::Vector3f>&) const;
+            Eigen::Vector3f find_interface (const vector<Eigen::Vector3f>&, const bool) const;
+            void crop_track (vector<Eigen::Vector3f>&) const;
 
 
           protected:
@@ -90,7 +90,7 @@ namespace MR
             Eigen::Vector3f get_normal (const Eigen::Vector3f&, Interp&) const;
             Eigen::Vector3f get_cf_min_step (const Eigen::Vector3f&, Interp&) const;
 
-            Eigen::Vector3f find_interface (const std::vector<Eigen::Vector3f>&, const bool, Interp&) const;
+            Eigen::Vector3f find_interface (const vector<Eigen::Vector3f>&, const bool, Interp&) const;
 
 
             friend class Track_extender;

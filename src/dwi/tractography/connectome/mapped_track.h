@@ -82,13 +82,13 @@ namespace MR {
               nodes () { }
 
             void add_node   (const node_t i)               { nodes.push_back (i);  }
-            void set_nodes  (const std::vector<node_t>& i) { nodes = i; }
-            void set_nodes  (std::vector<node_t>&& i)       { std::swap (nodes, i); }
+            void set_nodes  (const vector<node_t>& i) { nodes = i; }
+            void set_nodes  (vector<node_t>&& i)       { std::swap (nodes, i); }
 
-            const std::vector<node_t>& get_nodes() const { return nodes; }
+            const vector<node_t>& get_nodes() const { return nodes; }
 
           private:
-            std::vector<node_t> nodes;
+            vector<node_t> nodes;
 
         };
 

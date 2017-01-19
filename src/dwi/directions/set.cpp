@@ -37,14 +37,14 @@ namespace MR {
         if (one == two)
           return 0;
 
-        std::vector<bool> processed (size(), 0);
-        std::vector<dir_t> to_expand;
+        vector<bool> processed (size(), 0);
+        vector<dir_t> to_expand;
         processed[one] = true;
         to_expand.push_back (one);
         dir_t min_linkage = 0;
         do {
           ++min_linkage;
-          std::vector<dir_t> next_to_expand;
+          vector<dir_t> next_to_expand;
           for (const auto& i : to_expand) {
             for (const auto& j : adj_dirs[i]) {
               if (j == two) {
@@ -81,7 +81,7 @@ namespace MR {
 
       void Set::initialise_adjacency()
       {
-        adj_dirs.assign (size(), std::vector<dir_t>());
+        adj_dirs.assign (size(), vector<dir_t>());
 
         // New algorithm for determining direction adjacency
         // * Duplicate all directions to get a full spherical set
@@ -108,7 +108,7 @@ namespace MR {
 
         class Plane { MEMALIGN(Plane)
           public:
-            Plane (const std::vector<Vertex>& vertices, const dir_t one, const dir_t two, const dir_t three) :
+            Plane (const vector<Vertex>& vertices, const dir_t one, const dir_t two, const dir_t three) :
                 indices {{ one, two, three }},
                 normal (((vertices[two].dir-vertices[one].dir).cross (vertices[three].dir-vertices[two].dir)).normalized()),
                 dist (std::max ( { vertices[one].dir.dot (normal), vertices[two].dir.dot (normal), vertices[three].dir.dot (normal) } ) ) { }
@@ -125,7 +125,7 @@ namespace MR {
             }
         };
 
-        std::vector<Vertex> vertices;
+        vector<Vertex> vertices;
         // Generate antipodal vertices
         for (dir_t i = 0; i != size(); ++i) {
           vertices.push_back (Vertex (*this, i, false));
@@ -148,7 +148,7 @@ namespace MR {
         }
 
         // Find the two most distant points out of these six
-        std::vector<dir_t> all_extrema;
+        vector<dir_t> all_extrema;
         for (size_t axis = 0; axis != 3; ++axis) {
           all_extrema.push_back (extremum_indices[axis][0]);
           all_extrema.push_back (extremum_indices[axis][1]);
@@ -199,7 +199,7 @@ namespace MR {
         planes.insert (Plane (vertices, base_plane.indices[1], fourth_point, base_plane.indices[2]));
         planes.insert (Plane (vertices, base_plane.indices[2], fourth_point, base_plane.indices[0]));
 
-        std::vector<Plane> hull;
+        vector<Plane> hull;
 
         // Speedup: Only test those directions that have not yet been incorporated into any plane
         std::list<size_t> unassigned;
@@ -228,7 +228,7 @@ namespace MR {
             // Identify all planes that this extremum point is above
             // More generally this would need to be constrained to only those faces adjacent to the
             //   current plane, but because the data are on the sphere a complete search should be fine
-            std::vector<std::multiset<Plane, PlaneComp>::iterator> all_planes;
+            vector<std::multiset<Plane, PlaneComp>::iterator> all_planes;
             for (std::multiset<Plane, PlaneComp>::iterator p = planes.begin(); p != planes.end(); ++p) {
               if (!p->includes (*max_index) && vertices[*max_index].dir.dot (p->normal) > p->dist)
                 all_planes.push_back (p);
@@ -363,7 +363,7 @@ namespace MR {
         double adj_dot_product_sum = 0.0;
         size_t adj_dot_product_count = 0;
         for (size_t i = 0; i != size(); ++i) {
-          for (std::vector<dir_t>::const_iterator j = adj_dirs[i].begin(); j != adj_dirs[i].end(); ++j) {
+          for (vector<dir_t>::const_iterator j = adj_dirs[i].begin(); j != adj_dirs[i].end(); ++j) {
             if (*j > i) {
               adj_dot_product_sum += std::abs (unit_vectors[i].dot (unit_vectors[*j]));
               ++adj_dot_product_count;
@@ -384,7 +384,7 @@ namespace MR {
         az_begin = -Math::pi;
         el_begin = 0.0;
 
-        grid_lookup.assign (total_num_angle_grids, std::vector<dir_t>());
+        grid_lookup.assign (total_num_angle_grids, vector<dir_t>());
         for (size_t i = 0; i != size(); ++i) {
           const size_t grid_index = dir2gridindex (get_dir(i));
           grid_lookup[grid_index].push_back (i);
@@ -409,7 +409,7 @@ namespace MR {
             const Eigen::Vector3f p (cos(az) * sin(el), sin(az) * sin(el), cos (el));
             const dir_t nearest_dir = select_direction_slow (p);
             bool dir_present = false;
-            for (std::vector<dir_t>::const_iterator d = grid_lookup[i].begin(); !dir_present && d != grid_lookup[i].end(); ++d)
+            for (vector<dir_t>::const_iterator d = grid_lookup[i].begin(); !dir_present && d != grid_lookup[i].end(); ++d)
               dir_present = (*d == nearest_dir);
             if (!dir_present)
               grid_lookup[i].push_back (nearest_dir);
@@ -419,16 +419,16 @@ namespace MR {
         }
 
         for (size_t grid_index = 0; grid_index != total_num_angle_grids; ++grid_index) {
-          std::vector<dir_t>& this_grid (grid_lookup[grid_index]);
+          vector<dir_t>& this_grid (grid_lookup[grid_index]);
           const size_t num_to_expand = this_grid.size();
           for (size_t index_to_expand = 0; index_to_expand != num_to_expand; ++index_to_expand) {
             const dir_t dir_to_expand = this_grid[index_to_expand];
-            for (std::vector<dir_t>::const_iterator adj = get_adj_dirs(dir_to_expand).begin(); adj != get_adj_dirs(dir_to_expand).end(); ++adj) {
+            for (vector<dir_t>::const_iterator adj = get_adj_dirs(dir_to_expand).begin(); adj != get_adj_dirs(dir_to_expand).end(); ++adj) {
 
               // Size of lookup tables could potentially be reduced by being more prohibitive of adjacent direction inclusion in the lookup table for this grid
 
               bool is_present = false;
-              for (std::vector<dir_t>::const_iterator i = this_grid.begin(); !is_present && i != this_grid.end(); ++i)
+              for (vector<dir_t>::const_iterator i = this_grid.begin(); !is_present && i != this_grid.end(); ++i)
                 is_present = (*i == *adj);
               if (!is_present)
                 this_grid.push_back (*adj);

@@ -67,7 +67,7 @@ namespace MR
     // @{
 
     //! vector of strings to hold the command-line description
-    class Description : public std::vector<const char*> { NOMEMALIGN
+    class Description : public vector<const char*> { NOMEMALIGN
       public:
         Description& operator+ (const char* text) {
           push_back (text);
@@ -81,7 +81,7 @@ namespace MR
 
 
     //! a class to hold the list of Argument's
-    class ArgumentList : public std::vector<Argument> { NOMEMALIGN
+    class ArgumentList : public vector<Argument> { NOMEMALIGN
       public:
         ArgumentList& operator+ (const Argument& argument) {
           push_back (argument);
@@ -96,7 +96,7 @@ namespace MR
 
 
     //! a class to hold the list of option groups
-    class OptionList : public std::vector<OptionGroup> { NOMEMALIGN
+    class OptionList : public vector<OptionGroup> { NOMEMALIGN
       public:
         OptionList& operator+ (const OptionGroup& option_group) {
           push_back (option_group);
@@ -116,7 +116,7 @@ namespace MR
         OptionGroup& back () {
           if (empty())
             push_back (OptionGroup());
-          return std::vector<OptionGroup>::back();
+          return vector<OptionGroup>::back();
         }
 
         std::string syntax (int format) const;
@@ -170,18 +170,18 @@ namespace MR
         uint64_t as_uint () const { return uint64_t (as_int()); }
         default_type as_float () const;
 
-        std::vector<int> as_sequence_int () const {
+        vector<int> as_sequence_int () const {
           assert (arg->type == IntSeq);
           try { return parse_ints (p); }
           catch (Exception& e) { error (e); }
-          return std::vector<int>();
+          return vector<int>();
         }
 
-        std::vector<default_type> as_sequence_float () const {
+        vector<default_type> as_sequence_float () const {
           assert (arg->type == FloatSeq);
           try { return parse_floats (p); }
           catch (Exception& e) { error (e); }
-          return std::vector<default_type>();
+          return vector<default_type>();
         }
 
         operator bool () const { return as_bool(); }
@@ -193,8 +193,8 @@ namespace MR
         operator long long unsigned int () const { return as_uint(); }
         operator float () const { return as_float(); }
         operator double () const { return as_float(); }
-        operator std::vector<int> () const { return as_sequence_int(); }
-        operator std::vector<default_type> () const { return as_sequence_float(); }
+        operator vector<int> () const { return as_sequence_int(); }
+        operator vector<default_type> () const { return as_sequence_float(); }
 
         const char* c_str () const { return p; }
 
@@ -254,9 +254,9 @@ namespace MR
 
 
     //! the list of arguments parsed from the command-line
-    extern std::vector<ParsedArgument> argument;
+    extern vector<ParsedArgument> argument;
     //! the list of options parsed from the command-line
-    extern std::vector<ParsedOption> option;
+    extern vector<ParsedOption> option;
 
     //! the description of the command
     /*! This is designed to be used within each command's usage() function. Add
@@ -349,11 +349,11 @@ namespace MR
      *    std::string arg1 = opt[0][0];
      *    int arg2 = opt[0][1];
      *    float arg3 = opt[0][2];
-     *    std::vector<int> arg4 = opt[0][3];
+     *    vector<int> arg4 = opt[0][3];
      *    auto values = opt[0][4].as_sequence_float();
      * }
      * \endcode */
-    const std::vector<ParsedOption> get_options (const std::string& name);
+    const vector<ParsedOption> get_options (const std::string& name);
     
     
     //! Returns the option value if set, and the default otherwise.

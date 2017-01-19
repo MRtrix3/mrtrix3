@@ -35,11 +35,11 @@ namespace MR
           ClusterSize (const Filter::Connector& connector, value_type cluster_forming_threshold) :
                        connector (connector), cluster_forming_threshold (cluster_forming_threshold) { }
 
-          value_type operator() (const value_type unused, const std::vector<value_type>& stats,
-                                 std::vector<value_type>& get_cluster_sizes) const
+          value_type operator() (const value_type unused, const vector<value_type>& stats,
+                                 vector<value_type>& get_cluster_sizes) const
           {
-            std::vector<Filter::cluster> clusters;
-            std::vector<uint32_t> labels (stats.size(), 0);
+            vector<Filter::cluster> clusters;
+            vector<uint32_t> labels (stats.size(), 0);
             connector.run (clusters, labels, stats, cluster_forming_threshold);
             get_cluster_sizes.resize (stats.size());
             for (size_t i = 0; i < stats.size(); ++i)

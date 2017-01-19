@@ -52,9 +52,9 @@ void run ()
   DWI::Tractography::ScalarReader<value_type> reader (argument[0], properties);
   DWI::Tractography::ScalarWriter<value_type> writer (argument[2], properties);
 
-  std::vector<value_type> tck_scalar;
+  vector<value_type> tck_scalar;
   while (reader (tck_scalar)) {
-    std::vector<value_type> tck_mask (tck_scalar.size());
+    vector<value_type> tck_mask (tck_scalar.size());
     for (size_t i = 0; i < tck_scalar.size(); ++i) {
       if (invert) {
         if (tck_scalar[i] > threshold)

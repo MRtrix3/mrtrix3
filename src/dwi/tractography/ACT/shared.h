@@ -47,7 +47,7 @@ namespace MR
             bool backtrack() const { return bt; }
 
             bool crop_at_gmwmi() const { return bool (gmwmi_finder); }
-            void crop_at_gmwmi (std::vector<Eigen::Vector3f>& tck) const
+            void crop_at_gmwmi (vector<Eigen::Vector3f>& tck) const
             {
               assert (gmwmi_finder);
               tck.back() = gmwmi_finder->find_interface (tck, true);

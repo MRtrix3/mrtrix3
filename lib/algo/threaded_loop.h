@@ -93,13 +93,13 @@ namespace MR
    * is to be processed, since its order of traversal will have the most
    * influence on performance (by making the most efficient use of the
    * hardware's RAM access and CPU cache). It is also possible to supply a
-   * `std::vector<size_t>` directly if required. 
+   * `vector<size_t>` directly if required. 
    *
    * These axes can be restricted to a specific range to allow volume-wise
    * processing, etc.  The inner axes can be specified by supplying how many
    * are needed; they will then be taken from the list of axes to be looped
    * over, in order of increasing stride. It is also possible to provide the
-   * list of inners axes and outer axes as separate `std::vector<size_t>`
+   * list of inners axes and outer axes as separate `vector<size_t>`
    * arguments.
    *
    *
@@ -241,21 +241,21 @@ namespace MR
 
   namespace {
 
-    inline std::vector<size_t> get_inner_axes (const std::vector<size_t>& axes, size_t num_inner_axes) {
+    inline vector<size_t> get_inner_axes (const vector<size_t>& axes, size_t num_inner_axes) {
       return { axes.begin(), axes.begin()+num_inner_axes };
     }
 
-    inline std::vector<size_t> get_outer_axes (const std::vector<size_t>& axes, size_t num_inner_axes) {
+    inline vector<size_t> get_outer_axes (const vector<size_t>& axes, size_t num_inner_axes) {
       return { axes.begin()+num_inner_axes, axes.end() };
     }
 
     template <class HeaderType>
-      inline std::vector<size_t> get_inner_axes (const HeaderType& source, size_t num_inner_axes, size_t from_axis, size_t to_axis) {
+      inline vector<size_t> get_inner_axes (const HeaderType& source, size_t num_inner_axes, size_t from_axis, size_t to_axis) {
         return get_inner_axes (Stride::order (source, from_axis, to_axis), num_inner_axes);
       }
 
     template <class HeaderType>
-      inline std::vector<size_t> get_outer_axes (const HeaderType& source, size_t num_inner_axes, size_t from_axis, size_t to_axis) {
+      inline vector<size_t> get_outer_axes (const HeaderType& source, size_t num_inner_axes, size_t from_axis, size_t to_axis) {
         return get_outer_axes (Stride::order (source, from_axis, to_axis), num_inner_axes);
       }
 
@@ -263,12 +263,12 @@ namespace MR
     template <int N, class Functor, class... ImageType>
       struct ThreadedLoopRunInner
       { MEMALIGN(ThreadedLoopRunInner<N,Functor,ImageType...>)
-        const std::vector<size_t>& outer_axes;
+        const vector<size_t>& outer_axes;
         decltype (Loop (outer_axes)) loop;
         typename std::remove_reference<Functor>::type func;
         std::tuple<ImageType...> vox;
 
-        ThreadedLoopRunInner (const std::vector<size_t>& outer_axes, const std::vector<size_t>& inner_axes,
+        ThreadedLoopRunInner (const vector<size_t>& outer_axes, const vector<size_t>& inner_axes,
             const Functor& functor, ImageType&... voxels) :
           outer_axes (outer_axes),
           loop (Loop (inner_axes)),
@@ -286,11 +286,11 @@ namespace MR
     template <class Functor, class... ImageType>
       struct ThreadedLoopRunInner<0,Functor,ImageType...>
       { MEMALIGN(ThreadedLoopRunInner<0, Functor,ImageType...>)
-        const std::vector<size_t>& outer_axes;
+        const vector<size_t>& outer_axes;
         decltype (Loop (outer_axes)) loop;
         typename std::remove_reference<Functor>::type func;
 
-        ThreadedLoopRunInner (const std::vector<size_t>& outer_axes, const std::vector<size_t>& inner_axes,
+        ThreadedLoopRunInner (const vector<size_t>& outer_axes, const vector<size_t>& inner_axes,
             const Functor& functor, ImageType&... /*voxels*/) :
           outer_axes (outer_axes),
           loop (Loop (inner_axes)),
@@ -307,7 +307,7 @@ namespace MR
       struct ThreadedLoopRunOuter { MEMALIGN(ThreadedLoopRunOuter<OuterLoopType>)
         Iterator iterator;
         OuterLoopType outer_loop;
-        std::vector<size_t> inner_axes;
+        vector<size_t> inner_axes;
 
         //! invoke \a functor (const Iterator& pos) per voxel <em> in the outer axes only</em>
         template <class Functor> 
@@ -376,10 +376,10 @@ namespace MR
   //! Multi-threaded loop object
   //* \sa image_thread_looping for details */
   template <class HeaderType>
-    inline ThreadedLoopRunOuter<decltype(Loop(std::vector<size_t>()))> ThreadedLoop (
+    inline ThreadedLoopRunOuter<decltype(Loop(vector<size_t>()))> ThreadedLoop (
         const HeaderType& source,
-        const std::vector<size_t>& outer_axes,
-        const std::vector<size_t>& inner_axes) {
+        const vector<size_t>& outer_axes,
+        const vector<size_t>& inner_axes) {
       return { source, Loop (outer_axes), inner_axes };
     }
 
@@ -387,9 +387,9 @@ namespace MR
   //! Multi-threaded loop object
   //* \sa image_thread_looping for details */
   template <class HeaderType>
-    inline ThreadedLoopRunOuter<decltype(Loop(std::vector<size_t>()))> ThreadedLoop (
+    inline ThreadedLoopRunOuter<decltype(Loop(vector<size_t>()))> ThreadedLoop (
         const HeaderType& source,
-        const std::vector<size_t>& axes,
+        const vector<size_t>& axes,
         size_t num_inner_axes = 1) {
       return { source, Loop (get_outer_axes (axes, num_inner_axes)), get_inner_axes (axes, num_inner_axes) }; 
     }
@@ -397,7 +397,7 @@ namespace MR
   //! Multi-threaded loop object
   //* \sa image_thread_looping for details */
   template <class HeaderType>
-    inline ThreadedLoopRunOuter<decltype(Loop(std::vector<size_t>()))> ThreadedLoop (
+    inline ThreadedLoopRunOuter<decltype(Loop(vector<size_t>()))> ThreadedLoop (
         const HeaderType& source,
         size_t from_axis = 0,
         size_t to_axis = std::numeric_limits<size_t>::max(),
@@ -410,21 +410,21 @@ namespace MR
   //! Multi-threaded loop object
   //* \sa image_thread_looping for details */
   template <class HeaderType>
-    inline ThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))> ThreadedLoop (
+    inline ThreadedLoopRunOuter<decltype(Loop("", vector<size_t>()))> ThreadedLoop (
         const std::string& progress_message,
         const HeaderType& source,
-        const std::vector<size_t>& outer_axes,
-        const std::vector<size_t>& inner_axes) {
+        const vector<size_t>& outer_axes,
+        const vector<size_t>& inner_axes) {
       return { source, Loop (progress_message, outer_axes), inner_axes };
     }
 
   //! Multi-threaded loop object
   //* \sa image_thread_looping for details */
   template <class HeaderType>
-    inline ThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))> ThreadedLoop (
+    inline ThreadedLoopRunOuter<decltype(Loop("", vector<size_t>()))> ThreadedLoop (
         const std::string& progress_message,
         const HeaderType& source,
-        const std::vector<size_t>& axes,
+        const vector<size_t>& axes,
         size_t num_inner_axes = 1) {
       return { source, 
         Loop (progress_message, get_outer_axes (axes, num_inner_axes)),
@@ -434,7 +434,7 @@ namespace MR
   //! Multi-threaded loop object
   //* \sa image_thread_looping for details */
   template <class HeaderType>
-    inline ThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))> ThreadedLoop (
+    inline ThreadedLoopRunOuter<decltype(Loop("", vector<size_t>()))> ThreadedLoop (
         const std::string& progress_message,
         const HeaderType& source,
         size_t from_axis = 0,

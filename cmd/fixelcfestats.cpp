@@ -162,7 +162,7 @@ void run() {
   int nperms_nonstationary = get_option_value ("nperms_nonstationary", DEFAULT_PERMUTATIONS_NONSTATIONARITY);
   
   // Read filenames
-  std::vector<std::string> filenames;
+  vector<std::string> filenames;
   {
     std::string folder = Path::dirname (argument[0]);
     std::ifstream ifs (argument[0].c_str());
@@ -202,8 +202,8 @@ void run() {
   for (auto i = Loop ()(fixel_index_image);i; ++i)
     fixel_index_image.value() = -1;
 
-  std::vector<Eigen::Vector3> positions;
-  std::vector<Eigen::Vector3f> directions;
+  vector<Eigen::Vector3> positions;
+  vector<Eigen::Vector3f> directions;
 
   Transform image_transform (mask_fixel_image);
   for (auto i = Loop (mask_fixel_image)(mask_fixel_image, fixel_index_image); i; ++i) {
@@ -223,8 +223,8 @@ void run() {
   CONSOLE ("number of fixels: " + str(num_fixels));
 
   // Compute fixel-fixel connectivity
-  std::vector<std::map<int32_t, Stats::CFE::connectivity> > connectivity_matrix (num_fixels);
-  std::vector<uint16_t> fixel_TDI (num_fixels, 0.0);
+  vector<std::map<int32_t, Stats::CFE::connectivity> > connectivity_matrix (num_fixels);
+  vector<uint16_t> fixel_TDI (num_fixels, 0.0);
   std::string track_filename = argument[4];
   std::string output_prefix = argument[5];
   DWI::Tractography::Properties properties;
@@ -253,7 +253,7 @@ void run() {
 
 
   // Normalise connectivity matrix and threshold, pre-compute fixel-fixel weights for smoothing.
-  std::vector<std::map<int32_t, value_type> > smoothing_weights (num_fixels);
+  vector<std::map<int32_t, value_type> > smoothing_weights (num_fixels);
   bool do_smoothing = false;
   const value_type gaussian_const2 = 2.0 * smooth_std_dev * smooth_std_dev;
   value_type gaussian_const1 = 1.0;
@@ -311,7 +311,7 @@ void run() {
       LogLevelLatch log_level (0);
       Sparse::Image<FixelMetric> fixel (filenames[subject]);
       check_dimensions (fixel, mask_fixel_image, 0, 3);
-      std::vector<value_type> temp_fixel_data (num_fixels, 0.0);
+      vector<value_type> temp_fixel_data (num_fixels, 0.0);
 
       for (auto voxel = Loop(fixel)(fixel, fixel_index_image); voxel; ++voxel) {
          fixel_index_image.index(3) = 0;
@@ -366,7 +366,7 @@ void run() {
 
   Math::Stats::GLMTTest glm_ttest (data, design, contrast);
   Stats::CFE::Enhancer cfe_integrator (connectivity_matrix, cfe_dh, cfe_e, cfe_h);
-  std::shared_ptr<std::vector<double> > empirical_cfe_statistic;
+  std::shared_ptr<vector<double> > empirical_cfe_statistic;
 
   Header output_header (input_header);
   output_header.keyval()["num permutations"] = str(num_perms);
@@ -380,7 +380,7 @@ void run() {
 
   // If performing non-stationarity adjustment we need to pre-compute the empirical CFE statistic
   if (do_nonstationary_adjustment) {
-    empirical_cfe_statistic.reset(new std::vector<double> (num_fixels, 0.0));
+    empirical_cfe_statistic.reset(new vector<double> (num_fixels, 0.0));
     Stats::PermTest::precompute_empirical_stat (glm_ttest, cfe_integrator, nperms_nonstationary, *empirical_cfe_statistic);
     output_header.keyval()["nonstationary adjustment"] = str(true);
     write_fixel_output (output_prefix + "cfe_empirical.msf", *empirical_cfe_statistic, output_header, mask_fixel_image, fixel_index_image);
@@ -389,11 +389,11 @@ void run() {
   }
 
   // Precompute default statistic and CFE statistic
-  std::vector<value_type> cfe_output (num_fixels, 0.0);
-  std::shared_ptr<std::vector<value_type> > cfe_output_neg;
-  std::vector<value_type> tvalue_output (num_fixels, 0.0);
+  vector<value_type> cfe_output (num_fixels, 0.0);
+  std::shared_ptr<vector<value_type> > cfe_output_neg;
+  vector<value_type> tvalue_output (num_fixels, 0.0);
   if (compute_negative_contrast)
-    cfe_output_neg.reset (new std::vector<value_type> (num_fixels, 0.0));
+    cfe_output_neg.reset (new vector<value_type> (num_fixels, 0.0));
 
   Stats::PermTest::precompute_default_permutation (glm_ttest, cfe_integrator, empirical_cfe_statistic, cfe_output, cfe_output_neg, tvalue_output);
 
@@ -407,12 +407,12 @@ void run() {
   if (!opt.size()) {
     Eigen::Matrix<value_type, Eigen::Dynamic, 1> perm_distribution (num_perms);
     std::shared_ptr<Eigen::Matrix<value_type, Eigen::Dynamic, 1> > perm_distribution_neg;
-    std::vector<value_type> uncorrected_pvalues (num_fixels, 0.0);
-    std::shared_ptr<std::vector<value_type> > uncorrected_pvalues_neg;
+    vector<value_type> uncorrected_pvalues (num_fixels, 0.0);
+    std::shared_ptr<vector<value_type> > uncorrected_pvalues_neg;
 
     if (compute_negative_contrast) {
       perm_distribution_neg.reset (new Eigen::Matrix<value_type, Eigen::Dynamic, 1> (num_perms));
-      uncorrected_pvalues_neg.reset (new std::vector<value_type> (num_fixels, 0.0));
+      uncorrected_pvalues_neg.reset (new vector<value_type> (num_fixels, 0.0));
     }
 
     Stats::PermTest::run_permutations (glm_ttest, cfe_integrator, num_perms, empirical_cfe_statistic,
@@ -423,14 +423,14 @@ void run() {
     ProgressBar progress ("outputting final results");
     save_matrix (perm_distribution, output_prefix + "perm_dist.txt");
 
-    std::vector<value_type> pvalue_output (num_fixels, 0.0);
+    vector<value_type> pvalue_output (num_fixels, 0.0);
     Math::Stats::statistic2pvalue (perm_distribution, cfe_output, pvalue_output);
     write_fixel_output (output_prefix + "fwe_pvalue.msf", pvalue_output, output_header, mask_fixel_image, fixel_index_image);
     write_fixel_output (output_prefix + "uncorrected_pvalue.msf", uncorrected_pvalues, output_header, mask_fixel_image, fixel_index_image);
 
     if (compute_negative_contrast) {
       save_matrix (*perm_distribution_neg, output_prefix + "perm_dist_neg.txt");
-      std::vector<value_type> pvalue_output_neg (num_fixels, 0.0);
+      vector<value_type> pvalue_output_neg (num_fixels, 0.0);
       Math::Stats::statistic2pvalue (*perm_distribution_neg, *cfe_output_neg, pvalue_output_neg);
       write_fixel_output (output_prefix + "fwe_pvalue_neg.msf", pvalue_output_neg, output_header, mask_fixel_image, fixel_index_image);
       write_fixel_output (output_prefix + "uncorrected_pvalue_neg.msf", *uncorrected_pvalues_neg, output_header, mask_fixel_image, fixel_index_image);

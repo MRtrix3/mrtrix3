@@ -84,7 +84,7 @@ namespace MR
 
             bool layout_is_dirty;
             size_t current_slice_index;
-            std::vector<proj_focusdelta> slices_proj_focusdelta;
+            vector<proj_focusdelta> slices_proj_focusdelta;
 
             GL::VertexBuffer frame_VB;
             GL::VertexArrayObject frame_VAO;

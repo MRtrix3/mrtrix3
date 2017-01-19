@@ -78,7 +78,7 @@ namespace MR
         void set_term_mu     (const float i)        { term_mu = i; }
         void set_csv_path    (const std::string& i) { csv_path = i; }
 
-        void set_regular_outputs (const std::vector<int>&, const bool);
+        void set_regular_outputs (const vector<int>&, const bool);
 
 
         // DEBUGGING
@@ -97,7 +97,7 @@ namespace MR
 
 
         // User-controllable settings
-        std::vector<track_t> output_at_counts;
+        vector<track_t> output_at_counts;
         bool    output_debug;
         track_t term_number;
         float   term_ratio;
@@ -116,12 +116,12 @@ namespace MR
         class TrackGradientCalculator
         { MEMALIGN(TrackGradientCalculator)
           public:
-            TrackGradientCalculator (const SIFTer& sifter, std::vector<Cost_fn_gradient_sort>& v, const double mu, const double r) :
+            TrackGradientCalculator (const SIFTer& sifter, vector<Cost_fn_gradient_sort>& v, const double mu, const double r) :
                 master (sifter), gradient_vector (v), current_mu (mu), current_roc_cost (r) { }
             bool operator() (const TrackIndexRange&) const;
           private:
             const SIFTer& master;
-            std::vector<Cost_fn_gradient_sort>& gradient_vector;
+            vector<Cost_fn_gradient_sort>& gradient_vector;
             const double current_mu, current_roc_cost;
         };
 

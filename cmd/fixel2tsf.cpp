@@ -99,7 +99,7 @@ void run ()
   while (reader (tck)) {
     SetVoxelDir dixels;
     mapper (tck, dixels);
-    std::vector<float> scalars (tck.size(), 0.0);
+    vector<float> scalars (tck.size(), 0.0);
     for (size_t p = 0; p < tck.size(); ++p) {
       voxel_pos = transform.scanner2voxel * tck[p].cast<default_type> ();
       for (SetVoxelDir::const_iterator d = dixels.begin(); d != dixels.end(); ++d) {

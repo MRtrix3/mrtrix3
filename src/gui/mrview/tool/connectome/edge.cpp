@@ -104,7 +104,7 @@ namespace MR
 
         Edge::Line::Line (const Edge& parent)
         {
-          std::vector<Eigen::Vector3f> data;
+          vector<Eigen::Vector3f> data;
           data.push_back (parent.get_node_centre (0));
           data.push_back (parent.get_node_centre (1));
 
@@ -253,10 +253,10 @@ namespace MR
 
           shared.check_num_points (count);
 
-          std::vector<Eigen::Vector3f> vertices;
+          vector<Eigen::Vector3f> vertices;
           const size_t N = shared.points_per_vertex();
           vertices.reserve (N * data.vertices.size());
-          for (std::vector<Eigen::Vector3f>::const_iterator i = data.vertices.begin(); i != data.vertices.end(); ++i) {
+          for (vector<Eigen::Vector3f>::const_iterator i = data.vertices.begin(); i != data.vertices.end(); ++i) {
             for (size_t j = 0; j != N; ++j)
               vertices.push_back (*i);
           }
@@ -265,9 +265,9 @@ namespace MR
           if (vertices.size())
             gl::BufferData (gl::ARRAY_BUFFER, vertices.size() * sizeof (Eigen::Vector3f), &vertices[0][0], gl::STATIC_DRAW);
 
-          std::vector<Eigen::Vector3f> tangents;
+          vector<Eigen::Vector3f> tangents;
           tangents.reserve (vertices.size());
-          for (std::vector<Eigen::Vector3f>::const_iterator i = data.tangents.begin(); i != data.tangents.end(); ++i) {
+          for (vector<Eigen::Vector3f>::const_iterator i = data.tangents.begin(); i != data.tangents.end(); ++i) {
             for (size_t j = 0; j != N; ++j)
               tangents.push_back (*i);
           }
@@ -276,14 +276,14 @@ namespace MR
           if (tangents.size())
             gl::BufferData (gl::ARRAY_BUFFER, tangents.size() * sizeof (Eigen::Vector3f), &tangents[0][0], gl::STATIC_DRAW);
 
-          std::vector< std::pair<float, float> > normal_multipliers;
+          vector< std::pair<float, float> > normal_multipliers;
           const float angle_multiplier = 2.0 * Math::pi / float(shared.points_per_vertex());
           for (size_t i = 0; i != shared.points_per_vertex(); ++i)
             normal_multipliers.push_back (std::make_pair (std::cos (i * angle_multiplier), std::sin (i * angle_multiplier)));
-          std::vector<Eigen::Vector3f> normals;
+          vector<Eigen::Vector3f> normals;
           normals.reserve (vertices.size());
           for (size_t i = 0; i != data.vertices.size(); ++i) {
-            for (std::vector< std::pair<float, float> >::const_iterator j = normal_multipliers.begin(); j != normal_multipliers.end(); ++j)
+            for (vector< std::pair<float, float> >::const_iterator j = normal_multipliers.begin(); j != normal_multipliers.end(); ++j)
               normals.push_back ((j->first * data.normals[i]) + (j->second * data.binormals[i]));
           }
           normal_buffer.gen();

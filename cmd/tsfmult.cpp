@@ -48,15 +48,15 @@ void run ()
 
   DWI::Tractography::check_properties_match (properties1, properties2, "scalar", false);
 
-  std::vector<value_type> tck_scalar1;
-  std::vector<value_type> tck_scalar2;
+  vector<value_type> tck_scalar1;
+  vector<value_type> tck_scalar2;
   while (reader1 (tck_scalar1)) {
     if (!reader2 (tck_scalar2))
       break;
     if (tck_scalar1.size() != tck_scalar2.size())
       throw Exception ("track scalar length mismatch");
 
-    std::vector<value_type> tck_scalar_output (tck_scalar1.size());
+    vector<value_type> tck_scalar_output (tck_scalar1.size());
     for (size_t i = 0; i < tck_scalar1.size(); ++i) {
       tck_scalar_output[i] = tck_scalar1[i] * tck_scalar2[i];
     }

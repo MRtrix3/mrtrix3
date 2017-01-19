@@ -116,7 +116,7 @@ namespace MR
           }
         }
 
-        template <class ImageType> void print (ImageType& ima, const std::vector<std::string>& fields) {
+        template <class ImageType> void print (ImageType& ima, const vector<std::string>& fields) {
 
           if (count) {
             mean /= double (count);
@@ -177,10 +177,10 @@ namespace MR
         complex_type min, max;
         size_t count;
         value_type hmin, hwidth;
-        std::vector<size_t> hist;
+        vector<size_t> hist;
         std::ostream* dump;
         bool is_complex;
-        std::vector<float> values;
+        vector<float> values;
     };
 
 

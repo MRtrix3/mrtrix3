@@ -71,8 +71,8 @@ bool Matrix::operator() (const Mapped_track_nodepair& in)
 bool Matrix::operator() (const Mapped_track_nodelist& in)
 {
   assert (assignments_pairs.empty());
-  std::vector<node_t> list (in.get_nodes());
-  for (std::vector<node_t>::const_iterator i = list.begin(); i != list.end(); ++i) {
+  vector<node_t> list (in.get_nodes());
+  for (vector<node_t>::const_iterator i = list.begin(); i != list.end(); ++i) {
     assert (*i < data.rows());
   }
   if (is_vector()) {
@@ -81,7 +81,7 @@ bool Matrix::operator() (const Mapped_track_nodelist& in)
       counts (0, 0) += in.get_weight();
       list.push_back (0);
     } else {
-      for (std::vector<node_t>::const_iterator n = list.begin(); n != list.end(); ++n) {
+      for (vector<node_t>::const_iterator n = list.begin(); n != list.end(); ++n) {
         apply (data (0, *n), in.get_factor(), in.get_weight());
         counts (0, *n) += in.get_weight();
       }
@@ -109,7 +109,7 @@ bool Matrix::operator() (const Mapped_track_nodelist& in)
   } else if (in.get_track_index() < assignments_lists.size()) {
     assignments_lists[in.get_track_index()] = std::move (list);
   } else {
-    assignments_lists.resize (in.get_track_index() + 1, std::vector<node_t>());
+    assignments_lists.resize (in.get_track_index() + 1, vector<node_t>());
     assignments_lists[in.get_track_index()] = std::move (list);
   }
   return true;
@@ -181,14 +181,14 @@ void Matrix::zero_diagonal()
 
 void Matrix::error_check (const std::set<node_t>& missing_nodes)
 {
-  std::vector<default_type> node_counts (data.cols(), 0);
+  vector<default_type> node_counts (data.cols(), 0);
   for (node_t i = 0; i != counts.rows(); ++i) {
     for (node_t j = i; j != counts.cols(); ++j) {
       node_counts[i] += counts (i, j);
       node_counts[j] += counts (i, j);
     }
   }
-  std::vector<node_t> empty_nodes;
+  vector<node_t> empty_nodes;
   for (size_t i = 1; i != node_counts.size(); ++i) {
     if (!node_counts[i] && missing_nodes.find (i) == missing_nodes.end())
       empty_nodes.push_back (i);

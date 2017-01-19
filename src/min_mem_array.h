@@ -33,8 +33,8 @@ namespace MR {
 
 // This class allows for construction and management of a c-style array, where the
 //   memory overhead is minimal (a pointer and a size_t)
-// std::vector<>'s have some amount of overhead, which can add up if many are being stored
-// Typical usage is to gather the required data using a std::vector<>, and use that vector
+// vector<>'s have some amount of overhead, which can add up if many are being stored
+// Typical usage is to gather the required data using a vector<>, and use that vector
 //   to construct a Min_mem_array<>
 
 template <class T>

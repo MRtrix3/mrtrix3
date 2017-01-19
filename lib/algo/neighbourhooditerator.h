@@ -36,7 +36,7 @@ namespace MR
   //! a dummy image to iterate over a certain neighbourhood, useful for multi-threaded looping.
   // Does not work properly with Loop() functions! Use instead:
   //
-  // std::vector extent(iter.ndim(),3) // max number of voxels to iterate over
+  // vector extent(iter.ndim(),3) // max number of voxels to iterate over
   // auto niter = NeighbourhoodIterator(iter, extent);
   // while(niter.loop()){
   //   std::cerr << niter << std::endl;
@@ -48,7 +48,7 @@ namespace MR
     public:
       NeighbourhoodIterator() = delete;
       template <class IteratorType>
-        NeighbourhoodIterator (const IteratorType& iter, const std::vector<size_t>& extent) :
+        NeighbourhoodIterator (const IteratorType& iter, const vector<size_t>& extent) :
           dim (iter.ndim()),
           offset (iter.ndim()),
           // pos (iter.ndim()),
@@ -115,7 +115,7 @@ namespace MR
 
 
     private:
-      std::vector<ssize_t> dim, offset, pos_orig, ext;
+      vector<ssize_t> dim, offset, pos_orig, ext;
       Eigen::Matrix< ssize_t, 1, Eigen::Dynamic > pos;
       bool has_next_;
 

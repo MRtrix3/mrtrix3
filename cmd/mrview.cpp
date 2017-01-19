@@ -67,7 +67,7 @@ void run ()
   qApp->processEvents();
 
   if (argument.size()) {
-    std::vector<std::unique_ptr<MR::Header>> list;
+    vector<std::unique_ptr<MR::Header>> list;
 
     for (size_t n = 0; n < argument.size(); ++n) {
       try {

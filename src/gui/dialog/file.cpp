@@ -68,10 +68,10 @@ namespace MR
 
 
 
-        std::vector<std::string> get_files (QWidget* parent, const std::string& caption, const std::string& filter, const std::string& folder)
+        vector<std::string> get_files (QWidget* parent, const std::string& caption, const std::string& filter, const std::string& folder)
         {
           QStringList qlist = QFileDialog::getOpenFileNames (parent, caption.c_str(), folder.size() ? QString(folder.c_str()) : QString(), filter.c_str(), 0, FILE_DIALOG_OPTIONS);
-          std::vector<std::string> list;
+          vector<std::string> list;
           if (qlist.size()) {
             for (int n = 0; n < qlist.size(); ++n) 
               list.push_back (qlist[n].toUtf8().data());

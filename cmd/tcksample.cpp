@@ -160,7 +160,7 @@ class Sampler { MEMALIGN(Sampler)
           sum_lengths = tck.calc_length();
           if (statistic == MEDIAN) {
             // Don't bother with a weighted median here
-            std::vector<value_type> data;
+            vector<value_type> data;
             data.assign (values.second.data(), values.second.data() + values.second.size());
             out.second = Math::median (data);
           } else if (statistic == MIN) {
@@ -200,7 +200,7 @@ class Sampler { MEMALIGN(Sampler)
               bool operator< (const WeightSort& that) const { return value < that.value; }
               value_type value, length;
           };
-          std::vector<WeightSort> data;
+          vector<WeightSort> data;
           for (const auto v : voxels) {
             assign_pos_of (v).to (*image);
             data.push_back (WeightSort (v, (image->value() * get_tdi_multiplier (v))));

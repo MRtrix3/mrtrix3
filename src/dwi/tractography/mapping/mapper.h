@@ -380,7 +380,7 @@ namespace MR {
             const tck_stat_t track_statistic;
 
             // Members for when the contribution of a track is not constant along its length
-            mutable std::vector<float> factors;
+            mutable vector<float> factors;
             void load_factors (const Streamline<>&) const;
 
             // Member for incorporating additional information from an external image into the TWI process

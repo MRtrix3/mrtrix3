@@ -455,7 +455,7 @@ namespace MR
         public:
           PrecomputedFraction () : f1 (0.0), f2 (0.0) { }
           ValueType f1, f2;
-          typename std::vector<ValueType>::const_iterator p1, p2;
+          typename vector<ValueType>::const_iterator p1, p2;
       };
 
 #ifndef USE_NON_ORTHONORMAL_SH_BASIS
@@ -491,7 +491,7 @@ namespace MR
             Eigen::Matrix<value_type,Eigen::Dynamic,1,0,64> buf (lmax+1);
 
             for (int n = 0; n < ndir; n++) {
-              typename std::vector<value_type>::iterator p = AL.begin() + n*nAL;
+              typename vector<value_type>::iterator p = AL.begin() + n*nAL;
               value_type cos_el = std::cos (n*inc);
               for (int m = 0; m <= lmax; m++) {
                 Legendre::Plm_sph (buf, lmax, m, cos_el);
@@ -566,7 +566,7 @@ namespace MR
         protected:
           int lmax, ndir, nAL;
           ValueType inc;
-          std::vector<ValueType> AL;
+          vector<ValueType> AL;
       };
 
 

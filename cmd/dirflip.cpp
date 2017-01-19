@@ -65,7 +65,7 @@ class Shared { MEMALIGN(Shared)
       progress ("optimising directions for eddy-currents", target_num_permutations),
       best_signs (directions.rows(), 1), best_eddy (std::numeric_limits<value_type>::max()) { }
 
-    bool update (value_type eddy, const std::vector<int>& signs) 
+    bool update (value_type eddy, const vector<int>& signs) 
     {
       std::lock_guard<std::mutex> lock (mutex);
       if (eddy < best_eddy) {
@@ -80,7 +80,7 @@ class Shared { MEMALIGN(Shared)
 
 
 
-    value_type eddy (size_t i, size_t j, const std::vector<int>& signs) const {
+    value_type eddy (size_t i, size_t j, const vector<int>& signs) const {
       vector3_type a = { directions(i,0), directions(i,1), directions(i,2) };
       vector3_type b = { directions(j,0), directions(j,1), directions(j,2) };
       if (signs[i] < 0) a = -a;
@@ -89,8 +89,8 @@ class Shared { MEMALIGN(Shared)
     }
 
 
-    std::vector<int> get_init_signs () const { return std::vector<int> (directions.rows(), 1); }
-    const std::vector<int>& get_best_signs () const { return best_signs; }
+    vector<int> get_init_signs () const { return vector<int> (directions.rows(), 1); }
+    const vector<int>& get_best_signs () const { return best_signs; }
 
 
   protected:
@@ -98,7 +98,7 @@ class Shared { MEMALIGN(Shared)
     const size_t target_num_permutations;
     size_t num_permutations;
     ProgressBar progress;
-    std::vector<int> best_signs;
+    vector<int> best_signs;
     value_type best_eddy;
     std::mutex mutex;
   
@@ -139,7 +139,7 @@ class Processor { MEMALIGN(Processor)
 
   protected:
     Shared& shared;
-    std::vector<int> signs;
+    vector<int> signs;
     Math::RNG rng;
     std::uniform_int_distribution<int> uniform;
 };

@@ -225,7 +225,7 @@ namespace MR
       float calibrate_ratio;
       size_t mean_sample_num, num_sample_runs, num_truncations;
       float max_truncation;
-      std::vector< Eigen::Vector3f > calibrate_list;
+      vector< Eigen::Vector3f > calibrate_list;
 
       float FOD (const Eigen::Vector3f& d) const
       {

@@ -71,7 +71,7 @@ namespace MR {
                 float step_size;
             } thresholds;
 
-            mutable std::vector<bool> include_visited;
+            mutable vector<bool> include_visited;
 
         };
 

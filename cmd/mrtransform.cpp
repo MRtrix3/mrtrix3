@@ -315,7 +315,7 @@ void run ()
   // Flip
   opt = get_options ("flip");
   if (opt.size()) {
-    std::vector<int> axes = opt[0][0];
+    vector<int> axes = opt[0][0];
     transform_type flip;
     flip.setIdentity();
     for (size_t i = 0; i < axes.size(); ++i) {

@@ -33,7 +33,7 @@ namespace MR {
           public:
             Endpoints() { }
 
-            bool operator() (std::vector<Eigen::Vector3f>&) const override;
+            bool operator() (vector<Eigen::Vector3f>&) const override;
             bool valid() const override { return true; }
 
         };

@@ -35,7 +35,7 @@ namespace MR {
           std::string key = lowercase (kv.key());
           if (key == "roi") {
             try {
-              std::vector<std::string> V (split (kv.value(), " \t", true, 2));
+              vector<std::string> V (split (kv.value(), " \t", true, 2));
               properties.roi.insert (std::pair<std::string,std::string> (V[0], V[1]));
             }
             catch (...) {

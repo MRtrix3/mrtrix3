@@ -92,7 +92,7 @@ typedef float value_type;
 template <class ImageType>
 class DenoisingFunctor { MEMALIGN(DenoisingFunctor)
   public:
-  DenoisingFunctor (ImageType& dwi, std::vector<int> extent, Image<bool>& mask, ImageType& noise)
+  DenoisingFunctor (ImageType& dwi, vector<int> extent, Image<bool>& mask, ImageType& noise)
     : extent {{extent[0]/2, extent[1]/2, extent[2]/2}},
       m (dwi.size(3)),
       n (extent[0]*extent[1]*extent[2]),
@@ -211,7 +211,7 @@ void run ()
   auto dwi_out = Image<value_type>::create (argument[1], header);
   
   opt = get_options("extent");
-  std::vector<int> extent = { DEFAULT_SIZE, DEFAULT_SIZE, DEFAULT_SIZE };
+  vector<int> extent = { DEFAULT_SIZE, DEFAULT_SIZE, DEFAULT_SIZE };
   if (opt.size()) {
     extent = parse_ints(opt[0][0]);
     if (extent.size() == 1)

@@ -104,7 +104,7 @@ void usage ()
 
 template <class VectorType, class ImageType>
 void write_output (const VectorType& data,
-                   const std::vector<std::vector<int> >& mask_indices,
+                   const vector<vector<int> >& mask_indices,
                    ImageType& image) {
   for (size_t i = 0; i < mask_indices.size(); i++) {
     for (size_t dim = 0; dim < image.ndim(); dim++)
@@ -131,7 +131,7 @@ void run() {
   bool do_nonstationary_adjustment = get_options ("nonstationary").size();
 
   // Read filenames
-  std::vector<std::string> subjects;
+  vector<std::string> subjects;
   {
     std::string folder = Path::dirname (argument[0]);
     std::ifstream ifs (argument[0].c_str());
@@ -179,7 +179,7 @@ void run() {
   auto abs_effect_image = Image<value_type>::create (prefix + "abs_effect.mif", output_header);
   auto std_effect_image = Image<value_type>::create (prefix + "std_effect.mif", output_header);
   auto std_dev_image = Image<value_type>::create (prefix + "std_dev.mif", output_header);
-  std::vector<Image<float>> beta_images;
+  vector<Image<float>> beta_images;
   for (ssize_t i = 0; i < contrast.cols(); ++i)
     beta_images.push_back(Image<value_type>::create (prefix + "beta" + str(i) + ".mif", output_header));
   Image<value_type> cluster_image_neg;
@@ -201,7 +201,7 @@ void run() {
   // Load Mask and compute adjacency
   auto mask_image = mask_header.get_image<value_type>();
   Filter::Connector connector (do_26_connectivity);
-  std::vector<std::vector<int> > mask_indices = connector.precompute_adjacency (mask_image);
+  vector<vector<int> > mask_indices = connector.precompute_adjacency (mask_image);
   const size_t num_vox = mask_indices.size();
 
   // Load images
@@ -213,7 +213,7 @@ void run() {
       auto input_image = Image<float>::open(subjects[subject]).with_direct_io (3);
       check_dimensions (input_image, mask_image, 0, 3);
       int index = 0;
-      std::vector<std::vector<int> >::iterator it;
+      vector<vector<int> >::iterator it;
       for (it = mask_indices.begin(); it != mask_indices.end(); ++it) {
         input_image.index(0) = (*it)[0];
         input_image.index(1) = (*it)[1];
@@ -229,17 +229,17 @@ void run() {
 
   Eigen::Matrix<value_type, Eigen::Dynamic, 1> perm_distribution (num_perms);
   std::shared_ptr<Eigen::Matrix<value_type, Eigen::Dynamic, 1> > perm_distribution_neg;
-  std::vector<value_type> default_cluster_output (num_vox, 0.0);
-  std::shared_ptr<std::vector<value_type> > default_cluster_output_neg;
-  std::vector<value_type> tvalue_output (num_vox, 0.0);
-  std::shared_ptr<std::vector<double> > empirical_tfce_statistic;
-  std::vector<value_type> uncorrected_pvalue (num_vox, 0.0);
-  std::shared_ptr<std::vector<value_type> > uncorrected_pvalue_neg;
+  vector<value_type> default_cluster_output (num_vox, 0.0);
+  std::shared_ptr<vector<value_type> > default_cluster_output_neg;
+  vector<value_type> tvalue_output (num_vox, 0.0);
+  std::shared_ptr<vector<double> > empirical_tfce_statistic;
+  vector<value_type> uncorrected_pvalue (num_vox, 0.0);
+  std::shared_ptr<vector<value_type> > uncorrected_pvalue_neg;
 
   if (compute_negative_contrast) {
     perm_distribution_neg.reset (new Eigen::Matrix<value_type, Eigen::Dynamic, 1> (num_perms));
-    default_cluster_output_neg.reset (new std::vector<value_type> (num_vox, 0.0));
-    uncorrected_pvalue_neg.reset (new std::vector<value_type> (num_vox, 0.0));
+    default_cluster_output_neg.reset (new vector<value_type> (num_vox, 0.0));
+    uncorrected_pvalue_neg.reset (new vector<value_type> (num_vox, 0.0));
   }
 
 
@@ -267,7 +267,7 @@ void run() {
     } else {
       Stats::TFCE::Enhancer tfce_integrator (connector, tfce_dh, tfce_E, tfce_H);
       if (do_nonstationary_adjustment) {
-        empirical_tfce_statistic.reset (new std::vector<double> (num_vox, 0.0));
+        empirical_tfce_statistic.reset (new vector<double> (num_vox, 0.0));
         Stats::PermTest::precompute_empirical_stat (glm, tfce_integrator, nperms_nonstationary, *empirical_tfce_statistic);
       }
 
@@ -282,7 +282,7 @@ void run() {
 
     save_matrix (perm_distribution, prefix + "perm_dist.txt");
 
-    std::vector<value_type> pvalue_output (num_vox, 0.0);
+    vector<value_type> pvalue_output (num_vox, 0.0);
     Math::Stats::statistic2pvalue (perm_distribution, default_cluster_output, pvalue_output);
     {
       ProgressBar progress ("generating output");
@@ -294,7 +294,7 @@ void run() {
     if (compute_negative_contrast) {
       ProgressBar progress ("generating negative contrast output");
       save_matrix (*perm_distribution_neg, prefix + "perm_dist_neg.txt");
-      std::vector<value_type> pvalue_output_neg (num_vox, 0.0);
+      vector<value_type> pvalue_output_neg (num_vox, 0.0);
       Math::Stats::statistic2pvalue (*perm_distribution_neg, *default_cluster_output_neg, pvalue_output_neg);
       write_output (*default_cluster_output_neg, mask_indices, cluster_image_neg);
       write_output (pvalue_output_neg, mask_indices, fwe_pvalue_image_neg);

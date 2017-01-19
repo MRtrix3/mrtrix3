@@ -148,7 +148,7 @@ typedef cfloat complex_type;
 class Evaluator;
 
 
-class Chunk : public std::vector<complex_type> { NOMEMALIGN
+class Chunk : public vector<complex_type> { NOMEMALIGN
   public:
     complex_type value;
 };
@@ -160,7 +160,7 @@ class ThreadLocalStorageItem { NOMEMALIGN
     copy_ptr<Image<complex_type>> image;
 };
 
-class ThreadLocalStorage : public std::vector<ThreadLocalStorageItem> { NOMEMALIGN
+class ThreadLocalStorage : public vector<ThreadLocalStorageItem> { NOMEMALIGN
   public:
 
       void load (Chunk& chunk, Image<complex_type>& image) {
@@ -187,7 +187,7 @@ class ThreadLocalStorage : public std::vector<ThreadLocalStorageItem> { NOMEMALI
     void reset (const Iterator& current_position) { current = 0; iter = &current_position; }
 
     const Iterator* iter;
-    std::vector<size_t> axes, size;
+    vector<size_t> axes, size;
 
   private:
     size_t current;
@@ -277,7 +277,7 @@ class Evaluator { NOMEMALIGN
     const std::string id;
     const char* format;
     bool ZtoR, RtoZ;
-    std::vector<StackEntry> operands;
+    vector<StackEntry> operands;
 
     Chunk& evaluate (ThreadLocalStorage& storage) const {
       Chunk& in1 (operands[0].evaluate (storage));
@@ -477,7 +477,7 @@ class TernaryEvaluator : public Evaluator { NOMEMALIGN
 
 
 template <class Operation>
-void unary_operation (const std::string& operation_name, std::vector<StackEntry>& stack, Operation operation)
+void unary_operation (const std::string& operation_name, vector<StackEntry>& stack, Operation operation)
 {
   if (stack.empty()) 
     throw Exception ("no operand in stack for operation \"" + operation_name + "\"!");
@@ -502,7 +502,7 @@ void unary_operation (const std::string& operation_name, std::vector<StackEntry>
 
 
 template <class Operation>
-void binary_operation (const std::string& operation_name, std::vector<StackEntry>& stack, Operation operation)
+void binary_operation (const std::string& operation_name, vector<StackEntry>& stack, Operation operation)
 {
   if (stack.size() < 2) 
     throw Exception ("not enough operands in stack for operation \"" + operation_name + "\"");
@@ -527,7 +527,7 @@ void binary_operation (const std::string& operation_name, std::vector<StackEntry
 
 
 template <class Operation>
-void ternary_operation (const std::string& operation_name, std::vector<StackEntry>& stack, Operation operation)
+void ternary_operation (const std::string& operation_name, vector<StackEntry>& stack, Operation operation)
 {
   if (stack.size() < 3) 
     throw Exception ("not enough operands in stack for operation \"" + operation_name + "\"");
@@ -597,7 +597,7 @@ void get_header (const StackEntry& entry, Header& header)
 class ThreadFunctor { NOMEMALIGN
   public:
     ThreadFunctor (
-        const std::vector<size_t>& inner_axes,
+        const vector<size_t>& inner_axes,
         const StackEntry& top_of_stack, 
         Image<complex_type>& output_image) :
       top_entry (top_of_stack),
@@ -645,7 +645,7 @@ class ThreadFunctor { NOMEMALIGN
 
     const StackEntry& top_entry;
     Image<complex_type> image;
-    decltype (Loop (std::vector<size_t>())) loop;
+    decltype (Loop (vector<size_t>())) loop;
     ThreadLocalStorage storage;
     size_t chunk_size;
 };
@@ -654,7 +654,7 @@ class ThreadFunctor { NOMEMALIGN
 
 
 
-void run_operations (const std::vector<StackEntry>& stack) 
+void run_operations (const vector<StackEntry>& stack) 
 {
   Header header;
   get_header (stack[0], header);
@@ -1050,7 +1050,7 @@ class OpIf : public OpTernary { NOMEMALIGN
  **********************************************************************/
 
 void run () {
-  std::vector<StackEntry> stack;
+  vector<StackEntry> stack;
 
   for (int n = 1; n < App::argc; ++n) {
 

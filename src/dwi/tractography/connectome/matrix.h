@@ -75,8 +75,8 @@ class Matrix
   private:
     MR::Connectome::matrix_type data, counts;
     const stat_edge statistic;
-    std::vector<NodePair> assignments_pairs;
-    std::vector< std::vector<node_t> > assignments_lists;
+    vector<NodePair> assignments_pairs;
+    vector< vector<node_t> > assignments_lists;
 
     void apply (double&, const double, const double);
 

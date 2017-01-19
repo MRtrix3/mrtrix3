@@ -53,7 +53,7 @@ namespace MR
       }
 
     private:
-      std::vector<ssize_t> d, p;
+      vector<ssize_t> d, p;
 
       void value () const { assert (0); }
   };

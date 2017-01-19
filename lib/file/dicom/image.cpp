@@ -342,7 +342,7 @@ namespace MR {
 
       namespace {
 
-        inline void update_count (size_t num, std::vector<size_t>& dim, std::vector<size_t>& index)
+        inline void update_count (size_t num, vector<size_t>& dim, vector<size_t>& index)
         {
           for (size_t n = 0; n < num; ++n) {
             if (dim[n] && index[n] != dim[n])
@@ -356,10 +356,10 @@ namespace MR {
       }
 
 
-      std::vector<size_t> Frame::count (const std::vector<Frame*>& frames) 
+      vector<size_t> Frame::count (const vector<Frame*>& frames) 
       {
-        std::vector<size_t> dim (3, 0);
-        std::vector<size_t> index (3, 1);
+        vector<size_t> dim (3, 0);
+        vector<size_t> index (3, 1);
         const Frame* previous = frames[0];
 
         for (auto frame_it = frames.cbegin()+1; frame_it != frames.cend(); ++frame_it) {
@@ -388,7 +388,7 @@ namespace MR {
 
 
 
-      default_type Frame::get_slice_separation (const std::vector<Frame*>& frames, size_t nslices)
+      default_type Frame::get_slice_separation (const vector<Frame*>& frames, size_t nslices)
       {
         default_type max_gap = 0.0;
         default_type min_separation = std::numeric_limits<default_type>::infinity();
@@ -420,7 +420,7 @@ namespace MR {
 
 
 
-      std::string Frame::get_DW_scheme (const std::vector<Frame*>& frames, size_t nslices, const transform_type& image_transform)
+      std::string Frame::get_DW_scheme (const vector<Frame*>& frames, size_t nslices, const transform_type& image_transform)
       {
         if (!std::isfinite (frames[0]->bvalue)) {
           DEBUG ("no DW encoding information found in DICOM frames");

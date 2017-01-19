@@ -358,7 +358,7 @@ namespace MR
 
           load_image_buffer ();
 
-          regular_grid_buffer_pos = std::vector<Eigen::Vector3f> (buffer_pos.size());
+          regular_grid_buffer_pos = vector<Eigen::Vector3f> (buffer_pos.size());
 
           regular_grid_vao.gen();
 

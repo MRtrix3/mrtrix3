@@ -88,7 +88,7 @@ void usage ()
 
 
 
-void permute_DW_scheme (Header& H, const std::vector<int>& axes)
+void permute_DW_scheme (Header& H, const vector<int>& axes)
 {
   auto in = DWI::get_DW_scheme (H);
   if (!in.rows())
@@ -112,7 +112,7 @@ void permute_DW_scheme (Header& H, const std::vector<int>& axes)
 
 
 template <class ImageType>
-inline std::vector<int> set_header (Header& header, const ImageType& input)
+inline vector<int> set_header (Header& header, const ImageType& input)
 {
   header.ndim() = input.ndim();
   for (size_t n = 0; n < header.ndim(); ++n) {
@@ -123,7 +123,7 @@ inline std::vector<int> set_header (Header& header, const ImageType& input)
   header.transform() = input.transform();
 
   auto opt = get_options ("axes");
-  std::vector<int> axes;
+  vector<int> axes;
   if (opt.size()) {
     axes = opt[0][0];
     header.ndim() = axes.size();
@@ -144,7 +144,7 @@ inline std::vector<int> set_header (Header& header, const ImageType& input)
 
   opt = get_options ("vox");
   if (opt.size()) {
-    std::vector<default_type> vox = opt[0][0];
+    vector<default_type> vox = opt[0][0];
     if (vox.size() > header.ndim())
       throw Exception ("too many axes supplied to -vox option");
     for (size_t n = 0; n < vox.size(); ++n) {
@@ -162,7 +162,7 @@ inline std::vector<int> set_header (Header& header, const ImageType& input)
 
 
 template <typename T>
-inline void copy_permute (Header& header_in, Header& header_out, const std::vector<std::vector<int>>& pos, const std::string& output_filename)
+inline void copy_permute (Header& header_in, Header& header_out, const vector<vector<int>>& pos, const std::string& output_filename)
 {
 
   auto in = header_in.get_image<T>();
@@ -214,9 +214,9 @@ void run ()
     DWI::set_DW_scheme (header_out, DWI::get_DW_scheme (header_in));
 
   auto opt = get_options ("coord");
-  std::vector<std::vector<int>> pos;
+  vector<vector<int>> pos;
   if (opt.size()) {
-    pos.assign (header_in.ndim(), std::vector<int>());
+    pos.assign (header_in.ndim(), vector<int>());
     for (size_t n = 0; n < opt.size(); n++) {
       int axis = opt[n][0];
       if (axis >= (int)header_in.ndim())
@@ -258,7 +258,7 @@ void run ()
   opt = get_options ("scaling");
   if (opt.size()) {
     if (header_out.datatype().is_integer()) {
-      std::vector<default_type> scaling = opt[0][0];
+      vector<default_type> scaling = opt[0][0];
       if (scaling.size() != 2)
         throw Exception ("-scaling option expects comma-separated 2-vector of floating-point values");
       header_out.intensity_offset() = scaling[0];

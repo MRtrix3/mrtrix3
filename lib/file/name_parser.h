@@ -55,11 +55,11 @@ namespace MR
               return (str);
             }
 
-            const std::vector<int>& sequence () const {
+            const vector<int>& sequence () const {
               return (seq);
             }
 
-            std::vector<int>& sequence () {
+            vector<int>& sequence () {
               return (seq);
             }
 
@@ -82,7 +82,7 @@ namespace MR
           protected:
             size_t seq_length;
             std::string str;
-            std::vector<int> seq;
+            vector<int> seq;
         };
 
 
@@ -100,7 +100,7 @@ namespace MR
           return (array[i]);
         }
 
-        const std::vector<int>& sequence (size_t index) const {
+        const vector<int>& sequence (size_t index) const {
           return (array[seq_index[index]].sequence());
         }
 
@@ -112,16 +112,16 @@ namespace MR
           return (seq_index[number]);
         }
 
-        bool match (const std::string& file_name, std::vector<int>& indices) const;
-        void calculate_padding (const std::vector<int>& maxvals);
-        std::string name (const std::vector<int>& indices);
-        std::string get_next_match (std::vector<int>& indices, bool return_seq_index = false);
+        bool match (const std::string& file_name, vector<int>& indices) const;
+        void calculate_padding (const vector<int>& maxvals);
+        std::string name (const vector<int>& indices);
+        std::string get_next_match (vector<int>& indices, bool return_seq_index = false);
 
         friend std::ostream& operator<< (std::ostream& stream, const NameParser& parser);
 
       private:
-        std::vector<Item> array;
-        std::vector<size_t> seq_index;
+        vector<Item> array;
+        vector<size_t> seq_index;
         std::string folder_name, specification, current_name;
         std::unique_ptr<Path::Dir> folder;
 
@@ -149,17 +149,17 @@ namespace MR
     //! a class to hold a parsed image filename
     class ParsedName { NOMEMALIGN
       public:
-        ParsedName (const std::string& name, const std::vector<int>& index) : indices (index), filename (name) { }
+        ParsedName (const std::string& name, const vector<int>& index) : indices (index), filename (name) { }
 
         //! a class to hold a set of parsed image filenames
         class List { NOMEMALIGN
           public:
-            std::vector<int> parse_scan_check (const std::string& specifier, 
+            vector<int> parse_scan_check (const std::string& specifier, 
                 size_t max_num_sequences = std::numeric_limits<size_t>::max());
 
             void scan (NameParser& parser);
 
-            std::vector<int> count () const;
+            vector<int> count () const;
 
             size_t biggest_filename_size () const {
               return max_name_size;
@@ -170,8 +170,8 @@ namespace MR
             const ParsedName& operator[] (size_t index) const { return *list[index]; }
 
           protected:
-            std::vector<std::shared_ptr<ParsedName>> list;
-            void count_dim (std::vector<int>& dim, size_t& current_entry, size_t current_dim) const;
+            vector<std::shared_ptr<ParsedName>> list;
+            void count_dim (vector<int>& dim, size_t& current_entry, size_t current_dim) const;
             size_t max_name_size;
         };
 
@@ -191,7 +191,7 @@ namespace MR
         friend std::ostream& operator<< (std::ostream& stream, const ParsedName& pin);
 
       protected:
-        std::vector<int>    indices;
+        vector<int>    indices;
         std::string         filename;
 
     };

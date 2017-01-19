@@ -36,7 +36,7 @@ namespace MR {
             Downsampler () : ratio (1) { }
             Downsampler (const size_t downsample_ratio) : ratio (downsample_ratio) { }
 
-            bool operator() (std::vector<Eigen::Vector3f>&) const override;
+            bool operator() (vector<Eigen::Vector3f>&) const override;
             bool valid() const override { return (ratio > 1); }
 
             // This version guarantees that the seed point is retained, and

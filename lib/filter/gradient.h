@@ -83,7 +83,7 @@ namespace MR
           wrt_scanner = do_wrt_scanner;
         }
 
-        void set_stdev (const std::vector<default_type>& stdevs) {
+        void set_stdev (const vector<default_type>& stdevs) {
           stdev = stdevs;
         }
 
@@ -151,7 +151,7 @@ namespace MR
         Filter::Smooth smoother;
         bool wrt_scanner;
         const bool magnitude;
-        std::vector<default_type> stdev;
+        vector<default_type> stdev;
     };
     //! @}
   }

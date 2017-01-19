@@ -63,12 +63,12 @@ namespace MR
 
         void set_voxel_size (default_type size)
         {
-          std::vector <default_type> voxel_size (3, size);
+          vector <default_type> voxel_size (3, size);
           set_voxel_size (voxel_size);
         }
 
 
-        void set_voxel_size (const std::vector<default_type>& voxel_size)
+        void set_voxel_size (const vector<default_type>& voxel_size)
         {
           if (voxel_size.size() != 3)
             throw Exception ("the voxel size must be defined using a value for all three dimensions.");
@@ -88,11 +88,11 @@ namespace MR
         }
 
 
-        void set_size (const std::vector<int>& image_res)
+        void set_size (const vector<int>& image_res)
         {
           if (image_res.size() != 3)
             throw Exception ("the image resolution must be defined for 3 spatial dimensions");
-          std::vector<default_type> new_voxel_size (3);
+          vector<default_type> new_voxel_size (3);
           for (size_t d = 0; d < 3; ++d) {
             if (image_res[d] <= 0)
               throw Exception ("the image resolution must be larger than zero for all 3 spatial dimensions");
@@ -104,15 +104,15 @@ namespace MR
 
         void set_scale_factor (default_type scale)
         {
-          set_scale_factor (std::vector<default_type> (3, scale));
+          set_scale_factor (vector<default_type> (3, scale));
         }
 
 
-        void set_scale_factor (const std::vector<default_type> & scale)
+        void set_scale_factor (const vector<default_type> & scale)
         {
           if (scale.size() != 3)
             throw Exception ("a scale factor for each spatial dimension is required");
-          std::vector<default_type> new_voxel_size (3);
+          vector<default_type> new_voxel_size (3);
           for (size_t d = 0; d < 3; ++d) {
             if (scale[d] <= 0.0)
               throw Exception ("the scale factor must be larger than zero");

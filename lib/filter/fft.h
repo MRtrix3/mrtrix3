@@ -62,10 +62,10 @@ namespace MR
         }
 
 
-        void set_axes (const std::vector<int>& in)
+        void set_axes (const vector<int>& in)
         {
           axes_to_process.clear();
-          for (std::vector<int>::const_iterator i = in.begin(); i != in.end(); ++i) {
+          for (vector<int>::const_iterator i = in.begin(); i != in.end(); ++i) {
             if (*i < 0)
               throw Exception ("Axis indices for FFT image filter must be positive");
             if (*i >= (int)this->ndim())
@@ -92,8 +92,8 @@ namespace MR
             if (progress)
               ++(*progress);
 
-            for (std::vector<size_t>::const_iterator axis = axes_to_process.begin(); axis != axes_to_process.end(); ++axis) {
-              std::vector<size_t> axes = Stride::order (temp);
+            for (vector<size_t>::const_iterator axis = axes_to_process.begin(); axis != axes_to_process.end(); ++axis) {
+              vector<size_t> axes = Stride::order (temp);
               for (size_t n = 0; n < axes.size(); ++n) {
                 if (axes[n] == *axis) {
                   axes.erase (axes.begin() + n);
@@ -108,7 +108,7 @@ namespace MR
             if (centre_zero_) {
               for (auto l = Loop (output)(output); l; ++l) {
                 assign_pos_of (output).to (temp);
-                for (std::vector<size_t>::const_iterator flip_axis = axes_to_process.begin(); flip_axis != axes_to_process.end(); ++flip_axis)
+                for (vector<size_t>::const_iterator flip_axis = axes_to_process.begin(); flip_axis != axes_to_process.end(); ++flip_axis)
                   temp.index(*flip_axis) = (temp.index(*flip_axis) >= (temp.size (*flip_axis) / 2)) ?
                                            (temp.index(*flip_axis) - (temp.size (*flip_axis) / 2)) :
                                            (temp.index(*flip_axis) + (temp.size (*flip_axis) / 2));
@@ -123,7 +123,7 @@ namespace MR
       protected:
 
         const bool inverse;
-        std::vector<size_t> axes_to_process;
+        vector<size_t> axes_to_process;
         bool centre_zero_;
 
         template <class ComplexImageType>

@@ -82,7 +82,7 @@ namespace MR
       class MT_gradient_vector_sorter
       { MEMALIGN(MT_gradient_vector_sorter)
 
-          typedef std::vector<Cost_fn_gradient_sort> VecType;
+          typedef vector<Cost_fn_gradient_sort> VecType;
           typedef VecType::iterator VecItType;
 
           class Comparator { NOMEMALIGN

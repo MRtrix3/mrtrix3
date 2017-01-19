@@ -46,7 +46,7 @@ namespace MR {
                 value_type d;
             };
 
-            std::vector<Plane> planes;
+            vector<Plane> planes;
 
           public:
             Arc (const size_t n, const point_type& s, const point_type& e) :
@@ -71,9 +71,9 @@ namespace MR {
               init_arc (w);
             }
 
-            bool operator() (std::vector<Eigen::Vector3f>&) const override;
+            bool operator() (vector<Eigen::Vector3f>&) const override;
             bool valid() const override { return nsamples; }
-            bool limits (const std::vector<Eigen::Vector3f>&) override;
+            bool limits (const vector<Eigen::Vector3f>&) override;
 
           private:
             const size_t nsamples;

@@ -25,7 +25,7 @@ namespace MR
     namespace
     {
 
-      inline bool in_seq (const std::vector<int>& seq, int val)
+      inline bool in_seq (const vector<int>& seq, int val)
       {
         if (seq.size() == 0) 
           return true;
@@ -128,7 +128,7 @@ namespace MR
 
 
 
-    bool NameParser::match (const std::string& file_name, std::vector<int>& indices) const
+    bool NameParser::match (const std::string& file_name, vector<int>& indices) const
     {
       int current = 0;
       size_t num = 0;
@@ -159,7 +159,7 @@ namespace MR
 
 
 
-    void NameParser::calculate_padding (const std::vector<int>& maxvals)
+    void NameParser::calculate_padding (const vector<int>& maxvals)
     {
       assert (maxvals.size() == seq_index.size());
       for (size_t n = 0; n < seq_index.size(); n++)
@@ -204,7 +204,7 @@ namespace MR
 
 
 
-    std::string NameParser::name (const std::vector<int>& indices)
+    std::string NameParser::name (const vector<int>& indices)
     {
       if (!seq_index.size())
         return Path::join (folder_name, array[0].string());
@@ -230,7 +230,7 @@ namespace MR
 
 
 
-    std::string NameParser::get_next_match (std::vector<int>& indices, bool return_seq_index)
+    std::string NameParser::get_next_match (vector<int>& indices, bool return_seq_index)
     {
       if (!folder)
         folder.reset (new Path::Dir (folder_name));
@@ -266,14 +266,14 @@ namespace MR
 
 
 
-    std::vector<int> ParsedName::List::parse_scan_check (const std::string& specifier, size_t max_num_sequences)
+    vector<int> ParsedName::List::parse_scan_check (const std::string& specifier, size_t max_num_sequences)
     {
       NameParser parser;
       parser.parse (specifier);
 
       scan (parser);
       std::sort (list.begin(), list.end(), compare_ptr_contents());
-      std::vector<int> dim = count();
+      vector<int> dim = count();
 
       for (size_t n = 0; n < dim.size(); n++)
         if (parser.sequence (n).size())
@@ -290,7 +290,7 @@ namespace MR
 
     void ParsedName::List::scan (NameParser& parser)
     {
-      std::vector<int> index;
+      vector<int> index;
       if (parser.ndim() == 0) {
         list.push_back (std::shared_ptr<ParsedName> (new ParsedName (parser.name (index), index)));
         return;
@@ -310,14 +310,14 @@ namespace MR
 
 
 
-    std::vector<int> ParsedName::List::count () const
+    vector<int> ParsedName::List::count () const
     {
       if (! list[0]->ndim()) {
-        if (size() == 1) return (std::vector<int>());
+        if (size() == 1) return (vector<int>());
         else throw Exception ("image number mismatch");
       }
 
-      std::vector<int> dim ( list[0]->ndim(), 0);
+      vector<int> dim ( list[0]->ndim(), 0);
       size_t current_entry = 0;
 
       count_dim (dim, current_entry, 0);
@@ -328,7 +328,7 @@ namespace MR
 
 
 
-    void ParsedName::List::count_dim (std::vector<int>& dim, size_t& current_entry, size_t current_dim) const
+    void ParsedName::List::count_dim (vector<int>& dim, size_t& current_entry, size_t current_dim) const
     {
       int n;
       bool stop = false;

@@ -62,8 +62,8 @@ void run ()
   auto directions = DWI::Directions::load_cartesian (argument[0]);
   auto rng = get_rng_uniform<size_t> (0, directions.rows()-1);
 
-  std::vector<ssize_t> indices (1, rng());
-  std::vector<ssize_t> remaining;
+  vector<ssize_t> indices (1, rng());
+  vector<ssize_t> remaining;
   for (ssize_t n = 0; n < directions.rows(); ++n)
     if (n != indices[0])
       remaining.push_back (n);

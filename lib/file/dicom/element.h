@@ -55,7 +55,7 @@ namespace MR {
           uint16_t group, element, VR;
           uint32_t size;
           uint8_t* data;
-          std::vector<Sequence> parents;
+          vector<Sequence> parents;
 
           void set (const std::string& filename, bool force_read = false, bool read_write = false);
           bool read ();
@@ -92,10 +92,10 @@ namespace MR {
           }
 
           Type type () const;
-          std::vector<int32_t> get_int () const;
-          std::vector<uint32_t> get_uint () const;
-          std::vector<double> get_float () const;
-          std::vector<std::string> get_string () const;
+          vector<int32_t> get_int () const;
+          vector<uint32_t> get_uint () const;
+          vector<double> get_float () const;
+          vector<std::string> get_string () const;
 
           size_t level () const { return parents.size(); }
 
@@ -116,7 +116,7 @@ namespace MR {
           uint8_t* start;
           bool is_explicit, is_BE, is_transfer_syntax_BE;
 
-          std::vector<uint8_t*>  end_seq;
+          vector<uint8_t*>  end_seq;
 
           uint16_t get_VR_from_tag_name (const std::string& name) {
             union { 

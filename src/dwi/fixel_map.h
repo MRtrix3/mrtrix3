@@ -80,7 +80,7 @@ namespace MR
         const ::MR::Header& header() const { return _header; }
 
       protected:
-        std::vector<Fixel> fixels;
+        vector<Fixel> fixels;
 
       private:
         const class HeaderHelper : public ::MR::Header { MEMALIGN(HeaderHelper)

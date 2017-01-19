@@ -75,13 +75,13 @@ namespace MR
           mask.index(2) = out.index(2);
         }
 
-        NCCPrecomputeFunctorMasked_DEBUG(const std::vector<size_t>& ext, ImageType1& adapter1, ImageType2& adapter2) :
+        NCCPrecomputeFunctorMasked_DEBUG(const vector<size_t>& ext, ImageType1& adapter1, ImageType2& adapter2) :
           extent(ext),
           in1(adapter1),
           in2(adapter2) { /* TODO check dimensions and extent */ }
 
         protected:
-          std::vector<size_t> extent;
+          vector<size_t> extent;
           ImageType1 in1; // Adapter::Reslice<Interp::Cubic, Image<float>>) :
           ImageType2 in2;
       };
@@ -193,13 +193,13 @@ namespace MR
           // out.row(3) << value_in1 - mean1, value_in2 - mean2, in1.value(), in2.value(), v2_2;
         }
 
-        NCCPrecomputeFunctorMasked_Naive (const std::vector<size_t>& ext, ImageType1& adapter1, ImageType2& adapter2) :
+        NCCPrecomputeFunctorMasked_Naive (const vector<size_t>& ext, ImageType1& adapter1, ImageType2& adapter2) :
           extent(ext),
           in1(adapter1),
           in2(adapter2) { /* TODO check dimensions and extent */ }
 
         protected:
-          std::vector<size_t> extent;
+          vector<size_t> extent;
           ImageType1 in1; // store reslice adapter in functor to avoid iterating over it when mask is false
           ImageType2 in2;
       };

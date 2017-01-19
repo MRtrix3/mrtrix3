@@ -62,7 +62,7 @@ namespace MR
 
 
 
-              void set_responses (const std::vector<std::string>& files)
+              void set_responses (const vector<std::string>& files)
               {
                 lmax_response.clear();
                 for (const auto s : files) {
@@ -77,7 +77,7 @@ namespace MR
                 prepare_responses();
               }
 
-              void set_responses (const std::vector<Eigen::MatrixXd>& matrices)
+              void set_responses (const vector<Eigen::MatrixXd>& matrices)
               {
                 responses = matrices;
                 prepare_responses();
@@ -120,7 +120,7 @@ namespace MR
 
                 Eigen::MatrixXd C (grad.rows(), nparams);
 
-                std::vector<size_t> dwilist;
+                vector<size_t> dwilist;
                 for (size_t i = 0; i != size_t(grad.rows()); i++)
                   dwilist.push_back(i);
 
@@ -161,7 +161,7 @@ namespace MR
                       }
                       li++;
                     }
-                    std::vector<size_t> vols = shells[shell_idx].get_volumes();
+                    vector<size_t> vols = shells[shell_idx].get_volumes();
                     for (size_t idx = 0; idx < vols.size(); idx++) {
                       Eigen::VectorXd SHT_(SHT.row (vols[idx]).head (tissue_n));
                       SHT_ = (SHT_.array()*fconv.array()).matrix();
@@ -171,8 +171,8 @@ namespace MR
                   pbegin += tissue_n;
                 }
 
-                std::vector<size_t> m (num_tissues());
-                std::vector<size_t> n (num_tissues());
+                vector<size_t> m (num_tissues());
+                vector<size_t> n (num_tissues());
                 size_t M = 0;
                 size_t N = 0;
 
@@ -209,8 +209,8 @@ namespace MR
               const Eigen::MatrixXd grad;
               const DWI::Shells shells;
               Eigen::MatrixXd HR_dirs;
-              std::vector<int> lmax, lmax_response;
-              std::vector<Eigen::MatrixXd> responses;
+              vector<int> lmax, lmax_response;
+              vector<Eigen::MatrixXd> responses;
               Math::ICLS::Problem<double> problem;
 
 

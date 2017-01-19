@@ -76,7 +76,7 @@ namespace MR
       INFO ("opening image \"" + image_name + "\"...");
 
       File::ParsedName::List list;
-      std::vector<int> num = list.parse_scan_check (image_name);
+      vector<int> num = list.parse_scan_check (image_name);
 
       const Formats::Base** format_handler = Formats::handlers;
       size_t item = 0;
@@ -133,7 +133,7 @@ namespace MR
 
 
   namespace {
-    inline bool check_strides_match (const std::vector<ssize_t>& a, const std::vector<ssize_t>& b) 
+    inline bool check_strides_match (const vector<ssize_t>& a, const vector<ssize_t>& b) 
     {
       size_t n = 0;
       for (; n < std::min (a.size(), b.size()); ++n) 
@@ -167,20 +167,20 @@ namespace MR
 
       File::NameParser parser;
       parser.parse (image_name);
-      std::vector<int> Pdim (parser.ndim());
+      vector<int> Pdim (parser.ndim());
 
-      std::vector<int> Hdim (H.ndim());
+      vector<int> Hdim (H.ndim());
       for (size_t i = 0; i < H.ndim(); ++i)
         Hdim[i] = H.size(i);
 
       H.name() = image_name;
 
-      const std::vector<ssize_t> strides (Stride::get_symbolic (H));
+      const vector<ssize_t> strides (Stride::get_symbolic (H));
       const Formats::Base** format_handler = Formats::handlers;
       for (; *format_handler; format_handler++)
         if ((*format_handler)->check (H, H.ndim() - Pdim.size()))
           break;
-      const std::vector<ssize_t> strides_aftercheck (Stride::get_symbolic (H));
+      const vector<ssize_t> strides_aftercheck (Stride::get_symbolic (H));
       if (!check_strides_match (strides, strides_aftercheck))
         INFO("output strides for image " + image_name + " modified to " + str(strides_aftercheck) +
             " - requested strides " + str(strides) + " are not supported in " + H.format() + " format");
@@ -204,7 +204,7 @@ namespace MR
       parser.calculate_padding (Pdim);
 
       Header header (H);
-      std::vector<int> num (Pdim.size());
+      vector<int> num (Pdim.size());
 
       if (image_name != "-")
         H.name() = parser.name (num);

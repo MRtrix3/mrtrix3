@@ -102,7 +102,7 @@ namespace MR
         default_type stdev;
         ssize_t radius;
         size_t axis;
-        std::vector<default_type> kernel;
+        vector<default_type> kernel;
         const bool zero_boundary;
       };
   }

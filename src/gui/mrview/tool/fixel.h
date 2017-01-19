@@ -117,21 +117,21 @@ namespace MR
 
               std::string filename;
               MR::Header header;
-              std::vector<Eigen::Vector3f> buffer_pos;
-              std::vector<Eigen::Vector3f> buffer_dir;
-              std::vector<float> buffer_val;
+              vector<Eigen::Vector3f> buffer_pos;
+              vector<Eigen::Vector3f> buffer_dir;
+              vector<float> buffer_val;
 
-              std::vector<Eigen::Vector3f> regular_grid_buffer_pos;
-              std::vector<Eigen::Vector3f> regular_grid_buffer_dir;
-              std::vector<float> regular_grid_buffer_val;
+              vector<Eigen::Vector3f> regular_grid_buffer_pos;
+              vector<Eigen::Vector3f> regular_grid_buffer_dir;
+              vector<float> regular_grid_buffer_val;
 
-              std::vector<std::vector<std::vector<GLint> > > slice_fixel_indices;
-              std::vector<std::vector<std::vector<GLsizei> > > slice_fixel_sizes;
-              std::vector<std::vector<GLsizei> > slice_fixel_counts;
+              vector<vector<vector<GLint> > > slice_fixel_indices;
+              vector<vector<vector<GLsizei> > > slice_fixel_sizes;
+              vector<vector<GLsizei> > slice_fixel_counts;
 
               // Flattened buffer used when cropping to slice
               // To support off-axis rendering, we maintain dict mapping voxels to buffer_pos indices
-              std::unordered_map <std::array<int, 3>, std::vector<GLint>, IntPointHasher> voxel_to_indices_map;
+              std::unordered_map <std::array<int, 3>, vector<GLint>, IntPointHasher> voxel_to_indices_map;
 
             private:
               Vector& fixel_tool;

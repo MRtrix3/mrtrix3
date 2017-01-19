@@ -75,7 +75,7 @@ void run ()
   header.datatype() = DataType::Float32;
   auto noise = Image<value_type>::create (argument[1], header);
 
-  std::vector<size_t> dwis;
+  vector<size_t> dwis;
   Eigen::MatrixXd mapping;
   {
     auto grad = DWI::get_valid_DW_scheme (dwi_in);
@@ -84,7 +84,7 @@ void run ()
     mapping = DWI::compute_SH2amp_mapping (dirs);
   }
 
-  auto dwi = Adapter::make <Adapter::Extract1D> (dwi_in, 3, container_cast<std::vector<int>> (dwis));
+  auto dwi = Adapter::make <Adapter::Extract1D> (dwi_in, 3, container_cast<vector<int>> (dwis));
 
   DWI::estimate_noise (dwi, noise, mapping);
 }

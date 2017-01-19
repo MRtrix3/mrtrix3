@@ -133,7 +133,7 @@ class Track_fixel_contribution
       { MEMALIGN(TrackContribution)
 
         public:
-        TrackContribution (const std::vector<Track_fixel_contribution>& in, const float c, const float l) :
+        TrackContribution (const vector<Track_fixel_contribution>& in, const float c, const float l) :
             Min_mem_array<Track_fixel_contribution> (in),
             total_contribution (c),
             total_length       (l) { }

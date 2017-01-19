@@ -37,7 +37,7 @@ namespace MR {
             FixedStepSize (const float ss) :
               step_size (ss) { }
 
-            bool operator() (std::vector<Eigen::Vector3f>&) const override;
+            bool operator() (vector<Eigen::Vector3f>&) const override;
             bool valid() const override { return step_size; }
 
             void set_step_size (const float ss) { step_size = ss; }

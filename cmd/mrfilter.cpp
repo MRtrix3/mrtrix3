@@ -168,7 +168,7 @@ void run () {
       auto input = Image<float>::open (argument[0]);
       Filter::Gradient filter (input, get_options ("magnitude").size());
 
-      std::vector<default_type> stdev;
+      vector<default_type> stdev;
       auto opt = get_options ("stdev");
       if (opt.size()) {
         stdev = parse_floats (opt[0][0]);
@@ -222,7 +222,7 @@ void run () {
       if (opt.size()) {
         if (stdev_supplied)
           throw Exception ("the stdev and FWHM options are mutually exclusive.");
-        std::vector<default_type> stdevs = parse_floats((opt[0][0]));
+        vector<default_type> stdevs = parse_floats((opt[0][0]));
         for (size_t d = 0; d < stdevs.size(); ++d)
           stdevs[d] = stdevs[d] / 2.3548;  //convert FWHM to stdev
         filter.set_stdev (stdevs);

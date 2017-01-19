@@ -65,7 +65,7 @@ namespace MR
       protected:
         using Base<ImageType>::parent;
         Header header_;
-        std::vector<ssize_t> pos_;
+        vector<ssize_t> pos_;
 
         ssize_t get_pos (size_t axis) const {
           return pos_[axis];

@@ -84,7 +84,7 @@ namespace MR
           return segsize;
         }
 
-        std::vector<File::Entry> files;
+        vector<File::Entry> files;
 
         void merge (const Base& B) {
           assert (addresses.empty());
@@ -101,7 +101,7 @@ namespace MR
 
       protected:
         size_t segsize;
-        std::vector<std::unique_ptr<uint8_t[]>> addresses;
+        vector<std::unique_ptr<uint8_t[]>> addresses;
         bool is_new, writable;
 
         void check () const {

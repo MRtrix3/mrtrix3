@@ -129,7 +129,7 @@ namespace MR
               Exemplar () = delete;
             private:
               const Eigen::Vector3f endpoints[2];
-              std::vector<Eigen::Vector3f> vertices, tangents, normals, binormals;
+              vector<Eigen::Vector3f> vertices, tangents, normals, binormals;
               friend class Streamline;
               friend class Streamtube;
           };

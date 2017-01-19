@@ -43,7 +43,7 @@ namespace MR
             bool unmasked1;
             bool unmasked2;
             struct rot_search { MEMALIGN(rot_search)
-              std::vector<default_type> angles;
+              vector<default_type> angles;
               default_type scale;
               size_t directions;
               bool run_global;

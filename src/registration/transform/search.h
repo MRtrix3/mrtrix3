@@ -311,10 +311,10 @@ namespace MR
             transform_type best_trafo;
             Header midway_image_header;
             default_type min_cost;
-            std::vector<default_type> vec_cost;
-            std::vector<size_t> vec_overlap;
+            vector<default_type> vec_cost;
+            vector<size_t> vec_overlap;
             size_t global_search_iterations;
-            std::vector<default_type> rot_angles;
+            vector<default_type> rot_angles;
             size_t local_search_directions;
             default_type image_scale_factor;
             bool global_search;

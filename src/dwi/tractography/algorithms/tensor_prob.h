@@ -83,7 +83,7 @@ namespace MR
             }
 
 
-            void truncate_track (std::vector<Eigen::Vector3f>& tck, const size_t length_to_revert_from, const int revert_step) {}
+            void truncate_track (vector<Eigen::Vector3f>& tck, const size_t length_to_revert_from, const int revert_step) {}
 
 
           protected:
@@ -123,7 +123,7 @@ namespace MR
                       raw_signals.push_back (Eigen::VectorXf (size(3)));
                   }
 
-                std::vector<Eigen::VectorXf> raw_signals;
+                vector<Eigen::VectorXf> raw_signals;
 
                 bool get (const Eigen::Vector3f& pos, Eigen::VectorXf& data) {
                   scanner (pos);

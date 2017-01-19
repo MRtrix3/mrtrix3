@@ -132,7 +132,7 @@ void run ()
   if (opt.size())
     position_stream.reset (new File::OFStream (opt[0][0]));
 
-  std::vector<std::string> fields;
+  vector<std::string> fields;
   opt = get_options ("output");
   for (size_t n = 0; n < opt.size(); ++n) 
     fields.push_back (opt[n][0]);
@@ -247,9 +247,9 @@ void run ()
 
   // voxels:
 
-  std::vector<Eigen::Array3i> voxel (voxels.size());
+  vector<Eigen::Array3i> voxel (voxels.size());
   for (size_t i = 0; i < voxels.size(); ++i) {
-    std::vector<int> x = parse_ints (voxels[i][0]);
+    vector<int> x = parse_ints (voxels[i][0]);
     if (x.size() != 3)
       throw Exception ("vector positions must be supplied as x,y,z");
     if (x[0] < 0 || x[0] >= data.size (0) ||

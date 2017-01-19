@@ -70,7 +70,7 @@ void run ()
 
     if (properties.comments.size()) {
       std::cout << "    Comments:             ";
-      for (std::vector<std::string>::iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
+      for (vector<std::string>::iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
         std::cout << (i == properties.comments.begin() ? "" : "                       ") << *i << "\n";
     }
 
@@ -80,7 +80,7 @@ void run ()
 
 
     if (actual_count) {
-      std::vector<float > tck;
+      vector<float > tck;
       size_t count = 0;
       {
         ProgressBar progress ("counting tracks in file");
@@ -94,7 +94,7 @@ void run ()
 
     if (opt.size()) {
       ProgressBar progress ("writing track scalar data to ascii files");
-      std::vector<float> tck;
+      vector<float> tck;
       size_t count = 0;
       while (file (tck)) {
         std::string filename (opt[0][0]);
@@ -103,7 +103,7 @@ void run ()
         filename.replace (filename.size()-4-num.size(), num.size(), num);
 
         File::OFStream out (filename);
-        for (std::vector<float>::iterator i = tck.begin(); i != tck.end(); ++i)
+        for (vector<float>::iterator i = tck.begin(); i != tck.end(); ++i)
           out << (*i) << "\n";
         out.close();
 

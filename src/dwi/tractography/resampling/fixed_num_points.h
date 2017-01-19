@@ -37,7 +37,7 @@ namespace MR {
             FixedNumPoints (const size_t n) :
                 num_points (n) { }
 
-            bool operator() (std::vector<Eigen::Vector3f>&) const override;
+            bool operator() (vector<Eigen::Vector3f>&) const override;
             bool valid() const override { return num_points; }
 
             void set_num_points (const size_t n) { num_points = n; }

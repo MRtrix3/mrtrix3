@@ -148,9 +148,9 @@ namespace MR
 
     void Sphere::LOD (const size_t level_of_detail)
     {
-      //std::vector<Vertex> vertices;
+      //vector<Vertex> vertices;
       vertices.clear();
-      std::vector<Triangle> indices;
+      vector<Triangle> indices;
 
       for (size_t n = 0; n < NUM_VERTICES; n++)
         vertices.push_back (initial_vertices[n]);

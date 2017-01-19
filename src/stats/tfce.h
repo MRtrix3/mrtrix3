@@ -37,15 +37,15 @@ namespace MR
           Enhancer (const Filter::Connector& connector, const value_type dh, const value_type E, const value_type H) :
                     connector (connector), dh (dh), E (E), H (H) {}
 
-          value_type operator() (const value_type max_stat, const std::vector<value_type>& stats,
-                                 std::vector<value_type>& enhanced_stats) const
+          value_type operator() (const value_type max_stat, const vector<value_type>& stats,
+                                 vector<value_type>& enhanced_stats) const
           {
             enhanced_stats.resize(stats.size());
             std::fill (enhanced_stats.begin(), enhanced_stats.end(), 0.0);
 
             for (value_type h = this->dh; h < max_stat; h += this->dh) {
-              std::vector<Filter::cluster> clusters;
-              std::vector<uint32_t> labels (enhanced_stats.size(), 0);
+              vector<Filter::cluster> clusters;
+              vector<uint32_t> labels (enhanced_stats.size(), 0);
               connector.run (clusters, labels, stats, h);
               for (size_t i = 0; i < enhanced_stats.size(); ++i)
                 if (labels[i])

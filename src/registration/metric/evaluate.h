@@ -114,7 +114,7 @@ namespace MR
             struct ThreadFunctor { MEMALIGN(ThreadFunctor)
               public:
                 ThreadFunctor (
-                    const std::vector<size_t>& inner_axes,
+                    const vector<size_t>& inner_axes,
                     const default_type density,
                     const MetricType& metric,
                     const ParamType& parameters,
@@ -154,7 +154,7 @@ namespace MR
                     }
                 }
               protected:
-                std::vector<size_t> inner_axes;
+                vector<size_t> inner_axes;
                 default_type density;
                 MetricType metric;
                 ParamType params;
@@ -235,7 +235,7 @@ namespace MR
           protected:
               MetricType metric;
               ParamType params;
-              std::vector<size_t> extent;
+              vector<size_t> extent;
               size_t iteration;
               Eigen::MatrixXd directions;
 

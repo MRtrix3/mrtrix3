@@ -37,7 +37,7 @@ namespace MR
 
 
     typedef Eigen::Vector3 Vertex;
-    typedef std::vector<Vertex> VertexList;
+    typedef vector<Vertex> VertexList;
 
     class Vox : public Eigen::Array3i
     { MEMALIGN(Vox)
@@ -92,9 +92,9 @@ namespace MR
     template <> bool Polygon<3>::shares_edge (const Polygon<3>&) const;
 
     typedef Polygon<3> Triangle;
-    typedef std::vector<Triangle> TriangleList;
+    typedef vector<Triangle> TriangleList;
     typedef Polygon<4> Quad;
-    typedef std::vector<Quad> QuadList;
+    typedef vector<Quad> QuadList;
 
 
 
@@ -231,10 +231,10 @@ namespace MR
     //   (would allow embedding binary data within the file, rather than
     //   everything being ASCII as in .obj)
 
-    class MeshMulti : public std::vector<Mesh>
+    class MeshMulti : public vector<Mesh>
     { MEMALIGN(MeshMulti)
       public:
-        using std::vector<Mesh>::vector;
+        using vector<Mesh>::vector;
 
         void load (const std::string&);
         void save (const std::string&) const;

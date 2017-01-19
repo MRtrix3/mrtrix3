@@ -34,7 +34,7 @@ namespace MR
 
 
 
-    List& sanitise (List& current, const List& desired, const std::vector<ssize_t>& dims)
+    List& sanitise (List& current, const List& desired, const vector<ssize_t>& dims)
     {
       // remove duplicates
       for (size_t i = 0; i < current.size()-1; ++i) {
@@ -78,7 +78,7 @@ namespace MR
       if (!opt.size()) 
         return strides;
 
-      std::vector<int> tmp = opt[0][0];
+      vector<int> tmp = opt[0][0];
       for (auto x : tmp)
         strides.push_back (x); 
 

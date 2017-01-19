@@ -109,7 +109,7 @@ namespace MR
             value_type  value;
         };
 
-        std::vector<Entry> list;
+        vector<Entry> list;
         friend class Kernel;
     };
 

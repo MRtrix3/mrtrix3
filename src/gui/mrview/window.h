@@ -81,7 +81,7 @@ namespace MR
           Window();
           ~Window();
 
-          void add_images (std::vector<std::unique_ptr<MR::Header>>& list);
+          void add_images (vector<std::unique_ptr<MR::Header>>& list);
           void process_commandline_options ();
 
           const QPoint& mouse_position () const { return mouse_position_; }
@@ -324,7 +324,7 @@ namespace MR
 
           Tool::Base* tool_has_focus;
 
-          std::vector<double> render_times;
+          vector<double> render_times;
           double best_FPS, best_FPS_time;
           bool show_FPS;
 

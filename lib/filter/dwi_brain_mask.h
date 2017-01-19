@@ -86,7 +86,7 @@ namespace MR
 
               for (auto l = Loop (0, 3) (input, shell_image); l; ++l) {
                 value_type mean = 0;
-                for (std::vector<size_t>::const_iterator v = shell.get_volumes().begin(); v != shell.get_volumes().end(); ++v) {
+                for (vector<size_t>::const_iterator v = shell.get_volumes().begin(); v != shell.get_volumes().end(); ++v) {
                   input.index(3) = *v;
                   mean += (input.value() < 0) ? 0 : input.value();
                 }

@@ -145,7 +145,7 @@ namespace MR
           }
 
           const DWI::Directions::Mask& get_mask() const { return mask; }
-          const std::vector<float>& get_values() const { return values; }
+          const vector<float>& get_values() const { return values; }
           float get_max_peak_value() const { return max_peak_value; }
           size_t num_peaks() const { return peak_dirs.size(); }
           const Eigen::Vector3f& get_peak_dir (const size_t i) const { assert (i < num_peaks()); return peak_dirs[i]; }
@@ -156,9 +156,9 @@ namespace MR
 
         private:
           DWI::Directions::Mask mask;
-          std::vector<float> values;
+          vector<float> values;
           float max_peak_value;
-          std::vector<Eigen::Vector3f> peak_dirs;
+          vector<Eigen::Vector3f> peak_dirs;
           Eigen::Vector3f mean_dir;
           float integral;
           bool neg;
@@ -167,10 +167,10 @@ namespace MR
 
 
 
-      class FOD_lobes : public std::vector<FOD_lobe> { MEMALIGN(FOD_lobes)
+      class FOD_lobes : public vector<FOD_lobe> { MEMALIGN(FOD_lobes)
         public:
           Eigen::Array3i vox;
-          std::vector<uint8_t> lut;
+          vector<uint8_t> lut;
       };
 
 

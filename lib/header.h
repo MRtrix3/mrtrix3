@@ -45,7 +45,15 @@ namespace MR
 
   class Header { MEMALIGN (Header)
     public:
-      class Axis;
+
+      //! a class to hold attributes about each axis
+      class Axis { NOMEMALIGN
+        public:
+          Axis () noexcept : size (1), spacing (std::numeric_limits<default_type>::quiet_NaN()), stride (0) { }
+          ssize_t size;
+          default_type spacing;
+          ssize_t stride;
+      };
 
       Header () :
         transform_ (Eigen::Matrix<default_type,3,4>::Constant (NaN)),
@@ -188,7 +196,7 @@ namespace MR
 
       class NDimProxy { NOMEMALIGN
         public:
-          NDimProxy (std::vector<Axis>& axes) : axes (axes) { }
+          NDimProxy (vector<Axis>& axes) : axes (axes) { }
           NDimProxy (NDimProxy&&) = default;
           NDimProxy (const NDimProxy&) = delete;
           NDimProxy& operator=(NDimProxy&&) = default;
@@ -201,7 +209,7 @@ namespace MR
             return stream;
           }
         private:
-          std::vector<Axis>& axes; 
+          vector<Axis>& axes; 
       };
 
       //! return the number of dimensions (axes) of image
@@ -330,7 +338,7 @@ namespace MR
       friend std::ostream& operator<< (std::ostream& stream, const Header& H);
 
     protected:
-      std::vector<Axis> axes_; 
+      vector<Axis> axes_; 
       transform_type transform_; 
       std::string name_;
       std::map<std::string, std::string> keyval_;
@@ -364,15 +372,6 @@ namespace MR
 
 
 
-
-  //! a class to hold attributes about each axis
-  class Header::Axis { NOMEMALIGN
-    public:
-      Axis () noexcept : size (1), spacing (std::numeric_limits<default_type>::quiet_NaN()), stride (0) { }
-      ssize_t size;
-      default_type spacing;
-      ssize_t stride;
-  };
 
 
 

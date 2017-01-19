@@ -122,7 +122,7 @@ class LUT : public std::multimap<node_t, LUT_node>
 // Convenience function for constructing a mapping from one lookup table to another
 // NOTE: If the TARGET LUT contains multiple entries for a particular index, and a
 //   mapping TO that index is required, the conversion is ill-formed.
-std::vector<node_t> get_lut_mapping (const LUT&, const LUT&);
+vector<node_t> get_lut_mapping (const LUT&, const LUT&);
 
 
 

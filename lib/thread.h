@@ -183,8 +183,8 @@ namespace MR
               }
             }
           protected:
-            std::vector<std::future<void>> threads;
-            std::vector<typename std::remove_reference<Functor>::type, Eigen::aligned_allocator<typename std::remove_reference<Functor>::type>> functors;
+            vector<std::future<void>> threads;
+            vector<typename std::remove_reference<Functor>::type> functors;
 
         };
 

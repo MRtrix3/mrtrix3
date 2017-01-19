@@ -157,7 +157,7 @@ namespace MR
                                          {  0,  0, +1 } };
 
       // Compute normals for polygons
-      std::vector<Eigen::Vector3> polygon_normals;
+      vector<Eigen::Vector3> polygon_normals;
       normals.reserve (triangles.size() + quads.size());
       for (TriangleList::const_iterator p = triangles.begin(); p != triangles.end(); ++p)
         polygon_normals.push_back (calc_normal (*p));
@@ -169,7 +169,7 @@ namespace MR
       auto init_seg = Image<uint8_t>::scratch (H);
 
       // For every voxel, stores those polygons that may intersect the voxel
-      typedef std::map< Vox, std::vector<size_t> > Vox2Poly;
+      typedef std::map< Vox, vector<size_t> > Vox2Poly;
       Vox2Poly voxel2poly;
 
       // Map each polygon to the underlying voxels
@@ -203,7 +203,7 @@ namespace MR
         for (voxel[2] = lower_bound[2]; voxel[2] <= upper_bound[2]; ++voxel[2]) {
           for (voxel[1] = lower_bound[1]; voxel[1] <= upper_bound[1]; ++voxel[1]) {
             for (voxel[0] = lower_bound[0]; voxel[0] <= upper_bound[0]; ++voxel[0]) {
-              std::vector<size_t> this_voxel_polys;
+              vector<size_t> this_voxel_polys;
 //#if __clang__
 //              Vox2Poly::const_iterator existing = voxel2poly.find (voxel);
 //#else
@@ -241,7 +241,7 @@ namespace MR
 
       // TODO This is slow; is there a faster implementation?
       // This is essentially a connected-component analysis...
-      std::vector<Vox> to_expand;
+      vector<Vox> to_expand;
       to_expand.push_back (corner_voxels[0]);
       assign_pos_of (corner_voxels[0]).to (init_seg);
       init_seg.value() = vox_mesh_t::OUTSIDE;
@@ -297,7 +297,7 @@ namespace MR
         const Vox& voxel (i->first);
 
         // Generate a set of points within this voxel that need to be tested individually
-        std::vector<Vertex> to_test;
+        vector<Vertex> to_test;
         to_test.reserve (Math::pow3 (pve_os_ratio));
         for (size_t x_idx = 0; x_idx != pve_os_ratio; ++x_idx) {
           const float x = voxel[0] - 0.5 + ((float(x_idx) + 0.5) / float(pve_os_ratio));
@@ -312,14 +312,14 @@ namespace MR
 
         // Count the number of these points that lie inside the mesh
         int inside_mesh_count = 0;
-        for (std::vector<Vertex>::const_iterator i_p = to_test.begin(); i_p != to_test.end(); ++i_p) {
+        for (vector<Vertex>::const_iterator i_p = to_test.begin(); i_p != to_test.end(); ++i_p) {
           const Vertex& p (*i_p);
 
           float best_min_edge_distance = -INFINITY;
           bool best_result_inside = false;
 
           // Only test against those polygons that are near this voxel
-          for (std::vector<size_t>::const_iterator polygon_index = i->second.begin(); polygon_index != i->second.end(); ++polygon_index) {
+          for (vector<size_t>::const_iterator polygon_index = i->second.begin(); polygon_index != i->second.end(); ++polygon_index) {
             const Eigen::Vector3& n (polygon_normals[*polygon_index]);
 
             const size_t polygon_num_vertices = (*polygon_index < triangles.size()) ? 3 : 4;
@@ -429,7 +429,7 @@ namespace MR
 
       // Pre-compute polygon centroids and areas
       VertexList centroids;
-      std::vector<float> areas;
+      vector<float> areas;
       for (TriangleList::const_iterator p = triangles.begin(); p != triangles.end(); ++p) {
         centroids.push_back ((vertices[(*p)[0]] + vertices[(*p)[1]] + vertices[(*p)[2]]) * (1.0f/3.0f));
         areas.push_back (calc_area (*p));
@@ -448,10 +448,10 @@ namespace MR
       //
       // Initialisation is different to iterations: Need a single pass to find those
       //   polygons that actually use the vertex
-      std::vector< std::set<uint32_t> > vert_polys (vertices.size(), std::set<uint32_t>());
+      vector< std::set<uint32_t> > vert_polys (vertices.size(), std::set<uint32_t>());
       // For each vertex, don't just want to store the polygons within the neighbourhood;
       //   also want to store those that will be expanded from in the next iteration
-      std::vector< std::vector<uint32_t> > vert_polys_to_expand (vertices.size(), std::vector<uint32_t>());
+      vector< vector<uint32_t> > vert_polys_to_expand (vertices.size(), vector<uint32_t>());
 
       for (uint32_t t = 0; t != triangles.size(); ++t) {
         for (uint32_t i = 0; i != 3; ++i) {
@@ -463,7 +463,7 @@ namespace MR
       // Now, we want to expand this selection outwards for each vertex
       // To do this, also want to produce a list for each polygon: containing those polygons
       //   that share a common edge (i.e. two vertices)
-      std::vector< std::vector<uint32_t> > poly_neighbours (triangles.size(), std::vector<uint32_t>());
+      vector< vector<uint32_t> > poly_neighbours (triangles.size(), vector<uint32_t>());
       for (uint32_t i = 0; i != triangles.size(); ++i) {
         for (uint32_t j = i+1; j != triangles.size(); ++j) {
           if (triangles[i].shares_edge (triangles[j])) {
@@ -479,9 +479,9 @@ namespace MR
         for (uint32_t v = 0; v != vertices.size(); ++v) {
 
           // Find polygons at the outer edge of this expanding front, and add them to the neighbourhood for this vertex
-          std::vector<uint32_t> next_front;
-          for (std::vector<uint32_t>::const_iterator front = vert_polys_to_expand[v].begin(); front != vert_polys_to_expand[v].end(); ++front) {
-            for (std::vector<uint32_t>::const_iterator expansion = poly_neighbours[*front].begin(); expansion != poly_neighbours[*front].end(); ++expansion) {
+          vector<uint32_t> next_front;
+          for (vector<uint32_t>::const_iterator front = vert_polys_to_expand[v].begin(); front != vert_polys_to_expand[v].end(); ++front) {
+            for (vector<uint32_t>::const_iterator expansion = poly_neighbours[*front].begin(); expansion != poly_neighbours[*front].end(); ++expansion) {
               const std::set<uint32_t>::const_iterator existing = vert_polys[v].find (*expansion);
               if (existing == vert_polys[v].end()) {
                 vert_polys[v].insert (*expansion);
@@ -711,7 +711,7 @@ namespace MR
               if (vertex_count != 3 && vertex_count != 4)
                 throw Exception ("Could not parse file \"" + path + "\";  only suppport 3- and 4-vertex polygons");
 
-              std::vector<unsigned int> t (vertex_count, 0);
+              vector<unsigned int> t (vertex_count, 0);
 
               if (is_ascii) {
                 for (int index = 0; index != vertex_count; ++index) {
@@ -789,7 +789,7 @@ namespace MR
           in.read (reinterpret_cast<char*>(&attribute_byte_count), sizeof(uint16_t));
           if (attribute_byte_count)
             warn_attribute = true;
-          triangles.push_back ( std::vector<uint32_t> { uint32_t(vertices.size()-3), uint32_t(vertices.size()-2), uint32_t(vertices.size()-1) } );
+          triangles.push_back ( vector<uint32_t> { uint32_t(vertices.size()-3), uint32_t(vertices.size()-2), uint32_t(vertices.size()-1) } );
           const Eigen::Vector3 computed_normal = calc_normal (triangles.back());
           if (computed_normal.dot (normal.cast<default_type>()) < 0.0)
             warn_right_hand_rule = true;
@@ -852,7 +852,7 @@ namespace MR
             inside_facet = false;
             if (vertex_index != 3)
               throw Exception ("Error parsing STL file " + Path::basename (path) + ": facet ended with " + str(vertex_index) + " vertices");
-            triangles.push_back ( std::vector<uint32_t> { uint32_t(vertices.size()-3), uint32_t(vertices.size()-2), uint32_t(vertices.size()-1) } );
+            triangles.push_back ( vector<uint32_t> { uint32_t(vertices.size()-3), uint32_t(vertices.size()-2), uint32_t(vertices.size()-1) } );
             vertex_index = 0;
             const Eigen::Vector3 computed_normal = calc_normal (triangles.back());
             if (computed_normal.dot (normal) < 0.0)
@@ -919,7 +919,7 @@ namespace MR
           // Need to handle:
           // * Either 3 or 4 vertices - write to either triangles or quads
           // * Vertices only, vertices & texture coordinates, vertices & normals, all 3
-          std::vector<std::string> elements;
+          vector<std::string> elements;
           do {
             const size_t first_space = data.find_first_of (' ');
             if (first_space == data.npos) {
@@ -933,9 +933,9 @@ namespace MR
           } while (data.size());
           if (elements.size() != 3 && elements.size() != 4)
             throw Exception ("Malformed face information in input OBJ file (face with neither 3 nor 4 vertices; line " + str(counter) + ")");
-          std::vector<FaceData> face_data;
+          vector<FaceData> face_data;
           size_t values_per_element = 0;
-          for (std::vector<std::string>::iterator i = elements.begin(); i != elements.end(); ++i) {
+          for (vector<std::string>::iterator i = elements.begin(); i != elements.end(); ++i) {
             FaceData temp;
             temp.vertex = 0; temp.texture = 0; temp.normal = 0;
             const size_t first_slash = i->find_first_of ('/');
@@ -962,10 +962,10 @@ namespace MR
             face_data.push_back (temp);
           }
           if (face_data.size() == 3) {
-            std::vector<uint32_t> temp { face_data[0].vertex, face_data[1].vertex, face_data[2].vertex };
+            vector<uint32_t> temp { face_data[0].vertex, face_data[1].vertex, face_data[2].vertex };
             triangles.push_back (Triangle (temp));
           } else {
-            std::vector<uint32_t> temp { face_data[0].vertex, face_data[1].vertex, face_data[2].vertex, face_data[3].vertex };
+            vector<uint32_t> temp { face_data[0].vertex, face_data[1].vertex, face_data[2].vertex, face_data[3].vertex };
             quads.push_back (Quad (temp));
           }
           // The OBJ format allows defining different vertex-based normals for different faces that reference the same vertex
@@ -1209,8 +1209,8 @@ namespace MR
     }
     float Mesh::calc_area (const Quad& in) const
     {
-      const std::vector<uint32_t> v_one { in[0], in[1], in[2] };
-      const std::vector<uint32_t> v_two { in[0], in[2], in[3] };
+      const vector<uint32_t> v_one { in[0], in[1], in[2] };
+      const vector<uint32_t> v_two { in[0], in[2], in[3] };
       const Triangle one (v_one), two (v_two);
       return (calc_area (one) + calc_area (two));
     }
@@ -1264,7 +1264,7 @@ namespace MR
         } else if (prefix == "f") {
           if (index < 0)
             throw Exception ("Malformed OBJ file; face outside object (line " + str(counter) + ")");
-          std::vector<std::string> elements;
+          vector<std::string> elements;
           do {
             const size_t first_space = data.find_first_of (' ');
             if (first_space == data.npos) {
@@ -1278,9 +1278,9 @@ namespace MR
           } while (data.size());
           if (elements.size() != 3 && elements.size() != 4)
             throw Exception ("Malformed face information in input OBJ file (face with neither 3 nor 4 vertices; line " + str(counter) + ")");
-          std::vector<FaceData> face_data;
+          vector<FaceData> face_data;
           size_t values_per_element = 0;
-          for (std::vector<std::string>::iterator i = elements.begin(); i != elements.end(); ++i) {
+          for (vector<std::string>::iterator i = elements.begin(); i != elements.end(); ++i) {
             FaceData temp;
             temp.vertex = 0; temp.texture = 0; temp.normal = 0;
             const size_t first_slash = i->find_first_of ('/');
@@ -1306,10 +1306,10 @@ namespace MR
             face_data.push_back (temp);
           }
           if (face_data.size() == 3) {
-            std::vector<uint32_t> temp { face_data[0].vertex, face_data[1].vertex, face_data[2].vertex };
+            vector<uint32_t> temp { face_data[0].vertex, face_data[1].vertex, face_data[2].vertex };
             triangles.push_back (Triangle (temp));
           } else {
-            std::vector<uint32_t> temp { face_data[0].vertex, face_data[1].vertex, face_data[2].vertex, face_data[3].vertex };
+            vector<uint32_t> temp { face_data[0].vertex, face_data[1].vertex, face_data[2].vertex, face_data[3].vertex };
             quads.push_back (Quad (temp));
           }
         } else if (prefix == "g") {

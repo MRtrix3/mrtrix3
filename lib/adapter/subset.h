@@ -62,7 +62,7 @@ namespace MR
 
       protected:
         using Base<ImageType>::parent;
-        const std::vector<ssize_t> from_, size_;
+        const vector<ssize_t> from_, size_;
         transform_type transform_;
     };
 

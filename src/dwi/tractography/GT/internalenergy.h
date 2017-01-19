@@ -107,7 +107,7 @@ namespace MR {
         protected:
           ParticleGrid& pGrid;
           double cpot, dEint;
-          std::vector<ParticleEnd> neighbourhood;
+          vector<ParticleEnd> neighbourhood;
           double normalization;
           Math::RNG::Uniform<double> rng_uniform;
           

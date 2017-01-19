@@ -30,7 +30,7 @@ namespace MR
           using Base<ImageType>::parent;
           typedef typename ImageType::value_type value_type;
 
-          PermuteAxes (const ImageType& original, const std::vector<int>& axes) :
+          PermuteAxes (const ImageType& original, const vector<int>& axes) :
             Base<ImageType> (original), 
             axes_ (axes) {
               for (int i = 0; i < static_cast<int> (parent().ndim()); ++i) {
@@ -64,7 +64,7 @@ next_axis:
           void move_index (size_t axis, ssize_t increment) { parent().index (axes_[axis]) += increment; }
 
         private:
-          const std::vector<int> axes_;
+          const vector<int> axes_;
 
       };
 

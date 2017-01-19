@@ -157,7 +157,7 @@ namespace MR
       const Shared& S;
       Interpolator<Image<float>>::type source;
 
-      std::vector<Eigen::Vector3f> positions, tangents;
+      vector<Eigen::Vector3f> positions, tangents;
       size_t sample_idx;
 
     };

@@ -47,7 +47,7 @@ public:
                     bool use_special_colourmaps = true,
                     bool use_customise_state_items = true);
     void set_colourmap_index(size_t index);
-    std::vector<QAction*> colourmap_actions;
+    vector<QAction*> colourmap_actions;
     void open_menu (const QPoint& p) { colourmap_menu->exec (p); }
 private:
     void init_menu(bool create_shortcuts, bool use_special, bool customise_state);
@@ -56,8 +56,8 @@ private:
     void init_special_colour_menu_items(bool create_shortcuts);
     void init_customise_state_menu_items();
 
-    static const std::vector<ColourMap::Entry> core_colourmaps_entries;
-    static const std::vector<ColourMap::Entry> special_colourmaps_entries;
+    static const vector<ColourMap::Entry> core_colourmaps_entries;
+    static const vector<ColourMap::Entry> special_colourmaps_entries;
 
     ColourMapButtonObserver& observer;
     QActionGroup *core_colourmaps_actions;

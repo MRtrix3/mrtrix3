@@ -25,10 +25,10 @@ namespace MR {
 
 
 
-        bool FixedStepSize::operator() (std::vector<Eigen::Vector3f>& tck) const
+        bool FixedStepSize::operator() (vector<Eigen::Vector3f>& tck) const
         {
           Math::Hermite<float> interp (hermite_tension);
-          std::vector<Eigen::Vector3f> output;
+          vector<Eigen::Vector3f> output;
           // Extensions required to enable Hermite interpolation in last streamline segment at either end
           const size_t s = tck.size();
           tck.insert    (tck.begin(), tck[0] + (tck[0] - tck[ 1 ]));

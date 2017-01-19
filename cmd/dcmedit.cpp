@@ -93,8 +93,8 @@ inline uint16_t read_hex (const std::string& m)
 
 void run ()
 {
-  std::vector<Tag> tags;
-  std::vector<uint16_t> VRs;
+  vector<Tag> tags;
+  vector<uint16_t> VRs;
 
   auto opt = get_options ("anonymise");
   if (opt.size()) {

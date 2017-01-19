@@ -26,7 +26,7 @@ namespace MR
   {
 
     extern const transform_type NoTransform;
-    extern const std::vector<int> AutoOverSample;
+    extern const vector<int> AutoOverSample;
 
     //! \addtogroup interp
     // @{
@@ -79,7 +79,7 @@ namespace MR
           Reslice (const ImageType& original,
                    const HeaderType& reference,
                    const transform_type& transform = NoTransform,
-                   const std::vector<int>& oversample = AutoOverSample,
+                   const vector<int>& oversample = AutoOverSample,
                    const value_type value_when_out_of_bounds = Interp::Base<ImageType>::default_out_of_bounds_value()) :
             interp (original, value_when_out_of_bounds),
             x { 0, 0, 0 },

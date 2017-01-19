@@ -99,7 +99,7 @@ namespace MR
 
     void Projection::draw_orientation_labels () const
     {
-      std::vector<OrientationLabel> labels;
+      vector<OrientationLabel> labels;
       labels.push_back (OrientationLabel (model_to_screen_direction (Eigen::Vector3f {-1.0,  0.0,  0.0}), 'L'));
       labels.push_back (OrientationLabel (model_to_screen_direction (Eigen::Vector3f { 1.0,  0.0,  0.0}), 'R'));
       labels.push_back (OrientationLabel (model_to_screen_direction (Eigen::Vector3f { 0.0, -1.0,  0.0}), 'P'));
