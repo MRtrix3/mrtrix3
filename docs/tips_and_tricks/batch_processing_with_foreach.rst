@@ -34,14 +34,14 @@ Other people may pefer to organise their imaging datasets with one folder per im
   study/dwi/005_control.mif
   study/dwi/006_control.mif
 
-The :code:`NAME` keyword canbe useful in this situation to loop over all subjects::
+The :code:`NAME` keyword can be used in this situation to loop over all subjects::
 
   $ mkdir study/dwi_denoised
   $ foreach study/dwi/* : dwidenoise IN study/dwi_denoised/NAME
 
-Here, the IN keyword will be substituted with the full string from the matching pattern (:code:`study/dwi/001_patient.mif`, :code:`study/dwi/002_patient.mif`, etc), however the NAME keyword will be replaced with the *basename* of the matching pattern (:code:`001_patient.mif`, :code:`002_patient.mif` etc).
+Here, the IN keyword will be substituted with the full string from the matching pattern (:code:`study/dwi/001_patient.mif`, :code:`study/dwi/002_patient.mif`, etc), however the NAME keyword will be replaced with the *basename* of the matching pattern (:code:`001_patient.mif`, :code:`002_patient.mif`, etc).
 
-Alternatively, the same result can be achieved by running foreach from inside the :code:`dwi` directory. In this case NAME would not be required. For example::
+Alternatively, the same result can be achieved by running foreach from inside the :code:`study/dwi` directory. In this case NAME would not be required. For example::
 
   $ mkdir study/dwi_denoised
   $ cd study/dwi
@@ -50,7 +50,7 @@ Alternatively, the same result can be achieved by running foreach from inside th
 
 Example 3 - using PRE
 ----------------------
-For this example let us assume we want to convert all dwi.mif files from example 1 to NIfTI file format (*.nii). This can be performed using::
+For this example let us assume we want to convert all dwi.mif files from example 2 to NIfTI file format (*.nii). This can be performed using::
 
   $ foreach study/dwi/* : mrconvert IN study/dwi/PRE.nii
   $ rm *.mif
@@ -65,9 +65,9 @@ As an example of a single :code:`foreach` command running multiple sequential co
   $ foreach study/dwi/* : mrconvert IN study/dwi/PRE.nii "&&" rm IN
 
 
-As shown the :code:`&&` operator must be escaped with quotes to prevent the shell from interpreting it. Bash operator characters can also be escaped with :code:`\`, for example to :ref:`pipe an image <unix_pipelines>` between two MRtrix commands (assuming the data set directory layout from example 1)::
+As shown the :code:`&&` operator must be escaped with quotes to prevent the shell from interpreting it. Bash operator characters can also be escaped with the \ character, for example to :ref:`pipe an image <unix_pipelines>` between two MRtrix commands (assuming the data set directory layout from example 1)::
 
-  $ foreach study/* : dwiextract -bzero IN/dwi.mif - \| mrmath - mean -axis 3 study/IN/mean_b0.mif
+  $ foreach study/* : dwiextract -bzero IN/dwi.mif - \| mrmath - mean -axis 3 IN/mean_b0.mif
 
 
 Example 5 - Parallel Processing
@@ -76,7 +76,7 @@ To run multiple jobs at once, add the -N option before the colon, where N is the
 
   $ foreach -8 study/* : dwidenoise IN/dwi.mif IN/dwi_denoised.mif
 
-will run up to 8 of the required jobs in parallel. Note that most MRtrix commands are multi-threaded and will use all available CPU cores anyway, and therefore running multiple jobs in parallel will not change the computation time greatly.
+will run up to 8 of the required jobs in parallel. Note that most MRtrix commands are multi-threaded and will use all available CPU cores, and therefore running multiple jobs in parallel is unlikely to benefit the computation time.
 
 
 
