@@ -198,12 +198,14 @@ namespace MR
     class vector : public ::std::vector<X, Eigen::aligned_allocator<X>> { NOMEMALIGN
       public:
         using ::std::vector<X,Eigen::aligned_allocator<X>>::vector;
+        vector() { }
     };
 
   template <typename X>
     class vector<X,0> : public ::std::vector<X> { NOMEMALIGN
       public:
         using ::std::vector<X>::vector;
+        vector() { }
     };
 
 }
