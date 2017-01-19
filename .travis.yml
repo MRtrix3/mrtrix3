@@ -1,29 +1,26 @@
 sudo: false
 language: cpp
-os:
-  - linux
 addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
     packages:
       - zlib1g-dev
-      - libgsl0-dev
-      - g++-4.8
       - libqt4-opengl-dev
+      - g++-4.8
       - python3
 compiler:
   - clang
 env:
-  - python_version=2
-  - python_version=3
+  - py=python2
+  - py=python3
 install: 
   - export NUMBER_OF_PROCESSORS=4
   - export PATH=`pwd`/release/bin:`pwd`/scripts:${PATH}
   - export EIGEN_CFLAGS=-I`pwd`/../eigen
   - (cd ..; hg clone https://bitbucket.org/eigen/eigen/; cd eigen; hg update 3.3)
 script:
-        - ./check_memalign && if [ ${python_version} = "3" ]; then python3 ./configure -assert && python3 ./build -nowarnings && ./run_tests; else ./configure -assert && ./build -nowarnings && ./run_tests; fi
+  - ./check_memalign && $py ./configure -assert && $py ./build -nowarnings && ./run_tests
 
 after_failure: 
   - cat memalign.log
