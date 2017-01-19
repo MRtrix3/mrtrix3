@@ -490,11 +490,15 @@ namespace MR
     template <class ImageType>
       class ConstRow {
         public:
-          ConstRow (ImageType& image, size_t axis) : image (image), axis (axis) { assert (axis >= 0 && axis < image.ndim()); }
+          ConstRow (ImageType& image, size_t axis) : axis (axis), image (image) { assert (axis >= 0 && axis < image.ndim()); }
           ssize_t size () const { return image.size (axis); }
           typename ImageType::value_type operator[] (ssize_t n) const { image.index (axis) = n; return image.value(); }
-          ImageType& image;
           const size_t axis;
+        protected:
+          ImageType& image;
+          template <class MatrixType>     friend class Eigen::Matrix;
+          template <class Derived>        friend class Eigen::MatrixBase;
+          template <class OtherImageType> friend class Row;
       };
 
 
