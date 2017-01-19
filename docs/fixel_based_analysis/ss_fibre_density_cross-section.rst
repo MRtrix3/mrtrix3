@@ -4,9 +4,7 @@ Fibre Density and Cross-section - Single Shell DWI
 Introduction
 -------------
 
-This tutorial explains how to perform `fixel-based analysis of fibre density and cross-section <https://www.ncbi.nlm.nih.gov/pubmed/27639350>`_ using single-shell data. While the focus here is on the analysis of `Apparent Fibre Density (AFD) <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`_ derived from FODs, other fixel-based measures related to fibre density can also be analysed with a few minor modifications to these steps (as outlined below). We note that high b-value (>2000) data is recommended to aid the interpretation of AFD being related to the intra-axonal space. See the `original paper <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`_ for more details.
-
-.. WARNING:: This tutorial assumes you have already pre-processed your data to remove artefacts (e.g. eddy-current and magnetic suseptibility-induced distortions and subject motion). If performing analysis of AFD derived from FODs, then additional pre-processing is required and explained in `this tutorial <http://mrtrix.readthedocs.io/en/latest/workflows/DWI_preprocessing_for_quantitative_analysis.html>`_.
+This tutorial explains how to perform `fixel-based analysis of fibre density and cross-section <https://www.ncbi.nlm.nih.gov/pubmed/27639350>`_ using single-shell data. While the focus here is on the analysis of `Apparent Fibre Density (AFD) <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`_ derived from FODs, other fixel-based measures related to fibre density can also be analysed with a few minor modifications to these steps (as outlined below). We note that high b-value (>2000s/mm2) data is recommended to aid the interpretation of AFD being related to the intra-axonal space. See the `original paper <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`_ for more details.
 
 Note that for all MRtrix scripts and commands, additional information on the command usage and available command-line options can be found by invoking the command with the :code:`-help` option. Please post any questions or issues on the `MRtrix community forum <http://community.mrtrix.org/>`_.
 
@@ -23,7 +21,7 @@ The effective SNR of diffusion data can be improved considerably by exploiting t
 
   dwidenoise <input_dwi> <output_dwi>
 
-Note that this denoising step *must* be performed prior to any other image pre-processing: any form of image interpolation (e.g. re-gridding images following motion correction) will invalidate the statistical properties of the image data that are exploited by ``dwidenoise``, and make the denoising process prone to errors. Therefore this process is applied as the very first step.
+Note that this denoising step *must* be performed prior to any other image pre-processing: any form of image interpolation (e.g. re-gridding images following motion correction) will invalidate the statistical properties of the image data that are exploited by :ref:`dwidenoise`, and make the denoising process prone to errors. Therefore this process is applied as the very first step.
 
 
 2. DWI general pre-processing
@@ -40,21 +38,21 @@ Here, only a simple example is provided, where a single DWI series is acquired w
 
 3. Estimate a brain mask
 ^^^^^^^^^^^^^^^^^^^^^^^^^
-A whole-brain mask is required as input to the subsequent bias field correction step. This can be computed with::
+A whole-brain mask is required as input to subsequent steps. This can be computed with::
 
   dwi2mask <input_dwi> <output_mask>
 
 
 
-AFD-specific processsing steps
+AFD-specific pre-processsing steps
 --------------------------------
 
-To enable robust quantitative comparisons of AFD across subjects three additional steps are required (note these can be skipped if analysing other DWI fixel-based measures related to fibre density (for example CHARMED).
+To enable robust quantitative comparisons of AFD across subjects three additional steps are required. Note these can be skipped if analysing other DWI fixel-based measures related to fibre density (for example CHARMED).
 
 
 4. Bias field correction
 ^^^^^^^^^^^^^^^^^^^^^^^^
-Because we recommend a :ref:`global-intensity-normalisation`, bias field correction is required as a pre-processing step to eliminate low frequency intensity inhomogeneities across the image. DWI bias field correction is perfomed by first estimating a correction field from the DWI b=0 image, then applying the field to correct all DW volumes. This can be done in a single step using the :ref:`dwibiascorrect` script in MRtrix. The script uses bias field correction algorthims available in `ANTS <http://stnava.github.io/ANTs/>`_ or `FSL <http://fsl.fmrib.ox.ac.uk/>`_. In our experience the `N4 algorithm <http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3071855/>`_ in ANTS gives superiour results. To install N4 install the `ANTS <http://stnava.github.io/ANTs/>`_ package, then run perform bias field correction on DW images using::
+Because we recommend a :ref:`global intensity normalisation <global-intensity-normalisation>`, bias field correction is required as a pre-processing step to eliminate low frequency intensity inhomogeneities across the image. DWI bias field correction is perfomed by first estimating a correction field from the DWI b=0 image, then applying the field to correct all DW volumes. This can be done in a single step using the :ref:`dwibiascorrect` script in MRtrix. The script uses bias field correction algorthims available in `ANTS <http://stnava.github.io/ANTs/>`_ or `FSL <http://fsl.fmrib.ox.ac.uk/>`_. In our experience the `N4 algorithm <http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3071855/>`_ in ANTS gives superiour results. To install N4 install the `ANTS <http://stnava.github.io/ANTs/>`_ package, then run perform bias field correction on DW images using::
 
     dwibiascorrect -ants -mask <input_brain_mask> <input_dwi> <output_corrected_dwi>
 
@@ -62,7 +60,7 @@ Because we recommend a :ref:`global-intensity-normalisation`, bias field correct
 5. Global intensity normalisation across subjects
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-As outlined :ref:`here <global-intensity-normalisation>`, a global intensity normalisation is required to perform robust comparisons of AFD across individuals. For single-shell data this can be achieved:
+As outlined :ref:`here <global-intensity-normalisation>`, a global intensity normalisation is recommended for AFD analysis. For single-shell data this can be achieved using the :ref:`dwiintensitynorm` script. The script performs normalisation on all subject within a study, and therefore the input and output arguments are folders containing all study images:
 
     dwiintensitynorm <input_dwi_folder> <input_brain_mask_folder> <output_normalised_dwi_folder> <output_fa_template> <output_template_wm_mask>
 
@@ -91,10 +89,6 @@ Alternatively, to ensure the response function is representative of your study p
 Fixel-based analysis steps
 ---------------------------
 
-.. WARNING:: The following steps and commands are pre-release only. It is likely that some command and option names will change over the next few months, however the overall process will remain the same. We recommend you don't update MRtrix half way through a study, and look out for update announcements on the `MRtrix community <http://community.mrtrix.org/>`_ and `blog <www.mrtrix.org/blog/>`_ pages.
-
-Note that for all MRtrix scripts and commands, additional information on the command usage and available command-line options can be found by invoking the command with the :code:`-help` option. 
-
 7. Upsampling DW images
 ^^^^^^^^^^^^^^^^^^^^^^^
 Upsampling DWI data before computing FODs can `increase anatomical contrast <http://www.sciencedirect.com/science/article/pii/S1053811914007472>`_ and improve downstream spatial normalisation and statistics. We recommend upsampling by a factor of two using bspline interpolation::
@@ -107,6 +101,10 @@ Compute a whole brain mask from the upsampled DW images::
     
     dwi2mask <input_upsampled_dwi> <output_upsampled_mask>
 
+Depending on your data, you may find that upsampling the low-resolution masks from step 3 gives superiour masks (with less holes). This can be performed using::
+
+    mrresize <input_mask> -scale 2.0 -inter nearest <output_upsampled_mask>
+
 9. Fibre Orientation Distribution estimation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This command performs Constrained Spherical Deconvolution (CSD) using the group average response function `estimated previously  <http://userdocs.mrtrix.org/en/latest/workflows/DWI_preprocessing_for_quantitative_analysis.html>`_. Note that :code:`dwi2fod csd` can be used, however here we use :code:`dwi2fod msmt_csd` (even with single shell data) to benefit from the hard non-negativity constraint::
@@ -114,7 +112,7 @@ This command performs Constrained Spherical Deconvolution (CSD) using the group 
     dwiextract <input_upsampled_dwi> - | dwi2fod msmt_csd - <group_average_response_text_file> <output_fod_image> -mask <input_upsampled_mask>
 
 10. Generate a study-specific unbiased FOD template
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Population template creation is the most time consuming step in a fixel-based analysis. If you have a large number of subjects in your study, we recommend building the template from a subset of 20-40 individuals. Subjects should be chosen to ensure the generated template is representative of your population (i.e. equal number of patients and controls). To build a template, place all FOD images in a single folder. We also recommend placing a set of corresponding mask images (with the same prefix as the FOD images) in another folder. Using masks can speed up registration significantly. Run the population_template building script as follows::
     
     population_template <input_folder_of_FOD_images> -mask_dir <input_mask_folder> <output_fod_template_image>
@@ -141,35 +139,35 @@ Compute the intersection of all warped masks::
     
 13. Compute a white matter template analysis fixel mask
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Here we perform a 2-step threshold to identify template white matter fixels to be included in the analysis. Fixels in the template fixel analysis mask are also used to identify the best fixel correspondence across all subjects (i.e. match fixels across subjects within a voxel). 
+Here we perform a 2-step threshold to identify template white matter fixels to be included in the analysis. Fixels in the template fixel analysis mask are also used to identify the best fixel correspondence across all subjects (i.e. match fixels across subjects within a voxel).
        
 Compute a template AFD peaks fixel image::
     
-    fod2fixel <input_fod_template_image> -mask <input_template_mask_intersection> -peak <template_peaks_image.msf> 
+    fod2fixel fod_template.mif -mask template_mask_intersection.mif fixel_directory<output -peak peaks.mif
     
-.. NOTE:: Fixel images in MRtrix must be stored using the .msf (MRtrix sparse format) extension. 
+.. NOTE:: Fixel images in this step are stored using the :ref:`fixel_format`.
     
-Next view the peaks file using the vector plot tool in mrview and identify an appropriate threshold that removes peaks from grey matter, yet does not introduce any 'holes' in your white matter (approximately 0.33).      
+Next view the peaks file using the fixel plot tool in :ref:`mrview` and identify an appropriate threshold that removes peaks from grey matter, yet does not introduce any 'holes' in your white matter (approximately 0.33).
 
 Threshold the peaks fixel image::
     
-    fixelthreshold -crop <template_peaks_image.msf> 0.33 <analysis_fixel_mask.msf>
+    mrthreshold <input_fixel_directory_step1/peaks.mif> 0.33 <fixel_directory/mask.mif>
 
 Generate an analysis voxel mask from the fixel mask. The median filter in this step should remove spurious voxels outside the brain, and fill in the holes in deep white matter where you have small peaks due to 3-fibre crossings::
 
-    fixel2voxel <analysis_fixel_mask.msf> count - | mrthreshold - - -abs 0.5 | mrfilter - median <output_analysis_voxel_mask>
+    fixel2voxel <fixel_directory/mask.mif> count - | mrthreshold - - -abs 0.5 | mrfilter - median <output_analysis_voxel_mask>
 
 Recompute the fixel mask using the analysis voxel mask. Using the mask allows us to use a lower AFD threshold than possible in the steps above, to ensure we have included fixels with low AFD inside white matter::
  
-    fod2fixel -mask <input_analysis_voxel_mask> <input_fod_template_image> -peak <output_temp.msf>
+    fod2fixel -mask <input_analysis_voxel_mask> <input_fod_template_image> <output_fixel_directory> -peak peaks.mif
     fixelthreshold <input_temp.msf> -crop 0.2 <output_analysis_fixel_mask.msf> -force
     rm <temp.msf>
     
-.. NOTE:: We recommend having no more than 500,000 fixels in the analysis_fixel_mask (you can check this with :code:`fixelstats`), otherwise downstream statistical analysis (using :code:`fixelcfestats`) will run out of RAM). A mask with 500,000 fixels will require a PC with 128GB of RAM for the statistical analysis step.
+.. NOTE:: We recommend having no more than 500,000 fixels in the analysis_fixel_mask (you can check this with :code:`fixelstats`), otherwise downstream statistical analysis (using :ref:`fixelcfestats`) will run out of RAM). A mask with 500,000 fixels will require a PC with 128GB of RAM for the statistical analysis step.
 
-14. Transform FOD images to template space
+14. Warp FOD images to template space
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Note that here we transform FOD images into template space *without* FOD reorientation. Reorientation will be performed in a separate subsequent step:: 
+Note that here we warp FOD images into template space *without* FOD reorientation. Reorientation will be performed in a separate subsequent step::
 
     mrtransform <input_subject_fod_image> -warp <subject2template_warp> -noreorientation <output_warped_fod_image>
 
@@ -179,7 +177,7 @@ Here we segment each FOD lobe to identify the number and orientation of fixels i
 
     fod2fixel <input_warped_fod_image> -mask <input_analysis_voxel_mask> <output_fixel_folder> -afd <fd.mif>
     
-.. NOTE:: If you would like to perform fixel-based analysis of metrics derived from other diffusion MRI models (e.g. CHARMED), replace steps 8 & 9. For example, in step 8 you can warp preprocessed DW images (also without any reorientation). In step 9 you could then estimate your DWI model of choice. 
+.. NOTE:: If you would like to perform fixel-based analysis of metrics derived from other diffusion MRI models (e.g. CHARMED), replace steps 14 & 15. For example, in step 14 you can warp preprocessed DW images (also without any reorientation). In step 15 you could then estimate your DWI model of choice, and output the FD related measure to the :ref:`fixel_format`, ready for the subsequent fixel reorientation step.
     
     
 16. Reorient fixel orientations
