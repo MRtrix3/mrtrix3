@@ -153,7 +153,7 @@ class Processor { MEMALIGN(Processor)
                Eigen::Matrix<value_type, Eigen::Dynamic, 2>& directions,
                int lmax,
                int npeaks,
-               std::vector<Direction> true_peaks,
+               vector<Direction> true_peaks,
                value_type threshold,
                Image<value_type>* ipeaks_data) :
       dirs_vox (dirs_data),
@@ -177,7 +177,7 @@ class Processor { MEMALIGN(Processor)
         return true;
       }
 
-      std::vector<Direction> all_peaks;
+      vector<Direction> all_peaks;
 
       for (size_t i = 0; i < size_t(dirs.rows()); i++) {
         Direction p (dirs (i,0), dirs (i,1));
@@ -251,9 +251,9 @@ class Processor { MEMALIGN(Processor)
     Image<value_type> dirs_vox;
     Eigen::Matrix<value_type, Eigen::Dynamic, 2> dirs;
     int lmax, npeaks;
-    std::vector<Direction> true_peaks;
+    vector<Direction> true_peaks;
     value_type threshold;
-    std::vector<Direction> peaks_out;
+    vector<Direction> peaks_out;
     copy_ptr<Image<value_type> > ipeaks_vox;
 
     bool check_input (const Item& item) {
@@ -308,7 +308,7 @@ void run ()
   int npeaks = get_option_value ("num", DEFAULT_NPEAKS);
 
   opt = get_options ("direction");
-  std::vector<Direction> true_peaks;
+  vector<Direction> true_peaks;
   for (size_t n = 0; n < opt.size(); ++n) {
     Direction p (Math::pi*to<float> (opt[n][0]) /180.0, Math::pi*float (opt[n][1]) /180.0);
     true_peaks.push_back (p);

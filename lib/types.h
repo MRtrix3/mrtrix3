@@ -195,21 +195,15 @@ namespace MR
 
 
   template <typename X, int N=(alignof(X)>MRTRIX_ALLOC_MEM_ALIGN)>
-    class memalign_vector { NOMEMALIGN
+    class vector : public std::vector<X, Eigen::aligned_allocator<X>> { NOMEMALIGN
       public:
-        memalign_vector() = delete;
-        memalign_vector(const memalign_vector&) = delete;
-        memalign_vector(memalign_vector&&) = delete;
-        typedef std::vector<X, Eigen::aligned_allocator<X>> type;
+        using std::vector<X,Eigen::aligned_allocator<X>>::vector;
     };
 
   template <typename X>
-    class memalign_vector<X,0> { NOMEMALIGN
+    class vector<X,0> : public std::vector<X> { NOMEMALIGN
       public:
-        memalign_vector() = delete;
-        memalign_vector(const memalign_vector&) = delete;
-        memalign_vector(memalign_vector&&) = delete;
-        typedef std::vector<X> type;
+        using std::vector<X>::vector;
     };
 
 }

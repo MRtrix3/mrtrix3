@@ -222,7 +222,7 @@ namespace MR
           private:
             ParamType get_parameters () {
               // create resized midway image
-              memalign_vector<Eigen::Transform<default_type, 3, Eigen::Projective>>::type init_transforms;
+              vector<Eigen::Transform<default_type, 3, Eigen::Projective>> init_transforms;
               {
                 Eigen::Transform<default_type, 3, Eigen::Projective> init_trafo_1 = local_trafo.get_transform_half_inverse();
                 Eigen::Transform<default_type, 3, Eigen::Projective> init_trafo_2 = local_trafo.get_transform_half();
@@ -231,7 +231,7 @@ namespace MR
               }
               auto padding = Eigen::Matrix<default_type, 4, 1>(0.0, 0.0, 0.0, 0.0);
               int subsample = 1;
-              memalign_vector<Header>::type headers;
+              vector<Header> headers;
               headers.push_back (Header (im1));
               headers.push_back (Header (im2));
               midway_image_header = compute_minimum_average_header (headers, subsample, padding, init_transforms);
@@ -323,7 +323,7 @@ namespace MR
             Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_el;
             Eigen::Matrix<default_type, Eigen::Dynamic, 3> xyz;
             Eigen::Matrix<default_type, Eigen::Dynamic, 1> overlap_it, cost_it;
-            memalign_vector<transform_type>::type trafo_it;
+            vector<transform_type> trafo_it;
           };
     } // namespace RotationSearch
   }

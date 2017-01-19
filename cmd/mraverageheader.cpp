@@ -69,7 +69,7 @@ void run ()
 
     bool fill = get_options ("fill").size();
 
-    memalign_vector<Header>::type headers_in;
+    vector<Header> headers_in;
     size_t dim (Header::open (argument[0]).ndim());
     if (dim < 3 or dim > 4)
       throw Exception ("Please provide 3D or 4D images");
@@ -85,7 +85,7 @@ void run ()
         }
     }
 
-    memalign_vector<Eigen::Transform<default_type, 3, Eigen::Projective>>::type transform_header_with;
+    vector<Eigen::Transform<default_type, 3, Eigen::Projective>> transform_header_with;
     auto H = compute_minimum_average_header (headers_in, resolution, padding, transform_header_with);
     H.datatype() = DataType::Bit;
     if (fill) {
