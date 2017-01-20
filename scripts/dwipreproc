@@ -15,23 +15,17 @@
 # * The total readout time of the EPI acquisition. This affects the magnitude of the image distortion for a given field inhomogeneity. If this information is not provided via the -readout_time option, then a 'sane' default of 0.1s will be assumed. Note that this is not actually expected to influence the estimation of the field; it will result in the field inhomogeneity estimation being scaled by some factor, but as long as it uses the same sane default for the DWIs, the distortion correction should operate as expected.
 
 import math, os, sys
-import lib.app, lib.cmdlineParser
+import lib.app
+import lib.cmdlineParser
+import lib.file
+import lib.fsl
+import lib.image
+import lib.message
+import lib.misc
+import lib.path
+import lib.phaseEncoding
 
-from lib.binaryInPath      import binaryInPath
-from lib.delFile           import delFile
-from lib.errorMessage      import errorMessage
-from lib.getFSLEddyPath    import getFSLEddyPath
-from lib.getFSLSuffix      import getFSLSuffix
-from lib.getHeaderInfo     import getHeaderInfo
-from lib.getHeaderProperty import getHeaderProperty
-from lib.getUserPath       import getUserPath
-from lib.getPEDir          import getPEDir
-from lib.getPEScheme       import getPEScheme
-from lib.imagesMatch       import imagesMatch
-from lib.isWindows         import isWindows
-from lib.printMessage      import printMessage
 from lib.runCommand        import runCommand
-from lib.warnMessage       import warnMessage
 
 lib.app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
 lib.app.addCitation('', 'Andersson, J. L. & Sotiropoulos, S. N. An integrated approach to correction for off-resonance effects and subject movement in diffusion MR imaging. NeuroImage, 2015, 125, 1063-1078', True)
@@ -67,8 +61,8 @@ lib.cmdlineParser.flagMutuallyExclusiveOptions( [ 'rpe_header', 'readout_time' ]
 lib.app.initialise()
 
 
-if isWindows():
-  errorMessage('Script cannot run on Windows due to FSL dependency')
+if lib.misc.isWindows():
+  lib.message.error('Script cannot run on Windows due to FSL dependency')
 
 PE_design = ''
 if lib.app.args.rpe_none:
@@ -76,82 +70,82 @@ if lib.app.args.rpe_none:
 elif lib.app.args.rpe_pair:
   PE_design = 'Pair'
   if not lib.app.args.se_epi:
-    errorMessage('If using the -rpe_pair option, the -se_epi option must be used to provide the spin-echo EPI data to be used by topup')
+    lib.message.error('If using the -rpe_pair option, the -se_epi option must be used to provide the spin-echo EPI data to be used by topup')
 elif lib.app.args.rpe_all:
   PE_design = 'All'
 elif lib.app.args.rpe_header:
   PE_design = 'Header'
 else:
-  errorMessage('Must explicitly specify phase-encoding acquisition design (even if none)')
+  lib.message.error('Must explicitly specify phase-encoding acquisition design (even if none)')
 
 fsl_path = os.environ.get('FSLDIR', '')
 if not fsl_path:
-  errorMessage('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
+  lib.message.error('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
 
 if not PE_design == 'None':
   topup_config_path = os.path.join(fsl_path, 'etc', 'flirtsch', 'b02b0.cnf')
   if not os.path.isfile(topup_config_path):
-    errorMessage('Could not find necessary default config file for FSL\'s topup program\n(expected location: ' + topup_config_path + ')')
+    lib.message.error('Could not find necessary default config file for FSL\'s topup program\n(expected location: ' + topup_config_path + ')')
 
   topup_cmd = 'topup'
-  if not binaryInPath(topup_cmd):
+  if not lib.misc.haveBinary(topup_cmd):
     topup_cmd = 'fsl5.0-topup'
-    if not binaryInPath(topup_cmd):
-      errorMessage('Could not find FSL program topup; please verify FSL install')
+    if not lib.misc.haveBinary(topup_cmd):
+      lib.message.error('Could not find FSL program topup; please verify FSL install')
 
   applytopup_cmd = 'applytopup'
-  if not binaryInPath(applytopup_cmd):
+  if not lib.misc.haveBinary(applytopup_cmd):
     applytopup_cmd = 'fsl5.0-applytopup'
-    if not binaryInPath(applytopup_cmd):
-      errorMessage('Could not find FSL program applytopup; please verify FSL install')
+    if not lib.misc.haveBinary(applytopup_cmd):
+      lib.message.error('Could not find FSL program applytopup; please verify FSL install')
 
-eddy_cmd = getFSLEddyPath(lib.app.args.cuda)
-fsl_suffix = getFSLSuffix()
+eddy_cmd = lib.fsl.eddyBinary(lib.app.args.cuda)
+fsl_suffix = lib.fsl.suffix()
 lib.app.checkOutputFile(lib.app.args.output)
 
 # Export the gradient table to the path requested by the user if necessary
 grad_export_option = ''
 if lib.app.args.export_grad_mrtrix:
-  grad_export_option = ' -export_grad_mrtrix ' + getUserPath(lib.app.args.export_grad_mrtrix, True)
-  lib.app.checkOutputFile(getUserPath(lib.app.args.export_grad_mrtrix, True))
+  grad_export_option = ' -export_grad_mrtrix ' + lib.path.fromUser(lib.app.args.export_grad_mrtrix, True)
+  lib.app.checkOutputFile(lib.path.fromUser(lib.app.args.export_grad_mrtrix, True))
 elif lib.app.args.export_grad_fsl:
-  grad_export_option = ' -export_grad_fsl ' + getUserPath(lib.app.args.export_grad_fsl[0], True) + ' ' + getUserPath(lib.app.args.export_grad_fsl[1], True)
-  lib.app.checkOutputFile(getUserPath(lib.app.args.export_grad_fsl[0], True))
-  lib.app.checkOutputFile(getUserPath(lib.app.args.export_grad_fsl[1], True))
+  grad_export_option = ' -export_grad_fsl ' + lib.path.fromUser(lib.app.args.export_grad_fsl[0], True) + ' ' + lib.path.fromUser(lib.app.args.export_grad_fsl[1], True)
+  lib.app.checkOutputFile(lib.path.fromUser(lib.app.args.export_grad_fsl[0], True))
+  lib.app.checkOutputFile(lib.path.fromUser(lib.app.args.export_grad_fsl[1], True))
 
 
 # Convert all input images into MRtrix format and store in temprary directory first;
-#   that way getHeaderInfo() can be run multiple times without having to repeatedly parse e.g. DICOM data
+#   that way lib.image.headerField() can be run multiple times without having to repeatedly parse e.g. DICOM data
 lib.app.makeTempDir()
 
 grad_option = ''
 if lib.app.args.grad:
-  grad_option = ' -grad ' + getUserPath(lib.app.args.grad, True)
+  grad_option = ' -grad ' + lib.path.fromUser(lib.app.args.grad, True)
 elif lib.app.args.fslgrad:
-  grad_option = ' -fslgrad ' + getUserPath(lib.app.args.fslgrad[0], True) + ' ' + getUserPath(lib.app.args.fslgrad[1], True)
+  grad_option = ' -fslgrad ' + lib.path.fromUser(lib.app.args.fslgrad[0], True) + ' ' + lib.path.fromUser(lib.app.args.fslgrad[1], True)
 json_option = ''
 if lib.app.args.json_import:
-  json_option = ' -json_import ' + getUserPath(lib.app.args.json_import, True)
-runCommand('mrconvert ' + getUserPath(lib.app.args.input, True) + ' ' + os.path.join(lib.app.tempDir, 'dwi.mif') + grad_option + json_option)
+  json_option = ' -json_import ' + lib.path.fromUser(lib.app.args.json_import, True)
+runCommand('mrconvert ' + lib.path.fromUser(lib.app.args.input, True) + ' ' + os.path.join(lib.app.tempDir, 'dwi.mif') + grad_option + json_option)
 if lib.app.args.se_epi:
-  runCommand('mrconvert ' + getUserPath(lib.app.args.se_epi, True) + ' ' + os.path.join(lib.app.tempDir, 'topup_in.mif'))
+  runCommand('mrconvert ' + lib.path.fromUser(lib.app.args.se_epi, True) + ' ' + os.path.join(lib.app.tempDir, 'topup_in.mif'))
 
 lib.app.gotoTempDir()
 
 
 
 # Get information on the input images, particularly so that their validity can be checked
-dwi_size = [ int(s) for s in getHeaderInfo('dwi.mif', 'size').split() ]
-dwi_pe_scheme = getPEScheme('dwi.mif')
+dwi_size = [ int(s) for s in lib.image.headerField('dwi.mif', 'size').split() ]
+dwi_pe_scheme = lib.phaseEncoding.getScheme('dwi.mif')
 if lib.app.args.se_epi:
-  topup_size = [ int(s) for s in getHeaderInfo('topup_in.mif', 'size').split() ]
+  topup_size = [ int(s) for s in lib.image.headerField('topup_in.mif', 'size').split() ]
   if not len(topup_size) == 4:
-    errorMessage('File provided using -se_epi option must contain more than one image volume')
-  topup_pe_scheme = getPEScheme('topup_in.mif')
-grad = getHeaderInfo('dwi.mif', 'dwgrad').split('\n')
+    lib.message.error('File provided using -se_epi option must contain more than one image volume')
+  topup_pe_scheme = lib.phaseEncoding.getScheme('topup_in.mif')
+grad = lib.image.headerField('dwi.mif', 'dwgrad').split('\n')
 grad = [ line.split() for line in grad ]
 grad = [ [ float(f) for f in line ] for line in grad ]
-stride = getHeaderInfo('dwi.mif', 'stride')
+stride = lib.image.headerField('dwi.mif', 'stride')
 num_volumes = 1
 if len(dwi_size) == 4:
   num_volumes = dwi_size[3]
@@ -162,7 +156,7 @@ if len(dwi_size) == 4:
 #   such information is present in the header, let's grab it here
 manual_pe_dir = None
 if lib.app.args.pe_dir:
-  manual_pe_dir = [ float(i) for i in getPEDir(lib.app.args.pe_dir) ]
+  manual_pe_dir = [ float(i) for i in lib.phaseEncoding.dir(lib.app.args.pe_dir) ]
 manual_trt = None
 if lib.app.args.readout_time:
   manual_trt = float(lib.app.args.readout_time)
@@ -171,9 +165,9 @@ if lib.app.args.readout_time:
 
 # Perform initial checks on input images
 if not grad:
-  errorMessage('No diffusion gradient table found')
+  lib.message.error('No diffusion gradient table found')
 if not len(grad) == num_volumes:
-  errorMessage('Number of volumes in gradient table does not match input image')
+  lib.message.error('Number of volumes in gradient table does not match input image')
 
 
 
@@ -228,7 +222,7 @@ if manual_pe_dir:
               grad_matchings[index2] = index1;
               grad_pairs.append([index1, index2])
     if not len(grad_pairs) == num_volumes/2:
-      errorMessage('Unable to determine matching DWI volume pairs for reversed phase-encode combination')
+      lib.message.error('Unable to determine matching DWI volume pairs for reversed phase-encode combination')
     # Construct manual PE scheme here:
     #   Regardless of whether or not there's a scheme in the header, need to have it:
     #   if there's one in the header, want to compare to the manually-generated one
@@ -243,7 +237,7 @@ if manual_pe_dir:
 else: # No manual phase encode direction defined
 
   if not PE_design == 'Header':
-    errorMessage('If not using -rpe_header, phase encoding direction must be provided using the -pe_dir option')
+    lib.message.error('If not using -rpe_header, phase encoding direction must be provided using the -pe_dir option')
 
 
 
@@ -270,12 +264,12 @@ if dwi_pe_scheme:
     #   relying on earlier code having successfully generated the 'appropriate'
     #   PE scheme for the input volume based on the diffusion gradient table
     if not scheme_dirs_match(dwi_pe_scheme, dwi_manual_pe_scheme):
-      warnMessage('User-defined phase-encoding direction design does not match what is stored in DWI image header; proceeding with user specification')
+      lib.message.warn('User-defined phase-encoding direction design does not match what is stored in DWI image header; proceeding with user specification')
       overwrite_scheme = True
   if manual_trt:
     # Compare manual specification to that read from the header
     if not scheme_times_match(dwi_pe_scheme, dwi_manual_pe_scheme):
-      warnMessage('User-defined total readout time does not match what is stored in DWI image header; proceeding with user specification')
+      lib.message.warn('User-defined total readout time does not match what is stored in DWI image header; proceeding with user specification')
       overwrite_scheme = True
   if overwrite_scheme:
     dwi_pe_scheme = dwi_manual_pe_scheme # May be used later for triggering volume recombination
@@ -284,11 +278,11 @@ if dwi_pe_scheme:
 else:
   # Nothing in the header; rely entirely on user specification
   if PE_design == 'Header':
-    errorMessage('No phase encoding information found in DWI image header')
+    lib.message.error('No phase encoding information found in DWI image header')
   if not manual_pe_dir:
-    errorMessage('No phase encoding information provided either in header or at command-line')
+    lib.message.error('No phase encoding information provided either in header or at command-line')
   if auto_trt_warning:
-    warnMessage('Total readout time not provided at command-line; assuming sane default of ' + str(auto_trt))
+    lib.message.warn('Total readout time not provided at command-line; assuming sane default of ' + str(auto_trt))
   dwi_pe_scheme = dwi_manual_pe_scheme # May be needed later for triggering volume recombination
 
 
@@ -325,7 +319,7 @@ if lib.app.args.se_epi:
   if PE_design == 'Pair':
     num_topup_volumes = topup_size[3]
     if num_topup_volumes%2:
-      errorMessage('If using -rpe_pair option, image provided using -se_epi must contain an even number of volumes');
+      lib.message.error('If using -rpe_pair option, image provided using -se_epi must contain an even number of volumes');
     # Criteria:
     #   * If present in own header, ignore DWI header entirely -
     #     - If also provided at command-line, look for conflict & report
@@ -336,11 +330,11 @@ if lib.app.args.se_epi:
     if topup_pe_scheme:
       if manual_pe_dir:
         if not scheme_dirs_match(topup_pe_scheme, topup_manual_pe_scheme):
-          warnMessage('User-defined phase-encoding direction design does not match what is stored in topup image header; proceeding with user specification')
+          lib.message.warn('User-defined phase-encoding direction design does not match what is stored in topup image header; proceeding with user specification')
           overwrite_scheme = True
       if manual_trt:
         if not scheme_times_match(topup_pe_scheme, topup_manual_pe_scheme):
-          warnMessage('User-defined total readout time does not match what is stored in topup image header; proceeding with user specification')
+          lib.message.warn('User-defined total readout time does not match what is stored in topup image header; proceeding with user specification')
           overwrite_scheme = True
       if not overwrite_scheme:
         topup_manual_pe_scheme = None # So that the scheme stored within the hedaer will be used
@@ -355,7 +349,7 @@ if lib.app.args.se_epi:
           auto_trt_warning = True
       else:
         if not dwi_pe_scheme:
-          errorMessage('Unable to determine phase-encoding design of topup images')
+          lib.message.error('Unable to determine phase-encoding design of topup images')        
         line = list(dwi_pe_scheme[0])
         topup_manual_pe_scheme = [ ' '.join(str(i) for i in line) ] * int(num_topup_volumes/2)
         line = [ (-i if i else 0.0) for i in line[0:3] ]
@@ -370,7 +364,7 @@ if lib.app.args.se_epi:
     #     - Don't have enough information to proceed
     #     - Is this too harsh? (e.g. Have rules by which it may be inferred from the DWI header / command-line)
     if not topup_pe_scheme:
-      errorMessage('If explicitly including topup images when using -rpe_all option, they must come with their own associated phase-encoding information')
+      lib.message.error('If explicitly including topup images when using -rpe_all option, they must come with their own associated phase-encoding information')
 
   elif PE_design == 'Header':
     # Criteria:
@@ -379,7 +373,7 @@ if lib.app.args.se_epi:
     #   * If _not_ present in own header:
     #       Cannot proceed
     if not topup_pe_scheme:
-      errorMessage('No phase-encoding information present in topup image header');
+      lib.message.error('No phase-encoding information present in topup image header');
 
 elif not PE_design == 'None': # No topup images explicitly provided: In some cases, can extract appropriate b=0 images from DWI
 
@@ -390,19 +384,19 @@ elif not PE_design == 'None': # No topup images explicitly provided: In some cas
   #   of the extracted b=0's is propagated to the generated b=0 series
   if PE_design == 'All':
     runCommand('mrconvert dwi.mif' + import_dwi_pe_table_option + ' - | dwiextract - topup_in.mif -bzero')
-    topup_size = [ int(s) for s in getHeaderInfo('topup_in.mif', 'size').split() ]
+    topup_size = [ int(s) for s in lib.image.headerField('topup_in.mif', 'size').split() ]
   elif PE_design == 'Header':
     runCommand('dwiextract dwi.mif -bzero bzeros.mif')
     # If there's no contrast remaining in the phase-encoding scheme, it'll be written to
     #   PhaseEncodingDirection and TotalReadoutTime rather than pe_scheme
     # In this scenario, we will be unable to run topup
-    if getHeaderProperty('bzeros.mif', 'pe_scheme'):
+    if lib.image.headerKeyValue('bzeros.mif', 'pe_scheme'):
       runCommand('mrconvert bzeros.mif topup_in.mif -stride -1,+2,+3,+4 -export_pe_table topup_datain.txt')
-      topup_size = [ int(s) for s in getHeaderInfo('topup_in.mif', 'size').split() ]
+      topup_size = [ int(s) for s in lib.image.headerField('topup_in.mif', 'size').split() ]
     else:
-      warnMessage('DWI header indicates no phase encoding contrast in b=0 images; proceeding without inhomogeneity field estimation')
+      lib.message.warn('DWI header indicates no phase encoding contrast in b=0 images; proceeding without inhomogeneity field estimation')
       do_topup = False
-    delFile('bzeros.mif')
+    lib.file.delTempFile('bzeros.mif')
 
 
 
@@ -424,9 +418,9 @@ if do_topup:
     if int(axis_size)%2:
       crop_option += ' -axis ' + str(axis) + ' 1 ' + str(int(axis_size)-1)
   if crop_option:
-    warnMessage('Topup images contain at least one non-even dimension; cropping images for topup compatibility')
+    lib.message.warn('Topup images contain at least one non-even dimension; cropping images for topup compatibility')
     runCommand('mrcrop topup_in.mif topup_in_crop.mif' + crop_option)
-    delFile('topup_in.mif')
+    lib.file.delTempFile('topup_in.mif')
     topup_in_path = 'topup_in_crop.mif'
 
   # Do the conversion in preparation for topup
@@ -472,7 +466,7 @@ else:
 # Run eddy
 # TODO Detect eddy version and use outlier replacement if available
 runCommand('mrconvert dwi.mif' + import_dwi_pe_table_option + ' dwi.nii -stride -1,+2,+3,+4 -export_grad_fsl bvecs bvals -export_pe_eddy eddy_config.txt eddy_indices.txt')
-delFile('dwi.mif')
+lib.file.delTempFile('dwi.mif')
 runCommand(eddy_cmd + ' --imain=dwi.nii --mask=mask.nii --acqp=eddy_config.txt --index=eddy_indices.txt --bvecs=bvecs --bvals=bvals' + eddy_in_topup_option + ' --out=dwi_post_eddy')
 
 
@@ -486,7 +480,7 @@ stride_option = ' -stride ' + stride.replace(' ', ',')
 #   if it has, import this into the output image
 bvecs_path = 'dwi_post_eddy.eddy_rotated_bvecs'
 if not os.path.isfile(bvecs_path):
-  warnMessage('eddy has not provided rotated bvecs file; using original gradient table. Recommend updating FSL eddy to version 5.0.9 or later.')
+  lib.message.warn('eddy has not provided rotated bvecs file; using original gradient table. Recommend updating FSL eddy to version 5.0.9 or later.')
   bvecs_path = 'bvecs'
 
 
@@ -515,7 +509,7 @@ if not len(volume_pairs) == num_volumes/2:
   runCommand('mrconvert dwi_post_eddy' + fsl_suffix + ' result.mif' + stride_option + ' -fslgrad ' + bvecs_path + ' bvals')
 
 else:
-  printMessage('Detected matching DWI volumes with opposing phase encoding; performing explicit volume recombination')
+  lib.message.print('Detected matching DWI volumes with opposing phase encoding; performing explicit volume recombination')
 
   # Perform a manual combination of the volumes output by eddy, since LSR is disabled
 
@@ -566,10 +560,10 @@ else:
   #   (even if this doesn't cause an issue with the subsequent mrcalc command, it may in the future, it's better for
   #   visualising the script temporary files, and it gives the user a warning about an out-of-date FSL)
   field_map_image = 'field_map' + fsl_suffix
-  if not imagesMatch('topup_in.nii', field_map_image):
-    warnMessage('topup output field image has erroneous header; recommend updating FSL to version 5.0.8 or later')
+  if not lib.image.match('topup_in.nii', field_map_image):
+    lib.message.warn('topup output field image has erroneous header; recommend updating FSL to version 5.0.8 or later')
     runCommand('mrtransform ' + field_map_image + ' -replace topup_in.nii field_map_fix' + fsl_suffix)
-    delFile(field_map_image)
+    lib.file.delTempFile(field_map_image)
     field_map_image = 'field_map_fix' + fsl_suffix
 
 
@@ -596,9 +590,9 @@ else:
     runCommand('mrcalc ' + field_map_image + ' ' + str(config[3]) + ' -mult' + sign_multiplier + ' - | mrfilter - gradient - | mrconvert - ' + field_derivative_path + ' -coord 3 ' + str(pe_axis) + ' -axes 0,1,2')
     jacobian_path = 'jacobian_' + str(index+1) + '.mif'
     runCommand('mrcalc 1.0 ' + field_derivative_path + ' -add 0.0 -max ' + jacobian_path)
-    delFile(field_derivative_path)
+    lib.file.delTempFile(field_derivative_path)
     runCommand('mrcalc ' + jacobian_path + ' ' + jacobian_path + ' -mult weight' + str(index+1) + '.mif')
-    delFile(jacobian_path)
+    lib.file.delTempFile(jacobian_path)
 
   # This section extracts the two volumes corresponding to each reversed phase-encoded volume pair, and
   #   derives a single image volume based on the recombination equation
@@ -610,22 +604,22 @@ else:
     # Volume recombination equation described in Skare and Bammer 2010
     runCommand('mrcalc volume0.mif weight' + str(pe_indices[0]) + '.mif -mult volume1.mif weight' + str(pe_indices[1]) + '.mif -mult -add weight' + str(pe_indices[0]) + '.mif weight' + str(pe_indices[1]) + '.mif -add -divide 0.0 -max combined' + str(index) + '.mif')
     combined_image_list.append('combined' + str(index) + '.mif')
-    delFile('volume0.mif')
-    delFile('volume1.mif')
+    lib.file.delTempFile('volume0.mif')
+    lib.file.delTempFile('volume1.mif')
 
   for index in range(0, len(eddy_config)):
-    delFile('weight' + str(index+1) + '.mif')
+    lib.file.delTempFile('weight' + str(index+1) + '.mif')
 
   # Finally the recombined volumes must be concatenated to produce the resulting image series
   runCommand('mrcat ' + ' '.join(combined_image_list) + ' - -axis 3 | mrconvert - result.mif -fslgrad bvecs_combined bvals_combined' + stride_option)
 
   for path in combined_image_list:
-    delFile(path)
+    lib.file.delTempFile(path)
 
 
 
 
 # Finish!
-runCommand('mrconvert result.mif ' + getUserPath(lib.app.args.output, True) + grad_export_option + lib.app.mrtrixForce)
+runCommand('mrconvert result.mif ' + lib.path.fromUser(lib.app.args.output, True) + grad_export_option + lib.app.mrtrixForce)
 lib.app.complete()
 

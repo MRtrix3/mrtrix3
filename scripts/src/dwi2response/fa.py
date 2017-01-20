@@ -30,7 +30,7 @@ def getInputFiles():
 def execute():
   import os, shutil
   import lib.app
-  from lib.getUserPath import getUserPath
+  import lib.path
   from lib.runCommand  import runCommand
   from lib.runFunction import runFunction
   lmax_option = ''
@@ -49,5 +49,5 @@ def execute():
     runCommand('mrthreshold fa.mif voxels.mif -top ' + str(lib.app.args.number))
   runCommand('amp2response dwi.mif voxels.mif vector.mif response.txt' + lmax_option)
 
-  runFunction(shutil.copyfile, 'response.txt', getUserPath(lib.app.args.output, False))
+  runFunction(shutil.copyfile, 'response.txt', lib.path.fromUser(lib.app.args.output, False))
 

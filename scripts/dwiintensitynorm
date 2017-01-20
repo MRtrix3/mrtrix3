@@ -1,7 +1,16 @@
 #!/usr/bin/env python
 
 import math, os, sys
-import lib.app, lib.cmdlineParser
+import lib.app
+import lib.cmdlineParser
+import lib.file
+import lib.image
+import lib.message
+import lib.path
+
+from lib.runCommand import runCommand
+
+
 
 def abspath(*arg):
   return os.path.abspath(os.path.join(*arg))
@@ -9,11 +18,7 @@ def abspath(*arg):
 def relpath(*arg):
   return os.path.relpath(os.path.join(*arg),lib.app.workingDir)
 
-from lib.printMessage  import printMessage
-from lib.errorMessage  import errorMessage
-from lib.getHeaderInfo import getHeaderInfo
-from lib.getUserPath   import getUserPath
-from lib.runCommand    import runCommand
+
 
 class Input:
   def __init__(self, filename, prefix, directory, mask_filename = '', mask_directory = ''):
@@ -38,38 +43,38 @@ lib.app.initialise()
 lib.app.args.input_dir = relpath(lib.app.args.input_dir)
 inputDir = lib.app.args.input_dir
 if not os.path.exists(inputDir):
-  errorMessage('input directory not found');
+  lib.message.error('input directory not found');
 inFiles = os.listdir(inputDir)
 if len(inFiles) <= 1:
-  printMessage('not enough images found in input directory. More than one image is needed to perform a group-wise intensity normalisation')
+  lib.message.print('not enough images found in input directory. More than one image is needed to perform a group-wise intensity normalisation')
 else:
-  printMessage('performing global intensity normalisation on ' + str(len(inFiles)) + ' input images')
+  lib.message.print('performing global intensity normalisation on ' + str(len(inFiles)) + ' input images')
 
 lib.app.args.mask_dir = relpath(lib.app.args.mask_dir);
 maskDir = lib.app.args.mask_dir
 if not os.path.exists(maskDir):
-  errorMessage('mask directory not found')
+  lib.message.error('mask directory not found')
 maskFiles = os.listdir(maskDir)
 if len(maskFiles) != len(inFiles):
-  errorMessage('the number of images in the mask directory does not equal the number of images in the input directory')
-maskCommonPostfix = lib.app.getCommonPostfix(maskFiles)
+  lib.message.error('the number of images in the mask directory does not equal the number of images in the input directory')
+maskCommonPostfix = lib.path.commonPostfix(maskFiles)
 maskPrefixes = []
 for m in maskFiles:
   maskPrefixes.append(m.split(maskCommonPostfix)[0])
 
-commonPostfix = lib.app.getCommonPostfix(inFiles)
+commonPostfix = lib.path.commonPostfix(inFiles)
 input = []
 for i in inFiles:
   prefix = i.split(commonPostfix)[0]
   if prefix not in maskPrefixes:
-    errorMessage ('no matching mask image was found for input image ' + i)
+    lib.message.error ('no matching mask image was found for input image ' + i)
   index = maskPrefixes.index(prefix)
   input.append(Input(i, prefix, lib.app.workingDir + '/' + inputDir + '/', maskFiles[index], lib.app.workingDir + '/' + maskDir + '/'))
 
 lib.app.checkOutputFile (lib.app.args.fa_template)
 lib.app.checkOutputFile (lib.app.args.wm_mask)
 lib.app.checkOutputFile (lib.app.args.output_dir)
-lib.app.make_dir(lib.app.args.output_dir)
+lib.file.makeDir(lib.app.args.output_dir)
 
 lib.app.makeTempDir()
 
@@ -78,23 +83,23 @@ runCommand ('cp -R -L ' + maskDir + ' ' + maskTempDir)
 
 lib.app.gotoTempDir()
 
-lib.app.make_dir('fa')
-printMessage('Computing FA images')
+lib.file.makeDir('fa')
+lib.message.print('Computing FA images')
 input_filenames = []
 for i in input:
   runCommand('dwi2tensor ' + abspath(i.directory, i.filename) + ' -mask ' + abspath(i.mask_directory, i.mask_filename) + ' - | tensor2metric - -fa fa/' + i.prefix + '.mif')
 
-printMessage('Generating FA population template')
+lib.message.print('Generating FA population template')
 runCommand('population_template fa -mask_dir ' + maskTempDir + ' fa_template.mif -type rigid_affine_nonlinear -rigid_scale 0.25,0.5,0.8,1.0 -affine_scale 0.7,0.8,1.0,1.0 -nl_scale 0.5,0.75,1.0,1.0,1.0 -nl_niter 5,5,5,5,5 -tempdir population_template -linear_no_pause -nocleanup')
 
 runCommand('mrthreshold fa_template.mif -abs ' +  lib.app.args.fa_threshold + ' template_wm_mask.mif')
-lib.app.make_dir('wm_mask_warped')
+lib.file.makeDir('wm_mask_warped')
 for i in input:
   runCommand('mrtransform template_wm_mask.mif -interp nearest -warp_full population_template/warps/' + i.prefix + '.mif wm_mask_warped/' + i.prefix + '.mif -from 2 -template fa/' + i.prefix + '.mif')
-  runCommand('dwinormalise ' + abspath(i.directory, i.filename) + ' wm_mask_warped/' + i.prefix + '.mif ' + getUserPath(os.path.join(lib.app.args.output_dir, i.filename), True) + lib.app.mrtrixForce)
+  runCommand('dwinormalise ' + abspath(i.directory, i.filename) + ' wm_mask_warped/' + i.prefix + '.mif ' + lib.path.fromUser(os.path.join(lib.app.args.output_dir, i.filename), True) + lib.mrtrix.optionForce)
 
-runCommand('mrconvert template_wm_mask.mif ' + getUserPath(lib.app.args.wm_mask, True) + lib.app.mrtrixForce)
-runCommand('mrconvert fa_template.mif ' + getUserPath(lib.app.args.fa_template, True) + lib.app.mrtrixForce)
+runCommand('mrconvert template_wm_mask.mif ' + lib.path.fromUser(lib.app.args.wm_mask, True) + lib.app.mrtrixForce)
+runCommand('mrconvert fa_template.mif ' + lib.path.fromUser(lib.app.args.fa_template, True) + lib.app.mrtrixForce)
 
 lib.app.complete()
 

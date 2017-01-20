@@ -7,13 +7,14 @@
 #   - Using segmentations from FreeSurfer
 
 
-import argparse, os, sys
-import lib.app, lib.cmdlineParser
+import argparse, pkgutil, os, sys
+import lib.algorithm
+import lib.app
+import lib.cmdlineParser
+import lib.message
+import lib.path
 
-from lib.getAlgorithmList import getAlgorithmList
-from lib.getUserPath      import getUserPath
-from lib.runCommand       import runCommand
-from lib.warnMessage      import warnMessage
+from lib.runCommand  import runCommand
 
 lib.app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
 lib.app.addCitation('', 'Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. NeuroImage, 2012, 62, 1924-1938', False)
@@ -24,26 +25,21 @@ common_options = base_parser.add_argument_group('Options common to all 5ttgen al
 common_options.add_argument('-nocrop', action='store_true', default=False, help='Do NOT crop the resulting 5TT image to reduce its size (keep the same dimensions as the input image)')
 common_options.add_argument('-sgm_amyg_hipp', action='store_true', default=False, help='Represent the amygdalae and hippocampi as sub-cortical grey matter in the 5TT image')
 
-algorithm_list = getAlgorithmList()
-subparsers = lib.app.parser.add_subparsers(title='Algorithm choices', help='Select the software / algorithm to be used to derive the 5TT image; additional details and options become available once an algorithm is nominated. Options are: ' + ', '.join(algorithm_list), dest='algorithm')
+subparsers = lib.app.parser.add_subparsers(title='Algorithm choices', help='Select the software / algorithm to be used to derive the 5TT image; additional details and options become available once an algorithm is nominated. Options are: ' + ', '.join(lib.algorithm.getList()), dest='algorithm')
 
-# Import the command-line settings for all algorithms found
-from src import _5ttgen
-for name in algorithm_list:
-  __import__('src._5ttgen', globals(), locals(), [ name ])
-  algorithm = getattr(_5ttgen, name)
-  algorithm.initParser(subparsers, base_parser)
+# Import the command-line settings for all algorithms found in the relevant directory
+lib.algorithm.initialise(base_parser, subparsers)
 
 lib.app.initialise()
 
 # Find out which algorithm the user has requested
-algorithm = getattr(_5ttgen, lib.app.args.algorithm)
+algorithm = lib.algorithm.getModule(lib.app.args.algorithm)
 
 lib.app.checkOutputFile(lib.app.args.output)
 algorithm.checkOutputFiles()
 
 lib.app.makeTempDir()
-runCommand('mrconvert ' + getUserPath(lib.app.args.input, True) + ' ' + os.path.join(lib.app.tempDir, 'input.mif'))
+runCommand('mrconvert ' + lib.path.fromUser(lib.app.args.input, True) + ' ' + os.path.join(lib.app.tempDir, 'input.mif'))
 algorithm.getInputFiles()
 
 lib.app.gotoTempDir()
@@ -52,8 +48,8 @@ algorithm.execute()
 
 (stdout,stderr) = runCommand('5ttcheck result.mif', False)
 if len(stderr) and 'ERROR' in stderr:
-  warnMessage('Generated image does not perfectly conform to 5TT format')
+  lib.message.warn('Generated image does not perfectly conform to 5TT format')
 
-runCommand('mrconvert result.mif ' + getUserPath(lib.app.args.output, True) + lib.app.mrtrixForce)
+runCommand('mrconvert result.mif ' + lib.path.fromUser(lib.app.args.output, True) + lib.app.mrtrixForce)
 lib.app.complete()
 

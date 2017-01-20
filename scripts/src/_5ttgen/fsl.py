@@ -26,17 +26,16 @@ def checkOutputFiles():
 def getInputFiles():
   import os
   import lib.app
-  from lib.imagesMatch   import imagesMatch
-  from lib.errorMessage  import errorMessage
-  from lib.getHeaderInfo import getHeaderInfo
-  from lib.getUserPath   import getUserPath
-  from lib.runCommand    import runCommand
+  import lib.image
+  import lib.message
+  import lib.path
+  from lib.runCommand import runCommand
   if lib.app.args.mask:
-    runCommand('mrconvert ' + getUserPath(lib.app.args.mask, True) + ' ' + os.path.join(lib.app.tempDir, 'mask.mif') + ' -datatype bit -stride -1,+2,+3')
+    runCommand('mrconvert ' + lib.path.fromUser(lib.app.args.mask, True) + ' ' + os.path.join(lib.app.tempDir, 'mask.mif') + ' -datatype bit -stride -1,+2,+3')
   if lib.app.args.t2:
-    if not imagesMatch(lib.app.args.input, lib.app.args.t2):
-      errorMessage('Provided T2 image does not match input T1 image')
-    runCommand('mrconvert ' + getUserPath(lib.app.args.t2, True) + ' ' + os.path.join(lib.app.tempDir, 'T2.nii') + ' -stride -1,+2,+3')
+    if not lib.image.match(lib.app.args.input, lib.app.args.t2):
+      lib.message.error('Provided T2 image does not match input T1 image')
+    runCommand('mrconvert ' + lib.path.fromUser(lib.app.args.t2, True) + ' ' + os.path.join(lib.app.tempDir, 'T2.nii') + ' -stride -1,+2,+3')
 
 
 
@@ -44,52 +43,49 @@ def getInputFiles():
 def execute():
   import os
   import lib.app
-  from lib.binaryInPath  import binaryInPath
-  from lib.errorMessage  import errorMessage
-  from lib.getFSLSuffix  import getFSLSuffix
-  from lib.getHeaderInfo import getHeaderInfo
-  from lib.imagesMatch   import imagesMatch
-  from lib.isWindows     import isWindows
-  from lib.runCommand    import runCommand
-  from lib.warnMessage   import warnMessage
+  import lib.fsl
+  import lib.image
+  import lib.message
+  import lib.misc
+  from lib.runCommand import runCommand
   
-  if isWindows():
-    errorMessage('\'fsl\' algorithm of 5ttgen script cannot be run on Windows: FSL not available on Windows')
+  if lib.misc.isWindows():
+    lib.message.error('\'fsl\' algorithm of 5ttgen script cannot be run on Windows: FSL not available on Windows')
 
   fsl_path = os.environ.get('FSLDIR', '')
   if not fsl_path:
-    errorMessage('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
+    lib.message.error('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
 
   ssroi_cmd = 'standard_space_roi'
-  if not binaryInPath(ssroi_cmd):
+  if not lib.misc.haveBinary(ssroi_cmd):
     ssroi_cmd = 'fsl5.0-standard_space_roi'
-    if not binaryInPath(ssroi_cmd):
-      errorMessage('Could not find FSL program standard_space_roi; please verify FSL install')
+    if not lib.misc.haveBinary(ssroi_cmd):
+      lib.message.error('Could not find FSL program standard_space_roi; please verify FSL install')
 
   bet_cmd = 'bet'
-  if not binaryInPath(bet_cmd):
+  if not lib.misc.haveBinary(bet_cmd):
     bet_cmd = 'fsl5.0-bet'
-    if not binaryInPath(bet_cmd):
-      errorMessage('Could not find FSL program bet; please verify FSL install')
+    if not lib.misc.haveBinary(bet_cmd):
+      lib.message.error('Could not find FSL program bet; please verify FSL install')
 
   fast_cmd = 'fast'
-  if not binaryInPath(fast_cmd):
+  if not lib.misc.haveBinary(fast_cmd):
     fast_cmd = 'fsl5.0-fast'
-    if not binaryInPath(fast_cmd):
-      errorMessage('Could not find FSL program fast; please verify FSL install')
+    if not lib.misc.haveBinary(fast_cmd):
+      lib.message.error('Could not find FSL program fast; please verify FSL install')
 
   first_cmd = 'run_first_all'
-  if not binaryInPath(first_cmd):
+  if not lib.misc.haveBinary(first_cmd):
     first_cmd = "fsl5.0-run_first_all"
-    if not binaryInPath(first_cmd):
-      errorMessage('Could not find FSL program run_first_all; please verify FSL install')
+    if not lib.misc.haveBinary(first_cmd):
+      lib.message.error('Could not find FSL program run_first_all; please verify FSL install')
 
   first_atlas_path = os.path.join(fsl_path, 'data', 'first', 'models_336_bin')
 
   if not os.path.isdir(first_atlas_path):
-    errorMessage('Atlases required for FSL\'s FIRST program not installed;\nPlease install fsl-first-data using your relevant package manager')
+    lib.message.error('Atlases required for FSL\'s FIRST program not installed; please install fsl-first-data using your relevant package manager')
 
-  fsl_suffix = getFSLSuffix()
+  fsl_suffix = lib.fsl.suffix()
 
   sgm_structures = [ 'L_Accu', 'R_Accu', 'L_Caud', 'R_Caud', 'L_Pall', 'R_Pall', 'L_Puta', 'R_Puta', 'L_Thal', 'R_Thal' ]
   if lib.app.args.sgm_amyg_hipp:
@@ -106,11 +102,11 @@ def execute():
     fast_t1_input = 'T1_masked' + fsl_suffix
     
     # Check to see if the mask matches the T1 image
-    if imagesMatch('T1.nii', 'mask.mif'):
+    if lib.image.match('T1.nii', 'mask.mif'):
       runCommand('mrcalc T1.nii mask.mif -mult ' + fast_t1_input)
       mask_path = 'mask.mif'
     else:
-      warnMessage('Mask image does not match input image - re-gridding')
+      lib.message.warn('Mask image does not match input image - re-gridding')
       runCommand('mrtransform mask.mif mask_regrid.mif -template T1.nii')
       runCommand('mrcalc T1.nii mask_regrid.mif ' + fast_t1_input)
       mask_path = 'mask_regrid.mif'
@@ -151,7 +147,7 @@ def execute():
       runCommand(ssroi_cmd + ' T1.nii T1_preBET' + fsl_suffix + ' -b', False)
 
     if not os.path.exists('T1_preBET' + fsl_suffix):
-      warnMessage('FSL command ' + ssroi_cmd + ' appears to have failed; passing T1 directly to BET')
+      lib.message.warn('FSL command ' + ssroi_cmd + ' appears to have failed; passing T1 directly to BET')
       runCommand('mrconvert input.mif T1_preBET' + fsl_suffix + ' -stride -1,+2,+3')
 
     # BET
@@ -188,7 +184,7 @@ def execute():
     vtk_in_path = 'first-' + struct + '_first.vtk'
     vtk_temp_path = struct + '.vtk'
     if not os.path.exists(vtk_in_path):
-      errorMessage('Missing .vtk file for structure ' + struct + '; run_first_all must have failed')
+      lib.message.error('Missing .vtk file for structure ' + struct + '; run_first_all must have failed')
     runCommand('meshconvert ' + vtk_in_path + ' ' + vtk_temp_path + ' -transform first2real T1.nii')
     runCommand('mesh2pve ' + vtk_temp_path + ' ' + fast_t1_input + ' ' + pve_image_path)
     pve_image_list.append(pve_image_path)

@@ -8,10 +8,10 @@ mutuallyExclusiveOptionGroups = [ ]
 def initialise(desc):
   import argparse
   import lib.app
-  from lib.errorMessage import errorMessage
   global parser
   if not lib.app.author:
-    errorMessage('Script error: No author defined')
+    sys.stderr.write('Script error: No author defined\n')
+    sys.exit(1)
   lib.app.parser = Parser(description=desc, add_help=False)
   standard_options = lib.app.parser.add_argument_group('Standard options')
   standard_options.add_argument('-continue', nargs=2, dest='cont', metavar=('<TempDir>', '<LastFile>'), help='Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file')
@@ -104,7 +104,7 @@ class Parser(argparse.ArgumentParser):
   def print_help(self):
     import subprocess, textwrap
     import lib.app
-    from lib.readMRtrixConfSetting import readMRtrixConfSetting
+    import lib.mrtrix
     global author, citationList, copyright
 
     def bold(text):
@@ -197,8 +197,9 @@ class Parser(argparse.ArgumentParser):
           s += w.fill('* ' + entry[0] + ':') + '\n'
         s += w.fill(entry[1]) + '\n'
         s += '\n'
-    command = readMRtrixConfSetting('HelpCommand')
-    if not command:
+    if 'HelpCommand' in lib.mrtrix.config:
+      command = lib.mrtrix.config['HelpCommand']
+    else:
       command = 'less -X'
     if command:
       try:

@@ -28,13 +28,12 @@ def getInputFiles():
 def execute():
   import math, os, shutil
   import lib.app
-  from lib.delFile      import delFile, delFolder
-  from lib.errorMessage import errorMessage
-  from lib.getImageStat import getImageStat
-  from lib.getUserPath  import getUserPath
-  from lib.printMessage import printMessage
-  from lib.runCommand   import runCommand
-  from lib.runFunction  import runFunction
+  import lib.file
+  import lib.image
+  import lib.message
+  import lib.path
+  from lib.runCommand  import runCommand
+  from lib.runFunction import runFunction
   
   lmax_option = ''
   if lib.app.args.lmax:
@@ -54,9 +53,10 @@ def execute():
     if iteration == 0:
       RF_in_path = 'init_RF.txt'
       mask_in_path = 'mask.mif'
-      volume_means = [float(x) for x in getImageStat('dwi.mif', 'mean', 'mask.mif').split()]
+      # TODO This can be changed once #71 is implemented (mrstats statistics across volumes)
+      volume_means = [float(x) for x in lib.image.statistic('dwi.mif', 'mean', 'mask.mif').split()]
       mean = sum(volume_means) / float(len(volume_means))
-      volume_stds = [float(x) for x in getImageStat('dwi.mif', 'std', 'mask.mif').split()]
+      volume_stds = [float(x) for x in lib.image.statistic('dwi.mif', 'std', 'mask.mif').split()]
       std = sum(volume_stds) / float(len(volume_stds))
       # Scale these to reflect the fact that we're moving to the SH basis
       mean *= math.sqrt(4.0 * math.pi)
@@ -74,28 +74,28 @@ def execute():
     runCommand('dwi2fod csd dwi.mif ' + RF_in_path + ' ' + prefix + 'FOD.mif -mask ' + mask_in_path)
     # Get amplitudes of two largest peaks, and directions of largest
     runCommand('fod2fixel ' + prefix + 'FOD.mif ' + prefix + 'fixel -peak peaks.mif -mask ' + mask_in_path + ' -fmls_no_thresholds')
-    delFile(prefix + 'FOD.mif')
+    lib.file.delTempFile(prefix + 'FOD.mif')
     runCommand('fixel2voxel ' + prefix + 'fixel/peaks.mif split_data ' + prefix + 'amps.mif')
     runCommand('mrconvert ' + prefix + 'amps.mif ' + prefix + 'first_peaks.mif -coord 3 0 -axes 0,1,2')
     runCommand('mrconvert ' + prefix + 'amps.mif ' + prefix + 'second_peaks.mif -coord 3 1 -axes 0,1,2')
-    delFile(prefix + 'amps.mif')
+    lib.file.delTempFile(prefix + 'amps.mif')
     runCommand('fixel2voxel ' + prefix + 'fixel/directions.mif split_dir ' + prefix + 'all_dirs.mif')
-    delFolder(prefix + 'fixel')
+    lib.file.delTempFolder(prefix + 'fixel')
     runCommand('mrconvert ' + prefix + 'all_dirs.mif ' + prefix + 'first_dir.mif -coord 3 0:2')
-    delFile(prefix + 'all_dirs.mif')
+    lib.file.delTempFile(prefix + 'all_dirs.mif')
     # Revise single-fibre voxel selection based on ratio of tallest to second-tallest peak
     runCommand('mrcalc ' + prefix + 'second_peaks.mif ' + prefix + 'first_peaks.mif -div ' + prefix + 'peak_ratio.mif')
-    delFile(prefix + 'first_peaks.mif')
-    delFile(prefix + 'second_peaks.mif')
+    lib.file.delTempFile(prefix + 'first_peaks.mif')
+    lib.file.delTempFile(prefix + 'second_peaks.mif')
     runCommand('mrcalc ' + prefix + 'peak_ratio.mif ' + str(lib.app.args.peak_ratio) + ' -lt ' + mask_in_path + ' -mult ' + prefix + 'SF.mif -datatype bit')
-    delFile(prefix + 'peak_ratio.mif')
+    lib.file.delTempFile(prefix + 'peak_ratio.mif')
     # Make sure image isn't empty
-    SF_voxel_count = int(getImageStat(prefix + 'SF.mif', 'count', prefix + 'SF.mif'))
+    SF_voxel_count = int(lib.image.statistic(prefix + 'SF.mif', 'count', prefix + 'SF.mif'))
     if not SF_voxel_count:
-      errorMessage('Aborting: All voxels have been excluded from single-fibre selection')
+      lib.message.error('Aborting: All voxels have been excluded from single-fibre selection')
     # Generate a new response function
     runCommand('amp2response dwi.mif ' + prefix + 'SF.mif ' + prefix + 'first_dir.mif ' + prefix + 'RF.txt' + lmax_option)
-    delFile(prefix + 'first_dir.mif')
+    lib.file.delTempFile(prefix + 'first_dir.mif')
     
     # Detect convergence
     # Look for a change > some percentage - don't bother looking at the masks
@@ -112,20 +112,20 @@ def execute():
         if ratio > convergence_change:
           reiterate = True
       if not reiterate:
-        printMessage('Exiting at iteration ' + str(iteration) + ' with ' + str(SF_voxel_count) + ' SF voxels due to unchanged response function coefficients')
+        lib.message.print('Exiting at iteration ' + str(iteration) + ' with ' + str(SF_voxel_count) + ' SF voxels due to unchanged response function coefficients')
         runFunction(shutil.copyfile, prefix + 'RF.txt', 'response.txt')
         runFunction(shutil.copyfile, prefix + 'SF.mif', 'voxels.mif')
         break
         
-    delFile(RF_in_path)
-    delFile(mask_in_path)
+    lib.file.delTempFile(RF_in_path)
+    lib.file.delTempFile(mask_in_path)
   # Go to the next iteration
 
   # If we've terminated due to hitting the iteration limiter, we still need to copy the output file(s) to the correct location
   if not os.path.exists('response.txt'):
-    printMessage('Exiting after maximum ' + str(lib.app.args.max_iters-1) + ' iterations with ' + str(SF_voxel_count) + ' SF voxels')
+    lib.message.print('Exiting after maximum ' + str(lib.app.args.max_iters-1) + ' iterations with ' + str(SF_voxel_count) + ' SF voxels')
     runFunction(shutil.copyfile, 'iter' + str(lib.app.args.max_iters-1) + '_RF.txt', 'response.txt')
     runFunction(shutil.copyfile, 'iter' + str(lib.app.args.max_iters-1) + '_SF.mif', 'voxels.mif')
 
-  runFunction(shutil.copyfile, 'response.txt', getUserPath(lib.app.args.output, False))
+  runFunction(shutil.copyfile, 'response.txt', lib.path.fromUser(lib.app.args.output, False))
 

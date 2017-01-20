@@ -5,16 +5,15 @@
 
 
 import os, sys
-import lib.app, lib.cmdlineParser
+import lib.app
+import lib.cmdlineParser
+import lib.fsl
+import lib.image
+import lib.message
+import lib.misc
+import lib.path
 
-from lib.binaryInPath  import binaryInPath
-from lib.errorMessage  import errorMessage
-from lib.getFSLSuffix  import getFSLSuffix
-from lib.getHeaderInfo import getHeaderInfo
-from lib.getUserPath   import getUserPath
-from lib.imagesMatch   import imagesMatch
-from lib.isWindows     import isWindows
-from lib.runCommand    import runCommand
+from lib.runCommand import runCommand
 
 lib.app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
 lib.app.addCitation('If using -fast option', 'Zhang, Y.; Brady, M. & Smith, S. Segmentation of brain MR images through a hidden Markov random field model and the expectation-maximization algorithm. IEEE Transactions on Medical Imaging, 2001, 20, 45-57', True)
@@ -36,20 +35,20 @@ lib.app.initialise()
 
 if lib.app.args.fsl:
 
-  if isWindows():
-    errorMessage('Script cannot run using FSL on Windows due to FSL dependency')
+  if lib.misc.isWindows():
+    lib.message.error('Script cannot run using FSL on Windows due to FSL dependency')
 
   fsl_path = os.environ.get('FSLDIR', '')
   if not fsl_path:
-    errorMessage('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
+    lib.message.error('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
 
   fast_cmd = 'fast'
-  if not binaryInPath(fast_cmd):
+  if not lib.misc.haveBinary(fast_cmd):
     fast_cmd = 'fsl5.0-fast'
-    if not binaryInPath(fast_cmd):
-      errorMessage('Could not find FSL program fast; please verify FSL install')
+    if not lib.misc.haveBinary(fast_cmd):
+      lib.message.error('Could not find FSL program fast; please verify FSL install')
     
-  fsl_suffix = getFSLSuffix()
+  fsl_suffix = lib.fsl.suffix()
   if fast_cmd == 'fast':
     fast_suffix = fsl_suffix
   else:
@@ -57,42 +56,42 @@ if lib.app.args.fsl:
 
 elif lib.app.args.ants:
 
-  if not binaryInPath('N4BiasFieldCorrection'):
-    errorMessage('Could not find ANTS program N4BiasFieldCorrection; please check installation')
+  if not lib.misc.haveBinary('N4BiasFieldCorrection'):
+    lib.message.error('Could not find ANTS program N4BiasFieldCorrection; please check installation')
 
 else:
-  errorMessage('No bias field estimation algorithm specified')
+  lib.message.error('No bias field estimation algorithm specified')
 
 grad_import_option = ''
 if lib.app.args.grad:
-  grad_import_option = ' -grad ' + getUserPath(lib.app.args.grad, True)
+  grad_import_option = ' -grad ' + lib.path.fromUser(lib.app.args.grad, True)
 elif lib.app.args.fslgrad:
-  grad_import_option = ' -fslgrad ' + getUserPath(lib.app.args.fslgrad[0], True) + ' ' + getUserPath(lib.app.args.fslgrad[1], True)
+  grad_import_option = ' -fslgrad ' + lib.path.fromUser(lib.app.args.fslgrad[0], True) + ' ' + lib.path.fromUser(lib.app.args.fslgrad[1], True)
 
 lib.app.checkOutputFile(lib.app.args.output)
 lib.app.checkOutputFile(lib.app.args.bias)
 
 lib.app.makeTempDir()
 
-runCommand('mrconvert ' + getUserPath(lib.app.args.input, True) + ' ' + os.path.join(lib.app.tempDir, 'in.mif') + grad_import_option)
+runCommand('mrconvert ' + lib.path.fromUser(lib.app.args.input, True) + ' ' + os.path.join(lib.app.tempDir, 'in.mif') + grad_import_option)
 if lib.app.args.mask:
-  runCommand('mrconvert ' + getUserPath(lib.app.args.mask, True) + ' ' + os.path.join(lib.app.tempDir, 'mask.mif'))
+  runCommand('mrconvert ' + lib.path.fromUser(lib.app.args.mask, True) + ' ' + os.path.join(lib.app.tempDir, 'mask.mif'))
 
 lib.app.gotoTempDir()
 
 # Make sure it's actually a DWI that's been passed
-dwi_sizes = getHeaderInfo('in.mif', 'size').split()
+dwi_sizes = lib.image.headerField('in.mif', 'size').split()
 if len(dwi_sizes) != 4:
-  errorMessage('Input image must be a 4D image')
-DW_scheme = getHeaderInfo('in.mif', 'dwgrad').split('\n')
+  lib.message.error('Input image must be a 4D image')
+DW_scheme = lib.image.headerField('in.mif', 'dwgrad').split('\n')
 if len(DW_scheme) != int(dwi_sizes[3]):
-  errorMessage('Input image does not contain valid DW gradient scheme')
+  lib.message.error('Input image does not contain valid DW gradient scheme')
 
 # Generate a brain mask if required, or check the mask if provided
 if lib.app.args.mask:
-  mask_sizes = getHeaderInfo('mask.mif', 'size').split()
+  mask_sizes = lib.image.headerField('mask.mif', 'size').split()
   if not mask_sizes[:3] == dwi_sizes[:3]:
-    errorMessage('Provided mask image does not match input DWI')
+    lib.message.error('Provided mask image does not match input DWI')
 else:
   runCommand('dwi2mask in.mif mask.mif')
 
@@ -109,8 +108,8 @@ elif lib.app.args.ants:
   # If the mask image was provided manually, and doesn't match the input image perfectly
   #   (i.e. also transform and voxel sizes), N4 will fail
   if lib.app.args.mask:
-    if not imagesMatch('mean_bzero.mif', 'mask.mif'):
-      errorMessage('Input mask header does not perfectly match DWI as required by N4')
+    if not lib.image.match('mean_bzero.mif', 'mask.mif'):
+      lib.message.error('Input mask header does not perfectly match DWI as required by N4')
 
   # Use the brain mask as a weights image rather than a mask; means that voxels at the edge of the mask
   #   will have a smoothly-varying bias field correction applied, rather than multiplying by 1.0 outside the mask
@@ -120,8 +119,8 @@ elif lib.app.args.ants:
   runCommand('N4BiasFieldCorrection -d 3 -i mean_bzero.nii -w mask.nii -o [corrected.nii,' + bias_path + '] -s 2 -b [150] -c [200x200,0.0]')
   
 runCommand('mrcalc in.mif ' + bias_path + ' -div result.mif')
-runCommand('mrconvert result.mif ' + getUserPath(lib.app.args.output, True) + lib.app.mrtrixForce)
+runCommand('mrconvert result.mif ' + lib.path.fromUser(lib.app.args.output, True) + lib.app.mrtrixForce)
 if lib.app.args.bias:
-  runCommand('mrconvert ' + bias_path + ' ' + getUserPath(lib.app.args.bias, True) + lib.app.mrtrixForce)
+  runCommand('mrconvert ' + bias_path + ' ' + lib.path.fromUser(lib.app.args.bias, True) + lib.app.mrtrixForce)
 lib.app.complete()
 

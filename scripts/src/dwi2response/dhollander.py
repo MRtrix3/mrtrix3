@@ -33,24 +33,20 @@ def getInputFiles():
 def execute():
   import math, os, shutil
   import lib.app
-  from lib.errorMessage  import errorMessage
-  from lib.getHeaderInfo import getHeaderInfo
-  from lib.getImageStat  import getImageStat
-  from lib.getUserPath   import getUserPath
-  from lib.printMessage  import printMessage
-  from lib.runCommand    import runCommand
-  from lib.runFunction   import runFunction
-  from lib.warnMessage   import warnMessage
-
+  import lib.image
+  import lib.message
+  import lib.path
+  from lib.runCommand  import runCommand
+  from lib.runFunction import runFunction
   
 
 
   # Get b-values and number of volumes per b-value.
-  bvalues = [ int(round(float(x))) for x in getHeaderInfo('dwi.mif', 'shells').split() ]
-  bvolumes = [ int(x) for x in getHeaderInfo('dwi.mif', 'shellcounts').split() ]
-  printMessage(str(len(bvalues)) + ' unique b-value(s) detected: ' + ','.join(map(str,bvalues)) + ' with ' + ','.join(map(str,bvolumes)) + ' volumes.')
+  bvalues = [ int(round(float(x))) for x in lib.image.headerField('dwi.mif', 'shells').split() ]
+  bvolumes = [ int(x) for x in lib.image.headerField('dwi.mif', 'shellcounts').split() ]
+  lib.message.print(str(len(bvalues)) + ' unique b-value(s) detected: ' + ','.join(map(str,bvalues)) + ' with ' + ','.join(map(str,bvolumes)) + ' volumes.')
   if len(bvalues) < 2:
-    errorMessage('Need at least 2 unique b-values (including b=0).')
+    lib.message.error('Need at least 2 unique b-values (including b=0).')
 
 
   # Get lmax information (if provided).
@@ -58,12 +54,12 @@ def execute():
   if lib.app.args.lmax:
     sfwm_lmax = [ int(x.strip()) for x in lib.app.args.lmax.split(',') ]
     if not len(sfwm_lmax) == len(bvalues):
-      errorMessage('Number of lmax\'s (' + str(len(sfwm_lmax)) + ', as supplied to the -lmax option: ' + ','.join(map(str,sfwm_lmax)) + ') does not match number of unique b-values.')
+      lib.message.error('Number of lmax\'s (' + str(len(sfwm_lmax)) + ', as supplied to the -lmax option: ' + ','.join(map(str,sfwm_lmax)) + ') does not match number of unique b-values.')
     for l in sfwm_lmax:
       if l%2:
-        errorMessage('Values supplied to the -lmax option must be even.')
+        lib.message.error('Values supplied to the -lmax option must be even.')
       if l<0:
-        errorMessage('Values supplied to the -lmax option must be non-negative.')
+        lib.message.error('Values supplied to the -lmax option must be non-negative.')
 
 
   # Erode (brain) mask.
@@ -106,23 +102,23 @@ def execute():
   runCommand('mrcalc crude_wm.mif 0 safe_mask.mif -if _crudenonwm.mif -datatype bit')
 
   # Crude GM versus CSF separation based on SDM.
-  crudenonwmmedian = getImageStat('safe_sdm.mif', 'median', '_crudenonwm.mif')
+  crudenonwmmedian = lib.image.statistic('safe_sdm.mif', 'median', '_crudenonwm.mif')
   runCommand('mrcalc _crudenonwm.mif safe_sdm.mif ' + str(crudenonwmmedian) + ' -subtract 0 -if - | mrthreshold - - -mask _crudenonwm.mif | mrcalc _crudenonwm.mif - 0 -if crude_csf.mif -datatype bit')
   runCommand('mrcalc crude_csf.mif 0 _crudenonwm.mif -if crude_gm.mif -datatype bit')
 
 
   # Refine WM: remove high SDM outliers.
-  crudewmmedian = getImageStat('safe_sdm.mif', 'median', 'crude_wm.mif')
+  crudewmmedian = lib.image.statistic('safe_sdm.mif', 'median', 'crude_wm.mif')
   runCommand('mrcalc crude_wm.mif safe_sdm.mif 0 -if ' + str(crudewmmedian) + ' -gt _crudewmhigh.mif -datatype bit')
   runCommand('mrcalc _crudewmhigh.mif 0 crude_wm.mif -if _crudewmlow.mif -datatype bit')
-  crudewmQ1 = float(getImageStat('safe_sdm.mif', 'median', '_crudewmlow.mif'))
-  crudewmQ3 = float(getImageStat('safe_sdm.mif', 'median', '_crudewmhigh.mif'))
+  crudewmQ1 = float(lib.image.statistic('safe_sdm.mif', 'median', '_crudewmlow.mif'))
+  crudewmQ3 = float(lib.image.statistic('safe_sdm.mif', 'median', '_crudewmhigh.mif'))
   crudewmoutlthresh = crudewmQ3 + (crudewmQ3 - crudewmQ1)
   runCommand('mrcalc crude_wm.mif safe_sdm.mif 0 -if ' + str(crudewmoutlthresh) + ' -gt _crudewmoutliers.mif -datatype bit')
   runCommand('mrcalc _crudewmoutliers.mif 0 crude_wm.mif -if refined_wm.mif -datatype bit')
 
   # Refine GM: separate safer GM from partial volumed voxels.
-  crudegmmedian = getImageStat('safe_sdm.mif', 'median', 'crude_gm.mif')
+  crudegmmedian = lib.image.statistic('safe_sdm.mif', 'median', 'crude_gm.mif')
   runCommand('mrcalc crude_gm.mif safe_sdm.mif 0 -if ' + str(crudegmmedian) + ' -gt _crudegmhigh.mif -datatype bit')
   runCommand('mrcalc _crudegmhigh.mif 0 crude_gm.mif -if _crudegmlow.mif -datatype bit')
   runCommand('mrcalc _crudegmhigh.mif safe_sdm.mif ' + str(crudegmmedian) + ' -subtract 0 -if - | mrthreshold - - -mask _crudegmhigh.mif -invert | mrcalc _crudegmhigh.mif - 0 -if _crudegmhighselect.mif -datatype bit')
@@ -130,26 +126,26 @@ def execute():
   runCommand('mrcalc _crudegmhighselect.mif 1 _crudegmlowselect.mif -if refined_gm.mif -datatype bit')
 
   # Refine CSF: recover lost CSF from crude WM SDM outliers, separate safer CSF from partial volumed voxels.
-  crudecsfmin = getImageStat('safe_sdm.mif', 'min', 'crude_csf.mif')
+  crudecsfmin= lib.image.statistic('safe_sdm.mif', 'min', 'crude_csf.mif')
   runCommand('mrcalc _crudewmoutliers.mif safe_sdm.mif 0 -if ' + str(crudecsfmin) + ' -gt 1 crude_csf.mif -if _crudecsfextra.mif -datatype bit')
   runCommand('mrcalc _crudecsfextra.mif safe_sdm.mif ' + str(crudecsfmin) + ' -subtract 0 -if - | mrthreshold - - -mask _crudecsfextra.mif | mrcalc _crudecsfextra.mif - 0 -if refined_csf.mif -datatype bit')
 
 
   # Get final voxels for single-fibre WM response function estimation from WM using 'tournier' algorithm.
-  refwmcount = float(getImageStat('refined_wm.mif', 'count', 'refined_wm.mif'))
+  refwmcount = float(lib.image.statistic('refined_wm.mif', 'count', 'refined_wm.mif'))
   voxsfwmcount = int(round(refwmcount * lib.app.args.sfwm / 100.0))
-  printMessage('Running \'tournier\' algorithm to select ' + str(voxsfwmcount) + ' single-fibre WM voxels.')
+  lib.message.print('Running \'tournier\' algorithm to select ' + str(voxsfwmcount) + ' single-fibre WM voxels.')
   cleanopt = ''
   if not lib.app.cleanup:
     cleanopt = ' -nocleanup'
   runCommand('dwi2response tournier dwi.mif _respsfwmss.txt -sf_voxels ' + str(voxsfwmcount) + ' -iter_voxels ' + str(voxsfwmcount * 10) + ' -mask refined_wm.mif -voxels voxels_sfwm.mif -quiet -tempdir ' + lib.app.tempDir + cleanopt)
 
   # Get final voxels for GM response function estimation from GM.
-  refgmmedian = getImageStat('safe_sdm.mif', 'median', 'refined_gm.mif')
+  refgmmedian = lib.image.statistic('safe_sdm.mif', 'median', 'refined_gm.mif')
   runCommand('mrcalc refined_gm.mif safe_sdm.mif 0 -if ' + str(refgmmedian) + ' -gt _refinedgmhigh.mif -datatype bit')
   runCommand('mrcalc _refinedgmhigh.mif 0 refined_gm.mif -if _refinedgmlow.mif -datatype bit')
-  refgmhighcount = float(getImageStat('_refinedgmhigh.mif', 'count', '_refinedgmhigh.mif'))
-  refgmlowcount = float(getImageStat('_refinedgmlow.mif', 'count', '_refinedgmlow.mif'))
+  refgmhighcount = float(lib.image.statistic('_refinedgmhigh.mif', 'count', '_refinedgmhigh.mif'))
+  refgmlowcount = float(lib.image.statistic('_refinedgmlow.mif', 'count', '_refinedgmlow.mif'))
   voxgmhighcount = int(round(refgmhighcount * lib.app.args.gm / 100.0))
   voxgmlowcount = int(round(refgmlowcount * lib.app.args.gm / 100.0))
   runCommand('mrcalc _refinedgmhigh.mif safe_sdm.mif 0 -if - | mrthreshold - - -bottom ' + str(voxgmhighcount) + ' -ignorezero | mrcalc _refinedgmhigh.mif - 0 -if _refinedgmhighselect.mif -datatype bit')
@@ -157,18 +153,18 @@ def execute():
   runCommand('mrcalc _refinedgmhighselect.mif 1 _refinedgmlowselect.mif -if voxels_gm.mif -datatype bit')
 
   # Get final voxels for CSF response function estimation from CSF.
-  refcsfcount = float(getImageStat('refined_csf.mif', 'count', 'refined_csf.mif'))
+  refcsfcount = float(lib.image.statistic('refined_csf.mif', 'count', 'refined_csf.mif'))
   voxcsfcount = int(round(refcsfcount * lib.app.args.csf / 100.0))
   runCommand('mrcalc refined_csf.mif safe_sdm.mif 0 -if - | mrthreshold - - -top ' + str(voxcsfcount) + ' -ignorezero | mrcalc refined_csf.mif - 0 -if voxels_csf.mif -datatype bit')
 
 
   # Show summary of voxels counts.
   textarrow = ' --> '
-  printMessage('Summary of voxel counts:')
-  printMessage('Mask: ' + str(int(getImageStat('mask.mif', 'count', 'mask.mif'))) + textarrow + str(int(getImageStat('eroded_mask.mif', 'count', 'eroded_mask.mif'))) + textarrow + str(int(getImageStat('safe_mask.mif', 'count', 'safe_mask.mif'))))
-  printMessage('WM: ' + str(int(getImageStat('crude_wm.mif', 'count', 'crude_wm.mif'))) + textarrow + str(int(getImageStat('refined_wm.mif', 'count', 'refined_wm.mif'))) + textarrow + str(int(getImageStat('voxels_sfwm.mif', 'count', 'voxels_sfwm.mif'))) + ' (SF)')
-  printMessage('GM: ' + str(int(getImageStat('crude_gm.mif', 'count', 'crude_gm.mif'))) + textarrow + str(int(getImageStat('refined_gm.mif', 'count', 'refined_gm.mif'))) + textarrow + str(int(getImageStat('voxels_gm.mif', 'count', 'voxels_gm.mif'))))
-  printMessage('CSF: ' + str(int(getImageStat('crude_csf.mif', 'count', 'crude_csf.mif'))) + textarrow + str(int(getImageStat('refined_csf.mif', 'count', 'refined_csf.mif'))) + textarrow + str(int(getImageStat('voxels_csf.mif', 'count', 'voxels_csf.mif'))))
+  lib.message.print('Summary of voxel counts:')
+  lib.message.print('Mask: ' + str(int(lib.image.statistic('mask.mif', 'count', 'mask.mif'))) + textarrow + str(int(lib.image.statistic('eroded_mask.mif', 'count', 'eroded_mask.mif'))) + textarrow + str(int(lib.image.statistic('safe_mask.mif', 'count', 'safe_mask.mif'))))
+  lib.message.print('WM: ' + str(int(lib.image.statistic('crude_wm.mif', 'count', 'crude_wm.mif'))) + textarrow + str(int(lib.image.statistic('refined_wm.mif', 'count', 'refined_wm.mif'))) + textarrow + str(int(lib.image.statistic('voxels_sfwm.mif', 'count', 'voxels_sfwm.mif'))) + ' (SF)')
+  lib.message.print('GM: ' + str(int(lib.image.statistic('crude_gm.mif', 'count', 'crude_gm.mif'))) + textarrow + str(int(lib.image.statistic('refined_gm.mif', 'count', 'refined_gm.mif'))) + textarrow + str(int(lib.image.statistic('voxels_gm.mif', 'count', 'voxels_gm.mif'))))
+  lib.message.print('CSF: ' + str(int(lib.image.statistic('crude_csf.mif', 'count', 'crude_csf.mif'))) + textarrow + str(int(lib.image.statistic('refined_csf.mif', 'count', 'refined_csf.mif'))) + textarrow + str(int(lib.image.statistic('voxels_csf.mif', 'count', 'voxels_csf.mif'))))
 
 
   # Generate single-fibre WM, GM and CSF responses
@@ -179,9 +175,9 @@ def execute():
   runCommand('amp2response dwi.mif voxels_sfwm.mif safe_vecs.mif response_sfwm.txt' + bvalues_option + sfwm_lmax_option)
   runCommand('amp2response dwi.mif voxels_gm.mif safe_vecs.mif response_gm.txt' + bvalues_option + ' -isotropic')
   runCommand('amp2response dwi.mif voxels_csf.mif safe_vecs.mif response_csf.txt' + bvalues_option + ' -isotropic')
-  runFunction(shutil.copyfile, 'response_sfwm.txt', getUserPath(lib.app.args.out_sfwm, False))
-  runFunction(shutil.copyfile, 'response_gm.txt', getUserPath(lib.app.args.out_gm, False))
-  runFunction(shutil.copyfile, 'response_csf.txt', getUserPath(lib.app.args.out_csf, False))
+  runFunction(shutil.copyfile, 'response_sfwm.txt', lib.path.fromUser(lib.app.args.out_sfwm, False))
+  runFunction(shutil.copyfile, 'response_gm.txt', lib.path.fromUser(lib.app.args.out_gm, False))
+  runFunction(shutil.copyfile, 'response_csf.txt', lib.path.fromUser(lib.app.args.out_csf, False))
 
 
   # Generate 4D binary images with voxel selections at major stages in algorithm (RGB as in MSMT-CSD paper).

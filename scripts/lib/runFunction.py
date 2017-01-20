@@ -1,6 +1,8 @@
 def runFunction(fn, *args):
 
-  import lib.app, os, sys
+  import os, sys
+  import lib.app
+  import lib.message
 
   fnstring = fn.__module__ + '.' + fn.__name__ + '(' + ', '.join(args) + ')'
 
@@ -17,16 +19,16 @@ def runFunction(fn, *args):
         totest = entry
       filetotest = [ lib.app.lastFile, os.path.splitext(lib.app.lastFile)[0] ]
       if totest in filetotest:
-        debugMessage('Detected last file \'' + lib.app.lastFile + '\' in function \'' + fnstring + '\'; this is the last runCommand() / runFunction() call that will be skipped')
+        lib.message.debug('Detected last file \'' + lib.app.lastFile + '\' in function \'' + fnstring + '\'; this is the last runCommand() / runFunction() call that will be skipped')
         lib.app.lastFile = ''
         break
     if lib.app.verbosity:
-      sys.stderr.write(lib.app.colourConsole + 'Skipping function:' + lib.app.colourClear + ' ' + fnstring + '\n')
+      sys.stderr.write(lib.message.colourConsole + 'Skipping function:' + lib.message.colourClear + ' ' + fnstring + '\n')
       sys.stderr.flush()
     return
 
   if lib.app.verbosity:
-    sys.stderr.write(lib.app.colourConsole + 'Function:' + lib.app.colourClear + ' ' + fnstring + '\n')
+    sys.stderr.write(lib.message.colourConsole + 'Function:' + lib.message.colourClear + ' ' + fnstring + '\n')
     sys.stderr.flush()
 
   # Now we need to actually execute the requested function

@@ -1,22 +1,14 @@
 _env = None
-_mrtrix_bin_list = [ ]
-_mrtrix_bin_path = ''
 
 def runCommand(cmd, exitOnError=True):
 
-  import inspect, lib.app, os, subprocess, sys
-  from lib.debugMessage import debugMessage
-  from lib.errorMessage import errorMessage
-  from lib.isWindows    import isWindows
-  from lib.printMessage import printMessage
-  from lib.warnMessage  import warnMessage
-  import distutils
-  from distutils.spawn import find_executable
-
+  import inspect, os, subprocess, sys
+  import lib.app
+  import lib.message
+  import lib.mrtrix
+  
   global _env
-  global _mrtrix_bin_list
-  global _mrtrix_bin_path
-
+  
   if not _env:
     _env = os.environ.copy()
     # Prevent _any_ SGE-compatible commands from running in SGE mode;
@@ -26,16 +18,11 @@ def runCommand(cmd, exitOnError=True):
     if os.environ.get('SGE_ROOT'):
       del _env['SGE_ROOT']
 
-  if not _mrtrix_bin_list:
-    _mrtrix_bin_path = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(os.path.realpath(__file__))), os.pardir, os.pardir, 'release', 'bin'));
-    # On Windows, strip the .exe's
-    _mrtrix_bin_list = [ os.path.splitext(name)[0] for name in os.listdir(_mrtrix_bin_path) ]
-
   # Vectorise the command string, preserving anything encased within quotation marks
   # TODO Use shlex.split()?
   quotation_split = cmd.split('\"')
   if not len(quotation_split)%2:
-    errorMessage('Malformed command \"' + cmd + '\": odd number of quotation marks')
+    lib.message.error('Malformed command \"' + cmd + '\": odd number of quotation marks')
   cmdsplit = [ ]
   if len(quotation_split) == 1:
     cmdsplit = cmd.split()
@@ -51,7 +38,7 @@ def runCommand(cmd, exitOnError=True):
     #   intended to be produced by this command; if it is, this will be the last
     #   command that gets skipped by the -continue option
     # It's possible that the file might be defined in a '--option=XXX' style argument
-    #  It's also possible that the filename in the command string has the file extension omitted
+    #   It's also possible that the filename in the command string has the file extension omitted
     for entry in cmdsplit:
       if entry.startswith('--') and '=' in entry:
         cmdtotest = entry.split('=')[1]
@@ -59,7 +46,7 @@ def runCommand(cmd, exitOnError=True):
         cmdtotest = entry
       filetotest = [ lib.app.lastFile, os.path.splitext(lib.app.lastFile)[0] ]
       if cmdtotest in filetotest:
-        debugMessage('Detected last file \'' + lib.app.lastFile + '\' in command \'' + cmd + '\'; this is the last runCommand() / runFunction() call that will be skipped')
+        lib.message.debug('Detected last file \'' + lib.app.lastFile + '\' in command \'' + cmd + '\'; this is the last runCommand() / runFunction() call that will be skipped')
         lib.app.lastFile = ''
         break
     if lib.app.verbosity:
@@ -68,42 +55,29 @@ def runCommand(cmd, exitOnError=True):
     return
 
   # For any MRtrix commands, need to insert the nthreads and quiet calls
+  # Also make sure that the appropriate version of that MRtrix command will be invoked
   new_cmdsplit = [ ]
-  is_mrtrix_binary = False
-  next_is_binary = True
+  is_mrtrix_exe = False
+  next_is_exe = True
   for item in cmdsplit:
-    if next_is_binary:
-      is_mrtrix_binary = item in _mrtrix_bin_list
-      # Make sure we're not accidentally running an MRtrix command from a different installation to the script
-      if is_mrtrix_binary:
-        binary_sys = find_executable(item)
-        binary_manual = os.path.join(_mrtrix_bin_path, item)
-        if (isWindows()):
-          binary_manual = binary_manual + '.exe'
-        use_manual_binary_path = not binary_sys
-        if not use_manual_binary_path:
-          # os.path.samefile() not supported on all platforms / Python versions
-          if hasattr(os.path, 'samefile'):
-            use_manual_binary_path = not os.path.samefile(binary_sys, binary_manual)
-          else:
-            # Hack equivalent of samefile(); not perfect, but should be adequate for use here
-            use_manual_binary_path = not os.path.normcase(os.path.normpath(binary_sys)) == os.path.normcase(os.path.normpath(binary_manual))
-        if use_manual_binary_path:
-          item = binary_manual
-      next_is_binary = False
+    if next_is_exe:
+      is_mrtrix_exe = item in lib.mrtrix.exe_list
+      if is_mrtrix_exe:
+        item = lib.mrtrix.exeVersionMatch(item)
+      next_is_exe = False
     if item == '|':
-      if is_mrtrix_binary:
-        if lib.app.mrtrixNThreads:
-          new_cmdsplit.extend(lib.app.mrtrixNThreads.strip().split())
-        if lib.app.mrtrixVerbosity:
-          new_cmdsplit.append(lib.app.mrtrixVerbosity.strip())
-      next_is_binary = True
+      if is_mrtrix_exe:
+        if lib.mrtrix.optionNThreads:
+          new_cmdsplit.extend(lib.mrtrix.optionNThreads.strip().split())
+        if lib.mrtrix.optionVerbosity:
+          new_cmdsplit.append(lib.mrtrix.optionVerbosity.strip())
+      next_is_exe = True
     new_cmdsplit.append(item)
-  if is_mrtrix_binary:
-    if lib.app.mrtrixNThreads:
-      new_cmdsplit.extend(lib.app.mrtrixNThreads.strip().split())
-    if lib.app.mrtrixVerbosity:
-      new_cmdsplit.append(lib.app.mrtrixVerbosity.strip())
+  if is_mrtrix_exe:
+    if lib.mrtrix.optionNThreads:
+      new_cmdsplit.extend(lib.mrtrix.optionNThreads.strip().split())
+    if lib.mrtrix.optionVerbosity:
+      new_cmdsplit.append(lib.mrtrix.optionVerbosity.strip())
   cmdsplit = new_cmdsplit
 
   # If the piping symbol appears anywhere, we need to split this into multiple commands and execute them separately
@@ -117,10 +91,10 @@ def runCommand(cmd, exitOnError=True):
   cmdstack.append(cmdsplit[prev:])
 
   if lib.app.verbosity:
-    sys.stderr.write(lib.app.colourConsole + 'Command:' + lib.app.colourClear + ' ' + cmd + '\n')
+    sys.stderr.write(lib.message.colourConsole + 'Command:' + lib.message.colourClear + ' ' + cmd + '\n')
     sys.stderr.flush()
 
-  debugMessage('To execute: ' + str(cmdstack))
+  lib.message.debug('To execute: ' + str(cmdstack))
 
   # Execute all processes
   processes = [ ]
@@ -172,18 +146,18 @@ def runCommand(cmd, exitOnError=True):
     lib.app.cleanup = False
     if exitOnError:
       caller = inspect.getframeinfo(inspect.stack()[1][0])
-      printMessage('')
-      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + lib.app.colourError + '[ERROR] Command failed: ' + cmd + lib.app.colourClear + lib.app.colourDebug + ' (' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')' + lib.app.colourClear + '\n')
-      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + lib.app.colourPrint + 'Output of failed command:' + lib.app.colourClear + '\n')
+      lib.message.print('')
+      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + lib.message.colourError + '[ERROR] Command failed: ' + cmd + lib.message.colourClear + lib.message.colourDebug + ' (' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')' + lib.message.colourClear + '\n')
+      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + lib.message.colourPrint + 'Output of failed command:' + lib.message.colourClear + '\n')
       sys.stderr.write(error_text)
       sys.stderr.flush()
       if lib.app.tempDir:
         with open(os.path.join(lib.app.tempDir, 'error.txt'), 'w') as outfile:
           outfile.write(cmd + '\n\n' + error_text + '\n')
       lib.app.complete()
-      exit(1)
+      sys.exit(1)
     else:
-      warnMessage('Command failed: ' + cmd)
+      lib.message.warn('Command failed: ' + cmd)
 
   # Only now do we append to the script log, since the command has completed successfully
   # Note: Writing the command as it was formed as the input to runCommand():
