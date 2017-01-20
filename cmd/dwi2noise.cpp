@@ -69,22 +69,23 @@ void run ()
   WARN ("Command dwi2noise is deprecated. Try using dwidenoise with -noise option instead.");
   
   auto dwi_in = Image<value_type>::open (argument[0]);
-
-  auto header = Header (dwi_in);
-  header.ndim() = 3;
-  header.datatype() = DataType::Float32;
-  auto noise = Image<value_type>::create (argument[1], header);
+  const auto grad = DWI::get_valid_DW_scheme (dwi_in);
 
   vector<size_t> dwis;
   Eigen::MatrixXd mapping;
   {
-    auto grad = DWI::get_valid_DW_scheme (dwi_in);
-    dwis = DWI::Shells (grad).select_shells (true, true).largest().get_volumes();
-    auto dirs = DWI::gen_direction_matrix (grad, dwis);
+    dwis = DWI::Shells (grad).select_shells (true, false, true).largest().get_volumes();
+    const auto dirs = DWI::gen_direction_matrix (grad, dwis);
     mapping = DWI::compute_SH2amp_mapping (dirs);
   }
 
   auto dwi = Adapter::make <Adapter::Extract1D> (dwi_in, 3, container_cast<vector<int>> (dwis));
+
+  auto header = Header (dwi_in);
+  header.ndim() = 3;
+  header.datatype() = DataType::Float32;
+  DWI::stash_DW_scheme (header, grad);
+  auto noise = Image<value_type>::create (argument[1], header);
 
   DWI::estimate_noise (dwi, noise, mapping);
 }

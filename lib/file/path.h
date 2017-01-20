@@ -105,11 +105,11 @@ namespace MR
               name.substr (name.size()-suffix.size()) == suffix);
     }
 
-    inline bool has_suffix(const std::string&name, const std::initializer_list<const std::string> &suffix_list)
+    inline bool has_suffix (const std::string&name, const std::initializer_list<const std::string> &suffix_list)
     {
       bool flag(false);
 
-      for(const auto& suffix : suffix_list) { flag = flag || has_suffix(name, suffix); }
+      for(const auto& suffix : suffix_list) { flag = flag || has_suffix (name, suffix); }
 
       return flag;
     }

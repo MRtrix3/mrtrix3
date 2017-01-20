@@ -25,7 +25,7 @@
 #include "registration/transform/affine.h"
 #include "registration/warp/compose.h"
 #include "registration/warp/convert.h"
-#include "registration/warp/utils.h"
+#include "registration/warp/helpers.h"
 #include "registration/warp/invert.h"
 #include "registration/metric/demons.h"
 #include "registration/metric/demons4D.h"
@@ -188,15 +188,15 @@ namespace MR
                   DEBUG ("smoothing update fields");
                   Filter::Smooth smooth_filter (*im1_update);
                   smooth_filter.set_stdev (update_smoothing_mm);
-                  smooth_filter (*im1_update, *im1_update);
-                  smooth_filter (*im2_update, *im2_update);
+                  smooth_filter (*im1_update);
+                  smooth_filter (*im2_update);
                 }
 
                 Image<default_type> im1_deform_field = Image<default_type>::scratch (field_header);
                 Image<default_type> im2_deform_field = Image<default_type>::scratch (field_header);
 
                 if (iteration > 1) {
-                  DEBUG ("updating displacement field field");
+                  DEBUG ("updating displacement field");
                   Warp::update_displacement_scaling_and_squaring (*im1_to_mid, *im1_update, *im1_to_mid_new, grad_step_altered);
                   Warp::update_displacement_scaling_and_squaring (*im2_to_mid, *im2_update, *im2_to_mid_new, grad_step_altered);
 
@@ -204,8 +204,8 @@ namespace MR
                   Filter::Smooth smooth_filter (*im1_to_mid_new);
                   smooth_filter.set_stdev (disp_smoothing_mm);
                   smooth_filter.set_zero_boundary (true);
-                  smooth_filter (*im1_to_mid_new, *im1_to_mid_new);
-                  smooth_filter (*im2_to_mid_new, *im2_to_mid_new);
+                  smooth_filter (*im1_to_mid_new);
+                  smooth_filter (*im2_to_mid_new);
 
                   Registration::Warp::compose_linear_displacement (im1_to_mid_linear, *im1_to_mid_new, im1_deform_field);
                   Registration::Warp::compose_linear_displacement (im2_to_mid_linear, *im2_to_mid_new, im2_deform_field);

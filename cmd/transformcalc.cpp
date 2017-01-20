@@ -20,7 +20,7 @@
 #include "math/math.h"
 #include "math/average_space.h"
 #include "image.h"
-#include "file/nifti1_utils.h"
+#include "file/nifti_utils.h"
 #include "transform.h"
 #include "file/key_value.h"
 
@@ -44,10 +44,7 @@ void usage ()
   AUTHOR = "Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
 
   DESCRIPTION
-  + "This command's function is to process linear transformation matrices."
-
-  + "It allows to perform affine matrix operations or to convert the transformation matrix provided by FSL's flirt command to a format usable in MRtrix"
-  ;
+  + "This command's function is to perform calculations on linear transformation matrices.";
 
   ARGUMENTS
   + Argument ("input", "the input for the specified operation").allow_multiple()

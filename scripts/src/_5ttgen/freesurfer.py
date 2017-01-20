@@ -18,8 +18,9 @@ def getInputFiles():
   import os, shutil
   import lib.app
   from lib.getUserPath import getUserPath
+  from lib.runFunction import runFunction
   if hasattr(lib.app.args, 'lut') and lib.app.args.lut:
-    shutil.copyfile(getUserPath(lib.app.args.lut, False), os.path.join(lib.app.tempDir, 'LUT.txt'))
+    runFunction(shutil.copyfile, getUserPath(lib.app.args.lut, False), os.path.join(lib.app.tempDir, 'LUT.txt'))
 
 
 

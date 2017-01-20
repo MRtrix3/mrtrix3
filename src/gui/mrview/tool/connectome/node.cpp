@@ -20,7 +20,6 @@
 
 #include "exception.h"
 #include "gui/mrview/window.h"
-#include "mesh/vox2mesh.h"
 
 namespace MR
 {
@@ -70,7 +69,7 @@ namespace MR
 
 
 
-        Node::Mesh::Mesh (MR::Mesh::Mesh& in) :
+        Node::Mesh::Mesh (MR::Surface::Mesh& in) :
             count (3 * in.num_triangles())
         {
           MRView::GrabContext context;

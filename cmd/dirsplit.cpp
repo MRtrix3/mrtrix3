@@ -17,7 +17,6 @@
 #include "command.h"
 #include "progressbar.h"
 #include "math/rng.h"
-#include "math/SH.h"
 #include "thread.h"
 #include "dwi/directions/file.h"
 

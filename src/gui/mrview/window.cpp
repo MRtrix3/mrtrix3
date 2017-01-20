@@ -117,6 +117,9 @@ namespace MR
         }
 
       QSize Window::GLArea::sizeHint () const {
+        //CONF option: MRViewInitWindowSize
+        //CONF initial window size of MRView in pixels
+        //CONF default: 512,512
         std::string init_size_string = lowercase (MR::File::Config::get ("MRViewInitWindowSize"));
         vector<int> init_window_size;
         if (init_size_string.length())
@@ -1980,7 +1983,11 @@ namespace MR
           + OptionGroup ("Debugging options")
 
           + Option ("fps", "Display frames per second, averaged over the last 10 frames. "
-              "The maximum over the last 3 seconds is also displayed.");
+              "The maximum over the last 3 seconds is also displayed.")
+
+          + OptionGroup ("Other options")
+
+          + NoRealignOption;
 
       }
 

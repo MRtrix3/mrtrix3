@@ -3,6 +3,7 @@ mrtrix_bin_path = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(o
 
 def getHeaderInfo(image_path, header_item):
   import lib.app, subprocess
+  from lib.debugMessage import debugMessage
   from lib.printMessage import printMessage
   command = [ os.path.join(mrtrix_bin_path, 'mrinfo'), image_path, '-' + header_item ]
   if lib.app.verbosity > 1:
@@ -11,6 +12,10 @@ def getHeaderInfo(image_path, header_item):
   result, err = proc.communicate()
   result = result.rstrip().decode('utf-8')
   if lib.app.verbosity > 1:
-    printMessage('Result: ' + result)
+    if '\n' in result:
+      printMessage('Result: (' + str(result.count('\n')+1) + ' lines)')
+      debugMessage(result)
+    else:
+      printMessage('Result: ' + result)
   return result
 

@@ -283,7 +283,7 @@ namespace MR
 
               if (track_excluded) {
                 switch (termination) {
-                  case CALIBRATE_FAIL: case ENTER_CSF: case BAD_SIGNAL: case HIGH_CURVATURE:
+                  case CALIBRATOR: case ENTER_CSF: case BAD_SIGNAL: case HIGH_CURVATURE:
                     S.add_rejection (ACT_POOR_TERMINATION);
                     break;
                   case LENGTH_EXCEED:
@@ -327,7 +327,7 @@ namespace MR
                     track_excluded = true;
                     break;
 
-                  case CALIBRATE_FAIL: case BAD_SIGNAL: case HIGH_CURVATURE:
+                  case CALIBRATOR: case BAD_SIGNAL: case HIGH_CURVATURE:
                     if (method.act().sgm_depth)
                       termination = TERM_IN_SGM;
                     else if (!method.act().in_pathology())
@@ -346,7 +346,7 @@ namespace MR
                   case ENTER_CGM: case ENTER_CSF: case EXIT_SGM: case TERM_IN_SGM:
                     throw Exception ("\nFIXME: Have received ACT-based termination for non-ACT tracking in apply_priors()\n");
 
-                  case EXIT_IMAGE: case EXIT_MASK: case LENGTH_EXCEED: case CALIBRATE_FAIL: case BAD_SIGNAL: case HIGH_CURVATURE: case TRAVERSE_ALL_INCLUDE:
+                  case EXIT_IMAGE: case EXIT_MASK: case LENGTH_EXCEED: case CALIBRATOR: case BAD_SIGNAL: case HIGH_CURVATURE: case TRAVERSE_ALL_INCLUDE:
                     break;
 
                   case ENTER_EXCLUDE:

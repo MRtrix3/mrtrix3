@@ -199,8 +199,8 @@ namespace MR
 
 
           class Dixel : public ModeBase
-          { MEMALIGN(Dixel)
-              typedef MR::DWI::Directions::dir_t dir_t;
+          { MEMALIGN (Dixel)
+              typedef MR::DWI::Directions::index_type dir_t;
             public:
               Dixel (Renderer& parent) :
                   ModeBase (parent),

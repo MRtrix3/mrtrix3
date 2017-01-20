@@ -394,7 +394,28 @@ namespace MR
         throw Exception ("dimension mismatch between \"" + in1.name() + "\" and \"" + in2.name() + "\"");
     }
 
+  template <class HeaderType1, class HeaderType2>
+    inline void check_transform (const HeaderType1& in1, const HeaderType2& in2, const double tol = 0.0) {
+      for (size_t i  = 0; i < 3; ++i) {
+        for (size_t j  = 0; j < 4; ++j) {
+          if (std::abs (in1.transform().matrix()(i,j) - in2.transform().matrix()(i,j)) > tol)
+            throw Exception ("images \"" + in1.name() + "\" and \"" + in2.name() + "\" do not have matching header transforms "
+                               + "\n" + str(in1.transform().matrix()) + "vs \n " + str(in2.transform().matrix()) + ")");
+        }
+      }
+    }
 
+
+  template <class HeaderType1, class HeaderType2>
+    inline bool transforms_match (const HeaderType1 in1, const HeaderType2 in2, const double tol = 0.0) {
+      for (size_t i  = 0; i < 3; ++i) {
+        for (size_t j  = 0; j < 4; ++j) {
+          if (std::abs (in1.transform().matrix()(i,j) - in2.transform().matrix()(i,j)) > tol)
+            return false;
+        }
+      }
+      return true;
+    }
 
   template <class HeaderType>
     inline void squeeze_dim (HeaderType& in, size_t from_axis = 3) 

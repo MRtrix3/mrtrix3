@@ -10,19 +10,19 @@ Synopsis
 
     fixel2tsf [ options ]  fixel_in tracks tsf
 
--  *fixel_in*: the input fixel image
+-  *fixel_in*: the input fixel data file (within the fixel directory)
 -  *tracks*: the input track file 
 -  *tsf*: the output track scalar file
 
 Description
 -----------
 
-Map fixel values to a track scalar file based on an input tractogram. This is useful for visualising the output from fixelcfestats in 3D.
+Map fixel values to a track scalar file based on an input tractogram. This is useful for visualising all brain fixels (e.g. the output from fixelcfestats) in 3D.
 
 Options
 -------
 
--  **-angle value** the max anglular threshold for computing correspondence between a fixel direction and track tangent (default = 30 degrees)
+-  **-angle value** the max anglular threshold for computing correspondence between a fixel direction and track tangent (default = 45 degrees)
 
 Standard options
 ^^^^^^^^^^^^^^^^

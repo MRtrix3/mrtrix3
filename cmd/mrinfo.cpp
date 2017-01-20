@@ -20,6 +20,8 @@
 
 #include "command.h"
 #include "header.h"
+#include "phase_encoding.h"
+#include "file/json.h"
 #include "dwi/gradient.h"
 
 
@@ -66,15 +68,15 @@ void usage ()
     +   Option ("offset", "image intensity offset")
     +   Option ("multiplier", "image intensity multiplier")
     +   Option ("transform", "the voxel to image transformation")
-    +   Option ("norealign",
-          "do not realign transform to near-default RAS coordinate system (the "
-          "default behaviour on image load). This is useful to inspect the transform "
-          "and strides as they are actually stored in the header, rather than as "
-          "MRtrix interprets them.")
+
+    +   NoRealignOption
 
     + Option ("property", "any text properties embedded in the image header under the "
         "specified key (use 'all' to list all keys found)").allow_multiple()
     +   Argument ("key").type_text()
+
+    + Option ("json_export", "export header key/value entries to a JSON file")
+    +   Argument ("file").type_file_out()
 
     + GradImportOptions
     + Option ("raw_dwgrad",
@@ -87,7 +89,10 @@ void usage ()
     +   Option ("dwgrad", "the diffusion-weighting gradient table, as stored in the header "
           "(i.e. without any interpretation, scaling of b-values, or normalisation of gradient vectors)")
     +   Option ("shells", "list the average b-value of each shell")
-    +   Option ("shellcounts", "list the number of volumes in each shell");
+    +   Option ("shellcounts", "list the number of volumes in each shell")
+
+    + PhaseEncoding::ExportOptions
+    + Option ("petable", "print the phase encoding table");
 
 }
 
@@ -129,6 +134,21 @@ void print_strides (const Header& header)
   std::cout << buffer << "\n";
 }
 
+void print_shells (const Header& header, const bool shells, const bool shellcounts)
+{
+  DWI::Shells dwshells (DWI::parse_DW_scheme (header));
+  if (shells) {
+    for (size_t i = 0; i < dwshells.count(); i++)
+      std::cout << dwshells[i].get_mean() << " ";
+    std::cout << "\n";
+  }
+  if (shellcounts) {
+    for (size_t i = 0; i < dwshells.count(); i++)
+      std::cout << dwshells[i].count() << " ";
+    std::cout << "\n";
+  }
+}
+
 void print_transform (const Header& header)
 {
   Eigen::IOFormat fmt (Eigen::FullPrecision, 0, " ", "\n", "", "", "", "\n");
@@ -138,20 +158,26 @@ void print_transform (const Header& header)
   std::cout << matrix.format (fmt);
 }
 
-void print_properties (const Header& header, const std::string& key)
+void print_properties (const Header& header, const std::string& key, const size_t indent = 0)
 {
   if (lowercase (key) == "all") {
     for (const auto& it : header.keyval()) {
       std::cout << it.first << ": ";
-      print_properties (header, it.first);
+      print_properties (header, it.first, it.first.size()+2);
     }
   }
   else {
     const auto values = header.keyval().find (key);
-    if (values != header.keyval().end())
-      std::cout << values->second << "\n";
-    else
+    if (values != header.keyval().end()) {
+      auto lines = split (values->second, "\n");
+      std::cout << lines[0] << "\n";
+      for (size_t i = 1; i != lines.size(); ++i) {
+        lines[i].insert (0, indent, ' ');
+        std::cout << lines[i] << "\n";
+      }
+    } else {
       WARN ("no \"" + key + "\" entries found in \"" + header.name() + "\"");
+    }
   }
 }
 
@@ -164,10 +190,15 @@ void run ()
 {
   auto check_option_group = [](const App::OptionGroup& g) { for (auto o: g) if (get_options (o.id).size()) return true; return false; };
 
-  bool export_grad = check_option_group (GradExportOptions);
+  const bool export_grad = check_option_group (GradExportOptions);
+  const bool export_pe   = check_option_group (PhaseEncoding::ExportOptions);
 
-  if (export_grad && argument.size() > 1 )
+  if (export_grad && argument.size() > 1)
     throw Exception ("can only export DW gradient table to file if a single input image is provided");
+  if (export_pe && argument.size() > 1)
+    throw Exception ("can only export phase encoding table to file if a single input image is provided");
+
+  std::unique_ptr<nlohmann::json> json (get_options ("json_export").size() ? new nlohmann::json : nullptr);
 
   if (get_options ("norealign").size())
     Header::do_not_realign_transform = true;
@@ -186,10 +217,12 @@ void run ()
   const bool shells      = get_options("shells")        .size();
   const bool shellcounts = get_options("shellcounts")   .size();
   const bool raw_dwgrad  = get_options("raw_dwgrad")    .size();
+  const bool petable     = get_options("petable")       .size();
 
   const bool print_full_header = !(format || ndim || size || vox || datatype || stride ||
-      offset || multiplier || properties.size() || transform || dwgrad || export_grad || shells || shellcounts);
+      offset || multiplier || properties.size() || transform || dwgrad || export_grad || shells || shellcounts || export_pe || petable);
 
+  Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", "\n", "", "", "", "\n");
 
   for (size_t i = 0; i < argument.size(); ++i) {
     auto header = Header::open (argument[i]);
@@ -207,27 +240,39 @@ void run ()
     if (offset)     std::cout << header.intensity_offset() << "\n";
     if (multiplier) std::cout << header.intensity_scale() << "\n";
     if (transform)  print_transform (header);
-    if (dwgrad)     std::cout << DWI::parse_DW_scheme (header) << "\n";
-    if (shells || shellcounts) {
-      DWI::Shells dwshells (DWI::parse_DW_scheme (header));
-      if (shells) {
-        for (size_t i = 0; i < dwshells.count(); i++)
-          std::cout << dwshells[i].get_mean() << " ";
-        std::cout << "\n";
-      }
-      if (shellcounts) {
-        for (size_t i = 0; i < dwshells.count(); i++)
-          std::cout << dwshells[i].count() << " ";
-        std::cout << "\n";
-      }
-    }
+    if (dwgrad)     std::cout << DWI::get_DW_scheme (header) << "\n";
+    if (shells || shellcounts) print_shells (header, shells, shellcounts);
+    if (petable)    std::cout << PhaseEncoding::get_scheme (header) << "\n";
+
     for (size_t n = 0; n < properties.size(); ++n)
       print_properties (header, properties[n][0]);
 
     DWI::export_grad_commandline (header);
+    PhaseEncoding::export_commandline (header);
+
+    if (json) {
+      for (const auto& kv : header.keyval()) {
+        if (json->find (kv.first) == json->end()) {
+          (*json)[kv.first] = kv.second;
+        } else if ((*json)[kv.first] != kv.second) {
+          // If the value for this key differs between images, turn the JSON entry into an array
+          if ((*json)[kv.first].is_array())
+            (*json)[kv.first].push_back (kv.second);
+          else
+            (*json)[kv.first] = { (*json)[kv.first], kv.second };
+        }
+      }
+    }
 
     if (print_full_header)
       std::cout << header.description();
+  }
+
+  if (json) {
+    auto opt = get_options ("json_export");
+    assert (opt.size());
+    File::OFStream out (opt[0][0]);
+    out << json->dump(4) << "\n";
   }
 
 }

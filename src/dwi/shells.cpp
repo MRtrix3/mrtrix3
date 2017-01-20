@@ -62,23 +62,47 @@ namespace MR
 
 
 
-
-    Shells& Shells::select_shells (const bool keep_bzero, const bool force_single_shell)
+    // Use to select the shells the user may have requested via the "-shell" option,
+    // and additionally enforce certain constraints related to the presence of shells.
+    //
+    // The optional constraints are:
+    // - force_singleshell: enforces the presence of exactly 1 (no more, no less) non-bzero shell;
+    //                      doesn't influence the presence (or not) of bzeros, i.e., if they're present,
+    //                      they're simply left in.
+    // - force_with_bzero: enforces the presence of bzeros.
+    // - force_without_bzero: enforces the absence of bzeros; typical usecase would be in conjunction
+    //                        with "force_singleshell", to obtain a "pure" single shell.
+    //
+    // When the "-shell" option is present, it is first applied, and next the constraints (if any are requested)
+    // are checked. If any constraint is violated, an error (exception) occurs. The logic is that the user's
+    // "-shell" selection is a conscious choice that should always be honoured, and no unexpected modifications
+    // (e.g. including the bzeros) are made to it.
+    //
+    // When the "-shell" option is not present, by default all shells are included. If constraints are requested,
+    // they are made true for the convenience of the user, if possible (e.g. just selecting the highest b-value
+    // shell if "force_singleshell" is requested, excluding the bzeros if "force_without_bzero" is present, etc.).
+    // However, if they simply can't be made true (e.g. "force_with_bzero" when there are no bzeros in the dataset),
+    // an error (exception) will still occur.
+    //
+    // So long story short: multi-shell (as in "all shells") is default, but constraints can be specified
+    // if strictly required for certain commands or algorithms.
+    Shells& Shells::select_shells (const bool force_singleshell, const bool force_with_bzero, const bool force_without_bzero)
     {
 
       // Easiest way to restrict processing to particular shells is to simply erase
       //   the unwanted shells; makes it command independent
 
-      BitSet to_retain (shells.size(), false);
-      if (keep_bzero && smallest().is_bzero())
-        to_retain[0] = true;
+      if (force_without_bzero && force_with_bzero)
+        throw Exception ("Incompatible constraints: command tries to enforce proceeding both with and without b=0");
+
+      BitSet to_retain (count(), false);
 
       auto opt = App::get_options ("shell");
       if (opt.size()) {
 
         vector<default_type> desired_bvalues = opt[0][0];
-        if (desired_bvalues.size() > 1 && !(desired_bvalues.front() == 0) && force_single_shell)
-          throw Exception ("Command not compatible with multiple non-zero b-shells");
+        bool bzero_selected = false;
+        size_t nonbzero_selected_count = 0;
 
         for (vector<default_type>::const_iterator b = desired_bvalues.begin(); b != desired_bvalues.end(); ++b) {
 
@@ -88,11 +112,16 @@ namespace MR
           // Automatically select a b=0 shell if the requested b-value is zero
           if (*b <= bzero_threshold()) {
 
-            if (smallest().is_bzero()) {
-              to_retain[0] = true;
-              DEBUG ("User requested b-value " + str(*b) + "; got b=0 shell : " + str(smallest().get_mean()) + " +- " + str(smallest().get_stdev()) + " with " + str(smallest().count()) + " volumes");
+            if (has_bzero()) {
+              if (!bzero_selected) {
+                to_retain[0] = true;
+                bzero_selected = true;
+                DEBUG ("User requested b-value " + str(*b) + "; got b=0 shell : " + str(smallest().get_mean()) + " +- " + str(smallest().get_stdev()) + " with " + str(smallest().count()) + " volumes");
+              } else {
+                throw Exception ("User selected b=0 shell more than once");
+              }
             } else {
-              throw Exception ("User selected b=0 shell, but no such data exists");
+              throw Exception ("User selected b=0 shell, but no such data was found");
             }
 
           } else {
@@ -105,11 +134,16 @@ namespace MR
             // * Assume each is a Poisson distribution, see if there's a clear winner
             // Prompt warning if decision is slightly askew, exception if ambiguous
             bool shell_selected = false;
-            for (size_t s = 0; s != shells.size(); ++s) {
+            for (size_t s = 0; s != count(); ++s) {
               if ((*b >= shells[s].get_min()) && (*b <= shells[s].get_max())) {
-                to_retain[s] = true;
-                shell_selected = true;
-                DEBUG ("User requested b-value " + str(*b) + "; got shell " + str(s) + ": " + str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev()) + " with " + str(shells[s].count()) + " volumes");
+                if (!to_retain[s]) {
+                  to_retain[s] = true;
+                  nonbzero_selected_count++;
+                  shell_selected = true;
+                  DEBUG ("User requested b-value " + str(*b) + "; got shell " + str(s) + ": " + str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev()) + " with " + str(shells[s].count()) + " volumes");
+                } else {
+                  throw Exception ("User selected a shell more than once: " + str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev()) + " with " + str(shells[s].count()) + " volumes");
+                }
               }
             }
             if (!shell_selected) {
@@ -117,7 +151,7 @@ namespace MR
               // Check to see if we can unambiguously select a shell based on b-value integer rounding
               size_t best_shell = 0;
               bool ambiguous = false;
-              for (size_t s = 0; s != shells.size(); ++s) {
+              for (size_t s = 0; s != count(); ++s) {
                 if (std::abs (*b - shells[s].get_mean()) <= 1.0) {
                   if (shell_selected) {
                     ambiguous = true;
@@ -128,8 +162,13 @@ namespace MR
                 }
               }
               if (shell_selected && !ambiguous) {
-                to_retain[best_shell] = true;
-                DEBUG ("User requested b-value " + str(*b) + "; got shell " + str(best_shell) + ": " + str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell].get_stdev()) + " with " + str(shells[best_shell].count()) + " volumes");
+                if (!to_retain[best_shell]) {
+                  to_retain[best_shell] = true;
+                  nonbzero_selected_count++;
+                  DEBUG ("User requested b-value " + str(*b) + "; got shell " + str(best_shell) + ": " + str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell].get_stdev()) + " with " + str(shells[best_shell].count()) + " volumes");
+                } else {
+                  throw Exception ("User selected a shell more than once: " + str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell].get_stdev()) + " with " + str(shells[best_shell].count()) + " volumes");
+                }
               } else {
 
                 // First, check to see if all non-zero shells have (effectively) non-zero standard deviation
@@ -145,7 +184,7 @@ namespace MR
                 size_t best_shell = 0;
                 default_type best_num_stdevs = std::numeric_limits<default_type>::max();
                 bool ambiguous = false;
-                for (size_t s = 0; s != shells.size(); ++s) {
+                for (size_t s = 0; s != count(); ++s) {
                   const default_type stdev = (shells[s].is_bzero() ? 0.5 * bzero_threshold() : (zero_stdev ? std::sqrt (shells[s].get_mean()) : shells[s].get_stdev()));
                   const default_type num_stdev = std::abs ((*b - shells[s].get_mean()) / stdev);
                   if (num_stdev < best_num_stdevs) {
@@ -159,7 +198,7 @@ namespace MR
 
                 if (ambiguous) {
                   std::string bvalues;
-                  for (size_t s = 0; s != shells.size(); ++s) {
+                  for (size_t s = 0; s != count(); ++s) {
                     if (bvalues.size())
                       bvalues += ", ";
                     bvalues += str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev());
@@ -167,7 +206,12 @@ namespace MR
                   throw Exception ("Unable to robustly select desired shell b=" + str(*b) + " (detected shells are: " + bvalues + ")");
                 } else {
                   WARN ("User requested shell b=" + str(*b) + "; have selected shell " + str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell].get_stdev()));
-                  to_retain[best_shell] = true;
+                  if (!to_retain[best_shell]) {
+                    to_retain[best_shell] = true;
+                    nonbzero_selected_count++;
+                  } else {
+                    throw Exception ("User selected a shell more than once: " + str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell].get_stdev()) + " with " + str(shells[best_shell].count()) + " volumes");
+                  }
                 }
 
               } // End checking if the requested b-value is within 1.0 of a shell mean
@@ -178,11 +222,34 @@ namespace MR
 
         } // End looping over list of requested b-value shells
 
+        if (force_singleshell && nonbzero_selected_count != 1)
+          throw Exception ("User selected " + str(nonbzero_selected_count) + " non b=0 shells, but the command requires single-shell data");
+
+        if (force_with_bzero && !bzero_selected)
+          throw Exception ("User did not select b=0 shell, but the command requires the presence of b=0 data");
+
+        if (force_without_bzero && bzero_selected)
+          throw Exception ("User selected b=0 shell, but the command is not compatible with b=0 data");
+
       } else {
 
-        if (force_single_shell && !is_single_shell())
+        if (force_singleshell && !is_single_shell()) {
+          if (count() == 1 && has_bzero())
+            throw Exception ("No non b=0 data found, but the command requires a non b=0 shell");
           WARN ("Multiple non-zero b-value shells detected; automatically selecting b=" + str(largest().get_mean()) + " with " + str(largest().count()) + " volumes");
-        to_retain[shells.size()-1] = true;
+          to_retain[count()-1] = true;
+          if (has_bzero())
+            to_retain[0] = true;
+        } else {
+          // default: keep everything
+          to_retain.clear (true);
+        }
+        
+        if (force_with_bzero && !has_bzero())
+          throw Exception ("No b=0 data found, but the command requires the presence of b=0 data");
+
+        if (force_without_bzero && has_bzero())
+          to_retain[0] = false;
 
       }
 
@@ -193,7 +260,7 @@ namespace MR
 
       // Erase the unwanted shells
       vector<Shell> new_shells;
-      for (size_t s = 0; s != shells.size(); ++s) {
+      for (size_t s = 0; s != count(); ++s) {
         if (to_retain[s])
           new_shells.push_back (shells[s]);
       }

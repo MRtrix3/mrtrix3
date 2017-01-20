@@ -9,7 +9,17 @@ retval=0
 
 for f in $(find . -type f -name '*.h' -o -name '*.cpp' | grep -v '_moc.cpp'); do 
 
-  [[ $(basename $f) == "icons.cpp" ]] && continue
+# files to ignore:
+  [[ "$f" -ef "src/gui/shview/icons.h" || 
+     "$f" -ef "src/gui/shview/icons.cpp" || 
+     "$f" -ef "src/gui/mrview/icons.h" || 
+     "$f" -ef "src/gui/mrview/icons.cpp" || 
+     "$f" -ef "lib/file/mgh.h" || 
+     "$f" -ef "lib/file/json.h" || 
+     "$f" -ef "lib/file/nifti2.h" || 
+     "$f" -ef "lib/signal_handler.h" ||
+     "$f" -ef "lib/signal_handler.cpp" ]] && continue
+
 
 # detect classes not declared MEMALIGN or NOMEMALIGN:
   res=$( \

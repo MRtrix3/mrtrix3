@@ -127,7 +127,7 @@ namespace MR
                   switch (i) {
                     case CONTINUE:              name = "undefined";      break;
                     case ENTER_CGM:             name = "enter_cgm";      break;
-                    case CALIBRATE_FAIL:        name = "calibrate_fail"; break;
+                    case CALIBRATOR:            name = "calibrator";     break;
                     case EXIT_IMAGE:            name = "exit_image";     break;
                     case ENTER_CSF:             name = "enter_csf";      break;
                     case BAD_SIGNAL:            name = "bad_signal";     break;
@@ -160,7 +160,7 @@ namespace MR
                 switch (i) {
                   case CONTINUE:             term_type = "Unknown";                       to_print = false;    break;
                   case ENTER_CGM:            term_type = "Entered cortical grey matter";  to_print = is_act(); break;
-                  case CALIBRATE_FAIL:       term_type = "Calibrator failed";             to_print = true;     break;
+                  case CALIBRATOR:           term_type = "Calibrator sub-threshold";      to_print = true;     break;
                   case EXIT_IMAGE:           term_type = "Exited image";                  to_print = true;     break;
                   case ENTER_CSF:            term_type = "Entered CSF";                   to_print = is_act(); break;
                   case BAD_SIGNAL:           term_type = "Bad diffusion signal";          to_print = true;     break;

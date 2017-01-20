@@ -23,7 +23,7 @@ namespace MR {
       namespace Mapping {
 
 
-        const size_t Dixel::invalid = std::numeric_limits<size_t>::max();
+        const Dixel::dir_index_type Dixel::invalid = std::numeric_limits<Dixel::dir_index_type>::max();
 
 
       }

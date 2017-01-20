@@ -180,6 +180,7 @@ void run ()
   Header header (dwi);
   header.datatype() = DataType::Float32;
   header.ndim() = 4;
+  DWI::stash_DW_scheme (header, grad);
   
   Image<value_type>* predict = nullptr;
   opt = get_options ("predicted_signal");

@@ -44,9 +44,11 @@ Options
 
 -  **-transform** the voxel to image transformation
 
--  **-norealign** do not realign transform to near-default RAS coordinate system (the default behaviour on image load). This is useful to inspect the transform and strides as they are actually stored in the header, rather than as MRtrix interprets them.
+-  **-norealign** do not realign transform to near-default RAS coordinate system (the default behaviour on image load). This is useful to inspect the image and/or header contents as they are actually stored in the header, rather than as MRtrix interprets them.
 
 -  **-property key** any text properties embedded in the image header under the specified key (use 'all' to list all keys found)
+
+-  **-json_export file** export header key/value entries to a JSON file
 
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -71,6 +73,15 @@ DW gradient table export options
 -  **-shells** list the average b-value of each shell
 
 -  **-shellcounts** list the number of volumes in each shell
+
+Options for exporting phase-encode tables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-export_pe_table file** export phase-encoding table to file
+
+-  **-export_pe_eddy config indices** export phase-encoding information to an EDDY-style config / index file pair
+
+-  **-petable** print the phase encoding table
 
 Standard options
 ^^^^^^^^^^^^^^^^

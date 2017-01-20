@@ -14,7 +14,6 @@ def initParser(subparsers, base_parser):
   options.add_argument('-pvf', type=float, default=0.95, help='Partial volume fraction threshold for tissue voxel selection')
   options.add_argument('-wm_algo', metavar='algorithm', default='tournier', help='dwi2response algorithm to use for WM single-fibre voxel selection')
   parser.set_defaults(algorithm='msmt_5tt')
-  parser.set_defaults(single_shell=False)
   
   
   
@@ -40,22 +39,21 @@ def getInputFiles():
 def execute():
   import math, os, shutil
   import lib.app
+  from lib.errorMessage  import errorMessage
   from lib.getHeaderInfo import getHeaderInfo
   from lib.getImageStat  import getImageStat
   from lib.getUserPath   import getUserPath
   from lib.printMessage  import printMessage
   from lib.runCommand    import runCommand
+  from lib.runFunction   import runFunction
   from lib.warnMessage   import warnMessage
-  from lib.errorMessage  import errorMessage
+
   
   # Ideally want to use the oversampling-based regridding of the 5TT image from the SIFT model, not mrtransform
   # May need to commit 5ttregrid...
 
   # Verify input 5tt image
-  sizes = [ int(x) for x in getHeaderInfo('5tt.mif', 'size').split() ]
-  datatype = getHeaderInfo('5tt.mif', 'datatype')
-  if not len(sizes) == 4 or not sizes[3] == 5 or not datatype.startswith('Float'):
-    errorMessage('Imported anatomical image ' + os.path.basename(lib.app.args.in_5tt) + ' is not in the 5TT format')
+  runCommand('5ttcheck 5tt.mif')
 
   # Get shell information
   shells = [ int(round(float(x))) for x in getHeaderInfo('dwi.mif', 'shells').split() ]
@@ -76,7 +74,7 @@ def execute():
 
   runCommand('dwi2tensor dwi.mif - -mask mask.mif | tensor2metric - -fa fa.mif -vector vector.mif')
   if not os.path.exists('dirs.mif'):
-    shutil.copy('vector.mif', 'dirs.mif')
+    runFunction(shutil.copy, 'vector.mif', 'dirs.mif')
   runCommand('mrtransform 5tt.mif 5tt_regrid.mif -template fa.mif -interp linear')
 
   # Basic tissue masks
@@ -113,45 +111,16 @@ def execute():
     errorMessage(message)
 
   # For each of the three tissues, generate a multi-shell response
-  # Since here we're guaranteeing that GM and CSF will be isotropic in all shells, let's use mrstats rather than sh2response (seems a bit weird passing a directions file to sh2response with lmax=0...)
-
-  wm_responses  = [ ]
-  gm_responses  = [ ]
-  csf_responses = [ ]
-  max_length = 0
-
-  for index, b in enumerate(shells):
-    dwi_path = 'dwi_b' + str(b) + '.mif'
-    # dwiextract will yield a 4D image, even if there's only a single volume in a shell
-    runCommand('dwiextract dwi.mif -shell ' + str(b) + ' ' + dwi_path)
-    this_b_lmax_option = ''
-    if wm_lmax:
-      this_b_lmax_option = ' -lmax ' + str(wm_lmax[index])
-    runCommand('amp2sh ' + dwi_path + ' - | sh2response - wm_sf_mask.mif dirs.mif wm_response_b' + str(b) + '.txt' + this_b_lmax_option)
-    wm_response = open('wm_response_b' + str(b) + '.txt', 'r').read().split()
-    wm_responses.append(wm_response)
-    max_length = max(max_length, len(wm_response))
-    mean_dwi_path = 'dwi_b' + str(b) + '_mean.mif'
-    runCommand('mrmath ' + dwi_path + ' mean ' + mean_dwi_path + ' -axis 3')
-    gm_mean  = float(getImageStat(mean_dwi_path, 'mean', 'gm_mask.mif'))
-    csf_mean = float(getImageStat(mean_dwi_path, 'mean', 'csf_mask.mif'))
-    gm_responses .append( str(gm_mean  * math.sqrt(4.0 * math.pi)) )
-    csf_responses.append( str(csf_mean * math.sqrt(4.0 * math.pi)) )
-
-  with open('wm.txt', 'w') as f:
-    for line in wm_responses:
-      line += ['0'] * (max_length - len(line))
-      f.write(' '.join(line) + '\n')
-  with open('gm.txt', 'w') as f:
-    for line in gm_responses:
-      f.write(line + '\n')
-  with open('csf.txt', 'w') as f:
-    for line in csf_responses:
-      f.write(line + '\n')
-
-  shutil.copyfile('wm.txt',  getUserPath(lib.app.args.out_wm,  False))
-  shutil.copyfile('gm.txt',  getUserPath(lib.app.args.out_gm,  False))
-  shutil.copyfile('csf.txt', getUserPath(lib.app.args.out_csf, False))
+  bvalues_option = ' -shell ' + ','.join(map(str,shells))
+  sfwm_lmax_option = ''
+  if wm_lmax:
+    sfwm_lmax_option = ' -lmax ' + ','.join(map(str,wm_lmax))
+  runCommand('amp2response dwi.mif wm_sf_mask.mif dirs.mif wm.txt' + bvalues_option + sfwm_lmax_option)
+  runCommand('amp2response dwi.mif gm_mask.mif dirs.mif gm.txt' + bvalues_option + ' -isotropic')
+  runCommand('amp2response dwi.mif csf_mask.mif dirs.mif csf.txt' + bvalues_option + ' -isotropic')
+  runFunction(shutil.copyfile, 'wm.txt',  getUserPath(lib.app.args.out_wm,  False))
+  runFunction(shutil.copyfile, 'gm.txt',  getUserPath(lib.app.args.out_gm,  False))
+  runFunction(shutil.copyfile, 'csf.txt', getUserPath(lib.app.args.out_csf, False))
 
   # Generate output 4D binary image with voxel selections; RGB as in MSMT-CSD paper
   runCommand('mrcat csf_mask.mif gm_mask.mif wm_sf_mask.mif voxels.mif -axis 3')

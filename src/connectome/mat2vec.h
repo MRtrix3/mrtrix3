@@ -19,87 +19,112 @@
 #define __connectome_mat2vec_h__
 
 
+#include <stdint.h>
 #include <vector>
+
+#include <Eigen/Dense>
+
+#include "types.h"
 
 #include "connectome/connectome.h"
 
 
+
 namespace MR {
-namespace Connectome {
+  namespace Connectome {
 
 
 
 
-class Mat2Vec
-{ MEMALIGN(Mat2Vec)
+    class Mat2Vec
+    { MEMALIGN (Mat2Vec)
 
-  public:
-    Mat2Vec (const node_t);
-    Mat2Vec& operator= (Mat2Vec&&);
+      public:
+        Mat2Vec (const node_t);
 
-    size_t operator() (const node_t i, const node_t j) const
+        Mat2Vec& operator= (Mat2Vec&&);
+
+        size_t operator() (const node_t i, const node_t j) const
+        {
+          assert (i < dim);
+          assert (j < dim);
+          return lookup[i][j];
+        }
+        std::pair<node_t, node_t> operator() (const size_t i) const
+        {
+          assert (i < inv_lookup.size());
+          return inv_lookup[i];
+        }
+        node_t mat_size() const { return dim; }
+        size_t vec_size() const { return inv_lookup.size(); }
+
+        // Complete Matrix->Vector and Vector->Matrix conversion
+        template <class MatType, class VecType>
+        VecType& M2V (const MatType&, VecType&) const;
+        template <class VecType, class MatType>
+        MatType& V2M (const VecType&, MatType&) const;
+
+        // Convenience functions to avoid having to pre-define the output class
+        template <class MatType>
+        vector_type M2V (const MatType&) const;
+        template <class VecType>
+        matrix_type V2M (const VecType&) const;
+
+
+      private:
+        node_t dim;
+        // Lookup tables
+        vector< vector<size_t> > lookup;
+        vector< std::pair<node_t, node_t> > inv_lookup;
+
+    };
+
+
+
+    template <class MatType, class VecType>
+    VecType& Mat2Vec::M2V (const MatType& m, VecType& v) const
     {
-      assert (i < size);
-      assert (j < size);
-      return lookup[i][j];
+      assert (m.rows() == m.cols());
+      assert (m.rows() == dim);
+      v.resize (vec_size());
+      for (size_t index = 0; index != vec_size(); ++index) {
+        const std::pair<node_t, node_t> row_col = (*this) (index);
+        v[index] = m (row_col.first, row_col.second);
+      }
+      return v;
     }
-    std::pair<node_t, node_t> operator() (const size_t i) const
+
+    template <class VecType, class MatType>
+    MatType& Mat2Vec::V2M (const VecType& v, MatType& m) const
     {
-      assert (i < inv_lookup.size());
-      return inv_lookup[i];
+      assert (v.size() == vec_size());
+      m.resize (dim, dim);
+      for (node_t row = 0; row != dim; ++row) {
+        for (node_t col = 0; col != dim; ++col)
+          m (row, col) = v[(*this) (row, col)];
+      }
+      return m;
     }
-    node_t mat_size() const { return size; }
-    size_t vec_size() const { return inv_lookup.size(); }
 
-    // Complete Matrix->Vector and Vector->Matrix conversion
-    // Templating allows use of either an Eigen::Vector or a vector
-    template <class Cont> Cont&        operator() (const matrix_type&, Cont&) const;
-    template <class Cont> matrix_type& operator() (const Cont&, matrix_type&) const;
+    template <class MatType>
+    vector_type Mat2Vec::M2V (const MatType& m) const
+    {
+      vector_type v;
+      M2V (m, v);
+      return v;
+    }
 
-  protected:
-    node_t size;
-
-  private:
-    // Lookup tables
-    vector< vector<size_t> > lookup;
-    vector< std::pair<node_t, node_t> > inv_lookup;
-
-};
-
+    template <class VecType>
+    matrix_type Mat2Vec::V2M (const VecType& v) const
+    {
+      matrix_type m;
+      V2M (v, m);
+      return m;
+    }
 
 
 
-template <class Cont>
-Cont& Mat2Vec::operator() (const matrix_type& in, Cont& out) const
-{
-  assert (in.rows() == in.cols());
-  assert (in.rows() == size);
-  out.resize (vec_size());
-  for (size_t index = 0; index != vec_size(); ++index) {
-    const std::pair<node_t, node_t> row_column = (*this) (index);
-    out[index] = in (row_column.first, row_column.second);
   }
-  return out;
-}
-
-
-
-template <class Cont>
-matrix_type& Mat2Vec::operator() (const Cont& in, matrix_type& out) const
-{
-  assert (in.size() == vec_size());
-  out.resize (size, size);
-  for (node_t row = 0; row != size; ++row) {
-    for (node_t column = 0; column != size; ++column)
-      out (row, column) = in[(*this) (row, column)];
-  }
-  return out;
-}
-
-
-
-
-}
 }
 
 

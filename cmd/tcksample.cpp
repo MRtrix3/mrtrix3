@@ -24,6 +24,8 @@
 #include "dwi/tractography/mapping/mapper.h"
 #include "file/ofstream.h"
 #include "file/path.h"
+#include "interp/linear.h"
+#include "interp/nearest.h"
 #include "math/median.h"
 
 
@@ -35,6 +37,8 @@ using namespace App;
 
 enum stat_tck { MEAN, MEDIAN, MIN, MAX, NONE };
 const char* statistics[] = { "mean", "median", "min", "max", nullptr };
+
+enum interp_type { NEAREST, LINEAR, PRECISE };
 
 
 void usage ()
@@ -60,6 +64,8 @@ void usage ()
                         "(options are: " + join(statistics, ",") + ")")
     + Argument ("statistic").type_choice (statistics)
 
+  + Option ("nointerp", "do not use trilinear interpolation when sampling image values")
+
   + Option ("precise", "use the precise mechanism for mapping streamlines to voxels "
                        "(obviates the need for trilinear interpolation) "
                        "(only applicable if some per-streamline statistic is requested)")
@@ -76,6 +82,12 @@ void usage ()
   // TODO add support for reading from fixel image
   //   (this would supersede fixel2tsf when used without -precise or -stat_tck options)
   //   (wait until fixel_twi is merged; should simplify)
+
+  REFERENCES
+    + "* If using -precise option: " // Internal
+    "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+    "SIFT: Spherical-deconvolution informed filtering of tractograms. "
+    "NeuroImage, 2013, 67, 298-312";
 
 
 }
@@ -112,125 +124,57 @@ class TDI : public Image<value_type> { MEMALIGN(TDI)
 
 
 
-// Guarantees thread-safety
-class Sampler { MEMALIGN(Sampler)
+template <class Interp>
+class SamplerNonPrecise 
+{ MEMALIGN (SamplerNonPrecise<Interp>)
   public:
-    Sampler (Image<value_type>& image, const stat_tck statistic, const bool precise, std::unique_ptr<TDI>& precalc_tdi) :
-        interp ((!precise && !precalc_tdi) ? new Interp::Linear<Image<value_type>> (image) : nullptr),
-        mapper ((precise || precalc_tdi) ? new DWI::Tractography::Mapping::TrackMapperBase (image) : nullptr),
-        image  ((precise || precalc_tdi) ? new Image<value_type> (image) : nullptr),
-        tdi (precalc_tdi ? new TDI (*precalc_tdi) : nullptr),
+    SamplerNonPrecise (Image<value_type>& image, const stat_tck statistic, MR::copy_ptr<TDI>& precalc_tdi) :
+        interp (image),
+        mapper (precalc_tdi ? new DWI::Tractography::Mapping::TrackMapperBase (image) : nullptr),
+        tdi (precalc_tdi),
         statistic (statistic)
     {
-      assert (!(statistic == stat_tck::NONE && precise));
       if (mapper)
-        mapper->set_use_precise_mapping (precise);
+        mapper->set_use_precise_mapping (false);
     }
 
     bool operator() (DWI::Tractography::Streamline<>& tck, std::pair<size_t, value_type>& out)
     {
       assert (statistic != stat_tck::NONE);
       out.first = tck.index;
-      value_type sum_lengths = value_type(0);
 
-      // Only if _not_ using precise mapping, and _not_ using a pre-calculated TDI
-      //   (in the latter case, the mapper will still be used, just without the precise mapping;
-      //   each traversed voxel will return a length of 1)
-      if (interp) {
+      std::pair<size_t, vector_type> values;
+      (*this) (tck, values);
 
-        std::pair<size_t, vector_type> values;
-        (*this) (tck, values);
-
-        if (statistic == MEAN) {
-          // Take distance between points into account in mean calculation
-          //   (Should help down-weight endpoints)
-          value_type integral = value_type(0), sum_lengths = value_type(0);
-          for (size_t i = 0; i != tck.size(); ++i) {
-            value_type length = value_type(0);
-            if (i)
-              length += (tck[i] - tck[i-1]).norm();
-            if (i < tck.size() - 1)
-              length += (tck[i+1] - tck[i]).norm();
-            length *= 0.5;
-            integral += values.second[i] * length;
-            sum_lengths += length;
-          }
-          out.second = sum_lengths ? (integral / sum_lengths) : 0.0;
-        } else {
-          sum_lengths = tck.calc_length();
-          if (statistic == MEDIAN) {
-            // Don't bother with a weighted median here
-            vector<value_type> data;
-            data.assign (values.second.data(), values.second.data() + values.second.size());
-            out.second = Math::median (data);
-          } else if (statistic == MIN) {
-            out.second = std::numeric_limits<value_type>::infinity();
-            for (size_t i = 0; i != tck.size(); ++i)
-              out.second = std::min (out.second, values.second[i]);
-          } else if (statistic == MAX) {
-            out.second = -std::numeric_limits<value_type>::infinity();
-            for (size_t i = 0; i != tck.size(); ++i)
-              out.second = std::max (out.second, values.second[i]);
-          } else {
-            assert (0);
-          }
+      if (statistic == MEAN) {
+        // Take distance between points into account in mean calculation
+        //   (Should help down-weight endpoints)
+        value_type integral = value_type(0), sum_lengths = value_type(0);
+        for (size_t i = 0; i != tck.size(); ++i) {
+          value_type length = value_type(0);
+          if (i)
+            length += (tck[i] - tck[i-1]).norm();
+          if (i < tck.size() - 1)
+            length += (tck[i+1] - tck[i]).norm();
+          length *= 0.5;
+          integral += values.second[i] * length;
+          sum_lengths += length;
         }
-
+        out.second = sum_lengths ? (integral / sum_lengths) : 0.0;
       } else {
-
-        DWI::Tractography::Mapping::SetVoxel voxels;
-        (*mapper) (tck, voxels);
-
-        if (statistic == MEAN) {
-          value_type integral = value_type(0.0);
-          for (const auto v : voxels) {
-            assign_pos_of (v).to (*image);
-            integral += v.get_length() * (image->value() * get_tdi_multiplier (v));
-            sum_lengths += v.get_length();
-          }
-          out.second = integral / sum_lengths;
-        } else if (statistic == MEDIAN) {
-          // Should be a weighted median...
-          // Just use the n.log(n) algorithm
-          class WeightSort { NOMEMALIGN
-            public:
-              WeightSort (const DWI::Tractography::Mapping::Voxel& voxel, const value_type value) :
-                  value (value),
-                  length (voxel.get_length()) { }
-              bool operator< (const WeightSort& that) const { return value < that.value; }
-              value_type value, length;
-          };
-          vector<WeightSort> data;
-          for (const auto v : voxels) {
-            assign_pos_of (v).to (*image);
-            data.push_back (WeightSort (v, (image->value() * get_tdi_multiplier (v))));
-            sum_lengths += v.get_length();
-          }
-          std::sort (data.begin(), data.end());
-          const value_type target_length = 0.5 * sum_lengths;
-          sum_lengths = value_type(0.0);
-          value_type prev_value = data.front().value;
-          for (const auto d : data) {
-            if ((sum_lengths += d.length) > target_length) {
-              out.second = prev_value;
-              break;
-            }
-            prev_value = d.value;
-          }
+        if (statistic == MEDIAN) {
+          // Don't bother with a weighted median here
+          vector<value_type> data;
+          data.assign (values.second.data(), values.second.data() + values.second.size());
+          out.second = Math::median (data);
         } else if (statistic == MIN) {
           out.second = std::numeric_limits<value_type>::infinity();
-          for (const auto v : voxels) {
-            assign_pos_of (v).to (*image);
-            out.second = std::min (out.second, value_type (image->value() * get_tdi_multiplier (v)));
-            sum_lengths += v.get_length();
-          }
+          for (size_t i = 0; i != tck.size(); ++i)
+            out.second = std::min (out.second, values.second[i]);
         } else if (statistic == MAX) {
           out.second = -std::numeric_limits<value_type>::infinity();
-          for (const auto v : voxels) {
-            assign_pos_of (v).to (*image);
-            out.second = std::max (out.second, value_type (image->value() * get_tdi_multiplier (v)));
-            sum_lengths += v.get_length();
-          }
+          for (size_t i = 0; i != tck.size(); ++i)
+            out.second = std::max (out.second, values.second[i]);
         } else {
           assert (0);
         }
@@ -244,12 +188,11 @@ class Sampler { MEMALIGN(Sampler)
 
     bool operator() (const DWI::Tractography::Streamline<>& tck, std::pair<size_t, vector_type>& out)
     {
-      assert (interp);
       out.first = tck.index;
       out.second.resize (tck.size());
       for (size_t i = 0; i != tck.size(); ++i) {
-        if (interp->scanner (tck[i]))
-          out.second[i] = interp->value();
+        if (interp.scanner (tck[i]))
+          out.second[i] = interp.value();
         else
           out.second[i] = std::numeric_limits<value_type>::quiet_NaN();
       }
@@ -257,9 +200,109 @@ class Sampler { MEMALIGN(Sampler)
     }
 
   private:
-    MR::copy_ptr<Interp::Linear<Image<value_type>>> interp;
+    Interp interp;
     std::shared_ptr<DWI::Tractography::Mapping::TrackMapperBase> mapper;
-    MR::copy_ptr<Image<value_type>> image;
+    MR::copy_ptr<TDI> tdi;
+    const stat_tck statistic;
+
+    value_type get_tdi_multiplier (const DWI::Tractography::Mapping::Voxel& v)
+    {
+      if (!tdi)
+        return value_type(1);
+      assign_pos_of (v).to (*tdi);
+      assert (!is_out_of_bounds (*tdi));
+      return v.get_length() / tdi->value();
+    }
+
+};
+
+
+
+class SamplerPrecise 
+{ MEMALIGN (SamplerPrecise)
+  public:
+    SamplerPrecise (Image<value_type>& image, const stat_tck statistic, MR::copy_ptr<TDI>& precalc_tdi) :
+        image (image),
+        mapper (new DWI::Tractography::Mapping::TrackMapperBase (image)),
+        tdi (precalc_tdi),
+        statistic (statistic)
+    {
+      assert (statistic != stat_tck::NONE);
+      mapper->set_use_precise_mapping (true);
+    }
+
+    bool operator() (DWI::Tractography::Streamline<>& tck, std::pair<size_t, value_type>& out)
+    {
+      out.first = tck.index;
+      value_type sum_lengths = value_type(0);
+
+      DWI::Tractography::Mapping::SetVoxel voxels;
+      (*mapper) (tck, voxels);
+
+      if (statistic == MEAN) {
+        value_type integral = value_type(0.0);
+        for (const auto v : voxels) {
+          assign_pos_of (v).to (image);
+          integral += v.get_length() * (image.value() * get_tdi_multiplier (v));
+          sum_lengths += v.get_length();
+        }
+        out.second = integral / sum_lengths;
+      } else if (statistic == MEDIAN) {
+        // Should be a weighted median...
+        // Just use the n.log(n) algorithm
+        class WeightSort { NOMEMALIGN
+          public:
+            WeightSort (const DWI::Tractography::Mapping::Voxel& voxel, const value_type value) :
+              value (value),
+              length (voxel.get_length()) { }
+            bool operator< (const WeightSort& that) const { return value < that.value; }
+            value_type value, length;
+        };
+        vector<WeightSort> data;
+        for (const auto v : voxels) {
+          assign_pos_of (v).to (image);
+          data.push_back (WeightSort (v, (image.value() * get_tdi_multiplier (v))));
+          sum_lengths += v.get_length();
+        }
+        std::sort (data.begin(), data.end());
+        const value_type target_length = 0.5 * sum_lengths;
+        sum_lengths = value_type(0.0);
+        value_type prev_value = data.front().value;
+        for (const auto d : data) {
+          if ((sum_lengths += d.length) > target_length) {
+            out.second = prev_value;
+            break;
+          }
+          prev_value = d.value;
+        }
+      } else if (statistic == MIN) {
+        out.second = std::numeric_limits<value_type>::infinity();
+        for (const auto v : voxels) {
+          assign_pos_of (v).to (image);
+          out.second = std::min (out.second, value_type (image.value() * get_tdi_multiplier (v)));
+          sum_lengths += v.get_length();
+        }
+      } else if (statistic == MAX) {
+        out.second = -std::numeric_limits<value_type>::infinity();
+        for (const auto v : voxels) {
+          assign_pos_of (v).to (image);
+          out.second = std::max (out.second, value_type (image.value() * get_tdi_multiplier (v)));
+          sum_lengths += v.get_length();
+        }
+      } else {
+        assert (0);
+      }
+
+      if (!std::isfinite (out.second))
+        out.second = NaN;
+
+      return true;
+    }
+
+
+  private:
+    Image<value_type> image;
+    std::shared_ptr<DWI::Tractography::Mapping::TrackMapperBase> mapper;
     MR::copy_ptr<TDI> tdi;
     const stat_tck statistic;
 
@@ -363,6 +406,49 @@ class Receiver_NoStatistic : private ReceiverBase { MEMALIGN(Receiver_NoStatisti
 
 
 
+
+template <class InterpType>
+void execute_nostat (DWI::Tractography::Reader<value_type>& reader,
+                     const DWI::Tractography::Properties& properties,
+                     const size_t num_tracks,
+                     Image<value_type>& image,
+                     const std::string& path)
+{
+  MR::copy_ptr<TDI> no_tdi;
+  SamplerNonPrecise<InterpType> sampler (image, stat_tck::NONE, no_tdi);
+  Receiver_NoStatistic receiver (path, num_tracks, properties);
+  DWI::Tractography::Streamline<value_type> tck;
+  std::pair<size_t, vector_type> values;
+  size_t counter = 0;
+  while (reader (tck)) {
+    sampler (tck, values);
+    receiver (values);
+    ++counter;
+  }
+  if (counter != num_tracks)
+    WARN ("Expected " + str(num_tracks) + " tracks based on header; read " + str(counter));
+}
+
+template <class SamplerType>
+void execute (DWI::Tractography::Reader<value_type>& reader,
+              const size_t num_tracks,
+              Image<value_type>& image,
+              const stat_tck statistic,
+              MR::copy_ptr<TDI>& tdi,
+              const std::string& path)
+{
+  SamplerType sampler (image, statistic, tdi);
+  Receiver_Statistic receiver (num_tracks);
+  Thread::run_queue (reader,
+                     Thread::batch (DWI::Tractography::Streamline<value_type>()),
+                     Thread::multi (sampler),
+                     Thread::batch (std::pair<size_t, value_type>()),
+                     receiver);
+  receiver.save (path);
+}
+
+
+
 void run ()
 {
   DWI::Tractography::Properties properties;
@@ -372,19 +458,25 @@ void run ()
 
   auto opt = get_options ("stat_tck");
   const stat_tck statistic = opt.size() ? stat_tck(int(opt[0][0])) : stat_tck::NONE;
+  const bool nointerp = get_options ("nointerp").size();
   const bool precise = get_options ("precise").size();
+  if (nointerp && precise)
+    throw Exception ("Option -nointerp and -precise are mutually exclusive");
+  const interp_type interp = nointerp ? interp_type::NEAREST : (precise ? interp_type::PRECISE : interp_type::LINEAR);
   const size_t num_tracks = properties.find("count") == properties.end() ?
                             0 :
                             to<size_t>(properties["count"]);
 
-  if (statistic == stat_tck::NONE && precise)
+  if (statistic == stat_tck::NONE && interp == interp_type::PRECISE)
     throw Exception ("Precise streamline mapping may only be used with per-streamline statistics");
 
-  std::unique_ptr<TDI> tdi;
+  MR::copy_ptr<TDI> tdi;
   if (get_options ("use_tdi_fraction").size()) {
+    if (statistic == stat_tck::NONE)
+      throw Exception ("Cannot use -use_tdi_fraction option unless a per-streamline statistic is used");
     DWI::Tractography::Reader<value_type> tdi_reader (argument[0], properties);
     DWI::Tractography::Mapping::TrackMapperBase mapper (H);
-    mapper.set_use_precise_mapping (precise);
+    mapper.set_use_precise_mapping (interp == interp_type::PRECISE);
     tdi.reset (new TDI (H, num_tracks));
     Thread::run_queue (tdi_reader,
                        Thread::batch (DWI::Tractography::Streamline<value_type>()),
@@ -394,25 +486,29 @@ void run ()
     tdi->done();
   }
 
-  Sampler sampler (image, statistic, precise, tdi);
-
   if (statistic == stat_tck::NONE) {
-    Receiver_NoStatistic receiver (argument[2], num_tracks, properties);
-    DWI::Tractography::Streamline<value_type> tck;
-    std::pair<size_t, vector_type> values;
-    while (reader (tck)) {
-      sampler (tck, values);
-      receiver (values);
+    switch (interp) {
+      case interp_type::NEAREST:
+        execute_nostat<Interp::Nearest<Image<value_type>>> (reader, properties, num_tracks, image, argument[2]);
+        break;
+      case interp_type::LINEAR:
+        execute_nostat<Interp::Linear<Image<value_type>>> (reader, properties, num_tracks, image, argument[2]);
+        break;
+      case interp_type::PRECISE:
+        throw Exception ("Precise streamline mapping may only be used with per-streamline statistics");
     }
   } else {
-    Receiver_Statistic receiver (num_tracks);
-    Thread::run_queue (reader,
-                       Thread::batch (DWI::Tractography::Streamline<value_type>()),
-                       Thread::multi (sampler),
-                       Thread::batch (std::pair<size_t, value_type>()),
-                       receiver);
-    receiver.save (argument[2]);
+    switch (interp) {
+      case interp_type::NEAREST:
+        execute<SamplerNonPrecise<Interp::Nearest<Image<value_type>>>> (reader, num_tracks, image, statistic, tdi, argument[2]);
+        break;
+      case interp_type::LINEAR:
+        execute<SamplerNonPrecise<Interp::Linear<Image<value_type>>>> (reader, num_tracks, image, statistic, tdi, argument[2]);
+        break;
+      case interp_type::PRECISE:
+        execute<SamplerPrecise> (reader, num_tracks, image, statistic, tdi, argument[2]);
+        break;
+    }
   }
-
 }
 

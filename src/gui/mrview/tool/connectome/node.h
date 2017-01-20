@@ -19,7 +19,7 @@
 #include "image.h"
 
 #include "gui/opengl/gl.h"
-#include "mesh/mesh.h"
+#include "surface/mesh.h"
 
 namespace MR
 {
@@ -38,7 +38,7 @@ namespace MR
           Node (const Eigen::Vector3f&, const size_t, const size_t, const MR::Image<bool>&);
           Node ();
 
-          void assign_mesh (MR::Mesh::Mesh& in) { clear_mesh(); mesh.reset (new Node::Mesh (in)); }
+          void assign_mesh (MR::Surface::Mesh& in) { clear_mesh(); mesh.reset (new Node::Mesh (in)); }
           void render_mesh() const { if (!mesh) return; mesh->render(); }
           void clear_mesh() { if (mesh) delete mesh.release(); }
 
@@ -75,7 +75,7 @@ namespace MR
           // Helper class to manage the storage and display of the mesh for each node
           class Mesh { MEMALIGN(Mesh)
             public:
-              Mesh (MR::Mesh::Mesh&);
+              Mesh (MR::Surface::Mesh&);
               Mesh (const Mesh&) = delete;
               Mesh (Mesh&&);
               Mesh () = delete;

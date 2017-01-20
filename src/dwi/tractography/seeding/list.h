@@ -43,6 +43,8 @@ namespace MR
             total_volume (0.0),
             total_count (0) { }
 
+          List (const List&) = delete;
+
 
           void add (Base* const in);
           void clear();

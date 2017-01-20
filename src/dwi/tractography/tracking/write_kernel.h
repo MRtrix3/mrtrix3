@@ -27,6 +27,7 @@
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
 
+#include "dwi/tractography/tracking/early_exit.h"
 #include "dwi/tractography/tracking/generated_track.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/types.h"
@@ -54,7 +55,8 @@ namespace MR
                 writer (output_file, properties),
                 always_increment (S.properties.seeds.is_finite() || !S.max_num_tracks),
                 warn_on_max_attempts (S.implicit_max_num_attempts),
-                progress (printf ("       0 generated,        0 selected", 0, 0), always_increment ? S.max_num_attempts : S.max_num_tracks)
+                progress (printf ("       0 generated,        0 selected", 0, 0), always_increment ? S.max_num_attempts : S.max_num_tracks),
+                early_exit (shared)
           {
             const auto seed_output = properties.find ("seed_output");
             if (seed_output != properties.end()) {
@@ -93,7 +95,9 @@ namespace MR
           const bool always_increment, warn_on_max_attempts;
           std::unique_ptr<File::OFStream> seeds;
           ProgressBar progress;
+          EarlyExit early_exit;
       };
+
 
 
 

@@ -817,7 +817,7 @@ namespace MR
      * (defaults to MRTRIX_QUEUE_DEFAULT_BATCH_SIZE).
      * \sa Thread::run_queue() */
     template <class Item>
-      inline __Batch<Item> batch (const Item& object, size_t number = MRTRIX_QUEUE_DEFAULT_BATCH_SIZE) 
+      inline __Batch<Item> batch (const Item&, size_t number = MRTRIX_QUEUE_DEFAULT_BATCH_SIZE)
       {
         return __Batch<Item> (number);
       }

@@ -66,6 +66,9 @@ void run ()
   window.show();
   qApp->processEvents();
 
+  if (MR::App::get_options ("norealign").size())
+    Header::do_not_realign_transform = true;
+
   if (argument.size()) {
     vector<std::unique_ptr<MR::Header>> list;
 

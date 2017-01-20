@@ -14,7 +14,7 @@
  */
 
 #include "dwi/gradient.h"
-#include "file/nifti1_utils.h"
+#include "file/nifti_utils.h"
 
 namespace MR
 {
@@ -238,8 +238,8 @@ namespace MR
         scale_bvalue_by_G_squared (grad);
 
       try {
-        normalise_grad (grad);
         check_DW_scheme (header, grad);
+        normalise_grad (grad);
       }
       catch (Exception& e) {
         if (!nofail)

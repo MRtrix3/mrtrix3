@@ -12,9 +12,9 @@ def initParser(subparsers, base_parser):
   options.add_argument('-max_iters', type=int, default=10, help='Maximum number of iterations')
   parser.set_defaults(algorithm='tournier')
   parser.set_defaults(single_shell=True)
-  
-  
-  
+
+
+
 def checkOutputFiles():
   import lib.app
   lib.app.checkOutputFile(lib.app.args.output)
@@ -29,12 +29,14 @@ def getInputFiles():
 def execute():
   import os, shutil
   import lib.app
-  from lib.delFile      import delFile
+  from lib.delFile      import delFile, delFolder
+  from lib.errorMessage import errorMessage
   from lib.getImageStat import getImageStat
   from lib.getUserPath  import getUserPath
   from lib.printMessage import printMessage
   from lib.runCommand   import runCommand
-  
+  from lib.runFunction  import runFunction
+
   lmax_option = ''
   if lib.app.args.lmax:
     lmax_option = ' -lmax ' + lib.app.args.lmax
@@ -42,11 +44,9 @@ def execute():
   if lib.app.args.max_iters < 2:
     errorMessage('Number of iterations must be at least 2')
 
-  runCommand('amp2sh dwi.mif dwiSH.mif' + lmax_option)
-
   for iteration in range(0, lib.app.args.max_iters):
     prefix = 'iter' + str(iteration) + '_'
-  
+
     if iteration == 0:
       RF_in_path = 'init_RF.txt'
       mask_in_path = 'mask.mif'
@@ -64,16 +64,16 @@ def execute():
     # Get amplitudes of two largest peaks, and direction of largest
     # TODO Speed-test fod2fixel against sh2peaks
     # TODO Add maximum number of fixels per voxel option to fod2fixel?
-    runCommand('fod2fixel ' + prefix + 'FOD.mif -peak ' + prefix + 'peaks.msf -mask ' + mask_in_path + ' -fmls_no_thresholds')
+    runCommand('fod2fixel ' + prefix + 'FOD.mif ' + prefix + 'fixel -peak peaks.mif -mask ' + mask_in_path + ' -fmls_no_thresholds')
     delFile(prefix + 'FOD.mif')
     if iteration:
       delFile(mask_in_path)
-    runCommand('fixel2voxel ' + prefix + 'peaks.msf split_value ' + prefix + 'amps.mif')
+    runCommand('fixel2voxel ' + prefix + 'fixel/peaks.mif split_data ' + prefix + 'amps.mif')
     runCommand('mrconvert ' + prefix + 'amps.mif ' + prefix + 'first_peaks.mif -coord 3 0 -axes 0,1,2')
     runCommand('mrconvert ' + prefix + 'amps.mif ' + prefix + 'second_peaks.mif -coord 3 1 -axes 0,1,2')
     delFile(prefix + 'amps.mif')
-    runCommand('fixel2voxel ' + prefix + 'peaks.msf split_dir ' + prefix + 'all_dirs.mif')
-    delFile(prefix + 'peaks.msf')
+    runCommand('fixel2voxel ' + prefix + 'fixel/directions.mif split_dir ' + prefix + 'all_dirs.mif')
+    delFolder(prefix + 'fixel')
     runCommand('mrconvert ' + prefix + 'all_dirs.mif ' + prefix + 'first_dir.mif -coord 3 0:2')
     delFile(prefix + 'all_dirs.mif')
     # Calculate the 'cost function' Donald derived for selecting single-fibre voxels
@@ -85,7 +85,7 @@ def execute():
     # Select the top-ranked voxels
     runCommand('mrthreshold ' + prefix + 'CF.mif -top ' + str(lib.app.args.sf_voxels) + ' ' + prefix + 'SF.mif')
     # Generate a new response function based on this selection
-    runCommand('sh2response dwiSH.mif ' + prefix + 'SF.mif ' + prefix + 'first_dir.mif ' + prefix + 'RF.txt' + iter_lmax_option)
+    runCommand('amp2response dwi.mif ' + prefix + 'SF.mif ' + prefix + 'first_dir.mif ' + prefix + 'RF.txt' + iter_lmax_option)
     delFile(prefix + 'first_dir.mif')
     # Should we terminate?
     if iteration > 0:
@@ -96,8 +96,8 @@ def execute():
       if int(max_diff) == 0:
         printMessage('Convergence of SF voxel selection detected at iteration ' + str(iteration))
         delFile(prefix + 'CF.mif')
-        shutil.copyfile(prefix + 'RF.txt', 'response.txt')
-        shutil.move(prefix + 'SF.mif', 'voxels.mif')
+        runFunction(shutil.copyfile, prefix + 'RF.txt', 'response.txt')
+        runFunction(shutil.move, prefix + 'SF.mif', 'voxels.mif')
         break
 
     # Select a greater number of top single-fibre voxels, and dilate (within bounds of initial mask);
@@ -110,8 +110,8 @@ def execute():
   # If terminating due to running out of iterations, still need to put the results in the appropriate location
   if not os.path.exists('response.txt'):
     printMessage('Exiting after maximum ' + str(lib.app.args.max_iters) + ' iterations')
-    shutil.copyfile('iter' + str(lib.app.args.max_iters-1) + '_RF.txt', 'response.txt')
-    shutil.move('iter' + str(lib.app.args.max_iters-1) + '_SF.mif', 'voxels.mif')
+    runFunction(shutil.copyfile, 'iter' + str(lib.app.args.max_iters-1) + '_RF.txt', 'response.txt')
+    runFunction(shutil.move, 'iter' + str(lib.app.args.max_iters-1) + '_SF.mif', 'voxels.mif')
     
-  shutil.copyfile('response.txt', getUserPath(lib.app.args.output, False))
+  runFunction(shutil.copyfile, 'response.txt', getUserPath(lib.app.args.output, False))
 

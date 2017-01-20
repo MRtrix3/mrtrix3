@@ -24,6 +24,7 @@
 
 #include "math/math.h"
 #include "math/SH.h"
+#include "math/ZSH.h"
 
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
@@ -82,7 +83,7 @@ void run ()
     throw Exception ("input direction image \"" + std::string (argument[2]) + "\" must contain precisely 3 volumes");
 
   Eigen::VectorXd delta;
-  vector<value_type> response (lmax/2 + 1, 0.0);
+  vector<value_type> response (Math::ZSH::NforL (lmax), 0.0);
   size_t count = 0;
 
   auto loop = Loop ("estimating response function", SH, 0, 3);
@@ -116,7 +117,7 @@ void run ()
         d_dot_s += s*delta[i];
         d_dot_d += Math::pow2 (delta[i]);
       }
-      response[l/2] += d_dot_s / d_dot_d;
+      response[Math::ZSH::index(l)] += d_dot_s / d_dot_d;
     }
     ++count;
   }

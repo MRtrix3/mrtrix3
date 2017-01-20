@@ -15,9 +15,9 @@
 
 #include "header.h"
 #include "raw.h"
-#include "file/ofstream.h"
 #include "file/mgh_utils.h"
-#include "file/nifti1_utils.h"
+#include "file/nifti_utils.h"
+#include "file/ofstream.h"
 
 namespace MR
 {

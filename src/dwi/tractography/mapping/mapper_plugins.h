@@ -25,6 +25,7 @@
 
 #include "dwi/directions/set.h"
 
+#include "dwi/tractography/streamline.h"
 #include "dwi/tractography/mapping/twi_stats.h"
 
 
@@ -44,7 +45,7 @@ namespace MR {
               dirs (directions) { }
             DixelMappingPlugin (const DixelMappingPlugin& that) :
               dirs (that.dirs) { }
-            size_t operator() (const Eigen::Vector3f& d) const { return dirs.select_direction (d); }
+            DWI::Directions::index_type operator() (const Eigen::Vector3& d) const { return dirs.select_direction (d); }
           private:
             const DWI::Directions::FastLookupSet& dirs;
         };
@@ -75,7 +76,7 @@ namespace MR {
 
             virtual ~TWIImagePluginBase() { }
 
-            virtual void load_factors (const vector<Eigen::Vector3f>&, vector<float>&) = 0;
+            virtual void load_factors (const Streamline<>&, vector<default_type>&) = 0;
 
           protected:
             //Image<float> voxel;
@@ -84,7 +85,7 @@ namespace MR {
             mutable Interp::Linear<Image<float>> interp;
 
             // New helper function; find the last point on the streamline from which valid image information can be read
-            const Eigen::Vector3f get_last_point_in_fov (const vector<Eigen::Vector3f>&, const bool) const;
+            const Streamline<>::point_type get_last_point_in_fov (const Streamline<>&, const bool) const;
 
         };
 
@@ -114,7 +115,7 @@ namespace MR {
             ~TWIScalarImagePlugin() { }
 
 
-            void load_factors (const vector<Eigen::Vector3f>&, vector<float>&);
+            void load_factors (const Streamline<>&, vector<default_type>&);
 
           private:
             const tck_stat_t statistic;
@@ -131,16 +132,16 @@ namespace MR {
             TWIFODImagePlugin (const std::string& input_image) :
               TWIImagePluginBase (input_image),
               sh_coeffs (interp.size(3)),
-              precomputer (new Math::SH::PrecomputedAL<float> ()) {
+              precomputer (new Math::SH::PrecomputedAL<default_type> ()) {
                 Math::SH::check (Header (interp));
                 precomputer->init (Math::SH::LforN (sh_coeffs.size()));
               }
 
-            void load_factors (const vector<Eigen::Vector3f>&, vector<float>&);
+            void load_factors (const Streamline<>&, vector<default_type>&);
 
           private:
-            Eigen::VectorXf sh_coeffs;
-            std::shared_ptr<Math::SH::PrecomputedAL<float>> precomputer;
+            Eigen::Matrix<default_type, Eigen::Dynamic, 1> sh_coeffs;
+            std::shared_ptr<Math::SH::PrecomputedAL<default_type>> precomputer;
 
         };
 

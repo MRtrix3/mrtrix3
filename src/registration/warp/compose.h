@@ -21,7 +21,7 @@
 #include "transform.h"
 #include "interp/linear.h"
 #include "adapter/jacobian.h" //TODO remove after debug
-#include "registration/warp/utils.h"
+#include "registration/warp/helpers.h"
 #include "adapter/extract.h"
 
 namespace MR

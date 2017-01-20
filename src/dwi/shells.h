@@ -133,14 +133,18 @@ namespace MR
           return b;
         }
 
-        Shells& select_shells (const bool keep_bzero = false, const bool force_single_shell = true);
+        Shells& select_shells (const bool force_singleshell, const bool force_with_bzero, const bool force_without_bzero);
 
         Shells& reject_small_shells (const size_t min_volumes = DWI_SHELLS_MIN_DIRECTIONS);
 
         bool is_single_shell() const {
-          return ((shells.size() == 1) || ((shells.size() == 2 && smallest().is_bzero())));
+          // only if exactly 1 non-bzero shell
+          return ((count() == 1 && !has_bzero()) || (count() == 2 && has_bzero()));
         }
 
+        bool has_bzero() const {
+          return smallest().is_bzero();
+        }
 
         friend std::ostream& operator<< (std::ostream& stream, const Shells& S)
         {

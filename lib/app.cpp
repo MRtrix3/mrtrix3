@@ -80,6 +80,8 @@ namespace MR
     const char* project_version = nullptr;
     const char* build_date = __DATE__;
 
+    SignalHandler signal_handler;
+
     int argc = 0;
     char** argv = nullptr;
 
@@ -657,7 +659,7 @@ namespace MR
         s += format_option (__standard_options[i]);
 
       if (REFERENCES.size()) { 
-        s += std::string ("#### References\n\n");
+        s += std::string ("## References\n\n");
         for (size_t i = 0; i < REFERENCES.size(); ++i)
           s += indent_newlines (REFERENCES[i]) + "\n\n";
       }

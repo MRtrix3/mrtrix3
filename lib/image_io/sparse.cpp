@@ -26,7 +26,7 @@ namespace MR
 
 
 
-    void Sparse::load (const Header& header, size_t)
+    void SparseLegacy::load (const Header& header, size_t)
     {
 
       Default::load (header,0);
@@ -58,7 +58,7 @@ namespace MR
 
         // Writes a single uint32_t(0) to the start of the sparse data region
         // Any voxel that has its value initialised to 0 will point here, and therefore dereferencing of any
-        //   such voxel will yield a Sparse::Value with zero elements
+        //   such voxel will yield a Fixel::Value with zero elements
         memset (off2mem (0), 0x00, sizeof (uint32_t));
 
         data_end = sizeof(uint32_t);
@@ -77,7 +77,7 @@ namespace MR
 
 
 
-    void Sparse::unload (const Header& header)
+    void SparseLegacy::unload (const Header& header)
     {
 
       Default::unload (header);
@@ -103,7 +103,7 @@ namespace MR
 
 
 
-    uint64_t Sparse::set_numel (const uint64_t old_offset, const uint32_t numel)
+    uint64_t SparseLegacy::set_numel (const uint64_t old_offset, const uint32_t numel)
     {
       assert (is_image_readwrite());
 

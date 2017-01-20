@@ -30,8 +30,7 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 
-#include "mesh/mesh.h"
-#include "mesh/vox2mesh.h"
+#include "surface/mesh_multi.h"
 
 namespace MR
 {
@@ -2338,9 +2337,11 @@ namespace MR
           for (size_t i = 0; i < list.size(); ++i) {
             try {
               MR::Connectome::matrix_type matrix = MR::load_matrix<default_type> (list[i]);
-              MR::Connectome::verify_matrix (matrix, num_nodes());
+              MR::Connectome::to_upper (matrix);
+              if (matrix.rows() != num_nodes())
+                throw Exception ("Matrix file \"" + Path::basename(list[i]) + "\" is incorrect size");
               FileDataVector temp;
-              mat2vec (matrix, temp);
+              mat2vec.M2V (matrix, temp);
               temp.calc_stats();
               temp.set_name (list[i]);
               data.push_back (std::move (temp));
@@ -2730,13 +2731,14 @@ namespace MR
           MR::Connectome::matrix_type temp;
           try {
             temp = MR::load_matrix<default_type> (path);
-            MR::Connectome::verify_matrix (temp, num_nodes());
+            MR::Connectome::to_upper (temp);
+            if (temp.rows() != num_nodes())
+              throw Exception ("Matrix file \"" + Path::basename(path) + "\" is incorrect size");
           } catch (Exception& e) {
             e.display();
             return false;
           }
-          data.clear();
-          mat2vec (temp, data);
+          mat2vec.M2V (temp, data);
           data.calc_stats();
           data.set_name (Path::basename (path));
           return true;
@@ -3784,7 +3786,7 @@ namespace MR
           // Request exemplar track file path from user
           const std::string path = GUI::Dialog::File::get_file (this, "Select file containing mesh for each node", "OBJ mesh files (*.obj)");
           if (!path.size()) return;
-          Mesh::MeshMulti meshes;
+          Surface::MeshMulti meshes;
           meshes.load (path);
           if (meshes.size() != nodes.size())
             throw Exception ("Mesh file contains " + str(meshes.size()) + " objects; expected " + str(nodes.size()));

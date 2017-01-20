@@ -48,7 +48,7 @@ void TrackMapperTWI::set_factor (const Streamline<>& tck, SetVoxelExtras& out) c
 
     case TDI: out.factor = 1.0; break;
     case LENGTH: out.factor = tck.calc_length(); break;
-    case INVLENGTH: out.factor = 1.0f / tck.calc_length(); break;
+    case INVLENGTH: out.factor = 1.0 / tck.calc_length(); break;
 
     case SCALAR_MAP:
     case SCALAR_MAP_COUNT:
@@ -84,7 +84,7 @@ void TrackMapperTWI::set_factor (const Streamline<>& tck, SetVoxelExtras& out) c
               ++count;
             }
           }
-          out.factor = (count ? (out.factor / float(count)) : 0.0);
+          out.factor = (count ? (out.factor / default_type(count)) : 0.0);
           break;
 
         case T_MAX:
@@ -112,7 +112,7 @@ void TrackMapperTWI::set_factor (const Streamline<>& tck, SetVoxelExtras& out) c
               ++count;
             }
           }
-          out.factor = (count ? (out.factor / float(count)) : 0.0);
+          out.factor = (count ? (out.factor / default_type(count)) : 0.0);
           break;
 
         case GAUSSIAN:
@@ -216,7 +216,7 @@ void TrackMapperTWI::load_factors (const Streamline<>& tck) const
   if (contrast != CURVATURE)
     throw Exception ("Unsupported contrast in function TrackMapperTWI::load_factors()");
 
-  vector<Eigen::Vector3f> tangents;
+  vector<Eigen::Vector3> tangents;
   tangents.reserve (tck.size());
 
   // Would like to be able to manipulate the length over which the tangent calculation is affected
@@ -229,17 +229,17 @@ void TrackMapperTWI::load_factors (const Streamline<>& tck) const
 
   // Need to know the distance along the spline between every point and every other point
   // Start by logging the length of each step
-  vector<float> step_sizes;
+  vector<default_type> step_sizes;
   step_sizes.reserve (tck.size());
 
   for (size_t i = 0; i != tck.size(); ++i) {
-    Eigen::Vector3f this_tangent;
+    Eigen::Vector3 this_tangent;
     if (i == 0)
-      this_tangent = ((tck[1]   - tck[0]  ).normalized());
+      this_tangent = ((tck[1]   - tck[0]  ).cast<default_type>().normalized());
     else if (i == tck.size() - 1)
-      this_tangent = ((tck[i]   - tck[i-1]).normalized());
+      this_tangent = ((tck[i]   - tck[i-1]).cast<default_type>().normalized());
     else
-      this_tangent = ((tck[i+1] - tck[i-1]).normalized());
+      this_tangent = ((tck[i+1] - tck[i-1]).cast<default_type>().normalized());
     if (this_tangent.allFinite())
       tangents.push_back (this_tangent);
     else
@@ -271,8 +271,7 @@ void TrackMapperTWI::load_factors (const Streamline<>& tck) const
   }
 
   // Produce a matrix of spline distances between points
-  Eigen::MatrixXf spline_distances (tck.size(), tck.size());
-  spline_distances.setZero();
+  Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> spline_distances = Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic>::Zero (tck.size(), tck.size());
   for (size_t i = 0; i != tck.size(); ++i) {
     for (size_t j = 0; j <= i; ++j) {
       for (size_t k = i+1; k != tck.size(); ++k) {
@@ -285,19 +284,19 @@ void TrackMapperTWI::load_factors (const Streamline<>& tck) const
   // Smooth both the tangent vectors and the principal normal vectors according to a Gaussuan kernel
   // Remember: tangent vectors are unit length, but for principal normal vectors length must be preserved!
 
-  vector<Eigen::Vector3f> smoothed_tangents;
+  vector<Eigen::Vector3> smoothed_tangents;
   smoothed_tangents.reserve (tangents.size());
 
-  static const float gaussian_theta = CURVATURE_TRACK_SMOOTHING_FWHM / (2.0 * sqrt (2.0 * log (2.0)));
-  static const float gaussian_denominator = 2.0 * gaussian_theta * gaussian_theta;
+  static const default_type gaussian_theta = CURVATURE_TRACK_SMOOTHING_FWHM / (2.0 * sqrt (2.0 * log (2.0)));
+  static const default_type gaussian_denominator = 2.0 * gaussian_theta * gaussian_theta;
 
   for (size_t i = 0; i != tck.size(); ++i) {
 
-    Eigen::Vector3f this_tangent (0.0, 0.0, 0.0);
+    Eigen::Vector3 this_tangent (0.0, 0.0, 0.0);
 
     for (size_t j = 0; j != tck.size(); ++j) {
-      const float distance = spline_distances (i, j);
-      const float this_weight = exp (-distance * distance / gaussian_denominator);
+      const default_type distance = spline_distances (i, j);
+      const default_type this_weight = exp (-distance * distance / gaussian_denominator);
       this_tangent += tangents[j] * this_weight;
     }
 
@@ -307,7 +306,7 @@ void TrackMapperTWI::load_factors (const Streamline<>& tck) const
 
   for (size_t i = 0; i != tck.size(); ++i) {
 
-    float tangent_dot_product, length;
+    default_type tangent_dot_product, length;
     if (i == 0) {
       tangent_dot_product = smoothed_tangents[ 1 ].dot (smoothed_tangents[ 0 ]);
       length = spline_distances (0, 1);
