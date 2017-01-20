@@ -35,7 +35,7 @@ def execute():
   import lib.path
   from lib.runCommand  import runCommand
   from lib.runFunction import runFunction
-  
+
   lmax_option = ''
   if lib.app.args.lmax:
     lmax_option = ' -lmax ' + lib.app.args.lmax
@@ -93,7 +93,7 @@ def execute():
       max_diff = lib.image.statistic(prefix + 'SF_diff.mif', 'max')
       lib.file.delTempFile(prefix + 'SF_diff.mif')
       if int(max_diff) == 0:
-        lib.message.print('Convergence of SF voxel selection detected at iteration ' + str(iteration))
+        lib.message.console('Convergence of SF voxel selection detected at iteration ' + str(iteration))
         lib.file.delTempFile(prefix + 'CF.mif')
         runFunction(shutil.copyfile, prefix + 'RF.txt', 'response.txt')
         runFunction(shutil.move, prefix + 'SF.mif', 'voxels.mif')
@@ -108,7 +108,7 @@ def execute():
 
   # If terminating due to running out of iterations, still need to put the results in the appropriate location
   if not os.path.exists('response.txt'):
-    lib.message.print('Exiting after maximum ' + str(lib.app.args.max_iters) + ' iterations')
+    lib.message.console('Exiting after maximum ' + str(lib.app.args.max_iters) + ' iterations')
     runFunction(shutil.copyfile, 'iter' + str(lib.app.args.max_iters-1) + '_RF.txt', 'response.txt')
     runFunction(shutil.move, 'iter' + str(lib.app.args.max_iters-1) + '_SF.mif', 'voxels.mif')
     

@@ -7,7 +7,7 @@
 #   - Using segmentations from FreeSurfer
 
 
-import argparse, pkgutil, os, sys
+import os
 import lib.algorithm
 import lib.app
 import lib.cmdlineParser

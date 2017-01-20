@@ -55,7 +55,7 @@ def getScheme(image_path):
   import lib.mrtrix
   command = [ lib.mrtrix.exeVersionMatch('mrinfo'), image_path, '-petable' ]
   if lib.app.verbosity > 1:
-    lib.message.print('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
+    lib.message.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
   proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
   result, err = proc.communicate()
   result = result.rstrip().decode('utf-8')
@@ -63,9 +63,9 @@ def getScheme(image_path):
     result = [ [ float(f) for f in line.split() ] for line in result.split('\n') ]
   if lib.app.verbosity > 1:
     if not result:
-      lib.message.print('Result: No phase encoding table found')
+      lib.message.console('Result: No phase encoding table found')
     else:
-      lib.message.print('Result: ' + str(len(result)) + ' x ' + str(len(result[0])) + ' table')
+      lib.message.console('Result: ' + str(len(result)) + ' x ' + str(len(result[0])) + ' table')
       lib.message.debug(str(result))
   return result
 

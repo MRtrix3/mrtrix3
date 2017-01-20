@@ -112,7 +112,7 @@ def execute():
         if ratio > convergence_change:
           reiterate = True
       if not reiterate:
-        lib.message.print('Exiting at iteration ' + str(iteration) + ' with ' + str(SF_voxel_count) + ' SF voxels due to unchanged response function coefficients')
+        lib.message.console('Exiting at iteration ' + str(iteration) + ' with ' + str(SF_voxel_count) + ' SF voxels due to unchanged response function coefficients')
         runFunction(shutil.copyfile, prefix + 'RF.txt', 'response.txt')
         runFunction(shutil.copyfile, prefix + 'SF.mif', 'voxels.mif')
         break
@@ -123,7 +123,7 @@ def execute():
 
   # If we've terminated due to hitting the iteration limiter, we still need to copy the output file(s) to the correct location
   if not os.path.exists('response.txt'):
-    lib.message.print('Exiting after maximum ' + str(lib.app.args.max_iters-1) + ' iterations with ' + str(SF_voxel_count) + ' SF voxels')
+    lib.message.console('Exiting after maximum ' + str(lib.app.args.max_iters-1) + ' iterations with ' + str(SF_voxel_count) + ' SF voxels')
     runFunction(shutil.copyfile, 'iter' + str(lib.app.args.max_iters-1) + '_RF.txt', 'response.txt')
     runFunction(shutil.copyfile, 'iter' + str(lib.app.args.max_iters-1) + '_SF.mif', 'voxels.mif')
 

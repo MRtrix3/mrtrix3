@@ -46,9 +46,9 @@ if not os.path.exists(inputDir):
   lib.message.error('input directory not found');
 inFiles = os.listdir(inputDir)
 if len(inFiles) <= 1:
-  lib.message.print('not enough images found in input directory. More than one image is needed to perform a group-wise intensity normalisation')
+  lib.message.console('not enough images found in input directory. More than one image is needed to perform a group-wise intensity normalisation')
 else:
-  lib.message.print('performing global intensity normalisation on ' + str(len(inFiles)) + ' input images')
+  lib.message.console('performing global intensity normalisation on ' + str(len(inFiles)) + ' input images')
 
 lib.app.args.mask_dir = relpath(lib.app.args.mask_dir);
 maskDir = lib.app.args.mask_dir
@@ -84,12 +84,12 @@ runCommand ('cp -R -L ' + maskDir + ' ' + maskTempDir)
 lib.app.gotoTempDir()
 
 lib.file.makeDir('fa')
-lib.message.print('Computing FA images')
+lib.message.console('Computing FA images')
 input_filenames = []
 for i in input:
   runCommand('dwi2tensor ' + abspath(i.directory, i.filename) + ' -mask ' + abspath(i.mask_directory, i.mask_filename) + ' - | tensor2metric - -fa fa/' + i.prefix + '.mif')
 
-lib.message.print('Generating FA population template')
+lib.message.console('Generating FA population template')
 runCommand('population_template fa -mask_dir ' + maskTempDir + ' fa_template.mif -type rigid_affine_nonlinear -rigid_scale 0.25,0.5,0.8,1.0 -affine_scale 0.7,0.8,1.0,1.0 -nl_scale 0.5,0.75,1.0,1.0,1.0 -nl_niter 5,5,5,5,5 -tempdir population_template -linear_no_pause -nocleanup')
 
 runCommand('mrthreshold fa_template.mif -abs ' +  lib.app.args.fa_threshold + ' template_wm_mask.mif')

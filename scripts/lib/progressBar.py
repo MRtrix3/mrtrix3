@@ -1,11 +1,12 @@
 import os, sys
 import lib.app
+import lib.message
 
 
 class progressBar:
 
   def _update(self):
-    sys.stderr.write('\r' + lib.app.colourPrint + os.path.basename(sys.argv[0]) + ': ' + lib.app.colourClear + '[{0:>3}%] '.format(int(round(100.0*self.counter/self.target))) + self.message + '...' + lib.app.clearLine + self.newline)
+    sys.stderr.write('\r' + lib.message.colourConsole + os.path.basename(sys.argv[0]) + ': ' + lib.message.colourClear + '[{0:>3}%] '.format(int(round(100.0*self.counter/self.target))) + self.message + '...' + lib.message.clearLine + self.newline)
     sys.stderr.flush()
 
   def __init__(self, msg, target):
@@ -25,7 +26,7 @@ class progressBar:
 
   def done(self):
     self.counter = self.target
-    sys.stderr.write('\r' + lib.app.colourPrint + os.path.basename(sys.argv[0]) + ': ' + lib.app.colourClear + '[100%] ' + self.message + lib.app.clearLine + '\n')
+    sys.stderr.write('\r' + lib.message.colourConsole + os.path.basename(sys.argv[0]) + ': ' + lib.message.colourClear + '[100%] ' + self.message + lib.message.clearLine + '\n')
     sys.stderr.flush()
     lib.app.verbosity = self.orig_verbosity
     

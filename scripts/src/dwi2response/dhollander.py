@@ -44,7 +44,7 @@ def execute():
   # Get b-values and number of volumes per b-value.
   bvalues = [ int(round(float(x))) for x in lib.image.headerField('dwi.mif', 'shells').split() ]
   bvolumes = [ int(x) for x in lib.image.headerField('dwi.mif', 'shellcounts').split() ]
-  lib.message.print(str(len(bvalues)) + ' unique b-value(s) detected: ' + ','.join(map(str,bvalues)) + ' with ' + ','.join(map(str,bvolumes)) + ' volumes.')
+  lib.message.console(str(len(bvalues)) + ' unique b-value(s) detected: ' + ','.join(map(str,bvalues)) + ' with ' + ','.join(map(str,bvolumes)) + ' volumes.')
   if len(bvalues) < 2:
     lib.message.error('Need at least 2 unique b-values (including b=0).')
 
@@ -134,7 +134,7 @@ def execute():
   # Get final voxels for single-fibre WM response function estimation from WM using 'tournier' algorithm.
   refwmcount = float(lib.image.statistic('refined_wm.mif', 'count', 'refined_wm.mif'))
   voxsfwmcount = int(round(refwmcount * lib.app.args.sfwm / 100.0))
-  lib.message.print('Running \'tournier\' algorithm to select ' + str(voxsfwmcount) + ' single-fibre WM voxels.')
+  lib.message.console('Running \'tournier\' algorithm to select ' + str(voxsfwmcount) + ' single-fibre WM voxels.')
   cleanopt = ''
   if not lib.app.cleanup:
     cleanopt = ' -nocleanup'
@@ -160,11 +160,11 @@ def execute():
 
   # Show summary of voxels counts.
   textarrow = ' --> '
-  lib.message.print('Summary of voxel counts:')
-  lib.message.print('Mask: ' + str(int(lib.image.statistic('mask.mif', 'count', 'mask.mif'))) + textarrow + str(int(lib.image.statistic('eroded_mask.mif', 'count', 'eroded_mask.mif'))) + textarrow + str(int(lib.image.statistic('safe_mask.mif', 'count', 'safe_mask.mif'))))
-  lib.message.print('WM: ' + str(int(lib.image.statistic('crude_wm.mif', 'count', 'crude_wm.mif'))) + textarrow + str(int(lib.image.statistic('refined_wm.mif', 'count', 'refined_wm.mif'))) + textarrow + str(int(lib.image.statistic('voxels_sfwm.mif', 'count', 'voxels_sfwm.mif'))) + ' (SF)')
-  lib.message.print('GM: ' + str(int(lib.image.statistic('crude_gm.mif', 'count', 'crude_gm.mif'))) + textarrow + str(int(lib.image.statistic('refined_gm.mif', 'count', 'refined_gm.mif'))) + textarrow + str(int(lib.image.statistic('voxels_gm.mif', 'count', 'voxels_gm.mif'))))
-  lib.message.print('CSF: ' + str(int(lib.image.statistic('crude_csf.mif', 'count', 'crude_csf.mif'))) + textarrow + str(int(lib.image.statistic('refined_csf.mif', 'count', 'refined_csf.mif'))) + textarrow + str(int(lib.image.statistic('voxels_csf.mif', 'count', 'voxels_csf.mif'))))
+  lib.message.console('Summary of voxel counts:')
+  lib.message.console('Mask: ' + str(int(lib.image.statistic('mask.mif', 'count', 'mask.mif'))) + textarrow + str(int(lib.image.statistic('eroded_mask.mif', 'count', 'eroded_mask.mif'))) + textarrow + str(int(lib.image.statistic('safe_mask.mif', 'count', 'safe_mask.mif'))))
+  lib.message.console('WM: ' + str(int(lib.image.statistic('crude_wm.mif', 'count', 'crude_wm.mif'))) + textarrow + str(int(lib.image.statistic('refined_wm.mif', 'count', 'refined_wm.mif'))) + textarrow + str(int(lib.image.statistic('voxels_sfwm.mif', 'count', 'voxels_sfwm.mif'))) + ' (SF)')
+  lib.message.console('GM: ' + str(int(lib.image.statistic('crude_gm.mif', 'count', 'crude_gm.mif'))) + textarrow + str(int(lib.image.statistic('refined_gm.mif', 'count', 'refined_gm.mif'))) + textarrow + str(int(lib.image.statistic('voxels_gm.mif', 'count', 'voxels_gm.mif'))))
+  lib.message.console('CSF: ' + str(int(lib.image.statistic('crude_csf.mif', 'count', 'crude_csf.mif'))) + textarrow + str(int(lib.image.statistic('refined_csf.mif', 'count', 'refined_csf.mif'))) + textarrow + str(int(lib.image.statistic('voxels_csf.mif', 'count', 'voxels_csf.mif'))))
 
 
   # Generate single-fibre WM, GM and CSF responses

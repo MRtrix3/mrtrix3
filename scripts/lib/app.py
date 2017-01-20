@@ -69,10 +69,10 @@ def initialise():
   if use_colour:
     lib.message.clearLine = '\033[0K'
     lib.message.colourClear = '\033[0m'
-    lib.message.colourConsole = '\033[03;36m'
+    lib.message.colourConsole = '\033[03;32m'
     lib.message.colourDebug = '\033[03;34m'
     lib.message.colourError = '\033[01;31m'
-    lib.message.colourPrint = '\033[03;32m'
+    lib.message.colourExec = '\033[03;36m'
     lib.message.colourWarn = '\033[00;31m'
 
   if args.nocleanup:
@@ -90,13 +90,13 @@ def initialise():
     lib.mrtrix.optionVerbosity = ' -info'
 
   if citationList:
-    lib.message.print('')
+    lib.message.console('')
     citation_warning = 'Note that this script makes use of commands / algorithms that have relevant articles for citation'
     if externalCitations:
       citation_warning += '; INCLUDING FROM EXTERNAL SOFTWARE PACKAGES'
     citation_warning += '. Please consult the help page (-help option) for more information.'
-    lib.message.print(citation_warning)
-    lib.message.print('')
+    lib.message.console(citation_warning)
+    lib.message.console('')
 
   if args.cont:
     tempDir = os.path.abspath(args.cont[0])
@@ -131,7 +131,7 @@ def makeTempDir():
   import lib.mrtrix
   global args, tempDir, workingDir
   if args.cont:
-    lib.message.print('Skipping temporary directory creation due to use of -continue option')
+    lib.message.console('Skipping temporary directory creation due to use of -continue option')
     return
   if tempDir:
     lib.message.error('Script error: Cannot use multiple temporary directories')
@@ -154,7 +154,7 @@ def makeTempDir():
     random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))
     tempDir = os.path.join(dir_path, prefix + random_string) + os.sep
   os.makedirs(tempDir)
-  lib.message.print('Generated temporary directory: ' + tempDir)
+  lib.message.console('Generated temporary directory: ' + tempDir)
   with open(os.path.join(tempDir, 'cwd.txt'), 'w') as outfile:
     outfile.write(workingDir + '\n')
   with open(os.path.join(tempDir, 'command.txt'), 'w') as outfile:
@@ -170,7 +170,7 @@ def gotoTempDir():
   if not tempDir:
     lib.message.error('Script error: No temporary directory location set')
   if verbosity:
-    lib.message.print('Changing to temporary directory (' + tempDir + ')')
+    lib.message.console('Changing to temporary directory (' + tempDir + ')')
   os.chdir(tempDir)
 
 
@@ -178,19 +178,18 @@ def gotoTempDir():
 def complete():
   import os, shutil, sys
   import lib.message
-  global colourClear, colourPrint, colourWarn, tempDir, workingDir
-  lib.message.print('Changing back to original directory (' + workingDir + ')')
+  lib.message.console('Changing back to original directory (' + workingDir + ')')
   os.chdir(workingDir)
   if cleanup and tempDir:
-    lib.message.print('Deleting temporary directory ' + tempDir)
+    lib.message.console('Deleting temporary directory ' + tempDir)
     shutil.rmtree(tempDir)
   elif tempDir:
     # This needs to be printed even if the -quiet option is used
     if os.path.isfile(os.path.join(tempDir, 'error.txt')):
       with open(os.path.join(tempDir, 'error.txt'), 'r') as errortext:
-        sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'Script failed while executing the command: ' + errortext.readline().rstrip() + colourClear + '\n')
-      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'For debugging, inspect contents of temporary directory: ' + tempDir + colourClear + '\n')
+        sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + lib.message.colourWarn + 'Script failed while executing the command: ' + errortext.readline().rstrip() + lib.message.colourClear + '\n')
+      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + lib.message.colourWarn + 'For debugging, inspect contents of temporary directory: ' + tempDir + lib.message.colourClear + '\n')
     else:
-      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourPrint + 'Contents of temporary directory kept, location: ' + tempDir + colourClear + '\n')
+      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + lib.message.colourConsole + 'Contents of temporary directory kept, location: ' + tempDir + lib.message.colourClear + '\n')
     sys.stderr.flush()
 

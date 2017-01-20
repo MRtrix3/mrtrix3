@@ -79,7 +79,7 @@ def execute():
   runCommand('mrconvert 5tt_regrid.mif - -coord 3 3 -axes 0,1,2 | mrcalc - ' + str(lib.app.args.pvf) + ' -gt fa.mif ' + str(lib.app.args.fa) + ' -lt -mult mask.mif -mult csf_mask.mif')
 
   # Revise WM mask to only include single-fibre voxels
-  lib.message.print('Calling dwi2response recursively to select WM single-fibre voxels using \'' + lib.app.args.wm_algo + '\' algorithm')
+  lib.message.console('Calling dwi2response recursively to select WM single-fibre voxels using \'' + lib.app.args.wm_algo + '\' algorithm')
   recursive_cleanup_option=''
   if not lib.app.cleanup:
     recursive_cleanup_option = ' -nocleanup'

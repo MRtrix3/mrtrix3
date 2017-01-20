@@ -23,12 +23,12 @@ def runFunction(fn, *args):
         lib.app.lastFile = ''
         break
     if lib.app.verbosity:
-      sys.stderr.write(lib.message.colourConsole + 'Skipping function:' + lib.message.colourClear + ' ' + fnstring + '\n')
+      sys.stderr.write(lib.message.colourExec + 'Skipping function:' + lib.message.colourClear + ' ' + fnstring + '\n')
       sys.stderr.flush()
     return
 
   if lib.app.verbosity:
-    sys.stderr.write(lib.message.colourConsole + 'Function:' + lib.message.colourClear + ' ' + fnstring + '\n')
+    sys.stderr.write(lib.message.colourExec + 'Function:' + lib.message.colourClear + ' ' + fnstring + '\n')
     sys.stderr.flush()
 
   # Now we need to actually execute the requested function

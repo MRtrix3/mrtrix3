@@ -3,8 +3,16 @@ colourClear = ''
 colourConsole = ''
 colourDebug = ''
 colourError = ''
-colourPrint = ''
+colourExec = ''
 colourWarn = ''
+
+
+
+def console(message):
+  import lib.app, os, sys
+  global colourClear, colourPrint
+  if lib.app.verbosity:
+    sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourConsole + message + colourClear + '\n')
 
 
 
@@ -20,6 +28,7 @@ def debug(message):
   sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourDebug + '[DEBUG] ' + fname + '(): ' + message + colourClear + '\n')
 
 
+
 def error(message):
   import lib.app, os, sys
   global colourClear, colourError
@@ -28,11 +37,7 @@ def error(message):
   lib.app.complete()
   sys.exit(1)
 
-def print(message):
-  import lib.app, os, sys
-  global colourClear, colourPrint
-  if lib.app.verbosity:
-    sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourPrint + message + colourClear + '\n')
+
 
 def warn(message):
   import lib.app, os, sys

@@ -50,7 +50,7 @@ def initialise(base_parser, subparsers):
       module.initParser(subparsers, base_parser)
       initlist.extend(package_name)
   lib.message.debug('Initialised algorithms: ' + str(initlist))
-  
+
 
 
 

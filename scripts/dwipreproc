@@ -349,7 +349,7 @@ if lib.app.args.se_epi:
           auto_trt_warning = True
       else:
         if not dwi_pe_scheme:
-          lib.message.error('Unable to determine phase-encoding design of topup images')        
+          lib.message.error('Unable to determine phase-encoding design of topup images')
         line = list(dwi_pe_scheme[0])
         topup_manual_pe_scheme = [ ' '.join(str(i) for i in line) ] * int(num_topup_volumes/2)
         line = [ (-i if i else 0.0) for i in line[0:3] ]
@@ -509,7 +509,7 @@ if not len(volume_pairs) == num_volumes/2:
   runCommand('mrconvert dwi_post_eddy' + fsl_suffix + ' result.mif' + stride_option + ' -fslgrad ' + bvecs_path + ' bvals')
 
 else:
-  lib.message.print('Detected matching DWI volumes with opposing phase encoding; performing explicit volume recombination')
+  lib.message.console('Detected matching DWI volumes with opposing phase encoding; performing explicit volume recombination')
 
   # Perform a manual combination of the volumes output by eddy, since LSR is disabled
 

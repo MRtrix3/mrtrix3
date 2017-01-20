@@ -6,9 +6,9 @@ def runCommand(cmd, exitOnError=True):
   import lib.app
   import lib.message
   import lib.mrtrix
-  
+
   global _env
-  
+
   if not _env:
     _env = os.environ.copy()
     # Prevent _any_ SGE-compatible commands from running in SGE mode;
@@ -50,7 +50,7 @@ def runCommand(cmd, exitOnError=True):
         lib.app.lastFile = ''
         break
     if lib.app.verbosity:
-      sys.stderr.write(lib.app.colourConsole + 'Skipping command:' + lib.app.colourClear + ' ' + cmd + '\n')
+      sys.stderr.write(lib.app.colourExec + 'Skipping command:' + lib.app.colourClear + ' ' + cmd + '\n')
       sys.stderr.flush()
     return
 
@@ -91,7 +91,7 @@ def runCommand(cmd, exitOnError=True):
   cmdstack.append(cmdsplit[prev:])
 
   if lib.app.verbosity:
-    sys.stderr.write(lib.message.colourConsole + 'Command:' + lib.message.colourClear + ' ' + cmd + '\n')
+    sys.stderr.write(lib.message.colourExec + 'Command:' + lib.message.colourClear + ' ' + cmd + '\n')
     sys.stderr.flush()
 
   lib.message.debug('To execute: ' + str(cmdstack))
@@ -146,7 +146,7 @@ def runCommand(cmd, exitOnError=True):
     lib.app.cleanup = False
     if exitOnError:
       caller = inspect.getframeinfo(inspect.stack()[1][0])
-      lib.message.print('')
+      lib.message.console('')
       sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + lib.message.colourError + '[ERROR] Command failed: ' + cmd + lib.message.colourClear + lib.message.colourDebug + ' (' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')' + lib.message.colourClear + '\n')
       sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + lib.message.colourPrint + 'Output of failed command:' + lib.message.colourClear + '\n')
       sys.stderr.write(error_text)

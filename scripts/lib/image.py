@@ -10,16 +10,16 @@ def headerField(image_path, field):
   import lib.mrtrix
   command = [ lib.mrtrix.exeVersionMatch('mrinfo'), image_path, '-' + field ]
   if lib.app.verbosity > 1:
-    lib.message.print('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
+    lib.message.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
   proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
   result, err = proc.communicate()
   result = result.rstrip().decode('utf-8')
   if lib.app.verbosity > 1:
     if '\n' in result:
-      lib.message.print('Result: (' + str(result.count('\n')+1) + ' lines)')
+      lib.message.console('Result: (' + str(result.count('\n')+1) + ' lines)')
       lib.message.debug(result)
     else:
-      lib.message.print('Result: ' + result)
+      lib.message.console('Result: ' + result)
   return result
 
 
@@ -31,12 +31,12 @@ def headerKeyValue(image_path, key):
   import lib.mrtrix
   command = [ lib.mrtrix.exeVersionMatch('mrinfo'), image_path, '-property', key ]
   if lib.app.verbosity > 1:
-    lib.message.print('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
+    lib.message.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
   proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
   result, err = proc.communicate()
   result = result.rstrip().decode('utf-8')
   if lib.app.verbosity > 1:
-    lib.message.print('Result: ' + result)
+    lib.message.console('Result: ' + result)
   return result
 
 
@@ -81,11 +81,11 @@ def statistic(image_path, statistic, mask_path = ''):
   if mask_path:
     command.extend([ '-mask', mask_path ])
   if lib.app.verbosity > 1:
-    lib.message.print('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
+    lib.message.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
   proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
   result, err = proc.communicate()
   result = result.rstrip().decode('utf-8')
   if lib.app.verbosity > 1:
-    lib.message.print('Result: ' + result)
+    lib.message.console('Result: ' + result)
   return result
 
