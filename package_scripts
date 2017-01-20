@@ -1,0 +1,114 @@
+#!/usr/bin/env python
+# Take a single command-line argument, which is the target directory to place the packaged executable scripts
+# TODO Ideally, identify those files in scripts/ that are being tracked by git, and only package those
+
+import os, shutil, subprocess, sys
+
+# Database: scripts/data/ files that need to be captured by specific scripts
+# Contents of scripts/src/ should be automatically detected and added
+# Theoretically, the need for such data files could be described somewhere in the source
+#   files, and identified by this script
+data_files = { '5ttgen':      [ 'FreeSurfer2ACT.txt', 'FreeSurfer2ACT_sgm_amyg_hipp.txt' ],
+               'labelsgmfix': [ 'FreeSurferSGM.txt' ] }
+
+
+if len(sys.argv) != 2:
+  sys.stderr.write('Usage: package_scripts <target_directory>\n')
+  sys.exit(1)
+
+# Test requested output location
+outdir = os.path.abspath(sys.argv[1])
+if not os.path.isdir(outdir):
+  if os.path.exists(outdir):
+    sys.stderr.write('Output path \'' + sys.argv[1] + '\'already exists, but is not a directory\n')
+    sys.exit(1)
+  try:
+    os.makedirs(outdir)
+  except:
+    sys.stderr.write('Unable to create output directory \'' + sys.argv[1] + '\'')
+    sys.exit(1)
+
+# Operate on each script one at a time
+os.chdir('scripts')
+for script in os.listdir(os.getcwd()):
+
+  if os.path.isdir(script) or script == 'generate_mrtrix_cmd_completion.py' or script == 'mrtrix_bash_completion':
+    continue
+
+  # Some scripts are written in Bash;
+  #   for these, do a straight copy to the output directory  
+  if not 'lib.cmdlineParser.initialise' in open(script).read():
+    shutil.copy(script, os.path.join(outdir, script))
+    continue
+
+  # PyInstaller doesn't like executable Python scripts that don't have the .py extension;
+  #   therefore create a temporary copy
+  shutil.copy(script, script + '.py')
+  
+  # Generate the spec file
+  subprocess.run(['pyi-makespec',script+'.py'])
+  if not os.path.isfile(script + '.spec'):
+    sys.stderr.write('pyi-makespec failed for script \'' + script + '\'\n')
+    os.remove(script + '.py')
+    os.chdir(os.pardir)
+    sys.exit(1)
+  
+  # Determine whether or not there are either data files, or src/ algorithm files, that
+  #   need to be included in the package for this script
+  datas = [ ]
+  if sys.argv[1][0].isalpha():
+    dirname = script
+  else:
+    dirname = '_' + script
+  srcdir = os.path.join(os.path.abspath(os.getcwd()), 'src', dirname)
+  if os.path.isdir(srcdir):
+#    datas.append( (os.path.abspath(srcdir), dirname) )
+    for srcfile in os.listdir(srcdir):
+      if os.path.isfile(os.path.join(srcdir, srcfile)) and srcfile.endswith('.py'):
+        # Each entry in the list is a 2-tuple, containing the location of the file to be included in the package, and where it should be stored within the package
+        datas.append( (os.path.abspath(os.path.join(srcdir, srcfile)), dirname) )
+      elif not srcfile == '__pycache__':
+        sys.stderr.write('File ' + os.path.join('scripts', srcdir, srcfile) + ' not included in package for script ' + script + '\n')
+  if script in data_files:
+    for filename in data_files[script]:
+      datas.append( (os.path.abspath(os.path.join('data', filename)), 'data') )
+  
+#  print ()
+#  print (datas)
+#  print ()
+  
+  # If there is, we need to modify the spec file
+  if len(datas):
+    newspec = open(script + '_mod.spec', 'w')
+    with open(script + '.spec', 'r') as oldspec:
+      for line in oldspec:
+        if line.strip().startswith('datas='):
+          newspec.write(line.replace('None', str(datas)))
+        else:
+          newspec.write(line)
+    shutil.move(script + '_mod.spec', script + '.spec')
+
+  # Now we run PyInstaller
+  subprocess.run(['pyinstaller', '--onefile', script + '.spec'])
+  if not os.path.isfile(os.path.join('build', script, script)):
+    sys.stderr.write('pyinstaller failed for script \'' + script + '\'\n')
+    #os.remove(script + '.py')
+    #os.remove(script + '.spec')
+    os.chdir(os.pardir)
+    sys.exit(1)
+  
+  # Grab the standalone executable and put it in the output directory
+  shutil.copy(os.path.join('build', script, script), os.path.join(outdir, script))
+  
+  # Clean up after ourselves
+  os.remove(script + '.py')
+  os.remove(script + '.spec')
+
+# Further cleanup after all scripts have been packaged
+shutil.rmtree('build')
+
+# Go back to the MRtrix3 root directory
+os.chdir(os.pardir)
+  
+  
+  
