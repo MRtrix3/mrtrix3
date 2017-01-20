@@ -26,17 +26,20 @@ namespace MR
     {
 
     template <class ImageType>
-      class Replicate : public Base<ImageType>
+      class Replicate : 
+        public Base<Replicate<ImageType>,ImageType>
     {
       public:
+
+        typedef Base<Replicate<ImageType>,ImageType> base_type;
         typedef typename ImageType::value_type value_type;
 
-        using Base<ImageType>::name;
-        using Base<ImageType>::ndim;
-        using Base<ImageType>::spacing;
+        using base_type::name;
+        using base_type::ndim;
+        using base_type::spacing;
 
           Replicate (ImageType& original, const Header& replication_template) :
-            Base<ImageType> (original),
+            base_type (original),
             header_ (replication_template),
             pos_ (ndim(), 0)
           {
@@ -59,32 +62,21 @@ namespace MR
           return axis < parent().ndim() ? parent().stride (axis) : 0;
         }
 
-        Helper::Index<Replicate<ImageType> > operator[] (size_t axis) {
-          return (Helper::Index<Replicate<ImageType> > (*this, axis));
+        ssize_t get_index (size_t axis) const {
+          return pos_[axis];
+        }
+        void move_index (size_t axis, ssize_t increment) {
+          pos_[axis] += increment;
+          if (axis < parent().ndim())
+            if (parent().size(axis) > 1)
+              parent().index(axis) += increment;
         }
 
       protected:
-        using Base<ImageType>::parent;
+        using base_type::parent;
         Header header_;
         std::vector<ssize_t> pos_;
 
-        ssize_t get_pos (size_t axis) const {
-          return pos_[axis];
-        }
-        void set_pos (size_t axis, ssize_t position) {
-          pos_[axis] = position;
-          if (axis < parent().ndim())
-            if (parent().dim(axis) > 1)
-              parent()[axis] = position;
-        }
-        void move_pos (size_t axis, ssize_t increment) {
-          pos_[axis] += increment;
-          if (axis < parent().ndim())
-            if (parent().dim(axis) > 1)
-              parent()[axis] += increment;
-        }
-
-        friend class Helper::Index<Replicate<ImageType> >;
     };
 
     }

@@ -24,9 +24,17 @@ namespace MR {
 
 
     template <class ImageType, class Functor, size_t NUM_VOX_PER_CHUNK = 256> 
-      class Bootstrap : public Adapter::Base<ImageType>
+      class Bootstrap : 
+        public Adapter::Base<Bootstrap<ImageType,Functor,NUM_VOX_PER_CHUNK>,ImageType>
     {
       public:
+
+        typedef Adapter::Base<Bootstrap<ImageType,Functor,NUM_VOX_PER_CHUNK>,ImageType> base_type;
+        typedef typename ImageType::value_type value_type;
+
+        using base_type::ndim;
+        using base_type::size;
+        using base_type::index;
 
         class IndexCompare {
           public:
@@ -38,16 +46,12 @@ namespace MR {
             }
         };
 
-        typedef typename ImageType::value_type value_type;
-        using Adapter::Base<ImageType>::size;
-        using Adapter::Base<ImageType>::index;
-
         Bootstrap (const ImageType& Image, const Functor& functor) :
-          Adapter::Base<ImageType> (Image),
+          base_type (Image),
           func (functor),
           next_voxel (nullptr),
           last_voxel (nullptr) {
-            assert (Adapter::Base<ImageType>::ndim() == 4);
+            assert (ndim() == 4);
           }
 
         value_type value () { 
@@ -107,7 +111,7 @@ namespace MR {
             data = allocate_voxel ();
             ssize_t pos = index(3);
             for (auto l = Loop(3)(*this); l; ++l)
-              data[index(3)] = Adapter::Base<ImageType>::value();
+              data[index(3)] = base_type::value();
             index(3) = pos;
             func (data);
           }

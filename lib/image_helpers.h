@@ -236,7 +236,7 @@ namespace MR
     }
 
   template <class HeaderType, class VectorType>
-    FORCE_INLINE bool is_out_of_bounds (const HeaderType& header, const VectorType& pos,
+    FORCE_INLINE typename std::enable_if<!std::is_arithmetic<VectorType>::value, bool>::type is_out_of_bounds (const HeaderType& header, const VectorType& pos,
         size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
     {
       for (size_t n = from_axis; n < std::min<size_t> (to_axis, header.ndim()); ++n)
@@ -435,14 +435,14 @@ namespace MR
   {
 
     template <class ImageType>
-      class Index {
+      class Index 
+      {
         public:
           FORCE_INLINE Index (ImageType& image, size_t axis) : image (image), axis (axis) { assert (axis < image.ndim()); }
           Index () = delete;
           Index (const Index&) = delete;
           FORCE_INLINE Index (Index&&) = default;
 
-          FORCE_INLINE ssize_t get () const { const ImageType& _i (image); return _i.index (axis); }
           FORCE_INLINE operator ssize_t () const { return get (); }
           FORCE_INLINE ssize_t operator++ () { move( 1); return get(); }
           FORCE_INLINE ssize_t operator-- () { move(-1); return get(); }
@@ -456,12 +456,14 @@ namespace MR
         protected:
           ImageType& image;
           const size_t axis;
+          FORCE_INLINE ssize_t get () const { return image.get_index (axis); }
           FORCE_INLINE void move (ssize_t amount) { image.move_index (axis, amount); }
       };
 
 
     template <class ImageType> 
-      class Value {
+      class Value 
+      {
         public:
           typedef typename ImageType::value_type value_type;
           Value () = delete;
@@ -469,37 +471,145 @@ namespace MR
           FORCE_INLINE Value (Value&&) = default;
 
           FORCE_INLINE Value (ImageType& parent) : image (parent) { }
-          FORCE_INLINE value_type get () const { const ImageType& _i (image); return _i.value(); }
           FORCE_INLINE operator value_type () const { return get(); }
           FORCE_INLINE value_type operator= (value_type value) { return set (value); }
           template <typename OtherType>
-            FORCE_INLINE value_type operator= (Value<OtherType>&& V) { return set (V.get()); }
+            FORCE_INLINE value_type operator= (Value<OtherType>&& V) { return set (typename OtherType::value_type (V)); }
           FORCE_INLINE value_type operator+= (value_type value) { return set (get() + value); }
           FORCE_INLINE value_type operator-= (value_type value) { return set (get() - value); }
           FORCE_INLINE value_type operator*= (value_type value) { return set (get() * value); }
           FORCE_INLINE value_type operator/= (value_type value) { return set (get() / value); }
           friend std::ostream& operator<< (std::ostream& stream, const Value& V) { stream << V.get(); return stream; }
-      private:
-        ImageType& image;
-        FORCE_INLINE value_type set (value_type value) { image.set_value (value); return value; }
+        private:
+          ImageType& image;
+          FORCE_INLINE value_type get () const { return image.get_value(); }
+          FORCE_INLINE value_type set (value_type value) { image.set_value (value); return value; }
+      };
+
+
+    template <class ImageType>
+      class ConstRow {
+        public:
+          ConstRow (ImageType& image, size_t axis) : axis (axis), image (image) { assert (axis >= 0 && axis < image.ndim()); }
+          ssize_t size () const { return image.size (axis); }
+          typename ImageType::value_type operator[] (ssize_t n) const { image.index (axis) = n; return image.value(); }
+          const size_t axis;
+        protected:
+          ImageType& image;
+          template <typename, int, int, int, int, int> friend class Eigen::Matrix;
+          template <class Derived>        friend class Eigen::MatrixBase;
+          template <class OtherImageType> friend class Row;
+      };
+
+
+    template <class ImageType>
+      class Row :
+        public ConstRow<ImageType> 
+    {
+      public:
+
+        typedef typename ImageType::value_type value_type;
+
+        Row (ImageType& image, size_t axis) : ConstRow<ImageType> (image, axis) { }
+
+        template <class OtherImageType>
+          Row (ConstRow<OtherImageType>&& other) {
+            assert (image.size(axis) == other.image.size(other.axis)); 
+            for (image.index(axis) = 0, other.image.index(other.axis); 
+                image.index(axis) < image.size(axis);
+                ++image.index(axis), ++other.image.index(other.axis))  
+              image.value() = typename OtherImageType::value_type (other.image.value()); 
+          }
+
+        using ConstRow<ImageType>::image;
+        using ConstRow<ImageType>::axis;
+
+#define MRTRIX_OP(ARG) \
+        template <class Derived> \
+          FORCE_INLINE void operator ARG (const Eigen::MatrixBase<Derived>& vec) { \
+            assert (vec.rows() == image.size(axis)); \
+            assert (vec.cols() == 1); \
+            for (image.index(axis) = 0; image.index(axis) < image.size(axis); ++image.index(axis))  \
+              image.value() ARG vec[image.index(axis)]; \
+          }
+        MRTRIX_OP(=);
+        MRTRIX_OP(+=);
+        MRTRIX_OP(-=);
+#undef MRTRIX_OP
+
+#define MRTRIX_OP(ARG) \
+        FORCE_INLINE void operator ARG (value_type val) { \
+          for (image.index(axis) = 0; image.index(axis) < image.size(axis); ++image.index(axis))  \
+            image.value() ARG val; \
+        }
+        MRTRIX_OP(=);
+        MRTRIX_OP(+=);
+        MRTRIX_OP(-=);
+        MRTRIX_OP(*=);
+        MRTRIX_OP(/=);
+#undef MRTRIX_OP
+
+        FORCE_INLINE void operator= (Row&& other) { 
+          assert (image.size(axis) == other.image.size(other.axis));  
+            for (image.index(axis) = 0, other.image.index(other.axis) = 0;  
+                image.index(axis) < image.size(axis); 
+                ++image.index(axis), ++other.image.index(other.axis))   
+              image.value() = other.image.value();  
+        }
+
+#define MRTRIX_OP(ARG) \
+                template <class OtherImageType> \
+          FORCE_INLINE void operator ARG (ConstRow<OtherImageType>&& other) { \
+            assert (image.size(axis) == other.image.size(other.axis));  \
+            for (image.index(axis) = 0, other.image.index(other.axis) = 0;  \
+                image.index(axis) < image.size(axis); \
+                ++image.index(axis), ++other.image.index(other.axis))   \
+              image.value() ARG typename OtherImageType::value_type (other.image.value());  \
+          }
+        MRTRIX_OP(=);
+        MRTRIX_OP(+=);
+        MRTRIX_OP(-=);
+#undef MRTRIX_OP
+
     };
 
 
 
-    //! convenience function returning fully-formed VoxelIndex 
-    template <class ImageType>
-      FORCE_INLINE Index<ImageType> index (ImageType& image, size_t axis) {
-        return { image, axis };
-      }
-
-    //! convenience function returning fully-formed VoxelValue
-    template <class ImageType>
-      FORCE_INLINE Value<ImageType> value (ImageType& image) {
-        return { image };
-      }
-
-
   }
+
+
+  template <class Derived, typename ValueType>
+    class ImageBase 
+    { 
+      public:
+        typedef ValueType value_type;
+
+        FORCE_INLINE Helper::Index<Derived> index (size_t axis) { return { static_cast<Derived&> (*this), axis }; }
+        FORCE_INLINE ssize_t index (size_t axis) const { return static_cast<const Derived*>(this)->get_index (axis); }
+
+        FORCE_INLINE Helper::Value<Derived> value () { return { static_cast<Derived&> (*this) }; }
+        FORCE_INLINE ValueType value () const { return static_cast<const Derived*>(this)->get_value(); }
+
+        //! a proxy class for the vector of values along the specified axis
+        /*! returns a proxy class to simplify interactions with the data as a
+         * vector along the specified axis. This class can be cast to an Eigen
+         * matrix type, and can be assigned to using another instance of the
+         * same class, or using an Eigen type. For example:
+         * \code
+         * Image<float> in; // assuming size 3 along volume dimension
+         *
+         * in.row(3) = Eigen::Vector3f::Random(3,1);
+         * Eigen::Vector3f x (in.row(3));
+         * out.row(3) += x;
+         * out.row(3) += M*Eigen::Vector3f(in.row(3)) + Eigen::VectorXf (other.row(3));
+         * \code
+         * */
+        FORCE_INLINE Helper::ConstRow<Derived> row (size_t axis) const { return { static_cast<Derived&> (*this), axis }; }
+        FORCE_INLINE Helper::Row<Derived> row (size_t axis) { return { static_cast<Derived&> (*this), axis }; }
+    };
+
+
+
 }
 
 #endif

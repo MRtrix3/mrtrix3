@@ -64,20 +64,24 @@ class SH2Amp
 {
   public:
     template <class MatrixType>
-    SH2Amp (const MatrixType& dirs, const size_t lmax, bool nonneg) 
-      : transformer(dirs.template cast<value_type>(), lmax), nonnegative(nonneg) { }
+    SH2Amp (const MatrixType& dirs, const size_t lmax, bool nonneg) : 
+      transformer (dirs.template cast<value_type>(), lmax), 
+      nonnegative (nonneg),
+      sh (transformer.n_SH()),
+      amp (transformer.n_amp()) { }
     
     void operator() (Image<value_type>& in, Image<value_type>& out) {
-      transformer.SH2A(r, in.row(3));
+      sh = in.row (3);
+      transformer.SH2A(amp, sh);
       if (nonnegative)
-        r = r.cwiseMax(value_type(0.0));
-      out.row(3) = r;
+        amp = amp.cwiseMax(value_type(0.0));
+      out.row (3) = amp;
     }
 
   private:
-    Math::SH::Transform<value_type> transformer;
-    bool nonnegative;
-    Eigen::Matrix<value_type, Eigen::Dynamic, 1> r;
+    const Math::SH::Transform<value_type> transformer;
+    const bool nonnegative;
+    Eigen::Matrix<value_type, Eigen::Dynamic, 1> sh, amp;
 };
 
 

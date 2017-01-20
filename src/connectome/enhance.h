@@ -71,7 +71,7 @@ namespace MR {
             return (*this) (in, threshold, out);
           }
 
-          value_type operator() (const vector_type&, const value_type, vector_type&) const;
+          value_type operator() (const vector_type&, const value_type, vector_type&) const override;
 
         protected:
           std::shared_ptr< std::vector< std::vector<size_t> > > adjacency;
