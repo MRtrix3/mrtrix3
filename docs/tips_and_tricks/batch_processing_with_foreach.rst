@@ -3,7 +3,7 @@
 Batch processing with :code:`foreach`
 =====================================
 
-Image processing often involves executing the same command on many different subjects or time points within a study. MRtrix includes a bash script called :code:`foreach` to simplify this process. The main benefit of using :code:`foreach` compared to a bash :code:`for` loop is a simpler and less verbose syntax. However other benefits include multi-threaded job execution (to exploit modern multi-core CPUs when the command being run is not already multi-threaded), and automatic identification of path basenames and prefixes. To view the full :code:`foreach` help run foreach on the command line with no arguments.
+Image processing often involves executing the same command on many different subjects or time points within a study. MRtrix includes a bash script called :code:`foreach` to simplify this process. The main benefit of using :code:`foreach` compared to a bash :code:`for` loop is a simpler and less verbose syntax. However other benefits include multi-threaded job execution (to exploit modern multi-core CPUs when the command being run is not already multi-threaded), and automatic identification of path basenames and prefixes. To view the full help page run :code:`foreach` on the command line with no arguments.
 
 
 Example 1 - using IN
@@ -21,7 +21,7 @@ The foreach script can be used to run the same command on each subject, for exam
 
   $ foreach study/* : dwidenoise IN/dwi.mif IN/dwi_denoised.mif
 
-The first part of the command above is the :code:`foreach` script name, followed by the pattern matching string (:code:`study/*`) to identify all the files (which in this case are directories) to be looped over. The colon is used to separate the pattern matching from the start of the command. In this example the :code:`dwidenoise` command will be run multiple times, by substituting the keyword :code:`IN` with each of the directories that match the pattern :code:`study/*`.
+The first part of the command above is the :code:`foreach` script name, followed by the pattern matching string (:code:`study/*`) to identify all the files (which in this case are directories) to be looped over. The colon is used to separate the pattern matching from the start of the command. In this example the :code:`dwidenoise` command will be run multiple times, by substituting the keyword :code:`IN` with each of the directories that match the pattern (:code:`study/001_patient`, :code:`study/002_patient`, etc).
 
 Example 2 - using NAME
 -----------------------
@@ -34,7 +34,7 @@ Other people may pefer to organise their imaging datasets with one folder per im
   study/dwi/005_control.mif
   study/dwi/006_control.mif
 
-The :code:`NAME` keyword can be used in this situation to loop over all subjects::
+The :code:`NAME` keyword can be used in this situation to obtain the basename of the file path. For example::
 
   $ mkdir study/dwi_denoised
   $ foreach study/dwi/* : dwidenoise IN study/dwi_denoised/NAME
@@ -65,7 +65,7 @@ As an example of a single :code:`foreach` command running multiple sequential co
   $ foreach study/dwi/* : mrconvert IN study/dwi/PRE.nii "&&" rm IN
 
 
-As shown the :code:`&&` operator must be escaped with quotes to prevent the shell from interpreting it. Bash operator characters can also be escaped with the \ character, for example to :ref:`pipe an image <unix_pipelines>` between two MRtrix commands (assuming the data set directory layout from example 1)::
+As shown the :code:`&&` operator must be escaped with quotes to prevent the shell from interpreting it. Bash operator characters can also be escaped with the "\" character, for example to :ref:`pipe an image <unix_pipelines>` between two MRtrix commands (assuming the data set directory layout from example 1)::
 
   $ foreach study/* : dwiextract -bzero IN/dwi.mif - \| mrmath - mean -axis 3 IN/mean_b0.mif
 

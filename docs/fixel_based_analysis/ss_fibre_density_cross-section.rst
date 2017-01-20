@@ -8,6 +8,15 @@ This tutorial explains how to perform `fixel-based analysis of fibre density and
 
 Note that for all MRtrix scripts and commands, additional information on the command usage and available command-line options can be found by invoking the command with the :code:`-help` option. Please post any questions or issues on the `MRtrix community forum <http://community.mrtrix.org/>`_.
 
+Because some steps in this tutorial are performed seperately on each individual subject and some at the group level, all steps below are written as if the commands are being run on a cohort of images, and make extensive use of the :ref:`foreach script to simplify batch processing <batch_processing>`. This tutorial also assumes that the imaging dataset is organised with one directory identifying the subject, and all files within identifying the image type. For example::
+
+    study/subjects/001/dwi.mif
+    study/subjects/001/t1.mif
+    study/subjects/002/dwi.mif
+    study/subjects/002/t1.mif
+
+.. NOTE:: All commands in this tutorial are run from the subjects path unless otherwise stated.
+
 
 Pre-processsing steps
 ---------------------
@@ -19,7 +28,7 @@ Below is a list of recommended pre-processing steps for fixel-based analysis, wi
 
 The effective SNR of diffusion data can be improved considerably by exploiting the redundancy in the data to reduce the effects of thermal noise. This functionality is provided in the command ``dwidenoise``::
 
-  dwidenoise <input_dwi> <output_dwi>
+    foreach * : dwidenoise IN/dwi.mif IN/dwi_denoised.mif
 
 Note that this denoising step *must* be performed prior to any other image pre-processing: any form of image interpolation (e.g. re-gridding images following motion correction) will invalidate the statistical properties of the image data that are exploited by :ref:`dwidenoise`, and make the denoising process prone to errors. Therefore this process is applied as the very first step.
 
@@ -33,15 +42,13 @@ Usage of this script varies depending on the specific nature of the DWI acquisit
 
 Here, only a simple example is provided, where a single DWI series is acquired where all volumes have an anterior-posterior (A>>P) phase encoding direction::
 
-  dwipreproc <input_dwi> <output_dwi> -rpe_none -pe_dir AP
+    foreach * : dwipreproc IN/dwi_denoised.mif IN/dwi_denoised_preproc.mif -rpe_none -pe_dir AP
 
 
 3. Estimate a brain mask
 ^^^^^^^^^^^^^^^^^^^^^^^^^
-A whole-brain mask is required as input to subsequent steps. This can be computed with::
 
-  dwi2mask <input_dwi> <output_mask>
-
+    foreach * : dwi2mask IN/dwi_denoised_preproc.mif IN/dwi_mask.mif
 
 
 AFD-specific pre-processsing steps
@@ -54,37 +61,46 @@ To enable robust quantitative comparisons of AFD across subjects three additiona
 ^^^^^^^^^^^^^^^^^^^^^^^^
 Because we recommend a :ref:`global intensity normalisation <global-intensity-normalisation>`, bias field correction is required as a pre-processing step to eliminate low frequency intensity inhomogeneities across the image. DWI bias field correction is perfomed by first estimating a correction field from the DWI b=0 image, then applying the field to correct all DW volumes. This can be done in a single step using the :ref:`dwibiascorrect` script in MRtrix. The script uses bias field correction algorthims available in `ANTS <http://stnava.github.io/ANTs/>`_ or `FSL <http://fsl.fmrib.ox.ac.uk/>`_. In our experience the `N4 algorithm <http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3071855/>`_ in ANTS gives superiour results. To install N4 install the `ANTS <http://stnava.github.io/ANTs/>`_ package, then run perform bias field correction on DW images using::
 
-    dwibiascorrect -ants -mask <input_brain_mask> <input_dwi> <output_corrected_dwi>
+    foreach * : dwibiascorrect -ants -mask IN/dwi_mask.mif IN/dwi_denoised_preproc.mif IN/dwi_denoised_preproc_bias.mif
 
 
 5. Global intensity normalisation across subjects
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-As outlined :ref:`here <global-intensity-normalisation>`, a global intensity normalisation is recommended for AFD analysis. For single-shell data this can be achieved using the :ref:`dwiintensitynorm` script. The script performs normalisation on all subject within a study, and therefore the input and output arguments are folders containing all study images:
+As outlined :ref:`here <global-intensity-normalisation>`, a global intensity normalisation is required for AFD analysis. For single-shell data this can be achieved using the :ref:`dwiintensitynorm` script. The script performs normalisation on all subjects within a study (using a group-wise registration), and therefore the input and output arguments are directories containing all study images. First create directories to store all the input and output images. From the subjects directory::
 
-    dwiintensitynorm <input_dwi_folder> <input_brain_mask_folder> <output_normalised_dwi_folder> <output_fa_template> <output_template_wm_mask>
+    mkdir -p ../dwiintensitynorm/dwi_input
+    mkdir ../dwiintensitynorm/mask_input
+
+You could copy all files into this directory, however linking them will save space::
+
+    foreach * : ln -sr IN/dwi_denoised_preproc_bias.mif ../dwiintensitynorm/dwi_input/IN.mif
+    foreach * : ln -sr IN/dwi_mask.mif ../dwiintensitynorm/mask_input/IN.mif
+
+Perform intensity normalisation::
+
+    dwiintensitynorm ../dwiintensitynorm/dwi_input/ ../dwiintensitynorm/mask_input/ ../dwiintensitynorm/dwi_output/ ../dwiintensitynorm/fa_template.mif ../dwiintensitynorm/fa_template_wm_mask.mif
+
+Link the output files back to the subject directories::
+
+    foreach ../dwiintensitynorm/dwi_output/* : ln -sr IN PRE/dwi_denoised_preproc_bias_norm.mif
 
 The dwiintensitynorm script also outputs the study-specific FA template and white matter mask. **It is recommended that you check that the white matter mask is appropriate** (i.e. does not contain CSF or voxels external to the brain. Note it only needs to be a rough WM mask). If you feel the white matter mask needs to be larger or smaller you can re-run :code:`dwiintensitynorm` with a different :code:`-fa_threshold` option. Note that if your input brain masks include CSF then this can cause spurious high FA values outside the brain which will may be included in the template white matter mask.
 
-Keeping the FA template image and white matter mask is also handy if additional subjects are added to the study at a later date. New subjects can be intensity normalised in a single step by `piping <http://userdocs.mrtrix.org/en/latest/getting_started/command_line.html#unix-pipelines>`_ the following commands together::
+Keeping the FA template image and white matter mask is also handy if additional subjects are added to the study at a later date. New subjects can be intensity normalised in a single step by :ref:`piping <unix-pipelines>` the following commands together. Run from the subjects directory::
 
-    dwi2tensor <input_dwi> -mask <input_brain_mask> - | tensor2metric - -fa - | mrregister <fa_template> - -mask2 <input_brain_mask> -nl_scale 0.5,0.75,1.0 -nl_niter 5,5,15 -nl_warp - tmp.mif | mrtransform <input_template_wm_mask> -template <input_dwi> -warp - - | dwinormalise <input_dwi> - <output_normalised_dwi>; rm tmp.mif
+    dwi2tensor new_subject/dwi_denoised_preproc_bias.mif -mask new_subject/dwi_mask.mif - | tensor2metric - -fa - | mrregister -force ../dwiintensitynorm/fa_template.mif - -mask2 new_subject/dwi_mask.mif -nl_scale 0.5,0.75,1.0 -nl_niter 5,5,15 -nl_warp - /tmp/dummy_file.mif | mrtransform ../dwiintensitynorm/fa_template_wm_mask.mif -template new_subject/dwi_denoised_preproc_bias.mif -warp - - | dwinormalise new_subject/dwi_denoised_preproc_bias.mif - ../dwiintensitynorm/dwi_output/new_subject.mif
 
 .. NOTE:: The above command may also be useful if you wish to alter the mask then re-apply the intensity normalisation to all subjects in the study. For example you may wish to edit the mask using the ROI tool in :code:`mrview` to remove white matter regions that you hypothesise are affected by the disease (e.g. removing the corticospinal tract in a study of motor neurone disease due to T2 hyperintensity). You also may wish to redefine the mask completely, for example in an elderly population (with larger ventricles) it may be appropriate to intensity normalise using the median b=0 CSF. This could be performed by manually masking partial-volume-free CSF voxels, then running the above command with the CSF mask instead of the <input_template_wm_mask>.
 
-.. WARNING:: We also strongly recommend you that you check the scale factors applied during intensity normalisation are not influenced by the variable of interest in your study. For example if one group contains global changes in white matter T2 then this may directly influence the intensity normalisation and therefore bias downstream results. To check this we recommend you perform an equivalence test to ensure mean scale factors are the same between groups. To output the scale factor applied for each subject use :code:`mrinfo <output_normalised_dwi> -property dwi_norm_scale_factor`.
+.. WARNING:: We also strongly recommend you that you check the scale factors applied during intensity normalisation are not influenced by the variable of interest in your study. For example if one group contains global changes in white matter T2 then this may directly influence the intensity normalisation and therefore bias downstream AFD analysis. To check this we recommend you perform an equivalence test to ensure mean scale factors are the same between groups. To output the scale factor applied for all subjects use :code:`mrinfo ../dwiintensitynorm/dwi_output/* -property dwi_norm_scale_factor`.
 
 6. Computing a group average response function
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-As described `here <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`_, using the same response function when estimating FOD images for all subjects enables differences in the intra-axonal volume (and therefore DW signal) across subjects to be detected as differences in the FOD amplitude (the AFD). At high b-values (~3000 s/mm2), the shape of the estimated white matter response function varies little across subjects and therefore choosing any single subjects' estimate response is OK. To estimate a response function from a single subject::
+As described `here <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`_, using the same response function when estimating FOD images for all subjects enables differences in the intra-axonal volume (and therefore DW signal) across subjects to be detected as differences in the FOD amplitude (the AFD). To ensure the response function is representative of your study population, a group average response function can be computed by first estimating a response function per subject, then averaging with the script::
 
-    dwi2response tournier <Input DWI> <Output response text file>
-
-Alternatively, to ensure the response function is representative of your study population, a group average response function can be computed by first estimating a response function per subject, then averaging with the script::
-
-    average_response <input_response_files (mulitple inputs accepted)> <output_group_average_response>
-
-
+    foreach * : dwi2response tournier IN/dwi_denoised_preproc_bias_norm.mif IN/response.txt
+    average_response */response.txt ../group_average_response.txt
 
 Fixel-based analysis steps
 ---------------------------
