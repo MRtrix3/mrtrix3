@@ -39,7 +39,7 @@ namespace MR
 
             template <class InputDeformationFieldType, class OutputDeformationFieldType>
             void operator() (InputDeformationFieldType& deform_input, OutputDeformationFieldType& deform_output) {
-              deform_output.row(3) = transform * deform_input.row(3).colwise().homogeneous();
+              deform_output.row(3) = transform * Eigen::Vector3 (deform_input.row(3));
             }
 
           protected:
@@ -58,7 +58,7 @@ namespace MR
             template <class DisplacementFieldType, class DeformationFieldType>
             void operator() (DisplacementFieldType& disp_input, DeformationFieldType& deform_output) {
               Eigen::Vector3 voxel (disp_input.index(0), disp_input.index(1), disp_input.index(2));
-              deform_output.row(3) = linear_transform * (image_transform.voxel2scanner * voxel + disp_input.row(3));
+              deform_output.row(3) = linear_transform * (image_transform.voxel2scanner * voxel + Eigen::Vector3 (disp_input.row(3)));
             }
 
           protected:
@@ -75,12 +75,12 @@ namespace MR
             void operator() (Image<default_type>& disp_input1, Image<default_type>& disp_output) {
               Eigen::Vector3 voxel ((default_type)disp_input1.index(0), (default_type)disp_input1.index(1), (default_type)disp_input1.index(2));
               Eigen::Vector3 voxel_position = disp1_transform.voxel2scanner * voxel;
-              Eigen::Vector3 original_position = voxel_position + disp_input1.row(3);
+              Eigen::Vector3 original_position = voxel_position + Eigen::Vector3(disp_input1.row(3));
               disp2_interp.scanner (original_position);
               if (!disp2_interp) {
                 disp_output.row(3) = disp_input1.row(3);
               } else {
-                Eigen::Vector3 displacement (disp2_interp.row(3).array() * step);
+                Eigen::Vector3 displacement (Eigen::Vector3(disp2_interp.row(3)).array() * step);
                 Eigen::Vector3 new_position = displacement + original_position;
                 disp_output.row(3) = new_position - voxel_position;
               }
@@ -161,7 +161,7 @@ namespace MR
 
         default_type max_norm = 0.0;
         auto max_norm_func = [&max_norm](Image<default_type>& update) {
-          default_type norm = update.row(3).norm();
+          default_type norm = Eigen::Vector3 (update.row(3)).norm();
           if (norm > max_norm)
             max_norm = norm;
         };
@@ -183,7 +183,7 @@ namespace MR
           default_type scaled_step = step / scale_factor; // apply the step size and scale factor at once
           ThreadedLoop (update).run (
                 [&scaled_step](Image<default_type>& update, Image<default_type>& scaled_update) {
-                  scaled_update.row(3) = update.row(3) * scaled_step;
+                  scaled_update.row(3) = Eigen::Vector3 (update.row(3)) * scaled_step;
                 }, update, *scaled_update);
 
 //          CONSOLE ("composing " + str(std::log2 (scale_factor)) + "times");

@@ -24,14 +24,26 @@ namespace MR
   {
 
     template <class ImageType>
-      class Gaussian1D : public Base<ImageType> { MEMALIGN (Gaussian1D<ImageType>)
+      class Gaussian1D : 
+        public Base<Gaussian1D<ImageType>,ImageType> 
+    { MEMALIGN (Gaussian1D<ImageType>) 
       public:
+
+        typedef Base<Gaussian1D<ImageType>,ImageType> base_type;
+        typedef typename ImageType::value_type value_type;
+
+        using base_type::name;
+        using base_type::size;
+        using base_type::spacing;
+        using base_type::index;
+
+
         Gaussian1D (const ImageType& parent,
                     default_type stdev_in = 1.0,
                     size_t axis_in = 0,
                     size_t extent = 0,
                     bool zero_boundary = false) :
-          Base<ImageType> (parent),
+          base_type (parent),
           stdev (stdev_in),
           axis (axis_in),
           zero_boundary (zero_boundary) {
@@ -44,12 +56,11 @@ namespace MR
           compute_kernel();
         }
 
-        typedef typename ImageType::value_type value_type;
 
         value_type value ()
         {
           if (!kernel.size())
-            return Base<ImageType>::value();
+            return base_type::value();
 
           const ssize_t pos = index (axis);
 
@@ -65,10 +76,10 @@ namespace MR
           ssize_t c = (pos < radius) ? radius - pos : 0;
           for (ssize_t k = from; k <= to; ++k, ++c) {
             index (axis) = k;
-            value_type neighbour_value = Base<ImageType>::value();
+            value_type neighbour_value = base_type::value();
             if (std::isfinite (neighbour_value)) {
               av_weights += kernel[c];
-              result += value_type (Base<ImageType>::value()) * kernel[c];
+              result += value_type (base_type::value()) * kernel[c];
             }
           }
           result /= av_weights;
@@ -76,11 +87,6 @@ namespace MR
           index (axis) = pos;
           return result;
         }
-
-        using Base<ImageType>::name;
-        using Base<ImageType>::size;
-        using Base<ImageType>::spacing;
-        using Base<ImageType>::index;
 
       protected:
 

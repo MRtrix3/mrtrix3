@@ -97,7 +97,7 @@ namespace MR {
     template <class VecType, class MatType>
     MatType& Mat2Vec::V2M (const VecType& v, MatType& m) const
     {
-      assert (v.size() == vec_size());
+      assert (size_t (v.size()) == vec_size());
       m.resize (dim, dim);
       for (node_t row = 0; row != dim; ++row) {
         for (node_t col = 0; col != dim; ++col)

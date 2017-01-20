@@ -48,7 +48,7 @@ namespace MR
           {
             Eigen::Vector3 voxel ((default_type)displacement_inverse.index(0), (default_type)displacement_inverse.index(1), (default_type)displacement_inverse.index(2));
             Eigen::Vector3 truth = transform.voxel2scanner * voxel;
-            Eigen::Vector3 current = truth + displacement_inverse.row(3);
+            Eigen::Vector3 current = truth + Eigen::Vector3(displacement_inverse.row(3));
 
             size_t iter = 0;
             default_type error = std::numeric_limits<default_type>::max();
@@ -64,7 +64,7 @@ namespace MR
           default_type update (Eigen::Vector3& current, const Eigen::Vector3& truth)
           {
             displacement.scanner (current);
-            Eigen::Vector3 discrepancy = truth - (current + displacement.row(3));
+            Eigen::Vector3 discrepancy = truth - (current + Eigen::Vector3 (displacement.row(3)));
             current += discrepancy;
             return discrepancy.dot (discrepancy);
           }
@@ -108,7 +108,7 @@ namespace MR
             default_type update (Eigen::Vector3& current, const Eigen::Vector3& truth)
             {
               deform.scanner (current);
-              Eigen::Vector3 discrepancy = truth - deform.row(3);
+              Eigen::Vector3 discrepancy = truth - Eigen::Vector3 (deform.row(3));
               current += discrepancy;
               return discrepancy.dot (discrepancy);
             }

@@ -23,16 +23,22 @@ namespace MR
   namespace Adapter
   {
 
-    template <class ImageType> class Extract1D : public Base<ImageType>
+    template <class ImageType> 
+      class Extract1D : 
+        public Base<Extract1D<ImageType>,ImageType> 
     { MEMALIGN (Extract1D<ImageType>)
       public:
-        using Base<ImageType>::ndim;
-        using Base<ImageType>::spacing;
-        using Base<ImageType>::parent;
+
+        typedef Base<Extract1D<ImageType>,ImageType> base_type;
         typedef typename ImageType::value_type value_type;
 
+        using base_type::ndim;
+        using base_type::spacing;
+        using base_type::parent;
+
+
         Extract1D (const ImageType& original, const size_t axis, const vector<int>& indices) :
-          Base<ImageType> (original),
+          base_type (original),
           extract_axis (axis),
           indices (indices),
           nsize (indices.size()),
@@ -56,13 +62,12 @@ namespace MR
         }
 
         ssize_t size (size_t axis) const {
-          return ( axis == extract_axis ? nsize : Base<ImageType>::size (axis) );
+          return ( axis == extract_axis ? nsize : base_type::size (axis) );
         }
 
         const transform_type& transform () const { return trans; } 
 
-        ssize_t index (size_t axis) const { return ( axis == extract_axis ? current_pos : parent().index(axis) ); }
-        auto index (size_t axis) -> decltype(Helper::index(*this, axis)) { return { *this, axis }; } 
+        ssize_t get_index (size_t axis) const { return ( axis == extract_axis ? current_pos : parent().index(axis) ); }
         void move_index (size_t axis, ssize_t increment) {
           if (axis == extract_axis) {
             ssize_t prev_pos = current_pos < nsize ? indices[current_pos] : 0;
@@ -103,16 +108,22 @@ namespace MR
 
 
 
-    template <class ImageType> class Extract : public Base<ImageType>
+    template <class ImageType> 
+      class Extract : 
+        public Base<Extract<ImageType>,ImageType>
     { MEMALIGN (Extract<ImageType>)
       public:
-        using Base<ImageType>::ndim;
-        using Base<ImageType>::spacing;
-        using Base<ImageType>::parent;
+
+        typedef Base<Extract<ImageType>,ImageType> base_type;
         typedef typename ImageType::value_type value_type;
 
+        using base_type::ndim;
+        using base_type::spacing;
+        using base_type::parent;
+
+
         Extract (const ImageType& original, const vector<vector<int>>& indices) :
-          Base<ImageType> (original),
+          base_type (original),
           current_pos (ndim()), 
           indices (indices),
           trans (original.transform()) {
@@ -141,8 +152,7 @@ namespace MR
           }
         }
 
-        ssize_t index (size_t axis) const { return current_pos[axis]; }
-        auto index (size_t axis) -> decltype(Helper::index(*this, axis)) { return { *this, axis }; }
+        ssize_t get_index (size_t axis) const { return current_pos[axis]; }
         void move_index (size_t axis, ssize_t increment) {
           ssize_t prev = current_pos[axis];
           current_pos[axis] += increment;

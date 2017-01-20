@@ -24,14 +24,19 @@ namespace MR
   {
 
     template <class ImageType> 
-      class PermuteAxes : public Base<ImageType> { MEMALIGN (PermuteAxes<ImageType>)
+      class PermuteAxes : 
+        public Base<PermuteAxes<ImageType>,ImageType>
+    { MEMALIGN (PermuteAxes<ImageType>)
         public:
-          using Base<ImageType>::size;
-          using Base<ImageType>::parent;
-          typedef typename ImageType::value_type value_type;
 
-          PermuteAxes (const ImageType& original, const vector<int>& axes) :
-            Base<ImageType> (original), 
+        typedef Base<PermuteAxes<ImageType>,ImageType> base_type;
+        typedef typename ImageType::value_type value_type;
+
+        using base_type::size;
+        using base_type::parent;
+
+        PermuteAxes (const ImageType& original, const vector<int>& axes) :
+          base_type (original), 
             axes_ (axes) {
               for (int i = 0; i < static_cast<int> (parent().ndim()); ++i) {
                 for (size_t a = 0; a < axes_.size(); ++a)
@@ -59,8 +64,7 @@ next_axis:
 
           void reset () { parent().reset(); }
 
-          ssize_t index (size_t axis) const { return axes_[axis] < 0 ? 0 : parent().index (axes_[axis]); }
-          auto index (size_t axis) -> decltype(Helper::index(*this, axis)) { return { *this, axis }; }
+        ssize_t get_index (size_t axis) const { return axes_[axis] < 0 ? 0 : parent().index (axes_[axis]); }
           void move_index (size_t axis, ssize_t increment) { parent().index (axes_[axis]) += increment; }
 
         private:

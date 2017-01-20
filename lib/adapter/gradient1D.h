@@ -24,20 +24,28 @@ namespace MR
   {
 
     template <class ImageType>
-      class Gradient1D : public Base<ImageType> { MEMALIGN(Gradient1D<ImageType>)
+      class Gradient1D : 
+        public Base<Gradient1D<ImageType>, ImageType> 
+    { MEMALIGN (Gradient1D<ImageType>)
       public:
 
+        typedef Base<Gradient1D<ImageType>,ImageType> base_type;
         typedef typename ImageType::value_type value_type;
+
+        using base_type::name;
+        using base_type::size;
+        using base_type::spacing;
+        using base_type::index;
+
 
         Gradient1D (const ImageType& parent,
                     size_t axis = 0,
                     bool wrt_spacing = false) :
-          Base<ImageType> (parent),
+          base_type (parent),
           axis (axis),
           wrt_spacing (wrt_spacing),
           derivative_weights (3, 1.0),
-          half_derivative_weights (3, 0.5)  
-          {
+          half_derivative_weights (3, 0.5)  {
             if (wrt_spacing) {
               for (size_t dim = 0; dim < 3; ++dim) {
                 derivative_weights[dim] /= spacing(dim);
@@ -61,29 +69,24 @@ namespace MR
           result = 0.0;
 
           if (pos == 0) {
-            result = Base<ImageType>::value();
+            result = base_type::value();
             index (axis) = pos + 1;
-            result = derivative_weights[axis] * (Base<ImageType>::value() - result);
+            result = derivative_weights[axis] * (base_type::value() - result);
           } else if (pos == size(axis) - 1) {
-            result = Base<ImageType>::value();
+            result = base_type::value();
             index (axis) = pos - 1;
-            result = derivative_weights[axis] * (result - Base<ImageType>::value());
+            result = derivative_weights[axis] * (result - base_type::value());
           } else {
             index (axis) = pos + 1;
-            result = Base<ImageType>::value();
+            result = base_type::value();
             index (axis) = pos - 1;
-            result = half_derivative_weights[axis] * (result - Base<ImageType>::value());
+            result = half_derivative_weights[axis] * (result - base_type::value());
           }
           index (axis) = pos;
 
           return result;
         }
 
-
-        using Base<ImageType>::name;
-        using Base<ImageType>::size;
-        using Base<ImageType>::spacing;
-        using Base<ImageType>::index;
 
       protected:
         size_t axis;

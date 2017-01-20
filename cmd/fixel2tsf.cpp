@@ -117,7 +117,7 @@ void run ()
 
           for (size_t fixel = 0; fixel < num_fixels_in_voxel; ++fixel) {
             in_directions_image.index(0) = offset + fixel;
-            float dp = std::abs (dir.dot (in_directions_image.row(1)));
+            float dp = std::abs (dir.dot (Eigen::Vector3f (in_directions_image.row(1))));
             if (dp > largest_dp) {
               largest_dp = dp;
               closest_fixel_index = fixel;

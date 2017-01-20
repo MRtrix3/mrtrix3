@@ -84,8 +84,7 @@ void run ()
       for (size_t f = 0; f < num_fixels_in_voxel; ++f) {
         input_directions_image.index(0) = index + f;
         output_directions_image.index(0) = index + f;
-        output_directions_image.row(1) = transform * input_directions_image.row(1);
-        output_directions_image.row(1).normalize();
+        output_directions_image.row(1) = (transform * Eigen::Vector3f (input_directions_image.row(1))).normalized();
       }
     }
   }

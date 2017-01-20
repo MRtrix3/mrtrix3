@@ -56,23 +56,25 @@ class SConvFunctor { MEMALIGN(SConvFunctor)
                 const Eigen::Matrix<value_type, Eigen::Dynamic, 1>& response) :
                     image_mask (mask),
                     response (response),
-                    SH_out (n){ }
+                    SH_in (n),
+                    SH_out (n) { }
 
     void operator() (Image<value_type>& in, Image<value_type>& out) {
       if (image_mask.valid()) {
         assign_pos_of(in).to(image_mask);
         if (!image_mask.value()) {
-          out.row(3).setZero();
+          out.row(3) = 0.0;
           return;
         }
       }
-      out.row(3) = Math::SH::sconv (SH_out, response, in.row(3));
+      SH_in = in.row(3);
+      out.row(3) = Math::SH::sconv (SH_out, response, SH_in);
     }
 
   protected:
     Image<bool> image_mask;
     Eigen::Matrix<value_type, Eigen::Dynamic, 1> response;
-    Eigen::Matrix<value_type, Eigen::Dynamic, 1> SH_out;
+    Eigen::Matrix<value_type, Eigen::Dynamic, 1> SH_in, SH_out;
 
 };
 

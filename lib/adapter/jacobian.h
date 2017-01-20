@@ -26,20 +26,26 @@ namespace MR
   {
 
     template <class WarpType>
-      class Jacobian : public Base<WarpType> { MEMALIGN (Jacobian<WarpType>)
-
+      class Jacobian : 
+        public Base<Jacobian<WarpType>,WarpType> 
+    { MEMALIGN (Jacobian<WarpType>)
         public:
+
+          typedef Base<Jacobian<WarpType>,WarpType> base_type;
+          typedef Eigen::Matrix<typename WarpType::value_type,3,3> value_type;
+
+          using base_type::name;
+          using base_type::size;
+          using base_type::spacing;
+          using base_type::index;
+
           Jacobian (const WarpType& parent, bool wrt_scanner = true) :
-            Base<WarpType> (parent),
+            base_type (parent),
             gradient1D (parent, 0, wrt_scanner),
             transform (parent),
             wrt_scanner (wrt_scanner) { }
 
-
-          typedef typename WarpType::value_type value_type;
-
-
-          Eigen::Matrix<value_type, 3, 3> value ()
+          value_type value ()
           {
             for (size_t dim = 0; dim < 3; ++dim)
               gradient1D.index(dim) = index(dim);
@@ -52,18 +58,13 @@ namespace MR
             }
 
             if (wrt_scanner)
-              jacobian = jacobian * transform.scanner2image.linear().template cast<value_type>();
+              jacobian = jacobian * transform.scanner2image.linear().template cast<typename WarpType::value_type>();
             return jacobian;
           }
 
-          using Base<WarpType>::name;
-          using Base<WarpType>::size;
-          using Base<WarpType>::spacing;
-          using Base<WarpType>::index;
-
 
         protected:
-          Eigen::Matrix<value_type, 3, 3> jacobian;
+          value_type jacobian;
           Gradient1D<WarpType> gradient1D;
           Transform transform;
           const bool wrt_scanner;

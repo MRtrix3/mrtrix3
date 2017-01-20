@@ -14,7 +14,6 @@
  */
 
 
-#include <unsupported/Eigen/MatrixFunctions>
 #include "command.h"
 #include "progressbar.h"
 #include "image.h"
