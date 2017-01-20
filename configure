@@ -160,7 +160,7 @@ PATH            Set the path to use during the configure process.
                 during subsequent invocations of the build process. It only
                 needs to be specified correctly at configure time.
 """)
-    sys.exit (0)
+    sys.exit (1)
 
 
 if not profile_name:
