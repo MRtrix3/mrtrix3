@@ -52,7 +52,7 @@ namespace MR
 
           void operator() (const Mesh&, Mesh&) const override;
 
-          void operator() (const MeshMulti& in, MeshMulti& out) const {
+          void operator() (const MeshMulti& in, MeshMulti& out) const override {
             Base::operator() (in, out);
           }
 
