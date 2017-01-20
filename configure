@@ -549,7 +549,7 @@ ld_lib_flags += ld_flags
 if 'LDLIB_FLAGS' in os.environ.keys(): ld_lib_flags += shlex.split (os.environ['LDLIB_FLAGS'])
 
 for candidate in cxx:
-  report ('Checking for C++11 compliant compiler [' + candidate + ']: ')
+  report ('Looking for compiler [' + candidate + ']: ')
   cpp = [ candidate ] + cxx_args
   if ld_cmdline: 
     ld = ld_cmdline
@@ -559,13 +559,14 @@ for candidate in cxx:
   ld += ld_args
 
   try:
-    compiler_version = execute ([ cpp[0], '-dumpversion' ], CompileError)[1]
-    if len(compiler_version) == 0: report ('(no version information)')
-    else: report (compiler_version)
+    compiler_version = execute ([ cpp[0], '--version' ], CompileError)[1]
+    if len(compiler_version) == 0: report ('(no version information)\n')
+    else: report (compiler_version.splitlines()[0] + '\n')
   except:
     report ('not found\n')
     continue
 
+  report ('Checking for C++11 compliance: ')
   try:
     compile ('''
 struct Base {
@@ -580,11 +581,11 @@ int main() {
   return (0);
 }
 ''', cpp_flags, ld_flags)
-    report (' - tested ok\n')
+    report ('ok\n')
   except (CompileError, LinkError, RuntimeError):
-    report (' - test failed (see configure.log for details)\n')
+    report ('test failed (see configure.log for details)\n')
   except:
-    error (' unexpected exception!' + configure_log_hint)
+    error ('unexpected exception!' + configure_log_hint)
   else:
     break
 
