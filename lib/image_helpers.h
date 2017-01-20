@@ -496,7 +496,7 @@ namespace MR
           const size_t axis;
         protected:
           ImageType& image;
-          template <class MatrixType>     friend class Eigen::Matrix;
+          template <typename, int, int, int, int, int> friend class Eigen::Matrix;
           template <class Derived>        friend class Eigen::MatrixBase;
           template <class OtherImageType> friend class Row;
       };

@@ -98,7 +98,7 @@ void run ()
   bool user_warn = false;
   for (auto l = Loop (in) (in, out); l; ++l) {
     const node_t orig = in.value();
-    if (orig >= 0 && orig < mapping.size())
+    if (in.value() >= 0 && orig < mapping.size())
       out.value() = mapping[orig];
     else
       user_warn = true;
