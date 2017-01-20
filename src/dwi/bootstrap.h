@@ -36,7 +36,7 @@ namespace MR {
         using base_type::size;
         using base_type::index;
 
-        class IndexCompare {
+        class IndexCompare { NOMEMALIGN
           public:
             bool operator() (const Eigen::Vector3i& a, const Eigen::Vector3i& b) const {
               if (a[0] < b[0]) return true;

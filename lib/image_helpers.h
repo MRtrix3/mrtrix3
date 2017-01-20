@@ -482,7 +482,7 @@ namespace MR
 
 
     template <class ImageType>
-      class ConstRow {
+      class ConstRow { NOMEMALIGN
         public:
           ConstRow (ImageType& image, size_t axis) : axis (axis), image (image) { assert (axis >= 0 && axis < image.ndim()); }
           ssize_t size () const { return image.size (axis); }
@@ -499,7 +499,7 @@ namespace MR
     template <class ImageType>
       class Row :
         public ConstRow<ImageType> 
-    {
+    { NOMEMALIGN
       public:
 
         typedef typename ImageType::value_type value_type;
@@ -574,7 +574,7 @@ namespace MR
 
   template <class Derived, typename ValueType>
     class ImageBase 
-    { 
+    { MEMALIGN (ImageBase<Derived,ValueType>)
       public:
         typedef ValueType value_type;
 
