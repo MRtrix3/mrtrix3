@@ -1684,218 +1684,230 @@ namespace MR
         qApp->processEvents();
 
         try {
-          for (size_t copt = 0; copt < MR::App::option.size(); ++copt) {
-            if (copt)
-              qApp->processEvents();
+          for (int arg = 1; arg < MR::App::argc; ++arg) {
+            qApp->processEvents();
 
-            const MR::App::ParsedOption& opt (MR::App::option[copt]);
+            const MR::App::Option* opt_p = match_option (MR::App::argv[arg]);
+            if (opt_p) {
+              if (arg + int (opt_p->size()) >= MR::App::argc)
+                throw Exception (std::string ("not enough parameters to option \"-") + opt_p->id + "\"");
 
-            // see whether option is claimed by any tools:
-            size_t tool_id = 0;
-            std::string stub;
+              const MR::App::ParsedOption opt (ParsedOption (opt_p, MR::App::argv+arg+1));
+              arg += opt_p->size();
+
+              // see whether option is claimed by any tools:
+              size_t tool_id = 0;
+              std::string stub;
 #include "gui/mrview/tool/list.h"
 
 
-            // process general options:
-            if (opt.opt->is ("mode")) {
-              int n = int(opt[0]) - 1;
-              if (n < 0 || n >= mode_group->actions().size())
-                throw Exception ("invalid mode index \"" + str(n) + "\" in batch command");
-              select_mode_slot (mode_group->actions()[n]);
-              continue;
-            }
-
-            if (opt.opt->is ("size")) {
-              std::vector<int> glsize = opt[0];
-              if (glsize.size() != 2)
-                throw Exception ("invalid argument \"" + std::string(opt.args[0]) + "\" to view.size batch command");
-              QSize oldsize = glarea->size();
-              QSize winsize = size();
-              resize (winsize.width() - oldsize.width() + glsize[0], winsize.height() - oldsize.height() + glsize[1]);
-              continue;
-            }
-
-            if (opt.opt->is ("reset")) {
-              reset_view_slot();
-              continue;
-            }
-
-            else if (opt.opt->is ("fov")) {
-              float fov = opt[0];
-              set_FOV (fov);
-              glarea->update();
-              continue;
-            }
-
-            if (opt.opt->is ("focus")) {
-              try {
-                auto pos = parse_floats (opt[0]);
-                if (pos.size() != 3)
-                   throw Exception ("-focus option expects a comma-separated list of 3 floating-point values");
-                set_focus (Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
+              // process general options:
+              if (opt.opt->is ("mode")) {
+                int n = int(opt[0]) - 1;
+                if (n < 0 || n >= mode_group->actions().size())
+                  throw Exception ("invalid mode index \"" + str(n) + "\" in batch command");
+                select_mode_slot (mode_group->actions()[n]);
+                continue;
               }
-              catch (Exception& E) {
-                try {
-                  show_crosshairs_action->setChecked (to<bool> (opt[0]));
-                }
-                catch (Exception& E2) {
-                  throw Exception ("-focus option expects a boolean or a comma-separated list of 3 floating-point values");
-                }
-              }
-              glarea->update();
-              continue;
-            }
 
-            if (opt.opt->is ("voxel")) {
-              if (image()) {
-                std::vector<default_type> pos = parse_floats (opt[0]);
-                if (pos.size() != 3)
-                  throw Exception ("-voxel option expects a comma-separated list of 3 floating-point values");
-                set_focus (image()->transform().voxel2scanner.cast<float>() *  Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
+              if (opt.opt->is ("size")) {
+                std::vector<int> glsize = opt[0];
+                if (glsize.size() != 2)
+                  throw Exception ("invalid argument \"" + std::string(opt.args[0]) + "\" to view.size batch command");
+                QSize oldsize = glarea->size();
+                QSize winsize = size();
+                resize (winsize.width() - oldsize.width() + glsize[0], winsize.height() - oldsize.height() + glsize[1]);
+                continue;
+              }
+
+              if (opt.opt->is ("reset")) {
+                reset_view_slot();
+                continue;
+              }
+
+              else if (opt.opt->is ("fov")) {
+                float fov = opt[0];
+                set_FOV (fov);
                 glarea->update();
+                continue;
               }
-              continue;
-            }
 
-            if (opt.opt->is ("fov")) {
-              float fov = opt[0];
-              set_FOV (fov);
-              glarea->update();
-              continue;
-            }
+              if (opt.opt->is ("focus")) {
+                try {
+                  auto pos = parse_floats (opt[0]);
+                  if (pos.size() != 3)
+                    throw Exception ("-focus option expects a comma-separated list of 3 floating-point values");
+                  set_focus (Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
+                }
+                catch (Exception& E) {
+                  try {
+                    show_crosshairs_action->setChecked (to<bool> (opt[0]));
+                  }
+                  catch (Exception& E2) {
+                    throw Exception ("-focus option expects a boolean or a comma-separated list of 3 floating-point values");
+                  }
+                }
+                glarea->update();
+                continue;
+              }
 
-            if (opt.opt->is ("plane")) {
-              int n = opt[0];
-              set_plane (n);
-              glarea->update();
-              continue;
-            }
+              if (opt.opt->is ("voxel")) {
+                if (image()) {
+                  std::vector<default_type> pos = parse_floats (opt[0]);
+                  if (pos.size() != 3)
+                    throw Exception ("-voxel option expects a comma-separated list of 3 floating-point values");
+                  set_focus (image()->transform().voxel2scanner.cast<float>() *  Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
+                  glarea->update();
+                }
+                continue;
+              }
 
-            if (opt.opt->is ("lock")) {
-              bool n = opt[0];
-              snap_to_image_action->setChecked (n);
-              snap_to_image_slot();
-              continue;
-            }
+              if (opt.opt->is ("fov")) {
+                float fov = opt[0];
+                set_FOV (fov);
+                glarea->update();
+                continue;
+              }
 
-            if (opt.opt->is ("select_image")) {
-              int n = int(opt[0]) - 1;
-              if (n < 0 || n >= image_group->actions().size())
-                throw Exception ("invalid image index requested for option -select_image");
-              image_select_slot (image_group->actions()[n]);
-              continue;
-            }
+              if (opt.opt->is ("plane")) {
+                int n = opt[0];
+                set_plane (n);
+                glarea->update();
+                continue;
+              }
 
-            if (opt.opt->is ("load")) {
-              std::vector<std::unique_ptr<MR::Header>> list;
-              try { list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (opt[0])))); }
-              catch (Exception& e) { e.display(); }
-              add_images (list);
-              continue;
-            }
+              if (opt.opt->is ("lock")) {
+                bool n = opt[0];
+                snap_to_image_action->setChecked (n);
+                snap_to_image_slot();
+                continue;
+              }
 
-            if (opt.opt->is ("autoscale")) {
-              image_reset_slot();
-              continue;
-            }
+              if (opt.opt->is ("select_image")) {
+                int n = int(opt[0]) - 1;
+                if (n < 0 || n >= image_group->actions().size())
+                  throw Exception ("invalid image index requested for option -select_image");
+                image_select_slot (image_group->actions()[n]);
+                continue;
+              }
 
-            if (opt.opt->is ("colourmap")) {
-              int n = int(opt[0]) - 1;
-              if (n < 0 || n >= static_cast<int>(colourmap_button->colourmap_actions.size()))
-                throw Exception ("invalid image colourmap index \"" + str(n+1) + "\" requested in batch command");
-              colourmap_button->set_colourmap_index(n);
-              continue;
-            }
+              if (opt.opt->is ("load")) {
+                std::vector<std::unique_ptr<MR::Header>> list;
+                try { list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (opt[0])))); }
+                catch (Exception& e) { e.display(); }
+                add_images (list);
+                continue;
+              }
 
-            if (opt.opt->is ("interpolation")) {
-              try {
+              if (opt.opt->is ("autoscale")) {
+                image_reset_slot();
+                continue;
+              }
+
+              if (opt.opt->is ("colourmap")) {
+                int n = int(opt[0]) - 1;
+                if (n < 0 || n >= static_cast<int>(colourmap_button->colourmap_actions.size()))
+                  throw Exception ("invalid image colourmap index \"" + str(n+1) + "\" requested in batch command");
+                colourmap_button->set_colourmap_index(n);
+                continue;
+              }
+
+              if (opt.opt->is ("interpolation")) {
+                try {
                   image_interpolate_action->setChecked (to<bool> (opt[0]));
                 }
                 catch (Exception& E) {
                   throw Exception ("-interpolation option expects a boolean");
                 }
-              image_interpolate_slot();
-            }
-
-            if (opt.opt->is ("intensity_range")) {
-              if (image()) {
-                std::vector<default_type> param = parse_floats (opt[0]);
-                if (param.size() != 2)
-                  throw Exception ("-intensity_range options expects comma-separated list of two floating-point values");
-                image()->set_windowing (param[0], param[1]);
-                glarea->update();
+                image_interpolate_slot();
               }
-              continue;
-            }
 
-            if (opt.opt->is ("position")) {
-              std::vector<int> pos = opt[0];
-              if (pos.size() != 2)
-                throw Exception ("invalid argument \"" + std::string(opt[0]) + "\" to -position option");
-              move (pos[0], pos[1]);
-              continue;
-            }
+              if (opt.opt->is ("intensity_range")) {
+                if (image()) {
+                  std::vector<default_type> param = parse_floats (opt[0]);
+                  if (param.size() != 2)
+                    throw Exception ("-intensity_range options expects comma-separated list of two floating-point values");
+                  image()->set_windowing (param[0], param[1]);
+                  glarea->update();
+                }
+                continue;
+              }
 
-            if (opt.opt->is ("fullscreen")) {
-              full_screen_action->setChecked (true);
-              full_screen_slot();
-              continue;
-            }
+              if (opt.opt->is ("position")) {
+                std::vector<int> pos = opt[0];
+                if (pos.size() != 2)
+                  throw Exception ("invalid argument \"" + std::string(opt[0]) + "\" to -position option");
+                move (pos[0], pos[1]);
+                continue;
+              }
 
-            if (opt.opt->is ("noannotations")) {
-              toggle_annotations_slot ();
-            }
+              if (opt.opt->is ("fullscreen")) {
+                full_screen_action->setChecked (true);
+                full_screen_slot();
+                continue;
+              }
 
-            if (opt.opt->is ("comments")) {
-              try {
+              if (opt.opt->is ("noannotations")) {
+                toggle_annotations_slot ();
+              }
+
+              if (opt.opt->is ("comments")) {
+                try {
                   show_comments_action->setChecked (to<bool> (opt[0]));
                 }
                 catch (Exception& E) {
                   throw Exception ("-comments option expects a boolean");
                 }
-              glarea->update();
-            }
+                glarea->update();
+              }
 
-            if (opt.opt->is ("voxelinfo")) {
-              try {
+              if (opt.opt->is ("voxelinfo")) {
+                try {
                   show_voxel_info_action->setChecked (to<bool> (opt[0]));
                 }
                 catch (Exception& E) {
                   throw Exception ("-voxelinfo option expects a boolean");
                 }
-              glarea->update();
-            }
+                glarea->update();
+              }
 
-            if (opt.opt->is ("orientationlabel")) {
-              try {
+              if (opt.opt->is ("orientationlabel")) {
+                try {
                   show_orientation_labels_action->setChecked (to<bool> (opt[0]));
                 }
                 catch (Exception& E) {
                   throw Exception ("-orientationlabel option expects a boolean");
                 }
-              glarea->update();
-            }
+                glarea->update();
+              }
 
-            if (opt.opt->is ("colourbar")) {
-              try {
+              if (opt.opt->is ("colourbar")) {
+                try {
                   show_colourbar_action->setChecked (to<bool> (opt[0]));
                 }
                 catch (Exception& E) {
                   throw Exception ("-colourbar option expects a boolean");
                 }
-              glarea->update();
-            }
+                glarea->update();
+              }
 
-            if (opt.opt->is ("fps")) {
-              show_FPS = true;
-              continue;
-            }
+              if (opt.opt->is ("fps")) {
+                show_FPS = true;
+                continue;
+              }
 
-            if (opt.opt->is ("exit")) {
-              qApp->processEvents();
-              qApp->quit();
-            }
+              if (opt.opt->is ("exit")) {
+                qApp->processEvents();
+                qApp->quit();
+              }
 
+            }
+            else {
+              std::vector<std::unique_ptr<MR::Header>> list;
+              try { list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (MR::App::argv[arg])))); }
+              catch (Exception& e) { e.display(); }
+              add_images (list);
+            }
           }
         }
         catch (Exception& E) {
