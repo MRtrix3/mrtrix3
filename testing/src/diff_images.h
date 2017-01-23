@@ -24,6 +24,8 @@
 #include "image_helpers.h"
 #include "image_diff.h"
 
+#include "adapter/replicate.h"
+
 namespace MR
 {
   namespace Testing
@@ -36,6 +38,8 @@ namespace MR
         + App::Argument ("tolerance").type_float (0.0)
       + App::Option ("frac", "specify a fractional tolerance")
         + App::Argument ("tolerance").type_float (0.0)
+      + App::Option ("image", "specify an image containing the tolerances")
+        + App::Argument ("path").type_image_in()
       + App::Option ("voxel", "specify a fractional tolerance relative to the maximum value in the voxel")
         + App::Argument ("tolerance").type_float (0.0);
 
@@ -45,22 +49,23 @@ namespace MR
     void diff_images (ImageType1& in1, ImageType2& in2)
     {
 
-      double tolerance = 0.0;
       auto abs_opt = App::get_options ("abs");
       auto frac_opt = App::get_options ("frac");
+      auto image_opt = App::get_options ("image");
       auto voxel_opt = App::get_options ("voxel");
 
-      if (frac_opt.size()) {
-        tolerance = frac_opt[0][0];
-        check_images_frac (in1, in2, tolerance);
+      if (abs_opt.size()){
+        check_images_abs (in1, in2, abs_opt[0][0]);
+      } else if (frac_opt.size()) {
+        check_images_frac (in1, in2, frac_opt[0][0]);
+      } else if (image_opt.size()) {
+        auto tolerance = Image<default_type>::open (image_opt[0][0]);
+        Adapter::Replicate<decltype(tolerance)> replicate (tolerance, in1);
+        check_images_tolimage (in1, in2, replicate);
       } else if (voxel_opt.size()) {
-        tolerance = voxel_opt[0][0];
-        check_images_voxel (in1, in2, tolerance);
-      } else if (abs_opt.size()){
-        tolerance = abs_opt[0][0];
-        check_images_abs (in1, in2, tolerance);
+        check_images_voxel (in1, in2, voxel_opt[0][0]);
       } else {
-        check_images_abs (in1, in2, tolerance);
+        check_images_abs (in1, in2, 0.0);
       }
 
     }

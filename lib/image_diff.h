@@ -70,6 +70,20 @@ namespace MR
           }, in1, in2);
     }
 
+  //! check images are the same within a tolerance defined by a third image
+  template <class ImageType1, class ImageType2, class ImageTypeTol>
+    inline void check_images_tolimage (ImageType1& in1, ImageType2& in2, ImageTypeTol& tol) {
+
+      check_headers (in1, in2);
+      check_headers (in1, tol);
+      ThreadedLoop (in1)
+      .run ([] (const decltype(in1)& a, const decltype(in2)& b, const decltype(tol)& t) {
+          if (std::abs (cdouble (a.value()) - cdouble (b.value())) > t.value())
+          throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within precision of \"" + t.name() + "\""
+               + " (" + str(cdouble (a.value())) + " vs " + str(cdouble (b.value())) + ", tolerance " + str(t.value()) + ")");
+          }, in1, in2, tol);
+    }
+
   //! check images are the same within a fractional tolerance relative to the maximum value in the voxel
   template <class ImageType1, class ImageType2>
     inline void check_images_voxel (ImageType1& in1, ImageType2& in2, const double tol = 0.0)
