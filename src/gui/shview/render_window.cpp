@@ -153,12 +153,12 @@ namespace MR
         settings_menu->addAction (show_axes_action);
         settings_menu->addAction (hide_negative_lobes_action);
         settings_menu->addAction (colour_by_direction_action);
-        settings_menu->addAction (reset_scale_action);
         settings_menu->addAction (response_action);
         settings_menu->addSeparator();
         QMenu* lmax_menu = settings_menu->addMenu (tr ("&Harmonic order"));
         QMenu* lod_menu = settings_menu->addMenu (tr ("Level of &detail"));
         settings_menu->addSeparator();
+        settings_menu->addAction (reset_scale_action);
         settings_menu->addAction (manual_colour_action);
         settings_menu->addAction (advanced_lighting_action);
 
