@@ -77,7 +77,7 @@ These applications have been written from scratch in C++, using the functionalit
    quantitative_structural_connectivity/ismrm_hcp_tutorial
    
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Fixel-Based Analysis
 
    fixel_based_analysis/ss_fibre_density_cross-section

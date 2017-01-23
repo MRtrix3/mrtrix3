@@ -22,9 +22,14 @@ For all MRtrix scripts and commands, additional information on the command usage
 Pre-processsing steps
 ---------------------
 
-.. include:: common_fba_steps/dwidenoise.rst
-.. include:: common_fba_steps/dwipreproc.rst
+1. DWI denoising
+^^^^^^^^^^^^^^^^
 
+.. include:: common_fba_steps/dwidenoise.rst
+
+2. DWI general pre-processing
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. include:: common_fba_steps/dwipreproc.rst
 
 
 3. Estimate a brain mask

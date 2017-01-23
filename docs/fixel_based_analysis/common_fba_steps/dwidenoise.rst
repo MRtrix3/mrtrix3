@@ -1,6 +1,3 @@
-DWI denoising
-^^^^^^^^^^^^^
-
 The effective SNR of diffusion data can be improved considerably by exploiting the redundancy in the data to reduce the effects of thermal noise. This functionality is provided in the command ``dwidenoise``::
 
     foreach * : dwidenoise IN/dwi.mif IN/dwi_denoised.mif
