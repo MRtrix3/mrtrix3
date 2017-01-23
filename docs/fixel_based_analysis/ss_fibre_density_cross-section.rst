@@ -22,11 +22,10 @@ For all MRtrix scripts and commands, additional information on the command usage
 Pre-processsing steps
 ---------------------
 
-.. toctree::
-   :maxdepth: 2
+.. include:: common_fba_steps/dwidenoise
 
-   common_fba_steps/dwidenoise
-   common_fba_steps/dwipreproc
+
+.. include:: common_fba_steps/dwipreproc
 
 
 
