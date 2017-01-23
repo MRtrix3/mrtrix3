@@ -79,9 +79,12 @@ namespace MR
             use_lighting = yesno;
             update();
           }
-          void set_normalise (bool yesno = true) {
-            normalise = yesno;
+          void set_scale (float new_scale) {
+            scale = new_scale;
             update();
+          }
+          void reset_scale () {
+            set_scale (NaN);
           }
           void set_lmax (int lmax) {
             assert (mode == mode_t::SH);

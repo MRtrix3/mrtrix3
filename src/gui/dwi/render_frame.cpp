@@ -44,10 +44,10 @@ namespace MR
 
       RenderFrame::RenderFrame (QWidget* parent) :
         GL::Area (parent),
-        view_angle (40.0), distance (0.3), line_width (1.0), scale (1.0), 
+        view_angle (40.0), distance (0.3), line_width (1.0), scale (NaN), 
         lmax_computed (0), lod_computed (0), mode (mode_t::SH), recompute_mesh (true), recompute_amplitudes (true),
         show_axes (true), hide_neg_values (true), color_by_dir (true), use_lighting (true),
-        normalise (false), font (parent->font()), projection (this, font),
+        font (parent->font()), projection (this, font),
         orientation (Math::Versorf::unit()),
         focus (0.0, 0.0, 0.0), OS (0), OS_x (0), OS_y (0),
         renderer ((QGLWidget*)this)
@@ -179,9 +179,12 @@ namespace MR
           if (std::isfinite (values[0])) {
             gl::Disable (gl::BLEND);
 
-            float final_scale = scale;
-            if (normalise && std::isfinite (values[0]) && values[0] != 0.0)
-              final_scale /= values[0];
+            if (!std::isfinite (scale)) {
+              if (std::isfinite (values[0]) && values[0] != 0.0)
+                scale = 2.0f / values[0];
+              else 
+                scale = 2.0f / values.norm();
+            }
 
             renderer.set_mode (mode);
 
@@ -194,7 +197,7 @@ namespace MR
               recompute_mesh = false;
             }
 
-            renderer.start (projection, *lighting, final_scale, use_lighting, color_by_dir, hide_neg_values);
+            renderer.start (projection, *lighting, scale, use_lighting, color_by_dir, hide_neg_values);
 
             if (recompute_amplitudes) {
               Eigen::Matrix<float, Eigen::Dynamic, 1> r_del_daz;
