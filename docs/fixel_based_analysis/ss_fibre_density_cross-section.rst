@@ -22,30 +22,18 @@ For all MRtrix scripts and commands, additional information on the command usage
 Pre-processsing steps
 ---------------------
 
-1. DWI denoising
-^^^^^^^^^^^^^^^^
+.. toctree::
+   :numbered:
+   :maxdepth: 2
 
-The effective SNR of diffusion data can be improved considerably by exploiting the redundancy in the data to reduce the effects of thermal noise. This functionality is provided in the command ``dwidenoise``::
-
-    foreach * : dwidenoise IN/dwi.mif IN/dwi_denoised.mif
-
-Note that this denoising step *must* be performed prior to any other image pre-processing: any form of image interpolation (e.g. re-gridding images following motion correction) will invalidate the statistical properties of the image data that are exploited by :ref:`dwidenoise`, and make the denoising process prone to errors. Therefore this process is applied as the very first step.
+   common_fba_steps/dwidenoise
+   common_fba_steps/dwipreproc
 
 
-2. DWI general pre-processing
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The :code:`dwipreproc` script is provided for performing general pre-processing of diffusion image data - this includes eddy current-induced distortion correction, motion correction, and (possibly) susceptibility-induced distortion correction. Commands for performing this pre-processing are not yet implemented in *MRtrix3*; the :code:`dwipreproc` script in its current form is in fact an interface to the relevant commands that are provided as part of the `FSL <http://fsl.fmrib.ox.ac.uk/>`_ package. Installation of FSL (including `eddy <http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/EDDY>`_) is therefore required to use this script, and citation of the relevant articles is also required (see the :ref:`dwipreproc` help page).
-
-Usage of this script varies depending on the specific nature of the DWI acquisition with respect to EPI phase encoding - full details are available within the :ref:`DWI distortion correction using ``dwipreproc`` ` page, and the :ref:`dwipreproc` help file.
-
-Here, only a simple example is provided, where a single DWI series is acquired where all volumes have an anterior-posterior (A>>P) phase encoding direction::
-
-    foreach * : dwipreproc IN/dwi_denoised.mif IN/dwi_denoised_preproc.mif -rpe_none -pe_dir AP
-
-
-3. Estimate a brain mask::
+3. Estimate a brain mask
 ^^^^^^^^^^^^^^^^^^^^^^^^^
+Compute a bran mask::
 
     foreach * : dwi2mask IN/dwi_denoised_preproc.mif IN/dwi_mask.mif
 
