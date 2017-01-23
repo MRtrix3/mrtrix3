@@ -337,9 +337,6 @@ namespace MR
           if (values.cols() == 0 || values.rows() == 0)
             throw Exception ("invalid matrix of SH coefficients");
 
-          if (values.cols() == 1)
-            values.transposeInPlace();
-
           is_response = values.cols() < 15;
           response_action->setChecked (is_response);
           int lmax = is_response ? values.cols()-2 : (Math::SH::LforN (values.cols())/2)-1;
