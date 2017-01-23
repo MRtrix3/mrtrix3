@@ -220,11 +220,11 @@ namespace MR
         render_frame = new RenderFrame (this);
         setCentralWidget (render_frame);
 
-        render_frame->set_lmax (8);
+        render_frame->set_lmax (0);
         render_frame->set_normalise (true);
         render_frame->set_LOD (5);
 
-        lmax_group->actions() [render_frame->get_lmax() /2]->setChecked (true);
+        lmax_group->actions() [render_frame->get_lmax()/2]->setChecked (true);
         lod_group->actions() [render_frame->get_LOD()-3]->setChecked (true);
       }
 
@@ -339,7 +339,9 @@ namespace MR
 
           is_response = values.cols() < 15;
           response_action->setChecked (is_response);
-          lmax_group->actions()[is_response ? values.cols()-1 : Math::SH::LforN (values.cols())/2]->setChecked (true);
+
+          render_frame->set_lmax (is_response ? (values.cols()-1)*2 : Math::SH::LforN (values.cols()));
+          lmax_group->actions()[render_frame->get_lmax()/2]->setChecked (true);
 
           name = Path::basename (filename);
           set_values (0);
