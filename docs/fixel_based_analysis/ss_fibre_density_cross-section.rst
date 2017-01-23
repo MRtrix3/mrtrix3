@@ -130,7 +130,7 @@ When performing analysis of AFD, Constrained Spherical Deconvolution (CSD) shoul
 
 10. Generate a study-specific unbiased FOD template
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Population template creation is the most time consuming step in a fixel-based analysis. If you have a large number of subjects in your study, we recommend building the template from a subset of 20-40 individuals. Subjects should be chosen to ensure the generated template is representative of your population (i.e. equal number of patients and controls). To build a template, place all FOD images in a single folder. We also recommend placing a set of corresponding mask images (with the same prefix as the FOD images) in another folder. Using masks can speed up registration significantly.
+Population template creation is the most time consuming step in a fixel-based analysis. If you have a large number of subjects in your study, we recommend building the template from a subset of 20-40 individuals. Subjects should be chosen to ensure the generated template is representative of your population (i.e. equal number of patients and controls). To build a template, place all FOD images in a single folder. We also recommend placing a set of corresponding mask images (with the same prefix as the FOD images) in another folder. Using masks can speed up registration significantly::
 
     mkdir -p ../template/fod_input
     mkdir -p ../template/mask_input
@@ -149,9 +149,9 @@ Run the template building script as follows::
 
     population_template ../template/fod_input -mask_dir ../template/mask_input ../template/fod_template.mif
 
-.. NOTE::If you are building a template from your entire study population use the :code:`-warp_dir` option to output a directory containing all subject warps to the template. Saving the warps here will enable you to skip the next step. To symbolic link the warps from the output directory to the subject directories::
+**If you are building a template from your entire study population**, run the population_template script use the :code:`-warp_dir warps` option to output a directory containing all subject warps to the template. Saving the warps here will enable you to skip the next step. Note that the warps used (and therefore output) from the population_template script are 5D images containing both forward and reverse warps (see :ref:`mrregister`for more info). To convert this warp format to a more conventional 4D deformation field format ready for the subsequent steps, run::
 
-    foreach ../template/dwi_output/* : ln -sr IN PRE/warp.mif
+    foreach ../template/warps/* : warpconvert -type warpfull2deformation -template ../template/fod_template.mif IN PRE/subject2template_warp.mif
 
 11. Register all subject FOD images to the FOD template
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -221,7 +221,7 @@ Here we segment each FOD lobe to identify the number and orientation of fixels i
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Here we reorient the direction of all fixels based on the Jacobian matrix (local affine transformation) at each voxel in the warp. Note that in-place fixel reorientation can be performed by specifing the output fixel folder to be the same as the input, and using the :code:`-force` option::
 
-    fixelreorient IN/fixel_in_template_space IN/subject2template_warp.mif IN/fixel_in_template_space --force
+    foreach * : fixelreorient IN/fixel_in_template_space IN/subject2template_warp.mif IN/fixel_in_template_space --force
     
 17. Assign subject fixels to template fixels
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -235,27 +235,28 @@ Apparent fibre density, and other related measures that are influenced by the qu
 
     foreach * : warp2metric IN/subject2template_warp.mif -fc ../template/fixel_template ../template/fc IN.mif
 
-.. NOTE:: All steps from here on are executed from the template directory
-
-::
-    cd ../template
     
-Note that the FC files will be used in the next step. However, for group statistical analysis of FC we recommend taking the log (FC) to ensure data are centred about zero and normally distributed::
+Note that the FC files will be used in the next step. However, for group statistical analysis of FC we recommend taking the log(FC) to ensure data are centred about zero and normally distributed. We could place all the log(FC) fixel data files in the same fixel directory as the FC files (as long as they are named differently. However to keep things tidy, create a separate fixel directory to store the log(FC) data and copy the fixel index and directions file across::
 
-    mkdir log_fc
-    foreach fc/* : mrcalc IN -log log_fc/NAME
+    mkdir ../template/log_fc
+    cp ../template/fc/index.mif ../template/log_fc
+    cp ../template/fc/directions.mif ../template/log_fc
+    foreach * : mrcalc ../template/fc/IN.mif -log ../template/log_fc/IN.mif
 
 19. Compute a combined measure of fibre density and cross-section (FDC)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 To account for changes to both within-voxel fibre density and macroscopic atrophy, fibre density and fibre cross-section must be combined (a measure we call fibre density & cross-section, FDC). This enables a more complete picture of group differences in white matter. Note that as discussed in `this paper <https://www.ncbi.nlm.nih.gov/pubmed/27639350>`_, group differences in FD or FC alone must be interpreted with care in crossing-fibre regions. However group differences in FDC are more directly interpretable. To generate the combined measure we 'modulate' the FD by FC::
 
-    mkdir fdc
-    foreach fd/* : mrcalc IN fc/NAME -mult fdc/NAME
+    mkdir ../template/fdc
+    cp ../template/fc/index.mif ../template/fdc
+    cp ../template/fc/directions.mif ../template/fdc
+    foreach * : mrcalc ../template/fd/IN.mif ../template/fc/IN.mif -mult ../template/fdc/IN.mif
     
 20. Perform whole-brain fibre tractography on the FOD template
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Statistical analysis using `connectivity-based fixel enhancement <http://www.ncbi.nlm.nih.gov/pubmed/26004503>`_ exploits connectivity information derived from probabilistic fibre tractography. To generate a whole-brain tractogram from the FOD template::
-    
+Statistical analysis using `connectivity-based fixel enhancement <http://www.ncbi.nlm.nih.gov/pubmed/26004503>`_ exploits connectivity information derived from probabilistic fibre tractography. To generate a whole-brain tractogram from the FOD template. Note the remaining steps from here on are executed from the template directory::
+
+    cd ../template
     tckgen -angle 22.5 -maxlen 250 -minlen 10 -power 1.0 fod_template.mif -seed_image voxel_mask.mif -mask voxel_mask.mif -number 20000000 tracks_20_million.tck
     
 21. Reduce biases in tractogram densities
