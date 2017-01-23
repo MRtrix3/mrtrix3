@@ -1,5 +1,5 @@
 Before you install
-=========
+==================
 
 
 Acknowledging this work
@@ -9,7 +9,7 @@ If you wish to include results generated using the *MRtrix3* package in a public
 
 * Fibre-tracking was performed using the MRtrix package (J-D Tournier, Brain Research Institute, Melbourne, Australia, https://github.com/MRtrix3/mrtrix3) (Tournier et al. 2012)
 
-.. NOTE:: Many features have been published and included in MRtrix3 since the above 2012 paper. Please check the references listed on the specific application's page to ensure the appropriate reference is included so recent contributors to MRtrix3 are acknowledged.
+.. NOTE:: Many features have been published and included in MRtrix3 since the above 2012 paper. Please check the references listed on the specific :ref:`application's page <list-of-mrtrix3-commands>` to ensure the appropriate reference is included so that more recent contributors to MRtrix3 are acknowledged.
 
 
 Warranty
