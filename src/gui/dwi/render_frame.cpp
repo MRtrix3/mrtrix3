@@ -189,12 +189,8 @@ namespace MR
           if (std::isfinite (values[0])) {
             gl::Disable (gl::BLEND);
 
-            if (!std::isfinite (scale)) {
-              if (values[0] != 0.0)
-                scale = 2.0f / values[0];
-              else 
-                scale = 2.0f / values.norm();
-            }
+            if (!std::isfinite (scale)) 
+              scale = 2.0f / values.norm();
 
             renderer.set_mode (mode);
 
