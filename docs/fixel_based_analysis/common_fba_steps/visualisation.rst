@@ -1,0 +1,1 @@
+To view the results load the population FOD template image in :code:`mrview`, and overlay the fixel images using the vector plot tool. Note that p-value images are saved as 1-p-value. Therefore to visualise all p-values < 0.05, threshold the fixels using the vector plot tool at 0.95.
