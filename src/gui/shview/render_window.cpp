@@ -178,8 +178,8 @@ namespace MR
         lmax_menu->addSeparator();
 
         lmax_group = new QActionGroup (this);
-        for (int n = 0; n < 8; n++) {
-          int num = 2* (n+1);
+        for (int n = 0; n <= 8; n++) {
+          int num = 2*n;
           QString label = QString::number (num);
           QAction* lmax_action = new QAction (label, this);
           lmax_action->setCheckable (true);
@@ -224,14 +224,14 @@ namespace MR
         render_frame->set_normalise (true);
         render_frame->set_LOD (5);
 
-        lmax_group->actions() [ (render_frame->get_lmax() /2)-1]->setChecked (true);
+        lmax_group->actions() [render_frame->get_lmax() /2]->setChecked (true);
         lod_group->actions() [render_frame->get_LOD()-3]->setChecked (true);
       }
 
       Window::~Window()
       {
         render_frame->makeCurrent();
-        QList<QAction*> lmax = lod_group->actions();
+        QList<QAction*> lmax = lmax_group->actions();
         for (QAction* action : lmax)
           delete action;
         QList<QAction*> lods = lod_group->actions();
@@ -294,7 +294,7 @@ namespace MR
       {
         QList<QAction*> actions = lmax_group->actions();
         int index = actions.indexOf (lmax_group->checkedAction());
-        if (index < 7) {
+        if (index < 8) {
           actions[index+1]->setChecked (true);
           lmax_slot();
         }
@@ -339,8 +339,7 @@ namespace MR
 
           is_response = values.cols() < 15;
           response_action->setChecked (is_response);
-          int lmax = is_response ? values.cols()-2 : (Math::SH::LforN (values.cols())/2)-1;
-          lmax_group->actions()[lmax]->setChecked (true);
+          lmax_group->actions()[is_response ? values.cols()-1 : Math::SH::LforN (values.cols())/2]->setChecked (true);
 
           name = Path::basename (filename);
           set_values (0);
