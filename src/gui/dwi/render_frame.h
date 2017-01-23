@@ -115,6 +115,10 @@ namespace MR
             recompute_mesh = recompute_amplitudes = true;
             update();
           }
+          void set_text (const std::string& text_to_display) {
+            text = text_to_display;
+            update();
+          }
 
           int  get_LOD () const { return lod_computed; }
           int  get_lmax () const { return lmax_computed; }
@@ -136,7 +140,7 @@ namespace MR
           std::unique_ptr<MR::DWI::Directions::Set> dirs;
 
           QPoint last_pos;
-          GL::Font font;
+          GL::Font glfont;
           Projection projection;
           Math::Versorf orientation;
           Eigen::Vector3f focus;
@@ -152,6 +156,8 @@ namespace MR
 
           Renderer renderer;
           Eigen::VectorXf values;
+
+          std::string text;
 
         protected:
           virtual void initializeGL () override;

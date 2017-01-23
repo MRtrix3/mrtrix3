@@ -224,6 +224,8 @@ namespace MR
 
         lmax_group->actions() [render_frame->get_lmax()/2]->setChecked (true);
         lod_group->actions() [render_frame->get_LOD()-3]->setChecked (true);
+
+        render_frame->set_text ("no data loaded");
       }
 
       Window::~Window()
@@ -354,7 +356,7 @@ namespace MR
       void Window::set_values (int row)
       {
         Eigen::Matrix<float, Eigen::Dynamic, 1> val;
-        std::string title;
+        std::string title, text;
 
         if (values.rows()) {
           current = row;
@@ -372,9 +374,12 @@ namespace MR
             val = values.row (current);
           if (is_response) title += " (response)";
           title = name + " [ " + str (current) + " ]";
+          render_frame->set_text ("row " + str(current));
         }
-        else 
+        else {
           name.clear();
+          render_frame->set_text ("no data loaded");
+        }
 
         render_frame->set (val);
         setWindowTitle (QString (title.c_str()));

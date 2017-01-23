@@ -42,12 +42,20 @@ namespace MR
     namespace DWI
     {
 
+      namespace {
+        QFont get_font (QWidget* parent) {
+          QFont f = parent->font();
+          f.setPointSize (MR::File::Config::get_int ("FontSize", 10));
+          return f;
+        }
+      }
+
       RenderFrame::RenderFrame (QWidget* parent) :
         GL::Area (parent),
         view_angle (40.0), distance (0.3), line_width (1.0), scale (NaN), 
         lmax_computed (0), lod_computed (0), mode (mode_t::SH), recompute_mesh (true), recompute_amplitudes (true),
         show_axes (true), hide_neg_values (true), color_by_dir (true), use_lighting (true),
-        font (parent->font()), projection (this, font),
+        glfont (get_font (parent)), projection (this, glfont),
         orientation (Eigen::AngleAxisf (Math::pi_4, Eigen::Vector3f (0.0f, 0.0f, 1.0f)) * Eigen::AngleAxisf (Math::pi/3.0f, Eigen::Vector3f (1.0f, 0.0f, 0.0f))),
         focus (0.0, 0.0, 0.0), OS (0), OS_x (0), OS_y (0),
         renderer ((QGLWidget*)this)
@@ -87,6 +95,7 @@ namespace MR
       void RenderFrame::initializeGL ()
       {
         GL::init();
+        glfont.initGL (false);
         renderer.initGL();
         gl::Enable (gl::DEPTH_TEST);
 
@@ -173,6 +182,7 @@ namespace MR
         GL::mat4 MV = GL::translate (0.0, 0.0, -dist) * GL::mat4 (M);
         projection.set (MV, P);
 
+        gl::Enable (gl::DEPTH_TEST);
         gl::DepthMask (gl::TRUE_);
 
         if (values.size()) {
@@ -180,7 +190,7 @@ namespace MR
             gl::Disable (gl::BLEND);
 
             if (!std::isfinite (scale)) {
-              if (std::isfinite (values[0]) && values[0] != 0.0)
+              if (values[0] != 0.0)
                 scale = 2.0f / values[0];
               else 
                 scale = 2.0f / values.norm();
@@ -243,6 +253,12 @@ namespace MR
 
           gl::Disable (gl::BLEND);
           gl::Disable (gl::LINE_SMOOTH);
+
+          if (text.size()) {
+            projection.setup_render_text (0.0f, 0.0f, 0.0f);
+            projection.render_text (10, 10, text);
+            projection.done_render_text();
+          }
         }
 
         // need to clear alpha channel when using QOpenGLWidget (Qt >= 5.4)
