@@ -6,7 +6,6 @@ Pre-processsing steps
 ---------------------
 
 .. toctree::
-   :numbered:
    :maxdepth: 2
 
    common_fba_steps/dwidenoise
