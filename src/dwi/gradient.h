@@ -200,13 +200,24 @@ namespace MR
     void export_grad_commandline (const Header& header);
 
 
+    /*! \brief validate the DW encoding matrix \a grad and
+     * check that it matches the DW header in \a header 
+     *
+     * This ensures the dimensions match the corresponding DWI data, applies
+     * b-value scaling if specified, and normalises the gradient vectors. */
+    void validate_DW_scheme (Eigen::MatrixXd& grad, const Header& header, bool nofail = false);
 
     /*! \brief get the DW encoding matrix as per get_DW_scheme(), and
      * check that it matches the DW header in \a header 
      *
      * This is the version that should be used in any application that
      * processes the DWI raw data. */
-    Eigen::MatrixXd get_valid_DW_scheme (const Header& header, bool nofail = false);
+    inline Eigen::MatrixXd get_valid_DW_scheme (const Header& header, bool nofail = false) 
+    {
+      auto grad = get_DW_scheme (header);
+      validate_DW_scheme (grad, header, nofail);
+      return grad;
+    }
 
 
     //! \brief get the matrix mapping SH coefficients to amplitudes
