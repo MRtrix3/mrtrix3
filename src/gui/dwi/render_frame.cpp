@@ -43,6 +43,8 @@ namespace MR
     {
 
       namespace {
+        const Math::Versorf DefaultOrientation = Eigen::AngleAxisf (Math::pi_4, Eigen::Vector3f (0.0f, 0.0f, 1.0f)) * 
+                                                     Eigen::AngleAxisf (Math::pi/3.0f, Eigen::Vector3f (1.0f, 0.0f, 0.0f));
         QFont get_font (QWidget* parent) {
           QFont f = parent->font();
           f.setPointSize (MR::File::Config::get_int ("FontSize", 10));
@@ -56,7 +58,7 @@ namespace MR
         lmax_computed (0), lod_computed (0), mode (mode_t::SH), recompute_mesh (true), recompute_amplitudes (true),
         show_axes (true), hide_neg_values (true), color_by_dir (true), use_lighting (true),
         glfont (get_font (parent)), projection (this, glfont),
-        orientation (Eigen::AngleAxisf (Math::pi_4, Eigen::Vector3f (0.0f, 0.0f, 1.0f)) * Eigen::AngleAxisf (Math::pi/3.0f, Eigen::Vector3f (1.0f, 0.0f, 0.0f))),
+        orientation (DefaultOrientation),
         focus (0.0, 0.0, 0.0), OS (0), OS_x (0), OS_y (0),
         renderer ((QGLWidget*)this)
       {
@@ -280,7 +282,7 @@ namespace MR
       {
         if (event->modifiers() == Qt::NoModifier) {
           if (event->buttons() == Qt::LeftButton) {
-            orientation = Math::Versorf::unit();
+            orientation = DefaultOrientation;
             update();
           }
           else if (event->buttons() == Qt::MidButton) {
