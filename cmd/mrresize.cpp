@@ -70,7 +70,7 @@ void run () {
 
   size_t resize_option_count = 0;
 
-  std::vector<default_type> scale;
+  vector<default_type> scale;
   auto opt = get_options ("scale");
   if (opt.size()) {
     scale = parse_floats (opt[0][0]);
@@ -80,7 +80,7 @@ void run () {
     ++resize_option_count;
   }
 
-  std::vector<default_type> voxel_size;
+  vector<default_type> voxel_size;
   opt = get_options ("voxel");
   if (opt.size()) {
     voxel_size = parse_floats (opt[0][0]);
@@ -90,7 +90,7 @@ void run () {
     ++resize_option_count;
   }
 
-  std::vector<int> image_size;
+  vector<int> image_size;
   opt = get_options ("size");
   if (opt.size()) {
     image_size = parse_ints(opt[0][0]);

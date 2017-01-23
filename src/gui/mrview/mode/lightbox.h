@@ -27,7 +27,7 @@ namespace MR
       namespace Mode
       {
         class LightBox : public Slice
-        {
+        { MEMALIGN(LightBox)
             Q_OBJECT
             using proj_focusdelta = std::pair<Projection,float>;
           public:
@@ -84,7 +84,7 @@ namespace MR
 
             bool layout_is_dirty;
             size_t current_slice_index;
-            std::vector<proj_focusdelta> slices_proj_focusdelta;
+            vector<proj_focusdelta> slices_proj_focusdelta;
 
             GL::VertexBuffer frame_VB;
             GL::VertexArrayObject frame_VAO;

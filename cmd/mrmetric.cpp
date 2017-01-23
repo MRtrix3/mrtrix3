@@ -303,9 +303,9 @@ void run ()
       typedef Header ImageTypeM;
 
       n_voxels = 0;
-      std::vector<Header> headers;
+      vector<Header> headers;
       Registration::Transform::Rigid transform;
-      std::vector<Eigen::Transform<default_type, 3, Eigen::Projective> > init_transforms;
+      vector<Eigen::Transform<default_type, 3, Eigen::Projective>> init_transforms;
       Eigen::Matrix<default_type, 4, 1> padding (0.0, 0.0, 0.0, 0.0);
       headers.push_back (Header (input1));
       headers.push_back (Header (input2));

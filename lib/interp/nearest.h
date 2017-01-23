@@ -64,8 +64,7 @@ namespace MR
      */
 
     template <class ImageType>
-      class Nearest : public Base<ImageType>
-    {
+      class Nearest : public Base<ImageType> { MEMALIGN(Nearest<ImageType>)
       public:
         using typename Base<ImageType>::value_type;
 
@@ -75,7 +74,6 @@ namespace MR
 
         Nearest (const ImageType& parent, value_type value_when_out_of_bounds = Base<ImageType>::default_out_of_bounds_value()) :
           Base<ImageType> (parent, value_when_out_of_bounds) { }
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         //! Set the current position to <b>voxel space</b> position \a pos
         /*! See file interp/base.h for details. */

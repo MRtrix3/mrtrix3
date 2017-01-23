@@ -31,7 +31,7 @@ namespace MR
       namespace Tool
       {
         class Vector : public Base, public ColourMapButtonObserver, public DisplayableVisitor
-        {
+        { MEMALIGN(Vector)
             Q_OBJECT
 
           public:
@@ -102,7 +102,7 @@ namespace MR
 
             QGroupBox *lock_to_grid, *crop_to_slice;
 
-            void add_images (std::vector<std::string>& list);
+            void add_images (vector<std::string>& list);
             void dropEvent (QDropEvent* event) override;
         };
       }

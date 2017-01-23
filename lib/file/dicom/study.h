@@ -26,7 +26,7 @@ namespace MR {
       class Patient;
       class Series;
 
-      class Study : public std::vector<std::shared_ptr<Series>> {
+      class Study : public vector<std::shared_ptr<Series>> { NOMEMALIGN
         public:
           Study (Patient* parent, const std::string& study_name, const std::string& study_ID = "", 
               const std::string& study_date = "", const std::string& study_time = "") :

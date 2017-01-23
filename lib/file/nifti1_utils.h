@@ -27,7 +27,7 @@ namespace MR
     namespace NIfTI
     {
 
-      transform_type adjust_transform (const Header& H, std::vector<size_t>& order);
+      transform_type adjust_transform (const Header& H, vector<size_t>& order);
 
       void check (Header& H, bool single_file);
       size_t read (Header& H, const nifti_1_header& NH);

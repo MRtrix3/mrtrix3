@@ -41,7 +41,7 @@ namespace MR
 
 
     class NonLinear
-    {
+    { MEMALIGN(NonLinear)
 
       public:
 
@@ -62,7 +62,6 @@ namespace MR
             fod_lmax[2] = 4;
         }
 
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         template <class TransformType, class Im1ImageType, class Im2ImageType, class Im1MaskType, class Im2MaskType>
           void run (TransformType linear_transform,
@@ -76,7 +75,7 @@ namespace MR
               im2_to_mid_linear = linear_transform.get_transform_half_inverse();
 
               INFO ("Estimating halfway space");
-              std::vector<Eigen::Transform<double, 3, Eigen::Projective> > init_transforms;
+              vector<Eigen::Transform<double, 3, Eigen::Projective>> init_transforms;
               // define transfomations that will be applied to the image header when the common space is calculated
               {
                 Eigen::Transform<double, 3, Eigen::Projective> init_trafo_2 = linear_transform.get_transform_half();
@@ -86,7 +85,7 @@ namespace MR
               }
 
               auto padding = Eigen::Matrix<default_type, 4, 1>(0.0, 0.0, 0.0, 0.0);
-              std::vector<Header> headers;
+              vector<Header> headers;
               headers.push_back (Header (im2_image));
               headers.push_back (Header (im1_image));
               midway_image_header = compute_minimum_average_header(headers, 1, padding, init_transforms);
@@ -333,7 +332,7 @@ namespace MR
           }
 
 
-          void set_max_iter (const std::vector<int>& maxiter) {
+          void set_max_iter (const vector<int>& maxiter) {
             for (size_t i = 0; i < maxiter.size (); ++i)
               if (maxiter[i] < 0)
                 throw Exception ("the number of iterations must be positive");
@@ -341,7 +340,7 @@ namespace MR
           }
 
 
-          void set_scale_factor (const std::vector<default_type>& scalefactor) {
+          void set_scale_factor (const vector<default_type>& scalefactor) {
             for (size_t level = 0; level < scalefactor.size(); ++level) {
               if (scalefactor[level] <= 0 || scalefactor[level] > 1)
                 throw Exception ("the non-linear registration scale factor for each multi-resolution level must be between 0 and 1");
@@ -349,7 +348,7 @@ namespace MR
             scale_factor = scalefactor;
           }
 
-          std::vector<default_type> get_scale_factor () const {
+          vector<default_type> get_scale_factor () const {
             return scale_factor;
           }
 
@@ -370,7 +369,7 @@ namespace MR
             disp_smoothing = voxel_fwhm;
           }
 
-          void set_lmax (const std::vector<int>& lmax) {
+          void set_lmax (const vector<int>& lmax) {
             for (size_t i = 0; i < lmax.size (); ++i)
               if (lmax[i] < 0 || lmax[i] % 2)
                 throw Exception ("the input nonlinear lmax must be positive and even");
@@ -469,14 +468,14 @@ namespace MR
 
 
           bool is_initialised;
-          std::vector<int> max_iter;
-          std::vector<default_type> scale_factor;
+          vector<int> max_iter;
+          vector<default_type> scale_factor;
           default_type update_smoothing;
           default_type disp_smoothing;
           default_type gradient_step;
           Eigen::MatrixXd aPSF_directions;
           bool do_reorientation;
-          std::vector<int> fod_lmax;
+          vector<int> fod_lmax;
 
           transform_type im1_to_mid_linear;
           transform_type im2_to_mid_linear;

@@ -32,7 +32,7 @@ namespace MR
 
     template <class ImageType>
       class NeighbourhoodCoord : public Base<ImageType>
-    {
+    { MEMALIGN (NeighbourhoodCoord<ImageType>)
       public:
         typedef typename ImageType::value_type value_type;
 
@@ -79,7 +79,7 @@ namespace MR
 
       protected:
         using Base<ImageType>::parent;
-        std::vector<ssize_t> from_, size_;
+        vector<ssize_t> from_, size_;
         Iterator iter_;
         transform_type transform_;
     };

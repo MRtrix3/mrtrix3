@@ -36,7 +36,7 @@ namespace MR
 
 
       class List
-      {
+      { MEMALIGN(List)
 
         public:
           List() :
@@ -67,7 +67,7 @@ namespace MR
 
 
         private:
-          std::vector<std::unique_ptr<Base>> seeders;
+          vector<std::unique_ptr<Base>> seeders;
           float total_volume;
           uint32_t total_count;
 

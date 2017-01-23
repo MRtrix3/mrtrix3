@@ -39,7 +39,7 @@ namespace MR
       
       template <class ValueType>
       class ReaderInterface
-      {
+      { NOMEMALIGN
         public:
           virtual bool operator() (Streamline<ValueType>&) = 0;
           virtual ~ReaderInterface() { }
@@ -48,7 +48,7 @@ namespace MR
       
       template <class ValueType>
       class WriterInterface
-      {
+      { NOMEMALIGN
         public:
           virtual bool operator() (const Streamline<ValueType>&) = 0;
           virtual ~WriterInterface() { }
@@ -59,7 +59,7 @@ namespace MR
       //! A class to read streamlines data
       template <class ValueType = float>
       class Reader : public __ReaderBase__, public ReaderInterface<ValueType>
-      {
+      { NOMEMALIGN
         public:
 
           //! open the \c file for reading and load header into \c properties
@@ -203,7 +203,7 @@ namespace MR
        * */
       template <class ValueType = float>
         class WriterUnbuffered : public __WriterBase__<ValueType>, public WriterInterface<ValueType>
-      {
+      { NOMEMALIGN
         public:
           using __WriterBase__<ValueType>::count;
           using __WriterBase__<ValueType>::total_count;
@@ -350,7 +350,7 @@ namespace MR
        * */
       template <typename ValueType = float>
         class Writer : public WriterUnbuffered<ValueType>
-      {
+      { NOMEMALIGN
         public:
           using __WriterBase__<ValueType>::count;
           using __WriterBase__<ValueType>::total_count;

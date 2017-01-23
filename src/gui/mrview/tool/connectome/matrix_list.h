@@ -41,7 +41,7 @@ namespace MR
 
 
         class Matrix_list_model : public QAbstractItemModel
-        {
+        { MEMALIGN(Matrix_list_model)
           public:
 
             Matrix_list_model (Connectome* parent);
@@ -88,13 +88,13 @@ namespace MR
               endRemoveRows();
             }
 
-            void add_items (std::vector<FileDataVector>&);
+            void add_items (vector<FileDataVector>&);
 
             const FileDataVector& get (const size_t index) { assert (index < items.size()); return items[index]; }
             const FileDataVector& get (QModelIndex& index) { assert (size_t(index.row()) < items.size()); return items[index.row()]; }
 
           protected:
-            std::vector<FileDataVector> items;
+            vector<FileDataVector> items;
 
         };
 

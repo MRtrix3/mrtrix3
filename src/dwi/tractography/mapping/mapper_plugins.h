@@ -38,7 +38,7 @@ namespace MR {
 
 
         class DixelMappingPlugin
-        {
+        { MEMALIGN(DixelMappingPlugin)
           public:
             DixelMappingPlugin (const DWI::Directions::FastLookupSet& directions) :
               dirs (directions) { }
@@ -52,7 +52,7 @@ namespace MR {
 
 
         class TODMappingPlugin
-        {
+        { MEMALIGN(TODMappingPlugin)
           public:
             TODMappingPlugin (const size_t N) :
               generator (new Math::SH::aPSF<float> (Math::SH::LforN (N))) { }
@@ -67,7 +67,7 @@ namespace MR {
 
 
         class TWIImagePluginBase
-        {
+        { MEMALIGN(TWIImagePluginBase)
 
           public:
             TWIImagePluginBase (const std::string& input_image) :
@@ -75,7 +75,7 @@ namespace MR {
 
             virtual ~TWIImagePluginBase() { }
 
-            virtual void load_factors (const std::vector<Eigen::Vector3f>&, std::vector<float>&) = 0;
+            virtual void load_factors (const vector<Eigen::Vector3f>&, vector<float>&) = 0;
 
           protected:
             //Image<float> voxel;
@@ -84,7 +84,7 @@ namespace MR {
             mutable Interp::Linear<Image<float>> interp;
 
             // New helper function; find the last point on the streamline from which valid image information can be read
-            const Eigen::Vector3f get_last_point_in_fov (const std::vector<Eigen::Vector3f>&, const bool) const;
+            const Eigen::Vector3f get_last_point_in_fov (const vector<Eigen::Vector3f>&, const bool) const;
 
         };
 
@@ -93,7 +93,7 @@ namespace MR {
 
 
         class TWIScalarImagePlugin : public TWIImagePluginBase
-        {
+        { MEMALIGN(TWIScalarImagePlugin)
           public:
             TWIScalarImagePlugin (const std::string& input_image, const tck_stat_t track_statistic) :
               TWIImagePluginBase (input_image),
@@ -114,7 +114,7 @@ namespace MR {
             ~TWIScalarImagePlugin() { }
 
 
-            void load_factors (const std::vector<Eigen::Vector3f>&, std::vector<float>&);
+            void load_factors (const vector<Eigen::Vector3f>&, vector<float>&);
 
           private:
             const tck_stat_t statistic;
@@ -126,7 +126,7 @@ namespace MR {
 
 
         class TWIFODImagePlugin : public TWIImagePluginBase
-        {
+        { MEMALIGN(TWIFODImagePlugin)
           public:
             TWIFODImagePlugin (const std::string& input_image) :
               TWIImagePluginBase (input_image),
@@ -136,7 +136,7 @@ namespace MR {
                 precomputer->init (Math::SH::LforN (sh_coeffs.size()));
               }
 
-            void load_factors (const std::vector<Eigen::Vector3f>&, std::vector<float>&);
+            void load_factors (const vector<Eigen::Vector3f>&, vector<float>&);
 
           private:
             Eigen::VectorXf sh_coeffs;

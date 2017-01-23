@@ -66,7 +66,7 @@ namespace MR
       {
 
         class Connectome : public Base
-        {
+        { MEMALIGN(Connectome)
             Q_OBJECT
 
             enum class node_visibility_matrix_operator_t { ANY, ALL };
@@ -239,8 +239,8 @@ namespace MR
             std::unique_ptr< MR::Image<node_t> > buffer;
 
 
-            std::vector<Node> nodes;
-            std::vector<Edge> edges;
+            vector<Node> nodes;
+            vector<Edge> edges;
 
 
             // For converting connectome matrices to vectors
@@ -351,7 +351,7 @@ namespace MR
             void clear_all();
             void enable_all (const bool);
             void initialise (const std::string&);
-            void add_matrices (const std::vector<std::string>&);
+            void add_matrices (const vector<std::string>&);
 
             void draw_nodes (const Projection&);
             void draw_edges (const Projection&);
@@ -375,7 +375,7 @@ namespace MR
 
             // Helper functions for determining actual node / edge visual properties
             //   given current selection status
-            void           node_selection_changed          (const std::vector<node_t>&);
+            void           node_selection_changed          (const vector<node_t>&);
             bool           node_visibility_given_selection (const node_t);
             Eigen::Array3f node_colour_given_selection     (const node_t);
             float          node_size_given_selection       (const node_t);

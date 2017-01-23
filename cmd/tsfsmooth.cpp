@@ -54,7 +54,7 @@ void run ()
 
   float stdev = get_option_value ("stdev", DEFAULT_SMOOTHING);
   
-  std::vector<float> kernel (2 * ceil(2.5 * stdev) + 1, 0);
+  vector<float> kernel (2 * ceil(2.5 * stdev) + 1, 0);
   float norm_factor = 0.0;
   float radius = (kernel.size() - 1.0) / 2.0;
   for (size_t c = 0; c < kernel.size(); ++c) {
@@ -64,9 +64,9 @@ void run ()
   for (size_t c = 0; c < kernel.size(); c++)
     kernel[c] /= norm_factor;
 
-  std::vector<value_type> tck_scalar;
+  vector<value_type> tck_scalar;
   while (reader (tck_scalar)) {
-    std::vector<value_type> tck_scalars_smoothed (tck_scalar.size());
+    vector<value_type> tck_scalars_smoothed (tck_scalar.size());
 
     for (int i = 0; i < (int)tck_scalar.size(); ++i) {
       float norm_factor = 0.0;

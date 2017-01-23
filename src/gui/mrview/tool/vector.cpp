@@ -33,13 +33,13 @@ namespace MR
 
 
         class Vector::Model : public ListModelBase
-        {
+        { MEMALIGN(Vector::Model)
 
           public:
             Model (QObject* parent) :
               ListModelBase (parent) { }
 
-            void add_items (std::vector<std::string>& filenames, Vector& fixel_tool) {
+            void add_items (vector<std::string>& filenames, Vector& fixel_tool) {
 
               size_t old_size = items.size();
               for (size_t i = 0, N = filenames.size(); i < N; ++i) {
@@ -292,14 +292,14 @@ namespace MR
 
         void Vector::fixel_open_slot ()
         {
-          std::vector<std::string> list = Dialog::File::get_files (this,
+          vector<std::string> list = Dialog::File::get_files (this,
                                                                    "Select fixel images to open",
                                                                    GUI::Dialog::File::image_filter_string);
           add_images (list);
         }
 
 
-        void Vector::add_images (std::vector<std::string> &list)
+        void Vector::add_images (vector<std::string> &list)
         {
           if (list.empty())
             return;
@@ -323,7 +323,7 @@ namespace MR
 
           const QMimeData* mimeData = event->mimeData();
           if (mimeData->hasUrls()) {
-            std::vector<std::string> list;
+            vector<std::string> list;
             QList<QUrl> urlList = mimeData->urls();
             for (int i = 0; i < urlList.size() && i < max_files; ++i) {
                 list.push_back (urlList.at (i).path().toUtf8().constData());
@@ -740,7 +740,7 @@ namespace MR
         bool Vector::process_commandline_option (const MR::App::ParsedOption& opt) 
         {
           if (opt.opt->is ("vector.load")) {
-            std::vector<std::string> list (1, std::string(opt[0]));
+            vector<std::string> list (1, std::string(opt[0]));
             try { fixel_list_model->add_items (list , *this); }
             catch (Exception& E) { E.display(); }
             return true;

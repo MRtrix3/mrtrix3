@@ -35,7 +35,7 @@ namespace MR
 
 
         class ODF_Model : public QAbstractItemModel
-        {
+        { MEMALIGN(ODF_Model)
           public:
 
             ODF_Model (QObject* parent) :
@@ -70,7 +70,7 @@ namespace MR
               return 1;
             }
 
-            size_t add_items (const std::vector<std::string>& list, const odf_type_t type, bool colour_by_direction, bool hide_negative_lobes, float scale);
+            size_t add_items (const vector<std::string>& list, const odf_type_t type, bool colour_by_direction, bool hide_negative_lobes, float scale);
 
             QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const {
               (void ) parent; // to suppress warnings about unused parameters
@@ -87,7 +87,7 @@ namespace MR
               return index.isValid() ? dynamic_cast<ODF_Item*>(items[index.row()].get()) : NULL;
             }
 
-            std::vector<std::unique_ptr<ODF_Item>> items;
+            vector<std::unique_ptr<ODF_Item>> items;
         };
 
       }

@@ -50,7 +50,7 @@ namespace MR
 
 
     template <class... DestImageType>
-      struct __assign {
+      struct __assign { NOMEMALIGN
         __assign (size_t axis, ssize_t index) : axis (axis), index (index) { }
         const size_t axis;
         const ssize_t index;
@@ -59,7 +59,7 @@ namespace MR
       };
 
     template <class... DestImageType>
-      struct __assign<std::tuple<DestImageType...>> {
+      struct __assign<std::tuple<DestImageType...>> { NOMEMALIGN
         __assign (size_t axis, ssize_t index) : axis (axis), index (index) { }
         const size_t axis;
         const ssize_t index;
@@ -68,7 +68,7 @@ namespace MR
       };
 
     template <class... DestImageType>
-      struct __max_axis {
+      struct __max_axis { NOMEMALIGN
         __max_axis (size_t& axis) : axis (axis) { }
         size_t& axis;
         template <class ImageType> 
@@ -76,7 +76,7 @@ namespace MR
       };
 
     template <class... DestImageType>
-      struct __max_axis<std::tuple<DestImageType...>> {
+      struct __max_axis<std::tuple<DestImageType...>> { NOMEMALIGN
         __max_axis (size_t& axis) : axis (axis) { }
         size_t& axis;
         template <class ImageType> 
@@ -84,8 +84,7 @@ namespace MR
       };
 
     template <class ImageType>
-      struct __assign_pos_axis_range
-      {
+      struct __assign_pos_axis_range { NOMEMALIGN
         template <class... DestImageType>
           FORCE_INLINE void to (DestImageType&... dest) const {
             size_t last_axis = to_axis;
@@ -99,15 +98,14 @@ namespace MR
 
 
     template <class ImageType, typename IntType>
-      struct __assign_pos_axes
-      {
+      struct __assign_pos_axes { NOMEMALIGN
         template <class... DestImageType>
           FORCE_INLINE void to (DestImageType&... dest) const {
             for (auto a : axes) 
               apply (__assign<DestImageType...> (a, __get_index (ref, a)), std::tie (dest...));
           }
         const ImageType& ref;
-        const std::vector<IntType> axes;
+        const vector<IntType> axes;
       };
   }
 
@@ -117,8 +115,7 @@ namespace MR
 
   //! convenience function for SFINAE on header types
   template <class HeaderType, typename ReturnType>
-    struct enable_if_header_type
-    {
+    struct enable_if_header_type { NOMEMALIGN
       typedef decltype ((void) (
             std::declval<HeaderType>().ndim() + 
             std::declval<HeaderType>().size(0) + 
@@ -128,7 +125,7 @@ namespace MR
 
   //! convenience function for SFINAE on header types
   template<typename HeaderType>
-    class is_header_type {
+    class is_header_type { NOMEMALIGN
       typedef char yes[1], no[2];
       template<typename C> static yes& test(typename enable_if_header_type<HeaderType,int>::type); 
       template<typename C> static no&  test(...); 
@@ -141,8 +138,7 @@ namespace MR
 
   //! convenience function for SFINAE on image types
   template <class ImageType, typename ReturnType>
-    struct enable_if_image_type
-    {
+    struct enable_if_image_type { NOMEMALIGN
       typedef decltype ((void) (
             std::declval<ImageType>().ndim() + 
             std::declval<ImageType>().size(0) + 
@@ -155,7 +151,7 @@ namespace MR
 
   //! convenience function for SFINAE on image types
   template<typename ImageType>
-    class is_image_type {
+    class is_image_type { NOMEMALIGN
       typedef char yes[1], no[2];
       template<typename C> static yes& test(typename enable_if_image_type<ImageType,int>::type); 
       template<typename C> static no&  test(...); 
@@ -170,13 +166,13 @@ namespace MR
 
   //! convenience function for SFINAE on images of type Image<ValueType>
   template<class ImageType>
-    struct is_pure_image {
+    struct is_pure_image { NOMEMALIGN
       static bool const value = std::is_same<ImageType, ::MR::Image<typename ImageType::value_type>>::value;
     };
 
   //! convenience function for SFINAE on images NOT of type Image<ValueType>
   template<class ImageType>
-    struct is_adapter_type {
+    struct is_adapter_type { NOMEMALIGN
       static bool const value = is_image_type<ImageType>::value && !is_pure_image<ImageType>::value;
     };
 
@@ -202,7 +198,7 @@ namespace MR
   //! returns a functor to set the position in ref to other voxels
   /*! this can be used as follows:
    * \code
-   * std::vector<int> axes = { 0, 3, 4 };
+   * vector<int> axes = { 0, 3, 4 };
    * assign_pos (src_image, axes) (dest_image1, dest_image2);
    * \endcode 
    * 
@@ -211,14 +207,14 @@ namespace MR
    * operator[](size_t) methods). */
   template <class ImageType, typename IntType>
     FORCE_INLINE __assign_pos_axes<ImageType, IntType> 
-    assign_pos_of (const ImageType& reference, const std::vector<IntType>& axes) 
+    assign_pos_of (const ImageType& reference, const vector<IntType>& axes) 
     {
       return { reference, axes };
     }
 
   template <class ImageType, typename IntType>
     FORCE_INLINE __assign_pos_axes<ImageType, IntType> 
-    assign_pos_of (const ImageType& reference, const std::vector<IntType>&& axes) 
+    assign_pos_of (const ImageType& reference, const vector<IntType>&& axes) 
     {
       return assign_pos_of (reference, axes);
     }
@@ -279,7 +275,7 @@ namespace MR
 
   //! returns the number of voxel in the relevant subvolume of the data set
   template <class HeaderType> 
-    inline int64_t voxel_count (const HeaderType& in, const std::vector<size_t>& axes)
+    inline int64_t voxel_count (const HeaderType& in, const vector<size_t>& axes)
     {
       int64_t fp = 1;
       for (size_t n = 0; n < axes.size(); ++n) {
@@ -337,7 +333,7 @@ namespace MR
     }
 
   template <class HeaderType1, class HeaderType2>
-    inline bool spacings_match (const HeaderType1& in1, const HeaderType2& in2, const std::vector<size_t>& axes)
+    inline bool spacings_match (const HeaderType1& in1, const HeaderType2& in2, const vector<size_t>& axes)
     {
       for (size_t n = 0; n < axes.size(); ++n) {
         if (in1.ndim() <= axes[n] || in2.ndim() <= axes[n]) return false;
@@ -368,7 +364,7 @@ namespace MR
     }
 
   template <class HeaderType1, class HeaderType2>
-    inline bool dimensions_match (const HeaderType1& in1, const HeaderType2& in2, const std::vector<size_t>& axes)
+    inline bool dimensions_match (const HeaderType1& in1, const HeaderType2& in2, const vector<size_t>& axes)
     {
       for (size_t n = 0; n < axes.size(); ++n) {
         if (in1.ndim() <= axes[n] || in2.ndim() <= axes[n]) return false;
@@ -392,7 +388,7 @@ namespace MR
     }
 
   template <class HeaderType1, class HeaderType2>
-    inline void check_dimensions (const HeaderType1& in1, const HeaderType2& in2, const std::vector<size_t>& axes)
+    inline void check_dimensions (const HeaderType1& in1, const HeaderType2& in2, const vector<size_t>& axes)
     {
       if (!dimensions_match (in1, in2, axes))
         throw Exception ("dimension mismatch between \"" + in1.name() + "\" and \"" + in2.name() + "\"");
@@ -414,7 +410,7 @@ namespace MR
   {
 
     template <class ImageType>
-      class Index {
+      class Index { NOMEMALIGN
         public:
           FORCE_INLINE Index (ImageType& image, size_t axis) : image (image), axis (axis) { assert (axis < image.ndim()); }
           Index () = delete;
@@ -440,7 +436,7 @@ namespace MR
 
 
     template <class ImageType> 
-      class Value {
+      class Value { NOMEMALIGN
         public:
           typedef typename ImageType::value_type value_type;
           Value () = delete;

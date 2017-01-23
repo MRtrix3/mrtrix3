@@ -37,7 +37,7 @@ namespace MR
         class ROI_Item;
 
 
-        struct ROI_UndoEntry {
+        struct ROI_UndoEntry { MEMALIGN(ROI_UndoEntry)
 
           ROI_UndoEntry (ROI_Item&, int, int);
           ROI_UndoEntry (const ROI_UndoEntry&) = delete;
@@ -59,10 +59,10 @@ namespace MR
 
           std::array<GLint,3> from, size;
           std::array<GLint,2> tex_size, slice_axes;
-          std::vector<GLubyte> before, after;
+          vector<GLubyte> before, after;
 
           class Shared
-          {
+          { MEMALIGN(Shared)
             public:
               Shared();
               ~Shared();

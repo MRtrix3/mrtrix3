@@ -122,7 +122,7 @@ void run () {
   if (filter_index == 1) { // Connected components
     Filter::ConnectedComponents filter (input_image, std::string("applying connected-component filter to image ") + Path::basename (argument[0]));
     auto opt = get_options ("axes");
-    std::vector<int> axes;
+    vector<int> axes;
     if (opt.size()) {
       axes = opt[0][0];
       for (size_t d = 0; d < input_image.ndim(); d++)

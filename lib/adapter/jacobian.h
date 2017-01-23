@@ -26,7 +26,7 @@ namespace MR
   {
 
     template <class WarpType>
-      class Jacobian : public Base<WarpType> {
+      class Jacobian : public Base<WarpType> { MEMALIGN (Jacobian<WarpType>)
 
         public:
           Jacobian (const WarpType& parent, bool wrt_scanner = true) :

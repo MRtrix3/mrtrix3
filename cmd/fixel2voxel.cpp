@@ -74,8 +74,7 @@ void usage ()
   REFERENCES 
     + "* Reference for 'complexity' operation:\n"
     "Riffert, T. W.; Schreiber, J.; Anwander, A. & Knosche, T. R. "
-    "Beyond Fractional Anisotropy: Extraction of bundle-specific structural metrics from crossing fibre models. "
-    "NeuroImage, 2014 (in press)";
+    "Beyond Fractional Anisotropy: Extraction of bundle-specific structural metrics from crossing fibre models. " "NeuroImage, 2014 (in press)";
 
   ARGUMENTS
   + Argument ("fixel_in",  "the input sparse fixel image.").type_image_in ()
@@ -91,8 +90,7 @@ void usage ()
 
 
 
-class OpBase
-{
+class OpBase { MEMALIGN(OpBase)
   protected:
     typedef Sparse::Image<FixelMetric> in_type;
     typedef Image<float> out_type;
@@ -109,8 +107,7 @@ class OpBase
 };
 
 
-class Mean : public OpBase
-{
+class Mean : public OpBase { MEMALIGN(Mean)
   public:
     Mean (const bool weighted) :
         OpBase (weighted),
@@ -140,8 +137,7 @@ class Mean : public OpBase
     default_type sum, sum_volumes;
 };
 
-class Sum : public OpBase
-{
+class Sum : public OpBase { MEMALIGN(Sum)
   public:
     Sum (const bool weighted) :
         OpBase (weighted),
@@ -167,8 +163,7 @@ class Sum : public OpBase
     default_type sum;
 };
 
-class Product : public OpBase
-{
+class Product : public OpBase { MEMALIGN(Product)
   public:
     Product (const bool weighted) :
         OpBase (weighted),
@@ -196,8 +191,7 @@ class Product : public OpBase
     default_type product;
 };
 
-class RMS : public OpBase
-{
+class RMS : public OpBase { MEMALIGN(RMS)
   public:
     RMS (const bool weighted) :
         OpBase (weighted),
@@ -227,8 +221,7 @@ class RMS : public OpBase
     default_type sum, sum_volumes;
 };
 
-class Var : public OpBase
-{
+class Var : public OpBase { MEMALIGN(Var)
   public:
     Var (const bool weighted) :
         OpBase (weighted),
@@ -286,8 +279,7 @@ class Var : public OpBase
     default_type sum_sqr;
 };
 
-class Std : public Var
-{
+class Std : public Var { MEMALIGN(Std)
   public:
     Std (const bool weighted) :
         Var (weighted) { }
@@ -301,8 +293,7 @@ class Std : public Var
     }
 };
 
-class Min : public OpBase
-{
+class Min : public OpBase { MEMALIGN(Min)
   public:
     Min (const bool weighted) :
         OpBase (weighted),
@@ -328,8 +319,7 @@ class Min : public OpBase
     default_type min;
 };
 
-class Max : public OpBase
-{
+class Max : public OpBase { MEMALIGN(Max)
   public:
     Max (const bool weighted) :
         OpBase (weighted),
@@ -355,8 +345,7 @@ class Max : public OpBase
     default_type max;
 };
 
-class AbsMax : public OpBase
-{
+class AbsMax : public OpBase { MEMALIGN(AbsMax)
   public:
     AbsMax (const bool weighted) :
         OpBase (weighted),
@@ -382,8 +371,7 @@ class AbsMax : public OpBase
     default_type max;
 };
 
-class MagMax : public OpBase
-{
+class MagMax : public OpBase { MEMALIGN(MagMax)
   public:
     MagMax (const bool weighted) :
         OpBase (weighted),
@@ -409,8 +397,7 @@ class MagMax : public OpBase
     default_type max;
 };
 
-class Count : public OpBase
-{
+class Count : public OpBase { MEMALIGN(Count)
   public:
     Count (const bool weighted) :
         OpBase (weighted)
@@ -427,8 +414,7 @@ class Count : public OpBase
     }
 };
 
-class Complexity : public OpBase
-{
+class Complexity : public OpBase { MEMALIGN(Complexity)
   public:
     Complexity (const bool weighted) :
         OpBase (weighted),
@@ -460,8 +446,7 @@ class Complexity : public OpBase
     default_type max, sum;
 };
 
-class SF : public OpBase
-{
+class SF : public OpBase { MEMALIGN(SF)
   public:
     SF (const bool weighted) :
         OpBase (weighted),
@@ -489,8 +474,7 @@ class SF : public OpBase
     default_type max, sum;
 };
 
-class DEC_unit : public OpBase
-{
+class DEC_unit : public OpBase { MEMALIGN(DEC_unit)
   public:
     DEC_unit (const bool weighted) :
         OpBase (weighted),
@@ -517,8 +501,7 @@ class DEC_unit : public OpBase
     Eigen::Vector3 sum_dec;
 };
 
-class DEC_scaled : public OpBase
-{
+class DEC_scaled : public OpBase { MEMALIGN(DEC_scaled)
   public:
     DEC_scaled (const bool weighted) :
         OpBase (weighted),
@@ -560,8 +543,7 @@ class DEC_scaled : public OpBase
     default_type sum_volume, sum_value;
 };
 
-class SplitSize : public OpBase
-{
+class SplitSize : public OpBase { MEMALIGN(SplitSize)
   public:
     SplitSize (const bool weighted) :
         OpBase (weighted)
@@ -583,8 +565,7 @@ class SplitSize : public OpBase
     }
 };
 
-class SplitValue : public OpBase
-{
+class SplitValue : public OpBase { MEMALIGN(SplitValue)
   public:
     SplitValue (const bool weighted) :
         OpBase (weighted)
@@ -606,8 +587,7 @@ class SplitValue : public OpBase
     }
 };
 
-class SplitDir : public OpBase
-{
+class SplitDir : public OpBase { MEMALIGN(SplitDir)
   public:
     SplitDir (const bool weighted) :
         OpBase (weighted)

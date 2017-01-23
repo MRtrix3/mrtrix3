@@ -42,7 +42,7 @@ namespace MR
 
 
       template <class FODImageType>
-      class LinearKernel {
+      class LinearKernel { MEMALIGN(LinearKernel<FODImageType>)
 
         public:
           LinearKernel (const ssize_t n_SH,
@@ -114,7 +114,7 @@ namespace MR
 
 
       template <class FODImageType>
-      class NonLinearKernel {
+      class NonLinearKernel { MEMALIGN(NonLinearKernel<FODImageType>)
 
         public:
           NonLinearKernel (const ssize_t n_SH, Image<default_type>& warp, const Eigen::MatrixXd& directions, const bool modulate) :

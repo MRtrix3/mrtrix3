@@ -24,7 +24,6 @@
 
 using namespace MR;
 using namespace App;
-using namespace std;
 
 typedef float value_type;
 const char* modulate_choices[] = { "none", "fa", "eigval", NULL };
@@ -107,10 +106,20 @@ void usage ()
     "Proc Intl Soc Mag Reson Med, 1997, 5, 1742";
 }
 
-class Processor
-{
+class Processor { MEMALIGN(Processor)
   public:
-    Processor (Image<bool>& mask_img, Image<value_type>& adc_img, Image<value_type>& fa_img, Image<value_type>& ad_img, Image<value_type>& rd_img, Image<value_type>& cl_img, Image<value_type>& cp_img, Image<value_type>& cs_img, Image<value_type>& value_img, Image<value_type>& vector_img, std::vector<int> vals, int modulate) :
+    Processor (Image<bool>& mask_img, 
+        Image<value_type>& adc_img, 
+        Image<value_type>& fa_img, 
+        Image<value_type>& ad_img, 
+        Image<value_type>& rd_img, 
+        Image<value_type>& cl_img, 
+        Image<value_type>& cp_img, 
+        Image<value_type>& cs_img, 
+        Image<value_type>& value_img, 
+        Image<value_type>& vector_img, 
+        vector<int>& vals, 
+        int modulate) :
       mask_img (mask_img),
       adc_img (adc_img),
       fa_img (fa_img),
@@ -245,7 +254,7 @@ class Processor
     Image<value_type> cs_img;
     Image<value_type> value_img;
     Image<value_type> vector_img;
-    std::vector<int> vals;
+    vector<int> vals;
     int modulate;
 };
 
@@ -310,7 +319,7 @@ void run ()
     cs_img = Image<value_type>::create (opt[0][0], header);
   }
   
-  std::vector<int> vals = {1};
+  vector<int> vals = {1};
   opt = get_options ("num");
   if (opt.size()) {
     vals = opt[0][0];

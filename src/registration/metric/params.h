@@ -42,6 +42,10 @@ namespace MR
                 class ProcMaskType = Image<bool>,
                 class ProcessedMaskInterpolatorType = Interp::Nearest<Image<bool>>>
       class Params {
+        MEMALIGN(Params<TransformType,Im1ImageType,Im2ImageType,MidwayImageType, 
+            Im1MaskType,Im2MaskType,Im1ImageInterpType,Im2ImageInterpType, 
+            Im1MaskInterpolatorType,Im2MaskInterpolatorType,ProcImageType,ProcImageInterpolatorType,
+            ProcMaskType,ProcessedMaskInterpolatorType>)
         public:
 
           typedef typename TransformType::ParameterType TransformParamType;
@@ -81,7 +85,7 @@ namespace MR
                       update_control_points();
           }
 
-          void set_extent (std::vector<size_t> extent_vector) { extent=std::move(extent_vector); }
+          void set_extent (vector<size_t> extent_vector) { extent=std::move(extent_vector); }
 
           template <class VectorType>
           void set_control_points_extent(const VectorType& extent) {
@@ -109,7 +113,7 @@ namespace MR
             control_points.block<3,4>(0,0).colwise() += centre;
           }
 
-          const std::vector<size_t>& get_extent() const { return extent; }
+          const vector<size_t>& get_extent() const { return extent; }
 
           TransformType& transformation;
           Im1ImageType im1_image;
@@ -125,7 +129,7 @@ namespace MR
           bool robust_estimate;
           Eigen::Vector3 control_point_exent;
           Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> control_points;
-          std::vector<size_t> extent;
+          vector<size_t> extent;
 
           ProcImageType processed_image;
           MR::copy_ptr<ProcImageInterpolatorType> processed_image_interp;

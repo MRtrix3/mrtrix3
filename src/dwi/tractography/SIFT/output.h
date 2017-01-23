@@ -277,7 +277,7 @@ namespace MR
         File::OFStream out (path, std::ios_base::out | std::ios_base::trunc);
         const double current_mu = mu();
         out << "Fibre density,Track density (unscaled),Track density (scaled),Weight,\n";
-        for (typename std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i)
+        for (typename vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i)
           out << str (i->get_FOD()) << "," << str (i->get_TD()) << "," << str (i->get_TD() * current_mu) << "," << str (i->get_weight()) << ",\n";
         out.close();
       }

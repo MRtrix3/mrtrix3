@@ -68,7 +68,7 @@ void usage ()
 
 
 class Modifier
-{
+{ MEMALIGN(Modifier)
   public:
     Modifier (Image<float>& input_image, Image<float>& output_image) :
         v_in  (input_image),

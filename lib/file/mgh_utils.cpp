@@ -141,7 +141,7 @@ namespace MR
         if (ndim > 4)
           throw Exception ("MGH file format does not support images of more than 4 dimensions");
 
-        std::vector<size_t> axes;
+        vector<size_t> axes;
         auto M = File::NIfTI::adjust_transform (H, axes);
 
         Raw::store<int32_t> (1, &MGHH.version, is_BE);
@@ -242,7 +242,7 @@ namespace MR
       {
         File::OFStream out (path, std::ios_base::out | std::ios_base::app);
         out.write ((char*) &MGHO, 5 * sizeof (float));
-        for (std::vector<std::string>::const_iterator i = MGHO.tags.begin(); i != MGHO.tags.end(); ++i)
+        for (vector<std::string>::const_iterator i = MGHO.tags.begin(); i != MGHO.tags.end(); ++i)
           out.write (i->c_str(), i->size() + 1);
         out.close();
       }

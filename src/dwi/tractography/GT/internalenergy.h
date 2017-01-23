@@ -32,8 +32,8 @@ namespace MR {
     namespace Tractography {
       namespace GT {
         
-        class InternalEnergyComputer : public EnergyComputer
-        {
+        class InternalEnergyComputer : public EnergyComputer 
+        { MEMALIGN(InternalEnergyComputer)
         public:
           
           InternalEnergyComputer(Stats& s, ParticleGrid& pgrid)
@@ -107,7 +107,7 @@ namespace MR {
         protected:
           ParticleGrid& pGrid;
           double cpot, dEint;
-          std::vector<ParticleEnd> neighbourhood;
+          vector<ParticleEnd> neighbourhood;
           double normalization;
           Math::RNG::Uniform<double> rng_uniform;
           

@@ -39,7 +39,7 @@ namespace MR
       if (get_options("init_rotation.search.run_global").size()) registration.init.init_rotation.search.run_global = true;
       auto opt = get_options("init_rotation.search.angles");
       if (opt.size()) {
-        std::vector<default_type> angles = parse_floats (opt[0][0]);
+        vector<default_type> angles = parse_floats (opt[0][0]);
         for (auto& a: angles) {
           if (a < 0.0 or a > 180.0)
             throw Exception ("init_rotation.search.angles have to be between 0 and 180 degree.");

@@ -25,8 +25,7 @@ namespace MR
   namespace File
   {
 
-    class Entry
-    {
+    class Entry { NOMEMALIGN
       public:
         Entry (const std::string& fname, int64_t offset = 0) :
           name (fname), start (offset) { }

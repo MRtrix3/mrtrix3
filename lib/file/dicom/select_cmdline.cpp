@@ -23,9 +23,9 @@ namespace MR {
   namespace File {
     namespace Dicom {
 
-      std::vector<std::shared_ptr<Series>> select_cmdline (const Tree& tree)
+      vector<std::shared_ptr<Series>> select_cmdline (const Tree& tree)
       {
-        std::vector<std::shared_ptr<Series>> series;
+        vector<std::shared_ptr<Series>> series;
 
         if (tree.size() == 0) 
           throw Exception ("DICOM tree its empty");
@@ -131,7 +131,7 @@ namespace MR {
               series.clear(); 
               return (series); 
             }
-            std::vector<int> seq;
+            vector<int> seq;
             try {
               seq = parse_ints (buf);
             }
@@ -158,7 +158,7 @@ namespace MR {
 
 
 
-      std::vector<std::shared_ptr<Series>> (*select_func) (const Tree& tree) = select_cmdline;
+      vector<std::shared_ptr<Series>> (*select_func) (const Tree& tree) = select_cmdline;
 
 
 

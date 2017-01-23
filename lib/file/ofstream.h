@@ -20,6 +20,7 @@
 #include <fstream>
 #include <string>
 
+#include "types.h"
 
 
 namespace MR
@@ -34,8 +35,7 @@ namespace MR
      * output files, the presence of an existing file is first checked. It also removes the
      * necessity to explicitly convert a path expressed as a std::string to a
      * c-style string. */
-    class OFStream : public std::ofstream
-    {
+    class OFStream : public std::ofstream { NOMEMALIGN
       public:
         OFStream() { }
         OFStream (const std::string& path, const std::ios_base::openmode mode = std::ios_base::out) {

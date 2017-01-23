@@ -27,7 +27,7 @@ namespace MRView
 
 // FIXME Why is this duplicating colourmap code?
 using Entry = ColourMap::Entry;
-const std::vector<Entry> ColourMapButton::core_colourmaps_entries{{
+const vector<Entry> ColourMapButton::core_colourmaps_entries{{
     Entry ("Gray",
         "color.rgb = vec3 (amplitude);\n",
         [] (float amplitude) { return Eigen::Vector3f (amplitude, amplitude, amplitude); }),
@@ -46,7 +46,7 @@ const std::vector<Entry> ColourMapButton::core_colourmaps_entries{{
 }};
 
 
-const std::vector<Entry> ColourMapButton::special_colourmaps_entries{{
+const vector<Entry> ColourMapButton::special_colourmaps_entries{{
     Entry ("RGB",
            "color.rgb = scale * (abs(color.rgb) - offset);\n",
            Entry::basic_map_fn(),

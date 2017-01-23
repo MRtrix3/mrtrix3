@@ -34,7 +34,7 @@ namespace MR
       @{ */
 
 
-      class connectivity {
+      class connectivity { MEMALIGN(connectivity)
         public:
           connectivity () : value (0.0) { }
           value_type value;
@@ -46,13 +46,13 @@ namespace MR
       /**
        * Process each track by converting each streamline to a set of dixels, and map these to fixels.
        */
-      class TrackProcessor {
+      class TrackProcessor { MEMALIGN(TrackProcessor)
 
         public:
           TrackProcessor (Image<int32_t>& fixel_indexer,
-                          const std::vector<Eigen::Matrix<value_type, 3, 1> >& fixel_directions,
-                          std::vector<uint16_t>& fixel_TDI,
-                          std::vector<std::map<int32_t, connectivity> >& connectivity_matrix,
+                          const vector<Eigen::Matrix<value_type, 3, 1> >& fixel_directions,
+                          vector<uint16_t>& fixel_TDI,
+                          vector<std::map<int32_t, connectivity> >& connectivity_matrix,
                           value_type angular_threshold):
                           fixel_indexer (fixel_indexer) ,
                           fixel_directions (fixel_directions),
@@ -64,7 +64,7 @@ namespace MR
           bool operator() (SetVoxelDir& in)
           {
             // For each voxel tract tangent, assign to a fixel
-            std::vector<int32_t> tract_fixel_indices;
+            vector<int32_t> tract_fixel_indices;
             for (SetVoxelDir::const_iterator i = in.begin(); i != in.end(); ++i) {
               assign_pos_of (*i).to (fixel_indexer);
               fixel_indexer.index(3) = 0;
@@ -106,23 +106,23 @@ namespace MR
 
         private:
           Image<int32_t> fixel_indexer;
-          const std::vector<Eigen::Vector3f>& fixel_directions;
-          std::vector<uint16_t>& fixel_TDI;
-          std::vector<std::map<int32_t, connectivity> >& connectivity_matrix;
+          const vector<Eigen::Vector3f>& fixel_directions;
+          vector<uint16_t>& fixel_TDI;
+          vector<std::map<int32_t, connectivity> >& connectivity_matrix;
           value_type angular_threshold_dp;
       };
 
 
 
 
-      class Enhancer {
+      class Enhancer { MEMALIGN(Enhancer)
         public:
-          Enhancer (const std::vector<std::map<int32_t, connectivity> >& connectivity_map,
+          Enhancer (const vector<std::map<int32_t, connectivity> >& connectivity_map,
                     const value_type dh, const value_type E, const value_type H) :
                     connectivity_map (connectivity_map), dh (dh), E (E), H (H) { }
 
-          value_type operator() (const value_type max_stat, const std::vector<value_type>& stats,
-                                 std::vector<value_type>& enhanced_stats) const
+          value_type operator() (const value_type max_stat, const vector<value_type>& stats,
+                                 vector<value_type>& enhanced_stats) const
           {
             enhanced_stats.resize (stats.size());
             std::fill (enhanced_stats.begin(), enhanced_stats.end(), 0.0);
@@ -144,7 +144,7 @@ namespace MR
           }
 
         protected:
-          const std::vector<std::map<int32_t, connectivity> >& connectivity_map;
+          const vector<std::map<int32_t, connectivity> >& connectivity_map;
           const value_type dh, E, H;
       };
 

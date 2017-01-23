@@ -30,10 +30,10 @@ namespace MR {
 
       using namespace MR::DWI::Tractography::Tracking;
 
-      std::vector<Eigen::Vector3f> direction_grid (float max_angle, float spacing)
+      vector<Eigen::Vector3f> direction_grid (float max_angle, float spacing)
       {
         const float maxR = Math::pow2 (max_angle / spacing);
-        std::vector<Eigen::Vector3f> list;
+        vector<Eigen::Vector3f> list;
         ssize_t extent = std::ceil (max_angle / spacing);
 
         for (ssize_t i = -extent; i <= extent; ++i) {
@@ -53,7 +53,7 @@ namespace MR {
       }
 
       namespace {
-        class Pair {
+        class Pair { NOMEMALIGN
           public:
             Pair (float elevation, float amplitude) : el (elevation), amp (amplitude) { }
             float el, amp;
@@ -66,7 +66,7 @@ namespace MR {
           typename Method::Calibrate calibrate_func (method);
           const float sqrt3 = std::sqrt (3.0);
 
-          std::vector<Pair> amps;
+          vector<Pair> amps;
           for (float el = 0.0; el < method.S.max_angle; el += 0.001) {
             amps.push_back (Pair (el, calibrate_func (el)));
             if (!std::isfinite (amps.back().amp) || amps.back().amp <= 0.0) break;

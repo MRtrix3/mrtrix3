@@ -47,8 +47,7 @@ typedef Tractography::Streamline<value_type> TrackType;
 
 
 
-class Loader 
-{
+class Loader { MEMALIGN(Loader)
   public:
     Loader (const std::string& file) : reader (file, properties) {}
 
@@ -63,8 +62,7 @@ class Loader
 
 
 
-class Warper
-{
+class Warper { MEMALIGN(Warper)
   public:
     Warper (const Image<value_type>& warp) :
       interp (warp) { }
@@ -93,8 +91,7 @@ class Warper
 
 
 
-class Writer 
-{
+class Writer { MEMALIGN(Writer)
   public:
     Writer (const std::string& file, const Tractography::Properties& properties) :
       progress ("normalising tracks"),

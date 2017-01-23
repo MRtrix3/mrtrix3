@@ -25,7 +25,7 @@ namespace Connectome {
 Mat2Vec::Mat2Vec (const node_t i) :
     size (i)
 {
-  lookup.assign (size, std::vector<size_t> (size, 0));
+  lookup.assign (size, vector<size_t> (size, 0));
   inv_lookup.reserve (size * (size+1) / 2);
   size_t index = 0;
   for (node_t row = 0; row != size; ++row) {

@@ -34,10 +34,10 @@ namespace MR
 
     using namespace MR::DWI::Tractography::Tracking;
 
-    class NullDist1 : public MethodBase {
+    class NullDist1 : public MethodBase { MEMALIGN(NullDist1)
       public:
 
-      class Shared : public SharedBase {
+      class Shared : public SharedBase { MEMALIGN(Shared)
         public:
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
           SharedBase (diff_path, property_set)
@@ -82,10 +82,10 @@ namespace MR
 
     };
 
-    class NullDist2 : public iFOD2 {
+    class NullDist2 : public iFOD2 { MEMALIGN(NullDist2)
       public:
 
-      class Shared : public iFOD2::Shared {
+      class Shared : public iFOD2::Shared { MEMALIGN(Shared)
         public:
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
           iFOD2::Shared (diff_path, property_set)
@@ -157,7 +157,7 @@ namespace MR
       const Shared& S;
       Interpolator<Image<float>>::type source;
 
-      std::vector<Eigen::Vector3f> positions, tangents;
+      vector<Eigen::Vector3f> positions, tangents;
       size_t sample_idx;
 
     };

@@ -36,7 +36,7 @@ namespace MR {
 
 
         class Receiver
-        {
+        { MEMALIGN(Receiver)
 
           public:
 

@@ -46,7 +46,7 @@ namespace MR
           eigenvals.resize(eval.size());
 
           // sort eigenvectors by eigenvalue, largest first
-          std::vector<std::pair<default_type, ssize_t>> eval_idx_vec;
+          vector<std::pair<default_type, ssize_t>> eval_idx_vec;
           for(ssize_t i = 0; i < eval.size(); ++i ) {
               eval_idx_vec.emplace_back(eval[i], i);
           }

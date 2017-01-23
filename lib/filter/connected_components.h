@@ -30,8 +30,7 @@ namespace MR
   namespace Filter
   {
 
-    class cluster
-    {
+    class cluster { NOMEMALIGN
       public:
         uint32_t label;
         uint32_t size;
@@ -47,7 +46,7 @@ namespace MR
     }
 
 
-    class Connector {
+    class Connector { NOMEMALIGN
 
       public:
         Connector (bool do_26_connectivity) :
@@ -58,8 +57,8 @@ namespace MR
 
 
         // Perform connected components on the mask.
-        const std::vector<std::vector<int> >& run (std::vector<cluster>& clusters,
-                                                   std::vector<uint32_t>& labels) const {
+        const vector<vector<int> >& run (vector<cluster>& clusters,
+                                                   vector<uint32_t>& labels) const {
           labels.resize (adjacent_indices.size(), 0);
           uint32_t current_label = 1;
           for (uint32_t i = 0; i < labels.size(); i++) {
@@ -80,9 +79,9 @@ namespace MR
 
 
         // Perform connected components on data with the defined threshold. Assumes adjacency is the same as the mask.
-        void run (std::vector<cluster>& clusters,
-                  std::vector<uint32_t>& labels,
-                  const std::vector<float>& data,
+        void run (vector<cluster>& clusters,
+                  vector<uint32_t>& labels,
+                  const vector<float>& data,
                   const float threshold) const {
           labels.resize (adjacent_indices.size(), 0);
           uint32_t current_label = 1;
@@ -102,7 +101,7 @@ namespace MR
         }
 
 
-        void set_dim_to_ignore (std::vector<bool>& ignore_dim) {
+        void set_dim_to_ignore (vector<bool>& ignore_dim) {
           for (size_t d = 0; d < ignore_dim.size(); ++d) {
             dim_to_ignore[d] = ignore_dim[d];
           }
@@ -110,7 +109,7 @@ namespace MR
 
 
         template <class MaskImageType>
-        const std::vector<std::vector<int> >& precompute_adjacency (MaskImageType& mask) {
+        const vector<vector<int> >& precompute_adjacency (MaskImageType& mask) {
 
           auto index_image = Image<uint32_t>::scratch (mask);
 
@@ -119,7 +118,7 @@ namespace MR
             if (mask.value() >= 0.5) {
               // For each voxel, store the index within mask_indices for 2nd pass
               index_image.value() = mask_indices.size();
-              std::vector<int> index (mask.ndim());
+              vector<int> index (mask.ndim());
               for (size_t dim = 0; dim < mask.ndim(); dim++)
                 index[dim] = mask.index(dim);
               mask_indices.push_back (index);
@@ -128,8 +127,8 @@ namespace MR
             }
           }
           // Here we pre-compute the offsets for our neighbours in 4D space
-          std::vector< std::vector<int> > neighbour_offsets;
-          std::vector<int> offset (4);
+          vector< vector<int> > neighbour_offsets;
+          vector<int> offset (4);
           for (offset[0] = -1; offset[0] <= 1; offset[0]++) {
             for (offset[1] = -1; offset[1] <= 1; offset[1]++) {
               for (offset[2] = -1; offset[2] <= 1; offset[2]++) {
@@ -146,9 +145,9 @@ namespace MR
           }
           // 2nd pass, define adjacency
           MaskImageType mask_neigh (mask);
-          for (std::vector<std::vector<int> >::const_iterator it = mask_indices.begin(); it != mask_indices.end(); ++it) {
-            std::vector<uint32_t> neighbour_indices;
-            for (std::vector< std::vector<int> >::const_iterator offset = neighbour_offsets.begin(); offset != neighbour_offsets.end(); ++offset) {
+          for (vector<vector<int> >::const_iterator it = mask_indices.begin(); it != mask_indices.end(); ++it) {
+            vector<uint32_t> neighbour_indices;
+            for (vector< vector<int> >::const_iterator offset = neighbour_offsets.begin(); offset != neighbour_offsets.end(); ++offset) {
               for (size_t dim = 0; dim < mask.ndim(); dim++)
                 mask_neigh.index(dim) = (*it)[dim] + (*offset)[dim];
               if (!is_out_of_bounds (mask_neigh)) {
@@ -165,7 +164,7 @@ namespace MR
         }
 
 
-        bool next_neighbour (uint32_t& node, std::vector<uint32_t>& labels) const {
+        bool next_neighbour (uint32_t& node, vector<uint32_t>& labels) const {
           for (size_t n = 0; n < adjacent_indices[node].size(); n++) {
             if (labels[adjacent_indices[node][n]] == 0) {
               node = adjacent_indices[node][n];
@@ -177,8 +176,8 @@ namespace MR
 
 
         bool next_neighbour (uint32_t& node,
-                             std::vector<uint32_t>& labels,
-                             const std::vector<float>& data,
+                             vector<uint32_t>& labels,
+                             const vector<float>& data,
                              const float threshold) const {
           for (size_t n = 0; n < adjacent_indices[node].size(); n++) {
             if (labels[adjacent_indices[node][n]] == 0 && data[adjacent_indices[node][n]] > threshold) {
@@ -193,7 +192,7 @@ namespace MR
         // use a non-recursive depth first search to agglomerate adjacent voxels
         void depth_first_search (uint32_t root,
                                  cluster& cluster,
-                                 std::vector<uint32_t>& labels) const {
+                                 vector<uint32_t>& labels) const {
           uint32_t node = root;
           std::stack<uint32_t> stack;
           while (true) {
@@ -216,8 +215,8 @@ namespace MR
         // use a non-recursive depth first search to agglomerate adjacent voxels
         void depth_first_search (uint32_t root,
                                  cluster& cluster,
-                                 std::vector<uint32_t>& labels,
-                                 const std::vector<float>& data,
+                                 vector<uint32_t>& labels,
+                                 const vector<float>& data,
                                  const float threshold) const {
           uint32_t node = root;
           std::stack<uint32_t> stack;
@@ -240,9 +239,9 @@ namespace MR
 
 
         bool do_26_connectivity;
-        std::vector<bool> dim_to_ignore;
-        std::vector<std::vector<int> > mask_indices;
-        std::vector<std::vector<uint32_t> > adjacent_indices;
+        vector<bool> dim_to_ignore;
+        vector<vector<int> > mask_indices;
+        vector<vector<uint32_t> > adjacent_indices;
     };
 
 
@@ -263,8 +262,7 @@ namespace MR
      *
      * \endcode
      */
-    class ConnectedComponents : public Base
-    {
+    class ConnectedComponents : public Base { MEMALIGN(ConnectedComponents)
       public:
 
       template <class HeaderType>
@@ -305,9 +303,9 @@ namespace MR
           ++(*progress);
         }
 
-        std::vector<cluster> clusters;
-        std::vector<uint32_t> labels;
-        std::vector<std::vector<int> > mask_indices = connector.run (clusters, labels);
+        vector<cluster> clusters;
+        vector<uint32_t> labels;
+        vector<vector<int> > mask_indices = connector.run (clusters, labels);
 
         if (progress)
           ++(*progress);
@@ -315,7 +313,7 @@ namespace MR
         if (progress)
           ++(*progress);
 
-        std::vector<int> label_lookup (clusters.size(), 0);
+        vector<int> label_lookup (clusters.size(), 0);
         for (uint32_t c = 0; c < clusters.size(); c++)
           label_lookup[clusters[c].label - 1] = c + 1;
 
@@ -355,7 +353,7 @@ namespace MR
 
 
       protected:
-        std::vector<bool> dim_to_ignore;
+        vector<bool> dim_to_ignore;
         bool largest_only;
         bool do_26_connectivity;
     };

@@ -31,7 +31,7 @@ namespace Connectome {
 
 
 class Mat2Vec
-{
+{ MEMALIGN(Mat2Vec)
 
   public:
     Mat2Vec (const node_t);
@@ -52,7 +52,7 @@ class Mat2Vec
     size_t vec_size() const { return inv_lookup.size(); }
 
     // Complete Matrix->Vector and Vector->Matrix conversion
-    // Templating allows use of either an Eigen::Vector or a std::vector
+    // Templating allows use of either an Eigen::Vector or a vector
     template <class Cont> Cont&        operator() (const matrix_type&, Cont&) const;
     template <class Cont> matrix_type& operator() (const Cont&, matrix_type&) const;
 
@@ -61,8 +61,8 @@ class Mat2Vec
 
   private:
     // Lookup tables
-    std::vector< std::vector<size_t> > lookup;
-    std::vector< std::pair<node_t, node_t> > inv_lookup;
+    vector< vector<size_t> > lookup;
+    vector< std::pair<node_t, node_t> > inv_lookup;
 
 };
 

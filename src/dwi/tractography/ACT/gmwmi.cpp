@@ -55,7 +55,7 @@ namespace MR
 
 
 
-        Eigen::Vector3f GMWMI_finder::find_interface (const std::vector< Eigen::Vector3f >& tck, const bool end) const
+        Eigen::Vector3f GMWMI_finder::find_interface (const vector< Eigen::Vector3f >& tck, const bool end) const
         {
           Interp interp (interp_template);
           return find_interface (tck, end, interp);
@@ -64,7 +64,7 @@ namespace MR
 
 
 
-        void GMWMI_finder::crop_track (std::vector< Eigen::Vector3f >& tck) const
+        void GMWMI_finder::crop_track (vector< Eigen::Vector3f >& tck) const
         {
           if (tck.size() < 3)
             return;
@@ -204,7 +204,7 @@ namespace MR
 
 
 
-        Eigen::Vector3f GMWMI_finder::find_interface (const std::vector<Eigen::Vector3f>& tck, const bool end, Interp& interp) const
+        Eigen::Vector3f GMWMI_finder::find_interface (const vector<Eigen::Vector3f>& tck, const bool end, Interp& interp) const
         {
 
           if (tck.size() == 0)

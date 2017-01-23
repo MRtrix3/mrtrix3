@@ -54,7 +54,7 @@ namespace MR {
 
 
         class TrackMapperBase
-        {
+        { MEMALIGN(TrackMapperBase)
 
           public:
             template <class HeaderType>
@@ -79,7 +79,6 @@ namespace MR {
             TrackMapperBase (const TrackMapperBase&) = default;
             TrackMapperBase (TrackMapperBase&&) = default;
 
-            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
             virtual ~TrackMapperBase() { }
 
@@ -347,7 +346,7 @@ namespace MR {
 
 
         class TrackMapperTWI : public TrackMapperBase
-        {
+        { MEMALIGN(TrackMapperTWI)
           public:
             template <class HeaderType>
               TrackMapperTWI (const HeaderType& template_image, const contrast_t c, const tck_stat_t s) :
@@ -370,7 +369,6 @@ namespace MR {
                 }
               }
 
-            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
             void add_scalar_image (const std::string&);
             void add_fod_image    (const std::string&);
@@ -382,7 +380,7 @@ namespace MR {
             const tck_stat_t track_statistic;
 
             // Members for when the contribution of a track is not constant along its length
-            mutable std::vector<float> factors;
+            mutable vector<float> factors;
             void load_factors (const Streamline<>&) const;
 
             // Member for incorporating additional information from an external image into the TWI process

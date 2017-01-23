@@ -32,7 +32,7 @@ namespace MR
       namespace {
 
 
-      class DisplacementThreadKernel {
+      class DisplacementThreadKernel { MEMALIGN(DisplacementThreadKernel)
 
         public:
           DisplacementThreadKernel (Image<default_type> & displacement,
@@ -76,7 +76,7 @@ namespace MR
       };
 
 
-        class DeformationThreadKernel {
+        class DeformationThreadKernel { MEMALIGN(DeformationThreadKernel)
 
           public:
             DeformationThreadKernel (Image<default_type> & deform,

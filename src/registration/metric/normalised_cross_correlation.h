@@ -30,7 +30,7 @@ namespace MR
     namespace Metric
     {
       template <typename ImageType1, typename ImageType2>
-      struct NCCPrecomputeFunctorMasked_DEBUG {
+      struct NCCPrecomputeFunctorMasked_DEBUG { MEMALIGN(NCCPrecomputeFunctorMasked_DEBUG<ImageType1,ImageType2>)
         template <typename MaskType, typename ImageType3>
         void operator() (MaskType& mask, ImageType3& out) {
           out.index(0) = mask.index(0);
@@ -75,19 +75,19 @@ namespace MR
           mask.index(2) = out.index(2);
         }
 
-        NCCPrecomputeFunctorMasked_DEBUG(const std::vector<size_t>& ext, ImageType1& adapter1, ImageType2& adapter2) :
+        NCCPrecomputeFunctorMasked_DEBUG(const vector<size_t>& ext, ImageType1& adapter1, ImageType2& adapter2) :
           extent(ext),
           in1(adapter1),
           in2(adapter2) { /* TODO check dimensions and extent */ }
 
         protected:
-          std::vector<size_t> extent;
+          vector<size_t> extent;
           ImageType1 in1; // Adapter::Reslice<Interp::Cubic, Image<float>>) :
           ImageType2 in2;
       };
 
       template <typename ImageType1, typename ImageType2>
-      struct NCCPrecomputeFunctorMasked_Naive {
+      struct NCCPrecomputeFunctorMasked_Naive { MEMALIGN(NCCPrecomputeFunctorMasked_Naive<ImageType1,ImageType2>)
         template <typename MaskType, typename ImageType3>
         void operator() (MaskType& mask, ImageType3& out) {
           if (!mask.value())
@@ -193,18 +193,18 @@ namespace MR
           // out.row(3) << value_in1 - mean1, value_in2 - mean2, in1.value(), in2.value(), v2_2;
         }
 
-        NCCPrecomputeFunctorMasked_Naive (const std::vector<size_t>& ext, ImageType1& adapter1, ImageType2& adapter2) :
+        NCCPrecomputeFunctorMasked_Naive (const vector<size_t>& ext, ImageType1& adapter1, ImageType2& adapter2) :
           extent(ext),
           in1(adapter1),
           in2(adapter2) { /* TODO check dimensions and extent */ }
 
         protected:
-          std::vector<size_t> extent;
+          vector<size_t> extent;
           ImageType1 in1; // store reslice adapter in functor to avoid iterating over it when mask is false
           ImageType2 in2;
       };
 
-      class NormalisedCrossCorrelation {
+      class NormalisedCrossCorrelation { MEMALIGN(NormalisedCrossCorrelation)
           private:
             transform_type midway_v2s;
 

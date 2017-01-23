@@ -31,7 +31,7 @@ namespace MR
       }
 
     template <class ImageType> 
-      class Base {
+      class Base { MEMALIGN(Base<ImageType>)
         public:
           Base (const ImageType& parent) :
             parent_ (parent) {

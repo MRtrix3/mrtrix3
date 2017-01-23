@@ -47,7 +47,7 @@ namespace MR
         };
 
 
-        class Entry {
+        class Entry { MEMALIGN(Entry)
           public:
 
             typedef std::function< Eigen::Array3f (float) > basic_map_fn;
@@ -126,7 +126,7 @@ namespace MR
 
 
 
-        class Renderer {
+        class Renderer { MEMALIGN(Renderer)
           public:
             Renderer();
             void begin_render_colourbars (Projection* projection,

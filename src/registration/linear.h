@@ -54,7 +54,7 @@ namespace MR
     enum LinearRobustMetricEstimatorType {L1, L2, LP, None};
 
     class Linear
-    {
+    { MEMALIGN(Linear)
 
       public:
 
@@ -91,21 +91,21 @@ namespace MR
           fod_lmax[2] = 4;
         }
 
-        void set_max_iter (const std::vector<int>& maxiter) {
+        void set_max_iter (const vector<int>& maxiter) {
           for (size_t i = 0; i < maxiter.size (); ++i)
             if (maxiter[i] < 0)
               throw Exception ("the number of iterations must be positive");
           max_iter = maxiter;
         }
 
-        void set_gradient_descent_repetitions (const std::vector<int>& rep) {
+        void set_gradient_descent_repetitions (const vector<int>& rep) {
           for (size_t i = 0; i < rep.size (); ++i)
             if (rep[i] < 0)
               throw Exception ("the number of repetitions must be positive");
           gd_repetitions = rep;
         }
 
-        void set_scale_factor (const std::vector<default_type>& scalefactor) {
+        void set_scale_factor (const vector<default_type>& scalefactor) {
           for (size_t level = 0; level < scalefactor.size(); ++level) {
             if (scalefactor[level] <= 0 || scalefactor[level] > 1)
               throw Exception ("the linear registration scale factor for each multi-resolution level must be between 0 and 1");
@@ -113,7 +113,7 @@ namespace MR
           scale_factor = scalefactor;
         }
 
-        void set_extent (const std::vector<size_t> extent) {
+        void set_extent (const vector<size_t> extent) {
           for (size_t d = 0; d < extent.size(); ++d) {
             if (extent[d] < 1)
               throw Exception ("the neighborhood kernel extent must be at least 1 voxel");
@@ -121,7 +121,7 @@ namespace MR
           kernel_extent = extent;
         }
 
-        void set_loop_density (const std::vector<default_type>& loop_density_){
+        void set_loop_density (const vector<default_type>& loop_density_){
           for (size_t d = 0; d < loop_density_.size(); ++d)
             if (loop_density_[d] < 0.0 or loop_density_[d] > 1.0 )
               throw Exception ("loop density must be between 0.0 and 1.0");
@@ -153,7 +153,7 @@ namespace MR
           log_stream = stream;
         }
 
-        void set_lmax (const std::vector<int>& lmax) {
+        void set_lmax (const vector<int>& lmax) {
           for (size_t i = 0; i < lmax.size (); ++i)
             if (lmax[i] < 0 || lmax[i] % 2)
               throw Exception ("the input rigid and affine lmax must be positive and even");
@@ -453,11 +453,11 @@ namespace MR
           }
 
       protected:
-        std::vector<int> max_iter;
-        std::vector<int> gd_repetitions;
-        std::vector<default_type> scale_factor;
-        std::vector<default_type> loop_density;
-        std::vector<size_t> kernel_extent;
+        vector<int> max_iter;
+        vector<int> gd_repetitions;
+        vector<default_type> scale_factor;
+        vector<default_type> loop_density;
+        vector<size_t> kernel_extent;
         default_type grad_tolerance;
         default_type step_tolerance;
         std::streambuf* log_stream;
@@ -465,7 +465,7 @@ namespace MR
         bool robust_estimate;
         bool do_reorientation;
         Eigen::MatrixXd aPSF_directions;
-        std::vector<int> fod_lmax;
+        vector<int> fod_lmax;
         const bool reg_bbgd, analyse_descent;
 
         Header midway_image_header;

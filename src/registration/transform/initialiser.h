@@ -30,8 +30,8 @@ namespace MR
       namespace Init
       {
         enum InitType {set_centre_mass, set_centre_geometric, mass, geometric, moments, rot_search, none};
-        struct LinearInitialisationParams {
-          struct TranslationInit {
+        struct LinearInitialisationParams { MEMALIGN(LinearInitialisationParams)
+          struct TranslationInit { MEMALIGN(TranslationInit)
             bool unmasked1;
             bool unmasked2;
             TranslationInit () :
@@ -39,15 +39,15 @@ namespace MR
               unmasked2 (false) {} // TODO config parsing
           };
 
-          struct RotationInit {
+          struct RotationInit { MEMALIGN(RotationInit)
             bool unmasked1;
             bool unmasked2;
-            struct rot_search {
-              std::vector<default_type> angles;
+            struct rot_search { MEMALIGN(rot_search)
+              vector<default_type> angles;
               default_type scale;
               size_t directions;
               bool run_global;
-              struct global_search {
+              struct global_search { MEMALIGN(global_search)
                 size_t iterations;
                 global_search () :
                   iterations (10000) {}

@@ -26,7 +26,7 @@ namespace MR {
       class Series; 
       class Patient;
 
-      class Tree : public std::vector<std::shared_ptr<Patient>> { 
+      class Tree : public vector<std::shared_ptr<Patient>> { NOMEMALIGN
         public:
           std::string description;
           void read (const std::string& filename);
@@ -48,7 +48,7 @@ namespace MR {
 
       std::ostream& operator<< (std::ostream& stream, const Tree& item);
 
-      extern std::vector<std::shared_ptr<Series>> (*select_func) (const Tree& tree);
+      extern vector<std::shared_ptr<Series>> (*select_func) (const Tree& tree);
 
     }
   }

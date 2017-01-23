@@ -34,7 +34,7 @@ namespace MR
 
 
 
-        class MethodBase {
+        class MethodBase { MEMALIGN(MethodBase)
 
           public:
 

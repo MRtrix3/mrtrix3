@@ -31,12 +31,11 @@ namespace MR
     namespace Warp
     {
 
-        class ComposeLinearDeformKernel {
+        class ComposeLinearDeformKernel { MEMALIGN(ComposeLinearDeformKernel)
           public:
             ComposeLinearDeformKernel (const transform_type& transform) :
                                        transform (transform) {}
 
-            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
             template <class InputDeformationFieldType, class OutputDeformationFieldType>
             void operator() (InputDeformationFieldType& deform_input, OutputDeformationFieldType& deform_output) {
@@ -48,14 +47,13 @@ namespace MR
         };
 
 
-        class ComposeLinearDispKernel {
+        class ComposeLinearDispKernel { MEMALIGN(ComposeLinearDispKernel)
           public:
             template<class DisplacementFieldType>
             ComposeLinearDispKernel (const transform_type& linear_transform, const DisplacementFieldType& disp_in) :
                                      linear_transform (linear_transform),
                                      image_transform (disp_in) {}
 
-            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
             template <class DisplacementFieldType, class DeformationFieldType>
             void operator() (DisplacementFieldType& disp_input, DeformationFieldType& deform_output) {
@@ -68,12 +66,11 @@ namespace MR
             MR::Transform image_transform;
         };
 
-        class ComposeDispKernel {
+        class ComposeDispKernel { MEMALIGN(ComposeDispKernel)
           public:
             ComposeDispKernel (Image<default_type>& disp_input1, Image<default_type>& disp_input2, default_type step) :
                                disp1_transform (disp_input1), disp2_interp (disp_input2), step (step) {}
 
-            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
             void operator() (Image<default_type>& disp_input1, Image<default_type>& disp_output) {
               Eigen::Vector3 voxel ((default_type)disp_input1.index(0), (default_type)disp_input1.index(1), (default_type)disp_input1.index(2));
@@ -97,7 +94,7 @@ namespace MR
 
 
         template <class DeformationField1Type, class DeformationField2Type>
-        class ComposeHalfwayKernel {
+        class ComposeHalfwayKernel { MEMALIGN(ComposeHalfwayKernel<DeformationField1Type,DeformationField2Type>)
           public:
             ComposeHalfwayKernel (const transform_type& linear1, DeformationField1Type& deform1,
                                   DeformationField2Type& deform2, const transform_type& linear2) :
@@ -106,7 +103,6 @@ namespace MR
               out_of_bounds *= NaN;
             }
 
-            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
             void operator() (Image<default_type>& deform) {
               Eigen::Vector3 voxel ((default_type)deform.index(0), (default_type)deform.index(1), (default_type)deform.index(2));
@@ -250,7 +246,7 @@ namespace MR
         WarpType deformation = WarpType::scratch (midway_header);
 
         transform_type linear;
-        std::vector<int> index(1);
+        vector<int> index(1);
         if (from == 1) {
           linear = Registration::Warp::parse_linear_transform (warp, "linear1");
           index[0] = 0;
@@ -273,7 +269,7 @@ namespace MR
         transform_type linear1 = Registration::Warp::parse_linear_transform (warp, "linear1");
         transform_type linear2 = Registration::Warp::parse_linear_transform (warp, "linear2");
 
-        std::vector<int> index(1);
+        vector<int> index(1);
         if (from == 1) {
           index[0] = 0;
           Adapter::Extract1D<Image<default_type>> im1_to_mid (warp, 4, index);

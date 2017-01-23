@@ -43,7 +43,7 @@ extern const App::Option EdgeStatisticOption;
 
 
 class Matrix
-{
+{ MEMALIGN(Matrix)
 
   public:
     Matrix (const node_t max_node_index, const stat_edge stat, const bool vector_output = false) :
@@ -75,8 +75,8 @@ class Matrix
   private:
     MR::Connectome::matrix_type data, counts;
     const stat_edge statistic;
-    std::vector<NodePair> assignments_pairs;
-    std::vector< std::vector<node_t> > assignments_lists;
+    vector<NodePair> assignments_pairs;
+    vector< vector<node_t> > assignments_lists;
 
     void apply (double&, const double, const double);
 

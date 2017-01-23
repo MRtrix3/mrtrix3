@@ -47,8 +47,7 @@ namespace MR
      * \sa Interp::warp()
      */
     template <template <class ImageType> class Interpolator, class ImageType, class WarpType>
-      class Warp
-    {
+      class Warp { MEMALIGN(Warp<Interpolator,ImageType,WarpType>)
       public:
         typedef typename ImageType::value_type value_type;
 

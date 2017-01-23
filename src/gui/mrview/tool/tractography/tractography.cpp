@@ -36,13 +36,13 @@ namespace MR
       {
 
         class Tractography::Model : public ListModelBase
-        {
+        { MEMALIGN(Tractography::Model)
 
           public:
             Model (QObject* parent) :
               ListModelBase (parent) { }
 
-            void add_items (std::vector<std::string>& filenames,
+            void add_items (vector<std::string>& filenames,
                             Tractography& tractography_tool) {
 
               for (size_t i = 0; i < filenames.size(); ++i) {
@@ -288,7 +288,7 @@ namespace MR
 
         void Tractography::tractogram_open_slot ()
         {
-          std::vector<std::string> list = Dialog::File::get_files (this, "Select tractograms to open", "Tractograms (*.tck)");
+          vector<std::string> list = Dialog::File::get_files (this, "Select tractograms to open", "Tractograms (*.tck)");
           if (list.empty())
             return;
           try {
@@ -307,7 +307,7 @@ namespace MR
 
           const QMimeData* mimeData = event->mimeData();
           if (mimeData->hasUrls()) {
-            std::vector<std::string> list;
+            vector<std::string> list;
             QList<QUrl> urlList = mimeData->urls();
             for (int i = 0; i < urlList.size() && i < max_files; ++i) {
                 list.push_back (urlList.at (i).path().toUtf8().constData());
@@ -670,7 +670,7 @@ namespace MR
         bool Tractography::process_commandline_option (const MR::App::ParsedOption& opt) 
         {
           if (opt.opt->is ("tractography.load")) {
-            std::vector<std::string> list (1, std::string(opt[0]));
+            vector<std::string> list (1, std::string(opt[0]));
             try { 
               tractogram_list_model->add_items (list, *this); 
               window().updateGL();

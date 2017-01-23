@@ -25,13 +25,13 @@ namespace MR {
 
 
 
-        bool FixedNumPoints::operator() (std::vector<Eigen::Vector3f>& tck) const
+        bool FixedNumPoints::operator() (vector<Eigen::Vector3f>& tck) const
         {
           // Perform an explicit calculation of streamline length
           // From this, derive the spline position of each sample
           assert (tck.size() > 1);
           float length = 0.0;
-          std::vector<float> steps;
+          vector<float> steps;
           for (size_t i = 1; i != tck.size(); ++i) {
             const float dist = (tck[i] - tck[i-1]).norm();
             length += dist;
@@ -40,7 +40,7 @@ namespace MR {
           steps.push_back (0.0f);
 
           Math::Hermite<float> interp (hermite_tension);
-          std::vector<Eigen::Vector3f> output;
+          vector<Eigen::Vector3f> output;
           const size_t s = tck.size();
           tck.insert    (tck.begin(), tck[0] + (tck[0] - tck[ 1 ]));
           tck.push_back (             tck[s] + (tck[s] - tck[s-1]));

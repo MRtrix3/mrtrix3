@@ -42,8 +42,7 @@ namespace MR
      *
      * \endcode
      */
-    class Smooth : public Base
-    {
+    class Smooth : public Base { MEMALIGN(Smooth)
 
       public:
         template <class HeaderType>
@@ -59,7 +58,7 @@ namespace MR
         }
 
         template <class HeaderType>
-        Smooth (const HeaderType& in, const std::vector<default_type>& stdev_in):
+        Smooth (const HeaderType& in, const vector<default_type>& stdev_in):
             Base (in),
             extent (3, 0),
             stdev (3, 0.0)
@@ -71,7 +70,7 @@ namespace MR
         //! Set the extent of smoothing kernel in voxels.
         //! This can be set as a single value to be used for the first 3 dimensions
         //! or separate values, one for each dimension. (Default: 4 standard deviations)
-        void set_extent (const std::vector<int>& new_extent)
+        void set_extent (const vector<int>& new_extent)
         {
           if (new_extent.size() != 1 && new_extent.size() != 3)
             throw Exception ("Please supply a single kernel extent value, or three values (one for each spatial dimension)");
@@ -89,7 +88,7 @@ namespace MR
         }
 
         void set_stdev (default_type stdev_in) {
-          set_stdev (std::vector<default_type> (3, stdev_in));
+          set_stdev (vector<default_type> (3, stdev_in));
         }
 
         //! ensure the image boundary remains zero. Used to constrain displacement fields during image registration
@@ -100,7 +99,7 @@ namespace MR
         //! Set the standard deviation of the Gaussian defined in mm.
         //! This must be set as a single value to be used for the first 3 dimensions
         //! or separate values, one for each dimension. (Default: 1 voxel)
-        void set_stdev (const std::vector<default_type>& std_dev)
+        void set_stdev (const vector<default_type>& std_dev)
         { 
           for (size_t i = 0; i < std_dev.size(); ++i)
             if (stdev[i] < 0.0)
@@ -127,7 +126,7 @@ namespace MR
           std::unique_ptr<ProgressBar> progress;
           if (message.size()) {
             size_t axes_to_smooth = 0;
-            for (std::vector<default_type>::const_iterator i = stdev.begin(); i != stdev.end(); ++i)
+            for (vector<default_type>::const_iterator i = stdev.begin(); i != stdev.end(); ++i)
               if (*i)
                 ++axes_to_smooth;
             progress.reset (new ProgressBar (message, axes_to_smooth + 1));
@@ -147,8 +146,8 @@ namespace MR
         }
 
       protected:
-        std::vector<int> extent;
-        std::vector<default_type> stdev;
+        vector<int> extent;
+        vector<default_type> stdev;
         bool zero_boundary;
     };
     //! @}

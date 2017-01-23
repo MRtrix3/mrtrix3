@@ -65,7 +65,7 @@ namespace MR
 
 
       template <typename T = float> class ScalarReader : public __ReaderBase__
-      {
+      { NOMEMALIGN
         public:
           typedef T value_type;
 
@@ -73,7 +73,7 @@ namespace MR
             open (file, "track scalars", properties);
           }
 
-          bool operator() (std::vector<value_type>& tck_scalar)
+          bool operator() (vector<value_type>& tck_scalar)
           {
             tck_scalar.clear();
 
@@ -160,7 +160,7 @@ namespace MR
        * */
       template <typename T = float>
       class ScalarWriter : public __WriterBase__<T>
-      {
+      { NOMEMALIGN
         public:
           typedef T value_type;
           using __WriterBase__<T>::count;
@@ -198,13 +198,13 @@ namespace MR
           }
 
 
-          bool operator() (const std::vector<value_type>& tck_scalar)
+          bool operator() (const vector<value_type>& tck_scalar)
           {
             if (tck_scalar.size()) {
               if (buffer_size + tck_scalar.size() > buffer_capacity)
                 commit();
 
-              for (typename std::vector<value_type>::const_iterator i = tck_scalar.begin(); i != tck_scalar.end(); ++i)
+              for (typename vector<value_type>::const_iterator i = tck_scalar.begin(); i != tck_scalar.end(); ++i)
                 add_scalar (*i);
               add_scalar (delimiter());
               ++count;

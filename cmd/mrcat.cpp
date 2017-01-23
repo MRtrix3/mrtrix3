@@ -59,7 +59,7 @@ void run () {
   int axis = get_option_value ("axis", -1);
 
   int num_images = argument.size()-1;
-  std::vector<Header, Eigen::aligned_allocator<Header>> in (num_images);
+  vector<Header> in (num_images);
   in[0] = Header::open (argument[0]);
 
   int ndims = 0;
@@ -115,7 +115,7 @@ void run () {
 
   if (axis > 2) { // concatenate DW schemes
     size_t nrows = 0;
-    std::vector<Eigen::MatrixXd> input_grads;
+    vector<Eigen::MatrixXd> input_grads;
     for (int n = 0; n < num_images; ++n) {
       auto grad = DWI::get_DW_scheme (in[n]);
       input_grads.push_back (grad);

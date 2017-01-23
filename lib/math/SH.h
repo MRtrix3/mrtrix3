@@ -158,7 +158,7 @@ namespace MR
         }
 
       template <typename ValueType>
-      class Transform {
+      class Transform { MEMALIGN(Transform<ValueType>)
         public:
           typedef Eigen::Matrix<ValueType,Eigen::Dynamic,Eigen::Dynamic> matrix_type;
 
@@ -343,7 +343,7 @@ namespace MR
 
 
       namespace {
-        template <typename> struct __dummy { typedef int type; };
+        template <typename> struct __dummy { NOMEMALIGN typedef int type; };
       }
 
 
@@ -451,11 +451,11 @@ namespace MR
 
       //! used to speed up SH calculation
       template <typename ValueType> class PrecomputedFraction
-      {
+      { NOMEMALIGN
         public:
           PrecomputedFraction () : f1 (0.0), f2 (0.0) { }
           ValueType f1, f2;
-          typename std::vector<ValueType>::const_iterator p1, p2;
+          typename vector<ValueType>::const_iterator p1, p2;
       };
 
 #ifndef USE_NON_ORTHONORMAL_SH_BASIS
@@ -466,7 +466,7 @@ namespace MR
 
       //! Precomputed Associated Legrendre Polynomials - used to speed up SH calculation
       template <typename ValueType> class PrecomputedAL
-      {
+      { NOMEMALIGN
         public:
           typedef ValueType value_type;
 
@@ -491,7 +491,7 @@ namespace MR
             Eigen::Matrix<value_type,Eigen::Dynamic,1,0,64> buf (lmax+1);
 
             for (int n = 0; n < ndir; n++) {
-              typename std::vector<value_type>::iterator p = AL.begin() + n*nAL;
+              typename vector<value_type>::iterator p = AL.begin() + n*nAL;
               value_type cos_el = std::cos (n*inc);
               for (int m = 0; m <= lmax; m++) {
                 Legendre::Plm_sph (buf, lmax, m, cos_el);
@@ -566,7 +566,7 @@ namespace MR
         protected:
           int lmax, ndir, nAL;
           ValueType inc;
-          std::vector<ValueType> AL;
+          vector<ValueType> AL;
       };
 
 
@@ -720,7 +720,7 @@ namespace MR
 
       //! a class to hold the coefficients for an apodised point-spread function.
       template <typename ValueType> class aPSF
-      {
+      { MEMALIGN(aPSF<ValueType>)
         public:
           aPSF (const size_t lmax) :
             lmax (lmax),

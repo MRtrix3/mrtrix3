@@ -115,7 +115,7 @@ namespace MR
       // bvecs format actually assumes a LHS coordinate system even if image is
       // stored using RHS - x axis is flipped to make linear 3x3 part of
       // transform have negative determinant:
-      std::vector<size_t> order;
+      vector<size_t> order;
       auto adjusted_transform = File::NIfTI::adjust_transform (header, order);
       if (adjusted_transform.linear().determinant() > 0.0) 
         bvecs.row(0) = -bvecs.row(0);
@@ -152,7 +152,7 @@ namespace MR
 
       // deal with FSL requiring gradient directions to coincide with data strides
       // also transpose matrices in preparation for file output
-      std::vector<size_t> order;
+      vector<size_t> order;
       auto adjusted_transform = File::NIfTI::adjust_transform (header, order);
       Eigen::MatrixXd bvecs (3, grad.rows());
       Eigen::MatrixXd bvals (1, grad.rows());

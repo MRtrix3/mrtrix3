@@ -30,7 +30,7 @@ namespace MR
 
 
     class Cylinder
-    {
+    { MEMALIGN(Cylinder)
       public:
         Cylinder () : num_indices (0) { }
 

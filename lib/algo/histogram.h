@@ -24,12 +24,11 @@
 namespace MR
 {
 
-    template <class Set> class Histogram
-    {
+    template <class ImageType> class Histogram { MEMALIGN (Histogram<ImageType>)
       public:
-        typedef typename Set::value_type value_type;
+        typedef typename ImageType::value_type value_type;
 
-        Histogram (Set& D, const size_t num_buckets=100) {
+        Histogram (ImageType& D, const size_t num_buckets=100) {
           if (num_buckets < 10)
             throw Exception ("Error initialising histogram: number of buckets must be greater than 10");
 
@@ -103,15 +102,14 @@ namespace MR
         }
 
       protected:
-        class Entry
-        {
+        class Entry { NOMEMALIGN
           public:
             Entry () : frequency (0), value (0.0) { }
             size_t  frequency;
             value_type  value;
         };
 
-        std::vector<Entry> list;
+        vector<Entry> list;
         friend class Kernel;
     };
 

@@ -60,8 +60,7 @@ void usage ()
 typedef float value_type;
 
 
-class SH2Amp
-{
+class SH2Amp { MEMALIGN(SH2Amp)
   public:
     template <class MatrixType>
     SH2Amp (const MatrixType& dirs, const size_t lmax, bool nonneg) 

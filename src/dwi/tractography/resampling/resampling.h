@@ -39,15 +39,14 @@ namespace MR {
 
 
 
-        class Base
-        {
+        class Base { NOMEMALIGN
           public:
             Base() { }
 
-            virtual bool operator() (std::vector<Eigen::Vector3f>&) const = 0;
+            virtual bool operator() (vector<Eigen::Vector3f>&) const = 0;
 
             virtual bool valid () const = 0;
-            virtual bool limits (const std::vector<Eigen::Vector3f>&) { return true; }
+            virtual bool limits (const vector<Eigen::Vector3f>&) { return true; }
 
         };
 

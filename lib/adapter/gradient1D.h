@@ -24,7 +24,7 @@ namespace MR
   {
 
     template <class ImageType>
-      class Gradient1D : public Base<ImageType> {
+      class Gradient1D : public Base<ImageType> { MEMALIGN(Gradient1D<ImageType>)
       public:
 
         typedef typename ImageType::value_type value_type;
@@ -89,8 +89,8 @@ namespace MR
         size_t axis;
         value_type result;
         const bool wrt_spacing;
-        std::vector<value_type> derivative_weights;
-        std::vector<value_type> half_derivative_weights;
+        vector<value_type> derivative_weights;
+        vector<value_type> half_derivative_weights;
       };
   }
 }

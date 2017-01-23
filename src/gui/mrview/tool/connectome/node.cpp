@@ -76,7 +76,7 @@ namespace MR
           MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
-          std::vector<float> vertices;
+          vector<float> vertices;
           vertices.reserve (3 * in.num_vertices());
           for (size_t v = 0; v != in.num_vertices(); ++v) {
             for (size_t axis = 0; axis != 3; ++axis)
@@ -89,7 +89,7 @@ namespace MR
 
           if (!in.have_normals())
             in.calculate_normals();
-          std::vector<float> normals;
+          vector<float> normals;
           normals.reserve (3 * in.num_vertices());
           for (size_t n = 0; n != in.num_vertices(); ++n) {
             for (size_t axis = 0; axis != 3; ++axis)
@@ -109,7 +109,7 @@ namespace MR
           gl::EnableVertexAttribArray (1);
           gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
 
-          std::vector<unsigned int> indices;
+          vector<unsigned int> indices;
           indices.reserve (3 * in.num_triangles());
           for (size_t i = 0; i != in.num_triangles(); ++i) {
             for (size_t v = 0; v != 3; ++v)

@@ -20,7 +20,7 @@ namespace MR
   namespace Adapter
   {
     const transform_type NoTransform = transform_type::Identity();
-    const std::vector<int> AutoOverSample;
+    const vector<int> AutoOverSample;
   }
 }
 

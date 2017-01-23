@@ -117,10 +117,10 @@ namespace MR
 
   //! read matrix data into a 2D vector \a filename
   template <class ValueType = default_type>
-    std::vector<std::vector<ValueType>> load_matrix_2D_vector (const std::string& filename)
+    vector<vector<ValueType>> load_matrix_2D_vector (const std::string& filename)
     {
       std::ifstream stream (filename, std::ios_base::in | std::ios_base::binary);
-      std::vector<std::vector<ValueType>> V;
+      vector<vector<ValueType>> V;
       std::string sbuf;
 
       while (getline (stream, sbuf)) {
@@ -128,7 +128,7 @@ namespace MR
         if (sbuf.empty())
           continue;
 
-        V.push_back (std::vector<ValueType>());
+        V.push_back (vector<ValueType>());
 
         const auto elements = MR::split (sbuf, " ,;\t", true);
         try {
@@ -156,7 +156,7 @@ namespace MR
     Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> load_matrix (const std::string& filename)
     {
       DEBUG ("loading matrix file \"" + filename + "\"...");
-      std::vector<std::vector<ValueType>> V;
+      vector<vector<ValueType>> V;
       try {
         V = load_matrix_2D_vector<ValueType> (filename);
       } catch (Exception& e) {
@@ -178,7 +178,7 @@ namespace MR
   {
     DEBUG ("loading transform file \"" + filename + "\"...");
 
-    std::vector<std::vector<default_type>> V;
+    vector<vector<default_type>> V;
     try {
       V = load_matrix_2D_vector<> (filename);
     } catch (Exception& e) {

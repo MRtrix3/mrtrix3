@@ -50,13 +50,13 @@ namespace MR
 
 
       class Window : public QMainWindow, ColourMapButtonObserver
-      {
+      { MEMALIGN(Window)
           Q_OBJECT
 
         private:
           Cursor cursors_do_not_use;
 
-          class GLArea : public GL::Area {
+          class GLArea : public GL::Area { MEMALIGN(GLArea)
             public:
               GLArea (Window& parent);
               QSize sizeHint () const override;
@@ -81,7 +81,7 @@ namespace MR
           Window();
           ~Window();
 
-          void add_images (std::vector<std::unique_ptr<MR::Header>>& list);
+          void add_images (vector<std::unique_ptr<MR::Header>>& list);
           void process_commandline_options ();
 
           const QPoint& mouse_position () const { return mouse_position_; }
@@ -324,7 +324,7 @@ namespace MR
 
           Tool::Base* tool_has_focus;
 
-          std::vector<double> render_times;
+          vector<double> render_times;
           double best_FPS, best_FPS_time;
           bool show_FPS;
 
@@ -337,7 +337,7 @@ namespace MR
       };
 
 
-      class GrabContext : private Context::Grab {
+      class GrabContext : private Context::Grab { NOMEMALIGN
         public:
           GrabContext () : Context::Grab (Window::main->glarea) { }
       };

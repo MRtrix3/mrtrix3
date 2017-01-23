@@ -35,7 +35,7 @@ namespace MR
 
 
   template <typename ValueType>
-    class Image {
+    class Image { MEMALIGN (Image<ValueType>)
       public:
         typedef ValueType value_type;
         class Buffer;
@@ -201,19 +201,20 @@ namespace MR
           return Header::scratch (template_header, label).get_image<ValueType>();
         }
 
-      protected:
         //! shared reference to header/buffer
         std::shared_ptr<Buffer> buffer;
+      protected:
         //! pointer to data address whether in RAM or MMap
         void* data_pointer;
         //! voxel indices
-        std::vector<ssize_t> x;
+        vector<ssize_t> x;
         //! voxel indices
         Stride::List strides;
         //! offset to currently pointed-to voxel
         size_t data_offset;
     };
 
+  CHECK_MEM_ALIGN (Image<float>);
 
 
 
@@ -221,9 +222,9 @@ namespace MR
 
 
   template <typename ValueType> 
-    class Image<ValueType>::Buffer : public Header
-    {
+    class Image<ValueType>::Buffer : public Header { MEMALIGN (Image<ValueType>::Buffer)
       public:
+        Buffer() {} // TODO: delete this line! Only for testing memory alignment issues.
         //! construct a Buffer object to access the data in the image specified
         Buffer (Header& H, bool read_write_if_existing = false);
         Buffer (Buffer&&) = default;
@@ -232,7 +233,6 @@ namespace MR
         Buffer (const Buffer& b) : 
           Header (b), fetch_func (b.fetch_func), store_func (b.store_func) { }
 
-      EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         FORCE_INLINE ValueType get_value (size_t offset) const {
           ssize_t nseg = offset / io->segment_size();
@@ -258,6 +258,7 @@ namespace MR
         }
     };
 
+  CHECK_MEM_ALIGN (Image<float>::Buffer);
 
 
 
@@ -277,12 +278,12 @@ namespace MR
 
     // lightweight struct to copy data into:
     template <typename ValueType>
-      struct TmpImage {
+      struct TmpImage { MEMALIGN (TmpImage<ValueType>)
         typedef ValueType value_type;
 
         const typename Image<ValueType>::Buffer& b;
         void* const data;
-        std::vector<ssize_t> x;
+        vector<ssize_t> x;
         const Stride::List& strides;
         size_t offset;
 
@@ -300,6 +301,8 @@ namespace MR
         FORCE_INLINE auto value () -> decltype (Helper::value (*this)) { return { *this }; }
         FORCE_INLINE void set_value (ValueType val) { Raw::store_native<ValueType> (val, data, offset); }
       };
+    
+    CHECK_MEM_ALIGN (TmpImage<float>);
 
   }
 
@@ -394,7 +397,7 @@ namespace MR
         if (buffer->get_io()) {
           if (buffer->get_io()->is_image_readwrite() && buffer->data_buffer) {
             auto data_buffer = std::move (buffer->data_buffer);
-            TmpImage<ValueType> src = { *buffer, data_buffer.get(), std::vector<ssize_t> (ndim(), 0), strides, Stride::offset (*this) };
+            TmpImage<ValueType> src = { *buffer, data_buffer.get(), vector<ssize_t> (ndim(), 0), strides, Stride::offset (*this) };
             Image<ValueType> dest (buffer);
             threaded_copy_with_progress_message ("writing back direct IO buffer for \"" + name() + "\"", src, dest); 
           }
@@ -438,7 +441,7 @@ namespace MR
       }
       else {
         auto src (*this);
-        TmpImage<ValueType> dest = { *buffer, buffer->data_buffer.get(), std::vector<ssize_t> (ndim(), 0), with_strides, Stride::offset (with_strides, *this) };
+        TmpImage<ValueType> dest = { *buffer, buffer->data_buffer.get(), vector<ssize_t> (ndim(), 0), with_strides, Stride::offset (with_strides, *this) };
         threaded_copy_with_progress_message ("preloading data for \"" + name() + "\"", src, dest); 
       }
 

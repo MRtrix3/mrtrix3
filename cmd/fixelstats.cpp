@@ -70,7 +70,7 @@ void run ()
   if (opt.size())
     position_stream.reset (new File::OFStream (opt[0][0]));
 
-  std::vector<std::string> fields;
+  vector<std::string> fields;
   opt = get_options ("output");
   for (size_t n = 0; n < opt.size(); ++n)
     fields.push_back (opt[n][0]);

@@ -46,7 +46,7 @@ namespace MR
 
 
         class ROI : public Base
-        {
+        { MEMALIGN(ROI)
             Q_OBJECT
 
           public:
@@ -105,7 +105,7 @@ namespace MR
                window().updateGL();
              }
 
-             void load (std::vector<std::unique_ptr<MR::Header>>& list);
+             void load (vector<std::unique_ptr<MR::Header>>& list);
              void save (ROI_Item*);
 
              int normal2axis (const Eigen::Vector3f&, const MR::Transform&) const;

@@ -54,7 +54,7 @@ namespace MR
 
 
         class View::ClipPlaneModel : public QAbstractItemModel
-        {
+        { MEMALIGN(View::ClipPlaneModel)
           public:
 
             ClipPlaneModel (QObject* parent) :
@@ -151,7 +151,7 @@ namespace MR
               endInsertRows();
             }
 
-            std::vector<ClipPlane> planes;
+            vector<ClipPlane> planes;
         };
 
 
@@ -860,9 +860,9 @@ namespace MR
 
 
 
-        std::vector< std::pair<GL::vec4,bool> > View::get_active_clip_planes () const
+        vector< std::pair<GL::vec4,bool> > View::get_active_clip_planes () const
         {
-          std::vector< std::pair<GL::vec4,bool> > ret;
+          vector< std::pair<GL::vec4,bool> > ret;
           QItemSelectionModel* selection = clip_planes_list_view->selectionModel();
           if (clip_box->isChecked()) {
             for (int i = 0; i < clip_planes_model->rowCount(); ++i) {
@@ -878,9 +878,9 @@ namespace MR
           return ret;
         }
 
-        std::vector<GL::vec4*> View::get_clip_planes_to_be_edited () const
+        vector<GL::vec4*> View::get_clip_planes_to_be_edited () const
         {
-          std::vector<GL::vec4*> ret;
+          vector<GL::vec4*> ret;
           if (clip_box->isChecked()) {
             QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
             for (int i = 0; i < indices.size(); ++i) 

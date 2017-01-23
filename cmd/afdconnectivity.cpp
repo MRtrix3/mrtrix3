@@ -90,7 +90,7 @@ typedef DWI::Tractography::SIFT::FixelBase FixelBase;
 
 
 class Fixel : public FixelBase
-{
+{ MEMALIGN(Fixel)
   public:
     Fixel () : FixelBase (), length (0.0) { }
     Fixel (const FMLS::FOD_lobe& lobe) : FixelBase (lobe), length (0.0) { }
@@ -111,7 +111,7 @@ class Fixel : public FixelBase
 
 
 class AFDConnectivity : public DWI::Tractography::SIFT::ModelBase<Fixel>
-{
+{ MEMALIGN(AFDConnectivity)
   public:
     AFDConnectivity (Image<value_type>& fod_buffer, const DWI::Directions::FastLookupSet& dirs, const std::string& tck_path, const std::string& wbft_path) :
         DWI::Tractography::SIFT::ModelBase<Fixel> (fod_buffer, dirs),
@@ -223,7 +223,7 @@ value_type AFDConnectivity::get (const std::string& path)
     if (all_fixels) {
 
       // All fixels contribute to the result
-      for (std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
+      for (vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
         if (i->is_selected())
           sum_volumes += i->get_FOD();
       }

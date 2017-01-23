@@ -32,7 +32,7 @@ namespace MR {
 
 
         class TrackLoader
-        {
+        { MEMALIGN(TrackLoader)
 
           public:
             TrackLoader (Reader<>& file, const size_t to_load = 0, const std::string& msg = "mapping tracks to image") :

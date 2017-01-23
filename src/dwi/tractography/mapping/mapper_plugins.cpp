@@ -27,7 +27,7 @@ namespace MR {
 
 
 
-        const Eigen::Vector3f TWIImagePluginBase::get_last_point_in_fov (const std::vector<Eigen::Vector3f>& tck, const bool end) const
+        const Eigen::Vector3f TWIImagePluginBase::get_last_point_in_fov (const vector<Eigen::Vector3f>& tck, const bool end) const
         {
           int index = end ? tck.size() - 1 : 0;
           const int step = end ? -1 : 1;
@@ -45,7 +45,7 @@ namespace MR {
 
 
 
-        void TWIScalarImagePlugin::load_factors (const std::vector<Eigen::Vector3f>& tck, std::vector<float>& factors)
+        void TWIScalarImagePlugin::load_factors (const vector<Eigen::Vector3f>& tck, vector<float>& factors)
         {
           if (statistic == ENDS_MIN || statistic == ENDS_MEAN || statistic == ENDS_MAX || statistic == ENDS_PROD) {
 
@@ -75,7 +75,7 @@ namespace MR {
 
 
 
-        void TWIFODImagePlugin::load_factors (const std::vector<Eigen::Vector3f>& tck, std::vector<float>& factors)
+        void TWIFODImagePlugin::load_factors (const vector<Eigen::Vector3f>& tck, vector<float>& factors)
         {
           for (size_t i = 0; i != tck.size(); ++i) {
             if (interp.scanner (tck[i])) {

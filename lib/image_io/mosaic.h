@@ -25,7 +25,7 @@ namespace MR
   {
 
     class Mosaic : public Base
-    {
+    { NOMEMALIGN
       public:
         Mosaic (const Header& header, size_t mosaic_xdim, size_t mosaic_ydim, size_t slice_xdim, size_t slice_ydim, size_t nslices) :
           Base (header), m_xdim (mosaic_xdim), m_ydim (mosaic_ydim),

@@ -177,7 +177,7 @@ namespace MR {
 
 
 
-      class Max_abs {
+      class Max_abs { NOMEMALIGN
         public:
           bool operator() (const default_type& a, const default_type& b) const { return (std::abs (a) > std::abs (b)); }
       };
@@ -203,11 +203,11 @@ namespace MR {
         if (data_in_order.begin()->first <= 0.0)
           return true;
 
-        std::vector< std::pair<dir_t, uint32_t> > retrospective_assignments;
+        vector< std::pair<dir_t, uint32_t> > retrospective_assignments;
 
         for (const auto& i : data_in_order) {
 
-          std::vector<uint32_t> adj_lobes;
+          vector<uint32_t> adj_lobes;
           for (uint32_t l = 0; l != out.size(); ++l) {
             if ((((i.first <= 0.0) &&  out[l].is_negative())
                   || ((i.first >  0.0) && !out[l].is_negative()))
@@ -256,7 +256,7 @@ namespace MR {
                 }
               }
               for (size_t j = adj_lobes.size() - 1; j; --j) {
-                std::vector<FOD_lobe>::iterator ptr = out.begin();
+                vector<FOD_lobe>::iterator ptr = out.begin();
                 advance (ptr, adj_lobes[j]);
                 out.erase (ptr);
               }
@@ -323,15 +323,15 @@ namespace MR {
           if (dilate_lookup_table && out.size()) {
 
             DWI::Directions::Mask processed (dirs);
-            for (std::vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i)
+            for (vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i)
               processed |= i->get_mask();
 
-            NON_POD_VLA (new_assignments, std::vector<uint32_t>, dirs.size());
+            NON_POD_VLA (new_assignments, vector<uint32_t>, dirs.size());
             while (!processed.full()) {
 
               for (dir_t dir = 0; dir != dirs.size(); ++dir) {
                 if (!processed[dir]) {
-                  for (std::vector<dir_t>::const_iterator neighbour = dirs.get_adj_dirs (dir).begin(); neighbour != dirs.get_adj_dirs (dir).end(); ++neighbour) {
+                  for (vector<dir_t>::const_iterator neighbour = dirs.get_adj_dirs (dir).begin(); neighbour != dirs.get_adj_dirs (dir).end(); ++neighbour) {
                     if (processed[*neighbour])
                       new_assignments[dir].push_back (out.lut[*neighbour]);
                   }
@@ -348,7 +348,7 @@ namespace MR {
 
                   uint32_t best_lobe = 0;
                   default_type max_integral = 0.0;
-                  for (std::vector<uint32_t>::const_iterator lobe_no = new_assignments[dir].begin(); lobe_no != new_assignments[dir].end(); ++lobe_no) {
+                  for (vector<uint32_t>::const_iterator lobe_no = new_assignments[dir].begin(); lobe_no != new_assignments[dir].end(); ++lobe_no) {
                     if (out[*lobe_no].get_integral() > max_integral) {
                       best_lobe = *lobe_no;
                       max_integral = out[*lobe_no].get_integral();
@@ -369,7 +369,7 @@ namespace MR {
 
         if (create_null_lobe) {
           DWI::Directions::Mask null_mask (dirs, true);
-          for (std::vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i)
+          for (vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i)
             null_mask &= i->get_mask();
           out.push_back (FOD_lobe (null_mask));
         }

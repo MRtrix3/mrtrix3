@@ -26,11 +26,11 @@ namespace MR {
 
 
 
-        bool Upsampler::operator() (std::vector<Eigen::Vector3f>& in) const
+        bool Upsampler::operator() (vector<Eigen::Vector3f>& in) const
         {
           if (!interp_prepare (in))
             return false;
-          std::vector<Eigen::Vector3f> out;
+          vector<Eigen::Vector3f> out;
           for (size_t i = 3; i < in.size(); ++i) {
             out.push_back (in[i-2]);
             increment (in[i]);
@@ -65,7 +65,7 @@ namespace MR {
 
 
 
-        bool Upsampler::interp_prepare (std::vector<Eigen::Vector3f>& in) const
+        bool Upsampler::interp_prepare (vector<Eigen::Vector3f>& in) const
         {
           if (!M.rows() || in.size() < 2)
             return false;

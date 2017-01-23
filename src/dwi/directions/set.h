@@ -37,7 +37,7 @@ namespace MR {
 
 
 
-      class Set {
+      class Set { MEMALIGN(Set)
 
         public:
 
@@ -88,7 +88,7 @@ namespace MR {
 
           size_t size () const { return unit_vectors.size(); }
           const Eigen::Vector3f& get_dir (const size_t i) const { return unit_vectors[i]; }
-          const std::vector<dir_t>& get_adj_dirs (const size_t i) const { return adj_dirs[i]; }
+          const vector<dir_t>& get_adj_dirs (const size_t i) const { return adj_dirs[i]; }
 
           bool dirs_are_adjacent (const dir_t one, const dir_t two) const {
             for (const auto& i : adj_dirs[one]) {
@@ -100,15 +100,15 @@ namespace MR {
 
           dir_t get_min_linkage (const dir_t one, const dir_t two) const;
 
-          const std::vector<Eigen::Vector3f>& get_dirs() const { return unit_vectors; }
+          const vector<Eigen::Vector3f>& get_dirs() const { return unit_vectors; }
           const Eigen::Vector3f& operator[] (const size_t i) const { return unit_vectors[i]; }
 
 
         protected:
 
           // TODO Change to double
-          std::vector<Eigen::Vector3f> unit_vectors;
-          std::vector< std::vector<dir_t> > adj_dirs; // Note: not self-inclusive
+          vector<Eigen::Vector3f> unit_vectors;
+          vector< vector<dir_t> > adj_dirs; // Note: not self-inclusive
 
 
         private:
@@ -155,7 +155,7 @@ namespace MR {
 
 
 
-      class FastLookupSet : public Set {
+      class FastLookupSet : public Set { MEMALIGN(FastLookupSet)
 
         public:
 
@@ -188,7 +188,7 @@ namespace MR {
 
         private:
 
-          std::vector< std::vector<dir_t> > grid_lookup;
+          vector< vector<dir_t> > grid_lookup;
           unsigned int num_az_grids, num_el_grids, total_num_angle_grids;
           float az_grid_step, el_grid_step;
           float az_begin, el_begin;

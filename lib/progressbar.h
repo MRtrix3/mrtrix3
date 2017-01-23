@@ -32,8 +32,7 @@ namespace MR
 {
 
   //! base class for the ProgressBar interface
-  class ProgressInfo
-  {
+  class ProgressInfo { NOMEMALIGN
     public:
       ProgressInfo () = delete;
       ProgressInfo (const ProgressInfo& p) = delete;
@@ -201,8 +200,7 @@ namespace MR
    * Other implementations can be created by overriding the display_func() and
    * done_func() static functions. These functions will then be used throughout
    * the application.  */
-  class ProgressBar 
-  {
+  class ProgressBar { NOMEMALIGN
     public:
 
       //! Create an unusable ProgressBar.

@@ -39,7 +39,7 @@ namespace MR {
         
         
         struct Properties
-        {
+        { MEMALIGN(Properties)
           float p_birth;
           float p_death;
           float p_shift;
@@ -57,14 +57,14 @@ namespace MR {
           double ppot;
           
           Eigen::MatrixXf resp_WM;
-          std::vector< Eigen::VectorXf > resp_ISO;
+          vector< Eigen::VectorXf > resp_ISO;
           
         };
         
         
         
         class Stats
-        {
+        { MEMALIGN(Stats)
         public:
           
           Stats(const double T0, const double T1, const uint64_t maxiter) 

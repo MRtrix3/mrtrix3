@@ -26,7 +26,7 @@ namespace MR
     {
 
       template <class Im1ImageType, class Im2ImageType, class Im1MaskType, class Im2MaskType>
-      class Demons {
+      class Demons { MEMALIGN(Demons<Im1ImageType,Im2ImageType,Im1MaskType,Im2MaskType>)
         public:
           Demons (default_type& global_energy, size_t& global_voxel_count,
                      const Im1ImageType& im1_image, const Im2ImageType& im2_image, const Im1MaskType im1_mask, const Im2MaskType im2_mask) :

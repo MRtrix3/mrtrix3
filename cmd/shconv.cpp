@@ -49,7 +49,7 @@ void usage ()
 typedef float value_type;
 
 
-class SConvFunctor {
+class SConvFunctor { MEMALIGN(SConvFunctor)
   public:
   SConvFunctor (const size_t n, Image<bool>& mask, 
                 const Eigen::Matrix<value_type, Eigen::Dynamic, 1>& response) :

@@ -33,7 +33,7 @@ namespace Connectome {
 
 
 class Streamline_nodepair : public Tractography::Streamline<>
-{
+{ MEMALIGN(Streamline_nodepair)
   public:
     Streamline_nodepair() : Tractography::Streamline<>(), nodes (std::make_pair (0, 0)) { }
     Streamline_nodepair (const size_t i) : Tractography::Streamline<> (i), nodes (std::make_pair (0, 0)) { }
@@ -48,16 +48,16 @@ class Streamline_nodepair : public Tractography::Streamline<>
 
 
 class Streamline_nodelist : public Tractography::Streamline<>
-{
+{ MEMALIGN(Streamline_nodelist)
   public:
     Streamline_nodelist() : Tractography::Streamline<>(), nodes () { }
     Streamline_nodelist (const size_t i) : Tractography::Streamline<> (i), nodes () { }
 
-    void set_nodes (const std::vector<node_t>& i) { nodes = i; }
-    const std::vector<node_t>& get_nodes() const { return nodes; }
+    void set_nodes (const vector<node_t>& i) { nodes = i; }
+    const vector<node_t>& get_nodes() const { return nodes; }
 
   private:
-    std::vector<node_t> nodes;
+    vector<node_t> nodes;
 };
 
 

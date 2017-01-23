@@ -89,7 +89,7 @@ namespace MR
       }
 
       bool convergence = false;
-      std::vector<default_type> dist(numIter);
+      vector<default_type> dist(numIter);
 
       // Minimizing the sum of the squares of the distances between each point in 'X' and the median.
       size_t i = 0;

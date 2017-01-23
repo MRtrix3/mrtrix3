@@ -28,7 +28,7 @@ namespace MR {
       class Series;
       class Element;
 
-      class Frame { 
+      class Frame { MEMALIGN(Frame)
         public:
           Frame () { 
             acq_dim[0] = acq_dim[1] = dim[0] = dim[1] = instance = series_num = acq = sequence = UINT_MAX;
@@ -51,7 +51,7 @@ namespace MR {
           size_t data, bits_alloc, data_size, frame_offset;
           std::string filename;
           bool DW_scheme_wrt_image;
-          std::vector<uint32_t> index;
+          vector<uint32_t> index;
 
           bool operator< (const Frame& frame) const {
             if (series_num != frame.series_num) 
@@ -89,9 +89,9 @@ namespace MR {
             distance = orientation_z.dot (position_vector);
           }
 
-          static std::vector<size_t> count (const std::vector<Frame*>& frames);
-          static default_type get_slice_separation (const std::vector<Frame*>& frames, size_t nslices);
-          static std::string get_DW_scheme (const std::vector<Frame*>& frames, size_t nslices, const transform_type& image_transform);
+          static vector<size_t> count (const vector<Frame*>& frames);
+          static default_type get_slice_separation (const vector<Frame*>& frames, size_t nslices);
+          static std::string get_DW_scheme (const vector<Frame*>& frames, size_t nslices, const transform_type& image_transform);
 
           friend std::ostream& operator<< (std::ostream& stream, const Frame& item);
       };
@@ -106,7 +106,7 @@ namespace MR {
 
 
 
-      class Image : public Frame {
+      class Image : public Frame { MEMALIGN(Image)
 
         public:
           Image (Series* parent = NULL) : 
@@ -120,8 +120,8 @@ namespace MR {
           std::string  sequence_name, manufacturer;
           bool is_BE, in_frames;
 
-          std::vector<uint32_t> frame_dim;
-          std::vector<std::shared_ptr<Frame>> frames;
+          vector<uint32_t> frame_dim;
+          vector<std::shared_ptr<Frame>> frames;
 
           void read ();
           void parse_item (Element& item, const std::string& dirname = "");

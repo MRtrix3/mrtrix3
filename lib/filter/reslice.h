@@ -48,7 +48,7 @@ namespace MR
           ImageTypeSource& source,
           ImageTypeDestination& destination,
           const transform_type& transform = Adapter::NoTransform,
-          const std::vector<int>& oversampling = Adapter::AutoOverSample,
+          const vector<int>& oversampling = Adapter::AutoOverSample,
           const typename ImageTypeDestination::value_type value_when_out_of_bounds = Interp::Base<ImageTypeDestination>::default_out_of_bounds_value())
       {
         Adapter::Reslice<Interpolator, ImageTypeSource> interp (source, destination, transform, oversampling, value_when_out_of_bounds);

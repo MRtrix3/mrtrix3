@@ -36,10 +36,10 @@ namespace MR {
          * @brief The ParticleGrid class
          */
         class ParticleGrid
-        {
+        { MEMALIGN(ParticleGrid)
         public:
           
-          typedef std::vector<Particle*> ParticleVectorType;
+          typedef vector<Particle*> ParticleVectorType;
           
           template <class HeaderType>
           ParticleGrid(const HeaderType& image)
@@ -90,7 +90,7 @@ namespace MR {
         protected:
           std::mutex mutex;
           ParticlePool pool;
-          std::vector<ParticleVectorType> grid;
+          vector<ParticleVectorType> grid;
           Math::RNG rng;
           transform_type T_s2g;
           size_t dims[3];

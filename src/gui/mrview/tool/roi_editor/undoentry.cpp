@@ -371,7 +371,7 @@ namespace MR
           const bool existing_value = after[seed_index];
           if (existing_value == insert_mode_value) return;
           after[seed_index] = fill_value;
-          std::vector<std::array<int,3>> buffer (1, seed_voxel);
+          vector<std::array<int,3>> buffer (1, seed_voxel);
           while (buffer.size()) {
             const std::array<int,3> v (buffer.back());
             buffer.pop_back();

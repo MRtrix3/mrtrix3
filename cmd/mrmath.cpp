@@ -75,7 +75,7 @@ void usage ()
 typedef float value_type;
 
 
-class Mean {
+class Mean { NOMEMALIGN
   public:
     Mean () : sum (0.0), count (0) { }
     void operator() (value_type val) { 
@@ -93,7 +93,7 @@ class Mean {
     size_t count;
 };
 
-class Median {
+class Median { NOMEMALIGN
   public:
     Median () { }
     void operator() (value_type val) { 
@@ -103,10 +103,10 @@ class Median {
     value_type result () { 
       return Math::median(values);
     }
-    std::vector<value_type> values; 
+    vector<value_type> values; 
 };
 
-class Sum {
+class Sum { NOMEMALIGN
   public:
     Sum () : sum (0.0) { }
     void operator() (value_type val) { 
@@ -120,7 +120,7 @@ class Sum {
 };
 
 
-class Product {
+class Product { NOMEMALIGN
   public:
     Product () : product (NAN) { }
     void operator() (value_type val) {
@@ -134,7 +134,7 @@ class Product {
 };
 
 
-class RMS {
+class RMS { NOMEMALIGN
   public:
     RMS() : sum (0.0), count (0) { }
     void operator() (value_type val) {
@@ -152,7 +152,7 @@ class RMS {
     size_t count;
 };
 
-class NORM2 {
+class NORM2 { NOMEMALIGN
   public:
     NORM2() : sum (0.0), count (0) { }
     void operator() (value_type val) {
@@ -171,7 +171,7 @@ class NORM2 {
 };
 
 
-class Var {
+class Var { NOMEMALIGN
   public:
     Var () : sum (0.0), sum_sqr (0.0), count (0) { }
     void operator() (value_type val) { 
@@ -191,14 +191,14 @@ class Var {
 };
 
 
-class Std : public Var {
+class Std : public Var { NOMEMALIGN
   public:
     Std() : Var() { }
     value_type result () const { return std::sqrt (Var::result()); }
 };
 
 
-class Min {
+class Min { NOMEMALIGN
   public:
     Min () : min (std::numeric_limits<value_type>::infinity()) { }
     void operator() (value_type val) { 
@@ -210,7 +210,7 @@ class Min {
 };
 
 
-class Max {
+class Max { NOMEMALIGN
   public:
     Max () : max (-std::numeric_limits<value_type>::infinity()) { }
     void operator() (value_type val) { 
@@ -222,7 +222,7 @@ class Max {
 };
 
 
-class AbsMax {
+class AbsMax { NOMEMALIGN
   public:
     AbsMax () : max (-std::numeric_limits<value_type>::infinity()) { }
     void operator() (value_type val) { 
@@ -233,7 +233,7 @@ class AbsMax {
     value_type max;
 };
 
-class MagMax {
+class MagMax { NOMEMALIGN
   public:
     MagMax () : max (-std::numeric_limits<value_type>::infinity()) { }
     MagMax (const int i) : max (-std::numeric_limits<value_type>::infinity()) { }
@@ -250,7 +250,7 @@ class MagMax {
 
 
 template <class Operation>
-class AxisKernel {
+class AxisKernel { NOMEMALIGN
   public:
     AxisKernel (size_t axis) : axis (axis) { }
 
@@ -269,7 +269,7 @@ class AxisKernel {
 
 
 
-class ImageKernelBase {
+class ImageKernelBase { NOMEMALIGN
   public:
     virtual void process (Header& image_in) = 0;
     virtual void write_back (Image<value_type>& out) = 0;
@@ -278,14 +278,14 @@ class ImageKernelBase {
 
 
 template <class Operation>
-class ImageKernel : public ImageKernelBase {
+class ImageKernel : public ImageKernelBase { NOMEMALIGN
   protected:
-    class InitFunctor { 
+    class InitFunctor { NOMEMALIGN
       public: 
         template <class ImageType> 
           void operator() (ImageType& out) const { out.value() = Operation(); } 
     };
-    class ProcessFunctor { 
+    class ProcessFunctor { NOMEMALIGN
       public: 
         template <class ImageType1, class ImageType2>
           void operator() (ImageType1& out, ImageType2& in) const { 
@@ -294,7 +294,7 @@ class ImageKernel : public ImageKernelBase {
             out.value() = op;
           } 
     };
-    class ResultFunctor {
+    class ResultFunctor { NOMEMALIGN
       public: 
         template <class ImageType1, class ImageType2>
           void operator() (ImageType1& out, ImageType2& in) const {
@@ -379,7 +379,7 @@ void run ()
       throw Exception ("mrmath requires either multiple input images, or the -axis option to be provided");
 
     // Pre-load all image headers
-    std::vector<Header, Eigen::aligned_allocator<Header>> headers_in (num_inputs);
+    vector<Header> headers_in (num_inputs);
 
     // Header of first input image is the template to which all other input images are compared
     headers_in[0] = Header::open (argument[0]);

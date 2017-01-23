@@ -26,14 +26,14 @@ namespace MR
 
 
     template <class ImageType>
-      class Median : public Base<ImageType> {
+      class Median : public Base<ImageType> { MEMALIGN(Median<ImageType>)
       public:
         Median (const ImageType& parent) :
           Base<ImageType> (parent) {
-            set_extent (std::vector<int>(1,3));
+            set_extent (vector<int>(1,3));
           }
 
-        Median (const ImageType& parent, const std::vector<int>& extent) :
+        Median (const ImageType& parent, const vector<int>& extent) :
           Base<ImageType> (parent) {
             set_extent (extent);
           }
@@ -41,7 +41,7 @@ namespace MR
         typedef typename ImageType::value_type value_type;
         typedef Median voxel_type;
 
-        void set_extent (const std::vector<int>& ext)
+        void set_extent (const vector<int>& ext)
         {
           for (size_t i = 0; i < ext.size(); ++i)
             if (! (ext[i] & int(1)))
@@ -49,7 +49,7 @@ namespace MR
           if (ext.size() != 1 && ext.size() != 3)
             throw Exception ("unexpected number of elements specified in extent");
           if (ext.size() == 1)
-            extent = std::vector<int> (3, ext[0]);
+            extent = vector<int> (3, ext[0]);
           else
             extent = ext;
 
@@ -95,8 +95,8 @@ namespace MR
         using Base<ImageType>::index;
 
       protected:
-        std::vector<int> extent;
-        std::vector<value_type> values;
+        vector<int> extent;
+        vector<value_type> values;
         value_type retval;
       };
 

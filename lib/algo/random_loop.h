@@ -28,7 +28,7 @@ namespace MR
 {
 
  template <class ImageType, class RandomEngine>
-  class Random_loop {
+  class Random_loop { NOMEMALIGN
     public:
       Random_loop (ImageType& in,
         RandomEngine& random_engine,
@@ -75,9 +75,9 @@ namespace MR
       ImageType& image;
       RandomEngine& engine;
       size_t ax;
-      std::vector<size_t> idx;
-      std::vector<size_t>::iterator it;
-      std::vector<size_t>::iterator stop;
+      vector<size_t> idx;
+      vector<size_t>::iterator it;
+      vector<size_t>::iterator stop;
       size_t max_cnt;
       bool status;
       size_t cnt;
@@ -85,7 +85,7 @@ namespace MR
 
   // Random_sparse_loop: ok for VERY sparse loops, slows down significantly at higher density (>5%)
   template <class ImageType>
-    class Random_sparse_loop {
+    class Random_sparse_loop { NOMEMALIGN
       public:
         Random_sparse_loop (ImageType& in,
           const size_t& axis = 0,
@@ -164,7 +164,7 @@ namespace MR
    };
 
   template <class ImageType, class IterType>
-    class Iterator_loop {
+    class Iterator_loop { NOMEMALIGN
       public:
         Iterator_loop (ImageType& in,
           IterType first,
