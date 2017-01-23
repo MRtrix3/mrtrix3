@@ -27,11 +27,11 @@ namespace MR
 
       class Font {
         public:
-          Font (const QFont& font) :
+          Font (const QFont font) :
             metric (font),
             font (font) { } 
 
-          void initGL ();
+          void initGL (bool with_shadow = true);
 
           const QFontMetrics metric;
 
@@ -59,7 +59,7 @@ namespace MR
           void render (const std::string& text, int x, int y) const;
 
         protected:
-          const QFont& font;
+          const QFont font;
           GL::Texture tex;
           GL::VertexBuffer vertex_buffer[2];
           GL::VertexArrayObject vertex_array_object;
