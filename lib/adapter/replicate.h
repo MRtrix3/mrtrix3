@@ -38,7 +38,7 @@ namespace MR
           Replicate (ImageType& original, const Header& replication_template) :
             Base<ImageType> (original),
             header_ (replication_template),
-            pos_ (ndim(), 0)
+            pos_ (std::max<size_t> (parent().ndim(), header_.ndim()), 0)
           {
             for (size_t n = 0; n < std::min<size_t> (parent().ndim(), header_.ndim()); ++n) {
               if (parent().size(n) > 1 && parent().size(n) != header_.size(n))
@@ -59,8 +59,12 @@ namespace MR
           return axis < parent().ndim() ? parent().stride (axis) : 0;
         }
 
-        Helper::Index<Replicate<ImageType> > operator[] (size_t axis) {
-          return (Helper::Index<Replicate<ImageType> > (*this, axis));
+        ssize_t index (size_t axis) const {
+          return pos_[axis];
+        }
+
+        auto index (size_t axis) -> decltype(Helper::index(*this, axis)) {
+          return { *this, axis };
         }
 
       protected:
@@ -68,20 +72,15 @@ namespace MR
         Header header_;
         std::vector<ssize_t> pos_;
 
-        ssize_t get_pos (size_t axis) const {
-          return pos_[axis];
-        }
-        void set_pos (size_t axis, ssize_t position) {
+        void set_index (size_t axis, ssize_t position) {
           pos_[axis] = position;
-          if (axis < parent().ndim())
-            if (parent().dim(axis) > 1)
-              parent()[axis] = position;
+          if (axis < parent().ndim() && parent().size(axis) > 1)
+            parent().index(axis) = position;
         }
-        void move_pos (size_t axis, ssize_t increment) {
+        void move_index (size_t axis, ssize_t increment) {
           pos_[axis] += increment;
-          if (axis < parent().ndim())
-            if (parent().dim(axis) > 1)
-              parent()[axis] += increment;
+          if (axis < parent().ndim() && parent().size(axis) > 1)
+            parent().index(axis) += increment;
         }
 
         friend class Helper::Index<Replicate<ImageType> >;
