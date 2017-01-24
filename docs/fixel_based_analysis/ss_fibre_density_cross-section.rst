@@ -1,4 +1,4 @@
-Fibre Density and Cross-section - Single Shell DWI
+Fibre density and cross-section - Single shell DWI
 ==================================================
 
 Introduction
