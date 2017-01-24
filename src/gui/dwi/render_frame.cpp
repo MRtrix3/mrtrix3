@@ -34,8 +34,6 @@ namespace MR
 
         constexpr float DistDefault = 0.3f;
         constexpr float DistInc = 0.005f;
-        constexpr float DistMin = 0.1f;
-        constexpr float DistMax = 10.0f;
 
         constexpr float ScaleInc = 1.05f;
 
@@ -315,8 +313,6 @@ namespace MR
           }
           else if (event->buttons() == Qt::RightButton) {
             distance *= 1.0 - DistInc*dy;
-            if (distance < DistMin) distance = DistMin;
-            if (distance > DistMax) distance = DistMax;
             update();
           }
         }
