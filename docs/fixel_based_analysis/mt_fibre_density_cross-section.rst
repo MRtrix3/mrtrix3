@@ -45,12 +45,14 @@ As described `here <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`_, using the sa
     average_response */response_gm.txt ../group_average_response_gm.txt
     average_response */response_csf.txt ../group_average_response_csf.txt
 
+
 4. Upsampling DW images
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 Upsampling DWI data before computing FODs can `increase anatomical contrast <http://www.sciencedirect.com/science/article/pii/S1053811914007472>`_ and improve downstream spatial normalisation and statistics. We recommend upsampling by a factor of two using bspline interpolation. Note that if you already have higher than normal DWI resolution (e.g. HCP data), then we recommend you skip this step::
 
     foreach * : mrresize IN/dwi_denoised_preproc.mif -scale 2.0 IN/dwi_denoised_preproc_upsampled.mif
+
 
 5. Compute upsampled brain mask images
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -72,10 +74,11 @@ When performing analysis of AFD, Constrained Spherical Deconvolution (CSD) shoul
 
 10. Perform simultaneous bias field correction and intensity normalisation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This step performs :ref:`global intensity normalisation <global-intensity-normalisation>` by scaling all tissue types based on a single scale factor. A multiplicative bias field is also estimated and guaranteed to have a mean of 1 over all voxels within the brain mask (automatically calculated)::
+This step performs :ref:`global intensity normalisation <global-intensity-normalisation>` by scaling all tissue types based on a single scale factor. A single multiplicative bias field is also estimated and applied to correct the output::
 
-    foreach * : mtbin IN/fod.mif IN/fod_bias_norm.mif IN/gm.mif IN/gm_bias_norm.mif IN/csf.mif IN/csf_bias_norm.mif -bias bias_estimated.mif
+    foreach * : mtbin IN/fod.mif IN/fod_bias_norm.mif IN/gm.mif IN/gm_bias_norm.mif IN/csf.mif IN/csf_bias_norm.mif
 
+.. WARNING:: We also strongly recommend you that you check the scale factors applied during intensity normalisation are not influenced by the variable of interest in your study. For example if one group contains global changes in white matter T2 then this may directly influence the intensity normalisation and therefore bias downstream AFD analysis. To check this we recommend you perform an equivalence test to ensure mean scale factors are the same between groups. To output the scale factor applied for all subjects use :code:`foreach * : mrinfo IN/fod_bias_norm.mif -property normalisation_scale_factor`.
 
 
 11. Generate a study-specific unbiased FOD template
@@ -83,10 +86,21 @@ This step performs :ref:`global intensity normalisation <global-intensity-normal
 
 .. include:: common_fba_steps/population_template.rst
 
+    foreach * : ln -sr IN/fod_wm_bias_norm.mif ../template/fod_input/PRE.mif
+    foreach * : ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
+
+Alternatively, if you have more than 40 subjects you can randomly select a subset of the individuals. If your study has multiple groups, then ideally you want to select the same number of subjects from each group to ensure the template is un-biased. Assuming the subject directory labels can be used to identify members of each group, you could use::
+
+    foreach `ls -d *patient | sort -R | tail -20` : ln -sr IN/fod_wm_bias_norm.mif ../template/fod_input/PRE.mif ";" ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
+    foreach `ls *control | sort -R | tail -20` : ln -sr IN/fod_wm_bias_norm.mif ../template/fod_input/PRE.mif ";" ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
+
+.. include:: common_fba_steps/population_template2.rst
+
 12. Register all subject FOD images to the FOD template
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. include:: common_fba_steps/register_to_template.rst
+
 
 13. Compute the intersection of all subject masks in template space
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

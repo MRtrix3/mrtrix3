@@ -81,7 +81,7 @@ These applications have been written from scratch in C++, using the functionalit
    :caption: Fixel-Based Analysis
 
    fixel_based_analysis/ss_fibre_density_cross-section
-   fixel_based_analysis/ms_fibre_density_cross-section
+   fixel_based_analysis/mt_fibre_density_cross-section
    fixel_based_analysis/fba_of_other_measures
    fixel_based_analysis/computing_effect_size_wrt_controls
    fixel_based_analysis/displaying_results_with_streamlines
