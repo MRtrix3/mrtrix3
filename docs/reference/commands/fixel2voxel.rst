@@ -46,7 +46,7 @@ Standard options
 References
 ^^^^^^^^^^
 
-* Reference for 'complexity' operation:Riffert, T. W.; Schreiber, J.; Anwander, A. & Knosche, T. R. Beyond Fractional Anisotropy: Extraction of bundle-specific structural metrics from crossing fibre models. NeuroImage, 2014 (in press)
+* Reference for 'complexity' operation:Riffert, T. W.; Schreiber, J.; Anwander, A. & Knosche, T. R. Beyond Fractional Anisotropy: Extraction of bundle-specific structural metrics from crossing fibre models. NeuroImage, 2014, 100, 176-191
 
 --------------
 
