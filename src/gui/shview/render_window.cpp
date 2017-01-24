@@ -223,7 +223,7 @@ namespace MR
         render_frame->set_LOD (5);
 
         lmax_group->actions() [render_frame->get_lmax()/2]->setChecked (true);
-        lod_group->actions() [render_frame->get_LOD()-3]->setChecked (true);
+        lod_group->actions() [render_frame->get_LOD()-1]->setChecked (true);
 
         render_frame->set_text ("no data loaded");
       }
