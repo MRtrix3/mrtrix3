@@ -356,7 +356,7 @@ namespace MR
       void Window::set_values (int row)
       {
         Eigen::Matrix<float, Eigen::Dynamic, 1> val;
-        std::string title, text;
+        std::string title;
 
         if (values.rows()) {
           current = row;
@@ -372,9 +372,15 @@ namespace MR
           }
           else 
             val = values.row (current);
-          if (is_response) title += " (response)";
-          title = name + " [ " + str (current) + " ]";
-          render_frame->set_text ("row " + str(current));
+          title = name;
+          if (is_response)
+            title += " (response)";
+          if (values.rows() > 1) {
+            title += " [ " + str (current+1) + "/" + str(values.rows()) + " ]";
+            render_frame->set_text ("row " + str(current+1) + " of " + str(values.rows()));
+          } else {
+            render_frame->set_text ("");
+          }
         }
         else {
           name.clear();
