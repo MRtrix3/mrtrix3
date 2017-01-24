@@ -127,7 +127,7 @@ namespace MR
         response_action = new QAction ("Treat as &response", this);
         response_action->setCheckable (true);
         response_action->setChecked (is_response_coefs);
-        response_action->setShortcut (tr ("R"));
+        response_action->setShortcut (tr ("Z"));
         response_action->setStatusTip (tr ("Assume each row of values consists only of\nthe m=0 (axially symmetric) even SH coefficients"));
         connect (response_action, SIGNAL (triggered (bool)), this, SLOT (response_slot (bool)));
 
@@ -139,7 +139,7 @@ namespace MR
 
         QAction* reset_view_action = new QAction ("&Reset View", this);
         reset_view_action->setCheckable (false);
-        reset_view_action->setShortcut (tr ("Home"));
+        reset_view_action->setShortcut (tr ("R"));
         reset_view_action->setStatusTip (tr ("reset viewing direction and focus position"));
         connect (reset_view_action, SIGNAL (triggered ()), this, SLOT (reset_view_slot ()));
 
