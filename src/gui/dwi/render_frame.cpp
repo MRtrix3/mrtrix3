@@ -28,8 +28,6 @@
 #define DIST_MAX 10.0
 
 #define SCALE_INC 1.05
-#define SCALE_MIN 0.01
-#define SCALE_MAX 10.0
 
 #define ANGLE_INC 0.1
 #define ANGLE_MIN 1.0
@@ -332,8 +330,6 @@ namespace MR
         int scroll = event->delta() / 120;
         for (int n = 0; n < scroll; n++) scale *= SCALE_INC;
         for (int n = 0; n > scroll; n--) scale /= SCALE_INC;
-        if (scale > SCALE_MAX) scale = SCALE_MAX;
-        if (scale < SCALE_MIN) scale = SCALE_MIN;
         update();
       }
 
