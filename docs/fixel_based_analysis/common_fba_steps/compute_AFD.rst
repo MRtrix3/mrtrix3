@@ -2,4 +2,3 @@ Here we segment each FOD lobe to identify the number and orientation of fixels i
 
     foreach * : fod2fixel IN/fod_in_template_space.mif -mask ../template/voxel_mask.mif IN/fixel_in_template_space -afd fd.mif
 
-.. NOTE:: If you would like to perform fixel-based analysis of metrics derived from other diffusion MRI models (e.g. CHARMED), replace steps 14 & 15. For example, in step 14 you can warp preprocessed DW images (also without any reorientation). In step 15 you could then estimate your DWI model of choice, and output the FD related measure to the :ref:`fixel_format`, ready for the subsequent fixel reorientation step.

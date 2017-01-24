@@ -10,9 +10,9 @@ This tutorial explains how to perform `fixel-based analysis of fibre density and
 All steps in this tutorial have written as if the commands are being **run on a cohort of images**, and make extensive use of the :ref:`foreach script to simplify batch processing <batch_processing>`. This tutorial also assumes that the imaging dataset is organised with one directory identifying the subject, and all files within identifying the image type. For example::
 
     study/subjects/001_patient/dwi.mif
-    study/subjects/001_patient/t1.mif
+    study/subjects/001_patient/fod.mif
     study/subjects/002_control/dwi.mif
-    study/subjects/002_control/t1.mif
+    study/subjects/002_control/fod.mif
 
 .. NOTE:: All commands in this tutorial are run **from the subjects path** up until step 20, where we change directory to the template path
 
@@ -191,6 +191,9 @@ Note that here we warp FOD images into template space *without* FOD reorientatio
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. include:: common_fba_steps/compute_AFD.rst
+
+.. NOTE:: If you would like to perform fixel-based analysis of metrics derived from other diffusion MRI models (e.g. CHARMED), replace steps 14 & 15. For example, in step 14 you can warp pre-processed DW images (also without any reorientation). In step 15 you could then estimate your DWI model of choice, and output the FD related measure to the :ref:`fixel_format`, ready for the subsequent fixel reorientation step.
+
     
 16. Reorient fixel orientations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -224,7 +227,7 @@ In step 10 & 11 we obtained spatial correspondence between subject and template.
 .. include:: common_fba_steps/sift.rst
     
 22. Perform statistical analysis of FD, FC, and FDC
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. include:: common_fba_steps/statistics.rst
 

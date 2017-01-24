@@ -10,9 +10,9 @@ This tutorial explains how to perform `fixel-based analysis of fibre density and
 All steps in this tutorial have written as if the commands are being **run on a cohort of images**, and make extensive use of the :ref:`foreach script to simplify batch processing <batch_processing>`. This tutorial also assumes that the imaging dataset is organised with one directory identifying the subject, and all files within identifying the image type. For example::
 
     study/subjects/001_patient/dwi.mif
-    study/subjects/001_patient/t1.mif
+    study/subjects/001_patient/fod.mif
     study/subjects/002_control/dwi.mif
-    study/subjects/002_control/t1.mif
+    study/subjects/002_control/fod.mif
 
 .. NOTE:: All commands in this tutorial are run **from the subjects path** up until step 18, where we change directory to the template path
 
@@ -78,7 +78,7 @@ This step performs :ref:`global intensity normalisation <global-intensity-normal
 
     foreach * : mtbin IN/fod.mif IN/fod_bias_norm.mif IN/gm.mif IN/gm_bias_norm.mif IN/csf.mif IN/csf_bias_norm.mif
 
-.. WARNING:: We also strongly recommend you that you check the scale factors applied during intensity normalisation are not influenced by the variable of interest in your study. For example if one group contains global changes in white matter T2 then this may directly influence the intensity normalisation and therefore bias downstream AFD analysis. To check this we recommend you perform an equivalence test to ensure mean scale factors are the same between groups. To output the scale factor applied for all subjects use :code:`foreach * : mrinfo IN/fod_bias_norm.mif -property normalisation_scale_factor`.
+.. WARNING:: We strongly recommend you that you check the scale factors applied during intensity normalisation are not influenced by the variable of interest in your study. For example if one group contains global changes in white matter T2 then this may directly influence the intensity normalisation and therefore bias downstream AFD analysis. To check this we recommend you perform an equivalence test to ensure mean scale factors are the same between groups. To output the scale factor applied for all subjects use :code:`foreach * : mrinfo IN/fod_bias_norm.mif -property normalisation_scale_factor`.
 
 
 8. Generate a study-specific unbiased FOD template
@@ -99,7 +99,7 @@ Alternatively, if you have more than 40 subjects you can randomly select a subse
 9. Register all subject FOD images to the FOD template
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Register the FOD image from all subjects to the FOD template image, note you can skip this step if you built your template from your entire population and saved the warps (see previous step)::
+Register the FOD image from all subjects to the FOD template image. Note you can skip this step if you built your template from your entire population and saved the warps (see previous step)::
 
     foreach * : mrregister IN/fod_wm_bias_norm.mif -mask1 IN/dwi_mask_upsampled.mif ../template/fod_template.mif -nl_warp IN/subject2template_warp.mif IN/template2subject_warp.mif
 
@@ -131,6 +131,7 @@ Note that here we warp FOD images into template space *without* FOD reorientatio
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. include:: common_fba_steps/compute_AFD.rst
+
 
 14. Reorient fixel orientations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
