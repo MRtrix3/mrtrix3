@@ -27,18 +27,15 @@ namespace MR
 
       class Lighting : public QObject
       {
-          Q_OBJECT
+        Q_OBJECT
 
         public:
-          Lighting (QObject* parent) : 
+
+          Lighting (QObject* parent) :
             QObject (parent), 
-            ambient (0.5),
-            diffuse (0.7), 
-            specular (0.7),
-            shine (0.5),
             set_background (false) {
-            load_defaults();
-          }
+              load_defaults();
+            }
 
           float ambient, diffuse, specular, shine;
           float light_color[3], lightpos[3], background_color[3];
