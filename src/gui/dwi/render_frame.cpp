@@ -272,25 +272,15 @@ namespace MR
       }
 
 
-
-
-
-
-
-
-      void RenderFrame::mouseDoubleClickEvent (QMouseEvent* event)
-      {
-        if (event->modifiers() == Qt::NoModifier) {
-          if (event->buttons() == Qt::LeftButton) {
-            orientation = DefaultOrientation;
-            update();
-          }
-          else if (event->buttons() == Qt::MidButton) {
-            focus.setZero();
-            update();
-          }
-        }
+      void RenderFrame::reset_view () {
+        orientation = DefaultOrientation;
+        focus.setZero();
+        update();
       }
+
+
+
+
 
 
       void RenderFrame::mousePressEvent (QMouseEvent* event)

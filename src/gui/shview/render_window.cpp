@@ -124,18 +124,24 @@ namespace MR
         colour_by_direction_action->setStatusTip (tr ("Colour surface according to direction"));
         connect (colour_by_direction_action, SIGNAL (triggered (bool)), this, SLOT (colour_by_direction_slot (bool)));
 
-        QAction* reset_scale_action = new QAction ("&Reset scaling", this);
-        reset_scale_action->setCheckable (false);
-        reset_scale_action->setShortcut (tr ("Esc"));
-        reset_scale_action->setStatusTip (tr ("reset intensity scaling based on ODF currently displayed"));
-        connect (reset_scale_action, SIGNAL (triggered ()), this, SLOT (reset_scale_slot ()));
-
         response_action = new QAction ("Treat as &response", this);
         response_action->setCheckable (true);
         response_action->setChecked (is_response_coefs);
         response_action->setShortcut (tr ("R"));
         response_action->setStatusTip (tr ("Assume each row of values consists only of\nthe m=0 (axially symmetric) even SH coefficients"));
         connect (response_action, SIGNAL (triggered (bool)), this, SLOT (response_slot (bool)));
+
+        QAction* reset_scale_action = new QAction ("Reset &scaling", this);
+        reset_scale_action->setCheckable (false);
+        reset_scale_action->setShortcut (tr ("Esc"));
+        reset_scale_action->setStatusTip (tr ("reset intensity scaling based on ODF currently displayed"));
+        connect (reset_scale_action, SIGNAL (triggered ()), this, SLOT (reset_scale_slot ()));
+
+        QAction* reset_view_action = new QAction ("&Reset View", this);
+        reset_view_action->setCheckable (false);
+        reset_view_action->setShortcut (tr ("Home"));
+        reset_view_action->setStatusTip (tr ("reset viewing direction and focus position"));
+        connect (reset_view_action, SIGNAL (triggered ()), this, SLOT (reset_view_slot ()));
 
         QAction* manual_colour_action = new QAction ("&Manual colour", this);
         manual_colour_action->setShortcut (tr ("M"));
@@ -158,6 +164,7 @@ namespace MR
         QMenu* lmax_menu = settings_menu->addMenu (tr ("&Harmonic order"));
         QMenu* lod_menu = settings_menu->addMenu (tr ("Level of &detail"));
         settings_menu->addSeparator();
+        settings_menu->addAction (reset_view_action);
         settings_menu->addAction (reset_scale_action);
         settings_menu->addAction (manual_colour_action);
         settings_menu->addAction (advanced_lighting_action);
@@ -260,31 +267,43 @@ namespace MR
       {
         render_frame->set_use_lighting (is_checked);
       }
+
       void Window::show_axes_slot (bool is_checked)
       {
         render_frame->set_show_axes (is_checked);
       }
+
       void Window::hide_negative_lobes_slot (bool is_checked)
       {
         render_frame->set_hide_neg_values (is_checked);
       }
+
       void Window::colour_by_direction_slot (bool is_checked)
       {
         render_frame->set_color_by_dir (is_checked);
       }
+
       void Window::reset_scale_slot ()
       {
         render_frame->reset_scale ();
       }
+
+      void Window::reset_view_slot ()
+      {
+        render_frame->reset_view ();
+      }
+
       void Window::response_slot (bool is_checked)
       {
         is_response = is_checked;
         set_values (current);
       }
+
       void Window::lmax_slot ()
       {
         render_frame->set_lmax (lmax_group->checkedAction()->data().toInt());
       }
+
       void Window::lod_slot ()
       {
         render_frame->set_LOD (lod_group->checkedAction()->data().toInt());

@@ -86,6 +86,7 @@ namespace MR
           void reset_scale () {
             set_scale (NaN);
           }
+          void reset_view ();
           void set_lmax (int lmax) {
             assert (mode == mode_t::SH);
             if (lmax != lmax_computed) 
@@ -163,7 +164,6 @@ namespace MR
           virtual void initializeGL () override;
           virtual void resizeGL (int w, int h) override;
           virtual void paintGL () override;
-          void mouseDoubleClickEvent (QMouseEvent* event) override;
           void mousePressEvent (QMouseEvent* event) override;
           void mouseMoveEvent (QMouseEvent* event) override;
           void wheelEvent (QWheelEvent* event) override;
