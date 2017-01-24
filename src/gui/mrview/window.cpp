@@ -1584,9 +1584,11 @@ namespace MR
       {
         assert (mode);
 #if QT_VERSION >= 0x050400
-        QPoint delta = 30 * event->pixelDelta();
-        if (delta.isNull())
+        QPoint delta;
+        if (event->source() == Qt::MouseEventNotSynthesized) 
           delta = event->angleDelta();
+        else
+          delta = 30 * event->pixelDelta();
 #else
         QPoint delta = event->orientation() == Qt::Vertical ? QPoint (0, event->delta()) : QPoint (event->delta(), 0);
 #endif
