@@ -692,14 +692,14 @@ namespace MR
             + Option ("overlay.load", "Loads the specified image on the overlay tool.").allow_multiple()
             +   Argument ("image").type_image_in()
 
-            + Option ("overlay.opacity", "Sets the overlay opacity to floating value [0-1].")
+            + Option ("overlay.opacity", "Sets the overlay opacity to floating value [0-1].").allow_multiple()
             +   Argument ("value").type_float (0.0, 1.0)
 
-            + Option ("overlay.interpolation_on", "Enables overlay image interpolation.")
+            + Option ("overlay.interpolation_on", "Enables overlay image interpolation.").allow_multiple()
 
-            + Option ("overlay.interpolation_off", "Disables overlay image interpolation.")
+            + Option ("overlay.interpolation_off", "Disables overlay image interpolation.").allow_multiple()
 
-            + Option ("overlay.colourmap", "Sets the colourmap of the overlay as indexed in the colourmap dropdown menu.")
+            + Option ("overlay.colourmap", "Sets the colourmap of the overlay as indexed in the colourmap dropdown menu.").allow_multiple()
             +   Argument ("index").type_integer();
             
         }

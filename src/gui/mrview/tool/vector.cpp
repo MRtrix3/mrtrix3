@@ -733,7 +733,7 @@ namespace MR
           options
             + OptionGroup ("Vector plot tool options")
 
-            + Option ("vector.load", "Load the specified MRtrix sparse image file (.msf) into the fixel tool.")
+            + Option ("vector.load", "Load the specified MRtrix sparse image file (.msf) into the fixel tool.").allow_multiple()
             +   Argument ("image").type_image_in();
         }
 
