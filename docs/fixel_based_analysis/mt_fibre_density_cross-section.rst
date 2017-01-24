@@ -67,7 +67,7 @@ Depending on your data, you may find that computing masks on native resolution D
 
 6. Fibre Orientation Distribution estimation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-When performing analysis of AFD, Constrained Spherical Deconvolution (CSD) should be performed using the group average response functions computed at step 3.
+When performing analysis of AFD, Constrained Spherical Deconvolution (CSD) should be performed using the group average response functions computed at step 3::
 
     foreach * : dwi2fod msmt_csd IN/dwi_denoised_preproc_upsampled.mif ../group_average_response_wm.txt IN/fod.mif ../group_average_response_gm.txt IN/gm.mif  ../group_average_response_csf.txt IN/csf.mif -mask IN/dwi_mask_upsampled.mif
 
