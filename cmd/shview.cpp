@@ -35,14 +35,14 @@ void usage ()
 
   ARGUMENTS
   + Argument ("coefs",
-              "a text file containing the even spherical harmonics coefficients to display.")
+              "a text file containing the even order spherical harmonics coefficients to display.")
   .optional()
   .type_file_in();
 
   OPTIONS
   + Option ("response",
-            "assume SH coefficients file only contains even, m=0 terms. Used to "
-            "display the response function as produced by estimate_response");
+            "assume SH coefficients file only contains m=0 terms (zonal harmonics). "
+            "Used to display the response function as produced by estimate_response");
 
   REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
 }
