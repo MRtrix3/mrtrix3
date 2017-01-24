@@ -56,7 +56,7 @@ namespace MR
 
       RenderFrame::RenderFrame (QWidget* parent) :
         GL::Area (parent),
-        view_angle (AngleDefault), distance (DistDefault), line_width (1.0), scale (NaN), 
+        view_angle (AngleDefault), distance (DistDefault), scale (NaN), 
         lmax_computed (0), lod_computed (0), mode (mode_t::SH), recompute_mesh (true), recompute_amplitudes (true),
         show_axes (true), hide_neg_values (true), color_by_dir (true), use_lighting (true),
         glfont (get_font (parent)), projection (this, glfont),
@@ -239,7 +239,6 @@ namespace MR
         }
 
         if (show_axes) {
-          gl::LineWidth (line_width);
           gl::BlendFunc (gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
           gl::Enable (gl::BLEND);
           gl::Enable (gl::LINE_SMOOTH);

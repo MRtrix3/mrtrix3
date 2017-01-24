@@ -134,7 +134,7 @@ namespace MR
           void screenshot (int oversampling, const std::string& image_name);
 
         protected:
-          float view_angle, distance, line_width, scale;
+          float view_angle, distance, scale;
           int lmax_computed, lod_computed;
           mode_t mode;
           bool recompute_mesh, recompute_amplitudes, show_axes, hide_neg_values, color_by_dir, use_lighting, normalise;
