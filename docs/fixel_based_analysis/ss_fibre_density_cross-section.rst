@@ -124,6 +124,8 @@ When performing analysis of AFD, Constrained Spherical Deconvolution (CSD) shoul
 
 .. include:: common_fba_steps/population_template.rst
 
+Symbolic link all FOD images (and masks) into a single input folder. If you have fewer than 40 subjects in your study, you can use the entire population to build the template::
+
     foreach * : ln -sr IN/fod.mif ../template/fod_input/PRE.mif
     foreach * : ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
 

@@ -2,5 +2,3 @@ Population template creation is the most time consuming step in a fixel-based an
 
     mkdir -p ../template/fod_input
     mkdir -p ../template/mask_input
-
-Symbolic link all FOD images (and masks) into a single input folder. If you have fewer than 40 subjects in your study, you can use the entire population to build the template::
