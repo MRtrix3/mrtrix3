@@ -88,13 +88,13 @@ This step performs :ref:`global intensity normalisation <global-intensity-normal
 
 Symbolic link all FOD images (and masks) into a single input folder. If you have fewer than 40 subjects in your study, you can use the entire population to build the template::
 
-    foreach * : ln -sr IN/fod_wm_bias_norm.mif ../template/fod_input/PRE.mif
+    foreach * : ln -sr IN/fod_bias_norm.mif ../template/fod_input/PRE.mif
     foreach * : ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
 
 Alternatively, if you have more than 40 subjects you can randomly select a subset of the individuals. If your study has multiple groups, then ideally you want to select the same number of subjects from each group to ensure the template is un-biased. Assuming the subject directory labels can be used to identify members of each group, you could use::
 
-    foreach `ls -d *patient | sort -R | tail -20` : ln -sr IN/fod_wm_bias_norm.mif ../template/fod_input/PRE.mif ";" ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
-    foreach `ls *control | sort -R | tail -20` : ln -sr IN/fod_wm_bias_norm.mif ../template/fod_input/PRE.mif ";" ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
+    foreach `ls -d *patient | sort -R | tail -20` : ln -sr IN/fod_bias_norm.mif ../template/fod_input/PRE.mif ";" ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
+    foreach `ls -d *control | sort -R | tail -20` : ln -sr IN/fod_bias_norm.mif ../template/fod_input/PRE.mif ";" ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
 
 .. include:: common_fba_steps/population_template2.rst
 
