@@ -65,14 +65,14 @@ Depending on your data, you may find that computing masks on native resolution D
     foreach * : dwi2mask IN/dwi_denoised_preproc.mif - \| mrresize - -scale 2.0 -interp nearest IN/dwi_mask_upsampled.mif
 
 
-9. Fibre Orientation Distribution estimation
+6. Fibre Orientation Distribution estimation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 When performing analysis of AFD, Constrained Spherical Deconvolution (CSD) should be performed using the group average response functions computed at step 3.
 
     foreach * : dwi2fod msmt_csd IN/dwi_denoised_preproc_upsampled.mif ../group_average_response_wm.txt IN/fod.mif ../group_average_response_gm.txt IN/gm.mif  ../group_average_response_csf.txt IN/csf.mif -mask IN/dwi_mask_upsampled.mif
 
 
-10. Perform simultaneous bias field correction and intensity normalisation
+7. Perform simultaneous bias field correction and intensity normalisation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This step performs :ref:`global intensity normalisation <global-intensity-normalisation>` by scaling all tissue types based on a single scale factor. A single multiplicative bias field is also estimated and applied to correct the output::
 
@@ -81,7 +81,7 @@ This step performs :ref:`global intensity normalisation <global-intensity-normal
 .. WARNING:: We also strongly recommend you that you check the scale factors applied during intensity normalisation are not influenced by the variable of interest in your study. For example if one group contains global changes in white matter T2 then this may directly influence the intensity normalisation and therefore bias downstream AFD analysis. To check this we recommend you perform an equivalence test to ensure mean scale factors are the same between groups. To output the scale factor applied for all subjects use :code:`foreach * : mrinfo IN/fod_bias_norm.mif -property normalisation_scale_factor`.
 
 
-11. Generate a study-specific unbiased FOD template
+8. Generate a study-specific unbiased FOD template
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. include:: common_fba_steps/population_template.rst
@@ -96,75 +96,79 @@ Alternatively, if you have more than 40 subjects you can randomly select a subse
 
 .. include:: common_fba_steps/population_template2.rst
 
-12. Register all subject FOD images to the FOD template
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+9. Register all subject FOD images to the FOD template
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. include:: common_fba_steps/register_to_template.rst
+Register the FOD image from all subjects to the FOD template image, note you can skip this step if you built your template from your entire population and saved the warps (see previous step)::
 
+    foreach * : mrregister IN/fod_wm_bias_norm.mif -mask1 IN/dwi_mask_upsampled.mif ../template/fod_template.mif -nl_warp IN/subject2template_warp.mif IN/template2subject_warp.mif
 
-13. Compute the intersection of all subject masks in template space
+10. Compute the intersection of all subject masks in template space
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. include:: common_fba_steps/mask_intersection.rst
 
 
-14. Compute a white matter template analysis fixel mask
+11. Compute a white matter template analysis fixel mask
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Next we identify all fixels of interest to be analysed from the FOD template image (see `here <http://www.ncbi.nlm.nih.gov/pubmed/26004503>`_ for more information about a fixel analysis mask). Note that the fixel image output from this step is stored using the :ref:`fixel_format`, which exploits the filesystem to store all fixel data in a directory::
 
     mrconvert fod_template.mif -coord 3 0 - | mrthreshold - - | fod2fixel fod_template.mif -mask - ../template/fixel_template
 
-You can visualise the output fixels using the fixel plot tool from :ref:`mrview`. The automatic thresholding step used above should give you a mask that nicely covers all of white matter, however if not you can always try manually adjusting the threshold with the :code:`mrthreshold -abs` option.
+You can visualise the output fixels using the fixel plot tool from :ref:`mrview`, and opening either the :code:`index.mif` or :code:`directions.mif` found in :code:`../template/fixel_template`. The automatic thresholding step used above should give you a mask that nicely covers all of white matter, however if not you can always try manually adjusting the threshold with the :code:`mrthreshold -abs` option.
 
 .. NOTE:: We recommend having no more than 500,000 fixels in the analysis_fixel_mask (you can check this by :code:`mrinfo -size ../template/fixel_template/directions.mif`, and looking at the size of the image along the 1st dimension), otherwise downstream statistical analysis (using :ref:`fixelcfestats`) will run out of RAM). A mask with 500,000 fixels will require a PC with 128GB of RAM for the statistical analysis step.
 
-15. Warp FOD images to template space
+12. Warp FOD images to template space
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. include:: common_fba_steps/warp_fods.rst
+Note that here we warp FOD images into template space *without* FOD reorientation. Reorientation will be performed in a separate subsequent step::
 
-16. Segment FOD images to estimate fixels and their apparent fibre density (FD)
+    foreach * : mrtransform IN/fod_wm_bias_norm.mif -warp IN/subject2template_warp.mif -noreorientation IN/fod_in_template_space.mif
+
+
+13. Segment FOD images to estimate fixels and their apparent fibre density (FD)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. include:: common_fba_steps/compute_AFD.rst
 
-17. Reorient fixel orientations
+14. Reorient fixel orientations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. include:: common_fba_steps/reorient_fixels.rst
 
-18. Assign subject fixels to template fixels
+15. Assign subject fixels to template fixels
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-In step 10 & 11 we obtained spatial correspondence between subject and template. In step 16 we corrected the fixel orientations to ensure angular correspondence of the segmented peaks of subject and template. Here, for each fixel in the template fixel analysis mask, we identify the corresponding fixel in each voxel of the subject image and assign the FD value of the subject fixel to the corresponding fixel in template space. If no fixel exists in the subject that corresponds to the template fixel then it is assigned a value of zero. See `this paper <http://www.ncbi.nlm.nih.gov/pubmed/26004503>`_ for more information. In the command below, you will note that the output fixel directory is the same for all subjects. This directory now stores data for all subjects at corresponding fixels, ready for input to :code:`fixelcfestats` in step 22 below::
+In step 8 & 9 we obtained spatial correspondence between subject and template. In step 14 we corrected the fixel orientations to ensure angular correspondence of the segmented peaks of subject and template. Here, for each fixel in the template fixel analysis mask, we identify the corresponding fixel in each voxel of the subject image and assign the FD value of the subject fixel to the corresponding fixel in template space. If no fixel exists in the subject that corresponds to the template fixel then it is assigned a value of zero. See `this paper <http://www.ncbi.nlm.nih.gov/pubmed/26004503>`_ for more information. In the command below, you will note that the output fixel directory is the same for all subjects. This directory now stores data for all subjects at corresponding fixels, ready for input to :code:`fixelcfestats` in step 20 below::
 
     foreach * : fixelcorrespondence IN/fixel_in_template_space/fd.mif ../template/fixel_template ../template/fd PRE.mif
 
-19. Compute fibre cross-section (FC) metric
+16. Compute fibre cross-section (FC) metric
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. include:: common_fba_steps/compute_FC.rst
 
-20. Compute a combined measure of fibre density and cross-section (FDC)
+17. Compute a combined measure of fibre density and cross-section (FDC)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. include:: common_fba_steps/compute_FDC.rst
 
-21. Perform whole-brain fibre tractography on the FOD template
+18. Perform whole-brain fibre tractography on the FOD template
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. include:: common_fba_steps/tractography.rst
 
-22. Reduce biases in tractogram densities
+19. Reduce biases in tractogram densities
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. include:: common_fba_steps/sift.rst
 
-23. Perform statistical analysis of FD, FC, and FDC
+20. Perform statistical analysis of FD, FC, and FDC
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. include:: common_fba_steps/statistics.rst
 
-24. Visualise the results
+21. Visualise the results
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. include:: common_fba_steps/visualisation.rst

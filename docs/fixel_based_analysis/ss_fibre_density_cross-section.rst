@@ -137,7 +137,10 @@ Alternatively, if you have more than 40 subjects you can randomly select a subse
 11. Register all subject FOD images to the FOD template
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. include:: common_fba_steps/register_to_template.rst
+Register the FOD image from all subjects to the FOD template image::
+
+    foreach * : mrregister IN/fod.mif -mask1 IN/dwi_mask_upsampled.mif ../template/fod_template.mif -nl_warp IN/subject2template_warp.mif IN/template2subject_warp.mif
+
 
 12. Compute the intersection of all subject masks in template space
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -179,7 +182,10 @@ You can now remove the fixel mask from the intermediate step to avoid confusion 
 14. Warp FOD images to template space
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. include:: common_fba_steps/warp_fods.rst
+Note that here we warp FOD images into template space *without* FOD reorientation. Reorientation will be performed in a separate subsequent step::
+
+    foreach * : mrtransform IN/fod.mif -warp IN/subject2template_warp.mif -noreorientation IN/fod_in_template_space.mif
+
 
 15. Segment FOD images to estimate fixels and their apparent fibre density (FD)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
