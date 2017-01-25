@@ -124,7 +124,7 @@ namespace MR
         colour_by_direction_action->setStatusTip (tr ("Colour surface according to direction"));
         connect (colour_by_direction_action, SIGNAL (triggered (bool)), this, SLOT (colour_by_direction_slot (bool)));
 
-        response_action = new QAction ("Treat as &response", this);
+        response_action = new QAction ("Treat as response (&zonal SH)", this);
         response_action->setCheckable (true);
         response_action->setChecked (is_response_coefs);
         response_action->setShortcut (tr ("Z"));
