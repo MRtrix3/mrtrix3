@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __dwi_tractography_mapping_writer_h__
 #define __dwi_tractography_mapping_writer_h__
@@ -156,12 +155,14 @@ namespace MR {
 
               case V_SUM:
                 if (type == DEC) {
+                  assert (counts);
                   for (auto l = loop (buffer, *counts); l; ++l) {
-                    if (counts->value()) {
+                    const float total_weight = counts->value();
+                    if (total_weight) {
                       auto value = get_dec();
                       const default_type norm = value.norm();
                       if (norm)
-                        value *= counts->value() / norm;
+                        value *= total_weight / norm;
                       set_dec (value);
                     }
                   }
@@ -176,6 +177,7 @@ namespace MR {
                 break;
 
               case V_MEAN:
+                assert (counts);
                 if (type == GREYSCALE) {
                   for (auto l = loop (buffer, *counts); l; ++l) {
                     if (counts->value())
@@ -292,7 +294,7 @@ namespace MR {
               const default_type factor = get_factor (i, in);
               const default_type weight = in.weight * i.get_length();
               switch (voxel_statistic) {
-                case V_SUM:  buffer.value() += weight * factor;                  break;
+                case V_SUM:  buffer.value() += weight * factor; break;
                 case V_MIN:  buffer.value() = std::min (default_type (buffer.value()), factor); break;
                 case V_MAX:  buffer.value() = std::max (default_type (buffer.value()), factor); break;
                 case V_MEAN:
@@ -334,6 +336,7 @@ namespace MR {
                   break;
                 case V_MEAN:
                   set_dec (current_value + (scaled_colour * weight));
+                  assert (counts);
                   assign_pos_of (i).to (*counts);
                   counts->value() += weight;
                   break;
@@ -360,7 +363,7 @@ namespace MR {
               const default_type factor = get_factor (i, in);
               const default_type weight = in.weight * i.get_length();
               switch (voxel_statistic) {
-                case V_SUM:  buffer.value() += weight * factor;                  break;
+                case V_SUM:  buffer.value() += weight * factor; break;
                 case V_MIN:  buffer.value() = std::min (default_type (buffer.value()), factor); break;
                 case V_MAX:  buffer.value() = std::max (default_type (buffer.value()), factor); break;
                 case V_MEAN:

@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 #include "app.h"
 #include "timer.h"
 #include "file/config.h"
@@ -1587,9 +1586,11 @@ namespace MR
       {
         assert (mode);
 #if QT_VERSION >= 0x050400
-        QPoint delta = 30 * event->pixelDelta();
-        if (delta.isNull())
+        QPoint delta;
+        if (event->source() == Qt::MouseEventNotSynthesized) 
           delta = event->angleDelta();
+        else
+          delta = 30 * event->pixelDelta();
 #else
         QPoint delta = event->orientation() == Qt::Vertical ? QPoint (0, event->delta()) : QPoint (event->delta(), 0);
 #endif
