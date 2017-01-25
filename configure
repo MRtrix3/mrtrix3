@@ -798,6 +798,30 @@ except:
 
 
 
+# Test that JSON for Modern C++ will compile, since it enforces its own requirements
+
+report('Checking JSON for Modern C++ requirements: ')
+try:
+  compile ('''
+#include "''' + os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), 'lib', 'file', 'json.h')) + '''"
+
+int main (int argc, char* argv[])
+{
+  nlohmann::json json;
+  json["key"] = "value";
+}
+
+''', cpp_flags, ld_flags)
+
+  report ('OK\n')
+except ( CompileError, LinkError ):
+  error (''' error compiling JSON test application!
+
+  MRtrix3 was unable to compile a test program involving JSON for Modern C++. Your compiler may not be sufficiently up-to-date.''' + configure_log_hint)
+except:
+  error ('unexpected exception!' + configure_log_hint)
+
+
 
 
 
