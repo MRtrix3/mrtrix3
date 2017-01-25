@@ -156,12 +156,14 @@ namespace MR {
 
               case V_SUM:
                 if (type == DEC) {
+                  assert (counts);
                   for (auto l = loop (buffer, *counts); l; ++l) {
-                    if (counts->value()) {
+                    const float total_weight = counts->value();
+                    if (total_weight) {
                       auto value = get_dec();
                       const default_type norm = value.norm();
                       if (norm)
-                        value *= counts->value() / norm;
+                        value *= total_weight / norm;
                       set_dec (value);
                     }
                   }
@@ -176,6 +178,7 @@ namespace MR {
                 break;
 
               case V_MEAN:
+                assert (counts);
                 if (type == GREYSCALE) {
                   for (auto l = loop (buffer, *counts); l; ++l) {
                     if (counts->value())
@@ -292,7 +295,7 @@ namespace MR {
               const default_type factor = get_factor (i, in);
               const default_type weight = in.weight * i.get_length();
               switch (voxel_statistic) {
-                case V_SUM:  buffer.value() += weight * factor;                  break;
+                case V_SUM:  buffer.value() += weight * factor; break;
                 case V_MIN:  buffer.value() = std::min (default_type (buffer.value()), factor); break;
                 case V_MAX:  buffer.value() = std::max (default_type (buffer.value()), factor); break;
                 case V_MEAN:
@@ -334,6 +337,7 @@ namespace MR {
                   break;
                 case V_MEAN:
                   set_dec (current_value + (scaled_colour * weight));
+                  assert (counts);
                   assign_pos_of (i).to (*counts);
                   counts->value() += weight;
                   break;
@@ -360,7 +364,7 @@ namespace MR {
               const default_type factor = get_factor (i, in);
               const default_type weight = in.weight * i.get_length();
               switch (voxel_statistic) {
-                case V_SUM:  buffer.value() += weight * factor;                  break;
+                case V_SUM:  buffer.value() += weight * factor; break;
                 case V_MIN:  buffer.value() = std::min (default_type (buffer.value()), factor); break;
                 case V_MAX:  buffer.value() = std::max (default_type (buffer.value()), factor); break;
                 case V_MEAN:

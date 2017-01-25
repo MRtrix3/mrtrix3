@@ -185,7 +185,7 @@ namespace MR {
               vox = round (scanner2voxel * (*i));
               if (check (vox, info)) {
                 const Eigen::Vector3 dir = (*(i+1) - *prev).cast<default_type>().normalized();
-                if (dir.allFinite())
+                if (dir.allFinite() && !dir.isZero())
                   add_to_set (output, vox, dir, 1.0);
               }
               prev = i;
@@ -194,7 +194,7 @@ namespace MR {
             vox = round (scanner2voxel * (*last));
             if (check (vox, info)) {
               const Eigen::Vector3 dir = (*last - *prev).cast<default_type>().normalized();
-              if (dir.allFinite())
+              if (dir.allFinite() && !dir.isZero())
                 add_to_set (output, vox, dir, 1.0);
             }
 

@@ -71,6 +71,7 @@ namespace MR {
         };
 
 
+
         class VoxelDEC : public Voxel 
         {
 
@@ -108,6 +109,7 @@ namespace MR {
             mutable Eigen::Vector3 colour;
 
         };
+
 
 
         // Temporary fix for fixel stats branch
@@ -148,7 +150,6 @@ namespace MR {
             mutable Eigen::Vector3 dir;
 
         };
-
 
 
 
@@ -257,7 +258,11 @@ namespace MR {
 
 
 
-
+        std::ostream& operator<< (std::ostream&, const Voxel&);
+        std::ostream& operator<< (std::ostream&, const VoxelDEC&);
+        std::ostream& operator<< (std::ostream&, const VoxelDir&);
+        std::ostream& operator<< (std::ostream&, const Dixel&);
+        std::ostream& operator<< (std::ostream&, const VoxelTOD&);
 
 
 
