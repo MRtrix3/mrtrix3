@@ -803,7 +803,7 @@ except:
 report('Checking JSON for Modern C++ requirements: ')
 try:
   compile ('''
-#include "''' + os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), 'lib', 'file', 'json.h')) + '''"
+#include "''' + os.path.join('file', 'json.h') + '''"
 
 int main (int argc, char* argv[])
 {
@@ -811,7 +811,8 @@ int main (int argc, char* argv[])
   json["key"] = "value";
 }
 
-''', cpp_flags, ld_flags)
+''', cpp_flags + [ '-I'+os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), 'lib')) ], ld_flags)
+
 
   report ('OK\n')
 except ( CompileError, LinkError ):
