@@ -831,7 +831,7 @@ namespace MR
             + Option ("connectome.init", "Initialise the connectome tool using a parcellation image.")
             +   Argument ("image").type_image_in()
 
-            + Option ("connectome.load", "Load a matrix file into the connectome tool.")
+            + Option ("connectome.load", "Load a matrix file into the connectome tool.").allow_multiple()
             +   Argument ("path").type_file_in();
 
         }
