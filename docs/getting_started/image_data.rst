@@ -650,7 +650,7 @@ Fixel Data File
 
 Fixel Direction File
 ......................
-* **All DWI models must specify the direction of each fixel**.
+* **All fixel-based DWI models must specify the direction of each fixel**.
 * Directions for each fixel must be saved within a single file named either ``directions.nii`` or ``directions.mif``.
 * This can be considered as a special type of fixel data file, with dimensions (n x 3 x 1).
 * Directions must be specified with respect to the *scanner coordinate frame*, in *cartesian coordinates*.
