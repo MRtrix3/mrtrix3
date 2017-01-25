@@ -1,7 +1,7 @@
 Images and other data
 =====================
 
-Format handling in *MRtrix3*
+Image format handling in *MRtrix3*
 ----------------------------
 
 *MRtrix3* provides a flexible data input/output back-end in the shared
@@ -339,10 +339,10 @@ the information as stored on file, use :ref:`mrinfo`'s ``-norealign`` option.
 
 .. _supported_image_formats:
 
-Supported formats
-------------------
+Supported image formats
+-----------------------
 
-This lists the various file formats currently supported by *MRtrix3*.
+This lists the various image formats currently supported by *MRtrix3*.
 
 
 .. _mrtrix_image_formats:
@@ -589,7 +589,7 @@ appropriately according to the standard.
 .. _fixel_format:
 
 Fixel image (directory) format 
-''''''''''''''''''''''''''''''
+------------------------------
 
 Images for representing discrete multi-fibre models are sparse in nature (i.e. different voxels may have different numbers of
 fibre populations - a.k.a *`fixels <dix_fix>`__*), and different models have different parameter requirements per fixel (e.g. orientation,
@@ -597,7 +597,7 @@ volume fraction, fanning, tensors etc). This fixel image format overcomes severa
 such data in either traditional 4D images or a custom format (such as the legacy :ref:`legacy_mrtrix_sparse_format`).
 
 Requirements
-.............
+''''''''''''
 
 This new format has been designed with the following requirements in mind:
 
@@ -609,7 +609,7 @@ This new format has been designed with the following requirements in mind:
 * **Extendability**. Users should be able to add components to an existing sparse image. E.g. a mask to label fixels of interest, or additional test-statistic output from a group analysis.
 
 Specifications
-...............
+''''''''''''''
 In the fixel format we have opted to leverage the file system by storing data belonging to a single sparse DWI model inside a single *directory/folder*
 (in contrast to the old :ref:`legacy_mrtrix_sparse_format` where all data is stored inside a single *file*). Effectively the directory becomes the ‘dataset’. While this
 implies that all data files must be kept together inside the directory, and can be tampered with (or accidently deleted) by users, we believe
@@ -622,23 +622,24 @@ All files types saved inside the format are in either `NIfTI-2 format <_nifti_fo
    :align: center
 
 Fixel format file types
-.......................
+'''''''''''''''''''''''
+
 Index File
 ...............
-* 4D image (i x j x k x 2).
-* The index file is required, with fixed naming (``index.nii`` or ``index.mif``).
-* The first 3D volume in the 4th dimension stores the *number of elements (fixels)* per voxel.
-* The second volume in the 4th dimension stores the *index of the first element (fixel)* in that voxel; indices for the subsequent elements in each voxel are inferred to be sequential.
+-  4D image (i x j x k x 2).
+-  The index file is required, with fixed naming (``index.nii`` or ``index.mif``).
+-  The first 3D volume in the 4th dimension stores the *number of elements (fixels)* per voxel.
+-  The second volume in the 4th dimension stores the *index of the first element (fixel)* in that voxel; indices for the subsequent elements in each voxel are inferred to be sequential.
 
 Fixel Data File
 .................
-* 3D image (n x p x 1) where n is the total number of elements in the image, and p is the number of parameters per element (e.g. 3 for direction.nii, 1 for volume.nii, or 6 for a multi-tensor model).
-* For each voxel, data for the elements within that voxel must be stored within sequential indices in the first dimension.
-* Easily identified as a data file type because the size of the image is 1 in the 3rd dimension
-* Any number of Fixel Data File types may be present in the directory. In the example image above, the volume fraction and fanning angle parameters have been saved as separate files; however the format is flexible and allows for multiple parameters, p, per element.
-* Any naming convention can be used for Fixel Data Files, with the exception of:
-  * The directions file (see below).
-  * If a particular set of commands expect to write and subsequently read one or more data files with a fixed name, then manually renaming such files may prevent the operation of that set of commands.
+-  3D image (n x p x 1) where n is the total number of elements in the image, and p is the number of parameters per element (e.g. 3 for direction.nii, 1 for volume.nii, or 6 for a multi-tensor model).
+-  For each voxel, data for the elements within that voxel must be stored within sequential indices in the first dimension.
+-  Easily identified as a data file type because the size of the image is 1 in the 3rd dimension
+-  Any number of Fixel Data File types may be present in the directory. In the example image above, the volume fraction and fanning angle parameters have been saved as separate files; however the format is flexible and allows for multiple parameters, p, per element.
+-  Any naming convention can be used for Fixel Data Files, with the exception of:
+   - The directions file (see below).
+   - If a particular set of commands expect to write and subsequently read one or more data files with a fixed name, then manually renaming such files may prevent the operation of that set of commands.
 
 .. NOTE::
   The number of fixels in a whole-brain image can be very large (> 100,000).
@@ -647,15 +648,12 @@ Fixel Data File
   65,535. This is why either `NIfTI-2 <_nifti_format>`__ or
   :ref:`mrtrix_image_formats` must be used.
 
-
 Fixel Direction File
 ......................
 * **All DWI models must specify the direction of each fixel**.
 * Directions for each fixel must be saved within a single file named either ``directions.nii`` or ``directions.mif``.
 * This can be considered as a special type of fixel data file, with dimensions (n x 3 x 1).
 * Directions must be specified with respect to the *scanner coordinate frame*, in *cartesian coordinates*.
-
-
 
 Voxel Data File
 ................
@@ -667,7 +665,7 @@ Voxel Data File
 
 
 Usage
-................
+''''''''''
 Because the fixel format leverages the file system to store all fixel data within a single directory,
 interacting with fixel data in *MRtrix3* may require user input and output arguments to be either:
 1) the path to the fixel format directory; or 2) specific fixel data files within the directory. For
@@ -693,7 +691,7 @@ Other commands like ``mrhistogram``, ``mrcalc`` and ``mrstats`` can also be used
   mrstats -output mean -mask patient01/fixel_directory/afd_mask.mif patient01/fixel_directory/dispersion.mif
 
 Viewing fixel data in mrview
-.....................................
+''''''''''''''''''''''''''''
 Fixel data can be visualised using the "Fixel Plot" tool in ``mrview``. Any
 image within the fixel directory can be opened by the file chooser. By
 default the fixels will be coloured based on the file selected when loaded
@@ -709,8 +707,8 @@ while colour-coding by effect size.
 
 .. _legacy_mrtrix_sparse_format:
 
-MRtrix Sparse Format (``.msh / .msf``)
-''''''''''''''''''''''''''''''''''''''''
+Legacy MRtrix Sparse Format (``.msh / .msf``)
+---------------------------------------------
 
 This is an old lecacy format prevously used for applications where the number
 of discrete elements within a voxel may vary between voxels 
@@ -734,7 +732,7 @@ location within the sparse image field, where the sparse data relevant
 for that image element can be found.
 
 Additional image header features
-................................
+''''''''''''''''''''''''''''''''
 
 These image formats have some features within the image header that
 differ from the standard MRtrix image formats:
@@ -764,7 +762,7 @@ differ from the standard MRtrix image formats:
    the header.
 
 Sparse data storage
-...................
+'''''''''''''''''''
 
 Within the sparse data field, there is no delimiting information or
 identifying features; the image format relies on the integers stored in
