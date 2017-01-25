@@ -55,15 +55,39 @@ are as follows:
    estimation will also be reduced if ``lmax`` of the provided response
    function is less than that calculated as above.
 
+The *exception* to these rules is the new ``amp2response`` command, which
+is now called by default in all ``dwi2response`` script algorithms. This
+command converts *amplitudes* on the half-sphere (most likely in the form
+of raw DWI image intensities) into a *response function* intended for use
+in spherical deconvolution. This command behaves differently for two
+reasons in combination:
+
+-  The image data from multiple voxels are combined together in a single
+   fitting procedure, therefore having a much greater number of samples
+   when performing the transformation.
+
+-  The data are transformed not to the spherical harmonic basis, but 
+   directly to the *zonal* spherical harmonic basis (this is the spherical
+   harmonic basis containing only the ``m = 0`` terms). This basis requires
+   far less coefficients for any given value of ``lmax``: 2 for
+   ``lmax = 2``, 3 for ``lmax = 4``, 4 for ``lmax = 6``, 5 for ``lmax = 8``
+   and so on.
+
+The value of ``lmax`` that can be used in this command is therefore
+practically unconstrained; though the power in higher harmonic degrees
+is much smaller than that in lower degrees. The command is currently
+configured to select ``lmax = 10`` by default, regardless of *b*-value;
+interested readers can find the discussion `here <https://github.com/MRtrix3/mrtrix3/pull/786>`__.
+
 Reduced ``lmax`` in particular subjects
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If you find that certain subjects within a cohort have a reduced ``lmax``
-compared to the rest of the cohort (usually spotted by checking the number
-of coefficients in the response function), the most likely cause is
-premature termination of the diffusion sequence during scanning of that
-subject, resulting in a reduced number of diffusion volumes and therefore
-a reduced ``lmax`` according to the table above.
+compared to the rest of the cohort when using any command relating to
+spherical harmonics, the most likely cause is premature termination of the
+diffusion sequence during scanning of those subjects, resulting in a reduced
+number of diffusion volumes, and therefore a reduced ``lmax`` according to
+the table above.
 
 Setting ``lmax`` in different applications
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -71,7 +95,7 @@ Setting ``lmax`` in different applications
 The range of permissible values for ``lmax`` depends on the particular
 command being used; e.g.:
 
--  The way that response function estimation is currently implemented, it
+-  For any command that maps image data directly to spherical harmonics, it
    is impossible to set ``lmax`` to a value higher than that supported by the
    image data. The transformation from DWI data to spherical harmonics simply
    cannot be done in such a case, as the problem is under-determined. You can
@@ -88,5 +112,10 @@ command being used; e.g.:
 
 -  If performing Track Orientation Density Imaging (TODI) using
    ``tckgen -tod``, then the apodized point spread functions (aPSFs) can be
-   generated at any value of ``lmax``, since the angular resolution of the
-   original image data is not a limiting factor here.
+   generated at any value of ``lmax`` for which aPSF data are available
+   (currently ``lmax = 16``, since the angular resolution of the original image
+   data is not a limiting factor here.
+
+-  As described previously, the ``amp2response`` command is a special case,
+   and the maximum permissible ``lmax`` is vastly greater than the maximum
+   practical value.
