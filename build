@@ -138,7 +138,7 @@ getting short git version in folder "''' + folder + '"... ')
 
 bin_dir = 'bin'
 cmd_dir = 'cmd'
-lib_dir = 'lib'
+lib_dir = 'core'
 misc_dir = 'src'
 other_dir = '3rd_party'
 
@@ -942,7 +942,7 @@ if len(targets) == 0:
 
 
 # get git version info:
-update_git_version (mrtrix_dir[-1], os.path.join (mrtrix_dir[-1], 'lib/version.cpp'), '''
+update_git_version (mrtrix_dir[-1], os.path.join (mrtrix_dir[-1], lib_dir, 'version.cpp'), '''
 namespace MR { 
   namespace App { 
     const char* mrtrix_version = "%%%";

@@ -22,7 +22,7 @@ icons.cpp
 /configure.log
 /build.log
 /test/build.log
-/lib/version.cpp
+/core/version.cpp
 /src/project_version.h
 /test/src/project_version.h
 /scripts/mrtrix_bash_completion

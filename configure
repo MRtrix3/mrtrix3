@@ -811,7 +811,7 @@ int main (int argc, char* argv[])
   json["key"] = "value";
 }
 
-''', cpp_flags + [ '-I'+os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), 'lib')) ], ld_flags)
+''', cpp_flags + [ '-I'+os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), 'core')) ], ld_flags)
 
 
   report ('OK\n')
