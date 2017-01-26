@@ -45,9 +45,9 @@ ARGUMENTS
 
 typedef double value_type;
 typedef std::array<value_type,3> Direction;
-typedef std::vector<Direction> DirectionSet;
+typedef vector<Direction> DirectionSet;
 
-struct OutDir {
+struct OutDir { MEMALIGN(OutDir)
   Direction d;
   size_t b;
   size_t pe;
@@ -64,8 +64,8 @@ void run ()
   size_t num_subsets = argument[0];
 
 
-  std::vector<std::vector<DirectionSet>> dirs;
-  std::vector<value_type> bvalue ((argument.size() - 2) / (1+num_subsets));
+  vector<vector<DirectionSet>> dirs;
+  vector<value_type> bvalue ((argument.size() - 2) / (1+num_subsets));
   INFO ("expecting " + str(bvalue.size()) + " b-values");
   if (bvalue.size()*(1+num_subsets) + 2 != argument.size())
     throw Exception ("inconsistent number of arguments");
@@ -75,7 +75,7 @@ void run ()
   size_t current = 1, nb = 0;
   while (current < argument.size()-1) {
     bvalue[nb] = to<value_type> (argument[current++]);
-    std::vector<DirectionSet> d;
+    vector<DirectionSet> d;
     for (size_t i = 0; i < num_subsets; ++i) {
       auto m = DWI::Directions::load_cartesian (argument[current++]);
       DirectionSet set;
@@ -84,7 +84,7 @@ void run ()
       d.push_back (set);
     }
     INFO ("found b = " + str(bvalue[nb]) + ", " + 
-        str ([&]{ std::vector<size_t> s; for (auto& n : d) s.push_back (n.size()); return s; }()) + " volumes");
+        str ([&]{ vector<size_t> s; for (auto& n : d) s.push_back (n.size()); return s; }()) + " volumes");
 
     dirs.push_back (d);
     ++nb;
@@ -100,7 +100,7 @@ void run ()
   size_t first = std::uniform_int_distribution<size_t> (0, dirs[0][0].size()-1)(rng);
 
   
-  std::vector<OutDir> merged;
+  vector<OutDir> merged;
 
   auto push = [&](size_t b, size_t p, size_t n) 
   { 
@@ -149,7 +149,7 @@ void run ()
 
 
 
-  std::vector<float> fraction;
+  vector<float> fraction;
   for (auto& d : dirs) {
     size_t n = 0;
     for (auto& m : d)
@@ -159,7 +159,7 @@ void run ()
 
   push (0, 0, first);
 
-  std::vector<size_t> counts (bvalue.size(), 0);
+  vector<size_t> counts (bvalue.size(), 0);
   ++counts[0];
 
   auto num_for_b = [&](size_t b) {

@@ -41,7 +41,7 @@ namespace MR
     namespace ICLS {
 
       template <typename ValueType>
-        class Problem {
+        class Problem { MEMALIGN(Problem<ValueType>)
           public:
 
             typedef ValueType value_type;
@@ -126,7 +126,7 @@ namespace MR
 
 
       template <typename ValueType>
-        class Solver {
+        class Solver { MEMALIGN(Solver<ValueType>)
           public:
 
             typedef ValueType value_type;
@@ -263,7 +263,7 @@ namespace MR
             const Problem<value_type>& P;
             matrix_type BtB, B;
             vector_type y_u, c, c_u, lambda, lambda_prev, l;
-            std::vector<bool> active;
+            vector<bool> active;
         };
 
 

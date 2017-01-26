@@ -49,7 +49,7 @@ namespace MR
 
 
 
-       class ROI_Item : public Volume {
+       class ROI_Item : public Volume { MEMALIGN(ROI_Item)
           public:
             ROI_Item (MR::Header&&);
 
@@ -72,7 +72,7 @@ namespace MR
             float min_brush_size, max_brush_size, brush_size;
 
           private:
-            std::vector<ROI_UndoEntry> undo_list;
+            vector<ROI_UndoEntry> undo_list;
             int current_undo;
 
             static int number_of_undos;

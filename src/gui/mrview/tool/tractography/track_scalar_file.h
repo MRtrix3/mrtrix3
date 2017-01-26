@@ -33,7 +33,7 @@ namespace MR
         class Tractogram;
 
           class TrackScalarFileOptions : public QGroupBox, public DisplayableVisitor
-          {
+          { MEMALIGN(TrackScalarFileOptions)
             Q_OBJECT
 
             public:

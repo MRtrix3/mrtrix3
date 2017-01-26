@@ -25,7 +25,7 @@ namespace MR
   {
 
     template <typename T> class Hermite
-    {
+    { NOMEMALIGN
       public:
         typedef T value_type;
 
@@ -57,9 +57,6 @@ namespace MR
       private:
         value_type w[4];
         value_type t;
-
-
-
     };
 
   }

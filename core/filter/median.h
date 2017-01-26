@@ -38,8 +38,7 @@ namespace MR
      *
      * \endcode
      */
-    class Median : public Base
-    {
+    class Median : public Base { MEMALIGN(Median)
 
       public:
         template <class HeaderType>
@@ -57,14 +56,14 @@ namespace MR
             }
 
         template <class HeaderType>
-        Median (const HeaderType& in, const std::vector<int>& extent) :
+        Median (const HeaderType& in, const vector<int>& extent) :
             Base (in),
             extent (extent) {
           datatype() = DataType::Float32;
         }
 
         template <class HeaderType>
-          Median (const HeaderType& in, const std::string& message, const std::vector<int>& extent) :
+          Median (const HeaderType& in, const std::string& message, const vector<int>& extent) :
             Base (in, message),
             extent (extent) { 
               datatype() = DataType::Float32;
@@ -73,7 +72,7 @@ namespace MR
         //! Set the extent of median filtering neighbourhood in voxels.
         //! This must be set as a single value for all three dimensions
         //! or three values, one for each dimension. Default 3x3x3.
-        void set_extent (const std::vector<int>& ext) {
+        void set_extent (const vector<int>& ext) {
           for (size_t i = 0; i < ext.size(); ++i) {
             if (!(ext[i] & int (1)))
               throw Exception ("expected odd number for extent");
@@ -93,7 +92,7 @@ namespace MR
         }
 
     protected:
-        std::vector<int> extent;
+        vector<int> extent;
     };
     //! @}
   }

@@ -31,29 +31,30 @@ namespace MR
 
 
       class Permutation
-      {
+      { MEMALIGN (Permutation)
         public:
           size_t index;
-          std::vector<size_t> data;
+          vector<size_t> data;
       };
 
 
-      class PermutationStack {
+      class PermutationStack 
+      { MEMALIGN (PermutationStack)
         public:
           PermutationStack (const size_t num_permutations, const size_t num_samples, const std::string msg, const bool include_default = true);
 
-          PermutationStack (std::vector <std::vector<size_t> >& permutations, const std::string msg);
+          PermutationStack (vector <vector<size_t> >& permutations, const std::string msg);
 
           bool operator() (Permutation&);
 
-          const std::vector<size_t>& operator[] (size_t index) const {
+          const vector<size_t>& operator[] (size_t index) const {
             return permutations[index];
           }
 
           const size_t num_permutations;
 
         protected:
-          std::vector< std::vector<size_t> > permutations;
+          vector< vector<size_t> > permutations;
           size_t counter;
           ProgressBar progress;
       };

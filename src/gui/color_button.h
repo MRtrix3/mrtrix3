@@ -18,7 +18,7 @@
 #include "gui/opengl/gl.h"
 
 class QColorButton : public QPushButton
-{
+{ NOMEMALIGN
   Q_OBJECT
   Q_PROPERTY (QColor color READ color WRITE setColor)
 

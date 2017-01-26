@@ -20,10 +20,10 @@ namespace MR {
   namespace File {
     namespace Dicom {
 
-      std::vector<int> Series::count () const
+      vector<int> Series::count () const
       {
-        std::vector<int> dim (3);
-        std::vector<int> current_dim(2);
+        vector<int> dim (3);
+        vector<int> current_dim(2);
         dim[0] = dim[1] = dim[2] = 0;
         current_dim[0] = current_dim[1] = 1;
 

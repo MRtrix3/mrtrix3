@@ -20,6 +20,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "mrtrix.h"
+
 namespace MR
 {
   namespace Surface
@@ -28,7 +30,7 @@ namespace MR
 
     template <uint32_t vertices = 3>
     class Polygon
-    {
+    { MEMALIGN (Polygon<vertices>)
 
       public:
 

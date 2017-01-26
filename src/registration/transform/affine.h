@@ -29,7 +29,7 @@ namespace MR
     namespace Transform
     {
 
-      class AffineLinearNonSymmetricUpdate {
+      class AffineLinearNonSymmetricUpdate { MEMALIGN(AffineLinearNonSymmetricUpdate)
         public:
           bool operator() (Eigen::Matrix<default_type, Eigen::Dynamic, 1>& newx,
               const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x,
@@ -42,7 +42,7 @@ namespace MR
         }
       };
 
-      class AffineUpdate {
+      class AffineUpdate { MEMALIGN(AffineUpdate)
         public:
           AffineUpdate (): use_convergence_check (false) { }
 
@@ -76,7 +76,7 @@ namespace MR
           Eigen::Matrix<default_type, Eigen::Dynamic, 1> new_control_points_vec;
       };
 
-      class AffineRobustEstimator {
+      class AffineRobustEstimator { MEMALIGN(AffineRobustEstimator)
         public:
           inline bool operator() (Eigen::Matrix<default_type, Eigen::Dynamic, 1>& newx,
               const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x,
@@ -92,7 +92,7 @@ namespace MR
       /*! A 3D affine transformation class for registration.
        *
        */
-      class Affine : public Base  {
+      class Affine : public Base  { MEMALIGN(Affine)
         public:
 
           typedef typename Base::ParameterType ParameterType;
@@ -100,7 +100,6 @@ namespace MR
           typedef AffineRobustEstimator RobustEstimatorType;
           typedef int has_robust_estimator;
 
-          EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
           Affine () : Base (12) {
             //CONF option: reg_gdweight_matrix
@@ -129,7 +128,7 @@ namespace MR
 
           bool robust_estimate (
             Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient,
-            std::vector<Eigen::Matrix<default_type, Eigen::Dynamic, 1>>& grad_estimates,
+            vector<Eigen::Matrix<default_type, Eigen::Dynamic, 1>>& grad_estimates,
             const Eigen::Matrix<default_type, 4, 4>& control_points,
             const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& parameter_vector,
             const default_type& weiszfeld_precision,

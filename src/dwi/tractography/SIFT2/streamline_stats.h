@@ -31,7 +31,7 @@ namespace MR {
 
 
       class StreamlineStats
-      {
+      { NOMEMALIGN
 
         public:
           StreamlineStats();

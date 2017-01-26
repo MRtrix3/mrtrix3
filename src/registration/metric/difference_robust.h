@@ -25,7 +25,7 @@ namespace MR
     namespace Metric
     {
       template<class Estimator = L2>
-        class DifferenceRobust {
+        class DifferenceRobust { MEMALIGN(DifferenceRobust<Estimator>)
           public:
             DifferenceRobust (Estimator est) : estimator(est) {}
 
@@ -63,7 +63,7 @@ namespace MR
         };
 
       template<class Im1Type, class Im2Type, class Estimator = L2>
-        class DifferenceRobust4D {
+        class DifferenceRobust4D { MEMALIGN(DifferenceRobust4D<Im1Type,Im2Type,Estimator>)
           public:
             DifferenceRobust4D (const Im1Type& im1, const Im2Type& im2, const Estimator& est) :
               volumes(im1.size(3)),

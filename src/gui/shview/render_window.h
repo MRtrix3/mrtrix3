@@ -27,12 +27,12 @@ namespace MR
     namespace DWI
     {
 
-      class Window : public QMainWindow
-      {
+      class Window : public QMainWindow 
+      { MEMALIGN(Window)
           Q_OBJECT
 
           class RenderFrame : public DWI::RenderFrame
-          {
+          { MEMALIGN(RenderFrame)
             public:
               using DWI::RenderFrame::RenderFrame;
               void set_colour (const QColor& c) {

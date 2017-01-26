@@ -99,8 +99,7 @@ void usage ()
 
 
 
-class Segmented_FOD_receiver
-{
+class Segmented_FOD_receiver { MEMALIGN(Segmented_FOD_receiver)
 
   public:
     Segmented_FOD_receiver (const Header& header, bool dir_as_peak = false) :
@@ -124,7 +123,7 @@ class Segmented_FOD_receiver
 
   private:
 
-    struct Primitive_FOD_lobe {
+    struct Primitive_FOD_lobe { MEMALIGN (Primitive_FOD_lobe)
       Eigen::Vector3f dir;
       float integral;
       float peak_value;
@@ -133,7 +132,7 @@ class Segmented_FOD_receiver
     };
 
 
-    class Primitive_FOD_lobes : public std::vector<Primitive_FOD_lobe> {
+    class Primitive_FOD_lobes : public vector<Primitive_FOD_lobe> { MEMALIGN (Primitive_FOD_lobes)
       public:
         Eigen::Array3i vox;
 
@@ -150,7 +149,7 @@ class Segmented_FOD_receiver
 
     Header H;
     std::string fixel_directory_path, index_path, dir_path, afd_path, peak_path, disp_path;
-    std::vector<Primitive_FOD_lobes> lobes;
+    vector<Primitive_FOD_lobes> lobes;
     uint64_t n_fixels;
     bool dir_as_peak;
 };

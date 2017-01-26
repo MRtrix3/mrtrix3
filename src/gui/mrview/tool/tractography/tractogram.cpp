@@ -537,9 +537,9 @@ namespace MR
 
           DWI::Tractography::Reader<float> file (filename, properties);
           DWI::Tractography::Streamline<float> tck;
-          std::vector<Eigen::Vector3f> buffer;
-          std::vector<GLint> starts;
-          std::vector<GLint> sizes;
+          vector<Eigen::Vector3f> buffer;
+          vector<GLint> starts;
+          vector<GLint> sizes;
           size_t tck_count = 0;
 
           on_FOV_changed();
@@ -598,7 +598,7 @@ namespace MR
           for (size_t buffer_index = 0, N = vertex_buffers.size(); buffer_index < N; ++buffer_index) {
 
             const size_t num_tracks = num_tracks_per_buffer[buffer_index];
-            std::vector<Eigen::Vector3f> buffer;
+            vector<Eigen::Vector3f> buffer;
             for (size_t buffer_tck_counter = 0; buffer_tck_counter != num_tracks; ++buffer_tck_counter) {
 
               const Eigen::Vector3f& tangent (endpoint_tangents[total_tck_counter++]);
@@ -631,8 +631,8 @@ namespace MR
           erase_intensity_scalar_data ();
           value_min = std::numeric_limits<float>::infinity();
           value_max = -std::numeric_limits<float>::infinity();
-          std::vector<float> buffer;
-          std::vector<float> tck_scalar;
+          vector<float> buffer;
+          vector<float> tck_scalar;
 
           if (Path::has_suffix (filename, ".tsf")) {
             DWI::Tractography::Properties scalar_properties;
@@ -668,7 +668,7 @@ namespace MR
           } else {
             const Eigen::VectorXf scalars = MR::load_vector<float> (filename);
             size_t total_num_tracks = 0;
-            for (std::vector<size_t>::const_iterator i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
+            for (vector<size_t>::const_iterator i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
               total_num_tracks += *i;
             if (size_t(scalars.size()) != total_num_tracks)
               throw Exception ("The scalar text file does not contain the same number of elements as the selected tractogram");
@@ -676,7 +676,7 @@ namespace MR
 
             for (size_t buffer_index = 0; buffer_index != vertex_buffers.size(); ++buffer_index) {
               const size_t num_tracks = num_tracks_per_buffer[buffer_index];
-              std::vector<GLint>& track_lengths (original_track_sizes[buffer_index]);
+              vector<GLint>& track_lengths (original_track_sizes[buffer_index]);
 
               for (size_t index = 0; index != num_tracks; ++index, ++running_index) {
                 const float value = scalars[running_index];
@@ -720,8 +720,8 @@ namespace MR
           erase_threshold_scalar_data ();
           threshold_min = std::numeric_limits<float>::infinity();
           threshold_max = -std::numeric_limits<float>::infinity();
-          std::vector<float> buffer;
-          std::vector<float> tck_scalar;
+          vector<float> buffer;
+          vector<float> tck_scalar;
 
           if (Path::has_suffix (filename, ".tsf")) {
             DWI::Tractography::Properties scalar_properties;
@@ -757,7 +757,7 @@ namespace MR
           } else {
             const Eigen::VectorXf scalars = MR::load_vector<float> (filename);
             size_t total_num_tracks = 0;
-            for (std::vector<size_t>::const_iterator i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
+            for (vector<size_t>::const_iterator i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
               total_num_tracks += *i;
             if (size_t(scalars.size()) != total_num_tracks)
               throw Exception ("The scalar text file does not contain the same number of elements as the selected tractogram");
@@ -765,7 +765,7 @@ namespace MR
 
             for (size_t buffer_index = 0; buffer_index != vertex_buffers.size(); ++buffer_index) {
               const size_t num_tracks = num_tracks_per_buffer[buffer_index];
-              std::vector<GLint>& track_lengths (original_track_sizes[buffer_index]);
+              vector<GLint>& track_lengths (original_track_sizes[buffer_index]);
 
               for (size_t index = 0; index != num_tracks; ++index, ++running_index) {
                 const float value = scalars[running_index];
@@ -869,9 +869,9 @@ namespace MR
 
 
 
-        void Tractogram::load_tracks_onto_GPU (std::vector<Eigen::Vector3f>& buffer,
-            std::vector<GLint>& starts,
-            std::vector<GLint>& sizes,
+        void Tractogram::load_tracks_onto_GPU (vector<Eigen::Vector3f>& buffer,
+            vector<GLint>& starts,
+            vector<GLint>& sizes,
             size_t& tck_count) 
         {
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
@@ -904,7 +904,7 @@ namespace MR
         
         
         
-        void Tractogram::load_end_colours_onto_GPU (std::vector<Eigen::Vector3f>& buffer) 
+        void Tractogram::load_end_colours_onto_GPU (vector<Eigen::Vector3f>& buffer) 
         {
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
@@ -924,7 +924,7 @@ namespace MR
 
 
 
-        void Tractogram::load_intensity_scalars_onto_GPU (std::vector<float>& buffer)
+        void Tractogram::load_intensity_scalars_onto_GPU (vector<float>& buffer)
         {
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
@@ -944,7 +944,7 @@ namespace MR
 
 
 
-        void Tractogram::load_threshold_scalars_onto_GPU (std::vector<float>& buffer)
+        void Tractogram::load_threshold_scalars_onto_GPU (vector<float>& buffer)
         {
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 

@@ -153,8 +153,8 @@ void run() {
   const uint32_t num_fixels = Fixel::get_number_of_fixels (index_header);
   CONSOLE ("number of fixels: " + str(num_fixels));
 
-  std::vector<Eigen::Vector3> positions (num_fixels);
-  std::vector<direction_type> directions (num_fixels);
+  vector<Eigen::Vector3> positions (num_fixels);
+  vector<direction_type> directions (num_fixels);
 
   const std::string output_fixel_directory = argument[5];
   Fixel::copy_index_and_directions_file (input_fixel_directory, output_fixel_directory);
@@ -175,7 +175,7 @@ void run() {
     }
   }
   // Read identifiers and check files exist
-  std::vector<std::string> identifiers;
+  vector<std::string> identifiers;
   Header header;
   {
     ProgressBar progress ("validating input files...");
@@ -202,7 +202,7 @@ void run() {
 
   // Load permutations file if supplied
   opt = get_options("permutations");
-  std::vector<std::vector<size_t> > permutations;
+  vector<vector<size_t> > permutations;
   if (opt.size()) {
     permutations = Math::Stats::Permutation::load_permutations_file (opt[0][0]);
     num_perms = permutations.size();
@@ -212,7 +212,7 @@ void run() {
 
   // Load non-stationary correction permutations file if supplied
   opt = get_options("permutations_nonstationary");
-  std::vector<std::vector<size_t> > permutations_nonstationary;
+  vector<vector<size_t> > permutations_nonstationary;
   if (opt.size()) {
     permutations_nonstationary = Math::Stats::Permutation::load_permutations_file (opt[0][0]);
     nperms_nonstationary = permutations_nonstationary.size();
@@ -229,8 +229,8 @@ void run() {
     throw Exception ("only a single contrast vector (defined as a row) is currently supported");
 
   // Compute fixel-fixel connectivity
-  std::vector<std::map<uint32_t, Stats::CFE::connectivity> > connectivity_matrix (num_fixels);
-  std::vector<uint16_t> fixel_TDI (num_fixels, 0.0);
+  vector<std::map<uint32_t, Stats::CFE::connectivity> > connectivity_matrix (num_fixels);
+  vector<uint16_t> fixel_TDI (num_fixels, 0.0);
   const std::string track_filename = argument[4];
   DWI::Tractography::Properties properties;
   DWI::Tractography::Reader<float> track_file (track_filename, properties);
@@ -257,7 +257,7 @@ void run() {
   track_file.close();
 
   // Normalise connectivity matrix and threshold, pre-compute fixel-fixel weights for smoothing.
-  std::vector<std::map<uint32_t, connectivity_value_type> > smoothing_weights (num_fixels);
+  vector<std::map<uint32_t, connectivity_value_type> > smoothing_weights (num_fixels);
   bool do_smoothing = false;
 
   const float gaussian_const2 = 2.0 * smooth_std_dev * smooth_std_dev;
@@ -327,7 +327,7 @@ void run() {
       LogLevelLatch log_level (0);
 
       auto subject_data = Image<value_type>::open (identifiers[subject]).with_direct_io();
-      std::vector<value_type> subject_data_vector (num_fixels, 0.0);
+      vector<value_type> subject_data_vector (num_fixels, 0.0);
       for (auto i = Loop (index_image, 0, 3)(index_image); i; ++i) {
         index_image.index(3) = 1;
         uint32_t offset = index_image.value();

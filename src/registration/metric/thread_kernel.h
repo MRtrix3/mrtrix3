@@ -29,44 +29,44 @@ namespace MR
       //! \cond skip
       namespace {
         template<class T>
-        struct Void {
+        struct Void { NOMEMALIGN
           typedef void type;
         };
 
         template <class MetricType, typename U = void>
-        struct is_neighbourhood_metric {
+        struct is_neighbourhood_metric { NOMEMALIGN
           typedef int no;
         };
 
         template <class MetricType>
-        struct is_neighbourhood_metric<MetricType, typename Void<typename MetricType::is_neighbourhood>::type> {
+        struct is_neighbourhood_metric<MetricType, typename Void<typename MetricType::is_neighbourhood>::type> { NOMEMALIGN
           typedef int yes;
         };
 
         template <class MetricType, typename U = void>
-        struct use_processed_image {
+        struct use_processed_image { NOMEMALIGN
           typedef int no;
         };
 
         template <class MetricType>
-        struct use_processed_image<MetricType, typename Void<typename MetricType::requires_precompute>::type> {
+        struct use_processed_image<MetricType, typename Void<typename MetricType::requires_precompute>::type> { NOMEMALIGN
           typedef int yes;
         };
 
         template <class MetricType, typename U = void>
-        struct cost_is_vector {
+        struct cost_is_vector { NOMEMALIGN
           typedef int no;
         };
 
         template <class MetricType>
-        struct cost_is_vector<MetricType, typename Void<typename MetricType::is_vector_type>::type> {
+        struct cost_is_vector<MetricType, typename Void<typename MetricType::is_vector_type>::type> { NOMEMALIGN
           typedef int yes;
         };
       }
       //! \endcond
 
       template <class MetricType, class ParamType>
-      class ThreadKernel {
+      class ThreadKernel { MEMALIGN(ThreadKernel)
         public:
           ThreadKernel (
               const MetricType& metric,

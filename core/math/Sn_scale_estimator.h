@@ -29,7 +29,7 @@ namespace MR {
     // for details, see: Rousseeuw PJ, Croux C. Alternatives to the Median Absolute Deviation. Journal of the American Statistical Association 1993;88:1273–1283. 
 
     template <typename value_type = default_type> 
-      class Sn_scale_estimator {
+      class Sn_scale_estimator { NOMEMALIGN
         public:
           template <class VectorType>
             value_type operator() (const VectorType& vec)
@@ -45,7 +45,7 @@ namespace MR {
             }
 
         protected:
-          std::vector<value_type> diff, med_diff;
+          vector<value_type> diff, med_diff;
 
       };
 

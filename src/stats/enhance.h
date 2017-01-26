@@ -27,7 +27,7 @@ namespace MR
     // This class defines the standardised interface by which statistical enhancement
     //   is performed.
     class EnhancerBase
-    {
+    { NOMEMALIGN
       public:
 
         // Return value is the maximal enhanced statistic

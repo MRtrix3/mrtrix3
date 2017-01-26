@@ -25,13 +25,12 @@ namespace MR {
     namespace Tractography {
       namespace GT {
         
-
         /**
          * @brief SpatialLock manages a mutex lock on n positions in 3D space.
          */
         template <typename T = float >
         class SpatialLock
-        {
+        { MEMALIGN(SpatialLock)
         public:
           typedef T value_type;
           typedef Eigen::Matrix<value_type, 3, 1> point_type;
@@ -56,7 +55,7 @@ namespace MR {
 
 
           struct Guard
-          {
+          { NOMEMALIGN
           public:
             Guard(SpatialLock& l) : lock(l), idx(-1) { }
 
@@ -82,7 +81,7 @@ namespace MR {
           
         protected:
           std::mutex mutex;
-          std::vector< std::pair<point_type, bool> > lockcentres;
+          vector< std::pair<point_type, bool> > lockcentres;
           value_type _tx, _ty, _tz;
 
           bool try_lock(const point_type& pos, ssize_t& idx) {

@@ -48,8 +48,8 @@ void run ()
 
   DWI::Tractography::check_properties_match (properties1, properties2, "scalar", false);
 
-  std::vector<value_type> tck_scalar1;
-  std::vector<value_type> tck_scalar2;
+  vector<value_type> tck_scalar1;
+  vector<value_type> tck_scalar2;
   
   auto opt = get_options ("frac");
   if (opt.size()) {

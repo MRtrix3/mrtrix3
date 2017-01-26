@@ -61,7 +61,7 @@ void run ()
 
   auto in = Image<float>::open (argument[0]);
 
-  std::vector<std::vector<ssize_t>> bounds (in.ndim(), std::vector<ssize_t> (2));
+  vector<vector<ssize_t>> bounds (in.ndim(), vector<ssize_t> (2));
   for (size_t axis = 0; axis < in.ndim(); axis++) {
     bounds[axis][0] = 0;
     bounds[axis][1] = in.size (axis) - 1;
@@ -78,10 +78,10 @@ void run ()
       bounds[axis][1] = 0;
     }
 
-    struct BoundsCheck {
-      std::vector<std::vector<ssize_t>>& overall_bounds;
-      std::vector<std::vector<ssize_t>> bounds;
-      BoundsCheck (std::vector<std::vector<ssize_t>>& overall_bounds) : overall_bounds (overall_bounds), bounds (overall_bounds) { }
+    struct BoundsCheck { NOMEMALIGN
+      vector<vector<ssize_t>>& overall_bounds;
+      vector<vector<ssize_t>> bounds;
+      BoundsCheck (vector<vector<ssize_t>>& overall_bounds) : overall_bounds (overall_bounds), bounds (overall_bounds) { }
       ~BoundsCheck () {
         for (size_t axis = 0; axis != 3; ++axis) {
           overall_bounds[axis][0] = std::min (bounds[axis][0], overall_bounds[axis][0]);
@@ -127,8 +127,8 @@ void run ()
     bounds[axis][1] = end;
   }
 
-  std::vector<size_t> from (in.ndim());
-  std::vector<size_t> size (in.ndim());
+  vector<size_t> from (in.ndim());
+  vector<size_t> size (in.ndim());
   for (size_t axis = 0; axis < in.ndim(); axis++) {
     from[axis] = bounds[axis][0];
     size[axis] = bounds[axis][1] - from[axis] + 1;

@@ -66,7 +66,7 @@ namespace MR
      */
 
     template <class ImageType> class Sinc : public Base<ImageType>
-    {
+    { MEMALIGN(Sinc<ImageType>)
       public:
         using typename Base<ImageType>::value_type;
         using Base<ImageType>::out_of_bounds;
@@ -85,7 +85,6 @@ namespace MR
           assert (w % 2);
         }
 
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         //! Set the current position to <b>voxel space</b> position \a pos
         /*! See file interp/base.h for details. */
@@ -157,7 +156,7 @@ namespace MR
         const size_t window_size;
         const int kernel_width;
         Math::Sinc<value_type> Sinc_x, Sinc_y, Sinc_z;
-        std::vector<value_type> y_values, z_values;
+        vector<value_type> y_values, z_values;
 
     };
 

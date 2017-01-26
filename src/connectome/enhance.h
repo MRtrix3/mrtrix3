@@ -42,7 +42,7 @@ namespace MR {
 
       // This should be possible to use for any domain of inference
       class PassThrough : public Stats::EnhancerBase
-      {
+      { MEMALIGN (PassThrough)
         public:
           PassThrough() { }
           ~PassThrough() { }
@@ -55,7 +55,7 @@ namespace MR {
 
 
       class NBS : public Stats::TFCE::EnhancerBase
-      {
+      { MEMALIGN (NBS)
         public:
 
           NBS () = delete;
@@ -70,10 +70,10 @@ namespace MR {
             return (*this) (in, threshold, out);
           }
 
-          value_type operator() (const vector_type&, const value_type, vector_type&) const;
+          value_type operator() (const vector_type&, const value_type, vector_type&) const override;
 
         protected:
-          std::shared_ptr< std::vector< std::vector<size_t> > > adjacency;
+          std::shared_ptr< vector< vector<size_t> > > adjacency;
           value_type threshold;
 
         private:

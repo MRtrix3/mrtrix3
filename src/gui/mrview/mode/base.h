@@ -56,7 +56,7 @@ namespace MR
         class Volume;
         class LightBox;
         class ModeGuiVisitor
-        {
+        { MEMALIGN(ModeGuiVisitor)
           public:
             virtual void update_base_mode_gui(const Base&) {}
             virtual void update_slice_mode_gui(const Slice&) {}
@@ -68,7 +68,7 @@ namespace MR
 
 
         class Base : public QObject
-        {
+        { MEMALIGN(Base)
           public:
             Base (int flags = FocusContrast | MoveTarget);
             virtual ~Base ();
@@ -215,7 +215,7 @@ namespace MR
 
         //! \cond skip
         class __Action__ : public QAction
-        {
+        { NOMEMALIGN
           public:
             __Action__ (QActionGroup* parent,
                         const char* const name,
@@ -234,7 +234,7 @@ namespace MR
 
 
         template <class T> class Action : public __Action__
-        {
+        { NOMEMALIGN
           public:
             Action (QActionGroup* parent,
                     const char* const name,

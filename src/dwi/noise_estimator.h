@@ -28,7 +28,7 @@ namespace MR {
     namespace {
 
       template <class InputImageType, class OutputImageType, class MatrixType>
-        class NoiseEstimatorFunctor {
+        class NoiseEstimatorFunctor { MEMALIGN(NoiseEstimatorFunctor<InputImageType,OutputImageType,MatrixType>)
           public:
 
             NoiseEstimatorFunctor (const MatrixType& SH2amp_mapping, int axis, InputImageType& dwi, OutputImageType& noise) :

@@ -31,7 +31,7 @@ namespace MR {
 
         template <typename value_type>
           class BufferScratchDump : public Image<value_type>
-        {
+        { MEMALIGN(BufferScratchDump)
 
           public:
             template <class Template>
@@ -95,7 +95,7 @@ namespace MR {
             for (std::map<std::string, std::string>::const_iterator i = H.begin(); i != H.end(); ++i)
               out_header << "\n" << i->first << ": " << i->second;
 
-            for (std::vector<std::string>::const_iterator i = H.comments().begin(); i != H.comments().end(); i++)
+            for (vector<std::string>::const_iterator i = H.comments().begin(); i != H.comments().end(); i++)
               out_header << "\ncomments: " << *i;
 
 

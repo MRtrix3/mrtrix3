@@ -69,7 +69,7 @@ void run ()
     Header::do_not_realign_transform = true;
 
   if (argument.size()) {
-    std::vector<std::unique_ptr<MR::Header>> list;
+    vector<std::unique_ptr<MR::Header>> list;
 
     for (size_t n = 0; n < argument.size(); ++n) {
       try {

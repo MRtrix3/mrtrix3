@@ -38,7 +38,7 @@ namespace MR {
 
 
         class DixelMappingPlugin
-        {
+        { MEMALIGN(DixelMappingPlugin)
           public:
             DixelMappingPlugin (const DWI::Directions::FastLookupSet& directions) :
               dirs (directions) { }
@@ -52,7 +52,7 @@ namespace MR {
 
 
         class TODMappingPlugin
-        {
+        { MEMALIGN(TODMappingPlugin)
           public:
             TODMappingPlugin (const size_t N) :
               generator (new Math::SH::aPSF<float> (Math::SH::LforN (N))) { }
@@ -67,7 +67,7 @@ namespace MR {
 
 
         class TWIImagePluginBase
-        {
+        { MEMALIGN(TWIImagePluginBase)
 
           public:
             TWIImagePluginBase (const std::string& input_image) :
@@ -75,7 +75,7 @@ namespace MR {
 
             virtual ~TWIImagePluginBase() { }
 
-            virtual void load_factors (const Streamline<>&, std::vector<default_type>&) = 0;
+            virtual void load_factors (const Streamline<>&, vector<default_type>&) = 0;
 
           protected:
             //Image<float> voxel;
@@ -93,7 +93,7 @@ namespace MR {
 
 
         class TWIScalarImagePlugin : public TWIImagePluginBase
-        {
+        { MEMALIGN(TWIScalarImagePlugin)
           public:
             TWIScalarImagePlugin (const std::string& input_image, const tck_stat_t track_statistic) :
               TWIImagePluginBase (input_image),
@@ -114,7 +114,7 @@ namespace MR {
             ~TWIScalarImagePlugin() { }
 
 
-            void load_factors (const Streamline<>&, std::vector<default_type>&);
+            void load_factors (const Streamline<>&, vector<default_type>&);
 
           private:
             const tck_stat_t statistic;
@@ -126,7 +126,7 @@ namespace MR {
 
 
         class TWIFODImagePlugin : public TWIImagePluginBase
-        {
+        { MEMALIGN(TWIFODImagePlugin)
           public:
             TWIFODImagePlugin (const std::string& input_image) :
               TWIImagePluginBase (input_image),
@@ -136,7 +136,7 @@ namespace MR {
                 precomputer->init (Math::SH::LforN (sh_coeffs.size()));
               }
 
-            void load_factors (const Streamline<>&, std::vector<default_type>&);
+            void load_factors (const Streamline<>&, vector<default_type>&);
 
           private:
             Eigen::Matrix<default_type, Eigen::Dynamic, 1> sh_coeffs;

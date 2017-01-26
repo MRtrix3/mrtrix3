@@ -33,7 +33,7 @@ namespace MR
 
 
       class Calibrator
-      {
+      { MEMALIGN (Calibrator)
 
         public:
           Calibrator (const size_t number_of_bins = 0, const bool ignorezero = false) :
@@ -79,7 +79,7 @@ namespace MR
           default_type min, max, bin_width;
           size_t num_bins;
           const bool ignore_zero;
-          std::vector<default_type> data;
+          vector<default_type> data;
 
           default_type get_iqr();
 
@@ -89,7 +89,7 @@ namespace MR
 
 
       class Data
-      {
+      { MEMALIGN (Data)
         public:
 
           typedef Eigen::Array<size_t, Eigen::Dynamic, 1> vector_type;
@@ -207,7 +207,7 @@ namespace MR
 
 
       class Matcher
-      {
+      { MEMALIGN (Matcher)
 
           typedef Eigen::Array<default_type, Eigen::Dynamic, 1> vector_type;
 

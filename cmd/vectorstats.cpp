@@ -66,7 +66,7 @@ void run()
 {
 
   // Read filenames
-  std::vector<std::string> filenames;
+  vector<std::string> filenames;
   {
     std::string folder = Path::dirname (argument[0]);
     std::ifstream ifs (argument[0].c_str());
@@ -96,7 +96,7 @@ void run()
 
   // Load permutations file if supplied
   auto opt = get_options("permutations");
-  std::vector<std::vector<size_t> > permutations;
+  vector<vector<size_t> > permutations;
   if (opt.size()) {
     permutations = Math::Stats::Permutation::load_permutations_file (opt[0][0]);
     num_perms = permutations.size();
@@ -166,7 +166,7 @@ void run()
   // Precompute default statistic
   // Don't use convenience function: No enhancer!
   // Manually construct default permutation
-  std::vector<size_t> default_permutation (filenames.size());
+  vector<size_t> default_permutation (filenames.size());
   for (size_t i = 0; i != filenames.size(); ++i)
     default_permutation[i] = i;
   vector_type default_tvalues;

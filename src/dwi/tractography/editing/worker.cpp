@@ -78,8 +78,8 @@ namespace MR {
           if (properties.mask.size()) {
 
             // Split tck into separate tracks based on the mask
-            std::vector<std::vector<Eigen::Vector3f>> cropped_tracks;
-            std::vector<Eigen::Vector3f> temp;
+            vector<vector<Eigen::Vector3f>> cropped_tracks;
+            vector<Eigen::Vector3f> temp;
 
             for (const auto& p : in) {
               const bool contains = properties.mask.contains (p);

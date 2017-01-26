@@ -74,7 +74,7 @@ namespace MR {
       Image<bool> Mask::__get_mask (const std::string& name)
       {
         auto data = Image<bool>::open (name);
-        std::vector<size_t> bottom (data.ndim(), 0), top (data.ndim(), 0);
+        vector<size_t> bottom (data.ndim(), 0), top (data.ndim(), 0);
         std::fill_n (bottom.begin(), 3, std::numeric_limits<size_t>::max());
 
         size_t sum = 0;

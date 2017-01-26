@@ -53,7 +53,7 @@ namespace MR
 
 
       class Triangle
-      {
+      { NOMEMALIGN
         public:
           Triangle () { }
           Triangle (const GLuint x[3]) {
@@ -78,8 +78,8 @@ namespace MR
           GLuint  index[3];
       };
 
-      class Edge
-      {
+      class Edge 
+      { NOMEMALIGN
         public:
           Edge (const Edge& E) {
             set (E.i1, E.i2);
@@ -113,9 +113,9 @@ namespace MR
 
     void HalfSphere::LOD (const size_t level_of_detail)
     {
-      //std::vector<Vertex> vertices;
+      //vector<Vertex> vertices;
       vertices.clear();
-      std::vector<Triangle> indices;
+      vector<Triangle> indices;
 
       for (size_t n = 0; n < NUM_VERTICES; n++)
         vertices.push_back (initial_vertices[n]);

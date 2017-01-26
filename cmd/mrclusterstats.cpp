@@ -91,7 +91,7 @@ void usage ()
 
 template <class VectorType, class ImageType>
 void write_output (const VectorType& data,
-                   const std::vector<std::vector<int> >& mask_indices,
+                   const vector<vector<int> >& mask_indices,
                    ImageType& image) {
   for (size_t i = 0; i < mask_indices.size(); i++) {
     for (size_t dim = 0; dim < image.ndim(); dim++)
@@ -120,7 +120,7 @@ void run() {
   const bool do_nonstationary_adjustment = get_options ("nonstationary").size();
 
   // Read filenames
-  std::vector<std::string> subjects;
+  vector<std::string> subjects;
   {
     std::string folder = Path::dirname (argument[0]);
     std::ifstream ifs (argument[0].c_str());
@@ -136,7 +136,7 @@ void run() {
 
   // Load permutations file if supplied
   auto opt = get_options("permutations");
-  std::vector<std::vector<size_t> > permutations;
+  vector<vector<size_t> > permutations;
   if (opt.size()) {
     permutations = Math::Stats::Permutation::load_permutations_file (opt[0][0]);
     num_perms = permutations.size();
@@ -146,7 +146,7 @@ void run() {
 
   // Load non-stationary correction permutations file if supplied
   opt = get_options("permutations_nonstationary");
-  std::vector<std::vector<size_t> > permutations_nonstationary;
+  vector<vector<size_t> > permutations_nonstationary;
   if (opt.size()) {
     permutations_nonstationary = Math::Stats::Permutation::load_permutations_file (opt[0][0]);
     nperms_nonstationary = permutations.size();
@@ -163,7 +163,7 @@ void run() {
   // Load Mask and compute adjacency
   auto mask_image = mask_header.get_image<value_type>();
   Filter::Connector connector (do_26_connectivity);
-  std::vector<std::vector<int> > mask_indices = connector.precompute_adjacency (mask_image);
+  vector<vector<int> > mask_indices = connector.precompute_adjacency (mask_image);
   const size_t num_vox = mask_indices.size();
 
   matrix_type data (num_vox, subjects.size());
@@ -176,7 +176,7 @@ void run() {
       auto input_image = Image<float>::open (subjects[subject]); //.with_direct_io (3); <- Should be inputting 3D images?
       check_dimensions (input_image, mask_image, 0, 3);
       int index = 0;
-      std::vector<std::vector<int> >::iterator it;
+      vector<vector<int> >::iterator it;
       for (it = mask_indices.begin(); it != mask_indices.end(); ++it) {
         input_image.index(0) = (*it)[0];
         input_image.index(1) = (*it)[1];

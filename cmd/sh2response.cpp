@@ -82,7 +82,7 @@ void run ()
     throw Exception ("input direction image \"" + std::string (argument[2]) + "\" must contain precisely 3 volumes");
 
   Eigen::VectorXd delta;
-  std::vector<value_type> response (Math::ZSH::NforL (lmax), 0.0);
+  vector<value_type> response (Math::ZSH::NforL (lmax), 0.0);
   size_t count = 0;
 
   auto loop = Loop ("estimating response function", SH, 0, 3);

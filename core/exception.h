@@ -76,8 +76,7 @@ namespace MR
 
 
 
-  class Exception
-  {
+  class Exception { NOMEMALIGN
     public:
       Exception (const std::string& msg) {
         description.push_back (msg);
@@ -103,11 +102,10 @@ namespace MR
 
       static void (*display_func) (const Exception& E, int log_level);
 
-      std::vector<std::string> description;
+      vector<std::string> description;
   };
 
-  class InvalidImageException : public Exception
-  {
+  class InvalidImageException : public Exception { NOMEMALIGN
     public:
       InvalidImageException (const std::string& msg) : Exception(msg) {}
       InvalidImageException (const Exception& previous_exception, const std::string& msg)
@@ -120,8 +118,7 @@ namespace MR
 
 
 
-    class LogLevelLatch
-    {
+    class LogLevelLatch { NOMEMALIGN
       public:
         LogLevelLatch (const int new_level) :
           prev_level (App::log_level) {

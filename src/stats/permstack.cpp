@@ -31,7 +31,7 @@ namespace MR
         Math::Stats::Permutation::generate (num_permutations, num_samples, permutations, include_default);
       }
 
-      PermutationStack::PermutationStack (std::vector <std::vector<size_t> >& permutations, const std::string msg) :
+      PermutationStack::PermutationStack (vector <vector<size_t> >& permutations, const std::string msg) :
           num_permutations (permutations.size()),
           permutations (permutations),
           counter (0),

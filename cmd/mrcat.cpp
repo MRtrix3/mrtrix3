@@ -59,7 +59,7 @@ void run () {
   int axis = get_option_value ("axis", -1);
 
   int num_images = argument.size()-1;
-  std::vector<Header, Eigen::aligned_allocator<Header>> in (num_images);
+  vector<Header> in (num_images);
   in[0] = Header::open (argument[0]);
 
   int ndims = 0;
@@ -116,7 +116,7 @@ void run () {
   if (axis > 2) {
     // concatenate DW schemes
     ssize_t nrows = 0, ncols = 0;
-    std::vector<Eigen::MatrixXd> input_grads;
+    vector<Eigen::MatrixXd> input_grads;
     for (int n = 0; n < num_images; ++n) {
       auto grad = DWI::get_DW_scheme (in[n]);
       if (grad.rows() == 0 || grad.cols() < 4) {
@@ -146,7 +146,7 @@ void run () {
 
     // concatenate PE schemes
     nrows = 0; ncols = 0;
-    std::vector<Eigen::MatrixXd> input_schemes;
+    vector<Eigen::MatrixXd> input_schemes;
     for (int n = 0; n != num_images; ++n) {
       auto scheme = PhaseEncoding::parse_scheme (in[n]);
       if (!scheme.rows()) {

@@ -24,22 +24,30 @@ namespace MR
 
 
     template <class ImageType>
-      class Normalise3D : public Base<ImageType> {
+      class Normalise3D : 
+        public Base<Normalise3D<ImageType>,ImageType> 
+    { MEMALIGN(Normalise3D<ImageType>)
       public:
-        Normalise3D (const ImageType& parent) :
-          Base<ImageType> (parent) {
-            set_extent (std::vector<int>(1,3));
-          }
 
-        Normalise3D (const ImageType& parent, const std::vector<int>& extent) :
-          Base<ImageType> (parent) {
-            set_extent (extent);
-          }
-
+        typedef Base<Normalise3D<ImageType>,ImageType> base_type;
         typedef typename ImageType::value_type value_type;
         typedef Normalise3D voxel_type;
 
-        void set_extent (const std::vector<int>& ext)
+        using base_type::name;
+        using base_type::size;
+        using base_type::index;
+
+        Normalise3D (const ImageType& parent) :
+          base_type (parent) {
+            set_extent (vector<int>(1,3));
+          }
+
+        Normalise3D (const ImageType& parent, const vector<int>& extent) :
+          base_type (parent) {
+            set_extent (extent);
+          }
+
+        void set_extent (const vector<int>& ext)
         {
           for (size_t i = 0; i < ext.size(); ++i)
             if (! (ext[i] & int(1)))
@@ -47,7 +55,7 @@ namespace MR
           if (ext.size() != 1 && ext.size() != 3)
             throw Exception ("unexpected number of elements specified in extent");
           if (ext.size() == 1)
-            extent = std::vector<int> (3, ext[0]);
+            extent = vector<int> (3, ext[0]);
           else
             extent = ext;
 
@@ -59,10 +67,10 @@ namespace MR
 
 
 
-        value_type& value ()
+        value_type value ()
         {
           const ssize_t old_pos [3] = { index(0), index(1), index(2) };
-          pos_value = Base<ImageType>::value();
+          pos_value = base_type::value();
           nelements = 0;
 
           const ssize_t from[3] = {
@@ -81,7 +89,7 @@ namespace MR
           for (index(2) = from[2]; index(2) < to[2]; ++index(2))
             for (index(1) = from[1]; index(1) < to[1]; ++index(1))
               for (index(0) = from[0]; index(0) < to[0]; ++index(0)){
-                mean += Base<ImageType>::value();
+                mean += base_type::value();
                 nelements += 1;
               }
           mean /= nelements;
@@ -90,20 +98,14 @@ namespace MR
           index(1) = old_pos[1];
           index(2) = old_pos[2];
 
-          retval = pos_value - mean;
-          return retval;
+          return pos_value - mean;
         }
 
-        using Base<ImageType>::name;
-        using Base<ImageType>::size;
-        using Base<ImageType>::index;
-
       protected:
-        std::vector<int> extent;
+        vector<int> extent;
         value_type mean;
         value_type pos_value;
         size_t nelements;
-        value_type retval;
       };
 
   }

@@ -36,7 +36,7 @@ namespace Connectome {
 // Class for storing any useful information regarding a parcellation node that
 //   may be imported from a lookup table
 class LUT_node
-{
+{ MEMALIGN(LUT_node)
 
   public:
 
@@ -92,7 +92,7 @@ class LUT_node
 
 
 class LUT : public std::multimap<node_t, LUT_node>
-{
+{ MEMALIGN(LUT)
     enum file_format { LUT_NONE, LUT_BASIC, LUT_FREESURFER, LUT_AAL, LUT_ITKSNAP, LUT_MRTRIX };
   public:
     typedef std::multimap<node_t, LUT_node> map_type;
@@ -121,7 +121,7 @@ class LUT : public std::multimap<node_t, LUT_node>
 // Convenience function for constructing a mapping from one lookup table to another
 // NOTE: If the TARGET LUT contains multiple entries for a particular index, and a
 //   mapping TO that index is required, the conversion is ill-formed.
-std::vector<node_t> get_lut_mapping (const LUT&, const LUT&);
+vector<node_t> get_lut_mapping (const LUT&, const LUT&);
 
 
 

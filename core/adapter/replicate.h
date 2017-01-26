@@ -25,17 +25,20 @@ namespace MR
     {
 
     template <class ImageType>
-      class Replicate : public Base<ImageType>
-    {
+      class Replicate : 
+        public Base<Replicate<ImageType>,ImageType>
+    { MEMALIGN(Replicate<ImageType>)
       public:
+
+        typedef Base<Replicate<ImageType>,ImageType> base_type;
         typedef typename ImageType::value_type value_type;
 
-        using Base<ImageType>::name;
-        using Base<ImageType>::ndim;
-        using Base<ImageType>::spacing;
+        using base_type::name;
+        using base_type::ndim;
+        using base_type::spacing;
 
           Replicate (ImageType& original, const Header& replication_template) :
-            Base<ImageType> (original),
+            base_type (original),
             header_ (replication_template),
             pos_ (std::max<size_t> (parent().ndim(), header_.ndim()), 0)
           {
@@ -58,31 +61,21 @@ namespace MR
           return axis < parent().ndim() ? parent().stride (axis) : 0;
         }
 
-        ssize_t index (size_t axis) const {
+        ssize_t get_index (size_t axis) const {
           return pos_[axis];
-        }
-
-        auto index (size_t axis) -> decltype(Helper::index(*this, axis)) {
-          return { *this, axis };
-        }
-
-      protected:
-        using Base<ImageType>::parent;
-        Header header_;
-        std::vector<ssize_t> pos_;
-
-        void set_index (size_t axis, ssize_t position) {
-          pos_[axis] = position;
-          if (axis < parent().ndim() && parent().size(axis) > 1)
-            parent().index(axis) = position;
         }
         void move_index (size_t axis, ssize_t increment) {
           pos_[axis] += increment;
-          if (axis < parent().ndim() && parent().size(axis) > 1)
-            parent().index(axis) += increment;
+          if (axis < parent().ndim())
+            if (parent().size(axis) > 1)
+              parent().index(axis) += increment;
         }
 
-        friend class Helper::Index<Replicate<ImageType> >;
+      protected:
+        using base_type::parent;
+        Header header_;
+        std::vector<ssize_t> pos_;
+
     };
 
     }

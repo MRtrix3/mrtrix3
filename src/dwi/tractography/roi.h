@@ -37,7 +37,7 @@ namespace MR
       void load_rois (Properties& properties);
 
 
-      class Mask : public Image<bool> {
+      class Mask : public Image<bool> { MEMALIGN(Mask)
         public:
           typedef Eigen::Transform<float, 3, Eigen::AffineCompact> transform_type;
           Mask (const Mask&) = default;
@@ -55,7 +55,7 @@ namespace MR
 
 
 
-      class ROI {
+      class ROI { MEMALIGN(ROI)
         public:
           ROI (const Eigen::Vector3f& sphere_pos, float sphere_radius) :
             pos (sphere_pos), radius (sphere_radius), radius2 (Math::pow2 (radius)) { }
@@ -122,7 +122,7 @@ namespace MR
 
 
 
-      class ROISet {
+      class ROISet { MEMALIGN(ROISet)
         public:
           ROISet () { }
 
@@ -137,14 +137,14 @@ namespace MR
             return false;
           }
 
-          void contains (const Eigen::Vector3f& p, std::vector<bool>& retval) const {
+          void contains (const Eigen::Vector3f& p, vector<bool>& retval) const {
             for (size_t n = 0; n < R.size(); ++n)
               if (R[n].contains (p)) retval[n] = true;
           }
 
           friend inline std::ostream& operator<< (std::ostream& stream, const ROISet& R) {
             if (R.R.empty()) return (stream);
-            std::vector<ROI>::const_iterator i = R.R.begin();
+            vector<ROI>::const_iterator i = R.R.begin();
             stream << *i;
             ++i;
             for (; i != R.R.end(); ++i) stream << ", " << *i;
@@ -152,7 +152,7 @@ namespace MR
           }
 
         private:
-          std::vector<ROI> R;
+          vector<ROI> R;
       };
 
 

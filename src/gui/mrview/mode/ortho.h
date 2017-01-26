@@ -28,7 +28,7 @@ namespace MR
       {
 
         class Ortho : public Slice
-        {
+        { MEMALIGN(Ortho)
             Q_OBJECT
 
           public:
@@ -44,7 +44,7 @@ namespace MR
             virtual const Projection* get_current_projection () const;
 
           protected:
-            std::vector<Projection> projections;
+            vector<Projection> projections;
             int current_plane;
             GL::VertexBuffer frame_VB;
             GL::VertexArrayObject frame_VAO;

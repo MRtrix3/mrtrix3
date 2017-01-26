@@ -24,7 +24,6 @@
 
 using namespace MR;
 using namespace App;
-using namespace std;
 
 typedef float value_type;
 
@@ -56,11 +55,13 @@ void run()
   auto input_header = Header::open (argument[0]);
   auto input_image = input_header.get_image<float>();
 
-  Eigen::MatrixXd grad = DWI::get_valid_DW_scheme (input_image);
+  Eigen::MatrixXd grad_unprocessed = DWI::get_DW_scheme (input_image);
+  Eigen::MatrixXd grad = grad_unprocessed;
+  DWI::validate_DW_scheme (grad, input_image);
 
   // Want to support non-shell-like data if it's just a straight extraction
   //   of all dwis or all bzeros i.e. don't initialise the Shells class
-  std::vector<int> volumes;
+  vector<int> volumes;
   bool bzero = get_options ("bzero").size();
   if (get_options ("shell").size() || get_options ("singleshell").size()) {
     DWI::Shells shells (grad);
@@ -95,7 +96,7 @@ void run()
     const auto filter = parse_floats (opt[0][0]);
     if (!(filter.size() == 3 || filter.size() == 4))
       throw Exception ("Phase encoding filter must be a comma-separated list of either 3 or 4 numbers");
-    std::vector<int> new_volumes;
+    vector<int> new_volumes;
     for (const auto i : volumes) {
       bool keep = true;
       for (size_t axis = 0; axis != 3; ++axis) {
@@ -129,7 +130,7 @@ void run()
 
   Eigen::MatrixXd new_grad (volumes.size(), grad.cols());
   for (size_t i = 0; i < volumes.size(); i++)
-    new_grad.row (i) = grad.row (volumes[i]);
+    new_grad.row (i) = grad_unprocessed.row (volumes[i]);
   DWI::set_DW_scheme (header, new_grad);
 
   if (pe_scheme.rows()) {

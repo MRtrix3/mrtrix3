@@ -24,7 +24,7 @@ namespace MR {
     Mat2Vec::Mat2Vec (const node_t i) :
         dim (i)
     {
-      lookup.assign (dim, std::vector<size_t> (dim, 0));
+      lookup.assign (dim, vector<size_t> (dim, 0));
       inv_lookup.reserve (dim* (dim+1) / 2);
       size_t index = 0;
       for (node_t row = 0; row != dim; ++row) {

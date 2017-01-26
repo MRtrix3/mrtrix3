@@ -25,7 +25,7 @@ namespace MR
       namespace Tool
       {
         class Directory : public FixelType<FixelIndexImageType>
-        {
+        { MEMALIGN (Directory)
           public:
             Directory (const std::string& filename, Fixel& fixel_tool) :
               FixelType (MR::Fixel::find_index_header (Path::dirname (filename)).name (), fixel_tool)

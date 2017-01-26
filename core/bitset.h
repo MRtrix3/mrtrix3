@@ -38,14 +38,13 @@ namespace MR {
    * from a two-dimensional position to an array index. If a boolean value for
    * each voxel is required for three- or four-dimensional data, use of an
    * Image::BufferScratch<bool> is recommended. */
-  class BitSet {
+  class BitSet { NOMEMALIGN
 
     public:
 
       /*! convenience classes that allow the programmer to access and modify
        * the bit wise information using the [] operator. */
-      class Value
-      {
+      class Value { NOMEMALIGN
         public:
         Value (BitSet& master, const size_t offset) : d (master), p (offset) { assert (p < d.size()); }
         operator bool()                  const { return d.test (p); }
@@ -58,8 +57,7 @@ namespace MR {
         BitSet& d;
         const size_t p;
       };
-      class ConstValue
-      {
+      class ConstValue { NOMEMALIGN
         public:
           ConstValue (const BitSet& master, const size_t offset) : d (master), p (offset) { assert (p < d.size()); }
           operator bool()                  const { return d.test (p); }

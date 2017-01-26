@@ -27,7 +27,7 @@ namespace MR
 {
    namespace Math
    {
-      void matrix_average (std::vector<Eigen::MatrixXd> const &mat_in, Eigen::MatrixXd& mat_avg, bool verbose = false);
+      void matrix_average (vector<Eigen::MatrixXd> const &mat_in, Eigen::MatrixXd& mat_avg, bool verbose = false);
    }
  }
 
@@ -36,27 +36,27 @@ namespace MR
   Eigen::Matrix<default_type, 8, 4> get_cuboid_corners (const Eigen::Matrix<default_type, 4, 1>& xzx1);
   Eigen::Matrix<default_type, 8, 4> get_bounding_box (const Header& header, const Eigen::Transform<default_type, 3, Eigen::Projective>& voxel2scanner);
 
-  Header compute_minimum_average_header (const std::vector<Header>& input_headers,
+  Header compute_minimum_average_header (const vector<Header>& input_headers,
                                          int voxel_subsampling,
                                          const Eigen::Matrix<default_type, 4, 1>& padding,
-                                         const std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>>& transform_header_with);
+                                         const vector<Eigen::Transform<default_type, 3, Eigen::Projective>>& transform_header_with);
 
   template<class ImageType1, class ImageType2, class TransformationType>
-  Header compute_minimum_average_header (
-    const ImageType1& im1,
-    const ImageType2& im2,
-    const TransformationType& transformation,
-    const default_type& voxel_subsampling,
-    const Eigen::Matrix<default_type, 4, 1>& padding) {
-      std::vector<Eigen::Transform<default_type, 3, Eigen::Projective> > init_transforms;
+    Header compute_minimum_average_header (
+        const ImageType1& im1,
+        const ImageType2& im2,
+        const TransformationType& transformation,
+        const default_type& voxel_subsampling,
+        const Eigen::Matrix<default_type, 4, 1>& padding) {
+      vector<Eigen::Transform<default_type, 3, Eigen::Projective>> init_transforms;
       Eigen::Transform<default_type, 3, Eigen::Projective> trafo_1 = transformation.get_transform_half_inverse();
       Eigen::Transform<default_type, 3, Eigen::Projective> trafo_2 = transformation.get_transform_half();
       init_transforms.push_back (trafo_1);
       init_transforms.push_back (trafo_2);
-      std::vector<Header> headers;
+      vector<Header> headers;
       headers.push_back(Header(im1));
       headers.push_back(Header(im2));
       return compute_minimum_average_header(headers, voxel_subsampling, padding, init_transforms);
-  }
-}
+    }
+ }
 #endif

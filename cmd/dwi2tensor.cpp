@@ -72,8 +72,7 @@ void usage ()
 }
 
 template <class MASKType, class B0Type, class DKTType, class PredictType>
-class Processor
-{
+class Processor { MEMALIGN(Processor)
   public:
     Processor (const Eigen::MatrixXd& b, const int iter, MASKType* mask_image, B0Type* b0_image, DKTType* dkt_image, PredictType* predict_image) :
       mask_image (mask_image),

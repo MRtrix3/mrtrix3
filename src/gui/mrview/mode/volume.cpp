@@ -62,10 +62,10 @@ namespace MR
 
         std::string Volume::Shader::fragment_shader_source (const Displayable& object)
         {
-          std::vector< std::pair<GL::vec4,bool> > clip = mode.get_active_clip_planes();
+          vector< std::pair<GL::vec4,bool> > clip = mode.get_active_clip_planes();
           const bool AND = mode.get_clipintersectionmodestate();
           std::string clip_color_spec = File::Config::get ("MRViewClipPlaneColour");
-          std::vector<float> clip_color = { 1.0, 0.0, 0.0, 0.1 };
+          vector<float> clip_color = { 1.0, 0.0, 0.0, 0.1 };
           if (clip_color_spec.size()) {
             auto colour = parse_floats (clip_color_spec);
             if (colour.size() != 4)
@@ -471,7 +471,7 @@ namespace MR
           GL_CHECK_ERROR;
           gl::Uniform1i (gl::GetUniformLocation (volume_shader, "depth_sampler"), 1);
 
-          std::vector< std::pair<GL::vec4,bool> > clip = get_active_clip_planes();
+          vector< std::pair<GL::vec4,bool> > clip = get_active_clip_planes();
           GL_CHECK_ERROR;
 
           for (size_t n = 0; n < clip.size(); ++n) {
@@ -530,16 +530,16 @@ namespace MR
           return dynamic_cast<Tool::View*> (dock->tool);
         }
 
-        inline std::vector< std::pair<GL::vec4,bool> > Volume::get_active_clip_planes () const 
+        inline vector< std::pair<GL::vec4,bool> > Volume::get_active_clip_planes () const 
         {
           Tool::View* view = get_view_tool();
-          return view ? view->get_active_clip_planes() : std::vector< std::pair<GL::vec4,bool> >();
+          return view ? view->get_active_clip_planes() : vector< std::pair<GL::vec4,bool> >();
         }
 
-        inline std::vector<GL::vec4*> Volume::get_clip_planes_to_be_edited () const
+        inline vector<GL::vec4*> Volume::get_clip_planes_to_be_edited () const
         {
           Tool::View* view = get_view_tool();
-          return view ? view->get_clip_planes_to_be_edited() : std::vector<GL::vec4*>();
+          return view ? view->get_clip_planes_to_be_edited() : vector<GL::vec4*>();
         }
         
         inline bool Volume::get_cliphighlightstate () const
@@ -554,7 +554,7 @@ namespace MR
           return view ? view->get_clipintersectionmodestate() : false;
         }
 
-        inline void Volume::move_clip_planes_in_out (std::vector<GL::vec4*>& clip, float distance)
+        inline void Volume::move_clip_planes_in_out (vector<GL::vec4*>& clip, float distance)
         {
           Eigen::Vector3f d = get_current_projection()->screen_normal();
           for (size_t n = 0; n < clip.size(); ++n) {
@@ -565,7 +565,7 @@ namespace MR
         }
 
 
-        inline void Volume::rotate_clip_planes (std::vector<GL::vec4*>& clip, const Math::Versorf& rot)
+        inline void Volume::rotate_clip_planes (vector<GL::vec4*>& clip, const Math::Versorf& rot)
         {
           for (size_t n = 0; n < clip.size(); ++n) {
             GL::vec4& p (*clip[n]);
@@ -587,7 +587,7 @@ namespace MR
         void Volume::slice_move_event (float x) 
         {
          
-          std::vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
+          vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
           if (clip.size()) {
             const auto &header = image()->header();
             float increment = snap_to_image() ?
@@ -602,7 +602,7 @@ namespace MR
 
         void Volume::pan_event () 
         {
-          std::vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
+          vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
           if (clip.size()) {
             Eigen::Vector3f move = get_current_projection()->screen_to_model_direction (window().mouse_displacement(), target());
             for (size_t n = 0; n < clip.size(); ++n) {
@@ -618,7 +618,7 @@ namespace MR
 
         void Volume::panthrough_event () 
         {
-          std::vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
+          vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
           if (clip.size()) 
             move_clip_planes_in_out (clip, MOVE_IN_OUT_FOV_MULTIPLIER * window().mouse_displacement().y() * FOV());
           else
@@ -629,7 +629,7 @@ namespace MR
 
         void Volume::tilt_event () 
         {
-          std::vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
+          vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
           if (clip.size()) {
             const Math::Versorf rot = get_tilt_rotation();
             if (!rot)
@@ -644,7 +644,7 @@ namespace MR
 
         void Volume::rotate_event () 
         {
-          std::vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
+          vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
           if (clip.size()) {
             const Math::Versorf rot = get_rotate_rotation();
             if (!rot)

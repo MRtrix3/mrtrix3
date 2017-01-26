@@ -39,8 +39,7 @@ namespace MR
      * should ideally conform to.
      *
      */
-    class Base : public Header
-    {
+    class Base : public Header { MEMALIGN(Base)
       public:
         template <class HeaderType>
         Base (const HeaderType& in) :

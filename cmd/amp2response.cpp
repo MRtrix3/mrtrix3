@@ -101,9 +101,9 @@ Eigen::Matrix<default_type, 3, 3> gen_rotation_matrix (const Eigen::Vector3& dir
 }
 
 
-std::vector<size_t> all_volumes (const size_t num)
+vector<size_t> all_volumes (const size_t num)
 {
-  std::vector<size_t> result;
+  vector<size_t> result;
   result.reserve (num);
   for (size_t i = 0; i != num; ++i)
     result.push_back (i);
@@ -118,18 +118,18 @@ void run ()
   auto header = Header::open (argument[0]);
 
   // May be dealing with multiple shells
-  std::vector<Eigen::MatrixXd> dirs_azel;
-  std::vector<std::vector<size_t>> volumes;
+  vector<Eigen::MatrixXd> dirs_azel;
+  vector<vector<size_t>> volumes;
   std::unique_ptr<DWI::Shells> shells;
 
   auto opt = get_options ("directions");
   if (opt.size()) {
-    dirs_azel.push_back (std::move (load_matrix (opt[0][0])));
-    volumes.push_back (std::move (all_volumes (dirs_azel.size())));
+    dirs_azel.push_back (load_matrix (opt[0][0]));
+    volumes.push_back (all_volumes (dirs_azel.size()));
   } else {
     auto hit = header.keyval().find ("directions");
     if (hit != header.keyval().end()) {
-      std::vector<default_type> dir_vector;
+      vector<default_type> dir_vector;
       for (auto line : split_lines (hit->second)) {
         auto v = parse_floats (line);
         dir_vector.insert (dir_vector.end(), v.begin(), v.end());
@@ -140,7 +140,7 @@ void run ()
         directions (i/2, 1) = dir_vector[i+1];
       }
       dirs_azel.push_back (std::move (directions));
-      volumes.push_back (std::move (all_volumes (dirs_azel.size())));
+      volumes.push_back (all_volumes (dirs_azel.size()));
     } else {
       auto grad = DWI::get_valid_DW_scheme (header);
       shells.reset (new DWI::Shells (grad));
@@ -152,7 +152,7 @@ void run ()
     }
   }
 
-  std::vector<int> lmax;
+  vector<int> lmax;
   int max_lmax = 0;
   opt = get_options ("lmax");
   if (get_options("isotropic").size()) {

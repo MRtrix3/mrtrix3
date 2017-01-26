@@ -33,7 +33,7 @@ namespace MR
       // * 'size': parameter related to the size of the fixel (e.g. FOD lobe integral, bolume fraction, FOD peak amplitude)
       // * 'value': the parameteric value of interest associated with the fixel
       class FixelMetric
-      {
+      { MEMALIGN (FixelMetric)
         public:
           FixelMetric (const Eigen::Vector3f& d, const float s, const float v) :
             dir (d),

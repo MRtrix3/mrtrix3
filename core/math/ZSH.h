@@ -100,7 +100,7 @@ namespace MR
 
 
       template <typename ValueType>
-      class Transform {
+      class Transform { MEMALIGN (Transform<ValueType>)
         public:
           typedef Eigen::Matrix<ValueType,Eigen::Dynamic,Eigen::Dynamic> matrix_type;
 

@@ -126,7 +126,7 @@ void run ()
       sifter.set_csv_path (opt[0][0]);
     opt = get_options ("output_at_counts");
     if (opt.size()) {
-      std::vector<int> counts = parse_ints (opt[0][0]);
+      vector<int> counts = parse_ints (opt[0][0]);
       sifter.set_regular_outputs (counts, out_debug);
     }
 

@@ -67,7 +67,7 @@ void run ()
 
   typedef Eigen::Array<int, 3, 1> voxel_corner_t;
 
-  std::vector<voxel_corner_t> lower_corners, upper_corners;
+  vector<voxel_corner_t> lower_corners, upper_corners;
 
   {
     for (auto i = Loop ("Importing label image", labels) (labels); i; ++i) {
@@ -99,7 +99,7 @@ void run ()
 
     auto worker = [&] (const size_t& in)
     {
-      std::vector<int> from, dimensions;
+      vector<int> from, dimensions;
       for (size_t axis = 0; axis != 3; ++axis) {
         from.push_back (lower_corners[in][axis]);
         dimensions.push_back (upper_corners[in][axis] - lower_corners[in][axis] + 1);

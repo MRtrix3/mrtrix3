@@ -15,7 +15,8 @@
 #ifndef __gt_particle_h__
 #define __gt_particle_h__
 
-#include <Eigen/Dense>
+#include "types.h"
+
 
 
 namespace MR {
@@ -29,7 +30,7 @@ namespace MR {
          * A particle is a segment of a track and consists of a position and a direction.
          */
         class Particle
-        {
+        { MEMALIGN(Particle)
         public:
           
           // Particle length
@@ -213,7 +214,7 @@ namespace MR {
          * and to represent a pending fibre track.
          */
         struct ParticleEnd
-        {
+        { MEMALIGN(ParticleEnd)
           Particle* par;
           int alpha;
           float e_conn;

@@ -43,11 +43,11 @@ int precision = 6;
 
 void report (const std::string& title, const Eigen::MatrixXd& directions) 
 {
-  std::vector<double> NN_bipolar (directions.rows(), -1.0);
-  std::vector<double> NN_unipolar (directions.rows(), -1.0);
+  vector<double> NN_bipolar (directions.rows(), -1.0);
+  vector<double> NN_unipolar (directions.rows(), -1.0);
 
-  std::vector<double> E_bipolar (directions.rows(), 0.0);
-  std::vector<double> E_unipolar (directions.rows(), 0.0);
+  vector<double> E_bipolar (directions.rows(), 0.0);
+  vector<double> E_unipolar (directions.rows(), 0.0);
 
   for (ssize_t i = 0; i < directions.rows()-1; ++i) {
     for (ssize_t j = i+1; j < directions.rows(); ++j) {
@@ -74,7 +74,7 @@ void report (const std::string& title, const Eigen::MatrixXd& directions)
 
 
 
-  auto report_NN = [](const std::vector<double>& NN) {
+  auto report_NN = [](const vector<double>& NN) {
     double min = std::numeric_limits<double>::max();
     double mean = 0.0;
     double max = 0.0;
@@ -91,7 +91,7 @@ void report (const std::string& title, const Eigen::MatrixXd& directions)
 
 
 
-  auto report_E = [](const std::vector<double>& E) {
+  auto report_E = [](const vector<double>& E) {
     double min = std::numeric_limits<double>::max();
     double total = 0.0;
     double max = 0.0;

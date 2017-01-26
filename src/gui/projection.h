@@ -30,7 +30,7 @@ namespace MR
 
 
     class Projection
-    {
+    { MEMALIGN(Projection)
       public:
         Projection (GL::Area* parent, const GL::Font& font) : 
           glarea (parent), 

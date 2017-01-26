@@ -433,7 +433,7 @@ namespace MR
 
           set_colour_type_index (colour_index);
 
-          regular_grid_buffer_pos = std::vector<Eigen::Vector3f> (pos_buffer_store.size ());
+          regular_grid_buffer_pos = vector<Eigen::Vector3f> (pos_buffer_store.size ());
 
           regular_grid_vao.gen ();
 

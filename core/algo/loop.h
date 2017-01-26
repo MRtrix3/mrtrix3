@@ -28,7 +28,7 @@ namespace MR
 
   namespace {
 
-    struct set_pos {
+    struct set_pos { NOMEMALIGN
       FORCE_INLINE set_pos (size_t axis, ssize_t index) : axis (axis), index (index) { }
       template <class ImageType> 
         FORCE_INLINE void operator() (ImageType& vox) { vox.index(axis) = index; }
@@ -36,7 +36,7 @@ namespace MR
       ssize_t index;
     };
 
-    struct inc_pos {
+    struct inc_pos { NOMEMALIGN
       FORCE_INLINE inc_pos (size_t axis) : axis (axis) { }
       template <class ImageType> 
         FORCE_INLINE void operator() (ImageType& vox) { ++vox.index(axis); }
@@ -135,7 +135,7 @@ namespace MR
    * following example:
    * \code
    * float value = 0.0;
-   * std::vector<size_t> order = { 1, 0, 2 };
+   * vector<size_t> order = { 1, 0, 2 };
    *
    * LoopInOrder loop (vox, order);
    * for (auto i = loop.run (vox); i; ++i) 
@@ -183,11 +183,11 @@ namespace MR
    *@{ */
 
 
-  struct LoopAlongSingleAxis {
+  struct LoopAlongSingleAxis { NOMEMALIGN
     const size_t axis;
 
     template <class... ImageType>
-      struct Run {
+      struct Run { NOMEMALIGN
         const size_t axis;
         const std::tuple<ImageType&...> vox;
         const ssize_t size0;
@@ -202,12 +202,12 @@ namespace MR
       FORCE_INLINE Run<ImageType...> operator() (ImageType&... images) const { return { axis, std::tie (images...) }; }
   };
 
-  struct LoopAlongSingleAxisProgress {
+  struct LoopAlongSingleAxisProgress { NOMEMALIGN
     const std::string text;
     const size_t axis;
 
     template <class... ImageType>
-      struct Run {
+      struct Run { NOMEMALIGN
         MR::ProgressBar progress;
         const size_t axis;
         const std::tuple<ImageType&...> vox;
@@ -225,11 +225,11 @@ namespace MR
 
 
 
-  struct LoopAlongAxisRange {
+  struct LoopAlongAxisRange { NOMEMALIGN
     const size_t from, to;
 
     template <class... ImageType>
-      struct Run {
+      struct Run { NOMEMALIGN
         const size_t from, to;
         const std::tuple<ImageType&...> vox;
         const ssize_t size0;
@@ -263,13 +263,13 @@ namespace MR
       FORCE_INLINE Run<ImageType...> operator() (ImageType&... images) const { return { from, to, std::tie (images...) }; }
   };
 
-  struct LoopAlongAxisRangeProgress : public LoopAlongAxisRange {
+  struct LoopAlongAxisRangeProgress : public LoopAlongAxisRange { NOMEMALIGN
     const std::string text;
     LoopAlongAxisRangeProgress (const std::string& text, const size_t from, const size_t to) :
       LoopAlongAxisRange ({ from, to }), text (text) { }
 
     template <class... ImageType>
-      struct Run : public LoopAlongAxisRange::Run<ImageType...> {
+      struct Run : public LoopAlongAxisRange::Run<ImageType...> { NOMEMALIGN
         MR::ProgressBar progress;
         FORCE_INLINE Run (const std::string& text, const size_t from, const size_t to, const std::tuple<ImageType&...>& vox) : 
           LoopAlongAxisRange::Run<ImageType...> (from, to, vox), progress (text, MR::voxel_count (std::get<0>(vox), from, to)) { }
@@ -283,12 +283,12 @@ namespace MR
 
 
 
-  struct LoopAlongAxes {
+  struct LoopAlongAxes { NOMEMALIGN
     template <class... ImageType>
       FORCE_INLINE LoopAlongAxisRange::Run<ImageType...> operator() (ImageType&... images) const { return { 0, std::get<0>(std::tie(images...)).ndim(), std::tie (images...) }; }
   };
 
-  struct LoopAlongAxesProgress {
+  struct LoopAlongAxesProgress { NOMEMALIGN
     const std::string text;
     template <class... ImageType>
       FORCE_INLINE LoopAlongAxisRangeProgress::Run<ImageType...> operator() (ImageType&... images) const { return { text, 0, std::get<0>(std::tie(images...)).ndim(), std::tie (images...) }; }
@@ -296,11 +296,11 @@ namespace MR
 
 
 
-  struct LoopAlongStaticAxes {
+  struct LoopAlongStaticAxes { NOMEMALIGN
     const std::initializer_list<size_t> axes;
 
     template <class... ImageType>
-      struct Run {
+      struct Run { NOMEMALIGN
         const std::initializer_list<size_t> axes;
         const std::tuple<ImageType&...> vox;
         const size_t from;
@@ -335,13 +335,13 @@ namespace MR
       FORCE_INLINE Run<ImageType...> operator() (ImageType&... images) const { return { axes, std::tie (images...) }; }
   };
 
-  struct LoopAlongStaticAxesProgress : public LoopAlongStaticAxes {
+  struct LoopAlongStaticAxesProgress : public LoopAlongStaticAxes { NOMEMALIGN
     const std::string text;
     LoopAlongStaticAxesProgress (const std::string& text, const std::initializer_list<size_t> axes) : 
       LoopAlongStaticAxes ({ axes }), text (text) { }
 
     template <class... ImageType>
-      struct Run : public LoopAlongStaticAxes::Run<ImageType...> {
+      struct Run : public LoopAlongStaticAxes::Run<ImageType...> { NOMEMALIGN
         MR::ProgressBar progress;
         FORCE_INLINE Run (const std::string& text, const std::initializer_list<size_t> axes, const std::tuple<ImageType&...>& vox) : 
           LoopAlongStaticAxes::Run<ImageType...> (axes, vox), progress (text, MR::voxel_count (std::get<0>(vox), axes)) { }
@@ -355,17 +355,17 @@ namespace MR
 
 
 
-  struct LoopAlongDynamicAxes {
-    const std::vector<size_t> axes;
+  struct LoopAlongDynamicAxes { NOMEMALIGN
+    const vector<size_t> axes;
 
     template <class... ImageType>
-      struct Run {
-        const std::vector<size_t> axes;
+      struct Run { NOMEMALIGN
+        const vector<size_t> axes;
         const std::tuple<ImageType&...> vox;
         const size_t from;
         const ssize_t size0;
         bool ok;
-        FORCE_INLINE Run (const std::vector<size_t>& axes, const std::tuple<ImageType&...>& vox) : 
+        FORCE_INLINE Run (const vector<size_t>& axes, const std::tuple<ImageType&...>& vox) : 
           axes (axes), vox (vox), from (axes[0]), size0 (std::get<0>(vox).size(from)), ok (true) { 
             for (auto axis : axes)
               apply (set_pos (axis, 0), vox); 
@@ -393,15 +393,15 @@ namespace MR
       FORCE_INLINE Run<ImageType...> operator() (ImageType&... images) const { return { axes, std::tie (images...) }; }
   };
 
-  struct LoopAlongDynamicAxesProgress : public LoopAlongDynamicAxes {
+  struct LoopAlongDynamicAxesProgress : public LoopAlongDynamicAxes { NOMEMALIGN
       const std::string text;
-      LoopAlongDynamicAxesProgress (const std::string& text, const std::vector<size_t>& axes) : 
+      LoopAlongDynamicAxesProgress (const std::string& text, const vector<size_t>& axes) : 
         LoopAlongDynamicAxes ({ axes }), text (text) { }
 
       template <class... ImageType>
-        struct Run : public LoopAlongDynamicAxes::Run<ImageType...> {
+        struct Run : public LoopAlongDynamicAxes::Run<ImageType...> { NOMEMALIGN
           MR::ProgressBar progress;
-          FORCE_INLINE Run (const std::string& text, const std::vector<size_t>& axes, const std::tuple<ImageType&...>& vox) : 
+          FORCE_INLINE Run (const std::string& text, const vector<size_t>& axes, const std::tuple<ImageType&...>& vox) : 
             LoopAlongDynamicAxes::Run<ImageType...> (axes, vox), progress (text, MR::voxel_count (std::get<0>(vox), axes)) { }
           FORCE_INLINE void operator++() { LoopAlongDynamicAxes::Run<ImageType...>::operator++(); ++progress; }
           FORCE_INLINE void operator++(int) { operator++(); }
@@ -421,8 +421,8 @@ namespace MR
   FORCE_INLINE LoopAlongAxisRangeProgress Loop (const std::string& progress_message, size_t axis_from, size_t axis_to) { return { progress_message, axis_from, axis_to }; }
   FORCE_INLINE LoopAlongStaticAxes Loop (std::initializer_list<size_t> axes) { return { axes }; }
   FORCE_INLINE LoopAlongStaticAxesProgress Loop (const std::string& progress_message, std::initializer_list<size_t> axes) { return { progress_message, axes }; }
-  FORCE_INLINE LoopAlongDynamicAxes Loop (const std::vector<size_t>& axes) { return { axes }; }
-  FORCE_INLINE LoopAlongDynamicAxesProgress Loop (const std::string& progress_message, const std::vector<size_t>& axes) { return { progress_message, axes }; }
+  FORCE_INLINE LoopAlongDynamicAxes Loop (const vector<size_t>& axes) { return { axes }; }
+  FORCE_INLINE LoopAlongDynamicAxesProgress Loop (const std::string& progress_message, const vector<size_t>& axes) { return { progress_message, axes }; }
 
   template <class ImageType>
     FORCE_INLINE LoopAlongDynamicAxes 

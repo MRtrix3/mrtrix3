@@ -124,7 +124,7 @@ void print_vox (const Header& header)
 void print_strides (const Header& header)
 {
   std::string buffer;
-  std::vector<ssize_t> strides (Stride::get (header));
+  vector<ssize_t> strides (Stride::get (header));
   Stride::symbolise (strides);
   for (size_t i = 0; i < header.ndim(); ++i) {
     if (i) buffer += " ";

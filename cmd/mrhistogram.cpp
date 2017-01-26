@@ -44,7 +44,7 @@ OPTIONS
 
 
 class Volume_loop
-{
+{ MEMALIGN (Volume_loop)
   public:
     Volume_loop (Image<float>& in) :
         image (in),

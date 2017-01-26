@@ -37,9 +37,9 @@ namespace MR {
 
 
 #define MAX_TRACKS_READ_FOR_HEADER 1000000
-        void generate_header (Header&, const std::string&, const std::vector<default_type>&);
+        void generate_header (Header&, const std::string&, const vector<default_type>&);
 
-        void oversample_header (Header&, const std::vector<default_type>&);
+        void oversample_header (Header&, const vector<default_type>&);
 
 
 

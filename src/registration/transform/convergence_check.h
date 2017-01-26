@@ -31,7 +31,7 @@ namespace MR
       // convergence check using linear trend of each parameter during gradient descent
       // we use double exponential smoothing to get rid of small oscillations
       class DoubleExpSmoothSlopeCheck
-      {
+      { MEMALIGN (DoubleExpSmoothSlopeCheck)
         public:
             DoubleExpSmoothSlopeCheck ( ):
               stop_cnt (0),

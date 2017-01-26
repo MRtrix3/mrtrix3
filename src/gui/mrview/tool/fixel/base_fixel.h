@@ -39,12 +39,12 @@ namespace MR
       namespace Tool
       {
 
-        class BaseFixel : public Displayable {
+        class BaseFixel : public Displayable { MEMALIGN (BaseFixel)
           public:
             BaseFixel (const std::string&, Fixel&);
             ~BaseFixel();
 
-              class Shader : public Displayable::Shader {
+              class Shader : public Displayable::Shader { MEMALIGN (Shader)
                 public:
                   Shader () : do_crop_to_slice (false), color_type (Direction), scale_type (Value) { }
                   std::string vertex_shader_source   (const Displayable&) override;
@@ -216,7 +216,7 @@ namespace MR
               }
 
             protected:
-              struct IntPointHasher {
+              struct IntPointHasher { NOMEMALIGN
                 size_t operator () (const std::array<int, 3>& v) const {
                   // This hashing function works best if the fixel image dimensions
                   // are bounded above by 2^10 x 2^10 x 2^10 = 1024 x 1024 x 1024
@@ -246,28 +246,28 @@ namespace MR
               }
 
               MR::Header header;
-              std::vector<std::string> colour_types;
-              std::vector<std::string> value_types;
-              std::vector<std::string> threshold_types;
+              vector<std::string> colour_types;
+              vector<std::string> value_types;
+              vector<std::string> threshold_types;
               mutable std::map<const std::string, FixelValue> fixel_values;
               mutable FixelValue dummy_fixel_val_state;
 
-              std::vector<Eigen::Vector3f> pos_buffer_store;
-              std::vector<Eigen::Vector3f> dir_buffer_store;
+              vector<Eigen::Vector3f> pos_buffer_store;
+              vector<Eigen::Vector3f> dir_buffer_store;
 
-              std::vector<Eigen::Vector3f> regular_grid_buffer_pos;
-              std::vector<Eigen::Vector3f> regular_grid_buffer_dir;
-              std::vector<float> regular_grid_buffer_colour;
-              std::vector<float> regular_grid_buffer_val;
-              std::vector<float> regular_grid_buffer_threshold;
+              vector<Eigen::Vector3f> regular_grid_buffer_pos;
+              vector<Eigen::Vector3f> regular_grid_buffer_dir;
+              vector<float> regular_grid_buffer_colour;
+              vector<float> regular_grid_buffer_val;
+              vector<float> regular_grid_buffer_threshold;
 
-              std::vector<std::vector<std::vector<GLint> > > slice_fixel_indices;
-              std::vector<std::vector<std::vector<GLsizei> > > slice_fixel_sizes;
-              std::vector<std::vector<GLsizei> > slice_fixel_counts;
+              vector<vector<vector<GLint> > > slice_fixel_indices;
+              vector<vector<vector<GLsizei> > > slice_fixel_sizes;
+              vector<vector<GLsizei> > slice_fixel_counts;
 
               // Flattened buffer used when cropping to slice
               // To support off-axis rendering, we maintain dict mapping voxels to buffer_pos indices
-              std::unordered_map <std::array<int, 3>, std::vector<GLint>, IntPointHasher> voxel_to_indices_map;
+              std::unordered_map <std::array<int, 3>, vector<GLint>, IntPointHasher> voxel_to_indices_map;
 
               FixelColourType colour_type;
               FixelScaleType scale_type;
@@ -304,7 +304,7 @@ namespace MR
         // Wrapper to generically store fixel data
 
         template <typename ImageType> class FixelType : public BaseFixel
-        {
+        { MEMALIGN (FixelType<ImageType>)
           public:
             FixelType (const std::string& filename, Fixel& fixel_tool) :
             BaseFixel (filename, fixel_tool),

@@ -33,7 +33,7 @@ namespace MR
           throw Exception ("Error opening input file!");
 
         const int32_t num_vertices = get_BE<int32_t> (in);
-        std::vector<int32_t> vertices, vertex_labels;
+        vector<int32_t> vertices, vertex_labels;
         vertices.reserve (num_vertices);
         vertex_labels.reserve (num_vertices);
         for (int32_t i = 0; i != num_vertices; ++i) {

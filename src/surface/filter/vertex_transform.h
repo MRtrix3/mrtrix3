@@ -33,7 +33,7 @@ namespace MR
 
 
       class VertexTransform : public Base
-      {
+      { MEMALIGN (VertexTransform)
         public:
           enum class transform_t { UNDEFINED, FIRST2REAL, REAL2FIRST, VOXEL2REAL, REAL2VOXEL };
 
@@ -51,7 +51,7 @@ namespace MR
 
           void operator() (const Mesh&, Mesh&) const override;
 
-          void operator() (const MeshMulti& in, MeshMulti& out) const {
+          void operator() (const MeshMulti& in, MeshMulti& out) const override {
             Base::operator() (in, out);
           }
 

@@ -230,7 +230,7 @@ namespace MR
 
         bool is_BE = H.datatype().is_big_endian();
 
-        std::vector<size_t> axes;
+        vector<size_t> axes;
         auto M = File::NIfTI::adjust_transform (H, axes);
 
 

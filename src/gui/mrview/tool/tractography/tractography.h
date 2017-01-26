@@ -38,7 +38,7 @@ namespace MR
       {
 
         class Tractography : public Base
-        {
+        { MEMALIGN(Tractography)
             Q_OBJECT
 
           public:

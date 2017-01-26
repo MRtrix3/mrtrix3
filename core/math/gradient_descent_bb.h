@@ -31,7 +31,7 @@ namespace MR
     //! \addtogroup Optimisation
     // @{
 
-    class LinearUpdateBB {
+    class LinearUpdateBB { NOMEMALIGN
       public:
         template <typename ValueType>
           inline bool operator() (Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& newx, const Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& x,
@@ -46,7 +46,7 @@ namespace MR
     //! Computes the minimum of a function using a Barzilai Borwein gradient descent approach.
     template <class Function, class UpdateFunctor=LinearUpdateBB>
       class GradientDescentBB
-      {
+      { MEMALIGN(GradientDescentBB<Function,UpdateFunctor>)
         public:
           typedef typename Function::value_type value_type;
 

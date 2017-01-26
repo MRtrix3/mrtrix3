@@ -50,7 +50,7 @@ namespace MR
 
         // TODO Try having ACT as a template boolean; allow compiler to optimise out branch statements
 
-        template <class Method> class Exec {
+        template <class Method> class Exec { MEMALIGN(Exec<Method>)
 
           public:
 
@@ -130,7 +130,7 @@ namespace MR
             Math::RNG thread_local_RNG;
             Method method;
             bool track_excluded;
-            std::vector<bool> track_included;
+            vector<bool> track_included;
 
 
             term_t iterate ()
@@ -360,7 +360,7 @@ namespace MR
 
 
 
-            bool track_rejected (const std::vector<Eigen::Vector3f>& tck)
+            bool track_rejected (const vector<Eigen::Vector3f>& tck)
             {
 
               if (track_excluded)
@@ -412,7 +412,7 @@ namespace MR
 
 
 
-            bool satisfy_wm_requirement (const std::vector<Eigen::Vector3f>& tck)
+            bool satisfy_wm_requirement (const vector<Eigen::Vector3f>& tck)
             {
               // If using the Seed_test algorithm (indicated by max_num_points == 2), don't want to execute this check
               if (S.max_num_points == 2)
@@ -438,7 +438,7 @@ namespace MR
 
 
 
-            void truncate_exit_sgm (std::vector<Eigen::Vector3f>& tck)
+            void truncate_exit_sgm (vector<Eigen::Vector3f>& tck)
             {
 
               Interpolator<Image<float>>::type source (S.source);

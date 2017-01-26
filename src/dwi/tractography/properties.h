@@ -32,7 +32,7 @@ namespace MR
     {
 
 
-      class Properties : public std::map<std::string, std::string> {
+      class Properties : public std::map<std::string, std::string> { MEMALIGN(Properties)
         public:
 
           Properties () { 
@@ -51,7 +51,7 @@ namespace MR
 
           ROISet include, exclude, mask;
           Seeding::List seeds;
-          std::vector<std::string> comments;
+          vector<std::string> comments;
           std::multimap<std::string, std::string> roi;
 
 
@@ -114,7 +114,7 @@ namespace MR
         for (std::map<std::string, std::string>::const_iterator i = P.begin(); i != P.end(); ++i)
           stream << "[ " << i->first << ": " << i->second << " ], ";
         stream << "comments: ";
-        for (std::vector<std::string>::const_iterator i = P.comments.begin(); i != P.comments.end(); ++i)
+        for (vector<std::string>::const_iterator i = P.comments.begin(); i != P.comments.end(); ++i)
           stream << "\"" << *i << "\", ";
         return (stream);
       }

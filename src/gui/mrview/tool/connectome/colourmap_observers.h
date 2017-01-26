@@ -31,7 +31,7 @@ namespace MR
 
       // Classes to receive input from the colourmap buttons and act accordingly
       class NodeColourObserver : public ColourMapButtonObserver
-      {
+      { MEMALIGN(NodeColourObserver)
         public:
           NodeColourObserver (Connectome& connectome) : master (connectome) { }
           void selected_colourmap (size_t, const ColourMapButton&) override;
@@ -43,7 +43,7 @@ namespace MR
           Connectome& master;
       };
       class EdgeColourObserver : public ColourMapButtonObserver
-      {
+      { MEMALIGN(EdgeColourObserver)
         public:
           EdgeColourObserver (Connectome& connectome) : master (connectome) { }
           void selected_colourmap (size_t, const ColourMapButton&) override;

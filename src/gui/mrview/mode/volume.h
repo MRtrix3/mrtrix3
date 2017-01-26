@@ -34,7 +34,7 @@ namespace MR
       {
 
         class Volume : public Base
-        {
+        { MEMALIGN(Volume)
           public:
             Volume () :
               Base (FocusContrast | MoveTarget | TiltRotate | ShaderTransparency | ShaderThreshold | ShaderClipping),
@@ -52,9 +52,9 @@ namespace MR
             GL::VertexBuffer volume_VB, volume_VI;
             GL::VertexArrayObject volume_VAO;
             GL::Texture depth_texture;
-            std::vector<GL::vec4> clip;
+            vector<GL::vec4> clip;
 
-            class Shader : public Displayable::Shader {
+            class Shader : public Displayable::Shader { MEMALIGN(Shader)
               public:
                 Shader (const Volume& mode) : mode (mode), active_clip_planes (0), cliphighlight (true), clipintersectionmode (false) { }
                 virtual std::string vertex_shader_source (const Displayable& object);
@@ -68,13 +68,13 @@ namespace MR
             } volume_shader;
 
             Tool::View* get_view_tool () const;
-            std::vector< std::pair<GL::vec4,bool> > get_active_clip_planes () const;
-            std::vector<GL::vec4*> get_clip_planes_to_be_edited () const;
+            vector< std::pair<GL::vec4,bool> > get_active_clip_planes () const;
+            vector<GL::vec4*> get_clip_planes_to_be_edited () const;
             bool get_cliphighlightstate () const;
             bool get_clipintersectionmodestate () const;
 
-            void move_clip_planes_in_out (std::vector<GL::vec4*>& clip, float distance);
-            void rotate_clip_planes (std::vector<GL::vec4*>& clip, const Math::Versorf& rot);
+            void move_clip_planes_in_out (vector<GL::vec4*>& clip, float distance);
+            void rotate_clip_planes (vector<GL::vec4*>& clip, const Math::Versorf& rot);
         };
 
       }

@@ -132,7 +132,7 @@ void run ()
       transform_type transform_out;
       Eigen::Transform<default_type, 3, Eigen::Projective> Tin;
       Eigen::MatrixXd Min;
-      std::vector<Eigen::MatrixXd> matrices;
+      vector<Eigen::MatrixXd> matrices;
       for (size_t i = 0; i < num_inputs; i++) {
         DEBUG(str(argument[i]));
         Tin = load_transform (argument[i]);

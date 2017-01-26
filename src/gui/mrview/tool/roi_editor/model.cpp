@@ -29,7 +29,7 @@ namespace MR
 
 
 
-        void ROI_Model::load (std::vector<std::unique_ptr<MR::Header>>& list)
+        void ROI_Model::load (vector<std::unique_ptr<MR::Header>>& list)
         {
           beginInsertRows (QModelIndex(), items.size(), items.size()+list.size());
           for (size_t i = 0; i < list.size(); ++i) {

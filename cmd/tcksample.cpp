@@ -98,8 +98,7 @@ typedef Eigen::VectorXf vector_type;
 
 
 
-class TDI : public Image<value_type>
-{
+class TDI : public Image<value_type> { MEMALIGN(TDI)
   public:
     TDI (const Header& H, const size_t num_tracks) :
         Image<value_type> (Image<value_type>::scratch (H, "TDI scratch image")),
@@ -125,7 +124,8 @@ class TDI : public Image<value_type>
 
 
 template <class Interp>
-class SamplerNonPrecise {
+class SamplerNonPrecise 
+{ MEMALIGN (SamplerNonPrecise<Interp>)
   public:
     SamplerNonPrecise (Image<value_type>& image, const stat_tck statistic, MR::copy_ptr<TDI>& precalc_tdi) :
         interp (image),
@@ -163,7 +163,7 @@ class SamplerNonPrecise {
       } else {
         if (statistic == MEDIAN) {
           // Don't bother with a weighted median here
-          std::vector<value_type> data;
+          vector<value_type> data;
           data.assign (values.second.data(), values.second.data() + values.second.size());
           out.second = Math::median (data);
         } else if (statistic == MIN) {
@@ -217,7 +217,8 @@ class SamplerNonPrecise {
 
 
 
-class SamplerPrecise {
+class SamplerPrecise 
+{ MEMALIGN (SamplerPrecise)
   public:
     SamplerPrecise (Image<value_type>& image, const stat_tck statistic, MR::copy_ptr<TDI>& precalc_tdi) :
         image (image),
@@ -248,7 +249,7 @@ class SamplerPrecise {
       } else if (statistic == MEDIAN) {
         // Should be a weighted median...
         // Just use the n.log(n) algorithm
-        class WeightSort {
+        class WeightSort { NOMEMALIGN
           public:
             WeightSort (const DWI::Tractography::Mapping::Voxel& voxel, const value_type value) :
               value (value),
@@ -256,7 +257,7 @@ class SamplerPrecise {
             bool operator< (const WeightSort& that) const { return value < that.value; }
             value_type value, length;
         };
-        std::vector<WeightSort> data;
+        vector<WeightSort> data;
         for (const auto v : voxels) {
           assign_pos_of (v).to (image);
           data.push_back (WeightSort (v, (image.value() * get_tdi_multiplier (v))));
@@ -317,8 +318,7 @@ class SamplerPrecise {
 
 
 
-class ReceiverBase
-{
+class ReceiverBase { MEMALIGN(ReceiverBase)
   public:
     ReceiverBase (const size_t num_tracks) :
         received (0),
@@ -347,8 +347,7 @@ class ReceiverBase
 };
 
 
-class Receiver_Statistic : private ReceiverBase
-{
+class Receiver_Statistic : private ReceiverBase { MEMALIGN(Receiver_Statistic)
   public:
     Receiver_Statistic (const size_t num_tracks) :
         ReceiverBase (num_tracks),
@@ -373,8 +372,7 @@ class Receiver_Statistic : private ReceiverBase
 
 
 
-class Receiver_NoStatistic : private ReceiverBase
-{
+class Receiver_NoStatistic : private ReceiverBase { MEMALIGN(Receiver_NoStatistic)
   public:
     Receiver_NoStatistic (const std::string& path,
                           const size_t num_tracks,

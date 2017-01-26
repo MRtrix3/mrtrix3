@@ -26,8 +26,7 @@ namespace MR
     @{ */
 
   //! a dummy image to iterate over, useful for multi-threaded looping.
-  class Iterator
-  {
+  class Iterator { NOMEMALIGN
     public:
       Iterator() = delete;
       template <class InfoType>
@@ -53,7 +52,7 @@ namespace MR
       }
 
     private:
-      std::vector<ssize_t> d, p;
+      vector<ssize_t> d, p;
 
       void value () const { assert (0); }
   };

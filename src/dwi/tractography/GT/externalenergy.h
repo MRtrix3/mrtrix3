@@ -30,7 +30,7 @@ namespace MR {
       namespace GT {
         
         class ExternalEnergyComputer : public EnergyComputer
-        {
+        { MEMALIGN(ExternalEnergyComputer)
         public:
           
           ExternalEnergyComputer(Stats& stat, const Image<float>& dwimage, const Properties& props);
@@ -86,10 +86,10 @@ namespace MR {
           
           Math::ICLS::Problem<double> nnls;
           
-          std::vector<Eigen::Vector3i > changes_vox;
-          std::vector<Eigen::VectorXd > changes_tod;
-          std::vector<Eigen::VectorXd > changes_fiso;
-          std::vector<double> changes_eext;
+          vector<Eigen::Vector3i > changes_vox;
+          vector<Eigen::VectorXd > changes_tod;
+          vector<Eigen::VectorXd > changes_fiso;
+          vector<double> changes_eext;
           
           
           void add(const Point_t& pos, const Point_t& dir, const double factor = 1.);

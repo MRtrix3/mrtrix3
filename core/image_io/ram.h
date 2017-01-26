@@ -24,7 +24,7 @@ namespace MR
 
 
     class RAM : public Base
-    {
+    { NOMEMALIGN
       public:
         RAM (const Header& header) : Base (header) { }
 

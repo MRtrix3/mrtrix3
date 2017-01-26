@@ -22,7 +22,7 @@ namespace MR
   namespace GUI
   {
     class LightingSettings : public QFrame
-    {
+    { NOMEMALIGN
       Q_OBJECT
 
       public:
@@ -42,7 +42,7 @@ namespace MR
     };
 
     class LightingDock : public QDockWidget
-    {
+    { NOMEMALIGN
       public:
         LightingDock (const std::string& title, GL::Lighting& lighting);
       private:

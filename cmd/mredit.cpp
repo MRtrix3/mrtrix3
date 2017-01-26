@@ -72,7 +72,7 @@ void usage ()
 
 
 class Vox : public Eigen::Array3i
-{
+{ MEMALIGN (Vox)
   public:
     using Eigen::Array3i::Array3i;
     Vox (const Eigen::Vector3& p) :
@@ -127,7 +127,7 @@ void run ()
     const size_t axis = p[0];
     const auto coords = parse_ints (p[1]);
     const float value = p[2];
-    const std::array<size_t, 2> loop_axes { axis == 0 ? size_t(1) : size_t(0), axis == 2 ? size_t(1) : size_t(2) };
+    const std::array<size_t, 2> loop_axes ( { axis == 0 ? size_t(1) : size_t(0), axis == 2 ? size_t(1) : size_t(2) } );
     for (auto c : coords) {
       out.index (axis) = c;
       for (auto outer = Loop(loop_axes[0]) (out); outer; ++outer) {
@@ -154,7 +154,7 @@ void run ()
     else
       centre_scannerspace = transform.voxel2scanner * centre_voxelspace;
     std::set<Vox> processed;
-    std::vector<Vox> to_expand;
+    vector<Vox> to_expand;
     const Vox seed_voxel (centre_voxelspace);
     processed.insert (seed_voxel);
     to_expand.push_back (seed_voxel);

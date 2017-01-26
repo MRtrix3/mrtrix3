@@ -29,15 +29,15 @@ namespace MR
                                                   const bool do_reorientation = false,
                                                   const int lmax = 0)
     {
-      std::vector<int> from (input.ndim(), 0);
-      std::vector<int> size (input.ndim());
+      vector<int> from (input.ndim(), 0);
+      vector<int> size (input.ndim());
       for (size_t dim = 0; dim < input.ndim(); ++dim)
         size[dim] = input.size(dim);
       if (do_reorientation)
         size[3] = Math::SH::NforL (lmax);
       Adapter::Subset<ImageType> subset (input, from, size);
       Filter::Smooth smooth_filter (subset);
-      std::vector<default_type> stdev(3);
+      vector<default_type> stdev(3);
       for (size_t dim = 0; dim < 3; ++dim)
         stdev[dim] = input.spacing(dim) / (2.0 * scale_factor);
 

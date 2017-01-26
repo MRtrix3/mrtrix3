@@ -63,7 +63,7 @@ namespace MR
 
 
     class SparseLegacy : public Default
-    {
+    { MEMALIGN (SparseLegacy)
       public:
 
         SparseLegacy (const Header& header, const std::string& sparse_class_name, const size_t sparse_class_size, const File::Entry& entry) :

@@ -32,7 +32,7 @@ namespace MR
 
       // Stores all information relating to the drawing of individual nodes, both fixed and variable
       class Node
-      {
+      { MEMALIGN(Node)
         public:
           Node (const Eigen::Vector3f&, const size_t, const size_t, const MR::Image<bool>&);
           Node ();
@@ -72,7 +72,7 @@ namespace MR
           QPixmap pixmap;
 
           // Helper class to manage the storage and display of the mesh for each node
-          class Mesh {
+          class Mesh { MEMALIGN(Mesh)
             public:
               Mesh (MR::Surface::Mesh&);
               Mesh (const Mesh&) = delete;

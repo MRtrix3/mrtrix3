@@ -64,7 +64,7 @@ namespace MR
 #if QT_VERSION >= 0x050400
       typedef QOpenGLWidget Area;
       typedef QSurfaceFormat Format;
-      struct CheckContext {
+      struct CheckContext { NOMEMALIGN
 # ifndef NDEBUG
         CheckContext () : __context (nullptr) { }
         void grab_context () { 
@@ -81,13 +81,13 @@ namespace MR
 # endif
       };
 #else
-      class Area : public QGLWidget {
+      class Area : public QGLWidget { NOMEMALIGN
         public:
           using QGLWidget::QGLWidget;
           QImage grabFramebuffer () { return QGLWidget::grabFrameBuffer(); }
       };
       typedef QGLFormat Format;
-      struct CheckContext {
+      struct CheckContext { NOMEMALIGN
         void grab_context () { }
         void check_context () const { }
       };
@@ -107,7 +107,7 @@ namespace MR
       }
 
 
-      class Texture : CheckContext {
+      class Texture : CheckContext { NOMEMALIGN
         public:
           Texture () : id (0) { }
           ~Texture () { clear(); }
@@ -159,7 +159,7 @@ namespace MR
       };
 
 
-      class VertexBuffer : CheckContext {
+      class VertexBuffer : CheckContext { NOMEMALIGN
         public:
           VertexBuffer () : id (0) { }
           ~VertexBuffer () { clear(); }
@@ -193,7 +193,7 @@ namespace MR
       };
 
 
-      class VertexArrayObject : CheckContext {
+      class VertexArrayObject : CheckContext { NOMEMALIGN
         public:
           VertexArrayObject () : id (0) { }
           ~VertexArrayObject () { clear(); }
@@ -226,7 +226,7 @@ namespace MR
       };
 
 
-      class IndexBuffer : CheckContext {
+      class IndexBuffer : CheckContext { NOMEMALIGN
         public:
           IndexBuffer () : id (0) { }
           ~IndexBuffer () { clear(); }
@@ -261,7 +261,7 @@ namespace MR
 
 
 
-      class FrameBuffer : CheckContext {
+      class FrameBuffer : CheckContext { NOMEMALIGN
         public:
           FrameBuffer () : id (0) { }
           ~FrameBuffer () { clear(); }

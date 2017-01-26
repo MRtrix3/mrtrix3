@@ -346,7 +346,7 @@ void run ()
   }
 
   opt = get_options ("rigid_lmax");
-  std::vector<int> rigid_lmax;
+  vector<int> rigid_lmax;
   if (opt.size ()) {
     if (!do_rigid)
       throw Exception ("the -rigid_lmax option has been set when no rigid registration is requested");
@@ -496,7 +496,7 @@ void run ()
 
 
   opt = get_options ("affine_lmax");
-  std::vector<int> affine_lmax;
+  vector<int> affine_lmax;
   if (opt.size ()) {
     if (!do_affine)
       throw Exception ("the -affine_lmax option has been set when no affine registration is requested");
@@ -587,7 +587,7 @@ void run ()
   if (opt.size ()) {
     if (!do_nonlinear)
       throw Exception ("the non-linear multi-resolution scale factors were input when no non-linear registration is requested");
-    std::vector<default_type> scale_factors = parse_floats (opt[0][0]);
+    vector<default_type> scale_factors = parse_floats (opt[0][0]);
     if (nonlinear_init) {
       WARN ("-nl_scale option ignored since only the full resolution will be performed when initialising with non-linear warp");
     } else {
@@ -599,7 +599,7 @@ void run ()
   if (opt.size ()) {
     if (!do_nonlinear)
       throw Exception ("the number of non-linear iterations have been input when no non-linear registration is requested");
-    std::vector<int> iterations_per_level = parse_ints (opt[0][0]);
+    vector<int> iterations_per_level = parse_ints (opt[0][0]);
     if (nonlinear_init && iterations_per_level.size() > 1)
       throw Exception ("when initialising the non-linear registration the max number of iterations can only be defined for a single level");
     else
@@ -628,7 +628,7 @@ void run ()
   }
 
   opt = get_options ("nl_lmax");
-  std::vector<int> nl_lmax;
+  vector<int> nl_lmax;
   if (opt.size ()) {
     if (!do_nonlinear)
       throw Exception ("the -nl_lmax option has been set when no non-linear registration is requested");
@@ -672,7 +672,7 @@ void run ()
     } else { // 3D
       if (rigid_metric == Registration::NCC){
         Registration::Metric::NormalisedCrossCorrelation metric;
-        std::vector<size_t> extent(3,3);
+        vector<size_t> extent(3,3);
         rigid_registration.set_extent (extent);
         rigid_registration.run_masked (metric, rigid, im1_image, im2_image, im1_mask, im2_mask);
       }
@@ -742,7 +742,7 @@ void run ()
     } else { // 3D
       if (affine_metric == Registration::NCC){
         Registration::Metric::NormalisedCrossCorrelation metric;
-        std::vector<size_t> extent(3,3);
+        vector<size_t> extent(3,3);
         affine_registration.set_extent (extent);
         affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
       }

@@ -29,7 +29,7 @@ namespace MR
       class TreeModel;
 
       class ImageProperties : public QDialog
-      {
+      { MEMALIGN(ImageProperties)
           Q_OBJECT
 
         public:

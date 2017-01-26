@@ -23,7 +23,7 @@
 namespace MR
 {
   class InvalidFixelDirectoryException : public Exception
-  {
+  { NOMEMALIGN
     public:
       InvalidFixelDirectoryException (const std::string& msg) : Exception(msg) {}
       InvalidFixelDirectoryException (const Exception& previous_exception, const std::string& msg)
@@ -197,11 +197,11 @@ namespace MR
     }
 
 
-    FORCE_INLINE std::vector<Header> find_data_headers (const std::string &fixel_directory_path, const Header &index_header, const bool include_directions = false)
+    FORCE_INLINE vector<Header> find_data_headers (const std::string &fixel_directory_path, const Header &index_header, const bool include_directions = false)
     {
       check_index_image (index_header);
       auto dir_walker = Path::Dir (fixel_directory_path);
-      std::vector<std::string> file_names;
+      vector<std::string> file_names;
       {
         std::string temp;
         while ((temp = dir_walker.read_name()).size())
@@ -209,7 +209,7 @@ namespace MR
       }
       std::sort (file_names.begin(), file_names.end());
 
-      std::vector<Header> data_headers;
+      vector<Header> data_headers;
       for (auto fname : file_names) {
         if (Path::has_suffix (fname, supported_sparse_formats)) {
           try {

@@ -24,7 +24,7 @@ namespace MR
 
 
     class Scratch : public Base
-    {
+    { NOMEMALIGN
       public:
         Scratch (const Header& header) : Base (header) { }
 
