@@ -283,8 +283,32 @@ if 'clean' in targets:
     for root, dirs, files in os.walk(f, topdown=False):
       for name in files:
         fname = os.path.join(root, name)
+        print ('delete file:', fname)
+        os.remove (fname)
       for name in dirs:
         os.rmdir (os.path.join(root, name))
+
+  try: 
+    process = subprocess.Popen ([ 'git', 'ls-files', '-x', '.*', '-o', 'bin/' ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    ( files, stderr ) = process.communicate()
+    if process.returncode == 0:
+      files = files.decode(errors='ignore').splitlines()
+      for fname in files:
+        print ('delete file:', fname)
+        os.remove (fname)
+    else:
+      print ('error')
+  except:
+    pass
+
+  try:
+    for entry in os.listdir ('lib'):
+      fname = os.path.join ('lib', entry)
+      if os.path.isfile (fname):
+        print ('delete file:', fname)
+        os.remove (fname)
+  except:
+    pass
 
   sys.exit (0)
 
