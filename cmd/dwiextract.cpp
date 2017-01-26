@@ -55,7 +55,9 @@ void run()
   auto input_header = Header::open (argument[0]);
   auto input_image = input_header.get_image<float>();
 
-  Eigen::MatrixXd grad = DWI::get_valid_DW_scheme (input_image);
+  Eigen::MatrixXd grad_unprocessed = DWI::get_DW_scheme (input_image);
+  Eigen::MatrixXd grad = grad_unprocessed;
+  DWI::validate_DW_scheme (grad, input_image);
 
   // Want to support non-shell-like data if it's just a straight extraction
   //   of all dwis or all bzeros i.e. don't initialise the Shells class
@@ -128,7 +130,7 @@ void run()
 
   Eigen::MatrixXd new_grad (volumes.size(), grad.cols());
   for (size_t i = 0; i < volumes.size(); i++)
-    new_grad.row (i) = grad.row (volumes[i]);
+    new_grad.row (i) = grad_unprocessed.row (volumes[i]);
   DWI::set_DW_scheme (header, new_grad);
 
   if (pe_scheme.rows()) {

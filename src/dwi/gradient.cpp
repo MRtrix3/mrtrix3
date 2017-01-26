@@ -212,9 +212,8 @@ namespace MR
 
 
 
-    Eigen::MatrixXd get_valid_DW_scheme (const Header& header, bool nofail)
+    void validate_DW_scheme (Eigen::MatrixXd& grad, const Header& header, bool nofail)
     {
-      auto grad = get_DW_scheme (header);
       if (grad.rows() == 0) 
         throw Exception ("no diffusion encoding information found in image \"" + header.name() + "\"");
 
@@ -244,7 +243,6 @@ namespace MR
         if (!nofail)
           throw Exception (e, "unable to get valid diffusion gradient table for image \"" + header.name() + "\"");
       }
-      return grad;
     }
 
 
