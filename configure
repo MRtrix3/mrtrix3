@@ -11,7 +11,6 @@ noshared = False
 static = False
 verbose = False
 R_module = False
-profile_name = None
 sh_basis_def = None
 dev = False
 
@@ -31,11 +30,6 @@ for arg in sys.argv[1:]:
     R_module = True
     #noshared = True
     nogui = True
-  elif arg[0] != '-':
-    if profile_name != None:
-      print ('configure: too many names supplied')
-      sys.exit (1)
-    profile_name = arg
   else:
     print ("""
 usage: [ENV] ./configure [name] [-debug] [-assert] [-profile] [-nogui] [-noshared]
@@ -161,16 +155,6 @@ PATH            Set the path to use during the configure process.
 """)
     sys.exit (0)
 
-
-if not profile_name:
-  profile_name = 'release'
-
-
-try:
-  os.makedirs (profile_name)
-except OSError:
-  if not os.path.isdir (profile_name):
-    raise
 
 
 global logfile, config_report
@@ -1192,7 +1176,7 @@ if sh_basis_def is not None:
 
 
 # write out configuration:
-cache_filename = os.path.join (os.path.dirname(sys.argv[0]), profile_name, 'config')
+cache_filename = os.path.join (os.path.dirname(sys.argv[0]), 'config')
 
 sys.stdout.write ('\nwriting configuration to file \'' + cache_filename + '\': ')
 

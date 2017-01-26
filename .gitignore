@@ -17,8 +17,9 @@
 *.hdr
 *.qrc
 *.rste
-icons.cpp
-/config.*
+config
+*.build
+*.build.active
 /configure.log
 /build.log
 /test/build.log
@@ -29,6 +30,8 @@ icons.cpp
 /release/
 /test/bin/
 /dev/
+/bin/
+/tmp/
 .cproject
 .project
 .settings
