@@ -49,7 +49,7 @@ namespace MR
       namespace Tool { class Connectome; }
       namespace Tool { class Tractogram; }
       class DisplayableVisitor
-      {
+      { NOMEMALIGN
         public:
           virtual void render_image_colourbar (const Image&) {}
           virtual void render_fixel_colourbar (const Tool::BaseFixel&) {}
@@ -57,7 +57,7 @@ namespace MR
       };
 
       class Displayable : public QAction
-      {
+      { MEMALIGN(Displayable)
         Q_OBJECT
 
         public:
@@ -194,7 +194,7 @@ namespace MR
           }
 
 
-          class Shader : public GL::Shader::Program {
+          class Shader : public GL::Shader::Program { MEMALIGN(Shader)
             public:
               virtual std::string fragment_shader_source (const Displayable& object) = 0;
               virtual std::string geometry_shader_source (const Displayable&) { return std::string(); }

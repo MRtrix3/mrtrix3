@@ -25,7 +25,7 @@ namespace MR
   {
 
     class Pipe : public Base
-    {
+    { NOMEMALIGN
       public:
         Pipe (Base&& io_handler) : Base (std::move (io_handler)) { }
 

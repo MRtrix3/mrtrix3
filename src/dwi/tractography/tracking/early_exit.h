@@ -44,7 +44,7 @@ namespace MR
 
 
         class EarlyExit
-        {
+        { NOMEMALIGN
           public:
             EarlyExit (const SharedBase& shared) :
               max_num_attempts (shared.max_num_attempts),

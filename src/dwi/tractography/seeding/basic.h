@@ -38,7 +38,7 @@ namespace MR
 
 
         class Sphere : public Base
-        {
+        { MEMALIGN(Sphere)
 
           public:
             Sphere (const std::string& in) :
@@ -61,7 +61,7 @@ namespace MR
 
 
         class SeedMask : public Base
-        {
+        { MEMALIGN(SeedMask)
 
           public:
             SeedMask (const std::string& in) :
@@ -80,7 +80,7 @@ namespace MR
 
 
         class Random_per_voxel : public Base
-        {
+        { MEMALIGN(Random_per_voxel)
 
           public:
             Random_per_voxel (const std::string& in, const size_t num_per_voxel) :
@@ -107,7 +107,7 @@ namespace MR
 
 
         class Grid_per_voxel : public Base
-        {
+        { MEMALIGN(Grid_per_voxel)
 
           public:
             Grid_per_voxel (const std::string& in, const size_t os_factor) :
@@ -137,12 +137,11 @@ namespace MR
 
 
         class Rejection : public Base
-        {
+        { MEMALIGN(Rejection)
           public:
             typedef Eigen::Transform<float, 3, Eigen::AffineCompact> transform_type;
             Rejection (const std::string&);
 
-            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
             virtual bool get_seed (Eigen::Vector3f& p) const override;
 

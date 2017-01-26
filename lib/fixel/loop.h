@@ -23,25 +23,25 @@ namespace MR
 
 
     namespace {
-      struct set_offset {
+      struct set_offset { NOMEMALIGN
         FORCE_INLINE set_offset (uint32_t offset) : offset (offset) { }
         template <class DataType>
           FORCE_INLINE void operator() (DataType& data) { data.index(0) = offset; }
         uint32_t offset;
       };
 
-      struct inc_fixel {
+      struct inc_fixel { NOMEMALIGN
         template <class DataType>
           FORCE_INLINE void operator() (DataType& data) { ++data.index(0); }
       };
     }
 
-    struct LoopFixelsInVoxel {
+    struct LoopFixelsInVoxel { NOMEMALIGN
       const size_t num_fixels;
       const uint32_t offset;
 
       template <class... DataType>
-      struct Run {
+      struct Run { NOMEMALIGN
         const size_t num_fixels;
         const uint32_t offset;
         uint32_t fixel_index;

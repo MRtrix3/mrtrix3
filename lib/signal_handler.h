@@ -25,7 +25,7 @@ namespace MR
 
 
   class SignalHandler
-  {
+  { 
     public:
       SignalHandler();
       SignalHandler (const SignalHandler&) = delete;

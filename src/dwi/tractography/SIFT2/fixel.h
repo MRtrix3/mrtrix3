@@ -38,7 +38,7 @@ namespace MR
 
 
       class Fixel : public SIFT::FixelBase
-      {
+      { MEMALIGN(Fixel)
 
         typedef SIFT::track_t track_t;
 

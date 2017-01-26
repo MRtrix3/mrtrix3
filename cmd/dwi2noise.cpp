@@ -70,7 +70,7 @@ void run ()
   auto dwi_in = Image<value_type>::open (argument[0]);
   const auto grad = DWI::get_valid_DW_scheme (dwi_in);
 
-  std::vector<size_t> dwis;
+  vector<size_t> dwis;
   Eigen::MatrixXd mapping;
   {
     dwis = DWI::Shells (grad).select_shells (true, false, true).largest().get_volumes();
@@ -78,7 +78,7 @@ void run ()
     mapping = DWI::compute_SH2amp_mapping (dirs);
   }
 
-  auto dwi = Adapter::make <Adapter::Extract1D> (dwi_in, 3, container_cast<std::vector<int>> (dwis));
+  auto dwi = Adapter::make <Adapter::Extract1D> (dwi_in, 3, container_cast<vector<int>> (dwis));
 
   auto header = Header (dwi_in);
   header.ndim() = 3;

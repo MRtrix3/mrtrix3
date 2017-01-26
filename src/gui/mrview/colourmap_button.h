@@ -27,7 +27,7 @@ namespace MRView
 
 class ColourMapButton;
 class ColourMapButtonObserver
-{
+{ NOMEMALIGN
 public:
     virtual void selected_colourmap(size_t, const ColourMapButton&) {}
     virtual void selected_custom_colour(const QColor&, const ColourMapButton&) {}
@@ -38,7 +38,7 @@ public:
 
 
 class ColourMapButton : public QToolButton
-{
+{ MEMALIGN(ColourMapButton)
     Q_OBJECT
 public:
     ColourMapButton(QWidget* parent, ColourMapButtonObserver& obs,
@@ -46,7 +46,7 @@ public:
                     bool use_special_colourmaps = true,
                     bool use_customise_state_items = true);
     void set_colourmap_index(size_t index);
-    std::vector<QAction*> colourmap_actions;
+    vector<QAction*> colourmap_actions;
     void open_menu (const QPoint& p) { colourmap_menu->exec (p); }
 private:
     void init_menu(bool create_shortcuts, bool use_special, bool customise_state);
@@ -55,8 +55,8 @@ private:
     void init_special_colour_menu_items(bool create_shortcuts);
     void init_customise_state_menu_items();
 
-    static const std::vector<ColourMap::Entry> core_colourmaps_entries;
-    static const std::vector<ColourMap::Entry> special_colourmaps_entries;
+    static const vector<ColourMap::Entry> core_colourmaps_entries;
+    static const vector<ColourMap::Entry> special_colourmaps_entries;
 
     ColourMapButtonObserver& observer;
     QActionGroup *core_colourmaps_actions;

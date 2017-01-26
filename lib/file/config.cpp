@@ -120,7 +120,7 @@ namespace MR
       std::string value = get (key);
       if (value.size()) {
         try {
-          std::vector<default_type> V (parse_floats (value));
+          vector<default_type> V (parse_floats (value));
           if (V.size() < 3) 
             throw Exception ("malformed RGB entry \"" + value + "\" for key \"" + key + "\" in configuration file - ignored");
           ret[0] = V[0];

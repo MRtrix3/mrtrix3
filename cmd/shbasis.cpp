@@ -80,7 +80,7 @@ void usage ()
 
 // Perform a linear regression on the power ratio in each order
 // Omit l=2 - tends to be abnormally small due to non-isotropic brain-wide fibre distribution
-std::pair<float, float> get_regression (const std::vector<float>& ratios)
+std::pair<float, float> get_regression (const vector<float>& ratios)
 {
   const size_t n = ratios.size() - 1;
   Eigen::VectorXf Y (n), b (2);
@@ -140,7 +140,7 @@ void check_and_update (Header& H, const conv_t conversion)
   if (App::log_level > 0 && App::log_level < 2)
     progress.reset (new ProgressBar ("Evaluating SH basis of image \"" + H.name() + "\"", N-1));
 
-  std::vector<float> ratios;
+  vector<float> ratios;
 
   for (size_t l = 2; l <= lmax; l += 2) {
 
@@ -322,7 +322,7 @@ void run ()
     }
   }
 
-  for (std::vector<ParsedArgument>::const_iterator i = argument.begin(); i != argument.end(); ++i) {
+  for (vector<ParsedArgument>::const_iterator i = argument.begin(); i != argument.end(); ++i) {
 
     const std::string path = *i;
     Header H = Header::open (path);

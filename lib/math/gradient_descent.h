@@ -28,7 +28,7 @@ namespace MR
 
     namespace {
 
-      class LinearUpdate {
+      class LinearUpdate { NOMEMALIGN
         public:
           template <typename ValueType>
             inline bool operator() (Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& newx, const Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& x,
@@ -48,7 +48,7 @@ namespace MR
     //! Computes the minimum of a function using a gradient descent approach.
     template <class Function, class UpdateFunctor=LinearUpdate>
       class GradientDescent
-      {
+      { MEMALIGN(GradientDescent<Function,UpdateFunctor>)
         public:
           typedef typename Function::value_type value_type;
 

@@ -53,7 +53,7 @@ inline bool within_haussdorf (const DWI::Tractography::Streamline<>& tck1, const
   return true;
 }
 
-inline bool within_haussdorf (const DWI::Tractography::Streamline<>& tck, const std::vector<DWI::Tractography::Streamline<>>& list, float tol)
+inline bool within_haussdorf (const DWI::Tractography::Streamline<>& tck, const vector<DWI::Tractography::Streamline<>>& list, float tol)
 {
   for (auto& tck2 : list) {
     if (within_haussdorf (tck, tck2, tol) || within_haussdorf (tck2, tck, tol)) 
@@ -70,7 +70,7 @@ void run ()
   float tol = argument[2];
 
   DWI::Tractography::Properties properties1, properties2;
-  std::vector<DWI::Tractography::Streamline<>> ref_list;
+  vector<DWI::Tractography::Streamline<>> ref_list;
   DWI::Tractography::Reader<> reader1 (argument[0], properties1);
   DWI::Tractography::Reader<> reader2 (argument[1], properties2);
 

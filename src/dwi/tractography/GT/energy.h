@@ -27,7 +27,7 @@ namespace MR {
       namespace GT {
         
         class EnergyComputer
-        {
+        { MEMALIGN(EnergyComputer)
         public:
           EnergyComputer(Stats& s) : stats(s) { }
           
@@ -55,7 +55,7 @@ namespace MR {
         
         
         class EnergySumComputer : public EnergyComputer
-        {
+        { MEMALIGN(EnergySumComputer)
         public:
           
           // Copy-constructable via clone method

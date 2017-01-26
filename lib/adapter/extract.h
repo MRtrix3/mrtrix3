@@ -22,16 +22,22 @@ namespace MR
   namespace Adapter
   {
 
-    template <class ImageType> class Extract1D : public Base<ImageType>
-    {
+    template <class ImageType> 
+      class Extract1D : 
+        public Base<Extract1D<ImageType>,ImageType> 
+    { MEMALIGN (Extract1D<ImageType>)
       public:
-        using Base<ImageType>::ndim;
-        using Base<ImageType>::spacing;
-        using Base<ImageType>::parent;
+
+        typedef Base<Extract1D<ImageType>,ImageType> base_type;
         typedef typename ImageType::value_type value_type;
 
-        Extract1D (const ImageType& original, const size_t axis, const std::vector<int>& indices) :
-          Base<ImageType> (original),
+        using base_type::ndim;
+        using base_type::spacing;
+        using base_type::parent;
+
+
+        Extract1D (const ImageType& original, const size_t axis, const vector<int>& indices) :
+          base_type (original),
           extract_axis (axis),
           indices (indices),
           nsize (indices.size()),
@@ -47,7 +53,6 @@ namespace MR
             this->indices.push_back (indices.back());
           }
 
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         void reset () {
           for (size_t n = 0; n < ndim(); ++n) 
@@ -56,13 +61,12 @@ namespace MR
         }
 
         ssize_t size (size_t axis) const {
-          return ( axis == extract_axis ? nsize : Base<ImageType>::size (axis) );
+          return ( axis == extract_axis ? nsize : base_type::size (axis) );
         }
 
         const transform_type& transform () const { return trans; } 
 
-        ssize_t index (size_t axis) const { return ( axis == extract_axis ? current_pos : parent().index(axis) ); }
-        auto index (size_t axis) -> decltype(Helper::index(*this, axis)) { return { *this, axis }; } 
+        ssize_t get_index (size_t axis) const { return ( axis == extract_axis ? current_pos : parent().index(axis) ); }
         void move_index (size_t axis, ssize_t increment) {
           if (axis == extract_axis) {
             ssize_t prev_pos = current_pos < nsize ? indices[current_pos] : 0;
@@ -87,7 +91,7 @@ namespace MR
 
       private:
         const size_t extract_axis;
-        std::vector<int> indices;
+        vector<int> indices;
         const ssize_t nsize;
         transform_type trans;
         ssize_t current_pos;
@@ -103,16 +107,22 @@ namespace MR
 
 
 
-    template <class ImageType> class Extract : public Base<ImageType>
-    {
+    template <class ImageType> 
+      class Extract : 
+        public Base<Extract<ImageType>,ImageType>
+    { MEMALIGN (Extract<ImageType>)
       public:
-        using Base<ImageType>::ndim;
-        using Base<ImageType>::spacing;
-        using Base<ImageType>::parent;
+
+        typedef Base<Extract<ImageType>,ImageType> base_type;
         typedef typename ImageType::value_type value_type;
 
-        Extract (const ImageType& original, const std::vector<std::vector<int>>& indices) :
-          Base<ImageType> (original),
+        using base_type::ndim;
+        using base_type::spacing;
+        using base_type::parent;
+
+
+        Extract (const ImageType& original, const vector<vector<int>>& indices) :
+          base_type (original),
           current_pos (ndim()), 
           indices (indices),
           trans (original.transform()) {
@@ -129,7 +139,6 @@ namespace MR
             }
           }
 
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         ssize_t size (size_t axis) const { return sizes[axis]; }
 
@@ -142,8 +151,7 @@ namespace MR
           }
         }
 
-        ssize_t index (size_t axis) const { return current_pos[axis]; }
-        auto index (size_t axis) -> decltype(Helper::index(*this, axis)) { return { *this, axis }; }
+        ssize_t get_index (size_t axis) const { return current_pos[axis]; }
         void move_index (size_t axis, ssize_t increment) {
           ssize_t prev = current_pos[axis];
           current_pos[axis] += increment;
@@ -151,9 +159,9 @@ namespace MR
         }
 
       private:
-        std::vector<size_t> current_pos;
-        std::vector<std::vector<int> > indices;
-        std::vector<ssize_t> sizes;
+        vector<size_t> current_pos;
+        vector<vector<int> > indices;
+        vector<ssize_t> sizes;
         transform_type trans;
     };
 

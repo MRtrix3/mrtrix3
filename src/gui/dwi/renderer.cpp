@@ -427,7 +427,7 @@ namespace MR
         QApplication::restoreOverrideCursor();
       }
 
-      void Renderer::SH::update_transform (const std::vector<Shapes::HalfSphere::Vertex>& vertices, int lmax)
+      void Renderer::SH::update_transform (const vector<Shapes::HalfSphere::Vertex>& vertices, int lmax)
       {
         // order is r, del, daz
 
@@ -636,8 +636,8 @@ namespace MR
 
       void Renderer::Dixel::update_dixels (const MR::DWI::Directions::Set& dirs)
       {
-        std::vector<Eigen::Vector3f> directions_data;
-        std::vector<std::array<GLint,3>> indices_data;
+        vector<Eigen::Vector3f> directions_data;
+        vector<std::array<GLint,3>> indices_data;
 
         for (size_t i = 0; i != dirs.size(); ++i) {
           directions_data.push_back (dirs[i].cast<float>());

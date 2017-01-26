@@ -44,7 +44,7 @@ namespace MR {
 
 
 
-        bool Downsampler::operator() (std::vector<Eigen::Vector3f>& tck) const
+        bool Downsampler::operator() (vector<Eigen::Vector3f>& tck) const
         {
           if (ratio <= 1 || tck.empty())
             return false;

@@ -29,7 +29,7 @@ namespace MR {
 
 
         class Upsampler : public Base
-        {
+        { MEMALIGN(Upsampler)
 
           public:
             Upsampler () :
@@ -48,7 +48,7 @@ namespace MR {
             ~Upsampler() { }
 
 
-            bool operator() (std::vector<Eigen::Vector3f>&) const override;
+            bool operator() (vector<Eigen::Vector3f>&) const override;
             bool valid () const override { return (M.rows()); }
 
             void set_ratio (const size_t);
@@ -58,7 +58,7 @@ namespace MR {
             Eigen::MatrixXf M;
             mutable Eigen::MatrixXf temp, data;
 
-            bool interp_prepare (std::vector<Eigen::Vector3f>&) const;
+            bool interp_prepare (vector<Eigen::Vector3f>&) const;
             void increment (const Eigen::Vector3f&) const;
 
         };

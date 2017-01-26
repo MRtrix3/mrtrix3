@@ -25,7 +25,7 @@ namespace MR
   {
 
     class GZ : public Base
-    {
+    { NOMEMALIGN
       public:
         GZ (GZ&&) = default;
         GZ (const Header& header, size_t file_header_size) :

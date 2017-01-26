@@ -23,7 +23,7 @@ namespace MR
   {
 
     template <typename T = float> class Sinc
-    {
+    { NOMEMALIGN
       public:
         typedef T value_type;
 
@@ -122,8 +122,8 @@ namespace MR
 
       private:
         const size_t window_size, max_offset_from_kernel_centre;
-        std::vector<size_t> indices;
-        std::vector<value_type> weights;
+        vector<size_t> indices;
+        vector<value_type> weights;
         value_type  current_pos;
 
     };

@@ -66,17 +66,9 @@ namespace MR
      * transform_type M = input.transform(); // a valid 4x4 transformation matrix
      * \endcode
      */
-    template <class C>
-    struct value_type_of
-    {
-      typedef C type;
-    };
+    template <class C> struct value_type_of { NOMEMALIGN typedef C type; };
 
-    template <class X>
-    struct value_type_of<std::complex<X>>
-    {
-      typedef X type;
-    };
+    template <class X> struct value_type_of<std::complex<X>> { NOMEMALIGN typedef X type; };
 
     enum LinearInterpProcessingType
     {
@@ -90,13 +82,11 @@ namespace MR
     // which we store in LinearInterpBase
 
     template <class ImageType, LinearInterpProcessingType PType>
-    class LinearInterpBase : public Base<ImageType>
-    {
+    class LinearInterpBase : public Base<ImageType> { MEMALIGN(LinearInterpBase<ImageType, PType>)
       public:
         using typename Base<ImageType>::value_type;
         typedef typename value_type_of<value_type>::type coef_type;
 
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         LinearInterpBase (const ImageType& parent, value_type value_when_out_of_bounds = Base<ImageType>::default_out_of_bounds_value()) :
             Base<ImageType> (parent, value_when_out_of_bounds),
@@ -116,8 +106,7 @@ namespace MR
 
 
     template <class ImageType, LinearInterpProcessingType PType>
-    class LinearInterp : public LinearInterpBase <ImageType, PType>
-    {
+    class LinearInterp : public LinearInterpBase <ImageType, PType> { MEMALIGN(LinearInterp<ImageType,PType>)
       private:
         LinearInterp ();
     };
@@ -126,12 +115,11 @@ namespace MR
     // Specialization of LinearInterp when we're only after interpolated values
 
     template <class ImageType>
-    class LinearInterp<ImageType, LinearInterpProcessingType::Value>:
-        public LinearInterpBase<ImageType, LinearInterpProcessingType::Value>
-    {
+    class LinearInterp<ImageType, LinearInterpProcessingType::Value> :
+        public LinearInterpBase<ImageType, LinearInterpProcessingType::Value> 
+    { MEMALIGN(LinearInterp<ImageType,LinearInterpProcessingType::Value>)
       public:
         using LinearBase = LinearInterpBase<ImageType, LinearInterpProcessingType::Value>;
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         typedef typename LinearBase::value_type value_type;
         typedef typename LinearBase::coef_type coef_type;
@@ -253,12 +241,11 @@ namespace MR
     // Specialization of LinearInterp when we're only after interpolated gradients
 
     template <class ImageType>
-    class LinearInterp<ImageType, LinearInterpProcessingType::Derivative>:
+    class LinearInterp<ImageType, LinearInterpProcessingType::Derivative> :
         public LinearInterpBase<ImageType, LinearInterpProcessingType::Derivative>
-    {
+    { MEMALIGN(LinearInterp<ImageType,LinearInterpProcessingType::Derivative>)
       public:
         using LinearBase = LinearInterpBase<ImageType, LinearInterpProcessingType::Derivative>;
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         typedef typename LinearBase::value_type value_type;
         typedef typename LinearBase::coef_type coef_type;
@@ -403,12 +390,11 @@ namespace MR
 
     // Specialization of LinearInterp when we're after both interpolated gradients and values
     template <class ImageType>
-    class LinearInterp<ImageType, LinearInterpProcessingType::ValueAndDerivative>:
+    class LinearInterp<ImageType, LinearInterpProcessingType::ValueAndDerivative> :
         public LinearInterpBase <ImageType, LinearInterpProcessingType::ValueAndDerivative>
-    {
+    { MEMALIGN(LinearInterp<ImageType,LinearInterpProcessingType::ValueAndDerivative>)
       public:
         using LinearBase = LinearInterpBase<ImageType, LinearInterpProcessingType::ValueAndDerivative>;
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         typedef typename LinearBase::value_type value_type;
         typedef typename LinearBase::coef_type coef_type;

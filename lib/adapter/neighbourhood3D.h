@@ -23,18 +23,21 @@ namespace MR
   namespace Adapter {
 
     template <class ImageType>
-      class NeighbourhoodCoord : public Base<ImageType>
-    {
+      class NeighbourhoodCoord : 
+        public Base<NeighbourhoodCoord<ImageType>,ImageType>
+    { MEMALIGN (NeighbourhoodCoord<ImageType>)
       public:
+
+        typedef Base<NeighbourhoodCoord<ImageType>,ImageType> base_type;
         typedef typename ImageType::value_type value_type;
 
-        using Base<ImageType>::name;
-        using Base<ImageType>::spacing;
+        using base_type::name;
+        using base_type::spacing;
 
 
         template <class VectorType>
           NeighbourhoodCoord (const ImageType& original, const VectorType& extent, const Iterator& iter) :
-            Base<ImageType> (original),
+            base_type (original),
             iter_ (iter),
             transform_ (original.transform()) {
 
@@ -65,13 +68,12 @@ namespace MR
         ssize_t size (size_t axis) const { return size_ [axis]; }
         const transform_type& transform() const { return transform_; }
 
-        ssize_t index (size_t axis) const { return parent().index(axis)-from_[axis]; }
-        auto index (size_t axis) -> decltype(Helper::index(*this, axis)) { return { *this, axis }; } 
+        ssize_t get_index (size_t axis) const { return parent().index(axis)-from_[axis]; }
         void move_index (size_t axis, ssize_t increment) { parent().index(axis) += increment; }
 
       protected:
-        using Base<ImageType>::parent;
-        std::vector<ssize_t> from_, size_;
+        using base_type::parent;
+        vector<ssize_t> from_, size_;
         Iterator iter_;
         transform_type transform_;
     };

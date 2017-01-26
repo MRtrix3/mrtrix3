@@ -146,7 +146,7 @@ void Exemplar::finalize (const float step_size)
   // Start from the midpoint, resample backwards to the start of the exemplar,
   //   reverse the data, then do the second half of the exemplar
   int32_t index = (size() + 1) / 2;
-  std::vector<point_type> vertices (1, (*this)[index]);
+  vector<point_type> vertices (1, (*this)[index]);
   const float step_sq = Math::pow2 (step_size);
   for (int32_t step = -1; step <= 1; step += 2) {
     if (step == 1) {

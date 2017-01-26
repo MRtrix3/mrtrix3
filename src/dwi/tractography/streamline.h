@@ -30,8 +30,8 @@ namespace MR
 
 
       template <typename ValueType = float>
-        class Streamline : public std::vector<Eigen::Matrix<ValueType,3,1>>
-      {
+        class Streamline : public vector<Eigen::Matrix<ValueType,3,1>>
+      { MEMALIGN(Streamline<ValueType>)
         public:
           typedef Eigen::Matrix<ValueType,3,1> point_type;
           typedef ValueType value_type;
@@ -39,12 +39,12 @@ namespace MR
           Streamline () : index (-1), weight (1.0f) { }
 
           Streamline (size_t size) : 
-            std::vector<point_type> (size), 
+            vector<point_type> (size), 
             index (-1),
             weight (value_type (1.0)) { }
 
           Streamline (size_t size, const Eigen::Vector3f& fill) :
-            std::vector<point_type> (size, fill),
+            vector<point_type> (size, fill),
             index (-1),
             weight (value_type (1.0)) { }
 
@@ -52,21 +52,21 @@ namespace MR
           Streamline& operator= (const Streamline& that) = default;
 
           Streamline (Streamline&& that) :
-            std::vector<point_type> (std::move (that)),
+            vector<point_type> (std::move (that)),
             index (that.index),
             weight (that.weight) {
               that.index = -1;
               that.weight = 1.0f;
             }
 
-          Streamline (const std::vector<point_type>& tck) :
-            std::vector<point_type> (tck),
+          Streamline (const vector<point_type>& tck) :
+            vector<point_type> (tck),
             index (-1),
             weight (1.0) { }
 
           Streamline& operator= (Streamline&& that)
           {
-            std::vector<point_type>::operator= (std::move (that));
+            vector<point_type>::operator= (std::move (that));
             index = that.index; that.index = -1;
             weight = that.weight; that.weight = 1.0f;
             return *this;
@@ -75,7 +75,7 @@ namespace MR
 
           void clear()
           {
-            std::vector<point_type>::clear();
+            vector<point_type>::clear();
             index = -1;
             weight = 1.0;
           }

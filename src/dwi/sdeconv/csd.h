@@ -39,11 +39,10 @@ namespace MR
 
     extern const App::OptionGroup CSD_options;
 
-    class CSD
-    {
+    class CSD { MEMALIGN(CSD)
       public:
-        class Shared
-        {
+
+        class Shared { MEMALIGN(Shared)
           public:
 
             Shared (const Header& dwi_header) :
@@ -208,7 +207,7 @@ namespace MR
             Eigen::MatrixXd DW_dirs, HR_dirs;
             Eigen::MatrixXd rconv, HR_trans, M, Mt_M;
             default_type neg_lambda, norm_lambda, threshold;
-            std::vector<size_t> dwis;
+            vector<size_t> dwis;
             int lmax_response, lmax_data, lmax;
             size_t niter;
         };
@@ -279,7 +278,7 @@ namespace MR
         Eigen::MatrixXd work, HR_T;
         Eigen::VectorXd F, init_F, HR_amps, Mt_b;
         Eigen::LLT<Eigen::MatrixXd> llt;
-        std::vector<int> neg, old_neg;
+        vector<int> neg, old_neg;
     };
 
 

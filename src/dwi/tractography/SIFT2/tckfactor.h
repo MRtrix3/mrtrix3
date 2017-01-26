@@ -57,7 +57,7 @@ namespace MR {
 
 
       class TckFactor : public SIFT::Model<Fixel>
-      {
+      { MEMALIGN(TckFactor)
 
         public:
 

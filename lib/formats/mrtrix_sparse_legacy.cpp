@@ -75,7 +75,7 @@ namespace MR
       get_mrtrix_file_path (H, "file", image_fname, image_offset);
 
       File::ParsedName::List image_list;
-      std::vector<int> image_num = image_list.parse_scan_check (image_fname);
+      vector<int> image_num = image_list.parse_scan_check (image_fname);
 
       get_mrtrix_file_path (H, "sparse_file", sparse_fname, sparse_offset);
 

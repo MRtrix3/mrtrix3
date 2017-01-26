@@ -121,9 +121,9 @@ void run ()
     throw Exception ("At least two tissue types must be provided");
 
   ProgressBar progress ("performing intensity normalisation and bias field correction...");
-  std::vector<Image<float> > input_images;
-  std::vector<Header> output_headers;
-  std::vector<std::string> output_filenames;
+  vector<Image<float> > input_images;
+  vector<Header> output_headers;
+  vector<std::string> output_filenames;
 
 
   // Open input images and check for output
@@ -267,7 +267,7 @@ void run ()
           summed.value() += scale_factors(j, 0) * input_images[j].value() / bias_field.value();
       }
       compute_mask (summed, mask);
-      std::vector<float> summed_values;
+      vector<float> summed_values;
       for (auto i = Loop (mask) (mask, summed); i; ++i) {
         if (mask.value())
           summed_values.push_back (summed.value());

@@ -45,7 +45,7 @@ namespace MR
           eigenvals.resize(eval.size());
 
           // sort eigenvectors by eigenvalue, largest first
-          std::vector<std::pair<default_type, ssize_t>> eval_idx_vec;
+          vector<std::pair<default_type, ssize_t>> eval_idx_vec;
           for(ssize_t i = 0; i < eval.size(); ++i ) {
               eval_idx_vec.emplace_back(eval[i], i);
           }
@@ -457,7 +457,8 @@ namespace MR
                 voxel_pos << (default_type)im.index(0), (default_type)im.index(1), (default_type)im.index(2);
                 scanner = im_transform.voxel2scanner * voxel_pos;
                 centre_of_mass += scanner * im.value();
-                sh += im.row(3).head(N);
+                for (im.index(3) = 0; im.index(3) < N; ++im.index(3))
+                  sh[im.index(3)] += im.value();
                 ++cnt;
               }
             }
@@ -467,7 +468,8 @@ namespace MR
               voxel_pos << (default_type)im.index(0), (default_type)im.index(1), (default_type)im.index(2);
               scanner = im_transform.voxel2scanner * voxel_pos;
               centre_of_mass += scanner * im.value();
-              sh += im.row(3).head(N);
+              for (im.index(3) = 0; im.index(3) < N; ++im.index(3))
+                sh[im.index(3)] += im.value();
             }
             cnt = im.size(0) * im.size(1) * im.size(2);
           }

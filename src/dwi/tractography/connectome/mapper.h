@@ -32,7 +32,7 @@ namespace Connectome {
 
 
 class Mapper
-{
+{ MEMALIGN(Mapper)
 
   public:
     Mapper (const Tck2nodes_base& a, const Metric& b) :
@@ -58,7 +58,7 @@ class Mapper
     {
       assert (!tck2nodes.provides_pair());
       out.set_track_index (in.index);
-      std::vector<node_t> nodes;
+      vector<node_t> nodes;
       tck2nodes (in, nodes);
       out.set_nodes (std::move (nodes));
       out.set_factor (metric (in, out.get_nodes()));

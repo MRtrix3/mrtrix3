@@ -26,13 +26,13 @@ namespace MR
       {
 
 
-        size_t ODF_Model::add_items (const std::vector<std::string>& list,
+        size_t ODF_Model::add_items (const vector<std::string>& list,
                                      const odf_type_t type,
                                      const bool colour_by_direction,
                                      const bool hide_negative_lobes,
                                      const float scale)
         {
-          std::vector<std::unique_ptr<MR::Header>> hlist;
+          vector<std::unique_ptr<MR::Header>> hlist;
           for (size_t i = 0; i < list.size(); ++i) {
             try {
               std::unique_ptr<MR::Header> header (new MR::Header (MR::Header::open (list[i])));

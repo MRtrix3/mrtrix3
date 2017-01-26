@@ -41,7 +41,7 @@ namespace MR
       @{ */
 
 
-      class connectivity {
+      class connectivity { MEMALIGN(connectivity)
         public:
           connectivity () : value (0.0) { }
           connectivity (const connectivity_value_type v) : value (v) { }
@@ -54,31 +54,31 @@ namespace MR
       /**
        * Process each track by converting each streamline to a set of dixels, and map these to fixels.
        */
-      class TrackProcessor {
+      class TrackProcessor { MEMALIGN(TrackProcessor)
 
         public:
           TrackProcessor (Image<uint32_t>& fixel_indexer,
-                          const std::vector<direction_type>& fixel_directions,
-                          std::vector<uint16_t>& fixel_TDI,
-                          std::vector<std::map<uint32_t, connectivity> >& connectivity_matrix,
+                          const vector<direction_type>& fixel_directions,
+                          vector<uint16_t>& fixel_TDI,
+                          vector<std::map<uint32_t, connectivity> >& connectivity_matrix,
                           const value_type angular_threshold);
 
           bool operator () (const SetVoxelDir& in);
 
         private:
           Image<uint32_t> fixel_indexer;
-          const std::vector<direction_type>& fixel_directions;
-          std::vector<uint16_t>& fixel_TDI;
-          std::vector<std::map<uint32_t, connectivity> >& connectivity_matrix;
+          const vector<direction_type>& fixel_directions;
+          vector<uint16_t>& fixel_TDI;
+          vector<std::map<uint32_t, connectivity> >& connectivity_matrix;
           const value_type angular_threshold_dp;
       };
 
 
 
 
-      class Enhancer : public Stats::EnhancerBase {
+      class Enhancer : public Stats::EnhancerBase { MEMALIGN (Enhancer)
         public:
-          Enhancer (const std::vector<std::map<uint32_t, connectivity> >& connectivity_map,
+          Enhancer (const vector<std::map<uint32_t, connectivity> >& connectivity_map,
                     const value_type dh, const value_type E, const value_type H);
 
 
@@ -86,7 +86,7 @@ namespace MR
 
 
         protected:
-          const std::vector<std::map<uint32_t, connectivity> >& connectivity_map;
+          const vector<std::map<uint32_t, connectivity> >& connectivity_map;
           const value_type dh, E, H;
       };
 

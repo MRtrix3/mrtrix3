@@ -18,7 +18,7 @@ namespace MR {
   namespace File {
     namespace Dicom {
 
-      UnorderedMap<uint32_t, const char*>::Type Element::dict;
+      std::unordered_map<uint32_t, const char*> Element::dict;
 
 
       // Note this implementation does not account for multiplicity

@@ -24,8 +24,7 @@
 namespace MR
 {
 
-  class DataType
-  {
+  class DataType { NOMEMALIGN
     public:
       DataType () noexcept : dt (DataType::Native) { }
       DataType (uint8_t type) noexcept : dt (type) { }

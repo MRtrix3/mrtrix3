@@ -47,7 +47,7 @@ void usage ()
 }
 
 
-class Tag {
+class Tag { NOMEMALIGN
   public:
     uint16_t group, element;
     std::string value;
@@ -67,7 +67,7 @@ void run ()
   if (opt.size()) {
     std::istringstream hex;
 
-    std::vector<Tag> tags (opt.size());
+    vector<Tag> tags (opt.size());
     for (size_t n = 0; n < opt.size(); ++n) {
       tags[n].group = read_hex (opt[n][0]);
       tags[n].element = read_hex (opt[n][1]);

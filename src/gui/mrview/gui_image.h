@@ -41,7 +41,7 @@ namespace MR
       }
 
       class ImageBase : public Volume
-      {
+      { MEMALIGN(ImageBase)
         public:
           ImageBase (MR::Header&&);
           virtual ~ImageBase();
@@ -56,12 +56,12 @@ namespace MR
 
         protected:
           GL::Texture texture2D[3];
-          std::vector<ssize_t> tex_positions;
+          vector<ssize_t> tex_positions;
 
       };
 
       class Image : public ImageBase
-      {
+      { MEMALIGN(Image)
         public:
           Image (MR::Header&&);
 
@@ -77,7 +77,7 @@ namespace MR
           cfloat nearest_neighbour_value (const Eigen::Vector3f&) const;
 
           const MR::Transform& transform() const { return linear_interp; }
-          const std::vector<std::string>& comments() const { return _comments; }
+          const vector<std::string>& comments() const { return _comments; }
 
           void reset_windowing (const int, const bool);
 
@@ -96,7 +96,7 @@ namespace MR
           template <typename T> void copy_texture_3D ();
           void copy_texture_3D_complex ();
 
-          std::vector<std::string> _comments;
+          vector<std::string> _comments;
 
       };
 

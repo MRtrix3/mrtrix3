@@ -67,7 +67,7 @@ LUT::file_format LUT::guess_file_format (const std::string& path)
 {
 
   class Column
-  {
+  { NOMEMALIGN
     public:
       Column () :
           numeric (true),
@@ -107,7 +107,7 @@ LUT::file_format LUT::guess_file_format (const std::string& path)
   std::ifstream in_lut (path, std::ios_base::in);
   if (!in_lut)
     throw Exception ("Unable to open lookup table file");
-  std::vector<Column> columns;
+  vector<Column> columns;
   std::string line;
   while (std::getline (in_lut, line)) {
     if (line.size() > 1 && line[0] != '#') {
@@ -286,18 +286,18 @@ void LUT::check_and_insert (const node_t index, const LUT_node& data)
 
 
 
-std::vector<node_t> get_lut_mapping (const LUT& in, const LUT& out)
+vector<node_t> get_lut_mapping (const LUT& in, const LUT& out)
 {
   if (in.empty())
-    return std::vector<node_t>();
-  std::vector<node_t> map (in.rbegin()->first + 1, 0);
+    return vector<node_t>();
+  vector<node_t> map (in.rbegin()->first + 1, 0);
   for (const auto& node_in : in) {
     node_t target = 0;
     for (const auto& node_out : out) {
       if (node_out.second.get_name() == node_in.second.get_name()) {
         if (target) {
           throw Exception ("Cannot perform LUT conversion: Node " + str(node_in.first) + " (" + node_in.second.get_name() + ") has multiple possible targets");
-          return std::vector<node_t> ();
+          return vector<node_t> ();
         }
         target = node_out.first;
         break;

@@ -33,8 +33,7 @@ namespace MR
 
 
     template <class Fixel>
-    class Fixel_map
-    {
+    class Fixel_map { MEMALIGN(Fixel_map<Fixel>)
 
       public:
         Fixel_map (const Header& H) :
@@ -48,7 +47,6 @@ namespace MR
           fixels.push_back (Fixel());
         }
         Fixel_map (const Fixel_map&) = delete;
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         class MapVoxel;
         typedef Image<MapVoxel*> VoxelAccessor;
@@ -81,10 +79,10 @@ namespace MR
         const ::MR::Header& header() const { return _header; }
 
       protected:
-        std::vector<Fixel> fixels;
+        vector<Fixel> fixels;
 
       private:
-        const class HeaderHelper : public ::MR::Header {
+        const class HeaderHelper : public ::MR::Header { MEMALIGN(HeaderHelper)
           public:
             HeaderHelper (const ::MR::Header& H) :
                 ::MR::Header (H)
@@ -103,7 +101,7 @@ namespace MR
 
     template <class Fixel>
     class Fixel_map<Fixel>::MapVoxel
-    {
+    { MEMALIGN(Fixel_map<Fixel>)
       public:
         MapVoxel (const FMLS::FOD_lobes& in, const size_t first) :
             first_fixel_index (first),
@@ -125,7 +123,6 @@ namespace MR
             lookup_table = nullptr;
           }
         }
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         size_t first_index() const { return first_fixel_index; }
         size_t num_fixels()  const { return count; }
@@ -149,8 +146,7 @@ namespace MR
 
 
     template <class Fixel>
-    class Fixel_map<Fixel>::Iterator
-    {
+    class Fixel_map<Fixel>::Iterator { NOMEMALIGN
         friend class Fixel_map<Fixel>::ConstIterator;
       public:
         Iterator (const MapVoxel* const voxel, Fixel_map<Fixel>& parent) :
@@ -168,8 +164,7 @@ namespace MR
     };
 
     template <class Fixel>
-    class Fixel_map<Fixel>::ConstIterator
-    {
+    class Fixel_map<Fixel>::ConstIterator { NOMEMALIGN
       public:
         ConstIterator (const MapVoxel* const voxel, const Fixel_map& parent) :
             index     (voxel ? voxel->first_index() : 0),

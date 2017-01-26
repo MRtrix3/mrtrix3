@@ -30,7 +30,7 @@ namespace MR
 
       extern bool right_left_warning_issued;
 
-      transform_type adjust_transform (const Header& H, std::vector<size_t>& order);
+      transform_type adjust_transform (const Header& H, vector<size_t>& order);
 
       void check (Header& H, const bool is_analyse);
       size_t version (Header& H);

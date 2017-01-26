@@ -182,7 +182,7 @@ void convert_new2old ()
 
   Header H_index = Fixel::find_index_header (input_fixel_directory);
   Header H_dirs = Fixel::find_directions_header (input_fixel_directory);
-  std::vector<Header> H_data = Fixel::find_data_headers (input_fixel_directory, H_index, false);
+  vector<Header> H_data = Fixel::find_data_headers (input_fixel_directory, H_index, false);
   size_t size_index = H_data.size(), value_index = H_data.size();
 
   for (size_t i = 0; i != H_data.size(); ++i) {

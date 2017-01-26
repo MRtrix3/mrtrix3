@@ -39,7 +39,7 @@ namespace MR
         enum class TrackThresholdType { None, UseColourFile, SeparateFile };
 
         class Tractogram : public Displayable
-        {
+        { MEMALIGN(Tractogram)
           Q_OBJECT
 
           public:
@@ -92,7 +92,7 @@ namespace MR
             std::string intensity_scalar_filename;
             std::string threshold_scalar_filename;
 
-            class Shader : public Displayable::Shader {
+            class Shader : public Displayable::Shader { MEMALIGN(Shader)
               public:
                 Shader () :
                     do_crop_to_slab (false),
@@ -127,19 +127,19 @@ namespace MR
             //   streamline tangents and store them; then, if colour by
             //   endpoint is requested, generate the buffer based on these
             //   and the known track sizes
-            std::vector<Eigen::Vector3f> endpoint_tangents;
+            vector<Eigen::Vector3f> endpoint_tangents;
 
-            std::vector<GLuint> vertex_buffers;
-            std::vector<GLuint> vertex_array_objects;
-            std::vector<GLuint> colour_buffers;
-            std::vector<GLuint> intensity_scalar_buffers;
-            std::vector<GLuint> threshold_scalar_buffers;
+            vector<GLuint> vertex_buffers;
+            vector<GLuint> vertex_array_objects;
+            vector<GLuint> colour_buffers;
+            vector<GLuint> intensity_scalar_buffers;
+            vector<GLuint> threshold_scalar_buffers;
             DWI::Tractography::Properties properties;
-            std::vector<std::vector<GLint> > track_starts;
-            std::vector<std::vector<GLint> > track_sizes;
-            std::vector<std::vector<GLint> > original_track_sizes;
-            std::vector<std::vector<GLint> > original_track_starts;
-            std::vector<size_t> num_tracks_per_buffer;
+            vector<vector<GLint> > track_starts;
+            vector<vector<GLint> > track_sizes;
+            vector<vector<GLint> > original_track_sizes;
+            vector<vector<GLint> > original_track_starts;
+            vector<size_t> num_tracks_per_buffer;
             GLint sample_stride;
             float line_thickness_screenspace;
             bool vao_dirty;
@@ -149,15 +149,15 @@ namespace MR
             float threshold_min, threshold_max;
 
 
-            void load_tracks_onto_GPU (std::vector<Eigen::Vector3f>& buffer,
-                                       std::vector<GLint>& starts,
-                                       std::vector<GLint>& sizes,
+            void load_tracks_onto_GPU (vector<Eigen::Vector3f>& buffer,
+                                       vector<GLint>& starts,
+                                       vector<GLint>& sizes,
                                        size_t& tck_count);
                                               
-            void load_end_colours_onto_GPU (std::vector<Eigen::Vector3f>&);
+            void load_end_colours_onto_GPU (vector<Eigen::Vector3f>&);
 
-            void load_intensity_scalars_onto_GPU (std::vector<float>& buffer);
-            void load_threshold_scalars_onto_GPU (std::vector<float>& buffer);
+            void load_intensity_scalars_onto_GPU (vector<float>& buffer);
+            void load_threshold_scalars_onto_GPU (vector<float>& buffer);
 
             void render_streamlines ();
 

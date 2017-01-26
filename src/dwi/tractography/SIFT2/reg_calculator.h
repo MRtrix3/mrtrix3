@@ -33,7 +33,7 @@ namespace MR {
 
 
       class RegularisationCalculator
-      {
+      { NOMEMALIGN
 
         public:
           RegularisationCalculator (TckFactor&, double&, double&);

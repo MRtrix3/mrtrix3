@@ -120,7 +120,7 @@ namespace MR
         //CONF initial window size of MRView in pixels
         //CONF default: 512,512
         std::string init_size_string = lowercase (MR::File::Config::get ("MRViewInitWindowSize"));
-        std::vector<int> init_window_size;
+        vector<int> init_window_size;
         if (init_size_string.length())
           init_window_size = parse_ints(init_size_string);
         if (init_window_size.size() == 2)
@@ -140,7 +140,7 @@ namespace MR
       void Window::GLArea::dropEvent (QDropEvent* event) {
         const QMimeData* mimeData = event->mimeData();
         if (mimeData->hasUrls()) {
-          std::vector<std::unique_ptr<MR::Header>> list;
+          vector<std::unique_ptr<MR::Header>> list;
           QList<QUrl> urlList = mimeData->urls();
           for (int i = 0; i < urlList.size() && i < 32; ++i) {
             try {
@@ -747,11 +747,11 @@ namespace MR
 
       void Window::image_open_slot ()
       {
-        std::vector<std::string> image_list = Dialog::File::get_images (this, "Select images to open");
+        vector<std::string> image_list = Dialog::File::get_images (this, "Select images to open");
         if (image_list.empty())
           return;
 
-        std::vector<std::unique_ptr<MR::Header>> list;
+        vector<std::unique_ptr<MR::Header>> list;
         for (size_t n = 0; n < image_list.size(); ++n) {
           try {
             list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (image_list[n]))));
@@ -773,7 +773,7 @@ namespace MR
 
 
         try {
-          std::vector<std::unique_ptr<MR::Header>> list;
+          vector<std::unique_ptr<MR::Header>> list;
           list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (folder))));
           add_images (list);
         }
@@ -785,7 +785,7 @@ namespace MR
 
 
 
-      void Window::add_images (std::vector<std::unique_ptr<MR::Header>>& list)
+      void Window::add_images (vector<std::unique_ptr<MR::Header>>& list)
       {
         for (size_t i = 0; i < list.size(); ++i) {
           const std::string name = list[i]->name(); // Gets move-constructed out
@@ -1710,7 +1710,7 @@ namespace MR
             }
 
             if (opt.opt->is ("size")) {
-              std::vector<int> glsize = opt[0];
+              vector<int> glsize = opt[0];
               if (glsize.size() != 2)
                 throw Exception ("invalid argument \"" + std::string(opt.args[0]) + "\" to view.size batch command");
               QSize oldsize = glarea->size();
@@ -1752,7 +1752,7 @@ namespace MR
 
             if (opt.opt->is ("voxel")) {
               if (image()) {
-                std::vector<default_type> pos = parse_floats (opt[0]);
+                vector<default_type> pos = parse_floats (opt[0]);
                 if (pos.size() != 3)
                   throw Exception ("-voxel option expects a comma-separated list of 3 floating-point values");
                 set_focus (image()->transform().voxel2scanner.cast<float>() *  Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
@@ -1791,7 +1791,7 @@ namespace MR
             }
 
             if (opt.opt->is ("load")) {
-              std::vector<std::unique_ptr<MR::Header>> list;
+              vector<std::unique_ptr<MR::Header>> list;
               try { list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (opt[0])))); }
               catch (Exception& e) { e.display(); }
               add_images (list);
@@ -1823,7 +1823,7 @@ namespace MR
 
             if (opt.opt->is ("intensity_range")) {
               if (image()) {
-                std::vector<default_type> param = parse_floats (opt[0]);
+                vector<default_type> param = parse_floats (opt[0]);
                 if (param.size() != 2)
                   throw Exception ("-intensity_range options expects comma-separated list of two floating-point values");
                 image()->set_windowing (param[0], param[1]);
@@ -1833,7 +1833,7 @@ namespace MR
             }
 
             if (opt.opt->is ("position")) {
-              std::vector<int> pos = opt[0];
+              vector<int> pos = opt[0];
               if (pos.size() != 2)
                 throw Exception ("invalid argument \"" + std::string(opt[0]) + "\" to -position option");
               move (pos[0], pos[1]);

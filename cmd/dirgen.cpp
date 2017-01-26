@@ -65,7 +65,7 @@ OPTIONS
 
 
 // constrain directions to remain unit length:
-class ProjectedUpdate {
+class ProjectedUpdate { MEMALIGN(ProjectedUpdate)
   public:
     bool operator() (
         Eigen::VectorXd& newx, 
@@ -81,7 +81,7 @@ class ProjectedUpdate {
 
 
 
-class Energy {
+class Energy { MEMALIGN(Energy)
   public:
     Energy (size_t n_directions, int power, bool bipolar, const Eigen::VectorXd& init_directions) : 
       ndir (n_directions),

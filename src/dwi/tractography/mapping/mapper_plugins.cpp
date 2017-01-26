@@ -44,7 +44,7 @@ namespace MR {
 
 
 
-        void TWIScalarImagePlugin::load_factors (const Streamline<>& tck, std::vector<default_type>& factors)
+        void TWIScalarImagePlugin::load_factors (const Streamline<>& tck, vector<default_type>& factors)
         {
           if (statistic == ENDS_MIN || statistic == ENDS_MEAN || statistic == ENDS_MAX || statistic == ENDS_PROD) {
 
@@ -74,7 +74,7 @@ namespace MR {
 
 
 
-        void TWIFODImagePlugin::load_factors (const Streamline<>& tck, std::vector<default_type>& factors)
+        void TWIFODImagePlugin::load_factors (const Streamline<>& tck, vector<default_type>& factors)
         {
           for (size_t i = 0; i != tck.size(); ++i) {
             if (interp.scanner (tck[i])) {

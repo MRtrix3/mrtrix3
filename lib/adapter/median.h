@@ -25,22 +25,30 @@ namespace MR
 
 
     template <class ImageType>
-      class Median : public Base<ImageType> {
+        class Median : 
+          public Base<Median<ImageType>,ImageType> 
+      { MEMALIGN(Median<ImageType>)
       public:
+
+          typedef Base<Median<ImageType>,ImageType> base_type;
+          typedef typename ImageType::value_type value_type;
+          typedef Median voxel_type;
+
+          using base_type::name;
+          using base_type::size;
+          using base_type::index;
+
         Median (const ImageType& parent) :
-          Base<ImageType> (parent) {
-            set_extent (std::vector<int>(1,3));
+          base_type (parent) {
+            set_extent (vector<int>(1,3));
           }
 
-        Median (const ImageType& parent, const std::vector<int>& extent) :
-          Base<ImageType> (parent) {
+        Median (const ImageType& parent, const vector<int>& extent) :
+          base_type (parent) {
             set_extent (extent);
           }
 
-        typedef typename ImageType::value_type value_type;
-        typedef Median voxel_type;
-
-        void set_extent (const std::vector<int>& ext)
+        void set_extent (const vector<int>& ext)
         {
           for (size_t i = 0; i < ext.size(); ++i)
             if (! (ext[i] & int(1)))
@@ -48,7 +56,7 @@ namespace MR
           if (ext.size() != 1 && ext.size() != 3)
             throw Exception ("unexpected number of elements specified in extent");
           if (ext.size() == 1)
-            extent = std::vector<int> (3, ext[0]);
+            extent = vector<int> (3, ext[0]);
           else
             extent = ext;
 
@@ -60,7 +68,7 @@ namespace MR
 
 
 
-        value_type& value ()
+          value_type value ()
         {
           const ssize_t old_pos [3] = { index(0), index(1), index(2) };
           const ssize_t from[3] = {
@@ -79,24 +87,18 @@ namespace MR
           for (index(2) = from[2]; index(2) < to[2]; ++index(2))
             for (index(1) = from[1]; index(1) < to[1]; ++index(1))
               for (index(0) = from[0]; index(0) < to[0]; ++index(0))
-                values.push_back (Base<ImageType>::value());
+                  values.push_back (base_type::value());
 
           index(0) = old_pos[0];
           index(1) = old_pos[1];
           index(2) = old_pos[2];
 
-          retval = Math::median (values);
-          return retval;
+            return Math::median (values);
         }
 
-        using Base<ImageType>::name;
-        using Base<ImageType>::size;
-        using Base<ImageType>::index;
-
       protected:
-        std::vector<int> extent;
-        std::vector<value_type> values;
-        value_type retval;
+        vector<int> extent;
+        vector<value_type> values;
       };
 
   }

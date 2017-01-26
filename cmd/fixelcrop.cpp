@@ -71,9 +71,9 @@ void run ()
 
 
   // Open all data images and create output date images with size equal to expected number of fixels
-  std::vector<Header> in_headers = Fixel::find_data_headers (in_directory, in_index_header, true);
-  std::vector<Image<float> > in_data_images;
-  std::vector<Image<float> > out_data_images;
+  vector<Header> in_headers = Fixel::find_data_headers (in_directory, in_index_header, true);
+  vector<Image<float> > in_data_images;
+  vector<Image<float> > out_data_images;
   for (auto& in_data_header : in_headers) {
     in_data_images.push_back(in_data_header.get_image<float>().with_direct_io());
     check_dimensions (in_data_images.back(), mask_image, {0, 2});

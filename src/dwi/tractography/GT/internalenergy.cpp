@@ -92,7 +92,7 @@ namespace MR {
           double sum = 0.0;
           double t = rng_uniform() * normalization;
           ParticleEnd pe;
-          for (std::vector<ParticleEnd>::iterator it = neighbourhood.begin(); it != neighbourhood.end(); ++it)
+          for (vector<ParticleEnd>::iterator it = neighbourhood.begin(); it != neighbourhood.end(); ++it)
           {
             sum += it->p_suc;
             if (sum >= t) {

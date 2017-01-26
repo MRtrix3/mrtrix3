@@ -53,7 +53,7 @@ namespace MR
           } else if (i->is_number_float()) {
             H.keyval().insert (std::make_pair (i.key(), str<float>(i.value())));
           } else if (i->is_array()) {
-            std::vector<std::string> s;
+            vector<std::string> s;
             for (auto j = i->cbegin(); j != i->cend(); ++j)
               s.push_back (str(*j));
             H.keyval().insert (std::make_pair (i.key(), join(s, "\n")));
@@ -65,7 +65,7 @@ namespace MR
         }
 
         auto pe_scheme = PhaseEncoding::get_scheme (H);
-        std::vector<size_t> order;
+        vector<size_t> order;
         File::NIfTI::adjust_transform (H, order);
         if (pe_scheme.rows() && (order[0] != 0 || order[1] != 1 || order[2] != 2 || H.stride(0) < 0 || H.stride(1) < 0 || H.stride(2) < 0)) {
           // The corresponding header may have been rotated on image load prior to the JSON
@@ -88,7 +88,7 @@ namespace MR
       {
         nlohmann::json json;
         auto pe_scheme = PhaseEncoding::get_scheme (H);
-        std::vector<size_t> order;
+        vector<size_t> order;
         File::NIfTI::adjust_transform (H, order);
         if (pe_scheme.rows() && (order[0] != 0 || order[1] != 1 || order[2] != 2 || H.stride(0) < 0 || H.stride(1) < 0 || H.stride(2) < 0)) {
           // Assume that image being written to disk is going to have its transform adjusted,

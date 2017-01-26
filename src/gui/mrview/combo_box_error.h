@@ -25,7 +25,7 @@ namespace MR
     {
 
       class ComboBoxWithErrorMsg : public QComboBox
-      {
+      { NOMEMALIGN
         Q_OBJECT
 
         public:

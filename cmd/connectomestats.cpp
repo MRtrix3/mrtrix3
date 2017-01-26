@@ -114,7 +114,7 @@ void run()
 {
 
   // Read filenames
-  std::vector<std::string> filenames;
+  vector<std::string> filenames;
   {
     std::string folder = Path::dirname (argument[0]);
     std::ifstream ifs (argument[0].c_str());
@@ -176,7 +176,7 @@ void run()
 
   // Load permutations file if supplied
   auto opt = get_options("permutations");
-  std::vector<std::vector<size_t> > permutations;
+  vector<vector<size_t> > permutations;
   if (opt.size()) {
     permutations = Math::Stats::Permutation::load_permutations_file (opt[0][0]);
     num_perms = permutations.size();
@@ -186,7 +186,7 @@ void run()
 
   // Load non-stationary correction permutations file if supplied
   opt = get_options("permutations_nonstationary");
-  std::vector<std::vector<size_t> > permutations_nonstationary;
+  vector<vector<size_t> > permutations_nonstationary;
   if (opt.size()) {
     permutations_nonstationary = Math::Stats::Permutation::load_permutations_file (opt[0][0]);
     nperms_nonstationary = permutations.size();

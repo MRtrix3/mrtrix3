@@ -25,7 +25,8 @@ namespace MR
   {
 
 
-    class Scalar : public Eigen::Array<default_type, Eigen::Dynamic, 1> {
+    class Scalar : public Eigen::Array<default_type, Eigen::Dynamic, 1> 
+    { MEMALIGN (Scalar)
 
       public:
         typedef Eigen::Array<default_type, Eigen::Dynamic, 1> Base;

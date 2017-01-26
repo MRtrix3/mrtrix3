@@ -66,7 +66,7 @@ namespace MR {
 
 
 
-        void generate_header (Header& header, const std::string& tck_file_path, const std::vector<default_type>& voxel_size)
+        void generate_header (Header& header, const std::string& tck_file_path, const vector<default_type>& voxel_size)
         {
 
           Properties properties;
@@ -114,7 +114,7 @@ namespace MR {
 
 
 
-        void oversample_header (Header& header, const std::vector<default_type>& voxel_size)
+        void oversample_header (Header& header, const vector<default_type>& voxel_size)
         {
           INFO ("oversampling header...");
 

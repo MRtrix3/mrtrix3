@@ -107,7 +107,7 @@ namespace MR
 
 
 
-      void GLMTTest::operator() (const std::vector<size_t>& perm_labelling, vector_type& stats) const
+      void GLMTTest::operator() (const vector<size_t>& perm_labelling, vector_type& stats) const
       {
         stats = vector_type::Zero (y.rows());
         matrix_type tvalues, betas, residuals, SX, pinvSX;

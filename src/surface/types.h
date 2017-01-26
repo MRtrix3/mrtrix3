@@ -28,14 +28,14 @@ namespace MR
 
 
     typedef Eigen::Vector3 Vertex;
-    typedef std::vector<Vertex> VertexList;
+    typedef vector<Vertex> VertexList;
     typedef Polygon<3> Triangle;
     typedef Polygon<4> Quad;
-    typedef std::vector<Triangle> TriangleList;
-    typedef std::vector<Quad> QuadList;
+    typedef vector<Triangle> TriangleList;
+    typedef vector<Quad> QuadList;
 
     class Vox : public Eigen::Array3i
-    {
+    { MEMALIGN (Vox)
       public:
         using Eigen::Array3i::Array3i;
         bool operator< (const Vox& i) const

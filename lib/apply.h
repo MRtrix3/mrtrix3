@@ -24,7 +24,7 @@ namespace MR {
   namespace {
 
     template<size_t N>
-      struct Apply {
+      struct Apply { NOMEMALIGN
         template<typename F, typename T>
           static FORCE_INLINE void apply (F && f, T && t)
           {
@@ -34,7 +34,7 @@ namespace MR {
       };
 
     template<>
-      struct Apply<0> {
+      struct Apply<0> { NOMEMALIGN
         template<typename F, typename T>
           static FORCE_INLINE void apply (F && f, T && t)
           {
@@ -46,7 +46,7 @@ namespace MR {
 
 
     template<size_t N>
-      struct Unpack {
+      struct Unpack { NOMEMALIGN
         template<typename F, typename T, typename... A>
           static FORCE_INLINE auto unpack (F && f, T && t, A &&... a)
           -> decltype(Unpack<N-1>::unpack (
@@ -61,7 +61,7 @@ namespace MR {
       };
 
     template<>
-      struct Unpack<0> {
+      struct Unpack<0> { NOMEMALIGN
         template<typename F, typename T, typename... A>
           static FORCE_INLINE auto unpack (F && f, T &&, A &&... a)
           -> decltype(::std::forward<F>(f)(::std::forward<A>(a)...))

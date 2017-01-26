@@ -24,10 +24,13 @@ namespace MR
   {
 
     template <class ImageType>
-      class Gradient3D : public Gradient1D<ImageType> {
+      class Gradient3D : 
+        public Gradient1D<ImageType> 
+    { MEMALIGN(Gradient3D<ImageType>)
 
       public:
-        typedef typename ImageType::value_type value_type;
+
+        typedef Eigen::Matrix<typename ImageType::value_type,3,1> value_type;
 
         Gradient3D (const ImageType& parent,
                     bool wrt_scanner = false) :
@@ -35,15 +38,15 @@ namespace MR
           wrt_scanner (wrt_scanner),
           transform (parent) {}
 
-        Eigen::Matrix<value_type, 3, 1> value ()
+        value_type value ()
         {
-          Eigen::Matrix<value_type, 3, 1> grad;
+          value_type grad;
           for (size_t i = 0; i < 3; ++i) {
             Gradient1D<ImageType>::set_axis(i);
             grad[i] = Gradient1D<ImageType>::value();
           }
           if (wrt_scanner)
-            grad = transform.image2scanner.linear().template cast<value_type>() * grad;
+            grad = transform.image2scanner.linear().template cast<typename ImageType::value_type>() * grad;
 
           return grad;
         }

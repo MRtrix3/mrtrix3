@@ -22,8 +22,7 @@ namespace MR
 {
   namespace File
   {
-    class Config
-    {
+    class Config { NOMEMALIGN
       public:
 
         static void init ();

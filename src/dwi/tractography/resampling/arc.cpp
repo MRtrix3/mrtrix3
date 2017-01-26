@@ -22,13 +22,13 @@ namespace MR {
 
 
 
-        bool Arc::operator() (std::vector<Eigen::Vector3f>& tck) const
+        bool Arc::operator() (vector<Eigen::Vector3f>& tck) const
         {
           assert (tck.size());
           assert (planes.size());
           const bool reverse = idx_start > idx_end;
           size_t i = idx_start;
-          std::vector<point_type> rtck;
+          vector<point_type> rtck;
 
           for (size_t n = 0; n < nsamples; n++) {
             while (i != idx_end) {
@@ -47,7 +47,7 @@ namespace MR {
 
 
 
-        bool Arc::limits (const std::vector<Eigen::Vector3f>& tck)
+        bool Arc::limits (const vector<Eigen::Vector3f>& tck)
         {
           idx_start = idx_end = 0;
           size_t a (0), b (0);

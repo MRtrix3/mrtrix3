@@ -25,7 +25,7 @@ namespace MR
       namespace Tool
       {
         class Legacy : public FixelType<FixelLegacyType>
-        {
+        { MEMALIGN (Legacy)
           public:
             Legacy (const std::string& filename, Fixel& fixel_tool) :
               FixelType (filename, fixel_tool)

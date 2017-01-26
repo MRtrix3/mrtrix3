@@ -54,7 +54,7 @@ namespace MR
       void write_mrtrix_header (const Header&, StreamType&);
 
 
-    std::vector<ssize_t> parse_axes (size_t ndim, const std::string& specifier);
+    vector<ssize_t> parse_axes (size_t ndim, const std::string& specifier);
 
 
 
@@ -63,9 +63,9 @@ namespace MR
       void read_mrtrix_header (Header& H, SourceType& kv)
       {
         std::string dtype, layout;
-        std::vector<int> dim;
-        std::vector<default_type> vox, scaling;
-        std::vector<std::vector<default_type>> transform;
+        vector<int> dim;
+        vector<default_type> vox, scaling;
+        vector<vector<default_type>> transform;
 
         std::string key, value;
         while (next_keyvalue (kv, key, value)) {

@@ -49,7 +49,7 @@ void run ()
   auto output = Image<value_type>::create (argument[1], input);
 
   auto func = [&](Image<value_type>& in, Image<value_type>& out) {
-    if (in.row(3).norm() == 0.0) {
+    if (Eigen::Matrix<value_type, 3, 1>(in.row(3)).norm() == 0.0) {
       for (auto l = Loop (3) (out); l; ++l)
         out.value() = NaN;
     } else {

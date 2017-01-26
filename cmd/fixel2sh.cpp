@@ -72,7 +72,7 @@ void run ()
   out_header.size (3) = n_sh_coeff;
 
   auto sh_image = Image<float>::create (argument[1], out_header);
-  std::vector<default_type> sh_values;
+  vector<default_type> sh_values;
   Eigen::Matrix<default_type, Eigen::Dynamic, 1> apsf_values;
 
   for (auto l1 = Loop ("converting fixel image to spherical harmonic image", in_index_image) (in_index_image, sh_image); l1; ++l1) {

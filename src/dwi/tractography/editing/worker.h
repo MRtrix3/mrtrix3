@@ -33,7 +33,7 @@ namespace MR {
 
 
         class Worker
-        {
+        { MEMALIGN(Worker)
 
           public:
             Worker (Tractography::Properties& p, const bool inv, const bool end) :
@@ -59,7 +59,7 @@ namespace MR {
             const bool inverse, ends_only;
 
             class Thresholds
-            {
+            { NOMEMALIGN
               public:
                 Thresholds (Tractography::Properties&);
                 Thresholds (const Thresholds&);
@@ -70,7 +70,7 @@ namespace MR {
                 float step_size;
             } thresholds;
 
-            mutable std::vector<bool> include_visited;
+            mutable vector<bool> include_visited;
 
         };
 

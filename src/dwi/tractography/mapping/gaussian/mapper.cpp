@@ -40,7 +40,7 @@ namespace MR {
           void TrackMapper::gaussian_smooth_factors (const Streamline<>& tck) const
           {
 
-            std::vector<default_type> unsmoothed (factors);
+            vector<default_type> unsmoothed (factors);
 
             for (size_t i = 0; i != unsmoothed.size(); ++i) {
 

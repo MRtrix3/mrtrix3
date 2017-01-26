@@ -231,7 +231,7 @@ namespace MR
 
           bool Affine::robust_estimate (
             Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient,
-            std::vector<Eigen::Matrix<default_type, Eigen::Dynamic, 1>>& grad_estimates,
+            vector<Eigen::Matrix<default_type, Eigen::Dynamic, 1>>& grad_estimates,
             const Eigen::Matrix<default_type, 4, 4>& control_points,
             const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& parameter_vector,
             const default_type& weiszfeld_precision = 1.0e-6,

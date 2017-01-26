@@ -81,7 +81,7 @@ namespace MR
        * The translation also should be initialised as image1 image centre minus the image2 image centre.
        *
        */
-      class Base  {
+      class Base  { MEMALIGN(Base)
         public:
 
           typedef default_type ParameterType;
@@ -94,7 +94,6 @@ namespace MR
               centre.setZero();
             }
 
-          EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
           template <class OutPointType, class InPointType>
           inline void transform (OutPointType& out, const InPointType& in) const {
@@ -226,7 +225,7 @@ namespace MR
 
           template <class ParamType, class VectorType>
           bool robust_estimate (VectorType& gradient,
-                                std::vector<VectorType>& grad_estimates,
+                                vector<VectorType>& grad_estimates,
                                 const ParamType& params,
                                 const VectorType& parameter_vector,
                                 const default_type& weiszfeld_precision,

@@ -20,7 +20,7 @@ namespace MR
 {
    namespace Math
    {
-      void matrix_average (std::vector<Eigen::MatrixXd> const &mat_in, Eigen::MatrixXd& mat_avg, bool verbose) {
+      void matrix_average (vector<Eigen::MatrixXd> const &mat_in, Eigen::MatrixXd& mat_avg, bool verbose) {
         const size_t rows = mat_in[0].rows();
         const size_t cols = mat_in[0].cols();
         const size_t N = mat_in.size();
@@ -94,11 +94,11 @@ namespace MR
   void compute_average_voxel2scanner (Eigen::Transform<default_type, 3, Eigen::Projective>& average_v2s_trafo,
                                       Eigen::VectorXd& average_space_extent,
                                       Eigen::MatrixXd& projected_voxel_sizes,
-                                      const std::vector<Header>& input_headers,
+                                      const vector<Header>& input_headers,
                                       const Eigen::Matrix<default_type, 4, 1>& padding,
-                                      const std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>>& transform_header_with) {
+                                      const vector<Eigen::Transform<default_type, 3, Eigen::Projective>>& transform_header_with) {
     const size_t num_images = input_headers.size();
-    std::vector<Eigen::MatrixXd> transformation_matrices;
+    vector<Eigen::MatrixXd> transformation_matrices;
     Eigen::MatrixXd bounding_box_corners = Eigen::MatrixXd::Zero (8 * num_images, 4);
     Eigen::MatrixXd voxel_diagonals = Eigen::MatrixXd::Ones(4, num_images);
     voxel_diagonals.row(3) = Eigen::VectorXd::Zero(num_images);
@@ -158,10 +158,10 @@ namespace MR
     projected_voxel_sizes.noalias() = (average_xyz.transpose() * voxel_diagonals).cwiseAbs();
   }
 
-  Header compute_minimum_average_header (const std::vector<Header>& input_headers,
+  Header compute_minimum_average_header (const vector<Header>& input_headers,
                                          int voxel_subsampling,
                                          const Eigen::Matrix<default_type, 4, 1>& padding,
-                                         const std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>>& transform_header_with) {
+                                         const vector<Eigen::Transform<default_type, 3, Eigen::Projective>>& transform_header_with) {
     Eigen::Transform<default_type, 3, Eigen::Projective> average_v2s_trafo;
     Eigen::VectorXd average_space_extent;
     Eigen::MatrixXd projected_voxel_sizes;

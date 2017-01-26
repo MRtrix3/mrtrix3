@@ -25,7 +25,7 @@ namespace MR
   {
 
     extern const transform_type NoTransform;
-    extern const std::vector<int> AutoOverSample;
+    extern const vector<int> AutoOverSample;
 
     //! \addtogroup interp
     // @{
@@ -70,16 +70,18 @@ namespace MR
      * \sa Interp::reslice()
      */
     template <template <class ImageType> class Interpolator, class ImageType>
-      class Reslice
-    {
+      class Reslice :
+        public ImageBase<Reslice<Interpolator,ImageType>,typename ImageType::value_type>
+    { MEMALIGN (Reslice<Interpolator, ImageType>)
       public:
+
         typedef typename ImageType::value_type value_type;
 
         template <class HeaderType>
           Reslice (const ImageType& original,
                    const HeaderType& reference,
                    const transform_type& transform = NoTransform,
-                   const std::vector<int>& oversample = AutoOverSample,
+                   const vector<int>& oversample = AutoOverSample,
                    const value_type value_when_out_of_bounds = Interp::Base<ImageType>::default_out_of_bounds_value()) :
             interp (original, value_when_out_of_bounds),
             x { 0, 0, 0 },
@@ -164,8 +166,7 @@ namespace MR
           return interp.value();
         }
 
-        ssize_t index (size_t axis) const { return axis < 3 ? x[axis] : interp.index(axis); }
-        auto index (size_t axis) -> decltype(Helper::index(*this, axis)) { return { *this, axis }; }
+        ssize_t get_index (size_t axis) const { return axis < 3 ? x[axis] : interp.index(axis); }
         void move_index (size_t axis, ssize_t increment) {
           if (axis < 3) x[axis] += increment;
           else interp.index(axis) += increment;

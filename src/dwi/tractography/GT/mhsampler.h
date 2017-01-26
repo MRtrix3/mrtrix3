@@ -36,7 +36,7 @@ namespace MR {
          * @brief The MHSampler class
          */
         class MHSampler
-        {
+        { MEMALIGN(MHSampler)
         public:
           MHSampler(const Image<float>& dwi, Properties &p, Stats &s, ParticleGrid &pgrid, 
                     EnergyComputer* e, Image<bool>& m)
@@ -76,7 +76,7 @@ namespace MR {
           EnergyComputer* E;      // Polymorphic copy requires call to EnergyComputer::clone(), hence references or smart pointers won't do.
           
           Transform T;
-          std::vector<size_t> dims;
+          vector<size_t> dims;
           Image<bool> mask;
           
           std::shared_ptr< SpatialLock<float> > lock;

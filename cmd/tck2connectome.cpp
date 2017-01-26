@@ -85,7 +85,7 @@ void run ()
 
   // First, find out how many segmented nodes there are, so the matrix can be pre-allocated
   // Also check for node volume for all nodes
-  std::vector<uint32_t> node_volumes (1, 0);
+  vector<uint32_t> node_volumes (1, 0);
   node_t max_node_index = 0;
   for (auto i = Loop (node_image) (node_image); i; ++i) {
     if (node_image.value() > max_node_index) {

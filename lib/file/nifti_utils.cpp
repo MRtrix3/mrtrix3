@@ -29,7 +29,7 @@ namespace MR
 
 
 
-      transform_type adjust_transform (const Header& H, std::vector<size_t>& axes)
+      transform_type adjust_transform (const Header& H, vector<size_t>& axes)
       {
         Stride::List strides = Stride::get (H);
         strides.resize (3);

@@ -26,7 +26,7 @@ namespace MR
     {
 
     class Cube
-    {
+    { MEMALIGN(Cube)
       public:
         Cube () : num_indices (0) { }
 

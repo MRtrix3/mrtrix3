@@ -98,7 +98,7 @@ void run ()
   while (reader (tck)) {
     SetVoxelDir dixels;
     mapper (tck, dixels);
-    std::vector<float> scalars (tck.size(), 0.0);
+    vector<float> scalars (tck.size(), 0.0);
     for (size_t p = 0; p < tck.size(); ++p) {
       voxel_pos = transform.scanner2voxel * tck[p].cast<default_type> ();
       for (SetVoxelDir::const_iterator d = dixels.begin(); d != dixels.end(); ++d) {
@@ -116,7 +116,7 @@ void run ()
 
           for (size_t fixel = 0; fixel < num_fixels_in_voxel; ++fixel) {
             in_directions_image.index(0) = offset + fixel;
-            float dp = std::abs (dir.dot (in_directions_image.row(1)));
+            float dp = std::abs (dir.dot (Eigen::Vector3f (in_directions_image.row(1))));
             if (dp > largest_dp) {
               largest_dp = dp;
               closest_fixel_index = fixel;

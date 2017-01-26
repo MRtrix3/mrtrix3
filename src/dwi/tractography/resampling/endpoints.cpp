@@ -22,9 +22,9 @@ namespace MR {
 
 
 
-        bool Endpoints::operator() (std::vector<Eigen::Vector3f>& tck) const
+        bool Endpoints::operator() (vector<Eigen::Vector3f>& tck) const
         {
-          std::vector<Eigen::Vector3f> output;
+          vector<Eigen::Vector3f> output;
           output.reserve (2);
           output.push_back (tck.front());
           output.push_back (tck.back());

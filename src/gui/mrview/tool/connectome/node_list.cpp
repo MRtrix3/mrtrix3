@@ -172,7 +172,7 @@ namespace MR
       void Node_list::clear_selection_slot()
       {
         node_list_view->clearSelection();
-        std::vector<node_t> empty_node_list;
+        vector<node_t> empty_node_list;
         connectome.node_selection_changed (empty_node_list);
       }
 
@@ -189,7 +189,7 @@ namespace MR
       void Node_list::node_selection_changed_slot (const QItemSelection&, const QItemSelection&)
       {
         QModelIndexList list = node_list_view->selectionModel()->selectedRows();
-        std::vector<node_t> nodes;
+        vector<node_t> nodes;
         for (int i = 0; i != list.size(); ++i)
           nodes.push_back (list[i].row());
         connectome.node_selection_changed (nodes);

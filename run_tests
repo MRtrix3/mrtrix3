@@ -69,13 +69,13 @@ for script in $tests; do
 EOD
 
   echo -n 'running "'${script}'"... '
-  rm -f testing/data/tmp*
+  rm -rf testing/data/tmp*
   ((ntests=0))
   ((success=0))
   while IFS='' read -r cmd || [[ -n "$cmd" ]]; do
     echo -n '# command: '$cmd >> $LOGFILE 
     (
-      export PATH="$(pwd)/testing/release/bin:$(pwd)/release/bin:$PATH"; 
+      export PATH="$(pwd)/testing/release/bin:$(pwd)/release/bin:$(pwd)/scripts:$PATH"; 
       cd testing/data/
       eval $cmd
     ) > .__tmp.log 2>&1 

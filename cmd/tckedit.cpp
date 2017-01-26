@@ -101,7 +101,7 @@ void run ()
   // Get the consensus streamline properties from among the multiple input files
   Tractography::Properties properties;
   size_t count = 0;
-  std::vector<std::string> input_file_list;
+  vector<std::string> input_file_list;
 
   for (size_t file_index = 0; file_index != num_inputs; ++file_index) {
 
@@ -110,9 +110,9 @@ void run ()
     Properties p;
     Reader<float> reader (argument[file_index], p);
 
-    for (std::vector<std::string>::const_iterator i = p.comments.begin(); i != p.comments.end(); ++i) {
+    for (vector<std::string>::const_iterator i = p.comments.begin(); i != p.comments.end(); ++i) {
       bool present = false;
-      for (std::vector<std::string>::const_iterator j = properties.comments.begin(); !present && j != properties.comments.end(); ++j)
+      for (vector<std::string>::const_iterator j = properties.comments.begin(); !present && j != properties.comments.end(); ++j)
         present = (*i == *j);
       if (!present)
         properties.comments.push_back (*i);

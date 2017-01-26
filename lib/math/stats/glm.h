@@ -99,8 +99,7 @@ namespace MR
       /** \addtogroup Statistics
       @{ */
       /*! A class to compute t-statistics using a General Linear Model. */
-      class GLMTTest
-      {
+      class GLMTTest { NOMEMALIGN
         public:
           /*!
           * @param measurements a matrix storing the measured data for each subject in a column //TODO
@@ -115,7 +114,7 @@ namespace MR
           * @param max_stat the maximum t-statistic
           * @param min_stat the minimum t-statistic
           */
-          void operator() (const std::vector<size_t>& perm_labelling, vector_type& stats) const;
+          void operator() (const vector<size_t>& perm_labelling, vector_type& stats) const;
 
           size_t num_subjects () const { return y.cols(); }
           size_t num_elements () const { return y.rows(); }

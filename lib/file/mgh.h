@@ -35,7 +35,7 @@ extern "C" {
              http://surfer.nmr.mgh.harvard.edu/fswiki/FsTutorial/MghFormat
    */
   /*************************/  /************************/
-  struct mgh_header {
+  struct mgh_header { NOMEMALIGN
     /*************************/  /************************/
 
     int32_t version;       /*!< MUST be 1             */
@@ -79,7 +79,7 @@ extern "C" {
 #define MGH_TYPE_FLOAT 3
 
 
-  struct mgh_other {
+  struct mgh_other { NOMEMALIGN
 
     float tr;         /*!< milliseconds */
     float flip_angle; /*!< radians */
@@ -87,7 +87,7 @@ extern "C" {
     float ti;         /*!< milliseconds */
     float fov;        /*!< IGNORE THIS FIELD (data is inconsistent) */
 
-    std::vector<std::string> tags; /*!< variable length char strings */
+    ::std::vector<std::string> tags; /*!< variable length char strings */
 
   };
 

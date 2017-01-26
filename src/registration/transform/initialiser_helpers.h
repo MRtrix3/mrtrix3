@@ -64,7 +64,7 @@ namespace MR
                           default_type& mu020,
                           default_type& mu002);
 
-        class FODInitialiser {
+        class FODInitialiser { MEMALIGN(FODInitialiser)
           public:
             FODInitialiser (Image<default_type>& image1,
                                 Image<default_type>& image2,
@@ -91,7 +91,6 @@ namespace MR
 
             void run ();
 
-            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3
 
           protected:
             void init (Image<default_type>& image,
@@ -110,7 +109,7 @@ namespace MR
             Eigen::Matrix<default_type, Eigen::Dynamic, 1> sh1, sh2;
         };
 
-        class MomentsInitialiser {
+        class MomentsInitialiser { MEMALIGN(MomentsInitialiser)
           public:
             MomentsInitialiser (Image<default_type>& image1,
                                 Image<default_type>& image2,
@@ -127,7 +126,6 @@ namespace MR
 
             void run ();
 
-            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3
 
           protected:
             bool calculate_eigenvectors (

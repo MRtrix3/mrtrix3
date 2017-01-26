@@ -34,9 +34,9 @@ namespace MR
 
     using namespace MR::DWI::Tractography::Tracking;
 
-    class iFOD1 : public MethodBase {
+    class iFOD1 : public MethodBase { MEMALIGN(iFOD1)
       public:
-      class Shared : public SharedBase {
+      class Shared : public SharedBase { MEMALIGN(Shared)
         public:
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
           SharedBase (diff_path, property_set),
@@ -224,7 +224,7 @@ namespace MR
       float calibrate_ratio;
       size_t mean_sample_num, num_sample_runs, num_truncations;
       float max_truncation;
-      std::vector< Eigen::Vector3f > calibrate_list;
+      vector< Eigen::Vector3f > calibrate_list;
 
       float FOD (const Eigen::Vector3f& d) const
       {
@@ -241,7 +241,7 @@ namespace MR
 
 
       class Calibrate
-      {
+      { MEMALIGN (Calibrate)
         public:
           Calibrate (iFOD1& method) :
             P (method),

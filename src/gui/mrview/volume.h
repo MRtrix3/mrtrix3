@@ -35,7 +35,7 @@ namespace MR
       class Window;
 
       class Volume : public Displayable
-      {
+      { MEMALIGN(Volume)
         public:
           Volume (MR::Header&& header) :
               Displayable (header.name()),

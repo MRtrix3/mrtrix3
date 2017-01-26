@@ -27,11 +27,11 @@ namespace MR {
 
 
         // Also handles resampling along a fixed line
-        class Arc : public Base {
+        class Arc : public Base { MEMALIGN(Arc)
             typedef float value_type;
             typedef Eigen::Vector3f point_type;
           private:
-            class Plane {
+            class Plane { MEMALIGN(Plane)
               public:
                 Plane (const point_type& pos, const point_type& dir) :
                     n (dir)
@@ -45,7 +45,7 @@ namespace MR {
                 value_type d;
             };
 
-            std::vector<Plane> planes;
+            vector<Plane> planes;
 
           public:
             Arc (const size_t n, const point_type& s, const point_type& e) :
@@ -70,9 +70,9 @@ namespace MR {
               init_arc (w);
             }
 
-            bool operator() (std::vector<Eigen::Vector3f>&) const override;
+            bool operator() (vector<Eigen::Vector3f>&) const override;
             bool valid() const override { return nsamples; }
-            bool limits (const std::vector<Eigen::Vector3f>&) override;
+            bool limits (const vector<Eigen::Vector3f>&) override;
 
           private:
             const size_t nsamples;

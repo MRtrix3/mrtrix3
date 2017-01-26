@@ -33,8 +33,7 @@ namespace MR
     typedef cdouble complex_type;
 
 
-    class Stats
-    {
+    class Stats { NOMEMALIGN
       public:
         Stats (const bool is_complex = false, const bool ignorezero = false) :
             mean (0.0, 0.0),
@@ -60,7 +59,7 @@ namespace MR
           }
         }
 
-        template <class Set> void print (Set& ima, const std::vector<std::string>& fields) {
+        template <class ImageType> void print (ImageType& ima, const vector<std::string>& fields) {
 
           if (count) {
             mean /= double (count);
@@ -121,7 +120,7 @@ namespace MR
         complex_type min, max;
         size_t count;
         const bool is_complex, ignore_zero;
-        std::vector<float> values;
+        vector<float> values;
     };
 
 

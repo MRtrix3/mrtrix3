@@ -53,15 +53,15 @@ void run ()
   if (argument.size() % 2)
     throw Exception ("The number of input arguments must be even. There must be an output file provided for every input tissue image");
 
-  std::vector<Image<float>> input_images;
-  std::vector<Header> output_headers;
-  std::vector<std::string> output_filenames;
+  vector<Image<float>> input_images;
+  vector<Header> output_headers;
+  vector<std::string> output_filenames;
 
-  std::vector<size_t> sh_image_indexes;
+  vector<size_t> sh_image_indexes;
   for (size_t i = 0; i < argument.size(); i += 2) {
     Header header = Header::open (argument[i]);
     if (header.ndim() == 4 && header.size(3) > 1) { // assume SH image to extract DC term
-      auto dc = Adapter::make<Adapter::Extract1D> (header.get_image<float>(), 3, std::vector<int> (1, 0));
+      auto dc = Adapter::make<Adapter::Extract1D> (header.get_image<float>(), 3, vector<int> (1, 0));
       input_images.emplace_back (Image<float>::scratch(dc));
       threaded_copy_with_progress_message ("loading image", dc, input_images[i / 2]);
       sh_image_indexes.push_back (i / 2);

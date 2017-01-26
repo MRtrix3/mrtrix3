@@ -39,7 +39,7 @@ namespace MR
 
       using namespace MR::DWI::Tractography::Tracking;
 
-        class ACT_Method_additions {
+        class ACT_Method_additions { MEMALIGN(ACT_Method_additions)
 
           public:
             ACT_Method_additions (const SharedBase& shared) :
@@ -51,7 +51,6 @@ namespace MR
             ACT_Method_additions (const ACT_Method_additions&) = delete;
             ACT_Method_additions() = delete;
 
-            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
             const Tissues& tissues() const { return tissue_values; }
 

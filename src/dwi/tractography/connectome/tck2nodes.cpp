@@ -75,7 +75,7 @@ node_t Tck2nodes_radial::select_node (const Tractography::Streamline<>& tck, Ima
   const Eigen::Vector3 v_float = transform->scanner2voxel * p;
   const voxel_type centre { int(std::round (v_float[0])), int(std::round (v_float[1])), int(std::round (v_float[2])) };
 
-  for (std::vector<voxel_type>::const_iterator offset = radial_search.begin(); offset != radial_search.end(); ++offset) {
+  for (vector<voxel_type>::const_iterator offset = radial_search.begin(); offset != radial_search.end(); ++offset) {
 
     const voxel_type this_voxel (centre + *offset);
     const Eigen::Vector3 p_voxel (transform->voxel2scanner * this_voxel.matrix().cast<default_type>());
@@ -229,7 +229,7 @@ default_type Tck2nodes_forwardsearch::get_cf (const Eigen::Vector3& p, const Eig
 
 
 
-void Tck2nodes_all_voxels::select_nodes (const Streamline<>& tck, Image<node_t>& v, std::vector<node_t>& out) const
+void Tck2nodes_all_voxels::select_nodes (const Streamline<>& tck, Image<node_t>& v, vector<node_t>& out) const
 {
   std::set<node_t> result;
   for (Streamline<>::const_iterator p = tck.begin(); p != tck.end(); ++p) {

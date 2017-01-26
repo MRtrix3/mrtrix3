@@ -190,20 +190,21 @@ void usage ()
 
 
 template<typename T>
-class __copy_fod {
+class __copy_fod { MEMALIGN(__copy_fod<T>)
   public:
     __copy_fod (const int lmax, const double weight, const bool apodise) 
-      : w(weight), a(apodise), apo (lmax), SH_out (Math::SH::NforL(lmax)) { }
+      : w(weight), a(apodise), apo (lmax), SH_in (Math::SH::NforL(lmax)), SH_out (SH_in.size()) { }
 
     void operator() (Image<T>& in, Image<T>& out) {
-      out.row(3) = w * (a ? Math::SH::sconv (SH_out, apo.RH_coefs(), in.row(3)) : in.row(3));
+      SH_in = in.row(3);
+      out.row(3) = w * (a ? Math::SH::sconv (SH_out, apo.RH_coefs(), SH_in) : SH_in);
     }
 
   private:
     T w;
     bool a;
     Math::SH::aPSF<T> apo;
-    Eigen::Matrix<T, Eigen::Dynamic, 1> SH_out;
+    Eigen::Matrix<T, Eigen::Dynamic, 1> SH_in, SH_out;
 
 };
 

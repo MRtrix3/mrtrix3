@@ -24,7 +24,6 @@
 
 using namespace MR;
 using namespace App;
-using namespace std;
 
 typedef float value_type;
 
@@ -60,7 +59,7 @@ void run()
 
   // Want to support non-shell-like data if it's just a straight extraction
   //   of all dwis or all bzeros i.e. don't initialise the Shells class
-  std::vector<int> volumes;
+  vector<int> volumes;
   bool bzero = get_options ("bzero").size();
   if (get_options ("shell").size() || get_options ("singleshell").size()) {
     DWI::Shells shells (grad);
@@ -95,7 +94,7 @@ void run()
     const auto filter = parse_floats (opt[0][0]);
     if (!(filter.size() == 3 || filter.size() == 4))
       throw Exception ("Phase encoding filter must be a comma-separated list of either 3 or 4 numbers");
-    std::vector<int> new_volumes;
+    vector<int> new_volumes;
     for (const auto i : volumes) {
       bool keep = true;
       for (size_t axis = 0; axis != 3; ++axis) {

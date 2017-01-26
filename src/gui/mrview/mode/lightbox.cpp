@@ -73,8 +73,8 @@ namespace MR
 
         inline void LightBox::update_layout()
         {
-          // Can't use std::vector resize() because Projection needs to be assignable
-          slices_proj_focusdelta = std::vector<proj_focusdelta>(
+          // Can't use vector resize() because Projection needs to be assignable
+          slices_proj_focusdelta = vector<proj_focusdelta>(
               n_cols * n_rows,
               proj_focusdelta(projection, 0.f));
           set_current_slice_index((n_rows * n_cols) / 2);

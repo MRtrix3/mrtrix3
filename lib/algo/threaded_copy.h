@@ -23,7 +23,7 @@ namespace MR
   //! \cond skip
   namespace {
 
-    struct __copy_func {
+    struct __copy_func { NOMEMALIGN
       template <class InputImageType, class OutputImageType>
         FORCE_INLINE void operator() (InputImageType& in, OutputImageType& out) const {
           out.value() = in.value();
@@ -41,7 +41,7 @@ namespace MR
     inline void threaded_copy (
         InputImageType& source, 
         OutputImageType& destination, 
-        const std::vector<size_t>& axes,
+        const vector<size_t>& axes,
         size_t num_axes_in_thread = 1) 
     {
       ThreadedLoop (source, axes, num_axes_in_thread)
@@ -68,7 +68,7 @@ namespace MR
         const std::string& message, 
         InputImageType& source, 
         OutputImageType& destination, 
-        const std::vector<size_t>& axes,
+        const vector<size_t>& axes,
         size_t num_axes_in_thread = 1)
     {
       ThreadedLoop (message, source, axes, num_axes_in_thread)
@@ -93,7 +93,7 @@ namespace MR
     inline void threaded_copy_with_progress (
         InputImageType& source,
         OutputImageType& destination, 
-        const std::vector<size_t>& axes, 
+        const vector<size_t>& axes, 
         size_t num_axes_in_thread = 1)
     {
       threaded_copy_with_progress_message ("copying from \"" + shorten (source.name()) + "\" to \"" + shorten (destination.name()) + "\"",

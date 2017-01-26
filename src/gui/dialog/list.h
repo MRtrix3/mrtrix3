@@ -25,7 +25,7 @@ namespace MR
     {
 
       class TreeItem
-      {
+      { NOMEMALIGN
         public:
           TreeItem (const std::string& key, const std::string& value, TreeItem* parent = 0) {
             parentItem = parent;
@@ -66,7 +66,7 @@ namespace MR
 
 
       class TreeModel : public QAbstractItemModel
-      {
+      { NOMEMALIGN
         public:
           TreeModel (QObject* parent) : QAbstractItemModel (parent) {
             rootItem = new TreeItem ("Parameter", "Value");

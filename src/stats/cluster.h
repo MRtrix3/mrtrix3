@@ -37,7 +37,7 @@ namespace MR
 
       /** \addtogroup Statistics
       @{ */
-      class ClusterSize : public Stats::TFCE::EnhancerBase {
+      class ClusterSize : public Stats::TFCE::EnhancerBase { MEMALIGN (ClusterSize)
         public:
           ClusterSize (const Filter::Connector& connector, const value_type T) :
                        connector (connector), threshold (T) { }

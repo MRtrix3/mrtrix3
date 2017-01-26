@@ -74,7 +74,7 @@ namespace MR {
           Particle* par;
           Particle* nextpar;
           int alpha = 0;
-          std::vector<Point_t> track;
+          vector<Point_t> track;
           // Loop through all unvisited particles
           for (ParticleVectorType& gridvox : grid)
           {

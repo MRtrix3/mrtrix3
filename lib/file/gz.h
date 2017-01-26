@@ -33,8 +33,7 @@ namespace MR
   namespace File
   {
 
-    class GZ
-    {
+    class GZ { NOMEMALIGN
       public:
         GZ () : gz (NULL) { }
         GZ (const std::string& fname, const char* mode) : gz (NULL) {
