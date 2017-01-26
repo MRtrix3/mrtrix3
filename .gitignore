@@ -18,8 +18,7 @@
 *.qrc
 *.rste
 config
-*.build
-*.build.active
+build.*
 /configure.log
 /build.log
 /test/build.log
