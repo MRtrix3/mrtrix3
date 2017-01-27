@@ -152,13 +152,11 @@ def makeTempDir():
   if args.tempdir:
     dir_path = os.path.abspath(args.tempdir)
   else:
-    dir_path = readMRtrixConfSetting('TmpFileDir')
+    dir_path = readMRtrixConfSetting('ScriptTmpDir')
     if not dir_path:
-      if os.name == 'posix':
-        dir_path = '/tmp'
-      else:
-        dir_path = workingDir
-  prefix = readMRtrixConfSetting('TmpFilePrefix')
+      # Defaulting to working directory since too many users have encountered storage issues
+      dir_path = workingDir
+  prefix = readMRtrixConfSetting('ScriptTmpPrefix')
   if not prefix:
     prefix = os.path.basename(sys.argv[0]) + '-tmp-'
   tempDir = dir_path

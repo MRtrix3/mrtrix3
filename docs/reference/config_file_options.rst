@@ -359,6 +359,16 @@ List of MRtrix3 configuration file options
 
      The default colour to use for objects (i.e. SH glyphs) when not colouring by direction.
 
+*  **ScriptTmpDir**
+    *default: `.`*
+
+     The location in which to generate the temporary directories to be used by MRtrix Python scripts. By default they will be generated in the working directory.
+
+*  **ScriptTmpPrefix**
+    *default: `<script>-tmp-`*
+
+     The prefix to use when generating a unique name for a Python script temporary directory. By default the name of the invoked script itself will be used, followed by `-tmp-` (six random characters are then appended to produce a unique name in cases where a script may be run multiple times in parallel).
+
 *  **SparseDataInitialSize**
     *default: 16777216*
 
