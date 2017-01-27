@@ -461,13 +461,13 @@ namespace MR
           options
             + OptionGroup ("Screen Capture tool options")
 
-            + Option ("capture.folder", "Set the output folder for the screen capture tool.")
+            + Option ("capture.folder", "Set the output folder for the screen capture tool.").allow_multiple()
             +   Argument ("path").type_text()
 
-            + Option ("capture.prefix", "Set the output file prefix for the screen capture tool.")
+            + Option ("capture.prefix", "Set the output file prefix for the screen capture tool.").allow_multiple()
             +   Argument ("string").type_text()
 
-            + Option ("capture.grab", "Start the screen capture process.");
+            + Option ("capture.grab", "Start the screen capture process.").allow_multiple();
         }
 
         bool Capture::process_commandline_option (const MR::App::ParsedOption& opt) 

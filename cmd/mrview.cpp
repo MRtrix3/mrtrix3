@@ -63,27 +63,6 @@ void run ()
 {
   GUI::MRView::Window window;
   window.show();
-  qApp->processEvents();
-
-  if (MR::App::get_options ("norealign").size())
-    Header::do_not_realign_transform = true;
-
-  if (argument.size()) {
-    vector<std::unique_ptr<MR::Header>> list;
-
-    for (size_t n = 0; n < argument.size(); ++n) {
-      try {
-        list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (argument[n]))));
-      }
-      catch (Exception& e) {
-        e.display();
-      }
-    }
-
-    if (list.size())
-      window.add_images (list);
-  }
-
   window.process_commandline_options();
 
   if (qApp->exec())

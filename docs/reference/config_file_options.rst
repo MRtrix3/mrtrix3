@@ -5,7 +5,7 @@ List of MRtrix3 configuration file options
 ################
 
 *  **AmbientIntensity**
-    *default: 0.6*
+    **
 
      The default intensity for the ambient light in OpenGL renders.
 
@@ -25,7 +25,7 @@ List of MRtrix3 configuration file options
      Specifies the b-value threshold for determining those image volumes that correspond to b=0.
 
 *  **BackgroundColor**
-    *default: 1,1,1 (white)*
+    **
 
      The default colour to use for the background in OpenGL panels, notably the SH viewer.
 
@@ -170,7 +170,7 @@ List of MRtrix3 configuration file options
      Whether or not nodes are forced to be visible when selected.
 
 *  **DiffuseIntensity**
-    *default: 0.3*
+    **
 
      The default intensity for the diffuse light in OpenGL renders.
 
@@ -205,7 +205,7 @@ List of MRtrix3 configuration file options
      The starting position of the MRView toolbar. Valid values are: top, bottom, left, right.
 
 *  **LightPosition**
-    *default: 1,1,3*
+    **
 
      The default position vector to use for the light in OpenGL renders.
 
@@ -359,18 +359,28 @@ List of MRtrix3 configuration file options
 
      The default colour to use for objects (i.e. SH glyphs) when not colouring by direction.
 
+*  **ScriptTmpDir**
+    *default: `.`*
+
+     The location in which to generate the temporary directories to be used by MRtrix Python scripts. By default they will be generated in the working directory.
+
+*  **ScriptTmpPrefix**
+    *default: `<script>-tmp-`*
+
+     The prefix to use when generating a unique name for a Python script temporary directory. By default the name of the invoked script itself will be used, followed by `-tmp-` (six random characters are then appended to produce a unique name in cases where a script may be run multiple times in parallel).
+
 *  **SparseDataInitialSize**
     *default: 16777216*
 
      Initial buffer size for data in MRtrix sparse image format file (in bytes).
 
 *  **SpecularExponent**
-    *default: 1*
+    **
 
      The default exponent for the specular light in OpenGL renders.
 
 *  **SpecularIntensity**
-    *default: 0.4*
+    **
 
      The default intensity for the specular light in OpenGL renders.
 
