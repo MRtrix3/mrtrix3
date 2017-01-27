@@ -21,13 +21,11 @@ config
 build.*
 /configure.log
 /build.log
-/test/build.log
 /core/version.cpp
 /src/project_version.h
 /test/src/project_version.h
 /scripts/mrtrix_bash_completion
 /release/
-/test/bin/
 /dev/
 /bin/
 /tmp/
@@ -46,7 +44,6 @@ build.*
 /assert/
 testing.log
 testing/build.log
-testing/release/
+testing/bin/
 testing/src/project_version.h
-testing/build
 .__tmp.log

@@ -427,7 +427,7 @@ if 'clean' in targets:
         print ('delete file:', fname)
         os.remove (fname)
       for name in dirs:
-        print ('delete folder:', name)
+        print ('delete folder:', os.path.join (root, name))
         os.rmdir (os.path.join(root, name))
     print ('delete folder:', root)
     os.rmdir (root)
