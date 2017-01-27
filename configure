@@ -1,5 +1,133 @@
 #!/usr/bin/env python
 
+usage_string = '''
+USAGE
+
+    [ENV] ./configure [name] [-debug] [-assert] [-profile] [-nogui] [-noshared]
+
+
+DESCRIPTION
+
+    In most cases, a simple invocation should work:
+
+       $ ./configure
+
+    This creates a 'config' file containing the parameters of the buid (PATH,
+    compiler flags, etc.). A number of options are provided to modify the build
+    for debugging and other purposes (see OPTIONS below). For example:
+
+      $ ./configure -debug -assert
+
+    will generate a config file with debugging symbols and assertions enabled.
+    Other parameters are controlled by setting environment variables (see
+    ENVIRONMENT VARIABLES below). For example:
+
+      $ ARCH=x86-84 ./configure 
+
+    will produce a config file to run on a generic AMD64 CPU.
+
+OPTIONS
+
+    -debug       enable debugging symbols.
+
+    -assert      enable all assert() and related checks.
+
+    -profile     enable profiling.
+
+    -nogui       disable GUI components.
+
+    -noshared    disable shared library generation.
+
+    -static      produce statically-linked executables.
+
+    -verbose     enable more informative output.
+
+    -dev         enable the extended development build process
+
+    -R           used to generate an R module (implies -noshared)
+
+
+ENVIRONMENT VARIABLES
+
+    For non-standard setups, you may need to supply additional information
+    using environment variables. For example, to set the compiler, use:
+   
+      $ CXX=/usr/local/bin/g++-5.5 ./configure
+
+    Alternatively:
+
+      $ export CXX=/usr/local/bin/g++-5.5
+      $ ./configure
+
+    Multiple environment variables can be set this way as needed.  
+    The following environment variables are available:
+
+    CXX
+        The compiler command to use. The default is "clang++", falling back to
+        "g++" if not found. 
+
+    CXX_ARGS
+        The arguments expected by the compiler. The default is: 
+            "-c CFLAGS SRC -o OBJECT"
+
+    LD
+        The linker command to use. The default is the same as CXX.
+
+    LD_ARGS
+        The arguments expected by the linker. The default is:
+            "LDFLAGS OBJECTS -o EXECUTABLE"
+
+    LDLIB_ARGS
+        The arguments expected by the linker for generating a shared library.
+        The default is:
+             "-shared LDLIB_FLAGS OBJECTS -o LIB"
+
+    ARCH
+        the specific CPU architecture to compile for. This variable will be
+        passed to the compiler using -march=$ARCH. If set to an empty string,
+        no -march flag will be passed to the compiler.  The default is
+        'native'.
+
+    CFLAGS
+        Any additional flags to the compiler.
+
+    LDFLAGS 
+        Any additional flags to the linker.
+
+    LDLIB_FLAGS
+        Any additional flags to the linker to generate a shared library.
+
+    EIGEN_CFLAGS
+        Any flags required to compile with Eigen3. This may include in
+        particular the path to the include files, if not in a standard location
+        For example:
+            $ EIGEN_CFLAGS="-isystem /usr/local/include/eigen3" ./configure
+
+    ZLIB_CFLAGS
+        Any flags required to compile with the zlib compression library.
+
+    ZLIB_LDFLAGS
+        Any flags required to link with the zlib compression library.
+
+    QMAKE
+        The command to invoke Qt's qmake (default: qmake). 
+
+    MOC
+        The command to invoke Qt's meta-object compile (default: moc)
+
+    RCC
+        The command to invoke Qt's resource compiler (default: rcc)
+
+    PATH
+        Set the path to use during the configure process. This may be useful
+        to set the path to Qt's qmake. For example:
+            $ PATH=/usr/local/bin:$PATH ./configure
+
+        Note that this path will be stored in the config file and used during
+        subsequent invocations of the build process. It only needs to be
+        specified correctly at configure time.
+'''
+
 import subprocess, sys, os, platform, tempfile, shutil, shlex, re, copy
 
 
@@ -31,129 +159,7 @@ for arg in sys.argv[1:]:
     #noshared = True
     nogui = True
   else:
-    print ("""
-usage: [ENV] ./configure [name] [-debug] [-assert] [-profile] [-nogui] [-noshared]
-
-In most cases, a simple invocation should work:
-
-   $ ./configure
-
-By default, this creates a target folder named 'release', and a 'config' file
-within that folder. All intermediate files will be placed within the target
-folder to avoid conflict with any other configurations. If a name is provided,
-the configuration will be written to a different folder, which can then be used
-by the build script. For example:
-
-   $ ./configure testing -debug -assert
-
-will generate the folder 'testing' and a config file with debugging symbols and
-assertions enabled, which can be used with the build script as follows:
-
-   $ ./build testing
-
-By default, the build script will compile the 'release' folder.
-
-Note that naming a target folder does *not* set any compiler flags. These are
-modified by command-line options or environment variables. It is perfectly
-valid to use non-standard options with a default ('release') target folder, or
-standard options in a named target folder. For instance:
-
-   $ ARCH=x86-84 ./configure -noshared
-
-will produce a 'release' (the default name) target folder with non-default
-compiler options, while:
-
-   $ ./configure normal
-
-will produce a target folder named 'normal' using default compiler settings.
-
-
-OPTIONS:
-
-    -debug       enable debugging symbols.
-
-    -assert      enable all assert() and related checks.
-
-    -profile     enable profiling.
-
-    -nogui       disable GUI components.
-
-    -noshared    disable shared library generation.
-
-    -R           used to generate an R module (implies -noshared)
-
-    -static      produce statically-linked executables.
-
-    -verbose     enable more informative output.
-
-    -dev         enable the extended development build process
-
-
-ENVIRONMENT VARIABLES:
-
-For non-standard setups, you may need to supply additional
-information using environment variables. For example, to set
-the compiler, use:
-   $ CXX=/usr/local/bin/g++-5.5 ./configure
-
-Alternatively:
-   $ export CXX=/usr/local/bin/g++-5.5
-   $ ./configure
-
-Multiple environment variables can be set this way as needed. 
-The following environment variables are available:
-
-CXX             The compiler command to use. The default is "clang++", falling
-                back to "g++" if not found. 
-
-CXX_ARGS        The arguments expected by the compiler. The default is:
-                "-c CFLAGS SRC -o OBJECT"
-
-LD              The linker command to use. The default is the same as CXX.
-
-LD_ARGS         The arguments expected by the linker. The default is:
-                "LDFLAGS OBJECTS -o EXECUTABLE"
-
-LDLIB_ARGS      The arguments expected by the linker for generating a shared library.
-                The default is:
-                "-shared LDLIB_FLAGS OBJECTS -o LIB"
-
-ARCH            the specific CPU architecture to compile for. This variable
-                will be passed to the compiler using -march=$ARCH. If set to
-                an empty string, no -march flag will be passed to the compiler.
-                The default is 'native'.
-
-CFLAGS          Any additional flags to the compiler.
-
-LDFLAGS         Any additional flags to the linker.
-
-LDLIB_FLAGS     Any additional flags to the linker to generate a shared library.
-
-EIGEN_CFLAGS    Any flags required to compile with Eigen3.
-                This may include in particular the path to the
-                include files, if not in a standard location
-                For example:
-                $ EIGEN_CFLAGS="-isystem /usr/local/include/eigen3" ./configure
-
-ZLIB_CFLAGS     Any flags required to compile with the zlib compression library.
-
-ZLIB_LDFLAGS    Any flags required to link with the zlib compression library.
-
-QMAKE           The command to invoke Qt's qmake (default: qmake). 
-
-MOC             The command to invoke Qt's meta-object compile (default: moc)
-
-RCC             The command to invoke Qt's resource compiler (default: rcc)
-
-PATH            Set the path to use during the configure process.
-                This may be useful to set the path to Qt's qmake.
-                For example:
-                $ PATH=/usr/local/bin:$PATH ./configure
-
-                Note that this path will be stored in the config file and used
-                during subsequent invocations of the build process. It only
-                needs to be specified correctly at configure time.
-""")
+    print (usage_string)
     sys.exit (1)
 
 

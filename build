@@ -1,11 +1,83 @@
 #!/usr/bin/env python
 
-import platform, sys, os, time, threading, subprocess, copy, codecs, glob, atexit, tempfile
+usage_string = '''
+USAGE
+
+    ./build [-verbose] [-showdep[=target|all]] [target ...]
+
+DESCRIPTION
+
+    This script will compile and link the MRtrix3 source tree. It relies on the
+    configuration file produced by ./configure - please ensure you have run
+    this first.
+
+    In most cases, a simple invocation is all that is required:
+
+      $ ./build
+
+    If no targets are provided, the command will default to building all
+    applications by scanning through the cmd/ folder. 
+
+    The target executables will be located in the bin/ folder, and the shared
+    library (if requested - the default) will be located in the lib/ folder (or
+    in bin/ on Windows). All intermediate temporary files will be located
+    within the tmp/ folder.
+
+SPECIAL TARGETS
+
+    clean 
+       used to remove all compiler-generated files, including objects,
+       executables, and shared libraries. 
+  
+    bash
+       used to update the bash completion script. Note that automatic updating
+       of this script can be enabled at the configure stage, by running
+       './configure -dev' prior to invoking './build'.
+  
+    doc
+       used to update the command documentation, so that any modifications to
+       the inline documentation in commands can be propagated through to the
+       user documentation site.
+  
+    select name
+       used to switch between configs / builds. This stores the current config
+       and all compiler-generated files in a folder (called "build.oldname"),
+       and restores the config in "build.name". If the named config does not
+       already exist, an empty one is created. If "name" is not given the
+       currently active config name is reported.
+
+PARALLELISED BUILD
+
+    By default, 'build' will use all available cores to run a parallel build.
+    In some instances, this can cause problems (notably out of RAM errors). You
+    can control how many jobs 'build' will run concurrently using the
+    NUMBER_OF_PROCESSORS environment variable. For example:
+
+      $ NUMBER_OF_PROCESSORS=1 ./build
+
+OPTIONS 
+
+    -verbose
+       print each command as it is being invoked
+
+    -nowarnings
+       do not print out non-fatal compiler messages (warnings, etc)
+
+    -showdep[=target|all]
+       print the list of dependencies for every target (with -showdep=target;
+       the default) or for all files
+
+    -tree
+       [only used with -showdep] print full dependency tree for each file
+'''
+
 
 
 ############################################################################
 #                          COMMON DEFINITIONS                              #
 ############################################################################
+
+import platform, sys, os, time, threading, subprocess, copy, codecs, glob, atexit, tempfile
 
 global todo, headers, object_deps, file_flags, lock, print_lock, stop, main_cindex
 global include_paths
@@ -202,77 +274,7 @@ bash_completion = False
 
 for arg in sys.argv[1:]:
   if '-help'.startswith (arg):
-    print ('''
-USAGE
-
-    ./build [-verbose] [-showdep[=target|all]] [target ...]
-
-DESCRIPTION
-
-    This script will compile and link the MRtrix3 source tree. It relies on the
-    configuration file produced by ./configure - please ensure you have run
-    this first.
-
-    In most cases, a simple invocation is all that is required:
-
-      $ ./build
-
-    If no targets are provided, the command will default to building all
-    applications by scanning through the cmd/ folder. 
-
-    The target executables will be located in the ''' + bin_dir + '''/ folder, and the 
-    shared library (if requested - the default) will be located in the
-    lib/ folder (or in ''' + bin_dir + '''/ on Windows). All intermediate temporary files 
-    will be located within the ''' + tmp_dir + '''/ folder.
-
-SPECIAL TARGETS
-
-    clean 
-       used to remove all compiler-generated files, including objects,
-       executables, and shared libraries. 
-  
-    bash
-       used to update the bash completion script. Note that automatic updating
-       of this script can be enabled at the configure stage, by running
-       './configure -dev' prior to invoking './build'.
-  
-    doc
-       used to update the command documentation, so that any modifications to
-       the inline documentation in commands can be propagated through to the
-       user documentation site.
-  
-    select name
-       used to switch between configs / builds. This stores the current config
-       and all compiler-generated files in a folder (called "build.oldname"),
-       and restores the config in "build.name". If the named config does not
-       already exist, an empty one is created. If "name" is not given the
-       currently active config name is reported.
-
-PARALLELISED BUILD
-
-    By default, 'build' will use all available cores to run a parallel build.
-    In some instances, this can cause problems (notably out of RAM errors). You
-    can control how many jobs 'build' will run concurrently using the
-    NUMBER_OF_PROCESSORS environment variable. For example:
-
-      $ NUMBER_OF_PROCESSORS=1 ./build
-
-
-OPTIONS 
-
-    -verbose
-       print each command as it is being invoked
-
-    -nowarnings
-       do not print out non-fatal compiler messages (warnings, etc)
-
-    -showdep[=target|all]
-       print the list of dependencies for every target (with -showdep=target;
-       the default) or for all files
-
-    -tree
-       [only used with -showdep] print full dependency tree for each file
-''')
+    print (usage_string)
     exit (0)
   elif '-verbose'.startswith(arg): 
     verbose = True
@@ -1081,7 +1083,7 @@ if len(targets) == 0:
 
 
 # get git version info:
-update_git_version (mrtrix_dir[-1], os.path.join (mrtrix_dir[-1], lib_dir, 'version.cpp'), '''
+update_git_version (mrtrix_dir[-1], os.path.join (lib_dir, 'version.cpp'), '''
 namespace MR { 
   namespace App { 
     const char* mrtrix_version = "%%%";
