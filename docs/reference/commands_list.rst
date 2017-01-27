@@ -191,6 +191,8 @@ List of MRtrix3 commands
 
    commands/tensor2metric
 
+   commands/test_row_method
+
    commands/transformcalc
 
    commands/transformconvert
