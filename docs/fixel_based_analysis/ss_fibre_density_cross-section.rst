@@ -175,7 +175,7 @@ Recompute the fixel mask using the analysis voxel mask. Using the mask allows us
  
     fod2fixel -mask ../template/voxel_mask.mif -fmls_peak_value 0.2 ../template/fod_template.mif ../template/fixel_mask
 
-.. NOTE:: We recommend having no more than 500,000 fixels in the analysis fixel mask (you can check this by :code:`mrinfo -size ../template/fixel/mask.mif`, and looking at the size of the image along the 1st dimension), otherwise downstream statistical analysis (using :ref:`fixelcfestats`) will run out of RAM). A mask with 500,000 fixels will require a PC with 128GB of RAM for the statistical analysis step.
+.. NOTE:: We recommend having no more than 500,000 fixels in the analysis fixel mask (you can check this by :code:`mrinfo -size ../template/fixel/mask.mif`, and looking at the size of the image along the 1st dimension), otherwise downstream statistical analysis (using :ref:`fixelcfestats`) will run out of RAM). A mask with 500,000 fixels will require a PC with 128GB of RAM for the statistical analysis step. To reduce the number of fixels, try changing the thresholds in this step, or reduce the extent of upsampling in step 7.
 
 14. Warp FOD images to template space
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

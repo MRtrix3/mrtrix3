@@ -111,15 +111,20 @@ Register the FOD image from all subjects to the FOD template image. Note you can
 .. include:: common_fba_steps/mask_intersection.rst
 
 
-11. Compute a white matter template analysis fixel mask
+11. Compute a white matter analysis voxel & fixel mask
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Next we identify all fixels of interest to be analysed from the FOD template image (see `here <http://www.ncbi.nlm.nih.gov/pubmed/26004503>`_ for more information about a fixel analysis mask). Note that the fixel image output from this step is stored using the :ref:`fixel_format`, which exploits the filesystem to store all fixel data in a directory::
+Here we first identify all voxels having some white matter by thresholding the DC term (first SH coefficient) of the multi-tissue FOD image::
 
-    mrconvert ../template/fod_template.mif -coord 3 0 - | mrthreshold - - | fod2fixel ../template/fod_template.mif -mask - ../template/fixel_template
+    mrconvert ../template/fod_template.mif -coord 3 0 - | mrthreshold - ../template/voxel_mask.mif
 
-You can visualise the output fixels using the fixel plot tool from :ref:`mrview`, and opening either the :code:`index.mif` or :code:`directions.mif` found in :code:`../template/fixel_template`. The automatic thresholding step used above should give you a mask that nicely covers all of white matter, however if not you can always try manually adjusting the threshold with the :code:`mrthreshold -abs` option.
+Next we segment all fixels from each FOD in the template image (see `here <http://www.ncbi.nlm.nih.gov/pubmed/26004503>`_ for more information about a analysis fixel mask). Note that the fixel image output from this step is stored using the :ref:`fixel_format`, which exploits the filesystem to store all fixel data in a directory::
 
-.. NOTE:: We recommend having no more than 500,000 fixels in the analysis_fixel_mask (you can check this by :code:`mrinfo -size ../template/fixel_template/directions.mif`, and looking at the size of the image along the 1st dimension), otherwise downstream statistical analysis (using :ref:`fixelcfestats`) will run out of RAM). A mask with 500,000 fixels will require a PC with 128GB of RAM for the statistical analysis step. To reduce RAM requirements, you could reduce the number of fixels by not upsamplng your data at step 4 (or upsample it less), or apply a higher threshold when  performing this step (using :code:`-abs`), at the risk of removing some WM voxels from your analysis.
+
+   fod2fixel -mask ../template/voxel_mask.mif -fmls_peak_value 0.2 ../template/fod_template.mif ../template/fixel_mask
+
+You can visualise the output fixels using the fixel plot tool from :ref:`mrview`, and opening either the :code:`index.mif` or :code:`directions.mif` found in :code:`../template/fixel_mask`. The automatic thresholding step used above should give you a mask that nicely covers all of white matter, however if not you can always try manually adjusting the threshold with the :code:`mrthreshold -abs` option.
+
+.. NOTE:: We recommend having no more than 500,000 fixels in the analysis_fixel_mask (you can check this by :code:`mrinfo -size ../template/fixel_mask/directions.mif`, and looking at the size of the image along the 1st dimension), otherwise downstream statistical analysis (using :ref:`fixelcfestats`) will run out of RAM). A mask with 500,000 fixels will require a PC with 128GB of RAM for the statistical analysis step. To reduce the number of fixels, try either reducing the number of voxels in the voxel mask by applying a manual threshold using :code:`-abs`, reducing the :code:`-fmls_peak_value`, or reducing the extent of upsampling in step 4.
 
 12. Warp FOD images to template space
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -144,7 +149,7 @@ Note that here we warp FOD images into template space *without* FOD reorientatio
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 In step 8 & 9 we obtained spatial correspondence between subject and template. In step 14 we corrected the fixel orientations to ensure angular correspondence of the segmented peaks of subject and template. Here, for each fixel in the template fixel analysis mask, we identify the corresponding fixel in each voxel of the subject image and assign the FD value of the subject fixel to the corresponding fixel in template space. If no fixel exists in the subject that corresponds to the template fixel then it is assigned a value of zero. See `this paper <http://www.ncbi.nlm.nih.gov/pubmed/26004503>`_ for more information. In the command below, you will note that the output fixel directory is the same for all subjects. This directory now stores data for all subjects at corresponding fixels, ready for input to :code:`fixelcfestats` in step 20 below::
 
-    foreach * : fixelcorrespondence IN/fixel_in_template_space/fd.mif ../template/fixel_template ../template/fd PRE.mif
+    foreach * : fixelcorrespondence IN/fixel_in_template_space/fd.mif ../template/fixel_mask ../template/fd PRE.mif
 
 16. Compute fibre cross-section (FC) metric
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
