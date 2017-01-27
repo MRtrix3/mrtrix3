@@ -1910,7 +1910,7 @@ namespace MR
 
             }
             else {
-              std::vector<std::unique_ptr<MR::Header>> list;
+              vector<std::unique_ptr<MR::Header>> list;
               try { list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (MR::App::argv[arg])))); }
               catch (Exception& e) { e.display(); }
               add_images (list);

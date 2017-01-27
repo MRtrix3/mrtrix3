@@ -273,7 +273,7 @@ namespace MR
         typedef ValueType value_type;
 
       TmpImage (const typename Image<ValueType>::Buffer& b, void* const data, 
-          std::vector<ssize_t> x, const Stride::List& strides, size_t offset) :
+          vector<ssize_t> x, const Stride::List& strides, size_t offset) :
         b (b), data (data), x (x), strides (strides), offset (offset) { }
 
         const typename Image<ValueType>::Buffer& b;
