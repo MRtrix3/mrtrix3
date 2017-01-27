@@ -1,23 +1,24 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __header_h__
 #define __header_h__
 
 #include <map>
+#include <functional>
 
+#include "app.h"
 #include "debug.h"
 #include "types.h"
 #include "memory.h"
@@ -31,6 +32,8 @@
 namespace MR
 {
 
+  extern const App::Option NoRealignOption;
+
   /*! \defgroup ImageAPI Image access
    * \brief Classes and functions providing access to image data. 
    *
@@ -42,10 +45,17 @@ namespace MR
 
   template <typename ValueType> class Image;
 
-  class Header 
-  {
+  class Header { MEMALIGN (Header)
     public:
-      class Axis;
+
+      //! a class to hold attributes about each axis
+      class Axis { NOMEMALIGN
+        public:
+          Axis () noexcept : size (1), spacing (std::numeric_limits<default_type>::quiet_NaN()), stride (0) { }
+          ssize_t size;
+          default_type spacing;
+          ssize_t stride;
+      };
 
       Header () :
         transform_ (Eigen::Matrix<default_type,3,4>::Constant (NaN)),
@@ -116,7 +126,6 @@ namespace MR
             }
           }
 
-      EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
       //! assignment operator
       /*! This copies everything over, resets the intensity scaling if the data
@@ -187,9 +196,9 @@ namespace MR
       //! get/set the 4x4 affine transformation matrix mapping image to world coordinates
       transform_type& transform () { return transform_; }
 
-      class NDimProxy {
+      class NDimProxy { NOMEMALIGN
         public:
-          NDimProxy (std::vector<Axis>& axes) : axes (axes) { }
+          NDimProxy (vector<Axis>& axes) : axes (axes) { }
           NDimProxy (NDimProxy&&) = default;
           NDimProxy (const NDimProxy&) = delete;
           NDimProxy& operator=(NDimProxy&&) = default;
@@ -202,7 +211,7 @@ namespace MR
             return stream;
           }
         private:
-          std::vector<Axis>& axes; 
+          vector<Axis>& axes; 
       };
 
       //! return the number of dimensions (axes) of image
@@ -225,7 +234,7 @@ namespace MR
       //! get/set the stride between adjacent voxels along axis
       ssize_t& stride (size_t axis);
 
-      class DataTypeProxy : public DataType {
+      class DataTypeProxy : public DataType { NOMEMALIGN
         public:
           DataTypeProxy (Header& H) : DataType (H.datatype_), H (H) { }
           DataTypeProxy (DataTypeProxy&&) = default;
@@ -331,7 +340,7 @@ namespace MR
       friend std::ostream& operator<< (std::ostream& stream, const Header& H);
 
     protected:
-      std::vector<Axis> axes_; 
+      vector<Axis> axes_; 
       transform_type transform_; 
       std::string name_;
       std::map<std::string, std::string> keyval_;
@@ -359,19 +368,12 @@ namespace MR
       }
   };
 
+  CHECK_MEM_ALIGN (Header);
 
 
 
 
 
-  //! a class to hold attributes about each axis
-  class Header::Axis {
-    public:
-      Axis () noexcept : size (1), spacing (std::numeric_limits<default_type>::quiet_NaN()), stride (0) { }
-      ssize_t size;
-      default_type spacing;
-      ssize_t stride;
-  };
 
 
 

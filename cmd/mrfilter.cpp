@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 
 #include <complex>
@@ -168,7 +167,7 @@ void run () {
       auto input = Image<float>::open (argument[0]);
       Filter::Gradient filter (input, get_options ("magnitude").size());
 
-      std::vector<default_type> stdev;
+      vector<default_type> stdev;
       auto opt = get_options ("stdev");
       if (opt.size()) {
         stdev = parse_floats (opt[0][0]);
@@ -222,7 +221,7 @@ void run () {
       if (opt.size()) {
         if (stdev_supplied)
           throw Exception ("the stdev and FWHM options are mutually exclusive.");
-        std::vector<default_type> stdevs = parse_floats((opt[0][0]));
+        vector<default_type> stdevs = parse_floats((opt[0][0]));
         for (size_t d = 0; d < stdevs.size(); ++d)
           stdevs[d] = stdevs[d] / 2.3548;  //convert FWHM to stdev
         filter.set_stdev (stdevs);
@@ -234,7 +233,8 @@ void run () {
       Stride::set_from_command_line (filter);
 
       auto output = Image<float>::create (argument[2], filter);
-      filter (input, output);
+      threaded_copy (input, output);
+      filter (output);
       break;
     }
 

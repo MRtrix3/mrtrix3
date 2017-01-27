@@ -75,6 +75,11 @@ Debugging options
 
 -  **-fps** Display frames per second, averaged over the last 10 frames. The maximum over the last 3 seconds is also displayed.
 
+Other options
+^^^^^^^^^^^^^
+
+-  **-norealign** do not realign transform to near-default RAS coordinate system (the default behaviour on image load). This is useful to inspect the image and/or header contents as they are actually stored in the header, rather than as MRtrix interprets them.
+
 Overlay tool options
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -109,10 +114,10 @@ ODF tool options
 
 -  **-odf.load_dixel image** Loads the specified dixel-based image on the ODF tool.
 
-Vector plot tool options
-^^^^^^^^^^^^^^^^^^^^^^^^
+Fixel plot tool options
+^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-vector.load image** Load the specified MRtrix sparse image file (.msf) into the fixel tool.
+-  **-fixel.load image** Load a fixel file (any file inside a fixel directory, or an old *.msf legacy format file) into the fixel tool.
 
 Connectome tool options
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -160,11 +165,11 @@ Tournier, J.-D.; Calamante, F. & Connelly, A. MRtrix: Diffusion tractography in 
 
 **Author:** J-Donald Tournier (d.tournier@brain.org.au), Dave Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
+**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors
 
-This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/
+This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 MRtrix is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see www.mrtrix.org
+For more details, see http://www.mrtrix.org/.
 

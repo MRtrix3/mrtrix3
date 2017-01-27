@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 
 
@@ -147,7 +146,7 @@ void Exemplar::finalize (const float step_size)
   // Start from the midpoint, resample backwards to the start of the exemplar,
   //   reverse the data, then do the second half of the exemplar
   int32_t index = (size() + 1) / 2;
-  std::vector<point_type> vertices (1, (*this)[index]);
+  vector<point_type> vertices (1, (*this)[index]);
   const float step_sq = Math::pow2 (step_size);
   for (int32_t step = -1; step <= 1; step += 2) {
     if (step == 1) {

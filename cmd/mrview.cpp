@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "gui/gui.h"
 #include "command.h"
@@ -64,24 +63,6 @@ void run ()
 {
   GUI::MRView::Window window;
   window.show();
-  qApp->processEvents();
-
-  if (argument.size()) {
-    std::vector<std::unique_ptr<MR::Header>> list;
-
-    for (size_t n = 0; n < argument.size(); ++n) {
-      try {
-        list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (argument[n]))));
-      }
-      catch (Exception& e) {
-        e.display();
-      }
-    }
-
-    if (list.size())
-      window.add_images (list);
-  }
-
   window.process_commandline_options();
 
   if (qApp->exec())

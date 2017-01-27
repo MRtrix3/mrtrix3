@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __app_h__
 #define __app_h__
@@ -27,6 +26,7 @@
 
 #include "cmdline_option.h"
 #include "file/path.h"
+#include "signal_handler.h"
 
 
 extern void usage ();
@@ -52,6 +52,8 @@ namespace MR
     extern const char* project_version;
     extern const char* build_date;
 
+    extern SignalHandler signal_handler;
+
 
     const char* argtype_description (ArgType type);
 
@@ -67,8 +69,7 @@ namespace MR
     // @{
 
     //! vector of strings to hold the command-line description
-    class Description : public std::vector<const char*>
-    {
+    class Description : public vector<const char*> { NOMEMALIGN
       public:
         Description& operator+ (const char* text) {
           push_back (text);
@@ -82,7 +83,7 @@ namespace MR
 
 
     //! a class to hold the list of Argument's
-    class ArgumentList : public std::vector<Argument> {
+    class ArgumentList : public vector<Argument> { NOMEMALIGN
       public:
         ArgumentList& operator+ (const Argument& argument) {
           push_back (argument);
@@ -97,7 +98,7 @@ namespace MR
 
 
     //! a class to hold the list of option groups
-    class OptionList : public std::vector<OptionGroup> {
+    class OptionList : public vector<OptionGroup> { NOMEMALIGN
       public:
         OptionList& operator+ (const OptionGroup& option_group) {
           push_back (option_group);
@@ -117,7 +118,7 @@ namespace MR
         OptionGroup& back () {
           if (empty())
             push_back (OptionGroup());
-          return std::vector<OptionGroup>::back();
+          return vector<OptionGroup>::back();
         }
 
         std::string syntax (int format) const;
@@ -161,8 +162,7 @@ namespace MR
 
 
 
-    class ParsedArgument
-    {
+    class ParsedArgument { NOMEMALIGN
       public:
         operator std::string () const { return p; }
 
@@ -172,18 +172,18 @@ namespace MR
         uint64_t as_uint () const { return uint64_t (as_int()); }
         default_type as_float () const;
 
-        std::vector<int> as_sequence_int () const {
+        vector<int> as_sequence_int () const {
           assert (arg->type == IntSeq);
           try { return parse_ints (p); }
           catch (Exception& e) { error (e); }
-          return std::vector<int>();
+          return vector<int>();
         }
 
-        std::vector<default_type> as_sequence_float () const {
+        vector<default_type> as_sequence_float () const {
           assert (arg->type == FloatSeq);
           try { return parse_floats (p); }
           catch (Exception& e) { error (e); }
-          return std::vector<default_type>();
+          return vector<default_type>();
         }
 
         operator bool () const { return as_bool(); }
@@ -195,8 +195,8 @@ namespace MR
         operator long long unsigned int () const { return as_uint(); }
         operator float () const { return as_float(); }
         operator double () const { return as_float(); }
-        operator std::vector<int> () const { return as_sequence_int(); }
-        operator std::vector<default_type> () const { return as_sequence_float(); }
+        operator vector<int> () const { return as_sequence_int(); }
+        operator vector<default_type> () const { return as_sequence_float(); }
 
         const char* c_str () const { return p; }
 
@@ -231,8 +231,7 @@ namespace MR
     //! object storing information about option parsed from command-line
     /*! this is the object stored in the App::options vector, and the type
      * returned by App::get_options(). */
-    class ParsedOption
-    {
+    class ParsedOption { NOMEMALIGN
       public:
         ParsedOption (const Option* option, const char* const* arguments) :
           opt (option), args (arguments) { }
@@ -257,9 +256,9 @@ namespace MR
 
 
     //! the list of arguments parsed from the command-line
-    extern std::vector<ParsedArgument> argument;
+    extern vector<ParsedArgument> argument;
     //! the list of options parsed from the command-line
-    extern std::vector<ParsedOption> option;
+    extern vector<ParsedOption> option;
 
     //! the description of the command
     /*! This is designed to be used within each command's usage() function. Add
@@ -352,11 +351,11 @@ namespace MR
      *    std::string arg1 = opt[0][0];
      *    int arg2 = opt[0][1];
      *    float arg3 = opt[0][2];
-     *    std::vector<int> arg4 = opt[0][3];
+     *    vector<int> arg4 = opt[0][3];
      *    auto values = opt[0][4].as_sequence_float();
      * }
      * \endcode */
-    const std::vector<ParsedOption> get_options (const std::string& name);
+    const vector<ParsedOption> get_options (const std::string& name);
     
     
     //! Returns the option value if set, and the default otherwise.

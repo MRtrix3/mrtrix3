@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __image_filter_gradient_h__
 #define __image_filter_gradient_h__
@@ -42,8 +41,7 @@ namespace MR
      * gradient_filter (input, output);
      * \endcode
      */
-    class Gradient : public Base
-    {
+    class Gradient : public Base { MEMALIGN(Gradient)
       public:
         template <class HeaderType>
         Gradient (const HeaderType& in, const bool magnitude = false) :
@@ -84,7 +82,7 @@ namespace MR
           wrt_scanner = do_wrt_scanner;
         }
 
-        void set_stdev (const std::vector<default_type>& stdevs) {
+        void set_stdev (const vector<default_type>& stdevs) {
           stdev = stdevs;
         }
 
@@ -115,7 +113,8 @@ namespace MR
           auto smoothed = Image<float>::scratch (smoother);
           if (message.size())
             smoother.set_message ("applying smoothing prior to calculating gradient");
-          smoother (in, smoothed);
+          threaded_copy (in, smoothed);
+          smoother (smoothed);
 
           const size_t num_volumes = (in.ndim() == 3) ? 1 : in.size(3);
 
@@ -143,7 +142,7 @@ namespace MR
             if (wrt_scanner) {
               Transform transform (in);
               for (auto l = Loop(0,3) (out); l; ++l)
-                out.row(3) = transform.image2scanner.linear().template cast<typename OutputImageType::value_type>() * out.row(3);
+                out.row(3) = transform.image2scanner.linear() * Eigen::Vector3 (out.row(3));
             }
           }
         }
@@ -152,7 +151,7 @@ namespace MR
         Filter::Smooth smoother;
         bool wrt_scanner;
         const bool magnitude;
-        std::vector<default_type> stdev;
+        vector<default_type> stdev;
     };
     //! @}
   }

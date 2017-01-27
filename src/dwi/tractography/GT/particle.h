@@ -1,22 +1,22 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __gt_particle_h__
 #define __gt_particle_h__
 
-#include <Eigen/Dense>
+#include "types.h"
+
 
 
 namespace MR {
@@ -30,7 +30,7 @@ namespace MR {
          * A particle is a segment of a track and consists of a position and a direction.
          */
         class Particle
-        {
+        { MEMALIGN(Particle)
         public:
           
           // Particle length
@@ -214,7 +214,7 @@ namespace MR {
          * and to represent a pending fibre track.
          */
         struct ParticleEnd
-        {
+        { MEMALIGN(ParticleEnd)
           Particle* par;
           int alpha;
           float e_conn;

@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 
 #include <unsupported/Eigen/MatrixFunctions>
@@ -20,7 +19,7 @@
 #include "math/math.h"
 #include "math/average_space.h"
 #include "image.h"
-#include "file/nifti1_utils.h"
+#include "file/nifti_utils.h"
 #include "transform.h"
 #include "file/key_value.h"
 
@@ -44,10 +43,7 @@ void usage ()
   AUTHOR = "Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
 
   DESCRIPTION
-  + "This command's function is to process linear transformation matrices."
-
-  + "It allows to perform affine matrix operations or to convert the transformation matrix provided by FSL's flirt command to a format usable in MRtrix"
-  ;
+  + "This command's function is to perform calculations on linear transformation matrices.";
 
   ARGUMENTS
   + Argument ("input", "the input for the specified operation").allow_multiple()
@@ -136,7 +132,7 @@ void run ()
       transform_type transform_out;
       Eigen::Transform<default_type, 3, Eigen::Projective> Tin;
       Eigen::MatrixXd Min;
-      std::vector<Eigen::MatrixXd> matrices;
+      vector<Eigen::MatrixXd> matrices;
       for (size_t i = 0; i < num_inputs; i++) {
         DEBUG(str(argument[i]));
         Tin = load_transform (argument[i]);

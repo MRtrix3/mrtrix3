@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __math_rng_h__
 #define __math_rng_h__
@@ -41,7 +40,7 @@ namespace MR
      * multi-threading. */
     // TODO consider switch to std::mt19937_64
     class RNG : public std::mt19937
-    {
+    { NOMEMALIGN
       public:
         RNG () : std::mt19937 (get_seed()) { }
         RNG (std::mt19937::result_type seed) : std::mt19937 (seed) { }
@@ -79,7 +78,7 @@ namespace MR
 
 
     template <typename ValueType>
-      class RNG::Uniform {
+      class RNG::Uniform { NOMEMALIGN
         public:
           RNG rng;
           typedef ValueType result_type;
@@ -90,7 +89,7 @@ namespace MR
       };
 
     template <typename ValueType>
-      class RNG::Normal {
+      class RNG::Normal { NOMEMALIGN
         public:
           RNG rng;
           typedef ValueType result_type;
@@ -99,7 +98,7 @@ namespace MR
       };
 
       template <typename ValueType>
-        class RNG::Integer {
+        class RNG::Integer { NOMEMALIGN
           public:
             Integer (const ValueType max) :
                 dist (0, max) { }

@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __gui_opengl_gl_h__
 #define __gui_opengl_gl_h__
@@ -65,7 +64,7 @@ namespace MR
 #if QT_VERSION >= 0x050400
       typedef QOpenGLWidget Area;
       typedef QSurfaceFormat Format;
-      struct CheckContext {
+      struct CheckContext { NOMEMALIGN
 # ifndef NDEBUG
         CheckContext () : __context (nullptr) { }
         void grab_context () { 
@@ -82,13 +81,13 @@ namespace MR
 # endif
       };
 #else
-      class Area : public QGLWidget {
+      class Area : public QGLWidget { NOMEMALIGN
         public:
           using QGLWidget::QGLWidget;
           QImage grabFramebuffer () { return QGLWidget::grabFrameBuffer(); }
       };
       typedef QGLFormat Format;
-      struct CheckContext {
+      struct CheckContext { NOMEMALIGN
         void grab_context () { }
         void check_context () const { }
       };
@@ -108,7 +107,7 @@ namespace MR
       }
 
 
-      class Texture : CheckContext {
+      class Texture : CheckContext { NOMEMALIGN
         public:
           Texture () : id (0) { }
           ~Texture () { clear(); }
@@ -160,7 +159,7 @@ namespace MR
       };
 
 
-      class VertexBuffer : CheckContext {
+      class VertexBuffer : CheckContext { NOMEMALIGN
         public:
           VertexBuffer () : id (0) { }
           ~VertexBuffer () { clear(); }
@@ -194,7 +193,7 @@ namespace MR
       };
 
 
-      class VertexArrayObject : CheckContext {
+      class VertexArrayObject : CheckContext { NOMEMALIGN
         public:
           VertexArrayObject () : id (0) { }
           ~VertexArrayObject () { clear(); }
@@ -227,7 +226,7 @@ namespace MR
       };
 
 
-      class IndexBuffer : CheckContext {
+      class IndexBuffer : CheckContext { NOMEMALIGN
         public:
           IndexBuffer () : id (0) { }
           ~IndexBuffer () { clear(); }
@@ -262,7 +261,7 @@ namespace MR
 
 
 
-      class FrameBuffer : CheckContext {
+      class FrameBuffer : CheckContext { NOMEMALIGN
         public:
           FrameBuffer () : id (0) { }
           ~FrameBuffer () { clear(); }

@@ -1,19 +1,19 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
+
 #include "header.h"
+#include "phase_encoding.h"
 #include "image_io/default.h"
 #include "image_io/mosaic.h"
 #include "file/dicom/mapper.h"
@@ -28,7 +28,7 @@ namespace MR {
     namespace Dicom {
 
 
-      std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper (MR::Header& H, std::vector<std::shared_ptr<Series>>& series)
+      std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper (MR::Header& H, vector<std::shared_ptr<Series>>& series)
       {
         assert (series.size() > 0);
         std::unique_ptr<MR::ImageIO::Base> io_handler;
@@ -36,15 +36,15 @@ namespace MR {
         Patient* patient (series[0]->study->patient);
         std::string sbuf = ( patient->name.size() ? patient->name : "unnamed" );
         sbuf += " " + format_ID (patient->ID);
-        if (series[0]->modality.size()) sbuf 
-          += std::string (" [") + series[0]->modality + "]";
+        if (series[0]->modality.size())
+          sbuf += std::string (" [") + series[0]->modality + "]";
         if (series[0]->name.size()) 
           sbuf += std::string (" ") + series[0]->name;
         add_line (H.keyval()["comments"], sbuf);
         H.name() = sbuf;
 
         // build up sorted list of frames:
-        std::vector<Frame*> frames;
+        vector<Frame*> frames;
 
         // loop over series list:
         for (const auto series_it : series) {
@@ -81,8 +81,8 @@ namespace MR {
           throw Exception ("missing image frames for DICOM image \"" + H.name() + "\"");
 
         if (dim[0] > 1) { // switch axes so slice dim is inner-most:
-          std::vector<Frame*> list (frames);
-          std::vector<Frame*>::iterator it = frames.begin();
+          vector<Frame*> list (frames);
+          vector<Frame*>::iterator it = frames.begin();
           for (size_t k = 0; k < dim[2]; ++k) 
             for (size_t i = 0; i < dim[0]; ++i) 
               for (size_t j = 0; j < dim[1]; ++j) 
@@ -104,11 +104,10 @@ namespace MR {
           add_line (H.keyval()["comments"], sbuf);
         }
 
-
-
-
-
         const Image& image (*(*series[0])[0]);
+
+        if (std::isfinite (image.echo_time))
+          H.keyval()["EchoTime"] = str (0.001 * image.echo_time, 6);
 
         size_t nchannels = image.frames.size() ? 1 : image.data_size / (image.dim[0] * image.dim[1] * (image.bits_alloc/8));
         if (nchannels > 1) 
@@ -186,8 +185,7 @@ namespace MR {
             H.keyval()["dw_scheme"] = dw_scheme;
         }
 
-
-
+        PhaseEncoding::set_scheme (H, Frame::get_PE_scheme (frames, dim[1]));
 
         for (size_t n = 1; n < frames.size(); ++n) // check consistency of data scaling:
           if (frames[n]->scale_intercept != frames[n-1]->scale_intercept ||

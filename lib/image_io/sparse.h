@@ -1,20 +1,19 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_io_sparse_h__
-#define __image_io_sparse_h__
+
+#ifndef __image_io_sparse_legacy_h__
+#define __image_io_sparse_legacy_h__
 
 #include <cassert>
 #include <cstring>
@@ -41,7 +40,7 @@ namespace MR
     // A quick description of how the sparse image data are currently stored:
     // * The data are either after the image data within the same file if extension is .msf, or
     //     in a separate file with the .sdat extension if the image extension if .msh
-    // * The image header must store the fields defined in lib/image/sparse/key.h
+    // * The image header must store the fields defined in lib/image/fixel/key.h
     //     These are currently verified on construction of the BufferSparse class. This proved to
     //     be simpler than trying to verify class matching on every interaction with the handler
     //     using templated functions.
@@ -63,11 +62,11 @@ namespace MR
 
 
 
-    class Sparse : public Default
-    {
+    class SparseLegacy : public Default
+    { MEMALIGN (SparseLegacy)
       public:
 
-        Sparse (const Header& header, const std::string& sparse_class_name, const size_t sparse_class_size, const File::Entry& entry) :
+        SparseLegacy (const Header& header, const std::string& sparse_class_name, const size_t sparse_class_size, const File::Entry& entry) :
           Default (header),
           class_name (sparse_class_name),
           class_size (sparse_class_size),

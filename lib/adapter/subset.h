@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __adapter_subset_h__
 #define __adapter_subset_h__
@@ -24,17 +23,20 @@ namespace MR
   namespace Adapter {
 
     template <class ImageType>
-      class Subset : public Base<ImageType>
-    {
+      class Subset : 
+        public Base<Subset<ImageType>,ImageType>
+    { MEMALIGN(Subset<ImageType>) 
       public:
+
+        typedef Base<Subset<ImageType>,ImageType> base_type;
         typedef typename ImageType::value_type value_type;
 
-        using Base<ImageType>::name;
-        using Base<ImageType>::spacing;
+        using base_type::name;
+        using base_type::spacing;
 
         template <class VectorType>
           Subset (const ImageType& original, const VectorType& from, const VectorType& size) :
-            Base<ImageType> (original),
+            base_type (original),
             from_ (container_cast<decltype(from_)>(from)),
             size_ (container_cast<decltype(size_)>(size)),
             transform_ (original.transform()) {
@@ -57,13 +59,12 @@ namespace MR
         ssize_t size (size_t axis) const { return size_ [axis]; }
         const transform_type& transform() const { return transform_; }
 
-        ssize_t index (size_t axis) const { return parent().index(axis)-from_[axis]; }
-        auto index (size_t axis) -> decltype(Helper::index(*this, axis)) { return { *this, axis }; } 
+        ssize_t get_index (size_t axis) const { return parent().index(axis)-from_[axis]; }
         void move_index (size_t axis, ssize_t increment) { parent().index(axis) += increment; }
 
       protected:
-        using Base<ImageType>::parent;
-        const std::vector<ssize_t> from_, size_;
+        using base_type::parent;
+        const vector<ssize_t> from_, size_;
         transform_type transform_;
     };
 

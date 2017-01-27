@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __mrtrix_exception_h__
 #define __mrtrix_exception_h__
@@ -77,8 +76,7 @@ namespace MR
 
 
 
-  class Exception
-  {
+  class Exception { NOMEMALIGN
     public:
       Exception (const std::string& msg) {
         description.push_back (msg);
@@ -104,11 +102,10 @@ namespace MR
 
       static void (*display_func) (const Exception& E, int log_level);
 
-      std::vector<std::string> description;
+      vector<std::string> description;
   };
 
-  class InvalidImageException : public Exception
-  {
+  class InvalidImageException : public Exception { NOMEMALIGN
     public:
       InvalidImageException (const std::string& msg) : Exception(msg) {}
       InvalidImageException (const Exception& previous_exception, const std::string& msg)
@@ -121,8 +118,7 @@ namespace MR
 
 
 
-    class LogLevelLatch
-    {
+    class LogLevelLatch { NOMEMALIGN
       public:
         LogLevelLatch (const int new_level) :
           prev_level (App::log_level) {

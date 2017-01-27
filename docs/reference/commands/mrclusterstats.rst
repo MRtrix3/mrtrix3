@@ -24,25 +24,38 @@ Voxel-based analysis using permutation testing and threshold-free cluster enhanc
 Options
 -------
 
+Options for permutation testing
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 -  **-notest** don't perform permutation testing and only output population statistics (effect size, stdev etc)
+
+-  **-nperms num** the number of permutations (Default: 5000)
+
+-  **-permutations file** manually define the permutations (relabelling). The input should be a text file defining a m x n matrix, where each relabelling is defined as a column vector of size    m, and the number of columns, n, defines the number of permutations. Can be generated with the palm_quickperms function in PALM (http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM). Overrides the nperms option.
+
+-  **-nonstationary** perform non-stationarity correction
+
+-  **-nperms_nonstationary num** the number of permutations used when precomputing the empirical statistic image for nonstationary correction (Default: 5000)
+
+-  **-permutations_nonstationary file** manually define the permutations (relabelling) for computing the emprical statistic image for nonstationary correction. The input should be a text file defining a m x n matrix, where each relabelling is defined as a column vector of size m, and the number of columns, n, defines the number of permutations. Can be generated with the palm_quickperms function in PALM (http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM) Overrides the nperms_nonstationary option.
+
+Options for controlling TFCE behaviour
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-tfce_dh value** the height increment used in the tfce integration (default: 0.1)
+
+-  **-tfce_e value** tfce extent exponent (default: 0.5)
+
+-  **-tfce_h value** tfce height exponent (default: 2)
+
+Additional options for mrclusterstats
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-negative** automatically test the negative (opposite) contrast. By computing the opposite contrast simultaneously the computation time is reduced.
 
--  **-nperms num** the number of permutations (default = 5000).
-
 -  **-threshold value** the cluster-forming threshold to use for a standard cluster-based analysis. This disables TFCE, which is the default otherwise.
 
--  **-tfce_dh value** the height increment used in the TFCE integration (default = 0.1)
-
--  **-tfce_e value** TFCE extent parameter (default = 0.5)
-
--  **-tfce_h value** TFCE height parameter (default = 2)
-
 -  **-connectivity** use 26-voxel-neighbourhood connectivity (Default: 6)
-
--  **-nonstationary** perform non-stationarity correction (currently only implemented with tfce)
-
--  **-nperms_nonstationary num** the number of permutations used when precomputing the empirical statistic image for nonstationary correction (Default: 5000)
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -76,11 +89,11 @@ References
 
 **Author:** David Raffelt (david.raffelt@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
+**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors
 
-This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/
+This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 MRtrix is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see www.mrtrix.org
+For more details, see http://www.mrtrix.org/.
 

@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 #include "app.h"
 #include "timer.h"
 #include "file/config.h"
@@ -117,8 +116,11 @@ namespace MR
         }
 
       QSize Window::GLArea::sizeHint () const {
+        //CONF option: MRViewInitWindowSize
+        //CONF initial window size of MRView in pixels
+        //CONF default: 512,512
         std::string init_size_string = lowercase (MR::File::Config::get ("MRViewInitWindowSize"));
-        std::vector<int> init_window_size;
+        vector<int> init_window_size;
         if (init_size_string.length())
           init_window_size = parse_ints(init_size_string);
         if (init_window_size.size() == 2)
@@ -138,7 +140,7 @@ namespace MR
       void Window::GLArea::dropEvent (QDropEvent* event) {
         const QMimeData* mimeData = event->mimeData();
         if (mimeData->hasUrls()) {
-          std::vector<std::unique_ptr<MR::Header>> list;
+          vector<std::unique_ptr<MR::Header>> list;
           QList<QUrl> urlList = mimeData->urls();
           for (int i = 0; i < urlList.size() && i < 32; ++i) {
             try {
@@ -745,11 +747,11 @@ namespace MR
 
       void Window::image_open_slot ()
       {
-        std::vector<std::string> image_list = Dialog::File::get_images (this, "Select images to open");
+        vector<std::string> image_list = Dialog::File::get_images (this, "Select images to open");
         if (image_list.empty())
           return;
 
-        std::vector<std::unique_ptr<MR::Header>> list;
+        vector<std::unique_ptr<MR::Header>> list;
         for (size_t n = 0; n < image_list.size(); ++n) {
           try {
             list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (image_list[n]))));
@@ -771,7 +773,7 @@ namespace MR
 
 
         try {
-          std::vector<std::unique_ptr<MR::Header>> list;
+          vector<std::unique_ptr<MR::Header>> list;
           list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (folder))));
           add_images (list);
         }
@@ -783,7 +785,7 @@ namespace MR
 
 
 
-      void Window::add_images (std::vector<std::unique_ptr<MR::Header>>& list)
+      void Window::add_images (vector<std::unique_ptr<MR::Header>>& list)
       {
         for (size_t i = 0; i < list.size(); ++i) {
           const std::string name = list[i]->name(); // Gets move-constructed out
@@ -1584,9 +1586,11 @@ namespace MR
       {
         assert (mode);
 #if QT_VERSION >= 0x050400
-        QPoint delta = 30 * event->pixelDelta();
-        if (delta.isNull())
+        QPoint delta;
+        if (event->source() == Qt::MouseEventNotSynthesized) 
           delta = event->angleDelta();
+        else
+          delta = 30 * event->pixelDelta();
 #else
         QPoint delta = event->orientation() == Qt::Vertical ? QPoint (0, event->delta()) : QPoint (event->delta(), 0);
 #endif
@@ -1683,219 +1687,234 @@ namespace MR
         glarea->update();
         qApp->processEvents();
 
+        if (MR::App::get_options ("norealign").size())
+          Header::do_not_realign_transform = true;
+
         try {
-          for (size_t copt = 0; copt < MR::App::option.size(); ++copt) {
-            if (copt)
-              qApp->processEvents();
+          for (int arg = 1; arg < MR::App::argc; ++arg) {
+            qApp->processEvents();
 
-            const MR::App::ParsedOption& opt (MR::App::option[copt]);
+            const MR::App::Option* opt_p = match_option (MR::App::argv[arg]);
+            if (opt_p) {
+              if (arg + int (opt_p->size()) >= MR::App::argc)
+                throw Exception (std::string ("not enough parameters to option \"-") + opt_p->id + "\"");
 
-            // see whether option is claimed by any tools:
-            size_t tool_id = 0;
-            std::string stub;
+              const MR::App::ParsedOption opt (ParsedOption (opt_p, MR::App::argv+arg+1));
+              arg += opt_p->size();
+
+              // see whether option is claimed by any tools:
+              size_t tool_id = 0;
+              std::string stub;
 #include "gui/mrview/tool/list.h"
 
 
-            // process general options:
-            if (opt.opt->is ("mode")) {
-              int n = int(opt[0]) - 1;
-              if (n < 0 || n >= mode_group->actions().size())
-                throw Exception ("invalid mode index \"" + str(n) + "\" in batch command");
-              select_mode_slot (mode_group->actions()[n]);
-              continue;
-            }
-
-            if (opt.opt->is ("size")) {
-              std::vector<int> glsize = opt[0];
-              if (glsize.size() != 2)
-                throw Exception ("invalid argument \"" + std::string(opt.args[0]) + "\" to view.size batch command");
-              QSize oldsize = glarea->size();
-              QSize winsize = size();
-              resize (winsize.width() - oldsize.width() + glsize[0], winsize.height() - oldsize.height() + glsize[1]);
-              continue;
-            }
-
-            if (opt.opt->is ("reset")) {
-              reset_view_slot();
-              continue;
-            }
-
-            else if (opt.opt->is ("fov")) {
-              float fov = opt[0];
-              set_FOV (fov);
-              glarea->update();
-              continue;
-            }
-
-            if (opt.opt->is ("focus")) {
-              try {
-                auto pos = parse_floats (opt[0]);
-                if (pos.size() != 3)
-                   throw Exception ("-focus option expects a comma-separated list of 3 floating-point values");
-                set_focus (Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
+              // process general options:
+              if (opt.opt->is ("mode")) {
+                int n = int(opt[0]) - 1;
+                if (n < 0 || n >= mode_group->actions().size())
+                  throw Exception ("invalid mode index \"" + str(n) + "\" in batch command");
+                select_mode_slot (mode_group->actions()[n]);
+                continue;
               }
-              catch (Exception& E) {
-                try {
-                  show_crosshairs_action->setChecked (to<bool> (opt[0]));
-                }
-                catch (Exception& E2) {
-                  throw Exception ("-focus option expects a boolean or a comma-separated list of 3 floating-point values");
-                }
-              }
-              glarea->update();
-              continue;
-            }
 
-            if (opt.opt->is ("voxel")) {
-              if (image()) {
-                std::vector<default_type> pos = parse_floats (opt[0]);
-                if (pos.size() != 3)
-                  throw Exception ("-voxel option expects a comma-separated list of 3 floating-point values");
-                set_focus (image()->transform().voxel2scanner.cast<float>() *  Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
+              if (opt.opt->is ("size")) {
+                vector<int> glsize = opt[0];
+                if (glsize.size() != 2)
+                  throw Exception ("invalid argument \"" + std::string(opt.args[0]) + "\" to view.size batch command");
+                QSize oldsize = glarea->size();
+                QSize winsize = size();
+                resize (winsize.width() - oldsize.width() + glsize[0], winsize.height() - oldsize.height() + glsize[1]);
+                continue;
+              }
+
+              if (opt.opt->is ("reset")) {
+                reset_view_slot();
+                continue;
+              }
+
+              else if (opt.opt->is ("fov")) {
+                float fov = opt[0];
+                set_FOV (fov);
                 glarea->update();
+                continue;
               }
-              continue;
-            }
 
-            if (opt.opt->is ("fov")) {
-              float fov = opt[0];
-              set_FOV (fov);
-              glarea->update();
-              continue;
-            }
+              if (opt.opt->is ("focus")) {
+                try {
+                  auto pos = parse_floats (opt[0]);
+                  if (pos.size() != 3)
+                    throw Exception ("-focus option expects a comma-separated list of 3 floating-point values");
+                  set_focus (Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
+                }
+                catch (Exception& E) {
+                  try {
+                    show_crosshairs_action->setChecked (to<bool> (opt[0]));
+                  }
+                  catch (Exception& E2) {
+                    throw Exception ("-focus option expects a boolean or a comma-separated list of 3 floating-point values");
+                  }
+                }
+                glarea->update();
+                continue;
+              }
 
-            if (opt.opt->is ("plane")) {
-              int n = opt[0];
-              set_plane (n);
-              glarea->update();
-              continue;
-            }
+              if (opt.opt->is ("voxel")) {
+                if (image()) {
+                  vector<default_type> pos = parse_floats (opt[0]);
+                  if (pos.size() != 3)
+                    throw Exception ("-voxel option expects a comma-separated list of 3 floating-point values");
+                  set_focus (image()->transform().voxel2scanner.cast<float>() *  Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
+                  glarea->update();
+                }
+                continue;
+              }
 
-            if (opt.opt->is ("lock")) {
-              bool n = opt[0];
-              snap_to_image_action->setChecked (n);
-              snap_to_image_slot();
-              continue;
-            }
+              if (opt.opt->is ("fov")) {
+                float fov = opt[0];
+                set_FOV (fov);
+                glarea->update();
+                continue;
+              }
 
-            if (opt.opt->is ("select_image")) {
-              int n = int(opt[0]) - 1;
-              if (n < 0 || n >= image_group->actions().size())
-                throw Exception ("invalid image index requested for option -select_image");
-              image_select_slot (image_group->actions()[n]);
-              continue;
-            }
+              if (opt.opt->is ("plane")) {
+                int n = opt[0];
+                set_plane (n);
+                glarea->update();
+                continue;
+              }
 
-            if (opt.opt->is ("load")) {
-              std::vector<std::unique_ptr<MR::Header>> list;
-              try { list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (opt[0])))); }
-              catch (Exception& e) { e.display(); }
-              add_images (list);
-              continue;
-            }
+              if (opt.opt->is ("lock")) {
+                bool n = opt[0];
+                snap_to_image_action->setChecked (n);
+                snap_to_image_slot();
+                continue;
+              }
 
-            if (opt.opt->is ("autoscale")) {
-              image_reset_slot();
-              continue;
-            }
+              if (opt.opt->is ("select_image")) {
+                int n = int(opt[0]) - 1;
+                if (n < 0 || n >= image_group->actions().size())
+                  throw Exception ("invalid image index requested for option -select_image");
+                image_select_slot (image_group->actions()[n]);
+                continue;
+              }
 
-            if (opt.opt->is ("colourmap")) {
-              int n = int(opt[0]) - 1;
-              if (n < 0 || n >= static_cast<int>(colourmap_button->colourmap_actions.size()))
-                throw Exception ("invalid image colourmap index \"" + str(n+1) + "\" requested in batch command");
-              colourmap_button->set_colourmap_index(n);
-              continue;
-            }
+              if (opt.opt->is ("load")) {
+                vector<std::unique_ptr<MR::Header>> list;
+                try { list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (opt[0])))); }
+                catch (Exception& e) { e.display(); }
+                add_images (list);
+                continue;
+              }
 
-            if (opt.opt->is ("interpolation")) {
-              try {
+              if (opt.opt->is ("autoscale")) {
+                image_reset_slot();
+                continue;
+              }
+
+              if (opt.opt->is ("colourmap")) {
+                int n = int(opt[0]) - 1;
+                if (n < 0 || n >= static_cast<int>(colourmap_button->colourmap_actions.size()))
+                  throw Exception ("invalid image colourmap index \"" + str(n+1) + "\" requested in batch command");
+                colourmap_button->set_colourmap_index(n);
+                continue;
+              }
+
+              if (opt.opt->is ("interpolation")) {
+                try {
                   image_interpolate_action->setChecked (to<bool> (opt[0]));
                 }
                 catch (Exception& E) {
                   throw Exception ("-interpolation option expects a boolean");
                 }
-              image_interpolate_slot();
-            }
-
-            if (opt.opt->is ("intensity_range")) {
-              if (image()) {
-                std::vector<default_type> param = parse_floats (opt[0]);
-                if (param.size() != 2)
-                  throw Exception ("-intensity_range options expects comma-separated list of two floating-point values");
-                image()->set_windowing (param[0], param[1]);
-                glarea->update();
+                image_interpolate_slot();
               }
-              continue;
-            }
 
-            if (opt.opt->is ("position")) {
-              std::vector<int> pos = opt[0];
-              if (pos.size() != 2)
-                throw Exception ("invalid argument \"" + std::string(opt[0]) + "\" to -position option");
-              move (pos[0], pos[1]);
-              continue;
-            }
+              if (opt.opt->is ("intensity_range")) {
+                if (image()) {
+                  vector<default_type> param = parse_floats (opt[0]);
+                  if (param.size() != 2)
+                    throw Exception ("-intensity_range options expects comma-separated list of two floating-point values");
+                  image()->set_windowing (param[0], param[1]);
+                  glarea->update();
+                }
+                continue;
+              }
 
-            if (opt.opt->is ("fullscreen")) {
-              full_screen_action->setChecked (true);
-              full_screen_slot();
-              continue;
-            }
+              if (opt.opt->is ("position")) {
+                vector<int> pos = opt[0];
+                if (pos.size() != 2)
+                  throw Exception ("invalid argument \"" + std::string(opt[0]) + "\" to -position option");
+                move (pos[0], pos[1]);
+                continue;
+              }
 
-            if (opt.opt->is ("noannotations")) {
-              toggle_annotations_slot ();
-            }
+              if (opt.opt->is ("fullscreen")) {
+                full_screen_action->setChecked (true);
+                full_screen_slot();
+                continue;
+              }
 
-            if (opt.opt->is ("comments")) {
-              try {
+              if (opt.opt->is ("noannotations")) {
+                toggle_annotations_slot ();
+              }
+
+              if (opt.opt->is ("comments")) {
+                try {
                   show_comments_action->setChecked (to<bool> (opt[0]));
                 }
                 catch (Exception& E) {
                   throw Exception ("-comments option expects a boolean");
                 }
-              glarea->update();
-            }
+                glarea->update();
+              }
 
-            if (opt.opt->is ("voxelinfo")) {
-              try {
+              if (opt.opt->is ("voxelinfo")) {
+                try {
                   show_voxel_info_action->setChecked (to<bool> (opt[0]));
                 }
                 catch (Exception& E) {
                   throw Exception ("-voxelinfo option expects a boolean");
                 }
-              glarea->update();
-            }
+                glarea->update();
+              }
 
-            if (opt.opt->is ("orientationlabel")) {
-              try {
+              if (opt.opt->is ("orientationlabel")) {
+                try {
                   show_orientation_labels_action->setChecked (to<bool> (opt[0]));
                 }
                 catch (Exception& E) {
                   throw Exception ("-orientationlabel option expects a boolean");
                 }
-              glarea->update();
-            }
+                glarea->update();
+              }
 
-            if (opt.opt->is ("colourbar")) {
-              try {
+              if (opt.opt->is ("colourbar")) {
+                try {
                   show_colourbar_action->setChecked (to<bool> (opt[0]));
                 }
                 catch (Exception& E) {
                   throw Exception ("-colourbar option expects a boolean");
                 }
-              glarea->update();
-            }
+                glarea->update();
+              }
 
-            if (opt.opt->is ("fps")) {
-              show_FPS = true;
-              continue;
-            }
+              if (opt.opt->is ("fps")) {
+                show_FPS = true;
+                continue;
+              }
 
-            if (opt.opt->is ("exit")) {
-              qApp->processEvents();
-              qApp->quit();
-            }
+              if (opt.opt->is ("exit")) {
+                qApp->processEvents();
+                qApp->quit();
+              }
 
+            }
+            else {
+              vector<std::unique_ptr<MR::Header>> list;
+              try { list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (MR::App::argv[arg])))); }
+              catch (Exception& e) { e.display(); }
+              add_images (list);
+            }
           }
         }
         catch (Exception& E) {
@@ -1910,15 +1929,15 @@ namespace MR
         options
           + OptionGroup ("View options")
 
-          + Option ("mode", "Switch to view mode specified by the integer index. as per the view menu.")
+          + Option ("mode", "Switch to view mode specified by the integer index. as per the view menu.").allow_multiple()
           +   Argument ("index").type_integer()
 
-          + Option ("load", "Load image specified and make it current.")
+          + Option ("load", "Load image specified and make it current.").allow_multiple()
           +   Argument ("image").type_image_in()
 
-          + Option ("reset", "Reset the view according to current image. This resets the FOV, projection, and focus.")
+          + Option ("reset", "Reset the view according to current image. This resets the FOV, projection, and focus.").allow_multiple()
 
-          + Option ("fov", "Set the field of view, in mm.")
+          + Option ("fov", "Set the field of view, in mm.").allow_multiple()
           +   Argument ("value").type_float()
 
           + Option ("focus", "Either set the position of the crosshairs in scanner coordinates, "
@@ -1928,49 +1947,49 @@ namespace MR
 
           + Option ("voxel", "Set the position of the crosshairs in voxel coordinates, "
               "relative the image currently displayed. The new position should be supplied "
-              "as a comma-separated list of floating-point values.")
+              "as a comma-separated list of floating-point values.").allow_multiple()
           +   Argument ("x,y,z").type_sequence_float()
 
-          + Option ("plane", "Set the viewing plane, according to the mappping 0: sagittal; 1: coronal; 2: axial.")
+          + Option ("plane", "Set the viewing plane, according to the mappping 0: sagittal; 1: coronal; 2: axial.").allow_multiple()
           +   Argument ("index").type_integer (0,2)
 
-          + Option ("lock", "Set whether view is locked to image axes (0: no, 1: yes).")
+          + Option ("lock", "Set whether view is locked to image axes (0: no, 1: yes).").allow_multiple()
           +   Argument ("yesno").type_bool()
 
-          + Option ("select_image", "Switch to image number specified, with reference to the list of currently loaded images.")
+          + Option ("select_image", "Switch to image number specified, with reference to the list of currently loaded images.").allow_multiple()
           +   Argument ("index").type_integer (0)
 
-          + Option ("autoscale", "Reset the image scaling to automatically determined range.")
+          + Option ("autoscale", "Reset the image scaling to automatically determined range.").allow_multiple()
 
-          + Option ("interpolation", "Enable or disable image interpolation in main image.")
+          + Option ("interpolation", "Enable or disable image interpolation in main image.").allow_multiple()
           +   Argument ("boolean").type_bool ()
 
-          + Option ("colourmap", "Switch the image colourmap to that specified, as per the colourmap menu.")
+          + Option ("colourmap", "Switch the image colourmap to that specified, as per the colourmap menu.").allow_multiple()
           +   Argument ("index").type_integer (0)
 
-          + Option ("noannotations", "Hide all image annotation overlays")
+          + Option ("noannotations", "Hide all image annotation overlays").allow_multiple()
 
-          + Option ("comments", "Show of hide image comments overlay.")
+          + Option ("comments", "Show of hide image comments overlay.").allow_multiple()
           +   Argument ("boolean").type_bool ()
 
-          + Option ("voxelinfo", "Show or hide voxel information overlay")
+          + Option ("voxelinfo", "Show or hide voxel information overlay").allow_multiple()
           +   Argument ("boolean").type_bool ()
 
-          + Option ("orientationlabel", "Show or hide orientation label overlay.")
+          + Option ("orientationlabel", "Show or hide orientation label overlay.").allow_multiple()
           +   Argument ("boolean").type_bool ()
 
-          + Option ("colourbar", "Show or hide colourbar overlay.")
+          + Option ("colourbar", "Show or hide colourbar overlay.").allow_multiple()
           +   Argument ("boolean").type_bool ()
 
-          + Option ("intensity_range", "Set the image intensity range to that specified")
+          + Option ("intensity_range", "Set the image intensity range to that specified").allow_multiple()
           +   Argument ("min,max").type_sequence_int()
 
           + OptionGroup ("Window management options")
 
-          + Option ("size", "Set the size of the view area, in pixel units.")
+          + Option ("size", "Set the size of the view area, in pixel units.").allow_multiple()
           +   Argument ("width,height").type_sequence_int()
 
-          + Option ("position", "Set the position of the main window, in pixel units.")
+          + Option ("position", "Set the position of the main window, in pixel units.").allow_multiple()
           +   Argument ("x,y").type_sequence_int()
 
           + Option ("fullscreen", "Start fullscreen.")
@@ -1980,7 +1999,11 @@ namespace MR
           + OptionGroup ("Debugging options")
 
           + Option ("fps", "Display frames per second, averaged over the last 10 frames. "
-              "The maximum over the last 3 seconds is also displayed.");
+              "The maximum over the last 3 seconds is also displayed.")
+
+          + OptionGroup ("Other options")
+
+          + NoRealignOption;
 
       }
 

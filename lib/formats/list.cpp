@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include <cstdlib>
 
@@ -29,8 +28,10 @@ namespace MR
     MRtrix        mrtrix_handler;
     MRtrix_GZ     mrtrix_gz_handler;
     MRI           mri_handler;
-    NIfTI         nifti_handler;
-    NIfTI_GZ      nifti_gz_handler;
+    NIfTI1        nifti1_handler;
+    NIfTI2        nifti2_handler;
+    NIfTI1_GZ     nifti1_gz_handler;
+    NIfTI2_GZ     nifti2_gz_handler;
     Analyse       analyse_handler;
     XDS           xds_handler;
     DICOM         dicom_handler;
@@ -47,8 +48,10 @@ namespace MR
       &dicom_handler,
       &mrtrix_handler,
       &mrtrix_gz_handler,
-      &nifti_handler,
-      &nifti_gz_handler,
+      &nifti1_handler,
+      &nifti2_handler,
+      &nifti1_gz_handler,
+      &nifti2_gz_handler,
       &analyse_handler,
       &mri_handler,
       &xds_handler,

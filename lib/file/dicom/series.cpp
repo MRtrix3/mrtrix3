@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "file/dicom/series.h"
 #include "file/dicom/study.h"
@@ -21,10 +20,10 @@ namespace MR {
   namespace File {
     namespace Dicom {
 
-      std::vector<int> Series::count () const
+      vector<int> Series::count () const
       {
-        std::vector<int> dim (3);
-        std::vector<int> current_dim(2);
+        vector<int> dim (3);
+        vector<int> current_dim(2);
         dim[0] = dim[1] = dim[2] = 0;
         current_dim[0] = current_dim[1] = 1;
 

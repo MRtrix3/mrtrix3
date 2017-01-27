@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "gui/mrview/tool/view.h"
 
@@ -54,7 +53,7 @@ namespace MR
 
 
         class View::ClipPlaneModel : public QAbstractItemModel
-        {
+        { MEMALIGN(View::ClipPlaneModel)
           public:
 
             ClipPlaneModel (QObject* parent) :
@@ -151,7 +150,7 @@ namespace MR
               endInsertRows();
             }
 
-            std::vector<ClipPlane> planes;
+            vector<ClipPlane> planes;
         };
 
 
@@ -860,9 +859,9 @@ namespace MR
 
 
 
-        std::vector< std::pair<GL::vec4,bool> > View::get_active_clip_planes () const
+        vector< std::pair<GL::vec4,bool> > View::get_active_clip_planes () const
         {
-          std::vector< std::pair<GL::vec4,bool> > ret;
+          vector< std::pair<GL::vec4,bool> > ret;
           QItemSelectionModel* selection = clip_planes_list_view->selectionModel();
           if (clip_box->isChecked()) {
             for (int i = 0; i < clip_planes_model->rowCount(); ++i) {
@@ -878,9 +877,9 @@ namespace MR
           return ret;
         }
 
-        std::vector<GL::vec4*> View::get_clip_planes_to_be_edited () const
+        vector<GL::vec4*> View::get_clip_planes_to_be_edited () const
         {
-          std::vector<GL::vec4*> ret;
+          vector<GL::vec4*> ret;
           if (clip_box->isChecked()) {
             QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
             for (int i = 0; i < indices.size(); ++i) 

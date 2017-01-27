@@ -1,5 +1,6 @@
 def getImageStat(image_path, statistic, mask_path = ''):
   import lib.app, subprocess
+  from lib.debugMessage import debugMessage
   from lib.printMessage import printMessage
   command = [ 'mrstats', image_path, '-output', statistic ]
   if mask_path:

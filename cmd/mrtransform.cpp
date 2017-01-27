@@ -1,24 +1,22 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
-#include <unsupported/Eigen/MatrixFunctions>
 #include "command.h"
 #include "progressbar.h"
 #include "image.h"
 #include "math/math.h"
+#include "math/sphere.h"
 #include "interp/nearest.h"
 #include "interp/linear.h"
 #include "interp/cubic.h"
@@ -31,7 +29,7 @@
 #include "dwi/directions/predefined.h"
 #include "dwi/gradient.h"
 #include "registration/transform/reorient.h"
-#include "registration/warp/utils.h"
+#include "registration/warp/helpers.h"
 #include "registration/warp/compose.h"
 #include "math/average_space.h"
 #include "math/SH.h"
@@ -254,12 +252,7 @@ void run ()
   Image<default_type> warp;
   if (opt.size()) {
     warp = Image<default_type>::open (opt[0][0]).with_direct_io();
-    if (warp.ndim() != 5)
-      throw Exception ("the input -warp_full image must be a 5D file.");
-    if (warp.size(3) != 3)
-      throw Exception ("the input -warp_full image must have 3 volumes (x,y,z) in the 4th dimension.");
-    if (warp.size(4) != 4)
-      throw Exception ("the input -warp_full image must have 4 volumes in the 5th dimension.");
+    Registration::Warp::check_warp_full (warp);
     if (linear)
       throw Exception ("the -warp_full option cannot be applied in combination with -linear since the "
                        "linear transform is already included in the warp header");
@@ -315,7 +308,7 @@ void run ()
   // Flip
   opt = get_options ("flip");
   if (opt.size()) {
-    std::vector<int> axes = opt[0][0];
+    vector<int> axes = opt[0][0];
     transform_type flip;
     flip.setIdentity();
     for (size_t i = 0; i < axes.size(); ++i) {
@@ -352,7 +345,7 @@ void run ()
       directions_az_el = load_matrix (opt[0][0]);
     else
       directions_az_el = DWI::Directions::electrostatic_repulsion_300();
-    Math::SH::spherical2cartesian (directions_az_el, directions_cartesian);
+    Math::Sphere::spherical2cartesian (directions_az_el, directions_cartesian);
 
     // load with SH coeffients contiguous in RAM
     stride = Stride::contiguous_along_axis (3, input_header);
@@ -414,9 +407,9 @@ void run ()
           if (result.cols() == 2) {
             Eigen::Matrix<default_type, 2, 1> azel (v.data());
             Eigen::Vector3 dir;
-            Math::SH::spherical2cartesian (azel, dir);
+            Math::Sphere::spherical2cartesian (azel, dir);
             dir = rotation * dir;
-            Math::SH::cartesian2spherical (dir, azel);
+            Math::Sphere::cartesian2spherical (dir, azel);
             result.row (l) = azel;
           } else {
             const Eigen::Vector3 dir = rotation * Eigen::Vector3 (v.data());
@@ -460,10 +453,10 @@ void run ()
 
     if (get_options ("midway_space").size()) {
       INFO("regridding to midway space");
-      std::vector<Header> headers;
+      vector<Header> headers;
       headers.push_back(input_header);
       headers.push_back(template_header);
-      std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>> void_trafo;
+      vector<Eigen::Transform<default_type, 3, Eigen::Projective>> void_trafo;
       auto padding = Eigen::Matrix<double, 4, 1>(1.0, 1.0, 1.0, 1.0);
       int subsampling = 1;
       auto midway_header = compute_minimum_average_header (headers, subsampling, padding, void_trafo);

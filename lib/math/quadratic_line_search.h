@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __math_quadratic_line_search_h__
 #define __math_quadratic_line_search_h__
@@ -37,10 +36,10 @@ namespace MR
      *
      *  The min_bound and max_bound arguments define values that are used to
      *  initialise the search. If these bounds do not bracket the minimum,
-     *  then the search will return NAN. Furthermore, if the relevant function
+     *  then the search will return NaN. Furthermore, if the relevant function
      *  is not sufficiently smooth, and the search begins to diverge before
      *  finding a local minimum to within the specified tolerance, then the
-     *  search will also return NAN.
+     *  search will also return NaN.
      *
      *  This effect can be cancelled by calling:
      *  \code
@@ -69,7 +68,7 @@ namespace MR
 
     template <typename ValueType>
     class QuadraticLineSearch
-    {
+    { MEMALIGN(QuadraticLineSearch<ValueType>)
 
       public:
 
@@ -110,7 +109,7 @@ namespace MR
 
           ValueType l = init_lower, m = init_mid, u = init_upper;
           ValueType fl = functor (l), fm = functor (m), fu = functor (u);
-          // TODO Need to test if these bounds are producing a NAN CF
+          // TODO Need to test if these bounds are producing a NaN CF
           size_t iters = 0;
 
           while (iters++ < max_iters) {
@@ -126,7 +125,7 @@ namespace MR
                 return m;
               }
               status = NONCONVEX;
-              return NAN;
+              return NaN;
             }
 
             const ValueType sl = (fm-fl) / (m-l);
@@ -141,7 +140,7 @@ namespace MR
             if (n < l) {
               if (exit_outside_bounds) {
                 status = OUTSIDE_BOUNDS;
-                return NAN;
+                return NaN;
               }
               u = m; fu = fm;
               m = l; fm = fl;
@@ -165,7 +164,7 @@ namespace MR
             } else {
               if (exit_outside_bounds) {
                 status = OUTSIDE_BOUNDS;
-                return NAN;
+                return NaN;
               }
               l = m; fl = fm;
               m = u; fm = fu;
@@ -183,7 +182,7 @@ namespace MR
           }
 
           status = NONCONVERGING;
-          return NAN;
+          return NaN;
 
         }
 
@@ -213,7 +212,7 @@ namespace MR
               }
               status = NONCONVEX;
               std::cerr << "Returning due to nonconvexity, unsuccessfully\n";
-              return NAN;
+              return NaN;
             }
 
             const ValueType sl = (fm-fl) / (m-l);
@@ -228,7 +227,7 @@ namespace MR
             if (n < l) {
               if (exit_outside_bounds) {
                 status = OUTSIDE_BOUNDS;
-                return NAN;
+                return NaN;
               }
               u = m; fu = fm;
               m = l; fm = fl;
@@ -252,7 +251,7 @@ namespace MR
             } else {
               if (exit_outside_bounds) {
                 status = OUTSIDE_BOUNDS;
-                return NAN;
+                return NaN;
               }
               l = m; fl = fm;
               m = u; fm = fu;
@@ -273,7 +272,7 @@ namespace MR
 
           status = NONCONVERGING;
           std::cerr << "Returning due to too many iterations\n";
-          return NAN;
+          return NaN;
         }
 
 
@@ -285,8 +284,6 @@ namespace MR
         std::string message;
 
         mutable return_t status;
-
-
     };
 
 

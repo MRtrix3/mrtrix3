@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __math_SH_h__
 #define __math_SH_h__
@@ -158,7 +157,7 @@ namespace MR
         }
 
       template <typename ValueType>
-      class Transform {
+      class Transform { MEMALIGN(Transform<ValueType>)
         public:
           typedef Eigen::Matrix<ValueType,Eigen::Dynamic,Eigen::Dynamic> matrix_type;
 
@@ -286,28 +285,6 @@ namespace MR
 
 
 
-      template <class VectorType1, class VectorType2>
-        inline VectorType1& SH2RH (VectorType1& RH, const VectorType2& sh)
-        {
-          typedef typename VectorType2::Scalar value_type;
-          RH.resize (sh.size());
-          int lmax = 2*sh.size() +1;
-          Eigen::Matrix<value_type,Eigen::Dynamic,1,0,64> AL (lmax+1);
-          Legendre::Plm_sph (AL, lmax, 0, 1.0);
-          for (ssize_t l = 0; l < sh.size(); l++)
-            RH[l] = sh[l]/ AL[2*l];
-          return RH;
-        }
-
-      template <class VectorType>
-        inline Eigen::Matrix<typename VectorType::Scalar,Eigen::Dynamic,1> SH2RH (const VectorType& sh)
-        {
-          Eigen::Matrix<typename VectorType::Scalar,Eigen::Dynamic,1> RH (sh.size());
-          SH2RH (RH, sh);
-          return RH;
-        }
-
-
 
       //! perform spherical convolution, in place
       /*! perform spherical convolution of SH coefficients \a sh with response
@@ -343,119 +320,21 @@ namespace MR
 
 
       namespace {
-        template <typename> struct __dummy { typedef int type; };
+        template <typename> struct __dummy { NOMEMALIGN typedef int type; };
       }
 
 
-      //! convert spherical coordinates to Cartesian coordinates
-      template <class VectorType1, class VectorType2>
-        inline typename std::enable_if<VectorType1::IsVectorAtCompileTime, void>::type
-        spherical2cartesian (const VectorType1& az_el_r, VectorType2&& xyz)
-        {
-          if (az_el_r.size() == 3) {
-            xyz[0] = az_el_r[2] * std::sin (az_el_r[1]) * std::cos (az_el_r[0]);
-            xyz[1] = az_el_r[2] * std::sin (az_el_r[1]) * std::sin (az_el_r[0]);
-            xyz[2] = az_el_r[2] * cos (az_el_r[1]);
-          }
-          else {
-            xyz[0] = std::sin (az_el_r[1]) * std::cos (az_el_r[0]);
-            xyz[1] = std::sin (az_el_r[1]) * std::sin (az_el_r[0]);
-            xyz[2] = cos (az_el_r[1]);
-          }
-        }
-
-
-      //! convert matrix of spherical coordinates to Cartesian coordinates
-      template <class MatrixType1, class MatrixType2>
-        inline typename std::enable_if<!MatrixType1::IsVectorAtCompileTime, void>::type
-        spherical2cartesian (const MatrixType1& az_el, MatrixType2&& cartesian)
-        {
-          cartesian.resize (az_el.rows(), 3);
-          for (ssize_t dir = 0; dir < az_el.rows(); ++dir)
-            spherical2cartesian (az_el.row (dir), cartesian.row (dir));
-        }
-
-      //! convert matrix of spherical coordinates to Cartesian coordinates
-      template <class MatrixType>
-        inline typename std::enable_if<!MatrixType::IsVectorAtCompileTime, Eigen::MatrixXd>::type
-        spherical2cartesian (const MatrixType& az_el)
-        {
-          Eigen::MatrixXd cartesian (az_el.rows(), 3);
-          for (ssize_t dir = 0; dir < az_el.rows(); ++dir)
-            spherical2cartesian (az_el.row (dir), cartesian.row (dir));
-          return cartesian;
-        }
-
-
-
-      //! convert Cartesian coordinates to spherical coordinates
-      template <class VectorType1, class VectorType2>
-        inline typename std::enable_if<VectorType1::IsVectorAtCompileTime, void>::type
-        cartesian2spherical (const VectorType1& xyz, VectorType2&& az_el_r)
-        {
-          auto r = std::sqrt (Math::pow2(xyz[0]) + Math::pow2(xyz[1]) + Math::pow2(xyz[2]));
-          az_el_r[0] = std::atan2 (xyz[1], xyz[0]);
-          az_el_r[1] = std::acos (xyz[2] / r);
-          if (az_el_r.size() == 3)
-            az_el_r[2] = r;
-        }
-
-      //! convert matrix of Cartesian coordinates to spherical coordinates
-      template <class MatrixType1, class MatrixType2>
-        inline typename std::enable_if<!MatrixType1::IsVectorAtCompileTime, void>::type
-        cartesian2spherical (const MatrixType1& cartesian, MatrixType2&& az_el, bool include_r = false)
-        {
-          az_el.allocate (cartesian.rows(), include_r ? 3 : 2);
-          for (ssize_t dir = 0; dir < cartesian.rows(); ++dir)
-            cartesian2spherical (cartesian.row (dir), az_el.row (dir));
-        }
-
-      //! convert matrix of Cartesian coordinates to spherical coordinates
-      template <class MatrixType>
-        inline typename std::enable_if<!MatrixType::IsVectorAtCompileTime, Eigen::MatrixXd>::type
-        cartesian2spherical (const MatrixType& cartesian, bool include_r = false)
-        {
-          Eigen::MatrixXd az_el (cartesian.rows(), include_r ? 3 : 2);
-          for (ssize_t dir = 0; dir < cartesian.rows(); ++dir)
-            cartesian2spherical (cartesian.row (dir), az_el.row (dir));
-          return az_el;
-        }
-
-
-
-
-      //! compute axially-symmetric SH coefficients corresponding to specified tensor
-      template <class VectorType>
-        inline VectorType& FA2SH (
-            VectorType& sh, default_type FA, default_type ADC, default_type bvalue, int lmax, int precision = 100)
-        {
-          default_type a = FA/sqrt (3.0 - 2.0*FA*FA);
-          default_type ev1 = ADC* (1.0+2.0*a), ev2 = ADC* (1.0-a);
-
-          Eigen::VectorXd sigs (precision);
-          Eigen::MatrixXd SHT (precision, lmax/2+1);
-          Eigen::Matrix<default_type,Eigen::Dynamic,1,0,64> AL;
-
-          for (int i = 0; i < precision; i++) {
-            default_type el = i*Math::pi / (2.0* (precision-1));
-            sigs[i] = exp (-bvalue* (ev1*std::cos (el) *std::cos (el) + ev2*std::sin (el) *std::sin (el)));
-            Legendre::Plm_sph (AL, lmax, 0, std::cos (el));
-            for (int l = 0; l < lmax/2+1; l++) SHT (i,l) = AL[2*l];
-          }
-
-          return (sh = pinv(SHT) * sigs);
-        }
 
 
 
 
       //! used to speed up SH calculation
       template <typename ValueType> class PrecomputedFraction
-      {
+      { NOMEMALIGN
         public:
           PrecomputedFraction () : f1 (0.0), f2 (0.0) { }
           ValueType f1, f2;
-          typename std::vector<ValueType>::const_iterator p1, p2;
+          typename vector<ValueType>::const_iterator p1, p2;
       };
 
 #ifndef USE_NON_ORTHONORMAL_SH_BASIS
@@ -466,7 +345,7 @@ namespace MR
 
       //! Precomputed Associated Legrendre Polynomials - used to speed up SH calculation
       template <typename ValueType> class PrecomputedAL
-      {
+      { NOMEMALIGN
         public:
           typedef ValueType value_type;
 
@@ -491,7 +370,7 @@ namespace MR
             Eigen::Matrix<value_type,Eigen::Dynamic,1,0,64> buf (lmax+1);
 
             for (int n = 0; n < ndir; n++) {
-              typename std::vector<value_type>::iterator p = AL.begin() + n*nAL;
+              typename vector<value_type>::iterator p = AL.begin() + n*nAL;
               value_type cos_el = std::cos (n*inc);
               for (int m = 0; m <= lmax; m++) {
                 Legendre::Plm_sph (buf, lmax, m, cos_el);
@@ -566,7 +445,7 @@ namespace MR
         protected:
           int lmax, ndir, nAL;
           ValueType inc;
-          std::vector<ValueType> AL;
+          vector<ValueType> AL;
       };
 
 
@@ -720,7 +599,7 @@ namespace MR
 
       //! a class to hold the coefficients for an apodised point-spread function.
       template <typename ValueType> class aPSF
-      {
+      { MEMALIGN(aPSF<ValueType>)
         public:
           aPSF (const size_t lmax) :
             lmax (lmax),

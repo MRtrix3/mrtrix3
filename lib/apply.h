@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __apply_h__
 #define __apply_h__
@@ -25,7 +24,7 @@ namespace MR {
   namespace {
 
     template<size_t N>
-      struct Apply {
+      struct Apply { NOMEMALIGN
         template<typename F, typename T>
           static FORCE_INLINE void apply (F && f, T && t)
           {
@@ -35,7 +34,7 @@ namespace MR {
       };
 
     template<>
-      struct Apply<0> {
+      struct Apply<0> { NOMEMALIGN
         template<typename F, typename T>
           static FORCE_INLINE void apply (F && f, T && t)
           {
@@ -47,7 +46,7 @@ namespace MR {
 
 
     template<size_t N>
-      struct Unpack {
+      struct Unpack { NOMEMALIGN
         template<typename F, typename T, typename... A>
           static FORCE_INLINE auto unpack (F && f, T && t, A &&... a)
           -> decltype(Unpack<N-1>::unpack (
@@ -62,7 +61,7 @@ namespace MR {
       };
 
     template<>
-      struct Unpack<0> {
+      struct Unpack<0> { NOMEMALIGN
         template<typename F, typename T, typename... A>
           static FORCE_INLINE auto unpack (F && f, T &&, A &&... a)
           -> decltype(::std::forward<F>(f)(::std::forward<A>(a)...))

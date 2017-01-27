@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __dwi_tractography_tracking_write_kernel_h__
 #define __dwi_tractography_tracking_write_kernel_h__
@@ -27,6 +26,7 @@
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
 
+#include "dwi/tractography/tracking/early_exit.h"
 #include "dwi/tractography/tracking/generated_track.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/types.h"
@@ -44,7 +44,7 @@ namespace MR
 
 
       class WriteKernel
-      {
+      { MEMALIGN(WriteKernel)
         public:
 
           WriteKernel (const SharedBase& shared,
@@ -54,7 +54,8 @@ namespace MR
                 writer (output_file, properties),
                 always_increment (S.properties.seeds.is_finite() || !S.max_num_tracks),
                 warn_on_max_attempts (S.implicit_max_num_attempts),
-                progress (printf ("       0 generated,        0 selected", 0, 0), always_increment ? S.max_num_attempts : S.max_num_tracks)
+                progress (printf ("       0 generated,        0 selected", 0, 0), always_increment ? S.max_num_attempts : S.max_num_tracks),
+                early_exit (shared)
           {
             const auto seed_output = properties.find ("seed_output");
             if (seed_output != properties.end()) {
@@ -93,7 +94,9 @@ namespace MR
           const bool always_increment, warn_on_max_attempts;
           std::unique_ptr<File::OFStream> seeds;
           ProgressBar progress;
+          EarlyExit early_exit;
       };
+
 
 
 

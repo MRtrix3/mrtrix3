@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 #include "gui/mrview/colourmap_button.h"
 #include "gui/mrview/colourmap.h"
 #include "math/rng.h"
@@ -27,7 +26,7 @@ namespace MRView
 
 // FIXME Why is this duplicating colourmap code?
 using Entry = ColourMap::Entry;
-const std::vector<Entry> ColourMapButton::core_colourmaps_entries{{
+const vector<Entry> ColourMapButton::core_colourmaps_entries{{
     Entry ("Gray",
         "color.rgb = vec3 (amplitude);\n",
         [] (float amplitude) { return Eigen::Vector3f (amplitude, amplitude, amplitude); }),
@@ -46,7 +45,7 @@ const std::vector<Entry> ColourMapButton::core_colourmaps_entries{{
 }};
 
 
-const std::vector<Entry> ColourMapButton::special_colourmaps_entries{{
+const vector<Entry> ColourMapButton::special_colourmaps_entries{{
     Entry ("RGB",
            "color.rgb = scale * (abs(color.rgb) - offset);\n",
            Entry::basic_map_fn(),

@@ -10,19 +10,19 @@ Synopsis
 
     fixel2voxel [ options ]  fixel_in operation image_out
 
--  *fixel_in*: the input sparse fixel image.
--  *operation*: the operation to apply, one of: mean, sum, product, rms, var, std, min, max, absmax, magmax, count, complexity, sf, dec_unit, dec_scaled, split_size, split_value, split_dir.
+-  *fixel_in*: the input fixel data file
+-  *operation*: the operation to apply, one of: mean, sum, product, min, max, absmax, magmax, count, complexity, sf, dec_unit, dec_scaled, split_data, split_dir.
 -  *image_out*: the output scalar image.
 
 Description
 -----------
 
-convert a fixel-based sparse-data image into some form of scalar image. This could be: - Some statistic computed across all fixel values within a voxel: mean, sum, product, rms, var, std, min, max, absmax, magmax- The number of fixels in each voxel: count- Some measure of crossing-fibre organisation: complexity, sf ('single-fibre')- A 4D directionally-encoded colour image: dec_unit, dec_scaled- A 4D scalar image with one 3D volume per fixel: split_size, split_value- A 4D image with three 3D volumes per fixel direction: split_dir
+convert a fixel-based sparse-data image into some form of scalar image. This could be: - Some statistic computed across all fixel values within a voxel: mean, sum, product, min, max, absmax, magmax- The number of fixels in each voxel: count- Some measure of crossing-fibre organisation: complexity, sf ('single-fibre')- A 4D directionally-encoded colour image: dec_unit, dec_scaled- A 4D scalar image of fixel values with one 3D volume per fixel: split_data- A 4D image of fixel directions, stored as three 3D volumes per fixel direction: split_dir
 
 Options
 -------
 
--  **-weighted** weight the contribution of each fixel to the per-voxel result according to its volume (note that this option is not applicable for all operations, and should be avoided if the value stored in the fixel image is itself the estimated fibre volume)
+-  **-weighted fixel_in** weight the contribution of each fixel to the per-voxel result according to its volume. E.g. when estimating a voxel-based measure of mean axon diameter, a fixel's mean axon diameter should be weigthed by its relative volume within the voxel. Note that AFD can be used as a psuedomeasure of fixel volume.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -46,19 +46,19 @@ Standard options
 References
 ^^^^^^^^^^
 
-* Reference for 'complexity' operation:Riffert, T. W.; Schreiber, J.; Anwander, A. & Knosche, T. R. Beyond Fractional Anisotropy: Extraction of bundle-specific structural metrics from crossing fibre models. NeuroImage, 2014 (in press)
+* Reference for 'complexity' operation:Riffert, T. W.; Schreiber, J.; Anwander, A. & Knosche, T. R. Beyond Fractional Anisotropy: Extraction of bundle-specific structural metrics from crossing fibre models. NeuroImage, 2014, 100, 176-191
 
 --------------
 
 
 
-**Author:** Robert E. Smith (robert.smith@florey.edu.au)
+**Author:** Robert E. Smith (robert.smith@florey.edu.au) & David Raffelt (david.raffelt@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
+**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors
 
-This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/
+This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 MRtrix is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see www.mrtrix.org
+For more details, see http://www.mrtrix.org/.
 

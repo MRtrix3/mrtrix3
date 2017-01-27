@@ -11,7 +11,8 @@ def initParser(subparsers, base_parser):
   options.add_argument('-threshold', type=float, help='Apply a hard FA threshold, rather than selecting the top voxels')
   lib.cmdlineParser.flagMutuallyExclusiveOptions( [ 'number', 'threshold' ] )
   parser.set_defaults(algorithm='fa')
-  parser.set_defaults(single_shell=False)
+  parser.set_defaults(single_shell=True)
+  parser.set_defaults(needs_bzero=True)
   
   
   
@@ -31,6 +32,7 @@ def execute():
   import lib.app
   from lib.getUserPath import getUserPath
   from lib.runCommand  import runCommand
+  from lib.runFunction import runFunction
   lmax_option = ''
   if lib.app.args.lmax:
     lmax_option = ' -lmax ' + lib.app.args.lmax
@@ -39,14 +41,13 @@ def execute():
     mask_path = 'mask_eroded.mif'
   else:
     mask_path = 'mask.mif'
-  runCommand('dwi2tensor dwi.mif -mask ' + mask_path + ' tensor.mif')
+  runCommand('mrcat bzero.mif dwi.mif - -axis 3 | dwi2tensor - -mask ' + mask_path + ' tensor.mif')
   runCommand('tensor2metric tensor.mif -fa fa.mif -vector vector.mif -mask ' + mask_path)
   if lib.app.args.threshold:
     runCommand('mrthreshold fa.mif voxels.mif -abs ' + str(lib.app.args.threshold))
   else:
     runCommand('mrthreshold fa.mif voxels.mif -top ' + str(lib.app.args.number))
-  runCommand('amp2sh dwi.mif dwiSH.mif' + lmax_option)
-  runCommand('sh2response dwiSH.mif voxels.mif vector.mif response.txt' + lmax_option)
+  runCommand('amp2response dwi.mif voxels.mif vector.mif response.txt' + lmax_option)
 
-  shutil.copyfile('response.txt', getUserPath(lib.app.args.output, False))
+  runFunction(shutil.copyfile, 'response.txt', getUserPath(lib.app.args.output, False))
 

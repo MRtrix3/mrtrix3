@@ -1,3 +1,16 @@
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
+ */
+
 #include "command.h"
 #include "image.h"
 #include "algo/loop.h"
@@ -80,15 +93,18 @@ template <class InType1, class InType2, class MaskType1, class MaskType2>
     if (use_mask1 and use_mask2) {
       if (dimensions == 3) {
         for (auto i = Loop() (in1, in2, in1mask, in2mask); i ;++i)
-          if (in1mask.value() and in2mask.value()){
+          if (in1mask.value() and in2mask.value()) {
             ++n_voxels;
             meansquared<value_type>(in1.value(), in2.value(), sos);
           }
       } else { // 4D
+        Eigen::Matrix<value_type,Eigen::Dynamic,1> a (in1.size(3)), b (in2.size(3));
         for (auto i = Loop(0, 3) (in1, in2, in1mask, in2mask); i ;++i) {
-          if (in1mask.value() and in2mask.value()){
+          if (in1mask.value() and in2mask.value()) {
             ++n_voxels;
-            meansquared<value_type>(in1.row(3), in2.row(3), sos);
+            a = in1.row(3);
+            b = in2.row(3);
+            meansquared<value_type>(a, b, sos);
           }
         }
       }
@@ -100,10 +116,13 @@ template <class InType1, class InType2, class MaskType1, class MaskType2>
             meansquared<value_type>(in1.value(), in2.value(), sos);
           }
       } else { // 4D
+        Eigen::Matrix<value_type,Eigen::Dynamic,1> a (in1.size(3)), b (in2.size(3));
         for (auto i = Loop(0, 3) (in1, in2, in1mask); i ;++i) {
           if (in1mask.value()){
             ++n_voxels;
-            meansquared<value_type>(in1.row(3), in2.row(3), sos);
+            a = in1.row(3);
+            b = in2.row(3);
+            meansquared<value_type>(a, b, sos);
           }
         }
       }
@@ -115,10 +134,13 @@ template <class InType1, class InType2, class MaskType1, class MaskType2>
             meansquared<value_type>(in1.value(), in2.value(), sos);
           }
       } else { // 4D
+        Eigen::Matrix<value_type,Eigen::Dynamic,1> a (in1.size(3)), b (in2.size(3));
         for (auto i = Loop(0, 3) (in1, in2, in2mask); i ;++i) {
           if (in2mask.value()){
             ++n_voxels;
-            meansquared<value_type>(in1.row(3), in2.row(3), sos);
+            a = in1.row(3);
+            b = in2.row(3);
+            meansquared<value_type>(a, b, sos);
           }
         }
       }
@@ -127,8 +149,12 @@ template <class InType1, class InType2, class MaskType1, class MaskType2>
         for (auto i = Loop() (in1, in2); i ;++i)
           meansquared<value_type>(in1.value(), in2.value(), sos);
       } else { // 4D
-        for (auto i = Loop(0, 3) (in1, in2); i ;++i)
-          meansquared<value_type>(in1.row(3), in2.row(3), sos);
+        Eigen::Matrix<value_type,Eigen::Dynamic,1> a (in1.size(3)), b (in2.size(3));
+        for (auto i = Loop(0, 3) (in1, in2); i ;++i) {
+          a = in1.row(3);
+          b = in2.row(3);
+          meansquared<value_type>(a, b, sos);
+        }
       }
     }
   }
@@ -303,9 +329,9 @@ void run ()
       typedef Header ImageTypeM;
 
       n_voxels = 0;
-      std::vector<Header> headers;
+      vector<Header> headers;
       Registration::Transform::Rigid transform;
-      std::vector<Eigen::Transform<default_type, 3, Eigen::Projective> > init_transforms;
+      vector<Eigen::Transform<default_type, 3, Eigen::Projective>> init_transforms;
       Eigen::Matrix<default_type, 4, 1> padding (0.0, 0.0, 0.0, 0.0);
       headers.push_back (Header (input1));
       headers.push_back (Header (input2));

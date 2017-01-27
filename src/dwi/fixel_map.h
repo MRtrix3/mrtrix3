@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 
 
@@ -34,8 +33,7 @@ namespace MR
 
 
     template <class Fixel>
-    class Fixel_map
-    {
+    class Fixel_map { MEMALIGN(Fixel_map<Fixel>)
 
       public:
         Fixel_map (const Header& H) :
@@ -49,7 +47,6 @@ namespace MR
           fixels.push_back (Fixel());
         }
         Fixel_map (const Fixel_map&) = delete;
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         class MapVoxel;
         typedef Image<MapVoxel*> VoxelAccessor;
@@ -82,10 +79,10 @@ namespace MR
         const ::MR::Header& header() const { return _header; }
 
       protected:
-        std::vector<Fixel> fixels;
+        vector<Fixel> fixels;
 
       private:
-        const class HeaderHelper : public ::MR::Header {
+        const class HeaderHelper : public ::MR::Header { MEMALIGN(HeaderHelper)
           public:
             HeaderHelper (const ::MR::Header& H) :
                 ::MR::Header (H)
@@ -104,7 +101,7 @@ namespace MR
 
     template <class Fixel>
     class Fixel_map<Fixel>::MapVoxel
-    {
+    { MEMALIGN(Fixel_map<Fixel>)
       public:
         MapVoxel (const FMLS::FOD_lobes& in, const size_t first) :
             first_fixel_index (first),
@@ -126,7 +123,6 @@ namespace MR
             lookup_table = nullptr;
           }
         }
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         size_t first_index() const { return first_fixel_index; }
         size_t num_fixels()  const { return count; }
@@ -150,8 +146,7 @@ namespace MR
 
 
     template <class Fixel>
-    class Fixel_map<Fixel>::Iterator
-    {
+    class Fixel_map<Fixel>::Iterator { NOMEMALIGN
         friend class Fixel_map<Fixel>::ConstIterator;
       public:
         Iterator (const MapVoxel* const voxel, Fixel_map<Fixel>& parent) :
@@ -169,8 +164,7 @@ namespace MR
     };
 
     template <class Fixel>
-    class Fixel_map<Fixel>::ConstIterator
-    {
+    class Fixel_map<Fixel>::ConstIterator { NOMEMALIGN
       public:
         ConstIterator (const MapVoxel* const voxel, const Fixel_map& parent) :
             index     (voxel ? voxel->first_index() : 0),

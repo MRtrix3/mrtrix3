@@ -1,5 +1,5 @@
 Command-line usage
-==============
+==================
 
 *MRtrix3* generally follows a relatively standard Unix syntax, namely:
 
@@ -12,7 +12,7 @@ plenty of tutorials online to get you started. There are however a few notable
 features specific to *MRtrix3*, which are outlined below.
 
 Using short option names
--------------
+-------------------------
 
 Options do not need to be provided in full, as long as the initial part
 of the option provided is sufficient to unambiguously identify it. For
@@ -37,7 +37,7 @@ further:
     mrconvert: [ERROR] several matches possible for option "-d": "-datatype, "-debug"
 
 Ordering of options on the command-line
-----------------
+---------------------------------------
 
 Options can typically occur anywhere on the command-line, in any order -
 they do not usually need to precede the arguments. However, there are a
@@ -46,7 +46,7 @@ few commands where the order does matter, particularly ``mrcalc``.
 .. _number_sequences:
 
 Number sequences and floating-point lists
-----------------
+-----------------------------------------
 
 Options often expect arguments in the form of *number sequences* or
 *floating-point lists of numbers*. The former consists or a series of
@@ -70,7 +70,7 @@ numbers, for example:
 .. _unix_pipelines:
 
 Unix Pipelines
---------
+--------------
 
 The output of one program can be fed straight through to the input of
 another program via `Unix

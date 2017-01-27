@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __registration_metric_evaluate_h__
 #define __registration_metric_evaluate_h__
@@ -32,34 +31,34 @@ namespace MR
       //! \cond skip
       namespace {
         template<class T>
-        struct Void2 {
+        struct Void2 { NOMEMALIGN
           typedef void type;
         };
 
         template <class MetricType, typename U = void>
-        struct metric_requires_precompute {
+        struct metric_requires_precompute { NOMEMALIGN
           typedef int no;
         };
 
         template <class MetricType>
-        struct metric_requires_precompute<MetricType, typename Void2<typename MetricType::requires_precompute>::type> {
+        struct metric_requires_precompute<MetricType, typename Void2<typename MetricType::requires_precompute>::type> { NOMEMALIGN
           typedef int yes;
         };
 
         template <class MetricType, typename U = void>
-        struct metric_requires_initialisation {
+        struct metric_requires_initialisation { NOMEMALIGN
           typedef int no;
         };
 
         template <class MetricType>
-        struct metric_requires_initialisation<MetricType, typename Void2<typename MetricType::requires_initialisation>::type> {
+        struct metric_requires_initialisation<MetricType, typename Void2<typename MetricType::requires_initialisation>::type> { NOMEMALIGN
           typedef int yes;
         };
       }
       //! \endcond
 
       template <class MetricType, class ParamType>
-        class Evaluate {
+        class Evaluate { MEMALIGN(Evaluate<MetricType,ParamType>)
           public:
 
             typedef typename ParamType::TransformParamType TransformParamType;
@@ -111,10 +110,10 @@ namespace MR
               return overall_cost_function(0);
             }
 
-            struct ThreadFunctor {
+            struct ThreadFunctor { MEMALIGN(ThreadFunctor)
               public:
                 ThreadFunctor (
-                    const std::vector<size_t>& inner_axes,
+                    const vector<size_t>& inner_axes,
                     const default_type density,
                     const MetricType& metric,
                     const ParamType& parameters,
@@ -154,7 +153,7 @@ namespace MR
                     }
                 }
               protected:
-                std::vector<size_t> inner_axes;
+                vector<size_t> inner_axes;
                 default_type density;
                 MetricType metric;
                 ParamType params;
@@ -235,7 +234,7 @@ namespace MR
           protected:
               MetricType metric;
               ParamType params;
-              std::vector<size_t> extent;
+              vector<size_t> extent;
               size_t iteration;
               Eigen::MatrixXd directions;
 

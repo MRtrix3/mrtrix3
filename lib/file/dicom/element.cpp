@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "file/path.h"
 #include "file/dicom/element.h"
@@ -251,9 +250,9 @@ namespace MR {
 
 
 
-      std::vector<int32_t> Element::get_int () const
+      vector<int32_t> Element::get_int () const
       {
-        std::vector<int32_t> V;
+        vector<int32_t> V;
         if (VR == VR_SL) 
           for (const uint8_t* p = data; p < data + size; p += sizeof (int32_t))
             V.push_back (Raw::fetch_<int32_t> (p, is_BE));
@@ -261,7 +260,7 @@ namespace MR {
           for (const uint8_t* p = data; p < data + size; p += sizeof (int16_t)) 
             V.push_back (Raw::fetch_<int16_t> (p, is_BE));
         else if (VR == VR_IS) {
-          std::vector<std::string> strings (split (std::string (reinterpret_cast<const char*> (data), size), "\\", false));
+          vector<std::string> strings (split (std::string (reinterpret_cast<const char*> (data), size), "\\", false));
           V.resize (strings.size());
           for (size_t n = 0; n < V.size(); n++) 
             V[n] = to<int32_t> (strings[n]);
@@ -275,9 +274,9 @@ namespace MR {
 
 
 
-      std::vector<uint32_t> Element::get_uint () const
+      vector<uint32_t> Element::get_uint () const
       {
-        std::vector<uint32_t> V;
+        vector<uint32_t> V;
         if (VR == VR_UL) 
           for (const uint8_t* p = data; p < data + size; p += sizeof (uint32_t))
             V.push_back (Raw::fetch_<uint32_t> (p, is_BE));
@@ -285,7 +284,7 @@ namespace MR {
           for (const uint8_t* p = data; p < data + size; p += sizeof (uint16_t)) 
             V.push_back (Raw::fetch_<uint16_t> (p, is_BE));
         else if (VR == VR_IS) {
-          std::vector<std::string> strings (split (std::string (reinterpret_cast<const char*> (data), size), "\\", false));
+          vector<std::string> strings (split (std::string (reinterpret_cast<const char*> (data), size), "\\", false));
           V.resize (strings.size());
           for (size_t n = 0; n < V.size(); n++) V[n] = to<uint32_t> (strings[n]);
         }
@@ -296,9 +295,9 @@ namespace MR {
 
 
 
-      std::vector<double> Element::get_float () const
+      vector<double> Element::get_float () const
       {
-        std::vector<double> V;
+        vector<double> V;
         if (VR == VR_FD) 
           for (const uint8_t* p = data; p < data + size; p += sizeof (float64))
             V.push_back (Raw::fetch_<float64> (p, is_BE));
@@ -306,7 +305,7 @@ namespace MR {
           for (const uint8_t* p = data; p < data + size; p += sizeof (float32)) 
             V.push_back (Raw::fetch_<float32> (p, is_BE));
         else if (VR == VR_DS || VR == VR_IS) {
-          std::vector<std::string> strings (split (std::string (reinterpret_cast<const char*> (data), size), "\\", false));
+          vector<std::string> strings (split (std::string (reinterpret_cast<const char*> (data), size), "\\", false));
           V.resize (strings.size());
           for (size_t n = 0; n < V.size(); n++) 
             V[n] = to<double> (strings[n]);
@@ -320,16 +319,16 @@ namespace MR {
 
       
 
-      std::vector<std::string> Element::get_string () const
+      vector<std::string> Element::get_string () const
       { 
         if (VR == VR_AT) {
-          std::vector<std::string> strings;
+          vector<std::string> strings;
           strings.push_back (printf ("%02X %02X", Raw::fetch_<uint16_t> (data, is_BE), Raw::fetch_<uint16_t> (data+2, is_BE)));
           return strings;
         }
 
-        std::vector<std::string> strings (split (std::string (reinterpret_cast<const char*> (data), size), "\\", false)); 
-        for (std::vector<std::string>::iterator i = strings.begin(); i != strings.end(); ++i) {
+        vector<std::string> strings (split (std::string (reinterpret_cast<const char*> (data), size), "\\", false)); 
+        for (vector<std::string>::iterator i = strings.begin(); i != strings.end(); ++i) {
           *i = strip (*i);
           replace (*i, '^', ' ');
         }
@@ -340,7 +339,7 @@ namespace MR {
 
       namespace {
         template <class T> 
-          inline void print_vec (const std::vector<T>& V)
+          inline void print_vec (const vector<T>& V)
           { 
             for (size_t n = 0; n < V.size(); n++) 
               fprintf (stdout, "%s ", str (V[n]).c_str()); 

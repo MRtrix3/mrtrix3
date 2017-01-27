@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __dwi_tractography_editing_loader_h__
 #define __dwi_tractography_editing_loader_h__
@@ -35,10 +34,10 @@ namespace MR {
 
 
         class Loader
-        {
+        { MEMALIGN(Loader)
 
           public:
-            Loader (const std::vector<std::string>& files) :
+            Loader (const vector<std::string>& files) :
               file_list (files),
               dummy_properties (),
               reader (new Reader<> (file_list[0], dummy_properties)),
@@ -48,7 +47,7 @@ namespace MR {
 
 
           private:
-            const std::vector<std::string>& file_list;
+            const vector<std::string>& file_list;
             Properties dummy_properties;
             std::unique_ptr<Reader<> > reader;
             size_t file_index;

@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __adapter_reslice_h__
 #define __adapter_reslice_h__
@@ -26,7 +25,7 @@ namespace MR
   {
 
     extern const transform_type NoTransform;
-    extern const std::vector<int> AutoOverSample;
+    extern const vector<int> AutoOverSample;
 
     //! \addtogroup interp
     // @{
@@ -71,16 +70,18 @@ namespace MR
      * \sa Interp::reslice()
      */
     template <template <class ImageType> class Interpolator, class ImageType>
-      class Reslice
-    {
+      class Reslice :
+        public ImageBase<Reslice<Interpolator,ImageType>,typename ImageType::value_type>
+    { MEMALIGN (Reslice<Interpolator, ImageType>)
       public:
+
         typedef typename ImageType::value_type value_type;
 
         template <class HeaderType>
           Reslice (const ImageType& original,
                    const HeaderType& reference,
                    const transform_type& transform = NoTransform,
-                   const std::vector<int>& oversample = AutoOverSample,
+                   const vector<int>& oversample = AutoOverSample,
                    const value_type value_when_out_of_bounds = Interp::Base<ImageType>::default_out_of_bounds_value()) :
             interp (original, value_when_out_of_bounds),
             x { 0, 0, 0 },
@@ -165,8 +166,7 @@ namespace MR
           return interp.value();
         }
 
-        ssize_t index (size_t axis) const { return axis < 3 ? x[axis] : interp.index(axis); }
-        auto index (size_t axis) -> decltype(Helper::index(*this, axis)) { return { *this, axis }; }
+        ssize_t get_index (size_t axis) const { return axis < 3 ? x[axis] : interp.index(axis); }
         void move_index (size_t axis, ssize_t increment) {
           if (axis < 3) x[axis] += increment;
           else interp.index(axis) += increment;

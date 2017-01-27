@@ -1,25 +1,24 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __file_dicom_element_h__
 #define __file_dicom_element_h__
 
 #include <vector>
+#include <unordered_map>
 
 #include "memory.h"
-#include "hash_map.h"
 #include "raw.h"
 #include "file/mmap.h"
 #include "file/dicom/definitions.h"
@@ -29,7 +28,7 @@ namespace MR {
     namespace Dicom {
 
 
-      class Sequence {
+      class Sequence { NOMEMALIGN
         public:
           Sequence (uint16_t group, uint16_t element, uint8_t* end) : group (group), element (element), end (end) { }
           uint16_t group, element;
@@ -40,7 +39,7 @@ namespace MR {
 
 
 
-      class Element {
+      class Element { NOMEMALIGN
         public:
           typedef enum _Type {
             INVALID,
@@ -55,7 +54,7 @@ namespace MR {
           uint16_t group, element, VR;
           uint32_t size;
           uint8_t* data;
-          std::vector<Sequence> parents;
+          vector<Sequence> parents;
 
           void set (const std::string& filename, bool force_read = false, bool read_write = false);
           bool read ();
@@ -92,10 +91,10 @@ namespace MR {
           }
 
           Type type () const;
-          std::vector<int32_t> get_int () const;
-          std::vector<uint32_t> get_uint () const;
-          std::vector<double> get_float () const;
-          std::vector<std::string> get_string () const;
+          vector<int32_t> get_int () const;
+          vector<uint32_t> get_uint () const;
+          vector<double> get_float () const;
+          vector<std::string> get_string () const;
 
           size_t level () const { return parents.size(); }
 
@@ -116,7 +115,7 @@ namespace MR {
           uint8_t* start;
           bool is_explicit, is_BE, is_transfer_syntax_BE;
 
-          std::vector<uint8_t*>  end_seq;
+          vector<uint8_t*>  end_seq;
 
           uint16_t get_VR_from_tag_name (const std::string& name) {
             union { 
@@ -126,7 +125,7 @@ namespace MR {
             return ByteOrder::BE (d.i);
           }
 
-          static UnorderedMap<uint32_t, const char*>::Type dict;
+          static std::unordered_map<uint32_t, const char*> dict;
           static void init_dict();
 
           void report_unknown_tag_with_implicit_syntax () const {

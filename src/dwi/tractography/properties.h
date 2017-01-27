@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __dwi_tractography_properties_h__
 #define __dwi_tractography_properties_h__
@@ -33,7 +32,7 @@ namespace MR
     {
 
 
-      class Properties : public std::map<std::string, std::string> {
+      class Properties : public std::map<std::string, std::string> { MEMALIGN(Properties)
         public:
 
           Properties () { 
@@ -52,7 +51,7 @@ namespace MR
 
           ROISet include, exclude, mask;
           Seeding::List seeds;
-          std::vector<std::string> comments;
+          vector<std::string> comments;
           std::multimap<std::string, std::string> roi;
 
 
@@ -115,7 +114,7 @@ namespace MR
         for (std::map<std::string, std::string>::const_iterator i = P.begin(); i != P.end(); ++i)
           stream << "[ " << i->first << ": " << i->second << " ], ";
         stream << "comments: ";
-        for (std::vector<std::string>::const_iterator i = P.comments.begin(); i != P.comments.end(); ++i)
+        for (vector<std::string>::const_iterator i = P.comments.begin(); i != P.comments.end(); ++i)
           stream << "\"" << *i << "\", ";
         return (stream);
       }

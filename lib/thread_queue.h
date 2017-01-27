@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 
 #ifndef __mrtrix_thread_queue_h__
@@ -39,7 +38,7 @@ namespace MR
        * convenience Functor classes for use in Thread::run_queue()
        ********************************************************************/
       template <class Item> 
-        class __Batch {
+        class __Batch { NOMEMALIGN
           public:
             __Batch (size_t number) : num (number) { }
             size_t num;
@@ -48,13 +47,12 @@ namespace MR
 
 
       // to handle batched / unbatched seamlessly:
-      template <class X> class __item { public: typedef X type; }; 
-      template <class X> class __item <__Batch<X>> { public: typedef X type; };
+      template <class X> class __item { NOMEMALIGN public: typedef X type; }; 
+      template <class X> class __item <__Batch<X>> { NOMEMALIGN public: typedef X type; };
 
       // to get multi/single job/functor seamlessly:
       template <class X>
-        class __job
-        {
+        class __job { NOMEMALIGN
           public:
             typedef typename std::remove_reference<X>::type type;
             typedef typename std::remove_reference<X>::type& member_type;
@@ -67,8 +65,7 @@ namespace MR
         };
 
       template <class X>
-        class __job <__Multi<X>>
-        {
+        class __job <__Multi<X>> { NOMEMALIGN
           public:
             typedef typename std::remove_reference<X>::type type;
             typedef typename std::remove_reference<X>::type member_type;
@@ -348,8 +345,7 @@ namespace MR
      *
      * \sa Thread::run_queue()
      */
-    template <class T> class Queue
-    {
+    template <class T> class Queue { NOMEMALIGN
       public:
         //! Construct a Queue of items of type \c T
         /*! \param description a string identifying the queue for degugging purposes
@@ -397,8 +393,7 @@ namespace MR
          * \sa Thread::Queue for more detailed information and examples.
          * \sa Thread::run_queue() for a much more user-friendly way of setting
          * up a queue.  */
-        class Writer
-        {
+        class Writer { NOMEMALIGN
           public:
             //! Register a Writer object with the queue
             /*! The Writer object will register itself with the queue as a
@@ -418,8 +413,7 @@ namespace MR
              * \sa Thread::Queue for more detailed information and examples.
              * \sa Thread::run_queue() for a much more user-friendly way of setting
              * up a queue.  */
-            class Item
-            {
+            class Item { NOMEMALIGN
               public:
                 //! Construct a Writer::Item object
                 /*! The Writer::Item object can only be instantiated from a
@@ -464,8 +458,7 @@ namespace MR
          * \sa Thread::Queue for more detailed information and examples.
          * \sa Thread::run_queue() for a much more user-friendly way of setting
          * up a queue.  */
-        class Reader
-        {
+        class Reader { NOMEMALIGN
           public:
             //! Register a Reader object with the queue.
             /*! The Reader object will register itself with the queue as a
@@ -485,8 +478,7 @@ namespace MR
              * \sa Thread::Queue for more detailed information and examples.
              * \sa Thread::run_queue() for a much more user-friendly way of setting
              * up a queue.  */
-            class Item
-            {
+            class Item { NOMEMALIGN
               public:
                 //! Construct a Reader::Item object
                 /*! The Reader::Item object can only be instantiated from a
@@ -539,8 +531,8 @@ namespace MR
         T** back;
         size_t capacity;
         size_t writer_count, reader_count;
-        std::stack<T*,std::vector<T*> > item_stack;
-        std::vector<std::unique_ptr<T>> items;
+        std::stack<T*,vector<T*> > item_stack;
+        vector<std::unique_ptr<T>> items;
         std::string name;
 
         Queue (const Queue&) = delete;
@@ -636,10 +628,9 @@ namespace MR
 
      //* \cond skip
 
-    template <class T> class Queue<__Batch<T>>
-    {
+    template <class T> class Queue<__Batch<T>> { NOMEMALIGN
       private:
-        typedef std::vector<T> BatchType;
+        typedef vector<T> BatchType;
         typedef Queue<BatchType> BatchQueue;
 
       public:
@@ -648,14 +639,12 @@ namespace MR
           batch_size (item_type.num) { }
 
 
-        class Writer
-        {
+        class Writer { NOMEMALIGN
           public:
             Writer (Queue<__Batch<T>>& queue) : 
               batch_writer (queue.batch_queue), batch_size (queue.batch_size) { }
 
-            class Item
-            {
+            class Item { NOMEMALIGN
               public:
                 Item (const Writer& writer) : 
                   batch_item (writer.batch_writer), batch_size (writer.batch_size), n (0) { 
@@ -694,14 +683,12 @@ namespace MR
         };
 
 
-        class Reader
-        {
+        class Reader { NOMEMALIGN
           public:
             Reader (Queue<__Batch<T>>& queue) : 
               batch_reader (queue.batch_queue), batch_size (queue.batch_size) { }
 
-            class Item
-            {
+            class Item { NOMEMALIGN
               public:
                 Item (const Reader& reader) : batch_item (reader.batch_reader), batch_size (reader.batch_size), n (0) { }
                 FORCE_INLINE bool read () {
@@ -751,8 +738,7 @@ namespace MR
 
 
        template <class Type, class Functor>
-         class __Source
-         {
+         class __Source { MEMALIGN(__Source<Type,Functor>)
            public:
              __Source (Queue<Type>& queue, Functor& functor) :
                writer (queue), func (__job<Functor>::functor (functor)) { }
@@ -772,8 +758,7 @@ namespace MR
 
 
        template <class Type1, class Functor, class Type2>
-         class __Pipe
-         {
+         class __Pipe { MEMALIGN(__Pipe<Type1,Functor,Type2>)
            public:
              __Pipe (Queue<Type1>& queue_in, Functor& functor, Queue<Type2>& queue_out) :
                reader (queue_in), writer (queue_out), func (__job<Functor>::functor (functor)) { }
@@ -796,8 +781,7 @@ namespace MR
 
 
        template <class Type, class Functor>
-         class __Sink
-         {
+         class __Sink { MEMALIGN(__Sink<Type,Functor>)
            public:
              __Sink (Queue<Type>& queue, Functor& functor) :
                reader (queue), func (__job<Functor>::functor (functor)) { }
@@ -832,7 +816,7 @@ namespace MR
      * (defaults to MRTRIX_QUEUE_DEFAULT_BATCH_SIZE).
      * \sa Thread::run_queue() */
     template <class Item>
-      inline __Batch<Item> batch (const Item& object, size_t number = MRTRIX_QUEUE_DEFAULT_BATCH_SIZE) 
+      inline __Batch<Item> batch (const Item&, size_t number = MRTRIX_QUEUE_DEFAULT_BATCH_SIZE)
       {
         return __Batch<Item> (number);
       }

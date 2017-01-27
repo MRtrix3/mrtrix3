@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __image_adapter_jacobian_h__
 #define __image_adapter_jacobian_h__
@@ -26,20 +25,26 @@ namespace MR
   {
 
     template <class WarpType>
-      class Jacobian : public Base<WarpType> {
-
+      class Jacobian : 
+        public Base<Jacobian<WarpType>,WarpType> 
+    { MEMALIGN (Jacobian<WarpType>)
         public:
+
+          typedef Base<Jacobian<WarpType>,WarpType> base_type;
+          typedef Eigen::Matrix<typename WarpType::value_type,3,3> value_type;
+
+          using base_type::name;
+          using base_type::size;
+          using base_type::spacing;
+          using base_type::index;
+
           Jacobian (const WarpType& parent, bool wrt_scanner = true) :
-            Base<WarpType> (parent),
+            base_type (parent),
             gradient1D (parent, 0, wrt_scanner),
             transform (parent),
             wrt_scanner (wrt_scanner) { }
 
-
-          typedef typename WarpType::value_type value_type;
-
-
-          Eigen::Matrix<value_type, 3, 3> value ()
+          value_type value ()
           {
             for (size_t dim = 0; dim < 3; ++dim)
               gradient1D.index(dim) = index(dim);
@@ -52,18 +57,13 @@ namespace MR
             }
 
             if (wrt_scanner)
-              jacobian = jacobian * transform.scanner2image.linear().template cast<value_type>();
+              jacobian = jacobian * transform.scanner2image.linear().template cast<typename WarpType::value_type>();
             return jacobian;
           }
 
-          using Base<WarpType>::name;
-          using Base<WarpType>::size;
-          using Base<WarpType>::spacing;
-          using Base<WarpType>::index;
-
 
         protected:
-          Eigen::Matrix<value_type, 3, 3> jacobian;
+          value_type jacobian;
           Gradient1D<WarpType> gradient1D;
           Transform transform;
           const bool wrt_scanner;

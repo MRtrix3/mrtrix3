@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 
 #ifndef __formats_mrtrix_utils_h__
@@ -55,7 +54,7 @@ namespace MR
       void write_mrtrix_header (const Header&, StreamType&);
 
 
-    std::vector<ssize_t> parse_axes (size_t ndim, const std::string& specifier);
+    vector<ssize_t> parse_axes (size_t ndim, const std::string& specifier);
 
 
 
@@ -64,22 +63,22 @@ namespace MR
       void read_mrtrix_header (Header& H, SourceType& kv)
       {
         std::string dtype, layout;
-        std::vector<int> dim;
-        std::vector<default_type> vox, scaling;
-        std::vector<std::vector<default_type>> transform, dw_scheme;
+        vector<int> dim;
+        vector<default_type> vox, scaling;
+        vector<vector<default_type>> transform;
 
         std::string key, value;
         while (next_keyvalue (kv, key, value)) {
-          key = lowercase (key);
-          if (key == "dim") dim = parse_ints (value);
-          else if (key == "vox") vox = parse_floats (value);
-          else if (key == "layout") layout = value;
-          else if (key == "datatype") dtype = value;
-          else if (key == "scaling") scaling = parse_floats (value);
-          else if (key == "transform")
+          const std::string lkey = lowercase (key);
+          if (lkey == "dim") dim = parse_ints (value);
+          else if (lkey == "vox") vox = parse_floats (value);
+          else if (lkey == "layout") layout = value;
+          else if (lkey == "datatype") dtype = value;
+          else if (lkey == "scaling") scaling = parse_floats (value);
+          else if (lkey == "transform")
             transform.push_back (parse_floats (value));
           else if (key.size() && value.size())
-            add_line (H.keyval()[key], value);
+            add_line (H.keyval()[key], value); // Preserve capitalization if not a compulsory key
         }
 
         if (dim.empty())

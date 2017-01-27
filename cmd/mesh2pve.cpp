@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 
 
@@ -19,7 +18,8 @@
 
 #include "header.h"
 
-#include "mesh/mesh.h"
+#include "surface/mesh.h"
+#include "surface/algo/mesh2image.h"
 
 
 
@@ -56,12 +56,15 @@ void run ()
 {
 
   // Read in the mesh data
-  Mesh::Mesh mesh (argument[0]);
+  Surface::Mesh mesh (argument[0]);
 
   // Get the template image
-  Header template_image = Header::open (argument[1]);
+  Header template_header = Header::open (argument[1]);
 
   // Create the output image
-  mesh.output_pve_image (template_image, argument[2]);
+  Image<float> output = Image<float>::create (argument[2], template_header);
+
+  // Perform the partial volume estimation
+  Surface::Algo::mesh2image (mesh, output);
 
 }

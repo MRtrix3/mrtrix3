@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "mrtrix.h"
 
@@ -23,9 +22,9 @@ namespace MR
    *                       Miscellaneous functions                        *
    ************************************************************************/
 
-  std::vector<default_type> parse_floats (const std::string& spec)
+  vector<default_type> parse_floats (const std::string& spec)
   {
-    std::vector<default_type> V;
+    vector<default_type> V;
     if (!spec.size()) throw Exception ("floating-point sequence specifier is empty");
     std::string::size_type start = 0, end;
     default_type range_spec[3];
@@ -66,9 +65,9 @@ namespace MR
 
 
 
-  std::vector<int> parse_ints (const std::string& spec, int last)
+  vector<int> parse_ints (const std::string& spec, int last)
   {
-    std::vector<int> V;
+    vector<int> V;
     if (!spec.size()) throw Exception ("integer sequence specifier is empty");
     std::string::size_type start = 0, end;
     int num[3];
@@ -77,8 +76,7 @@ namespace MR
       do {
         end = spec.find_first_of (",:", start);
         std::string token (strip (spec.substr (start, end-start)));
-        lowercase (token);
-        if (token == "end") {
+        if (lowercase (token) == "end") {
           if (last == std::numeric_limits<int>::max())
             throw Exception ("value of \"end\" is not known in number sequence \"" + spec + "\"");
           num[i] = last;
@@ -125,9 +123,9 @@ namespace MR
 
 
 
-  std::vector<std::string> split (const std::string& string, const char* delimiters, bool ignore_empty_fields, size_t num)
+  vector<std::string> split (const std::string& string, const char* delimiters, bool ignore_empty_fields, size_t num)
   {
-    std::vector<std::string> V;
+    vector<std::string> V;
     std::string::size_type start = 0, end;
     try {
       do {

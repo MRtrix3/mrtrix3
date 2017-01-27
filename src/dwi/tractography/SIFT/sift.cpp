@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 #include "dwi/tractography/SIFT/sift.h"
 #include "math/math.h"
 
@@ -49,6 +48,9 @@ const OptionGroup SIFTModelOption = OptionGroup ("Options affecting the SIFT mod
 const OptionGroup SIFTOutputOption = OptionGroup ("Options to make SIFT provide additional output files")
 
   + Option ("csv", "output statistics of execution per iteration to a .csv file")
+    + Argument ("file").type_file_out()
+
+  + Option ("out_mu", "output the final value of SIFT proportionality coefficient mu to a text file")
     + Argument ("file").type_file_out()
 
   + Option ("output_debug", "provide various output images for assessing & debugging performace etc.");

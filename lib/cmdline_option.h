@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __cmdline_option_h__
 #define __cmdline_option_h__
@@ -98,8 +97,7 @@ namespace MR
      * as multiple (see allow_multiple() function). Note that in this case only
      * one such argument can be optional and/or multiple, since more than one
      * such argument would lead to ambiguities when parsing the command-line.  */
-    class Argument
-    {
+    class Argument { NOMEMALIGN
       public:
         //! constructor
         /*! this is used to construct a command-line argument object, with a name
@@ -123,10 +121,10 @@ namespace MR
         //! a structure to store the various parameters of the Argument
         union {
           const char* const* choices;
-          struct {
+          struct { NOMEMALIGN
             int64_t min, max;
           } i;
-          struct {
+          struct { NOMEMALIGN
             default_type min, max;
           } f;
         } limits;
@@ -316,7 +314,7 @@ namespace MR
      * Options can also be specified as required (see required() function), or
      * as multiple (see allow_multiple() function).
      */
-    class Option : public std::vector<Argument> {
+    class Option : public vector<Argument> { NOMEMALIGN
       public:
         Option () : id (nullptr), flags (Optional) { }
 
@@ -391,7 +389,7 @@ namespace MR
      * }
      * \endcode
      */  
-    class OptionGroup : public std::vector<Option> {
+    class OptionGroup : public vector<Option> { NOMEMALIGN
       public:
         OptionGroup (const char* group_name = "OPTIONS") : name (group_name) { }
         const char* name;
@@ -410,7 +408,7 @@ namespace MR
         Option& back () {
           if (empty())
             push_back (Option());
-          return std::vector<Option>::back();
+          return vector<Option>::back();
         }
 
         std::string header (int format) const;

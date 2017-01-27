@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __dwi_sdeconv_csd_h__
 #define __dwi_sdeconv_csd_h__
@@ -20,6 +19,7 @@
 #include "header.h"
 #include "dwi/gradient.h"
 #include "math/SH.h"
+#include "math/ZSH.h"
 #include "dwi/directions/predefined.h"
 #include "math/least_squares.h"
 
@@ -39,11 +39,10 @@ namespace MR
 
     extern const App::OptionGroup CSD_options;
 
-    class CSD
-    {
+    class CSD { MEMALIGN(CSD)
       public:
-        class Shared
-        {
+
+        class Shared { MEMALIGN(Shared)
           public:
 
             Shared (const Header& dwi_header) :
@@ -55,7 +54,7 @@ namespace MR
                 grad = DWI::get_valid_DW_scheme (dwi_header);
                 // Discard b=0 (b=0 normalisation not supported in this version)
                 // Only allow selection of one non-zero shell from command line
-                dwis = DWI::Shells (grad).select_shells (false, true).largest().get_volumes();
+                dwis = DWI::Shells (grad).select_shells (true, false, true).largest().get_volumes();
                 DW_dirs = DWI::gen_direction_matrix (grad, dwis);
 
                 lmax_data = Math::SH::LforN (dwis.size()); 
@@ -108,7 +107,7 @@ namespace MR
               void set_response (const Eigen::MatrixBase<Derived>& in)
               {
                 response = in;
-                lmax_response = 2*(response.size()-1);
+                lmax_response = Math::ZSH::LforN (response.size());
               }
 
 
@@ -125,13 +124,11 @@ namespace MR
 
               if (!init_filter.size())
                 init_filter = Eigen::VectorXd::Ones(3);
-              init_filter.conservativeResize (size_t (lmax_response/2)+1);
+              init_filter.conservativeResizeLike (Eigen::VectorXd::Zero (Math::ZSH::NforL (lmax_response)));
 
-              auto RH = SH2RH (response);
-              if (RH.size() < 1+lmax/2) {
-                RH.conservativeResize (1+lmax/2);
-                RH.tail (RH.size() - response.size()).setZero();
-              }
+              auto RH = Math::ZSH::ZSH2RH (response);
+              if (size_t(RH.size()) < Math::ZSH::NforL (lmax))
+                RH.conservativeResizeLike (Eigen::VectorXd::Zero (Math::ZSH::NforL (lmax)));
 
               // inverse sdeconv for initialisation:
               auto fconv = init_transform (DW_dirs, lmax_response);
@@ -210,7 +207,7 @@ namespace MR
             Eigen::MatrixXd DW_dirs, HR_dirs;
             Eigen::MatrixXd rconv, HR_trans, M, Mt_M;
             default_type neg_lambda, norm_lambda, threshold;
-            std::vector<size_t> dwis;
+            vector<size_t> dwis;
             int lmax_response, lmax_data, lmax;
             size_t niter;
         };
@@ -281,7 +278,7 @@ namespace MR
         Eigen::MatrixXd work, HR_T;
         Eigen::VectorXd F, init_F, HR_amps, Mt_b;
         Eigen::LLT<Eigen::MatrixXd> llt;
-        std::vector<int> neg, old_neg;
+        vector<int> neg, old_neg;
     };
 
 

@@ -31,6 +31,22 @@ Options
 
 -  **-scaling values** specify the data scaling parameters used to rescale the intensity values. These take the form of a comma-separated 2-vector of floating-point values, corresponding to offset & scale, with final intensity values being given by offset + scale * stored_value. By default, the values in the input image header are passed through to the output image header when writing to an integer image, and reset to 0,1 (no scaling) for floating-point and binary images. Note that his option has no effect for floating-point and binary images.
 
+Options for handling JSON (JavaScript Object Notation) files
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-json_import file** import data from a JSON file into header key-value pairs
+
+-  **-json_export file** export data from an image header key-value pairs into a JSON file
+
+Options for manipulating image header key/value entries
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-header_cat key value** concatenate a header key/value entry with the specified text
+
+-  **-header_erase key** erase a header key/value entry
+
+-  **-header_set key value** set a header key/value entry to the specified text (will erase any existing entry)
+
 Stride options
 ^^^^^^^^^^^^^^
 
@@ -54,6 +70,20 @@ DW gradient table export options
 -  **-export_grad_mrtrix path** export the diffusion-weighted gradient table to file in MRtrix format
 
 -  **-export_grad_fsl bvecs_path bvals_path** export the diffusion-weighted gradient table to files in FSL (bvecs / bvals) format
+
+Options for importing phase-encode tables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-import_pe_table file** import a phase-encoding table from file
+
+-  **-import_pe_eddy config indices** import phase-encoding information from an EDDY-style config / index file pair
+
+Options for exporting phase-encode tables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-export_pe_table file** export phase-encoding table to file
+
+-  **-export_pe_eddy config indices** export phase-encoding information to an EDDY-style config / index file pair
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -80,11 +110,11 @@ Standard options
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
+**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors
 
-This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/
+This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 MRtrix is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see www.mrtrix.org
+For more details, see http://www.mrtrix.org/.
 

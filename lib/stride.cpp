@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 #include "stride.h"
 
 namespace MR
@@ -34,7 +33,7 @@ namespace MR
 
 
 
-    List& sanitise (List& current, const List& desired, const std::vector<ssize_t>& dims)
+    List& sanitise (List& current, const List& desired, const vector<ssize_t>& dims)
     {
       // remove duplicates
       for (size_t i = 0; i < current.size()-1; ++i) {
@@ -78,7 +77,7 @@ namespace MR
       if (!opt.size()) 
         return strides;
 
-      std::vector<int> tmp = opt[0][0];
+      vector<int> tmp = opt[0][0];
       for (auto x : tmp)
         strides.push_back (x); 
 
@@ -110,7 +109,7 @@ namespace MR
         if (std::abs(x) > max_remaining)
           max_remaining = std::abs(x);
 
-      struct FindStride {
+      struct FindStride { NOMEMALIGN
         FindStride (List::value_type value) : x (std::abs(value)) { }
         bool operator() (List::value_type a) { return std::abs (a) == x; }
         const List::value_type x;

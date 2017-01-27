@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 
 
@@ -58,6 +57,7 @@ void usage ()
   OPTIONS
   + MR::DWI::Tractography::Connectome::AssignmentOptions
   + MR::DWI::Tractography::Connectome::MetricOptions
+  + MR::Connectome::MatrixOutputOptions
 
   + OptionGroup ("Other options for tck2connectome")
 
@@ -70,9 +70,6 @@ void usage ()
 
   + Option ("out_assignments", "output the node assignments of each streamline to a file")
     + Argument ("path").type_file_out()
-
-  + Option ("zero_diagonal", "set all diagonal entries in the matrix to zero \n"
-                             "(these represent streamlines that connect to the same node at both ends)")
 
   + Option ("vector", "output a vector representing connectivities from a given seed point to target nodes, "
                       "rather than a matrix of node-node connectivities");
@@ -88,7 +85,7 @@ void run ()
 
   // First, find out how many segmented nodes there are, so the matrix can be pre-allocated
   // Also check for node volume for all nodes
-  std::vector<uint32_t> node_volumes (1, 0);
+  vector<uint32_t> node_volumes (1, 0);
   node_t max_node_index = 0;
   for (auto i = Loop (node_image) (node_image); i; ++i) {
     if (node_image.value() > max_node_index) {
@@ -110,7 +107,7 @@ void run ()
     for (++i; i != missing_nodes.end(); ++i)
       list += ", " + str(*i);
     WARN (list);
-    WARN ("(This may indicate poor parcellation image preparation, use of incorrect config file in labelconfig, or very poor registration)");
+    WARN ("(This may indicate poor parcellation image preparation, use of incorrect or incomplete LUT file(s) in labelconvert, or very poor registration)");
   }
 
   // Are we generating a matrix or a vector?
@@ -155,10 +152,21 @@ void run ()
   if (!get_options ("keep_unassigned").size())
     connectome.remove_unassigned();
 
-  if (get_options ("zero_diagonal").size())
-    connectome.zero_diagonal();
+  MR::Connectome::matrix_type data = connectome.get();
 
-  connectome.write (argument[2]);
+  // These only modify the matrix as it is written to file
+  if (get_options ("symmetric").size()) {
+    if (vector_output) {
+      WARN ("Option -symmetric not applicable when generating connectivity vector");
+    } else {
+      MR::Connectome::to_symmetric (data);
+    }
+  }
+  if (get_options ("zero_diagonal").size())
+    data.matrix().diagonal().setZero();
+
+  save_matrix (data, argument[2]);
+
   opt = get_options ("out_assignments");
   if (opt.size())
     connectome.write_assignments (opt[0][0]);

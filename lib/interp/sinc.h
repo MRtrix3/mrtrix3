@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __interp_sinc_h__
 #define __interp_sinc_h__
@@ -67,7 +66,7 @@ namespace MR
      */
 
     template <class ImageType> class Sinc : public Base<ImageType>
-    {
+    { MEMALIGN(Sinc<ImageType>)
       public:
         using typename Base<ImageType>::value_type;
         using Base<ImageType>::out_of_bounds;
@@ -86,7 +85,6 @@ namespace MR
           assert (w % 2);
         }
 
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         //! Set the current position to <b>voxel space</b> position \a pos
         /*! See file interp/base.h for details. */
@@ -158,7 +156,7 @@ namespace MR
         const size_t window_size;
         const int kernel_width;
         Math::Sinc<value_type> Sinc_x, Sinc_y, Sinc_z;
-        std::vector<value_type> y_values, z_values;
+        vector<value_type> y_values, z_values;
 
     };
 

@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 
 
@@ -19,18 +18,16 @@
 #include "progressbar.h"
 #include "thread_queue.h"
 
-#include "mesh/mesh.h"
-
-
-
-#define DEFAULT_SMOOTHING_SPATIAL 10.0
-#define DEFAULT_SMOOTHING_INFLUENCE 10.0
+#include "surface/mesh.h"
+#include "surface/mesh_multi.h"
+#include "surface/filter/base.h"
+#include "surface/filter/smooth.h"
 
 
 
 using namespace MR;
 using namespace App;
-using namespace MR::Mesh;
+using namespace MR::Surface;
 
 
 const char* filters[] = { "smooth", NULL };
@@ -38,10 +35,10 @@ const char* filters[] = { "smooth", NULL };
 
 const OptionGroup smooth_option = OptionGroup ("Options for mesh smoothing filter")
 
-    + Option ("smooth_spatial", "spatial extent of smoothing (default: " + str(DEFAULT_SMOOTHING_INFLUENCE, 2) + "mm)")
+    + Option ("smooth_spatial", "spatial extent of smoothing (default: " + str(Filter::default_smoothing_spatial_factor, 2) + "mm)")
       + Argument ("value").type_float (0.0)
 
-    + Option ("smooth_influence", "influence factor for smoothing (default: " + str(DEFAULT_SMOOTHING_INFLUENCE, 2) + ")")
+    + Option ("smooth_influence", "influence factor for smoothing (default: " + str(Filter::default_smoothing_influence_factor, 2) + ")")
       + Argument ("value").type_float (0.0);
 
 
@@ -69,41 +66,37 @@ void usage ()
 void run ()
 {
 
-  MeshMulti meshes;
+  MeshMulti in;
 
   // Read in the mesh data
   try {
-    MR::Mesh::Mesh mesh (argument[0]);
-    meshes.push_back (mesh);
+    Mesh mesh (argument[0]);
+    in.push_back (mesh);
   } catch (...) {
-    meshes.load (argument[0]);
+    in.load (argument[0]);
   }
 
+  MeshMulti out;
+
   // Apply the relevant filter
-  int filter = argument[1];
-  if (filter == 0) {
-
-    const float spatial   = get_option_value ("smooth_spatial",  DEFAULT_SMOOTHING_SPATIAL);
-    const float influence = get_option_value ("smooth_inluence", DEFAULT_SMOOTHING_INFLUENCE);
-
-    if (meshes.size() == 1) {
-      meshes.front().smooth (spatial, influence);
-    } else {
-      std::mutex mutex;
-      ProgressBar progress ("Applying smoothing filter to multiple meshes", meshes.size());
-      auto loader = [&] (size_t& out) { static size_t i = 0; out = i++; return (out != meshes.size()); };
-      auto worker = [&] (const size_t& in) { meshes[in].smooth (spatial, influence); std::lock_guard<std::mutex> lock (mutex); ++progress; return true; };
-      Thread::run_queue (loader, size_t(), Thread::multi (worker));
-    }
-
+  std::unique_ptr<Filter::Base> filter;
+  int filter_index = argument[1];
+  if (filter_index == 0) {
+    const default_type spatial   = get_option_value ("smooth_spatial",   Filter::default_smoothing_spatial_factor);
+    const default_type influence = get_option_value ("smooth_influence", Filter::default_smoothing_influence_factor);
+    const std::string msg = in.size() > 1 ? "Applying smoothing filter to multiple meshes" : "";
+    filter.reset (new Filter::Smooth (msg, spatial, influence));
   } else {
     assert (0);
   }
 
+  out.assign (in.size(), Mesh());
+  (*filter) (in, out);
+
   // Create the output file
-  if (meshes.size() == 1)
-    meshes.front().save (argument[2]);
+  if (out.size() == 1)
+    out.front().save (argument[2]);
   else
-    meshes.save (argument[2]);
+    out.save (argument[2]);
 
 }

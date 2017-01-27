@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 
 
@@ -33,7 +32,7 @@ namespace Connectome {
 
 
 class Mapper
-{
+{ MEMALIGN(Mapper)
 
   public:
     Mapper (const Tck2nodes_base& a, const Metric& b) :
@@ -59,7 +58,7 @@ class Mapper
     {
       assert (!tck2nodes.provides_pair());
       out.set_track_index (in.index);
-      std::vector<node_t> nodes;
+      vector<node_t> nodes;
       tck2nodes (in, nodes);
       out.set_nodes (std::move (nodes));
       out.set_factor (metric (in, out.get_nodes()));

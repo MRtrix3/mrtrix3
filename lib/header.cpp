@@ -1,20 +1,19 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
-#include "app.h"
+
 #include "header.h"
+#include "phase_encoding.h"
 #include "stride.h"
 #include "transform.h"
 #include "image_io/default.h"
@@ -24,6 +23,13 @@
 
 namespace MR
 {
+
+  const App::Option NoRealignOption
+  = App::Option ("norealign",
+                 "do not realign transform to near-default RAS coordinate system (the "
+                 "default behaviour on image load). This is useful to inspect the image "
+                 "and/or header contents as they are actually stored in the header, "
+                 "rather than as MRtrix interprets them.");
 
   bool Header::do_not_realign_transform = false;
 
@@ -76,7 +82,7 @@ namespace MR
       INFO ("opening image \"" + image_name + "\"...");
 
       File::ParsedName::List list;
-      std::vector<int> num = list.parse_scan_check (image_name);
+      vector<int> num = list.parse_scan_check (image_name);
 
       const Formats::Base** format_handler = Formats::handlers;
       size_t item = 0;
@@ -133,7 +139,7 @@ namespace MR
 
 
   namespace {
-    inline bool check_strides_match (const std::vector<ssize_t>& a, const std::vector<ssize_t>& b) 
+    inline bool check_strides_match (const vector<ssize_t>& a, const vector<ssize_t>& b) 
     {
       size_t n = 0;
       for (; n < std::min (a.size(), b.size()); ++n) 
@@ -167,20 +173,20 @@ namespace MR
 
       File::NameParser parser;
       parser.parse (image_name);
-      std::vector<int> Pdim (parser.ndim());
+      vector<int> Pdim (parser.ndim());
 
-      std::vector<int> Hdim (H.ndim());
+      vector<int> Hdim (H.ndim());
       for (size_t i = 0; i < H.ndim(); ++i)
         Hdim[i] = H.size(i);
 
       H.name() = image_name;
 
-      const std::vector<ssize_t> strides (Stride::get_symbolic (H));
+      const vector<ssize_t> strides (Stride::get_symbolic (H));
       const Formats::Base** format_handler = Formats::handlers;
       for (; *format_handler; format_handler++)
         if ((*format_handler)->check (H, H.ndim() - Pdim.size()))
           break;
-      const std::vector<ssize_t> strides_aftercheck (Stride::get_symbolic (H));
+      const vector<ssize_t> strides_aftercheck (Stride::get_symbolic (H));
       if (!check_strides_match (strides, strides_aftercheck))
         INFO("output strides for image " + image_name + " modified to " + str(strides_aftercheck) +
             " - requested strides " + str(strides) + " are not supported in " + H.format() + " format");
@@ -204,7 +210,7 @@ namespace MR
       parser.calculate_padding (Pdim);
 
       Header header (H);
-      std::vector<int> num (Pdim.size());
+      vector<int> num (Pdim.size());
 
       if (image_name != "-")
         H.name() = parser.name (num);
@@ -506,6 +512,23 @@ namespace MR
     axes_[1] = a[1];
     axes_[2] = a[2];
 
+    // If there's any phase encoding direction information present in the
+    //   header, it's necessary here to update it according to the
+    //   flips / permutations that have taken place
+    auto pe_scheme = PhaseEncoding::get_scheme (*this);
+    if (pe_scheme.rows()) {
+      for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
+        Eigen::VectorXd new_line (pe_scheme.row (row));
+        for (ssize_t axis = 0; axis != 3; ++axis) {
+          new_line[axis] = pe_scheme(row, perm[axis]);
+          if (new_line[axis] && flip[axis])
+            new_line[axis] = -new_line[axis];
+        }
+        pe_scheme.row (row) = new_line;
+      }
+      PhaseEncoding::set_scheme (*this, pe_scheme);
+      INFO ("Phase encoding scheme has been modified according to internal header transform realignment");
+    }
   }
 
 
