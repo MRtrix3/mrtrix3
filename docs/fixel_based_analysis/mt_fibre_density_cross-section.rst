@@ -115,7 +115,7 @@ Register the FOD image from all subjects to the FOD template image. Note you can
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Next we identify all fixels of interest to be analysed from the FOD template image (see `here <http://www.ncbi.nlm.nih.gov/pubmed/26004503>`_ for more information about a fixel analysis mask). Note that the fixel image output from this step is stored using the :ref:`fixel_format`, which exploits the filesystem to store all fixel data in a directory::
 
-    mrconvert fod_template.mif -coord 3 0 - | mrthreshold - - | fod2fixel fod_template.mif -mask - ../template/fixel_template
+    mrconvert ../template/fod_template.mif -coord 3 0 - | mrthreshold - - | fod2fixel ../template/fod_template.mif -mask - ../template/fixel_template
 
 You can visualise the output fixels using the fixel plot tool from :ref:`mrview`, and opening either the :code:`index.mif` or :code:`directions.mif` found in :code:`../template/fixel_template`. The automatic thresholding step used above should give you a mask that nicely covers all of white matter, however if not you can always try manually adjusting the threshold with the :code:`mrthreshold -abs` option.
 
