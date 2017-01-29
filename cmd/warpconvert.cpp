@@ -137,7 +137,7 @@ void run ()
     Header header (warp_output);
     header.datatype() = DataType::from_command_line (DataType::Float32);
     Image<default_type> output = Image<default_type>::create (argument[1], header);
-    threaded_copy (warp_output, output);
+    threaded_copy_with_progress_message ("converting warp", warp_output, output);
   }
 
 }

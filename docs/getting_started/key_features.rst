@@ -1,6 +1,6 @@
-======
+============
 Key features
-======
+============
 
 While *MRtrix3* is primarily intended to be used for the analysis of
 diffusion MRI data, at its fundamental level it is designed as a
@@ -8,7 +8,7 @@ general-purpose library for the analysis of *any* type of MRI data. As such,
 it provides a back-end to simplify a large number of operations, many of
 which will be invisible to the end-user. Specifically, *MRtrix3* features:
 
--  a `consistent command-line interface <#command-line-usage>`__, with
+-  a consistent :ref:`command-line interface <command-line-interface>`, with
    inline documentation for each command
 
 -  universal import/export capabilities when :ref:`image_file_formats`

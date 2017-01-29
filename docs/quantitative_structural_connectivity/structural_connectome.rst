@@ -1,4 +1,4 @@
-.. _stuct_connectome_construction:
+.. _struct_connectome_construction:
 
 Structural connectome construction
 ==================================
@@ -34,8 +34,8 @@ In addition, this processing chain design provides flexibility in terms
 of both the source of the parcellation data, and the way in which the
 user wishes to customise the layout of their connectome.
 
-Please consult the tutorial :ref:`labelconvert` for a guide on how to use
-the ``labelconvert`` command.
+Please consult the tutorial :ref:`labelconvert_tutorial` for a guide on
+how to use the ``labelconvert`` command.
 
 Generating the connectome
 -------------------------
