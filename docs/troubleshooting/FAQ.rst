@@ -195,7 +195,7 @@ The functionalities previously provided by the ``-contrast`` option in
 this command can still be achieved, but through more explicit steps:
 
 ``tck2connectome -contrast mean_scalar``
-........................................
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code::
 
@@ -211,7 +211,7 @@ calculates the value of each edge to be the *mean of the values for the
 streamlines in that edge*.
 
 ``tck2connectome -contrast meanlength``
-.......................................
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code::
 
@@ -224,7 +224,7 @@ of the streamline in mm. Finally, for each edge, take the *mean* of the values
 contributed from all streamlines belonging to that edge.
 
 ``tck2connectome -contrast invlength_invnodevolume``
-....................................................
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code::
 
