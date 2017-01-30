@@ -359,21 +359,22 @@ void run ()
       throw Exception ("modulation can only be performed with FOD reorientation");
   }
 
+
   // Rotate/Flip gradient directions if present
   if (linear && input_header.ndim() == 4 && !warp && !fod_reorientation) {
     Eigen::MatrixXd rotation = linear_transform.linear().inverse();
     Eigen::MatrixXd test = rotation.transpose() * rotation;
     test = test.array() / test.diagonal().mean();
-    if (!test.isIdentity (0.001)) {
-      WARN ("the input linear transform contains shear or anisotropic scaling and "
-            "therefore should not be used to reorient directions / diffusion gradients");
-    }
     if (replace)
       rotation = linear_transform.linear() * input_header.transform().linear().inverse();
     try {
       auto grad = DWI::get_DW_scheme (input_header);
       if (input_header.size(3) == (ssize_t) grad.rows()) {
         INFO ("DW gradients detected and will be reoriented");
+        if (!test.isIdentity (0.001)) {
+          WARN ("the input linear transform contains shear or anisotropic scaling and "
+                "therefore should not be used to reorient directions / diffusion gradients");
+        }
         for (ssize_t n = 0; n < grad.rows(); ++n) {
           Eigen::Vector3 grad_vector = grad.block<1,3>(n,0);
           grad.block<1,3>(n,0) = rotation * grad_vector;
@@ -389,6 +390,10 @@ void run ()
     auto hit = input_header.keyval().find ("directions");
     if (hit != input_header.keyval().end()) {
       INFO ("Header entry \"directions\" detected and will be reoriented");
+      if (!test.isIdentity (0.001)) {
+        WARN ("the input linear transform contains shear or anisotropic scaling and "
+              "therefore should not be used to reorient directions / diffusion gradients");
+      }
       try {
         const auto lines = split_lines (hit->second);
         if (lines.size() != size_t(input_header.size(3)))
