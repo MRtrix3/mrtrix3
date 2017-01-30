@@ -16,6 +16,7 @@ export PATH=$mrtrix_root/release/bin:$mrtrix_root/release/scripts:"$PATH"
 
   echo "
 .. _list-of-mrtrix3-commands:
+
 ########################
 List of MRtrix3 commands
 ########################
