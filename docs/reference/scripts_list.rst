@@ -1,8 +1,7 @@
-.. _list-of-mrtrix3-scripts:
 
-#######################
-List of MRtrix3 scripts
-#######################
+################
+Python scripts provided with MRtrix3
+################
 
 
 .. toctree::

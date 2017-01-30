@@ -1,8 +1,7 @@
-.. _list-of-mrtrix3-commands:
 
-########################
+################
 List of MRtrix3 commands
-########################
+################
 
 
 .. toctree::
@@ -191,8 +190,6 @@ List of MRtrix3 commands
    commands/tckstats
 
    commands/tensor2metric
-
-   commands/test_row_method
 
    commands/transformcalc
 
