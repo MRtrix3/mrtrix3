@@ -41,7 +41,6 @@ class Parser(argparse.ArgumentParser):
 
   def error(self, message):
     import shlex, sys
-    import app
     for arg in sys.argv:
       if '-help'.startswith(arg):
         self.print_help()
