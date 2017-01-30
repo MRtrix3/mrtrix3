@@ -47,7 +47,7 @@ namespace MR
           LinearKernel (const ssize_t n_SH,
                         const transform_type& linear_transform,
                         const Eigen::MatrixXd& directions,
-                        const bool modulate)
+                        const bool modulate) : fod (n_SH)
           {
             Eigen::MatrixXd transformed_directions = linear_transform.linear().inverse() * directions;
 
@@ -66,12 +66,16 @@ namespace MR
           void operator() (FODImageType& in, FODImageType& out)
           {
             in.index(3) = 0;
-            if (in.value() > 0.0)  // only reorient voxels that contain a FOD
-              out.row(3) = transform * Eigen::Vector3 (in.row(3));
+            if (in.value() > 0.0) { // only reorient voxels that contain a FOD
+              fod = in.row(3);
+              fod = transform * fod;
+              out.row(3) = fod;
+            }
           }
 
         protected:
           Eigen::MatrixXd transform;
+          Eigen::VectorXd fod; 
       };
 
 
@@ -121,7 +125,8 @@ namespace MR
                            jacobian_adapter (warp),
                            directions (directions),
                            modulate (modulate),
-                           FOD_to_aPSF_transform (Math::pinv (aPSF_weights_to_FOD_transform (n_SH, directions))) {}
+                           FOD_to_aPSF_transform (Math::pinv (aPSF_weights_to_FOD_transform (n_SH, directions))),
+                           fod (n_SH) {}
 
 
           void operator() (FODImageType& image) {
@@ -145,8 +150,9 @@ namespace MR
                 transformed_directions.colwise().normalize();
                 transform.noalias() = aPSF_weights_to_FOD_transform (n_SH, transformed_directions) * FOD_to_aPSF_transform;
               }
-
-              image.row(3) = transform * Eigen::Vector3(image.row(3));
+              fod = image.row(3);
+              fod = transform * fod;
+              image.row(3) = fod;
             }
           }
           protected:
@@ -156,6 +162,7 @@ namespace MR
             const bool modulate;
             const Eigen::MatrixXd FOD_to_aPSF_transform;
             Eigen::MatrixXd transform;
+            Eigen::VectorXd fod;
       };
 
 
