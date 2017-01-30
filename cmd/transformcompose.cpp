@@ -19,9 +19,6 @@
 #include "algo/threaded_loop.h"
 #include "interp/linear.h"
 
-#include <stack>
-
-
 using namespace MR;
 using namespace App;
 
@@ -40,7 +37,7 @@ class Warp : public TransformBase {
     Eigen::Vector3 transform_point (const Eigen::Vector3 &input) {
       Eigen::Vector3 output;
       if (interp.scanner (input))
-        output.row(3) = interp.row(3);
+        output = interp.row(3);
       else
         output.fill (NaN);
       return output;
@@ -156,15 +153,14 @@ void run ()
     Image<float> output = Image<value_type>::create (argument [argument.size() - 1], output_header);
 
     Transform template_transform (output);
-    for (auto i = Loop ("composing transformations", output) (output); i ; ++i) {
+    for (auto i = Loop ("composing transformations", output, 0, 3) (output); i ; ++i) {
       Eigen::Vector3 voxel ((default_type) output.index(0),
                             (default_type) output.index(1),
                             (default_type) output.index(2));
 
       Eigen::Vector3 position = template_transform.voxel2scanner * voxel;
-
       ssize_t index = transform_list.size() - 1;
-       while (index >= 0) {
+      while (index >= 0) {
         position = transform_list[index]->transform_point (position);
         index--;
       }
