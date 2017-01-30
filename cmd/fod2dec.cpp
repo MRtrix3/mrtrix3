@@ -80,7 +80,7 @@ void usage ()
 }
 
 typedef float value_type;
-constexpr value_type UNIT = 0.577350269189626;
+constexpr value_type UNIT = 0.577350269189626; // 1/sqrt(3) , component of 3D unit vector wrt L2-norm
 
 class DecTransform { MEMALIGN(DecTransform)
 

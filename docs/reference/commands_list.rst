@@ -193,6 +193,8 @@ List of MRtrix3 commands
 
    commands/transformcalc
 
+   commands/transformcompose
+
    commands/transformconvert
 
    commands/tsfdivide
