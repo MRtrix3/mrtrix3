@@ -15,9 +15,10 @@ mrtrix_root=$( cd "$(dirname "${BASH_SOURCE}")"/../ ; pwd -P )
 export PATH=$mrtrix_root/release/bin:$mrtrix_root/release/scripts:"$PATH"
 
   echo "
-################
+.. _list-of-mrtrix3-commands:
+########################
 List of MRtrix3 commands
-################
+########################
 
 
 .. toctree::
@@ -43,9 +44,11 @@ List of MRtrix3 commands
 # Generating documentation for all scripts
 
   echo "
-################
-Python scripts provided with MRtrix3
-################
+.. _list-of-mrtrix3-scripts:
+
+#######################
+List of MRtrix3 scripts
+#######################
 
 
 .. toctree::
