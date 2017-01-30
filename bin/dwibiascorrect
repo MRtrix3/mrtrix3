@@ -1,0 +1,127 @@
+#!/usr/bin/env python
+
+# Script that performs B1 field inhomogeneity correction for a DWI volume series
+# Bias field is estimated using the mean b=0 image, and subsequently used to correct all volumes
+
+
+# Make the corresponding MRtrix3 Python libraries available
+import inspect, os, sys
+lib_folder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile(inspect.currentframe()))[0], os.pardir, 'lib')))
+if not os.path.isdir(lib_folder):
+  sys.stderr.write('Unable to locate MRtrix3 Python libraries')
+  sys.exit(1)
+sys.path.insert(0, lib_folder)
+
+
+from mrtrix3 import app, cmdlineParser, fsl, image, message, misc, path, run
+
+
+app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
+app.addCitation('If using -fast option', 'Zhang, Y.; Brady, M. & Smith, S. Segmentation of brain MR images through a hidden Markov random field model and the expectation-maximization algorithm. IEEE Transactions on Medical Imaging, 2001, 20, 45-57', True)
+app.addCitation('If using -fast option', 'Smith, S. M.; Jenkinson, M.; Woolrich, M. W.; Beckmann, C. F.; Behrens, T. E.; Johansen-Berg, H.; Bannister, P. R.; De Luca, M.; Drobnjak, I.; Flitney, D. E.; Niazy, R. K.; Saunders, J.; Vickers, J.; Zhang, Y.; De Stefano, N.; Brady, J. M. & Matthews, P. M. Advances in functional and structural MR image analysis and implementation as FSL. NeuroImage, 2004, 23, S208-S219', True)
+app.addCitation('If using -ants option', 'Tustison, N.; Avants, B.; Cook, P.; Zheng, Y.; Egan, A.; Yushkevich, P. & Gee, J. N4ITK: Improved N3 Bias Correction. IEEE Transactions on Medical Imaging, 2010, 29, 1310-1320', True)
+cmdlineParser.initialise('Perform B1 field inhomogeneity correction for a DWI volume series')
+app.parser.add_argument('input',  help='The input image series to be corrected')
+app.parser.add_argument('output', help='The output corrected image series')
+options = app.parser.add_argument_group('Options for the dwibiascorrect script')
+options.add_argument('-mask', help='Manually provide a mask image for bias field estimation')
+options.add_argument('-bias', help='Output the estimated bias field')
+options.add_argument('-ants', action='store_true', help='Use ANTS N4 to estimate the inhomogeneity field')
+options.add_argument('-fsl', action='store_true', help='Use FSL FAST to estimate the inhomogeneity field')
+cmdlineParser.flagMutuallyExclusiveOptions( [ 'ants', 'fsl' ] )
+options.add_argument('-grad', help='Pass the diffusion gradient table in MRtrix format')
+options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Pass the diffusion gradient table in FSL bvecs/bvals format')
+cmdlineParser.flagMutuallyExclusiveOptions( [ 'grad', 'fslgrad' ] )
+app.initialise()
+
+if app.args.fsl:
+
+  if misc.isWindows():
+    message.error('Script cannot run using FSL on Windows due to FSL dependency')
+
+  fsl_path = os.environ.get('FSLDIR', '')
+  if not fsl_path:
+    message.error('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
+
+  fast_cmd = 'fast'
+  if not misc.haveBinary(fast_cmd):
+    fast_cmd = 'fsl5.0-fast'
+    if not misc.haveBinary(fast_cmd):
+      message.error('Could not find FSL program fast; please verify FSL install')
+    
+  fsl_suffix = fsl.suffix()
+  if fast_cmd == 'fast':
+    fast_suffix = fsl_suffix
+  else:
+    fast_suffix = '.nii.gz'
+
+elif app.args.ants:
+
+  if not misc.haveBinary('N4BiasFieldCorrection'):
+    message.error('Could not find ANTS program N4BiasFieldCorrection; please check installation')
+
+else:
+  message.error('No bias field estimation algorithm specified')
+
+grad_import_option = ''
+if app.args.grad:
+  grad_import_option = ' -grad ' + path.fromUser(app.args.grad, True)
+elif app.args.fslgrad:
+  grad_import_option = ' -fslgrad ' + path.fromUser(app.args.fslgrad[0], True) + ' ' + path.fromUser(app.args.fslgrad[1], True)
+
+app.checkOutputFile(app.args.output)
+app.checkOutputFile(app.args.bias)
+
+app.makeTempDir()
+
+run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + os.path.join(app.tempDir, 'in.mif') + grad_import_option)
+if app.args.mask:
+  run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + os.path.join(app.tempDir, 'mask.mif'))
+
+app.gotoTempDir()
+
+# Make sure it's actually a DWI that's been passed
+dwi_sizes = image.headerField('in.mif', 'size').split()
+if len(dwi_sizes) != 4:
+  message.error('Input image must be a 4D image')
+DW_scheme = image.headerField('in.mif', 'dwgrad').split('\n')
+if len(DW_scheme) != int(dwi_sizes[3]):
+  message.error('Input image does not contain valid DW gradient scheme')
+
+# Generate a brain mask if required, or check the mask if provided
+if app.args.mask:
+  mask_sizes = image.headerField('mask.mif', 'size').split()
+  if not mask_sizes[:3] == dwi_sizes[:3]:
+    message.error('Provided mask image does not match input DWI')
+else:
+  run.command('dwi2mask in.mif mask.mif')
+
+# Generate a mean b=0 image
+run.command('dwiextract in.mif - -bzero | mrmath - mean mean_bzero.mif -axis 3')
+
+if app.args.fsl:
+  # FAST doesn't accept a mask input; therefore need to explicitly mask the input image
+  run.command('mrcalc mean_bzero.mif mask.mif -mult - | mrconvert - mean_bzero_masked.nii -stride -1,+2,+3')
+  run.command(fast_cmd + ' -t 2 -o fast -n 3 -b mean_bzero_masked.nii')
+  bias_path = 'fast_bias' + fast_suffix
+elif app.args.ants:
+
+  # If the mask image was provided manually, and doesn't match the input image perfectly
+  #   (i.e. also transform and voxel sizes), N4 will fail
+  if app.args.mask:
+    if not image.match('mean_bzero.mif', 'mask.mif'):
+      message.error('Input mask header does not perfectly match DWI as required by N4')
+
+  # Use the brain mask as a weights image rather than a mask; means that voxels at the edge of the mask
+  #   will have a smoothly-varying bias field correction applied, rather than multiplying by 1.0 outside the mask
+  run.command('mrconvert mean_bzero.mif mean_bzero.nii -stride +1,+2,+3')
+  run.command('mrconvert mask.mif mask.nii -stride +1,+2,+3')
+  bias_path = 'bias.nii'
+  run.command('N4BiasFieldCorrection -d 3 -i mean_bzero.nii -w mask.nii -o [corrected.nii,' + bias_path + '] -s 2 -b [150] -c [200x200,0.0]')
+  
+run.command('mrcalc in.mif ' + bias_path + ' -div result.mif')
+run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + app.mrtrixForce)
+if app.args.bias:
+  run.command('mrconvert ' + bias_path + ' ' + path.fromUser(app.args.bias, True) + app.mrtrixForce)
+app.complete()
+
