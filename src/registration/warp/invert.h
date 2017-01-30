@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __registration_warp_invert_h__
 #define __registration_warp_invert_h__
@@ -32,7 +31,7 @@ namespace MR
       namespace {
 
 
-      class DisplacementThreadKernel {
+      class DisplacementThreadKernel { MEMALIGN(DisplacementThreadKernel)
 
         public:
           DisplacementThreadKernel (Image<default_type> & displacement,
@@ -48,7 +47,7 @@ namespace MR
           {
             Eigen::Vector3 voxel ((default_type)displacement_inverse.index(0), (default_type)displacement_inverse.index(1), (default_type)displacement_inverse.index(2));
             Eigen::Vector3 truth = transform.voxel2scanner * voxel;
-            Eigen::Vector3 current = truth + displacement_inverse.row(3);
+            Eigen::Vector3 current = truth + Eigen::Vector3(displacement_inverse.row(3));
 
             size_t iter = 0;
             default_type error = std::numeric_limits<default_type>::max();
@@ -64,7 +63,7 @@ namespace MR
           default_type update (Eigen::Vector3& current, const Eigen::Vector3& truth)
           {
             displacement.scanner (current);
-            Eigen::Vector3 discrepancy = truth - (current + displacement.row(3));
+            Eigen::Vector3 discrepancy = truth - (current + Eigen::Vector3 (displacement.row(3)));
             current += discrepancy;
             return discrepancy.dot (discrepancy);
           }
@@ -76,7 +75,7 @@ namespace MR
       };
 
 
-        class DeformationThreadKernel {
+        class DeformationThreadKernel { MEMALIGN(DeformationThreadKernel)
 
           public:
             DeformationThreadKernel (Image<default_type> & deform,
@@ -108,7 +107,7 @@ namespace MR
             default_type update (Eigen::Vector3& current, const Eigen::Vector3& truth)
             {
               deform.scanner (current);
-              Eigen::Vector3 discrepancy = truth - deform.row(3);
+              Eigen::Vector3 discrepancy = truth - Eigen::Vector3 (deform.row(3));
               current += discrepancy;
               return discrepancy.dot (discrepancy);
             }

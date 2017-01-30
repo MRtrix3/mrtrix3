@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __registration_transform_search_h__
 #define __registration_transform_search_h__
@@ -57,7 +56,7 @@ namespace MR
       typedef Eigen::Quaternion<default_type> QuatType;
 
       template <class MetricType = Registration::Metric::MeanSquaredNoGradient>
-        class ExhaustiveRotationSearch {
+        class ExhaustiveRotationSearch { MEMALIGN(ExhaustiveRotationSearch<MetricType>)
           public:
             ExhaustiveRotationSearch (
               Image<default_type>& image1,
@@ -87,7 +86,6 @@ namespace MR
               local_trafo.set_translation (offset);
             };
 
-            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
             typedef Metric::Params<Registration::Transform::Rigid,
                                      Image<default_type>,
@@ -223,7 +221,7 @@ namespace MR
           private:
             ParamType get_parameters () {
               // create resized midway image
-              std::vector<Eigen::Transform<default_type, 3, Eigen::Projective> > init_transforms;
+              vector<Eigen::Transform<default_type, 3, Eigen::Projective>> init_transforms;
               {
                 Eigen::Transform<default_type, 3, Eigen::Projective> init_trafo_1 = local_trafo.get_transform_half_inverse();
                 Eigen::Transform<default_type, 3, Eigen::Projective> init_trafo_2 = local_trafo.get_transform_half();
@@ -232,7 +230,7 @@ namespace MR
               }
               auto padding = Eigen::Matrix<default_type, 4, 1>(0.0, 0.0, 0.0, 0.0);
               int subsample = 1;
-              std::vector<Header> headers;
+              vector<Header> headers;
               headers.push_back (Header (im1));
               headers.push_back (Header (im2));
               midway_image_header = compute_minimum_average_header (headers, subsample, padding, init_transforms);
@@ -312,10 +310,10 @@ namespace MR
             transform_type best_trafo;
             Header midway_image_header;
             default_type min_cost;
-            std::vector<default_type> vec_cost;
-            std::vector<size_t> vec_overlap;
+            vector<default_type> vec_cost;
+            vector<size_t> vec_overlap;
             size_t global_search_iterations;
-            std::vector<default_type> rot_angles;
+            vector<default_type> rot_angles;
             size_t local_search_directions;
             default_type image_scale_factor;
             bool global_search;
@@ -324,7 +322,7 @@ namespace MR
             Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_el;
             Eigen::Matrix<default_type, Eigen::Dynamic, 3> xyz;
             Eigen::Matrix<default_type, Eigen::Dynamic, 1> overlap_it, cost_it;
-            std::vector<transform_type> trafo_it;
+            vector<transform_type> trafo_it;
           };
     } // namespace RotationSearch
   }

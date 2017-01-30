@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 
 #include "command.h"
@@ -89,7 +88,7 @@ void usage ()
 
 
 class Mean
-{
+{ MEMALIGN (Mean)
   public:
     Mean (Image<float>& data, Image<float>& vol) :
         data (data), vol (vol) {}
@@ -118,7 +117,7 @@ class Mean
 
 
 class Sum
-{
+{ MEMALIGN (Sum)
   public:
     Sum (Image<float>& data, Image<float>& vol) :
       data (data), vol (vol) {}
@@ -140,7 +139,7 @@ class Sum
 
 
 class Product
-{
+{ MEMALIGN (Product)
   public:
     Product (Image<float>& data) :
       data (data) {}
@@ -168,7 +167,7 @@ class Product
 
 
 class Min
-{
+{ MEMALIGN (Min)
   public:
     Min (Image<float>& data) :
       data (data) {}
@@ -188,7 +187,7 @@ class Min
 
 
 class Max
-{
+{ MEMALIGN (Max)
   public:
     Max (Image<float>& data) :
       data (data) {}
@@ -208,7 +207,7 @@ class Max
 
 
 class AbsMax
-{
+{ MEMALIGN (AbsMax)
   public:
     AbsMax (Image<float>& data) :
       data (data) {}
@@ -228,7 +227,7 @@ class AbsMax
 
 
 class MagMax
-{
+{ MEMALIGN (MagMax)
   public:
     MagMax (Image<float>& data) :
       data (data) {}
@@ -248,7 +247,7 @@ class MagMax
 
 
 class Complexity
-{
+{ MEMALIGN (Complexity)
   public:
     Complexity (Image<float>& data) :
       data (data) {}
@@ -275,7 +274,7 @@ class Complexity
 
 
 class SF
-{
+{ MEMALIGN (SF)
   public:
     SF (Image<float>& data) : data (data) {}
 
@@ -295,7 +294,7 @@ class SF
 
 
 class DEC_unit
-{
+{ MEMALIGN (DEC_unit)
   public:
     DEC_unit (Image<float>& data, Image<float>& vol, Image<float>& dir) :
       data (data), vol (vol), dir (dir) {}
@@ -321,7 +320,7 @@ class DEC_unit
 
 
 class DEC_scaled
-{
+{ MEMALIGN (DEC_scaled)
   public:
     DEC_scaled (Image<float>& data, Image<float>& vol, Image<float>& dir) :
       data (data), vol (vol), dir (dir) {}
@@ -358,7 +357,7 @@ class DEC_scaled
 
 
 class SplitData
-{
+{ MEMALIGN (SplitData)
   public:
     SplitData (Image<float>& data) : data (data) {}
 
@@ -383,7 +382,7 @@ class SplitData
 
 
 class SplitDir
-{
+{ MEMALIGN (SplitDir)
   public:
     SplitDir (Image<float>& dir) : dir (dir) {}
 

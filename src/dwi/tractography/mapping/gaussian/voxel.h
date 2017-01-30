@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __dwi_tractography_mapping_gaussian_voxel_h__
 #define __dwi_tractography_mapping_gaussian_voxel_h__
@@ -31,7 +30,7 @@ namespace MR {
           // Base class to handle case where the factor contributed by the streamline varies along its length
           //   (currently only occurs when the track-wise statistic is Gaussian)
           class VoxelAddon
-          {
+          { NOMEMALIGN
             public:
               VoxelAddon() : sum_factors (0.0) { }
               VoxelAddon (const default_type v) : sum_factors (v) { }
@@ -49,7 +48,7 @@ namespace MR {
 
 
           class Voxel : public Mapping::Voxel, public VoxelAddon
-          {
+          { MEMALIGN(Voxel)
             typedef Mapping::Voxel Base;
             public:
             Voxel (const int x, const int y, const int z) : Base (x, y, z) , VoxelAddon () { }
@@ -70,7 +69,7 @@ namespace MR {
 
 
           class VoxelDEC : public Mapping::VoxelDEC, public VoxelAddon
-          {
+          { MEMALIGN(VoxelDEC)
             typedef Mapping::VoxelDEC Base;
             public:
             VoxelDEC () : Base (), VoxelAddon () { }
@@ -93,7 +92,7 @@ namespace MR {
 
 
           class Dixel : public Mapping::Dixel, public VoxelAddon
-          {
+          { MEMALIGN(Dixel)
             typedef Mapping::Dixel Base;
             public:
             typedef DWI::Directions::index_type dir_index_type;
@@ -115,7 +114,7 @@ namespace MR {
 
 
           class VoxelTOD : public Mapping::VoxelTOD, public VoxelAddon
-          {
+          { MEMALIGN(VoxelTOD)
             typedef Mapping::VoxelTOD Base;
             public:
             typedef Eigen::Matrix<default_type, Eigen::Dynamic, 1> vector_type;
@@ -145,7 +144,7 @@ namespace MR {
           // However, it's handy from a code perspective to still use the same base class
           /*
              class SetVoxelExtras
-             {
+             { MEMALIGN(SetVoxelExtras)
              public:
              size_t index;
              float weight;
@@ -157,7 +156,7 @@ namespace MR {
 
 
           class SetVoxel : public std::set<Voxel>, public Mapping::SetVoxelExtras
-          {
+          { MEMALIGN(SetVoxel)
             public:
               typedef Voxel VoxType;
               inline void insert (const Eigen::Vector3i& v, const default_type l, const default_type f)
@@ -171,7 +170,7 @@ namespace MR {
               }
           };
           class SetVoxelDEC : public std::set<VoxelDEC>, public Mapping::SetVoxelExtras
-          {
+          { MEMALIGN(SetVoxelDEC)
             public:
               typedef VoxelDEC VoxType;
               inline void insert (const Eigen::Vector3i& v, const Eigen::Vector3& d, const default_type l, const default_type f)
@@ -185,7 +184,7 @@ namespace MR {
               }
           };
           class SetDixel : public std::set<Dixel>, public Mapping::SetVoxelExtras
-          {
+          { MEMALIGN(SetDixel)
             public:
               typedef Dixel VoxType;
               typedef Dixel::dir_index_type dir_index_type;
@@ -200,7 +199,7 @@ namespace MR {
               }
           };
           class SetVoxelTOD : public std::set<VoxelTOD>, public Mapping::SetVoxelExtras
-          {
+          { MEMALIGN(SetVoxelTOD)
             public:
               typedef VoxelTOD VoxType;
               typedef VoxelTOD::vector_type vector_type;

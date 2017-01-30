@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 
 #include "dwi/tractography/mapping/mapper_plugins.h"
@@ -45,7 +44,7 @@ namespace MR {
 
 
 
-        void TWIScalarImagePlugin::load_factors (const Streamline<>& tck, std::vector<default_type>& factors)
+        void TWIScalarImagePlugin::load_factors (const Streamline<>& tck, vector<default_type>& factors)
         {
           if (statistic == ENDS_MIN || statistic == ENDS_MEAN || statistic == ENDS_MAX || statistic == ENDS_PROD) {
 
@@ -75,7 +74,7 @@ namespace MR {
 
 
 
-        void TWIFODImagePlugin::load_factors (const Streamline<>& tck, std::vector<default_type>& factors)
+        void TWIFODImagePlugin::load_factors (const Streamline<>& tck, vector<default_type>& factors)
         {
           for (size_t i = 0; i != tck.size(); ++i) {
             if (interp.scanner (tck[i])) {

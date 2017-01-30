@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __dwi_shells_h__
 #define __dwi_shells_h__
@@ -65,14 +64,14 @@ namespace MR
 
 
     class Shell
-    {
+    { NOMEMALIGN
 
       public:
 
         Shell() : mean (0.0), stdev (0.0), min (0.0), max (0.0) { }
-        Shell (const Eigen::MatrixXd& grad, const std::vector<size_t>& indices);
+        Shell (const Eigen::MatrixXd& grad, const vector<size_t>& indices);
 
-        const std::vector<size_t>& get_volumes() const { return volumes; }
+        const vector<size_t>& get_volumes() const { return volumes; }
         size_t count() const { return volumes.size(); }
 
         default_type get_mean()  const { return mean; }
@@ -94,7 +93,7 @@ namespace MR
 
 
       protected:
-        std::vector<size_t> volumes;
+        vector<size_t> volumes;
         default_type mean, stdev, min, max;
 
     };
@@ -104,7 +103,7 @@ namespace MR
 
 
     class Shells
-    {
+    { NOMEMALIGN
       public:
         Shells (const Eigen::MatrixXd& grad);
 
@@ -119,15 +118,15 @@ namespace MR
           return count;
         }
 
-        std::vector<size_t> get_counts() const { 
-          std::vector<size_t> c (count()); 
+        vector<size_t> get_counts() const { 
+          vector<size_t> c (count()); 
           for (size_t n = 0; n < count(); ++n)
             c[n] = shells[n].count();
           return c;
         }
 
-        std::vector<size_t> get_bvalues() const { 
-          std::vector<size_t> b (count()); 
+        vector<size_t> get_bvalues() const { 
+          vector<size_t> b (count()); 
           for (size_t n = 0; n < count(); ++n)
             b[n] = shells[n].get_mean();
           return b;
@@ -156,7 +155,7 @@ namespace MR
 
 
       protected:
-        std::vector<Shell> shells;
+        vector<Shell> shells;
 
 
       private:
@@ -164,8 +163,8 @@ namespace MR
         typedef decltype(std::declval<const Eigen::MatrixXd>().col(0)) BValueList;
 
         // Functions for current b-value clustering implementation
-        size_t clusterBvalues (const BValueList&, std::vector<size_t>&) const;
-        void regionQuery (const BValueList&, const default_type, std::vector<size_t>&) const;
+        size_t clusterBvalues (const BValueList&, vector<size_t>&) const;
+        void regionQuery (const BValueList&, const default_type, vector<size_t>&) const;
 
 
     };

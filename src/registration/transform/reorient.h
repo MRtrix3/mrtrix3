@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __registration_transform_reorient_h__
 #define __registration_transform_reorient_h__
@@ -42,7 +41,7 @@ namespace MR
 
 
       template <class FODImageType>
-      class LinearKernel {
+      class LinearKernel { MEMALIGN(LinearKernel<FODImageType>)
 
         public:
           LinearKernel (const ssize_t n_SH,
@@ -55,12 +54,12 @@ namespace MR
             if (modulate) {
               Eigen::VectorXd modulation_factors = transformed_directions.colwise().norm() / linear_transform.linear().inverse().determinant();
               transformed_directions.colwise().normalize();
-              transform.noalias() = (aPSF_weights_to_FOD_transform (n_SH, transformed_directions) * modulation_factors.asDiagonal()
-                                  * Math::pinv (aPSF_weights_to_FOD_transform (n_SH, directions))).cast <typename FODImageType::value_type> ();
+              transform.noalias() = aPSF_weights_to_FOD_transform (n_SH, transformed_directions) * modulation_factors.asDiagonal()
+                                  * Math::pinv (aPSF_weights_to_FOD_transform (n_SH, directions));
             } else {
               transformed_directions.colwise().normalize();
-              transform.noalias() = (aPSF_weights_to_FOD_transform (n_SH, transformed_directions)
-                                  * Math::pinv (aPSF_weights_to_FOD_transform (n_SH, directions))).cast <typename FODImageType::value_type> ();
+              transform.noalias() = aPSF_weights_to_FOD_transform (n_SH, transformed_directions)
+                                  * Math::pinv (aPSF_weights_to_FOD_transform (n_SH, directions));
             }
           }
 
@@ -68,11 +67,11 @@ namespace MR
           {
             in.index(3) = 0;
             if (in.value() > 0.0)  // only reorient voxels that contain a FOD
-              out.row(3) = transform * in.row(3);
+              out.row(3) = transform * Eigen::Vector3 (in.row(3));
           }
 
         protected:
-          Eigen::Matrix<typename FODImageType::value_type, Eigen::Dynamic, Eigen::Dynamic> transform;
+          Eigen::MatrixXd transform;
       };
 
 
@@ -114,7 +113,7 @@ namespace MR
 
 
       template <class FODImageType>
-      class NonLinearKernel {
+      class NonLinearKernel { MEMALIGN(NonLinearKernel<FODImageType>)
 
         public:
           NonLinearKernel (const ssize_t n_SH, Image<default_type>& warp, const Eigen::MatrixXd& directions, const bool modulate) :
@@ -147,7 +146,7 @@ namespace MR
                 transform.noalias() = aPSF_weights_to_FOD_transform (n_SH, transformed_directions) * FOD_to_aPSF_transform;
               }
 
-              image.row(3) = transform.cast<typename FODImageType::value_type>() * image.row(3);;
+              image.row(3) = transform * Eigen::Vector3(image.row(3));
             }
           }
           protected:

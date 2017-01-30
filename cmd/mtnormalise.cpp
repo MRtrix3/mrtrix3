@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 
 
@@ -54,15 +53,15 @@ void run ()
   if (argument.size() % 2)
     throw Exception ("The number of input arguments must be even. There must be an output file provided for every input tissue image");
 
-  std::vector<Image<float>> input_images;
-  std::vector<Header> output_headers;
-  std::vector<std::string> output_filenames;
+  vector<Image<float>> input_images;
+  vector<Header> output_headers;
+  vector<std::string> output_filenames;
 
-  std::vector<size_t> sh_image_indexes;
+  vector<size_t> sh_image_indexes;
   for (size_t i = 0; i < argument.size(); i += 2) {
     Header header = Header::open (argument[i]);
     if (header.ndim() == 4 && header.size(3) > 1) { // assume SH image to extract DC term
-      auto dc = Adapter::make<Adapter::Extract1D> (header.get_image<float>(), 3, std::vector<int> (1, 0));
+      auto dc = Adapter::make<Adapter::Extract1D> (header.get_image<float>(), 3, vector<int> (1, 0));
       input_images.emplace_back (Image<float>::scratch(dc));
       threaded_copy_with_progress_message ("loading image", dc, input_images[i / 2]);
       sh_image_indexes.push_back (i / 2);

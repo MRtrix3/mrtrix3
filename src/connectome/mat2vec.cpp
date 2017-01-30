@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 
 #include "connectome/mat2vec.h"
@@ -25,7 +24,7 @@ namespace MR {
     Mat2Vec::Mat2Vec (const node_t i) :
         dim (i)
     {
-      lookup.assign (dim, std::vector<size_t> (dim, 0));
+      lookup.assign (dim, vector<size_t> (dim, 0));
       inv_lookup.reserve (dim* (dim+1) / 2);
       size_t index = 0;
       for (node_t row = 0; row != dim; ++row) {

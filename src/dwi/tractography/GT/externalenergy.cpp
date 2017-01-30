@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "dwi/tractography/GT/externalenergy.h"
 
@@ -122,14 +121,14 @@ namespace MR {
           dE = 0.0;
           for (auto l = Loop(dwi, 0, 3) (dwi, tod, eext); l; ++l)
           {
-            y = dwi.row(3).cast<double>();
-            t = tod.row(3).cast<double>();
+            y = dwi.row(3);
+            t = tod.row(3);
             e = calcEnergy();
             eext.value() = e;
             dE += e;
             if (fiso.valid()) {
               assign_pos_of(dwi, 0, 3).to(fiso);
-              fiso.row(3) = fk.tail(nf).cast<float>();
+              fiso.row(3) = fk.tail(nf);
             }
           }
           stats.incEextTotal(dE - stats.getEextTotal());
@@ -143,11 +142,11 @@ namespace MR {
           {
             assign_pos_of(changes_vox[k], 0, 3).to(tod, eext);
             assert(!is_out_of_bounds(tod));
-            tod.row(3) = changes_tod[k].cast<float>();
+            tod.row(3) = changes_tod[k];
             eext.value() = changes_eext[k];
             if (fiso.valid()) {
               assign_pos_of(changes_vox[k], 0, 3).to(fiso);
-              fiso.row(3) = changes_fiso[k].cast<float>();
+              fiso.row(3) = changes_fiso[k];
             }
           }
           stats.incEextTotal(dE);
@@ -207,7 +206,7 @@ namespace MR {
             }
           }
           changes_vox.push_back(vox);
-          t += tod.row(3).cast<double>();
+          t += tod.row(3);
           changes_tod.push_back(t);
         }
         
@@ -220,7 +219,7 @@ namespace MR {
           {
             assign_pos_of(changes_vox[k], 0, 3).to(dwi, eext);
             assert(!is_out_of_bounds(dwi));
-            y = dwi.row(3).cast<double>();
+            y = dwi.row(3);
             t = changes_tod[k];
             e = calcEnergy();
             changes_fiso.push_back(fk.tail(nf));

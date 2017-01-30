@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "stats/cfe.h"
 
@@ -25,9 +24,9 @@ namespace MR
 
 
       TrackProcessor::TrackProcessor (Image<uint32_t>& fixel_indexer,
-                                      const std::vector<direction_type>& fixel_directions,
-                                      std::vector<uint16_t>& fixel_TDI,
-                                      std::vector<std::map<uint32_t, connectivity> >& connectivity_matrix,
+                                      const vector<direction_type>& fixel_directions,
+                                      vector<uint16_t>& fixel_TDI,
+                                      vector<std::map<uint32_t, connectivity> >& connectivity_matrix,
                                       const value_type angular_threshold) :
                                         fixel_indexer        (fixel_indexer) ,
                                         fixel_directions     (fixel_directions),
@@ -40,7 +39,7 @@ namespace MR
       bool TrackProcessor::operator() (const SetVoxelDir& in)
       {
         // For each voxel tract tangent, assign to a fixel
-        std::vector<int32_t> tract_fixel_indices;
+        vector<int32_t> tract_fixel_indices;
         for (SetVoxelDir::const_iterator i = in.begin(); i != in.end(); ++i) {
           assign_pos_of (*i).to (fixel_indexer);
           fixel_indexer.index(3) = 0;
@@ -87,7 +86,7 @@ namespace MR
 
 
 
-      Enhancer::Enhancer (const std::vector<std::map<uint32_t, connectivity> >& connectivity_map,
+      Enhancer::Enhancer (const vector<std::map<uint32_t, connectivity> >& connectivity_map,
                           const value_type dh,
                           const value_type E,
                           const value_type H) :

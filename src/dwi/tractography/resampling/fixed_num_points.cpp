@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "dwi/tractography/resampling/fixed_num_points.h"
 
@@ -25,13 +24,13 @@ namespace MR {
 
 
 
-        bool FixedNumPoints::operator() (std::vector<Eigen::Vector3f>& tck) const
+        bool FixedNumPoints::operator() (vector<Eigen::Vector3f>& tck) const
         {
           // Perform an explicit calculation of streamline length
           // From this, derive the spline position of each sample
           assert (tck.size() > 1);
           float length = 0.0;
-          std::vector<float> steps;
+          vector<float> steps;
           for (size_t i = 1; i != tck.size(); ++i) {
             const float dist = (tck[i] - tck[i-1]).norm();
             length += dist;
@@ -40,7 +39,7 @@ namespace MR {
           steps.push_back (0.0f);
 
           Math::Hermite<float> interp (hermite_tension);
-          std::vector<Eigen::Vector3f> output;
+          vector<Eigen::Vector3f> output;
           const size_t s = tck.size();
           tck.insert    (tck.begin(), tck[0] + (tck[0] - tck[ 1 ]));
           tck.push_back (             tck[s] + (tck[s] - tck[s-1]));

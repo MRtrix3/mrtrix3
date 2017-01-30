@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "gui/mrview/tool/odf/item.h"
 
@@ -114,7 +113,7 @@ namespace MR
           if (index >= shells->count())
             throw Exception ("Shell index is outside valid range");
           Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> shell_dirs ((*shells)[index].count(), 3);
-          const std::vector<size_t>& volumes = (*shells)[index].get_volumes();
+          const vector<size_t>& volumes = (*shells)[index].get_volumes();
           for (size_t row = 0; row != volumes.size(); ++row)
             shell_dirs.row (row) = grad.row (volumes[row]).head<3>().cast<float>();
           std::unique_ptr<MR::DWI::Directions::Set> new_dirs (new MR::DWI::Directions::Set (shell_dirs));
@@ -153,7 +152,7 @@ namespace MR
         Eigen::VectorXf ODF_Item::DixelPlugin::get_shell_data (const Eigen::VectorXf& values) const
         {
           assert (shells);
-          const std::vector<size_t>& volumes ((*shells)[shell_index].get_volumes());
+          const vector<size_t>& volumes ((*shells)[shell_index].get_volumes());
           Eigen::VectorXf result (volumes.size());
           for (size_t i = 0; i != volumes.size(); ++i)
             result[i] = values[volumes[i]];

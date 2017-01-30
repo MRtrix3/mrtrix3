@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 
 
@@ -68,7 +67,7 @@ void run ()
 
   typedef Eigen::Array<int, 3, 1> voxel_corner_t;
 
-  std::vector<voxel_corner_t> lower_corners, upper_corners;
+  vector<voxel_corner_t> lower_corners, upper_corners;
 
   {
     for (auto i = Loop ("Importing label image", labels) (labels); i; ++i) {
@@ -100,7 +99,7 @@ void run ()
 
     auto worker = [&] (const size_t& in)
     {
-      std::vector<int> from, dimensions;
+      vector<int> from, dimensions;
       for (size_t axis = 0; axis != 3; ++axis) {
         from.push_back (lower_corners[in][axis]);
         dimensions.push_back (upper_corners[in][axis] - lower_corners[in][axis] + 1);

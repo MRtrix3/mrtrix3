@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 
 
@@ -40,7 +39,7 @@ namespace Connectome {
 
 // Provides a common interface for assigning a streamline to the relevant parcellation node pair
 // Note that this class is NOT copy-constructed, so derivative classes must be thread-safe
-class Tck2nodes_base {
+class Tck2nodes_base { MEMALIGN(Tck2nodes_base)
 
   public:
     Tck2nodes_base (const Image<node_t>& nodes_data, const bool pair) :
@@ -61,7 +60,7 @@ class Tck2nodes_base {
       return std::make_pair (node_one, node_two);
     }
 
-    bool operator() (const Streamline<>& tck, std::vector<node_t>& out) const
+    bool operator() (const Streamline<>& tck, vector<node_t>& out) const
     {
       assert (!pair);
       Image<node_t> v (nodes);
@@ -81,12 +80,12 @@ class Tck2nodes_base {
       throw Exception ("Calling empty virtual function Tck2nodes_base::select_node()");
     }
 
-    virtual void select_nodes (const Streamline<>& tck, Image<node_t>& v, std::vector<node_t>& out) const {
+    virtual void select_nodes (const Streamline<>& tck, Image<node_t>& v, vector<node_t>& out) const {
       throw Exception ("Calling empty virtual function Tck2nodes_base::select_nodes()");
     }
 
     class voxel_type : public Eigen::Array<int,3,1>
-    {
+    { MEMALIGN(voxel_type)
       public:
         using Eigen::Array<int,3,1>::Array;
         bool operator< (const Eigen::Array<int,3,1>& that) const {
@@ -102,7 +101,7 @@ class Tck2nodes_base {
 // Specific implementations of assignment methodologies
 
 // Most basic: look up the voxel value at the voxel containing the streamline endpoint
-class Tck2nodes_end_voxels : public Tck2nodes_base {
+class Tck2nodes_end_voxels : public Tck2nodes_base { MEMALIGN(Tck2nodes_end_voxels)
 
   public:
     Tck2nodes_end_voxels (const Image<node_t>& nodes_data) :
@@ -123,7 +122,7 @@ class Tck2nodes_end_voxels : public Tck2nodes_base {
 
 
 // Radial search
-class Tck2nodes_radial : public Tck2nodes_base {
+class Tck2nodes_radial : public Tck2nodes_base { MEMALIGN(Tck2nodes_radial)
 
   public:
     Tck2nodes_radial (const Image<node_t>& nodes_data, const default_type radius) :
@@ -146,7 +145,7 @@ class Tck2nodes_radial : public Tck2nodes_base {
     node_t select_node (const Tractography::Streamline<>&, Image<node_t>&, const bool) const override;
 
     void initialise_search ();
-    std::vector<voxel_type> radial_search;
+    vector<voxel_type> radial_search;
     const default_type max_dist;
     // Distances are sub-voxel from the precise streamline termination point, so the search order is imperfect.
     //   This parameter controls when to stop the radial search because no voxel within the search space can be closer
@@ -160,8 +159,8 @@ class Tck2nodes_radial : public Tck2nodes_base {
 
 
 // Do a reverse-search from the track endpoints inwards
-class Tck2nodes_revsearch : public Tck2nodes_base
-{
+class Tck2nodes_revsearch : public Tck2nodes_base 
+{ MEMALIGN (Tck2nodes_revsearch)
 
   public:
     Tck2nodes_revsearch (const Image<node_t>& nodes_data, const default_type length) :
@@ -185,7 +184,7 @@ class Tck2nodes_revsearch : public Tck2nodes_base
 
 // Forward search - form a diamond-like shape emanating from the streamline endpoint in the direction of the tangent
 class Tck2nodes_forwardsearch : public Tck2nodes_base
-{
+{ MEMALIGN(Tck2nodes_forwardsearch)
 
   public:
     Tck2nodes_forwardsearch (const Image<node_t>& nodes_data, const default_type length) :
@@ -216,7 +215,7 @@ class Tck2nodes_forwardsearch : public Tck2nodes_base
 
 // Class that obtains a list of all nodes overlapped by the streamline
 class Tck2nodes_all_voxels : public Tck2nodes_base
-{
+{ MEMALIGN(Tck2nodes_all_voxels)
   public:
     Tck2nodes_all_voxels (const Image<node_t>& nodes_data) :
         Tck2nodes_base (nodes_data, false) { }
@@ -227,7 +226,7 @@ class Tck2nodes_all_voxels : public Tck2nodes_base
     ~Tck2nodes_all_voxels() { }
 
   private:
-    void select_nodes (const Streamline<>&, Image<node_t>&, std::vector<node_t>&) const override;
+    void select_nodes (const Streamline<>&, Image<node_t>&, vector<node_t>&) const override;
 
 };
 

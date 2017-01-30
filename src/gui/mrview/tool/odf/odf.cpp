@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "mrtrix.h"
 #include "dwi/gradient.h"
@@ -452,7 +451,7 @@ namespace MR
 
 
 
-        void ODF::add_images (std::vector<std::string>& list, const odf_type_t mode)
+        void ODF::add_images (vector<std::string>& list, const odf_type_t mode)
         {
           size_t previous_size = image_list_model->rowCount();
           if (!image_list_model->add_items (list, mode,
@@ -495,7 +494,7 @@ namespace MR
 
         void ODF::sh_open_slot ()
         {
-          std::vector<std::string> list = Dialog::File::get_images (&window(), "Select SH-based ODF images to open");
+          vector<std::string> list = Dialog::File::get_images (&window(), "Select SH-based ODF images to open");
           if (list.empty())
             return;
 
@@ -504,7 +503,7 @@ namespace MR
 
         void ODF::tensor_open_slot ()
         {
-          std::vector<std::string> list = Dialog::File::get_images (&window(), "Select tensor images to open");
+          vector<std::string> list = Dialog::File::get_images (&window(), "Select tensor images to open");
           if (list.empty())
             return;
 
@@ -513,7 +512,7 @@ namespace MR
 
         void ODF::dixel_open_slot ()
         {
-          std::vector<std::string> list = Dialog::File::get_images (&window(), "Select dixel-based ODF images to open");
+          vector<std::string> list = Dialog::File::get_images (&window(), "Select dixel-based ODF images to open");
           if (list.empty())
             return;
 
@@ -876,7 +875,7 @@ namespace MR
         {
           if (opt.opt->is ("odf.load_sh")) {
             try {
-              std::vector<std::string> list (1, opt[0]);
+              vector<std::string> list (1, opt[0]);
               add_images (list, odf_type_t::SH);
             }
             catch (Exception& e) {
@@ -887,7 +886,7 @@ namespace MR
 
           if (opt.opt->is ("odf.load_tensor")) {
             try {
-              std::vector<std::string> list (1, opt[0]);
+              vector<std::string> list (1, opt[0]);
               add_images (list, odf_type_t::TENSOR);
             }
             catch (Exception& e) {
@@ -898,7 +897,7 @@ namespace MR
 
           if (opt.opt->is ("odf.load_dixel")) {
             try {
-              std::vector<std::string> list (1, opt[0]);
+              vector<std::string> list (1, opt[0]);
               add_images (list, odf_type_t::DIXEL);
             }
             catch (Exception& e) {

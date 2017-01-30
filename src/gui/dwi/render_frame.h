@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __gui_dwi_render_frame_h__
 #define __gui_dwi_render_frame_h__
@@ -37,7 +36,7 @@ namespace MR
     {
 
       class RenderFrame : public GL::Area
-      {
+      { MEMALIGN(RenderFrame)
           Q_OBJECT
 
           typedef Renderer::mode_t mode_t;
@@ -79,10 +78,14 @@ namespace MR
             use_lighting = yesno;
             update();
           }
-          void set_normalise (bool yesno = true) {
-            normalise = yesno;
+          void set_scale (float new_scale) {
+            scale = new_scale;
             update();
           }
+          void reset_scale () {
+            set_scale (NaN);
+          }
+          void reset_view ();
           void set_lmax (int lmax) {
             assert (mode == mode_t::SH);
             if (lmax != lmax_computed) 
@@ -112,6 +115,10 @@ namespace MR
             recompute_mesh = recompute_amplitudes = true;
             update();
           }
+          void set_text (const std::string& text_to_display) {
+            text = text_to_display;
+            update();
+          }
 
           int  get_LOD () const { return lod_computed; }
           int  get_lmax () const { return lmax_computed; }
@@ -126,14 +133,14 @@ namespace MR
           void screenshot (int oversampling, const std::string& image_name);
 
         protected:
-          float view_angle, distance, line_width, scale;
+          float view_angle, distance, scale;
           int lmax_computed, lod_computed;
           mode_t mode;
           bool recompute_mesh, recompute_amplitudes, show_axes, hide_neg_values, color_by_dir, use_lighting, normalise;
           std::unique_ptr<MR::DWI::Directions::Set> dirs;
 
           QPoint last_pos;
-          GL::Font font;
+          GL::Font glfont;
           Projection projection;
           Math::Versorf orientation;
           Eigen::Vector3f focus;
@@ -150,11 +157,12 @@ namespace MR
           Renderer renderer;
           Eigen::VectorXf values;
 
+          std::string text;
+
         protected:
           virtual void initializeGL () override;
           virtual void resizeGL (int w, int h) override;
           virtual void paintGL () override;
-          void mouseDoubleClickEvent (QMouseEvent* event) override;
           void mousePressEvent (QMouseEvent* event) override;
           void mouseMoveEvent (QMouseEvent* event) override;
           void wheelEvent (QWheelEvent* event) override;

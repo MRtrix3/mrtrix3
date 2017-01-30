@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 
 
@@ -37,7 +36,7 @@ namespace MR {
 
 
 
-      class Set {
+      class Set { MEMALIGN(Set)
 
         public:
 
@@ -88,7 +87,7 @@ namespace MR {
 
           size_t size () const { return unit_vectors.size(); }
           const Eigen::Vector3& get_dir (const size_t i) const { assert (i < size()); return unit_vectors[i]; }
-          const std::vector<index_type>& get_adj_dirs (const size_t i) const { assert (i < size()); return adj_dirs[i]; }
+          const vector<index_type>& get_adj_dirs (const size_t i) const { assert (i < size()); return adj_dirs[i]; }
           bool dirs_are_adjacent (const index_type one, const index_type two) const {
             assert (one < size());
             assert (two < size());
@@ -101,14 +100,14 @@ namespace MR {
 
           index_type get_min_linkage (const index_type one, const index_type two) const;
 
-          const std::vector<Eigen::Vector3>& get_dirs() const { return unit_vectors; }
+          const vector<Eigen::Vector3>& get_dirs() const { return unit_vectors; }
           const Eigen::Vector3& operator[] (const size_t i) const { assert (i < size()); return unit_vectors[i]; }
 
 
         protected:
 
-          std::vector<Eigen::Vector3> unit_vectors;
-          std::vector< std::vector<index_type> > adj_dirs; // Note: not self-inclusive
+          vector<Eigen::Vector3> unit_vectors;
+          vector< vector<index_type> > adj_dirs; // Note: not self-inclusive
 
 
         private:
@@ -155,7 +154,7 @@ namespace MR {
 
 
 
-      class FastLookupSet : public Set {
+      class FastLookupSet : public Set { MEMALIGN(FastLookupSet)
 
         public:
 
@@ -188,7 +187,7 @@ namespace MR {
 
         private:
 
-          std::vector< std::vector<index_type> > grid_lookup;
+          vector< vector<index_type> > grid_lookup;
           unsigned int num_az_grids, num_el_grids, total_num_angle_grids;
           default_type az_grid_step, el_grid_step;
           default_type az_begin, el_begin;

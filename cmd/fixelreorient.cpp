@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 
 #include "command.h"
@@ -84,8 +83,7 @@ void run ()
       for (size_t f = 0; f < num_fixels_in_voxel; ++f) {
         input_directions_image.index(0) = index + f;
         output_directions_image.index(0) = index + f;
-        output_directions_image.row(1) = transform * input_directions_image.row(1);
-        output_directions_image.row(1).normalize();
+        output_directions_image.row(1) = (transform * Eigen::Vector3f (input_directions_image.row(1))).normalized();
       }
     }
   }

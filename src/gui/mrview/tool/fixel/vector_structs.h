@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __gui_mrview_tool_fixel_structs_h__
 #define __gui_mrview_tool_fixel_structs_h__
@@ -27,13 +26,13 @@ namespace MR
         enum FixelColourType { Direction, CValue };
         enum FixelScaleType { Unity, Value };
 
-        struct FixelValue {
+        struct FixelValue { MEMALIGN (FixelValue)
           bool loaded = false;
           float value_min = std::numeric_limits<float>::max ();
           float value_max = std::numeric_limits<float>::min ();
           float lessthan = value_min, greaterthan = value_max;
           float current_min = value_min, current_max = value_max;
-          std::vector<float> buffer_store;
+          vector<float> buffer_store;
 
 
           void add_value (float value) {

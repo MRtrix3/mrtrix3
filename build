@@ -1,10 +1,118 @@
 #!/usr/bin/env python
 
+usage_string = '''
+USAGE
+
+    ./build [-verbose] [-showdep[=target|all]] [target ...]
+
+DESCRIPTION
+
+    This script will compile and link the MRtrix3 source tree. It relies on the
+    configuration file produced by ./configure - please ensure you have run
+    this first.
+
+    In most cases, a simple invocation is all that is required:
+
+      $ ./build
+
+    If no targets are provided, the command will default to building all
+    applications by scanning through the cmd/ folder. 
+
+    The target executables will be located in the bin/ folder, and the shared
+    library (if requested - the default) will be located in the lib/ folder (or
+    in bin/ on Windows). All intermediate temporary files will be located
+    within the tmp/ folder.
+
+SPECIAL TARGETS
+
+    clean 
+       used to remove all compiler-generated files, including objects,
+       executables, and shared libraries. 
+  
+    bash
+       used to update the bash completion script. Note that automatic updating
+       of this script can be enabled at the configure stage, by running
+       './configure -dev' prior to invoking './build'.
+  
+    doc
+       used to update the command documentation, so that any modifications to
+       the inline documentation in commands can be propagated through to the
+       user documentation site.
+  
+    select name
+       used to switch between configs / builds. This stores the current config
+       and all compiler-generated files in a folder (called "build.oldname"),
+       and restores the config in "build.name". If the named config does not
+       already exist, an empty one is created. If "name" is not given the
+       currently active config name is reported.
+
+PARALLELISED BUILD
+
+    By default, 'build' will use all available cores to run a parallel build.
+    In some instances, this can cause problems (notably out of RAM errors). You
+    can control how many jobs 'build' will run concurrently using the
+    NUMBER_OF_PROCESSORS environment variable. For example:
+
+      $ NUMBER_OF_PROCESSORS=1 ./build
+
+OPTIONS 
+
+    -verbose
+       print each command as it is being invoked
+
+    -nowarnings
+       do not print out non-fatal compiler messages (warnings, etc)
+
+    -showdep[=target|all]
+       print the list of dependencies for every target (with -showdep=target;
+       the default) or for all files
+
+    -tree
+       [only used with -showdep] print full dependency tree for each file
+'''
+
+
+
+############################################################################
+#                          COMMON DEFINITIONS                              #
+############################################################################
+
 import platform, sys, os, time, threading, subprocess, copy, codecs, glob, atexit, tempfile
 
+global todo, headers, object_deps, file_flags, lock, print_lock, stop, main_cindex
+global include_paths
 
-config_name = None
+bin_dir = 'bin'
+cmd_dir = 'cmd'
+lib_dir = 'core'
+misc_dir = 'src'
+tmp_dir = 'tmp'
+
+cpp_suffix = '.cpp'
+h_suffix = '.h'
+libname = 'mrtrix'
+
+include_paths = [ misc_dir ]
 config_file = None
+
+
+system = None
+dependencies = 0
+dep_recursive = False
+verbose = False
+nowarnings = False
+targets = []
+use_multiple_cores = True
+
+
+todo, headers, object_deps, file_flags = {}, {}, {}, {}
+lock = threading.Lock()
+print_lock = threading.Lock()
+stop = False
+error_stream = None
+main_cindex = 0
+
+logfile = open ('build.log', 'wb')
 
 
 bcolors = {
@@ -26,6 +134,13 @@ bcolors = {
     "failed" : '\033[91m',
     "note" : '\033[94m'}
 
+
+
+
+
+
+
+
 def colorize(s):
   out = []
   for l in s.splitlines():
@@ -36,27 +151,6 @@ def colorize(s):
     out.append(l + '\n')
   return out
 
-
-
-system = None
-dependencies = 0
-dep_recursive = False
-verbose = False
-nowarnings = False
-targets = []
-use_multiple_cores = True
-
-
-global todo, headers, object_deps, file_flags, lock, print_lock, stop, main_cindex
-global include_paths
-todo, headers, object_deps, file_flags = {}, {}, {}, {}
-lock = threading.Lock()
-print_lock = threading.Lock()
-stop = False
-error_stream = None
-main_cindex = 0
-
-logfile = open ('build.log', 'wb')
 
 
 
@@ -134,125 +228,53 @@ getting short git version in folder "''' + folder + '"... ')
   return None
 
 
-# common definitions:
-
-bin_dir = 'bin'
-cmd_dir = 'cmd'
-lib_dir = 'lib'
-misc_dir = 'src'
-other_dir = '3rd_party'
-
-cpp_suffix = '.cpp'
-h_suffix = '.h'
-libname = 'mrtrix'
-
-
-
-
-
-
-include_paths = [ misc_dir, cmd_dir ]
-if os.path.exists (other_dir):
-  include_paths += [ other_dir ]
-
-# check if we are compiling a separate project:
-mrtrix_dir = [ '.' ]
-build_script = sys.argv[0]
-separate_project = False
-
 def get_real_name (path):
   if os.path.islink (path): return os.readlink (path)
   else: return (path)
 
-while os.path.abspath (os.path.dirname (get_real_name (build_script))) != os.path.abspath (mrtrix_dir[-1]):
-  if not separate_project:
-    log ('compiling separate project against:' + os.linesep)
-  separate_project = True
-  build_script = os.path.normpath (os.path.join (mrtrix_dir[-1], get_real_name (build_script)))
-  module_dir = os.path.dirname (build_script) 
-  mrtrix_dir += [ module_dir ]
-  include_paths += [ os.path.join (module_dir, misc_dir) ]
-  if os.path.exists (os.path.join (module_dir, other_dir)):
-    include_paths += [ os.path.join (module_dir, other_dir) ]
-  log ('    ' + module_dir + os.linesep + os.linesep)
 
 
 
 
+def list_untracked_bin_files():
+  process = subprocess.Popen ([ 'git', 'ls-files', '-x', '.*', '-o', bin_dir ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  ( files, stderr ) = process.communicate()
+  if process.returncode == 0:
+    return files.decode(errors='ignore').splitlines()
+  else:
+    print ('error retrieving list of untracked files in ' + bin_dir)
 
-def split_intermediate (name):
+
+
+def modify_path (name, tmp=False, in_main=False, strip=None, add=None):
+  if strip is not None:
+    name = name[:-len(strip)]
+  if add is not None:
+    name = name + add
   for module_dir in mrtrix_dir:
     relname = os.path.normpath (os.path.relpath (name, module_dir))
     if relname.startswith ('.'):
       continue
-    confname = relname.split(os.path.sep)[0]
-    is_target = os.path.isfile (os.path.join (mrtrix_dir[-1], confname, 'config'))
-    return [ module_dir, confname, os.path.relpath (name, os.path.join (module_dir, confname)) ]
-
-
-def make_intermediate (name, confname):
-  for module_dir in mrtrix_dir:
-    relname = os.path.normpath (os.path.relpath (name, module_dir))
-    if relname.startswith ('.'):
-      continue
-    return os.path.normpath (os.path.join (module_dir, confname, relname))
+    if tmp:
+      relname = os.path.join (tmp_dir, relname)
+    elif not os.path.relpath (relname, tmp_dir).startswith ('.'):
+      relname = os.sep.join (split_path (relname)[1:])
+    name = os.path.normpath (os.path.join (module_dir, relname))
+    return name
 
 
 
 
+############################################################################
+#                          COMMAND-LINE PARSING                            #
+############################################################################
 
-
-# parse command-line:
 command_doc = False
 bash_completion = False
 
 for arg in sys.argv[1:]:
   if '-help'.startswith (arg):
-    print ('''
-usage: ./build [-verbose] [-showdep[=target|all]] [target ...]
-
-This script will compile and link the MRtrix3 source tree. It relies on the
-configuration file produced by ./configure - please ensure you have run this
-first.
-
-In most cases, a simple invocation is all that is required:
-
-  $ ./build
-
-If no targets are provided, the command will default to building 
-all applications by scanning through the cmd/ folder. 
-
-All intermediate files and the target executables will be located in the target
-config folder (by default: 'release').
-
-The special target 'clean' is used to remove all compiler-generated 
-files, including objects, executables, and shared libraries. 
-
-The special target 'bash' is used to update the bash completion script. Note
-that automatic updating of this script can be enabled at the configure stage,
-by running './configure -dev' prior to invoking './build'
-
-The special target 'doc' is used to update the command documentation, so that
-any modifications to the inline documentation in commands can be propagate
-through to the user documentation site.
-
-By default, 'build' will use all available cores to run a parallel build. In some
-instances, this can cause problems (notably out of RAM errors). You can control 
-how many jobs 'build' will run concurrently using the NUMBER_OF_PROCESSORS 
-environment variable. For example:
-
-  $ NUMBER_OF_PROCESSORS=1 ./build
-
-
-OPTIONS:
-
-  -verbose               print each command as it is being invoked
-  -nowarnings            do not print out non-fatal compiler messages (warnings, etc)
-  -showdep[=target|all]  print the list of dependencies for every target (with 
-                         -showdep=target; the default) or for all files
-  -tree                  [only used with -showdep) print full dependency tree for 
-                         each file
-''')
+    print (usage_string)
     exit (0)
   elif '-verbose'.startswith(arg): 
     verbose = True
@@ -277,61 +299,174 @@ OPTIONS:
     command_doc = True
   elif arg == 'clean':
     targets = [ 'clean' ]
-  elif os.path.isfile (os.path.join (mrtrix_dir[-1], arg, "config")):
-    if config_name is not None and config_name is not arg:
-      sys.stderr.write ('conflicting configurations requested: "' + config_name + '" and "' + arg + '"\n')
-      sys.exit (1)
-    config_name = arg
   else: 
-    ret = split_intermediate (arg)
-    if arg is None:
-      sys.stderr.write ('unable to resolve target "' + arg + '"\n')
-      sys.exit (1)
     targets.append(arg)
-    if config_name is not None and config_name != ret[1]:
-      sys.stderr.write ('conflicting configurations requested: "' + config_name + '" and "' + ret[1] + '"\n')
-      sys.exit (1)
-    config_name = ret[1]
 
 
 
-# clean-up:
-if 'clean' in targets:
-  if config_name:
-    folders = [ config_name ]
+
+
+
+
+############################################################################
+#                        PROJECT / MODULE DETECTION                        #
+############################################################################
+
+mrtrix_dir = [ '.' ]
+build_script = sys.argv[0]
+separate_project = False
+
+while os.path.abspath (os.path.dirname (get_real_name (build_script))) != os.path.abspath (mrtrix_dir[-1]):
+  if not separate_project:
+    log ('compiling separate project against:' + os.linesep)
+  separate_project = True
+  build_script = os.path.normpath (os.path.join (mrtrix_dir[-1], get_real_name (build_script)))
+  module_dir = os.path.dirname (build_script) 
+  mrtrix_dir += [ module_dir ]
+  include_paths += [ os.path.join (module_dir, misc_dir) ]
+  log ('    ' + module_dir + os.linesep + os.linesep)
+
+
+
+
+
+############################################################################
+#                             CONFIG HANDLING                              #
+############################################################################
+
+def get_active_build ():
+  active_config = glob.glob ('build.*.active')
+  if len (active_config) > 1:
+    sys.stderr.write ('ERROR: more than one config is currently marked as active!\n')
+    sys.exit (1)
+  if len (active_config) == 1:
+    active_config = active_config[0]
+    if not os.path.isdir (active_config):
+      raise Exception ('ERROR: active config (' + active_config + ') is not a folder')
+    if len (os.listdir (active_config)):
+      raise Exception ('ERROR: active config folder (' + active_config + ') is not empty')
+    return active_config[:-len('.active')]
   else:
-    folders = [ f for f in os.listdir('.') if os.path.exists (os.path.join (f, 'config')) ]
+    os.mkdir ('build.default.active')
+    return 'build.default'
 
-  folders += [ 'dev' ]
 
-  if '.git' in folders: folders.remove ('.git')
-  for f in folders:
+
+def store_current_build ():
+  stored_config = get_active_build()
+  os.rename (stored_config + '.active', stored_config)
+  print ('storing "' + stored_config + '"...')
+  for f in [ tmp_dir, 'config' ] + list_untracked_bin_files() + glob.glob ('lib/libmrtrix*'):
+    if os.path.exists (f):
+      os.renames (f, os.path.join (stored_config, f))
+
+
+
+def restore_build (name):
+  stored_config = 'build.' + name
+  active_config = stored_config + '.active'
+  if os.path.isdir (stored_config):
+    print ('restoring "' + stored_config + '"...')
+    os.rename (stored_config, active_config)
+    for root, dirs, files in os.walk(active_config, topdown=False):
+      for name in files:
+        os.renames (os.path.join (root, name), os.path.join (os.path.relpath (root, active_config), name))
+      for name in dirs:
+        if os.path.isdir (os.path.join (root, name)):
+          os.rmdir (os.path.join(root, name))
+  else:
+    if os.path.exists (stored_config):
+      raise Exception ('ERROR config to be restored (' + stored_config + ') is not a folder')
+    print ('creating empty "' + stored_config + '"...')
+
+  if not os.path.isdir (active_config):
+    os.mkdir (active_config)
+
+
+
+
+if len (targets) and targets[0] == 'select':
+  active_config = get_active_build()
+
+  if len(targets) == 1:
+    print ('current config is "' + active_config + '"')
+    sys.exit (0)
+
+  if len(targets) != 2:
+    sys.stderr.write ('ERROR: select target expects a single configuration name\n')
+    sys.exit (1)
+
+  if active_config == 'build.' + targets[1]:
+    sys.stderr.write ('"' + active_config + '" is already active\n')
+    sys.exit (0)
+
+  store_current_build()
+  restore_build (targets[1])
+
+  sys.exit (0)
+
+
+  
+
+
+
+
+
+
+############################################################################
+#                            BUILD CLEAN                                   #
+############################################################################
+
+if 'clean' in targets:
+
+  for f in [ tmp_dir, 'dev' ]:
+    if not os.path.isdir (f): continue
     for root, dirs, files in os.walk(f, topdown=False):
       for name in files:
         fname = os.path.join(root, name)
-        if name != 'config' and root != f:
-          print ('delete file:', fname)
-          os.remove (fname)
+        print ('delete file:', fname)
+        os.remove (fname)
       for name in dirs:
+        print ('delete folder:', os.path.join (root, name))
         os.rmdir (os.path.join(root, name))
+    print ('delete folder:', root)
+    os.rmdir (root)
 
+  try: 
+    for fname in list_untracked_bin_files():
+      print ('delete file:', fname)
+      os.remove (fname)
+  except:
+    pass
+
+  try:
+    for fname in glob.glob (os.path.join ('lib', 'libmrtrix*')):
+      if os.path.isfile (fname):
+        print ('delete file:', fname)
+        os.remove (fname)
+  except:
+    pass
 
   sys.exit (0)
 
 
 
 
-# load configuration file:
-if config_name is None: 
-  config_name = 'release'
+
+
+
+############################################################################
+#                          LOAD CONFIGURATION FILE                         #
+############################################################################
+
 if config_file is None:
-  config_file = os.path.normpath (os.path.join (mrtrix_dir[-1], config_name, 'config'))
+  config_file = os.path.normpath (os.path.join (mrtrix_dir[-1], 'config'))
 
 try:
   log ('reading configuration from "' + config_file + '"...' + os.linesep)
   exec (codecs.open (config_file, mode='r', encoding='utf-8').read())
 except IOError:
-  sys.stderr.write ('no configuration file found for target build "' + config_name + '''"!
+  sys.stderr.write ('''no configuration file found!
 please run "./configure" prior to invoking this script
 
 ''')
@@ -341,20 +476,25 @@ please run "./configure" prior to invoking this script
 environ = os.environ.copy()
 environ.update ({ 'PATH': PATH })
 
-target_bin_dir = os.path.join (mrtrix_dir[0], config_name, bin_dir);
+target_bin_dir = os.path.join (mrtrix_dir[0], bin_dir);
 
 system = platform.system().lower()
 if system.startswith('mingw') or system.startswith('msys'):
-  target_lib_dir = os.path.join (mrtrix_dir[-1], config_name, bin_dir)
+  target_lib_dir = os.path.join (mrtrix_dir[-1], bin_dir)
 else:
-  target_lib_dir = os.path.join (mrtrix_dir[-1], config_name, lib_dir)
+  target_lib_dir = os.path.join (mrtrix_dir[-1], 'lib')
 lib_dir = os.path.join (mrtrix_dir[-1], lib_dir)
 
 if ld_enabled and len(runpath):
   ld_flags += [ runpath+os.path.relpath (target_lib_dir,target_bin_dir) ]
 
 
-# get version info:
+
+
+
+############################################################################
+#                          GET VERSION INFORMATION                         #
+############################################################################
 
 lib_version = get_git_lib_version (mrtrix_dir[-1])
 if lib_version is not None:
@@ -384,7 +524,7 @@ moc_obj_suffix = '_moc' + obj_suffix
 
 
 ###########################################################################
-#                           TODO list Entry
+#                           TODO LIST ENTRY                               #
 ###########################################################################
 
 class Entry:
@@ -437,7 +577,6 @@ class Entry:
           if not entry.startswith ('config'):
             fd.write ('<file>' + entry + '</file>\n')
         fd.write ('</qresource>\n</RCC>\n')
-      
     if len(self.cmd) > 0: 
       return execute (formatstr.format (cindex, self.action, self.name), self.cmd)
     else: 
@@ -448,8 +587,7 @@ class Entry:
     self.action = 'LB'
     if len(exe_suffix) > 0 and self.name.endswith(exe_suffix): cc_file = self.name[:-len(exe_suffix)]
     else: cc_file = self.name
-    cc_file = split_intermediate (cc_file)
-    cc_file = os.path.normpath (os.path.join (cc_file[0], cmd_dir, os.sep.join (split_path(cc_file[2])[1:]) + cpp_suffix))
+    cc_file = modify_path (os.path.join (cmd_dir, os.sep.join (split_path(cc_file)[1:])), add=cpp_suffix)
     self.deps = list_cmd_deps(cc_file)
 
     skip = False
@@ -481,14 +619,15 @@ class Entry:
     flags = copy.copy (eigen_cflags)
 
     if is_moc (cc_file):
-      cc_file = split_intermediate (cc_file)
-      src_header = os.path.normpath (os.path.join (cc_file[0], cc_file[2][:-len(moc_cpp_suffix)] + h_suffix))
-      cc_file = os.path.normpath (os.path.join (cc_file[0], cc_file[1], cc_file[2]))
+      src_header = modify_path (cc_file, strip=moc_cpp_suffix, add=h_suffix)
+      list_headers (src_header)
+      file_flags[cc_file] = file_flags[src_header]
+    elif is_icon (cc_file):
+      src_header = modify_path (cc_file, strip=cpp_suffix, add=h_suffix)
       list_headers (src_header)
       file_flags[cc_file] = file_flags[src_header]
     else:
-      cc_file = split_intermediate (cc_file)
-      cc_file = os.path.normpath (os.path.join (cc_file[0], cc_file[2]))
+      cc_file = modify_path (cc_file, tmp=False)
       self.deps = self.deps.union (list_headers (cc_file))
     self.deps.add (config_file)
 
@@ -506,8 +645,7 @@ class Entry:
 
   def set_moc (self):
     self.action = 'MOC'
-    src_file = split_intermediate (self.name[:-len(moc_cpp_suffix)] + h_suffix)
-    src_file = os.path.normpath (os.path.join (src_file[0], src_file[2]))
+    src_file = modify_path (self.name, strip=moc_cpp_suffix, add=h_suffix)
     self.deps = set([ src_file ])
     self.deps = self.deps.union (list_headers (src_file))
     self.deps.add (config_file)
@@ -535,7 +673,7 @@ class Entry:
 
   def set_icon (self):
     self.action = 'RCC'
-    with codecs.open (self.name[:-len(cpp_suffix)]+h_suffix, mode='r', encoding='utf-8') as fd:
+    with codecs.open (modify_path (self.name, strip=cpp_suffix, add=h_suffix), mode='r', encoding='utf-8') as fd:
       for line in fd:
         if line.startswith ('//RCC:'):
           for entry in line[6:].strip().split():
@@ -572,7 +710,7 @@ class Entry:
 
 
 ###########################################################################
-#                         FUNCTION DEFINITIONS
+#                         FUNCTION DEFINITIONS                            #
 ###########################################################################
 
 
@@ -586,7 +724,7 @@ def default_targets():
   return targets
 
 def is_executable (target):
-  return os.path.normpath (split_path (split_intermediate (target)[2])[0]) == os.path.normpath (bin_dir) and not is_moc (target) and not is_library (target)
+  return os.path.normpath (split_path (target)[0]) == os.path.normpath (bin_dir) and not is_moc (target) and not is_library (target)
 
 def is_library (target):
   return target.endswith (lib_suffix) and split_path(target)[-1].startswith (lib_prefix)
@@ -733,16 +871,16 @@ def list_cmd_deps (file_cc):
   file_cc = os.path.normpath (file_cc)
 
   if file_cc not in object_deps.keys():
-    object_deps[file_cc] = set([ make_intermediate (file_cc[:-len(cpp_suffix)] + obj_suffix, config_name) ])
+    object_deps[file_cc] = set([ modify_path (file_cc, tmp=True, strip=cpp_suffix, add=obj_suffix) ])
     for entry in list_headers (file_cc):
       if os.path.abspath(entry).startswith(os.path.abspath(lib_dir)): continue
       if 'M' in file_flags[entry]: 
-        object_deps[file_cc] = object_deps[file_cc].union ([ make_intermediate (entry[:-len(h_suffix)] + moc_obj_suffix, config_name) ])
+        object_deps[file_cc] = object_deps[file_cc].union ([ modify_path (entry, tmp=True, strip=h_suffix, add=moc_obj_suffix) ])
       entry_cc = entry[:-len(h_suffix)] + cpp_suffix
       if os.path.exists (entry_cc):
         object_deps[file_cc] = object_deps[file_cc].union (list_cmd_deps(entry_cc))
       if os.path.basename (entry) == 'icons'+h_suffix:
-        object_deps[file_cc].add (make_intermediate (entry[:-len(h_suffix)] + obj_suffix, config_name))
+        object_deps[file_cc].add (modify_path (entry, tmp=True, strip=h_suffix, add=obj_suffix))
     if file_cc not in file_flags: file_flags[file_cc] = ''
     for entry in headers[file_cc]:
       for c in file_flags[entry]:
@@ -759,7 +897,7 @@ def list_lib_deps ():
     for current_file in files:
       if current_file[0] == '.': continue
       if current_file.endswith (cpp_suffix):
-        deps.add (make_intermediate (os.path.join (root, current_file[:-len(cpp_suffix)] + obj_suffix), config_name))
+        deps.add (modify_path (os.path.join (root, current_file), tmp=True, strip=cpp_suffix, add=obj_suffix))
 
   return (deps)
 
@@ -887,6 +1025,9 @@ def update_bash_completion ():
 
   execute ('[SH] ' + completion_path, [ script_path, "-c", completion_path, "-m", target_bin_dir ] )
 
+
+
+
 def update_user_docs ():
   # Only attempt to update docs if POSIX compliant
   if os.name != 'posix': return
@@ -932,7 +1073,7 @@ def update_user_docs ():
 
 
 ###########################################################################
-#                            START OF PROGRAM
+#                              START BUILDING                             #
 ###########################################################################
 
 
@@ -942,7 +1083,7 @@ if len(targets) == 0:
 
 
 # get git version info:
-update_git_version (mrtrix_dir[-1], os.path.join (mrtrix_dir[-1], 'lib/version.cpp'), '''
+update_git_version (mrtrix_dir[-1], os.path.join (lib_dir, 'version.cpp'), '''
 namespace MR { 
   namespace App { 
     const char* mrtrix_version = "%%%";
@@ -1037,7 +1178,7 @@ if len(todo):
   launching ''' + str(num_processors) + ''' threads
   
   ''')
-  
+
   threads = []
   for i in range (1, num_processors):
     t = threading.Thread (target=build_next, args=(i,));

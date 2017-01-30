@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __registration_metric_params_h__
 #define __registration_metric_params_h__
@@ -42,6 +41,10 @@ namespace MR
                 class ProcMaskType = Image<bool>,
                 class ProcessedMaskInterpolatorType = Interp::Nearest<Image<bool>>>
       class Params {
+        MEMALIGN(Params<TransformType,Im1ImageType,Im2ImageType,MidwayImageType, 
+            Im1MaskType,Im2MaskType,Im1ImageInterpType,Im2ImageInterpType, 
+            Im1MaskInterpolatorType,Im2MaskInterpolatorType,ProcImageType,ProcImageInterpolatorType,
+            ProcMaskType,ProcessedMaskInterpolatorType>)
         public:
 
           typedef typename TransformType::ParameterType TransformParamType;
@@ -81,7 +84,7 @@ namespace MR
                       update_control_points();
           }
 
-          void set_extent (std::vector<size_t> extent_vector) { extent=std::move(extent_vector); }
+          void set_extent (vector<size_t> extent_vector) { extent=std::move(extent_vector); }
 
           template <class VectorType>
           void set_control_points_extent(const VectorType& extent) {
@@ -109,7 +112,7 @@ namespace MR
             control_points.block<3,4>(0,0).colwise() += centre;
           }
 
-          const std::vector<size_t>& get_extent() const { return extent; }
+          const vector<size_t>& get_extent() const { return extent; }
 
           TransformType& transformation;
           Im1ImageType im1_image;
@@ -125,7 +128,7 @@ namespace MR
           bool robust_estimate;
           Eigen::Vector3 control_point_exent;
           Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> control_points;
-          std::vector<size_t> extent;
+          vector<size_t> extent;
 
           ProcImageType processed_image;
           MR::copy_ptr<ProcImageInterpolatorType> processed_image_interp;

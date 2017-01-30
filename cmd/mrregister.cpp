@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "command.h"
 #include "image.h"
@@ -347,7 +346,7 @@ void run ()
   }
 
   opt = get_options ("rigid_lmax");
-  std::vector<int> rigid_lmax;
+  vector<int> rigid_lmax;
   if (opt.size ()) {
     if (!do_rigid)
       throw Exception ("the -rigid_lmax option has been set when no rigid registration is requested");
@@ -497,7 +496,7 @@ void run ()
 
 
   opt = get_options ("affine_lmax");
-  std::vector<int> affine_lmax;
+  vector<int> affine_lmax;
   if (opt.size ()) {
     if (!do_affine)
       throw Exception ("the -affine_lmax option has been set when no affine registration is requested");
@@ -588,7 +587,7 @@ void run ()
   if (opt.size ()) {
     if (!do_nonlinear)
       throw Exception ("the non-linear multi-resolution scale factors were input when no non-linear registration is requested");
-    std::vector<default_type> scale_factors = parse_floats (opt[0][0]);
+    vector<default_type> scale_factors = parse_floats (opt[0][0]);
     if (nonlinear_init) {
       WARN ("-nl_scale option ignored since only the full resolution will be performed when initialising with non-linear warp");
     } else {
@@ -600,7 +599,7 @@ void run ()
   if (opt.size ()) {
     if (!do_nonlinear)
       throw Exception ("the number of non-linear iterations have been input when no non-linear registration is requested");
-    std::vector<int> iterations_per_level = parse_ints (opt[0][0]);
+    vector<int> iterations_per_level = parse_ints (opt[0][0]);
     if (nonlinear_init && iterations_per_level.size() > 1)
       throw Exception ("when initialising the non-linear registration the max number of iterations can only be defined for a single level");
     else
@@ -629,7 +628,7 @@ void run ()
   }
 
   opt = get_options ("nl_lmax");
-  std::vector<int> nl_lmax;
+  vector<int> nl_lmax;
   if (opt.size ()) {
     if (!do_nonlinear)
       throw Exception ("the -nl_lmax option has been set when no non-linear registration is requested");
@@ -673,7 +672,7 @@ void run ()
     } else { // 3D
       if (rigid_metric == Registration::NCC){
         Registration::Metric::NormalisedCrossCorrelation metric;
-        std::vector<size_t> extent(3,3);
+        vector<size_t> extent(3,3);
         rigid_registration.set_extent (extent);
         rigid_registration.run_masked (metric, rigid, im1_image, im2_image, im1_mask, im2_mask);
       }
@@ -743,7 +742,7 @@ void run ()
     } else { // 3D
       if (affine_metric == Registration::NCC){
         Registration::Metric::NormalisedCrossCorrelation metric;
-        std::vector<size_t> extent(3,3);
+        vector<size_t> extent(3,3);
         affine_registration.set_extent (extent);
         affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
       }

@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __registration_metric_mean_squared_h__
 #define __registration_metric_mean_squared_h__
@@ -24,7 +23,7 @@ namespace MR
   {
     namespace Metric
     {
-      class MeanSquared {
+      class MeanSquared { MEMALIGN(MeanSquared)
 
         public:
           template <class Params>
@@ -58,7 +57,7 @@ namespace MR
           }
       };
 
-      class MeanSquaredNoGradient {
+      class MeanSquaredNoGradient { MEMALIGN(MeanSquaredNoGradient)
         public:
           template <class Params>
             default_type operator() (Params& params,
@@ -84,7 +83,7 @@ namespace MR
       };
 
       template <class Im1Type, class Im2Type>
-        class MeanSquared4D {
+        class MeanSquared4D { MEMALIGN(MeanSquared4D<Im1Type,Im2Type>)
           public:
             MeanSquared4D ( ) {}
             template <class Params>
@@ -132,7 +131,7 @@ namespace MR
         };
 
       template <class Im1Type, class Im2Type>
-        class MeanSquaredNoGradient4D {
+        class MeanSquaredNoGradient4D { MEMALIGN(MeanSquaredNoGradient4D<Im1Type,Im2Type>)
           public:
             MeanSquaredNoGradient4D ( ) {}
 
@@ -161,7 +160,7 @@ namespace MR
         };
 
       template <class Im1Type, class Im2Type>
-        class MeanSquaredVectorNoGradient4D {
+        class MeanSquaredVectorNoGradient4D { MEMALIGN(MeanSquaredVectorNoGradient4D<Im1Type,Im2Type>)
           private:
             const ssize_t volumes;
             Eigen::Matrix<default_type, Eigen::Dynamic, 1> res;

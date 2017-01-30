@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 
 
@@ -37,7 +36,7 @@ namespace MR {
 
 
     class Mat2Vec
-    {
+    { MEMALIGN (Mat2Vec)
 
       public:
         Mat2Vec (const node_t);
@@ -74,8 +73,8 @@ namespace MR {
       private:
         node_t dim;
         // Lookup tables
-        std::vector< std::vector<size_t> > lookup;
-        std::vector< std::pair<node_t, node_t> > inv_lookup;
+        vector< vector<size_t> > lookup;
+        vector< std::pair<node_t, node_t> > inv_lookup;
 
     };
 
@@ -97,7 +96,7 @@ namespace MR {
     template <class VecType, class MatType>
     MatType& Mat2Vec::V2M (const VecType& v, MatType& m) const
     {
-      assert (v.size() == vec_size());
+      assert (size_t (v.size()) == vec_size());
       m.resize (dim, dim);
       for (node_t row = 0; row != dim; ++row) {
         for (node_t col = 0; col != dim; ++col)

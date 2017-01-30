@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 
 #include "command.h"
@@ -72,9 +71,9 @@ void run ()
 
 
   // Open all data images and create output date images with size equal to expected number of fixels
-  std::vector<Header> in_headers = Fixel::find_data_headers (in_directory, in_index_header, true);
-  std::vector<Image<float> > in_data_images;
-  std::vector<Image<float> > out_data_images;
+  vector<Header> in_headers = Fixel::find_data_headers (in_directory, in_index_header, true);
+  vector<Image<float> > in_data_images;
+  vector<Image<float> > out_data_images;
   for (auto& in_data_header : in_headers) {
     in_data_images.push_back(in_data_header.get_image<float>().with_direct_io());
     check_dimensions (in_data_images.back(), mask_image, {0, 2});

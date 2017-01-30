@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "gui/mrview/gui_image.h"
 
@@ -173,7 +172,7 @@ namespace MR
         const ssize_t xsize = header().size (x), ysize = header().size (y);
 
         type = gl::FLOAT;
-        std::vector<float> data;
+        vector<float> data;
 
         std::string cmap_name = ColourMap::maps[colourmap].name;
 
@@ -426,7 +425,7 @@ namespace MR
       template <typename ValueType>
         inline void Image::copy_texture_3D ()
         {
-          struct WithType : public MR::Image<cfloat> {
+          struct WithType : public MR::Image<cfloat> { NOMEMALIGN
             using MR::Image<cfloat>::data_offset;
             using MR::Image<cfloat>::buffer;
 
@@ -442,7 +441,7 @@ namespace MR
           } V (image);
 
           const size_t N = ( format == gl::RED ? 1 : 3 );
-          std::vector<ValueType> data (N * V.size(0) * V.size(1));
+          vector<ValueType> data (N * V.size(0) * V.size(1));
 
           ProgressBar progress ("loading image data", V.size(2));
 
@@ -512,7 +511,7 @@ namespace MR
 
       inline void Image::copy_texture_3D_complex ()
       {
-        std::vector<float> data (2 * image.size (0) * image.size (1));
+        vector<float> data (2 * image.size (0) * image.size (1));
 
         ProgressBar progress ("loading image data", image.size (2));
 

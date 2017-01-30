@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 
 #include "command.h"
@@ -183,7 +182,7 @@ void convert_new2old ()
 
   Header H_index = Fixel::find_index_header (input_fixel_directory);
   Header H_dirs = Fixel::find_directions_header (input_fixel_directory);
-  std::vector<Header> H_data = Fixel::find_data_headers (input_fixel_directory, H_index, false);
+  vector<Header> H_data = Fixel::find_data_headers (input_fixel_directory, H_index, false);
   size_t size_index = H_data.size(), value_index = H_data.size();
 
   for (size_t i = 0; i != H_data.size(); ++i) {

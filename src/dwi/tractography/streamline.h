@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __dwi_tractography_streamline_h__
 #define __dwi_tractography_streamline_h__
@@ -31,8 +30,8 @@ namespace MR
 
 
       template <typename ValueType = float>
-        class Streamline : public std::vector<Eigen::Matrix<ValueType,3,1>>
-      {
+        class Streamline : public vector<Eigen::Matrix<ValueType,3,1>>
+      { MEMALIGN(Streamline<ValueType>)
         public:
           typedef Eigen::Matrix<ValueType,3,1> point_type;
           typedef ValueType value_type;
@@ -40,12 +39,12 @@ namespace MR
           Streamline () : index (-1), weight (1.0f) { }
 
           Streamline (size_t size) : 
-            std::vector<point_type> (size), 
+            vector<point_type> (size), 
             index (-1),
             weight (value_type (1.0)) { }
 
           Streamline (size_t size, const Eigen::Vector3f& fill) :
-            std::vector<point_type> (size, fill),
+            vector<point_type> (size, fill),
             index (-1),
             weight (value_type (1.0)) { }
 
@@ -53,21 +52,21 @@ namespace MR
           Streamline& operator= (const Streamline& that) = default;
 
           Streamline (Streamline&& that) :
-            std::vector<point_type> (std::move (that)),
+            vector<point_type> (std::move (that)),
             index (that.index),
             weight (that.weight) {
               that.index = -1;
               that.weight = 1.0f;
             }
 
-          Streamline (const std::vector<point_type>& tck) :
-            std::vector<point_type> (tck),
+          Streamline (const vector<point_type>& tck) :
+            vector<point_type> (tck),
             index (-1),
             weight (1.0) { }
 
           Streamline& operator= (Streamline&& that)
           {
-            std::vector<point_type>::operator= (std::move (that));
+            vector<point_type>::operator= (std::move (that));
             index = that.index; that.index = -1;
             weight = that.weight; that.weight = 1.0f;
             return *this;
@@ -76,7 +75,7 @@ namespace MR
 
           void clear()
           {
-            std::vector<point_type>::clear();
+            vector<point_type>::clear();
             index = -1;
             weight = 1.0;
           }

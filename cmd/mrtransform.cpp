@@ -1,20 +1,17 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
-#include <unsupported/Eigen/MatrixFunctions>
 #include "command.h"
 #include "progressbar.h"
 #include "image.h"
@@ -311,7 +308,7 @@ void run ()
   // Flip
   opt = get_options ("flip");
   if (opt.size()) {
-    std::vector<int> axes = opt[0][0];
+    vector<int> axes = opt[0][0];
     transform_type flip;
     flip.setIdentity();
     for (size_t i = 0; i < axes.size(); ++i) {
@@ -456,10 +453,10 @@ void run ()
 
     if (get_options ("midway_space").size()) {
       INFO("regridding to midway space");
-      std::vector<Header> headers;
+      vector<Header> headers;
       headers.push_back(input_header);
       headers.push_back(template_header);
-      std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>> void_trafo;
+      vector<Eigen::Transform<default_type, 3, Eigen::Projective>> void_trafo;
       auto padding = Eigen::Matrix<double, 4, 1>(1.0, 1.0, 1.0, 1.0);
       int subsampling = 1;
       auto midway_header = compute_minimum_average_header (headers, subsampling, padding, void_trafo);

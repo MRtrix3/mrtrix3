@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 
 #include "command.h"
@@ -71,7 +70,7 @@ void run ()
   auto dwi_in = Image<value_type>::open (argument[0]);
   const auto grad = DWI::get_valid_DW_scheme (dwi_in);
 
-  std::vector<size_t> dwis;
+  vector<size_t> dwis;
   Eigen::MatrixXd mapping;
   {
     dwis = DWI::Shells (grad).select_shells (true, false, true).largest().get_volumes();
@@ -79,7 +78,7 @@ void run ()
     mapping = DWI::compute_SH2amp_mapping (dirs);
   }
 
-  auto dwi = Adapter::make <Adapter::Extract1D> (dwi_in, 3, container_cast<std::vector<int>> (dwis));
+  auto dwi = Adapter::make <Adapter::Extract1D> (dwi_in, 3, container_cast<vector<int>> (dwis));
 
   auto header = Header (dwi_in);
   header.ndim() = 3;

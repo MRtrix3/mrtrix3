@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __dwi_sdeconv_csd_h__
 #define __dwi_sdeconv_csd_h__
@@ -40,11 +39,10 @@ namespace MR
 
     extern const App::OptionGroup CSD_options;
 
-    class CSD
-    {
+    class CSD { MEMALIGN(CSD)
       public:
-        class Shared
-        {
+
+        class Shared { MEMALIGN(Shared)
           public:
 
             Shared (const Header& dwi_header) :
@@ -209,7 +207,7 @@ namespace MR
             Eigen::MatrixXd DW_dirs, HR_dirs;
             Eigen::MatrixXd rconv, HR_trans, M, Mt_M;
             default_type neg_lambda, norm_lambda, threshold;
-            std::vector<size_t> dwis;
+            vector<size_t> dwis;
             int lmax_response, lmax_data, lmax;
             size_t niter;
         };
@@ -280,7 +278,7 @@ namespace MR
         Eigen::MatrixXd work, HR_T;
         Eigen::VectorXd F, init_F, HR_amps, Mt_b;
         Eigen::LLT<Eigen::MatrixXd> llt;
-        std::vector<int> neg, old_neg;
+        vector<int> neg, old_neg;
     };
 
 

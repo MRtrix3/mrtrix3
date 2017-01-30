@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "registration/linear.h"
 
@@ -39,7 +38,7 @@ namespace MR
       if (get_options("init_rotation.search.run_global").size()) registration.init.init_rotation.search.run_global = true;
       auto opt = get_options("init_rotation.search.angles");
       if (opt.size()) {
-        std::vector<default_type> angles = parse_floats (opt[0][0]);
+        vector<default_type> angles = parse_floats (opt[0][0]);
         for (auto& a: angles) {
           if (a < 0.0 or a > 180.0)
             throw Exception ("init_rotation.search.angles have to be between 0 and 180 degree.");

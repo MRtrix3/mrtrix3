@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "surface/algo/mesh2image.h"
 
@@ -56,7 +55,7 @@ namespace MR
                                            {  0,  0, +1 } };
 
         // Compute normals for polygons
-        std::vector<Eigen::Vector3> polygon_normals;
+        vector<Eigen::Vector3> polygon_normals;
         polygon_normals.reserve (mesh.num_polygons());
         for (TriangleList::const_iterator p = mesh.get_triangles().begin(); p != mesh.get_triangles().end(); ++p)
           polygon_normals.push_back (normal (mesh, *p));
@@ -70,7 +69,7 @@ namespace MR
         auto init_seg = Image<uint8_t>::scratch (H);
 
         // For every voxel, stores those polygons that may intersect the voxel
-        typedef std::map< Vox, std::vector<size_t> > Vox2Poly;
+        typedef std::map< Vox, vector<size_t> > Vox2Poly;
         Vox2Poly voxel2poly;
 
         // Map each polygon to the underlying voxels
@@ -104,7 +103,7 @@ namespace MR
           for (voxel[2] = lower_bound[2]; voxel[2] <= upper_bound[2]; ++voxel[2]) {
             for (voxel[1] = lower_bound[1]; voxel[1] <= upper_bound[1]; ++voxel[1]) {
               for (voxel[0] = lower_bound[0]; voxel[0] <= upper_bound[0]; ++voxel[0]) {
-                std::vector<size_t> this_voxel_polys;
+                vector<size_t> this_voxel_polys;
                 //#if __clang__
                 //              Vox2Poly::const_iterator existing = voxel2poly.find (voxel);
                 //#else
@@ -142,7 +141,7 @@ namespace MR
 
         // TODO This is slow; is there a faster implementation?
         // This is essentially a connected-component analysis...
-        std::vector<Vox> to_expand;
+        vector<Vox> to_expand;
         to_expand.push_back (corner_voxels[0]);
         assign_pos_of (corner_voxels[0]).to (init_seg);
         init_seg.value() = vox_mesh_t::OUTSIDE;
@@ -194,7 +193,7 @@ namespace MR
           const Vox& voxel (i->first);
 
           // Generate a set of points within this voxel that need to be tested individually
-          std::vector<Vertex> to_test;
+          vector<Vertex> to_test;
           to_test.reserve (Math::pow3 (pve_os_ratio));
           for (size_t x_idx = 0; x_idx != pve_os_ratio; ++x_idx) {
             const default_type x = voxel[0] - 0.5 + ((default_type(x_idx) + 0.5) / default_type(pve_os_ratio));
@@ -209,14 +208,14 @@ namespace MR
 
           // Count the number of these points that lie inside the mesh
           int inside_mesh_count = 0;
-          for (std::vector<Vertex>::const_iterator i_p = to_test.begin(); i_p != to_test.end(); ++i_p) {
+          for (vector<Vertex>::const_iterator i_p = to_test.begin(); i_p != to_test.end(); ++i_p) {
             const Vertex& p (*i_p);
 
             default_type best_min_edge_distance = -std::numeric_limits<default_type>::infinity();
             bool best_result_inside = false;
 
             // Only test against those polygons that are near this voxel
-            for (std::vector<size_t>::const_iterator polygon_index = i->second.begin(); polygon_index != i->second.end(); ++polygon_index) {
+            for (vector<size_t>::const_iterator polygon_index = i->second.begin(); polygon_index != i->second.end(); ++polygon_index) {
               const Eigen::Vector3& n (polygon_normals[*polygon_index]);
 
               const size_t polygon_num_vertices = (*polygon_index < mesh.num_triangles()) ? 3 : 4;

@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __registration_transform_affine_h__
 #define __registration_transform_affine_h__
@@ -30,7 +29,7 @@ namespace MR
     namespace Transform
     {
 
-      class AffineLinearNonSymmetricUpdate {
+      class AffineLinearNonSymmetricUpdate { MEMALIGN(AffineLinearNonSymmetricUpdate)
         public:
           bool operator() (Eigen::Matrix<default_type, Eigen::Dynamic, 1>& newx,
               const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x,
@@ -43,7 +42,7 @@ namespace MR
         }
       };
 
-      class AffineUpdate {
+      class AffineUpdate { MEMALIGN(AffineUpdate)
         public:
           AffineUpdate (): use_convergence_check (false) { }
 
@@ -77,7 +76,7 @@ namespace MR
           Eigen::Matrix<default_type, Eigen::Dynamic, 1> new_control_points_vec;
       };
 
-      class AffineRobustEstimator {
+      class AffineRobustEstimator { MEMALIGN(AffineRobustEstimator)
         public:
           inline bool operator() (Eigen::Matrix<default_type, Eigen::Dynamic, 1>& newx,
               const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x,
@@ -93,7 +92,7 @@ namespace MR
       /*! A 3D affine transformation class for registration.
        *
        */
-      class Affine : public Base  {
+      class Affine : public Base  { MEMALIGN(Affine)
         public:
 
           typedef typename Base::ParameterType ParameterType;
@@ -101,7 +100,6 @@ namespace MR
           typedef AffineRobustEstimator RobustEstimatorType;
           typedef int has_robust_estimator;
 
-          EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
           Affine () : Base (12) {
             //CONF option: reg_gdweight_matrix
@@ -130,7 +128,7 @@ namespace MR
 
           bool robust_estimate (
             Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient,
-            std::vector<Eigen::Matrix<default_type, Eigen::Dynamic, 1>>& grad_estimates,
+            vector<Eigen::Matrix<default_type, Eigen::Dynamic, 1>>& grad_estimates,
             const Eigen::Matrix<default_type, 4, 4>& control_points,
             const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& parameter_vector,
             const default_type& weiszfeld_precision,

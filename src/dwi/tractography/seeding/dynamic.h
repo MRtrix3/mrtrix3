@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __dwi_tractography_seeding_dynamic_h__
 #define __dwi_tractography_seeding_dynamic_h__
@@ -71,7 +70,7 @@ namespace MR
 
 
       class Fixel_TD_seed : public SIFT::FixelBase
-      {
+      { MEMALIGN(Fixel_TD_seed)
 
         public:
           Fixel_TD_seed (const FMLS::FOD_lobe& lobe) :
@@ -79,33 +78,36 @@ namespace MR
             voxel (-1, -1, -1),
             TD (SIFT::FixelBase::TD),
             update (true),
-            updating (ATOMIC_FLAG_INIT),
             old_prob (DYNAMIC_SEED_INITIAL_PROB),
             applied_prob (old_prob),
             track_count_at_last_update (0),
-            seed_count (0) { }
+            seed_count (0) {
+              updating.clear();
+            }
 
           Fixel_TD_seed (const Fixel_TD_seed& that) :
             SIFT::FixelBase (that),
             voxel (that.voxel),
             TD (double(that.TD)),
             update (that.update),
-            updating (ATOMIC_FLAG_INIT),
             old_prob (that.old_prob),
             applied_prob (that.applied_prob),
             track_count_at_last_update (that.track_count_at_last_update),
-            seed_count (that.seed_count) { }
+            seed_count (that.seed_count) { 
+              updating.clear();
+            }
 
           Fixel_TD_seed() :
             SIFT::FixelBase (),
             voxel (-1, -1, -1),
             TD (0.0),
             update (true),
-            updating (ATOMIC_FLAG_INIT),
             old_prob (DYNAMIC_SEED_INITIAL_PROB),
             applied_prob (old_prob),
             track_count_at_last_update (0),
-            seed_count (0) { }
+            seed_count (0) { 
+              updating.clear();
+            }
 
 
           double         get_TD     ()                    const { return TD.load (std::memory_order_relaxed); }
@@ -180,7 +182,7 @@ namespace MR
 
 
       class Dynamic_ACT_additions
-      {
+      { MEMALIGN(Dynamic_ACT_additions)
 
         public:
           Dynamic_ACT_additions (const std::string& path) :
@@ -201,7 +203,7 @@ namespace MR
 
 
       class Dynamic : public Base, public SIFT::ModelBase<Fixel_TD_seed>
-        {
+        { MEMALIGN(Dynamic)
           private:
 
             typedef Fixel_TD_seed Fixel;
@@ -279,7 +281,7 @@ namespace MR
 
 
       class WriteKernelDynamic : public Tracking::WriteKernel
-        {
+        { MEMALIGN(WriteKernelDynamic)
           public:
             WriteKernelDynamic (const Tracking::SharedBase& shared, const std::string& output_file, const Properties& properties) :
               Tracking::WriteKernel (shared, output_file, properties) { }

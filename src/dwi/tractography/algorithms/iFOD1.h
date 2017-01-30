@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __dwi_tractography_algorithms_iFOD1_h__
 #define __dwi_tractography_algorithms_iFOD1_h__
@@ -35,9 +34,9 @@ namespace MR
 
     using namespace MR::DWI::Tractography::Tracking;
 
-    class iFOD1 : public MethodBase {
+    class iFOD1 : public MethodBase { MEMALIGN(iFOD1)
       public:
-      class Shared : public SharedBase {
+      class Shared : public SharedBase { MEMALIGN(Shared)
         public:
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
           SharedBase (diff_path, property_set),
@@ -225,7 +224,7 @@ namespace MR
       float calibrate_ratio;
       size_t mean_sample_num, num_sample_runs, num_truncations;
       float max_truncation;
-      std::vector< Eigen::Vector3f > calibrate_list;
+      vector< Eigen::Vector3f > calibrate_list;
 
       float FOD (const Eigen::Vector3f& d) const
       {
@@ -242,7 +241,7 @@ namespace MR
 
 
       class Calibrate
-      {
+      { MEMALIGN (Calibrate)
         public:
           Calibrate (iFOD1& method) :
             P (method),

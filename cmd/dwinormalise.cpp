@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 
 #include "command.h"
@@ -68,14 +67,14 @@ void run () {
   auto grad = DWI::get_DW_scheme (input);
   DWI::Shells grad_shells (grad);
 
-  std::vector<size_t> bzeros;
+  vector<size_t> bzeros;
   for (size_t s = 0; s < grad_shells.count(); ++s) {
     if (grad_shells[s].is_bzero()) {
       bzeros = grad_shells[s].get_volumes();
     }
   }
 
-  std::vector<float> bzero_mask_values;
+  vector<float> bzero_mask_values;
   float intensity = get_option_value ("intensity", DEFAULT_TARGET_INTENSITY);
   int percentile = get_option_value ("percentile", 50);
 

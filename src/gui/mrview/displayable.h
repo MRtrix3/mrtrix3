@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __gui_mrview_displayable_h__
 #define __gui_mrview_displayable_h__
@@ -50,7 +49,7 @@ namespace MR
       namespace Tool { class Connectome; }
       namespace Tool { class Tractogram; }
       class DisplayableVisitor
-      {
+      { NOMEMALIGN
         public:
           virtual void render_image_colourbar (const Image&) {}
           virtual void render_fixel_colourbar (const Tool::BaseFixel&) {}
@@ -58,7 +57,7 @@ namespace MR
       };
 
       class Displayable : public QAction
-      {
+      { MEMALIGN(Displayable)
         Q_OBJECT
 
         public:
@@ -195,7 +194,7 @@ namespace MR
           }
 
 
-          class Shader : public GL::Shader::Program {
+          class Shader : public GL::Shader::Program { MEMALIGN(Shader)
             public:
               virtual std::string fragment_shader_source (const Displayable& object) = 0;
               virtual std::string geometry_shader_source (const Displayable&) { return std::string(); }

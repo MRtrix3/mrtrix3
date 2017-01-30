@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "dwi/tractography/SIFT/sifter.h"
 
@@ -56,7 +55,7 @@ namespace MR
 
         // For streamlines that do not contribute to the map, remove an equivalent proportion of length to those that do contribute
         double sum_contributing_length = 0.0, sum_noncontributing_length = 0.0;
-        std::vector<track_t> noncontributing_indices;
+        vector<track_t> noncontributing_indices;
         for (track_t i = 0; i != contributions.size(); ++i) {
           if (contributions[i]) {
             if (contributions[i]->get_total_contribution()) {
@@ -71,7 +70,7 @@ namespace MR
         // Randomise the order or removal here; faster than trying to select at random later
         std::random_shuffle (noncontributing_indices.begin(), noncontributing_indices.end());
 
-        std::vector<Cost_fn_gradient_sort> gradient_vector;
+        vector<Cost_fn_gradient_sort> gradient_vector;
         try {
           gradient_vector.assign (num_tracks(), Cost_fn_gradient_sort (num_tracks(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max()));
         } catch (...) {
@@ -176,7 +175,7 @@ namespace MR
 
             } else { // Proceed as normal
 
-              const std::vector<Cost_fn_gradient_sort>::iterator candidate = sorter.get();
+              const vector<Cost_fn_gradient_sort>::iterator candidate = sorter.get();
 
               const track_t candidate_index = candidate->get_tck_index();
 
@@ -353,9 +352,9 @@ namespace MR
 
 
 
-      void SIFTer::set_regular_outputs (const std::vector<int>& in, const bool b)
+      void SIFTer::set_regular_outputs (const vector<int>& in, const bool b)
       {
-        for (std::vector<int>::const_iterator i = in.begin(); i != in.end(); ++i) {
+        for (vector<int>::const_iterator i = in.begin(); i != in.end(); ++i) {
           if (*i > 0 && *i <= (int)contributions.size())
             output_at_counts.push_back (*i);
         }
@@ -371,7 +370,7 @@ namespace MR
 
         Math::RNG::Normal<float> rng;
 
-        std::vector<Cost_fn_gradient_sort> gradient_vector;
+        vector<Cost_fn_gradient_sort> gradient_vector;
         gradient_vector.assign (num_tracks, Cost_fn_gradient_sort (num_tracks, 0.0, 0.0));
         // Fill the gradient vector with random Gaussian data
         for (track_t index = 0; index != num_tracks; ++index) {
@@ -379,16 +378,16 @@ namespace MR
           gradient_vector[index].set (index, value, value);
         }
 
-        std::vector<size_t> block_sizes;
+        vector<size_t> block_sizes;
         for (size_t i = 16; i < num_tracks; i *= 2)
           block_sizes.push_back (i);
         block_sizes.push_back (num_tracks);
 
-        for (std::vector<size_t>::const_iterator i = block_sizes.begin(); i != block_sizes.end(); ++i) {
+        for (vector<size_t>::const_iterator i = block_sizes.begin(); i != block_sizes.end(); ++i) {
           const size_t block_size = *i;
 
           // Make a copy of the gradient vector, so the same data is sorted each time
-          std::vector<Cost_fn_gradient_sort> temp_gv (gradient_vector);
+          vector<Cost_fn_gradient_sort> temp_gv (gradient_vector);
 
           Timer timer;
           // Simulate sorting and filtering
@@ -418,7 +417,7 @@ namespace MR
       {
         const double current_mu = mu();
         double roc_cost = 0.0;
-        std::vector<Fixel>::const_iterator i = fixels.begin();
+        vector<Fixel>::const_iterator i = fixels.begin();
         for (++i; i != fixels.end(); ++i)
           roc_cost += i->get_d_cost_d_mu (current_mu);
         return roc_cost;

@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 
 #include <string>
@@ -102,7 +101,7 @@ void run ()
   // Get the consensus streamline properties from among the multiple input files
   Tractography::Properties properties;
   size_t count = 0;
-  std::vector<std::string> input_file_list;
+  vector<std::string> input_file_list;
 
   for (size_t file_index = 0; file_index != num_inputs; ++file_index) {
 
@@ -111,9 +110,9 @@ void run ()
     Properties p;
     Reader<float> reader (argument[file_index], p);
 
-    for (std::vector<std::string>::const_iterator i = p.comments.begin(); i != p.comments.end(); ++i) {
+    for (vector<std::string>::const_iterator i = p.comments.begin(); i != p.comments.end(); ++i) {
       bool present = false;
-      for (std::vector<std::string>::const_iterator j = properties.comments.begin(); !present && j != properties.comments.end(); ++j)
+      for (vector<std::string>::const_iterator j = properties.comments.begin(); !present && j != properties.comments.end(); ++j)
         present = (*i == *j);
       if (!present)
         properties.comments.push_back (*i);
