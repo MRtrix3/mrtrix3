@@ -1683,7 +1683,6 @@ namespace MR
         ++tool_id;
 
         glarea->update();
-        qApp->processEvents();
 
         try {
           for (int arg = 1; arg < MR::App::argc; ++arg) {
@@ -1764,6 +1763,20 @@ namespace MR
                 continue;
               }
 
+              if (opt.opt->is ("volume")) {
+                if (image()) {
+                  auto pos = parse_ints (opt[0]);
+                  for (size_t n = 0; n < std::min (pos.size(), image()->image.ndim()); ++n) {
+                    if (pos[n] < 0 || pos[n] >= image()->image.size(n+3))
+                      throw Exception ("volume index outside of image dimensions"); 
+                    set_image_volume (n+3, pos[n]);
+                    set_image_navigation_menu();
+                  }
+                  glarea->update();
+                }
+                continue;
+              }
+
               if (opt.opt->is ("fov")) {
                 float fov = opt[0];
                 set_FOV (fov);
@@ -1802,7 +1815,10 @@ namespace MR
               }
 
               if (opt.opt->is ("autoscale")) {
-                image_reset_slot();
+                if (image()) {
+                  image()->display_range = NaN;
+                  glarea->update();
+                }
                 continue;
               }
 
@@ -1944,6 +1960,10 @@ namespace MR
               "relative the image currently displayed. The new position should be supplied "
               "as a comma-separated list of floating-point values.").allow_multiple()
           +   Argument ("x,y,z").type_sequence_float()
+
+          + Option ("volume", "Set the volume index for the image displayed, "
+              "as a comma-separated list of integers.").allow_multiple()
+          +   Argument ("idx").type_sequence_int()
 
           + Option ("plane", "Set the viewing plane, according to the mappping 0: sagittal; 1: coronal; 2: axial.").allow_multiple()
           +   Argument ("index").type_integer (0,2)
