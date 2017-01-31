@@ -26,6 +26,7 @@ namespace MRView
 
 // FIXME Why is this duplicating colourmap code?
 using Entry = ColourMap::Entry;
+float clamp (const float i) { return std::max (0.0f, std::min (1.0f, i)); }
 const vector<Entry> ColourMapButton::core_colourmaps_entries{{
     Entry ("Gray",
         "color.rgb = vec3 (amplitude);\n",
@@ -41,7 +42,16 @@ const vector<Entry> ColourMapButton::core_colourmaps_entries{{
 
     Entry ("Jet",
         "color.rgb = 1.5 - 4.0 * abs (1.0 - amplitude - vec3(0.25, 0.5, 0.75));\n",
-        [] (float amplitude) { return Eigen::Vector3f (1.5 - 4.0 * std::abs (1.0 - amplitude - 0.25), 1.5 - 4.0 * std::abs (1.0 - amplitude - 0.5), 1.5 - 4.0 * std::abs (1.0 - amplitude - 0.75)); })
+        [] (float amplitude) { return Eigen::Vector3f (1.5 - 4.0 * std::abs (1.0 - amplitude - 0.25), 1.5 - 4.0 * std::abs (1.0 - amplitude - 0.5), 1.5 - 4.0 * std::abs (1.0 - amplitude - 0.75)); }),
+
+    Entry ("PET",
+           "color.r = 2.0*amplitude - 0.5;\n"
+           "color.g = clamp (2.0 * (0.25 - abs (amplitude - 0.25)), 0.0, 1.0) + clamp (2.0*amplitude - 1.0, 0.0, 1.0);\n"
+           "color.b = 1.0 - (clamp (1.0 - 2.0 * amplitude, 0.0, 1.0) + clamp (1.0 - 4.0 * abs (amplitude - 0.75), 0.0, 1.0));\n",
+        [] (float amplitude) { return Eigen::Array3f (clamp (2.0f * amplitude - 0.5f),
+                                                      clamp (0.25f - std::abs (amplitude - 0.25f)) + clamp (2.0f * amplitude - 1.0),
+                                                      clamp (1.0f - 2.0f * amplitude) + clamp (1.0 - 4.0 * std::abs (amplitude - 0.75))); })
+
 }};
 
 
