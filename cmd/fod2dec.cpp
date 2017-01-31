@@ -244,7 +244,7 @@ void run () {
     map_hdr = Header::open(opto[0][0]);
     if (!dimensions_match(map_hdr, fod_hdr, 0, 3) ||
         !spacings_match(map_hdr, fod_hdr, 0, 3) ||
-        !map_hdr.transform().isApprox(map_hdr.transform(),1e-42))
+        !map_hdr.transform().isApprox(fod_hdr.transform(),1e-42))
       needtoslice = true;
   }
 
