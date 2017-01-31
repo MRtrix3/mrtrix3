@@ -49,7 +49,7 @@ Add a script to the `tests/` folder. Each line of these scripts constitutes a
 single test, and will be run as a single unit. Use `&&` and `||` bash
 constructs if needed to create compound commands. Each of these lines should
 return a zero exit code if successful. You can test the output of your commands
-against your expected output using the `testing_diff_data` command (note other
+against your expected output using the `testing_diff_image` command (note other
 commands are available to check various types of output - look in `testing/cmd`
 for the full list). 
 
