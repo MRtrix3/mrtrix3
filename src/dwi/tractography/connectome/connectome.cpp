@@ -117,7 +117,7 @@ void setup_metric (Metric& metric, Image<node_t>& nodes_data)
   } else if (get_options ("scale_invlength").size()) {
     metric.set_scale_invlength();
   }
-  if (get_options ("scale_invnnodevol").size())
+  if (get_options ("scale_invnodevol").size())
     metric.set_scale_invnodevol (nodes_data);
   auto opt = get_options ("scale_file");
   if (opt.size())
