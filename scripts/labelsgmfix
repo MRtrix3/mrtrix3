@@ -63,6 +63,8 @@ if lib.app.args.sgm_amyg_hipp:
   structure_map.update({ 'L_Amyg':'Left-Amygdala',    'R_Amyg':'Right-Amygdala',
                          'L_Hipp':'Left-Hippocampus', 'R_Hipp':'Right-Hippocampus' })
 
+lib.app.checkOutputFile(lib.app.args.output)
+
 lib.app.makeTempDir()
 
 # Get the parcellation and T1 images into the temporary directory, with conversion of the T1 into the correct format for FSL
