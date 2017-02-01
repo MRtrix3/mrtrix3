@@ -91,13 +91,12 @@ typedef float value_type;
 
 void run ()
 {
-  vector<TransformBase*> transform_list;
-  std::shared_ptr<Header> template_header;
+  vector<std::unique_ptr<TransformBase>> transform_list;
+  std::unique_ptr<Header> template_header;
 
   for (size_t i = 0; i < argument.size() - 1; ++i) {
-    TransformBase* transform (nullptr);
     try {
-      template_header = std::make_shared<Header> (Header::open (argument[i]));
+      template_header.reset (new Header (Header::open (argument[i])));
       auto image = Image<default_type>::open (argument[i]);
 
       if (image.ndim() != 4)
@@ -106,13 +105,13 @@ void run ()
       if (image.size(3) != 3)
         throw Exception ("input warp should have 3 volumes in the 4th dimension");
 
-      transform = new Warp (image);
-      transform_list.push_back (transform);
+      std::unique_ptr<TransformBase> transform (new Warp (image));
+      transform_list.push_back (std::move (transform));
 
     } catch (Exception& E) {
       try {
-        transform = new Linear (load_transform (argument[i]));
-        transform_list.push_back (transform);
+        std::unique_ptr<TransformBase> transform (new Linear (load_transform (argument[i])));
+        transform_list.push_back (std::move (transform));
       } catch (Exception& E) {
         throw Exception ("error reading input file: " + str(argument[i]) + ". Does not appear to be a 4D warp image or 4x4 linear transform.");
       }
@@ -122,10 +121,10 @@ void run ()
   auto opt = get_options("template");
 
   if (opt.size()) {
-    template_header = std::make_shared<Header> (Header::open (opt[0][0]));
+    template_header.reset (new Header (Header::open (opt[0][0])));
   // no template is supplied and there are input warps, then make sure the last transform in the list is a warp
   } else if (template_header) {
-    if (!dynamic_cast<Warp*> (transform_list[transform_list.size() - 1]))
+    if (!dynamic_cast<Warp*> (transform_list[transform_list.size() - 1].get()))
       throw Exception ("Output deformation field grid not defined. When composing warps either use the -template "
                        "option to define the output deformation field grid, or ensure the last input transformation is a warp.");
   }
@@ -133,12 +132,12 @@ void run ()
   // all inputs are linear so compose and output as text file
   if (!template_header) {
 
-    transform_type composed = dynamic_cast<Linear*>(transform_list[transform_list.size() - 1])->transform;
+    transform_type composed = dynamic_cast<Linear*>(transform_list[transform_list.size() - 1].get())->transform;
     ssize_t index = transform_list.size() - 2;
     ProgressBar progress ("composing linear transformations", transform_list.size());
     progress++;
     while (index >= 0) {
-      composed = dynamic_cast<Linear*>(transform_list[index])->transform * composed;
+      composed = dynamic_cast<Linear*>(transform_list[index].get())->transform * composed;
       index--;
       progress++;
     }
