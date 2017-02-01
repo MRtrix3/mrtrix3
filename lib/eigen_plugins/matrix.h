@@ -10,6 +10,7 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
+
 template <class ImageType> Matrix (const MR::Helper::ConstRow<ImageType>& row) : Base () { operator= (row); }
 template <class ImageType> Matrix (const MR::Helper::Row<ImageType>& row) : Base () { operator= (row); }
 
