@@ -82,7 +82,6 @@ namespace MR
           ~Window();
 
           void add_images (std::vector<std::unique_ptr<MR::Header>>& list);
-          void process_commandline_options ();
 
           const QPoint& mouse_position () const { return mouse_position_; }
           const QPoint& mouse_displacement () const { return mouse_displacement_; }
@@ -175,6 +174,7 @@ namespace MR
         public slots:
           void on_scaling_changed ();
           void updateGL ();
+          void drawGL ();
 
         private slots:
           void image_open_slot ();
@@ -216,6 +216,7 @@ namespace MR
           void about_slot ();
           void aboutQt_slot ();
 
+          void process_commandline_options ();
 
 
         private:
@@ -327,6 +328,7 @@ namespace MR
           std::vector<double> render_times;
           double best_FPS, best_FPS_time;
           bool show_FPS;
+          int current_arg;
 
           friend class ImageBase;
           friend class Mode::Base;
