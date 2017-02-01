@@ -188,12 +188,12 @@ def complete():
   elif tempDir:
     # This needs to be printed even if the -quiet option is used
     if os.path.isfile(os.path.join(tempDir, 'error.txt')):
-      with open(os.path.join(tempDir, 'error.txt'),'rb') as errortext:
-        sys.stdout.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'Script failed while executing the command: ' + errortext.readline().rstrip() + colourClear + '\n')
-      sys.stdout.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'For debugging, inspect contents of temporary directory: ' + tempDir + colourClear + '\n')
+      with open(os.path.join(tempDir, 'error.txt'),'r') as errortext:
+        sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'Script failed while executing the command: ' + errortext.readline().rstrip() + colourClear + '\n')
+      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'For debugging, inspect contents of temporary directory: ' + tempDir + colourClear + '\n')
     else:
-      sys.stdout.write(os.path.basename(sys.argv[0]) + ': ' + colourPrint + 'Contents of temporary directory kept, location: ' + tempDir + colourClear + '\n')
-    sys.stdout.flush()
+      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourPrint + 'Contents of temporary directory kept, location: ' + tempDir + colourClear + '\n')
+    sys.stderr.flush()
 
 
 
