@@ -216,7 +216,7 @@ namespace MR
           void about_slot ();
           void aboutQt_slot ();
 
-          void process_commandline_options ();
+          void process_commandline_option_slot ();
 
 
         private:
@@ -321,6 +321,8 @@ namespace MR
           void closeEvent (QCloseEvent* event) override;
           void create_tool (QAction* action, bool show);
 
+          void process_commandline_option (const MR::App::ParsedOption& opt);
+
           template <class Event> void grab_mouse_state (Event* event);
           template <class Event> void update_mouse_state (Event* event);
 
@@ -329,7 +331,7 @@ namespace MR
           std::vector<double> render_times;
           double best_FPS, best_FPS_time;
           bool show_FPS;
-          int current_arg;
+          char* const* current_arg;
 
           friend class ImageBase;
           friend class Mode::Base;
