@@ -319,6 +319,7 @@ namespace MR
           void set_image_navigation_menu ();
 
           void closeEvent (QCloseEvent* event) override;
+          void create_tool (QAction* action, bool show);
 
           template <class Event> void grab_mouse_state (Event* event);
           template <class Event> void update_mouse_state (Event* event);

@@ -877,34 +877,14 @@ namespace MR
 
 
 
-      void Window::select_tool_slot (QAction* action)
+      void Window::select_tool_slot (QAction* action) 
       {
         Tool::Dock* tool = dynamic_cast<Tool::__Action__*>(action)->dock;
         if (!tool) {
-          tool = dynamic_cast<Tool::__Action__*>(action)->create();
-          connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (setChecked (bool)));
-          if (MR::File::Config::get_int ("MRViewDockFloating", 0))
-            return;
-          for (int i = 0; i < tool_group->actions().size(); ++i) {
-            Tool::Dock* other_tool = dynamic_cast<Tool::__Action__*>(tool_group->actions()[i])->dock;
-            if (other_tool && other_tool != tool) {
-              QList<QDockWidget* > list = QMainWindow::tabifiedDockWidgets (other_tool);
-              if (list.size())
-                QMainWindow::tabifyDockWidget (list.last(), tool);
-              else
-                QMainWindow::tabifyDockWidget (other_tool, tool);
-              tool->setFloating (false);
-              tool->raise();
-              return;
-            }
-          }
-          //CONF option: MRViewDockFloating
-          //CONF default: 0 (false)
-          //CONF Whether MRView tools should start docked in the main window, or
-          //CONF floating (detached from the main window).
-          tool->setFloating (MR::File::Config::get_int ("MRViewDockFloating", 0));
-          tool->show();
+          create_tool (action, true); 
+          return;
         }
+
         if (action->isChecked()) {
           if (!tool->isVisible())
             tool->show();
@@ -912,7 +892,50 @@ namespace MR
         } else {
           tool->close();
         }
-        glarea->update();
+      }
+
+
+
+
+
+      void Window::create_tool (QAction* action, bool show) 
+      {
+        if (dynamic_cast<Tool::__Action__*>(action)->dock)
+          return;
+
+        Tool::Dock* tool = dynamic_cast<Tool::__Action__*>(action)->create();
+        connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (setChecked (bool)));
+        
+        //CONF option: MRViewDockFloating
+        //CONF default: 0 (false)
+        //CONF Whether MRView tools should start docked in the main window, or
+        //CONF floating (detached from the main window).
+        bool floating = MR::File::Config::get_int ("MRViewDockFloating", 0);
+
+        if (!floating) {
+
+          for (int i = 0; i < tool_group->actions().size(); ++i) {
+            Tool::Dock* other_tool = dynamic_cast<Tool::__Action__*>(tool_group->actions()[i])->dock;
+            if (other_tool && other_tool != tool) {
+              QList<QDockWidget*> list = QMainWindow::tabifiedDockWidgets (other_tool);
+              if (list.size())
+                QMainWindow::tabifyDockWidget (list.last(), tool);
+              else
+                QMainWindow::tabifyDockWidget (other_tool, tool);
+              break;
+            }
+          }
+
+        }
+
+        tool->setFloating (floating);
+        if (show) {
+          tool->show();
+          tool->raise();
+        }
+        else {
+          tool->close();
+        }
       }
 
 
@@ -1683,8 +1706,7 @@ namespace MR
 #define TOOL(classname, name, description) \
         stub = lowercase (#classname "."); \
         if (stub.compare (0, stub.size(), std::string (opt.opt->id), 0, stub.size()) == 0) { \
-          tool_group->actions()[tool_id]->setChecked (true); \
-          select_tool_slot (tool_group->actions()[tool_id]); \
+          create_tool (tool_group->actions()[tool_id], false); \
           if (dynamic_cast<Tool::__Action__*>(tool_group->actions()[tool_id])->dock->tool->process_commandline_option (opt)) \
             return; \
         } \
