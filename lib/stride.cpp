@@ -11,6 +11,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+
 #include "stride.h"
 
 namespace MR

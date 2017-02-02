@@ -12,7 +12,6 @@
  */
 
 
-
 #include "dwi/tractography/SIFT/gradient_sort.h"
 
 #include <algorithm>

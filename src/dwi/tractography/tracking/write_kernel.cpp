@@ -12,7 +12,6 @@
  */
 
 
-
 #include "dwi/tractography/tracking/write_kernel.h"
 
 

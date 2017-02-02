@@ -12,8 +12,6 @@
  */
 
 
-
-
 #ifndef __dwi_tractography_sift2_regularisation_h__
 #define __dwi_tractography_sift2_regularisation_h__
 

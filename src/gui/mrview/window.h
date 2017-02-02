@@ -11,6 +11,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+
 #ifndef __gui_mrview_window_h__
 #define __gui_mrview_window_h__
 

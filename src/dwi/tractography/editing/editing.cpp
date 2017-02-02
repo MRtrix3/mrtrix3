@@ -12,7 +12,6 @@
  */
 
 
-
 #include "dwi/tractography/editing/editing.h"
 
 

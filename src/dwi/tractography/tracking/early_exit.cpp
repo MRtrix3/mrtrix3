@@ -12,7 +12,6 @@
  */
 
 
-
 #include "dwi/tractography/tracking/early_exit.h"
 
 #include "file/config.h"

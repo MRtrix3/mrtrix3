@@ -12,7 +12,6 @@
  */
 
 
-
 #include <sstream>
 
 #include "command.h"

@@ -12,8 +12,6 @@
  */
 
 
-
-
 #ifndef __connectome_connectome_h__
 #define __connectome_connectome_h__
 

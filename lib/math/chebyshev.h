@@ -12,14 +12,6 @@
  */
 
 
-
-
-/*
-
- Implementation based on the GSL (http://www.gnu.org/software/gsl/)
-
-*/
-
 #ifndef __math_chebyshev_h__
 #define __math_chebyshev_h__
 

@@ -12,8 +12,6 @@
  */
 
 
-
-
 #include "command.h"
 #include "debug.h"
 #include "file/path.h"

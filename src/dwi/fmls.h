@@ -12,8 +12,6 @@
  */
 
 
-
-
 #ifndef __dwi_fmls_h__
 #define __dwi_fmls_h__
 

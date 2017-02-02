@@ -12,7 +12,6 @@
  */
 
 
-
 #include "surface/polygon.h"
 
 

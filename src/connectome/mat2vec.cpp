@@ -12,7 +12,6 @@
  */
 
 
-
 #include "connectome/mat2vec.h"
 
 

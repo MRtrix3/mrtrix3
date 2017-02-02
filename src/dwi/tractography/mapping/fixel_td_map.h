@@ -12,8 +12,6 @@
  */
 
 
-
-
 #ifndef __dwi_tractography_mapping_fixel_td_map_h__
 #define __dwi_tractography_mapping_fixel_td_map_h__
 

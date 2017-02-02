@@ -12,10 +12,6 @@
  */
 
 
-
-
-
-
 #include "dwi/tractography/mapping/mapping.h"
 
 

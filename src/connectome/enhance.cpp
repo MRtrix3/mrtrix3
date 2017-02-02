@@ -12,8 +12,6 @@
  */
 
 
-
-
 #include "connectome/enhance.h"
 #include "connectome/mat2vec.h"
 

@@ -12,7 +12,6 @@
  */
 
 
-
 #include "dwi/tractography/SIFT/track_index_range.h"
 
 

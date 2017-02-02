@@ -12,7 +12,6 @@
  */
 
 
-
 #include "command.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/scalar_file.h"

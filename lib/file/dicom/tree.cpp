@@ -12,7 +12,6 @@
  */
 
 
-
 #include "file/path.h"
 #include "file/dicom/element.h"
 #include "file/dicom/quick_scan.h"

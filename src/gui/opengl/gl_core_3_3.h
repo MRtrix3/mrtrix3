@@ -11,6 +11,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+
 #ifndef OPENGL_NOLOAD_STYLE_HPP
 #define OPENGL_NOLOAD_STYLE_HPP
 /*

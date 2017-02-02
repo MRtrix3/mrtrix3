@@ -12,7 +12,6 @@
  */
 
 
-
 #ifndef __surface_freesurfer_h__
 #define __surface_freesurfer_h__
 

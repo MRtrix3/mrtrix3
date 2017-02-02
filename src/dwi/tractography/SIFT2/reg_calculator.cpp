@@ -12,7 +12,6 @@
  */
 
 
-
 #include <mutex>
 
 #include "dwi/tractography/SIFT2/reg_calculator.h"

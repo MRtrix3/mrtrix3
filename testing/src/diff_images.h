@@ -12,7 +12,6 @@
  */
 
 
-
 #ifndef __testing_diff_images_h__
 #define __testing_diff_images_h__
 

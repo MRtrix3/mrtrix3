@@ -12,7 +12,6 @@
  */
 
 
-
 #include "dwi/tractography/file_base.h"
 #include "file/path.h"
 

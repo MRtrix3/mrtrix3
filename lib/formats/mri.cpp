@@ -12,7 +12,6 @@
  */
 
 
-
 #include "file/config.h"
 #include "file/ofstream.h"
 #include "file/path.h"

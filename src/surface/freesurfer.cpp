@@ -12,7 +12,6 @@
  */
 
 
-
 #include "surface/freesurfer.h"
 
 #include "debug.h"

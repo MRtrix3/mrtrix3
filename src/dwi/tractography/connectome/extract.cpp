@@ -12,8 +12,6 @@
  */
 
 
-
-
 #include "dwi/tractography/connectome/extract.h"
 
 #include "bitset.h"

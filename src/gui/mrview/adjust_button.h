@@ -11,6 +11,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+
 #ifndef __gui_mrview_log_spin_box_h__
 #define __gui_mrview_log_spin_box_h__
 

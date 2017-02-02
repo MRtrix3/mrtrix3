@@ -12,8 +12,6 @@
  */
 
 
-
-
 #ifndef __connectome_lut_h__
 #define __connectome_lut_h__
 

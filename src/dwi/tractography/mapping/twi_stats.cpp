@@ -12,8 +12,6 @@
  */
 
 
-
-
 #include "dwi/tractography/mapping/twi_stats.h"
 
 

@@ -11,6 +11,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+
 #ifdef SIGALRM
     __SIGNAL (SIGALRM, "Timer expiration");
 #endif

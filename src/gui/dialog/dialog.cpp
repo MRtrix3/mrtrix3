@@ -12,7 +12,6 @@
  */
 
 
-
 #include "gui/dialog/dialog.h"
 
 #include "app.h"

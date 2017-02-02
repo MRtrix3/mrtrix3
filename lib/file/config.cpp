@@ -12,13 +12,6 @@
  */
 
 
-
-// to extract all documented configuration options from the code, use this
-// command (or a modification of it):
-//
-// grep -rn --include=\*.h --include=\*.cpp '^\s*//CONF\b ' . | sed -ne 's/^.*CONF \(.*\)/\1/p'
-
-
 #include "debug.h"
 
 #include "file/path.h"

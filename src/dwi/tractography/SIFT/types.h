@@ -12,8 +12,6 @@
  */
 
 
-
-
 #ifndef __dwi_tractography_sift_types_h__
 #define __dwi_tractography_sift_types_h__
 

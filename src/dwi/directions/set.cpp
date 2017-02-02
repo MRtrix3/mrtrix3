@@ -12,9 +12,6 @@
  */
 
 
-
-
-
 #include "dwi/directions/set.h"
 
 #include <list>

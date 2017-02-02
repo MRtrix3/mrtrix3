@@ -12,7 +12,6 @@
  */
 
 
-
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/roi.h"
 #include "adapter/subset.h"

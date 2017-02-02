@@ -12,7 +12,6 @@
  */
 
 
-
 #include "command.h"
 #include "image.h"
 #include "registration/warp/helpers.h"

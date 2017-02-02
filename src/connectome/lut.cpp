@@ -12,8 +12,6 @@
  */
 
 
-
-
 #include "connectome/lut.h"
 
 #include <fstream>

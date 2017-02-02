@@ -12,7 +12,6 @@
  */
 
 
-
 #ifndef __dwi_directions_predefined_h__
 #define __dwi_directions_predefined_h__
 

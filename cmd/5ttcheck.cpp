@@ -12,8 +12,6 @@
  */
 
 
-
-
 #include "app.h"
 #include "command.h"
 #include "datatype.h"

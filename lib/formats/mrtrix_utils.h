@@ -12,7 +12,6 @@
  */
 
 
-
 #ifndef __formats_mrtrix_utils_h__
 #define __formats_mrtrix_utils_h__
 

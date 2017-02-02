@@ -12,7 +12,6 @@
  */
 
 
-
 #ifndef __gui_dwi_renderer_h__
 #define __gui_dwi_renderer_h__
 

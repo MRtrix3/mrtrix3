@@ -12,7 +12,6 @@
  */
 
 
-
 #include <fstream>
 
 #include "command.h"

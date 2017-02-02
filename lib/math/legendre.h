@@ -12,17 +12,6 @@
  */
 
 
-
-
-/*
-
-   Implementation inspired by:
-   - Wikipedia: http://en.wikipedia.org/wiki/Associated_Legendre_functions
-   - Mathematical Methods for Physicists (4th edition), George B. Arfken & Hans J. Weber
-   - Numerical Recipes (3rd edition), William H. Press, Saul A. Teukolsky, William T. Vetterling, Brian P. Flannery
-
-*/
-
 #ifndef __math_legendre_h__
 #define __math_legendre_h__
 

@@ -12,8 +12,6 @@
  */
 
 
-
-
 #include "dwi/tractography/SIFT/proc_mask.h"
 
 #include "transform.h"

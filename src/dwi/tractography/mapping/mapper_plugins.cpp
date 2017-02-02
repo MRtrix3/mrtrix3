@@ -12,7 +12,6 @@
  */
 
 
-
 #include "dwi/tractography/mapping/mapper_plugins.h"
 
 

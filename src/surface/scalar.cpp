@@ -12,7 +12,6 @@
  */
 
 
-
 #include "surface/scalar.h"
 
 #include "math/math.h"

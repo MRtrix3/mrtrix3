@@ -12,7 +12,6 @@
  */
 
 
-
 #include "header.h"
 #include "image_io/sparse.h"
 

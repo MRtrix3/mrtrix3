@@ -12,7 +12,6 @@
  */
 
 
-
 #ifndef __dwi_tractography_sift2_reg_calculator_h__
 #define __dwi_tractography_sift2_reg_calculator_h__
 

@@ -12,9 +12,6 @@
  */
 
 
-
-
-
 #include "command.h"
 #include "image.h"
 #include "image_helpers.h"

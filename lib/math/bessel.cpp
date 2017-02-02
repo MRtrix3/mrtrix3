@@ -12,12 +12,6 @@
  */
 
 
-
-
-/*
- Implementation based on the GSL (http://www.gnu.org/software/gsl/)
-*/
-
 #include "math/bessel.h"
 
 namespace MR

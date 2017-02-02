@@ -12,7 +12,6 @@
  */
 
 
-
 #include "formats/mrtrix_utils.h"
 
 

@@ -12,8 +12,6 @@
  */
 
 
-
-
 #include "connectome/connectome.h"
 
 

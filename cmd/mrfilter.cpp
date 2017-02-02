@@ -12,7 +12,6 @@
  */
 
 
-
 #include <complex>
 
 #include "command.h"

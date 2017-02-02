@@ -12,8 +12,6 @@
  */
 
 
-
-
 #include "command.h"
 #include "progressbar.h"
 #include "datatype.h"

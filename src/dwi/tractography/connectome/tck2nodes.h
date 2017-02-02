@@ -12,8 +12,6 @@
  */
 
 
-
-
 #ifndef __dwi_tractography_connectome_tck2nodes_h__
 #define __dwi_tractography_connectome_tck2nodes_h__
 

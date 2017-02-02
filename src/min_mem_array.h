@@ -12,9 +12,6 @@
  */
 
 
-
-
-
 #ifndef __min_mem_array_h__
 #define __min_mem_array_h__
 

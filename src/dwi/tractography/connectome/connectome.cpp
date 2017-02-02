@@ -12,8 +12,6 @@
  */
 
 
-
-
 #include "dwi/tractography/connectome/connectome.h"
 #include "dwi/tractography/connectome/metric.h"
 #include "dwi/tractography/connectome/tck2nodes.h"

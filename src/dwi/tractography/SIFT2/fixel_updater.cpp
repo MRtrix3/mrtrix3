@@ -12,7 +12,6 @@
  */
 
 
-
 #include <mutex>
 
 #include "dwi/tractography/SIFT2/fixel_updater.h"

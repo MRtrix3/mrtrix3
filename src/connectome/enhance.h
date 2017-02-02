@@ -12,8 +12,6 @@
  */
 
 
-
-
 #ifndef __connectome_enhance_h__
 #define __connectome_enhance_h__
 

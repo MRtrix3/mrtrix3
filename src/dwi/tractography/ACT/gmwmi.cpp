@@ -12,7 +12,6 @@
  */
 
 
-
 #include "dwi/tractography/ACT/gmwmi.h"
 
 

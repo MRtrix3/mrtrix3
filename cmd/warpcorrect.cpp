@@ -12,7 +12,6 @@
  */
 
 
-
 #include "command.h"
 #include "image.h"
 #include "algo/threaded_loop.h"

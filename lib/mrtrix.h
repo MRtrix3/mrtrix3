@@ -12,7 +12,6 @@
  */
 
 
-
 #ifndef __mrtrix_h__
 #define __mrtrix_h__
 
