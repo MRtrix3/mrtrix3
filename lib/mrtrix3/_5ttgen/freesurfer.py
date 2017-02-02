@@ -1,6 +1,6 @@
 def initParser(subparsers, base_parser):
   import argparse  
-  parser = subparsers.add_parser('freesurfer', parents=[base_parser], add_help=False, description='Generate the 5TT image based on a FreeSurfer parcellation image')
+  parser = subparsers.add_parser('freesurfer', parents=[base_parser], description='Generate the 5TT image based on a FreeSurfer parcellation image')
   parser.add_argument('input',  help='The input FreeSurfer parcellation image (any image containing \'aseg\' in its name)')
   parser.add_argument('output', help='The output 5TT image')
   options = parser.add_argument_group('Options specific to the \'freesurfer\' algorithm')
@@ -9,45 +9,45 @@ def initParser(subparsers, base_parser):
 
 
 
-def checkOutputFiles():
+def checkOutputPaths():
   pass
 
 
 
-def getInputFiles():
+def getInputs():
   import os, shutil
   from mrtrix3 import app, path, run
   if hasattr(app.args, 'lut') and app.args.lut:
-    run.function(shutil.copyfile, path.fromUser(app.args.lut, False), os.path.join(app.tempDir, 'LUT.txt'))
+    run.function(shutil.copyfile, path.fromUser(app.args.lut, False), path.toTemp('LUT.txt', False))
 
 
 
 def execute():
   import os, sys
-  from mrtrix3 import app, message, path, run
+  from mrtrix3 import app, path, run
 
   lut_input_path = 'LUT.txt'
   if not os.path.exists('LUT.txt'):
     freesurfer_home = os.environ.get('FREESURFER_HOME', '')
     if not freesurfer_home:
-      message.error('Environment variable FREESURFER_HOME is not set; please run appropriate FreeSurfer configuration script, set this variable manually, or provide script with path to file FreeSurferColorLUT.txt using -lut option')
+      app.error('Environment variable FREESURFER_HOME is not set; please run appropriate FreeSurfer configuration script, set this variable manually, or provide script with path to file FreeSurferColorLUT.txt using -lut option')
     lut_input_path = os.path.join(freesurfer_home, 'FreeSurferColorLUT.txt')
     if not os.path.isfile(lut_input_path):
-      message.error('Could not find FreeSurfer lookup table file (expected location: ' + freesurfer_lut + '), and none provided using -lut')
+      app.error('Could not find FreeSurfer lookup table file (expected location: ' + freesurfer_lut + '), and none provided using -lut')
 
-  if app.args.sgm_amyg_hipp:
+  if hasattr(app.args, 'sgm_amyg_hipp') and app.args.sgm_amyg_hipp:
     lut_output_file_name = 'FreeSurfer2ACT_sgm_amyg_hipp.txt'
   else:
     lut_output_file_name = 'FreeSurfer2ACT.txt'
-  lut_output_path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'data', lut_output_file_name);
+  lut_output_path = os.path.join(path.sharedDataPath(), path.scriptSubDirName(), lut_output_file_name);
   if not os.path.isfile(lut_output_path):
-    message.error('Could not find lookup table file for converting FreeSurfer parcellation output to tissues (expected location: ' + lut_output_path + ')')
+    app.error('Could not find lookup table file for converting FreeSurfer parcellation output to tissues (expected location: ' + lut_output_path + ')')
 
   # Initial conversion from FreeSurfer parcellation to five principal tissue types
   run.command('labelconvert input.mif ' + lut_input_path + ' ' + lut_output_path + ' indices.mif')
 
   # Use mrcrop to reduce file size
-  if app.args.nocrop:
+  if hasattr(app.args, 'nocrop') and app.args.nocrop:
     image = 'indices.mif'
   else:
     image = 'indices_cropped.mif'

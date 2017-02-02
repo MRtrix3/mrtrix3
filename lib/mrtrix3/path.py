@@ -2,7 +2,7 @@
 
 # Determines the common postfix for a list of filenames (including the file extension)
 def commonPostfix(inputFiles):
-  from mrtrix3 import message
+  from mrtrix3 import app
   first = inputFiles[0];
   cursor = 0
   found = False;
@@ -16,7 +16,7 @@ def commonPostfix(inputFiles):
       if found == False:
         common = first[len(first)-cursor-1] + common
       cursor += 1
-  message.debug('Common postfix of ' + str(len(inputFiles)) + ' is \'' + common + '\'')
+  app.debug('Common postfix of ' + str(len(inputFiles)) + ' is \'' + common + '\'')
   return common
 
 
@@ -30,12 +30,25 @@ def commonPostfix(inputFiles):
 #     erroneously split, subsequently confusing whatever command is being invoked.
 def fromUser(filename, is_command):
   import os
-  from mrtrix3 import app, message
+  from mrtrix3 import app
   wrapper=''
-  if is_command and (filename.count(' ') or app.workingDir.count(' ')):
+  if is_command and (filename.count(' ') or app._workingDir.count(' ')):
     wrapper='\"'
-  path = wrapper + os.path.abspath(os.path.join(app.workingDir, filename)) + wrapper
-  message.debug(path)
+  path = wrapper + os.path.abspath(os.path.join(app._workingDir, filename)) + wrapper
+  app.debug(filename + ' -> ' + path)
+  return path
+
+
+
+# Get the full absolute path to a location in the temporary script directory
+def toTemp(filename, is_command):
+  import os
+  from mrtrix3 import app
+  wrapper=''
+  if is_command and filename.count(' '):
+    wrapper='\"'
+  path = wrapper + os.path.abspath(os.path.join(app._tempDir, filename)) + wrapper
+  app.debug(filename + ' -> ' + path)
   return path
 
 
@@ -56,7 +69,7 @@ def scriptSubDirName():
 # Some scripts come with additional requisite data files; this function makes it easy to find them.
 # For data that is stored in a named sub-directory specifically for a particular script, this function will
 #   need to be used in conjunction with scriptSubDirName()
-def sharedDataPath(filename):
-  import inspect, os
+def sharedDataPath():
+  import os
   return os.path.realpath(os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, os.pardir, 'share', 'mrtrix3')))
 

@@ -1,6 +1,6 @@
 def initParser(subparsers, base_parser):
   import argparse
-  from mrtrix3 import app, cmdlineParser
+  from mrtrix3 import app
   parser = subparsers.add_parser('fsl', parents=[base_parser], add_help=False, description='Use FSL commands to generate the 5TT image based on a T1-weighted image')
   app.addCitation('If using \'fsl\' algorithm', 'Smith, S. M. Fast robust automated brain extraction. Human Brain Mapping, 2002, 17, 143-155', True)
   app.addCitation('If using \'fsl\' algorithm', 'Zhang, Y.; Brady, M. & Smith, S. Segmentation of brain MR images through a hidden Markov random field model and the expectation-maximization algorithm. IEEE Transactions on Medical Imaging, 2001, 20, 45-57', True)
@@ -12,73 +12,74 @@ def initParser(subparsers, base_parser):
   options.add_argument('-t2', metavar='<T2 image>', help='Provide a T2-weighted image in addition to the default T1-weighted image; this will be used as a second input to FSL FAST')
   options.add_argument('-mask', help='Manually provide a brain mask, rather than deriving one in the script')
   options.add_argument('-premasked', action='store_true', help='Indicate that brain masking has already been applied to the input image')
-  cmdlineParser.flagMutuallyExclusiveOptions( [ 'mask', 'premasked' ] )
+  parser.flagMutuallyExclusiveOptions( [ 'mask', 'premasked' ] )
   parser.set_defaults(algorithm='fsl')
   
   
   
-def checkOutputFiles():
+def checkOutputPaths():
   pass
 
 
 
-def getInputFiles():
+def getInputs():
   import os
-  from mrtrix3 import app, image, message, path, run
-  if app.args.mask:
-    run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + os.path.join(app.tempDir, 'mask.mif') + ' -datatype bit -stride -1,+2,+3')
-  if app.args.t2:
+  from mrtrix3 import app, image, path, run
+  if hasattr(app.args, 'mask') and app.args.mask:
+    run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + path.toTemp('mask.mif', True) + ' -datatype bit -stride -1,+2,+3')
+  if hasattr(app.args, 't2') and app.args.t2:
     if not image.match(app.args.input, app.args.t2):
-      message.error('Provided T2 image does not match input T1 image')
-    run.command('mrconvert ' + path.fromUser(app.args.t2, True) + ' ' + os.path.join(app.tempDir, 'T2.nii') + ' -stride -1,+2,+3')
+      app.error('Provided T2 image does not match input T1 image')
+    run.command('mrconvert ' + path.fromUser(app.args.t2, True) + ' ' + path.toTemp('T2.nii', True) + ' -stride -1,+2,+3')
 
 
 
 
 def execute():
   import os
-  from mrtrix3 import app, fsl, image, message, misc, run
+  from distutils.spawn import find_executable
+  from mrtrix3 import app, fsl, image, run
   
   if misc.isWindows():
-    message.error('\'fsl\' algorithm of 5ttgen script cannot be run on Windows: FSL not available on Windows')
+    app.error('\'fsl\' algorithm of 5ttgen script cannot be run on Windows: FSL not available on Windows')
 
   fsl_path = os.environ.get('FSLDIR', '')
   if not fsl_path:
-    message.error('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
+    app.error('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
 
   ssroi_cmd = 'standard_space_roi'
-  if not misc.haveBinary(ssroi_cmd):
+  if not find_executable(ssroi_cmd):
     ssroi_cmd = 'fsl5.0-standard_space_roi'
-    if not misc.haveBinary(ssroi_cmd):
-      message.error('Could not find FSL program standard_space_roi; please verify FSL install')
+    if not find_executable(ssroi_cmd):
+      app.error('Could not find FSL program standard_space_roi; please verify FSL install')
 
   bet_cmd = 'bet'
-  if not misc.haveBinary(bet_cmd):
+  if not find_executable(bet_cmd):
     bet_cmd = 'fsl5.0-bet'
-    if not misc.haveBinary(bet_cmd):
-      message.error('Could not find FSL program bet; please verify FSL install')
+    if not find_executable(bet_cmd):
+      app.error('Could not find FSL program bet; please verify FSL install')
 
   fast_cmd = 'fast'
-  if not misc.haveBinary(fast_cmd):
+  if not find_executable(fast_cmd):
     fast_cmd = 'fsl5.0-fast'
-    if not misc.haveBinary(fast_cmd):
-      message.error('Could not find FSL program fast; please verify FSL install')
+    if not find_executable(fast_cmd):
+      app.error('Could not find FSL program fast; please verify FSL install')
 
   first_cmd = 'run_first_all'
-  if not misc.haveBinary(first_cmd):
+  if not find_executable(first_cmd):
     first_cmd = "fsl5.0-run_first_all"
-    if not misc.haveBinary(first_cmd):
-      message.error('Could not find FSL program run_first_all; please verify FSL install')
+    if not find_executable(first_cmd):
+      app.error('Could not find FSL program run_first_all; please verify FSL install')
 
   first_atlas_path = os.path.join(fsl_path, 'data', 'first', 'models_336_bin')
 
   if not os.path.isdir(first_atlas_path):
-    message.error('Atlases required for FSL\'s FIRST program not installed; please install fsl-first-data using your relevant package manager')
+    app.error('Atlases required for FSL\'s FIRST program not installed; please install fsl-first-data using your relevant package manager')
 
   fsl_suffix = fsl.suffix()
 
   sgm_structures = [ 'L_Accu', 'R_Accu', 'L_Caud', 'R_Caud', 'L_Pall', 'R_Pall', 'L_Puta', 'R_Puta', 'L_Thal', 'R_Thal' ]
-  if app.args.sgm_amyg_hipp:
+  if hasattr(app.args, 'sgm_amyg_hipp') and app.args.sgm_amyg_hipp:
     sgm_structures.extend([ 'L_Amyg', 'R_Amyg', 'L_Hipp', 'R_Hipp' ])
   
   run.command('mrconvert input.mif T1.nii -stride -1,+2,+3')
@@ -96,7 +97,7 @@ def execute():
       run.command('mrcalc T1.nii mask.mif -mult ' + fast_t1_input)
       mask_path = 'mask.mif'
     else:
-      message.warn('Mask image does not match input image - re-gridding')
+      app.warn('Mask image does not match input image - re-gridding')
       run.command('mrtransform mask.mif mask_regrid.mif -template T1.nii')
       run.command('mrcalc T1.nii mask_regrid.mif ' + fast_t1_input)
       mask_path = 'mask_regrid.mif'
@@ -137,7 +138,7 @@ def execute():
       run.command(ssroi_cmd + ' T1.nii T1_preBET' + fsl_suffix + ' -b', False)
 
     if not os.path.exists('T1_preBET' + fsl_suffix):
-      message.warn('FSL command ' + ssroi_cmd + ' appears to have failed; passing T1 directly to BET')
+      app.warn('FSL command ' + ssroi_cmd + ' appears to have failed; passing T1 directly to BET')
       run.command('mrconvert input.mif T1_preBET' + fsl_suffix + ' -stride -1,+2,+3')
 
     # BET
@@ -174,7 +175,7 @@ def execute():
     vtk_in_path = 'first-' + struct + '_first.vtk'
     vtk_temp_path = struct + '.vtk'
     if not os.path.exists(vtk_in_path):
-      message.error('Missing .vtk file for structure ' + struct + '; run_first_all must have failed')
+      app.error('Missing .vtk file for structure ' + struct + '; run_first_all must have failed')
     run.command('meshconvert ' + vtk_in_path + ' ' + vtk_temp_path + ' -transform first2real T1.nii')
     run.command('mesh2pve ' + vtk_temp_path + ' ' + fast_t1_input + ' ' + pve_image_path)
     pve_image_list.append(pve_image_path)

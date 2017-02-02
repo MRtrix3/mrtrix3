@@ -6,22 +6,23 @@
 #   conceivably be installed as.
 def eddyBinary(cuda):
   import os
-  from mrtrix3 import message, misc
+  from mrtrix3 import app
+  from distutils.spawn import find_executable
   if cuda:
-    if misc.haveBinary('eddy_cuda'):
-      message.debug('Selecting CUDA version of eddy')
+    if find_executable('eddy_cuda'):
+      app.debug('Selecting CUDA version of eddy')
       return 'eddy_cuda'
     else:
-      message.warn('CUDA version of eddy not found; running standard version')
-  if misc.haveBinary('eddy_openmp'):
+      app.warn('CUDA version of eddy not found; running standard version')
+  if find_executable('eddy_openmp'):
     path = 'eddy_openmp'
-  elif misc.haveBinary('eddy'):
+  elif find_executable('eddy'):
     path = 'eddy'
-  elif misc.haveBinary('fsl5.0-eddy'):
+  elif find_executable('fsl5.0-eddy'):
     path = 'fsl5.0-eddy'
   else:
-    message.error('Could not find FSL program eddy; please verify FSL install')
-  message.debug(path)
+    app.error('Could not find FSL program eddy; please verify FSL install')
+  app.debug(path)
   return path
 
 
@@ -31,20 +32,20 @@ def eddyBinary(cuda):
 #   to the relevant command. Therefore use this function to 'guess' what the names
 #   of images provided by FSL commands will be.
 def suffix():
-  import os, sys
-  from mrtrix3 import message
+  import os
+  from mrtrix3 import app
   fsl_output_type = os.environ.get('FSLOUTPUTTYPE', '')
   if fsl_output_type == 'NIFTI':
-    message.debug('NIFTI -> .nii')
+    app.debug('NIFTI -> .nii')
     return '.nii'
   if fsl_output_type == 'NIFTI_GZ':
-    message.debug('NIFTI_GZ -> .nii.gz')
+    app.debug('NIFTI_GZ -> .nii.gz')
     return '.nii.gz'
   if fsl_output_type == 'NIFTI_PAIR':
-    message.debug('NIFTI_PAIR -> .img')
+    app.debug('NIFTI_PAIR -> .img')
     return '.img'
   if fsl_output_type == 'NIFTI_PAIR_GZ':
-    message.error('MRtrix3 does not support compressed NIFTI pairs; please change FSLOUTPUTTYPE environment variable')
-  message.warn('Environment variable FSLOUTPUTTYPE not set; FSL commands may fail, or script may fail to locate FSL command outputs')
+    app.error('MRtrix3 does not support compressed NIFTI pairs; please change FSLOUTPUTTYPE environment variable')
+  app.warn('Environment variable FSLOUTPUTTYPE not set; FSL commands may fail, or script may fail to locate FSL command outputs')
   return '.nii.gz'
 

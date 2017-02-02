@@ -9,7 +9,6 @@
 def _algorithmsPath():
   import os
   from mrtrix3 import path
-  print (__file__)
   return os.path.join(os.path.dirname(__file__), path.scriptSubDirName())
 
 
@@ -17,7 +16,7 @@ def _algorithmsPath():
 # This function needs to be safe to run in order to populate the help page; that is, no app initialisation has been run
 def getList():
   import os, sys
-  from mrtrix3 import message
+  from mrtrix3 import app
   global _algorithm_list
   algorithm_list = [ ]
   src_file_list = os.listdir(_algorithmsPath())
@@ -26,21 +25,21 @@ def getList():
     if len(filename) == 2 and filename[1] == 'py' and not filename[0] == '__init__':
       algorithm_list.append(filename[0])
   algorithm_list = sorted(algorithm_list)
-  message.debug('Found algorithms: ' + str(algorithm_list))
+  app.debug('Found algorithms: ' + str(algorithm_list))
   return algorithm_list
 
 
 
 def initialise(base_parser, subparsers):
   import pkgutil
-  from mrtrix3 import message
+  from mrtrix3 import app
   initlist = [ ]
   for importer, package_name, ispkg in pkgutil.iter_modules( [ _algorithmsPath() ] ):
     loader = importer.find_loader(package_name)
     module = loader[0].load_module(package_name)
     module.initParser(subparsers, base_parser)
     initlist.extend(package_name)
-  message.debug('Initialised algorithms: ' + str(initlist))
+  app.debug('Initialised algorithms: ' + str(initlist))
 
 
 

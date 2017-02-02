@@ -8,41 +8,41 @@
 #   to dynamically free up storage space used by the script).
 def delTempFile(path):
   import os
-  from mrtrix3 import app, message
-  if not app.cleanup:
+  from mrtrix3 import app
+  if not app._cleanup:
     return
-  if app.verbosity > 2:
-    printMessage('Deleting temporary file: ' + path)
+  if app._verbosity > 2:
+    app.console('Deleting temporary file: ' + path)
   try:
     os.remove(path)
   except OSError:
-    pass
+    app.debug('Unable to delete temporary file ' + path)
 
 def delTempFolder(path):
-  import os, shutil
-  from mrtrix3 import app, message
-  if not app.cleanup:
+  import shutil
+  from mrtrix3 import app
+  if not app._cleanup:
     return
-  if app.verbosity > 2:
-    printMessage('Deleting temporary folder: ' + path)
+  if app._verbosity > 2:
+    app.console('Deleting temporary folder: ' + path)
   try:
     shutil.rmtree(path)
   except OSError:
-    pass
+    app.debug('Unable to delete temprary folder ' + path)
 
 
 
 # Make a directory if it doesn't exist; don't do anything if it does already exist
 def makeDir(path):
   import errno, os
-  from mrtrix3 import message
+  from mrtrix3 import app
   try:
     os.makedirs(path)
-    message.debug('Created directory ' + path)
+    app.debug('Created directory ' + path)
   except OSError as exception:
     if exception.errno != errno.EEXIST:
       raise
-    message.debug('Directory ' + path + ' already exists')
+    app.debug('Directory ' + path + ' already exists')
 
 
 
@@ -50,13 +50,13 @@ def makeDir(path):
 # Note: Doesn't actually create a file; just gives a unique name that won't over-write anything
 def newTempFile(suffix):
   import os, random, string
-  from mrtrix3 import message, mrtrix
-  if 'TmpFileDir' in mrtrix.config:
-    dir_path = mrtrix.config['TmpFileDir']
+  from mrtrix3 import app
+  if 'TmpFileDir' in app.config:
+    dir_path = app.config['TmpFileDir']
   else:
     dir_path = '.'
-  if 'TmpFilePrefix' in mrtrix.config:
-    prefix = mrtrix.config['TmpFilePrefix']
+  if 'TmpFilePrefix' in app.config:
+    prefix = app.config['TmpFilePrefix']
   else:
     prefix = os.path.basename(sys.argv[0]) + '-tmp-'
   full_path = dir_path
@@ -65,6 +65,6 @@ def newTempFile(suffix):
   while os.path.exists(full_path):
     random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))
     full_path = os.path.join(dir_path, prefix + random_string + '.' + suffix)
-  message.debug(full_path)
+  app.debug(full_path)
   return full_path
 

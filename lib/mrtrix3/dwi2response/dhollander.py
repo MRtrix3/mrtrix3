@@ -2,7 +2,7 @@ def initParser(subparsers, base_parser):
   import argparse
   from mrtrix3 import app
   app.addCitation('If using \'dhollander\' algorithm', 'Dhollander, T.; Raffelt, D. & Connelly, A. Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5', False)
-  parser = subparsers.add_parser('dhollander', parents=[base_parser], add_help=False, description='Unsupervised estimation of WM, GM and CSF response functions. Does not require a T1 image (or segmentation thereof).')
+  parser = subparsers.add_parser('dhollander', parents=[base_parser], description='Unsupervised estimation of WM, GM and CSF response functions. Does not require a T1 image (or segmentation thereof).')
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('out_sfwm', help='Output single-fibre WM response text file')
   parser.add_argument('out_gm', help='Output GM response text file')
@@ -32,33 +32,33 @@ def getInputFiles():
 
 def execute():
   import math, os, shutil
-  from mrtrix3 import app, image, message, path, run
+  from mrtrix3 import app, image, path, run
 
 
 
   # Get b-values and number of volumes per b-value.
   bvalues = [ int(round(float(x))) for x in image.headerField('dwi.mif', 'shells').split() ]
   bvolumes = [ int(x) for x in image.headerField('dwi.mif', 'shellcounts').split() ]
-  message.console(str(len(bvalues)) + ' unique b-value(s) detected: ' + ','.join(map(str,bvalues)) + ' with ' + ','.join(map(str,bvolumes)) + ' volumes.')
+  app.console(str(len(bvalues)) + ' unique b-value(s) detected: ' + ','.join(map(str,bvalues)) + ' with ' + ','.join(map(str,bvolumes)) + ' volumes.')
   if len(bvalues) < 2:
     message.error('Need at least 2 unique b-values (including b=0).')
 
 
   # Get lmax information (if provided).
   sfwm_lmax = [ ]
-  if app.args.lmax:
+  if hasattr(app.args, 'lmax') and app.args.lmax:
     sfwm_lmax = [ int(x.strip()) for x in app.args.lmax.split(',') ]
     if not len(sfwm_lmax) == len(bvalues):
-      message.error('Number of lmax\'s (' + str(len(sfwm_lmax)) + ', as supplied to the -lmax option: ' + ','.join(map(str,sfwm_lmax)) + ') does not match number of unique b-values.')
+      app.error('Number of lmax\'s (' + str(len(sfwm_lmax)) + ', as supplied to the -lmax option: ' + ','.join(map(str,sfwm_lmax)) + ') does not match number of unique b-values.')
     for l in sfwm_lmax:
       if l%2:
-        message.error('Values supplied to the -lmax option must be even.')
+        app.error('Values supplied to the -lmax option must be even.')
       if l<0:
-        message.error('Values supplied to the -lmax option must be non-negative.')
+        app.error('Values supplied to the -lmax option must be non-negative.')
 
 
   # Erode (brain) mask.
-  if app.args.erode > 0:
+  if hasattr(app.args, 'erode') and app.args.erode > 0:
     run.command('maskfilter mask.mif erode eroded_mask.mif -npass ' + str(app.args.erode))
   else:
     run.command('mrconvert mask.mif eroded_mask.mif -datatype bit')
@@ -129,11 +129,11 @@ def execute():
   # Get final voxels for single-fibre WM response function estimation from WM using 'tournier' algorithm.
   refwmcount = float(image.statistic('refined_wm.mif', 'count', 'refined_wm.mif'))
   voxsfwmcount = int(round(refwmcount * app.args.sfwm / 100.0))
-  message.console('Running \'tournier\' algorithm to select ' + str(voxsfwmcount) + ' single-fibre WM voxels.')
+  app.console('Running \'tournier\' algorithm to select ' + str(voxsfwmcount) + ' single-fibre WM voxels.')
   cleanopt = ''
-  if not app.cleanup:
+  if not app._cleanup:
     cleanopt = ' -nocleanup'
-  run.command('dwi2response tournier dwi.mif _respsfwmss.txt -sf_voxels ' + str(voxsfwmcount) + ' -iter_voxels ' + str(voxsfwmcount * 10) + ' -mask refined_wm.mif -voxels voxels_sfwm.mif -quiet -tempdir ' + app.tempDir + cleanopt)
+  run.command('dwi2response tournier dwi.mif _respsfwmss.txt -sf_voxels ' + str(voxsfwmcount) + ' -iter_voxels ' + str(voxsfwmcount * 10) + ' -mask refined_wm.mif -voxels voxels_sfwm.mif -quiet -tempdir ' + app._tempDir + cleanopt)
 
   # Get final voxels for GM response function estimation from GM.
   refgmmedian = image.statistic('safe_sdm.mif', 'median', 'refined_gm.mif')
@@ -155,11 +155,11 @@ def execute():
 
   # Show summary of voxels counts.
   textarrow = ' --> '
-  message.console('Summary of voxel counts:')
-  message.console('Mask: ' + str(int(image.statistic('mask.mif', 'count', 'mask.mif'))) + textarrow + str(int(image.statistic('eroded_mask.mif', 'count', 'eroded_mask.mif'))) + textarrow + str(int(image.statistic('safe_mask.mif', 'count', 'safe_mask.mif'))))
-  message.console('WM: ' + str(int(image.statistic('crude_wm.mif', 'count', 'crude_wm.mif'))) + textarrow + str(int(image.statistic('refined_wm.mif', 'count', 'refined_wm.mif'))) + textarrow + str(int(image.statistic('voxels_sfwm.mif', 'count', 'voxels_sfwm.mif'))) + ' (SF)')
-  message.console('GM: ' + str(int(image.statistic('crude_gm.mif', 'count', 'crude_gm.mif'))) + textarrow + str(int(image.statistic('refined_gm.mif', 'count', 'refined_gm.mif'))) + textarrow + str(int(image.statistic('voxels_gm.mif', 'count', 'voxels_gm.mif'))))
-  message.console('CSF: ' + str(int(image.statistic('crude_csf.mif', 'count', 'crude_csf.mif'))) + textarrow + str(int(image.statistic('refined_csf.mif', 'count', 'refined_csf.mif'))) + textarrow + str(int(image.statistic('voxels_csf.mif', 'count', 'voxels_csf.mif'))))
+  app.console('Summary of voxel counts:')
+  app.console('Mask: ' + str(int(image.statistic('mask.mif', 'count', 'mask.mif'))) + textarrow + str(int(image.statistic('eroded_mask.mif', 'count', 'eroded_mask.mif'))) + textarrow + str(int(image.statistic('safe_mask.mif', 'count', 'safe_mask.mif'))))
+  app.console('WM: ' + str(int(image.statistic('crude_wm.mif', 'count', 'crude_wm.mif'))) + textarrow + str(int(image.statistic('refined_wm.mif', 'count', 'refined_wm.mif'))) + textarrow + str(int(image.statistic('voxels_sfwm.mif', 'count', 'voxels_sfwm.mif'))) + ' (SF)')
+  app.console('GM: ' + str(int(image.statistic('crude_gm.mif', 'count', 'crude_gm.mif'))) + textarrow + str(int(image.statistic('refined_gm.mif', 'count', 'refined_gm.mif'))) + textarrow + str(int(image.statistic('voxels_gm.mif', 'count', 'voxels_gm.mif'))))
+  app.console('CSF: ' + str(int(image.statistic('crude_csf.mif', 'count', 'crude_csf.mif'))) + textarrow + str(int(image.statistic('refined_csf.mif', 'count', 'refined_csf.mif'))) + textarrow + str(int(image.statistic('voxels_csf.mif', 'count', 'voxels_csf.mif'))))
 
 
   # Generate single-fibre WM, GM and CSF responses

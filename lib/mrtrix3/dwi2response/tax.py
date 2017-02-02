@@ -2,7 +2,7 @@ def initParser(subparsers, base_parser):
   import argparse
   from mrtrix3 import app
   app.addCitation('If using \'tax\' algorithm', 'Tax, C. M.; Jeurissen, B.; Vos, S. B.; Viergever, M. A. & Leemans, A. Recursive calibration of the fiber response function for spherical deconvolution of diffusion MRI data. NeuroImage, 2014, 86, 67-80', False)
-  parser = subparsers.add_parser('tax', parents=[base_parser], add_help=False, description='Use the Tax et al. (2014) recursive calibration algorithm for single-fibre voxel selection and response function estimation')
+  parser = subparsers.add_parser('tax', parents=[base_parser], description='Use the Tax et al. (2014) recursive calibration algorithm for single-fibre voxel selection and response function estimation')
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('output', help='The output response function text file')
   options = parser.add_argument_group('Options specific to the \'tax\' algorithm')
@@ -27,10 +27,10 @@ def getInputFiles():
 
 def execute():
   import math, os, shutil
-  from mrtrix3 import app, file, image, message, path, run
+  from mrtrix3 import app, file, image, path, run
 
   lmax_option = ''
-  if app.args.lmax:
+  if hasattr(app.args, 'lmax') and app.args.lmax:
     lmax_option = ' -lmax ' + app.args.lmax
 
   convergence_change = 0.01 * app.args.convergence
@@ -86,7 +86,7 @@ def execute():
     # Make sure image isn't empty
     SF_voxel_count = int(image.statistic(prefix + 'SF.mif', 'count', prefix + 'SF.mif'))
     if not SF_voxel_count:
-      message.error('Aborting: All voxels have been excluded from single-fibre selection')
+      app.error('Aborting: All voxels have been excluded from single-fibre selection')
     # Generate a new response function
     run.command('amp2response dwi.mif ' + prefix + 'SF.mif ' + prefix + 'first_dir.mif ' + prefix + 'RF.txt' + lmax_option)
     file.delTempFile(prefix + 'first_dir.mif')
@@ -106,7 +106,7 @@ def execute():
         if ratio > convergence_change:
           reiterate = True
       if not reiterate:
-        message.console('Exiting at iteration ' + str(iteration) + ' with ' + str(SF_voxel_count) + ' SF voxels due to unchanged response function coefficients')
+        app.console('Exiting at iteration ' + str(iteration) + ' with ' + str(SF_voxel_count) + ' SF voxels due to unchanged response function coefficients')
         run.function(shutil.copyfile, prefix + 'RF.txt', 'response.txt')
         run.function(shutil.copyfile, prefix + 'SF.mif', 'voxels.mif')
         break
@@ -117,7 +117,7 @@ def execute():
 
   # If we've terminated due to hitting the iteration limiter, we still need to copy the output file(s) to the correct location
   if not os.path.exists('response.txt'):
-    message.console('Exiting after maximum ' + str(app.args.max_iters-1) + ' iterations with ' + str(SF_voxel_count) + ' SF voxels')
+    app.console('Exiting after maximum ' + str(app.args.max_iters-1) + ' iterations with ' + str(SF_voxel_count) + ' SF voxels')
     run.function(shutil.copyfile, 'iter' + str(app.args.max_iters-1) + '_RF.txt', 'response.txt')
     run.function(shutil.copyfile, 'iter' + str(app.args.max_iters-1) + '_SF.mif', 'voxels.mif')
 

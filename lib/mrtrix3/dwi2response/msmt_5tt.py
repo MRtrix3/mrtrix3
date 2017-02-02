@@ -2,7 +2,7 @@ def initParser(subparsers, base_parser):
   import argparse
   from mrtrix3 import app
   app.addCitation('If using \'msmt_csd\' algorithm', 'Jeurissen, B.; Tournier, J.-D.; Dhollander, T.; Connelly, A. & Sijbers, J. Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data. NeuroImage, 2014, 103, 411-426', False)
-  parser = subparsers.add_parser('msmt_5tt', parents=[base_parser], add_help=False, description='Derive MSMT-CSD tissue response functions based on a co-registered five-tissue-type (5TT) image')
+  parser = subparsers.add_parser('msmt_5tt', parents=[base_parser], description='Derive MSMT-CSD tissue response functions based on a co-registered five-tissue-type (5TT) image')
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('in_5tt', help='Input co-registered 5TT image')
   parser.add_argument('out_wm', help='Output WM response text file')
@@ -28,15 +28,15 @@ def checkOutputFiles():
 def getInputFiles():
   import os
   from mrtrix3 import app, path, run
-  run.command('mrconvert ' + path.fromUser(app.args.in_5tt, True) + ' ' + os.path.join(app.tempDir, '5tt.mif'))
+  run.command('mrconvert ' + path.fromUser(app.args.in_5tt, True) + ' ' + path.toTemp('5tt.mif', True))
   if app.args.dirs:
-    run.command('mrconvert ' + path.fromUser(app.args.dirs, True) + ' ' + os.path.join(app.tempDir, 'dirs.mif') + ' -stride 0,0,0,1')
+    run.command('mrconvert ' + path.fromUser(app.args.dirs, True) + ' ' + path.toTemp('dirs.mif', True) + ' -stride 0,0,0,1')
 
 
 
 def execute():
   import math, os, shutil
-  from mrtrix3 import app, image, message, path, run
+  from mrtrix3 import app, image, path, run
 
   # Ideally want to use the oversampling-based regridding of the 5TT image from the SIFT model, not mrtransform
   # May need to commit 5ttregrid...
@@ -47,19 +47,19 @@ def execute():
   # Get shell information
   shells = [ int(round(float(x))) for x in image.headerField('dwi.mif', 'shells').split() ]
   if len(shells) < 3:
-    message.warn('Less than three b-value shells; response functions will not be applicable in MSMT-CSD algorithm')
+    app.warn('Less than three b-value shells; response functions will not be applicable in MSMT-CSD algorithm')
 
   # Get lmax information (if provided)
   wm_lmax = [ ]
-  if app.args.lmax:
+  if hasattr(app.args, 'lmax') and app.args.lmax:
     wm_lmax = [ int(x.strip()) for x in app.args.lmax.split(',') ]
     if not len(wm_lmax) == len(shells):
-      message.error('Number of manually-defined lmax\'s (' + str(len(wm_lmax)) + ') does not match number of b-value shells (' + str(len(shells)) + ')')
+      app.error('Number of manually-defined lmax\'s (' + str(len(wm_lmax)) + ') does not match number of b-value shells (' + str(len(shells)) + ')')
     for l in wm_lmax:
       if l%2:
-        message.error('Values for lmax must be even')
+        app.error('Values for lmax must be even')
       if l<0:
-        message.error('Values for lmax must be non-negative')
+        app.error('Values for lmax must be non-negative')
 
   run.command('dwi2tensor dwi.mif - -mask mask.mif | tensor2metric - -fa fa.mif -vector vector.mif')
   if not os.path.exists('dirs.mif'):
@@ -72,11 +72,11 @@ def execute():
   run.command('mrconvert 5tt_regrid.mif - -coord 3 3 -axes 0,1,2 | mrcalc - ' + str(app.args.pvf) + ' -gt fa.mif ' + str(app.args.fa) + ' -lt -mult mask.mif -mult csf_mask.mif')
 
   # Revise WM mask to only include single-fibre voxels
-  message.console('Calling dwi2response recursively to select WM single-fibre voxels using \'' + app.args.wm_algo + '\' algorithm')
+  app.console('Calling dwi2response recursively to select WM single-fibre voxels using \'' + app.args.wm_algo + '\' algorithm')
   recursive_cleanup_option=''
-  if not app.cleanup:
+  if not app._cleanup:
     recursive_cleanup_option = ' -nocleanup'
-  run.command('dwi2response ' + app.args.wm_algo + ' dwi.mif wm_ss_response.txt -mask wm_mask.mif -voxels wm_sf_mask.mif -quiet -tempdir ' + app.tempDir + recursive_cleanup_option)
+  run.command('dwi2response ' + app.args.wm_algo + ' dwi.mif wm_ss_response.txt -mask wm_mask.mif -voxels wm_sf_mask.mif -quiet -tempdir ' + app._tempDir + recursive_cleanup_option)
 
   # Check for empty masks
   wm_voxels  = int(image.statistic('wm_sf_mask.mif', 'count', 'wm_sf_mask.mif'))
@@ -97,7 +97,7 @@ def execute():
     message += ' empty; cannot estimate response function'
     if len(empty_masks) > 1:
       message += 's'
-    message.error(message)
+    app.error(message)
 
   # For each of the three tissues, generate a multi-shell response
   bvalues_option = ' -shell ' + ','.join(map(str,shells))

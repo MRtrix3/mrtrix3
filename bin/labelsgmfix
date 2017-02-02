@@ -18,40 +18,42 @@ if not os.path.isdir(lib_folder):
 sys.path.insert(0, lib_folder)
 
 
-from mrtrix3 import app, cmdlineParser, image, message, misc, path, run
+
+from distutils.spawn import find_executable
+from mrtrix3 import app, image, path, run
 
 
-app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
+app.init('Robert E. Smith (robert.smith@florey.edu.au)',
+         'In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST')
 app.addCitation('', 'Patenaude, B.; Smith, S. M.; Kennedy, D. N. & Jenkinson, M. A Bayesian model of shape and appearance for subcortical brain segmentation. NeuroImage, 2011, 56, 907-922', True)
 app.addCitation('', 'Smith, S. M.; Jenkinson, M.; Woolrich, M. W.; Beckmann, C. F.; Behrens, T. E.; Johansen-Berg, H.; Bannister, P. R.; De Luca, M.; Drobnjak, I.; Flitney, D. E.; Niazy, R. K.; Saunders, J.; Vickers, J.; Zhang, Y.; De Stefano, N.; Brady, J. M. & Matthews, P. M. Advances in functional and structural MR image analysis and implementation as FSL. NeuroImage, 2004, 23, S208-S219', True)
 app.addCitation('', 'Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. The effects of SIFT on the reproducibility and biological accuracy of the structural connectome. NeuroImage, 2015, 104, 253-265', False)
-cmdlineParser.initialise('In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST')
-app.parser.add_argument('parc',   help='The input FreeSurfer parcellation image')
-app.parser.add_argument('t1',     help='The T1 image to be provided to FIRST')
-app.parser.add_argument('lut',    help='The lookup table file that the parcellated image is based on')
-app.parser.add_argument('output', help='The output parcellation image')
-options = app.parser.add_argument_group('Options for the labelsgmfix script')
+app.cmdline.add_argument('parc',   help='The input FreeSurfer parcellation image')
+app.cmdline.add_argument('t1',     help='The T1 image to be provided to FIRST')
+app.cmdline.add_argument('lut',    help='The lookup table file that the parcellated image is based on')
+app.cmdline.add_argument('output', help='The output parcellation image')
+options = app.cmdline.add_argument_group('Options for the labelsgmfix script')
 options.add_argument('-premasked', action='store_true', default=False, help='Indicate that brain masking has been applied to the T1 input image')
 options.add_argument('-sgm_amyg_hipp', action='store_true', default=False, help='Consider the amygdalae and hippocampi as sub-cortical grey matter structures, and also replace their estimates with those from FIRST')
-app.initialise()
+app.parse()
 
-if misc.isWindows():
-  message.error('Script cannot run on Windows due to FSL dependency')
+if app.isWindows():
+  app.error('Script cannot run on Windows due to FSL dependency')
 
 fsl_path = os.environ.get('FSLDIR', '')
 if not fsl_path:
-  message.error('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
+  app.error('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
 
 first_cmd = 'run_first_all'
-if not misc.haveBinary(first_cmd):
+if not find_executable(first_cmd):
   first_cmd = "fsl5.0-run_first_all"
-  if not misc.haveBinary(first_cmd):
-    message.error('Could not find FSL program run_first_all; please verify FSL install')
+  if not find_executable(first_cmd):
+    app.error('Could not find FSL program run_first_all; please verify FSL install')
 
 first_atlas_path = os.path.join(fsl_path, 'data', 'first', 'models_336_bin')
 
 if not os.path.isdir(first_atlas_path):
-  message.error('Atlases required for FSL\'s FIRST program not installed;\nPlease install fsl-first-data using your relevant package manager')
+  app.error('Atlases required for FSL\'s FIRST program not installed;\nPlease install fsl-first-data using your relevant package manager')
 
 # Want a mapping between FreeSurfer node names and FIRST structure names
 # Just deal with the 5 that are used in ACT; FreeSurfer's hippocampus / amygdala segmentations look good enough.
@@ -60,21 +62,21 @@ structure_map = { 'L_Accu':'Left-Accumbens-area',  'R_Accu':'Right-Accumbens-are
                   'L_Pall':'Left-Pallidum',        'R_Pall':'Right-Pallidum',
                   'L_Puta':'Left-Putamen',         'R_Puta':'Right-Putamen',
                   'L_Thal':'Left-Thalamus-Proper', 'R_Thal':'Right-Thalamus-Proper' }
-if app.args.sgm_amyg_hipp:
+if hasattr(app.args, 'sgm_amyg_hipp') and app.args.sgm_amyg_hipp:
   structure_map.update({ 'L_Amyg':'Left-Amygdala',    'R_Amyg':'Right-Amygdala',
                          'L_Hipp':'Left-Hippocampus', 'R_Hipp':'Right-Hippocampus' })
 
 app.makeTempDir()
 
 # Get the parcellation and T1 images into the temporary directory, with conversion of the T1 into the correct format for FSL
-run.command('mrconvert ' + path.fromUser(app.args.parc, True) + ' ' + os.path.join(app.tempDir, 'parc.mif'))
-run.command('mrconvert ' + path.fromUser(app.args.t1, True)   + ' ' + os.path.join(app.tempDir, 'T1.nii') + ' -stride -1,+2,+3')
+run.command('mrconvert ' + path.fromUser(app.args.parc, True) + ' ' + path.toTemp('parc.mif', True))
+run.command('mrconvert ' + path.fromUser(app.args.t1, True)   + ' ' + path.toTemp('T1.nii', True) + ' -stride -1,+2,+3')
 
 app.gotoTempDir()
 
 # Run FIRST
 first_input_is_brain_extracted = ''
-if app.args.premasked:
+if hasattr(app.args, 'premasked') and app.args.premasked:
   first_input_is_brain_extracted = ' -b'
 run.command(first_cmd + ' -s ' + ','.join(structure_map.keys()) + ' -i T1.nii' + first_input_is_brain_extracted + ' -o first')
 
@@ -85,7 +87,7 @@ run.command('mrcalc parc.mif 0 -min sgm.mif')
 # This will map a structure name to an index
 sgm_lut = {}
 sgm_lut_file_name = 'FreeSurferSGM.txt'
-sgm_lut_file_path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'data', sgm_lut_file_name)
+sgm_lut_file_path = os.path.join(path.sharedDataPath(), path.scriptSubDirName(), sgm_lut_file_name)
 with open(sgm_lut_file_path) as f:
   for line in f:
     line = line.rstrip()
@@ -98,18 +100,16 @@ with open(sgm_lut_file_path) as f:
 mask_list = [ ]
 for key, value in structure_map.items():
   image_path = key + '_mask.mif'
-  mask_list.append (image_path)
+  mask_list.append(image_path)
   vtk_in_path = 'first-' + key + '_first.vtk'
   if not os.path.exists(vtk_in_path):
-    message.error('Missing .vtk file for structure ' + struct + '; run_first_all must have failed')
-  run.command('meshconvert ' + vtk_in_path + ' transformed.vtk -transform_first2real T1.nii')
-  run.command('mesh2pve transformed.vtk parc.mif - | mrthreshold - ' + image_path + ' -abs 0.5')
-  if not app.lastFile:
-    run.function(os.remove, 'transformed.vtk')
+    app.error('Missing .vtk file for structure ' + struct + '; run_first_all must have failed')
+  run.command('meshconvert ' + vtk_in_path + ' first-' + key + '_transformed.vtk -transform first2real T1.nii')
+  run.command('mesh2pve first-' + key + '_transformed.vtk parc.mif - | mrthreshold - ' + image_path + ' -abs 0.5')
   # Add to the SGM image; don't worry about overlap for now
   node_index = sgm_lut[value]
   run.command('mrcalc ' + image_path + ' ' + node_index + ' sgm.mif -if sgm_new.mif')
-  if not app.lastFile:
+  if not app._lastFile:
     run.function(os.remove, 'sgm.mif')
     run.function(os.rename, 'sgm_new.mif', 'sgm.mif')
 
@@ -128,13 +128,13 @@ for struct in structure_map.keys():
   image_path = struct + '_mask.mif'
   index = image.statistic('sgm_new_labels.mif', 'median', image_path)
   run.command('mrcalc parc.mif ' + index + ' -eq 0 parc.mif -if parc_removed.mif')
-  if not app.lastFile:
+  if not app._lastFile:
     run.function(os.remove, 'parc.mif')
     run.function(os.rename, 'parc_removed.mif', 'parc.mif')
 
 # Insert the new delineations of all SGM structures in a single call
 # Enforce unsigned integer datatype of output image
 run.command('mrcalc sgm_new_labels.mif 0.5 -gt sgm_new_labels.mif parc.mif -if result.mif -datatype uint32')
-run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + app.mrtrixForce)
+run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + (' -force' if app.force else ''))
 app.complete()
 

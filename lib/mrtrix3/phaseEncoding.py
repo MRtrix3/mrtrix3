@@ -2,12 +2,12 @@
 
 # From a user-specified string, determine the axis and direction of phase encoding
 def dir(string):
-from mrtrix3 import message
+from mrtrix3 import app
   pe_dir = ''
   try:
     PE_axis = abs(int(string))
     if PE_axis > 2:
-      message.error('When specified as a number, phase encode axis must be either 0, 1 or 2 (positive or negative)')
+      app.error('When specified as a number, phase encode axis must be either 0, 1 or 2 (positive or negative)')
     reverse = (string.contains('-')) # Allow -0
     pe_dir = [0,0,0]
     if reverse:
@@ -41,8 +41,8 @@ from mrtrix3 import message
     elif string == 'k-':
       pe_dir = [0,0,-1]
     else:
-      message.error('Unrecognized phase encode direction specifier: ' + string)
-  message.debug(string + ' -> ' + str(pe_dir))
+      app.error('Unrecognized phase encode direction specifier: ' + string)
+  app.debug(string + ' -> ' + str(pe_dir))
   return pe_dir
 
 
@@ -50,20 +50,20 @@ from mrtrix3 import message
 # Extract a phase-encoding acheme from an image header
 def getScheme(image_path):
   import subprocess
-  from mrtrix3 import app, message, mrtrix
-  command = [ mrtrix.exeVersionMatch('mrinfo'), image_path, '-petable' ]
-  if app.verbosity > 1:
-    message.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
+  from mrtrix3 import app, run
+  command = [ run.versionMatch('mrinfo'), image_path, '-petable' ]
+  if app._verbosity > 1:
+    app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
   proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
   result, err = proc.communicate()
   result = result.rstrip().decode('utf-8')
   if result:
     result = [ [ float(f) for f in line.split() ] for line in result.split('\n') ]
-  if app.verbosity > 1:
+  if app._verbosity > 1:
     if not result:
-      message.console('Result: No phase encoding table found')
+      app.console('Result: No phase encoding table found')
     else:
-      message.console('Result: ' + str(len(result)) + ' x ' + str(len(result[0])) + ' table')
-      message.debug(str(result))
+      app.console('Result: ' + str(len(result)) + ' x ' + str(len(result[0])) + ' table')
+      app.debug(str(result))
   return result
 

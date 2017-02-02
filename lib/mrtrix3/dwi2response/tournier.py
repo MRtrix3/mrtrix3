@@ -2,7 +2,7 @@ def initParser(subparsers, base_parser):
   import argparse
   from mrtrix3 import app
   app.addCitation('If using \'tournier\' algorithm', 'Tournier, J.-D.; Calamante, F. & Connelly, A. Determination of the appropriate b value and number of gradient directions for high-angular-resolution diffusion-weighted imaging. NMR Biomedicine, 2013, 26, 1775-1786', False)
-  parser = subparsers.add_parser('tournier', parents=[base_parser], add_help=False, description='Use the Tournier et al. (2013) iterative algorithm for single-fibre voxel selection and response function estimation')
+  parser = subparsers.add_parser('tournier', parents=[base_parser], description='Use the Tournier et al. (2013) iterative algorithm for single-fibre voxel selection and response function estimation')
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('output', help='The output response function text file')
   options = parser.add_argument_group('Options specific to the \'tournier\' algorithm')
@@ -28,14 +28,14 @@ def getInputFiles():
 
 def execute():
   import os, shutil
-  from mrtrix3 import app, file, image, message, path, run
+  from mrtrix3 import app, file, image, path, run
 
   lmax_option = ''
-  if app.args.lmax:
+  if hasattr(app.args, 'lmax') and app.args.lmax:
     lmax_option = ' -lmax ' + app.args.lmax
 
   if app.args.max_iters < 2:
-    message.error('Number of iterations must be at least 2')
+    app.error('Number of iterations must be at least 2')
 
   for iteration in range(0, app.args.max_iters):
     prefix = 'iter' + str(iteration) + '_'
@@ -87,7 +87,7 @@ def execute():
       max_diff = image.statistic(prefix + 'SF_diff.mif', 'max')
       file.delTempFile(prefix + 'SF_diff.mif')
       if int(max_diff) == 0:
-        message.console('Convergence of SF voxel selection detected at iteration ' + str(iteration))
+        app.console('Convergence of SF voxel selection detected at iteration ' + str(iteration))
         file.delTempFile(prefix + 'CF.mif')
         run.function(shutil.copyfile, prefix + 'RF.txt', 'response.txt')
         run.function(shutil.move, prefix + 'SF.mif', 'voxels.mif')
@@ -102,7 +102,7 @@ def execute():
 
   # If terminating due to running out of iterations, still need to put the results in the appropriate location
   if not os.path.exists('response.txt'):
-    message.console('Exiting after maximum ' + str(app.args.max_iters) + ' iterations')
+    app.console('Exiting after maximum ' + str(app.args.max_iters) + ' iterations')
     run.function(shutil.copyfile, 'iter' + str(app.args.max_iters-1) + '_RF.txt', 'response.txt')
     run.function(shutil.move, 'iter' + str(app.args.max_iters-1) + '_SF.mif', 'voxels.mif')
     

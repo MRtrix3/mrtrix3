@@ -18,33 +18,33 @@ if not os.path.isdir(lib_folder):
 sys.path.insert(0, lib_folder)
 
 
-from mrtrix3 import algorithm, app, cmdlineParser, message, path, run
+from mrtrix3 import algorithm, app, path, run
 
-app.author = 'Robert E. Smith (robert.smith@florey.edu.au)'
+app.init('Robert E. Smith (robert.smith@florey.edu.au)', 'Generate a 5TT image suitable for ACT')
 app.addCitation('', 'Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. NeuroImage, 2012, 62, 1924-1938', False)
-cmdlineParser.initialise('Generate a 5TT image suitable for ACT')
 
-base_parser = cmdlineParser.Parser(description='Base parser for 5ttgen script', parents=[app.parser], add_help=False)
+# TODO Re-test this: Is it necessary to duplicate the base parser, or can app.cmdline be used?
+base_parser = app.Parser(description='Base parser for 5ttgen script', parents=[app.cmdline], add_help=False)
 common_options = base_parser.add_argument_group('Options common to all 5ttgen algorithms')
 common_options.add_argument('-nocrop', action='store_true', default=False, help='Do NOT crop the resulting 5TT image to reduce its size (keep the same dimensions as the input image)')
 common_options.add_argument('-sgm_amyg_hipp', action='store_true', default=False, help='Represent the amygdalae and hippocampi as sub-cortical grey matter in the 5TT image')
 
-subparsers = app.parser.add_subparsers(title='Algorithm choices', help='Select the software / algorithm to be used to derive the 5TT image; additional details and options become available once an algorithm is nominated. Options are: ' + ', '.join(algorithm.getList()), dest='algorithm')
+subparsers = app.cmdline.add_subparsers(title='Algorithm choices', help='Select the software / algorithm to be used to derive the 5TT image; additional details and options become available once an algorithm is nominated. Options are: ' + ', '.join(algorithm.getList()), dest='algorithm')
 
 # Import the command-line settings for all algorithms found in the relevant directory
 algorithm.initialise(base_parser, subparsers)
 
-app.initialise()
+app.parse()
 
 # Find out which algorithm the user has requested
 algorithm = algorithm.getModule(app.args.algorithm)
 
-app.checkOutputFile(app.args.output)
-algorithm.checkOutputFiles()
+app.checkOutputPath(app.args.output)
+algorithm.checkOutputPaths()
 
 app.makeTempDir()
-run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + os.path.join(app.tempDir, 'input.mif'))
-algorithm.getInputFiles()
+run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('input.mif', True))
+algorithm.getInputs()
 
 app.gotoTempDir()
 
@@ -52,8 +52,8 @@ algorithm.execute()
 
 (stdout,stderr) = run.command('5ttcheck result.mif', False)
 if len(stderr) and 'ERROR' in stderr:
-  message.warn('Generated image does not perfectly conform to 5TT format')
+  app.warn('Generated image does not perfectly conform to 5TT format')
 
-run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + app.mrtrixForce)
+run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + (' -force' if app.force else ''))
 app.complete()
 
