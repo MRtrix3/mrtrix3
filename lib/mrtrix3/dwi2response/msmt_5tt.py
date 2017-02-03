@@ -51,7 +51,7 @@ def execute():
 
   # Get lmax information (if provided)
   wm_lmax = [ ]
-  if hasattr(app.args, 'lmax') and app.args.lmax:
+  if app.args.lmax:
     wm_lmax = [ int(x.strip()) for x in app.args.lmax.split(',') ]
     if not len(wm_lmax) == len(shells):
       app.error('Number of manually-defined lmax\'s (' + str(len(wm_lmax)) + ') does not match number of b-value shells (' + str(len(shells)) + ')')

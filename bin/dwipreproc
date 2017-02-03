@@ -67,15 +67,15 @@ if app.isWindows():
   app.error('Script cannot run on Windows due to FSL dependency')
 
 PE_design = ''
-if hasattr(app.args, 'rpe_none') and app.args.rpe_none:
+if app.args.rpe_none:
   PE_design = 'None'
-elif hasattr(app.args, 'rpe_pair') and app.args.rpe_pair:
+elif app.args.rpe_pair:
   PE_design = 'Pair'
-  if not (hasattr(app.args, 'se_epi') and app.args.se_epi):
+  if not app.args.se_epi:
     app.error('If using the -rpe_pair option, the -se_epi option must be used to provide the spin-echo EPI data to be used by topup')
-elif hasattr(app.args, 'rpe_all') and app.args.rpe_all:
+elif app.args.rpe_all:
   PE_design = 'All'
-elif hasattr(app.args, 'rpe_header') and app.args.rpe_header:
+elif app.args.rpe_header:
   PE_design = 'Header'
 else:
   app.error('Must explicitly specify phase-encoding acquisition design (even if none)')
@@ -107,10 +107,10 @@ app.checkOutputPath(app.args.output)
 
 # Export the gradient table to the path requested by the user if necessary
 grad_export_option = ''
-if hasattr(app.args, 'export_grad_mrtrix') and app.args.export_grad_mrtrix:
+if app.args.export_grad_mrtrix:
   grad_export_option = ' -export_grad_mrtrix ' + path.fromUser(app.args.export_grad_mrtrix, True)
   app.checkOutputPath(path.fromUser(app.args.export_grad_mrtrix, False))
-elif hasattr(app.args, 'export_grad_fsl') and app.args.export_grad_fsl:
+elif app.args.export_grad_fsl:
   grad_export_option = ' -export_grad_fsl ' + path.fromUser(app.args.export_grad_fsl[0], True) + ' ' + path.fromUser(app.args.export_grad_fsl[1], True)
   app.checkOutputPath(path.fromUser(app.args.export_grad_fsl[0], False))
   app.checkOutputPath(path.fromUser(app.args.export_grad_fsl[1], False))
@@ -121,12 +121,12 @@ elif hasattr(app.args, 'export_grad_fsl') and app.args.export_grad_fsl:
 app.makeTempDir()
 
 grad_option = ''
-if hasattr(app.args, 'grad') and app.args.grad:
+if app.args.grad:
   grad_option = ' -grad ' + path.fromUser(app.args.grad, True)
-elif hasattr(app.args, 'fslgrad') and app.args.fslgrad:
+elif app.args.fslgrad:
   grad_option = ' -fslgrad ' + path.fromUser(app.args.fslgrad[0], True) + ' ' + path.fromUser(app.args.fslgrad[1], True)
 json_option = ''
-if hasattr(app.args, 'json_import') and app.args.json_import:
+if app.args.json_import:
   json_option = ' -json_import ' + path.fromUser(app.args.json_import, True)
 run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('dwi.mif', True) + grad_option + json_option)
 if app.args.se_epi:
@@ -139,7 +139,7 @@ app.gotoTempDir()
 # Get information on the input images, particularly so that their validity can be checked
 dwi_size = [ int(s) for s in image.headerField('dwi.mif', 'size').split() ]
 dwi_pe_scheme = phaseEncoding.getScheme('dwi.mif')
-if hasattr(app.args, 'se_epi') and app.args.se_epi:
+if app.args.se_epi:
   topup_size = [ int(s) for s in image.headerField('topup_in.mif', 'size').split() ]
   if not len(topup_size) == 4:
     app.error('File provided using -se_epi option must contain more than one image volume')
@@ -157,10 +157,10 @@ if len(dwi_size) == 4:
 # Since we want to access user-defined phase encoding information regardless of whether or not
 #   such information is present in the header, let's grab it here
 manual_pe_dir = None
-if hasattr(app.args, 'pe_dir') and app.args.pe_dir:
+if app.args.pe_dir:
   manual_pe_dir = [ float(i) for i in phaseEncoding.dir(app.args.pe_dir) ]
 manual_trt = None
-if hasattr(app.args, 'readout_time') and app.args.readout_time:
+if app.args.readout_time:
   manual_trt = float(app.args.readout_time)
 
 
@@ -310,7 +310,7 @@ if topup_manual_pe_scheme:
 
 
 # Deal with the phase-encoding of the images to be fed to topup (if applicable)
-if hasattr(app.args, 'se_epi') and app.args.se_epi:
+if app.args.se_epi:
 
   # 3 possible sources of PE information: DWI header, topup image header, command-line
   # Any pair of these may conflict, and any one could be absent

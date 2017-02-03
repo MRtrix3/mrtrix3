@@ -24,7 +24,7 @@ def getInputFiles():
     app.warn('-mask option is ignored by algorithm \'manual\'')
     os.remove(mask_path)
   run.command('mrconvert ' + path.fromUser(app.args.in_voxels, True) + ' ' + path.toTemp('in_voxels.mif', True))
-  if hasattr(app.args, 'dirs') and app.args.dirs:
+  if app.args.dirs:
     run.command('mrconvert ' + path.fromUser(app.args.dirs, True) + ' ' + path.toTemp('dirs.mif', True) + ' -stride 0,0,0,1')
 
 
@@ -37,7 +37,7 @@ def execute():
 
   # Get lmax information (if provided)
   lmax = [ ]
-  if hasattr(app.args, 'lmax') and app.args.lmax:
+  if app.args.lmax:
     lmax = [ int(x.strip()) for x in app.args.lmax.split(',') ]
     if not len(lmax) == len(shells):
       app.error('Number of manually-defined lmax\'s (' + str(len(lmax)) + ') does not match number of b-value shells (' + str(len(shells)) + ')')

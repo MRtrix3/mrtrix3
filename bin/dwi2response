@@ -47,13 +47,13 @@ algorithm = algorithm.getModule(app.args.algorithm)
 
 
 # Check for prior existence of output files, and grab any input files, used by the particular algorithm
-if hasattr(app.args, 'voxels') and app.args.voxels:
+if app.args.voxels:
   app.checkOutputPath(app.args.voxels)
 algorithm.checkOutputPaths()
 
 
 # Sanitise some inputs, and get ready for data import
-if hasattr(app.args, 'lmax') and app.args.lmax:
+if app.args.lmax:
   try:
     lmax = [ int(x) for x in app.args.lmax.split(',') ]
     if any([lmax_value%2 for lmax_value in lmax]):
@@ -63,7 +63,7 @@ if hasattr(app.args, 'lmax') and app.args.lmax:
   if app.args.single_shell and not len(lmax) == 1:
     app.error('Can only specify a single lmax value for single-shell algorithms')
 shell_option = ''
-if hasattr(app.args, 'shell') and app.args.shell:
+if app.args.shell:
   try:
     shell_values = [ int(x) for x in app.args.shell.split(',') ]
   except:
@@ -76,9 +76,9 @@ if app.args.single_shell:
   singleshell_option = ' -singleshell -no-bzero'
 
 grad_import_option = ''
-if hasattr(app.args, 'grad') and app.args.grad:
+if app.args.grad:
   grad_import_option = ' -grad ' + path.fromUser(app.args.grad, True)
-elif hasattr(app.args, 'fslgrad') and app.args.fslgrad:
+elif app.args.fslgrad:
   grad_import_option = ' -fslgrad ' + path.fromUser(app.args.fslgrad[0], True) + ' ' + path.fromUser(app.args.fslgrad[1], True)
 elif not image.headerField(path.fromUser(app.args.input, False), 'dwgrad'):
   app.error('Script requires diffusion gradient table: either in image header, or using -grad / -fslgrad option')
@@ -90,9 +90,9 @@ if app.args.single_shell or shell_option:
   run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' - -stride 0,0,0,1' + grad_import_option + ' | dwiextract - ' + path.toTemp('dwi.mif', True) + shell_option + singleshell_option)
 else: # Don't want to discard b=0 in multi-shell algorithms, which dwiextract will do
   run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('dwi.mif', True) + ' -stride 0,0,0,1' + grad_import_option)
-if hasattr(app.args, 'needs_bzero') and app.args.needs_bzero:
+if app.args.needs_bzero:
   run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' - -stride 0,0,0,1' + grad_import_option + ' | dwiextract - ' + path.toTemp('bzero.mif', True) + " -bzero")
-if hasattr(app.args, 'mask') and app.args.mask:
+if app.args.mask:
   run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + path.toTemp('mask.mif', True) + ' -datatype bit')
 
 algorithm.getInputs()
@@ -118,7 +118,7 @@ algorithm.execute()
 
 
 # Finalize for all algorithms
-if hasattr(app.args, 'voxels') and app.args.voxels:
+if app.args.voxels:
   run.command('mrconvert voxels.mif ' + path.fromUser(app.args.voxels, True) + (' -force' if app.force else ''))
 app.complete()
 

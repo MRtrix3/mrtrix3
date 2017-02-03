@@ -31,9 +31,9 @@ def execute():
   import os, shutil
   from mrtrix3 import app, path, run
   lmax_option = ''
-  if hasattr(app.args, 'lmax') and app.args.lmax:
+  if app.args.lmax:
     lmax_option = ' -lmax ' + app.args.lmax
-  if not (hasattr(app.args, 'mask') and app.args.mask):
+  if not app.args.mask:
     run.command('maskfilter mask.mif erode mask_eroded.mif -npass ' + str(app.args.erode))
     mask_path = 'mask_eroded.mif'
   else:

@@ -46,7 +46,7 @@ def execute():
 
   # Get lmax information (if provided).
   sfwm_lmax = [ ]
-  if hasattr(app.args, 'lmax') and app.args.lmax:
+  if app.args.lmax:
     sfwm_lmax = [ int(x.strip()) for x in app.args.lmax.split(',') ]
     if not len(sfwm_lmax) == len(bvalues):
       app.error('Number of lmax\'s (' + str(len(sfwm_lmax)) + ', as supplied to the -lmax option: ' + ','.join(map(str,sfwm_lmax)) + ') does not match number of unique b-values.')
@@ -58,7 +58,7 @@ def execute():
 
 
   # Erode (brain) mask.
-  if hasattr(app.args, 'erode') and app.args.erode > 0:
+  if app.args.erode > 0:
     run.command('maskfilter mask.mif erode eroded_mask.mif -npass ' + str(app.args.erode))
   else:
     run.command('mrconvert mask.mif eroded_mask.mif -datatype bit')

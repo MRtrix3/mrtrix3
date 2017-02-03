@@ -25,9 +25,9 @@ def checkOutputPaths():
 def getInputs():
   import os
   from mrtrix3 import app, image, path, run
-  if hasattr(app.args, 'mask') and app.args.mask:
+  if app.args.mask:
     run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + path.toTemp('mask.mif', True) + ' -datatype bit -stride -1,+2,+3')
-  if hasattr(app.args, 't2') and app.args.t2:
+  if app.args.t2:
     if not image.match(app.args.input, app.args.t2):
       app.error('Provided T2 image does not match input T1 image')
     run.command('mrconvert ' + path.fromUser(app.args.t2, True) + ' ' + path.toTemp('T2.nii', True) + ' -stride -1,+2,+3')
@@ -79,7 +79,7 @@ def execute():
   fsl_suffix = fsl.suffix()
 
   sgm_structures = [ 'L_Accu', 'R_Accu', 'L_Caud', 'R_Caud', 'L_Pall', 'R_Pall', 'L_Puta', 'R_Puta', 'L_Thal', 'R_Thal' ]
-  if hasattr(app.args, 'sgm_amyg_hipp') and app.args.sgm_amyg_hipp:
+  if app.args.sgm_amyg_hipp:
     sgm_structures.extend([ 'L_Amyg', 'R_Amyg', 'L_Hipp', 'R_Hipp' ])
   
   run.command('mrconvert input.mif T1.nii -stride -1,+2,+3')

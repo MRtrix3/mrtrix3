@@ -30,7 +30,7 @@ def execute():
   from mrtrix3 import app, file, image, path, run
 
   lmax_option = ''
-  if hasattr(app.args, 'lmax') and app.args.lmax:
+  if app.args.lmax:
     lmax_option = ' -lmax ' + app.args.lmax
 
   convergence_change = 0.01 * app.args.convergence

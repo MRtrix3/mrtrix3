@@ -219,7 +219,7 @@ initial_alignment = app.args.initial_alignment
 if initial_alignment not in ["mass", "geometric", "none"]:
   message.error('initial_alignment must be one of ' + " ".join(["mass", "geometric", "none"]));
 
-linear_estimator = app.args.linear_estimator if hasattr(app.args, 'linear_estimator') else None
+linear_estimator = app.args.linear_estimator
 if linear_estimator:
   if not dononlinear:
     app.error('linear_estimator specified when no linear registration is requested');
@@ -227,7 +227,7 @@ if linear_estimator:
     app.error('linear_estimator must be one of ' + " ".join(["l1", "l2", "lp"]));
 
 useMasks = False
-if hasattr(app.args, 'mask_dir') and app.args.mask_dir:
+if app.args.mask_dir:
   useMasks = True
   app.args.mask_dir = relpath(app.args.mask_dir);
   maskDir = app.args.mask_dir
@@ -244,7 +244,7 @@ if hasattr(app.args, 'mask_dir') and app.args.mask_dir:
 if not useMasks:
   app.warn('no masks input. Use input masks to reduce computation time and improve robustness')
 
-if hasattr(app.args, 'template_mask') and app.args.template_mask and not useMasks:
+if app.args.template_mask and not useMasks:
   app.error('you cannot output a template mask because no subject masks were input using -mask_dir')
 
 commonPostfix = path.commonPostfix(inFiles)
@@ -260,10 +260,10 @@ for i in inFiles:
     input.append(Input(i, prefix, path.fromUser(inputDir, False)))
 
 
-noreorientation = app.args.noreorientation if hasattr(app.args, 'noreorientation') else False
+noreorientation = app.args.noreorientation
 
 do_pause_on_warn = True
-if hasattr(app.args, 'linear_no_pause') and app.args.linear_no_pause:
+if app.args.linear_no_pause:
   do_pause_on_warn = False
   if not dolinear:
     app.error("linear option set when no linear registration is performed")
@@ -271,15 +271,15 @@ if hasattr(app.args, 'linear_no_pause') and app.args.linear_no_pause:
 app.args.template = relpath(app.args.template)
 app.checkOutputPath(app.args.template)
 
-if hasattr(app.args, 'warp_dir') and app.args.warp_dir:
+if app.args.warp_dir:
   app.args.warp_dir = relpath(app.args.warp_dir)
   app.checkOutputPath(app.args.warp_dir)
 
-if hasattr(app.args, 'transformed_dir') and app.args.transformed_dir:
+if app.args.transformed_dir:
   app.args.transformed_dir = relpath(app.args.transformed_dir)
   app.checkOutputPath(app.args.transformed_dir)
 
-if hasattr(app.args, 'linear_transformations_dir') and app.args.linear_transformations_dir:
+if app.args.linear_transformations_dir:
   if not dolinear:
     app.error("linear option set when no linear registration is performed")
   app.args.linear_transformations_dir = relpath(app.args.linear_transformations_dir)
@@ -298,11 +298,11 @@ if len(image_size) == 4:
     do_fod_registration = True
 
 #rigid options
-if hasattr(app.args, 'rigid_scale') and app.args.rigid_scale:
+if app.args.rigid_scale:
   rigid_scales = [float(x) for x in app.args.rigid_scale.split(',')]
   if not dorigid:
     app.error("rigid_scales option set when no rigid registration is performed")
-if hasattr(app.args, 'rigid_lmax') and app.args.rigid_lmax:
+if app.args.rigid_lmax:
   if not dorigid:
     app.error("rigid_lmax option set when no rigid registration is performed")
   rigid_lmax = [int(x) for x in app.args.rigid_lmax.split(',')]
@@ -310,7 +310,7 @@ if hasattr(app.args, 'rigid_lmax') and app.args.rigid_lmax:
     app.error('rigid_scales and rigid_lmax schedules are not equal in length')
 
 rigid_niter = [100] * len(rigid_scales)
-if hasattr(app.args, 'rigid_niter') and app.args.rigid_niter:
+if app.args.rigid_niter:
   if not dorigid:
     app.error("rigid_niter specified when no rigid registration is performed")
   rigid_niter = [int(x) for x in app.args.rigid_niter.split(',')]
@@ -320,11 +320,11 @@ if hasattr(app.args, 'rigid_niter') and app.args.rigid_niter:
     app.error('rigid_scales and rigid_niter schedules are not equal in length')
 
 # affine options
-if hasattr(app.args, 'affine_scale') and app.args.affine_scale:
+if app.args.affine_scale:
   affine_scales = [float(x) for x in app.args.affine_scale.split(',')]
   if not doaffine:
     app.error("affine_scale option set when no affine registration is performed")
-if hasattr(app.args, 'affine_lmax') and app.args.affine_lmax:
+if app.args.affine_lmax:
   if not doaffine:
     app.error("affine_lmax option set when no affine registration is performed")
   affine_lmax = [int(x) for x in app.args.affine_lmax.split(',')]
@@ -332,7 +332,7 @@ if hasattr(app.args, 'affine_lmax') and app.args.affine_lmax:
     app.error('affine_scales and affine_lmax schedules are not equal in length')
 
 affine_niter = [500] * len(affine_scales)
-if hasattr(app.args, 'affine_niter') and app.args.affine_niter:
+if app.args.affine_niter:
   if not doaffine:
     app.error("affine_niter specified when no affine registration is performed")
   affine_niter = [int(x) for x in app.args.affine_niter.split(',')]
@@ -379,7 +379,7 @@ if not dononlinear:
   nl_scales = []
   nl_lmax   = []
   nl_niter  = []
-  if hasattr(app.args, 'warp_dir') and app.args.warp_dir:
+  if app.args.warp_dir:
     app.error('warp_dir specified when no nonlinear registration is performed')
 else:
   if app.args.nl_scale:
@@ -610,7 +610,7 @@ else:
     run.function(copy, os.path.join('linear_transforms_%i' % level, filename), 'linear_transforms')
 
 # Create a template mask for nl registration by taking the intersection of all transformed input masks and dilating
-if useMasks and (dononlinear or (hasattr(app.args, 'template_mask') and app.args.template_mask)):
+if useMasks and (dononlinear or app.args.template_mask):
   for i in input:
     run.command('mrtransform ' + abspath(i.mask_directory, i.mask_filename) +
                ' -template ' + current_template +
@@ -691,25 +691,25 @@ if dononlinear:
 
 run.command('mrconvert ' + current_template + ' ' + path.fromUser(app.args.template, True) + (' -force' if app.force else ''))
 
-if hasattr(app.args, 'warp_dir') and app.args.warp_dir:
+if app.args.warp_dir:
   warp_path = path.fromUser(app.args.warp_dir, False)
   if os.path.exists(warp_path):
     run.function(rmtree, warp_path)
   run.function(copytree, 'warps', warp_path)
 
-if hasattr(app.args, 'linear_transformations_dir') and app.args.linear_transformations_dir:
+if app.args.linear_transformations_dir:
   linear_transformations_path = path.fromUser(app.args.linear_transformations_dir, False)
   if os.path.exists(linear_transformations_path):
     run.function(rmtree, linear_transformations_path)
   run.function(copytree, 'linear_transforms', linear_transformations_path)
 
-if hasattr(app.args, 'transformed_dir') and app.args.transformed_dir:
+if app.args.transformed_dir:
   transformed_path = path.fromUser(app.args.transformed_dir, False)
   if os.path.exists(transformed_path):
     run.function(rmtree, transformed_path)
   run.function(copytree, 'input_transformed', transformed_path)
 
-if hasattr(app.args, 'template_mask') and app.args.template_mask:
+if app.args.template_mask:
   run.command('mrconvert ' + current_template_mask + ' ' + path.fromUser(app.args.template_mask, True) + (' -force' if app.force else ''))
 
 app.complete()

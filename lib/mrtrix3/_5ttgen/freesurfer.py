@@ -17,7 +17,7 @@ def checkOutputPaths():
 def getInputs():
   import os, shutil
   from mrtrix3 import app, path, run
-  if hasattr(app.args, 'lut') and app.args.lut:
+  if app.args.lut:
     run.function(shutil.copyfile, path.fromUser(app.args.lut, False), path.toTemp('LUT.txt', False))
 
 
@@ -35,7 +35,7 @@ def execute():
     if not os.path.isfile(lut_input_path):
       app.error('Could not find FreeSurfer lookup table file (expected location: ' + freesurfer_lut + '), and none provided using -lut')
 
-  if hasattr(app.args, 'sgm_amyg_hipp') and app.args.sgm_amyg_hipp:
+  if app.args.sgm_amyg_hipp:
     lut_output_file_name = 'FreeSurfer2ACT_sgm_amyg_hipp.txt'
   else:
     lut_output_file_name = 'FreeSurfer2ACT.txt'
@@ -47,7 +47,7 @@ def execute():
   run.command('labelconvert input.mif ' + lut_input_path + ' ' + lut_output_path + ' indices.mif')
 
   # Use mrcrop to reduce file size
-  if hasattr(app.args, 'nocrop') and app.args.nocrop:
+  if app.args.nocrop:
     image = 'indices.mif'
   else:
     image = 'indices_cropped.mif'

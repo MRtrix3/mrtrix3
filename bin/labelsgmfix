@@ -62,7 +62,7 @@ structure_map = { 'L_Accu':'Left-Accumbens-area',  'R_Accu':'Right-Accumbens-are
                   'L_Pall':'Left-Pallidum',        'R_Pall':'Right-Pallidum',
                   'L_Puta':'Left-Putamen',         'R_Puta':'Right-Putamen',
                   'L_Thal':'Left-Thalamus-Proper', 'R_Thal':'Right-Thalamus-Proper' }
-if hasattr(app.args, 'sgm_amyg_hipp') and app.args.sgm_amyg_hipp:
+if app.args.sgm_amyg_hipp:
   structure_map.update({ 'L_Amyg':'Left-Amygdala',    'R_Amyg':'Right-Amygdala',
                          'L_Hipp':'Left-Hippocampus', 'R_Hipp':'Right-Hippocampus' })
 
@@ -76,7 +76,7 @@ app.gotoTempDir()
 
 # Run FIRST
 first_input_is_brain_extracted = ''
-if hasattr(app.args, 'premasked') and app.args.premasked:
+if app.args.premasked:
   first_input_is_brain_extracted = ' -b'
 run.command(first_cmd + ' -s ' + ','.join(structure_map.keys()) + ' -i T1.nii' + first_input_is_brain_extracted + ' -o first')
 
