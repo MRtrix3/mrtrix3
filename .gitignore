@@ -30,6 +30,7 @@ build.*
 /bin/
 /tmp/
 .cproject
+.idea
 .project
 .settings
 .pydevproject

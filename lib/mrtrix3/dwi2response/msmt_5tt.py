@@ -17,15 +17,15 @@ def initParser(subparsers, base_parser):
 
 
 
-def checkOutputFiles():
+def checkOutputPaths():
   from mrtrix3 import app
-  app.checkOutputFile(app.args.out_wm)
-  app.checkOutputFile(app.args.out_gm)
-  app.checkOutputFile(app.args.out_csf)
+  app.checkOutputPath(app.args.out_wm)
+  app.checkOutputPath(app.args.out_gm)
+  app.checkOutputPath(app.args.out_csf)
 
 
 
-def getInputFiles():
+def getInputs():
   import os
   from mrtrix3 import app, path, run
   run.command('mrconvert ' + path.fromUser(app.args.in_5tt, True) + ' ' + path.toTemp('5tt.mif', True))

@@ -5,6 +5,8 @@ _mrtrix_bin_path = os.path.join(os.path.abspath(os.path.dirname(os.path.abspath(
 # Remember to remove the '.exe' from Windows binary executables
 _mrtrix_exe_list = [ os.path.splitext(name)[0] for name in os.listdir(_mrtrix_bin_path) ]
 
+_processes = [ ]
+
 
 
 def command(cmd, exitOnError=True):
@@ -12,7 +14,7 @@ def command(cmd, exitOnError=True):
   import inspect, os, subprocess, sys
   from mrtrix3 import app
 
-  global _env
+  global _env, _mrtrix_exe_list
 
   if not _env:
     _env = os.environ.copy()
@@ -103,14 +105,27 @@ def command(cmd, exitOnError=True):
   app.debug('To execute: ' + str(cmdstack))
 
   # Execute all processes
-  processes = [ ]
+  _processes = [ ]
   for index, command in enumerate(cmdstack):
     if index > 0:
-      proc_in = processes[index-1].stdout
+      proc_in = _processes[index-1].stdout
     else:
       proc_in = None
-    process = subprocess.Popen (command, stdin=proc_in, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=_env)
-    processes.append(process)
+    try:
+      process = subprocess.Popen (command, stdin=proc_in, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=_env)
+      _processes.append(process)
+    except FileNotFoundError:
+      if exitOnError:
+        app.error('\'' + command[0] + '\' not found in PATH; script cannot proceed')
+      else:
+        app.warn('\'' + command[0] + '\' not found in PATH; not executed')
+        for p in _processes:
+          p.terminate()
+        _processes = [ ]
+        break
+    except (KeyboardInterrupt, SystemExit):
+      import inspect, signal
+      app._handler(signal.SIGINT, inspect.currentframe())
 
   return_stdout = ''
   return_stderr = ''
@@ -118,27 +133,31 @@ def command(cmd, exitOnError=True):
   error_text = ''
 
   # Wait for all commands to complete
-  for process in processes:
+  try:
+    for process in _processes:
 
-    # Switch how we monitor running processes / wait for them to complete
-    #   depending on whether or not the user has specified -verbose option
-    if app._verbosity > 1:
-      stderrdata = ''
-      while True:
-        # Have to read one character at a time: Waiting for a newline character using e.g. readline() will prevent MRtrix progressbars from appearing
-        line = process.stderr.read(1).decode('utf-8')
-        sys.stderr.write(line)
-        sys.stderr.flush()
-        stderrdata += line
-        if not line and process.poll() != None:
-          break
-    else:
-      process.wait()
+      # Switch how we monitor running processes / wait for them to complete
+      #   depending on whether or not the user has specified -verbose option
+      if app._verbosity > 1:
+        stderrdata = ''
+        while True:
+          # Have to read one character at a time: Waiting for a newline character using e.g. readline() will prevent MRtrix progressbars from appearing
+          line = process.stderr.read(1).decode('utf-8')
+          sys.stderr.write(line)
+          sys.stderr.flush()
+          stderrdata += line
+          if not line and process.poll() != None:
+            break
+      else:
+        process.wait()
+  except (KeyboardInterrupt, SystemExit):
+    import inspect, signal
+    app._handler(signal.SIGINT, inspect.currentframe())
 
   # Let all commands complete before grabbing stdout data; querying the stdout data
   #   immediately after command completion can intermittently prevent the data from
   #   getting to the following command (e.g. MRtrix piping)
-  for process in processes:
+  for process in _processes:
     (stdoutdata, stderrdata) = process.communicate()
     stdoutdata = stdoutdata.decode('utf-8')
     stderrdata = stderrdata.decode('utf-8')
@@ -147,6 +166,8 @@ def command(cmd, exitOnError=True):
     if process.returncode:
       error = True
       error_text += stdoutdata + stderrdata
+    process = None
+  _processes = [ ]
 
   if (error):
     app.cleanup = False

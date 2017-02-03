@@ -32,9 +32,6 @@ config = { }
 force = False
 mrtrix = None
 
-# TODO Provide a wrapper class around the command-line arguments that
-#   provides a simple 'get()' function?
-# (to avoid repeated use of hasattr())
 
 
 # These are used to configure the script interface and operation, and should not typically be accessed/modified directly
@@ -62,11 +59,32 @@ _workingDir = ''
 
 
 
+# Data used for setting up signal handlers
+_signals = { 'SIGALRM': 'Timer expiration',
+             'SIGBUS' : 'Bus error: Accessing invalid address (out of storage space?)',
+             'SIGFPE' : 'Floating-point arithmetic exception',
+             'SIGHUP' : 'Disconnection of terminal',
+             'SIGILL' : 'Illegal instruction (corrupt binary command file?)',
+             'SIGINT' : 'Program manually interrupted by terminal',
+             'SIGPIPE': 'Nothing on receiving end of pipe',
+             'SIGPWR' : 'Power failure restart',
+             'SIGQUIT': 'Received terminal quit signal',
+             'SIGSEGV': 'Segmentation fault: Invalid memory reference',
+             'SIGSYS' : 'Bad system call',
+             'SIGTERM': 'Terminated by kill command',
+             'SIGXCPU': 'CPU time limit exceeded',
+             'SIGXFSZ': 'File size limit exceeded' }
+           # Can't be handled; see https://bugs.python.org/issue9524
+           # 'CTRL_C_EVENT': 'Terminated by user Ctrl-C input',
+           # 'CTRL_BREAK_EVENT': Terminated by user Ctrl-Break input'
+
+
+
 
 def init(author, desc):
   import os
   global cmdline, config, mrtrix
-  global _author, _workingDir
+  global _author, _signalData, _workingDir
   _author = author
   cmdline = Parser(description=desc)
   _workingDir = os.getcwd()
@@ -83,7 +101,13 @@ def init(author, desc):
         config[line[0]] = line[1]
     except IOError:
       pass
-  
+  # Set up signal handlers
+  for s in _signals:
+    try:
+      signal.signal(getattr(signal, s), _handler)
+    except:
+      pass
+
 
 
 def addCitation(condition, reference, is_external):
@@ -154,7 +178,7 @@ def parse():
     console(citation_warning)
     console('')
 
-  if hasattr(args, 'continue'):
+  if args.cont:
     _tempDir = os.path.abspath(args.cont[0])
     _lastFile = args.cont[1]
 
@@ -186,12 +210,12 @@ def makeTempDir():
   import os, random, string, sys
   global args, config, mrtrix
   global _tempDir, _workingDir
-  if hasattr(args, 'cont') and args.cont:
+  if args.cont:
     debug('Skipping temporary directory creation due to use of -continue option')
     return
   if _tempDir:
     error('Script error: Cannot use multiple temporary directories')
-  if hasattr(args, 'tempdir') and args.tempdir:
+  if args.tempdir:
     dir_path = os.path.abspath(args.tempdir)
   else:
     if 'TmpFileDir' in config:
@@ -485,7 +509,7 @@ class Parser(argparse.ArgumentParser):
     s += bold('AUTHOR') + '\n'
     s += w.fill(_author) + '\n'
     s += '\n'
-    s += bold('_copyright') + '\n'
+    s += bold('COPYRIGHT') + '\n'
     s += w.fill(_copyright) + '\n'
     if _citationList:
       s += '\n'
@@ -496,8 +520,8 @@ class Parser(argparse.ArgumentParser):
           s += w.fill('* ' + entry[0] + ':') + '\n'
         s += w.fill(entry[1]) + '\n'
         s += '\n'
-    if 'HelpCommand' in mrtrix.config:
-      command = mrtrix.config['HelpCommand']
+    if 'HelpCommand' in config:
+      command = config['HelpCommand']
     else:
       command = 'less -X'
     if command:
@@ -691,3 +715,35 @@ def isWindows():
   result = system.startswith('mingw') or system.startswith('msys') or system.startswith('windows')
   debug('System = ' + system + '; is Windows? ' + str(result))
   return result
+
+
+
+
+# Handler function for dealing with system signals
+def _handler(signum, frame):
+  import os, signal, sys
+  global _signals
+  # First, kill any child processes
+  try:
+    from mrtrix3.run import _processes
+    for p in _processes:
+      p.terminate()
+    _processes = [ ]
+  except ImportError:
+    pass
+  msg = '[SYSTEM FATAL CODE: '
+  signal_found = False
+  for (key, value) in _signals.items():
+    try:
+      if getattr(signal, key) == signum:
+        msg += key + ' (' + str(signum) + ')] ' + value
+        signal_found = True
+        break
+    except AttributeError:
+      pass
+  if not signal_found:
+    msg += '?] Unknown system signal'
+  sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourError + msg + colourClear + '\n')
+  complete()
+  exit(signum)
+

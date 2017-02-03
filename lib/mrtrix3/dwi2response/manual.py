@@ -10,13 +10,13 @@ def initParser(subparsers, base_parser):
 
 
 
-def checkOutputFiles():
+def checkOutputPaths():
   from mrtrix3 import app
-  app.checkOutputFile(app.args.output)
+  app.checkOutputPath(app.args.output)
 
 
 
-def getInputFiles():
+def getInputs():
   import os
   from mrtrix3 import app, path, run
   mask_path = path.toTemp('mask.mif', False)

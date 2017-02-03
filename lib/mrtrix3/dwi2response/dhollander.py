@@ -17,15 +17,15 @@ def initParser(subparsers, base_parser):
   
   
   
-def checkOutputFiles():
+def checkOutputPaths():
   from mrtrix3 import app
-  app.checkOutputFile(app.args.out_sfwm)
-  app.checkOutputFile(app.args.out_gm)
-  app.checkOutputFile(app.args.out_csf)
+  app.checkOutputPath(app.args.out_sfwm)
+  app.checkOutputPath(app.args.out_gm)
+  app.checkOutputPath(app.args.out_csf)
   
   
   
-def getInputFiles():
+def getInputs():
   pass
 
 
