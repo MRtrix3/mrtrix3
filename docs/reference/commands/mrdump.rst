@@ -1,6 +1,6 @@
-.. _maskdump:
+.. _mrdump:
 
-maskdump
+mrdump
 ===========
 
 Synopsis
@@ -8,7 +8,7 @@ Synopsis
 
 ::
 
-    maskdump [ options ]  input[ output ]
+    mrdump [ options ]  input[ output ]
 
 -  *input*: the input image.
 -  *output*: the (optional) output text file.
@@ -16,10 +16,12 @@ Synopsis
 Description
 -----------
 
-Print out the locations of all non-zero voxels in a mask image. If no destination file is specified, the voxel locations will be printed to stdout.
+Print out the values within an image. If no destination file is specified, the voxel locations will be printed to stdout.
 
 Options
 -------
+
+-  **-mask image** only write the image values within voxels specified by a mask image
 
 Standard options
 ^^^^^^^^^^^^^^^^

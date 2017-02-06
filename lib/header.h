@@ -242,7 +242,7 @@ namespace MR
           DataTypeProxy& operator=(DataTypeProxy&&) = default;
           DataTypeProxy& operator=(const DataTypeProxy&) = delete;
 
-          const uint8_t& operator()() const { return DataType::operator()(); }
+          uint8_t operator()() const { return DataType::operator()(); }
           const DataType& operator= (const DataType& DT) { DataType::operator= (DT); set(); return *this; }
           void set_flag (uint8_t flag) { DataType::set_flag (flag); set(); }
           void unset_flag (uint8_t flag) { DataType::unset_flag (flag); set(); }
