@@ -1,19 +1,26 @@
 #!/usr/bin/env python
 
-import math, os, sys
-import lib.app, lib.cmdlineParser
+
+# Make the corresponding MRtrix3 Python libraries available
+import inspect, os, sys
+lib_folder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile(inspect.currentframe()))[0], os.pardir, 'lib')))
+if not os.path.isdir(lib_folder):
+  sys.stderr.write('Unable to locate MRtrix3 Python libraries')
+  sys.exit(1)
+sys.path.insert(0, lib_folder)
+
+
+import math
+from mrtrix3 import app, file, path, run
+
 
 def abspath(*arg):
   return os.path.abspath(os.path.join(*arg))
 
 def relpath(*arg):
-  return os.path.relpath(os.path.join(*arg),lib.app.workingDir)
+  return os.path.relpath(os.path.join(*arg), app._workingDir)
 
-from lib.printMessage  import printMessage
-from lib.errorMessage  import errorMessage
-from lib.getHeaderInfo import getHeaderInfo
-from lib.getUserPath   import getUserPath
-from lib.runCommand    import runCommand
+
 
 class Input:
   def __init__(self, filename, prefix, directory, mask_filename = '', mask_directory = ''):
@@ -23,78 +30,77 @@ class Input:
     self.mask_filename = mask_filename
     self.mask_directory = mask_directory
 
-lib.app.author = 'David Raffelt (david.raffelt@florey.edu.au)'
-lib.cmdlineParser.initialise('Performs a global DWI intensity normalisation on a group of subjects using the median b=0 white matter value as the reference. The white matter mask is estimated from a population average FA template then warped back to each subject to perform the intensity normalisation. Note that bias field correction should be performed prior to this step.')
-lib.app.parser.add_argument('input_dir', help='The input directory containing all DWI images')
-lib.app.parser.add_argument('mask_dir', help='Input directory containing brain masks, corresponding to one per input image (with the same file name prefix)')
-lib.app.parser.add_argument('output_dir', help='The output directory containing all of the intensity normalised DWI images')
-lib.app.parser.add_argument('fa_template', help='The output population specific FA template, which is threshold to estimate a white matter mask')
-lib.app.parser.add_argument('wm_mask', help='The output white matter mask (in template space), used to estimate the median b=0 white matter value for normalisation')
-options = lib.app.parser.add_argument_group('Options for the dwiintensitynorm script')
+app.init('David Raffelt (david.raffelt@florey.edu.au)',
+         'Performs a global DWI intensity normalisation on a group of subjects using the median b=0 white matter value as the reference. The white matter mask is estimated from a population average FA template then warped back to each subject to perform the intensity normalisation. Note that bias field correction should be performed prior to this step.')
+app.cmdline.add_argument('input_dir', help='The input directory containing all DWI images')
+app.cmdline.add_argument('mask_dir', help='Input directory containing brain masks, corresponding to one per input image (with the same file name prefix)')
+app.cmdline.add_argument('output_dir', help='The output directory containing all of the intensity normalised DWI images')
+app.cmdline.add_argument('fa_template', help='The output population specific FA template, which is threshold to estimate a white matter mask')
+app.cmdline.add_argument('wm_mask', help='The output white matter mask (in template space), used to estimate the median b=0 white matter value for normalisation')
+options = app.cmdline.add_argument_group('Options for the dwiintensitynorm script')
 options.add_argument('-fa_threshold', default='0.4', help='The threshold applied to the Fractional Anisotropy group template used to derive an approximate white matter mask')
+app.parse()
 
-lib.app.initialise()
-
-lib.app.args.input_dir = relpath(lib.app.args.input_dir)
-inputDir = lib.app.args.input_dir
+app.args.input_dir = relpath(app.args.input_dir)
+inputDir = app.args.input_dir
 if not os.path.exists(inputDir):
-  errorMessage('input directory not found');
+  app.error('input directory not found');
 inFiles = os.listdir(inputDir)
 if len(inFiles) <= 1:
-  printMessage('not enough images found in input directory. More than one image is needed to perform a group-wise intensity normalisation')
+  app.console('not enough images found in input directory. More than one image is needed to perform a group-wise intensity normalisation')
 else:
-  printMessage('performing global intensity normalisation on ' + str(len(inFiles)) + ' input images')
+  app.console('performing global intensity normalisation on ' + str(len(inFiles)) + ' input images')
 
-lib.app.args.mask_dir = relpath(lib.app.args.mask_dir);
-maskDir = lib.app.args.mask_dir
+app.args.mask_dir = relpath(app.args.mask_dir);
+maskDir = app.args.mask_dir
 if not os.path.exists(maskDir):
-  errorMessage('mask directory not found')
+  app.error('mask directory not found')
 maskFiles = os.listdir(maskDir)
 if len(maskFiles) != len(inFiles):
-  errorMessage('the number of images in the mask directory does not equal the number of images in the input directory')
-maskCommonPostfix = lib.app.getCommonPostfix(maskFiles)
+  app.error('the number of images in the mask directory does not equal the number of images in the input directory')
+maskCommonPostfix = path.commonPostfix(maskFiles)
 maskPrefixes = []
 for m in maskFiles:
   maskPrefixes.append(m.split(maskCommonPostfix)[0])
 
-commonPostfix = lib.app.getCommonPostfix(inFiles)
+commonPostfix = path.commonPostfix(inFiles)
 input = []
 for i in inFiles:
   prefix = i.split(commonPostfix)[0]
   if prefix not in maskPrefixes:
-    errorMessage ('no matching mask image was found for input image ' + i)
+    app.error ('no matching mask image was found for input image ' + i)
   index = maskPrefixes.index(prefix)
-  input.append(Input(i, prefix, lib.app.workingDir + '/' + inputDir + '/', maskFiles[index], lib.app.workingDir + '/' + maskDir + '/'))
+  input.append(Input(i, prefix, path.fromUser(inputDir, False), maskFiles[index], path.fromUser(maskDir, False)))
 
-lib.app.checkOutputFile (lib.app.args.fa_template)
-lib.app.checkOutputFile (lib.app.args.wm_mask)
-lib.app.checkOutputFile (lib.app.args.output_dir)
-lib.app.make_dir(lib.app.args.output_dir)
+app.checkOutputPath(app.args.fa_template)
+app.checkOutputPath(app.args.wm_mask)
+app.checkOutputPath(app.args.output_dir)
+file.makeDir(app.args.output_dir)
 
-lib.app.makeTempDir()
+app.makeTempDir()
 
-maskTempDir = os.path.join(lib.app.tempDir, os.path.basename(os.path.normpath(maskDir)))
-runCommand ('cp -R -L ' + maskDir + ' ' + maskTempDir)
+maskTempDir = os.path.join(app._tempDir, os.path.basename(os.path.normpath(maskDir)))
+run.command ('cp -R -L ' + maskDir + ' ' + maskTempDir)
 
-lib.app.gotoTempDir()
+app.gotoTempDir()
 
-lib.app.make_dir('fa')
-printMessage('Computing FA images')
+file.makeDir('fa')
+app.console('Computing FA images')
 input_filenames = []
 for i in input:
-  runCommand('dwi2tensor ' + abspath(i.directory, i.filename) + ' -mask ' + abspath(i.mask_directory, i.mask_filename) + ' - | tensor2metric - -fa fa/' + i.prefix + '.mif')
+  run.command('dwi2tensor ' + abspath(i.directory, i.filename) + ' -mask ' + abspath(i.mask_directory, i.mask_filename) + ' - | tensor2metric - -fa ' + os.path.join('fa', i.prefix + '.mif'))
 
-printMessage('Generating FA population template')
-runCommand('population_template fa -mask_dir ' + maskTempDir + ' fa_template.mif -type rigid_affine_nonlinear -rigid_scale 0.25,0.5,0.8,1.0 -affine_scale 0.7,0.8,1.0,1.0 -nl_scale 0.5,0.75,1.0,1.0,1.0 -nl_niter 5,5,5,5,5 -tempdir population_template -linear_no_pause -nocleanup')
+app.console('Generating FA population template')
+run.command('population_template fa -mask_dir ' + maskTempDir + ' fa_template.mif -type rigid_affine_nonlinear -rigid_scale 0.25,0.5,0.8,1.0 -affine_scale 0.7,0.8,1.0,1.0 -nl_scale 0.5,0.75,1.0,1.0,1.0 -nl_niter 5,5,5,5,5 -tempdir population_template -linear_no_pause -nocleanup')
 
-runCommand('mrthreshold fa_template.mif -abs ' +  lib.app.args.fa_threshold + ' template_wm_mask.mif')
-lib.app.make_dir('wm_mask_warped')
+run.command('mrthreshold fa_template.mif -abs ' +  app.args.fa_threshold + ' template_wm_mask.mif')
+file.makeDir('wm_mask_warped')
 for i in input:
-  runCommand('mrtransform template_wm_mask.mif -interp nearest -warp_full population_template/warps/' + i.prefix + '.mif wm_mask_warped/' + i.prefix + '.mif -from 2 -template fa/' + i.prefix + '.mif')
-  runCommand('dwinormalise ' + abspath(i.directory, i.filename) + ' wm_mask_warped/' + i.prefix + '.mif ' + getUserPath(os.path.join(lib.app.args.output_dir, i.filename), True) + lib.app.mrtrixForce)
+  run.command('mrtransform template_wm_mask.mif -interp nearest -warp_full ' + os.path.join('population_template', 'warps', i.prefix + '.mif') + ' ' + os.path.join('wm_mask_warped', i.prefix + '.mif') + ' -from 2 -template ' + os.path.join('fa', i.prefix + '.mif'))
+  run.command('dwinormalise ' + abspath(i.directory, i.filename) + ' ' + os.path.join('wm_mask_warped', i.prefix + '.mif') + ' ' + path.fromUser(os.path.join(app.args.output_dir, i.filename), True) + (' -force' if app.force else ''))
 
-runCommand('mrconvert template_wm_mask.mif ' + getUserPath(lib.app.args.wm_mask, True) + lib.app.mrtrixForce)
-runCommand('mrconvert fa_template.mif ' + getUserPath(lib.app.args.fa_template, True) + lib.app.mrtrixForce)
+run.command('mrconvert template_wm_mask.mif ' + path.fromUser(app.args.wm_mask, True) + (' -force' if app.force else ''))
+run.command('mrconvert fa_template.mif ' + path.fromUser(app.args.fa_template, True) + (' -force' if app.force else ''))
 
-lib.app.complete()
+app.complete()
 
