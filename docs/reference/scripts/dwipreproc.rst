@@ -8,7 +8,7 @@ Synopsis
 
 ::
 
-    dwipreproc [ options ] input output
+    dwipreproc input output [ options ]
 
 -  *input*: The input DWI series to be corrected
 -  *output*: The output corrected image series
@@ -101,11 +101,11 @@ References
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/.
+file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 MRtrix is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see http://www.mrtrix.org/.
+For more details, see www.mrtrix.org
 

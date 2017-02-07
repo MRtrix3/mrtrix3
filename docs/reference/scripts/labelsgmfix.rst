@@ -8,7 +8,7 @@ Synopsis
 
 ::
 
-    labelsgmfix [ options ] parc t1 lut output
+    labelsgmfix parc t1 lut output [ options ]
 
 -  *parc*: The input FreeSurfer parcellation image
 -  *t1*: The T1 image to be provided to FIRST
@@ -70,11 +70,11 @@ References
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/.
+file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 MRtrix is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see http://www.mrtrix.org/.
+For more details, see www.mrtrix.org
 

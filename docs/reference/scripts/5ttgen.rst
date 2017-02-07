@@ -8,7 +8,7 @@ Synopsis
 
 ::
 
-    5ttgen freesurfer [ options ] input output
+    5ttgen freesurfer input output [ options ]
 
 -  *input*: The input FreeSurfer parcellation image (any image containing 'aseg' in its name)
 -  *output*: The output 5TT image
@@ -77,13 +77,13 @@ References
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/.
+file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 MRtrix is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see http://www.mrtrix.org/.
+For more details, see www.mrtrix.org
 
 .. _5ttgen_fsl:
 
@@ -95,7 +95,7 @@ Synopsis
 
 ::
 
-    5ttgen fsl [ options ] input output
+    5ttgen fsl input output [ options ]
 
 -  *input*: The input T1-weighted image
 -  *output*: The output 5TT image
@@ -168,13 +168,13 @@ References
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/.
+file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 MRtrix is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see http://www.mrtrix.org/.
+For more details, see www.mrtrix.org
 
 .. _5ttgen:
 
@@ -186,7 +186,7 @@ Synopsis
 
 ::
 
-    5ttgen [ options ] algorithm ...
+    5ttgen algorithm [ options ] ...
 
 -  *algorithm*: Select the software / algorithm to be used to derive the 5TT image; additional details and options become available once an algorithm is nominated. Options are: freesurfer, fsl
 
@@ -242,11 +242,11 @@ References
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/.
+file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 MRtrix is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see http://www.mrtrix.org/.
+For more details, see www.mrtrix.org
 
