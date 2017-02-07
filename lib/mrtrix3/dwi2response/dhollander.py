@@ -41,7 +41,7 @@ def execute():
   bvolumes = [ int(x) for x in image.headerField('dwi.mif', 'shellcounts').split() ]
   app.console(str(len(bvalues)) + ' unique b-value(s) detected: ' + ','.join(map(str,bvalues)) + ' with ' + ','.join(map(str,bvolumes)) + ' volumes.')
   if len(bvalues) < 2:
-    message.error('Need at least 2 unique b-values (including b=0).')
+    app.error('Need at least 2 unique b-values (including b=0).')
 
 
   # Get lmax information (if provided).
@@ -121,7 +121,7 @@ def execute():
   run.command('mrcalc _crudegmhighselect.mif 1 _crudegmlowselect.mif -if refined_gm.mif -datatype bit')
 
   # Refine CSF: recover lost CSF from crude WM SDM outliers, separate safer CSF from partial volumed voxels.
-  crudecsfmin= image.statistic('safe_sdm.mif', 'min', 'crude_csf.mif')
+  crudecsfmin = image.statistic('safe_sdm.mif', 'min', 'crude_csf.mif')
   run.command('mrcalc _crudewmoutliers.mif safe_sdm.mif 0 -if ' + str(crudecsfmin) + ' -gt 1 crude_csf.mif -if _crudecsfextra.mif -datatype bit')
   run.command('mrcalc _crudecsfextra.mif safe_sdm.mif ' + str(crudecsfmin) + ' -subtract 0 -if - | mrthreshold - - -mask _crudecsfextra.mif | mrcalc _crudecsfextra.mif - 0 -if refined_csf.mif -datatype bit')
 
