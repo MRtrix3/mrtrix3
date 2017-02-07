@@ -8,7 +8,7 @@ Synopsis
 
 ::
 
-    dwi2response dhollander [ options ] input out_sfwm out_gm out_csf
+    dwi2response dhollander input out_sfwm out_gm out_csf [ options ]
 
 -  *input*: The input DWI
 -  *out_sfwm*: Output single-fibre WM response text file
@@ -95,13 +95,13 @@ References
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/.
+file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 MRtrix is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see http://www.mrtrix.org/.
+For more details, see www.mrtrix.org
 
 .. _dwi2response_fa:
 
@@ -113,7 +113,7 @@ Synopsis
 
 ::
 
-    dwi2response fa [ options ] input output
+    dwi2response fa input output [ options ]
 
 -  *input*: The input DWI
 -  *output*: The output response function text file
@@ -194,13 +194,13 @@ References
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/.
+file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 MRtrix is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see http://www.mrtrix.org/.
+For more details, see www.mrtrix.org
 
 .. _dwi2response_manual:
 
@@ -212,7 +212,7 @@ Synopsis
 
 ::
 
-    dwi2response manual [ options ] input in_voxels output
+    dwi2response manual input in_voxels output [ options ]
 
 -  *input*: The input DWI
 -  *in_voxels*: Input voxel selection mask
@@ -290,13 +290,13 @@ References
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/.
+file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 MRtrix is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see http://www.mrtrix.org/.
+For more details, see www.mrtrix.org
 
 .. _dwi2response_msmt_5tt:
 
@@ -308,7 +308,7 @@ Synopsis
 
 ::
 
-    dwi2response msmt_5tt [ options ] input in_5tt out_wm out_gm out_csf
+    dwi2response msmt_5tt input in_5tt out_wm out_gm out_csf [ options ]
 
 -  *input*: The input DWI
 -  *in_5tt*: Input co-registered 5TT image
@@ -394,13 +394,13 @@ References
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/.
+file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 MRtrix is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see http://www.mrtrix.org/.
+For more details, see www.mrtrix.org
 
 .. _dwi2response_tax:
 
@@ -412,7 +412,7 @@ Synopsis
 
 ::
 
-    dwi2response tax [ options ] input output
+    dwi2response tax input output [ options ]
 
 -  *input*: The input DWI
 -  *output*: The output response function text file
@@ -493,13 +493,13 @@ References
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/.
+file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 MRtrix is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see http://www.mrtrix.org/.
+For more details, see www.mrtrix.org
 
 .. _dwi2response_tournier:
 
@@ -511,7 +511,7 @@ Synopsis
 
 ::
 
-    dwi2response tournier [ options ] input output
+    dwi2response tournier input output [ options ]
 
 -  *input*: The input DWI
 -  *output*: The output response function text file
@@ -594,13 +594,13 @@ References
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/.
+file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 MRtrix is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see http://www.mrtrix.org/.
+For more details, see www.mrtrix.org
 
 .. _dwi2response:
 
@@ -612,7 +612,7 @@ Synopsis
 
 ::
 
-    dwi2response [ options ] algorithm ...
+    dwi2response algorithm [ options ] ...
 
 -  *algorithm*: Select the algorithm to be used to derive the response function; additional details and options become available once an algorithm is nominated. Options are: dhollander, fa, manual, msmt_5tt, tax, tournier
 
@@ -668,11 +668,11 @@ References
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/.
+file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 MRtrix is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see http://www.mrtrix.org/.
+For more details, see www.mrtrix.org
 

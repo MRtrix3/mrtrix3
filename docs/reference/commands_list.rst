@@ -187,9 +187,9 @@ List of MRtrix3 commands
 
    commands/tcksample
 
-   commands/tcksift
-
    commands/tcksift2
+
+   commands/tcksift
 
    commands/tckstats
 

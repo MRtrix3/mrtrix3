@@ -60,7 +60,7 @@ structure corresponds to. This is dealt with by mapping the structure
 indices of this lookup table to a *new* lookup table. For this example,
 let's imagine that we're using the default MRtrix lookup table for the
 FreeSurfer Desikan-Killiany atlas segmentation: this is provided at
-``src/connectome/tables/fs_default.txt``.Examining this file in detail,
+``shared/mrtrix3/labelconvert/fs_default.txt``.Examining this file in detail,
 we see the following:
 
 ::

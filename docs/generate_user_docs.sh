@@ -12,7 +12,7 @@
 # Generating documentation for all commands
 
 mrtrix_root=$( cd "$(dirname "${BASH_SOURCE}")"/../ ; pwd -P )
-export PATH=$mrtrix_root/release/bin:$mrtrix_root/release/scripts:"$PATH"
+export PATH=$mrtrix_root/bin:"$PATH"
 
   echo "
 .. _list-of-mrtrix3-commands:
@@ -58,7 +58,7 @@ List of MRtrix3 scripts
 " > reference/scripts_list.rst
 
   mkdir -p reference/scripts
-  for n in `find ../scripts/ -type f -print0 | xargs -0 grep -l "lib.cmdlineParser.initialise" | sort`; do
+  for n in `find ../bin/ -type f -print0 | xargs -0 grep -l "app.parse" | sort`; do
     filepath='reference/scripts'
     filename=`basename $n`
     $n __print_usage_rst__ > $filepath/$filename.rst

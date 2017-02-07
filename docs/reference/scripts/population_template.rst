@@ -8,7 +8,7 @@ Synopsis
 
 ::
 
-    population_template [ options ] input_dir template
+    population_template input_dir template [ options ]
 
 -  *input_dir*: The input directory containing all images used to build the template
 -  *template*: The output template image
@@ -105,11 +105,11 @@ Standard options
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/.
+file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 MRtrix is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see http://www.mrtrix.org/.
+For more details, see www.mrtrix.org
 
