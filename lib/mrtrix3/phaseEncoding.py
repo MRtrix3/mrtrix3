@@ -2,7 +2,7 @@
 
 # From a user-specified string, determine the axis and direction of phase encoding
 def dir(string):
-from mrtrix3 import app
+  from mrtrix3 import app
   pe_dir = ''
   try:
     PE_axis = abs(int(string))

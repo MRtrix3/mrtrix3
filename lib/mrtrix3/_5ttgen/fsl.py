@@ -40,7 +40,7 @@ def execute():
   from distutils.spawn import find_executable
   from mrtrix3 import app, fsl, image, run
   
-  if misc.isWindows():
+  if app.isWindows():
     app.error('\'fsl\' algorithm of 5ttgen script cannot be run on Windows: FSL not available on Windows')
 
   fsl_path = os.environ.get('FSLDIR', '')

@@ -42,7 +42,7 @@ def execute():
   # May need to commit 5ttregrid...
 
   # Verify input 5tt image
-  run.command('5ttcheck 5tt.mif')
+  run.command('5ttcheck 5tt.mif', False)
 
   # Get shell information
   shells = [ int(round(float(x))) for x in image.headerField('dwi.mif', 'shells').split() ]

@@ -37,6 +37,8 @@ options.add_argument('-premasked', action='store_true', default=False, help='Ind
 options.add_argument('-sgm_amyg_hipp', action='store_true', default=False, help='Consider the amygdalae and hippocampi as sub-cortical grey matter structures, and also replace their estimates with those from FIRST')
 app.parse()
 
+app.checkOutputPath(app.args.output)
+
 if app.isWindows():
   app.error('Script cannot run on Windows due to FSL dependency')
 

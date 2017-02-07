@@ -736,7 +736,7 @@ def _handler(signum, frame):
   for (key, value) in _signals.items():
     try:
       if getattr(signal, key) == signum:
-        msg += key + ' (' + str(signum) + ')] ' + value
+        msg += key + ' (' + str(int(signum)) + ')] ' + value
         signal_found = True
         break
     except AttributeError:
