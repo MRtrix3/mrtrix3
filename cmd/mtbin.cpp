@@ -1,18 +1,15 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 
 #include "command.h"
@@ -122,9 +119,9 @@ void run ()
     throw Exception ("At least two tissue types must be provided");
 
   ProgressBar progress ("performing intensity normalisation and bias field correction...");
-  std::vector<Image<float> > input_images;
-  std::vector<Header> output_headers;
-  std::vector<std::string> output_filenames;
+  vector<Image<float> > input_images;
+  vector<Header> output_headers;
+  vector<std::string> output_filenames;
 
 
   // Open input images and check for output
@@ -268,7 +265,7 @@ void run ()
           summed.value() += scale_factors(j, 0) * input_images[j].value() / bias_field.value();
       }
       compute_mask (summed, mask);
-      std::vector<float> summed_values;
+      vector<float> summed_values;
       for (auto i = Loop (mask) (mask, summed); i; ++i) {
         if (mask.value())
           summed_values.push_back (summed.value());

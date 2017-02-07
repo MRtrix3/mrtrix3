@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __algo_threaded_copy_h__
 #define __algo_threaded_copy_h__
@@ -24,7 +23,7 @@ namespace MR
   //! \cond skip
   namespace {
 
-    struct __copy_func {
+    struct __copy_func { NOMEMALIGN
       template <class InputImageType, class OutputImageType>
         FORCE_INLINE void operator() (InputImageType& in, OutputImageType& out) const {
           out.value() = in.value();
@@ -42,7 +41,7 @@ namespace MR
     inline void threaded_copy (
         InputImageType& source, 
         OutputImageType& destination, 
-        const std::vector<size_t>& axes,
+        const vector<size_t>& axes,
         size_t num_axes_in_thread = 1) 
     {
       ThreadedLoop (source, axes, num_axes_in_thread)
@@ -69,7 +68,7 @@ namespace MR
         const std::string& message, 
         InputImageType& source, 
         OutputImageType& destination, 
-        const std::vector<size_t>& axes,
+        const vector<size_t>& axes,
         size_t num_axes_in_thread = 1)
     {
       ThreadedLoop (message, source, axes, num_axes_in_thread)
@@ -94,7 +93,7 @@ namespace MR
     inline void threaded_copy_with_progress (
         InputImageType& source,
         OutputImageType& destination, 
-        const std::vector<size_t>& axes, 
+        const vector<size_t>& axes, 
         size_t num_axes_in_thread = 1)
     {
       threaded_copy_with_progress_message ("copying from \"" + shorten (source.name()) + "\" to \"" + shorten (destination.name()) + "\"",

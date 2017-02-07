@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __image_adapter_gaussian1D_h__
 #define __image_adapter_gaussian1D_h__
@@ -24,14 +23,26 @@ namespace MR
   {
 
     template <class ImageType>
-      class Gaussian1D : public Base<ImageType> {
+      class Gaussian1D : 
+        public Base<Gaussian1D<ImageType>,ImageType> 
+    { MEMALIGN (Gaussian1D<ImageType>) 
       public:
+
+        typedef Base<Gaussian1D<ImageType>,ImageType> base_type;
+        typedef typename ImageType::value_type value_type;
+
+        using base_type::name;
+        using base_type::size;
+        using base_type::spacing;
+        using base_type::index;
+
+
         Gaussian1D (const ImageType& parent,
                     default_type stdev_in = 1.0,
                     size_t axis_in = 0,
                     size_t extent = 0,
                     bool zero_boundary = false) :
-          Base<ImageType> (parent),
+          base_type (parent),
           stdev (stdev_in),
           axis (axis_in),
           zero_boundary (zero_boundary) {
@@ -44,12 +55,11 @@ namespace MR
           compute_kernel();
         }
 
-        typedef typename ImageType::value_type value_type;
 
         value_type value ()
         {
           if (!kernel.size())
-            return Base<ImageType>::value();
+            return base_type::value();
 
           const ssize_t pos = index (axis);
 
@@ -65,10 +75,10 @@ namespace MR
           ssize_t c = (pos < radius) ? radius - pos : 0;
           for (ssize_t k = from; k <= to; ++k, ++c) {
             index (axis) = k;
-            value_type neighbour_value = Base<ImageType>::value();
+            value_type neighbour_value = base_type::value();
             if (std::isfinite (neighbour_value)) {
               av_weights += kernel[c];
-              result += value_type (Base<ImageType>::value()) * kernel[c];
+              result += value_type (base_type::value()) * kernel[c];
             }
           }
           result /= av_weights;
@@ -76,11 +86,6 @@ namespace MR
           index (axis) = pos;
           return result;
         }
-
-        using Base<ImageType>::name;
-        using Base<ImageType>::size;
-        using Base<ImageType>::spacing;
-        using Base<ImageType>::index;
 
       protected:
 
@@ -102,7 +107,7 @@ namespace MR
         default_type stdev;
         ssize_t radius;
         size_t axis;
-        std::vector<default_type> kernel;
+        vector<default_type> kernel;
         const bool zero_boundary;
       };
   }

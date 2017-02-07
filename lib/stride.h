@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __stride_h__
 #define __stride_h__
@@ -59,7 +58,7 @@ namespace MR
   namespace Stride
   {
 
-    typedef std::vector<ssize_t> List;
+    typedef vector<ssize_t> List;
 
     extern const App::OptionGroup Options;
 
@@ -70,8 +69,7 @@ namespace MR
     namespace
     {
       template <class HeaderType> 
-        class Compare
-        {
+        class Compare { NOMEMALIGN
           public:
             Compare (const HeaderType& header) : S (header) { }
             bool operator() (const size_t a, const size_t b) const {
@@ -85,8 +83,7 @@ namespace MR
             const HeaderType& S;
         };
 
-      class Wrapper
-      {
+      class Wrapper { NOMEMALIGN
         public:
           Wrapper (List& strides) : S (strides) { }
           size_t ndim () const {
@@ -104,7 +101,7 @@ namespace MR
 
       template <class HeaderType> 
         class InfoWrapper : public Wrapper
-      {
+      { NOMEMALIGN
         public:
           InfoWrapper (List& strides, const HeaderType& header) : Wrapper (strides), D (header) {
             assert (ndim() == D.ndim());
@@ -121,7 +118,7 @@ namespace MR
 
 
 
-    //! return the strides of \a header as a std::vector<ssize_t>
+    //! return the strides of \a header as a vector<ssize_t>
     template <class HeaderType> 
       List get (const HeaderType& header)
       {
@@ -131,7 +128,7 @@ namespace MR
         return ret;
       }
 
-    //! set the strides of \a header from a std::vector<ssize_t>
+    //! set the strides of \a header from a vector<ssize_t>
     template <class HeaderType>
       void set (HeaderType& header, const List& stride)
       {
@@ -157,11 +154,11 @@ namespace MR
      * absolute stride.
      * \note all strides should be valid (i.e. non-zero). */
     template <class HeaderType> 
-      std::vector<size_t> order (const HeaderType& header, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
+      vector<size_t> order (const HeaderType& header, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
       {
         to_axis = std::min<size_t> (to_axis, header.ndim());
         assert (to_axis > from_axis);
-        std::vector<size_t> ret (to_axis-from_axis);
+        vector<size_t> ret (to_axis-from_axis);
         for (size_t i = 0; i < ret.size(); ++i) 
           ret[i] = from_axis+i;
         Compare<HeaderType> compare (header);
@@ -174,7 +171,7 @@ namespace MR
      * absolute stride.
      * \note all strides should be valid (i.e. non-zero). */
     template <> inline 
-      std::vector<size_t> order<List> (const List& strides, size_t from_axis, size_t to_axis)
+      vector<size_t> order<List> (const List& strides, size_t from_axis, size_t to_axis)
       {
         const Wrapper wrapper (const_cast<List&> (strides));
         return order (wrapper, from_axis, to_axis);
@@ -232,7 +229,7 @@ namespace MR
      * zero) or duplicate (absolute) strides, and assigning to each a
      * suitable value. The value chosen for each sanitised stride is the
      * lowest number greater than any of the currently valid strides. */
-    List& sanitise (List& current, const List& desired, const std::vector<ssize_t>& header);
+    List& sanitise (List& current, const List& desired, const vector<ssize_t>& header);
 
 
     //! convert strides from symbolic to actual strides
@@ -240,7 +237,7 @@ namespace MR
       void actualise (HeaderType& header)
       {
         sanitise (header);
-        std::vector<size_t> x (order (header));
+        vector<size_t> x (order (header));
         ssize_t skip = 1;
         for (size_t i = 0; i < header.ndim(); ++i) {
           header.stride (x[i]) = header.stride (x[i]) < 0 ? -skip : skip;
@@ -281,7 +278,7 @@ namespace MR
     template <class HeaderType> 
       void symbolise (HeaderType& header)
       {
-        std::vector<size_t> p (order (header));
+        vector<size_t> p (order (header));
         for (ssize_t i = 0; i < ssize_t (p.size()); ++i)
           if (header.stride (p[i]) != 0)
             header.stride (p[i]) = header.stride (p[i]) < 0 ? -(i+1) : i+1;
@@ -367,7 +364,7 @@ namespace MR
         List in (get_symbolic (current)), out (desired);
         out.resize (in.size(), 0);
 
-        std::vector<ssize_t> dims (current.ndim());
+        vector<ssize_t> dims (current.ndim());
         for (size_t n = 0; n < dims.size(); ++n)
           dims[n] = current.size(n);
 

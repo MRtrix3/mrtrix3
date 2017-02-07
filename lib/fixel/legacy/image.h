@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __fixel_legacy_image_h__
 #define __fixel_legacy_image_h__
@@ -36,7 +35,7 @@ namespace MR
     namespace Legacy
     {
       template <typename DataType>
-        class Value {
+        class Value { MEMALIGN (Value<DataType>)
           public:
             Value (::MR::Image<uint64_t>& offsets, ImageIO::SparseLegacy& io) : offsets (offsets), io (io) { }
 
@@ -95,7 +94,7 @@ namespace MR
       // A convenience class for wrapping access to sparse images
       template <typename DataType>
         class Image : public ::MR::Image<uint64_t>
-      {
+      { MEMALIGN (Image<DataType>)
         public:
           Image (const std::string& image_name) :
             ::MR::Image<uint64_t> (::MR::Image<uint64_t>::open (image_name)), io (nullptr) { check(); }

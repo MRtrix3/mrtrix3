@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __file_dicom_image_h__
 #define __file_dicom_image_h__
@@ -28,7 +27,7 @@ namespace MR {
       class Series;
       class Element;
 
-      class Frame { 
+      class Frame { MEMALIGN(Frame)
         public:
           Frame () { 
             acq_dim[0] = acq_dim[1] = dim[0] = dim[1] = instance = series_num = acq = sequence = UINT_MAX;
@@ -59,7 +58,7 @@ namespace MR {
           int pe_sign;
           default_type pixel_bandwidth, bandwidth_per_pixel_phase_encode, echo_time;
           size_t echo_train_length;
-          std::vector<uint32_t> index;
+          vector<uint32_t> index;
 
           bool operator< (const Frame& frame) const {
             if (series_num != frame.series_num) 
@@ -97,10 +96,10 @@ namespace MR {
             distance = orientation_z.dot (position_vector);
           }
 
-          static std::vector<size_t> count (const std::vector<Frame*>& frames);
-          static default_type get_slice_separation (const std::vector<Frame*>& frames, size_t nslices);
-          static std::string get_DW_scheme (const std::vector<Frame*>& frames, const size_t nslices, const transform_type& image_transform);
-          static Eigen::MatrixXd get_PE_scheme (const std::vector<Frame*>& frames, const size_t nslices);
+          static vector<size_t> count (const vector<Frame*>& frames);
+          static default_type get_slice_separation (const vector<Frame*>& frames, size_t nslices);
+          static std::string get_DW_scheme (const vector<Frame*>& frames, const size_t nslices, const transform_type& image_transform);
+          static Eigen::MatrixXd get_PE_scheme (const vector<Frame*>& frames, const size_t nslices);
 
           friend std::ostream& operator<< (std::ostream& stream, const Frame& item);
       };
@@ -115,7 +114,7 @@ namespace MR {
 
 
 
-      class Image : public Frame {
+      class Image : public Frame { MEMALIGN(Image)
 
         public:
           Image (Series* parent = NULL) : 
@@ -129,8 +128,8 @@ namespace MR {
           std::string  sequence_name, manufacturer;
           bool is_BE, in_frames;
 
-          std::vector<uint32_t> frame_dim;
-          std::vector<std::shared_ptr<Frame>> frames;
+          vector<uint32_t> frame_dim;
+          vector<std::shared_ptr<Frame>> frames;
 
           void read ();
           void parse_item (Element& item, const std::string& dirname = "");

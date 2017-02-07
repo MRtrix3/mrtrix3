@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __gui_mrview_tool_view_h__
 #define __gui_mrview_tool_view_h__
@@ -35,7 +34,7 @@ namespace MR
 
 
         class ClipPlane 
-        {
+        { MEMALIGN (ClipPlane)
           public:
             GL::vec4 plane;
             bool active;
@@ -43,15 +42,15 @@ namespace MR
         };
 
         class View : public Base, public Mode::ModeGuiVisitor
-        {
+        { MEMALIGN(View)
           Q_OBJECT
           public:
             View (Dock* parent);
 
             QPushButton *clip_on_button[3], *clip_edit_button[3], *clip_modify_button;
 
-            std::vector< std::pair<GL::vec4,bool> > get_active_clip_planes () const;
-            std::vector<GL::vec4*> get_clip_planes_to_be_edited () const;
+            vector< std::pair<GL::vec4,bool> > get_active_clip_planes () const;
+            vector<GL::vec4*> get_clip_planes_to_be_edited () const;
             bool get_cliphighlightstate () const;
             bool get_clipintersectionmodestate () const;
 

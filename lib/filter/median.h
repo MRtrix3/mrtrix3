@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __image_filter_median_h__
 #define __image_filter_median_h__
@@ -39,8 +38,7 @@ namespace MR
      *
      * \endcode
      */
-    class Median : public Base
-    {
+    class Median : public Base { MEMALIGN(Median)
 
       public:
         template <class HeaderType>
@@ -58,14 +56,14 @@ namespace MR
             }
 
         template <class HeaderType>
-        Median (const HeaderType& in, const std::vector<int>& extent) :
+        Median (const HeaderType& in, const vector<int>& extent) :
             Base (in),
             extent (extent) {
           datatype() = DataType::Float32;
         }
 
         template <class HeaderType>
-          Median (const HeaderType& in, const std::string& message, const std::vector<int>& extent) :
+          Median (const HeaderType& in, const std::string& message, const vector<int>& extent) :
             Base (in, message),
             extent (extent) { 
               datatype() = DataType::Float32;
@@ -74,7 +72,7 @@ namespace MR
         //! Set the extent of median filtering neighbourhood in voxels.
         //! This must be set as a single value for all three dimensions
         //! or three values, one for each dimension. Default 3x3x3.
-        void set_extent (const std::vector<int>& ext) {
+        void set_extent (const vector<int>& ext) {
           for (size_t i = 0; i < ext.size(); ++i) {
             if (!(ext[i] & int (1)))
               throw Exception ("expected odd number for extent");
@@ -94,7 +92,7 @@ namespace MR
         }
 
     protected:
-        std::vector<int> extent;
+        vector<int> extent;
     };
     //! @}
   }

@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -90,10 +88,9 @@ typedef float value_type;
 
 
 template <class ImageType>
-class DenoisingFunctor
-{
+class DenoisingFunctor { MEMALIGN(DenoisingFunctor)
   public:
-  DenoisingFunctor (ImageType& dwi, std::vector<int> extent, Image<bool>& mask, ImageType& noise)
+  DenoisingFunctor (ImageType& dwi, vector<int> extent, Image<bool>& mask, ImageType& noise)
     : extent {{extent[0]/2, extent[1]/2, extent[2]/2}},
       m (dwi.size(3)),
       n (extent[0]*extent[1]*extent[2]),
@@ -175,8 +172,8 @@ class DenoisingFunctor
     for (dwi.index(2) = pos[2]-extent[2]; dwi.index(2) <= pos[2]+extent[2]; ++dwi.index(2))
       for (dwi.index(1) = pos[1]-extent[1]; dwi.index(1) <= pos[1]+extent[1]; ++dwi.index(1))
         for (dwi.index(0) = pos[0]-extent[0]; dwi.index(0) <= pos[0]+extent[0]; ++dwi.index(0), ++k)
-          if (! is_out_of_bounds(dwi))
-            X.col(k) = dwi.row(3).template cast<float>();
+          if (! is_out_of_bounds(dwi,0,3))
+            X.col(k) = dwi.row(3);
     // reset image position
     dwi.index(0) = pos[0];
     dwi.index(1) = pos[1];
@@ -212,7 +209,7 @@ void run ()
   auto dwi_out = Image<value_type>::create (argument[1], header);
   
   opt = get_options("extent");
-  std::vector<int> extent = { DEFAULT_SIZE, DEFAULT_SIZE, DEFAULT_SIZE };
+  vector<int> extent = { DEFAULT_SIZE, DEFAULT_SIZE, DEFAULT_SIZE };
   if (opt.size()) {
     extent = parse_ints(opt[0][0]);
     if (extent.size() == 1)

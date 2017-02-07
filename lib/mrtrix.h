@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -57,22 +55,22 @@ namespace MR
 
 
   template <typename X, typename ReturnType = int>
-    struct max_digits {
+    struct max_digits { NOMEMALIGN
       static constexpr int value () { return 0; }
     };
 
   template <typename X>
-    struct max_digits<X, typename std::enable_if<std::is_fundamental<X>::value, int>::type> {
+    struct max_digits<X, typename std::enable_if<std::is_fundamental<X>::value, int>::type> { NOMEMALIGN
       static constexpr int value () { return std::numeric_limits<X>::max_digits10; }
     };
 
   template <typename X>
-    struct max_digits<X, typename std::enable_if<std::is_fundamental<typename X::Scalar>::value, int>::type> {
+    struct max_digits<X, typename std::enable_if<std::is_fundamental<typename X::Scalar>::value, int>::type> { NOMEMALIGN
       static constexpr int value () { return std::numeric_limits<typename X::Scalar>::max_digits10; }
     };
 
   template <typename X>
-    struct max_digits<X, typename std::enable_if<std::is_fundamental<typename X::value_type>::value && !std::is_fundamental<typename X::Scalar>::value, int>::type> {
+    struct max_digits<X, typename std::enable_if<std::is_fundamental<typename X::value_type>::value && !std::is_fundamental<typename X::Scalar>::value, int>::type> { NOMEMALIGN
       static constexpr int value () { return std::numeric_limits<typename X::value_type>::max_digits10; }
     };
 
@@ -191,26 +189,26 @@ namespace MR
   }
 
 
-  std::vector<std::string> split (
+  vector<std::string> split (
     const std::string& string,
     const char* delimiters = " \t\n",
     bool ignore_empty_fields = false,
     size_t num = std::numeric_limits<size_t>::max());
 
-  inline std::vector<std::string> split_lines (
+  inline vector<std::string> split_lines (
       const std::string& string,
       bool ignore_empty_fields = true,
       size_t num = std::numeric_limits<size_t>::max()) {
     return split (string, "\n", ignore_empty_fields, num);
   }
 
-  inline std::string join (const std::vector<std::string>& V, const std::string& delimiter)
+  inline std::string join (const vector<std::string>& V, const std::string& delimiter)
   {
     std::string ret;
     if (V.empty())
       return ret;
     ret = V[0];
-    for (std::vector<std::string>::const_iterator i = V.begin() +1; i != V.end(); ++i)
+    for (vector<std::string>::const_iterator i = V.begin() +1; i != V.end(); ++i)
       ret += delimiter + *i;
     return ret;
   }
@@ -226,8 +224,8 @@ namespace MR
     return ret;
   }
 
-  std::vector<default_type> parse_floats (const std::string& spec);
-  std::vector<int>   parse_ints (const std::string& spec, int last = std::numeric_limits<int>::max());
+  vector<default_type> parse_floats (const std::string& spec);
+  vector<int>   parse_ints (const std::string& spec, int last = std::numeric_limits<int>::max());
 
   /*
   inline int round (default_type x)

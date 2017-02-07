@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include <map>
 
@@ -428,7 +427,7 @@ namespace MR
         QApplication::restoreOverrideCursor();
       }
 
-      void Renderer::SH::update_transform (const std::vector<Shapes::HalfSphere::Vertex>& vertices, int lmax)
+      void Renderer::SH::update_transform (const vector<Shapes::HalfSphere::Vertex>& vertices, int lmax)
       {
         // order is r, del, daz
 
@@ -637,8 +636,8 @@ namespace MR
 
       void Renderer::Dixel::update_dixels (const MR::DWI::Directions::Set& dirs)
       {
-        std::vector<Eigen::Vector3f> directions_data;
-        std::vector<std::array<GLint,3>> indices_data;
+        vector<Eigen::Vector3f> directions_data;
+        vector<std::array<GLint,3>> indices_data;
 
         for (size_t i = 0; i != dirs.size(); ++i) {
           directions_data.push_back (dirs[i].cast<float>());

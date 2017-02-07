@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include <set>
 #include <vector>
@@ -73,7 +72,7 @@ void usage ()
 
 
 class Vox : public Eigen::Array3i
-{
+{ MEMALIGN (Vox)
   public:
     using Eigen::Array3i::Array3i;
     Vox (const Eigen::Vector3& p) :
@@ -128,7 +127,7 @@ void run ()
     const size_t axis = p[0];
     const auto coords = parse_ints (p[1]);
     const float value = p[2];
-    const std::array<size_t, 2> loop_axes { axis == 0 ? size_t(1) : size_t(0), axis == 2 ? size_t(1) : size_t(2) };
+    const std::array<size_t, 2> loop_axes { { axis == 0 ? size_t(1) : size_t(0), axis == 2 ? size_t(1) : size_t(2) } };
     for (auto c : coords) {
       out.index (axis) = c;
       for (auto outer = Loop(loop_axes[0]) (out); outer; ++outer) {
@@ -155,7 +154,7 @@ void run ()
     else
       centre_scannerspace = transform.voxel2scanner * centre_voxelspace;
     std::set<Vox> processed;
-    std::vector<Vox> to_expand;
+    vector<Vox> to_expand;
     const Vox seed_voxel (centre_voxelspace);
     processed.insert (seed_voxel);
     to_expand.push_back (seed_voxel);

@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __registration_metric_demons_h__
 #define __registration_metric_demons_h__
@@ -29,7 +28,7 @@ namespace MR
     {
 
       template <class Im1ImageType, class Im2ImageType, class Im1MaskType, class Im2MaskType>
-      class Demons {
+      class Demons { MEMALIGN(Demons<Im1ImageType,Im2ImageType,Im1MaskType,Im2MaskType>)
         public:
           Demons (default_type& global_energy, size_t& global_voxel_count,
                      const Im1ImageType& im1_image, const Im2ImageType& im2_image, const Im1MaskType im1_mask, const Im2MaskType im2_mask) :
@@ -73,8 +72,8 @@ namespace MR
             if (im1_image.index(0) == 0 || im1_image.index(0) == im1_image.size(0) - 1 ||
                 im1_image.index(1) == 0 || im1_image.index(1) == im1_image.size(1) - 1 ||
                 im1_image.index(2) == 0 || im1_image.index(2) == im1_image.size(2) - 1) {
-              im1_update.row(3).setZero();
-              im2_update.row(3).setZero();
+              im1_update.row(3) = 0.0;
+              im2_update.row(3) = 0.0;
               return;
             }
 
@@ -83,8 +82,8 @@ namespace MR
               assign_pos_of (im1_image, 0, 3).to (im1_mask);
               im1_mask_value = im1_mask.value();
               if (im1_mask_value < 0.1) {
-                im1_update.row(3).setZero();
-                im2_update.row(3).setZero();
+                im1_update.row(3) = 0.0;
+                im2_update.row(3) = 0.0;
                 return;
               }
             }
@@ -94,8 +93,8 @@ namespace MR
               assign_pos_of (im2_image, 0, 3).to (im2_mask);
               im2_mask_value = im2_mask.value();
               if (im2_mask_value < 0.1) {
-                im1_update.row(3).setZero();
-                im2_update.row(3).setZero();
+                im1_update.row(3) = 0.0;
+                im2_update.row(3) = 0.0;
                 return;
               }
             }
@@ -114,11 +113,11 @@ namespace MR
             Eigen::Matrix<typename Im1ImageType::value_type, 3, 1> grad = (im2_gradient.value() + im1_gradient.value()).array() / 2.0;
             default_type denominator = speed_squared / normaliser + grad.squaredNorm();
             if (std::abs (speed) < intensity_difference_threshold || denominator < denominator_threshold) {
-              im1_update.row(3).setZero();
-              im2_update.row(3).setZero();
+              im1_update.row(3) = 0.0;
+              im2_update.row(3) = 0.0;
             } else {
-              im1_update.row(3) = speed * grad.array() / denominator;
-              im2_update.row(3) = -im1_update.row(3);
+              im1_update.row(3) = Eigen::Vector3 (speed * grad.array() / denominator);
+              im2_update.row(3) = -Eigen::Vector3 (im1_update.row(3));
             }
           }
 

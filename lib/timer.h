@@ -1,28 +1,28 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __timer_h__
 #define __timer_h__
 
 #include <chrono>
 
+#define NOMEMALIGN
+
 namespace MR
 {
 
-  class Timer
-  {
+  class Timer { NOMEMALIGN
     public:
       Timer () {
         start();
@@ -47,8 +47,7 @@ namespace MR
 
 
   // a class to help perform operations at given time intervals
-  class IntervalTimer : protected Timer
-  {
+  class IntervalTimer : protected Timer { NOMEMALIGN
     public:
       //! by default, fire at ~30 Hz - most monitors are 60Hz
       IntervalTimer (double time_interval = 0.0333333) :

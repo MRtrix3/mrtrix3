@@ -1,18 +1,15 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 
 #include <vector>
@@ -35,7 +32,7 @@ using namespace MR;
 using namespace App;
 
 
-const char* algorithms[] = { "nbs", "nbs_tfce", "none", nullptr };
+const char* algorithms[] = { "nbs", "nbse", "none", nullptr };
 
 
 
@@ -84,7 +81,7 @@ void usage ()
                "Zalesky, A.; Fornito, A. & Bullmore, E. T. Network-based statistic: Identifying differences in brain networks. \n"
                "NeuroImage, 2010, 53, 1197-1207"
 
-             + "* If using the NBS-TFCE algorithm: \n"
+             + "* If using the NBSE algorithm: \n"
                "Vinokur, L.; Zalesky, A.; Raffelt, D.; Smith, R.E. & Connelly, A. A Novel Threshold-Free Network-Based Statistics Method: Demonstration using Simulated Pathology. \n"
                "OHBM, 2015, 4144"
 
@@ -115,7 +112,7 @@ void run()
 {
 
   // Read filenames
-  std::vector<std::string> filenames;
+  vector<std::string> filenames;
   {
     std::string folder = Path::dirname (argument[0]);
     std::ifstream ifs (argument[0].c_str());
@@ -177,7 +174,7 @@ void run()
 
   // Load permutations file if supplied
   auto opt = get_options("permutations");
-  std::vector<std::vector<size_t> > permutations;
+  vector<vector<size_t> > permutations;
   if (opt.size()) {
     permutations = Math::Stats::Permutation::load_permutations_file (opt[0][0]);
     num_perms = permutations.size();
@@ -187,7 +184,7 @@ void run()
 
   // Load non-stationary correction permutations file if supplied
   opt = get_options("permutations_nonstationary");
-  std::vector<std::vector<size_t> > permutations_nonstationary;
+  vector<vector<size_t> > permutations_nonstationary;
   if (opt.size()) {
     permutations_nonstationary = Math::Stats::Permutation::load_permutations_file (opt[0][0]);
     nperms_nonstationary = permutations.size();

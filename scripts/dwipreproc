@@ -291,14 +291,12 @@ else:
     warnMessage('Total readout time not provided at command-line; assuming sane default of ' + str(auto_trt))
   dwi_pe_scheme = dwi_manual_pe_scheme # May be needed later for triggering volume recombination
 
-
-
 # This may be required by -rpe_all for extracting b=0 volumes while retaining phase-encoding information
 import_dwi_pe_table_option = ''
 if dwi_manual_pe_scheme:
   with open('dwi_manual_pe_scheme.txt', 'w') as f:
     for line in dwi_manual_pe_scheme:
-      f.write(' '.join( [ str(f) for f in line ] ) + '\n')
+      f.write(' '.join( [ str(value) for value in line ] ) + '\n')
   import_dwi_pe_table_option = ' -import_pe_table dwi_manual_pe_scheme.txt'
 
 

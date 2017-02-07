@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -52,7 +50,7 @@ typedef Eigen::Vector3d vector3_type;
 
 
 
-class Shared {
+class Shared { MEMALIGN(Shared)
   public:
     Shared (const Eigen::MatrixXd& directions, size_t num_subsets, size_t target_num_permutations) :
       directions (directions), subset (num_subsets), 
@@ -65,13 +63,13 @@ class Shared {
           if (s >= num_subsets) s = 0;
         }
         INFO ("split " + str(directions.rows()) + " directions into subsets with " + 
-            str([&]{ std::vector<size_t> c; for (auto& x : subset) c.push_back (x.size()); return c; }()) + " volumes");
+            str([&]{ vector<size_t> c; for (auto& x : subset) c.push_back (x.size()); return c; }()) + " volumes");
       }
 
 
 
 
-    bool update (value_type energy, const std::vector<std::vector<size_t>>& set) 
+    bool update (value_type energy, const vector<vector<size_t>>& set) 
     {
       std::lock_guard<std::mutex> lock (mutex);
       if (!progress) progress.reset (new ProgressBar ("distributing directions", target_num_permutations));
@@ -94,14 +92,14 @@ class Shared {
     }
 
 
-    const std::vector<std::vector<size_t>>& get_init_subset () const { return subset; }
-    const std::vector<std::vector<size_t>>& get_best_subset () const { return best_subset; }
+    const vector<vector<size_t>>& get_init_subset () const { return subset; }
+    const vector<vector<size_t>>& get_best_subset () const { return best_subset; }
 
 
   protected:
     const Eigen::MatrixXd& directions;
     std::mutex mutex;
-    std::vector<std::vector<size_t>> subset, best_subset;
+    vector<vector<size_t>> subset, best_subset;
     value_type best_energy;
     const size_t target_num_permutations;
     size_t num_permutations;
@@ -114,7 +112,7 @@ class Shared {
 
 
 
-class EnergyCalculator {
+class EnergyCalculator { MEMALIGN(EnergyCalculator)
   public:
     EnergyCalculator (Shared& shared) : shared (shared), subset (shared.get_init_subset()) { }
 
@@ -156,7 +154,7 @@ class EnergyCalculator {
 
   protected:
     Shared& shared;
-    std::vector<std::vector<size_t>> subset;
+    vector<vector<size_t>> subset;
     Math::RNG rng;
 };
 
@@ -174,7 +172,7 @@ void run ()
 
   size_t num_permutations = get_option_value ("permutations", DEFAULT_PERMUTATIONS);
 
-  std::vector<std::vector<size_t>> best;
+  vector<vector<size_t>> best;
   {
     Shared shared (directions, num_subsets, num_permutations);
     Thread::run (Thread::multi (EnergyCalculator (shared)), "energy eval thread");

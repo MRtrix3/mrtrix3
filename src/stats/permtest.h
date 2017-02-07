@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __stats_permtest_h__
 #define __stats_permtest_h__
@@ -54,12 +53,12 @@ namespace MR
 
       /*! A class to pre-compute the empirical enhanced statistic image for non-stationarity correction */
       template <class StatsType>
-        class PreProcessor {
+        class PreProcessor { MEMALIGN (PreProcessor<StatsType>)
           public:
             PreProcessor (const StatsType& stats_calculator,
                           const std::shared_ptr<EnhancerBase> enhancer,
                           vector_type& global_enhanced_sum,
-                          std::vector<size_t>& global_enhanced_count) :
+                          vector<size_t>& global_enhanced_count) :
                             stats_calculator (stats_calculator),
                             enhancer (enhancer), global_enhanced_sum (global_enhanced_sum),
                             global_enhanced_count (global_enhanced_count), enhanced_sum (vector_type::Zero (global_enhanced_sum.size())),
@@ -92,9 +91,9 @@ namespace MR
             StatsType stats_calculator;
             std::shared_ptr<EnhancerBase> enhancer;
             vector_type& global_enhanced_sum;
-            std::vector<size_t>& global_enhanced_count;
+            vector<size_t>& global_enhanced_count;
             vector_type enhanced_sum;
-            std::vector<size_t> enhanced_count;
+            vector<size_t> enhanced_count;
             vector_type stats;
             vector_type enhanced_stats;
             std::shared_ptr<std::mutex> mutex;
@@ -105,7 +104,7 @@ namespace MR
 
         /*! A class to perform the permutation testing */
         template <class StatsType>
-          class Processor {
+          class Processor { MEMALIGN (Processor<StatsType>)
             public:
               Processor (const StatsType& stats_calculator,
                          const std::shared_ptr<EnhancerBase> enhancer,
@@ -114,8 +113,8 @@ namespace MR
                          const std::shared_ptr<vector_type> default_enhanced_statistics_neg,
                          vector_type& perm_dist_pos,
                          std::shared_ptr<vector_type> perm_dist_neg,
-                         std::vector<size_t>& global_uncorrected_pvalue_counter,
-                         std::shared_ptr< std::vector<size_t> > global_uncorrected_pvalue_counter_neg) :
+                         vector<size_t>& global_uncorrected_pvalue_counter,
+                         std::shared_ptr< vector<size_t> > global_uncorrected_pvalue_counter_neg) :
                            stats_calculator (stats_calculator),
                            enhancer (enhancer), empirical_enhanced_statistics (empirical_enhanced_statistics),
                            default_enhanced_statistics (default_enhanced_statistics), default_enhanced_statistics_neg (default_enhanced_statistics_neg),
@@ -127,7 +126,7 @@ namespace MR
                            mutex (new std::mutex())
               {
                 if (global_uncorrected_pvalue_counter_neg)
-                  uncorrected_pvalue_counter_neg.reset (new std::vector<size_t>(stats_calculator.num_elements(), 0));
+                  uncorrected_pvalue_counter_neg.reset (new vector<size_t>(stats_calculator.num_elements(), 0));
               }
 
 
@@ -194,13 +193,13 @@ namespace MR
               const std::shared_ptr<vector_type> default_enhanced_statistics_neg;
               vector_type statistics;
               vector_type enhanced_statistics;
-              std::vector<size_t> uncorrected_pvalue_counter;
-              std::shared_ptr<std::vector<size_t> > uncorrected_pvalue_counter_neg;
+              vector<size_t> uncorrected_pvalue_counter;
+              std::shared_ptr<vector<size_t> > uncorrected_pvalue_counter_neg;
               vector_type& perm_dist_pos;
               std::shared_ptr<vector_type> perm_dist_neg;
 
-              std::vector<size_t>& global_uncorrected_pvalue_counter;
-              std::shared_ptr<std::vector<size_t> > global_uncorrected_pvalue_counter_neg;
+              vector<size_t>& global_uncorrected_pvalue_counter;
+              std::shared_ptr<vector<size_t> > global_uncorrected_pvalue_counter_neg;
               std::shared_ptr<std::mutex> mutex;
         };
 
@@ -210,7 +209,7 @@ namespace MR
           void precompute_empirical_stat (const StatsType& stats_calculator, const std::shared_ptr<EnhancerBase> enhancer,
                                           PermutationStack& perm_stack, vector_type& empirical_statistic)
           {
-            std::vector<size_t> global_enhanced_count (empirical_statistic.size(), 0);
+            vector<size_t> global_enhanced_count (empirical_statistic.size(), 0);
             {
               PreProcessor<StatsType> preprocessor (stats_calculator, enhancer, empirical_statistic, global_enhanced_count);
               Thread::run_queue (perm_stack, Permutation(), Thread::multi (preprocessor));
@@ -232,7 +231,7 @@ namespace MR
                                                  std::shared_ptr<vector_type> default_enhanced_statistics_neg,
                                                  vector_type& default_statistics)
             {
-              std::vector<size_t> default_labelling (stats_calculator.num_subjects());
+              vector<size_t> default_labelling (stats_calculator.num_subjects());
               for (size_t i = 0; i < default_labelling.size(); ++i)
                 default_labelling[i] = i;
               stats_calculator (default_labelling, default_statistics);
@@ -267,10 +266,10 @@ namespace MR
                                           vector_type& uncorrected_pvalues,
                                           std::shared_ptr<vector_type> uncorrected_pvalues_neg)
             {
-              std::vector<size_t> global_uncorrected_pvalue_count (stats_calculator.num_elements(), 0);
-              std::shared_ptr< std::vector<size_t> > global_uncorrected_pvalue_count_neg;
+              vector<size_t> global_uncorrected_pvalue_count (stats_calculator.num_elements(), 0);
+              std::shared_ptr< vector<size_t> > global_uncorrected_pvalue_count_neg;
               if (perm_dist_neg)
-                global_uncorrected_pvalue_count_neg.reset (new std::vector<size_t> (stats_calculator.num_elements(), 0));
+                global_uncorrected_pvalue_count_neg.reset (new vector<size_t> (stats_calculator.num_elements(), 0));
 
               {
                 Processor<StatsType> processor (stats_calculator, enhancer,
@@ -291,7 +290,7 @@ namespace MR
 
 
             template <class StatsType>
-              inline void run_permutations (std::vector<std::vector<size_t>>& permutations,
+              inline void run_permutations (vector<vector<size_t>>& permutations,
                                             const StatsType& stats_calculator,
                                             const std::shared_ptr<EnhancerBase> enhancer,
                                             const vector_type& empirical_enhanced_statistic,

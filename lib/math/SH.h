@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __math_SH_h__
 #define __math_SH_h__
@@ -158,7 +157,7 @@ namespace MR
         }
 
       template <typename ValueType>
-      class Transform {
+      class Transform { MEMALIGN(Transform<ValueType>)
         public:
           typedef Eigen::Matrix<ValueType,Eigen::Dynamic,Eigen::Dynamic> matrix_type;
 
@@ -321,7 +320,7 @@ namespace MR
 
 
       namespace {
-        template <typename> struct __dummy { typedef int type; };
+        template <typename> struct __dummy { NOMEMALIGN typedef int type; };
       }
 
 
@@ -331,11 +330,11 @@ namespace MR
 
       //! used to speed up SH calculation
       template <typename ValueType> class PrecomputedFraction
-      {
+      { NOMEMALIGN
         public:
           PrecomputedFraction () : f1 (0.0), f2 (0.0) { }
           ValueType f1, f2;
-          typename std::vector<ValueType>::const_iterator p1, p2;
+          typename vector<ValueType>::const_iterator p1, p2;
       };
 
 #ifndef USE_NON_ORTHONORMAL_SH_BASIS
@@ -346,7 +345,7 @@ namespace MR
 
       //! Precomputed Associated Legrendre Polynomials - used to speed up SH calculation
       template <typename ValueType> class PrecomputedAL
-      {
+      { NOMEMALIGN
         public:
           typedef ValueType value_type;
 
@@ -371,7 +370,7 @@ namespace MR
             Eigen::Matrix<value_type,Eigen::Dynamic,1,0,64> buf (lmax+1);
 
             for (int n = 0; n < ndir; n++) {
-              typename std::vector<value_type>::iterator p = AL.begin() + n*nAL;
+              typename vector<value_type>::iterator p = AL.begin() + n*nAL;
               value_type cos_el = std::cos (n*inc);
               for (int m = 0; m <= lmax; m++) {
                 Legendre::Plm_sph (buf, lmax, m, cos_el);
@@ -446,7 +445,7 @@ namespace MR
         protected:
           int lmax, ndir, nAL;
           ValueType inc;
-          std::vector<ValueType> AL;
+          vector<ValueType> AL;
       };
 
 
@@ -600,7 +599,7 @@ namespace MR
 
       //! a class to hold the coefficients for an apodised point-spread function.
       template <typename ValueType> class aPSF
-      {
+      { MEMALIGN(aPSF<ValueType>)
         public:
           aPSF (const size_t lmax) :
             lmax (lmax),

@@ -1,17 +1,17 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
+
 #ifndef __gui_mrview_window_h__
 #define __gui_mrview_window_h__
 
@@ -50,13 +50,13 @@ namespace MR
 
 
       class Window : public QMainWindow, ColourMapButtonObserver
-      {
+      { MEMALIGN(Window)
           Q_OBJECT
 
         private:
           Cursor cursors_do_not_use;
 
-          class GLArea : public GL::Area {
+          class GLArea : public GL::Area { MEMALIGN(GLArea)
             public:
               GLArea (Window& parent);
               QSize sizeHint () const override;
@@ -81,7 +81,8 @@ namespace MR
           Window();
           ~Window();
 
-          void add_images (std::vector<std::unique_ptr<MR::Header>>& list);
+          void add_images (vector<std::unique_ptr<MR::Header>>& list);
+          void process_commandline_options ();
 
           const QPoint& mouse_position () const { return mouse_position_; }
           const QPoint& mouse_displacement () const { return mouse_displacement_; }
@@ -215,8 +216,6 @@ namespace MR
           void about_slot ();
           void aboutQt_slot ();
 
-          void process_commandline_options ();
-
 
 
         private:
@@ -325,7 +324,7 @@ namespace MR
 
           Tool::Base* tool_has_focus;
 
-          std::vector<double> render_times;
+          vector<double> render_times;
           double best_FPS, best_FPS_time;
           bool show_FPS;
 
@@ -338,7 +337,7 @@ namespace MR
       };
 
 
-      class GrabContext : private Context::Grab {
+      class GrabContext : private Context::Grab { NOMEMALIGN
         public:
           GrabContext () : Context::Grab (Window::main->glarea) { }
       };

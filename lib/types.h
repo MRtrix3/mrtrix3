@@ -1,33 +1,41 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __mrtrix_types_h__
 #define __mrtrix_types_h__
 
+namespace MR {
+  namespace Helper {
+    template <class ImageType> class ConstRow;
+    template <class ImageType> class Row;
+  }
+}
+
 #define EIGEN_DONT_PARALLELIZE
+#define EIGEN_DENSEBASE_PLUGIN "eigen_plugins/dense_base.h"
+#define EIGEN_MATRIXBASE_PLUGIN "eigen_plugins/dense_base.h"
+#define EIGEN_ARRAYBASE_PLUGIN "eigen_plugins/dense_base.h"
+#define EIGEN_MATRIX_PLUGIN "eigen_plugins/matrix.h"
+#define EIGEN_ARRAY_PLUGIN "eigen_plugins/array.h"
+
 
 #include <stdint.h>
 #include <complex>
 #include <iostream>
 #include <vector>
 
-// These lines are to silence deprecation warnings with Eigen & GCC v5
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <Eigen/Geometry>
-#pragma GCC diagnostic pop
 
 /*! \defgroup VLA Variable-length array macros
  *
@@ -38,14 +46,14 @@
  * function is called recursively. They can be used safely in cases where the
  * size of the array is expected to be small, and the function will not be
  * called recursively, and in these cases may avoid the overhead of allocation
- * that might be incurred by the use of e.g. a std::vector. 
+ * that might be incurred by the use of e.g. a vector. 
  */
 
 //! \{
 
 /*! \def VLA
  * define a variable-length array (VLA) if supported by the compiler, or a
- * std::vector otherwise. This may have performance implications in the latter
+ * vector otherwise. This may have performance implications in the latter
  * case if this forms part of a tight loop.
  * \sa VLA_MAX
  */
@@ -63,7 +71,7 @@
 
 #ifdef MRTRIX_NO_VLA
 # define VLA(name, type, num) \
-  std::vector<type> __vla__ ## name(num); \
+  vector<type> __vla__ ## name(num); \
   type* name = &__vla__ ## name[0]
 # define VLA_MAX(name, type, num, max) type name[max]
 #else
@@ -74,7 +82,7 @@
 
 /*! \def NON_POD_VLA
  * define a variable-length array of non-POD data if supported by the compiler,
- * or a std::vector otherwise. This may have performance implications in the
+ * or a vector otherwise. This may have performance implications in the
  * latter case if this forms part of a tight loop.  
  * \sa VLA_MAX
  */
@@ -92,7 +100,7 @@
 
 #ifdef MRTRIX_NO_NON_POD_VLA
 # define NON_POD_VLA(name, type, num) \
-  std::vector<type> __vla__ ## name(num); \
+  vector<type> __vla__ ## name(num); \
   type* name = &__vla__ ## name[0]
 # define NON_POD_VLA_MAX(name, type, num, max) type name[max]
 #else
@@ -108,6 +116,60 @@
 # define FORCE_INLINE inline
 #endif
 
+
+#ifndef EIGEN_DEFAULT_ALIGN_BYTES
+// Assume 16 byte alignment as hard-coded in Eigen 3.2:
+# define EIGEN_DEFAULT_ALIGN_BYTES 16
+#endif
+
+#define NOMEMALIGN
+
+template <class T> class __has_custom_new_operator { NOMEMALIGN
+    template <typename C> static inline char test (decltype(C::operator new (sizeof(C)))) ;
+    template <typename C> static inline long test (...);    
+  public:
+    enum { value = sizeof(test<T>(nullptr)) == sizeof(char) };
+};
+
+
+inline void* __aligned_malloc (std::size_t size) {
+  auto* original = std::malloc (size + EIGEN_DEFAULT_ALIGN_BYTES); 
+  if (!original) throw std::bad_alloc(); 
+  void *aligned = reinterpret_cast<void*>((reinterpret_cast<std::size_t>(original) & ~(std::size_t(EIGEN_DEFAULT_ALIGN_BYTES-1))) + EIGEN_DEFAULT_ALIGN_BYTES);
+  *(reinterpret_cast<void**>(aligned) - 1) = original; 
+  return aligned; 
+}
+
+inline void __aligned_free (void* ptr) { if (ptr) std::free (*(reinterpret_cast<void**>(ptr) - 1)); }
+
+
+#define MEMALIGN(...) public: \
+  FORCE_INLINE void* operator new (std::size_t size) { return (alignof(__VA_ARGS__)>MRTRIX_ALLOC_MEM_ALIGN) ? __aligned_malloc (size) : ::operator new (size); } \
+  FORCE_INLINE void* operator new[] (std::size_t size) { return (alignof(__VA_ARGS__)>MRTRIX_ALLOC_MEM_ALIGN) ? __aligned_malloc (size) : ::operator new[] (size); } \
+  FORCE_INLINE void operator delete (void* ptr) { if (alignof(__VA_ARGS__)>MRTRIX_ALLOC_MEM_ALIGN) __aligned_free (ptr); else ::operator delete (ptr); } \
+  FORCE_INLINE void operator delete[] (void* ptr) { if (alignof(__VA_ARGS__)>MRTRIX_ALLOC_MEM_ALIGN) __aligned_free (ptr); else ::operator delete[] (ptr); }
+
+
+/*! \def CHECK_MEM_ALIGN
+ * used to verify that the class is set up approriately for memory alignment
+ * when dynamically allocated. This checks whether the class's alignment
+ * requirements exceed that of the default allocator, and if so whether it has
+ * custom operator new methods defined to deal with this. Conversely, it also
+ * checks whether a custom allocator has been defined needlessly, which is to
+ * be avoided for performance reasons. 
+ *
+ * The compiler will check whether this is indeed needed, and fail with an
+ * appropriate warning if this is not true. In this case, you need to replace
+ * MEMALIGN with NOMEMALIGN.
+ * \sa NOMEMALIGN
+ * \sa MEMALIGN
+ */
+#define CHECK_MEM_ALIGN(...) \
+    static_assert ( (alignof(__VA_ARGS__) <= MRTRIX_ALLOC_MEM_ALIGN ) || __has_custom_new_operator<__VA_ARGS__>::value, \
+        "class requires over-alignment, but no operator new defined! Please insert MEMALIGN() into class definition.")
+
+
+
 namespace MR
 {
 
@@ -117,7 +179,7 @@ namespace MR
   typedef std::complex<float> cfloat;
 
   template <typename T>
-    struct container_cast : public T {
+    struct container_cast : public T { MEMALIGN(container_cast<T>)
       template <typename U>
         container_cast (const U& x) : 
         T (x.begin(), x.end()) { }
@@ -134,15 +196,29 @@ namespace MR
 
 
   //! check whether type is complex:
-  template <class ValueType> struct is_complex : std::false_type { };
-  template <class ValueType> struct is_complex<std::complex<ValueType>> : std::true_type { };
+  template <class ValueType> struct is_complex : std::false_type { NOMEMALIGN };
+  template <class ValueType> struct is_complex<std::complex<ValueType>> : std::true_type { NOMEMALIGN };
 
 
   //! check whether type is compatible with MRtrix3's file IO backend:
   template <class ValueType> 
     struct is_data_type : 
-      std::integral_constant<bool, std::is_arithmetic<ValueType>::value || is_complex<ValueType>::value> { };
+      std::integral_constant<bool, std::is_arithmetic<ValueType>::value || is_complex<ValueType>::value> { NOMEMALIGN };
 
+
+  template <typename X, int N=(alignof(X)>MRTRIX_ALLOC_MEM_ALIGN)>
+    class vector : public ::std::vector<X, Eigen::aligned_allocator<X>> { NOMEMALIGN
+      public:
+        using ::std::vector<X,Eigen::aligned_allocator<X>>::vector;
+        vector() { }
+    };
+
+  template <typename X>
+    class vector<X,0> : public ::std::vector<X> { NOMEMALIGN
+      public:
+        using ::std::vector<X>::vector;
+        vector() { }
+    };
 
 }
 
@@ -181,4 +257,8 @@ namespace Eigen {
 }
 
 #endif
+
+
+
+
 

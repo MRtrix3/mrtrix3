@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __image_check__h__
 #define __image_check__h__
@@ -68,6 +67,20 @@ namespace MR
           throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within fractional precision of " + str(tol)
                + " (" + str(cdouble (a.value())) + " vs " + str(cdouble (b.value())) + ")");
           }, in1, in2);
+    }
+
+  //! check images are the same within a tolerance defined by a third image
+  template <class ImageType1, class ImageType2, class ImageTypeTol>
+    inline void check_images_tolimage (ImageType1& in1, ImageType2& in2, ImageTypeTol& tol) {
+
+      check_headers (in1, in2);
+      check_headers (in1, tol);
+      ThreadedLoop (in1)
+      .run ([] (const decltype(in1)& a, const decltype(in2)& b, const decltype(tol)& t) {
+          if (std::abs (cdouble (a.value()) - cdouble (b.value())) > t.value())
+          throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within precision of \"" + t.name() + "\""
+               + " (" + str(cdouble (a.value())) + " vs " + str(cdouble (b.value())) + ", tolerance " + str(t.value()) + ")");
+          }, in1, in2, tol);
     }
 
   //! check images are the same within a fractional tolerance relative to the maximum value in the voxel

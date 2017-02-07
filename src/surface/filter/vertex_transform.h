@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __surface_filter_vertex_transform_h__
 #define __surface_filter_vertex_transform_h__
@@ -34,7 +33,7 @@ namespace MR
 
 
       class VertexTransform : public Base
-      {
+      { MEMALIGN (VertexTransform)
         public:
           enum class transform_t { UNDEFINED, FIRST2REAL, REAL2FIRST, VOXEL2REAL, REAL2VOXEL };
 
@@ -52,7 +51,7 @@ namespace MR
 
           void operator() (const Mesh&, Mesh&) const override;
 
-          void operator() (const MeshMulti& in, MeshMulti& out) const {
+          void operator() (const MeshMulti& in, MeshMulti& out) const override {
             Base::operator() (in, out);
           }
 

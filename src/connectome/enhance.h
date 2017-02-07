@@ -1,18 +1,15 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 
 #ifndef __connectome_enhance_h__
@@ -43,7 +40,7 @@ namespace MR {
 
       // This should be possible to use for any domain of inference
       class PassThrough : public Stats::EnhancerBase
-      {
+      { MEMALIGN (PassThrough)
         public:
           PassThrough() { }
           ~PassThrough() { }
@@ -56,7 +53,7 @@ namespace MR {
 
 
       class NBS : public Stats::TFCE::EnhancerBase
-      {
+      { MEMALIGN (NBS)
         public:
 
           NBS () = delete;
@@ -71,10 +68,10 @@ namespace MR {
             return (*this) (in, threshold, out);
           }
 
-          value_type operator() (const vector_type&, const value_type, vector_type&) const;
+          value_type operator() (const vector_type&, const value_type, vector_type&) const override;
 
         protected:
-          std::shared_ptr< std::vector< std::vector<size_t> > > adjacency;
+          std::shared_ptr< vector< vector<size_t> > > adjacency;
           value_type threshold;
 
         private:

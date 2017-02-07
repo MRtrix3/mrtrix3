@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -60,24 +58,27 @@ void usage ()
 typedef float value_type;
 
 
-class SH2Amp
-{
+class SH2Amp { MEMALIGN(SH2Amp)
   public:
     template <class MatrixType>
-    SH2Amp (const MatrixType& dirs, const size_t lmax, bool nonneg) 
-      : transformer(dirs.template cast<value_type>(), lmax), nonnegative(nonneg) { }
+    SH2Amp (const MatrixType& dirs, const size_t lmax, bool nonneg) : 
+      transformer (dirs.template cast<value_type>(), lmax), 
+      nonnegative (nonneg),
+      sh (transformer.n_SH()),
+      amp (transformer.n_amp()) { }
     
     void operator() (Image<value_type>& in, Image<value_type>& out) {
-      transformer.SH2A(r, in.row(3));
+      sh = in.row (3);
+      transformer.SH2A(amp, sh);
       if (nonnegative)
-        r = r.cwiseMax(value_type(0.0));
-      out.row(3) = r;
+        amp = amp.cwiseMax(value_type(0.0));
+      out.row (3) = amp;
     }
 
   private:
-    Math::SH::Transform<value_type> transformer;
-    bool nonnegative;
-    Eigen::Matrix<value_type, Eigen::Dynamic, 1> r;
+    const Math::SH::Transform<value_type> transformer;
+    const bool nonnegative;
+    Eigen::Matrix<value_type, Eigen::Dynamic, 1> sh, amp;
 };
 
 

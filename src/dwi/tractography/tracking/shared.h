@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __dwi_tractography_tracking_shared_h__
 #define __dwi_tractography_tracking_shared_h__
@@ -49,7 +48,7 @@ namespace MR
 
 
 
-        class SharedBase {
+        class SharedBase { MEMALIGN(SharedBase)
 
           public:
 
@@ -127,7 +126,7 @@ namespace MR
                   switch (i) {
                     case CONTINUE:              name = "undefined";      break;
                     case ENTER_CGM:             name = "enter_cgm";      break;
-                    case CALIBRATE_FAIL:        name = "calibrate_fail"; break;
+                    case CALIBRATOR:            name = "calibrator";     break;
                     case EXIT_IMAGE:            name = "exit_image";     break;
                     case ENTER_CSF:             name = "enter_csf";      break;
                     case BAD_SIGNAL:            name = "bad_signal";     break;
@@ -160,7 +159,7 @@ namespace MR
                 switch (i) {
                   case CONTINUE:             term_type = "Unknown";                       to_print = false;    break;
                   case ENTER_CGM:            term_type = "Entered cortical grey matter";  to_print = is_act(); break;
-                  case CALIBRATE_FAIL:       term_type = "Calibrator failed";             to_print = true;     break;
+                  case CALIBRATOR:           term_type = "Calibrator sub-threshold";      to_print = true;     break;
                   case EXIT_IMAGE:           term_type = "Exited image";                  to_print = true;     break;
                   case ENTER_CSF:            term_type = "Entered CSF";                   to_print = is_act(); break;
                   case BAD_SIGNAL:           term_type = "Bad diffusion signal";          to_print = true;     break;

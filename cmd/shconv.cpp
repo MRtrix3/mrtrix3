@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -50,29 +48,31 @@ void usage ()
 typedef float value_type;
 
 
-class SConvFunctor {
+class SConvFunctor { MEMALIGN(SConvFunctor)
   public:
   SConvFunctor (const size_t n, Image<bool>& mask, 
                 const Eigen::Matrix<value_type, Eigen::Dynamic, 1>& response) :
                     image_mask (mask),
                     response (response),
-                    SH_out (n){ }
+                    SH_in (n),
+                    SH_out (n) { }
 
     void operator() (Image<value_type>& in, Image<value_type>& out) {
       if (image_mask.valid()) {
         assign_pos_of(in).to(image_mask);
         if (!image_mask.value()) {
-          out.row(3).setZero();
+          out.row(3) = 0.0;
           return;
         }
       }
-      out.row(3) = Math::SH::sconv (SH_out, response, in.row(3));
+      SH_in = in.row(3);
+      out.row(3) = Math::SH::sconv (SH_out, response, SH_in);
     }
 
   protected:
     Image<bool> image_mask;
     Eigen::Matrix<value_type, Eigen::Dynamic, 1> response;
-    Eigen::Matrix<value_type, Eigen::Dynamic, 1> SH_out;
+    Eigen::Matrix<value_type, Eigen::Dynamic, 1> SH_in, SH_out;
 
 };
 

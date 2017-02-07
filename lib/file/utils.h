@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __file_ops_h__
 #define __file_ops_h__
@@ -79,6 +78,26 @@ namespace MR
         static const std::string __tmpfile_prefix = __get_tmpfile_prefix();
         return __tmpfile_prefix;
       }
+
+      /* Config file options listed here so that they can be scraped by
+       * generate_user_docs.sh and added to the list of config file options in
+       * the documentation without modifying the script to read from the scripts
+       * directory.
+       */
+
+      //CONF option: ScriptTmpDir
+      //CONF default: `.`
+      //CONF The location in which to generate the temporary directories to be
+      //CONF used by MRtrix Python scripts. By default they will be generated
+      //CONF in the working directory.
+
+      //CONF option: ScriptTmpPrefix
+      //CONF default: `<script>-tmp-`
+      //CONF The prefix to use when generating a unique name for a Python
+      //CONF script temporary directory. By default the name of the invoked
+      //CONF script itself will be used, followed by `-tmp-` (six random
+      //CONF characters are then appended to produce a unique name in cases
+      //CONF where a script may be run multiple times in parallel).
 
     }
 

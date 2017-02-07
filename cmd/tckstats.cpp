@@ -1,18 +1,15 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 
 #include <vector>
@@ -63,8 +60,7 @@ void usage ()
 
 
 // Store length and weight of each streamline
-class LW
-{
+class LW { NOMEMALIGN
   public:
     LW (const float l, const float w) : length (l), weight (w) { }
     LW () : length (NaN), weight (NaN) { }
@@ -99,8 +95,8 @@ void run ()
   float min_length = std::numeric_limits<float>::infinity();
   float max_length = 0.0f;
   double sum_lengths = 0.0, sum_weights = 0.0;
-  std::vector<double> histogram;
-  std::vector<LW> all_lengths;
+  vector<double> histogram;
+  vector<LW> all_lengths;
   all_lengths.reserve (header_count);
 
   {
@@ -167,7 +163,7 @@ void run ()
   }
 
   double stdev = 0.0;
-  for (std::vector<LW>::const_iterator i = all_lengths.begin(); i != all_lengths.end(); ++i)
+  for (vector<LW>::const_iterator i = all_lengths.begin(); i != all_lengths.end(); ++i)
     stdev += i->get_weight() * Math::pow2 (i->get_length() - mean_length);
   stdev = std::sqrt (stdev / (((count - 1) / float(count)) * sum_weights));
 

@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -57,22 +56,22 @@ namespace MR
 
     const char* AUTHOR = nullptr;
     const char* COPYRIGHT =
-       "Copyright (c) 2008-2016 the MRtrix3 contributors"
+       "Copyright (c) 2008-2017 the MRtrix3 contributors"
        "\n\n"
        "This Source Code Form is subject to the terms of the Mozilla Public "
        "License, v. 2.0. If a copy of the MPL was not distributed with this "
-       "file, You can obtain one at http://mozilla.org/MPL/2.0/"
+       "file, you can obtain one at http://mozilla.org/MPL/2.0/."
        "\n\n"
        "MRtrix is distributed in the hope that it will be useful, "
-       "but WITHOUT ANY WARRANTY; without even the implied warranty of "
-       "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."
+       "but WITHOUT ANY WARRANTY; without even the implied warranty "
+       "of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."
        "\n\n"
-       "For more details, see www.mrtrix.org";
+       "For more details, see http://www.mrtrix.org/.";
 
 
     std::string NAME;
-    std::vector<ParsedArgument> argument;
-    std::vector<ParsedOption> option;
+    vector<ParsedArgument> argument;
+    vector<ParsedOption> option;
     int log_level = 1;
     bool fail_on_warn = false;
     bool terminal_use_colour = true;
@@ -91,7 +90,7 @@ namespace MR
     namespace
     {
 
-      inline void get_matches (std::vector<const Option*>& candidates, const OptionGroup& group, const std::string& stub)
+      inline void get_matches (vector<const Option*>& candidates, const OptionGroup& group, const std::string& stub)
       {
         for (size_t i = 0; i < group.size(); ++i) {
           if (stub.compare (0, stub.size(), group[i].id, stub.size()) == 0)
@@ -122,11 +121,11 @@ namespace MR
         if (size (line) < indent)
           resize (line, indent, ' ');
 
-        std::vector<std::string> paragraphs = split (text, "\n");
+        vector<std::string> paragraphs = split (text, "\n");
 
         for (size_t n = 0; n < paragraphs.size(); ++n) {
           size_t i = 0;
-          std::vector<std::string> words = split (paragraphs[n]);
+          vector<std::string> words = split (paragraphs[n]);
           while (i < words.size()) {
             do {
               line += " " + words[i++];
@@ -364,7 +363,7 @@ namespace MR
 
     std::string OptionList::syntax (int format) const
     {
-      std::vector<std::string> group_names;
+      vector<std::string> group_names;
       for (size_t i = 0; i < size(); ++i) {
         if (std::find (group_names.begin(), group_names.end(), (*this)[i].name) == group_names.end()) 
           group_names.push_back ((*this)[i].name);
@@ -624,7 +623,7 @@ namespace MR
         s += indent_newlines (DESCRIPTION[i]) + "\n\n";
 
 
-      std::vector<std::string> group_names;
+      vector<std::string> group_names;
       for (size_t i = 0; i < OPTIONS.size(); ++i) {
         if (std::find (group_names.begin(), group_names.end(), OPTIONS[i].name) == group_names.end()) 
           group_names.push_back (OPTIONS[i].name);
@@ -724,7 +723,7 @@ namespace MR
         s += indent_newlines (DESCRIPTION[i]) + "\n\n";
 
 
-      std::vector<std::string> group_names;
+      vector<std::string> group_names;
       for (size_t i = 0; i < OPTIONS.size(); ++i) {
         if (std::find (group_names.begin(), group_names.end(), OPTIONS[i].name) == group_names.end())
           group_names.push_back (OPTIONS[i].name);
@@ -779,7 +778,7 @@ namespace MR
     {
       if (arg[0] == '-' && arg[1] && !isdigit (arg[1]) && arg[1] != '.') {
         while (*arg == '-') arg++;
-        std::vector<const Option*> candidates;
+        vector<const Option*> candidates;
         std::string root (arg);
 
         for (size_t i = 0; i < OPTIONS.size(); ++i)
@@ -927,7 +926,7 @@ namespace MR
           s += " " + std::string(a);
         e.push_back (s);
         if (argument.size() > num_args_required) {
-          std::vector<std::string> potential_options;
+          vector<std::string> potential_options;
           for (const auto& a : argument) {
             for (const auto& og : OPTIONS) {
               for (const auto& o : og) {
@@ -1055,9 +1054,9 @@ namespace MR
 
 
 
-    const std::vector<ParsedOption> get_options (const std::string& name)
+    const vector<ParsedOption> get_options (const std::string& name)
     {
-      std::vector<ParsedOption> matches;
+      vector<ParsedOption> matches;
       for (size_t i = 0; i < option.size(); ++i) {
         assert (option[i].opt);
         if (option[i].opt->is (name)) 

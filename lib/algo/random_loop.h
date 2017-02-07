@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __algo_random_loop_h__
 #define __algo_random_loop_h__
@@ -28,7 +27,7 @@ namespace MR
 {
 
  template <class ImageType, class RandomEngine>
-  class Random_loop {
+  class Random_loop { NOMEMALIGN
     public:
       Random_loop (ImageType& in,
         RandomEngine& random_engine,
@@ -75,9 +74,9 @@ namespace MR
       ImageType& image;
       RandomEngine& engine;
       size_t ax;
-      std::vector<size_t> idx;
-      std::vector<size_t>::iterator it;
-      std::vector<size_t>::iterator stop;
+      vector<size_t> idx;
+      vector<size_t>::iterator it;
+      vector<size_t>::iterator stop;
       size_t max_cnt;
       bool status;
       size_t cnt;
@@ -85,7 +84,7 @@ namespace MR
 
   // Random_sparse_loop: ok for VERY sparse loops, slows down significantly at higher density (>5%)
   template <class ImageType>
-    class Random_sparse_loop {
+    class Random_sparse_loop { NOMEMALIGN
       public:
         Random_sparse_loop (ImageType& in,
           const size_t& axis = 0,
@@ -164,7 +163,7 @@ namespace MR
    };
 
   template <class ImageType, class IterType>
-    class Iterator_loop {
+    class Iterator_loop { NOMEMALIGN
       public:
         Iterator_loop (ImageType& in,
           IterType first,

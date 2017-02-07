@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __math_Sn_scale_estimator_h__
 #define __math_Sn_scale_estimator_h__
@@ -30,7 +29,7 @@ namespace MR {
     // for details, see: Rousseeuw PJ, Croux C. Alternatives to the Median Absolute Deviation. Journal of the American Statistical Association 1993;88:1273–1283. 
 
     template <typename value_type = default_type> 
-      class Sn_scale_estimator {
+      class Sn_scale_estimator { NOMEMALIGN
         public:
           template <class VectorType>
             value_type operator() (const VectorType& vec)
@@ -46,7 +45,7 @@ namespace MR {
             }
 
         protected:
-          std::vector<value_type> diff, med_diff;
+          vector<value_type> diff, med_diff;
 
       };
 

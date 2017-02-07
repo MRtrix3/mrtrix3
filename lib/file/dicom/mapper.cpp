@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "header.h"
 #include "phase_encoding.h"
@@ -29,7 +28,7 @@ namespace MR {
     namespace Dicom {
 
 
-      std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper (MR::Header& H, std::vector<std::shared_ptr<Series>>& series)
+      std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper (MR::Header& H, vector<std::shared_ptr<Series>>& series)
       {
         assert (series.size() > 0);
         std::unique_ptr<MR::ImageIO::Base> io_handler;
@@ -45,7 +44,7 @@ namespace MR {
         H.name() = sbuf;
 
         // build up sorted list of frames:
-        std::vector<Frame*> frames;
+        vector<Frame*> frames;
 
         // loop over series list:
         for (const auto series_it : series) {
@@ -82,8 +81,8 @@ namespace MR {
           throw Exception ("missing image frames for DICOM image \"" + H.name() + "\"");
 
         if (dim[0] > 1) { // switch axes so slice dim is inner-most:
-          std::vector<Frame*> list (frames);
-          std::vector<Frame*>::iterator it = frames.begin();
+          vector<Frame*> list (frames);
+          vector<Frame*>::iterator it = frames.begin();
           for (size_t k = 0; k < dim[2]; ++k) 
             for (size_t i = 0; i < dim[0]; ++i) 
               for (size_t j = 0; j < dim[1]; ++j) 

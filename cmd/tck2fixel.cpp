@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -34,15 +32,15 @@ using namespace App;
 #define DEFAULT_ANGLE_THRESHOLD 45.0
 
 
-class TrackProcessor {
+class TrackProcessor { MEMALIGN (TrackProcessor)
 
  public:
 
    typedef DWI::Tractography::Mapping::SetVoxelDir SetVoxelDir;
 
    TrackProcessor (Image<uint32_t>& fixel_indexer,
-                   const std::vector<Eigen::Vector3>& fixel_directions,
-                   std::vector<uint16_t>& fixel_TDI,
+                   const vector<Eigen::Vector3>& fixel_directions,
+                   vector<uint16_t>& fixel_TDI,
                    const float angular_threshold):
      fixel_indexer (fixel_indexer) ,
      fixel_directions (fixel_directions),
@@ -52,7 +50,7 @@ class TrackProcessor {
 
    bool operator () (const SetVoxelDir& in)  {
      // For each voxel tract tangent, assign to a fixel
-     std::vector<int32_t> tract_fixel_indices;
+     vector<int32_t> tract_fixel_indices;
      for (SetVoxelDir::const_iterator i = in.begin(); i != in.end(); ++i) {
        assign_pos_of (*i).to (fixel_indexer);
        fixel_indexer.index(3) = 0;
@@ -83,8 +81,8 @@ class TrackProcessor {
 
  private:
    Image<uint32_t> fixel_indexer;
-   const std::vector<Eigen::Vector3>& fixel_directions;
-   std::vector<uint16_t>& fixel_TDI;
+   const vector<Eigen::Vector3>& fixel_directions;
+   vector<uint16_t>& fixel_TDI;
    const float angular_threshold_dp;
 };
 
@@ -133,8 +131,8 @@ void run ()
 
   const float angular_threshold = get_option_value ("angle", DEFAULT_ANGLE_THRESHOLD);
 
-  std::vector<Eigen::Vector3> positions (num_fixels);
-  std::vector<Eigen::Vector3> directions (num_fixels);
+  vector<Eigen::Vector3> positions (num_fixels);
+  vector<Eigen::Vector3> directions (num_fixels);
 
   const std::string output_fixel_folder = argument[2];
   Fixel::copy_index_and_directions_file (input_fixel_folder, output_fixel_folder);
@@ -155,7 +153,7 @@ void run ()
     }
   }
 
-  std::vector<uint16_t> fixel_TDI (num_fixels, 0.0);
+  vector<uint16_t> fixel_TDI (num_fixels, 0.0);
   const std::string track_filename = argument[0];
   DWI::Tractography::Properties properties;
   DWI::Tractography::Reader<float> track_file (track_filename, properties);

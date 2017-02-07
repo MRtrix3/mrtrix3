@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __image_filter_gaussian_h__
 #define __image_filter_gaussian_h__
@@ -44,7 +43,7 @@ namespace MR
      */
 
     class Smooth : public Base
-    {
+    { MEMALIGN (Smooth)
 
       public:
         template <class HeaderType>
@@ -61,7 +60,7 @@ namespace MR
         }
 
         template <class HeaderType>
-        Smooth (const HeaderType& in, const std::vector<default_type>& stdev_in):
+        Smooth (const HeaderType& in, const vector<default_type>& stdev_in):
             Base (in),
             extent (3, 0),
             stdev (3, 0.0),
@@ -74,7 +73,7 @@ namespace MR
         //! Set the extent of smoothing kernel in voxels.
         //! This can be set as a single value to be used for the first 3 dimensions
         //! or separate values, one for each dimension. (Default: 4 standard deviations)
-        void set_extent (const std::vector<int>& new_extent)
+        void set_extent (const vector<int>& new_extent)
         {
           if (new_extent.size() != 1 && new_extent.size() != 3)
             throw Exception ("Please supply a single kernel extent value, or three values (one for each spatial dimension)");
@@ -92,7 +91,7 @@ namespace MR
         }
 
         void set_stdev (default_type stdev_in) {
-          set_stdev (std::vector<default_type> (3, stdev_in));
+          set_stdev (vector<default_type> (3, stdev_in));
         }
 
         //! ensure the image boundary remains zero. Used to constrain displacement fields during image registration
@@ -103,7 +102,7 @@ namespace MR
         //! Set the standard deviation of the Gaussian defined in mm.
         //! This must be set as a single value to be used for the first 3 dimensions
         //! or separate values, one for each dimension. (Default: 1 voxel)
-        void set_stdev (const std::vector<default_type>& std_dev)
+        void set_stdev (const vector<default_type>& std_dev)
         {
           for (size_t i = 0; i < std_dev.size(); ++i)
             if (stdev[i] < 0.0)
@@ -130,7 +129,7 @@ namespace MR
           std::unique_ptr<ProgressBar> progress;
           if (message.size()) {
             size_t axes_to_smooth = 0;
-            for (std::vector<default_type>::const_iterator i = stdev.begin(); i != stdev.end(); ++i)
+            for (vector<default_type>::const_iterator i = stdev.begin(); i != stdev.end(); ++i)
               if (*i)
                 ++axes_to_smooth;
             progress.reset (new ProgressBar (message, axes_to_smooth + 1));
@@ -157,7 +156,7 @@ namespace MR
           std::unique_ptr<ProgressBar> progress;
           if (message.size()) {
             size_t axes_to_smooth = 0;
-            for (std::vector<default_type>::const_iterator i = stdev.begin(); i != stdev.end(); ++i)
+            for (vector<default_type>::const_iterator i = stdev.begin(); i != stdev.end(); ++i)
               if (*i)
                 ++axes_to_smooth;
             progress.reset (new ProgressBar (message, axes_to_smooth + 1));
@@ -165,7 +164,7 @@ namespace MR
 
           for (size_t dim = 0; dim < 3; dim++) {
             if (stdev[dim] > 0) {
-              std::vector<size_t> axes (in_and_output.ndim(), dim);
+              vector<size_t> axes (in_and_output.ndim(), dim);
               size_t axdim = 1;
               for (size_t i = 0; i < in_and_output.ndim(); ++i) {
                 if (stride_order[i] == dim)
@@ -182,13 +181,13 @@ namespace MR
         }
 
       protected:
-        std::vector<int> extent;
-        std::vector<default_type> stdev;
-        const std::vector<size_t> stride_order;
+        vector<int> extent;
+        vector<default_type> stdev;
+        const vector<size_t> stride_order;
         bool zero_boundary;
 
         template <class ImageType>
-          class SmoothFunctor1D {
+          class SmoothFunctor1D { MEMALIGN (SmoothFunctor1D)
           public:
             SmoothFunctor1D (ImageType& image,
                            default_type stdev_in = 1.0,

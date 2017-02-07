@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __filter_dwi_brain_mask_h__
 #define __filter_dwi_brain_mask_h__
@@ -51,8 +50,7 @@ namespace MR
      *
      * \endcode
      */
-    class DWIBrainMask : public Base
-    {
+    class DWIBrainMask : public Base { MEMALIGN(DWIBrainMask)
 
       public:
 
@@ -88,7 +86,7 @@ namespace MR
 
               for (auto l = Loop (0, 3) (input, shell_image); l; ++l) {
                 value_type mean = 0;
-                for (std::vector<size_t>::const_iterator v = shell.get_volumes().begin(); v != shell.get_volumes().end(); ++v) {
+                for (vector<size_t>::const_iterator v = shell.get_volumes().begin(); v != shell.get_volumes().end(); ++v) {
                   input.index(3) = *v;
                   mean += (input.value() < 0) ? 0 : input.value();
                 }

@@ -1,10 +1,10 @@
-.. _labelconvert:
+.. _labelconvert_tutorial:
 
-Structural connectome construction: Using ``labelconvert``
-=================
+``labelconvert``: Explanation & demonstration
+=============================================
 
 The ``labelconvert`` (previously ``labelconfig``) step in
-:ref:`stuct_connectome_construction` has proven to be a hurdle for
+:ref:`struct_connectome_construction` has proven to be a hurdle for
 many. It may be a 'unique' step in so far as that other software
 packages probably deal with this step implicitly, but in MRtrix we
 prefer things to be explicit and modular. So here I'll go through an

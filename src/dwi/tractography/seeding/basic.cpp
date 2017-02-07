@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -151,8 +149,8 @@ namespace MR
           auto vox = Image<float>::open (in);
           if (!(vox.ndim() == 3 || (vox.ndim() == 4 && vox.size(3) == 1)))
             throw Exception ("Seed image must be a 3D image");
-          std::vector<size_t> bottom (3, std::numeric_limits<size_t>::max());
-          std::vector<size_t> top    (3, 0);
+          vector<size_t> bottom (3, std::numeric_limits<size_t>::max());
+          vector<size_t> top    (3, 0);
 
           for (auto i = Loop (0,3) (vox); i; ++i) {
             const float value = vox.value();

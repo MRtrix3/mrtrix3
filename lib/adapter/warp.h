@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __adapter_warp_h__
 #define __adapter_warp_h__
@@ -47,8 +46,9 @@ namespace MR
      * \sa Interp::warp()
      */
     template <template <class ImageType> class Interpolator, class ImageType, class WarpType>
-      class Warp
-    {
+      class Warp :
+        public ImageBase<Warp<Interpolator,ImageType,WarpType>, typename ImageType::value_type>
+    { MEMALIGN(Warp<Interpolator,ImageType,WarpType>) 
       public:
         typedef typename ImageType::value_type value_type;
 
@@ -91,23 +91,7 @@ namespace MR
           return interp.value();
         }
 
-
-        Eigen::Matrix<value_type, Eigen::Dynamic, 1> row (size_t axis) {
-          assert (interp.ndim() > 3);
-          Eigen::Vector3 pos = get_position();
-          if (std::isnan(pos[0]) || std::isnan(pos[1]) || std::isnan(pos[2])) {
-            Eigen::Matrix<value_type, Eigen::Dynamic, 1> out_of_bounds_row (interp.size (axis));
-            out_of_bounds_row.setOnes();
-            out_of_bounds_row *= value_when_out_of_bounds;
-            return out_of_bounds_row;
-          }
-          interp.scanner (pos);
-          return interp.row (axis);
-        }
-
-
-        ssize_t index (size_t axis) const { return axis < 3 ? x[axis] : interp.index(axis); }
-        auto index (size_t axis) -> decltype(Helper::index(*this, axis)) { return { *this, axis }; }
+        ssize_t get_index (size_t axis) const { return axis < 3 ? x[axis] : interp.index(axis); }
         void move_index (size_t axis, ssize_t increment) {
           if (axis < 3) x[axis] += increment;
           else interp.index(axis) += increment;
@@ -120,7 +104,7 @@ namespace MR
           warp.index(1) = x[1];
           warp.index(2) = x[2];
 
-          return warp.row(3).template cast<double>();
+          return warp.row(3);
         }
 
         Interpolator<ImageType> interp;

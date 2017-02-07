@@ -1,19 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
-//#define GL_DEBUG
 
 #include <string>
 
@@ -292,10 +289,10 @@ namespace MR
 
         void ROI::open_slot ()
         {
-          std::vector<std::string> names = Dialog::File::get_images (this, "Select ROI images to open");
+          vector<std::string> names = Dialog::File::get_images (this, "Select ROI images to open");
           if (names.empty())
             return;
-          std::vector<std::unique_ptr<MR::Header>> list;
+          vector<std::unique_ptr<MR::Header>> list;
           for (size_t n = 0; n < names.size(); ++n)
             list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (names[n]))));
 
@@ -313,7 +310,7 @@ namespace MR
 
           const QMimeData* mimeData = event->mimeData();
           if (mimeData->hasUrls()) {
-            std::vector<std::unique_ptr<MR::Header>> list;
+            vector<std::unique_ptr<MR::Header>> list;
             QList<QUrl> urlList = mimeData->urls();
             for (int i = 0; i < urlList.size() && i < max_files; ++i) {
               try {
@@ -336,7 +333,7 @@ namespace MR
 
         void ROI::save (ROI_Item* roi)
         {
-          std::vector<GLubyte> data (roi->header().size(0) * roi->header().size(1) * roi->header().size(2));
+          vector<GLubyte> data (roi->header().size(0) * roi->header().size(1) * roi->header().size(2));
           { 
             MRView::GrabContext context;
             ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
@@ -394,7 +391,7 @@ namespace MR
 
 
 
-        void ROI::load (std::vector<std::unique_ptr<MR::Header>>& list)
+        void ROI::load (vector<std::unique_ptr<MR::Header>>& list)
         {
           list_model->load (list);
           list_view->selectionModel()->clear();
@@ -893,7 +890,7 @@ namespace MR
         bool ROI::process_commandline_option (const MR::App::ParsedOption& opt) 
         {
           if (opt.opt->is ("roi.load")) {
-            std::vector<std::unique_ptr<MR::Header>> list;
+            vector<std::unique_ptr<MR::Header>> list;
             try { list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (opt[0])))); }
             catch (Exception& e) { e.display(); }
             load (list);

@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __fixel_helpers_h__
 #define __fixel_helpers_h__
@@ -24,7 +23,7 @@
 namespace MR
 {
   class InvalidFixelDirectoryException : public Exception
-  {
+  { NOMEMALIGN
     public:
       InvalidFixelDirectoryException (const std::string& msg) : Exception(msg) {}
       InvalidFixelDirectoryException (const Exception& previous_exception, const std::string& msg)
@@ -198,11 +197,11 @@ namespace MR
     }
 
 
-    FORCE_INLINE std::vector<Header> find_data_headers (const std::string &fixel_directory_path, const Header &index_header, const bool include_directions = false)
+    FORCE_INLINE vector<Header> find_data_headers (const std::string &fixel_directory_path, const Header &index_header, const bool include_directions = false)
     {
       check_index_image (index_header);
       auto dir_walker = Path::Dir (fixel_directory_path);
-      std::vector<std::string> file_names;
+      vector<std::string> file_names;
       {
         std::string temp;
         while ((temp = dir_walker.read_name()).size())
@@ -210,7 +209,7 @@ namespace MR
       }
       std::sort (file_names.begin(), file_names.end());
 
-      std::vector<Header> data_headers;
+      vector<Header> data_headers;
       for (auto fname : file_names) {
         if (Path::has_suffix (fname, supported_sparse_formats)) {
           try {

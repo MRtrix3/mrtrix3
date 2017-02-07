@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "signal_handler.h"
 
@@ -30,24 +29,12 @@
 namespace MR
 {
 
-#ifdef MRTRIX_WINDOWS
-  BOOL WINAPI SignalHandler::WindowsCtrlHandler (DWORD CtrlType)
-  {
-    switch (CtrlType) {
-      case CTRL_C_EVENT: handler (SIGINT); break;
-      default: handler (SIGTERM); break;
-    }
-    return false; // set to true if no other handlers to be invoked
-  }
-#endif
-
   std::vector<std::string> SignalHandler::data;
   std::atomic_flag SignalHandler::flag = ATOMIC_FLAG_INIT;
 
   SignalHandler::SignalHandler()
   {
 #ifdef MRTRIX_WINDOWS
-    SetConsoleCtrlHandler (WindowsCtrlHandler, true);
     // Use signal() rather than sigaction() for Windows, as the latter is not supported
 # define __SIGNAL(SIG,MSG) signal (SIG, handler)
 #else
@@ -64,6 +51,7 @@ namespace MR
 
 #undef __SIGNAL
   }
+
 
 
 
@@ -119,8 +107,10 @@ namespace MR
       char str[256];
       str[255] = '\0';
       snprintf (str, 255, "\n%s: [SYSTEM FATAL CODE: %s (%d)] %s\n", App::NAME.c_str(), sig, i, msg);
-      write (STDERR_FILENO, str, strnlen(str,256));
-      std::_Exit (i);
+      if (write (STDERR_FILENO, str, strnlen(str,256)) == 0)
+        std::_Exit (i);
+      else
+        std::_Exit (i);
     }
   }
 

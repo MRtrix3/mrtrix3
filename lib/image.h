@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __image_h__
 #define __image_h__
@@ -35,7 +34,9 @@ namespace MR
 
 
   template <typename ValueType>
-    class Image {
+    class Image :
+      public ImageBase<Image<ValueType>, ValueType> 
+  { MEMALIGN (Image<ValueType>)
       public:
         typedef ValueType value_type;
         class Buffer;
@@ -70,37 +71,25 @@ namespace MR
         //! reset index to zero (origin)
         FORCE_INLINE void reset () {
           for (size_t n = 0; n < ndim(); ++n)
-            index(n) = 0;
+          this->index(n) = 0;
         }
 
         //! get position of current voxel location along \a axis
-        FORCE_INLINE ssize_t index (size_t axis) const { return x[axis]; }
-
-        //! get/set position of current voxel location along \a axis
-        FORCE_INLINE auto index (size_t axis) -> decltype (Helper::index (*this, axis)) { return { *this, axis }; }
+      FORCE_INLINE ssize_t get_index (size_t axis) const { return x[axis]; }
+      //! move position of current voxel location along \a axis
         FORCE_INLINE void move_index (size_t axis, ssize_t increment) { data_offset += stride (axis) * increment; x[axis] += increment; }
 
         FORCE_INLINE bool is_direct_io () const { return data_pointer; }
 
         //! get voxel value at current location
-        FORCE_INLINE ValueType value () const {
+      FORCE_INLINE ValueType get_value () const {
           if (data_pointer) return Raw::fetch_native<ValueType> (data_pointer, data_offset);
           return buffer->get_value (data_offset);
         }
-        //! get/set voxel value at current location
-        FORCE_INLINE auto value () -> decltype (Helper::value (*this)) { return { *this }; }
+      //! set voxel value at current location
         FORCE_INLINE void set_value (ValueType val) {
           if (data_pointer) Raw::store_native<ValueType> (val, data_pointer, data_offset);
           else buffer->set_value (data_offset, val);
-        }
-
-        //! get set/set a row of values at the current index position along the specified axis
-        FORCE_INLINE Eigen::Map<Eigen::Matrix<value_type, Eigen::Dynamic, 1 >, Eigen::Unaligned, Eigen::InnerStride<> > row (size_t axis)
-        {
-          assert (is_direct_io() && "Image::row() method can only be used on Images loaded using Image::with_direct_io()");
-          index (axis) = 0;
-          return Eigen::Map<Eigen::Matrix<value_type, Eigen:: Dynamic, 1 >, Eigen::Unaligned, Eigen::InnerStride<> >
-                   (address(), size (axis), Eigen::InnerStride<> (stride (axis)));
         }
 
         //! use for debugging
@@ -201,19 +190,20 @@ namespace MR
           return Header::scratch (template_header, label).get_image<ValueType>();
         }
 
-      protected:
         //! shared reference to header/buffer
         std::shared_ptr<Buffer> buffer;
+      protected:
         //! pointer to data address whether in RAM or MMap
         void* data_pointer;
         //! voxel indices
-        std::vector<ssize_t> x;
+        vector<ssize_t> x;
         //! voxel indices
         Stride::List strides;
         //! offset to currently pointed-to voxel
         size_t data_offset;
     };
 
+  CHECK_MEM_ALIGN (Image<float>);
 
 
 
@@ -221,9 +211,9 @@ namespace MR
 
 
   template <typename ValueType> 
-    class Image<ValueType>::Buffer : public Header
-    {
+    class Image<ValueType>::Buffer : public Header { MEMALIGN (Image<ValueType>::Buffer)
       public:
+        Buffer() {} // TODO: delete this line! Only for testing memory alignment issues.
         //! construct a Buffer object to access the data in the image specified
         Buffer (Header& H, bool read_write_if_existing = false);
         Buffer (Buffer&&) = default;
@@ -232,7 +222,6 @@ namespace MR
         Buffer (const Buffer& b) : 
           Header (b), fetch_func (b.fetch_func), store_func (b.store_func) { }
 
-      EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         FORCE_INLINE ValueType get_value (size_t offset) const {
           ssize_t nseg = offset / io->segment_size();
@@ -258,6 +247,7 @@ namespace MR
         }
     };
 
+  CHECK_MEM_ALIGN (Image<float>::Buffer);
 
 
 
@@ -277,12 +267,18 @@ namespace MR
 
     // lightweight struct to copy data into:
     template <typename ValueType>
-      struct TmpImage {
+      struct TmpImage : 
+        public ImageBase<TmpImage<ValueType>, ValueType> 
+    { MEMALIGN (TmpImage<ValueType>)
         typedef ValueType value_type;
+
+      TmpImage (const typename Image<ValueType>::Buffer& b, void* const data, 
+          vector<ssize_t> x, const Stride::List& strides, size_t offset) :
+        b (b), data (data), x (x), strides (strides), offset (offset) { }
 
         const typename Image<ValueType>::Buffer& b;
         void* const data;
-        std::vector<ssize_t> x;
+        vector<ssize_t> x;
         const Stride::List& strides;
         size_t offset;
 
@@ -292,14 +288,14 @@ namespace MR
         FORCE_INLINE ssize_t size (size_t axis) const { return b.size(axis); }
         FORCE_INLINE ssize_t stride (size_t axis) const { return strides[axis]; }
 
-        FORCE_INLINE ssize_t index (size_t axis) const { return x[axis]; }
-        FORCE_INLINE auto index (size_t axis) -> decltype (Helper::index (*this, axis)) { return { *this, axis }; }
+      FORCE_INLINE ssize_t get_index (size_t axis) const { return x[axis]; }
         FORCE_INLINE void move_index (size_t axis, ssize_t increment) { offset += stride (axis) * increment; x[axis] += increment; }
 
-        FORCE_INLINE value_type value () const { return Raw::fetch_native<ValueType> (data, offset); } 
-        FORCE_INLINE auto value () -> decltype (Helper::value (*this)) { return { *this }; }
+      FORCE_INLINE value_type get_value () const { return Raw::fetch_native<ValueType> (data, offset); } 
         FORCE_INLINE void set_value (ValueType val) { Raw::store_native<ValueType> (val, data, offset); }
       };
+    
+    CHECK_MEM_ALIGN (TmpImage<float>);
 
   }
 
@@ -394,7 +390,7 @@ namespace MR
         if (buffer->get_io()) {
           if (buffer->get_io()->is_image_readwrite() && buffer->data_buffer) {
             auto data_buffer = std::move (buffer->data_buffer);
-            TmpImage<ValueType> src = { *buffer, data_buffer.get(), std::vector<ssize_t> (ndim(), 0), strides, Stride::offset (*this) };
+            TmpImage<ValueType> src = { *buffer, data_buffer.get(), vector<ssize_t> (ndim(), 0), strides, Stride::offset (*this) };
             Image<ValueType> dest (buffer);
             threaded_copy_with_progress_message ("writing back direct IO buffer for \"" + name() + "\"", src, dest); 
           }
@@ -438,7 +434,7 @@ namespace MR
       }
       else {
         auto src (*this);
-        TmpImage<ValueType> dest = { *buffer, buffer->data_buffer.get(), std::vector<ssize_t> (ndim(), 0), with_strides, Stride::offset (with_strides, *this) };
+        TmpImage<ValueType> dest = { *buffer, buffer->data_buffer.get(), vector<ssize_t> (ndim(), 0), with_strides, Stride::offset (with_strides, *this) };
         threaded_copy_with_progress_message ("preloading data for \"" + name() + "\"", src, dest); 
       }
 

@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __algo_histogram_h__
 #define __algo_histogram_h__
@@ -34,7 +33,7 @@ namespace MR
 
 
       class Calibrator
-      {
+      { MEMALIGN (Calibrator)
 
         public:
           Calibrator (const size_t number_of_bins = 0, const bool ignorezero = false) :
@@ -80,7 +79,7 @@ namespace MR
           default_type min, max, bin_width;
           size_t num_bins;
           const bool ignore_zero;
-          std::vector<default_type> data;
+          vector<default_type> data;
 
           default_type get_iqr();
 
@@ -90,7 +89,7 @@ namespace MR
 
 
       class Data
-      {
+      { MEMALIGN (Data)
         public:
 
           typedef Eigen::Array<size_t, Eigen::Dynamic, 1> vector_type;
@@ -208,7 +207,7 @@ namespace MR
 
 
       class Matcher
-      {
+      { MEMALIGN (Matcher)
 
           typedef Eigen::Array<default_type, Eigen::Dynamic, 1> vector_type;
 

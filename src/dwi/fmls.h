@@ -1,18 +1,15 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 
 #ifndef __dwi_fmls_h__
@@ -62,7 +59,7 @@ namespace MR
       void load_fmls_thresholds (Segmenter&);
 
 
-      class FOD_lobe {
+      class FOD_lobe { MEMALIGN(FOD_lobe)
 
         public:
           FOD_lobe (const DWI::Directions::Set& dirs, const index_type seed, const default_type value, const default_type weight) :
@@ -153,7 +150,7 @@ namespace MR
           DWI::Directions::Mask mask;
           Eigen::Array<default_type, Eigen::Dynamic, 1> values;
           default_type max_peak_value;
-          std::vector<Eigen::Vector3> peak_dirs;
+          vector<Eigen::Vector3> peak_dirs;
           Eigen::Vector3 mean_dir;
           default_type integral;
           bool neg;
@@ -162,14 +159,14 @@ namespace MR
 
 
 
-      class FOD_lobes : public std::vector<FOD_lobe> {
+      class FOD_lobes : public vector<FOD_lobe> { MEMALIGN(FOD_lobes)
         public:
           Eigen::Array3i vox;
-          std::vector<uint8_t> lut;
+          vector<uint8_t> lut;
       };
 
 
-      class SH_coefs : public Eigen::Matrix<default_type, Eigen::Dynamic, 1> {
+      class SH_coefs : public Eigen::Matrix<default_type, Eigen::Dynamic, 1> { MEMALIGN(SH_coefs)
         public:
           SH_coefs() :
               vox (-1, -1, -1) { }
@@ -179,8 +176,8 @@ namespace MR
           Eigen::Array3i vox;
       };
 
-      class FODQueueWriter
-      {
+      class FODQueueWriter 
+      { MEMALIGN (FODQueueWriter)
 
           typedef Image<float> FODImageType;
           typedef Image<float> MaskImageType;
@@ -221,8 +218,8 @@ namespace MR
       // Store a vector of weights to be applied when computing integrals, to account for non-uniformities in direction distribution
       // These weights are applied to the amplitude along each direction as the integral for each lobe is summed,
       //   in order to take into account the relative spacing between adjacent directions
-      class IntegrationWeights
-      {
+      class IntegrationWeights 
+      { MEMALIGN (IntegrationWeights)
         public:
           IntegrationWeights (const DWI::Directions::Set& dirs);
           default_type operator[] (const size_t i) { assert (i < size_t(data.size())); return data[i]; }
@@ -233,7 +230,7 @@ namespace MR
 
 
 
-      class Segmenter {
+      class Segmenter { MEMALIGN(Segmenter)
 
         public:
           Segmenter (const DWI::Directions::Set&, const size_t);

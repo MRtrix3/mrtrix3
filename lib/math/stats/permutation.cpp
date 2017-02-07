@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "math/stats/permutation.h"
 #include "math/math.h"
@@ -27,7 +26,7 @@ namespace MR
 
 
 
-        bool is_duplicate (const std::vector<size_t>& v1, const std::vector<size_t>& v2)
+        bool is_duplicate (const vector<size_t>& v1, const vector<size_t>& v2)
         {
           for (size_t i = 0; i < v1.size(); i++) {
             if (v1[i] != v2[i])
@@ -38,8 +37,8 @@ namespace MR
 
 
 
-        bool is_duplicate (const std::vector<size_t>& perm,
-                           const std::vector<std::vector<size_t> >& previous_permutations)
+        bool is_duplicate (const vector<size_t>& perm,
+                           const vector<vector<size_t> >& previous_permutations)
         {
           for (size_t p = 0; p < previous_permutations.size(); p++) {
             if (is_duplicate (perm, previous_permutations[p]))
@@ -52,11 +51,11 @@ namespace MR
 
         void generate (const size_t num_perms,
                        const size_t num_subjects,
-                       std::vector<std::vector<size_t> >& permutations,
+                       vector<vector<size_t> >& permutations,
                        const bool include_default)
         {
           permutations.clear();
-          std::vector<size_t> default_labelling (num_subjects);
+          vector<size_t> default_labelling (num_subjects);
           for (size_t i = 0; i < num_subjects; ++i)
             default_labelling[i] = i;
           size_t p = 0;
@@ -65,7 +64,7 @@ namespace MR
             ++p;
           }
           for (;p < num_perms; ++p) {
-            std::vector<size_t> permuted_labelling (default_labelling);
+            vector<size_t> permuted_labelling (default_labelling);
             do {
               std::random_shuffle (permuted_labelling.begin(), permuted_labelling.end());
             } while (is_duplicate (permuted_labelling, permutations));
@@ -77,7 +76,7 @@ namespace MR
 
         void statistic2pvalue (const vector_type& perm_dist, const vector_type& stats, vector_type& pvalues)
         {
-          std::vector<value_type> permutations;
+          vector<value_type> permutations;
           permutations.reserve (perm_dist.size());
           for (ssize_t i = 0; i != perm_dist.size(); ++i)
             permutations.push_back (perm_dist[i]);
@@ -101,8 +100,8 @@ namespace MR
 
 
 
-        std::vector<std::vector<size_t> > load_permutations_file (const std::string& filename) {
-          std::vector<std::vector<size_t> > temp = load_matrix_2D_vector<size_t> (filename);
+        vector<vector<size_t> > load_permutations_file (const std::string& filename) {
+          vector<vector<size_t> > temp = load_matrix_2D_vector<size_t> (filename);
           if (!temp.size())
             throw Exception ("no data found in permutations file: " + str(filename));
 
@@ -110,9 +109,9 @@ namespace MR
           if (min_value > 1)
             throw Exception ("indices for relabelling in permutations file must start from either 0 or 1");
 
-          std::vector<std::vector<size_t> > permutations (temp[0].size(), std::vector<size_t>(temp.size()));
-          for (std::vector<size_t>::size_type i = 0; i < temp[0].size(); i++) {
-            for (std::vector<size_t>::size_type j = 0; j < temp.size(); j++) {
+          vector<vector<size_t> > permutations (temp[0].size(), vector<size_t>(temp.size()));
+          for (vector<size_t>::size_type i = 0; i < temp[0].size(); i++) {
+            for (vector<size_t>::size_type j = 0; j < temp.size(); j++) {
               if (!temp[j][i])
                 throw Exception ("Pre-defined permutation labelling file \"" + filename + "\" contains zeros; labels should be indexed from one");
               permutations[i][j] = temp[j][i] - min_value;

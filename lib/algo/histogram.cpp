@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "algo/histogram.h"
 
@@ -48,7 +47,7 @@ namespace MR
           M = load_matrix (path);
           if (M.cols() == 1)
             throw Exception ("Histogram template must have at least 2 columns");
-          std::vector<default_type>().swap (data);
+          vector<default_type>().swap (data);
           auto V = M.row(0);
           num_bins = V.size();
           bin_width = (V[num_bins-1] - V[0]) / default_type(num_bins-1);
@@ -78,7 +77,7 @@ namespace MR
             // Need to adjust the bin width accordingly... kinda ugly hack
             // Will need to revisit if mrstats gets capability to compute statistics across all volumes rather than splitting
             bin_width = 2.0 * get_iqr() * std::pow(static_cast<default_type>(data.size() / num_volumes), -1.0/3.0);
-            std::vector<default_type>().swap (data); // No longer required; free the memory used
+            vector<default_type>().swap (data); // No longer required; free the memory used
             // If the input data are integers, the bin width should also be an integer, to avoid getting
             //   regular spike artifacts in the histogram
             if (is_integer) {

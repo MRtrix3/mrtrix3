@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "dwi/gradient.h"
 #include "file/nifti_utils.h"
@@ -115,7 +114,7 @@ namespace MR
       // bvecs format actually assumes a LHS coordinate system even if image is
       // stored using RHS - x axis is flipped to make linear 3x3 part of
       // transform have negative determinant:
-      std::vector<size_t> order;
+      vector<size_t> order;
       auto adjusted_transform = File::NIfTI::adjust_transform (header, order);
       if (adjusted_transform.linear().determinant() > 0.0) 
         bvecs.row(0) = -bvecs.row(0);
@@ -152,7 +151,7 @@ namespace MR
 
       // deal with FSL requiring gradient directions to coincide with data strides
       // also transpose matrices in preparation for file output
-      std::vector<size_t> order;
+      vector<size_t> order;
       auto adjusted_transform = File::NIfTI::adjust_transform (header, order);
       Eigen::MatrixXd bvecs (3, grad.rows());
       Eigen::MatrixXd bvals (1, grad.rows());
@@ -213,9 +212,8 @@ namespace MR
 
 
 
-    Eigen::MatrixXd get_valid_DW_scheme (const Header& header, bool nofail)
+    void validate_DW_scheme (Eigen::MatrixXd& grad, const Header& header, bool nofail)
     {
-      auto grad = get_DW_scheme (header);
       if (grad.rows() == 0) 
         throw Exception ("no diffusion encoding information found in image \"" + header.name() + "\"");
 
@@ -245,7 +243,6 @@ namespace MR
         if (!nofail)
           throw Exception (e, "unable to get valid diffusion gradient table for image \"" + header.name() + "\"");
       }
-      return grad;
     }
 
 

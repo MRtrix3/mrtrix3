@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __math_constrained_least_squares_h__
 #define __math_constrained_least_squares_h__
@@ -42,7 +41,7 @@ namespace MR
     namespace ICLS {
 
       template <typename ValueType>
-        class Problem {
+        class Problem { MEMALIGN(Problem<ValueType>)
           public:
 
             typedef ValueType value_type;
@@ -127,7 +126,7 @@ namespace MR
 
 
       template <typename ValueType>
-        class Solver {
+        class Solver { MEMALIGN(Solver<ValueType>)
           public:
 
             typedef ValueType value_type;
@@ -264,7 +263,7 @@ namespace MR
             const Problem<value_type>& P;
             matrix_type BtB, B;
             vector_type y_u, c, c_u, lambda, lambda_prev, l;
-            std::vector<bool> active;
+            vector<bool> active;
         };
 
 

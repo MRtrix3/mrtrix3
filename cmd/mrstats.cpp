@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -59,7 +57,7 @@ typedef Stats::complex_type complex_type;
 
 
 class Volume_loop
-{
+{ NOMEMALIGN
   public:
     Volume_loop (Image<complex_type>& in) :
         image (in),
@@ -129,7 +127,7 @@ void run ()
     check_dimensions (mask, header, 0, 3);
   }
 
-  std::vector<std::string> fields;
+  vector<std::string> fields;
   opt = get_options ("output");
   for (size_t n = 0; n < opt.size(); ++n) 
     fields.push_back (opt[n][0]);

@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __dwi_tractography_mapping_voxel_h__
 #define __dwi_tractography_mapping_voxel_h__
@@ -55,7 +54,7 @@ namespace MR {
 
 
         class Voxel : public Eigen::Vector3i
-        {
+        { MEMALIGN(Voxel)
           public:
             Voxel (const int x, const int y, const int z) : Eigen::Vector3i (x,y,z), length (1.0f) { }
             Voxel (const Eigen::Vector3i& that) : Eigen::Vector3i (that), length (1.0f) { }
@@ -71,8 +70,9 @@ namespace MR {
         };
 
 
+
         class VoxelDEC : public Voxel 
-        {
+        { MEMALIGN(VoxelDEC)
 
           public:
             VoxelDEC () :
@@ -110,10 +110,11 @@ namespace MR {
         };
 
 
+
         // Temporary fix for fixel stats branch
         // Stores precise direction through voxel rather than mapping to a DEC colour or a dixel
         class VoxelDir : public Voxel
-        {
+        { MEMALIGN(VoxelDir)
 
           public:
             VoxelDir () :
@@ -151,10 +152,9 @@ namespace MR {
 
 
 
-
         // Assumes tangent has been mapped to a hemisphere basis direction set
         class Dixel : public Voxel
-        {
+        { MEMALIGN(Dixel)
 
           public:
 
@@ -199,7 +199,7 @@ namespace MR {
         // TOD class: tore the SH coefficients in the voxel class so that aPSF generation can be multi-threaded
         // Provide a normalize() function to remove any length dependence, and have unary contribution per streamline
         class VoxelTOD : public Voxel
-        {
+        { MEMALIGN(VoxelTOD)
 
           public:
 
@@ -257,12 +257,16 @@ namespace MR {
 
 
 
-
+        std::ostream& operator<< (std::ostream&, const Voxel&);
+        std::ostream& operator<< (std::ostream&, const VoxelDEC&);
+        std::ostream& operator<< (std::ostream&, const VoxelDir&);
+        std::ostream& operator<< (std::ostream&, const Dixel&);
+        std::ostream& operator<< (std::ostream&, const VoxelTOD&);
 
 
 
         class SetVoxelExtras
-        {
+        { NOMEMALIGN
           public:
             default_type factor; // For TWI, when contribution to the map is uniform along the length of the track
             size_t index; // Index of the track
@@ -277,7 +281,7 @@ namespace MR {
         // Set classes that give sensible behaviour to the insert() function depending on the base voxel class
 
         class SetVoxel : public std::set<Voxel>, public SetVoxelExtras
-        {
+        { NOMEMALIGN
           public:
             typedef Voxel VoxType;
             inline void insert (const Voxel& v)
@@ -300,7 +304,7 @@ namespace MR {
 
 
         class SetVoxelDEC : public std::set<VoxelDEC>, public SetVoxelExtras
-        {
+        { NOMEMALIGN
           public:
             typedef VoxelDEC VoxType;
             inline void insert (const VoxelDEC& v)
@@ -327,7 +331,7 @@ namespace MR {
 
 
         class SetVoxelDir : public std::set<VoxelDir>, public SetVoxelExtras
-        {
+        { NOMEMALIGN
           public:
             typedef VoxelDir VoxType;
             inline void insert (const VoxelDir& v)
@@ -352,7 +356,7 @@ namespace MR {
 
 
         class SetDixel : public std::set<Dixel>, public SetVoxelExtras
-        {
+        { NOMEMALIGN
           public:
             typedef Dixel VoxType;
             typedef Dixel::dir_index_type dir_index_type;
@@ -381,7 +385,7 @@ namespace MR {
 
 
         class SetVoxelTOD : public std::set<VoxelTOD>, public SetVoxelExtras
-        {
+        { NOMEMALIGN
           public:
             typedef VoxelTOD VoxType;
             typedef VoxelTOD::vector_type vector_type;

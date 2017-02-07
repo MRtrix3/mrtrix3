@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "dwi/tractography/resampling/fixed_step_size.h"
 
@@ -25,10 +24,10 @@ namespace MR {
 
 
 
-        bool FixedStepSize::operator() (std::vector<Eigen::Vector3f>& tck) const
+        bool FixedStepSize::operator() (vector<Eigen::Vector3f>& tck) const
         {
           Math::Hermite<float> interp (hermite_tension);
-          std::vector<Eigen::Vector3f> output;
+          vector<Eigen::Vector3f> output;
           // Extensions required to enable Hermite interpolation in last streamline segment at either end
           const size_t s = tck.size();
           tck.insert    (tck.begin(), tck[0] + (tck[0] - tck[ 1 ]));

@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "gui/mrview/tool/fixel/fixel.h"
 
@@ -36,13 +35,13 @@ namespace MR
 
 
         class Fixel::Model : public ListModelBase
-        {
+        { MEMALIGN (Fixel::Model)
 
           public:
             Model (QObject* parent) :
               ListModelBase (parent) { }
 
-            void add_items (std::vector<std::string>& filenames, Fixel& fixel_tool) {
+            void add_items (vector<std::string>& filenames, Fixel& fixel_tool) {
 
               size_t old_size = items.size();
               for (size_t i = 0, N = filenames.size(); i < N; ++i) {
@@ -316,14 +315,14 @@ namespace MR
 
         void Fixel::fixel_open_slot ()
         {
-          std::vector<std::string> list = Dialog::File::get_files (this,
+          vector<std::string> list = Dialog::File::get_files (this,
                                                                    "Select fixel images to open",
                                                                    GUI::Dialog::File::image_filter_string);
           add_images (list);
         }
 
 
-        void Fixel::add_images (std::vector<std::string> &list)
+        void Fixel::add_images (vector<std::string> &list)
         {
           if (list.empty())
             return;
@@ -349,7 +348,7 @@ namespace MR
 
           const QMimeData* mimeData = event->mimeData();
           if (mimeData->hasUrls()) {
-            std::vector<std::string> list;
+            vector<std::string> list;
             QList<QUrl> urlList = mimeData->urls();
             for (int i = 0; i < urlList.size() && i < max_files; ++i) {
                 list.push_back (urlList.at (i).path().toUtf8().constData());
@@ -775,14 +774,14 @@ namespace MR
           options
             + OptionGroup ("Fixel plot tool options")
 
-            + Option ("fixel.load", "Load a fixel file (any file inside a fixel directory, or an old *.msf legacy format file) into the fixel tool.")
+            + Option ("fixel.load", "Load a fixel file (any file inside a fixel directory, or an old *.msf legacy format file) into the fixel tool.").allow_multiple()
             +   Argument ("image").type_image_in();
         }
 
         bool Fixel::process_commandline_option (const MR::App::ParsedOption& opt)
         {
           if (opt.opt->is ("fixel.load")) {
-            std::vector<std::string> list (1, std::string(opt[0]));
+            vector<std::string> list (1, std::string(opt[0]));
             try { fixel_list_model->add_items (list , *this); }
             catch (Exception& E) { E.display(); }
             return true;

@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -70,7 +68,7 @@ void run ()
 
     if (properties.comments.size()) {
       std::cout << "    Comments:             ";
-      for (std::vector<std::string>::iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
+      for (vector<std::string>::iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
         std::cout << (i == properties.comments.begin() ? "" : "                       ") << *i << "\n";
     }
 
@@ -80,7 +78,7 @@ void run ()
 
 
     if (actual_count) {
-      std::vector<float > tck;
+      vector<float > tck;
       size_t count = 0;
       {
         ProgressBar progress ("counting tracks in file");
@@ -94,7 +92,7 @@ void run ()
 
     if (opt.size()) {
       ProgressBar progress ("writing track scalar data to ascii files");
-      std::vector<float> tck;
+      vector<float> tck;
       size_t count = 0;
       while (file (tck)) {
         std::string filename (opt[0][0]);
@@ -103,7 +101,7 @@ void run ()
         filename.replace (filename.size()-4-num.size(), num.size(), num);
 
         File::OFStream out (filename);
-        for (std::vector<float>::iterator i = tck.begin(); i != tck.end(); ++i)
+        for (vector<float>::iterator i = tck.begin(); i != tck.end(); ++i)
           out << (*i) << "\n";
         out.close();
 

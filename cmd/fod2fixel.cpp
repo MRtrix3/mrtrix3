@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -100,8 +98,7 @@ void usage ()
 
 
 
-class Segmented_FOD_receiver
-{
+class Segmented_FOD_receiver { MEMALIGN(Segmented_FOD_receiver)
 
   public:
     Segmented_FOD_receiver (const Header& header, bool dir_as_peak = false) :
@@ -125,7 +122,7 @@ class Segmented_FOD_receiver
 
   private:
 
-    struct Primitive_FOD_lobe {
+    struct Primitive_FOD_lobe { MEMALIGN (Primitive_FOD_lobe)
       Eigen::Vector3f dir;
       float integral;
       float peak_value;
@@ -134,7 +131,7 @@ class Segmented_FOD_receiver
     };
 
 
-    class Primitive_FOD_lobes : public std::vector<Primitive_FOD_lobe> {
+    class Primitive_FOD_lobes : public vector<Primitive_FOD_lobe> { MEMALIGN (Primitive_FOD_lobes)
       public:
         Eigen::Array3i vox;
 
@@ -151,7 +148,7 @@ class Segmented_FOD_receiver
 
     Header H;
     std::string fixel_directory_path, index_path, dir_path, afd_path, peak_path, disp_path;
-    std::vector<Primitive_FOD_lobes> lobes;
+    vector<Primitive_FOD_lobes> lobes;
     uint64_t n_fixels;
     bool dir_as_peak;
 };

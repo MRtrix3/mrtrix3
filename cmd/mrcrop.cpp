@@ -1,18 +1,15 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 
 #include "command.h"
@@ -62,7 +59,7 @@ void run ()
 
   auto in = Image<float>::open (argument[0]);
 
-  std::vector<std::vector<ssize_t>> bounds (in.ndim(), std::vector<ssize_t> (2));
+  vector<vector<ssize_t>> bounds (in.ndim(), vector<ssize_t> (2));
   for (size_t axis = 0; axis < in.ndim(); axis++) {
     bounds[axis][0] = 0;
     bounds[axis][1] = in.size (axis) - 1;
@@ -79,10 +76,10 @@ void run ()
       bounds[axis][1] = 0;
     }
 
-    struct BoundsCheck {
-      std::vector<std::vector<ssize_t>>& overall_bounds;
-      std::vector<std::vector<ssize_t>> bounds;
-      BoundsCheck (std::vector<std::vector<ssize_t>>& overall_bounds) : overall_bounds (overall_bounds), bounds (overall_bounds) { }
+    struct BoundsCheck { NOMEMALIGN
+      vector<vector<ssize_t>>& overall_bounds;
+      vector<vector<ssize_t>> bounds;
+      BoundsCheck (vector<vector<ssize_t>>& overall_bounds) : overall_bounds (overall_bounds), bounds (overall_bounds) { }
       ~BoundsCheck () {
         for (size_t axis = 0; axis != 3; ++axis) {
           overall_bounds[axis][0] = std::min (bounds[axis][0], overall_bounds[axis][0]);
@@ -128,8 +125,8 @@ void run ()
     bounds[axis][1] = end;
   }
 
-  std::vector<size_t> from (in.ndim());
-  std::vector<size_t> size (in.ndim());
+  vector<size_t> from (in.ndim());
+  vector<size_t> size (in.ndim());
   for (size_t axis = 0; axis < in.ndim(); axis++) {
     from[axis] = bounds[axis][0];
     size[axis] = bounds[axis][1] - from[axis] + 1;

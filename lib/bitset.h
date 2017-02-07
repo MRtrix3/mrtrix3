@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -39,14 +37,13 @@ namespace MR {
    * from a two-dimensional position to an array index. If a boolean value for
    * each voxel is required for three- or four-dimensional data, use of an
    * Image::BufferScratch<bool> is recommended. */
-  class BitSet {
+  class BitSet { NOMEMALIGN
 
     public:
 
       /*! convenience classes that allow the programmer to access and modify
        * the bit wise information using the [] operator. */
-      class Value
-      {
+      class Value { NOMEMALIGN
         public:
         Value (BitSet& master, const size_t offset) : d (master), p (offset) { assert (p < d.size()); }
         operator bool()                  const { return d.test (p); }
@@ -59,8 +56,7 @@ namespace MR {
         BitSet& d;
         const size_t p;
       };
-      class ConstValue
-      {
+      class ConstValue { NOMEMALIGN
         public:
           ConstValue (const BitSet& master, const size_t offset) : d (master), p (offset) { assert (p < d.size()); }
           operator bool()                  const { return d.test (p); }

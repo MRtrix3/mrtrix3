@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __mrtrix_thread_h__
 #define __mrtrix_thread_h__
@@ -57,7 +56,7 @@ namespace MR
   namespace Thread
   {
 
-    class __Backend {
+    class __Backend { NOMEMALIGN
       public:
         __Backend();
         ~__Backend();
@@ -93,7 +92,7 @@ namespace MR
 
     namespace {
 
-      class __thread_base {
+      class __thread_base { NOMEMALIGN
         public:
           __thread_base (const std::string& name = "unnamed") : name (name) { __Backend::register_thread(); }
           __thread_base (const __thread_base&) = delete;
@@ -106,7 +105,7 @@ namespace MR
       };
 
 
-      class __single_thread : public __thread_base {
+      class __single_thread : public __thread_base { NOMEMALIGN
         public:
           template <class Functor>
             __single_thread (Functor&& functor, const std::string& name = "unnamed") :
@@ -137,7 +136,7 @@ namespace MR
 
 
       template <class Functor>
-        class __multi_thread : public __thread_base {
+        class __multi_thread : public __thread_base { NOMEMALIGN
           public:
             __multi_thread (Functor& functor, size_t nthreads, const std::string& name = "unnamed") :
               __thread_base (name), functors ( (nthreads>0 ? nthreads-1 : 0), functor) { 
@@ -183,14 +182,14 @@ namespace MR
               }
             }
           protected:
-            std::vector<std::future<void>> threads;
-            std::vector<typename std::remove_reference<Functor>::type, Eigen::aligned_allocator<typename std::remove_reference<Functor>::type>> functors;
+            vector<std::future<void>> threads;
+            vector<typename std::remove_reference<Functor>::type> functors;
 
         };
 
 
       template <class Functor> 
-        class __Multi {
+        class __Multi { NOMEMALIGN
           public:
             __Multi (Functor& object, size_t number) : functor (object), num (number) { }
             __Multi (__Multi&& m) = default;
@@ -202,7 +201,7 @@ namespace MR
         };
 
       template <class Functor>
-        class __run {
+        class __run { NOMEMALIGN
           public:
             typedef __single_thread type;
             type operator() (Functor& functor, const std::string& name) {
@@ -211,7 +210,7 @@ namespace MR
         };
 
       template <class Functor>
-        class __run<__Multi<Functor>> {
+        class __run<__Multi<Functor>> { NOMEMALIGN
           public:
             typedef __multi_thread<Functor> type;
             type operator() (__Multi<Functor>& functor, const std::string& name) {

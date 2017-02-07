@@ -1,1 +1,1 @@
-mrthreshold fixel_image/afd.mif -abs 0.08 - | fixelcrop fixel_image - fixelcrop_tmp; testing_diff_fixel fixelcrop_tmp fixelcrop -frac 0.001; rm -rf fixelcrop_tmp
+mrthreshold fixel_image/afd.mif -abs 0.08 - | fixelcrop fixel_image - fixelcrop_tmp && testing_diff_fixel fixelcrop_tmp fixelcrop -frac 0.001 && rm -rf fixelcrop_tmp

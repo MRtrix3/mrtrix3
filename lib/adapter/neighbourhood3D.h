@@ -1,24 +1,16 @@
-/*
-    Copyright 2009 Brain Research Institute, Melbourne, Australia
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
+ */
 
-    Written by J-Donald Tournier, 22/10/09.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #ifndef __adapter_neighbourhood_h__
 #define __adapter_neighbourhood_h__
@@ -31,18 +23,21 @@ namespace MR
   namespace Adapter {
 
     template <class ImageType>
-      class NeighbourhoodCoord : public Base<ImageType>
-    {
+      class NeighbourhoodCoord : 
+        public Base<NeighbourhoodCoord<ImageType>,ImageType>
+    { MEMALIGN (NeighbourhoodCoord<ImageType>)
       public:
+
+        typedef Base<NeighbourhoodCoord<ImageType>,ImageType> base_type;
         typedef typename ImageType::value_type value_type;
 
-        using Base<ImageType>::name;
-        using Base<ImageType>::spacing;
+        using base_type::name;
+        using base_type::spacing;
 
 
         template <class VectorType>
           NeighbourhoodCoord (const ImageType& original, const VectorType& extent, const Iterator& iter) :
-            Base<ImageType> (original),
+            base_type (original),
             iter_ (iter),
             transform_ (original.transform()) {
 
@@ -73,13 +68,12 @@ namespace MR
         ssize_t size (size_t axis) const { return size_ [axis]; }
         const transform_type& transform() const { return transform_; }
 
-        ssize_t index (size_t axis) const { return parent().index(axis)-from_[axis]; }
-        auto index (size_t axis) -> decltype(Helper::index(*this, axis)) { return { *this, axis }; } 
+        ssize_t get_index (size_t axis) const { return parent().index(axis)-from_[axis]; }
         void move_index (size_t axis, ssize_t increment) { parent().index(axis) += increment; }
 
       protected:
-        using Base<ImageType>::parent;
-        std::vector<ssize_t> from_, size_;
+        using base_type::parent;
+        vector<ssize_t> from_, size_;
         Iterator iter_;
         transform_type transform_;
     };

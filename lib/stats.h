@@ -1,17 +1,17 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
+
 #ifndef __stats_h_
 #define __stats_h_
 
@@ -34,8 +34,7 @@ namespace MR
     typedef cdouble complex_type;
 
 
-    class Stats
-    {
+    class Stats { NOMEMALIGN
       public:
         Stats (const bool is_complex = false, const bool ignorezero = false) :
             mean (0.0, 0.0),
@@ -61,7 +60,7 @@ namespace MR
           }
         }
 
-        template <class Set> void print (Set& ima, const std::vector<std::string>& fields) {
+        template <class ImageType> void print (ImageType& ima, const vector<std::string>& fields) {
 
           if (count) {
             mean /= double (count);
@@ -122,7 +121,7 @@ namespace MR
         complex_type min, max;
         size_t count;
         const bool is_complex, ignore_zero;
-        std::vector<float> values;
+        vector<float> values;
     };
 
 

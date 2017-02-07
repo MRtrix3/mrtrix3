@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -208,7 +206,7 @@ namespace MR
               if (vertex_count != 3 && vertex_count != 4)
                 throw Exception ("Could not parse file \"" + path + "\";  only suppport 3- and 4-vertex polygons");
 
-              std::vector<unsigned int> t (vertex_count, 0);
+              vector<unsigned int> t (vertex_count, 0);
 
               if (is_ascii) {
                 for (int index = 0; index != vertex_count; ++index) {
@@ -287,7 +285,7 @@ namespace MR
           if (attribute_byte_count)
             warn_attribute = true;
 
-          triangles.push_back ( std::vector<uint32_t> { uint32_t(vertices.size()-3), uint32_t(vertices.size()-2), uint32_t(vertices.size()-1) } );
+          triangles.push_back ( vector<uint32_t> { uint32_t(vertices.size()-3), uint32_t(vertices.size()-2), uint32_t(vertices.size()-1) } );
           const Eigen::Vector3 computed_normal = Surface::normal (*this, triangles.back());
           if (computed_normal.dot (normal.cast<default_type>()) < 0.0)
             warn_right_hand_rule = true;
@@ -350,7 +348,7 @@ namespace MR
             inside_facet = false;
             if (vertex_index != 3)
               throw Exception ("Error parsing STL file " + Path::basename (path) + ": facet ended with " + str(vertex_index) + " vertices");
-            triangles.push_back ( std::vector<uint32_t> { uint32_t(vertices.size()-3), uint32_t(vertices.size()-2), uint32_t(vertices.size()-1) } );
+            triangles.push_back ( vector<uint32_t> { uint32_t(vertices.size()-3), uint32_t(vertices.size()-2), uint32_t(vertices.size()-1) } );
             vertex_index = 0;
             const Eigen::Vector3 computed_normal = Surface::normal (*this, triangles.back());
             if (computed_normal.dot (normal) < 0.0)
@@ -390,7 +388,7 @@ namespace MR
     void Mesh::load_obj (const std::string& path)
     {
 
-      struct FaceData {
+      struct FaceData { NOMEMALIGN
           uint32_t vertex, texture, normal;
       };
 
@@ -424,7 +422,7 @@ namespace MR
           // Need to handle:
           // * Either 3 or 4 vertices - write to either triangles or quads
           // * Vertices only, vertices & texture coordinates, vertices & normals, all 3
-          std::vector<std::string> elements;
+          vector<std::string> elements;
           do {
             const size_t first_space = data.find_first_of (' ');
             if (first_space == data.npos) {
@@ -438,9 +436,9 @@ namespace MR
           } while (data.size());
           if (elements.size() != 3 && elements.size() != 4)
             throw Exception ("Malformed face information in input OBJ file (face with neither 3 nor 4 vertices; line " + str(counter) + ")");
-          std::vector<FaceData> face_data;
+          vector<FaceData> face_data;
           size_t values_per_element = 0;
-          for (std::vector<std::string>::iterator i = elements.begin(); i != elements.end(); ++i) {
+          for (vector<std::string>::iterator i = elements.begin(); i != elements.end(); ++i) {
             FaceData temp;
             temp.vertex = 0; temp.texture = 0; temp.normal = 0;
             const size_t first_slash = i->find_first_of ('/');
@@ -467,10 +465,10 @@ namespace MR
             face_data.push_back (temp);
           }
           if (face_data.size() == 3) {
-            std::vector<uint32_t> temp { face_data[0].vertex, face_data[1].vertex, face_data[2].vertex };
+            vector<uint32_t> temp { face_data[0].vertex, face_data[1].vertex, face_data[2].vertex };
             triangles.push_back (Triangle (temp));
           } else {
-            std::vector<uint32_t> temp { face_data[0].vertex, face_data[1].vertex, face_data[2].vertex, face_data[3].vertex };
+            vector<uint32_t> temp { face_data[0].vertex, face_data[1].vertex, face_data[2].vertex, face_data[3].vertex };
             quads.push_back (Quad (temp));
           }
           // The OBJ format allows defining different vertex-based normals for different faces that reference the same vertex

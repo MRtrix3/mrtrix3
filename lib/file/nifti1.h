@@ -1,18 +1,3 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
- */
-
 #ifndef _NIFTI_HEADER_
 #define _NIFTI_HEADER_
 
@@ -145,7 +130,7 @@ extern "C" {
              NIFTI-1 header file.
    */
   /*************************/  /************************/
-  struct nifti_1_header {
+  struct nifti_1_header { NOMEMALIGN
     /* NIFTI-1 usage         */  /* ANALYZE 7.5 field(s) */
     /*************************/  /************************/
 
@@ -289,7 +274,7 @@ extern "C" {
              values of {0,0,0,0} imply the file does not contain extensions.
              Other sequences of values are not currently defined.
    */
-  struct nifti1_extender {
+  struct nifti1_extender { NOMEMALIGN
     char extension[4] ;
   } ;
   typedef struct nifti1_extender nifti1_extender ;
@@ -297,7 +282,7 @@ extern "C" {
   /*! \struct nifti1_extension
       \brief Data structure defining the fields of a header extension.
    */
-  struct nifti1_extension {
+  struct nifti1_extension { NOMEMALIGN
     int    esize ; /*!< size of extension, in bytes (must be multiple of 16) */
     int    ecode ; /*!< extension code, one of the NIFTI_ECODE_ values       */
     char* edata ;  /*!< raw data, with no byte swapping                      */
@@ -561,16 +546,16 @@ extern "C" {
 
   /*-------- sample typedefs for complicated types ---*/
 #if 0
-  typedef struct {
+  typedef struct { NOMEMALIGN
     float       r,i;
   } complex_float ;
-  typedef struct {
+  typedef struct { NOMEMALIGN
     double      r,i;
   } complex_double ;
-  typedef struct {
+  typedef struct { NOMEMALIGN
     long double r,i;
   } complex_longdouble ;
-  typedef struct {
+  typedef struct { NOMEMALIGN
     unsigned char r,g,b;
   } rgb_byte ;
 #endif

@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include <fstream>
 #include <vector>
@@ -54,7 +53,7 @@ namespace MR
           } else if (i->is_number_float()) {
             H.keyval().insert (std::make_pair (i.key(), str<float>(i.value())));
           } else if (i->is_array()) {
-            std::vector<std::string> s;
+            vector<std::string> s;
             for (auto j = i->cbegin(); j != i->cend(); ++j)
               s.push_back (str(*j));
             H.keyval().insert (std::make_pair (i.key(), join(s, "\n")));
@@ -66,7 +65,7 @@ namespace MR
         }
 
         auto pe_scheme = PhaseEncoding::get_scheme (H);
-        std::vector<size_t> order;
+        vector<size_t> order;
         File::NIfTI::adjust_transform (H, order);
         if (pe_scheme.rows() && (order[0] != 0 || order[1] != 1 || order[2] != 2 || H.stride(0) < 0 || H.stride(1) < 0 || H.stride(2) < 0)) {
           // The corresponding header may have been rotated on image load prior to the JSON
@@ -89,7 +88,7 @@ namespace MR
       {
         nlohmann::json json;
         auto pe_scheme = PhaseEncoding::get_scheme (H);
-        std::vector<size_t> order;
+        vector<size_t> order;
         File::NIfTI::adjust_transform (H, order);
         if (pe_scheme.rows() && (order[0] != 0 || order[1] != 1 || order[2] != 2 || H.stride(0) < 0 || H.stride(1) < 0 || H.stride(2) < 0)) {
           // Assume that image being written to disk is going to have its transform adjusted,

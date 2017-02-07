@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __dwi_gradient_h__
 #define __dwi_gradient_h__
@@ -225,13 +224,24 @@ namespace MR
     void export_grad_commandline (const Header& header);
 
 
+    /*! \brief validate the DW encoding matrix \a grad and
+     * check that it matches the DW header in \a header 
+     *
+     * This ensures the dimensions match the corresponding DWI data, applies
+     * b-value scaling if specified, and normalises the gradient vectors. */
+    void validate_DW_scheme (Eigen::MatrixXd& grad, const Header& header, bool nofail = false);
 
     /*! \brief get the DW encoding matrix as per get_DW_scheme(), and
      * check that it matches the DW header in \a header 
      *
      * This is the version that should be used in any application that
      * processes the DWI raw data. */
-    Eigen::MatrixXd get_valid_DW_scheme (const Header& header, bool nofail = false);
+    inline Eigen::MatrixXd get_valid_DW_scheme (const Header& header, bool nofail = false) 
+    {
+      auto grad = get_DW_scheme (header);
+      validate_DW_scheme (grad, header, nofail);
+      return grad;
+    }
 
 
     //! \brief get the matrix mapping SH coefficients to amplitudes

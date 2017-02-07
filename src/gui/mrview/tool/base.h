@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __gui_mrview_tool_base_h__
 #define __gui_mrview_tool_base_h__
@@ -45,7 +44,7 @@ namespace MR
 
 
         class Dock : public QDockWidget
-        {
+        { NOMEMALIGN
           public:
             Dock (const QString& name) :
               QDockWidget (name, Window::main), tool (nullptr) { }
@@ -61,7 +60,7 @@ namespace MR
 
 
 
-        class Base : public QFrame {
+        class Base : public QFrame { NOMEMALIGN
           public:
             Base (Dock* parent);
             Window& window () const { return *Window::main; }
@@ -82,7 +81,7 @@ namespace MR
               }
             }
 
-            class HBoxLayout : public QHBoxLayout {
+            class HBoxLayout : public QHBoxLayout { NOMEMALIGN
               public:
                 HBoxLayout () : QHBoxLayout () { init(); }
                 HBoxLayout (QWidget* parent) : QHBoxLayout (parent) { init(); }
@@ -93,7 +92,7 @@ namespace MR
                 }
             };
 
-            class VBoxLayout : public QVBoxLayout {
+            class VBoxLayout : public QVBoxLayout { NOMEMALIGN
               public:
                 VBoxLayout () : QVBoxLayout () { init(); }
                 VBoxLayout (QWidget* parent) : QVBoxLayout (parent) { init(); }
@@ -104,7 +103,7 @@ namespace MR
                 }
             };
 
-            class GridLayout : public QGridLayout {
+            class GridLayout : public QGridLayout { NOMEMALIGN
               public:
                 GridLayout () : QGridLayout () { init(); }
                 GridLayout (QWidget* parent) : QGridLayout (parent) { init(); }
@@ -116,7 +115,7 @@ namespace MR
             };
 
 
-            class FormLayout : public QFormLayout {
+            class FormLayout : public QFormLayout { NOMEMALIGN
               public:
                 FormLayout () : QFormLayout () { init(); }
                 FormLayout (QWidget* parent) : QFormLayout (parent) { init(); }
@@ -164,7 +163,7 @@ namespace MR
 
 
         class __Action__ : public QAction
-        {
+        { NOMEMALIGN
           public:
             __Action__ (QActionGroup* parent,
                         const char* const name,
@@ -201,7 +200,7 @@ namespace MR
 
         template <class T>
           class Action : public __Action__
-        {
+        { NOMEMALIGN
           public:
             Action (QActionGroup* parent,
                 const char* const name,

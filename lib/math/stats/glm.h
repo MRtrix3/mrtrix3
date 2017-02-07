@@ -1,17 +1,17 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
+
 #ifndef __math_stats_glm_h__
 #define __math_stats_glm_h__
 
@@ -100,8 +100,7 @@ namespace MR
       /** \addtogroup Statistics
       @{ */
       /*! A class to compute t-statistics using a General Linear Model. */
-      class GLMTTest
-      {
+      class GLMTTest { NOMEMALIGN
         public:
           /*!
           * @param measurements a matrix storing the measured data for each subject in a column //TODO
@@ -116,7 +115,7 @@ namespace MR
           * @param max_stat the maximum t-statistic
           * @param min_stat the minimum t-statistic
           */
-          void operator() (const std::vector<size_t>& perm_labelling, vector_type& stats) const;
+          void operator() (const vector<size_t>& perm_labelling, vector_type& stats) const;
 
           size_t num_subjects () const { return y.cols(); }
           size_t num_elements () const { return y.rows(); }
