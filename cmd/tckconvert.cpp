@@ -12,7 +12,6 @@
  */
 
 
-
 #include "command.h"
 #include "file/ofstream.h"
 #include "file/name_parser.h"

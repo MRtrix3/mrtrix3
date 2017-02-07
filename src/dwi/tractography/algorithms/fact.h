@@ -12,9 +12,6 @@
  */
 
 
-
-
-
 #ifndef __dwi_tractography_algorithms_fact_h__
 #define __dwi_tractography_algorithms_fact_h__
 

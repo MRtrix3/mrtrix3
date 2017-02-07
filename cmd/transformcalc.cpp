@@ -12,7 +12,6 @@
  */
 
 
-
 #include <unsupported/Eigen/MatrixFunctions>
 #include <algorithm>
 #include "command.h"

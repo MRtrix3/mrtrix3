@@ -12,7 +12,6 @@
  */
 
 
-
 #ifndef __dwi_tractography_editing_editing_h__
 #define __dwi_tractography_editing_editing_h__
 

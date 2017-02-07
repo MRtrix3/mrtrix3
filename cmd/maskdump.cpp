@@ -12,7 +12,6 @@
  */
 
 
-
 #include "command.h"
 #include "image.h"
 #include "algo/loop.h"
@@ -33,7 +32,7 @@ void usage ()
 
   ARGUMENTS
   + Argument ("input",  "the input image.").type_image_in()
-  + Argument ("output", "The (optional) output text file.").type_file_out().optional();
+  + Argument ("output", "the (optional) output text file.").type_file_out().optional();
 }
 
 

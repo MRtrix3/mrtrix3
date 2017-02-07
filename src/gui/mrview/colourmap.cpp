@@ -34,6 +34,8 @@ namespace MR
         const char* Entry::default_amplitude = "color.r";
 
 
+        float clamp (const float i) { return std::max (0.0f, std::min (1.0f, i)); }
+
 
         const Entry maps[] = {
           Entry ("Gray", 
@@ -42,21 +44,29 @@ namespace MR
 
           Entry ("Hot", 
               "color.rgb = vec3 (2.7213 * amplitude, 2.7213 * amplitude - 1.0, 3.7727 * amplitude - 2.7727);\n",
-              [] (float amplitude) { return Eigen::Array3f (std::max (0.0f, std::min (1.0f, 2.7213f * amplitude)),
-                                                            std::max (0.0f, std::min (1.0f, 2.7213f * amplitude - 1.0f)),
-                                                            std::max (0.0f, std::min (1.0f, 3.7727f * amplitude - 2.7727f))); }),
+              [] (float amplitude) { return Eigen::Array3f (clamp (2.7213f * amplitude),
+                                                            clamp (2.7213f * amplitude - 1.0f),
+                                                            clamp (3.7727f * amplitude - 2.7727f)); }),
 
           Entry ("Cool",
               "color.rgb = 1.0 - (vec3 (2.7213 * (1.0 - amplitude), 2.7213 * (1.0 - amplitude) - 1.0, 3.7727 * (1.0 - amplitude) - 2.7727));\n",
-              [] (float amplitude) { return Eigen::Array3f (std::max (0.0f, std::min (1.0f, 1.0f - (2.7213f * (1.0f - amplitude)))),
-                                                            std::max (0.0f, std::min (1.0f, 1.0f - (2.7213f * (1.0f - amplitude) - 1.0f))),
-                                                            std::max (0.0f, std::min (1.0f, 1.0f - (3.7727f * (1.0f - amplitude) - 2.7727f)))); }),
+              [] (float amplitude) { return Eigen::Array3f (clamp (1.0f - (2.7213f * (1.0f - amplitude))),
+                                                            clamp (1.0f - (2.7213f * (1.0f - amplitude) - 1.0f)),
+                                                            clamp (1.0f - (3.7727f * (1.0f - amplitude) - 2.7727f))); }),
 
           Entry ("Jet", 
               "color.rgb = 1.5 - 4.0 * abs (1.0 - amplitude - vec3(0.25, 0.5, 0.75));\n",
-              [] (float amplitude) { return Eigen::Array3f (std::max (0.0f, std::min (1.0f, 1.5f - 4.0f * std::abs (1.0f - amplitude - 0.25f))),
-                                                            std::max (0.0f, std::min (1.0f, 1.5f - 4.0f * std::abs (1.0f - amplitude - 0.5f))),
-                                                            std::max (0.0f, std::min (1.0f, 1.5f - 4.0f * std::abs (1.0f - amplitude - 0.75f)))); }),
+              [] (float amplitude) { return Eigen::Array3f (clamp (1.5f - 4.0f * std::abs (1.0f - amplitude - 0.25f)),
+                                                            clamp (1.5f - 4.0f * std::abs (1.0f - amplitude - 0.5f)),
+                                                            clamp (1.5f - 4.0f * std::abs (1.0f - amplitude - 0.75f))); }),
+
+          Entry ("PET",
+              "color.r = 2.0*amplitude - 0.5;\n"
+              "color.g = clamp (2.0 * (0.25 - abs (amplitude - 0.25)), 0.0, 1.0) + clamp (2.0*amplitude - 1.0, 0.0, 1.0);\n"
+              "color.b = 1.0 - (clamp (1.0 - 2.0 * amplitude, 0.0, 1.0) + clamp (1.0 - 4.0 * abs (amplitude - 0.75), 0.0, 1.0));\n",
+              [] (float amplitude) { return Eigen::Array3f (clamp (2.0f * amplitude - 0.5f),
+                                                            clamp (0.25f - std::abs (amplitude - 0.25f)) + clamp (2.0f * (amplitude - 0.5)),
+                                                            clamp (1.0f - 2.0f * amplitude) + clamp (1.0 - 4.0 * std::abs (amplitude - 0.75))); }),
 
           Entry ("Colour", 
               "color.rgb = amplitude * colourmap_colour;\n",

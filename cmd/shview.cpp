@@ -12,7 +12,6 @@
  */
 
 
-
 #include "gui/gui.h"
 #include "command.h"
 #include "progressbar.h"

@@ -12,7 +12,6 @@
  */
 
 
-
 #include "command.h"
 #include "image.h"
 #include "math/SH.h"

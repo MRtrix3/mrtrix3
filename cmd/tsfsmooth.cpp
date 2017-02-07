@@ -12,7 +12,6 @@
  */
 
 
-
 #include "command.h"
 #include "math/median.h"
 #include "dwi/tractography/properties.h"

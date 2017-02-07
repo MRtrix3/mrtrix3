@@ -12,8 +12,6 @@
  */
 
 
-
-
 #ifndef __dwi_fixel_map_h__
 #define __dwi_fixel_map_h__
 

@@ -12,8 +12,6 @@
  */
 
 
-
-
 #ifndef __dwi_tractography_sift_track_index_range_h__
 #define __dwi_tractography_sift_track_index_range_h__
 

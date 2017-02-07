@@ -12,7 +12,6 @@
  */
 
 
-
 #include "math/average_space.h"
 
 

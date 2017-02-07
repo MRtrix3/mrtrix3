@@ -12,8 +12,6 @@
  */
 
 
-
-
 #include <vector>
 
 #include "command.h"
@@ -34,7 +32,7 @@ using namespace MR;
 using namespace App;
 
 
-const char* algorithms[] = { "nbs", "nbs_tfce", "none", nullptr };
+const char* algorithms[] = { "nbs", "nbse", "none", nullptr };
 
 
 
@@ -83,7 +81,7 @@ void usage ()
                "Zalesky, A.; Fornito, A. & Bullmore, E. T. Network-based statistic: Identifying differences in brain networks. \n"
                "NeuroImage, 2010, 53, 1197-1207"
 
-             + "* If using the NBS-TFCE algorithm: \n"
+             + "* If using the NBSE algorithm: \n"
                "Vinokur, L.; Zalesky, A.; Raffelt, D.; Smith, R.E. & Connelly, A. A Novel Threshold-Free Network-Based Statistics Method: Demonstration using Simulated Pathology. \n"
                "OHBM, 2015, 4144"
 

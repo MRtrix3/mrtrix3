@@ -12,7 +12,6 @@
  */
 
 
-
 #include "command.h"
 #include "exception.h"
 #include "mrtrix.h"

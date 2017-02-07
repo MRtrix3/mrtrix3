@@ -12,8 +12,6 @@
  */
 
 
-
-
 #include "dwi/tractography/connectome/matrix.h"
 
 

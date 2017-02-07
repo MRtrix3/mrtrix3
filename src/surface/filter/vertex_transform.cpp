@@ -12,7 +12,6 @@
  */
 
 
-
 #include "surface/filter/vertex_transform.h"
 
 #include "exception.h"

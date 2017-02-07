@@ -11,7 +11,7 @@ Synopsis
     maskdump [ options ]  input[ output ]
 
 -  *input*: the input image.
--  *output*: The (optional) output text file.
+-  *output*: the (optional) output text file.
 
 Description
 -----------

@@ -12,7 +12,6 @@
  */
 
 
-
 #include <sstream>
 
 #include "command.h"
@@ -80,7 +79,7 @@ void usage ()
 }
 
 typedef float value_type;
-constexpr value_type UNIT = 0.577350269189626;
+constexpr value_type UNIT = 0.577350269189626; // 1/sqrt(3) , component of 3D unit vector wrt L2-norm
 
 class DecTransform { MEMALIGN(DecTransform)
 
@@ -244,7 +243,7 @@ void run () {
     map_hdr = Header::open(opto[0][0]);
     if (!dimensions_match(map_hdr, fod_hdr, 0, 3) ||
         !spacings_match(map_hdr, fod_hdr, 0, 3) ||
-        !map_hdr.transform().isApprox(map_hdr.transform(),1e-42))
+        !map_hdr.transform().isApprox(fod_hdr.transform(),1e-42))
       needtoslice = true;
   }
 

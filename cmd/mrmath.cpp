@@ -12,7 +12,6 @@
  */
 
 
-
 #include "command.h"
 #include "progressbar.h"
 #include "memory.h"

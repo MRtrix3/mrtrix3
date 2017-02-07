@@ -12,7 +12,6 @@
  */
 
 
-
 #include "command.h"
 #include "math/SH.h"
 #include "memory.h"

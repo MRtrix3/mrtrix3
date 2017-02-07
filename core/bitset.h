@@ -12,7 +12,6 @@
  */
 
 
-
 #ifndef __bitset_h__
 #define __bitset_h__
 

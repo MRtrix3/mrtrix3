@@ -12,7 +12,6 @@
  */
 
 
-
 #include "dwi/tractography/mapping/gaussian/mapper.h"
 
 

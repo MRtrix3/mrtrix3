@@ -12,7 +12,6 @@
  */
 
 
-
 #ifndef __dwi_directions_load_h__
 #define __dwi_directions_load_h__
 

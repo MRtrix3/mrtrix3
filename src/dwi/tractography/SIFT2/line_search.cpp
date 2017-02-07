@@ -12,7 +12,6 @@
  */
 
 
-
 #include "dwi/tractography/SIFT2/line_search.h"
 #include "dwi/tractography/SIFT2/regularisation.h"
 #include "dwi/tractography/SIFT2/tckfactor.h"

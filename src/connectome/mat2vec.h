@@ -12,8 +12,6 @@
  */
 
 
-
-
 #ifndef __connectome_mat2vec_h__
 #define __connectome_mat2vec_h__
 

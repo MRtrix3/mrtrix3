@@ -12,8 +12,6 @@
  */
 
 
-
-
 #ifndef __dwi_tractography_connectome_streamline_h__
 #define __dwi_tractography_connectome_streamline_h__
 

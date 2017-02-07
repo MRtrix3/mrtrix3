@@ -12,7 +12,6 @@
  */
 
 
-
 #include "dwi/tractography/seeding/basic.h"
 #include "dwi/tractography/rng.h"
 #include "adapter/subset.h"

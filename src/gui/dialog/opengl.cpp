@@ -12,7 +12,6 @@
  */
 
 
-
 #include "gui/dialog/list.h"
 #include "gui/dialog/opengl.h"
 #include "gui/opengl/gl.h"

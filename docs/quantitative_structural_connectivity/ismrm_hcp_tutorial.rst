@@ -1,5 +1,5 @@
-Structural connectome for Human Connectome Project (HCP)
-========================================================
+ISMRM tutorial - Structural connectome for Human Connectome Project (HCP)
+==========================================================================
 
 This document duplicates the information provided during the *MRtrix3*
 demonstration at ISMRM 2015 in Toronto. We will generate a structural

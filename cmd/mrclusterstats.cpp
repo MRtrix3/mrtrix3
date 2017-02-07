@@ -12,7 +12,6 @@
  */
 
 
-
 #include "command.h"
 #include "file/path.h"
 #include "algo/loop.h"

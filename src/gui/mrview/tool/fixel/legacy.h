@@ -11,6 +11,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+
 #ifndef __gui_mrview_tool_fixel_legacy_h__
 #define __gui_mrview_tool_fixel_legacy_h__
 

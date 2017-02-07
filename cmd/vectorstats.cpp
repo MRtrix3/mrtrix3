@@ -12,8 +12,6 @@
  */
 
 
-
-
 #include <vector>
 
 #include "command.h"

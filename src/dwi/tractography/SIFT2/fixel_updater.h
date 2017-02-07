@@ -12,7 +12,6 @@
  */
 
 
-
 #ifndef __dwi_tractography_sift2_fixel_updater_h__
 #define __dwi_tractography_sift2_fixel_updater_h__
 

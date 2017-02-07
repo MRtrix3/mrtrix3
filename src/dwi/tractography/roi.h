@@ -12,8 +12,6 @@
  */
 
 
-
-
 #ifndef __dwi_tractography_roi_h__
 #define __dwi_tractography_roi_h__
 

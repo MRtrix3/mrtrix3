@@ -12,8 +12,6 @@
  */
 
 
-//#define GL_DEBUG
-
 #include <string>
 
 #include "gui/mrview/tool/roi_editor/roi.h"

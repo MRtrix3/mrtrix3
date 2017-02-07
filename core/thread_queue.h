@@ -12,7 +12,6 @@
  */
 
 
-
 #ifndef __mrtrix_thread_queue_h__
 #define __mrtrix_thread_queue_h__
 

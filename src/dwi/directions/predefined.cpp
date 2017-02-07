@@ -12,7 +12,6 @@
  */
 
 
-
 #include "dwi/directions/predefined.h"
 
 

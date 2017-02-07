@@ -12,7 +12,6 @@
  */
 
 
-
 #ifndef __surface_utils_h__
 #define __surface_utils_h__
 

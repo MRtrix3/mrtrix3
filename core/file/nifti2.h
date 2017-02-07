@@ -12,10 +12,6 @@
  */
 
 
-/** \file nifti2.h
-    \brief Header structure for NIFTI-2 format.
- */
-
 #ifndef __NIFTI2_HEADER
 #define __NIFTI2_HEADER
 

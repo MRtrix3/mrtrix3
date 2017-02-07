@@ -12,7 +12,6 @@
  */
 
 
-
 #include "dwi/tractography/SIFT2/streamline_stats.h"
 
 

@@ -12,8 +12,6 @@
  */
 
 
-
-
 #ifndef __dwi_tractography_sift_proc_mask_h__
 #define __dwi_tractography_sift_proc_mask_h__
 

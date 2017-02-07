@@ -12,7 +12,6 @@
  */
 
 
-
 #include "dwi/tractography/seeding/list.h"
 #include "dwi/tractography/rng.h"
 

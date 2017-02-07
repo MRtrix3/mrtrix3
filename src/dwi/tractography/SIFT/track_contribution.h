@@ -12,8 +12,6 @@
  */
 
 
-
-
 #ifndef __dwi_tractography_sift_track_contribution_h__
 #define __dwi_tractography_sift_track_contribution_h__
 

@@ -12,8 +12,6 @@
  */
 
 
-
-
 #include "command.h"
 
 #include <limits>

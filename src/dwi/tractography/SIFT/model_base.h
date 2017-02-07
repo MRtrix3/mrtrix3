@@ -12,8 +12,6 @@
  */
 
 
-
-
 #ifndef __dwi_tractography_sift_model_base_h__
 #define __dwi_tractography_sift_model_base_h__
 
