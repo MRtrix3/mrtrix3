@@ -29,7 +29,7 @@ def command(cmd, exitOnError=True):
   # TODO Use shlex.split()?
   quotation_split = cmd.split('\"')
   if not len(quotation_split)%2:
-    message.error('Malformed command \"' + cmd + '\": odd number of quotation marks')
+    app.error('Malformed command \"' + cmd + '\": odd number of quotation marks')
   cmdsplit = [ ]
   if len(quotation_split) == 1:
     cmdsplit = cmd.split()
