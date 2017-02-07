@@ -1001,21 +1001,18 @@ def update_bash_completion ():
   if os.name != 'posix': return
    
   # Check whether completion generation script exists
-  scripts_dir = os.path.join (mrtrix_dir[-1], 'scripts' )
-  script_path = os.path.join (scripts_dir, 'generate_mrtrix_cmd_completion.py') 
-  completion_path = os.path.join (scripts_dir, 'mrtrix_bash_completion')
+  script_path = os.path.join (mrtrix_dir[-1], 'generate_bash_completion.py')
+  completion_path = os.path.join (mrtrix_dir[-1], 'mrtrix_bash_completion')
   if not os.path.isfile (script_path):
     disp (colorize('WARNING: Skipping bash completion generation. Could not find script at ' + script_path + '\n')[0])
     return
   
-  import re
-
   # Check whether both command files and completion file exist and completion file is newer than commands
   if not os.path.isdir (target_bin_dir):
     return
   else:
     # Only look at relevant executables in bin file
-    commands = [comm for comm in os.listdir (target_bin_dir) if os.access( os.path.join( target_bin_dir, comm ), os.X_OK) and not re.match (r'^\w+__debug', comm)]
+    commands = [comm for comm in os.listdir (target_bin_dir) if os.access( os.path.join( target_bin_dir, comm ), os.X_OK)]
     if not commands: 
       return
     else:

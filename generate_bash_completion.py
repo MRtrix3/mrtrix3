@@ -49,6 +49,9 @@ def main(argv):
 	
 	parse_commands (commands_dir, completion_path, commands)
 
+
+
+
 ###########################################################################
 #                         PARSE FUNCTION
 ###########################################################################
@@ -108,14 +111,29 @@ def parse_commands (commands_dir, completion_path, commands):
 		
 
 		return arg_choices
+
+
+###########################################################################
+#                          IS_SCRIPT FUNCTION
+###########################################################################
+	def is_script (command):
+		textchars = bytearray({7,8,9,10,12,13,27} | set(range(0x20, 0x100)) - {0x7f})
+		with open(os.path.join(commands_dir, command), "rb") as f:
+			bytes = f.read(1024)
+		return not bytes.translate(None, textchars)
+
 	
 ###########################################################################
-#                         END INNER PARSE FUNCTIONS
+#                         END INTERNAL FUNCTIONS
 ###########################################################################
 
 	encoding = locale.getdefaultlocale()[1]
 
-	for command in commands:
+	for command in sorted(commands):
+
+		if is_script(command):
+			continue
+
 		single_dash_options = ""
 		double_dash_options = ""
 		current_option = ""
@@ -125,15 +143,15 @@ def parse_commands (commands_dir, completion_path, commands):
 		current_arg_allows_multiple = -1
 		current_arg_type = ""
 		current_arg_choices = ""			
-		
-		print ('''
+
+		try:
+			process = subprocess.Popen ([ os.path.join( commands_dir, command ), '__print_full_usage__'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+			print ('''
 _%s()
 { 
 ''' % (command), file = completion_file)
 
-		try:
-			process = subprocess.Popen ([ os.path.join( commands_dir, command ), '__print_full_usage__'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)	
-	
 			for line in process.stdout:
 				words = line.decode(encoding).split (' ')
 				
@@ -157,12 +175,10 @@ _%s()
 					flush_option_arg_allows_multiple ()
 					flush_option_arg ()
 					current_num_of_option_args += 1
-		except:
-			pass
-	
-		flush_option_num_args ()
 
-		print ('''
+			flush_option_num_args ()
+
+			print ('''
 	current_option=""
 	current_max_args=0
 	current_arg_index=0;
@@ -238,6 +254,9 @@ _%s()
 	fi
 }
 complete -F _%s %s \n''' % (double_dash_options, single_dash_options, command, command, command, command, command, command, command, command, command), file = completion_file)
+
+		except:
+			pass
 
 	completion_file.close ()
 
