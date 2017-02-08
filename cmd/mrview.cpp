@@ -64,7 +64,6 @@ void run ()
 {
   GUI::MRView::Window window;
   window.show();
-  window.process_commandline_options();
 
   if (qApp->exec())
     throw Exception ("error running Qt application");
