@@ -8,7 +8,7 @@ Synopsis
 
 ::
 
-    dwiintensitynorm [ options ] input_dir mask_dir output_dir fa_template wm_mask
+    dwiintensitynorm input_dir mask_dir output_dir fa_template wm_mask [ options ]
 
 -  *input_dir*: The input directory containing all DWI images
 -  *mask_dir*: Input directory containing brain masks, corresponding to one per input image (with the same file name prefix)

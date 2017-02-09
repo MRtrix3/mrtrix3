@@ -74,7 +74,7 @@ File ``FreeSurferColorLUT.txt`` is provided with FreeSurfer in its root
 directory. The target lookup table file (``fs_default.txt`` in this case)
 is a handy text file that provides a structure name for every row / column
 of the connectome matrix: it is provided as part of *MRtrix3*, and located at
-``src/connectome/tables/fs_default.txt`` within the *MRtrix3* folder.
+``shared/mrtrix3/labelconvert/fs_default.txt`` within the *MRtrix3* folder.
 
 4. Replace FreeSurfer's estimates of sub-cortical grey matter structures
    with estimates from FSL's FIRST tool:

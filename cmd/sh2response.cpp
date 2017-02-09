@@ -55,7 +55,9 @@ void usage ()
   OPTIONS
 
     + Option ("lmax", "specify the maximum harmonic degree of the response function to estimate")
-      + Argument ("value").type_integer (0, 20);
+      + Argument ("value").type_integer (0, 20)
+    + Option ("dump", "dump the m=0 SH coefficients from all voxels in the mask to the output file, rather than their mean")
+      + Argument ("file").type_file_out();
 }
 
 
@@ -81,8 +83,16 @@ void run ()
     throw Exception ("input direction image \"" + std::string (argument[2]) + "\" must contain precisely 3 volumes");
 
   Eigen::VectorXd delta;
-  vector<value_type> response (Math::ZSH::NforL (lmax), 0.0);
+  Eigen::VectorXd response = Eigen::VectorXd::Zero (Math::ZSH::NforL (lmax));
   size_t count = 0;
+
+  File::OFStream dump_stream;
+  auto opt = get_options ("dump");
+  if (opt.size())
+    dump_stream.open (opt[0][0]);
+
+  Eigen::Matrix<value_type,Eigen::Dynamic,1,0,64> AL (lmax+1);
+  Math::Legendre::Plm_sph (AL, lmax, 0, value_type (1.0));
 
   auto loop = Loop ("estimating response function", SH, 0, 3);
   for (auto l = loop(mask, SH, dir); l; ++l) {
@@ -115,19 +125,23 @@ void run ()
         d_dot_s += s*delta[i];
         d_dot_d += Math::pow2 (delta[i]);
       }
-      response[Math::ZSH::index(l)] += d_dot_s / d_dot_d;
+      value_type val = AL[l] * d_dot_s / d_dot_d;
+      response[Math::ZSH::index(l)] += val;
+
+      if (dump_stream.is_open()) 
+        dump_stream << val << " ";
     }
+    if (dump_stream.is_open()) 
+      dump_stream << "\n";
+
     ++count;
   }
 
-  Eigen::Matrix<value_type,Eigen::Dynamic,1,0,64> AL (lmax+1);
-  Math::Legendre::Plm_sph (AL, lmax, 0, value_type (1.0));
-  for (size_t l = 0; l < response.size(); l++)
-    response[l] *= AL[2*l] / count;
+  response /= count;
 
   if (std::string(argument[3]) == "-") {
-    for (auto r : response)
-      std::cout << r << " ";
+    for (size_t n = 0; n < response.size(); ++n)
+      std::cout << response[n] << " ";
     std::cout << "\n";
   }
   else {

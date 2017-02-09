@@ -1,0 +1,124 @@
+#!/usr/bin/env python
+
+# Script for estimating response functions for spherical deconvolution
+# A number of different approaches are available within this script for performing response function estimation.
+
+
+# Make the corresponding MRtrix3 Python libraries available
+import inspect, os, sys
+lib_folder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile(inspect.currentframe()))[0], os.pardir, 'lib')))
+if not os.path.isdir(lib_folder):
+  sys.stderr.write('Unable to locate MRtrix3 Python libraries')
+  sys.exit(1)
+sys.path.insert(0, lib_folder)
+
+
+from mrtrix3 import algorithm, app, image, path, run
+
+
+app.init('Robert E. Smith (robert.smith@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)',
+         'Estimate response function(s) for spherical deconvolution')
+
+# General options
+base_parser = app.Parser(description='Base parser for dwi2response script', parents=[app.cmdline], add_help=False)
+common_options = base_parser.add_argument_group('Options common to all dwi2response algorithms')
+common_options.add_argument('-shell', help='The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)')
+common_options.add_argument('-lmax', help='The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)')
+common_options.add_argument('-mask', help='Provide an initial mask for response voxel selection')
+common_options.add_argument('-voxels', help='Output an image showing the final voxel selection(s)')
+common_options.add_argument('-grad', help='Pass the diffusion gradient table in MRtrix format')
+common_options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Pass the diffusion gradient table in FSL bvecs/bvals format')
+base_parser.flagMutuallyExclusiveOptions( [ 'grad', 'fslgrad' ] )
+base_parser.set_defaults(single_shell=False)
+base_parser.set_defaults(needs_bzero=False)
+
+# Subparsers for individual algorithms
+subparsers = app.cmdline.add_subparsers(title='Algorithm choices', help='Select the algorithm to be used to derive the response function; additional details and options become available once an algorithm is nominated. Options are: ' + ', '.join(algorithm.getList()), dest='algorithm')
+
+# Import the command-line settings for all algorithms found in the relevant directory
+algorithm.initialise(base_parser, subparsers)
+
+
+app.parse()
+
+
+# Find out which algorithm the user has requested
+algorithm = algorithm.getModule(app.args.algorithm)
+
+
+# Check for prior existence of output files, and grab any input files, used by the particular algorithm
+if app.args.voxels:
+  app.checkOutputPath(app.args.voxels)
+algorithm.checkOutputPaths()
+
+
+# Sanitise some inputs, and get ready for data import
+if app.args.lmax:
+  try:
+    lmax = [ int(x) for x in app.args.lmax.split(',') ]
+    if any([lmax_value%2 for lmax_value in lmax]):
+      app.error('Value of lmax must be even')
+  except:
+    app.error('Parameter lmax must be a number')
+  if app.args.single_shell and not len(lmax) == 1:
+    app.error('Can only specify a single lmax value for single-shell algorithms')
+shell_option = ''
+if app.args.shell:
+  try:
+    shell_values = [ int(x) for x in app.args.shell.split(',') ]
+  except:
+    app.error('-shell option should provide a comma-separated list of b-values')
+  if app.args.single_shell and not len(shell_values) == 1:
+    app.error('Can only specify a single b-value shell for single-shell algorithms')
+  shell_option = ' -shell ' + app.args.shell
+singleshell_option = ''
+if app.args.single_shell:
+  singleshell_option = ' -singleshell -no-bzero'
+
+grad_import_option = ''
+if app.args.grad:
+  grad_import_option = ' -grad ' + path.fromUser(app.args.grad, True)
+elif app.args.fslgrad:
+  grad_import_option = ' -fslgrad ' + path.fromUser(app.args.fslgrad[0], True) + ' ' + path.fromUser(app.args.fslgrad[1], True)
+elif not image.headerField(path.fromUser(app.args.input, False), 'dwgrad'):
+  app.error('Script requires diffusion gradient table: either in image header, or using -grad / -fslgrad option')
+
+app.makeTempDir()
+
+# Get standard input data into the temporary directory
+if app.args.single_shell or shell_option:
+  run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' - -stride 0,0,0,1' + grad_import_option + ' | dwiextract - ' + path.toTemp('dwi.mif', True) + shell_option + singleshell_option)
+else: # Don't want to discard b=0 in multi-shell algorithms, which dwiextract will do
+  run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('dwi.mif', True) + ' -stride 0,0,0,1' + grad_import_option)
+if app.args.needs_bzero:
+  run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' - -stride 0,0,0,1' + grad_import_option + ' | dwiextract - ' + path.toTemp('bzero.mif', True) + " -bzero")
+if app.args.mask:
+  run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + path.toTemp('mask.mif', True) + ' -datatype bit')
+
+algorithm.getInputs()
+
+app.gotoTempDir()
+  
+
+# Generate a brain mask (if necessary)
+# Otherwise, check that the mask provided is appropriate
+if os.path.exists('mask.mif'):
+  dwi_size = [ int(x) for x in image.headerField('dwi.mif', 'size').split() ]
+  mask_size = [ int(x) for x in image.headerField('mask.mif', 'size').split() ]
+  if not mask_size[:3] == dwi_size[:3]:
+    app.error('Dimensions of provided mask image do not match DWI')
+  if int(image.statistic('mask.mif', 'count', 'mask.mif')) == 0:
+    app.error('Input mask does not contain any voxels')
+else:
+  run.command('dwi2mask dwi.mif mask.mif')
+
+
+# From here, the script splits depending on what estimation algorithm is being used
+algorithm.execute()
+
+
+# Finalize for all algorithms
+if app.args.voxels:
+  run.command('mrconvert voxels.mif ' + path.fromUser(app.args.voxels, True) + (' -force' if app.force else ''))
+app.complete()
+

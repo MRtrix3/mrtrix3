@@ -8,7 +8,7 @@ Synopsis
 
 ::
 
-    dwibiascorrect [ options ] input output
+    dwibiascorrect input output [ options ]
 
 -  *input*: The input image series to be corrected
 -  *output*: The output corrected image series

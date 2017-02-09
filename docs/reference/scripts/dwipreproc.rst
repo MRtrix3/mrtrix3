@@ -8,7 +8,7 @@ Synopsis
 
 ::
 
-    dwipreproc [ options ] input output
+    dwipreproc input output [ options ]
 
 -  *input*: The input DWI series to be corrected
 -  *output*: The output corrected image series

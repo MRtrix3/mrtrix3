@@ -8,7 +8,7 @@ Synopsis
 
 ::
 
-    dwi2response dhollander [ options ] input out_sfwm out_gm out_csf
+    dwi2response dhollander input out_sfwm out_gm out_csf [ options ]
 
 -  *input*: The input DWI
 -  *out_sfwm*: Output single-fibre WM response text file
@@ -113,7 +113,7 @@ Synopsis
 
 ::
 
-    dwi2response fa [ options ] input output
+    dwi2response fa input output [ options ]
 
 -  *input*: The input DWI
 -  *output*: The output response function text file
@@ -212,7 +212,7 @@ Synopsis
 
 ::
 
-    dwi2response manual [ options ] input in_voxels output
+    dwi2response manual input in_voxels output [ options ]
 
 -  *input*: The input DWI
 -  *in_voxels*: Input voxel selection mask
@@ -308,7 +308,7 @@ Synopsis
 
 ::
 
-    dwi2response msmt_5tt [ options ] input in_5tt out_wm out_gm out_csf
+    dwi2response msmt_5tt input in_5tt out_wm out_gm out_csf [ options ]
 
 -  *input*: The input DWI
 -  *in_5tt*: Input co-registered 5TT image
@@ -412,7 +412,7 @@ Synopsis
 
 ::
 
-    dwi2response tax [ options ] input output
+    dwi2response tax input output [ options ]
 
 -  *input*: The input DWI
 -  *output*: The output response function text file
@@ -511,7 +511,7 @@ Synopsis
 
 ::
 
-    dwi2response tournier [ options ] input output
+    dwi2response tournier input output [ options ]
 
 -  *input*: The input DWI
 -  *output*: The output response function text file
@@ -612,7 +612,7 @@ Synopsis
 
 ::
 
-    dwi2response [ options ] algorithm ...
+    dwi2response algorithm [ options ] ...
 
 -  *algorithm*: Select the algorithm to be used to derive the response function; additional details and options become available once an algorithm is nominated. Options are: dhollander, fa, manual, msmt_5tt, tax, tournier
 

@@ -8,7 +8,7 @@ Synopsis
 
 ::
 
-    population_template [ options ] input_dir template
+    population_template input_dir template [ options ]
 
 -  *input_dir*: The input directory containing all images used to build the template
 -  *template*: The output template image

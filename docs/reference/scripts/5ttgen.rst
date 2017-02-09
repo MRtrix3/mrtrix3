@@ -8,7 +8,7 @@ Synopsis
 
 ::
 
-    5ttgen freesurfer [ options ] input output
+    5ttgen freesurfer input output [ options ]
 
 -  *input*: The input FreeSurfer parcellation image (any image containing 'aseg' in its name)
 -  *output*: The output 5TT image
@@ -95,7 +95,7 @@ Synopsis
 
 ::
 
-    5ttgen fsl [ options ] input output
+    5ttgen fsl input output [ options ]
 
 -  *input*: The input T1-weighted image
 -  *output*: The output 5TT image
@@ -186,7 +186,7 @@ Synopsis
 
 ::
 
-    5ttgen [ options ] algorithm ...
+    5ttgen algorithm [ options ] ...
 
 -  *algorithm*: Select the software / algorithm to be used to derive the 5TT image; additional details and options become available once an algorithm is nominated. Options are: freesurfer, fsl
 

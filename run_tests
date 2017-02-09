@@ -75,7 +75,7 @@ EOD
   while IFS='' read -r cmd || [[ -n "$cmd" ]]; do
     echo -n '# command: '$cmd >> $LOGFILE 
     (
-      export PATH="$(pwd)/testing/release/bin:$(pwd)/release/bin:$(pwd)/scripts:$PATH"; 
+      export PATH="$(pwd)/testing/bin:$(pwd)/bin:$PATH"; 
       cd testing/data/
       eval $cmd
     ) > .__tmp.log 2>&1 

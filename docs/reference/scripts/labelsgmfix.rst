@@ -8,7 +8,7 @@ Synopsis
 
 ::
 
-    labelsgmfix [ options ] parc t1 lut output
+    labelsgmfix parc t1 lut output [ options ]
 
 -  *parc*: The input FreeSurfer parcellation image
 -  *t1*: The T1 image to be provided to FIRST
