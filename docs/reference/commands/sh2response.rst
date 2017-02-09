@@ -25,6 +25,8 @@ Options
 
 -  **-lmax value** specify the maximum harmonic degree of the response function to estimate
 
+-  **-dump file** dump the m=0 SH coefficients from all voxels in the mask to the output file, rather than their mean
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
