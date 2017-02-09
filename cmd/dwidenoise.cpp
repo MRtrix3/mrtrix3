@@ -42,7 +42,7 @@ void usage ()
   REFERENCES
     + "Veraart, J.; Novikov, D.S.; Christiaens, D.; Ades-aron, B.; Sijbers, J. & Fieremans, E. " // Internal
     "Denoising of diffusion MRI using random matrix theory. "
-    "NeuroImage, 2016, in press, doi: 10.1016/j.neuroimage.2016.08.016"
+    "NeuroImage, 2016, 142, 394-406, doi: 10.1016/j.neuroimage.2016.08.016"
 
     + "Veraart, J.; Fieremans, E. & Novikov, D.S. " // Internal
     "Diffusion MRI noise mapping using random matrix theory. "
