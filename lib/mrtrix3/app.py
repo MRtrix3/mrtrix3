@@ -712,9 +712,7 @@ class progressBar:
 def isWindows():
   import platform
   system = platform.system().lower()
-  result = system.startswith('mingw') or system.startswith('msys') or system.startswith('windows')
-  debug('System = ' + system + '; is Windows? ' + str(result))
-  return result
+  return system.startswith('mingw') or system.startswith('msys') or system.startswith('windows')
 
 
 

@@ -1,7 +1,7 @@
 _env = None
 
 import os
-_mrtrix_bin_path = os.path.join(os.path.abspath(os.path.dirname(os.path.abspath(__file__))), os.pardir, os.pardir, 'bin')
+_mrtrix_bin_path = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(os.path.abspath(__file__))), os.pardir, os.pardir, 'bin'))
 # Remember to remove the '.exe' from Windows binary executables
 _mrtrix_exe_list = [ os.path.splitext(name)[0] for name in os.listdir(_mrtrix_bin_path) ]
 
@@ -71,6 +71,7 @@ def command(cmd, exitOnError=True):
       is_mrtrix_exe = item in _mrtrix_exe_list
       if is_mrtrix_exe:
         item = versionMatch(item)
+      item = exeName(item)
       next_is_exe = False
     if item == '|':
       if is_mrtrix_exe:
@@ -248,8 +249,21 @@ def function(fn, *args):
 
 
 
+# When running on Windows, add the necessary '.exe' so that hopefully the correct
+#   command is found by subprocess
+def exeName(item):
+  from mrtrix3.app import isWindows
+  if isWindows() and not item.endswith('.exe'):
+    return item + '.exe'
+  return item
+
+
+
 # Make sure we're not accidentally running an MRtrix executable on the system that
-#   belongs to a different version of MRtrix3 to the script library currently being used
+#   belongs to a different version of MRtrix3 to the script library currently being used,
+#   or a non-MRtrix3 command with the same name as an MRtrix3 command
+#   (e.g. C:\Windows\system32\mrinfo.exe; On Windows, subprocess uses CreateProcess(),
+#   which checks system32\ before PATH)
 def versionMatch(item):
   import distutils, os, sys
   from distutils.spawn import find_executable
@@ -260,29 +274,15 @@ def versionMatch(item):
     app.debug('Command ' + item + ' not found in MRtrix3 bin/ directory')
     return item
 
-  exe_path_sys = find_executable(item)
-  exe_path_manual = os.path.join(_mrtrix_bin_path, item)
-  if not os.path.isfile(exe_path_manual):
-    exe_path_manual = exe_path_manual + '.exe'
-    if not os.path.isfile(exe_path_manual):
-      exe_path_manual = ''
-
-  # Always use the manual path if the item isn't found in the system path
-  use_manual_exe_path = not exe_path_sys
-  if not use_manual_exe_path:
-    # os.path.samefile() not supported on all platforms / Python versions
-    if hasattr(os.path, 'samefile'):
-      use_manual_exe_path = not os.path.samefile(exe_path_sys, exe_path_manual)
-    else:
-      # Hack equivalent of samefile(); not perfect, but should be adequate for use here
-      use_manual_exe_path = not os.path.normcase(os.path.normpath(exe_path_sys)) == os.path.normcase(os.path.normpath(exe_path_manual))
-
-  if use_manual_exe_path:
-    app.debug('Forcing version match for ' + item + ': ' + exe_path_manual)
+  exe_path_manual = os.path.join(_mrtrix_bin_path, exeName(item))
+  if os.path.isfile(exe_path_manual):
+    app.debug('Version-matched executable for ' + item + ': ' + exe_path_manual)
     return exe_path_manual
-  else:
-    app.debug('System version of ' + item + ' matches MRtrix3 version')
-    return item
 
+  exe_path_sys = find_executable(exeName(item))
+  if os.path.isfile(exe_path_sys):
+    app.debug('Using non-version-matched executable for ' + item + ': ' + exe_path_sys)
+    return exe_path_sys
 
+  app.error('Unable to find executable for MRtrix3 command ' + item)
 

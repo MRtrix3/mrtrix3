@@ -31,12 +31,11 @@ def getList():
 
 
 def initialise(base_parser, subparsers):
-  import pkgutil
-  from mrtrix3 import app
+  import importlib, pkgutil
+  from mrtrix3 import app, path
   initlist = [ ]
   for importer, package_name, ispkg in pkgutil.iter_modules( [ _algorithmsPath() ] ):
-    loader = importer.find_loader(package_name)
-    module = loader[0].load_module(package_name)
+    module = importlib.import_module('mrtrix3.' + path.scriptSubDirName() + '.' + package_name)
     module.initParser(subparsers, base_parser)
     initlist.extend(package_name)
   app.debug('Initialised algorithms: ' + str(initlist))
@@ -45,7 +44,7 @@ def initialise(base_parser, subparsers):
 
 
 def getModule(name):
-  import pkgutil
-  # TODO Is this causing a double module load?
-  return pkgutil.find_loader(name).load_module()
+  import sys
+  from mrtrix3 import path
+  return sys.modules['mrtrix3.' + path.scriptSubDirName() + '.' + name]
 

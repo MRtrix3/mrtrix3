@@ -6,7 +6,7 @@
 def headerField(image_path, field):
   import subprocess
   from mrtrix3 import app, run
-  command = [ run.versionMatch('mrinfo'), image_path, '-' + field ]
+  command = [ run.exeName(run.versionMatch('mrinfo')), image_path, '-' + field ]
   if app._verbosity > 1:
     app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
   proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
@@ -25,7 +25,7 @@ def headerField(image_path, field):
 def headerKeyValue(image_path, key):
   import subprocess
   from mrtrix3 import app, run
-  command = [ run.versionMatch('mrinfo'), image_path, '-property', key ]
+  command = [ run.exeName(run.versionMatch('mrinfo')), image_path, '-property', key ]
   if app.verbosity > 1:
     app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
   proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
@@ -71,7 +71,7 @@ def match(image_one, image_two):
 def statistic(image_path, statistic, mask_path = ''):
   import subprocess
   from mrtrix3 import app, run
-  command = [ run.versionMatch('mrstats'), image_path, '-output', statistic ]
+  command = [ run.exeName(run.versionMatch('mrstats')), image_path, '-output', statistic ]
   if mask_path:
     command.extend([ '-mask', mask_path ])
   if app._verbosity > 1:
