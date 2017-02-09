@@ -61,7 +61,7 @@ namespace MR
 
         Linear () :
           max_iter (1, 500),
-          gd_repetitions (1, 1),
+          gd_repetitions (1, File::Config::get_int ("reg_gradient_descent_repeats", 1)),
           scale_factor (3),
           loop_density (1, 1.0),
           kernel_extent (3, 1),
@@ -81,7 +81,11 @@ namespace MR
           //CONF default: 0 (false)
           //CONF Linear registration: write comma separated gradient descent parameters and gradients
           //CONF to stdout and verbose gradient descent output to stderr
-          analyse_descent (File::Config::get_bool ("reg_analyse_descent", false)) {
+          analyse_descent (File::Config::get_bool ("reg_analyse_descent", false)),
+          //CONF option: reg_linreg_diagnostics_image_prefix
+          //CONF default: "" (no image created)
+          //CONF Linear registration: write diagnostics images after every registration stage
+          diagnostics_image_prefix (File::Config::get ("reg_linreg_diagnostics_image_prefix", "")) {
           scale_factor[0] = 0.25;
           scale_factor[1] = 0.5;
           scale_factor[2] = 1.0;
@@ -100,7 +104,7 @@ namespace MR
         void set_gradient_descent_repetitions (const vector<int>& rep) {
           for (size_t i = 0; i < rep.size (); ++i)
             if (rep[i] < 0)
-              throw Exception ("the number of repetitions must be positive");
+              throw Exception ("the number of gardient descent repetitions must be positive");
           gd_repetitions = rep;
         }
 
@@ -303,9 +307,9 @@ namespace MR
                 std::string st;
                 loop_density[level] < 1.0 ? st = ", loop density: " + str(loop_density[level]) : st = "";
                 if (do_reorientation) {
-                  CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor " + str(scale_factor[level]) + st + ", lmax " + str(fod_lmax[level]) );
+                  CONSOLE ("multi-resolution level " + str(level) + ", scale factor " + str(scale_factor[level]) + st + ", lmax " + str(fod_lmax[level]) );
                 } else {
-                  CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor " + str(scale_factor[level]) + st);
+                  CONSOLE ("multi-resolution level " + str(level) + ", scale factor " + str(scale_factor[level]) + st);
                 }
               }
 
@@ -380,7 +384,7 @@ namespace MR
               size_t buffer_len (MR::File::Config::get_float ("reg_gd_convergence_buffer_len", 4));
               //CONF option: reg_gd_convergence_min_iter
               //CONF default: 10
-              //CONF Linear registration: minumum number of iterations until convergence check is activated
+              //CONF Linear registration: minimum number of iterations until convergence check is activated
               size_t min_iter (MR::File::Config::get_float ("reg_gd_convergence_min_iter", 10));
               transform.get_gradient_descent_updator()->set_convergence_check (slope_threshold, alpha, beta, buffer_len, min_iter);
 
@@ -389,52 +393,40 @@ namespace MR
                 evaluate.set_directions (aPSF_directions);
 
               INFO ("linear registration...");
-              for (auto gd_iteration = 0; gd_iteration < gd_repetitions[level]; ++gd_iteration){
-                if (reg_bbgd) {
+              for (auto gd_rep = 0; gd_rep < gd_repetitions[level]; ++gd_rep) {
+                if (reg_bbgd and gd_rep % 2 == 0) {
                   Math::GradientDescentBB<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
                     optim (evaluate, *transform.get_gradient_descent_updator());
                   optim.be_verbose (analyse_descent);
                   optim.precondition (optimiser_weights);
-                  if (log_stream)
-                    optim.run (max_iter[level], grad_tolerance, log_stream);
-                  else if (analyse_descent)
-                    optim.run (max_iter[level], grad_tolerance, std::cout.rdbuf());
-                  else
-                      optim.run (max_iter[level], grad_tolerance);
-                  DEBUG ("gradient descent ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
-                  if (!is_finite(optim.state())) {
-                    throw Exception ("registration failed: encountered NaN in parameters.");
-                  }
-                  parameters.transformation.set_parameter_vector (optim.state());
-                  parameters.update_control_points();
+                  optim.run (max_iter[level], grad_tolerance, analyse_descent ? std::cout.rdbuf() : log_stream);
+                  parameters.optimiser_update (optim);
                 } else {
                   Math::GradientDescent<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
                     optim (evaluate, *transform.get_gradient_descent_updator());
                   optim.be_verbose (analyse_descent);
                   optim.precondition (optimiser_weights);
-                  if (log_stream)
-                    optim.run (max_iter[level], grad_tolerance, log_stream);
-                  else if (analyse_descent)
-                    optim.run (max_iter[level], grad_tolerance, std::cout.rdbuf());
-                  else
-                      optim.run (max_iter[level], grad_tolerance);
-                  DEBUG ("gradient descent ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
-                  if (!is_finite(optim.state())) {
-                    throw Exception ("registration failed due to NaN in parameters");
-                  }
-                  parameters.transformation.set_parameter_vector (optim.state());
-                  parameters.update_control_points();
+                  optim.run (max_iter[level], grad_tolerance, analyse_descent ? std::cout.rdbuf() : log_stream);
+                  parameters.optimiser_update (optim);
                 }
-                if (log_stream){
+                if (log_stream) {
                   std::ostream log_os(log_stream);
                   log_os << "\n\n"; // two empty lines for gnuplot's index recognition
                 }
+                // debug cost function gradient
                 // auto params = optim.state();
                 // VAR(optim.function_evaluations());
                 // Math::check_function_gradient (evaluate, params, 0.0001, true, optimiser_weights);
+                if (diagnostics_image_prefix.size()) {
+                  std::ostringstream oss;
+                  oss << diagnostics_image_prefix << "_level-" << level << "_gdrep-" << gd_rep << ".mif";
+                  CONSOLE("creating diagnostics image:");
+                  CONSOLE(oss.str());
+                  parameters.make_diagnostics_image (oss.str(), File::Config::get_bool ("reg_linreg_diagnostics_image_masked", false));
+                }
               }
               // update midway (affine average) space using the current transformations
-              midway_image_header = compute_minimum_average_header(im1_image, im2_image, parameters.transformation, midspace_voxel_subsampling, midspace_padding);
+              midway_image_header = compute_minimum_average_header (im1_image, im2_image, parameters.transformation, midspace_voxel_subsampling, midspace_padding);
             }
             INFO("linear registration done");
           }
@@ -494,6 +486,7 @@ namespace MR
         Eigen::MatrixXd aPSF_directions;
         vector<int> fod_lmax;
         const bool reg_bbgd, analyse_descent;
+        std::basic_string<char> diagnostics_image_prefix;
 
         Header midway_image_header;
     };

@@ -213,13 +213,12 @@ namespace MR
           }
 
           std::string debug () {
-            INFO ("parameters of type " + str(DataType::from<ParameterType>().specifier()));
             Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", "\n", "", "", "", "");
-            INFO ("trafo:\n"+str(trafo.matrix().format(fmt)));
-            INFO ("trafo.inverse():\n"+str(trafo.inverse().matrix().format(fmt)));
-            INFO ("trafo_half:\n"+str(trafo_half.matrix().format(fmt)));
-            INFO ("trafo_half_inverse:\n"+str(trafo_half_inverse.matrix().format(fmt)));
-            INFO ("centre: "+str(centre.transpose(),12));
+            CONSOLE ("trafo:\n"+str(trafo.matrix().format(fmt)));
+            CONSOLE ("trafo_inverse:\n"+str(trafo.inverse().matrix().format(fmt)));
+            CONSOLE ("trafo_half:\n"+str(trafo_half.matrix().format(fmt)));
+            CONSOLE ("trafo_half_inverse:\n"+str(trafo_half_inverse.matrix().format(fmt)));
+            CONSOLE ("centre: "+str(centre.transpose(),12));
             return "";
           }
 

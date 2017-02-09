@@ -83,6 +83,7 @@ namespace MR
             template <class U = MetricType>
             default_type operator() (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x, Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient, typename metric_requires_precompute<U>::yes = 0) {
               Eigen::VectorXd overall_cost_function = Eigen::VectorXd::Zero(1,1);
+
               gradient.setZero();
               params.transformation.set_parameter_vector(x);
 
@@ -100,13 +101,15 @@ namespace MR
 
               metric.precompute (params);
               {
-                ThreadKernel<MetricType, ParamType> kernel (metric, params, overall_cost_function, gradient);
+                params.overlap_count = 0;
+                ThreadKernel<MetricType, ParamType> kernel (metric, params, overall_cost_function, gradient, &params.overlap_count);
                   ThreadedLoop (params.processed_image, 0, 3).run (kernel);
               }
               DEBUG ("Metric evaluate iteration: " + str(iteration++) + ", cost: " + str(overall_cost_function.transpose()));
               DEBUG ("  x: " + str(x.transpose()));
               DEBUG ("  gradient: " + str(gradient.transpose()));
               DEBUG ("  norm(gradient): " + str(gradient.norm()));
+              DEBUG ("  overlapping voxels: " + str(params.overlap_count));
               return overall_cost_function(0);
             }
 
@@ -119,7 +122,8 @@ namespace MR
                     const ParamType& parameters,
                     Eigen::VectorXd& overall_cost_function,
                     Eigen::VectorXd& overall_grad,
-                    Math::RNG& rng_engine) :
+                    Math::RNG& rng_engine,
+                    ssize_t* overlap_count = nullptr) :
                   inner_axes (inner_axes),
                   density (density),
                   metric (metric),
@@ -128,7 +132,8 @@ namespace MR
                   gradient (overall_grad.size()),
                   overall_cost_function (overall_cost_function),
                   overall_gradient (overall_grad),
-                  rng (rng_engine)  {
+                  rng (rng_engine),
+                  overlap_count (overlap_count)  {
                     gradient.setZero();
                     cost_function.setZero();
                     assert(inner_axes.size() >= 2);
@@ -142,13 +147,12 @@ namespace MR
 
                 void operator() (const Iterator& iter) {
                   auto engine = std::default_random_engine{static_cast<std::default_random_engine::result_type>(rng.get_seed())};
-                  auto kern = ThreadKernel<MetricType, ParamType> (metric, params, cost_function, gradient);
+                  auto kern = ThreadKernel<MetricType, ParamType> (metric, params, cost_function, gradient, overlap_count);
                   Iterator iterator (iter);
                   assign_pos_of(iter).to(iterator);
                   auto inner_loop = Random_loop<Iterator, std::default_random_engine>(iterator, engine, inner_axes[1], (float) iterator.size(inner_axes[1]) * density);
                   for (auto j = inner_loop; j; ++j)
-                    for (auto k = Loop (inner_axes[0]) (iterator); k; ++k){
-                      DEBUG (str(iterator));
+                    for (auto k = Loop (inner_axes[0]) (iterator); k; ++k) {
                       kern (iterator);
                     }
                 }
@@ -162,6 +166,7 @@ namespace MR
                 Eigen::VectorXd& overall_cost_function;
                 Eigen::VectorXd& overall_gradient;
                 Math::RNG rng;
+                ssize_t* overlap_count;
             };
 
             template <class TransformType_>
@@ -171,22 +176,27 @@ namespace MR
                   const ParamType& params,
                   Eigen::VectorXd& cost,
                   Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient,
-                  const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x) {
+                  const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x,
+                  ssize_t* overlap_count = nullptr) {
 
-                if (params.loop_density < 1.0){
-                  DEBUG("stochastic gradient descent, density: " + str(params.loop_density));
+                if (params.loop_density < 1.0) {
+                  DEBUG ("stochastic gradient descent, density: " + str(params.loop_density));
                   if (params.robust_estimate){
                     throw Exception ("TODO robust estimate not implemented");
                   } else {
                     Math::RNG rng;
                     gradient.setZero();
                     auto loop = ThreadedLoop (params.midway_image, 0, 3, 2);
-                    ThreadFunctor functor (loop.inner_axes, params.loop_density, metric, params, cost, gradient, rng);
+                    if (overlap_count)
+                      *overlap_count = 0;
+                    ThreadFunctor functor (loop.inner_axes, params.loop_density, metric, params, cost, gradient, rng, overlap_count);
                     loop.run_outer (functor);
                   }
                 }
                 else {
-                  ThreadKernel<MetricType, ParamType> kernel (metric, params, cost, gradient);
+                  if (overlap_count)
+                    *overlap_count = 0;
+                  ThreadKernel <MetricType, ParamType> kernel (metric, params, cost, gradient, overlap_count);
                   ThreadedLoop (params.midway_image, 0, 3).run (kernel);
                 }
               }
@@ -210,11 +220,13 @@ namespace MR
                 params.set_im2_iterpolator (*im2_image_reoriented);
               }
 
-              estimate(params.transformation, metric, params, overall_cost_function, gradient, x);
+              estimate (params.transformation, metric, params, overall_cost_function, gradient, x, &params.overlap_count);
+
               DEBUG ("Metric evaluate iteration: " + str(iteration++) + ", cost: " + str(overall_cost_function.transpose()));
               DEBUG ("  x: " + str(x.transpose()));
               DEBUG ("  gradient: " + str(gradient.transpose()));
               DEBUG ("  norm(gradient): " + str(gradient.norm()));
+              DEBUG ("  overlapping voxels: " + str(params.overlap_count));
               return overall_cost_function(0);
             }
 
