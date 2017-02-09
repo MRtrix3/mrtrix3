@@ -46,7 +46,7 @@ void usage ()
 
     + "Veraart, J.; Fieremans, E. & Novikov, D.S. " // Internal
     "Diffusion MRI noise mapping using random matrix theory. "
-    "Magn. Res. Med., 2016, early view, doi: 10.1002/mrm.26059";
+    "Magn. Res. Med., 2016, 76(5), 1582-1593, doi: 10.1002/mrm.26059";
   
   ARGUMENTS
   + Argument ("dwi", "the input diffusion-weighted image.").type_image_in ()
