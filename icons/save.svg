@@ -14,7 +14,7 @@
    height="48"
    id="svg2"
    version="1.1"
-   inkscape:version="0.48.5 r10040"
+   inkscape:version="0.91 r13725"
    sodipodi:docname="save.svg">
   <defs
      id="defs4">
@@ -128,11 +128,11 @@
     <linearGradient
        id="linearGradient3765-1">
       <stop
-         style="stop-color:#990000;stop-opacity:1;"
+         style="stop-color:#000098;stop-opacity:1"
          offset="0"
          id="stop3767-7" />
       <stop
-         style="stop-color:#fd4a00;stop-opacity:1;"
+         style="stop-color:#004aff;stop-opacity:1"
          offset="1"
          id="stop3769-9" />
     </linearGradient>
@@ -901,13 +901,13 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="5.2083335"
-     inkscape:cx="-0.15884188"
-     inkscape:cy="38.397472"
+     inkscape:cx="-30.302841"
+     inkscape:cy="38.013472"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
-     inkscape:window-width="1366"
-     inkscape:window-height="705"
+     inkscape:window-width="1920"
+     inkscape:window-height="1016"
      inkscape:window-x="0"
      inkscape:window-y="27"
      inkscape:window-maximized="1">
@@ -927,7 +927,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -962,7 +962,7 @@
        sodipodi:cy="21"
        sodipodi:rx="6"
        sodipodi:ry="1"
-       d="m 30,21 a 6,1 0 1 1 -12,0 6,1 0 1 1 12,0 z"
+       d="m 30,21 a 6,1 0 0 1 -6,1 6,1 0 0 1 -6,-1 6,1 0 0 1 6,-1 6,1 0 0 1 6,1 z"
        transform="matrix(2.973502,0,0,3.7639231,-47.740441,959.19942)" />
     <path
        sodipodi:type="arc"
@@ -972,7 +972,7 @@
        sodipodi:cy="21"
        sodipodi:rx="6"
        sodipodi:ry="1"
-       d="M 29.948423,21.130838 A 6,1 0 0 1 18.189916,21.249606"
+       d="m 29.948423,21.130838 a 6,1 0 0 1 -5.585465,0.867331 6,1 0 0 1 -6.173042,-0.748563"
        transform="matrix(2.973502,0,0,3.7639231,-47.740441,959.19942)"
        sodipodi:start="0.13121401"
        sodipodi:end="2.8893188"
