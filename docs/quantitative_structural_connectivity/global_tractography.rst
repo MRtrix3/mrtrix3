@@ -21,11 +21,11 @@ partial voluming.
 User guide
 ----------
 
-The most common use will be:
+For multi-shell DWI data, the most common use will be:
 
 ::
 
-    tckglobal dwi.mif wmr.txt -riso csfr.txt -riso gmr.txt -mask mask.mif -niter 1e8 -fod fod.mif -fiso fiso.mif tracks.tck
+    tckglobal dwi.mif wmr.txt -riso csfr.txt -riso gmr.txt -mask mask.mif -niter 1e9 -fod fod.mif -fiso fiso.mif tracks.tck
 
 In this example, ``dwi.mif`` is the input dataset, including the
 gradient table, and ``tracks.tck`` is the output tractogram. ``wmr.txt``, 
@@ -39,7 +39,7 @@ Input response functions
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 Input response functions for (single fibre) white matter, grey matter,
-and CSF can be estimated from the data in prior tissue segmentations, as
+and CSF can be estimated from multi-shell data in prior tissue segmentations, as
 described in `Jeurissen et al. (2014) <#references>`__ and `Christiaens
 et al. (2015) <#references>`__.
 
