@@ -59,6 +59,8 @@ View options
 
 -  **-colourbar boolean** Show or hide colourbar overlay.
 
+-  **-imagevisible boolean** Show or hide the main image.
+
 -  **-intensity_range min,max** Set the image intensity range to that specified
 
 Window management options
