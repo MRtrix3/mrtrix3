@@ -112,9 +112,9 @@ namespace MR
                 }
               } else {
                 if (do_reorientation) {
-                  CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor " + str(scale_factor[level]) + ", lmax " + str(fod_lmax[level]));
+                  CONSOLE ("stage " + str(level + 1) + ", scale factor " + str(scale_factor[level]) + ", lmax " + str(fod_lmax[level]));
                 } else {
-                  CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor " + str(scale_factor[level]));
+                  CONSOLE ("stage " + str(level + 1) + ", scale factor " + str(scale_factor[level]));
                 }
               }
 

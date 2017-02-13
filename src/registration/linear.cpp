@@ -26,9 +26,11 @@ namespace MR
 
     const char* linear_metric_choices[] = { "diff", "ncc", nullptr };
     const char* linear_robust_estimator_choices[] = { "l1", "l2", "lp", nullptr };
+    const char* linear_optimisation_algo_choices[] = { "bbgd", "gd", nullptr };
+    const char* optim_algo_names[] = { "BBGD", "GD", nullptr };
 
     // define parameters of initialisation methods used for both, rigid and affine registration
-    void parse_general_init_options (Registration::Linear& registration) {
+    void parse_general_options (Registration::Linear& registration) {
       if (get_options("init_translation.unmasked1").size()) registration.init.init_translation.unmasked1 = true;
       if (get_options("init_translation.unmasked2").size()) registration.init.init_translation.unmasked2 = true;
 
@@ -65,6 +67,54 @@ namespace MR
         if (iters == 0)
             throw Exception ("init_rotation.search.global.iterations has to be at least 1");
         registration.init.init_rotation.search.global.iterations = iters;
+      }
+
+
+      opt = get_options("stage.optimiser.default");
+      if (opt.size()) {
+        switch ((int) opt[0][0]) {
+        case 0:
+          registration.set_stage_optimiser_default (Registration::OptimiserAlgoType::bbgd);
+          break;
+        case 1:
+          registration.set_stage_optimiser_default (Registration::OptimiserAlgoType::gd);
+          break;
+        }
+      }
+
+      opt = get_options("stage.optimiser.first");
+      if (opt.size()) {
+        switch ((int) opt[0][0]) {
+        case 0:
+          registration.set_stage_optimiser_first (Registration::OptimiserAlgoType::bbgd);
+          break;
+        case 1:
+          registration.set_stage_optimiser_first (Registration::OptimiserAlgoType::gd);
+          break;
+        }
+      }
+
+      opt = get_options("stage.optimiser.last");
+      if (opt.size()) {
+        switch ((int) opt[0][0]) {
+        case 0:
+          registration.set_stage_optimiser_last (Registration::OptimiserAlgoType::bbgd);
+          break;
+        case 1:
+          registration.set_stage_optimiser_last (Registration::OptimiserAlgoType::gd);
+          break;
+        }
+      }
+
+      opt = get_options("stage.iterations");
+      if (opt.size()) {
+        vector<int> iterations = parse_ints (opt[0][0]);
+        registration.set_stage_iterations (iterations);
+      }
+
+      opt = get_options("stage.diagnostics.prefix");
+      if (opt.size()) {
+        registration.set_diagnostics_image_prefix (opt[0][0]);
       }
     }
 
@@ -120,7 +170,25 @@ namespace MR
         + Argument ("num").type_integer (1, 10000)
       + Option ("init_rotation.search.run_global", "perform a global search. (Default: local)")
       + Option ("init_rotation.search.global.iterations", "number of rotations to investigate (Default: 10000)")
-        + Argument ("num").type_integer (1, 1e10);
+        + Argument ("num").type_integer (1, 1e10)
+
+      // stage iteration / repetition specific options
+      + Option ("stage.iterations", "number of iterations for each registration stage. "
+        "Each repetition starts with the estimated parmeters from the previous stage (Default: 1)")
+        + Argument ("num or comma separated list").type_sequence_int ()
+      + Option ("stage.optimiser.first", "Cost function optimisation algorithm to use at first iteration of all stages. "
+        "Valid choices: bbgd (Barzilai-Borwein gradient descent) or gd (simple gradient descent). (Default: bbgd)")
+        + Argument ("algorithm").type_choice (linear_optimisation_algo_choices)
+      + Option ("stage.optimiser.last", "Cost function optimisation algorithm to use at last iteration of all stages (if there are more than one). "
+        "Valid choices: bbgd (Barzilai-Borwein gradient descent) or gd (simple gradient descent). (Default: bbgd)")
+        + Argument ("algorithm").type_choice (linear_optimisation_algo_choices)
+      + Option ("stage.optimiser.default", "Cost function optimisation algorithm to use at any stage iteration other than first or last iteration. "
+        "Valid choices: bbgd (Barzilai-Borwein gradient descent) or gd (simple gradient descent). (Default: bbgd)")
+        + Argument ("algorithm").type_choice (linear_optimisation_algo_choices)
+
+      // troubleshoot options
+      + Option ("stage.diagnostics.prefix", "generate diagnostics images after every registration stage")
+        + Argument ("file prefix").type_text();
 
     const OptionGroup rigid_options =
       OptionGroup ("Rigid registration options")
