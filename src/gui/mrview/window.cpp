@@ -678,7 +678,7 @@ namespace MR
           button->setText ("Info");
           button->setToolButtonStyle (button_style);
           button->setToolTip (tr ("Information"));
-          button->setIcon (QIcon (":/help.svg"));
+          button->setIcon (QIcon (":/info.svg"));
           button->setPopupMode (QToolButton::InstantPopup);
           button->setMenu (menu);
           toolbar->addWidget (button);
