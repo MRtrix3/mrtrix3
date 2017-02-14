@@ -79,16 +79,16 @@ void run ()
     DEBUG ("Unable to read input track file step size");
   }
 
-  if (std::isfinite (old_step_size)) {
-    float new_step_size = NaN;
+  float new_step_size = NaN;
+  if (typeid (*resampler) == typeid (Resampling::FixedStepSize)) {
+    new_step_size = dynamic_cast<Resampling::FixedStepSize*> (resampler)->get_step_size();
+  } else if (std::isfinite (old_step_size)) {
     if (typeid (*resampler) == typeid (Resampling::Downsampler))
       new_step_size = old_step_size * dynamic_cast<Resampling::Downsampler*> (resampler)->get_ratio();
-    if (typeid (*resampler) == typeid (Resampling::FixedStepSize))
-      new_step_size = dynamic_cast<Resampling::FixedStepSize*> (resampler)->get_step_size();
     if (typeid (*resampler) == typeid (Resampling::Upsampler))
       new_step_size = old_step_size / dynamic_cast<Resampling::Upsampler*> (resampler)->get_ratio();
-    properties["output_step_size"] = std::isfinite (new_step_size) ? str(new_step_size) : "variable";
   }
+  properties["output_step_size"] = std::isfinite (new_step_size) ? str(new_step_size) : "variable";
 
   auto downsample = properties.find ("downsample_factor");
   if (downsample != properties.end())
