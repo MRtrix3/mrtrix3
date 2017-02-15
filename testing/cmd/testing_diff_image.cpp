@@ -26,8 +26,7 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "compare two images for differences, optionally with a specified tolerance.";
+  SYNOPSIS = "Compare two images for differences, optionally with a specified tolerance";
 
   ARGUMENTS
   + Argument ("data1", "an image.").type_image_in()

@@ -26,8 +26,7 @@ void usage ()
 {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "compare two matrices for differences, optionally with a specified tolerance.";
+  SYNOPSIS = "Compare two matrices for differences, optionally with a specified tolerance";
 
   ARGUMENTS
   + Argument ("matrix1", "a matrix file.").type_file_in()

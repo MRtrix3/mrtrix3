@@ -24,9 +24,10 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
+  SYNOPSIS = "Compare two track files for differences, within specified tolerance";
+
   DESCRIPTION
-  + "compare two track files for differences, within specified tolerance. "
-    "This uses the symmetric Hausdorff distance to compare streamlines. For each "
+  + "This uses the symmetric Hausdorff distance to compare streamlines. For each "
     "streamline in the first input, the distance to the closest match in the second "
     "file is used and compared to the tolerance. The test succeeds if fewer "
     "than 10 streamlines fail."

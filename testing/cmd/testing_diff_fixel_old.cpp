@@ -31,8 +31,7 @@ void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "compare two fixel images for differences, within specified tolerance.";
+  SYNOPSIS = "Compare two fixel images for differences, within specified tolerance";
 
   ARGUMENTS
   + Argument ("data1", "a fixel image.").type_image_in ()

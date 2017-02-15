@@ -27,8 +27,7 @@ void usage ()
 {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "compare two peak images for differences, within specified tolerance.";
+  SYNOPSIS = "Compare two peak images for differences, within specified tolerance";
 
   ARGUMENTS
   + Argument ("peaks1", "a peaks image.").type_image_in ()

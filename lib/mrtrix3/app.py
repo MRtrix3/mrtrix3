@@ -163,7 +163,7 @@ def parse():
   elif args.debug:
     _verbosity = 3
 
-  if cmdline.citationList:
+  if cmdline._citationList:
     console('')
     citation_warning = 'Note that this script makes use of commands / algorithms that have relevant articles for citation'
     if cmdline.externalCitations:

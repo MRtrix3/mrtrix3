@@ -26,9 +26,10 @@ void usage ()
 {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
+  SYNOPSIS = "Compare two mesh files for differences, within specified tolerance";
+
   DESCRIPTION
-  + "compare two mesh files for differences, within specified tolerance. "
-    "Note that vertex normals are currently not tested.";
+  + "Note that vertex normals are currently not tested.";
 
   ARGUMENTS
   + Argument ("in1", "a mesh file.").type_file_in ()

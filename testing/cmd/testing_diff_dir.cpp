@@ -23,8 +23,7 @@ void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
-  DESCRIPTION
-  + "compare two direction sets for differences, within specified tolerance.";
+  SYNOPSIS = "Compare two direction sets for differences, within specified tolerance";
 
   ARGUMENTS
   + Argument ("dir1", "directions file").type_file_in ()

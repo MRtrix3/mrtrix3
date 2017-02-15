@@ -27,8 +27,7 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  DESCRIPTION
-  + "generate a test image of random numbers";
+  SYNOPSIS = "Generate a test image of random numbers";
 
   ARGUMENTS
   + Argument ("size", "the dimensions of the test data.").type_sequence_int ()

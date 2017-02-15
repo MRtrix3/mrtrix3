@@ -24,8 +24,7 @@ void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
-  DESCRIPTION
-  + "compare two track scalar files for differences, optionally with a specified tolerance.";
+  SYNOPSIS = "Compare two track scalar files for differences, optionally with a specified tolerance";
 
   ARGUMENTS
   + Argument ("tsf1", "a track scalar file.").type_file_in()
