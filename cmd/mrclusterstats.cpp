@@ -42,8 +42,7 @@ void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
-  DESCRIPTION
-  + "Voxel-based analysis using permutation testing and threshold-free cluster enhancement.";
+  SYNOPSIS = "Voxel-based analysis using permutation testing and threshold-free cluster enhancement";
 
   REFERENCES 
    + "* If not using the -threshold command-line option:\n"

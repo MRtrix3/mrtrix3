@@ -6,6 +6,11 @@ transformcompose
 Synopsis
 --------
 
+Compose any number of linear transformations and/or warps into a single transformation
+
+Usage
+--------
+
 ::
 
     transformcompose [ options ]  input [ input ... ] output
@@ -16,7 +21,7 @@ Synopsis
 Description
 -----------
 
-composes any number of linear transformations and/or warps into a single transformation. The input linear transforms must be supplied in as a 4x4 matrix in a text file (as per the output of mrregister).The input warp fields must be supplied as a 4D image representing a deformation field (as output from mrrregister -nl_warp).
+The input linear transforms must be supplied in as a 4x4 matrix in a text file (as per the output of mrregister).The input warp fields must be supplied as a 4D image representing a deformation field (as output from mrrregister -nl_warp).
 
 Options
 -------

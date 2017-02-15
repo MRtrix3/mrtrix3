@@ -6,6 +6,11 @@ mrfilter
 Synopsis
 --------
 
+Perform filtering operations on 3D / 4D MR images
+
+Usage
+--------
+
 ::
 
     mrfilter [ options ]  input filter output
@@ -17,7 +22,7 @@ Synopsis
 Description
 -----------
 
-Perform filtering operations on 3D / 4D MR images. For 4D images, each 3D volume is processed independently.
+For 4D images, each 3D volume is processed independently.
 
 The available filters are: fft, gradient, median, smooth, normalise.
 

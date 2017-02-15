@@ -24,8 +24,7 @@ void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
-  DESCRIPTION
-  + "an application to divide corresponding values in track scalar files";
+  SYNOPSIS = "Divide corresponding values in track scalar files";
 
   ARGUMENTS
   + Argument ("input",  "the input track scalar file.").type_file_in()

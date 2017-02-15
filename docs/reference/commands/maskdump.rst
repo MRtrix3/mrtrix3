@@ -6,6 +6,11 @@ maskdump
 Synopsis
 --------
 
+Print out the locations of all non-zero voxels in a mask image
+
+Usage
+--------
+
 ::
 
     maskdump [ options ]  input[ output ]
@@ -16,7 +21,7 @@ Synopsis
 Description
 -----------
 
-Print out the locations of all non-zero voxels in a mask image. If no destination file is specified, the voxel locations will be printed to stdout.
+If no destination file is specified, the voxel locations will be printed to stdout.
 
 Options
 -------

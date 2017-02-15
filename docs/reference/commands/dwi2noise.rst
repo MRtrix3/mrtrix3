@@ -6,6 +6,11 @@ dwi2noise
 Synopsis
 --------
 
+Estimate noise level voxel-wise using residuals from a truncated SH fit
+
+Usage
+--------
+
 ::
 
     dwi2noise [ options ]  dwi noise
@@ -15,8 +20,6 @@ Synopsis
 
 Description
 -----------
-
-estimate noise level voxel-wise using residuals from a truncated SH fit
 
 WARNING: This command is deprecated and may be removed in future releases. Try using the dwidenoise command with the -noise option instead.
 

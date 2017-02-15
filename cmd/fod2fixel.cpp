@@ -61,8 +61,7 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "use a fast-marching level-set method to segment fibre orientation distributions, and save parameters of interest as fixel images";
+  SYNOPSIS = "Use a fast-marching level-set method to segment fibre orientation distributions, and save parameters of interest as fixel images";
 
   REFERENCES 
     + "* Reference for the FOD segmentation method:\n"

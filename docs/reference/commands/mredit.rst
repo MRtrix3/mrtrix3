@@ -6,6 +6,11 @@ mredit
 Synopsis
 --------
 
+Directly edit the intensities within an image from the command-line
+
+Usage
+--------
+
 ::
 
     mredit [ options ]  input[ output ]
@@ -16,7 +21,7 @@ Synopsis
 Description
 -----------
 
-Directly edit the intensities within an image from the command-line. A range of options are provided to enable direct editing of voxel intensities based on voxel / real-space coordinates. If only one image path is provided, the image will be edited in-place (use at own risk); if input and output image paths are provided, the output will contain the edited image, and the original image will not be modified in any way.
+A range of options are provided to enable direct editing of voxel intensities based on voxel / real-space coordinates. If only one image path is provided, the image will be edited in-place (use at own risk); if input and output image paths are provided, the output will contain the edited image, and the original image will not be modified in any way.
 
 Options
 -------

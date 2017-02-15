@@ -6,6 +6,11 @@ mrmath
 Synopsis
 --------
 
+Compute summary statistic on image intensities either across images, or along a specified axis of a single image
+
+Usage
+--------
+
 ::
 
     mrmath [ options ]  input [ input ... ] operation output
@@ -17,7 +22,7 @@ Synopsis
 Description
 -----------
 
-compute summary statistic on image intensities either across images, or along a specified axis for a single image. Supported operations are:
+Supported operations are:
 
 mean, median, sum, product, rms (root-mean-square value), norm (vector 2-norm), var (unbiased variance), std (unbiased standard deviation), min, max, absmax (maximum absolute value), magmax (value with maximum absolute value, preserving its sign).
 

@@ -6,18 +6,17 @@ dwiextract
 Synopsis
 --------
 
+Extract diffusion-weighted volumes, b=0 volumes, or certain shells from a DWI dataset
+
+Usage
+--------
+
 ::
 
     dwiextract [ options ]  input output
 
 -  *input*: the input DW image.
 -  *output*: the output image (diffusion-weighted volumes by default).
-
-Description
------------
-
-Extract diffusion-weighted volumes, b=0 volumes, or certain shells from a DWI dataset.
-
 Options
 -------
 

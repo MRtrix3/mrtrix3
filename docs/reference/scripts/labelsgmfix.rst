@@ -6,6 +6,11 @@ labelsgmfix
 Synopsis
 --------
 
+In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST
+
+Usage
+--------
+
 ::
 
     labelsgmfix parc t1 lut output [ options ]
@@ -14,11 +19,6 @@ Synopsis
 -  *t1*: The T1 image to be provided to FIRST
 -  *lut*: The lookup table file that the parcellated image is based on
 -  *output*: The output parcellation image
-
-Description
------------
-
-In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST
 
 Options
 -------

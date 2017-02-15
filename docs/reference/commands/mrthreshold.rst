@@ -6,6 +6,11 @@ mrthreshold
 Synopsis
 --------
 
+Create bitwise image by thresholding image intensity
+
+Usage
+--------
+
 ::
 
     mrthreshold [ options ]  input output
@@ -16,7 +21,7 @@ Synopsis
 Description
 -----------
 
-Create bitwise image by thresholding image intensity. By default, an optimal threshold is determined using a parameter-free method. Alternatively the threshold can be defined manually by the user.
+By default, an optimal threshold is determined using a parameter-free method. Alternatively the threshold can be defined manually by the user.
 
 Options
 -------

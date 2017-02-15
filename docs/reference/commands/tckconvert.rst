@@ -6,6 +6,11 @@ tckconvert
 Synopsis
 --------
 
+Convert between different track file formats
+
+Usage
+--------
+
 ::
 
     tckconvert [ options ]  input output
@@ -15,8 +20,6 @@ Synopsis
 
 Description
 -----------
-
-Convert between different track file formats.
 
 The program currently supports MRtrix .tck files (input/output), ascii text files (input/output), and VTK polydata files (output only).
 

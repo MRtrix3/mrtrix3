@@ -6,6 +6,11 @@ sh2amp
 Synopsis
 --------
 
+Evaluate the amplitude of an image of spherical harmonic functions along specified directions
+
+Usage
+--------
+
 ::
 
     sh2amp [ options ]  input directions output
@@ -13,12 +18,6 @@ Synopsis
 -  *input*: the input image consisting of spherical harmonic (SH) coefficients.
 -  *directions*: the list of directions along which the SH functions will be sampled, generated using the dirgen command
 -  *output*: the output image consisting of the amplitude of the SH functions along the specified directions.
-
-Description
------------
-
-Evaluate the amplitude of an image of spherical harmonic functions along the specified directions
-
 Options
 -------
 

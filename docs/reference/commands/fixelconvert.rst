@@ -6,18 +6,17 @@ fixelconvert
 Synopsis
 --------
 
+Convert between the old format fixel image (*.msf / *.msh) and the new fixel directory format
+
+Usage
+--------
+
 ::
 
     fixelconvert [ options ]  fixel_in fixel_out
 
 -  *fixel_in*: the input fixel file / directory.
 -  *fixel_out*: the output fixel file / directory.
-
-Description
------------
-
-convert between the old format fixel image (*.msf / *.msh) and the new fixel directory format
-
 Options
 -------
 

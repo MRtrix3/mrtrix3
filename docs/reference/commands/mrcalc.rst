@@ -6,6 +6,11 @@ mrcalc
 Synopsis
 --------
 
+Apply generic voxel-wise mathematical operations to images
+
+Usage
+--------
+
 ::
 
     mrcalc [ options ]  operand [ operand ... ]
@@ -14,8 +19,6 @@ Synopsis
 
 Description
 -----------
-
-apply generic voxel-wise mathematical operations to images.
 
 This command will only compute per-voxel operations. Use 'mrmath' to compute summary statistics across images or along image axes.
 

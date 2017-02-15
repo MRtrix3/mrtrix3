@@ -33,8 +33,7 @@ void usage ()
 {
   AUTHOR = "Maximilian Pietsch (maximilian.pietsch@kcl.ac.uk)";
 
-  DESCRIPTION
-  + "This command calculates the average (unbiased) coordinate space of all input images";
+  SYNOPSIS = "Calculate the average (unbiased) coordinate space of all input images";
 
   ARGUMENTS
   + Argument ("input", "the input image(s).").type_image_in ().allow_multiple()

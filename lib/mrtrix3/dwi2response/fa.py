@@ -1,8 +1,9 @@
-def initParser(subparsers, base_parser):
+def initialise(subparsers):
   import argparse
   from mrtrix3 import app
-  app.addCitation('If using \'fa\' algorithm', 'Tournier, J.-D.; Calamante, F.; Gadian, D. G. & Connelly, A. Direct estimation of the fiber orientation density function from diffusion-weighted MRI data using spherical deconvolution. NeuroImage, 2004, 23, 1176-1185', False)
-  parser = subparsers.add_parser('fa', parents=[base_parser], description='Use the old FA-threshold heuristic for single-fibre voxel selection and response function estimation')
+
+  parser = subparsers.add_parser('fa', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Use the old FA-threshold heuristic for single-fibre voxel selection and response function estimation', parents=[app.cmdline])
+  parser.addCitation('', 'Tournier, J.-D.; Calamante, F.; Gadian, D. G. & Connelly, A. Direct estimation of the fiber orientation density function from diffusion-weighted MRI data using spherical deconvolution. NeuroImage, 2004, 23, 1176-1185', False)
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('output', help='The output response function text file')
   options = parser.add_argument_group('Options specific to the \'fa\' algorithm')
@@ -13,9 +14,9 @@ def initParser(subparsers, base_parser):
   parser.set_defaults(algorithm='fa')
   parser.set_defaults(single_shell=True)
   parser.set_defaults(needs_bzero=True)
-  
-  
-  
+
+
+
 def checkOutputPaths():
   from mrtrix3 import app
   app.checkOutputPath(app.args.output)

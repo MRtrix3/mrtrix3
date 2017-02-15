@@ -28,10 +28,12 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
+  SYNOPSIS = "Convert a set of amplitudes (defined along a set of corresponding directions) "
+    "to their spherical harmonic representation";
+
   DESCRIPTION
-  + "convert a set of amplitudes (defined along a set of corresponding directions) "
-    "to their spherical harmonic representation. The spherical harmonic decomposition is "
-    "calculated by least-squares linear fitting."
+  + "The spherical harmonic decomposition is calculated by least-squares linear fitting "
+    "to the amplitude data."
 
   + "The directions can be defined either as a DW gradient scheme (for example to compute "
     "the SH representation of the DW signal) or a set of [az el] pairs as output by the dirgen "

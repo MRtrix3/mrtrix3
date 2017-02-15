@@ -64,8 +64,9 @@ void usage ()
   
   AUTHOR = "Ben Jeurissen (ben.jeurissen@uantwerpen.be)";
   
+  SYNOPSIS = "Diffusion (kurtosis) tensor estimation using iteratively reweighted linear least squares estimator";
+
   DESCRIPTION
-  + "Diffusion (kurtosis) tensor estimation using iteratively reweighted linear least squares estimator."
   + encoding_description;
 
 }

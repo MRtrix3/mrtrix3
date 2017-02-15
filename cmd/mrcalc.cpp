@@ -27,9 +27,9 @@ void usage () {
 
 AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-DESCRIPTION
-  + "apply generic voxel-wise mathematical operations to images."
+SYNOPSIS = "Apply generic voxel-wise mathematical operations to images";
 
+DESCRIPTION
   + "This command will only compute per-voxel operations. "
   "Use 'mrmath' to compute summary statistics across images or "
   "along image axes."

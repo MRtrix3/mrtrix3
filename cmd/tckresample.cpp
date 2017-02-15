@@ -38,8 +38,9 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au) and J-Donald Tournier (jdtournier@gmail.com)";
 
+  SYNOPSIS = "Resample each streamline in a track file to a new set of vertices";
+
   DESCRIPTION
-  + "Resample each streamline to a new set of vertices. "
   + "This may be either increasing or decreasing the number of samples along "
     "each streamline, or changing the positions of the samples according to "
     "some specified trajectory.";

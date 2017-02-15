@@ -47,8 +47,7 @@ void usage ()
 {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "Connectome group-wise statistics at the edge level using non-parametric permutation testing.";
+  SYNOPSIS = "Connectome group-wise statistics at the edge level using non-parametric permutation testing";
 
 
   ARGUMENTS

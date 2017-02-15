@@ -6,6 +6,11 @@ transformconvert
 Synopsis
 --------
 
+Convert linear transformation matrices
+
+Usage
+--------
+
 ::
 
     transformconvert [ options ]  input [ input ... ] operation output
@@ -17,9 +22,7 @@ Synopsis
 Description
 -----------
 
-This command's function is to convert linear transformation matrices.
-
-It allows to convert the transformation matrix provided by FSL's flirt command 
+This command allows to convert the transformation matrix provided by FSL's flirt command 
 
 and ITK's linear transformation format to a format usable in MRtrix.
 

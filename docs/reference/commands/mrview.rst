@@ -6,17 +6,16 @@ mrview
 Synopsis
 --------
 
+The MRtrix image viewer
+
+Usage
+--------
+
 ::
 
     mrview [ options ] [ image ... ]
 
 -  *image*: an image to be loaded.
-
-Description
------------
-
-the MRtrix image viewer.
-
 Options
 -------
 

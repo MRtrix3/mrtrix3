@@ -6,6 +6,11 @@ mrmetric
 Synopsis
 --------
 
+Computes a dissimilarity metric between two images
+
+Usage
+--------
+
 ::
 
     mrmetric [ options ]  image1 image2
@@ -16,7 +21,7 @@ Synopsis
 Description
 -----------
 
-computes a dissimilarity metric between two images. Currently only the mean squared difference is implemented
+Currently only the mean squared difference is implemented.
 
 Options
 -------

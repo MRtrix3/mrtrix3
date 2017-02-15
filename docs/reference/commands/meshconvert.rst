@@ -6,18 +6,17 @@ meshconvert
 Synopsis
 --------
 
+Convert meshes between different formats, and apply transformations
+
+Usage
+--------
+
 ::
 
     meshconvert [ options ]  input output
 
 -  *input*: the input mesh file
 -  *output*: the output mesh file
-
-Description
------------
-
-convert meshes between different formats, and apply transformations.
-
 Options
 -------
 

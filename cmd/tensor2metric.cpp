@@ -91,9 +91,7 @@ void usage ()
   
   AUTHOR = "Thijs Dhollander (thijs.dhollander@gmail.com) & Ben Jeurissen (ben.jeurissen@uantwerpen.be) & J-Donald Tournier (jdtournier@gmail.com)";
 
-  
-  DESCRIPTION
-  + "Generate maps of tensor-derived parameters.";
+  SYNOPSIS = "Generate maps of tensor-derived parameters";
   
   REFERENCES 
   + "Basser, P. J.; Mattiello, J. & Lebihan, D. "

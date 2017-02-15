@@ -27,8 +27,10 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
+  SYNOPSIS = "Edit DICOM file in-place";
+
   DESCRIPTION
-  + "Edit DICOM file in-place. Note that this simply replaces the existing "
+  + "Note that this command simply replaces the existing "
     "values without modifying the DICOM structure in any way. Replacement text "
     "will be truncated if it is too long to fit inside the existing tag."
 

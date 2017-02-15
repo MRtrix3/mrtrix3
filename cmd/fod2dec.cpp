@@ -41,8 +41,9 @@ void usage ()
     "This is free software; see the source for copying conditions. "
     "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.";
 
+  SYNOPSIS = "Generate FOD-based DEC maps, with optional panchromatic sharpening and/or luminance/perception correction";
+
   DESCRIPTION
-    + "Generate FOD-based DEC maps, with optional panchromatic sharpening and/or luminance/perception correction."
     + "By default, the FOD-based DEC is weighted by the integral of the FOD. To weight by another scalar map, use the outputmap option. This option can also be used for panchromatic sharpening, e.g., by supplying a T1 (or other sensible) anatomical volume with a higher spatial resolution.";
 
   REFERENCES

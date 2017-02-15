@@ -6,6 +6,11 @@ tcknormalise
 Synopsis
 --------
 
+Apply a normalisation map to a tracks file
+
+Usage
+--------
+
 ::
 
     tcknormalise [ options ]  tracks transform output
@@ -13,12 +18,6 @@ Synopsis
 -  *tracks*: the input track file.
 -  *transform*: the image containing the transform.
 -  *output*: the output track file
-
-Description
------------
-
-apply a normalisation map to a tracks file.
-
 Options
 -------
 

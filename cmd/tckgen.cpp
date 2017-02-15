@@ -51,8 +51,7 @@ void usage ()
 
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "perform streamlines tractography.";
+  SYNOPSIS = "Perform streamlines tractography";
 
   REFERENCES 
    + "References based on streamlines algorithm used:"

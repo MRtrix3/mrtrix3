@@ -37,8 +37,7 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-    + "Generate a mask image appropriate for seeding streamlines on the grey matter - white matter interface";
+  SYNOPSIS = "Generate a mask image appropriate for seeding streamlines on the grey matter - white matter interface";
 
   REFERENCES
     + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal

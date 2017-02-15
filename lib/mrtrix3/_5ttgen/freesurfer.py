@@ -1,6 +1,7 @@
-def initParser(subparsers, base_parser):
-  import argparse  
-  parser = subparsers.add_parser('freesurfer', parents=[base_parser], description='Generate the 5TT image based on a FreeSurfer parcellation image')
+def initialise(subparsers):
+  import argparse
+  from mrtrix3 import app
+  parser = subparsers.add_parser('freesurfer', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Generate the 5TT image based on a FreeSurfer parcellation image', parents=[app.cmdline])
   parser.add_argument('input',  help='The input FreeSurfer parcellation image (any image containing \'aseg\' in its name)')
   parser.add_argument('output', help='The output 5TT image')
   options = parser.add_argument_group('Options specific to the \'freesurfer\' algorithm')

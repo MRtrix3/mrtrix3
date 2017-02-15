@@ -41,8 +41,7 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "calculate statistics on streamlines length.";
+  SYNOPSIS = "Calculate statistics on streamlines length";
 
   ARGUMENTS
   + Argument ("tracks_in", "the input track file").type_tracks_in();

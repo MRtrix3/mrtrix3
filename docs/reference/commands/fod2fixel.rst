@@ -6,18 +6,17 @@ fod2fixel
 Synopsis
 --------
 
+Use a fast-marching level-set method to segment fibre orientation distributions, and save parameters of interest as fixel images
+
+Usage
+--------
+
 ::
 
     fod2fixel [ options ]  fod fixel_directory
 
 -  *fod*: the input fod image.
 -  *fixel_directory*: the output fixel directory
-
-Description
------------
-
-use a fast-marching level-set method to segment fibre orientation distributions, and save parameters of interest as fixel images
-
 Options
 -------
 

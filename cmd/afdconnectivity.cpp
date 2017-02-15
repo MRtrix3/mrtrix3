@@ -31,9 +31,9 @@ void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "obtain an estimate of fibre connectivity between two regions using AFD and streamlines tractography"
+  SYNOPSIS = "Obtain an estimate of fibre connectivity between two regions using AFD and streamlines tractography";
 
+  DESCRIPTION
   + "This estimate is obtained by determining a fibre volume (AFD) occupied by the pathway "
     "of interest, and dividing by the streamline length."
 

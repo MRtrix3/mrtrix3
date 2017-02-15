@@ -6,17 +6,16 @@ tensor2metric
 Synopsis
 --------
 
+Generate maps of tensor-derived parameters
+
+Usage
+--------
+
 ::
 
     tensor2metric [ options ]  tensor
 
 -  *tensor*: the input tensor image.
-
-Description
------------
-
-Generate maps of tensor-derived parameters.
-
 Options
 -------
 

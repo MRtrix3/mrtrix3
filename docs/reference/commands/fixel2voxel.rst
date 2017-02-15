@@ -6,6 +6,11 @@ fixel2voxel
 Synopsis
 --------
 
+Convert a fixel-based sparse-data image into some form of scalar image
+
+Usage
+--------
+
 ::
 
     fixel2voxel [ options ]  fixel_in operation image_out
@@ -17,7 +22,19 @@ Synopsis
 Description
 -----------
 
-convert a fixel-based sparse-data image into some form of scalar image. This could be: - Some statistic computed across all fixel values within a voxel: mean, sum, product, min, max, absmax, magmax- The number of fixels in each voxel: count- Some measure of crossing-fibre organisation: complexity, sf ('single-fibre')- A 4D directionally-encoded colour image: dec_unit, dec_scaled- A 4D scalar image of fixel values with one 3D volume per fixel: split_data- A 4D image of fixel directions, stored as three 3D volumes per fixel direction: split_dir
+Fixel data can be reduced to voxel data in a number of ways:
+
+- Some statistic computed across all fixel values within a voxel: mean, sum, product, min, max, absmax, magmax
+
+- The number of fixels in each voxel: count
+
+- Some measure of crossing-fibre organisation: complexity, sf ('single-fibre')
+
+- A 4D directionally-encoded colour image: dec_unit, dec_scaled
+
+- A 4D scalar image of fixel values with one 3D volume per fixel: split_data
+
+- A 4D image of fixel directions, stored as three 3D volumes per fixel direction: split_dir
 
 Options
 -------

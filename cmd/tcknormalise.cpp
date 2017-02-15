@@ -29,8 +29,7 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  DESCRIPTION
-  + "apply a normalisation map to a tracks file.";
+  SYNOPSIS = "Apply a normalisation map to a tracks file";
 
   ARGUMENTS
   + Argument ("tracks", "the input track file.").type_tracks_in()

@@ -6,6 +6,11 @@ tcksift
 Synopsis
 --------
 
+Filter a whole-brain fibre-tracking data set such that the streamline densities match the FOD lobe integrals
+
+Usage
+--------
+
 ::
 
     tcksift [ options ]  in_tracks in_fod out_tracks
@@ -13,12 +18,6 @@ Synopsis
 -  *in_tracks*: the input track file
 -  *in_fod*: input image containing the spherical harmonics of the fibre orientation distributions
 -  *out_tracks*: the output filtered tracks file
-
-Description
------------
-
-filter a whole-brain fibre-tracking data set such that the streamline densities match the FOD lobe integrals.
-
 Options
 -------
 

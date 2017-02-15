@@ -26,8 +26,7 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  DESCRIPTION
-  + "print out information about track file";
+  SYNOPSIS = "Print out information about a track file";
 
   ARGUMENTS
   + Argument ("tracks", "the input track file.").type_tracks_in().allow_multiple();

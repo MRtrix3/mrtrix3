@@ -91,8 +91,7 @@ void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
-  DESCRIPTION
-  + "compute a fixel TDI map from a tractogram";
+  SYNOPSIS = "Compute a fixel TDI map from a tractogram";
 
   ARGUMENTS
   + Argument ("tracks",  "the input tracks.").type_tracks_in()

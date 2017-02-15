@@ -16,40 +16,38 @@ sys.path.insert(0, lib_folder)
 from mrtrix3 import algorithm, app, image, path, run
 
 
-app.init('Robert E. Smith (robert.smith@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)',
+app.init('Robert E. Smith (robert.smith@florey.edu.au)',
          'Estimate response function(s) for spherical deconvolution')
+app.cmdline.addDescription('dwi2response acts as a \'master\' script for performing various types of response function estimation; a range of different algorithms are available for completing this task. When using this script, the name of the algorithm to be used must appear as the first argument on the command-line after \'dwi2response\'. The subsequent compulsory arguments and options available depend on the particular algorithm being invoked.')
+app.cmdline.addDescription('Each algorithm available also has its own help page, including necessary references; e.g. to see the help page of the \'fa\' algorithm, type \'dwi2response fa\'.')
 
 # General options
-base_parser = app.Parser(description='Base parser for dwi2response script', parents=[app.cmdline], add_help=False)
-common_options = base_parser.add_argument_group('Options common to all dwi2response algorithms')
+common_options = app.cmdline.add_argument_group('Options common to all dwi2response algorithms')
 common_options.add_argument('-shell', help='The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)')
 common_options.add_argument('-lmax', help='The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)')
 common_options.add_argument('-mask', help='Provide an initial mask for response voxel selection')
 common_options.add_argument('-voxels', help='Output an image showing the final voxel selection(s)')
 common_options.add_argument('-grad', help='Pass the diffusion gradient table in MRtrix format')
 common_options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Pass the diffusion gradient table in FSL bvecs/bvals format')
-base_parser.flagMutuallyExclusiveOptions( [ 'grad', 'fslgrad' ] )
-base_parser.set_defaults(single_shell=False)
-base_parser.set_defaults(needs_bzero=False)
-
-# Subparsers for individual algorithms
-subparsers = app.cmdline.add_subparsers(title='Algorithm choices', help='Select the algorithm to be used to derive the response function; additional details and options become available once an algorithm is nominated. Options are: ' + ', '.join(algorithm.getList()), dest='algorithm')
+app.cmdline.flagMutuallyExclusiveOptions( [ 'grad', 'fslgrad' ] )
+app.cmdline.set_defaults(single_shell=False)
+app.cmdline.set_defaults(needs_bzero=False)
 
 # Import the command-line settings for all algorithms found in the relevant directory
-algorithm.initialise(base_parser, subparsers)
+algorithm.initialise()
 
 
 app.parse()
 
 
 # Find out which algorithm the user has requested
-algorithm = algorithm.getModule(app.args.algorithm)
+alg = algorithm.getModule(app.args.algorithm)
 
 
 # Check for prior existence of output files, and grab any input files, used by the particular algorithm
 if app.args.voxels:
   app.checkOutputPath(app.args.voxels)
-algorithm.checkOutputPaths()
+alg.checkOutputPaths()
 
 
 # Sanitise some inputs, and get ready for data import
@@ -95,7 +93,7 @@ if app.args.needs_bzero:
 if app.args.mask:
   run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + path.toTemp('mask.mif', True) + ' -datatype bit')
 
-algorithm.getInputs()
+alg.getInputs()
 
 app.gotoTempDir()
   
@@ -114,7 +112,7 @@ else:
 
 
 # From here, the script splits depending on what estimation algorithm is being used
-algorithm.execute()
+alg.execute()
 
 
 # Finalize for all algorithms

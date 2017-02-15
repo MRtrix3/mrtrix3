@@ -6,6 +6,11 @@ mrmodelfield
 Synopsis
 --------
 
+Model an input image using low frequency 3D polynomial basis functions
+
+Usage
+--------
+
 ::
 
     mrmodelfield [ options ]  input output
@@ -16,7 +21,7 @@ Synopsis
 Description
 -----------
 
-Model an input image using low frequency 3D polynomial basis functions. This command was designed to estimate a DWI bias field using the sum of normalised multi-tissue CSD compartments.
+This command was designed to estimate a DWI bias field using the sum of normalised multi-tissue CSD compartments.
 
 Options
 -------

@@ -6,6 +6,11 @@ mrregister
 Synopsis
 --------
 
+Register two images together using a rigid, affine or a non-linear transformation model
+
+Usage
+--------
+
 ::
 
     mrregister [ options ]  image1 image2
@@ -15,8 +20,6 @@ Synopsis
 
 Description
 -----------
-
-Register two images together using a rigid, affine or a non-linear transformation model.
 
 By default this application will perform an affine, followed by non-linear registration.
 

@@ -6,6 +6,11 @@ voxel2fixel
 Synopsis
 --------
 
+Map the scalar value in each voxel to all fixels within that voxel
+
+Usage
+--------
+
 ::
 
     voxel2fixel [ options ]  image_in fixel_directory_in fixel_directory_out fixel_data_out
@@ -18,7 +23,7 @@ Synopsis
 Description
 -----------
 
-map the scalar value in each voxel to all fixels within that voxel. This is designed to enable CFE-based statistical analysis to be performed on voxel-wise measures
+This command is designed to enable CFE-based statistical analysis to be performed on voxel-wise measures.
 
 Options
 -------

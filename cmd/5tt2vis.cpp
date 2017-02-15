@@ -40,8 +40,7 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "generate an image for visualisation purposes from an ACT 5TT segmented anatomical image";
+  SYNOPSIS = "Generate an image for visualisation purposes from an ACT 5TT segmented anatomical image";
 
   ARGUMENTS
   + Argument ("input",  "the input 4D tissue-segmented image").type_image_in()

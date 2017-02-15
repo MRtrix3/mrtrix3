@@ -6,18 +6,17 @@ tckedit
 Synopsis
 --------
 
+Perform various editing operations on track files
+
+Usage
+--------
+
 ::
 
     tckedit [ options ]  tracks_in [ tracks_in ... ] tracks_out
 
 -  *tracks_in*: the input track file(s)
 -  *tracks_out*: the output track file
-
-Description
------------
-
-perform various editing operations on track files.
-
 Options
 -------
 

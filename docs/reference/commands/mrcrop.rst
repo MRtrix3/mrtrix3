@@ -6,6 +6,11 @@ mrcrop
 Synopsis
 --------
 
+Crop an image to a reduced field of view
+
+Usage
+--------
+
 ::
 
     mrcrop [ options ]  image_in image_out
@@ -16,9 +21,9 @@ Synopsis
 Description
 -----------
 
-Crop an image series to a reduced field of view, using either manual setting of axis dimensions, or a computed mask image corresponding to the brain. 
+Extent of cropping can be determined using either manual setting of axis dimensions, or a computed mask image corresponding to the brain.
 
-If using a mask, a gap of 1 voxel will be left at all 6 edges of the image such that trilinear interpolation upon the resulting images is still valid. 
+If using a mask, a gap of 1 voxel will be left at all 6 edges of the image such that trilinear interpolation upon the resulting images is still valid.
 
 This is useful for axially-acquired brain images, where the image size can be reduced by a factor of 2 by removing the empty space on either side of the brain.
 

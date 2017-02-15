@@ -25,9 +25,10 @@ using namespace App;
 void usage () {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au), Thijs Dhollander (thijs.dhollander@gmail.com) and Ben Jeurissen (ben.jeurissen@uantwerpen.be)";
 
+SYNOPSIS = "Generates a whole brain mask from a DWI image";
+
 DESCRIPTION
-  + "Generates a whole brain mask from a DWI image. "
-    "All diffusion weighted and b=0 volumes are used to "
+  + "All diffusion weighted and b=0 volumes are used to "
     "obtain a mask that includes both brain tissue and CSF. "
     "\nIn a second step peninsula-like extensions, where the "
     "peninsula itself is wider than the bridge connecting it "

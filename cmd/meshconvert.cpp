@@ -35,8 +35,7 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "convert meshes between different formats, and apply transformations.";
+  SYNOPSIS = "Convert meshes between different formats, and apply transformations";
 
   ARGUMENTS
   + Argument ("input",  "the input mesh file").type_file_in()

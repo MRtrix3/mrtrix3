@@ -6,17 +6,16 @@ mrstats
 Synopsis
 --------
 
+Compute images statistics
+
+Usage
+--------
+
 ::
 
     mrstats [ options ]  image
 
 -  *image*: the input image from which statistics will be computed.
-
-Description
------------
-
-compute images statistics.
-
 Options
 -------
 

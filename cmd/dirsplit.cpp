@@ -28,9 +28,8 @@ void usage ()
 {
 AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-DESCRIPTION
-  + "split a set of evenly distributed directions (as generated "
-  "by dirgen) into approximately uniformly distributed subsets.";
+SYNOPSIS = "Split a set of evenly distributed directions (as generated "
+           "by dirgen) into approximately uniformly distributed subsets";
 
 ARGUMENTS
   + Argument ("dirs", "the text file containing the directions.").type_file_in()

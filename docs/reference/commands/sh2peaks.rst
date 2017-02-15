@@ -6,18 +6,17 @@ sh2peaks
 Synopsis
 --------
 
+Extract the peaks of a spherical harmonic function at each voxel, by commencing a Newton search along a set of specified directions
+
+Usage
+--------
+
 ::
 
     sh2peaks [ options ]  SH output
 
 -  *SH*: the input image of SH coefficients.
 -  *output*: the output image. Each volume corresponds to the x, y & z component of each peak direction vector in turn.
-
-Description
------------
-
-extract the peaks of a spherical harmonic function at each voxel, by commencing a Newton search along a set of specified directions
-
 Options
 -------
 

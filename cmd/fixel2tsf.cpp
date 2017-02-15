@@ -40,9 +40,10 @@ void usage ()
 
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
+  SYNOPSIS = "Map fixel values to a track scalar file based on an input tractogram";
+
   DESCRIPTION
-  + "Map fixel values to a track scalar file based on an input tractogram. "
-    "This is useful for visualising all brain fixels (e.g. the output from fixelcfestats) in 3D.";
+  + "This command is useful for visualising all brain fixels (e.g. the output from fixelcfestats) in 3D.";
 
   ARGUMENTS
   + Argument ("fixel_in", "the input fixel data file (within the fixel directory)").type_image_in ()

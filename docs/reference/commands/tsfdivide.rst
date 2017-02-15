@@ -6,6 +6,11 @@ tsfdivide
 Synopsis
 --------
 
+Divide corresponding values in track scalar files
+
+Usage
+--------
+
 ::
 
     tsfdivide [ options ]  input input output
@@ -13,12 +18,6 @@ Synopsis
 -  *input*: the input track scalar file.
 -  *input*: the input track scalar file.
 -  *output*: the output track scalar file
-
-Description
------------
-
-an application to divide corresponding values in track scalar files
-
 Options
 -------
 

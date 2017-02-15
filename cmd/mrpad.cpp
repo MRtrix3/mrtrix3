@@ -25,8 +25,7 @@ void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
-  DESCRIPTION
-  + "Pad an image to increase the FOV";
+  SYNOPSIS = "Pad an image to increase the FOV";
 
   ARGUMENTS
   + Argument ("image_in",

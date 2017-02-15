@@ -6,6 +6,11 @@ mrtransform
 Synopsis
 --------
 
+Apply spatial transformations to an image
+
+Usage
+--------
+
 ::
 
     mrtransform [ options ]  input output
@@ -15,8 +20,6 @@ Synopsis
 
 Description
 -----------
-
-apply spatial transformations to an image. 
 
 If a linear transform is applied without a template image the command will modify the image header transform matrix
 

@@ -1,6 +1,7 @@
-def initParser(subparsers, base_parser):
+def initialise(subparsers):
   import argparse
-  parser = subparsers.add_parser('manual', parents=[base_parser], description='Derive a response function using an input mask image alone (i.e. pre-selected voxels)')
+  from mrtrix3 import app
+  parser = subparsers.add_parser('manual', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Derive a response function using an input mask image alone (i.e. pre-selected voxels)', parents=[app.cmdline])
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('in_voxels', help='Input voxel selection mask')
   parser.add_argument('output', help='Output response function text file')

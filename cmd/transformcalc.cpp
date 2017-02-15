@@ -41,8 +41,7 @@ void usage ()
 {
   AUTHOR = "Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
 
-  DESCRIPTION
-  + "This command's function is to perform calculations on linear transformation matrices.";
+  SYNOPSIS = "Perform calculations on linear transformation matrices";
 
   ARGUMENTS
   + Argument ("input", "the input for the specified operation").allow_multiple()

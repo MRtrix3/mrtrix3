@@ -6,17 +6,16 @@ tsfinfo
 Synopsis
 --------
 
+Print out information about a track scalar file
+
+Usage
+--------
+
 ::
 
     tsfinfo [ options ]  tracks [ tracks ... ]
 
 -  *tracks*: the input track scalar file.
-
-Description
------------
-
-print out information about track scalar file
-
 Options
 -------
 

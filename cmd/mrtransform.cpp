@@ -46,9 +46,9 @@ void usage ()
 
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and David Raffelt (david.raffelt@florey.edu.au) and Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
 
-  DESCRIPTION
-  + "apply spatial transformations to an image. "
+  SYNOPSIS = "Apply spatial transformations to an image";
 
+  DESCRIPTION
   + "If a linear transform is applied without a template image the command "
     "will modify the image header transform matrix"
 

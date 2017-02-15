@@ -6,6 +6,11 @@ tsfthreshold
 Synopsis
 --------
 
+Threshold and invert track scalar files
+
+Usage
+--------
+
 ::
 
     tsfthreshold [ options ]  input N output
@@ -13,12 +18,6 @@ Synopsis
 -  *input*: the input track scalar file.
 -  *N*: the desired threshold
 -  *output*: the binary output track scalar file
-
-Description
------------
-
-an application to threshold and invert track scalar files
-
 Options
 -------
 

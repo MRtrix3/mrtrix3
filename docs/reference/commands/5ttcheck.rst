@@ -6,17 +6,16 @@
 Synopsis
 --------
 
+Thoroughly check that one or more images conform to the expected ACT five-tissue-type (5TT) format
+
+Usage
+--------
+
 ::
 
     5ttcheck [ options ]  input [ input ... ]
 
 -  *input*: the 5TT image(s) to be tested
-
-Description
------------
-
-thoroughly check that one or more images conform to the expected ACT five-tissue-type (5TT) format
-
 Options
 -------
 

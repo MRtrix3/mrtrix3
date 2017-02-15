@@ -6,6 +6,11 @@ fixelcfestats
 Synopsis
 --------
 
+Fixel-based analysis using connectivity-based fixel enhancement and non-parametric permutation testing
+
+Usage
+--------
+
 ::
 
     fixelcfestats [ options ]  in_fixel_directory subjects design contrast tracks out_fixel_directory
@@ -16,12 +21,6 @@ Synopsis
 -  *contrast*: the contrast vector, specified as a single row of weights
 -  *tracks*: the tracks used to determine fixel-fixel connectivity
 -  *out_fixel_directory*: the output directory where results will be saved. Will be created if it does not exist
-
-Description
------------
-
-Fixel-based analysis using connectivity-based fixel enhancement and non-parametric permutation testing.
-
 Options
 -------
 

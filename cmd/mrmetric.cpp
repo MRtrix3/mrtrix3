@@ -168,8 +168,10 @@ void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
 
+  SYNOPSIS = "Computes a dissimilarity metric between two images";
+
   DESCRIPTION
-  + "computes a dissimilarity metric between two images. Currently only the mean squared difference is implemented";
+  + "Currently only the mean squared difference is implemented.";
 
   ARGUMENTS
   + Argument ("image1", "the first input image.").type_image_in ()

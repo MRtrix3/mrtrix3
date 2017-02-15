@@ -31,8 +31,7 @@ void usage ()
 
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)";
 
-  DESCRIPTION
-    + "Extract diffusion-weighted volumes, b=0 volumes, or certain shells from a DWI dataset.";
+  SYNOPSIS = "Extract diffusion-weighted volumes, b=0 volumes, or certain shells from a DWI dataset";
 
   ARGUMENTS
     + Argument ("input", "the input DW image.").type_image_in ()

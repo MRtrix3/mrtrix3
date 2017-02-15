@@ -105,8 +105,10 @@ void usage ()
 {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au), David Raffelt (david.raffelt@florey.edu.au) and J-Donald Tournier (jdtournier@gmail.com)";
 
+  SYNOPSIS = "Perform filtering operations on 3D / 4D MR images";
+
   DESCRIPTION
-  + "Perform filtering operations on 3D / 4D MR images. For 4D images, each 3D volume is processed independently."
+  + "For 4D images, each 3D volume is processed independently."
   + "The available filters are: fft, gradient, median, smooth, normalise."
   + "Each filter has its own unique set of optional parameters.";
 

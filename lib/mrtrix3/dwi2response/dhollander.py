@@ -1,8 +1,8 @@
-def initParser(subparsers, base_parser):
+def initialise(subparsers):
   import argparse
   from mrtrix3 import app
-  app.addCitation('If using \'dhollander\' algorithm', 'Dhollander, T.; Raffelt, D. & Connelly, A. Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5', False)
-  parser = subparsers.add_parser('dhollander', parents=[base_parser], description='Unsupervised estimation of WM, GM and CSF response functions. Does not require a T1 image (or segmentation thereof).')
+  parser = subparsers.add_parser('dhollander', author='Thijs Dhollander (thijs.dhollander@gmail.com)', synopsis='Unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof)', parents=[app.cmdline])
+  parser.addCitation('', 'Dhollander, T.; Raffelt, D. & Connelly, A. Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5', False)
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('out_sfwm', help='Output single-fibre WM response text file')
   parser.add_argument('out_gm', help='Output GM response text file')
@@ -14,9 +14,9 @@ def initParser(subparsers, base_parser):
   options.add_argument('-gm', type=float, default=2.0, help='Number of GM voxels to select, as a percentage of refined GM. (default: 2 per cent)')
   options.add_argument('-csf', type=float, default=10.0, help='Number of CSF voxels to select, as a percentage of refined CSF. (default: 10 per cent)')
   parser.set_defaults(algorithm='dhollander')
-  
-  
-  
+
+
+
 def checkOutputPaths():
   from mrtrix3 import app
   app.checkOutputPath(app.args.out_sfwm)

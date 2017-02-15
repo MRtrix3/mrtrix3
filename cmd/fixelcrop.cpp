@@ -29,9 +29,10 @@ void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) & Rami Tabarra (rami.tabarra@florey.edu.au)";
 
+  SYNOPSIS = "Crop/remove fixels from sparse fixel image using a binary fixel mask";
+
   DESCRIPTION
-  + "Crop/remove fixels from sparse fixel image using a binary fixel mask. The mask must be input as a "
-    "fixel data file the same dimensions as the fixel data file(s) to be cropped.";
+  + "The mask must be input as a fixel data file the same dimensions as the fixel data file(s) to be cropped.";
 
   ARGUMENTS
   + Argument ("input_fixel_directory", "input fixel directory, all data files and directions "

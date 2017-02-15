@@ -6,6 +6,11 @@ dirflip
 Synopsis
 --------
 
+Optimise the polarity of the directions in a scheme with respect to a unipolar electrostatic repulsion model, by inversion of individual directions.
+
+Usage
+--------
+
 ::
 
     dirflip [ options ]  in out
@@ -16,7 +21,7 @@ Synopsis
 Description
 -----------
 
-optimise the polarity of the directions in a scheme with respect to a unipolar electrostatic repulsion model, by inversion of individual directions. The orientations themselves are not affected, only their polarity. This is necessary to ensure near-optimal distribution of DW directions for eddy-current correction.
+The orientations themselves are not affected, only their polarity; this is necessary to ensure near-optimal distribution of DW directions for eddy-current correction.
 
 Options
 -------

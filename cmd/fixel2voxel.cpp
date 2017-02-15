@@ -55,15 +55,16 @@ void usage ()
 {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au) & David Raffelt (david.raffelt@florey.edu.au)";
 
+  SYNOPSIS = "Convert a fixel-based sparse-data image into some form of scalar image";
+
   DESCRIPTION
-  + "convert a fixel-based sparse-data image into some form of scalar image. "
-    "This could be: \n"
-    "- Some statistic computed across all fixel values within a voxel: mean, sum, product, min, max, absmax, magmax\n"
-    "- The number of fixels in each voxel: count\n"
-    "- Some measure of crossing-fibre organisation: complexity, sf ('single-fibre')\n"
-    "- A 4D directionally-encoded colour image: dec_unit, dec_scaled\n"
-    "- A 4D scalar image of fixel values with one 3D volume per fixel: split_data\n"
-    "- A 4D image of fixel directions, stored as three 3D volumes per fixel direction: split_dir";
+  + "Fixel data can be reduced to voxel data in a number of ways:"
+  + "- Some statistic computed across all fixel values within a voxel: mean, sum, product, min, max, absmax, magmax"
+  + "- The number of fixels in each voxel: count"
+  + "- Some measure of crossing-fibre organisation: complexity, sf ('single-fibre')"
+  + "- A 4D directionally-encoded colour image: dec_unit, dec_scaled"
+  + "- A 4D scalar image of fixel values with one 3D volume per fixel: split_data"
+  + "- A 4D image of fixel directions, stored as three 3D volumes per fixel direction: split_dir";
 
   REFERENCES 
     + "* Reference for 'complexity' operation:\n"

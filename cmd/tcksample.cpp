@@ -43,9 +43,9 @@ void usage ()
 {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "sample values of an associated image along tracks"
+  SYNOPSIS = "Sample values of an associated image along tracks";
 
+  DESCRIPTION
   + "By default, the value of the underlying image at each point along the track "
     "is written to either an ASCII file (with all values for each track on the same "
     "line), or a track scalar file (.tsf). Alternatively, some statistic can be "

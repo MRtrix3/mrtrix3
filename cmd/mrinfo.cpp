@@ -37,9 +37,9 @@ void usage ()
 
   AUTHOR = "J-Donald Tournier (d.tournier@brain.org.au) and Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-    + "display header information, or extract specific information from the header."
+  SYNOPSIS = "Display image header information, or extract specific information from the header";
 
+  DESCRIPTION
     + "By default, all information contained in each image header will be printed to the console in "
       "a reader-friendly format."
 

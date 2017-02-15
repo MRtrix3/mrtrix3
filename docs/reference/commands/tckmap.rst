@@ -6,6 +6,11 @@ tckmap
 Synopsis
 --------
 
+Use track data as a form of contrast for producing a high-resolution image
+
+Usage
+--------
+
 ::
 
     tckmap [ options ]  tracks output
@@ -15,8 +20,6 @@ Synopsis
 
 Description
 -----------
-
-Use track data as a form of contrast for producing a high-resolution image.
 
 Note: if you run into limitations with RAM usage, make sure you output the results to a .mif file or .mih / .dat file pair - this will avoid the allocation of an additional buffer to store the output for write-out.
 

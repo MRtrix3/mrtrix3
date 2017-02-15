@@ -6,6 +6,11 @@ mrclusterstats
 Synopsis
 --------
 
+Voxel-based analysis using permutation testing and threshold-free cluster enhancement
+
+Usage
+--------
+
 ::
 
     mrclusterstats [ options ]  input design contrast mask output
@@ -15,12 +20,6 @@ Synopsis
 -  *contrast*: the contrast matrix, only specify one contrast as it will automatically compute the opposite contrast.
 -  *mask*: a mask used to define voxels included in the analysis.
 -  *output*: the filename prefix for all output.
-
-Description
------------
-
-Voxel-based analysis using permutation testing and threshold-free cluster enhancement.
-
 Options
 -------
 

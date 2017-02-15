@@ -33,8 +33,7 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "manually set the partial volume fractions in an ACT five-tissue-type (5TT) image using mask images";
+  SYNOPSIS = "Manually set the partial volume fractions in an ACT five-tissue-type (5TT) image using mask images";
 
   ARGUMENTS
   + Argument ("input",  "the 5TT image to be modified").type_image_in()

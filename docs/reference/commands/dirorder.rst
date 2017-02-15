@@ -6,18 +6,17 @@ dirorder
 Synopsis
 --------
 
+Reorder a set of directions to ensure near-uniformity upon truncation - i.e. if the scan is terminated early, the acquired directions are still close to optimal
+
+Usage
+--------
+
 ::
 
     dirorder [ options ]  input output
 
 -  *input*: the input directions file
 -  *output*: the output directions file
-
-Description
------------
-
-reorder a set of directions to ensure near-uniformity upon truncation - i.e. if the scan is terminated early, the acquired directions are still close to optimal
-
 Options
 -------
 

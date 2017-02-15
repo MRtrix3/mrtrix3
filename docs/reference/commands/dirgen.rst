@@ -6,18 +6,17 @@ dirgen
 Synopsis
 --------
 
+Generate a set of uniformly distributed directions using a bipolar electrostatic repulsion model
+
+Usage
+--------
+
 ::
 
     dirgen [ options ]  ndir dirs
 
 -  *ndir*: the number of directions to generate.
 -  *dirs*: the text file to write the directions to, as [ az el ] pairs.
-
-Description
------------
-
-generate a set of uniformly distributed directions using a bipolar electrostatic repulsion model.
-
 Options
 -------
 

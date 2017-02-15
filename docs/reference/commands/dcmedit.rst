@@ -6,6 +6,11 @@ dcmedit
 Synopsis
 --------
 
+Edit DICOM file in-place
+
+Usage
+--------
+
 ::
 
     dcmedit [ options ]  file
@@ -15,7 +20,7 @@ Synopsis
 Description
 -----------
 
-Edit DICOM file in-place. Note that this simply replaces the existing values without modifying the DICOM structure in any way. Replacement text will be truncated if it is too long to fit inside the existing tag.
+Note that this command simply replaces the existing values without modifying the DICOM structure in any way. Replacement text will be truncated if it is too long to fit inside the existing tag.
 
 WARNING: this command will modify existing data! It is recommended to run this command on a copy of the original data set to avoid loss of data.
 

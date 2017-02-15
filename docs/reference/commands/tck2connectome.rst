@@ -6,6 +6,11 @@ tck2connectome
 Synopsis
 --------
 
+Generate a connectome matrix from a streamlines file and a node parcellation image
+
+Usage
+--------
+
 ::
 
     tck2connectome [ options ]  tracks_in nodes_in connectome_out
@@ -13,12 +18,6 @@ Synopsis
 -  *tracks_in*: the input track file
 -  *nodes_in*: the input node parcellation image
 -  *connectome_out*: the output .csv file containing edge weights
-
-Description
------------
-
-generate a connectome matrix from a streamlines file and a node parcellation image
-
 Options
 -------
 

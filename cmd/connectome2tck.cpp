@@ -86,8 +86,7 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "extract streamlines from a tractogram based on their assignment to parcellated nodes";
+  SYNOPSIS = "Extract streamlines from a tractogram based on their assignment to parcellated nodes";
 
   ARGUMENTS
   + Argument ("tracks_in",      "the input track file").type_file_in()

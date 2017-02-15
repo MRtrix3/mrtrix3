@@ -47,8 +47,7 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "perform various editing operations on track files.";
+  SYNOPSIS = "Perform various editing operations on track files";
 
   ARGUMENTS
   + Argument ("tracks_in",  "the input track file(s)").type_tracks_in().allow_multiple()

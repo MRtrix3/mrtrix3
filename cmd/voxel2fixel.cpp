@@ -29,9 +29,10 @@ void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
+  SYNOPSIS = "Map the scalar value in each voxel to all fixels within that voxel";
+
   DESCRIPTION
-  + "map the scalar value in each voxel to all fixels within that voxel. "
-    "This is designed to enable CFE-based statistical analysis to be performed on voxel-wise measures";
+  + "This command is designed to enable CFE-based statistical analysis to be performed on voxel-wise measures.";
 
   ARGUMENTS
   + Argument ("image_in",  "the input image.").type_image_in()

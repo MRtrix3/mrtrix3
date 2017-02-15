@@ -4,7 +4,7 @@
 # Functions and variables defined here must be called / filled in the appropriate order
 #   for the command-line interface to be set up correctly:
 # - init()
-# - addCitation() as needed
+# - cmdline.addCitation(), cmdline.addDescription(), cmdline.setCopyright() as needed
 # - Add arguments and options to 'cmdline' as needed
 # - parse()
 # - checkOutputFile() as needed
@@ -30,15 +30,12 @@ args = ''
 cmdline = None
 config = { }
 force = False
-mrtrix = None
 
 
 
 # These are used to configure the script interface and operation, and should not typically be accessed/modified directly
-_author = ''
-_citationList = [ ]
 _cleanup = True
-_copyright = '''Copyright (c) 2008-2017 the MRtrix3 contributors
+_defaultCopyright = '''Copyright (c) 2008-2017 the MRtrix3 contributors
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -49,8 +46,6 @@ but WITHOUT ANY WARRANTY; without even the implied warranty
 of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 For more details, see http://www.mrtrix.org/.'''
-_externalCitations = False
-
 _lastFile = ''
 _nthreads = None
 _tempDir = ''
@@ -81,12 +76,11 @@ _signals = { 'SIGALRM': 'Timer expiration',
 
 
 
-def init(author, desc):
+def init(author, synopsis):
   import os
-  global cmdline, config, mrtrix
-  global _author, _signalData, _workingDir
-  _author = author
-  cmdline = Parser(description=desc)
+  global cmdline, config
+  global _signalData, _workingDir
+  cmdline = Parser(author=author, synopsis=synopsis)
   _workingDir = os.getcwd()
   # Load the MRtrix configuration files here, and create a dictionary
   # Load system config first, user second: Allows user settings to override
@@ -110,18 +104,10 @@ def init(author, desc):
 
 
 
-def addCitation(condition, reference, is_external):
-  global _citationList, _externalCitations
-  _citationList.append( (condition, reference) )
-  if is_external:
-    _externalCitations = True
-
-
-
 def parse():
   import os, sys
   global args, cmdline
-  global _citationList, _cleanup, _externalCitations, _lastFile, _nthreads, _tempDir, _verbosity
+  global _cleanup, _lastFile, _nthreads, _tempDir, _verbosity
   global clearLine, colourClear, colourConsole, colourDebug, colourError, colourExec, colourWarn
 
   if not cmdline:
@@ -130,6 +116,14 @@ def parse():
 
   if len(sys.argv) == 1:
     cmdline._printHelp()
+    sys.exit(0)
+
+  if sys.argv[-1] == '__print_full_usage__':
+    cmdline._printFullUsage()
+    sys.exit(0)
+
+  if sys.argv[-1] == '__print_synopsis__':
+    sys.stdout.write(cmdline.synopsis)
     sys.exit(0)
 
   if sys.argv[-1] == '__print_usage_markdown__':
@@ -169,10 +163,10 @@ def parse():
   elif args.debug:
     _verbosity = 3
 
-  if _citationList:
+  if cmdline.citationList:
     console('')
     citation_warning = 'Note that this script makes use of commands / algorithms that have relevant articles for citation'
-    if _externalCitations:
+    if cmdline.externalCitations:
       citation_warning += '; INCLUDING FROM EXTERNAL SOFTWARE PACKAGES'
     citation_warning += '. Please consult the help page (-help option) for more information.'
     console(citation_warning)
@@ -188,6 +182,7 @@ def parse():
 def checkOutputPath(path):
   import os
   global args, force
+  global _workingDir
   if not path:
     return
   abspath = os.path.abspath(os.path.join(_workingDir, path))
@@ -208,7 +203,7 @@ def checkOutputPath(path):
 
 def makeTempDir():
   import os, random, string, sys
-  global args, config, mrtrix
+  global args, config
   global _tempDir, _workingDir
   if args.cont:
     debug('Skipping temporary directory creation due to use of -continue option')
@@ -256,6 +251,8 @@ def gotoTempDir():
 
 def complete():
   import os, shutil, sys
+  global _cleanup, _tempDir, _workingDir
+  global colourClear, colourConsole, colourWarn
   console('Changing back to original directory (' + _workingDir + ')')
   os.chdir(_workingDir)
   if _cleanup and _tempDir:
@@ -286,12 +283,14 @@ colourWarn = ''
   
 def console(text):
   import os, sys
+  global colourClear, colourConsole
   global _verbosity
   if _verbosity:
     sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourConsole + text + colourClear + '\n')
 
 def debug(text):
   import inspect, os, sys
+  global colourClear, colourDebug
   global _verbosity
   if _verbosity <= 2: return
   stack = inspect.stack()[1]
@@ -303,6 +302,7 @@ def debug(text):
 
 def error(text):
   import os, sys
+  global colourClear, colourError
   global _cleanup
   sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourError + '[ERROR] ' + text + colourClear + '\n')
   _cleanup = False
@@ -311,6 +311,7 @@ def error(text):
 
 def warn(text):
   import os, sys
+  global colourClear, colourWarn
   sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + '[WARNING] ' + text + colourClear + '\n')
 
 
@@ -329,11 +330,34 @@ import argparse
 class Parser(argparse.ArgumentParser):
 
   def __init__(self, *args, **kwargs):
-    global mutuallyExclusiveOptionGroups
+    import sys
+    global _defaultCopyright
+    if 'author' in kwargs:
+      self._author = kwargs['author']
+      del kwargs['author']
+    else:
+      self._author = None
+    self._citationList = [ ]
+    if 'copyright' in kwargs:
+      self._copyright = kwargs['copyright']
+      del kwargs['copyright']
+    else:
+      self._copyright = _defaultCopyright
+    self._description = [ ]
+    self.externalCitations = False
+    if 'synopsis' in kwargs:
+      self.synopsis = kwargs['synopsis']
+      del kwargs['synopsis']
+    else:
+      self.synopsis = None
     kwargs['add_help'] = False
     argparse.ArgumentParser.__init__(self, *args, **kwargs)
     self.mutuallyExclusiveOptionGroups = [ ]
-    if not 'parents' in kwargs:
+    if 'parents' in kwargs:
+      for parent in kwargs['parents']:
+        self._citationList.extend(parent._citationList)
+        self.externalCitations = self.externalCitations or parent.externalCitations
+    else:
       standard_options = self.add_argument_group('Standard options')
       standard_options.add_argument('-continue', nargs=2, dest='cont', metavar=('<TempDir>', '<LastFile>'), help='Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file')
       standard_options.add_argument('-force', action='store_true', help='Force overwrite of output files if pre-existing')
@@ -345,6 +369,17 @@ class Parser(argparse.ArgumentParser):
       standard_options.add_argument('-verbose', action='store_true', help='Display additional information and progress for every command invoked')
       standard_options.add_argument('-debug', action='store_true', help='Display additional debugging information over and above the verbose output')
       self.flagMutuallyExclusiveOptions( [ 'quiet', 'verbose', 'debug' ] )
+
+  def addCitation(self, condition, reference, is_external):
+    self._citationList.append( (condition, reference) )
+    if is_external:
+      self.externalCitations = True
+
+  def addDescription(self, text):
+    self._description.append(text)
+
+  def setCopyright(text):
+    self._copyright = text
 
   # Mutually exclusive options need to be added before the command-line input is parsed
   def flagMutuallyExclusiveOptions(self, options, required=False):
@@ -371,7 +406,7 @@ class Parser(argparse.ArgumentParser):
       if '-help'.startswith(arg):
         self._printHelp()
         sys.exit(0)
-    if self.prog and len(shlex.split(self.prog)) == len(sys.argv): # No arguments provided to subcmdline
+    if self.prog and len(shlex.split(self.prog)) == len(sys.argv): # No arguments provided to subparser
       self._printHelp()
       sys.exit(0)
     usage = self._formatUsage()
@@ -427,8 +462,6 @@ class Parser(argparse.ArgumentParser):
 
   def _printHelp(self):
     import subprocess, textwrap
-    global author, mrtrix
-    global _citationList, _copyright
 
     def bold(text):
       return ''.join( c + chr(0x08) + c for c in text)
@@ -443,20 +476,24 @@ class Parser(argparse.ArgumentParser):
     s += '\n'
     s += bold('SYNOPSIS') + '\n'
     s += '\n'
-    synopsis = self.prog + ' [ options ]'
+    s += w.fill(self.synopsis) + '\n'
+    s += '\n'
+    s += bold('USAGE') + '\n'
+    s += '\n'
+    usage = self.prog + ' [ options ]'
     # Compulsory sub-cmdline algorithm selection (if present)
     if self._subparsers:
-      synopsis += ' ' + self._subparsers._group_actions[0].dest + ' ...'
+      usage += ' ' + self._subparsers._group_actions[0].dest + ' ...'
     # Find compulsory input arguments
     for arg in self._positionals._group_actions:
       if arg.metavar:
-        synopsis += ' ' + arg.metavar
+        usage += ' ' + arg.metavar
       else:
-        synopsis += ' ' + arg.dest
+        usage += ' ' + arg.dest
     # Unfortunately this can line wrap early because textwrap is counting each
     #   underlined character as 3 characters when calculating when to wrap
     # Fix by underlining after the fact
-    s += w.fill(synopsis).replace(self.prog, underline(self.prog), 1) + '\n'
+    s += w.fill(usage).replace(self.prog, underline(self.prog), 1) + '\n'
     s += '\n'
     if self._subparsers:
       s += '        ' + w_arg.fill(self._subparsers._group_actions[0].dest + ' '*(max(13-len(self._subparsers._group_actions[0].dest), 1)) + self._subparsers._group_actions[0].help).replace (self._subparsers._group_actions[0].dest, underline(self._subparsers._group_actions[0].dest), 1) + '\n'
@@ -470,15 +507,17 @@ class Parser(argparse.ArgumentParser):
       line += name + ' '*(max(13-len(name), 1)) + arg.help
       s += w_arg.fill(line).replace(name, underline(name), 1) + '\n'
       s += '\n'
-    s += bold('DESCRIPTION') + '\n'
-    s += '\n'
-    s += w.fill(self.description) + '\n'
-    s += '\n'
+    if self._description:
+      s += bold('DESCRIPTION') + '\n'
+      s += '\n'
+      for line in self._description:
+        s += w.fill(line) + '\n'
+        s += '\n'
     # Option groups
     for group in reversed(self._action_groups):
       # * Don't display empty groups
-      # * Don't display the subcmdline option; that's dealt with in the synopsis
-      # * Don't re-display any compulsory positional arguments; they're also dealt with in the synopsis
+      # * Don't display the subcmdline option; that's dealt with in the usage
+      # * Don't re-display any compulsory positional arguments; they're also dealt with in the usage
       if group._group_actions and not (len(group._group_actions) == 1 and isinstance(group._group_actions[0], argparse._SubParsersAction)) and not group == self._positionals:
         s += bold(group.title) + '\n'
         s += '\n'
@@ -507,15 +546,15 @@ class Parser(argparse.ArgumentParser):
           s += w.fill(option.help) + '\n'
           s += '\n'
     s += bold('AUTHOR') + '\n'
-    s += w.fill(_author) + '\n'
+    s += w.fill(self._author) + '\n'
     s += '\n'
     s += bold('COPYRIGHT') + '\n'
-    s += w.fill(_copyright) + '\n'
-    if _citationList:
+    s += w.fill(self._copyright) + '\n'
+    if self._citationList:
       s += '\n'
       s += bold('REFERENCES') + '\n'
       s += '\n'
-      for entry in _citationList:
+      for entry in self._citationList:
         if entry[0]:
           s += w.fill('* ' + entry[0] + ':') + '\n'
         s += w.fill(entry[1]) + '\n'
@@ -533,16 +572,50 @@ class Parser(argparse.ArgumentParser):
     else:
       print (s)
 
-  def _printUsageMarkdown(self):
-    import subprocess, sys
-    global _author, _copyright
+  def _printFullUsage(self):
+    import sys
+    print (self.synopsis)
+    if self._description:
+      if isinstance(self._description, list):
+        for line in self._description:
+          print (line)
+      else:
+        print (self._description)
     if self._subparsers and len(sys.argv) == 3:
       for alg in self._subparsers._group_actions[0].choices:
         if alg == sys.argv[1]:
+          self._subparsers._group_actions[0].choices[alg]._printFullUsage()
+          return
+      self.error('Invalid subparser nominated')
+    for arg in self._positionals._group_actions:
+      # This will need updating if any scripts allow mulitple argument inputs
+      print ('ARGUMENT ' + arg.dest + ' 0 0')
+      print (arg.help)
+    for group in reversed(self._action_groups):
+      if group._group_actions and not (len(group._group_actions) == 1 and isinstance(group._group_actions[0], argparse._SubParsersAction)) and not group == self._positionals:
+        for option in group._group_actions:
+          print ('OPTION ' + '/'.join(option.option_strings) + ' 1 0')
+          print (option.help)
+          if option.metavar:
+            if isinstance(option.metavar, tuple):
+              for arg in option.metavar:
+                print ('ARGUMENT ' + arg + ' 0 0')
+            else:
+              print ('ARGUMENT ' + option.metavar + ' 0 0')
+
+  def _printUsageMarkdown(self):
+    import os, subprocess, sys
+    if self._subparsers and len(sys.argv) == 3:
+      for alg in self._subparsers._group_actions[0].choices:
+        if alg == sys.argv[-2]:
           self._subparsers._group_actions[0].choices[alg]._printUsageMarkdown()
           return
       self.error('Invalid subcmdline nominated')
     print ('## Synopsis')
+    print ('')
+    print (self.synopsis)
+    print ('')
+    print ('## Usage')
     print ('')
     print ('    ' + self._formatUsage())
     print ('')
@@ -555,10 +628,12 @@ class Parser(argparse.ArgumentParser):
         name = arg.dest
       print ('-  *' + name + '*: ' + arg.help)
     print ('')
-    print ('## Description')
-    print ('')
-    print (self.description)
-    print ('')
+    if self._description:
+      print ('## Description')
+      print ('')
+      for line in self._description:
+        print (line)
+        print ('')
     print ('## Options')
     print ('')
     for group in reversed(self._action_groups):
@@ -575,10 +650,10 @@ class Parser(argparse.ArgumentParser):
               text += option.metavar
           print ('+ **-' + text + '**<br>' + option.help)
           print ('')
-    if _citationList:
+    if self._citationList:
       print ('## References')
       print ('')
-      for ref in _citationList:
+      for ref in self._citationList:
         text = ''
         if ref[0]:
           text += ref[0] + ': '
@@ -587,30 +662,34 @@ class Parser(argparse.ArgumentParser):
         print ('')
     print ('---')
     print ('')
-    print ('**Author:** ' + _author)
+    print ('**Author:** ' + self._author)
     print ('')
-    print ('**Copyright:** ' + _copyright)
+    print ('**Copyright:** ' + self._copyright)
     print ('')
     if self._subparsers:
       for alg in self._subparsers._group_actions[0].choices:
-        proc = subprocess.call ([ self.prog, alg, '__print_usage_markdown__' ])
+        subprocess.call ([ sys.executable, os.path.realpath(sys.argv[0]), alg, '__print_usage_markdown__' ])
 
   def _printUsageRst(self):
-    import subprocess, sys
-    global _author, _citationList, _copyright
+    import os, subprocess, sys
     # Need to check here whether it's the documentation for a particular subcmdline that's being requested
     if self._subparsers and len(sys.argv) == 3:
       for alg in self._subparsers._group_actions[0].choices:
-        if alg == sys.argv[1]:
+        if alg == sys.argv[-2]:
           self._subparsers._group_actions[0].choices[alg]._printUsageRst()
           return
-      self.error('Invalid subparser nominated')
+      self.error('Invalid subparser nominated: ' + sys.argv[-2])
     print ('.. _' + self.prog.replace(' ', '_') + ':')
     print ('')
     print (self.prog)
     print ('='*len(self.prog))
     print ('')
     print ('Synopsis')
+    print ('--------')
+    print ('')
+    print (self.synopsis)
+    print ('')
+    print ('Usage')
     print ('--------')
     print ('')
     print ('::')
@@ -626,11 +705,13 @@ class Parser(argparse.ArgumentParser):
         name = arg.dest
       print ('-  *' + name + '*: ' + arg.help)
     print ('')
-    print ('Description')
-    print ('-----------')
-    print ('')
-    print (self.description)
-    print ('')
+    if self._description:
+      print ('Description')
+      print ('-----------')
+      print ('')
+      for line in self._description:
+        print (line)
+        print ('')
     print ('Options')
     print ('-------')
     for group in reversed(self._action_groups):
@@ -648,11 +729,11 @@ class Parser(argparse.ArgumentParser):
               text += option.metavar
           print ('')
           print ('- **' + text + '** ' + option.help)
-    if _citationList:
+    if self._citationList:
       print ('')
       print ('References')
       print ('^^^^^^^^^^')
-      for ref in _citationList:
+      for ref in self._citationList:
         text = '* '
         if ref[0]:
           text += ref[0] + ': '
@@ -664,13 +745,14 @@ class Parser(argparse.ArgumentParser):
     print ('')
     print ('')
     print ('')
-    print ('**Author:** ' + _author)
+    print ('**Author:** ' + self._author)
     print ('')
-    print ('**Copyright:** ' + _copyright)
+    print ('**Copyright:** ' + self._copyright)
     print ('')
     if self._subparsers:
+      sys.stdout.flush()
       for alg in self._subparsers._group_actions[0].choices:
-        proc = subprocess.call ([ self.prog, alg, '__print_usage_rst__' ])
+        subprocess.call ([ sys.executable, os.path.realpath(sys.argv[0]), alg, '__print_usage_rst__' ])
 
 
 
@@ -679,6 +761,7 @@ class Parser(argparse.ArgumentParser):
 class progressBar:
 
   def _update(self):
+    global clearLine, colourConsole, colourClear
     sys.stderr.write('\r' + colourConsole + os.path.basename(sys.argv[0]) + ': ' + colourClear + '[{0:>3}%] '.format(int(round(100.0*self.counter/self.target))) + self.message + '...' + clearLine + self.newline)
     sys.stderr.flush()
 
@@ -700,6 +783,7 @@ class progressBar:
 
   def done(self):
     global _verbosity
+    global clearLine, colourConsole, colourClear
     self.counter = self.target
     sys.stderr.write('\r' + colourConsole + os.path.basename(sys.argv[0]) + ': ' + colourClear + '[100%] ' + self.message + clearLine + '\n')
     sys.stderr.flush()

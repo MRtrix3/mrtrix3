@@ -6,17 +6,16 @@ warp2metric
 Synopsis
 --------
 
+Compute fixel-wise or voxel-wise metrics from a 4D deformation field
+
+Usage
+--------
+
 ::
 
     warp2metric [ options ]  in
 
 -  *in*: the input deformation field
-
-Description
------------
-
-compute fixel or voxel-wise metrics from a 4D deformation field
-
 Options
 -------
 

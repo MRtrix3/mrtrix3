@@ -24,8 +24,7 @@ void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
-  DESCRIPTION
-  + "an application to threshold and invert track scalar files";
+  SYNOPSIS = "Threshold and invert track scalar files";
 
   ARGUMENTS
   + Argument ("input",  "the input track scalar file.").type_file_in()

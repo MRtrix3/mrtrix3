@@ -6,18 +6,17 @@ mrpad
 Synopsis
 --------
 
+Pad an image to increase the FOV
+
+Usage
+--------
+
 ::
 
     mrpad [ options ]  image_in image_out
 
 -  *image_in*: the image to be padded
 -  *image_out*: the output path for the resulting padded image
-
-Description
------------
-
-Pad an image to increase the FOV
-
 Options
 -------
 

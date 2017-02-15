@@ -6,6 +6,11 @@ vectorstats
 Synopsis
 --------
 
+Statistical testing of vector data using non-parametric permutation testing
+
+Usage
+--------
+
 ::
 
     vectorstats [ options ]  input design contrast output
@@ -14,12 +19,6 @@ Synopsis
 -  *design*: the design matrix. Note that a column of 1's will need to be added for correlations.
 -  *contrast*: the contrast vector, specified as a single row of weights
 -  *output*: the filename prefix for all output.
-
-Description
------------
-
-Statistical testing of vector data using non-parametric permutation testing.
-
 Options
 -------
 

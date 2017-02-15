@@ -6,6 +6,11 @@ mesh2pve
 Synopsis
 --------
 
+Convert a mesh surface to a partial volume estimation image
+
+Usage
+--------
+
 ::
 
     mesh2pve [ options ]  source template output
@@ -13,12 +18,6 @@ Synopsis
 -  *source*: the mesh file; note vertices must be defined in realspace coordinates
 -  *template*: the template image
 -  *output*: the output image
-
-Description
------------
-
-convert a mesh surface to a partial volume estimation image.
-
 Options
 -------
 

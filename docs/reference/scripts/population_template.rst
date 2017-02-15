@@ -6,6 +6,11 @@ population_template
 Synopsis
 --------
 
+Generates an unbiased group-average template from a series of images
+
+Usage
+--------
+
 ::
 
     population_template input_dir template [ options ]
@@ -16,7 +21,7 @@ Synopsis
 Description
 -----------
 
-Generates an unbiased group-average template from a series of images. First a template is optimised with linear registration (rigid or affine, affine is default), then non-linear registration is used to optimise the template further.
+First a template is optimised with linear registration (rigid or affine, affine is default), then non-linear registration is used to optimise the template further.
 
 Options
 -------

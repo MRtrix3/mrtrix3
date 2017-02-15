@@ -31,8 +31,7 @@ void usage ()
 
 AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-DESCRIPTION
-  + "generate a set of uniformly distributed directions using a bipolar electrostatic repulsion model.";
+SYNOPSIS = "Generate a set of uniformly distributed directions using a bipolar electrostatic repulsion model";
 
 REFERENCES 
   + "Jones, D.; Horsfield, M. & Simmons, A. "

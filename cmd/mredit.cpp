@@ -35,10 +35,10 @@ void usage ()
 {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "Directly edit the intensities within an image from the command-line. "
+  SYNOPSIS = "Directly edit the intensities within an image from the command-line";
 
-    "A range of options are provided to enable direct editing of "
+  DESCRIPTION
+  + "A range of options are provided to enable direct editing of "
     "voxel intensities based on voxel / real-space coordinates. "
 
     "If only one image path is provided, the image will be edited in-place "

@@ -34,8 +34,7 @@ void usage ()
 {
 AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-DESCRIPTION
-  + "compute images statistics.";
+SYNOPSIS = "Compute images statistics";
 
 ARGUMENTS
   + Argument ("image",

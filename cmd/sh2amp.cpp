@@ -28,9 +28,7 @@ void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
-  DESCRIPTION
-  + "Evaluate the amplitude of an image of spherical harmonic functions "
-    "along the specified directions";
+  SYNOPSIS = "Evaluate the amplitude of an image of spherical harmonic functions along specified directions";
 
   ARGUMENTS
     + Argument ("input",

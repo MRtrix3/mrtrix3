@@ -6,6 +6,11 @@ mtnormalise
 Synopsis
 --------
 
+Multi-tissue normalise
+
+Usage
+--------
+
 ::
 
     mtnormalise [ options ]  input output [ input output ... ]
@@ -15,7 +20,9 @@ Synopsis
 Description
 -----------
 
-Multi-tissue normalise. Globally normalise multiple tissue compartments (e.g. WM, GM, CSF) from multi-tissue CSD such that their sum (of their DC terms) within each voxel is as close to a scalar as possible (Default: sqrt(1/(4*pi)). Normalisation is performed by solving for a single scale factor to adjust each tissue type. Example usage: mtnormalise wm.mif wm_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif
+Globally normalise multiple tissue compartments (e.g. WM, GM, CSF) from multi-tissue CSD such that their sum (of their DC terms) within each voxel is as close to a scalar as possible (Default: sqrt(1/(4*pi)). Normalisation is performed by solving for a single scale factor to adjust each tissue type.
+
+Example usage: mtnormalise wm.mif wm_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif
 
 Options
 -------

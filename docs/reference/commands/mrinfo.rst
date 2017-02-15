@@ -6,6 +6,11 @@ mrinfo
 Synopsis
 --------
 
+Display image header information, or extract specific information from the header
+
+Usage
+--------
+
 ::
 
     mrinfo [ options ]  image [ image ... ]
@@ -14,8 +19,6 @@ Synopsis
 
 Description
 -----------
-
-display header information, or extract specific information from the header.
 
 By default, all information contained in each image header will be printed to the console in a reader-friendly format.
 

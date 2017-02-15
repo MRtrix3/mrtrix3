@@ -6,17 +6,17 @@ dwibiascorrect
 Synopsis
 --------
 
+Perform B1 field inhomogeneity correction for a DWI volume series
+
+Usage
+--------
+
 ::
 
     dwibiascorrect input output [ options ]
 
 -  *input*: The input image series to be corrected
 -  *output*: The output corrected image series
-
-Description
------------
-
-Perform B1 field inhomogeneity correction for a DWI volume series
 
 Options
 -------

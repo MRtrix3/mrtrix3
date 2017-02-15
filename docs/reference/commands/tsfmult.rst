@@ -6,6 +6,11 @@ tsfmult
 Synopsis
 --------
 
+Multiply corresponding values in track scalar files
+
+Usage
+--------
+
 ::
 
     tsfmult [ options ]  input input output
@@ -13,12 +18,6 @@ Synopsis
 -  *input*: the input track scalar file.
 -  *input*: the input track scalar file.
 -  *output*: the output track scalar file
-
-Description
------------
-
-an application to multiply corresponding values in track scalar files
-
 Options
 -------
 

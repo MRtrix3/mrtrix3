@@ -47,9 +47,11 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
+  SYNOPSIS = "Compute summary statistic on image intensities either across images, "
+             "or along a specified axis of a single image";
+
   DESCRIPTION
-    + "compute summary statistic on image intensities either across images, "
-    "or along a specified axis for a single image. Supported operations are:"
+    + "Supported operations are:"
 
     + "mean, median, sum, product, rms (root-mean-square value), norm (vector 2-norm), var (unbiased variance), "
     "std (unbiased standard deviation), min, max, absmax (maximum absolute value), "

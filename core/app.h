@@ -58,8 +58,9 @@ namespace MR
     const char* argtype_description (ArgType type);
 
     std::string help_head (int format);
+    std::string help_synopsis (int format);
     std::string help_tail (int format);
-    std::string help_syntax (int format);
+    std::string usage_syntax (int format);
     
 
 
@@ -68,7 +69,7 @@ namespace MR
     //! \addtogroup CmdParse
     // @{
 
-    //! vector of strings to hold the command-line description
+    //! vector of strings to hold more comprehensive command description
     class Description : public vector<const char*> { NOMEMALIGN
       public:
         Description& operator+ (const char* text) {
@@ -260,14 +261,14 @@ namespace MR
     //! the list of options parsed from the command-line
     extern vector<ParsedOption> option;
 
-    //! the description of the command
+    //! additional description of the command over and above the synopsis
     /*! This is designed to be used within each command's usage() function. Add
      * a paragraph to the description using the '+' operator, e.g.:
      * \code
      * void usage() {
      *   DESCRIPTION 
-     *   + "A command to do stuff. It can be used in lots of ways "
-     *     "and very versatile."
+     *   + "This command can be used in lots of ways "
+     *     "and is very versatile."
      *
      *   + "More description in this paragraph. It has lots of options "
      *     "and arguments.";
@@ -319,12 +320,13 @@ namespace MR
     extern bool REQUIRES_AT_LEAST_ONE_ARGUMENT;
 
     //! set the author of the command
-    /*! By default, this is set to "J-Donald Tournier (jdtournier@gmail.com)".
-     * Set to your own name & email to override. */
     extern const char* AUTHOR;
 
     //! set the copyright notice if different from that used in MRtrix
     extern const char* COPYRIGHT;
+
+    //! set a one-sentence synopsis for the command
+    extern const char* SYNOPSIS;
 
     //! add references to command help page
     /*! Like the description, use the '+' operator to add paragraphs (typically

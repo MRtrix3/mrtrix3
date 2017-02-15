@@ -1,8 +1,8 @@
-def initParser(subparsers, base_parser):
+def initialise(subparsers):
   import argparse
   from mrtrix3 import app
-  app.addCitation('If using \'tax\' algorithm', 'Tax, C. M.; Jeurissen, B.; Vos, S. B.; Viergever, M. A. & Leemans, A. Recursive calibration of the fiber response function for spherical deconvolution of diffusion MRI data. NeuroImage, 2014, 86, 67-80', False)
-  parser = subparsers.add_parser('tax', parents=[base_parser], description='Use the Tax et al. (2014) recursive calibration algorithm for single-fibre voxel selection and response function estimation')
+  parser = subparsers.add_parser('tax', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Use the Tax et al. (2014) recursive calibration algorithm for single-fibre voxel selection and response function estimation', parents=[app.cmdline])
+  parser.addCitation('', 'Tax, C. M.; Jeurissen, B.; Vos, S. B.; Viergever, M. A. & Leemans, A. Recursive calibration of the fiber response function for spherical deconvolution of diffusion MRI data. NeuroImage, 2014, 86, 67-80', False)
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('output', help='The output response function text file')
   options = parser.add_argument_group('Options specific to the \'tax\' algorithm')

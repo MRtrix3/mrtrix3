@@ -32,12 +32,17 @@ void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
+  SYNOPSIS = "Multi-Tissue Bias field correction and Intensity Normalisation (MTBIN)";
+
   DESCRIPTION
-   + "Multi-Tissue Bias field correction and Intensity Normalisation (MTBIN). This script inputs N number of tissue components "
+   + "This command inputs N number of tissue components "
      "(e.g. from multi-tissue CSD), and outputs N corrected tissue components. Intensity normalisation is performed by either "
      "determining a common global normalisation factor for all tissue types (default) or by normalising each tissue type independently "
-     "with a single tissue-specific global scale factor. Example usage: mtbin wm.mif wm_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif. "
-     "The estimated multiplicative bias field is guaranteed to have a mean of 1 over all voxels within the mask";
+     "with a single tissue-specific global scale factor."
+
+   + "Example usage: mtbin wm.mif wm_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif."
+
+   + "The estimated multiplicative bias field is guaranteed to have a mean of 1 over all voxels within the mask.";
 
   ARGUMENTS
     + Argument ("input output", "list of all input and output tissue compartment files. See example usage in the description. "

@@ -28,8 +28,7 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  DESCRIPTION
-  + "view spherical harmonics surface plots.";
+  SYNOPSIS = "View spherical harmonics surface plots";
 
   ARGUMENTS
   + Argument ("coefs",

@@ -25,9 +25,9 @@ using namespace App;
 
 void usage ()
 {
-  DESCRIPTION
-    + "Denoise DWI data and estimate the noise level based on the optimal threshold for PCA."
+  SYNOPSIS = "Denoise DWI data and estimate the noise level based on the optimal threshold for PCA";
     
+  DESCRIPTION
     + "DWI data denoising and noise map estimation by exploiting data redundancy in the PCA domain "
     "using the prior knowledge that the eigenspectrum of random covariance matrices is described by "
     "the universal Marchenko Pastur distribution."

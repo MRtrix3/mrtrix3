@@ -6,18 +6,17 @@ mraverageheader
 Synopsis
 --------
 
+Calculate the average (unbiased) coordinate space of all input images
+
+Usage
+--------
+
 ::
 
     mraverageheader [ options ]  input [ input ... ] output
 
 -  *input*: the input image(s).
 -  *output*: the output image
-
-Description
------------
-
-This command calculates the average (unbiased) coordinate space of all input images
-
 Options
 -------
 

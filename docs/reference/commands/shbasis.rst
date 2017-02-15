@@ -6,6 +6,11 @@ shbasis
 Synopsis
 --------
 
+Examine the values in spherical harmonic images to estimate (and optionally change) the SH basis used
+
+Usage
+--------
+
 ::
 
     shbasis [ options ]  SH [ SH ... ]
@@ -14,8 +19,6 @@ Synopsis
 
 Description
 -----------
-
-examine the values in spherical harmonic images to estimate (and optionally change) the SH basis used.
 
 In previous versions of MRtrix, the convention used for storing spherical harmonic coefficients was a non-orthonormal basis (the m!=0 coefficients were a factor of sqrt(2) too large). This error has been rectified in the new MRtrix (assuming that compilation was performed without the USE_NON_ORTHONORMAL_SH_BASIS symbol defined), but will cause issues if processing SH data that was generated using an older version of MRtrix (or vice-versa).
 

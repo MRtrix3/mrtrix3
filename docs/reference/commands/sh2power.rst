@@ -6,6 +6,11 @@ sh2power
 Synopsis
 --------
 
+Compute the total power of a spherical harmonics image
+
+Usage
+--------
+
 ::
 
     sh2power [ options ]  SH power
@@ -15,8 +20,6 @@ Synopsis
 
 Description
 -----------
-
-compute the total power of a spherical harmonics image.
 
 This command computes the sum of squared SH coefficients, which equals the mean-squared amplitude of the spherical function it represents.
 

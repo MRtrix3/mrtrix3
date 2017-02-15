@@ -30,11 +30,12 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
+  SYNOPSIS = "Optimise the polarity of the directions in a scheme with respect to a "
+    "unipolar electrostatic repulsion model, by inversion of individual directions";
+
   DESCRIPTION
-    + "optimise the polarity of the directions in a scheme with respect to a "
-    "unipolar electrostatic repulsion model, by inversion of individual "
-    "directions. The orientations themselves are not affected, only their "
-    "polarity. This is necessary to ensure near-optimal distribution of DW "
+  + "The orientations themselves are not affected, only their "
+    "polarity; this is necessary to ensure near-optimal distribution of DW "
     "directions for eddy-current correction.";
      
   ARGUMENTS

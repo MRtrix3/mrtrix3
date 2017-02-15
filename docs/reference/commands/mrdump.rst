@@ -6,6 +6,11 @@ mrdump
 Synopsis
 --------
 
+Print out the values within an image
+
+Usage
+--------
+
 ::
 
     mrdump [ options ]  input[ output ]
@@ -16,7 +21,7 @@ Synopsis
 Description
 -----------
 
-Print out the values within an image. If no destination file is specified, the voxel locations will be printed to stdout.
+If no destination file is specified, the voxel locations will be printed to stdout.
 
 Options
 -------

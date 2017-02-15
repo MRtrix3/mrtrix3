@@ -6,18 +6,17 @@ dwi2adc
 Synopsis
 --------
 
+Convert mean dwi (trace-weighted) images to mean ADC maps
+
+Usage
+--------
+
 ::
 
     dwi2adc [ options ]  input output
 
 -  *input*: the input image.
 -  *output*: the output image.
-
-Description
------------
-
-convert mean dwi (trace-weighted) images to mean adc maps
-
 Options
 -------
 

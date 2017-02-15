@@ -26,8 +26,7 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  DESCRIPTION
-  + "convert peak directions image to amplitudes.";
+  SYNOPSIS = "Convert peak directions image to amplitudes";
 
   ARGUMENTS
   + Argument ("directions", "the input directions image. Each volume corresponds to the x, y & z "

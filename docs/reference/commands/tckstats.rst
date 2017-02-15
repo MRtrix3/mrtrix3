@@ -6,17 +6,16 @@ tckstats
 Synopsis
 --------
 
+Calculate statistics on streamlines length
+
+Usage
+--------
+
 ::
 
     tckstats [ options ]  tracks_in
 
 -  *tracks_in*: the input track file
-
-Description
------------
-
-calculate statistics on streamlines length.
-
 Options
 -------
 

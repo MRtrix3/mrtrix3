@@ -37,8 +37,7 @@ void usage ()
 {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "thoroughly check that one or more images conform to the expected ACT five-tissue-type (5TT) format";
+  SYNOPSIS = "Thoroughly check that one or more images conform to the expected ACT five-tissue-type (5TT) format";
 
   ARGUMENTS
   + Argument ("input", "the 5TT image(s) to be tested").type_image_in().allow_multiple();

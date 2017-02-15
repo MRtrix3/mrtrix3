@@ -6,6 +6,11 @@ fixelcrop
 Synopsis
 --------
 
+Crop/remove fixels from sparse fixel image using a binary fixel mask
+
+Usage
+--------
+
 ::
 
     fixelcrop [ options ]  input_fixel_directory input_fixel_mask output_fixel_directory
@@ -17,7 +22,7 @@ Synopsis
 Description
 -----------
 
-Crop/remove fixels from sparse fixel image using a binary fixel mask. The mask must be input as a fixel data file the same dimensions as the fixel data file(s) to be cropped.
+The mask must be input as a fixel data file the same dimensions as the fixel data file(s) to be cropped.
 
 Options
 -------

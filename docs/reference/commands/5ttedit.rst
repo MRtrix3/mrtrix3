@@ -6,18 +6,17 @@
 Synopsis
 --------
 
+Manually set the partial volume fractions in an ACT five-tissue-type (5TT) image using mask images
+
+Usage
+--------
+
 ::
 
     5ttedit [ options ]  input output
 
 -  *input*: the 5TT image to be modified
 -  *output*: the output modified 5TT image
-
-Description
------------
-
-manually set the partial volume fractions in an ACT five-tissue-type (5TT) image using mask images
-
 Options
 -------
 

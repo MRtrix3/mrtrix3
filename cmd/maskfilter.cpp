@@ -73,9 +73,9 @@ void usage ()
 {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au), David Raffelt (david.raffelt@florey.edu.au), Thijs Dhollander (thijs.dhollander@gmail.com) and J-Donald Tournier (jdtournier@gmail.com)";
 
-  DESCRIPTION
-  + "Perform filtering operations on 3D / 4D mask images."
+  SYNOPSIS = "Perform filtering operations on 3D / 4D mask images";
 
+  DESCRIPTION
   + "The available filters are: clean, connect, dilate, erode, median."
 
   + "Each filter has its own unique set of optional parameters.";

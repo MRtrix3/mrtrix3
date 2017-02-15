@@ -41,10 +41,9 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
+  SYNOPSIS = "Examine the values in spherical harmonic images to estimate (and optionally change) the SH basis used";
 
   DESCRIPTION
-    + "examine the values in spherical harmonic images to estimate (and optionally change) the SH basis used."
-
     + "In previous versions of MRtrix, the convention used for storing spherical harmonic "
       "coefficients was a non-orthonormal basis (the m!=0 coefficients were a factor of "
       "sqrt(2) too large). This error has been rectified in the new MRtrix (assuming that "

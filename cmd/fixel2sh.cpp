@@ -34,8 +34,10 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au) & David Raffelt (david.raffelt@florey.edu.au)";
 
+  SYNOPSIS = "Convert a fixel-based sparse-data image into an spherical harmonic image";
+
   DESCRIPTION
-  + "convert a fixel-based sparse-data image into an spherical harmonic image "
+  + "This command generates spherical harmonic data from fixels "
     "that can be visualised using the ODF tool in MRview. The output ODF lobes "
     "are scaled according to the values in the input fixel image.";
 

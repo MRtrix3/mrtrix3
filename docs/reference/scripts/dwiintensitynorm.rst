@@ -6,6 +6,11 @@ dwiintensitynorm
 Synopsis
 --------
 
+Performs a global DWI intensity normalisation on a group of subjects using the median b=0 white matter value as the reference
+
+Usage
+--------
+
 ::
 
     dwiintensitynorm input_dir mask_dir output_dir fa_template wm_mask [ options ]
@@ -19,7 +24,7 @@ Synopsis
 Description
 -----------
 
-Performs a global DWI intensity normalisation on a group of subjects using the median b=0 white matter value as the reference. The white matter mask is estimated from a population average FA template then warped back to each subject to perform the intensity normalisation. Note that bias field correction should be performed prior to this step.
+The white matter mask is estimated from a population average FA template then warped back to each subject to perform the intensity normalisation. Note that bias field correction should be performed prior to this step.
 
 Options
 -------

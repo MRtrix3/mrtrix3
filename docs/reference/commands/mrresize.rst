@@ -6,6 +6,11 @@ mrresize
 Synopsis
 --------
 
+Resize an image by defining the new image resolution, voxel size or a scale factor
+
+Usage
+--------
+
 ::
 
     mrresize [ options ]  input output
@@ -15,8 +20,6 @@ Synopsis
 
 Description
 -----------
-
-Resize an image by defining the new image resolution, voxel size or a scale factor.
 
 Note that if the image is 4D, then only the first 3 dimensions can be resized.
 

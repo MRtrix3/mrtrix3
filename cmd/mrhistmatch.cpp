@@ -31,8 +31,7 @@ void usage () {
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au";
 
-  DESCRIPTION
-    + "modify the intensities of one image to match the histogram of another via a non-linear transform.";
+  SYNOPSIS = "Modify the intensities of one image to match the histogram of another via a non-linear transform";
 
   ARGUMENTS
     + Argument ("input", "the input image to be modified").type_image_in ()

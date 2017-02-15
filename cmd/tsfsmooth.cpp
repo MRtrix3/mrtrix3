@@ -28,8 +28,7 @@ void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
-  DESCRIPTION
-  + "Gaussian filter a track scalar file";
+  SYNOPSIS = "Gaussian filter a track scalar file";
 
   ARGUMENTS
   + Argument ("input",  "the input track scalar file.").type_file_in ()

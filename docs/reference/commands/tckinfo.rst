@@ -6,17 +6,16 @@ tckinfo
 Synopsis
 --------
 
+Print out information about a track file
+
+Usage
+--------
+
 ::
 
     tckinfo [ options ]  tracks [ tracks ... ]
 
 -  *tracks*: the input track file.
-
-Description
------------
-
-print out information about track file
-
 Options
 -------
 

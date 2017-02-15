@@ -26,8 +26,7 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  DESCRIPTION
-    + "report statistics on a direction set";
+  SYNOPSIS = "Report statistics on a direction set";
 
   ARGUMENTS
     + Argument ("dirs", "the text file containing the directions.").type_file_in();

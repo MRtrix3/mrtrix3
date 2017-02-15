@@ -6,18 +6,17 @@ mrhistogram
 Synopsis
 --------
 
+Generate a histogram of image intensities
+
+Usage
+--------
+
 ::
 
     mrhistogram [ options ]  image hist
 
 -  *image*: the input image from which the histogram will be computed
 -  *hist*: the output histogram file
-
-Description
------------
-
-generate a histogram of image intensities.
-
 Options
 -------
 

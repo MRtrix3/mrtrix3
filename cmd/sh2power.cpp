@@ -25,9 +25,9 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  DESCRIPTION
-    + "compute the total power of a spherical harmonics image."
+  SYNOPSIS = "Compute the total power of a spherical harmonics image";
     
+  DESCRIPTION
     + "This command computes the sum of squared SH coefficients, "
       "which equals the mean-squared amplitude "
       "of the spherical function it represents.";

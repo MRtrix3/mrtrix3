@@ -6,6 +6,11 @@ fixelreorient
 Synopsis
 --------
 
+Reorient fixel directions
+
+Usage
+--------
+
 ::
 
     fixelreorient [ options ]  fixel_in warp fixel_out
@@ -17,7 +22,7 @@ Synopsis
 Description
 -----------
 
-Reorient fixel directions. Reorientation is performed by transforming the vector representing the fixel direction with the Jacobian (local affine transform) computed at each voxel in the warp, then re-normalising the vector.
+Reorientation is performed by transforming the vector representing the fixel direction with the Jacobian (local affine transform) computed at each voxel in the warp, then re-normalising the vector.
 
 Options
 -------

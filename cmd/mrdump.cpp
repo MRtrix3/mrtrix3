@@ -27,10 +27,10 @@ void usage ()
 {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "Print out the values within an image. "
+  SYNOPSIS = "Print out the values within an image";
 
-    "If no destination file is specified, the voxel locations will be "
+  DESCRIPTION
+  + "If no destination file is specified, the voxel locations will be "
     "printed to stdout.";
 
   ARGUMENTS

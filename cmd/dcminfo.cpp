@@ -26,8 +26,7 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  DESCRIPTION
-  + "output DICOM fields in human-readable format.";
+  SYNOPSIS = "Output DICOM fields in human-readable format";
 
   ARGUMENTS
   + Argument ("file", "the DICOM file to be scanned.").type_file_in();

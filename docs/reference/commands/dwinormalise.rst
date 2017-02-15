@@ -6,6 +6,11 @@ dwinormalise
 Synopsis
 --------
 
+Intensity normalise the b=0 signal within a supplied white matter mask
+
+Usage
+--------
+
 ::
 
     dwinormalise [ options ]  input mask output
@@ -13,16 +18,10 @@ Synopsis
 -  *input*: the input DWI image containing volumes that are both diffusion weighted and b=0
 -  *mask*: the input mask image used to normalise the intensity
 -  *output*: the output DWI intensity normalised image
-
-Description
------------
-
-Intensity normalise the b=0 signal within a supplied white matter mask
-
 Options
 -------
 
--  **-intensity value** normalise the b=0 signal to the specified value (Default: 1e+03)
+-  **-intensity value** normalise the b=0 signal to the specified value (Default: 1e+003)
 
 -  **-percentile value** define the percentile of the mask intensties used for normalisation. If this option is not supplied then the median value (50th percentile) will be normalised to the desired intensity value.
 

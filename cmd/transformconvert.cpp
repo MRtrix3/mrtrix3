@@ -34,12 +34,11 @@ void usage ()
 {
   AUTHOR = "Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
 
-  DESCRIPTION
-  + "This command's function is to convert linear transformation matrices."
+  SYNOPSIS = "Convert linear transformation matrices";
 
-  + "It allows to convert the transformation matrix provided by FSL's flirt command "
-  + "and ITK's linear transformation format to a format usable in MRtrix."
-  ;
+  DESCRIPTION
+  + "This command allows to convert the transformation matrix provided by FSL's flirt command "
+    "and ITK's linear transformation format to a format usable in MRtrix.";
 
   ARGUMENTS
   + Argument ("input", "the input for the specified operation").allow_multiple()

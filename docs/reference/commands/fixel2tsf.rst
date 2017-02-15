@@ -6,6 +6,11 @@ fixel2tsf
 Synopsis
 --------
 
+Map fixel values to a track scalar file based on an input tractogram
+
+Usage
+--------
+
 ::
 
     fixel2tsf [ options ]  fixel_in tracks tsf
@@ -17,7 +22,7 @@ Synopsis
 Description
 -----------
 
-Map fixel values to a track scalar file based on an input tractogram. This is useful for visualising all brain fixels (e.g. the output from fixelcfestats) in 3D.
+This command is useful for visualising all brain fixels (e.g. the output from fixelcfestats) in 3D.
 
 Options
 -------

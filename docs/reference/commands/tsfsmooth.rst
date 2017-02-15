@@ -6,18 +6,17 @@ tsfsmooth
 Synopsis
 --------
 
+Gaussian filter a track scalar file
+
+Usage
+--------
+
 ::
 
     tsfsmooth [ options ]  input output
 
 -  *input*: the input track scalar file.
 -  *output*: the output track scalar file
-
-Description
------------
-
-Gaussian filter a track scalar file
-
 Options
 -------
 

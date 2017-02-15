@@ -45,8 +45,7 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "apply filter operations to meshes.";
+  SYNOPSIS = "Apply filter operations to meshes";
 
   ARGUMENTS
   + Argument ("input",  "the input mesh file").type_file_in()

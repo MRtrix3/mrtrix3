@@ -26,8 +26,7 @@ void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
-  DESCRIPTION
-  + "print out information about track scalar file";
+  SYNOPSIS = "Print out information about a track scalar file";
 
   ARGUMENTS
   + Argument ("tracks", "the input track scalar file.")

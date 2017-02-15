@@ -32,9 +32,10 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
+  SYNOPSIS = "Create bitwise image by thresholding image intensity";
+
   DESCRIPTION
-  + "Create bitwise image by thresholding image intensity. By default, an "
-    "optimal threshold is determined using a parameter-free method. "
+  + "By default, an optimal threshold is determined using a parameter-free method. "
     "Alternatively the threshold can be defined manually by the user.";
 
   REFERENCES 

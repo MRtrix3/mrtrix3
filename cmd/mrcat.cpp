@@ -25,8 +25,7 @@ using namespace App;
 void usage () {
 AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-DESCRIPTION
-  + "concatenate several images into one";
+SYNOPSIS = "Concatenate several images into one";
 
 ARGUMENTS
   + Argument ("image1", "the first input image.")

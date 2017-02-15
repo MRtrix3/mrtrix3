@@ -27,8 +27,7 @@ void usage ()
 {
 AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-DESCRIPTION
-  + "generate a histogram of image intensities.";
+SYNOPSIS = "Generate a histogram of image intensities";
 
 ARGUMENTS
   + Argument ("image", "the input image from which the histogram will be computed").type_image_in()

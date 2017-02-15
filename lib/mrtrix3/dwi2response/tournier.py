@@ -1,8 +1,8 @@
-def initParser(subparsers, base_parser):
+def initialise(subparsers):
   import argparse
   from mrtrix3 import app
-  app.addCitation('If using \'tournier\' algorithm', 'Tournier, J.-D.; Calamante, F. & Connelly, A. Determination of the appropriate b value and number of gradient directions for high-angular-resolution diffusion-weighted imaging. NMR Biomedicine, 2013, 26, 1775-1786', False)
-  parser = subparsers.add_parser('tournier', parents=[base_parser], description='Use the Tournier et al. (2013) iterative algorithm for single-fibre voxel selection and response function estimation')
+  parser = subparsers.add_parser('tournier', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Use the Tournier et al. (2013) iterative algorithm for single-fibre voxel selection and response function estimation', parents=[app.cmdline])
+  parser.addCitation('', 'Tournier, J.-D.; Calamante, F. & Connelly, A. Determination of the appropriate b value and number of gradient directions for high-angular-resolution diffusion-weighted imaging. NMR Biomedicine, 2013, 26, 1775-1786', False)
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('output', help='The output response function text file')
   options = parser.add_argument_group('Options specific to the \'tournier\' algorithm')

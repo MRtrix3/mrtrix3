@@ -6,6 +6,11 @@ maskfilter
 Synopsis
 --------
 
+Perform filtering operations on 3D / 4D mask images
+
+Usage
+--------
+
 ::
 
     maskfilter [ options ]  input filter output
@@ -16,8 +21,6 @@ Synopsis
 
 Description
 -----------
-
-Perform filtering operations on 3D / 4D mask images.
 
 The available filters are: clean, connect, dilate, erode, median.
 

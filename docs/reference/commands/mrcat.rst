@@ -6,6 +6,11 @@ mrcat
 Synopsis
 --------
 
+Concatenate several images into one
+
+Usage
+--------
+
 ::
 
     mrcat [ options ]  image1 image2 [ image2 ... ] output
@@ -13,12 +18,6 @@ Synopsis
 -  *image1*: the first input image.
 -  *image2*: additional input image(s).
 -  *output*: the output image.
-
-Description
------------
-
-concatenate several images into one
-
 Options
 -------
 

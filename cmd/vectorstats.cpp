@@ -34,8 +34,7 @@ void usage ()
 {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "Statistical testing of vector data using non-parametric permutation testing.";
+  SYNOPSIS = "Statistical testing of vector data using non-parametric permutation testing";
 
 
   ARGUMENTS

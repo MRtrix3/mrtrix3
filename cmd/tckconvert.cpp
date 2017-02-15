@@ -29,9 +29,9 @@ void usage ()
            "J-Donald Tournier (jdtournier@gmail.com), "
            "Philip Broser (philip.broser@me.com).";
 
-  DESCRIPTION
-  + "Convert between different track file formats."
+  SYNOPSIS = "Convert between different track file formats";
 
+  DESCRIPTION
   + "The program currently supports MRtrix .tck files (input/output), "
     "ascii text files (input/output), and VTK polydata files (output only).";
 

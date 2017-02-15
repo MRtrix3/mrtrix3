@@ -6,18 +6,17 @@ peaks2amp
 Synopsis
 --------
 
+Convert peak directions image to amplitudes
+
+Usage
+--------
+
 ::
 
     peaks2amp [ options ]  directions amplitudes
 
 -  *directions*: the input directions image. Each volume corresponds to the x, y & z component of each direction vector in turn.
 -  *amplitudes*: the output amplitudes image.
-
-Description
------------
-
-convert peak directions image to amplitudes.
-
 Options
 -------
 

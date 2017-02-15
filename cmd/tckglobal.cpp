@@ -65,9 +65,9 @@ void usage ()
               "This is free software; see the source for copying conditions.\n"
               "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.";
 
-  DESCRIPTION
-  + "Multi-Shell Multi-Tissue Global Tractography."
+  SYNOPSIS = "Multi-Shell Multi-Tissue Global Tractography";
   
+  DESCRIPTION
   + "This command will reconstruct the global white matter fibre tractogram that best "
     "explains the input DWI data, using a multi-tissue spherical convolution model."
   

@@ -45,8 +45,7 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "filter a whole-brain fibre-tracking data set such that the streamline densities match the FOD lobe integrals.";
+  SYNOPSIS = "Filter a whole-brain fibre-tracking data set such that the streamline densities match the FOD lobe integrals";
 
   REFERENCES 
     + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal

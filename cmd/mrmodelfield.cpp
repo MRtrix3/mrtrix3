@@ -28,9 +28,10 @@ void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) & Rami Tabbara (rami.tabbara@florey.edu.au)";
 
+  SYNOPSIS = "Model an input image using low frequency 3D polynomial basis functions";
+
   DESCRIPTION
-  + "Model an input image using low frequency 3D polynomial basis functions. "
-    "This command was designed to estimate a DWI bias field using the sum of normalised multi-tissue CSD compartments.";
+  + "This command was designed to estimate a DWI bias field using the sum of normalised multi-tissue CSD compartments.";
 
   ARGUMENTS
   + Argument ("input", "the input image").type_image_in()

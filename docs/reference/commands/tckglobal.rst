@@ -6,6 +6,11 @@ tckglobal
 Synopsis
 --------
 
+Multi-Shell Multi-Tissue Global Tractography
+
+Usage
+--------
+
 ::
 
     tckglobal [ options ]  source response tracks
@@ -16,8 +21,6 @@ Synopsis
 
 Description
 -----------
-
-Multi-Shell Multi-Tissue Global Tractography.
 
 This command will reconstruct the global white matter fibre tractogram that best explains the input DWI data, using a multi-tissue spherical convolution model.
 

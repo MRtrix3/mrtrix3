@@ -24,10 +24,10 @@ void usage ()
 {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "Print out the locations of all non-zero voxels in a mask image. "
+  SYNOPSIS = "Print out the locations of all non-zero voxels in a mask image";
 
-    "If no destination file is specified, the voxel locations will be "
+  DESCRIPTION
+  + "If no destination file is specified, the voxel locations will be "
     "printed to stdout.";
 
   ARGUMENTS

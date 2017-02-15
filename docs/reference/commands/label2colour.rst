@@ -6,6 +6,11 @@ label2colour
 Synopsis
 --------
 
+Convert a parcellated image (where values are node indices) into a colour image
+
+Usage
+--------
+
 ::
 
     label2colour [ options ]  nodes_in colour_out
@@ -16,7 +21,7 @@ Synopsis
 Description
 -----------
 
-convert a parcellated image (where values are node indices) into a colour image (many software packages handle this colouring internally within their viewer program; this binary explicitly converts a parcellation image into a colour image that should be viewable in any software)
+Many software packages handle this colouring internally within their viewer program; this binary explicitly converts a parcellation image into a colour image that should be viewable in any software.
 
 Options
 -------

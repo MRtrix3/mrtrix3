@@ -30,8 +30,7 @@ void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
-  DESCRIPTION
-  + "compute fixel or voxel-wise metrics from a 4D deformation field";
+  SYNOPSIS = "Compute fixel-wise or voxel-wise metrics from a 4D deformation field";
 
   REFERENCES
   + "Raffelt, D.; Tournier, JD/; Smith, RE.; Vaughan, DN.; Jackson, G.; Ridgway, GR. Connelly, A." // Internal

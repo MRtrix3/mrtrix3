@@ -6,6 +6,11 @@ amp2sh
 Synopsis
 --------
 
+Convert a set of amplitudes (defined along a set of corresponding directions) to their spherical harmonic representation.
+
+Usage
+--------
+
 ::
 
     amp2sh [ options ]  amp SH
@@ -16,7 +21,7 @@ Synopsis
 Description
 -----------
 
-convert a set of amplitudes (defined along a set of corresponding directions) to their spherical harmonic representation. The spherical harmonic decomposition is calculated by least-squares linear fitting.
+The spherical harmonic decomposition is calculated by least-squares linear fitting to the amplitude data.
 
 The directions can be defined either as a DW gradient scheme (for example to compute the SH representation of the DW signal) or a set of [az el] pairs as output by the dirgen command. The DW gradient scheme or direction set can be supplied within the input image header or using the -gradient or -directions option. Note that if a direction set and DW gradient scheme can be found, the direction set will be used by default.
 

@@ -6,6 +6,11 @@ fixel2sh
 Synopsis
 --------
 
+Convert a fixel-based sparse-data image into an spherical harmonic image
+
+Usage
+--------
+
 ::
 
     fixel2sh [ options ]  fixel_in sh_out
@@ -16,7 +21,7 @@ Synopsis
 Description
 -----------
 
-convert a fixel-based sparse-data image into an spherical harmonic image that can be visualised using the ODF tool in MRview. The output ODF lobes are scaled according to the values in the input fixel image.
+This command generates spherical harmonic data from fixels that can be visualised using the ODF tool in MRview. The output ODF lobes are scaled according to the values in the input fixel image.
 
 Options
 -------

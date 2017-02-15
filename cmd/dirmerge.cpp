@@ -29,9 +29,8 @@ void usage ()
 {
 AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-DESCRIPTION
-  + "splice or merge sets of directions over multiple shells into a single set, "
-    "in such a way as to maintain near-optimality upon truncation.";
+SYNOPSIS = "Splice or merge sets of directions over multiple shells into a single set, "
+           "in such a way as to maintain near-optimality upon truncation";
 
 ARGUMENTS
   + Argument ("subsets", "the number of subsets (phase-encode directions) per b-value").type_integer(1,10000)

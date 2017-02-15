@@ -46,17 +46,17 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION 
-    + "Estimate response function coefficients based on the DWI signal in single-fibre voxels. "
+  SYNOPSIS = "Estimate response function coefficients based on the DWI signal in single-fibre voxels";
 
-      "This command uses the image data from all selected single-fibre voxels concurrently, "
-      "rather than simply averaging their individual spherical harmonic coefficients. It also "
-      "ensures that the response function is non-negative, and monotonic (i.e. its amplitude "
-      "must increase from the fibre direction out to the orthogonal plane). "
+  DESCRIPTION
+   + "This command uses the image data from all selected single-fibre voxels concurrently, "
+     "rather than simply averaging their individual spherical harmonic coefficients. It also "
+     "ensures that the response function is non-negative, and monotonic (i.e. its amplitude "
+     "must increase from the fibre direction out to the orthogonal plane)."
 
-      "If multi-shell data are provided, and one or more b-value shells are not explicitly "
-      "requested, the command will generate a response function for every b-value shell "
-      "(including b=0 if present).";
+   + "If multi-shell data are provided, and one or more b-value shells are not explicitly "
+     "requested, the command will generate a response function for every b-value shell "
+     "(including b=0 if present).";
 
   ARGUMENTS
     + Argument ("amps", "the amplitudes image").type_image_in()

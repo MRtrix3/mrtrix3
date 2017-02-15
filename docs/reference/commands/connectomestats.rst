@@ -6,6 +6,11 @@ connectomestats
 Synopsis
 --------
 
+Connectome group-wise statistics at the edge level using non-parametric permutation testing
+
+Usage
+--------
+
 ::
 
     connectomestats [ options ]  input algorithm design contrast output
@@ -15,12 +20,6 @@ Synopsis
 -  *design*: the design matrix. Note that a column of 1's will need to be added for correlations.
 -  *contrast*: the contrast vector, specified as a single row of weights
 -  *output*: the filename prefix for all output.
-
-Description
------------
-
-Connectome group-wise statistics at the edge level using non-parametric permutation testing.
-
 Options
 -------
 

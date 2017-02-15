@@ -28,8 +28,7 @@ void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
-  DESCRIPTION
-    + "perform a spherical convolution";
+  SYNOPSIS = "Perform a spherical convolution";
 
   ARGUMENTS
     + Argument ("SH_in", "the input spherical harmonics coefficients image.").type_image_in ()

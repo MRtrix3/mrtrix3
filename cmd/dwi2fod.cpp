@@ -60,9 +60,9 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and Ben Jeurissen (ben.jeurissen@uantwerpen.be)";
 
-  DESCRIPTION
-    + "estimate fibre orientation distributions from diffusion data using spherical deconvolution."
+  SYNOPSIS = "Estimate fibre orientation distributions from diffusion data using spherical deconvolution";
 
+  DESCRIPTION
     + Math::SH::encoding_description;
 
   REFERENCES

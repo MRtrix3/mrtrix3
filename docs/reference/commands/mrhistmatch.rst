@@ -6,6 +6,11 @@ mrhistmatch
 Synopsis
 --------
 
+Modify the intensities of one image to match the histogram of another via a non-linear transform
+
+Usage
+--------
+
 ::
 
     mrhistmatch [ options ]  input target output
@@ -13,12 +18,6 @@ Synopsis
 -  *input*: the input image to be modified
 -  *target*: the input image from which to derive the target histogram
 -  *output*: the output image
-
-Description
------------
-
-modify the intensities of one image to match the histogram of another via a non-linear transform.
-
 Options
 -------
 

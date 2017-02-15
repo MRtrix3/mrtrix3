@@ -27,8 +27,9 @@ void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
+  SYNOPSIS = "Resize an image by defining the new image resolution, voxel size or a scale factor";
+
   DESCRIPTION
-  + "Resize an image by defining the new image resolution, voxel size or a scale factor."
   + "Note that if the image is 4D, then only the first 3 dimensions can be resized."
   + "Also note that if the image is down-sampled, the appropriate smoothing is automatically applied using Gaussian smoothing.";
 

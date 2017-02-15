@@ -6,6 +6,11 @@ shconv
 Synopsis
 --------
 
+Perform a spherical convolution
+
+Usage
+--------
+
 ::
 
     shconv [ options ]  SH_in response SH_out
@@ -13,12 +18,6 @@ Synopsis
 -  *SH_in*: the input spherical harmonics coefficients image.
 -  *response*: the convolution kernel (response function)
 -  *SH_out*: the output spherical harmonics coefficients image.
-
-Description
------------
-
-perform a spherical convolution
-
 Options
 -------
 

@@ -30,9 +30,9 @@ void usage ()
 
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  DESCRIPTION
-  + "estimate noise level voxel-wise using residuals from a truncated SH fit"
+  SYNOPSIS = "Estimate noise level voxel-wise using residuals from a truncated SH fit";
       
+  DESCRIPTION
   + "WARNING: This command is deprecated and may be removed in future releases. "
     "Try using the dwidenoise command with the -noise option instead.";
 

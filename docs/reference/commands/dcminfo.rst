@@ -6,17 +6,16 @@ dcminfo
 Synopsis
 --------
 
+Output DICOM fields in human-readable format
+
+Usage
+--------
+
 ::
 
     dcminfo [ options ]  file
 
 -  *file*: the DICOM file to be scanned.
-
-Description
------------
-
-output DICOM fields in human-readable format.
-
 Options
 -------
 

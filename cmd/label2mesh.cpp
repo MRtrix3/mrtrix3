@@ -38,8 +38,7 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "generate meshes from a label image.";
+  SYNOPSIS = "Generate meshes from a label image";
 
   ARGUMENTS
   + Argument ("nodes_in", "the input node parcellation image").type_image_in()

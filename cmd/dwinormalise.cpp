@@ -28,8 +28,7 @@ using namespace App;
 void usage () {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
-DESCRIPTION
-  + "Intensity normalise the b=0 signal within a supplied white matter mask";
+SYNOPSIS = "Intensity normalise the b=0 signal within a supplied white matter mask";
 
 ARGUMENTS
    + Argument ("input",

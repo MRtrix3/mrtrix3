@@ -33,8 +33,7 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "convert a mesh surface to a partial volume estimation image.";
+  SYNOPSIS = "Convert a mesh surface to a partial volume estimation image";
 
   REFERENCES 
     + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal

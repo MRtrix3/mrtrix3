@@ -6,18 +6,17 @@ label2mesh
 Synopsis
 --------
 
+Generate meshes from a label image
+
+Usage
+--------
+
 ::
 
     label2mesh [ options ]  nodes_in mesh_out
 
 -  *nodes_in*: the input node parcellation image
 -  *mesh_out*: the output mesh file
-
-Description
------------
-
-generate meshes from a label image.
-
 Options
 -------
 

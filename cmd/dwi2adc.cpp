@@ -29,8 +29,7 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  DESCRIPTION 
-    + "convert mean dwi (trace-weighted) images to mean adc maps";
+  SYNOPSIS = "Convert mean dwi (trace-weighted) images to mean ADC maps";
 
   ARGUMENTS 
     + Argument ("input", "the input image.").type_image_in ()

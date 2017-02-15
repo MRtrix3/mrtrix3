@@ -28,10 +28,9 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  DESCRIPTION
-    + "reorder a set of directions to ensure near-uniformity upon truncation - "
-    "i.e. if the scan is terminated early, the acquired directions are still "
-    "close to optimal";
+  SYNOPSIS = "Reorder a set of directions to ensure near-uniformity upon truncation - "
+             "i.e. if the scan is terminated early, the acquired directions are still "
+             "close to optimal";
 
   ARGUMENTS
     + Argument ("input", "the input directions file").type_file_in()

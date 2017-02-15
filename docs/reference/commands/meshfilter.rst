@@ -6,6 +6,11 @@ meshfilter
 Synopsis
 --------
 
+Apply filter operations to meshes
+
+Usage
+--------
+
 ::
 
     meshfilter [ options ]  input filter output
@@ -13,12 +18,6 @@ Synopsis
 -  *input*: the input mesh file
 -  *filter*: the filter to apply.Options are: smooth
 -  *output*: the output mesh file
-
-Description
------------
-
-apply filter operations to meshes.
-
 Options
 -------
 

@@ -6,6 +6,11 @@ sh2response
 Synopsis
 --------
 
+Generate an appropriate response function from the image data for spherical deconvolution
+
+Usage
+--------
+
 ::
 
     sh2response [ options ]  SH mask directions response
@@ -14,12 +19,6 @@ Synopsis
 -  *mask*: the mask containing the voxels from which to estimate the response function
 -  *directions*: a 4D image containing the direction vectors along which to estimate the response function
 -  *response*: the output axially-symmetric spherical harmonic coefficients
-
-Description
------------
-
-generate an appropriate response function from the image data for spherical deconvolution
-
 Options
 -------
 

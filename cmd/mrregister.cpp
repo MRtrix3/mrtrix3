@@ -41,9 +41,9 @@ void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
 
-  DESCRIPTION
-      + "Register two images together using a rigid, affine or a non-linear transformation model."
+  SYNOPSIS = "Register two images together using a rigid, affine or a non-linear transformation model";
 
+  DESCRIPTION
       + "By default this application will perform an affine, followed by non-linear registration."
 
       + "FOD registration (with apodised point spread reorientation) will be performed by default if the number of volumes "

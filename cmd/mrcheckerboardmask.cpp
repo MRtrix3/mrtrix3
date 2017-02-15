@@ -25,8 +25,7 @@ void usage ()
 {
   AUTHOR = "Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
 
-  DESCRIPTION
-  + "create bitwise checkerboard image";
+  SYNOPSIS = "Create bitwise checkerboard image";
 
   ARGUMENTS
   + Argument ("input", "the input image to be .").type_image_in ()

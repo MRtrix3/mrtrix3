@@ -6,18 +6,17 @@ mrmesh
 Synopsis
 --------
 
+Generate a mesh file from an image
+
+Usage
+--------
+
 ::
 
     mrmesh [ options ]  input output
 
 -  *input*: the input image.
 -  *output*: the output mesh file.
-
-Description
------------
-
-Generate a mesh file from an image.
-
 Options
 -------
 

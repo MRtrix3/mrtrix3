@@ -21,34 +21,32 @@ sys.path.insert(0, lib_folder)
 from mrtrix3 import algorithm, app, path, run
 
 app.init('Robert E. Smith (robert.smith@florey.edu.au)', 'Generate a 5TT image suitable for ACT')
-app.addCitation('', 'Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. NeuroImage, 2012, 62, 1924-1938', False)
+app.cmdline.addCitation('', 'Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. NeuroImage, 2012, 62, 1924-1938', False)
+app.cmdline.addDescription('5ttgen acts as a \'master\' script for generating a five-tissue-type (5TT) segmented tissue image suitable for use in Anatomically-Constrained Tractography (ACT). A range of different algorithms are available for completing this task. When using this script, the name of the algorithm to be used must appear as the first argument on the command-line after \'5ttgen\'. The subsequent compulsory arguments and options available depend on the particular algorithm being invoked.')
+app.cmdline.addDescription('Each algorithm available also has its own help page, including necessary references; e.g. to see the help page of the \'fsl\' algorithm, type \'5ttgen fsl\'.')
 
-# TODO Re-test this: Is it necessary to duplicate the base parser, or can app.cmdline be used?
-base_parser = app.Parser(description='Base parser for 5ttgen script', parents=[app.cmdline], add_help=False)
-common_options = base_parser.add_argument_group('Options common to all 5ttgen algorithms')
+common_options = app.cmdline.add_argument_group('Options common to all 5ttgen algorithms')
 common_options.add_argument('-nocrop', action='store_true', default=False, help='Do NOT crop the resulting 5TT image to reduce its size (keep the same dimensions as the input image)')
 common_options.add_argument('-sgm_amyg_hipp', action='store_true', default=False, help='Represent the amygdalae and hippocampi as sub-cortical grey matter in the 5TT image')
 
-subparsers = app.cmdline.add_subparsers(title='Algorithm choices', help='Select the software / algorithm to be used to derive the 5TT image; additional details and options become available once an algorithm is nominated. Options are: ' + ', '.join(algorithm.getList()), dest='algorithm')
-
 # Import the command-line settings for all algorithms found in the relevant directory
-algorithm.initialise(base_parser, subparsers)
+algorithm.initialise()
 
 app.parse()
 
 # Find out which algorithm the user has requested
-algorithm = algorithm.getModule(app.args.algorithm)
+alg = algorithm.getModule(app.args.algorithm)
 
 app.checkOutputPath(app.args.output)
-algorithm.checkOutputPaths()
+alg.checkOutputPaths()
 
 app.makeTempDir()
 run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('input.mif', True))
-algorithm.getInputs()
+alg.getInputs()
 
 app.gotoTempDir()
 
-algorithm.execute()
+alg.execute()
 
 (stdout,stderr) = run.command('5ttcheck result.mif', False)
 if len(stderr) and 'ERROR' in stderr:

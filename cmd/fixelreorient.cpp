@@ -29,8 +29,10 @@ void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
+  SYNOPSIS = "Reorient fixel directions";
+
   DESCRIPTION
-  + "Reorient fixel directions. Reorientation is performed by transforming the vector representing "
+  + "Reorientation is performed by transforming the vector representing "
     "the fixel direction with the Jacobian (local affine transform) computed at each voxel in the warp, "
     "then re-normalising the vector.";
 

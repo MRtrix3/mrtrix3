@@ -6,18 +6,17 @@
 Synopsis
 --------
 
+Generate an image for visualisation purposes from an ACT 5TT segmented anatomical image
+
+Usage
+--------
+
 ::
 
     5tt2vis [ options ]  input output
 
 -  *input*: the input 4D tissue-segmented image
 -  *output*: the output 3D image for visualisation
-
-Description
------------
-
-generate an image for visualisation purposes from an ACT 5TT segmented anatomical image
-
 Options
 -------
 

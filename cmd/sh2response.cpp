@@ -43,8 +43,7 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  DESCRIPTION 
-    + "generate an appropriate response function from the image data for spherical deconvolution";
+  SYNOPSIS = "Generate an appropriate response function from the image data for spherical deconvolution";
 
   ARGUMENTS
     + Argument ("SH", "the spherical harmonic decomposition of the diffusion-weighted images").type_image_in()

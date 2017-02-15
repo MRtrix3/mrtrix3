@@ -43,8 +43,7 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "generate a connectome matrix from a streamlines file and a node parcellation image";
+  SYNOPSIS = "Generate a connectome matrix from a streamlines file and a node parcellation image";
 
   ARGUMENTS
   + Argument ("tracks_in",      "the input track file").type_tracks_in()

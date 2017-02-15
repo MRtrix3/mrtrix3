@@ -6,17 +6,16 @@ dirstat
 Synopsis
 --------
 
+Report statistics on a direction set
+
+Usage
+--------
+
 ::
 
     dirstat [ options ]  dirs
 
 -  *dirs*: the text file containing the directions.
-
-Description
------------
-
-report statistics on a direction set
-
 Options
 -------
 

@@ -6,6 +6,11 @@ connectome2tck
 Synopsis
 --------
 
+Extract streamlines from a tractogram based on their assignment to parcellated nodes
+
+Usage
+--------
+
 ::
 
     connectome2tck [ options ]  tracks_in assignments_in prefix_out
@@ -13,12 +18,6 @@ Synopsis
 -  *tracks_in*: the input track file
 -  *assignments_in*: text file containing the node assignments for each streamline
 -  *prefix_out*: the output file / prefix
-
-Description
------------
-
-extract streamlines from a tractogram based on their assignment to parcellated nodes
-
 Options
 -------
 

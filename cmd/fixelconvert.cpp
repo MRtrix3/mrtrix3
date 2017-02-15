@@ -40,8 +40,7 @@ void usage ()
 
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "convert between the old format fixel image (*.msf / *.msh) and the new fixel directory format";
+  SYNOPSIS = "Convert between the old format fixel image (*.msf / *.msh) and the new fixel directory format";
 
   ARGUMENTS
   + Argument ("fixel_in",  "the input fixel file / directory.").type_text()

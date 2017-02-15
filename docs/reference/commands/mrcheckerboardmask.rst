@@ -6,18 +6,17 @@ mrcheckerboardmask
 Synopsis
 --------
 
+Create bitwise checkerboard image
+
+Usage
+--------
+
 ::
 
     mrcheckerboardmask [ options ]  input output
 
 -  *input*: the input image to be .
 -  *output*: the output binary image mask.
-
-Description
------------
-
-create bitwise checkerboard image
-
 Options
 -------
 

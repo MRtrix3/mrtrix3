@@ -6,6 +6,11 @@ tcksift2
 Synopsis
 --------
 
+Successor to the SIFT method; instead of removing streamlines, use an EM framework to find an appropriate cross-section multiplier for each streamline
+
+Usage
+--------
+
 ::
 
     tcksift2 [ options ]  in_tracks in_fod out_weights
@@ -13,12 +18,6 @@ Synopsis
 -  *in_tracks*: the input track file
 -  *in_fod*: input image containing the spherical harmonics of the fibre orientation distributions
 -  *out_weights*: output text file containing the weighting factor for each streamline
-
-Description
------------
-
-successor to the SIFT method; instead of removing streamlines, use an EM framework to find an appropriate cross-section multiplier for each streamline
-
 Options
 -------
 
@@ -79,7 +78,7 @@ Options for controlling the SIFT2 optimisation algorithm
 
 -  **-max_coeff_step step** maximum change to a streamline's weighting coefficient in a single iteration (default: 1)
 
--  **-min_cf_decrease frac** minimum decrease in the cost function (as a fraction of the initial value) that must occur each iteration for the algorithm to continue (default: 2.5e-05)
+-  **-min_cf_decrease frac** minimum decrease in the cost function (as a fraction of the initial value) that must occur each iteration for the algorithm to continue (default: 2.5e-005)
 
 Standard options
 ^^^^^^^^^^^^^^^^

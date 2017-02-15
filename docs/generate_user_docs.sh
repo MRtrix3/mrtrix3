@@ -39,7 +39,7 @@ List of MRtrix3 commands
     $cmdpath __print_usage_rst__ > $dirpath/$cmdname.rst
     sed -ie "1i.. _$cmdname:\n\n$cmdname\n===========\n" $dirpath/$cmdname.rst
     echo '
-   commands/'"$cmdname" >> reference/commands_list.rst
+   commands/'"$cmdname"': '`$cmdpath __print_synopsis__` >> reference/commands_list.rst
   done
 
 # Generating documentation for all scripts
@@ -64,7 +64,7 @@ List of MRtrix3 scripts
     $n __print_usage_rst__ > $filepath/$filename.rst
     #sed -ie "1i$filename\n===========\n" $filepath/$filename.rst
     echo '
-   scripts/'"$filename" >> reference/scripts_list.rst
+   scripts/'"$filename"': '`$n __print_synopsis__` >> reference/scripts_list.rst
   done
 
 # Generating list of configuration file options

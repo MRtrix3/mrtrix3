@@ -67,6 +67,7 @@ namespace MR
        "of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."
        "\n\n"
        "For more details, see http://www.mrtrix.org/.";
+    const char* SYNOPSIS = nullptr;
 
 
     std::string NAME;
@@ -227,6 +228,16 @@ namespace MR
 
 
 
+    std::string help_synopsis (int format)
+    {
+      if (!format)
+        return SYNOPSIS;
+      return bold("SYNOPSIS") + "\n" + paragraph ("", SYNOPSIS, HELP_PURPOSE_INDENT) + "\n";
+    }
+
+
+
+
     std::string help_tail (int format) 
     {
       std::string retval;
@@ -251,9 +262,10 @@ namespace MR
 
 
 
-
     std::string Description::syntax (int format) const
     {
+      if (!size())
+        return std::string();
       std::string s;
       if (format) 
         s += bold ("DESCRIPTION") + "\n\n";
@@ -265,9 +277,9 @@ namespace MR
 
 
 
-    std::string help_syntax (int format)
+    std::string usage_syntax (int format)
     {
-      std::string s = "SYNOPSIS";
+      std::string s = "USAGE";
       if (format)
         s = bold (s) + "\n\n     ";
       else 
@@ -477,7 +489,8 @@ namespace MR
     {
       return
         help_head (format)
-        + help_syntax (format)
+        + help_synopsis (format)
+        + usage_syntax (format)
         + ARGUMENTS.syntax (format)
         + DESCRIPTION.syntax (format)
         + OPTIONS.syntax (format)
@@ -552,6 +565,8 @@ namespace MR
     std::string full_usage ()
     {
       std::string s;
+      s += SYNOPSIS + std::string("\n");
+
       for (size_t i = 0; i < DESCRIPTION.size(); ++i)
         s += DESCRIPTION[i] + std::string("\n");
 
@@ -577,7 +592,8 @@ namespace MR
     {
       /*
          help_head (format)
-         + help_syntax (format)
+         + help_synopsis (format)
+         + usage_syntax (format)
          + ARGUMENTS.syntax (format)
          + DESCRIPTION.syntax (format)
          + OPTIONS.syntax (format)
@@ -586,7 +602,9 @@ namespace MR
          + __standard_options.footer (format)
          + help_tail (format);
          */
-      std::string s = "## Synopsis\n\n    "
+      std::string s = std::string("## Synopsis\n\n") + SYNOPSIS + "\n\n";
+
+      s += "## Usage\n\n    "
         + std::string(NAME) + " [ options ] ";
 
       // Syntax line:
@@ -617,10 +635,11 @@ namespace MR
       for (size_t i = 0; i < ARGUMENTS.size(); ++i) 
         s += std::string("- *") + ARGUMENTS[i].id + "*: " + indent_newlines (ARGUMENTS[i].desc) + "\n";
 
-
-      s += "\n## Description\n\n";
-      for (size_t i = 0; i < DESCRIPTION.size(); ++i) 
-        s += indent_newlines (DESCRIPTION[i]) + "\n\n";
+      if (DESCRIPTION.size()) {
+        s += "\n## Description\n\n";
+        for (size_t i = 0; i < DESCRIPTION.size(); ++i)
+          s += indent_newlines (DESCRIPTION[i]) + "\n\n";
+      }
 
 
       vector<std::string> group_names;
@@ -676,7 +695,8 @@ namespace MR
     {
       /*
          help_head (format)
-         + help_syntax (format)
+         + help_synopsis (format)
+         + usage_syntax (format)
          + ARGUMENTS.syntax (format)
          + DESCRIPTION.syntax (format)
          + OPTIONS.syntax (format)
@@ -686,7 +706,9 @@ namespace MR
          + help_tail (format);
          */
 
-      std::string s = "Synopsis\n--------\n\n::\n\n    "
+      std::string s = std::string("Synopsis\n--------\n\n") + SYNOPSIS + "\n\n";
+
+      s += "Usage\n--------\n\n::\n\n    "
         + std::string(NAME) + " [ options ] ";
 
       // Syntax line:
@@ -718,9 +740,11 @@ namespace MR
         s += std::string("-  *") + ARGUMENTS[i].id + "*: " + indent_newlines (ARGUMENTS[i].desc) + "\n";
 
 
-      s += "\nDescription\n-----------\n\n";
-      for (size_t i = 0; i < DESCRIPTION.size(); ++i)
-        s += indent_newlines (DESCRIPTION[i]) + "\n\n";
+      if (DESCRIPTION.size()) {
+        s += "\nDescription\n-----------\n\n";
+        for (size_t i = 0; i < DESCRIPTION.size(); ++i)
+          s += indent_newlines (DESCRIPTION[i]) + "\n\n";
+      }
 
 
       vector<std::string> group_names;
@@ -860,6 +884,8 @@ namespace MR
 
       if (!AUTHOR)
         throw Exception ("No author specified for command " + std::string(NAME));
+      if (!SYNOPSIS)
+        throw Exception ("No synopsis specified for command " + std::string(NAME));
 
       if (argc == 2) {
         if (strcmp (argv[1], "__print_full_usage__") == 0) {
@@ -872,6 +898,10 @@ namespace MR
         }
         if (strcmp (argv[1], "__print_usage_rst__") == 0) {
           print (restructured_text_usage ());
+          throw 0;
+        }
+        if (strcmp (argv[1], "__print_synopsis__") == 0) {
+          print (SYNOPSIS);
           throw 0;
         }
       }
