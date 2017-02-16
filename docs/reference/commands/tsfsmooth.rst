@@ -1,7 +1,7 @@
 .. _tsfsmooth:
 
 tsfsmooth
-===========
+===================
 
 Synopsis
 --------
@@ -17,6 +17,7 @@ Usage
 
 -  *input*: the input track scalar file.
 -  *output*: the output track scalar file
+
 Options
 -------
 

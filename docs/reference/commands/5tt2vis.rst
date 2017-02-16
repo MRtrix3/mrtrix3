@@ -1,7 +1,7 @@
 .. _5tt2vis:
 
 5tt2vis
-===========
+===================
 
 Synopsis
 --------
@@ -17,6 +17,7 @@ Usage
 
 -  *input*: the input 4D tissue-segmented image
 -  *output*: the output 3D image for visualisation
+
 Options
 -------
 

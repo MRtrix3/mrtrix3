@@ -1,7 +1,7 @@
 .. _fixelcorrespondence:
 
 fixelcorrespondence
-===========
+===================
 
 Synopsis
 --------

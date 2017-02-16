@@ -1,7 +1,7 @@
 .. _tck2connectome:
 
 tck2connectome
-===========
+===================
 
 Synopsis
 --------
@@ -18,6 +18,7 @@ Usage
 -  *tracks_in*: the input track file
 -  *nodes_in*: the input node parcellation image
 -  *connectome_out*: the output .csv file containing edge weights
+
 Options
 -------
 

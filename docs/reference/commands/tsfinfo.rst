@@ -1,7 +1,7 @@
 .. _tsfinfo:
 
 tsfinfo
-===========
+===================
 
 Synopsis
 --------
@@ -16,6 +16,7 @@ Usage
     tsfinfo [ options ]  tracks [ tracks ... ]
 
 -  *tracks*: the input track scalar file.
+
 Options
 -------
 

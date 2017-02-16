@@ -1,7 +1,7 @@
 .. _tensor2metric:
 
 tensor2metric
-===========
+===================
 
 Synopsis
 --------
@@ -16,6 +16,7 @@ Usage
     tensor2metric [ options ]  tensor
 
 -  *tensor*: the input tensor image.
+
 Options
 -------
 

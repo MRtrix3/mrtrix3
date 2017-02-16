@@ -1,7 +1,7 @@
 .. _mraverageheader:
 
 mraverageheader
-===========
+===================
 
 Synopsis
 --------
@@ -17,6 +17,7 @@ Usage
 
 -  *input*: the input image(s).
 -  *output*: the output image
+
 Options
 -------
 

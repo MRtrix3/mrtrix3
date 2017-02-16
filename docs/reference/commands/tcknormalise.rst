@@ -1,7 +1,7 @@
 .. _tcknormalise:
 
 tcknormalise
-===========
+===================
 
 Synopsis
 --------
@@ -18,6 +18,7 @@ Usage
 -  *tracks*: the input track file.
 -  *transform*: the image containing the transform.
 -  *output*: the output track file
+
 Options
 -------
 

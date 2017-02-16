@@ -1,7 +1,7 @@
 .. _dirstat:
 
 dirstat
-===========
+===================
 
 Synopsis
 --------
@@ -16,6 +16,7 @@ Usage
     dirstat [ options ]  dirs
 
 -  *dirs*: the text file containing the directions.
+
 Options
 -------
 

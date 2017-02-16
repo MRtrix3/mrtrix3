@@ -1,7 +1,7 @@
 .. _meshconvert:
 
 meshconvert
-===========
+===================
 
 Synopsis
 --------
@@ -17,6 +17,7 @@ Usage
 
 -  *input*: the input mesh file
 -  *output*: the output mesh file
+
 Options
 -------
 

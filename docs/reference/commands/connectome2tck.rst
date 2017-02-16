@@ -1,7 +1,7 @@
 .. _connectome2tck:
 
 connectome2tck
-===========
+===================
 
 Synopsis
 --------
@@ -18,6 +18,7 @@ Usage
 -  *tracks_in*: the input track file
 -  *assignments_in*: text file containing the node assignments for each streamline
 -  *prefix_out*: the output file / prefix
+
 Options
 -------
 

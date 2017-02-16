@@ -1,7 +1,7 @@
 .. _vectorstats:
 
 vectorstats
-===========
+===================
 
 Synopsis
 --------
@@ -19,6 +19,7 @@ Usage
 -  *design*: the design matrix. Note that a column of 1's will need to be added for correlations.
 -  *contrast*: the contrast vector, specified as a single row of weights
 -  *output*: the filename prefix for all output.
+
 Options
 -------
 

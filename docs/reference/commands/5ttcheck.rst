@@ -1,7 +1,7 @@
 .. _5ttcheck:
 
 5ttcheck
-===========
+===================
 
 Synopsis
 --------
@@ -16,6 +16,7 @@ Usage
     5ttcheck [ options ]  input [ input ... ]
 
 -  *input*: the 5TT image(s) to be tested
+
 Options
 -------
 

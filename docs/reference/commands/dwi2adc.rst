@@ -1,7 +1,7 @@
 .. _dwi2adc:
 
 dwi2adc
-===========
+===================
 
 Synopsis
 --------
@@ -17,6 +17,7 @@ Usage
 
 -  *input*: the input image.
 -  *output*: the output image.
+
 Options
 -------
 

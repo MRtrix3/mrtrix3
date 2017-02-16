@@ -1,7 +1,7 @@
 .. _mrconvert:
 
 mrconvert
-===========
+===================
 
 Synopsis
 --------

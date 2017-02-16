@@ -774,7 +774,7 @@ namespace MR
           options
             + OptionGroup ("Fixel plot tool options")
 
-            + Option ("fixel.load", "Load a fixel file (any file inside a fixel directory, or an old *.msf legacy format file) into the fixel tool.").allow_multiple()
+            + Option ("fixel.load", "Load a fixel file (any file inside a fixel directory, or an old .msf / .msh legacy format file) into the fixel tool.").allow_multiple()
             +   Argument ("image").type_image_in();
         }
 

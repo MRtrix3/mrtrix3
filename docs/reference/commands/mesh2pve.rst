@@ -1,7 +1,7 @@
 .. _mesh2pve:
 
 mesh2pve
-===========
+===================
 
 Synopsis
 --------
@@ -18,6 +18,7 @@ Usage
 -  *source*: the mesh file; note vertices must be defined in realspace coordinates
 -  *template*: the template image
 -  *output*: the output image
+
 Options
 -------
 

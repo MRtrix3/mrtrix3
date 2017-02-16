@@ -735,13 +735,25 @@ namespace MR
         return text;
       };
 
+      // Will need more sophisticated escaping of special characters
+      //   if they start popping up in argument / option descriptions
+      auto escape_special = [] (std::string text) {
+        size_t index = 0;
+        while ((index = text.find("|", index)) != std::string::npos) {
+          text.replace (index, 1, "\\|");
+          index += 2;
+        }
+        return text;
+      };
+
       // Argument description:
       for (size_t i = 0; i < ARGUMENTS.size(); ++i)
-        s += std::string("-  *") + ARGUMENTS[i].id + "*: " + indent_newlines (ARGUMENTS[i].desc) + "\n";
+        s += std::string("-  *") + ARGUMENTS[i].id + "*: " + escape_special (indent_newlines (ARGUMENTS[i].desc)) + "\n";
+      s += "\n";
 
 
       if (DESCRIPTION.size()) {
-        s += "\nDescription\n-----------\n\n";
+        s += "Description\n-----------\n\n";
         for (size_t i = 0; i < DESCRIPTION.size(); ++i)
           s += indent_newlines (DESCRIPTION[i]) + "\n\n";
       }
@@ -757,7 +769,7 @@ namespace MR
         std::string f = std::string ("-  **-") + opt.id;
         for (size_t a = 0; a < opt.size(); ++a)
           f += std::string (" ") + opt[a].id;
-        f += std::string("** ") + indent_newlines (opt.desc) + "\n\n";
+        f += std::string("** ") + escape_special (indent_newlines (opt.desc)) + "\n\n";
         return f;
       };
 

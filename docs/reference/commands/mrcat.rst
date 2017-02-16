@@ -1,7 +1,7 @@
 .. _mrcat:
 
 mrcat
-===========
+===================
 
 Synopsis
 --------
@@ -18,6 +18,7 @@ Usage
 -  *image1*: the first input image.
 -  *image2*: additional input image(s).
 -  *output*: the output image.
+
 Options
 -------
 

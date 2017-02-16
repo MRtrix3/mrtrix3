@@ -1,7 +1,7 @@
 .. _tcksift:
 
 tcksift
-===========
+===================
 
 Synopsis
 --------
@@ -18,6 +18,7 @@ Usage
 -  *in_tracks*: the input track file
 -  *in_fod*: input image containing the spherical harmonics of the fibre orientation distributions
 -  *out_tracks*: the output filtered tracks file
+
 Options
 -------
 

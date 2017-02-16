@@ -22,9 +22,6 @@ These applications have been written from scratch in C++, using the functionalit
 .. _Mozilla Public License: http://mozilla.org/MPL/2.0/
 
 
-.. toctree::
-   :maxdepth: 2
-   :caption:
 
 .. toctree::
    :maxdepth: 2
@@ -69,9 +66,8 @@ These applications have been written from scratch in C++, using the functionalit
    quantitative_structural_connectivity/act
    quantitative_structural_connectivity/sift
    quantitative_structural_connectivity/structural_connectome
-   quantitative_structural_connectivity/labelconvert
    quantitative_structural_connectivity/connectome_tool
-   quantitative_structural_connectivity/label_convert
+   quantitative_structural_connectivity/labelconvert_tutorial
    quantitative_structural_connectivity/global_tractography
    quantitative_structural_connectivity/ismrm_hcp_tutorial
    
@@ -81,17 +77,17 @@ These applications have been written from scratch in C++, using the functionalit
 
    fixel_based_analysis/ss_fibre_density_cross-section
    fixel_based_analysis/mt_fibre_density_cross-section
-   fixel_based_analysis/fba_of_other_measures
    fixel_based_analysis/computing_effect_size_wrt_controls
    fixel_based_analysis/displaying_results_with_streamlines
+..   fixel_based_analysis/fba_of_other_measures
    
 .. toctree::
    :maxdepth: 2
    :caption: Spatial Normalisation
 
-   spatial_normalisation/warp_file_formats
-   spatial_normalisation/warping_images_with_warps_from_other_packages      
-   spatial_normalisation/transforming_streamlines
+   spatial_normalisation/warping_images_with_warps_from_other_packages
+..   spatial_normalisation/warp_file_formats
+..   spatial_normalisation/transforming_streamlines
 
 .. toctree::
    :maxdepth: 2

@@ -703,7 +703,7 @@ class Parser(argparse.ArgumentParser):
         name = arg.metavar
       else:
         name = arg.dest
-      print ('-  *' + name + '*: ' + arg.help)
+      print ('-  *' + name + '*: ' + arg.help.replace('|', '\\|'))
     print ('')
     if self._description:
       print ('Description')
@@ -728,7 +728,7 @@ class Parser(argparse.ArgumentParser):
             else:
               text += option.metavar
           print ('')
-          print ('- **' + text + '** ' + option.help)
+          print ('- **' + text + '** ' + option.help.replace('|', '\\|'))
     if self._citationList:
       print ('')
       print ('References')

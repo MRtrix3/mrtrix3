@@ -1,7 +1,7 @@
 .. _tsfmult:
 
 tsfmult
-===========
+===================
 
 Synopsis
 --------
@@ -18,6 +18,7 @@ Usage
 -  *input*: the input track scalar file.
 -  *input*: the input track scalar file.
 -  *output*: the output track scalar file
+
 Options
 -------
 

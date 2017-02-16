@@ -1,7 +1,7 @@
 .. _mrstats:
 
 mrstats
-===========
+===================
 
 Synopsis
 --------
@@ -16,6 +16,7 @@ Usage
     mrstats [ options ]  image
 
 -  *image*: the input image from which statistics will be computed.
+
 Options
 -------
 

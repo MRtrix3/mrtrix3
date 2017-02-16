@@ -1,7 +1,7 @@
 .. _mrcheckerboardmask:
 
 mrcheckerboardmask
-===========
+===================
 
 Synopsis
 --------
@@ -17,6 +17,7 @@ Usage
 
 -  *input*: the input image to be .
 -  *output*: the output binary image mask.
+
 Options
 -------
 

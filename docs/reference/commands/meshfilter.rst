@@ -1,7 +1,7 @@
 .. _meshfilter:
 
 meshfilter
-===========
+===================
 
 Synopsis
 --------
@@ -18,6 +18,7 @@ Usage
 -  *input*: the input mesh file
 -  *filter*: the filter to apply.Options are: smooth
 -  *output*: the output mesh file
+
 Options
 -------
 

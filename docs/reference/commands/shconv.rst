@@ -1,7 +1,7 @@
 .. _shconv:
 
 shconv
-===========
+===================
 
 Synopsis
 --------
@@ -18,6 +18,7 @@ Usage
 -  *SH_in*: the input spherical harmonics coefficients image.
 -  *response*: the convolution kernel (response function)
 -  *SH_out*: the output spherical harmonics coefficients image.
+
 Options
 -------
 

@@ -1,7 +1,7 @@
 .. _tckglobal:
 
 tckglobal
-===========
+===================
 
 Synopsis
 --------

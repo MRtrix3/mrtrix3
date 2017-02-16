@@ -1,7 +1,7 @@
 .. _warp2metric:
 
 warp2metric
-===========
+===================
 
 Synopsis
 --------
@@ -16,6 +16,7 @@ Usage
     warp2metric [ options ]  in
 
 -  *in*: the input deformation field
+
 Options
 -------
 

@@ -1,7 +1,7 @@
 .. _transformcompose:
 
 transformcompose
-===========
+===================
 
 Synopsis
 --------

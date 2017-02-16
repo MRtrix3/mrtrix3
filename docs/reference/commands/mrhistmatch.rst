@@ -1,7 +1,7 @@
 .. _mrhistmatch:
 
 mrhistmatch
-===========
+===================
 
 Synopsis
 --------
@@ -18,6 +18,7 @@ Usage
 -  *input*: the input image to be modified
 -  *target*: the input image from which to derive the target histogram
 -  *output*: the output image
+
 Options
 -------
 

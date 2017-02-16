@@ -1,7 +1,7 @@
 .. _dwinormalise:
 
 dwinormalise
-===========
+===================
 
 Synopsis
 --------
@@ -18,6 +18,7 @@ Usage
 -  *input*: the input DWI image containing volumes that are both diffusion weighted and b=0
 -  *mask*: the input mask image used to normalise the intensity
 -  *output*: the output DWI intensity normalised image
+
 Options
 -------
 

@@ -1,7 +1,7 @@
 .. _mrhistogram:
 
 mrhistogram
-===========
+===================
 
 Synopsis
 --------
@@ -17,6 +17,7 @@ Usage
 
 -  *image*: the input image from which the histogram will be computed
 -  *hist*: the output histogram file
+
 Options
 -------
 

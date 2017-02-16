@@ -1,7 +1,7 @@
 .. _labelconvert:
 
 labelconvert
-===========
+===================
 
 Synopsis
 --------

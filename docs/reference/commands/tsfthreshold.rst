@@ -1,7 +1,7 @@
 .. _tsfthreshold:
 
 tsfthreshold
-===========
+===================
 
 Synopsis
 --------
@@ -18,6 +18,7 @@ Usage
 -  *input*: the input track scalar file.
 -  *N*: the desired threshold
 -  *output*: the binary output track scalar file
+
 Options
 -------
 

@@ -37,11 +37,13 @@ namespace MR
       void Lighting::load_defaults ()
       {
         //CONF option: BackgroundColor
+        //CONF default: 1.0,1.0,1.0
         //CONF The default colour to use for the background in OpenGL panels, notably
         //CONF the SH viewer.
         File::Config::get_RGB ("BackgroundColor", background_color, DefaultBackgroundColor[0], DefaultBackgroundColor[1], DefaultBackgroundColor[2]);
 
         //CONF option: LightPosition
+        //CONF default: 1.0,1.0,3.0
         //CONF The default position vector to use for the light in OpenGL
         //CONF renders.
         File::Config::get_RGB ("LightPosition", lightpos, DefaultLightPosition[0], DefaultLightPosition[1], DefaultBackgroundColor[2]);
@@ -49,15 +51,19 @@ namespace MR
         Eigen::Map<Eigen::Vector3f> (lightpos).normalize();
 
         //CONF option: AmbientIntensity
+        //CONF default: 0.5
         //CONF The default intensity for the ambient light in OpenGL renders.
         ambient = File::Config::get_float ("AmbientIntensity", DefaultAmbient);
         //CONF option: DiffuseIntensity
+        //CONF default: 0.5
         //CONF The default intensity for the diffuse light in OpenGL renders.
         diffuse = File::Config::get_float ("DiffuseIntensity", DefaultDiffuse);
         //CONF option: SpecularIntensity
+        //CONF default: 0.5
         //CONF The default intensity for the specular light in OpenGL renders.
         specular = File::Config::get_float ("SpecularIntensity", DefaultSpecular);
         //CONF option: SpecularExponent
+        //CONF default: 5.0
         //CONF The default exponent for the specular light in OpenGL renders.
         shine = File::Config::get_float ("SpecularExponent", DefaultShine);
       }

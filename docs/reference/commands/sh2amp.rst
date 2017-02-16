@@ -1,7 +1,7 @@
 .. _sh2amp:
 
 sh2amp
-===========
+===================
 
 Synopsis
 --------
@@ -18,6 +18,7 @@ Usage
 -  *input*: the input image consisting of spherical harmonic (SH) coefficients.
 -  *directions*: the list of directions along which the SH functions will be sampled, generated using the dirgen command
 -  *output*: the output image consisting of the amplitude of the SH functions along the specified directions.
+
 Options
 -------
 

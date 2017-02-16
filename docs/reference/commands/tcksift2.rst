@@ -1,7 +1,7 @@
 .. _tcksift2:
 
 tcksift2
-===========
+===================
 
 Synopsis
 --------
@@ -18,6 +18,7 @@ Usage
 -  *in_tracks*: the input track file
 -  *in_fod*: input image containing the spherical harmonics of the fibre orientation distributions
 -  *out_weights*: output text file containing the weighting factor for each streamline
+
 Options
 -------
 

@@ -1,7 +1,7 @@
 .. _fixelreorient:
 
 fixelreorient
-===========
+===================
 
 Synopsis
 --------

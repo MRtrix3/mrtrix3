@@ -1,7 +1,7 @@
 .. _dwiextract:
 
 dwiextract
-===========
+===================
 
 Synopsis
 --------
@@ -17,6 +17,7 @@ Usage
 
 -  *input*: the input DW image.
 -  *output*: the output image (diffusion-weighted volumes by default).
+
 Options
 -------
 

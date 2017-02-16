@@ -1,7 +1,7 @@
 .. _label2colour:
 
 label2colour
-===========
+===================
 
 Synopsis
 --------

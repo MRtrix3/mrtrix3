@@ -1,7 +1,7 @@
 .. _fixelcfestats:
 
 fixelcfestats
-===========
+===================
 
 Synopsis
 --------
@@ -21,6 +21,7 @@ Usage
 -  *contrast*: the contrast vector, specified as a single row of weights
 -  *tracks*: the tracks used to determine fixel-fixel connectivity
 -  *out_fixel_directory*: the output directory where results will be saved. Will be created if it does not exist
+
 Options
 -------
 

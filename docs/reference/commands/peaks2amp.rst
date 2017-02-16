@@ -1,7 +1,7 @@
 .. _peaks2amp:
 
 peaks2amp
-===========
+===================
 
 Synopsis
 --------
@@ -17,6 +17,7 @@ Usage
 
 -  *directions*: the input directions image. Each volume corresponds to the x, y & z component of each direction vector in turn.
 -  *amplitudes*: the output amplitudes image.
+
 Options
 -------
 

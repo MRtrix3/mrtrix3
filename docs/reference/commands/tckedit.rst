@@ -1,7 +1,7 @@
 .. _tckedit:
 
 tckedit
-===========
+===================
 
 Synopsis
 --------
@@ -17,6 +17,7 @@ Usage
 
 -  *tracks_in*: the input track file(s)
 -  *tracks_out*: the output track file
+
 Options
 -------
 

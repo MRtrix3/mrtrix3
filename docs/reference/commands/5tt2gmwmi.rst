@@ -1,12 +1,12 @@
 .. _5tt2gmwmi:
 
 5tt2gmwmi
-===========
+===================
 
 Synopsis
 --------
 
-Generate a mask image appropriate for seeding streamlines on the grey matter - white matter interface
+Generate a mask image appropriate for seeding streamlines on the grey matter-white matter interface
 
 Usage
 --------
@@ -17,6 +17,7 @@ Usage
 
 -  *5tt_in*: the input 5TT segmented anatomical image
 -  *mask_out*: the output mask image
+
 Options
 -------
 

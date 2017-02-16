@@ -1,7 +1,7 @@
 .. _tckstats:
 
 tckstats
-===========
+===================
 
 Synopsis
 --------
@@ -16,6 +16,7 @@ Usage
     tckstats [ options ]  tracks_in
 
 -  *tracks_in*: the input track file
+
 Options
 -------
 

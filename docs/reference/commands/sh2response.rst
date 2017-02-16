@@ -1,7 +1,7 @@
 .. _sh2response:
 
 sh2response
-===========
+===================
 
 Synopsis
 --------
@@ -19,6 +19,7 @@ Usage
 -  *mask*: the mask containing the voxels from which to estimate the response function
 -  *directions*: a 4D image containing the direction vectors along which to estimate the response function
 -  *response*: the output axially-symmetric spherical harmonic coefficients
+
 Options
 -------
 

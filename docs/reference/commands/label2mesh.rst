@@ -1,7 +1,7 @@
 .. _label2mesh:
 
 label2mesh
-===========
+===================
 
 Synopsis
 --------
@@ -17,6 +17,7 @@ Usage
 
 -  *nodes_in*: the input node parcellation image
 -  *mesh_out*: the output mesh file
+
 Options
 -------
 

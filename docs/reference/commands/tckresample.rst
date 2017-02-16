@@ -1,7 +1,7 @@
 .. _tckresample:
 
 tckresample
-===========
+===================
 
 Synopsis
 --------

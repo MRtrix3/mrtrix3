@@ -1,7 +1,7 @@
 .. _dirgen:
 
 dirgen
-===========
+===================
 
 Synopsis
 --------
@@ -17,6 +17,7 @@ Usage
 
 -  *ndir*: the number of directions to generate.
 -  *dirs*: the text file to write the directions to, as [ az el ] pairs.
+
 Options
 -------
 

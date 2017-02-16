@@ -1,7 +1,7 @@
 .. _mrpad:
 
 mrpad
-===========
+===================
 
 Synopsis
 --------
@@ -17,6 +17,7 @@ Usage
 
 -  *image_in*: the image to be padded
 -  *image_out*: the output path for the resulting padded image
+
 Options
 -------
 

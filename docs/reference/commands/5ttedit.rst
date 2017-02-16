@@ -1,7 +1,7 @@
 .. _5ttedit:
 
 5ttedit
-===========
+===================
 
 Synopsis
 --------
@@ -17,6 +17,7 @@ Usage
 
 -  *input*: the 5TT image to be modified
 -  *output*: the output modified 5TT image
+
 Options
 -------
 

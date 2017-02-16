@@ -1,7 +1,7 @@
 .. _tckinfo:
 
 tckinfo
-===========
+===================
 
 Synopsis
 --------
@@ -16,6 +16,7 @@ Usage
     tckinfo [ options ]  tracks [ tracks ... ]
 
 -  *tracks*: the input track file.
+
 Options
 -------
 

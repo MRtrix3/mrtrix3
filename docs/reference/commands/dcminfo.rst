@@ -1,7 +1,7 @@
 .. _dcminfo:
 
 dcminfo
-===========
+===================
 
 Synopsis
 --------
@@ -16,6 +16,7 @@ Usage
     dcminfo [ options ]  file
 
 -  *file*: the DICOM file to be scanned.
+
 Options
 -------
 

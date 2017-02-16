@@ -1,7 +1,7 @@
 .. _mrtransform:
 
 mrtransform
-===========
+===================
 
 Synopsis
 --------

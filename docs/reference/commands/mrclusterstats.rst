@@ -1,7 +1,7 @@
 .. _mrclusterstats:
 
 mrclusterstats
-===========
+===================
 
 Synopsis
 --------
@@ -20,6 +20,7 @@ Usage
 -  *contrast*: the contrast matrix, only specify one contrast as it will automatically compute the opposite contrast.
 -  *mask*: a mask used to define voxels included in the analysis.
 -  *output*: the filename prefix for all output.
+
 Options
 -------
 

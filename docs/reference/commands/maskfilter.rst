@@ -1,7 +1,7 @@
 .. _maskfilter:
 
 maskfilter
-===========
+===================
 
 Synopsis
 --------

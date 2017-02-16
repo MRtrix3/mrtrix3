@@ -1,7 +1,7 @@
 .. _dirmerge:
 
 dirmerge
-===========
+===================
 
 Synopsis
 --------
@@ -18,6 +18,7 @@ Usage
 -  *subsets*: the number of subsets (phase-encode directions) per b-value
 -  *bvalue files*: the b-value and sets of corresponding files, in order
 -  *out*: the output directions file, with each row listing the X Y Z gradient directions, the b-value, and an index representing the phase encode direction
+
 Options
 -------
 

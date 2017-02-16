@@ -1,7 +1,7 @@
 .. _tck2fixel:
 
 tck2fixel
-===========
+===================
 
 Synopsis
 --------
@@ -19,6 +19,7 @@ Usage
 -  *fixel_folder_in*: the input fixel folder. Used to define the fixels and their directions
 -  *fixel_folder_out*: the output fixel folder. This can be the same as the input folder if desired
 -  *fixel_data_out*: the name of the fixel data image.
+
 Options
 -------
 

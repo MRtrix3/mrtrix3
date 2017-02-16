@@ -1,7 +1,7 @@
 .. _fixel2voxel:
 
 fixel2voxel
-===========
+===================
 
 Synopsis
 --------

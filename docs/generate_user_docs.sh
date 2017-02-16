@@ -21,13 +21,24 @@ export PATH=$mrtrix_root/bin:"$PATH"
 List of MRtrix3 commands
 ########################
 
-
-.. toctree::
-   :maxdepth: 1
-
 " > reference/commands_list.rst
 
   mkdir -p reference/commands
+  toctree_file=$(mktemp)
+  table_file=$(mktemp)
+
+  echo "
+
+.. toctree::
+    :hidden:
+" > $toctree_file
+
+  echo "
+
+.. csv-table::
+    :header: \"Command\", \"Synopsis\"
+" > $table_file
+
   for n in `find ../cmd/ -name "*.cpp" | sort`; do
     dirpath='reference/commands'
     cppname=`basename $n`
@@ -37,10 +48,12 @@ List of MRtrix3 commands
       cmdpath=${cmdpath}'.exe'
     fi
     $cmdpath __print_usage_rst__ > $dirpath/$cmdname.rst
-    sed -ie "1i.. _$cmdname:\n\n$cmdname\n===========\n" $dirpath/$cmdname.rst
-    echo '
-   commands/'"$cmdname"': '`$cmdpath __print_synopsis__` >> reference/commands_list.rst
+    sed -ie "1i.. _$cmdname:\n\n$cmdname\n===================\n" $dirpath/$cmdname.rst
+    echo '    commands/'"$cmdname" >> $toctree_file
+    echo '    :ref:`'"$cmdname"'`, "'`$cmdpath __print_synopsis__`'"' >> $table_file
   done
+  cat $toctree_file $table_file >> reference/commands_list.rst
+  rm -f $toctree_file $temp_file
 
 # Generating documentation for all scripts
 
@@ -51,21 +64,35 @@ List of MRtrix3 commands
 List of MRtrix3 scripts
 #######################
 
-
-.. toctree::
-   :maxdepth: 1
-
 " > reference/scripts_list.rst
 
   mkdir -p reference/scripts
+  toctree_file=$(mktemp)
+  table_file=$(mktemp)
+
+  echo "
+
+.. toctree::
+    :hidden:
+" > $toctree_file
+
+  echo "
+
+.. csv-table::
+    :header: \"Command\", \"Synopsis\"
+" > $table_file
+
   for n in `find ../bin/ -type f -print0 | xargs -0 grep -l "app.parse" | sort`; do
     filepath='reference/scripts'
     filename=`basename $n`
     $n __print_usage_rst__ > $filepath/$filename.rst
     #sed -ie "1i$filename\n===========\n" $filepath/$filename.rst
-    echo '
-   scripts/'"$filename"': '`$n __print_synopsis__` >> reference/scripts_list.rst
+
+    echo '    scripts/'"$filename" >> $toctree_file
+    echo '    :ref:`'"$filename"'`, "'`$filename __print_synopsis__`'"' >> $table_file
   done
+  cat $toctree_file $table_file >> reference/scripts_list.rst
+  rm -f $toctree_file $temp_file
 
 # Generating list of configuration file options
 

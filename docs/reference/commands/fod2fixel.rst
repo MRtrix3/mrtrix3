@@ -1,7 +1,7 @@
 .. _fod2fixel:
 
 fod2fixel
-===========
+===================
 
 Synopsis
 --------
@@ -17,6 +17,7 @@ Usage
 
 -  *fod*: the input fod image.
 -  *fixel_directory*: the output fixel directory
+
 Options
 -------
 

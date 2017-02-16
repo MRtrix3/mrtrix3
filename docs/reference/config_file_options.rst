@@ -1,11 +1,11 @@
 .. _config_file_options:
 
-################
+##########################################
 List of MRtrix3 configuration file options
-################
+##########################################
 
 *  **AmbientIntensity**
-    **
+    *default: 0.5*
 
      The default intensity for the ambient light in OpenGL renders.
 
@@ -25,7 +25,7 @@ List of MRtrix3 configuration file options
      Specifies the b-value threshold for determining those image volumes that correspond to b=0.
 
 *  **BackgroundColor**
-    **
+    *default: 1.0,1.0,1.0*
 
      The default colour to use for the background in OpenGL panels, notably the SH viewer.
 
@@ -170,7 +170,7 @@ List of MRtrix3 configuration file options
      Whether or not nodes are forced to be visible when selected.
 
 *  **DiffuseIntensity**
-    **
+    *default: 0.5*
 
      The default intensity for the diffuse light in OpenGL renders.
 
@@ -205,7 +205,7 @@ List of MRtrix3 configuration file options
      The starting position of the MRView toolbar. Valid values are: top, bottom, left, right.
 
 *  **LightPosition**
-    **
+    *default: 1.0,1.0,3.0*
 
      The default position vector to use for the light in OpenGL renders.
 
@@ -375,12 +375,12 @@ List of MRtrix3 configuration file options
      Initial buffer size for data in MRtrix sparse image format file (in bytes).
 
 *  **SpecularExponent**
-    **
+    *default: 5.0*
 
      The default exponent for the specular light in OpenGL renders.
 
 *  **SpecularIntensity**
-    **
+    *default: 0.5*
 
      The default intensity for the specular light in OpenGL renders.
 

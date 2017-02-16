@@ -1,7 +1,7 @@
 .. _shview:
 
 shview
-===========
+===================
 
 Synopsis
 --------
@@ -16,6 +16,7 @@ Usage
     shview [ options ] [ coefs ]
 
 -  *coefs*: a text file containing the even order spherical harmonics coefficients to display.
+
 Options
 -------
 

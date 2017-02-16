@@ -1,7 +1,7 @@
 .. _dirorder:
 
 dirorder
-===========
+===================
 
 Synopsis
 --------
@@ -17,6 +17,7 @@ Usage
 
 -  *input*: the input directions file
 -  *output*: the output directions file
+
 Options
 -------
 

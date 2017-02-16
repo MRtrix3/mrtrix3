@@ -1,7 +1,7 @@
 .. _dwi2tensor:
 
 dwi2tensor
-===========
+===================
 
 Synopsis
 --------

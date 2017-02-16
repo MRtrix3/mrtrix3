@@ -1,7 +1,7 @@
 .. _sh2peaks:
 
 sh2peaks
-===========
+===================
 
 Synopsis
 --------
@@ -17,6 +17,7 @@ Usage
 
 -  *SH*: the input image of SH coefficients.
 -  *output*: the output image. Each volume corresponds to the x, y & z component of each peak direction vector in turn.
+
 Options
 -------
 

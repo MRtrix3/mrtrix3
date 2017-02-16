@@ -1,7 +1,7 @@
 .. _mrmesh:
 
 mrmesh
-===========
+===================
 
 Synopsis
 --------
@@ -17,6 +17,7 @@ Usage
 
 -  *input*: the input image.
 -  *output*: the output mesh file.
+
 Options
 -------
 

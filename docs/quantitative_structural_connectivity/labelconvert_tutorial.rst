@@ -120,28 +120,28 @@ Design rationale
 Making this step of re-indexing parcels explicit in connectome
 construction has a few distinct advantages:
 
-* You can use parcellations from any software / atlas: just provide the
-structure index / name lookup table that comes with whatever
-software / atlas provides the parcellation, and define an appropriate
-target lookup table that defines which index you want each structure to
-map to.
+-  You can use parcellations from any software / atlas: just provide the
+   structure index / name lookup table that comes with whatever
+   software / atlas provides the parcellation, and define an appropriate
+   target lookup table that defines which index you want each structure to
+   map to.
 
-* ``tck2connectome`` can be 'dumb and blind': it reads the integer indices
-at either end of the streamline, and that's the row/column of the connectome
-matrix that needs to be incremented.
+-  ``tck2connectome`` can be 'dumb and blind': it reads the integer indices
+   at either end of the streamline, and that's the row/column of the connectome
+   matrix that needs to be incremented.
 
-* You can have your grey matter parcels appear in any order in your
-matrices: just define a new lookup table file. Doing this prior to connectome
-construction is less likely to lead to heartache than re-ordering the rows
-and columns in e.g. Matlab, where you may lose track of which matrices have
-been re-ordered and which have not.
+-  You can have your grey matter parcels appear in any order in your
+   matrices: just define a new lookup table file. Doing this prior to connectome
+   construction is less likely to lead to heartache than re-ordering the rows
+   and columns in e.g. Matlab, where you may lose track of which matrices have
+   been re-ordered and which have not.
 
-* You can remove structures from the connectome, or merge multiple structures
-into a single parcel, just by omitting or duplicating indices appropriately in
-the target lookup table file.
+-  You can remove structures from the connectome, or merge multiple structures
+   into a single parcel, just by omitting or duplicating indices appropriately in
+   the target lookup table file.
 
-* Looking at your matrices and need to find out what structure corresponds to
-a particular row/column? Just look at the config file!
+-  Looking at your matrices and need to find out what structure corresponds to
+   a particular row/column? Just look at the config file!
 
 Obviously if your parcellation image already has node indices that increase
 monotonically from 1, and you're happy enough with the numerical order of the

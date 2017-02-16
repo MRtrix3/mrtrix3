@@ -1,7 +1,7 @@
 .. _mrthreshold:
 
 mrthreshold
-===========
+===================
 
 Synopsis
 --------

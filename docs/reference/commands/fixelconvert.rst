@@ -1,12 +1,12 @@
 .. _fixelconvert:
 
 fixelconvert
-===========
+===================
 
 Synopsis
 --------
 
-Convert between the old format fixel image (*.msf / *.msh) and the new fixel directory format
+Convert between the old format fixel image (.msf / .msh) and the new fixel directory format
 
 Usage
 --------
@@ -17,6 +17,7 @@ Usage
 
 -  *fixel_in*: the input fixel file / directory.
 -  *fixel_out*: the output fixel file / directory.
+
 Options
 -------
 
@@ -25,7 +26,7 @@ Options for converting from old to new format
 
 -  **-name string** assign a different name to the value field output (Default: value). Do not include the file extension.
 
--  **-nii** output the index, directions and data file in NIfTI format instead of *.mif
+-  **-nii** output the index, directions and data file in NIfTI format instead of .mif
 
 -  **-out_size** also output the 'size' field from the old format
 

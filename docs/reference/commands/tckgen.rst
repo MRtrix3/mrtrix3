@@ -1,7 +1,7 @@
 .. _tckgen:
 
 tckgen
-===========
+===================
 
 Synopsis
 --------
@@ -17,6 +17,7 @@ Usage
 
 -  *source*: the image containing the source data. The type of data depends on the algorithm used:- FACT: the directions file (each triplet of volumes is the X,Y,Z direction of a fibre population).- iFOD1/2, Nulldist2 & SD_Stream: the SH image resulting from CSD.- Nulldist1 & SeedTest: any image (will not be used).- Tensor_Det / Tensor_Prob: the DWI image.
 -  *tracks*: the output file containing the tracks generated.
+
 Options
 -------
 

@@ -1,7 +1,7 @@
 .. _fixelcrop:
 
 fixelcrop
-===========
+===================
 
 Synopsis
 --------

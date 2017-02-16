@@ -1,7 +1,7 @@
 .. _dirsplit:
 
 dirsplit
-===========
+===================
 
 Synopsis
 --------
@@ -17,6 +17,7 @@ Usage
 
 -  *dirs*: the text file containing the directions.
 -  *out*: the output partitioned directions
+
 Options
 -------
 
