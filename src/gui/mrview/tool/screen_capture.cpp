@@ -178,13 +178,13 @@ namespace MR
 
 
           QPushButton* preview = new QPushButton (this);
-          preview->setToolTip(tr("Preview play"));
-          preview->setIcon(QIcon (":/play.svg"));
+          preview->setToolTip(tr("Play preview"));
+          preview->setIcon(QIcon (":/start.svg"));
           connect (preview, SIGNAL (clicked()), this, SLOT (on_screen_preview()));
           capture_grid_layout->addWidget (preview, 2, 0);
 
           QPushButton* stop = new QPushButton (this);
-          stop->setToolTip (tr ("Stop"));
+          stop->setToolTip (tr ("Stop preview"));
           stop->setIcon(QIcon (":/stop.svg"));
           connect (stop, SIGNAL (clicked()), this, SLOT (on_screen_stop()));
           capture_grid_layout->addWidget (stop, 2, 1);

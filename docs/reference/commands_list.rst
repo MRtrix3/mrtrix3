@@ -23,7 +23,7 @@ List of MRtrix3 commands
 
    commands/amp2response: Estimate response function coefficients based on the DWI signal in single-fibre voxels
 
-   commands/amp2sh: Convert a set of amplitudes (defined along a set of corresponding directions) to their spherical harmonic representation.
+   commands/amp2sh: Convert a set of amplitudes (defined along a set of corresponding directions) to their spherical harmonic representation
 
    commands/connectome2tck: Extract streamlines from a tractogram based on their assignment to parcellated nodes
 
@@ -33,7 +33,7 @@ List of MRtrix3 commands
 
    commands/dcminfo: Output DICOM fields in human-readable format
 
-   commands/dirflip: Optimise the polarity of the directions in a scheme with respect to a unipolar electrostatic repulsion model, by inversion of individual directions.
+   commands/dirflip: Optimise the polarity of the directions in a scheme with respect to a unipolar electrostatic repulsion model, by inversion of individual directions
 
    commands/dirgen: Generate a set of uniformly distributed directions using a bipolar electrostatic repulsion model
 
@@ -187,9 +187,9 @@ List of MRtrix3 commands
 
    commands/tcksample: Sample values of an associated image along tracks
 
-   commands/tcksift: Filter a whole-brain fibre-tracking data set such that the streamline densities match the FOD lobe integrals
-
    commands/tcksift2: Successor to the SIFT method; instead of removing streamlines, use an EM framework to find an appropriate cross-section multiplier for each streamline
+
+   commands/tcksift: Filter a whole-brain fibre-tracking data set such that the streamline densities match the FOD lobe integrals
 
    commands/tckstats: Calculate statistics on streamlines length
 
@@ -219,6 +219,6 @@ List of MRtrix3 commands
 
    commands/warpconvert: Convert between different representations of a non-linear warp
 
-   commands/warpcorrect: Replaces voxels in a deformation field that point to 0,0,0 with nan,nan,nan.
+   commands/warpcorrect: Replaces voxels in a deformation field that point to 0,0,0 with nan,nan,nan
 
    commands/warpinit: Create an initial warp image, representing an identity transformation

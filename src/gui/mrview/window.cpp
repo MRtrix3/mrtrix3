@@ -321,8 +321,8 @@ namespace MR
           button = new QToolButton (this);
           button->setText ("File");
           button->setToolButtonStyle (button_style);
-          button->setToolTip (tr ("File menu"));
-          button->setIcon (QIcon (":/start.svg"));
+          button->setToolTip (tr ("Load and save images"));
+          button->setIcon (QIcon (":/file.svg"));
           button->setPopupMode (QToolButton::InstantPopup);
           button->setMenu (menu);
           toolbar->addWidget (button);
@@ -389,7 +389,7 @@ namespace MR
           button = new QToolButton (this);
           button->setText ("Image");
           button->setToolButtonStyle (button_style);
-          button->setToolTip (tr ("Image menu"));
+          button->setToolTip (tr ("Navigate the image"));
           button->setIcon (QIcon (":/image.svg"));
           button->setPopupMode (QToolButton::InstantPopup);
           button->setMenu (image_menu);
@@ -401,6 +401,7 @@ namespace MR
           colourmap_button = new ColourMapButton (this, *this, true, true, false);
           colourmap_button->setText ("Colourmap");
           colourmap_button->setToolButtonStyle (button_style);
+          colourmap_button->setToolTip (tr ("Change the colourmap"));
           colourmap_button->setPopupMode (QToolButton::InstantPopup);
 
           QMenu* colourmap_menu = colourmap_button->menu();
@@ -563,8 +564,8 @@ namespace MR
           button = new QToolButton (this);
           button->setText ("View");
           button->setToolButtonStyle (button_style);
-          button->setToolTip (tr ("Display"));
-          button->setIcon (QIcon (":/mode.svg"));
+          button->setToolTip (tr ("View modes and options"));
+          button->setIcon (QIcon (":/view.svg"));
           button->setMenu (menu);
           button->setPopupMode (QToolButton::InstantPopup);
           toolbar->addWidget (button);
@@ -592,7 +593,7 @@ namespace MR
           button = new QToolButton (this);
           button->setText ("Tool");
           button->setToolButtonStyle (button_style);
-          button->setToolTip (tr ("Select additional tools..."));
+          button->setToolTip (tr ("Open different tools"));
           button->setIcon (QIcon (":/tools.svg"));
           button->setMenu (menu);
           button->setPopupMode (QToolButton::InstantPopup);
@@ -665,6 +666,12 @@ namespace MR
 
           toolbar->addSeparator();
 
+          // Dynamic spacer
+
+          QWidget* spacer = new QWidget();
+          spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+          toolbar->addWidget (spacer);
+
           // Information menu:
 
           menu = new QMenu (tr ("Info"), this);
@@ -675,7 +682,6 @@ namespace MR
 
 
           button = new QToolButton (this);
-          button->setText ("Info");
           button->setToolButtonStyle (button_style);
           button->setToolTip (tr ("Information"));
           button->setIcon (QIcon (":/info.svg"));

@@ -100,6 +100,7 @@ namespace MR
 
             show_preview_button = new QPushButton ("Inspect ODF at focus",this);
             show_preview_button->setToolTip (tr ("Inspect ODF at focus<br>(opens separate window)"));
+            show_preview_button->setIcon (QIcon (":/inspect.svg"));
             connect (show_preview_button, SIGNAL (clicked()), this, SLOT (show_preview_slot ()));
             main_box->addWidget (show_preview_button, 1);
 
@@ -205,6 +206,7 @@ namespace MR
             box_layout->addWidget (use_lighting_box, 5, 2, 1, 2);
 
             QPushButton *lighting_settings_button = new QPushButton ("ODF lighting...", this);
+            lighting_settings_button->setIcon (QIcon (":/light.svg"));
             connect (lighting_settings_button, SIGNAL(clicked(bool)), this, SLOT (lighting_settings_slot (bool)));
             box_layout->addWidget (lighting_settings_button, 6, 0, 1, 4);
 

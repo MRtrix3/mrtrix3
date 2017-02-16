@@ -199,7 +199,7 @@ namespace MR
             connect (slab_entry, SIGNAL (valueChanged()), this, SLOT (on_slab_thickness_slot()));
             slab_layout->addWidget (slab_entry, 0, 1);
 
-            QGroupBox* lighting_group_box = new QGroupBox (tr("lighting"));
+            QGroupBox* lighting_group_box = new QGroupBox (tr("use lighting"));
             lighting_group_box->setCheckable (true);
             lighting_group_box->setChecked (false);
             general_opt_grid->addWidget (lighting_group_box, 5, 0, 1, 2);
@@ -207,7 +207,8 @@ namespace MR
             connect (lighting_group_box, SIGNAL (clicked (bool)), this, SLOT (on_use_lighting_slot (bool)));
 
             VBoxLayout* lighting_layout = new VBoxLayout (lighting_group_box);
-            QPushButton* lighting_button = new QPushButton ("settings...");
+            QPushButton* lighting_button = new QPushButton ("Track lighting...");
+            lighting_button->setIcon (QIcon (":/light.svg"));
             connect (lighting_button, SIGNAL (clicked()), this, SLOT (on_lighting_settings()));
             lighting_layout->addWidget (lighting_button);
 

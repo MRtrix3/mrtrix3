@@ -22,9 +22,7 @@ Usage
 Description
 -----------
 
-This command allows to convert the transformation matrix provided by FSL's flirt command 
-
-and ITK's linear transformation format to a format usable in MRtrix.
+This command allows to convert the transformation matrix provided by FSL's flirt command and ITK's linear transformation format to a format usable in MRtrix.
 
 Options
 -------

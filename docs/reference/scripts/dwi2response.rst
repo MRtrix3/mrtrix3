@@ -67,7 +67,7 @@ Standard options
 
 
 
-**Author:** Robert E. Smith (robert.smith@florey.edu.au)
+**Author:** Robert E. Smith (robert.smith@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)
 
 **Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors
 

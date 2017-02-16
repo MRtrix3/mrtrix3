@@ -6,7 +6,7 @@ dirflip
 Synopsis
 --------
 
-Optimise the polarity of the directions in a scheme with respect to a unipolar electrostatic repulsion model, by inversion of individual directions.
+Optimise the polarity of the directions in a scheme with respect to a unipolar electrostatic repulsion model, by inversion of individual directions
 
 Usage
 --------

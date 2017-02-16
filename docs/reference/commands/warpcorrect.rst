@@ -6,7 +6,7 @@ warpcorrect
 Synopsis
 --------
 
-Replaces voxels in a deformation field that point to 0,0,0 with nan,nan,nan.
+Replaces voxels in a deformation field that point to 0,0,0 with nan,nan,nan
 
 Usage
 --------

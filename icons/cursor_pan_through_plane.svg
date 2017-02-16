@@ -7,177 +7,16 @@
    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
    xmlns:svg="http://www.w3.org/2000/svg"
    xmlns="http://www.w3.org/2000/svg"
-   xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    width="32"
    height="32"
    id="svg6430"
    version="1.1"
-   inkscape:version="0.48.0 r9654"
-   sodipodi:docname="pan_through_plane.svg">
+   inkscape:version="0.91 r13725"
+   sodipodi:docname="cursor_pan_through_plane.svg">
   <defs
-     id="defs6432">
-    <linearGradient
-       id="linearGradient3795">
-      <stop
-         style="stop-color:#ffffff;stop-opacity:1;"
-         offset="0"
-         id="stop3797" />
-      <stop
-         style="stop-color:#bcbcbc;stop-opacity:1;"
-         offset="1"
-         id="stop3799" />
-    </linearGradient>
-    <linearGradient
-       id="linearGradient5863-1">
-      <stop
-         style="stop-color:#000000;stop-opacity:1;"
-         offset="0"
-         id="stop5865-9" />
-      <stop
-         style="stop-color:#ffffff;stop-opacity:1;"
-         offset="1"
-         id="stop5867-2" />
-    </linearGradient>
-    <linearGradient
-       id="linearGradient5873-5">
-      <stop
-         style="stop-color:#ffffff;stop-opacity:1;"
-         offset="0"
-         id="stop5875-5" />
-      <stop
-         style="stop-color:#000000;stop-opacity:1;"
-         offset="1"
-         id="stop5877-9" />
-    </linearGradient>
-    <linearGradient
-       id="linearGradient5863">
-      <stop
-         style="stop-color:#000000;stop-opacity:1;"
-         offset="0"
-         id="stop5865" />
-      <stop
-         style="stop-color:#ffffff;stop-opacity:1;"
-         offset="1"
-         id="stop5867" />
-    </linearGradient>
-    <linearGradient
-       id="linearGradient5873">
-      <stop
-         style="stop-color:#ffffff;stop-opacity:1;"
-         offset="0"
-         id="stop5875" />
-      <stop
-         style="stop-color:#000000;stop-opacity:1;"
-         offset="1"
-         id="stop5877" />
-    </linearGradient>
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient5863-1"
-       id="linearGradient7233"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="translate(-40,-1051.8622)"
-       x1="72"
-       y1="8"
-       x2="72"
-       y2="39" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient5873-5"
-       id="linearGradient7235"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="translate(-40,-1051.8622)"
-       x1="72"
-       y1="39"
-       x2="72"
-       y2="8" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient5863"
-       id="linearGradient7238"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="translate(-57,1004.8621)"
-       x1="72"
-       y1="8"
-       x2="72"
-       y2="39" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient5873"
-       id="linearGradient7240"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="translate(-57,1004.8621)"
-       x1="75.048561"
-       y1="39.30228"
-       x2="75.048569"
-       y2="7.9831514" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient5863-8"
-       id="linearGradient7238-9"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="translate(-57,1004.8621)"
-       x1="72"
-       y1="8"
-       x2="72"
-       y2="39" />
-    <linearGradient
-       id="linearGradient5863-8">
-      <stop
-         style="stop-color:#000000;stop-opacity:1;"
-         offset="0"
-         id="stop5865-1" />
-      <stop
-         style="stop-color:#ffffff;stop-opacity:1;"
-         offset="1"
-         id="stop5867-7" />
-    </linearGradient>
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient5873-8"
-       id="linearGradient7240-9"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="translate(-57,1004.8621)"
-       x1="76"
-       y1="8"
-       x2="76"
-       y2="39" />
-    <linearGradient
-       id="linearGradient5873-8">
-      <stop
-         style="stop-color:#ffffff;stop-opacity:1;"
-         offset="0"
-         id="stop5875-7" />
-      <stop
-         style="stop-color:#000000;stop-opacity:1;"
-         offset="1"
-         id="stop5877-5" />
-    </linearGradient>
-    <linearGradient
-       id="linearGradient5863-1-8">
-      <stop
-         style="stop-color:#000000;stop-opacity:1;"
-         offset="0"
-         id="stop5865-9-4" />
-      <stop
-         style="stop-color:#ffffff;stop-opacity:1;"
-         offset="1"
-         id="stop5867-2-3" />
-    </linearGradient>
-    <linearGradient
-       id="linearGradient5873-5-6">
-      <stop
-         style="stop-color:#ffffff;stop-opacity:1;"
-         offset="0"
-         id="stop5875-5-2" />
-      <stop
-         style="stop-color:#000000;stop-opacity:1;"
-         offset="1"
-         id="stop5877-9-6" />
-    </linearGradient>
-  </defs>
+     id="defs6432" />
   <sodipodi:namedview
      id="base"
      pagecolor="#ffffff"
@@ -186,15 +25,15 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="14.609417"
-     inkscape:cx="23.931551"
+     inkscape:cx="11.816078"
      inkscape:cy="15.93591"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
-     inkscape:window-width="1366"
-     inkscape:window-height="691"
-     inkscape:window-x="0"
-     inkscape:window-y="24"
+     inkscape:window-width="1920"
+     inkscape:window-height="1013"
+     inkscape:window-x="1920"
+     inkscape:window-y="0"
      inkscape:window-maximized="1">
     <inkscape:grid
        empspacing="5"
@@ -212,7 +51,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>

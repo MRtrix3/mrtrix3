@@ -15,7 +15,6 @@
    id="svg2"
    version="1.1"
    inkscape:version="0.91 r13725"
-   inkscape:export-filename="/home/donald/src/mrtrix/mrview/icons/inplane_rotate.png"
    inkscape:export-xdpi="90"
    inkscape:export-ydpi="90"
    sodipodi:docname="redo.svg">
@@ -32,275 +31,6 @@
          offset="1"
          id="stop3806" />
     </linearGradient>
-    <linearGradient
-       id="linearGradient3807">
-      <stop
-         style="stop-color:#ffffff;stop-opacity:1;"
-         offset="0"
-         id="stop3809" />
-      <stop
-         style="stop-color:#ffffff;stop-opacity:0;"
-         offset="1"
-         id="stop3811" />
-    </linearGradient>
-    <linearGradient
-       id="linearGradient3799">
-      <stop
-         style="stop-color:#000000;stop-opacity:1;"
-         offset="0"
-         id="stop3801" />
-      <stop
-         style="stop-color:#00b800;stop-opacity:1;"
-         offset="1"
-         id="stop3803" />
-    </linearGradient>
-    <linearGradient
-       id="linearGradient3785">
-      <stop
-         style="stop-color:#003200;stop-opacity:1;"
-         offset="0"
-         id="stop3787" />
-      <stop
-         id="stop3817"
-         offset="0.25"
-         style="stop-color:#00ff00;stop-opacity:1;" />
-      <stop
-         id="stop3797"
-         offset="0.5"
-         style="stop-color:#95ff95;stop-opacity:1;" />
-      <stop
-         style="stop-color:#00ff00;stop-opacity:1;"
-         offset="0.75"
-         id="stop3819" />
-      <stop
-         id="stop3793"
-         offset="1"
-         style="stop-color:#003200;stop-opacity:1;" />
-    </linearGradient>
-    <linearGradient
-       id="linearGradient3594">
-      <stop
-         style="stop-color:#000000;stop-opacity:1;"
-         offset="0"
-         id="stop3596" />
-      <stop
-         style="stop-color:#ffffff;stop-opacity:1;"
-         offset="1"
-         id="stop3598" />
-    </linearGradient>
-    <inkscape:perspective
-       sodipodi:type="inkscape:persp3d"
-       inkscape:vp_x="0 : 526.18109 : 1"
-       inkscape:vp_y="0 : 1000 : 0"
-       inkscape:vp_z="744.09448 : 526.18109 : 1"
-       inkscape:persp3d-origin="372.04724 : 350.78739 : 1"
-       id="perspective10" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient3594"
-       id="linearGradient3600"
-       x1="250"
-       y1="463.44913"
-       x2="250"
-       y2="483.01434"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="matrix(1,0,0,0.92,0.50002289,37.488972)" />
-    <inkscape:perspective
-       id="perspective3652"
-       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
-       inkscape:vp_z="1 : 0.5 : 1"
-       inkscape:vp_y="0 : 1000 : 0"
-       inkscape:vp_x="0 : 0.5 : 1"
-       sodipodi:type="inkscape:persp3d" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient3594-5"
-       id="linearGradient3600-9"
-       x1="250"
-       y1="462.36218"
-       x2="250"
-       y2="487.36218"
-       gradientUnits="userSpaceOnUse" />
-    <linearGradient
-       id="linearGradient3594-5">
-      <stop
-         style="stop-color:#000000;stop-opacity:1;"
-         offset="0"
-         id="stop3596-2" />
-      <stop
-         style="stop-color:#ffffff;stop-opacity:1;"
-         offset="1"
-         id="stop3598-1" />
-    </linearGradient>
-    <linearGradient
-       gradientTransform="matrix(1,0,0,0.92,9.5000801,-911.23539)"
-       y2="486.27524"
-       x2="249.99994"
-       y1="466.71002"
-       x1="250"
-       gradientUnits="userSpaceOnUse"
-       id="linearGradient3661"
-       xlink:href="#linearGradient3594-5"
-       inkscape:collect="always" />
-    <inkscape:perspective
-       id="perspective3694"
-       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
-       inkscape:vp_z="1 : 0.5 : 1"
-       inkscape:vp_y="0 : 1000 : 0"
-       inkscape:vp_x="0 : 0.5 : 1"
-       sodipodi:type="inkscape:persp3d" />
-    <inkscape:perspective
-       id="perspective3718"
-       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
-       inkscape:vp_z="1 : 0.5 : 1"
-       inkscape:vp_y="0 : 1000 : 0"
-       inkscape:vp_x="0 : 0.5 : 1"
-       sodipodi:type="inkscape:persp3d" />
-    <inkscape:perspective
-       id="perspective3743"
-       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
-       inkscape:vp_z="1 : 0.5 : 1"
-       inkscape:vp_y="0 : 1000 : 0"
-       inkscape:vp_x="0 : 0.5 : 1"
-       sodipodi:type="inkscape:persp3d" />
-    <linearGradient
-       id="linearGradient3594-5-6">
-      <stop
-         style="stop-color:#000000;stop-opacity:1;"
-         offset="0"
-         id="stop3596-2-1" />
-      <stop
-         style="stop-color:#ffffff;stop-opacity:1;"
-         offset="1"
-         id="stop3598-1-8" />
-    </linearGradient>
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient3594-52"
-       id="linearGradient3600-1"
-       x1="250"
-       y1="462.36218"
-       x2="250"
-       y2="487.36218"
-       gradientUnits="userSpaceOnUse" />
-    <linearGradient
-       id="linearGradient3594-52">
-      <stop
-         style="stop-color:#000000;stop-opacity:1;"
-         offset="0"
-         id="stop3596-5" />
-      <stop
-         style="stop-color:#ffffff;stop-opacity:1;"
-         offset="1"
-         id="stop3598-4" />
-    </linearGradient>
-    <inkscape:perspective
-       id="perspective4448"
-       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
-       inkscape:vp_z="1 : 0.5 : 1"
-       inkscape:vp_y="0 : 1000 : 0"
-       inkscape:vp_x="0 : 0.5 : 1"
-       sodipodi:type="inkscape:persp3d" />
-    <inkscape:perspective
-       id="perspective4474"
-       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
-       inkscape:vp_z="1 : 0.5 : 1"
-       inkscape:vp_y="0 : 1000 : 0"
-       inkscape:vp_x="0 : 0.5 : 1"
-       sodipodi:type="inkscape:persp3d" />
-    <inkscape:perspective
-       id="perspective4503"
-       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
-       inkscape:vp_z="1 : 0.5 : 1"
-       inkscape:vp_y="0 : 1000 : 0"
-       inkscape:vp_x="0 : 0.5 : 1"
-       sodipodi:type="inkscape:persp3d" />
-    <inkscape:perspective
-       id="perspective4503-1"
-       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
-       inkscape:vp_z="1 : 0.5 : 1"
-       inkscape:vp_y="0 : 1000 : 0"
-       inkscape:vp_x="0 : 0.5 : 1"
-       sodipodi:type="inkscape:persp3d" />
-    <inkscape:perspective
-       id="perspective4539"
-       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
-       inkscape:vp_z="1 : 0.5 : 1"
-       inkscape:vp_y="0 : 1000 : 0"
-       inkscape:vp_x="0 : 0.5 : 1"
-       sodipodi:type="inkscape:persp3d" />
-    <inkscape:perspective
-       id="perspective2876"
-       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
-       inkscape:vp_z="1 : 0.5 : 1"
-       inkscape:vp_y="0 : 1000 : 0"
-       inkscape:vp_x="0 : 0.5 : 1"
-       sodipodi:type="inkscape:persp3d" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient3799"
-       id="linearGradient3805"
-       x1="241.7618"
-       y1="477.99249"
-       x2="256.62399"
-       y2="465.27295"
-       gradientUnits="userSpaceOnUse" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient3799"
-       id="linearGradient3813"
-       x1="277.0072"
-       y1="447.78644"
-       x2="264.84692"
-       y2="459.43594"
-       gradientUnits="userSpaceOnUse" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient3785"
-       id="linearGradient3815"
-       x1="237.75377"
-       y1="470.66156"
-       x2="269.87085"
-       y2="442.51752"
-       gradientUnits="userSpaceOnUse" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient3799"
-       id="linearGradient3102"
-       gradientUnits="userSpaceOnUse"
-       x1="277.0072"
-       y1="447.78644"
-       x2="264.84692"
-       y2="459.43594" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient3785"
-       id="linearGradient3104"
-       gradientUnits="userSpaceOnUse"
-       x1="237.75377"
-       y1="470.66156"
-       x2="269.87085"
-       y2="442.51752" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient3785"
-       id="linearGradient3107"
-       gradientUnits="userSpaceOnUse"
-       x1="237.75377"
-       y1="470.66156"
-       x2="269.87085"
-       y2="442.51752"
-       gradientTransform="translate(0,4)" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient3799"
-       id="linearGradient3110"
-       gradientUnits="userSpaceOnUse"
-       x1="277.0072"
-       y1="447.78644"
-       x2="264.84692"
-       y2="459.43594"
-       gradientTransform="translate(0,4)" />
     <linearGradient
        inkscape:collect="always"
        xlink:href="#linearGradient3801"
@@ -319,8 +49,8 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="6.3816384"
-     inkscape:cx="-4.208709"
-     inkscape:cy="10.686783"
+     inkscape:cx="-31.944533"
+     inkscape:cy="10.373384"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
@@ -353,7 +83,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>

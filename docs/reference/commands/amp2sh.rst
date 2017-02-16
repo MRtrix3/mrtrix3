@@ -6,7 +6,7 @@ amp2sh
 Synopsis
 --------
 
-Convert a set of amplitudes (defined along a set of corresponding directions) to their spherical harmonic representation.
+Convert a set of amplitudes (defined along a set of corresponding directions) to their spherical harmonic representation
 
 Usage
 --------
