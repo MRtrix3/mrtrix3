@@ -1,7 +1,7 @@
 .. _mrview:
 
 mrview
-===========
+===================
 
 Synopsis
 --------
@@ -16,6 +16,7 @@ Usage
     mrview [ options ] [ image ... ]
 
 -  *image*: an image to be loaded.
+
 Options
 -------
 
@@ -120,7 +121,7 @@ ODF tool options
 Fixel plot tool options
 ^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-fixel.load image** Load a fixel file (any file inside a fixel directory, or an old *.msf legacy format file) into the fixel tool.
+-  **-fixel.load image** Load a fixel file (any file inside a fixel directory, or an old .msf / .msh legacy format file) into the fixel tool.
 
 Connectome tool options
 ^^^^^^^^^^^^^^^^^^^^^^^

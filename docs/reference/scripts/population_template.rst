@@ -104,7 +104,7 @@ Standard options
 
 
 
-**Author:** David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk) & Thijs Dhollander thijs.dhollander@gmail.com)
+**Author:** David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk) & Thijs Dhollander (thijs.dhollander@gmail.com)
 
 **Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors
 
