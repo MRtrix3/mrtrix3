@@ -70,7 +70,7 @@ namespace MR
       }
 
 
-      opt = get_options("stage.optimiser.default");
+      opt = get_options("linstage.optimiser.default");
       if (opt.size()) {
         switch ((int) opt[0][0]) {
         case 0:
@@ -82,7 +82,7 @@ namespace MR
         }
       }
 
-      opt = get_options("stage.optimiser.first");
+      opt = get_options("linstage.optimiser.first");
       if (opt.size()) {
         switch ((int) opt[0][0]) {
         case 0:
@@ -94,7 +94,7 @@ namespace MR
         }
       }
 
-      opt = get_options("stage.optimiser.last");
+      opt = get_options("linstage.optimiser.last");
       if (opt.size()) {
         switch ((int) opt[0][0]) {
         case 0:
@@ -106,13 +106,13 @@ namespace MR
         }
       }
 
-      opt = get_options("stage.iterations");
+      opt = get_options("linstage.iterations");
       if (opt.size()) {
         vector<int> iterations = parse_ints (opt[0][0]);
         registration.set_stage_iterations (iterations);
       }
 
-      opt = get_options("stage.diagnostics.prefix");
+      opt = get_options("linstage.diagnostics.prefix");
       if (opt.size()) {
         registration.set_diagnostics_image_prefix (opt[0][0]);
       }
@@ -170,24 +170,26 @@ namespace MR
         + Argument ("num").type_integer (1, 10000)
       + Option ("init_rotation.search.run_global", "perform a global search. (Default: local)")
       + Option ("init_rotation.search.global.iterations", "number of rotations to investigate (Default: 10000)")
-        + Argument ("num").type_integer (1, 1e10)
+        + Argument ("num").type_integer (1, 1e10);
 
-      // stage iteration / repetition specific options
-      + Option ("stage.iterations", "number of iterations for each registration stage. "
-        "Each repetition starts with the estimated parmeters from the previous stage (Default: 1)")
+    const OptionGroup lin_stage_options =
+      OptionGroup ("Advanced linear registration stage options")
+      + Option ("linstage.iterations", "number of iterations for each registration stage, not to be confused with -rigid_niter or -affine_niter. "
+        "This can be used to generate intermediate diagnostics images (-linstage.diagnostics.prefix) "
+        "or to change the cost function optimiser during registration (without the need to repeatedly resize the images). (Default: 1 == no repetition)")
         + Argument ("num or comma separated list").type_sequence_int ()
-      + Option ("stage.optimiser.first", "Cost function optimisation algorithm to use at first iteration of all stages. "
+
+      + Option ("linstage.optimiser.first", "Cost function optimisation algorithm to use at first iteration of all stages. "
         "Valid choices: bbgd (Barzilai-Borwein gradient descent) or gd (simple gradient descent). (Default: bbgd)")
         + Argument ("algorithm").type_choice (linear_optimisation_algo_choices)
-      + Option ("stage.optimiser.last", "Cost function optimisation algorithm to use at last iteration of all stages (if there are more than one). "
+      + Option ("linstage.optimiser.last", "Cost function optimisation algorithm to use at last iteration of all stages (if there are more than one). "
         "Valid choices: bbgd (Barzilai-Borwein gradient descent) or gd (simple gradient descent). (Default: bbgd)")
         + Argument ("algorithm").type_choice (linear_optimisation_algo_choices)
-      + Option ("stage.optimiser.default", "Cost function optimisation algorithm to use at any stage iteration other than first or last iteration. "
+      + Option ("linstage.optimiser.default", "Cost function optimisation algorithm to use at any stage iteration other than first or last iteration. "
         "Valid choices: bbgd (Barzilai-Borwein gradient descent) or gd (simple gradient descent). (Default: bbgd)")
         + Argument ("algorithm").type_choice (linear_optimisation_algo_choices)
 
-      // troubleshoot options
-      + Option ("stage.diagnostics.prefix", "generate diagnostics images after every registration stage")
+      + Option ("linstage.diagnostics.prefix", "generate diagnostics images after every registration stage")
         + Argument ("file prefix").type_text();
 
     const OptionGroup rigid_options =
@@ -226,7 +228,7 @@ namespace MR
                                "using comma separated values (Default: 0.25,0.5,1.0)")
         + Argument ("factor").type_sequence_float ()
 
-      + Option ("rigid_niter", "the maximum number of iterations. This can be specified either as a single number "
+      + Option ("rigid_niter", "the maximum number of gradient descent iterations per stage. This can be specified either as a single number "
                                "for all multi-resolution levels, or a single value for each level. (Default: 1000)")
         + Argument ("num").type_sequence_int ()
 
@@ -294,7 +296,7 @@ namespace MR
                                "using comma separated values (Default: 0.25,0.5,1.0)")
         + Argument ("factor").type_sequence_float ()
 
-      + Option ("affine_niter", "the maximum number of iterations. This can be specified either as a single number "
+      + Option ("affine_niter", "the maximum number of gradient descent iterations per stage. This can be specified either as a single number "
                                "for all multi-resolution levels, or a single value for each level. (Default: 1000)")
         + Argument ("num").type_sequence_int ()
 

@@ -45,6 +45,7 @@ namespace MR
   {
 
     extern const App::OptionGroup adv_init_options;
+    extern const App::OptionGroup lin_stage_options;
     extern const App::OptionGroup rigid_options;
     extern const App::OptionGroup affine_options;
     extern const App::OptionGroup fod_options;
@@ -65,7 +66,7 @@ namespace MR
         optimiser_first (OptimiserAlgoType::bbgd),
         optimiser_last (OptimiserAlgoType::gd),
         loop_density (1.0),
-        fod_lmax (0) {}
+        fod_lmax (-1) {}
 
       std::string info (const bool& do_reorientation = true) {
         std::string st;
@@ -88,7 +89,7 @@ namespace MR
       std::vector<OptimiserAlgoType> optimisers;
       OptimiserAlgoType optimiser_default, optimiser_first, optimiser_last;
       default_type loop_density;
-      size_t fod_lmax;
+      ssize_t fod_lmax;
       std::vector<std::string> diagnostics_images;
     } ;
 
@@ -191,8 +192,6 @@ namespace MR
         }
 
         void set_lmax (const vector<int>& lmax) {
-          if (!do_reorientation)
-            throw Exception ("lmax cannot be set when no reorientation is performed");
           for (size_t i = 0; i < lmax.size (); ++i)
             if (lmax[i] < 0 || lmax[i] % 2)
               throw Exception ("the input lmax must be positive and even");
@@ -312,9 +311,10 @@ namespace MR
           Im1MaskType& im1_mask,
           Im2MaskType& im2_mask) {
 
-            if (!do_reorientation)
+            if (do_reorientation)
               for (auto & s : stages)
-                s.fod_lmax = 0;
+                if (s.fod_lmax < 0)
+                  throw Exception ("the lmax needs to be defined for each registration stage");
 
             if (init_translation_type == Transform::Init::mass)
               Transform::Init::initialise_using_image_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init);

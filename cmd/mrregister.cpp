@@ -98,6 +98,8 @@ void usage ()
 
   + Registration::adv_init_options
 
+  + Registration::lin_stage_options
+
   + Registration::nonlinear_options
 
   + Registration::fod_options
@@ -494,7 +496,6 @@ void run ()
     affine_registration.set_max_iter (parse_ints (opt[0][0]));
   }
 
-
   opt = get_options ("affine_lmax");
   vector<int> affine_lmax;
   if (opt.size ()) {
@@ -517,9 +518,17 @@ void run ()
     affine_registration.set_log_stream (linear_logstream.rdbuf());
   }
 
-  // ****** LINEAR INITIALISATION OPTIONS *******
+
+  // ****** LINEAR INITIALISATION AND STAGE OPTIONS *******
   if (!do_rigid and !do_affine) {
     for (auto& s: Registration::adv_init_options) {
+      if (get_options(s.id).size()) {
+        std::stringstream msg;
+        msg << "cannot use option -" << s.id << " when no linear registration is requested";
+        throw Exception (msg.str());
+      }
+    }
+    for (auto& s: Registration::lin_stage_options) {
       if (get_options(s.id).size()) {
         std::stringstream msg;
         msg << "cannot use option -" << s.id << " when no linear registration is requested";
