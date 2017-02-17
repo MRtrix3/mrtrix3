@@ -442,7 +442,7 @@ List of MRtrix3 configuration file options
 *  **reg_gd_convergence_min_iter**
     *default: 10*
 
-     Linear registration: minumum number of iterations until convergence check is activated
+     Linear registration: minimum number of iterations until convergence check is activated
 
 *  **reg_gd_convergence_slope_smooth**
     *default: 0.1*
@@ -463,6 +463,11 @@ List of MRtrix3 configuration file options
     *default: 1*
 
      Linear registration: weight for optimisation of translation parameters
+
+*  **reg_linreg_diagnostics_image_prefix**
+    *default: "" (no image created)*
+
+     Linear registration: write diagnostics images after every registration stage
 
 *  **reg_stop_len**
     *default: 0.0001*

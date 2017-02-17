@@ -10,25 +10,25 @@
    xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="48"
-   height="48"
+   width="47.659611"
+   height="28.198669"
    id="svg2"
    version="1.1"
-   inkscape:version="0.48.5 r10040"
+   inkscape:version="0.91 r13725"
    inkscape:export-filename="/home/donald/src/mrtrix/mrview/icons/inplane_rotate.png"
    inkscape:export-xdpi="90"
    inkscape:export-ydpi="90"
-   sodipodi:docname="redo.svg">
+   sodipodi:docname="undo.svg">
   <defs
      id="defs4">
     <linearGradient
        id="linearGradient3801">
       <stop
-         style="stop-color:#38ff38;stop-opacity:1;"
+         style="stop-color:#ff3838;stop-opacity:1"
          offset="0"
          id="stop3804" />
       <stop
-         style="stop-color:#00ab00;stop-opacity:1;"
+         style="stop-color:#ab0000;stop-opacity:1"
          offset="1"
          id="stop3806" />
     </linearGradient>
@@ -300,16 +300,20 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="8.7481094"
-     inkscape:cx="24.895369"
-     inkscape:cy="23.967391"
+     inkscape:cx="4.662489"
+     inkscape:cy="12.93744"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
-     inkscape:window-width="1366"
-     inkscape:window-height="702"
+     inkscape:window-width="1920"
+     inkscape:window-height="986"
      inkscape:window-x="0"
      inkscape:window-y="27"
-     inkscape:window-maximized="1">
+     inkscape:window-maximized="1"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0">
     <inkscape:grid
        type="xygrid"
        id="grid2816"
@@ -317,8 +321,8 @@
        visible="true"
        enabled="true"
        snapvisiblegridlinesonly="true"
-       originx="0.5px"
-       originy="0.5px"
+       originx="0.50006309"
+       originy="-10.30133"
        spacingx="1px"
        spacingy="1px" />
   </sodipodi:namedview>
@@ -338,7 +342,7 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(-233,-435.36218)">
+     transform="translate(-232.99994,-444.36218)">
     <path
        style="fill:url(#linearGradient3808);fill-opacity:1;stroke:#000000;stroke-width:1px;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1"
        d="m 280.15956,467.86218 c -2,-19 -24,-30 -38,-17 -4,-4 -3,-6 -5,-6 -2,0 -5,21 -3,23 2,2 21,5 21,4 0,-1 -5.34523,-5.53571 -6,-8 9,-9 20.35954,-4.08584 31,4 z"

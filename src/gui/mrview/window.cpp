@@ -678,7 +678,7 @@ namespace MR
           button->setText ("Info");
           button->setToolButtonStyle (button_style);
           button->setToolTip (tr ("Information"));
-          button->setIcon (QIcon (":/help.svg"));
+          button->setIcon (QIcon (":/info.svg"));
           button->setPopupMode (QToolButton::InstantPopup);
           button->setMenu (menu);
           toolbar->addWidget (button);
@@ -881,11 +881,11 @@ namespace MR
 
 
 
-      void Window::select_tool_slot (QAction* action) 
+      void Window::select_tool_slot (QAction* action)
       {
         Tool::Dock* tool = dynamic_cast<Tool::__Action__*>(action)->dock;
         if (!tool) {
-          create_tool (action, true); 
+          create_tool (action, true);
           return;
         }
 
@@ -902,14 +902,14 @@ namespace MR
 
 
 
-      void Window::create_tool (QAction* action, bool show) 
+      void Window::create_tool (QAction* action, bool show)
       {
         if (dynamic_cast<Tool::__Action__*>(action)->dock)
           return;
 
         Tool::Dock* tool = dynamic_cast<Tool::__Action__*>(action)->create();
         connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (setChecked (bool)));
-        
+
         //CONF option: MRViewDockFloating
         //CONF default: 0 (false)
         //CONF Whether MRView tools should start docked in the main window, or
@@ -1620,7 +1620,7 @@ namespace MR
         assert (mode);
 #if QT_VERSION >= 0x050500
         QPoint delta;
-        if (event->source() == Qt::MouseEventNotSynthesized) 
+        if (event->source() == Qt::MouseEventNotSynthesized)
           delta = event->angleDelta();
         else
           delta = 30 * event->pixelDelta();
@@ -1824,7 +1824,7 @@ namespace MR
             auto pos = parse_ints (opt[0]);
             for (size_t n = 0; n < std::min (pos.size(), image()->image.ndim()); ++n) {
               if (pos[n] < 0 || pos[n] >= image()->image.size(n+3))
-                throw Exception ("volume index outside of image dimensions"); 
+                throw Exception ("volume index outside of image dimensions");
               set_image_volume (n+3, pos[n]);
               set_image_navigation_menu();
             }
@@ -1967,6 +1967,20 @@ namespace MR
           return;
         }
 
+        if (opt.opt->is ("imagevisible")) {
+          bool visible;
+          try {
+            visible = to<bool> (opt[0]);
+          }
+          catch (Exception& E) {
+            throw Exception ("-imagevisible option expects a boolean");
+          }
+          if (image_hide_action->isChecked() == visible)
+            set_image_visibility (visible);
+          return;
+        }
+
+
         if (opt.opt->is ("fps")) {
           show_FPS = true;
           return;
@@ -2040,6 +2054,9 @@ namespace MR
           +   Argument ("boolean").type_bool ()
 
           + Option ("colourbar", "Show or hide colourbar overlay.").allow_multiple()
+          +   Argument ("boolean").type_bool ()
+
+          + Option ("imagevisible", "Show or hide the main image.").allow_multiple()
           +   Argument ("boolean").type_bool ()
 
           + Option ("intensity_range", "Set the image intensity range to that specified").allow_multiple()

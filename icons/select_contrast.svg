@@ -14,10 +14,21 @@
    height="48"
    id="svg6430"
    version="1.1"
-   inkscape:version="0.48.0 r9654"
-   sodipodi:docname="brightness_contrast.svg">
+   inkscape:version="0.91 r13725"
+   sodipodi:docname="select_contrast.svg">
   <defs
      id="defs6432">
+    <linearGradient
+       id="linearGradient4209">
+      <stop
+         id="stop4211"
+         offset="0"
+         style="stop-color:#dcc7f8;stop-opacity:0.29411766" />
+      <stop
+         id="stop4213"
+         offset="1"
+         style="stop-color:#6f609d;stop-opacity:0.74509805" />
+    </linearGradient>
     <linearGradient
        id="linearGradient3796">
       <stop
@@ -419,7 +430,7 @@
        y2="39.014877" />
     <radialGradient
        inkscape:collect="always"
-       xlink:href="#linearGradient3942"
+       xlink:href="#linearGradient4209"
        id="radialGradient3101"
        gradientUnits="userSpaceOnUse"
        gradientTransform="translate(-1.2141194e-5,0)"
@@ -428,15 +439,6 @@
        fx="23"
        fy="25.475765"
        r="13.419355" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient3980"
-       id="linearGradient3103"
-       gradientUnits="userSpaceOnUse"
-       x1="18.057863"
-       y1="11.728414"
-       x2="36.419357"
-       y2="25.475765" />
   </defs>
   <sodipodi:namedview
      id="base"
@@ -445,16 +447,16 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="2.6276042"
-     inkscape:cx="13.378315"
-     inkscape:cy="24.398691"
+     inkscape:zoom="10.510417"
+     inkscape:cx="-2.5686985"
+     inkscape:cy="27.191248"
      inkscape:document-units="px"
-     inkscape:current-layer="layer1"
+     inkscape:current-layer="g3098"
      showgrid="false"
-     inkscape:window-width="1366"
-     inkscape:window-height="691"
+     inkscape:window-width="1920"
+     inkscape:window-height="986"
      inkscape:window-x="0"
-     inkscape:window-y="24"
+     inkscape:window-y="27"
      inkscape:window-maximized="1">
     <inkscape:grid
        empspacing="5"
@@ -472,7 +474,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -506,13 +508,13 @@
          id="g3098">
         <path
            sodipodi:type="arc"
-           style="fill:url(#radialGradient3101);fill-opacity:1;fill-rule:nonzero;stroke:url(#linearGradient3103);stroke-width:1.6774193;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+           style="fill:url(#radialGradient3101);fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.6774193;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
            id="path3859"
            sodipodi:cx="23"
            sodipodi:cy="26"
            sodipodi:rx="13"
            sodipodi:ry="13"
-           d="m 36,26 c 0,7.179702 -5.820298,13 -13,13 -7.179702,0 -13,-5.820298 -13,-13 0,-7.179702 5.820298,-13 13,-13 7.179702,0 13,5.820298 13,13 z"
+           d="M 36,26 A 13,13 0 0 1 23,39 13,13 0 0 1 10,26 13,13 0 0 1 23,13 13,13 0 0 1 36,26 Z"
            transform="matrix(1.1923077,0,0,1.1923077,-3.4230771,997.3622)" />
         <path
            style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
@@ -546,18 +548,6 @@
            sodipodi:nodetypes="cc"
            inkscape:transform-center-x="-2.5"
            inkscape:transform-center-y="1" />
-        <path
-           sodipodi:type="arc"
-           style="fill:#ffffff;fill-opacity:0.48085106;fill-rule:nonzero;stroke:none"
-           id="path3951"
-           sodipodi:cx="24.376957"
-           sodipodi:cy="19.768568"
-           sodipodi:rx="7.5006018"
-           sodipodi:ry="4.0628262"
-           d="m 31.877559,19.768568 c 0,2.243837 -3.358134,4.062826 -7.500602,4.062826 -4.142468,0 -7.500602,-1.818989 -7.500602,-4.062826 0,-2.243837 3.358134,-4.062826 7.500602,-4.062826 4.142468,0 7.500602,1.818989 7.500602,4.062826 z"
-           transform="matrix(1.2307394,-0.0274481,0.02439917,1.3845331,-6.6271996,994.00616)"
-           inkscape:transform-center-y="1.8913807"
-           inkscape:transform-center-x="1.1761408" />
         <path
            style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
            d="m 24,1005.3622 0,13"

@@ -35,6 +35,8 @@ View options
 
 -  **-voxel x,y,z** Set the position of the crosshairs in voxel coordinates, relative the image currently displayed. The new position should be supplied as a comma-separated list of floating-point values.
 
+-  **-volume idx** Set the volume index for the image displayed, as a comma-separated list of integers.
+
 -  **-plane index** Set the viewing plane, according to the mappping 0: sagittal; 1: coronal; 2: axial.
 
 -  **-lock yesno** Set whether view is locked to image axes (0: no, 1: yes).
@@ -56,6 +58,8 @@ View options
 -  **-orientationlabel boolean** Show or hide orientation label overlay.
 
 -  **-colourbar boolean** Show or hide colourbar overlay.
+
+-  **-imagevisible boolean** Show or hide the main image.
 
 -  **-intensity_range min,max** Set the image intensity range to that specified
 

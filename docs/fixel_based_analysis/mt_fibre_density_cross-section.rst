@@ -76,7 +76,7 @@ When performing analysis of AFD, Constrained Spherical Deconvolution (CSD) shoul
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This step performs :ref:`global intensity normalisation <global-intensity-normalisation>` by scaling all tissue types based on a single scale factor. A single multiplicative bias field is also estimated and applied to correct the output::
 
-    foreach * : mtbin -independent IN/fod.mif IN/fod_bias_norm.mif IN/gm.mif IN/gm_bias_norm.mif IN/csf.mif IN/csf_bias_norm.mif
+    foreach * : mtbin IN/fod.mif IN/fod_bias_norm.mif IN/gm.mif IN/gm_bias_norm.mif IN/csf.mif IN/csf_bias_norm.mif
 
 .. WARNING:: We strongly recommend you that you check the scale factors applied during intensity normalisation are not influenced by the variable of interest in your study. For example if one group contains global changes in white matter T2 then this may directly influence the intensity normalisation and therefore bias downstream AFD analysis. To check this we recommend you perform an equivalence test to ensure mean scale factors are the same between groups. To output the scale factor applied for all subjects use :code:`foreach * : mrinfo IN/fod_bias_norm.mif -property normalisation_scale_factor`.
 

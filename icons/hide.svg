@@ -10,8 +10,8 @@
    xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="56"
-   height="38"
+   width="55.115856"
+   height="41.467529"
    id="svg6430"
    version="1.1"
    inkscape:version="0.91 r13725"
@@ -150,16 +150,14 @@
     <clipPath
        clipPathUnits="userSpaceOnUse"
        id="clipPath3932">
-      <path
-         sodipodi:type="arc"
+      <ellipse
          style="fill:#000000;fill-opacity:1;stroke:none"
          id="path3934"
-         sodipodi:cx="23.925516"
-         sodipodi:cy="23.588192"
-         sodipodi:rx="27.037779"
-         sodipodi:ry="26.940521"
-         d="m 50.963295,23.588192 a 27.037779,26.940521 0 1 1 -54.0755577,0 27.037779,26.940521 0 1 1 54.0755577,0 z"
-         transform="translate(0,1004.3622)" />
+         transform="translate(0,1004.3622)"
+         cx="23.925516"
+         cy="23.588192"
+         rx="27.037779"
+         ry="26.940521" />
     </clipPath>
     <radialGradient
        inkscape:collect="always"
@@ -190,16 +188,14 @@
     <clipPath
        clipPathUnits="userSpaceOnUse"
        id="clipPath4027">
-      <path
-         sodipodi:type="arc"
+      <ellipse
          style="opacity:0.56370658;fill:#ffffff;fill-opacity:1;stroke:none"
          id="path4029"
-         sodipodi:cx="30.830849"
-         sodipodi:cy="12.695274"
-         sodipodi:rx="18.576315"
-         sodipodi:ry="12.546308"
-         d="m 49.407164,12.695274 a 18.576315,12.546308 0 1 1 -37.15263,0 18.576315,12.546308 0 1 1 37.15263,0 z"
-         transform="matrix(1.3267989,0,0,1.4263566,-16.648335,997.87974)" />
+         transform="matrix(1.3267989,0,0,1.4263566,-16.648335,997.87974)"
+         cx="30.830849"
+         cy="12.695274"
+         rx="18.576315"
+         ry="12.546308" />
     </clipPath>
     <radialGradient
        inkscape:collect="always"
@@ -318,16 +314,14 @@
     <clipPath
        clipPathUnits="userSpaceOnUse"
        id="clipPath3072">
-      <path
-         sodipodi:type="arc"
+      <ellipse
          style="fill:#ffffff;fill-opacity:1;stroke:none"
          id="path3074"
-         sodipodi:cx="27.621328"
-         sodipodi:cy="16.974636"
-         sodipodi:rx="14.783246"
-         sodipodi:ry="10.601144"
-         d="m 42.404574,16.974636 a 14.783246,10.601144 0 1 1 -29.566492,0 14.783246,10.601144 0 1 1 29.566492,0 z"
-         transform="matrix(1.1052632,0,0,0.96330275,-6.2142869,1000.1222)" />
+         transform="matrix(1.1052632,0,0,0.96330275,-6.2142869,1000.1222)"
+         cx="27.621328"
+         cy="16.974636"
+         rx="14.783246"
+         ry="10.601144" />
     </clipPath>
     <radialGradient
        inkscape:collect="always"
@@ -384,16 +378,6 @@
        fx="428.84229"
        fy="704.40137"
        r="251.44968" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient3770"
-       id="linearGradient4215"
-       x1="-644.87946"
-       y1="801.97516"
-       x2="-622.04572"
-       y2="788.25848"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="matrix(1.0163639,0,0,1.0165425,10.824438,-13.51334)" />
   </defs>
   <sodipodi:namedview
      id="base"
@@ -403,25 +387,31 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="15.999999"
-     inkscape:cx="24.45219"
-     inkscape:cy="24.250281"
+     inkscape:cx="12.947617"
+     inkscape:cy="25.296648"
      inkscape:document-units="px"
      inkscape:current-layer="g3161"
      showgrid="true"
      inkscape:window-width="1920"
-     inkscape:window-height="1016"
+     inkscape:window-height="986"
      inkscape:window-x="0"
      inkscape:window-y="27"
      inkscape:window-maximized="1"
      inkscape:snap-global="false"
-     units="px">
+     units="px"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0">
     <inkscape:grid
        empspacing="5"
        visible="true"
        enabled="true"
        snapvisiblegridlinesonly="true"
        type="xygrid"
-       id="grid6438" />
+       id="grid6438"
+       originx="-0.44207211"
+       originy="1.1713669" />
   </sodipodi:namedview>
   <metadata
      id="metadata6435">
@@ -431,7 +421,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -439,7 +429,7 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(0,-1014.3622)"
+     transform="translate(-0.44207211,-1012.066)"
      style="display:inline">
     <g
        id="g3161"
@@ -458,21 +448,18 @@
          transform="matrix(0.14566047,0,0,0.14566047,-32.124263,933.21319)"
          id="path3828"
          style="fill:#ffffff;fill-opacity:0.60526315;stroke:none"
-         sodipodi:type="arc"
-         sodipodi:ry="12.142858"
-         sodipodi:rx="12.142858"
-         sodipodi:cy="658.07648"
-         sodipodi:cx="405.71429"
-         d="m 417.85715,658.07648 a 12.142858,12.142858 0 0 1 -12.14286,12.14285 12.142858,12.142858 0 0 1 -12.14285,-12.14285 12.142858,12.142858 0 0 1 12.14285,-12.14286 12.142858,12.142858 0 0 1 12.14286,12.14286 z" />
+         cx="405.71429"
+         cy="658.07648"
+         r="12.142858" />
       <rect
-         style="opacity:1;fill:url(#linearGradient4215);fill-opacity:1;stroke:#ffffff;stroke-width:0.41407186;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         style="opacity:1;fill:#d30000;fill-opacity:1;stroke:#ffffff;stroke-width:0.45853144;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
          id="rect4203"
-         width="43.929268"
-         height="5.1643834"
-         x="-656.59344"
-         y="792.36487"
-         ry="2.5821917"
-         transform="matrix(0.75286604,-0.65817378,0.63237982,0.77465848,0,0)" />
+         width="48.650734"
+         height="5.7183385"
+         x="-658.78217"
+         y="792.35284"
+         ry="2.8591692"
+         transform="matrix(0.75324402,-0.65774117,0.63281976,0.77429914,0,0)" />
     </g>
   </g>
 </svg>
