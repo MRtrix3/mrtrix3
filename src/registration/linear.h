@@ -174,7 +174,7 @@ namespace MR
         void set_max_iter (const vector<int>& maxiter) {
           for (size_t i = 0; i < maxiter.size (); ++i)
             if (maxiter[i] < 0)
-              throw Exception ("the number of iterations must be positive");
+              throw Exception ("the number of iterations must be non-negative");
           if (maxiter.size() == stages.size()) {
             for (size_t i = 0; i < stages.size (); ++i)
               stages[i].gd_max_iter = maxiter[i];
@@ -224,7 +224,7 @@ namespace MR
             auto & stage = stages[level];
             for (size_t iter = 1; iter <= stage.stage_iterations; ++iter) {
               std::ostringstream oss;
-              oss << diagnostics_image_prefix << "_stage-" << level << "_iter-" << iter << ".mif";
+              oss << diagnostics_image_prefix << "_stage-" << level + 1 << "_iter-" << iter << ".mif";
               if (Path::exists(oss.str()) && !App::overwrite_files)
                 throw Exception ("diagnostics image file \"" + oss.str() + "\" already exists (use -force option to force overwrite)");
               stage.diagnostics_images.push_back(oss.str());
@@ -391,8 +391,6 @@ namespace MR
 
             for (size_t istage = 0; istage < stages.size(); istage++) {
               auto& stage = stages[istage];
-              if (stage.gd_max_iter == 0)
-                continue;
 
               CONSOLE ("linear stage " + str(istage + 1) + "/"+str(stages.size()) + ", " + stage.info(do_reorientation));
 
@@ -477,7 +475,7 @@ namespace MR
 
               INFO ("registration stage running...");
               for (auto stage_iter = 1; stage_iter <= stage.stage_iterations; ++stage_iter) {
-                if (stage.optimisers[stage_iter] == OptimiserAlgoType::bbgd) {
+                if (stage.gd_max_iter > 0 and stage.optimisers[stage_iter - 1] == OptimiserAlgoType::bbgd) {
                   Math::GradientDescentBB<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
                   optim (evaluate, *transform.get_gradient_descent_updator());
                   optim.be_verbose (analyse_descent);
@@ -486,7 +484,7 @@ namespace MR
                   parameters.optimiser_update (optim, evaluate.overlap());
                   INFO ("    iteration: "+str(stage_iter)+"/"+str(stage.stage_iterations)+" GD iterations: "+
                   str(optim.function_evaluations())+" cost: "+str(optim.value())+" overlap: "+str(evaluate.overlap()));
-                } else {
+                } else if (stage.gd_max_iter > 0) {
                   Math::GradientDescent<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
                     optim (evaluate, *transform.get_gradient_descent_updator());
                   optim.be_verbose (analyse_descent);
@@ -506,8 +504,8 @@ namespace MR
                 // VAR(optim.function_evaluations());
                 // Math::check_function_gradient (evaluate, params, 0.0001, true, optimiser_weights);
                 if (stage.diagnostics_images.size()) {
-                  CONSOLE("creating diagnostics image: " + stage.diagnostics_images[stage_iter]);
-                  parameters.make_diagnostics_image (stage.diagnostics_images[stage_iter], File::Config::get_bool ("reg_linreg_diagnostics_image_masked", false));
+                  CONSOLE("    creating diagnostics image: " + stage.diagnostics_images[stage_iter - 1]);
+                  parameters.make_diagnostics_image (stage.diagnostics_images[stage_iter - 1], File::Config::get_bool ("reg_linreg_diagnostics_image_masked", false));
                 }
               }
               // update midway (affine average) space using the current transformations
