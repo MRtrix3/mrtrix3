@@ -30,6 +30,8 @@ common_options.add_argument('-voxels', help='Output an image showing the final v
 common_options.add_argument('-grad', help='Pass the diffusion gradient table in MRtrix format')
 common_options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Pass the diffusion gradient table in FSL bvecs/bvals format')
 app.cmdline.flagMutuallyExclusiveOptions( [ 'grad', 'fslgrad' ] )
+
+# Set default parameters; certain algorithms will need to override these
 app.cmdline.set_defaults(single_shell=False)
 app.cmdline.set_defaults(needs_bzero=False)
 

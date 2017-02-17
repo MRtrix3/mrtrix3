@@ -1,13 +1,12 @@
-def initialise(subparsers):
+def initialise(base_parser, subparsers):
   import argparse
   from mrtrix3 import app
-  parser = subparsers.add_parser('manual', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Derive a response function using an input mask image alone (i.e. pre-selected voxels)', parents=[app.cmdline])
+  parser = subparsers.add_parser('manual', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Derive a response function using an input mask image alone (i.e. pre-selected voxels)', parents=[base_parser])
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('in_voxels', help='Input voxel selection mask')
   parser.add_argument('output', help='Output response function text file')
   options = parser.add_argument_group('Options specific to the \'manual\' algorithm')
   options.add_argument('-dirs', help='Manually provide the fibre direction in each voxel (a tensor fit will be used otherwise)')
-  parser.set_defaults(algorithm='manual')
 
 
 

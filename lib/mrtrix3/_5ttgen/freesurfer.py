@@ -1,12 +1,11 @@
-def initialise(subparsers):
+def initialise(base_parser, subparsers):
   import argparse
   from mrtrix3 import app
-  parser = subparsers.add_parser('freesurfer', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Generate the 5TT image based on a FreeSurfer parcellation image', parents=[app.cmdline])
+  parser = subparsers.add_parser('freesurfer', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Generate the 5TT image based on a FreeSurfer parcellation image', parents=[base_parser])
   parser.add_argument('input',  help='The input FreeSurfer parcellation image (any image containing \'aseg\' in its name)')
   parser.add_argument('output', help='The output 5TT image')
   options = parser.add_argument_group('Options specific to the \'freesurfer\' algorithm')
   options.add_argument('-lut', help='Manually provide path to the lookup table on which the input parcellation image is based (e.g. FreeSurferColorLUT.txt)')
-  parser.set_defaults(algorithm='freesurfer')
 
 
 

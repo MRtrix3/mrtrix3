@@ -96,9 +96,9 @@ Standard options
 
 - **-quiet** Suppress all console output during script execution
 
-- **-verbose** Display additional information and progress for every command invoked
+- **-info** Display additional information and progress for every command invoked
 
-- **-debug** Display additional debugging information over and above the verbose output
+- **-debug** Display additional debugging information over and above the output of -info
 
 --------------
 

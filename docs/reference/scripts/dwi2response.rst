@@ -15,7 +15,7 @@ Usage
 
     dwi2response algorithm [ options ] ...
 
--  *algorithm*: Select the software / algorithm to be used in performing the script's core functionality; additional details and options become available once an algorithm is nominated at the command-line. Options are: dhollander, fa, manual, msmt_5tt, tax, tournier
+-  *algorithm*: Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: dhollander, fa, manual, msmt_5tt, tax, tournier
 
 Description
 -----------
@@ -59,9 +59,9 @@ Standard options
 
 - **-quiet** Suppress all console output during script execution
 
-- **-verbose** Display additional information and progress for every command invoked
+- **-info** Display additional information and progress for every command invoked
 
-- **-debug** Display additional debugging information over and above the verbose output
+- **-debug** Display additional debugging information over and above the output of -info
 
 --------------
 
@@ -151,9 +151,9 @@ Standard options
 
 - **-quiet** Suppress all console output during script execution
 
-- **-verbose** Display additional information and progress for every command invoked
+- **-info** Display additional information and progress for every command invoked
 
-- **-debug** Display additional debugging information over and above the verbose output
+- **-debug** Display additional debugging information over and above the output of -info
 
 References
 ^^^^^^^^^^
@@ -242,9 +242,9 @@ Standard options
 
 - **-quiet** Suppress all console output during script execution
 
-- **-verbose** Display additional information and progress for every command invoked
+- **-info** Display additional information and progress for every command invoked
 
-- **-debug** Display additional debugging information over and above the verbose output
+- **-debug** Display additional debugging information over and above the output of -info
 
 References
 ^^^^^^^^^^
@@ -330,9 +330,9 @@ Standard options
 
 - **-quiet** Suppress all console output during script execution
 
-- **-verbose** Display additional information and progress for every command invoked
+- **-info** Display additional information and progress for every command invoked
 
-- **-debug** Display additional debugging information over and above the verbose output
+- **-debug** Display additional debugging information over and above the output of -info
 
 --------------
 
@@ -421,9 +421,9 @@ Standard options
 
 - **-quiet** Suppress all console output during script execution
 
-- **-verbose** Display additional information and progress for every command invoked
+- **-info** Display additional information and progress for every command invoked
 
-- **-debug** Display additional debugging information over and above the verbose output
+- **-debug** Display additional debugging information over and above the output of -info
 
 References
 ^^^^^^^^^^
@@ -512,9 +512,9 @@ Standard options
 
 - **-quiet** Suppress all console output during script execution
 
-- **-verbose** Display additional information and progress for every command invoked
+- **-info** Display additional information and progress for every command invoked
 
-- **-debug** Display additional debugging information over and above the verbose output
+- **-debug** Display additional debugging information over and above the output of -info
 
 References
 ^^^^^^^^^^
@@ -605,14 +605,14 @@ Standard options
 
 - **-quiet** Suppress all console output during script execution
 
-- **-verbose** Display additional information and progress for every command invoked
+- **-info** Display additional information and progress for every command invoked
 
-- **-debug** Display additional debugging information over and above the verbose output
+- **-debug** Display additional debugging information over and above the output of -info
 
 References
 ^^^^^^^^^^
 
-* Tournier, J.-D.; Calamante, F. & Connelly, A. Determination of the appropriate b value and number of gradient directions for high-angular-resolution diffusion-weighted imaging. NMR Biomedicine, 2013, 26, 1775-1786
+* Tournier, J.-D.; Calamante, F. & Connelly, A. Determination of the appropriate b-value and number of gradient directions for high-angular-resolution diffusion-weighted imaging. NMR Biomedicine, 2013, 26, 1775-1786
 
 --------------
 

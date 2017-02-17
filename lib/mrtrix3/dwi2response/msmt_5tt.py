@@ -1,8 +1,7 @@
-def initialise(subparsers):
+def initialise(base_parser, subparsers):
   import argparse
   from mrtrix3 import app
-
-  parser = subparsers.add_parser('msmt_5tt', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Derive MSMT-CSD tissue response functions based on a co-registered five-tissue-type (5TT) image', parents=[app.cmdline])
+  parser = subparsers.add_parser('msmt_5tt', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Derive MSMT-CSD tissue response functions based on a co-registered five-tissue-type (5TT) image', parents=[base_parser])
   parser.addCitation('', 'Jeurissen, B.; Tournier, J.-D.; Dhollander, T.; Connelly, A. & Sijbers, J. Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data. NeuroImage, 2014, 103, 411-426', False)
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('in_5tt', help='Input co-registered 5TT image')
@@ -14,7 +13,6 @@ def initialise(subparsers):
   options.add_argument('-fa', type=float, default=0.2, help='Upper fractional anisotropy threshold for GM and CSF voxel selection')
   options.add_argument('-pvf', type=float, default=0.95, help='Partial volume fraction threshold for tissue voxel selection')
   options.add_argument('-wm_algo', metavar='algorithm', default='tournier', help='dwi2response algorithm to use for WM single-fibre voxel selection')
-  parser.set_defaults(algorithm='msmt_5tt')
 
 
 

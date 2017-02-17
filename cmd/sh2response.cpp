@@ -139,7 +139,7 @@ void run ()
   response /= count;
 
   if (std::string(argument[3]) == "-") {
-    for (size_t n = 0; n < response.size(); ++n)
+    for (ssize_t n = 0; n < response.size(); ++n)
       std::cout << response[n] << " ";
     std::cout << "\n";
   }

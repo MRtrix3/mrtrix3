@@ -49,7 +49,7 @@ For more details, see http://www.mrtrix.org/.'''
 _lastFile = ''
 _nthreads = None
 _tempDir = ''
-_verbosity = 1 # 0 = quiet; 1 = default; 2 = verbose; 3 = debug
+_verbosity = 1 # 0 = quiet; 1 = default; 2 = info; 3 = debug
 _workingDir = ''
 
 
@@ -158,19 +158,12 @@ def parse():
     _nthreads = args.nthreads
   if args.quiet:
     _verbosity = 0
-  elif args.verbose:
+  elif args.info:
     _verbosity = 2
   elif args.debug:
     _verbosity = 3
 
-  if cmdline._citationList:
-    console('')
-    citation_warning = 'Note that this script makes use of commands / algorithms that have relevant articles for citation'
-    if cmdline.externalCitations:
-      citation_warning += '; INCLUDING FROM EXTERNAL SOFTWARE PACKAGES'
-    citation_warning += '. Please consult the help page (-help option) for more information.'
-    console(citation_warning)
-    console('')
+  cmdline.printCitationWarning()
 
   if args.cont:
     _tempDir = os.path.abspath(args.cont[0])
@@ -344,7 +337,7 @@ class Parser(argparse.ArgumentParser):
     else:
       self._copyright = _defaultCopyright
     self._description = [ ]
-    self.externalCitations = False
+    self._externalCitations = False
     if 'synopsis' in kwargs:
       self.synopsis = kwargs['synopsis']
       del kwargs['synopsis']
@@ -356,7 +349,7 @@ class Parser(argparse.ArgumentParser):
     if 'parents' in kwargs:
       for parent in kwargs['parents']:
         self._citationList.extend(parent._citationList)
-        self.externalCitations = self.externalCitations or parent.externalCitations
+        self._externalCitations = self._externalCitations or parent._externalCitations
     else:
       standard_options = self.add_argument_group('Standard options')
       standard_options.add_argument('-continue', nargs=2, dest='cont', metavar=('<TempDir>', '<LastFile>'), help='Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file')
@@ -366,14 +359,14 @@ class Parser(argparse.ArgumentParser):
       standard_options.add_argument('-nthreads', metavar='number', help='Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)')
       standard_options.add_argument('-tempdir', metavar='/path/to/tmp/', help='Manually specify the path in which to generate the temporary directory')
       standard_options.add_argument('-quiet',   action='store_true', help='Suppress all console output during script execution')
-      standard_options.add_argument('-verbose', action='store_true', help='Display additional information and progress for every command invoked')
-      standard_options.add_argument('-debug', action='store_true', help='Display additional debugging information over and above the verbose output')
-      self.flagMutuallyExclusiveOptions( [ 'quiet', 'verbose', 'debug' ] )
+      standard_options.add_argument('-info', action='store_true', help='Display additional information and progress for every command invoked')
+      standard_options.add_argument('-debug', action='store_true', help='Display additional debugging information over and above the output of -info')
+      self.flagMutuallyExclusiveOptions( [ 'quiet', 'info', 'debug' ] )
 
   def addCitation(self, condition, reference, is_external):
     self._citationList.append( (condition, reference) )
     if is_external:
-      self.externalCitations = True
+      self._externalCitations = True
 
   def addDescription(self, text):
     self._description.append(text)
@@ -398,6 +391,25 @@ class Parser(argparse.ArgumentParser):
       for alg in self._subparsers._group_actions[0].choices:
         self._subparsers._group_actions[0].choices[alg]._checkMutuallyExclusiveOptions(args)
     return args
+
+  def printCitationWarning(self):
+    # If a subparser has been invoked, the subparser's function should instead be called,
+    #   since it might have had additional citations appended
+    global args
+    if self._subparsers:
+      subparser = getattr(args, self._subparsers._group_actions[0].dest)
+      for alg in self._subparsers._group_actions[0].choices:
+        if alg == subparser:
+          self._subparsers._group_actions[0].choices[alg].printCitationWarning()
+          return
+    if self._citationList:
+      console('')
+      citation_warning = 'Note that this script makes use of commands / algorithms that have relevant articles for citation'
+      if self._externalCitations:
+        citation_warning += '; INCLUDING FROM EXTERNAL SOFTWARE PACKAGES'
+      citation_warning += '. Please consult the help page (-help option) for more information.'
+      console(citation_warning)
+      console('')
 
   # Overloads argparse.ArgumentParser function to give a better error message on failed parsing
   def error(self, text):
@@ -809,7 +821,8 @@ def _handler(signum, frame):
   try:
     from mrtrix3.run import _processes
     for p in _processes:
-      p.terminate()
+      if p:
+        p.terminate()
     _processes = [ ]
   except ImportError:
     pass

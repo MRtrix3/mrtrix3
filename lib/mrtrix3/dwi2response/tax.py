@@ -1,7 +1,7 @@
-def initialise(subparsers):
+def initialise(base_parser, subparsers):
   import argparse
   from mrtrix3 import app
-  parser = subparsers.add_parser('tax', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Use the Tax et al. (2014) recursive calibration algorithm for single-fibre voxel selection and response function estimation', parents=[app.cmdline])
+  parser = subparsers.add_parser('tax', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Use the Tax et al. (2014) recursive calibration algorithm for single-fibre voxel selection and response function estimation', parents=[base_parser])
   parser.addCitation('', 'Tax, C. M.; Jeurissen, B.; Vos, S. B.; Viergever, M. A. & Leemans, A. Recursive calibration of the fiber response function for spherical deconvolution of diffusion MRI data. NeuroImage, 2014, 86, 67-80', False)
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('output', help='The output response function text file')
@@ -9,7 +9,6 @@ def initialise(subparsers):
   options.add_argument('-peak_ratio', type=float, default=0.1, help='Second-to-first-peak amplitude ratio threshold')
   options.add_argument('-max_iters', type=int, default=20, help='Maximum number of iterations')
   options.add_argument('-convergence', type=float, default=0.5, help='Percentile change in any RF coefficient required to continue iterating')
-  parser.set_defaults(algorithm='tax')
   parser.set_defaults(single_shell=True)
 
 

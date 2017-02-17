@@ -1,8 +1,7 @@
-def initialise(subparsers):
+def initialise(base_parser, subparsers):
   import argparse
   from mrtrix3 import app
-
-  parser = subparsers.add_parser('fa', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Use the old FA-threshold heuristic for single-fibre voxel selection and response function estimation', parents=[app.cmdline])
+  parser = subparsers.add_parser('fa', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Use the old FA-threshold heuristic for single-fibre voxel selection and response function estimation', parents=[base_parser])
   parser.addCitation('', 'Tournier, J.-D.; Calamante, F.; Gadian, D. G. & Connelly, A. Direct estimation of the fiber orientation density function from diffusion-weighted MRI data using spherical deconvolution. NeuroImage, 2004, 23, 1176-1185', False)
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('output', help='The output response function text file')
@@ -11,7 +10,6 @@ def initialise(subparsers):
   options.add_argument('-number', type=int, default=300, help='The number of highest-FA voxels to use')
   options.add_argument('-threshold', type=float, help='Apply a hard FA threshold, rather than selecting the top voxels')
   parser.flagMutuallyExclusiveOptions( [ 'number', 'threshold' ] )
-  parser.set_defaults(algorithm='fa')
   parser.set_defaults(single_shell=True)
   parser.set_defaults(needs_bzero=True)
 

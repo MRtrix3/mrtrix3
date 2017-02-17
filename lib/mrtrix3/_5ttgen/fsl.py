@@ -1,7 +1,7 @@
-def initialise(subparsers):
+def initialise(base_parser, subparsers):
   import argparse
   from mrtrix3 import app
-  parser = subparsers.add_parser('fsl', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Use FSL commands to generate the 5TT image based on a T1-weighted image', parents=[app.cmdline])
+  parser = subparsers.add_parser('fsl', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Use FSL commands to generate the 5TT image based on a T1-weighted image', parents=[base_parser])
   parser.addCitation('', 'Smith, S. M. Fast robust automated brain extraction. Human Brain Mapping, 2002, 17, 143-155', True)
   parser.addCitation('', 'Zhang, Y.; Brady, M. & Smith, S. Segmentation of brain MR images through a hidden Markov random field model and the expectation-maximization algorithm. IEEE Transactions on Medical Imaging, 2001, 20, 45-57', True)
   parser.addCitation('', 'Patenaude, B.; Smith, S. M.; Kennedy, D. N. & Jenkinson, M. A Bayesian model of shape and appearance for subcortical brain segmentation. NeuroImage, 2011, 56, 907-922', True)
@@ -13,7 +13,6 @@ def initialise(subparsers):
   options.add_argument('-mask', help='Manually provide a brain mask, rather than deriving one in the script')
   options.add_argument('-premasked', action='store_true', help='Indicate that brain masking has already been applied to the input image')
   parser.flagMutuallyExclusiveOptions( [ 'mask', 'premasked' ] )
-  parser.set_defaults(algorithm='fsl')
   
   
   

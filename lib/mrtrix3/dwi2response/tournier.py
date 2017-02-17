@@ -1,8 +1,8 @@
-def initialise(subparsers):
+def initialise(base_parser, subparsers):
   import argparse
   from mrtrix3 import app
-  parser = subparsers.add_parser('tournier', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Use the Tournier et al. (2013) iterative algorithm for single-fibre voxel selection and response function estimation', parents=[app.cmdline])
-  parser.addCitation('', 'Tournier, J.-D.; Calamante, F. & Connelly, A. Determination of the appropriate b value and number of gradient directions for high-angular-resolution diffusion-weighted imaging. NMR Biomedicine, 2013, 26, 1775-1786', False)
+  parser = subparsers.add_parser('tournier', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Use the Tournier et al. (2013) iterative algorithm for single-fibre voxel selection and response function estimation', parents=[base_parser])
+  parser.addCitation('', 'Tournier, J.-D.; Calamante, F. & Connelly, A. Determination of the appropriate b-value and number of gradient directions for high-angular-resolution diffusion-weighted imaging. NMR Biomedicine, 2013, 26, 1775-1786', False)
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('output', help='The output response function text file')
   options = parser.add_argument_group('Options specific to the \'tournier\' algorithm')
@@ -10,7 +10,6 @@ def initialise(subparsers):
   options.add_argument('-sf_voxels', type=int, default=300, help='Number of single-fibre voxels to use when calculating response function')
   options.add_argument('-dilate', type=int, default=1, help='Number of mask dilation steps to apply when deriving voxel mask to test in the next iteration')
   options.add_argument('-max_iters', type=int, default=10, help='Maximum number of iterations')
-  parser.set_defaults(algorithm='tournier')
   parser.set_defaults(single_shell=True)
 
 

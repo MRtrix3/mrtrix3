@@ -1,7 +1,7 @@
-def initialise(subparsers):
+def initialise(base_parser, subparsers):
   import argparse
   from mrtrix3 import app
-  parser = subparsers.add_parser('dhollander', author='Thijs Dhollander (thijs.dhollander@gmail.com)', synopsis='Unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof)', parents=[app.cmdline])
+  parser = subparsers.add_parser('dhollander', author='Thijs Dhollander (thijs.dhollander@gmail.com)', synopsis='Unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof)', parents=[base_parser])
   parser.addCitation('', 'Dhollander, T.; Raffelt, D. & Connelly, A. Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5', False)
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('out_sfwm', help='Output single-fibre WM response text file')
@@ -13,7 +13,6 @@ def initialise(subparsers):
   options.add_argument('-sfwm', type=float, default=0.5, help='Number of single-fibre WM voxels to select, as a percentage of refined WM. (default: 0.5 per cent)')
   options.add_argument('-gm', type=float, default=2.0, help='Number of GM voxels to select, as a percentage of refined GM. (default: 2 per cent)')
   options.add_argument('-csf', type=float, default=10.0, help='Number of CSF voxels to select, as a percentage of refined CSF. (default: 10 per cent)')
-  parser.set_defaults(algorithm='dhollander')
 
 
 
@@ -133,7 +132,7 @@ def execute():
   cleanopt = ''
   if not app._cleanup:
     cleanopt = ' -nocleanup'
-  run.command('dwi2response tournier dwi.mif _respsfwmss.txt -sf_voxels ' + str(voxsfwmcount) + ' -iter_voxels ' + str(voxsfwmcount * 10) + ' -mask refined_wm.mif -voxels voxels_sfwm.mif -quiet -tempdir ' + app._tempDir + cleanopt)
+  run.command('dwi2response tournier dwi.mif _respsfwmss.txt -sf_voxels ' + str(voxsfwmcount) + ' -iter_voxels ' + str(voxsfwmcount * 10) + ' -mask refined_wm.mif -voxels voxels_sfwm.mif -tempdir ' + app._tempDir + cleanopt)
 
   # Get final voxels for GM response function estimation from GM.
   refgmmedian = image.statistic('safe_sdm.mif', 'median', 'refined_gm.mif')

@@ -11,7 +11,7 @@ _processes = [ ]
 
 def command(cmd, exitOnError=True):
 
-  import inspect, os, subprocess, sys
+  import inspect, os, subprocess, sys, tempfile
   from mrtrix3 import app
 
   global _env, _mrtrix_exe_list
@@ -61,7 +61,7 @@ def command(cmd, exitOnError=True):
       sys.stderr.flush()
     return
 
-  # For any MRtrix commands, need to insert the nthreads and quiet calls
+  # For any MRtrix commands, need to insert -nthreads / -quiet / -info calls
   # Also make sure that the appropriate version of that MRtrix command will be invoked
   new_cmdsplit = [ ]
   is_mrtrix_exe = False
@@ -80,6 +80,8 @@ def command(cmd, exitOnError=True):
         # Get MRtrix3 binaries to output additional INFO-level information if running in debug mode
         if app._verbosity == 3:
           new_cmdsplit.append('-info')
+#        elif app._verbosity < 2:
+#          new_cmdsplit.append('-quiet')
       next_is_exe = True
     new_cmdsplit.append(item)
   if is_mrtrix_exe:
@@ -87,6 +89,8 @@ def command(cmd, exitOnError=True):
       new_cmdsplit.extend( [ '-nthreads', str(app._nthreads) ] )
     if app._verbosity == 3:
       new_cmdsplit.append('-info')
+#    elif app._verbosity < 2:
+#      new_cmdsplit.append('-quiet')
   cmdsplit = new_cmdsplit
 
   # If the piping symbol appears anywhere, we need to split this into multiple commands and execute them separately
@@ -105,21 +109,49 @@ def command(cmd, exitOnError=True):
 
   app.debug('To execute: ' + str(cmdstack))
 
+  # Construct temporary text files for holding stdout / stderr contents when appropriate
+  #   (One entry per process; each is a tuple containing two entries, each of which is either a
+  #   file-like object, or None)
+  tempfiles = [ ]
+
   # Execute all processes
   _processes = [ ]
   for index, command in enumerate(cmdstack):
+    file_out = None
+    file_err = None
+    # If there's at least one command prior to this, need to receive the stdout from the prior command
+    #   at the stdin of this command; otherwise, nothing to receive
     if index > 0:
-      proc_in = _processes[index-1].stdout
+      handle_in = _processes[index-1].stdout
     else:
-      proc_in = None
+      handle_in = None
+    # If this is not the last command, then stdout needs to be piped to the next command;
+    #   otherwise, write stdout to a temporary file so that the contents can be read later
+    if index < len(cmdstack)-1:
+      handle_out = subprocess.PIPE
+    else:
+      file_out = tempfile.TemporaryFile()
+      handle_out = file_out.fileno()
+    # If we're in debug / verbose mode, the contents of stderr will be read and printed to the terminal
+    #   as the command progresses, hence this needs to go to a pipe; otherwise, write it to a temporary
+    #   file so that the contents can be read later
+    if app._verbosity > 1:
+      handle_err = subprocess.PIPE
+    else:
+      file_err = tempfile.TemporaryFile()
+      handle_err = file_err.fileno()
+    # Set off the processes
     try:
-      process = subprocess.Popen (command, stdin=proc_in, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=_env)
+      # FIXME On Python 2.7 and Windows, subprocess refuses to run scripts
+      process = subprocess.Popen (command, stdin=handle_in, stdout=handle_out, stderr=handle_err, env=_env)
       _processes.append(process)
-    except FileNotFoundError:
+      tempfiles.append( ( file_out, file_err ) )
+    # FileNotFoundError not defined in Python 2.7
+    except OSError as e:
       if exitOnError:
-        app.error('\'' + command[0] + '\' not found in PATH; script cannot proceed')
+        app.error('\'' + command[0] + '\' not executed ("' + str(e) + '"); script cannot proceed')
       else:
-        app.warn('\'' + command[0] + '\' not found in PATH; not executed')
+        app.warn('\'' + command[0] + '\' not executed ("' + str(e) + '")')
         for p in _processes:
           p.terminate()
         _processes = [ ]
@@ -135,11 +167,11 @@ def command(cmd, exitOnError=True):
 
   # Wait for all commands to complete
   try:
-    for process in _processes:
 
-      # Switch how we monitor running processes / wait for them to complete
-      #   depending on whether or not the user has specified -verbose option
-      if app._verbosity > 1:
+    # Switch how we monitor running processes / wait for them to complete
+    #   depending on whether or not the user has specified -verbose or -debug option
+    if app._verbosity > 1:
+      for process in _processes:
         stderrdata = ''
         while True:
           # Have to read one character at a time: Waiting for a newline character using e.g. readline() will prevent MRtrix progressbars from appearing
@@ -147,27 +179,36 @@ def command(cmd, exitOnError=True):
           sys.stderr.write(line)
           sys.stderr.flush()
           stderrdata += line
-          if not line and process.poll() != None:
+          if not line and process.poll() is not None:
             break
-      else:
+        return_stderr += stderrdata + '\n'
+        if process.returncode:
+          error = True
+          error_text += stderrdata + '\n'
+    else:
+      for process in _processes:
         process.wait()
+
   except (KeyboardInterrupt, SystemExit):
     import inspect, signal
     app._handler(signal.SIGINT, inspect.currentframe())
 
-  # Let all commands complete before grabbing stdout data; querying the stdout data
-  #   immediately after command completion can intermittently prevent the data from
-  #   getting to the following command (e.g. MRtrix piping)
-  for process in _processes:
-    (stdoutdata, stderrdata) = process.communicate()
-    stdoutdata = stdoutdata.decode('utf-8')
-    stderrdata = stderrdata.decode('utf-8')
-    return_stdout += stdoutdata + '\n'
-    return_stderr += stderrdata + '\n'
-    if process.returncode:
-      error = True
-      error_text += stdoutdata + stderrdata
-    process = None
+  # For any command stdout / stderr data that wasn't either passed to another command or
+  #   printed to the terminal during execution, read it here.
+  for index in range(len(cmdstack)):
+    if tempfiles[index][0] is not None:
+      stdout_text = tempfiles[index][0].read().decode('utf-8') + '\n'
+      return_stdout += stdout_text
+      if _processes[index].returncode:
+        error = True
+        error_text += stdout_text
+    if tempfiles[index][1] is not None:
+      stderr_text = tempfiles[index][1].read().decode('utf-8') + '\n'
+      return_stderr += stderr_text
+      if _processes[index].returncode:
+        error = True
+        error_text += stderr_text
+
   _processes = [ ]
 
   if (error):
@@ -252,9 +293,17 @@ def function(fn, *args):
 # When running on Windows, add the necessary '.exe' so that hopefully the correct
 #   command is found by subprocess
 def exeName(item):
-  from mrtrix3.app import isWindows
-  if isWindows() and not item.endswith('.exe'):
+  from distutils.spawn import find_executable
+  from mrtrix3 import app
+  if not app.isWindows():
+    return item
+  if item.endswith('.exe'):
+    return item
+  if find_executable(item) is not None:
+    return item
+  if find_executable(item + '.exe') is not None:
     return item + '.exe'
+  # If it can't be found, return the item as-is; find_executable() fails to identify Python scripts
   return item
 
 
@@ -280,7 +329,7 @@ def versionMatch(item):
     return exe_path_manual
 
   exe_path_sys = find_executable(exeName(item))
-  if os.path.isfile(exe_path_sys):
+  if exe_path_sys and os.path.isfile(exe_path_sys):
     app.debug('Using non-version-matched executable for ' + item + ': ' + exe_path_sys)
     return exe_path_sys
 

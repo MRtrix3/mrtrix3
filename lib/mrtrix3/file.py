@@ -49,16 +49,16 @@ def makeDir(path):
 # Get an appropriate location and name for a new temporary file
 # Note: Doesn't actually create a file; just gives a unique name that won't over-write anything
 def newTempFile(suffix):
-  import os, random, string
+  import os, random, string, sys
   from mrtrix3 import app
   if 'TmpFileDir' in app.config:
     dir_path = app.config['TmpFileDir']
   else:
-    dir_path = '.'
+    dir_path = app._tempDir
   if 'TmpFilePrefix' in app.config:
     prefix = app.config['TmpFilePrefix']
   else:
-    prefix = os.path.basename(sys.argv[0]) + '-tmp-'
+    prefix = 'mrtrix-tmp-'
   full_path = dir_path
   if not suffix:
     suffix = 'mif'
