@@ -179,6 +179,11 @@ namespace MR
         "or to change the cost function optimiser during registration (without the need to repeatedly resize the images). (Default: 1 == no repetition)")
         + Argument ("num or comma separated list").type_sequence_int ()
 
+      // TODO linstage.loop_density
+
+      // TODO linstage.robust: Start each stage repetition with the estimated parameters from the previous stage.
+      // choose parameter consensus criterion: maximum overlap, min cost
+
       + Option ("linstage.optimiser.first", "Cost function optimisation algorithm to use at first iteration of all stages. "
         "Valid choices: bbgd (Barzilai-Borwein gradient descent) or gd (simple gradient descent). (Default: bbgd)")
         + Argument ("algorithm").type_choice (linear_optimisation_algo_choices)

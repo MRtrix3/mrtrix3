@@ -153,7 +153,7 @@ namespace MR
 
         void set_stage_iterations (const vector<int>& it) {
           for (size_t i = 0; i < it.size (); ++i)
-            if (it[i] < 0)
+            if (it[i] <= 0)
               throw Exception ("the number of stage iterations must be positive");
           if (it.size() == stages.size()) {
             for (size_t i = 0; i < stages.size (); ++i)
@@ -222,7 +222,7 @@ namespace MR
         void set_diagnostics_image_prefix (const std::basic_string<char>& diagnostics_image_prefix) {
           for (size_t level = 0; level < stages.size(); ++level) {
             auto & stage = stages[level];
-            for (size_t iter = 0; iter < stage.stage_iterations; ++iter) {
+            for (size_t iter = 1; iter <= stage.stage_iterations; ++iter) {
               std::ostringstream oss;
               oss << diagnostics_image_prefix << "_stage-" << level << "_iter-" << iter << ".mif";
               if (Path::exists(oss.str()) && !App::overwrite_files)
@@ -389,12 +389,12 @@ namespace MR
             // calculate midway (affine average) space which will be constant for each resolution level
             midway_image_header = compute_minimum_average_header (im1_image, im2_image, transform, midspace_voxel_subsampling, midspace_padding);
 
-            for (size_t level = 0; level < stages.size(); level++) {
-              auto& stage = stages[level];
+            for (size_t istage = 0; istage < stages.size(); istage++) {
+              auto& stage = stages[istage];
               if (stage.gd_max_iter == 0)
                 continue;
 
-              CONSOLE ("linear stage " + str(level) + "/"+str(stages.size()-1) + ", " + stage.info(do_reorientation));
+              CONSOLE ("linear stage " + str(istage + 1) + "/"+str(stages.size()) + ", " + stage.info(do_reorientation));
 
               INFO ("smoothing image 1");
               auto im1_smoothed = Registration::multi_resolution_lmax (im1_image, stage.scale_factor, do_reorientation, stage.fod_lmax);
@@ -476,7 +476,7 @@ namespace MR
                 evaluate.set_directions (aPSF_directions);
 
               INFO ("registration stage running...");
-              for (auto stage_iter = 0; stage_iter < stage.stage_iterations; ++stage_iter) {
+              for (auto stage_iter = 1; stage_iter <= stage.stage_iterations; ++stage_iter) {
                 if (stage.optimisers[stage_iter] == OptimiserAlgoType::bbgd) {
                   Math::GradientDescentBB<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
                   optim (evaluate, *transform.get_gradient_descent_updator());
@@ -484,7 +484,7 @@ namespace MR
                   optim.precondition (optimiser_weights);
                   optim.run (stage.gd_max_iter, grad_tolerance, analyse_descent ? std::cout.rdbuf() : log_stream);
                   parameters.optimiser_update (optim, evaluate.overlap());
-                  INFO ("    iteration: "+str(stage_iter + 1)+"/"+str(stage.stage_iterations)+" GD iterations: "+
+                  INFO ("    iteration: "+str(stage_iter)+"/"+str(stage.stage_iterations)+" GD iterations: "+
                   str(optim.function_evaluations())+" cost: "+str(optim.value())+" overlap: "+str(evaluate.overlap()));
                 } else {
                   Math::GradientDescent<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
@@ -493,7 +493,7 @@ namespace MR
                   optim.precondition (optimiser_weights);
                   optim.run (stage.gd_max_iter, grad_tolerance, analyse_descent ? std::cout.rdbuf() : log_stream);
                   parameters.optimiser_update (optim, evaluate.overlap());
-                  INFO ("    iteration: "+str(stage_iter + 1)+"/"+str(stage.stage_iterations)+" GD iterations: "+
+                  INFO ("    iteration: "+str(stage_iter)+"/"+str(stage.stage_iterations)+" GD iterations: "+
                   str(optim.function_evaluations())+" cost: "+str(optim.value())+" overlap: "+str(evaluate.overlap()));
                 }
 
@@ -514,6 +514,7 @@ namespace MR
               midway_image_header = compute_minimum_average_header (im1_image, im2_image, parameters.transformation, midspace_voxel_subsampling, midspace_padding);
             }
             INFO("linear registration done");
+            INFO (transform.info());
           }
 
         template<class Im1ImageType, class Im2ImageType, class TransformType>

@@ -93,8 +93,11 @@ namespace MR
                 std::shared_ptr<Image<default_type> > im2_image_reoriented;
                 im1_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im1_image));
                 im2_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im2_image));
-                Registration::Transform::reorient (params.im1_image, *im1_image_reoriented, params.transformation.get_transform_half(), directions);
-                Registration::Transform::reorient (params.im2_image, *im2_image_reoriented, params.transformation.get_transform_half_inverse(), directions);
+                {
+                   LogLevelLatch log_level (0);
+                  Registration::Transform::reorient (params.im1_image, *im1_image_reoriented, params.transformation.get_transform_half(), directions);
+                  Registration::Transform::reorient (params.im2_image, *im2_image_reoriented, params.transformation.get_transform_half_inverse(), directions);
+                }
                 params.set_im1_iterpolator (*im1_image_reoriented);
                 params.set_im2_iterpolator (*im2_image_reoriented);
               }
@@ -209,13 +212,16 @@ namespace MR
               params.transformation.set_parameter_vector(x);
 
               if (directions.cols()) {
-                INFO ("Reorienting FODs...");
+                DEBUG ("Reorienting FODs...");
                 std::shared_ptr<Image<default_type> > im1_image_reoriented;
                 std::shared_ptr<Image<default_type> > im2_image_reoriented;
                 im1_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im1_image));
                 im2_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im2_image));
-                Registration::Transform::reorient (params.im1_image, *im1_image_reoriented, params.transformation.get_transform_half(), directions);
-                Registration::Transform::reorient (params.im2_image, *im2_image_reoriented, params.transformation.get_transform_half_inverse(), directions);
+                {
+                   LogLevelLatch log_level (0);
+                  Registration::Transform::reorient (params.im1_image, *im1_image_reoriented, params.transformation.get_transform_half(), directions);
+                  Registration::Transform::reorient (params.im2_image, *im2_image_reoriented, params.transformation.get_transform_half_inverse(), directions);
+                }
                 params.set_im1_iterpolator (*im1_image_reoriented);
                 params.set_im2_iterpolator (*im2_image_reoriented);
               }
