@@ -559,6 +559,8 @@ for candidate in cxx:
   report ('Checking for C++11 compliance: ')
   try:
     compile ('''
+#include <stddef.h>
+using ::max_align_t;
 struct Base {
     Base (int);
 };
