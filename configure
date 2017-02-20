@@ -22,7 +22,7 @@ DESCRIPTION
     Other parameters are controlled by setting environment variables (see
     ENVIRONMENT VARIABLES below). For example:
 
-      $ ARCH=x86-84 ./configure 
+      $ ARCH=x86-84 ./configure
 
     will produce a config file to run on a generic AMD64 CPU.
 
@@ -51,7 +51,7 @@ ENVIRONMENT VARIABLES
 
     For non-standard setups, you may need to supply additional information
     using environment variables. For example, to set the compiler, use:
-   
+
       $ CXX=/usr/local/bin/g++-5.5 ./configure
 
     Alternatively:
@@ -59,15 +59,15 @@ ENVIRONMENT VARIABLES
       $ export CXX=/usr/local/bin/g++-5.5
       $ ./configure
 
-    Multiple environment variables can be set this way as needed.  
+    Multiple environment variables can be set this way as needed.
     The following environment variables are available:
 
     CXX
         The compiler command to use. The default is "clang++", falling back to
-        "g++" if not found. 
+        "g++" if not found.
 
     CXX_ARGS
-        The arguments expected by the compiler. The default is: 
+        The arguments expected by the compiler. The default is:
             "-c CFLAGS SRC -o OBJECT"
 
     LD
@@ -91,7 +91,7 @@ ENVIRONMENT VARIABLES
     CFLAGS
         Any additional flags to the compiler.
 
-    LDFLAGS 
+    LDFLAGS
         Any additional flags to the linker.
 
     LDLIB_FLAGS
@@ -110,7 +110,7 @@ ENVIRONMENT VARIABLES
         Any flags required to link with the zlib compression library.
 
     QMAKE
-        The command to invoke Qt's qmake (default: qmake). 
+        The command to invoke Qt's qmake (default: qmake).
 
     MOC
         The command to invoke Qt's meta-object compile (default: moc)
@@ -310,7 +310,7 @@ def compiler_hint (cmd, flags_var, flags, args_var=None, args=None):
     $ ./configure
 '''
   return ret
- 
+
 def compiler_flags_hint (name, var, flags):
   return '''
 
@@ -323,7 +323,7 @@ def compiler_flags_hint (name, var, flags):
     $./configure
   (amend with the actual path to the ''' + name + ''' include files on your system)
 '''
- 
+
 def linker_flags_hint (name, var, flags):
   return '''
 
@@ -347,7 +347,7 @@ configure_log_hint='''
 
 qt_path_hint='''
 
-  Make sure your PATH environment variable includes the location of the correct 
+  Make sure your PATH environment variable includes the location of the correct
   version of this command, for example:
     $ export PATH=/opt/qt5/bin:$PATH
     $./configure
@@ -541,7 +541,7 @@ if 'LDLIB_FLAGS' in os.environ.keys(): ld_lib_flags += shlex.split (os.environ['
 for candidate in cxx:
   report ('Looking for compiler [' + candidate + ']: ')
   cpp = [ candidate ] + cxx_args
-  if ld_cmdline: 
+  if ld_cmdline:
     ld = ld_cmdline
   else:
     ld = copy.copy([ candidate ])
@@ -559,8 +559,6 @@ for candidate in cxx:
   report ('Checking for C++11 compliance: ')
   try:
     compile ('''
-#include <stddef.h>
-using ::max_align_t;
 struct Base {
     Base (int);
 };
@@ -579,10 +577,26 @@ int main() {
   except:
     error ('unexpected exception!' + configure_log_hint)
   else:
-    break
+    report ('Checking for ABI compatibility: ')
+    try:
+      compile ('''
+#include <stddef.h>
+using ::max_align_t;
+
+int main() {
+  return (0);
+}
+''', cpp_flags, ld_flags)
+      report ('ok\n')
+    except (CompileError, LinkError, RuntimeError):
+      report ('test failed (see configure.log for details)\n')
+    except:
+      error ('unexpected exception!' + configure_log_hint)
+    else:
+      break
 
 else:
-  error ('''no suitable compiler found! 
+  error ('''no suitable compiler found!
 
 ''' + compiler_hint ('compiler', 'CXX', '/usr/bin/g++-5.5', 'CXX_ARGS', '"-c CFLAGS SRC -o OBJECT"') + configure_log_hint)
 
@@ -754,7 +768,7 @@ try:
 #include <iostream>
 #include <limits>
 
-int main (int argc, char* argv[]) 
+int main (int argc, char* argv[])
 {
   size_t default_align = std::numeric_limits<size_t>::max();
   for (size_t n = 0; n < 100; ++n) {
@@ -911,9 +925,9 @@ if not nogui:
   MRtrix3 was unable to locate the Qt command 'qmake'.''' + qt_path_hint)
   except:
     error ('unexpected exception!' + configure_log_hint)
-  
-  
-  
+
+
+
   report ('Checking for Qt rcc: ')
   rcc = 'rcc'
 
@@ -1135,7 +1149,7 @@ if R_module:
   MRtrix3 encountered an error when testing linking of MRtrix as an R module.''' + linker_flags_hint ('R', 'R_LDFLAGS', '"-L/usr/local/R/lib -lR"'))
   except RuntimeError:
     error ('error running command!' + configure_log_hint)
-  except: 
+  except:
     error ('unexpected exception!' + configure_log_hint)
 
   cpp_flags += R_cflags + [ '-DMRTRIX_AS_R_LIBRARY' ]
