@@ -302,7 +302,7 @@ import_topup_pe_table_option = ''
 if topup_manual_pe_scheme:
   with open('topup_manual_pe_scheme.txt', 'w') as f:
     for line in topup_manual_pe_scheme:
-      f.write(' '.join( [ str(f) for f in line ] ) + '\n')
+      f.write(' '.join( [ str(value) for value in line ] ) + '\n')
   import_topup_pe_table_option = ' -import_pe_table topup_manual_pe_scheme.txt'
 
 
@@ -576,7 +576,7 @@ else:
   #   The jacobian image may be different for any particular volume pair
   #   The appropriate PE directions and total readout times can be acquired from the eddy-style config/index files
   #   eddy_config.txt and eddy_indices.txt
-  
+
   eddy_config  = [ [ float(f) for f in line.split() ] for line in open('eddy_config.txt', 'r').read().split('\n')[:-1] ]
   eddy_indices = [ int(i) for i in open('eddy_indices.txt', 'r').read().split() ]
 
