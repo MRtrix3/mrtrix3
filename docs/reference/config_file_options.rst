@@ -424,11 +424,6 @@ List of MRtrix3 configuration file options
 
      Linear registration: write comma separated gradient descent parameters and gradients to stdout and verbose gradient descent output to stderr
 
-*  **reg_bbgd**
-    *default: 1 (true)*
-
-     Linear registration: use Barzilai Borwein gradient descent
-
 *  **reg_coherence_len**
     *default: 3.0*
 
@@ -463,11 +458,6 @@ List of MRtrix3 configuration file options
     *default: 1*
 
      Linear registration: weight for optimisation of translation parameters
-
-*  **reg_linreg_diagnostics_image_prefix**
-    *default: "" (no image created)*
-
-     Linear registration: write diagnostics images after every registration stage
 
 *  **reg_stop_len**
     *default: 0.0001*
