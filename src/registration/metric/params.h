@@ -75,7 +75,6 @@ namespace MR
                     im2_mask (im2_mask),
                     loop_density (1.0),
                     robust_estimate (false),
-                    overlap_count (0),
                     control_point_exent (10.0, 10.0, 10.0) {
                       im1_image_interp.reset (new Im1ImageInterpType (im1_image));
                       im2_image_interp.reset (new Im2ImageInterpType (im2_image));
@@ -117,7 +116,7 @@ namespace MR
           const vector<size_t>& get_extent() const { return extent; }
 
           template <class OptimiserType>
-            void optimiser_update (OptimiserType& optim) {
+            void optimiser_update (OptimiserType& optim, const ssize_t overlap_count) {
               DEBUG ("gradient descent ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
               if (!is_finite(optim.state())) {
                 CONSOLE ("last valid transformation:");
@@ -189,7 +188,6 @@ namespace MR
           MR::copy_ptr<Im2MaskInterpolatorType> im2_mask_interp;
           default_type loop_density;
           bool robust_estimate;
-          ssize_t overlap_count;
           Eigen::Vector3 control_point_exent;
           Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> control_points;
           vector<size_t> extent;
