@@ -745,47 +745,6 @@ except:
 
 
 
-# check Eigen3 memory alignment:
-
-report('Detecting allocator memory alignment: ')
-try:
-  memalign = compile ('''
-#include <iostream>
-#include <limits>
-
-int main (int argc, char* argv[])
-{
-  size_t default_align = std::numeric_limits<size_t>::max();
-  for (size_t n = 0; n < 100; ++n) {
-    struct alignas(64) X { double c[8]; };
-    X* x = new X;
-    size_t align = reinterpret_cast<size_t>(x) & 63U;
-    if (align && align < default_align)
-      default_align = align;
-  }
-  std::cout << default_align << "\\n";
-  return 0;
-}
-
-''', cpp_flags, ld_flags)
-
-  cpp_flags += [ '-DMRTRIX_ALLOC_MEM_ALIGN='+memalign ]
-  report (memalign + ' byte\n')
-except CompileError:
-  error (''' error compiling application!
-
-  This shouldn't happen!''' + configure_log_hint)
-except LinkError:
-  error (''' error linking application!
-
-  This shouldn't happen!''' + configure_log_hint)
-except RuntimeError:
-  error (''' error running application
-
-  This shouldn't happen!''' + configure_log_hint)
-except:
-  error ('unexpected exception!' + configure_log_hint)
-
 
 
 # Test that JSON for Modern C++ will compile, since it enforces its own requirements
