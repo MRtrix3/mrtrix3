@@ -580,8 +580,7 @@ int main() {
     report ('Checking for ABI compatibility: ')
     try:
       compile ('''
-#include <stddef.h>
-using ::max_align_t;
+#include <cstddef>
 
 int main() {
   return (0);
