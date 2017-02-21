@@ -577,22 +577,7 @@ int main() {
   except:
     error ('unexpected exception!' + configure_log_hint)
   else:
-    report ('Checking for ABI compatibility: ')
-    try:
-      compile ('''
-#include <cstddef>
-
-int main() {
-  return (0);
-}
-''', cpp_flags, ld_flags)
-      report ('ok\n')
-    except (CompileError, LinkError, RuntimeError):
-      report ('test failed (see configure.log for details)\n')
-    except:
-      error ('unexpected exception!' + configure_log_hint)
-    else:
-      break
+    break
 
 else:
   error ('''no suitable compiler found!
@@ -735,6 +720,7 @@ else:
 
 try:
   eigen_version = compile ('''
+#include <cstddef>
 #include <Eigen/Core>
 #include <iostream>
 
