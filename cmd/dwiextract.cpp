@@ -74,7 +74,7 @@ void run()
   // If however we are selecting volumes according to phase-encoding, and
   //   shells have not been explicitly selected, do NOT filter by b-value here
   } else if (!get_options ("pe").size()) {
-    const float bzero_threshold = File::Config::get_float ("BValueThreshold", 10.0);
+    const float bzero_threshold = File::Config::get_float ("BZeroThreshold", 10.0);
     for (ssize_t row = 0; row != grad.rows(); ++row) {
       if ((bzero && (grad (row, 3) < bzero_threshold)) || (!bzero && (grad (row, 3) > bzero_threshold)))
         volumes.push_back (row);
