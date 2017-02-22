@@ -14,10 +14,10 @@ Check requirements
 To install *MRtrix3*, you will need the following:
 
 -  a `C++11 <https://en.wikipedia.org/wiki/C%2B%2B11>`__ compliant
-   compiler (GCC version >= 4.8, clang)
+   compiler (GCC version >= 4.9, clang)
 -  `Python <https://www.python.org/>`__ version >= 2.7
 -  The `zlib <http://www.zlib.net/>`__ compression library
--  `Eigen <http://eigen.tuxfamily.org>`__ version 3.2 *(do not install the beta version)*
+-  `Eigen <http://eigen.tuxfamily.org>`__ version >= 3.2 
 -  `Qt <http://www.qt.io/>`__ version >= 4.7 *[GUI components only]*
 
 .. WARNING:: 
@@ -39,21 +39,20 @@ same distribution. The commands below are suggestions based on what has
 been reported to work in the past, but may need to be amended. See below
 for hints on how to proceed in this case.
 
--  Ubuntu Linux (and derivatives, e.g. Linux Mint):
-
-   ::
+-  Ubuntu Linux (and derivatives, e.g. Linux Mint)::
 
        sudo apt-get install git g++ python python-numpy libeigen3-dev zlib1g-dev libqt4-opengl-dev libgl1-mesa-dev
 
--  RPM-based distros (Fedora, CentOS):
-
-   ::
+-  RPM-based distros (Fedora, CentOS)::
 
        sudo yum install git g++ python numpy eigen3-devel zlib-devel libqt4-devel libgl1-mesa-dev
 
--  Arch Linux:
+   on Fedora 24, this is reported to work::
 
-   ::
+           sudo yum install git gcc-c++ python numpy eigen3-devel zlib-devel qt-devel mesa-libGL-devel
+
+
+-  Arch Linux::
 
        sudo pacman -Syu git python python-numpy gcc zlib eigen qt5-svg
 
@@ -68,7 +67,7 @@ packages:
 
 -  git
 
--  your compiler (gcc 4.8 or above, or clang)
+-  your compiler (gcc 4.9 or above, or clang)
 
 -  Python version >2.7
 
@@ -78,8 +77,6 @@ packages:
    header/include files
 
 -  the Eigen template library (only consists of development header/include files);
-   note that *MRtrix3* may not run correctly with the beta release of Eigen,
-   so we recommend download and installation of the latest stable release
 
 -  Qt version >4.7, its corresponding development header/include files,
    and the executables required to compile the code. Note this will most
@@ -100,7 +97,7 @@ packages:
 
     ::
 
-        CXX=g++-4.9 LD=g++-4.9 ./configure
+        CXX=g++-4.9 ./configure
 
 If this *really* doesn't work
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -158,10 +155,8 @@ Set up *MRtrix3*
    If you are not familiar or comfortable with modification of shell files,
    *MRtrix3* now provides a convenience script that will perform this setup
    for you (assuming that you are using ``bash`` or equivalent interpreter).
-   From the top level *MRtrix3* directory, run the following:
+   From the top level *MRtrix3* directory, run the following::
    
-   ::
-
        ./set_path
 
 2. Close the terminal and start another one to ensure the startup file
@@ -169,7 +164,7 @@ Set up *MRtrix3*
 
 3. Type ``mrview`` to check that everything works
 
-4. You may also want to have a look through the :ref:`mrtrix_config_options`
+4. You may also want to have a look through the :ref:`config_file_options`
    and set anything you think might be required on your system.
    
   .. NOTE:: 
@@ -178,9 +173,7 @@ Set up *MRtrix3*
     is configured. If you find that the above doesn't work (e.g. typing
     ``mrview`` returns a 'command not found' error), try changing step 1 to
     instruct the ``set_path`` script to update ``PATH`` within a different
-    file, for example ``~/.bash_profile`` or ``~/.profile``, e.g. as follows:
-
-    ::
+    file, for example ``~/.bash_profile`` or ``~/.profile``, e.g. as follows::
 
       ./set_path ~/.bash_profile
 
@@ -188,17 +181,13 @@ Keeping *MRtrix3* up to date
 --------------------------
 
 1. You can update your installation at any time by opening a terminal in
-   the *MRtrix3* folder, and typing:
-
-   ::
+   the *MRtrix3* folder, and typing::
 
        git pull
        ./build
 
 2. If this doesn't work immediately, it may be that you need to re-run
-   the configure script:
-
-   ::
+   the configure script::
 
        ./configure
 
@@ -230,16 +219,11 @@ option). This means the executables will likely *not run* on a different
 CPUs with different instruction sets, resulting in 'illegal instruction'
 runtime errors. If you intend to run *MRtrix3* on a variety of different
 systems with a range of CPUs, or you have no idea what the CPU is on
-your target system, it is safest to specify a generic architecture when
-configuring *MRtrix3*, before invoking ``./build``. For example, assuming
-a 64-bit build is needed:
+your target system, it is safest to specify an empty (generic) architecture
+when configuring *MRtrix3*, before invoking ``./build``::
 
-::
-
-    ARCH='x86-64' ./configure
+    ARCH="" ./configure
     ./build
-
-For a 32-bit build, substituting ARCH='i686' or similar should suffice.
 
 Static build
 ^^^^^
@@ -250,14 +234,12 @@ no run-time dependencies. This can be accomplished by generating a
 static configuration before building the software, as follows.
 
 First, obtain the code and extract or clone it on a modern distribution
-(Arch, Ubuntu 14.04, Mint 17, ..., potentially with a virtual machine if
-required). Then, from the main *MRtrix3* folder:
-
-.. code::
+(Arch, Ubuntu 16.04, Mint 18, ..., potentially with a virtual machine if
+required). Then, from the main *MRtrix3* folder::
 
     ./build clean
     git pull
-    ARCH=x86-64 ./configure -static [-nogui]
+    ARCH="" ./configure -static [-nogui]
     ./build
 
 Note that this requires the availability of static versions of the
@@ -269,27 +251,31 @@ Qt <http://doc.qt.io/qt-5/linux-deployment.html#building-qt-statically>`__
 beforehand. Use the ``-nogui`` option to skip installation of GUI
 components, which rely on Qt.
 
-You can then copy the contents of the ``release/bin/`` folder onto target
-systems, make sure their location is listed in the ``PATH``, and start
-using these commands.
+You can then copy the contents of the ``bin/``, ``lib/`` and ``share/`` folders
+onto target systems, make sure the ``bin/`` folder location is listed in the
+``PATH``, and start using these commands. For example:
 
-If you also wish to be able to use the *MRtrix3* Python scripts, you can
-also copy the full contents of the ``scripts`` directory to the target
-system, and append their location to the ``PATH`` environment variable
-also. However, in order for certain functionalities of these scripts to
-work (for instance, controlling the command-line verbosity and
-multi-threading of invoked *MRtrix3* commands), the relative path between
-the scripts and binaries must be maintained; that is, the binaries must
-be located in ``../release/bin`` relative to ``scripts``. Therefore, the
-recommended solution is:
+1. Create a single archive of the relevant folders (for easy deployment)::
+   
+     tar cvfz mrtrix3_static.tgz bin/ lib/ share/
 
-1. Create an ``mrtrix3`` directory on the target system.
-2. Place the contents of ``release/bin`` into ``mrtrix3/release/bin``
-   on the target system.
-3. Place the contents of ``scripts`` (including all sub-directories) into
-   ``mrtrix3/scripts`` on the target system.
-4. Add ``mrtrix3/release/bin`` and ``mrtrix3/scripts`` to ``PATH`` on the
-   target system.
+2. Copy the resulting ``mrtrix3_static.tgz`` file over to the target system,
+   into a suitable location.
+
+3. Extract the archive in this location::
+
+     tar xvfz mrtrix3_static.tgz
+
+   You can safely remove the ``mrtrix3_static.tgz`` file at this point.
+
+4. Add the ``bin/`` folder to the system ``PATH``, e.g.::
+
+     export PATH="$(pwd)/bin:$PATH"
+
+   Note that the above command will only add *MRtrix3* to the ``PATH`` for the
+   current session. You would need to add the equivalent line to your users'
+   startup scripts, using whichever mechanism is appropriate for your system. 
+
 
 Standalone packager
 ^^^^^^^^^^^
@@ -338,27 +324,25 @@ Limitations
 
 -  **Installation on remote systems:** bear in mind that running the GUI
    components over a remote X11 connection is not possible, since the
-   GLX protocol does not support OpenGL 3 and above. You may be able to
-   use an OpenGL-capable VNC connection, but if that is not possible,
-   there is little point in installing the GUI components on the remote
-   server. The recommendation would be to configure with the ``-nogui``
-   option to skip the GUI components. You should also be able to access
-   your data over the network (e.g. using SAMBA or SSHFS), in which case
-   you would be able to display the images by running ``mrview`` locally and
-   loading the images over the shared network drives.
+   GLX protocol does not support OpenGL 3 and above (see :ref:`remote-display`
+   for details). You may be able to use an OpenGL-capable VNC connection, but
+   if that is not possible, there is little point in installing the GUI
+   components on the remote server. The recommendation would be to configure
+   with the ``-nogui`` option to skip the GUI components. You should also be
+   able to access your data over the network (e.g. using SAMBA or SSHFS), in
+   which case you would be able to display the images by running ``mrview``
+   locally and loading the images over the shared network drives.
 
 Instructions
 """""
 
 First, obtain the code and extract or clone it on a modern distribution
 (Arch, Ubuntu 14.04, Mint 17, ..., potentially with a virtual machine if
-required). Then, from the main *MRtrix3* folder:
-
-::
+required). Then, from the main *MRtrix3* folder::
 
     ./build clean
     git pull
-    ARCH='x86-64' ./configure [-nogui]
+    ARCH="" ./configure [-nogui]
     ./build
     ./package_mrtrix -standalone
 
@@ -366,17 +350,12 @@ Then copy the resulting ``_package/mrtrix3`` folder to the desired
 location on the target system (maybe your own home folder). To make the
 *MRtrix3* command available on the command-line, the ``bin/`` folder needs
 to be added to your PATH (note this assumes that you're running the BASH
-shell):
+shell)::
 
-::
+     export PATH="$(pwd)/bin:$PATH"
 
-    export PATH=$(pwd)/mrtrix3/release/bin:$(pwd)/mrtrix3/scripts:$PATH
+Note that the above command will only add *MRtrix3* to the ``PATH`` for the
+current session. You would need to add the equivalent line to your users'
+startup scripts, using whichever mechanism is appropriate for your system. 
 
-The above will only set your PATH for the current session. To make this
-the default for new sessions, you should add the relevant line to your
-``~/.bashrc`` file:
-
-::
-
-    echo export PATH=$(pwd)/mrtrix3/release/bin:$(pwd)/mrtrix3/scripts:\$PATH >> ~/.bashrc
 
