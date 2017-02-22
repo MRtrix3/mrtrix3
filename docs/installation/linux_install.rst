@@ -324,7 +324,7 @@ Limitations
 
 -  **Installation on remote systems:** bear in mind that running the GUI
    components over a remote X11 connection is not possible, since the
-   GLX protocol does not support OpenGL 3 and above (see :ref:`remote-display`
+   GLX protocol does not support OpenGL 3 and above (see :ref:`remote_display`
    for details). You may be able to use an OpenGL-capable VNC connection, but
    if that is not possible, there is little point in installing the GUI
    components on the remote server. The recommendation would be to configure
