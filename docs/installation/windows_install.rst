@@ -3,7 +3,8 @@ Windows installation
 =============
 
 
-We outline the steps for installing *MRtrix3* for Windows using `MSYS2 <http://sourceforge.net/p/msys2/wiki/MSYS2%20introduction/>`__. 
+We outline the steps for installing *MRtrix3* for Windows using `MSYS2
+<https://github.com/msys2/msys2/wiki>`__. 
 Please consult :ref:`windows_trouble_shooting` if you encounter any issues with the configure, build
 or runtime operations of *MRtrix3*.
 
@@ -24,7 +25,7 @@ To install *MRtrix3*, you will need the following:
    compiler
 -  `Python <https://www.python.org/>`__ version >= 2.7
 -  The `zlib <http://www.zlib.net/>`__ compression library
--  `Eigen <http://eigen.tuxfamily.org>`__ version 3.2 *(do not install the beta version)*
+-  `Eigen <http://eigen.tuxfamily.org>`__ version >= 3.2
 -  `Qt <http://www.qt.io/>`__ version >= 4.7 *[GUI components only]*
 
 .. NOTE::
@@ -42,38 +43,31 @@ Install and update MSYS2
 ------------------------
 
 1. Download and install the most recent 64-bit MSYS2 installer from
-   http://msys2.github.io/ (msys2-x86\_64-\*.exe).
+   http://msys2.github.io/ (msys2-x86\_64-\*.exe), and following the
+   installation instructions from the `MSYS2 wiki
+<https://github.com/msys2/msys2/wiki/MSYS2-installation>`__. 
 
 2. Run the program **'MinGW-w64 Win64 Shell'** from the start menu.
 
-3. Update the system packages:
+3. Update the system packages, `as per the instructions
+   <https://github.com/msys2/msys2/wiki/MSYS2-installation#iii-updating-packages>`__::
 
-   ::
+       pacman -Syuu
 
-       update-core
-   
-   .. NOTE::
-    Future versions of MSYS2 will drop ``update-core``. If your version came without ``update-core``, it is probably safe to skip this step.
+   Close the terminal, start a new **'MinGW-w64 Win64 Shell'**, and repeat as
+   necessary until no further packages are updated. 
 
 .. WARNING::
-    At time of writing, this MSYS2 system update will give a number of instructions, including: terminating the terminal when the update is
-    completed, and modifying the shortcuts for executing the shell(s). Although these instructions are not as prominent as they could be,
-    it is *vital* that they are followed correctly!
-
-4. Close the shell and start **'MinGW-w64 Win64 Shell'**
-   
-5. Update the other packages:
-
-   ::
-
-       pacman -Su
+    At time of writing, this MSYS2 system update will give a number of
+    instructions, including: terminating the terminal when the update is
+    completed, and modifying the shortcuts for executing the shell(s). Although
+    these instructions are not as prominent as they could be, it is *vital*
+    that they are followed correctly!
 
 Install *MRtrix3* dependencies
 ----------------------------
 
-1. From the **'MinGW-w64 Win64 Shell'** run:
-
-    ::
+1. From the **'MinGW-w64 Win64 Shell'** run::
 
         pacman -S git python pkg-config mingw-w64-x86_64-gcc mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5
     
@@ -83,9 +77,7 @@ Install *MRtrix3* dependencies
     place both the package file and corresponding .sig file into the
     ``/var/cache/pacman/pkg`` directory, and repeat the ``pacman`` call above.
 
-    Sometimes ``pacman`` may refuse to install a particular package, claiming e.g.:
-
-    ::
+    Sometimes ``pacman`` may refuse to install a particular package, claiming e.g.::
 
         error: failed to commit transaction (conflicting files)
         mingw-w64-x86_64-eigen3: /mingw64 exists in filesystem
@@ -141,16 +133,14 @@ Build *MRtrix3*
 Set up *MRtrix3*
 --------------
 
-
-1. Update the shell startup file, so that the locations of *MRtrix3* commands
-   and scripts will be added to your ``PATH`` envionment variable.
+1. Update the shell startup file, so that the shell can locate the *MRtrix3*
+   commands and scripts, by adding the ``bin/`` folder to your ``PATH``
+   environment variable.
    
    If you are not familiar or comfortable with modification of shell files,
-   *MRtrix3* now provides a convenience script that will perform this setup
-   for you (assuming that you are using ``bash`` or equivalent interpreter).
-   From the top level *MRtrix3* directory, run the following:
-   
-   ::
+   *MRtrix3* provides a convenience script that will perform this setup for you
+   (assuming that you are using ``bash`` or equivalent interpreter).  From the
+   top level *MRtrix3* directory, run the following::
 
        ./set_path
 
@@ -159,20 +149,10 @@ Set up *MRtrix3*
 
 3. Type ``mrview`` to check that everything works
 
-4. You may also want to have a look through the :ref:`mrtrix_config_options`
+4. You may also want to have a look through the :ref:`config_file_options`
    and set anything you think might be required on your system.
    
-  .. NOTE:: 
-    The above assumes that your shell will read the ``~/.bashrc`` file
-    at startup time. This is not always guaranteed, depending on how your
-    system is configured. If you find that the above doesn't work (e.g. typing
-    ``mrview`` returns a 'command not found' error), try changing step 1 to
-    instruct the ``set_path`` script to update ``PATH`` within a different
-    file, for example ``~/.bash_profile`` or ``~/.profile``, e.g. as follows:
 
-    ::
-
-      ./set_path ~/.bash_profile
 
 Keeping *MRtrix3* up to date
 --------------------------
