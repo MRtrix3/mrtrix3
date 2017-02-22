@@ -22,7 +22,7 @@ DESCRIPTION
     Other parameters are controlled by setting environment variables (see
     ENVIRONMENT VARIABLES below). For example:
 
-      $ ARCH=x86-84 ./configure
+      $ ARCH=x86-64 ./configure
 
     will produce a config file to run on a generic AMD64 CPU.
 
