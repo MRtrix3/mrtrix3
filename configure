@@ -591,10 +591,10 @@ int main() {
       report ('ok\n')
     except (CompileError, LinkError, RuntimeError):
       report ('not found\n')
-      cpp_flags += [ '-DMRTRIX_MAX_ALIGN_T_NOT_DEFINED' ]
     except:
       error ('unexpected exception!' + configure_log_hint)
 
+    std_max_align_t_defined = False
     report ('Checking for std::max_align_t: ')
     try:
       compile ('''
@@ -604,11 +604,11 @@ int main() {
   return 0;
 }
 ''', cpp_flags, ld_flags)
+      std_max_align_t_defined = True
       report ('ok\n')
     except (CompileError, LinkError, RuntimeError):
       report ('not found\n')
-      cpp_flags += [ '-DMRTRIX_STD_MAX_ALIGN_T_NOT_DEFINED' ]
-      if max_align_t_defined: 
+      if max_align_t_defined:
         break
     except:
       error ('unexpected exception!' + configure_log_hint)
@@ -619,7 +619,10 @@ else:
 
 ''' + compiler_hint ('compiler', 'CXX', '/usr/bin/g++-5.5', 'CXX_ARGS', '"-c CFLAGS SRC -o OBJECT"') + configure_log_hint)
 
-
+if not std_max_align_t_defined:
+ cpp_flags += [ '-DMRTRIX_STD_MAX_ALIGN_T_NOT_DEFINED' ]
+if not max_align_t_defined:
+  cpp_flags += [ '-DMRTRIX_MAX_ALIGN_T_NOT_DEFINED' ]
 
 
 
