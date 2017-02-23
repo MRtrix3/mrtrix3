@@ -764,7 +764,6 @@ int main (int argc, char* argv[]) {
 }
 ''', cpp_flags + eigen_cflags, ld_flags)
 
-  cpp_flags += eigen_cflags
   report (eigen_version + '\n')
 except CompileError:
   error (''' error compiling Eigen application!
