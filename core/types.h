@@ -34,6 +34,15 @@ namespace MR {
 #include <complex>
 #include <iostream>
 #include <vector>
+#include <cstddef>
+
+#ifdef MRTRIX_MAX_ALIGN_T_NOT_DEFINED
+using std::max_align_t;
+#endif
+
+#ifdef MRTRIX_STD_MAX_ALIGN_T_NOT_DEFINED
+namespace std { using ::max_align_t; }
+#endif
 
 #include <Eigen/Geometry>
 
