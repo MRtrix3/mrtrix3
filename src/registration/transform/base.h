@@ -14,6 +14,7 @@
 
 #ifndef __registration_transform_base_h__
 #define __registration_transform_base_h__
+#include "__mrtrix_plugin.h"
 
 #include "types.h"
 #include <unsupported/Eigen/MatrixFunctions> // Eigen::MatrixBase::sqrt()

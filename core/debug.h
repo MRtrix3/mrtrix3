@@ -14,6 +14,7 @@
 
 #ifndef __debug_h__
 #define __debug_h__
+#include "__mrtrix_plugin.h"
 
 #include <iostream>
 #include <string.h>

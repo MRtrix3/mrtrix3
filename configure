@@ -608,23 +608,20 @@ int main() {
       report ('ok\n')
     except (CompileError, LinkError, RuntimeError):
       report ('not found\n')
-      if max_align_t_defined:
-        break
     except:
       error ('unexpected exception!' + configure_log_hint)
-    else:
-      break;
+    break
 else:
   error ('''no suitable compiler found!
 
 ''' + compiler_hint ('compiler', 'CXX', '/usr/bin/g++-5.5', 'CXX_ARGS', '"-c CFLAGS SRC -o OBJECT"') + configure_log_hint)
 
-if not std_max_align_t_defined:
- cpp_flags += [ '-DMRTRIX_STD_MAX_ALIGN_T_NOT_DEFINED' ]
-if not max_align_t_defined:
+if not max_align_t_defined and not std_max_align_t_defined:
+  cpp_flags += [ '-DMRTRIX_MAX_ALIGN_T_NEEDS_TO_BE_DEFINED' ]
+elif not max_align_t_defined:
   cpp_flags += [ '-DMRTRIX_MAX_ALIGN_T_NOT_DEFINED' ]
-
-
+if not std_max_align_t_defined:
+  cpp_flags += [ '-DMRTRIX_STD_MAX_ALIGN_T_NOT_DEFINED' ]
 
 
 report ('Detecting pointer size: ')
@@ -758,6 +755,24 @@ else:
 
 try:
   eigen_version = compile ('''
+
+#ifdef MRTRIX_MAX_ALIGN_T_NEEDS_TO_BE_DEFINED
+typedef struct {
+   long long __clang_max_align_nonce1
+       __attribute__((__aligned__(__alignof__(long long))));
+   long double __clang_max_align_nonce2
+       __attribute__((__aligned__(__alignof__(long double))));
+ } max_align_t;
+#endif
+
+#ifdef MRTRIX_MAX_ALIGN_T_NOT_DEFINED
+using std::max_align_t;
+#endif
+
+#ifdef MRTRIX_STD_MAX_ALIGN_T_NOT_DEFINED
+namespace std { using ::max_align_t; }
+#endif
+
 #include <cstddef>
 #include <Eigen/Core>
 #include <iostream>
@@ -789,6 +804,23 @@ except:
 report('Checking JSON for Modern C++ requirements: ')
 try:
   compile ('''
+#ifdef MRTRIX_MAX_ALIGN_T_NEEDS_TO_BE_DEFINED
+typedef struct {
+   long long __clang_max_align_nonce1
+       __attribute__((__aligned__(__alignof__(long long))));
+   long double __clang_max_align_nonce2
+       __attribute__((__aligned__(__alignof__(long double))));
+ } max_align_t;
+#endif
+
+#ifdef MRTRIX_MAX_ALIGN_T_NOT_DEFINED
+using std::max_align_t;
+#endif
+
+#ifdef MRTRIX_STD_MAX_ALIGN_T_NOT_DEFINED
+namespace std { using ::max_align_t; }
+#endif
+
 #include "''' + os.path.join('file', 'json.h') + '''"
 
 int main (int argc, char* argv[])

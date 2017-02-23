@@ -14,6 +14,8 @@
 
 #ifndef __connectome_enhance_h__
 #define __connectome_enhance_h__
+#include "__mrtrix_plugin.h"
+
 
 #include <memory>
 #include <stdint.h>

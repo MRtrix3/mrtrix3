@@ -11,7 +11,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-
+#include "__mrtrix_plugin.h"
 #include "app.h"
 #include "datatype.h"
 
@@ -75,18 +75,18 @@ namespace MR
   {
     std::string str (lowercase (spec));
 
-    if (str == "float32") 
+    if (str == "float32")
       return Float32;
-    if (str == "float32le") 
+    if (str == "float32le")
       return Float32LE;
-    if (str == "float32be") 
+    if (str == "float32be")
       return Float32BE;
 
-    if (str == "float64") 
+    if (str == "float64")
       return Float64;
     if (str == "float64le")
       return Float64LE;
-    if (str == "float64be") 
+    if (str == "float64be")
       return Float64BE;
 
     if (str == "int64")
@@ -102,24 +102,24 @@ namespace MR
     if (str == "uint64be")
       return UInt64BE;
 
-    if (str == "int32") 
+    if (str == "int32")
       return Int32;
-    if (str == "uint32") 
+    if (str == "uint32")
       return UInt32;
-    if (str == "int32le") 
+    if (str == "int32le")
       return Int32LE;
     if (str == "uint32le")
       return UInt32LE;
-    if (str == "int32be") 
+    if (str == "int32be")
       return Int32BE;
-    if (str == "uint32be") 
+    if (str == "uint32be")
       return UInt32BE;
 
-    if (str == "int16") 
+    if (str == "int16")
       return Int16;
-    if (str == "uint16") 
+    if (str == "uint16")
       return UInt16;
-    if (str == "int16le") 
+    if (str == "int16le")
       return Int16LE;
     if (str == "uint16le")
       return UInt16LE;
@@ -128,14 +128,14 @@ namespace MR
     if (str == "uint16be")
       return UInt16BE;
 
-    if (str == "cfloat32") 
+    if (str == "cfloat32")
       return CFloat32;
     if (str == "cfloat32le")
       return CFloat32LE;
     if (str == "cfloat32be")
       return CFloat32BE;
 
-    if (str == "cfloat64") 
+    if (str == "cfloat64")
       return CFloat64;
     if (str == "cfloat64le")
       return CFloat64LE;
@@ -351,7 +351,7 @@ namespace MR
   DataType DataType::from_command_line (DataType default_datatype)
   {
     auto opt = App::get_options ("datatype");
-    if (opt.size()) 
+    if (opt.size())
       default_datatype = parse (opt[0][0]);
     return default_datatype;
   }
@@ -360,7 +360,7 @@ namespace MR
   App::OptionGroup DataType::options ()
   {
     using namespace App;
-    return OptionGroup ("Data type options") 
+    return OptionGroup ("Data type options")
       + Option ("datatype", "specify output image data type. "
           "Valid choices are: " + join (identifiers, ", ") + ".")
       + Argument ("spec").type_choice (identifiers);

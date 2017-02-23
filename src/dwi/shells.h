@@ -14,7 +14,7 @@
 
 #ifndef __dwi_shells_h__
 #define __dwi_shells_h__
-
+#include "__mrtrix_plugin.h"
 
 #include <fstream>
 #include <limits>
@@ -111,22 +111,22 @@ namespace MR
         const Shell& smallest() const { return shells.front(); }
         const Shell& largest()  const { return shells.back(); }
         size_t       count()    const { return shells.size(); }
-        size_t       volumecount()    const { 
+        size_t       volumecount()    const {
           size_t count = 0;
           for (const auto& it : shells)
             count += it.count();
           return count;
         }
 
-        vector<size_t> get_counts() const { 
-          vector<size_t> c (count()); 
+        vector<size_t> get_counts() const {
+          vector<size_t> c (count());
           for (size_t n = 0; n < count(); ++n)
             c[n] = shells[n].count();
           return c;
         }
 
-        vector<size_t> get_bvalues() const { 
-          vector<size_t> b (count()); 
+        vector<size_t> get_bvalues() const {
+          vector<size_t> b (count());
           for (size_t n = 0; n < count(); ++n)
             b[n] = shells[n].get_mean();
           return b;

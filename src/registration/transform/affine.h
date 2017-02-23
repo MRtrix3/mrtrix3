@@ -14,6 +14,7 @@
 
 #ifndef __registration_transform_affine_h__
 #define __registration_transform_affine_h__
+#include "__mrtrix_plugin.h"
 
 #include "registration/transform/base.h"
 #include "types.h"

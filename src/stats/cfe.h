@@ -14,6 +14,7 @@
 
 #ifndef __stats_cfe_h__
 #define __stats_cfe_h__
+#include "__mrtrix_plugin.h"
 
 #include "image.h"
 #include "image_helpers.h"

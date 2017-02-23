@@ -14,6 +14,7 @@
 
 #ifndef __dwi_tractography_roi_h__
 #define __dwi_tractography_roi_h__
+#include "__mrtrix_plugin.h"
 
 #include "app.h"
 #include "image.h"
@@ -63,7 +64,7 @@ namespace MR
           {
             try {
               auto F = parse_floats (spec);
-              if (F.size() != 4) 
+              if (F.size() != 4)
                 throw 1;
               pos[0] = F[0];
               pos[1] = F[1];
@@ -71,7 +72,7 @@ namespace MR
               radius = F[3];
               radius2 = Math::pow2 (radius);
             }
-            catch (...) { 
+            catch (...) {
               DEBUG ("could not parse spherical ROI specification \"" + spec + "\" - assuming mask image");
               mask.reset (new Mask (spec));
             }
@@ -146,7 +147,7 @@ namespace MR
             stream << *i;
             ++i;
             for (; i != R.R.end(); ++i) stream << ", " << *i;
-            return stream; 
+            return stream;
           }
 
         private:

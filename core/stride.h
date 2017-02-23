@@ -14,6 +14,7 @@
 
 #ifndef __stride_h__
 #define __stride_h__
+#include "__mrtrix_plugin.h"
 
 #include "app.h"
 #include "types.h"
@@ -68,7 +69,7 @@ namespace MR
     //! \cond skip
     namespace
     {
-      template <class HeaderType> 
+      template <class HeaderType>
         class Compare { NOMEMALIGN
           public:
             Compare (const HeaderType& header) : S (header) { }
@@ -99,7 +100,7 @@ namespace MR
           List& S;
       };
 
-      template <class HeaderType> 
+      template <class HeaderType>
         class InfoWrapper : public Wrapper
       { NOMEMALIGN
         public:
@@ -119,7 +120,7 @@ namespace MR
 
 
     //! return the strides of \a header as a vector<ssize_t>
-    template <class HeaderType> 
+    template <class HeaderType>
       List get (const HeaderType& header)
       {
         List ret (header.ndim());
@@ -153,13 +154,13 @@ namespace MR
     /*! \return a vector of indices of the axes in order of increasing
      * absolute stride.
      * \note all strides should be valid (i.e. non-zero). */
-    template <class HeaderType> 
+    template <class HeaderType>
       vector<size_t> order (const HeaderType& header, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
       {
         to_axis = std::min<size_t> (to_axis, header.ndim());
         assert (to_axis > from_axis);
         vector<size_t> ret (to_axis-from_axis);
-        for (size_t i = 0; i < ret.size(); ++i) 
+        for (size_t i = 0; i < ret.size(); ++i)
           ret[i] = from_axis+i;
         Compare<HeaderType> compare (header);
         std::sort (ret.begin(), ret.end(), compare);
@@ -170,7 +171,7 @@ namespace MR
     /*! \return a vector of indices of the axes in order of increasing
      * absolute stride.
      * \note all strides should be valid (i.e. non-zero). */
-    template <> inline 
+    template <> inline
       vector<size_t> order<List> (const List& strides, size_t from_axis, size_t to_axis)
       {
         const Wrapper wrapper (const_cast<List&> (strides));
@@ -185,7 +186,7 @@ namespace MR
      * zero) or duplicate (absolute) strides, and assigning to each a
      * suitable value. The value chosen for each sanitised stride is the
      * lowest number greater than any of the currently valid strides. */
-    template <class HeaderType> 
+    template <class HeaderType>
       void sanitise (HeaderType& header)
       {
         // remove duplicates
@@ -216,7 +217,7 @@ namespace MR
      * zero) or duplicate (absolute) strides, and assigning to each a
      * suitable value. The value chosen for each sanitised stride is the
      * lowest number greater than any of the currently valid strides. */
-    template <class HeaderType> 
+    template <class HeaderType>
       inline void sanitise (List& strides, const HeaderType& header)
       {
         InfoWrapper<HeaderType> wrapper (strides, header);
@@ -233,7 +234,7 @@ namespace MR
 
 
     //! convert strides from symbolic to actual strides
-    template <class HeaderType> 
+    template <class HeaderType>
       void actualise (HeaderType& header)
       {
         sanitise (header);
@@ -247,7 +248,7 @@ namespace MR
     //! convert strides from symbolic to actual strides
     /*! convert strides from symbolic to actual strides, assuming the strides
      * in \a strides and HeaderType dimensions of \a header. */
-    template <class HeaderType> 
+    template <class HeaderType>
       inline void actualise (List& strides, const HeaderType& header)
       {
         InfoWrapper<HeaderType> wrapper (strides, header);
@@ -255,7 +256,7 @@ namespace MR
       }
 
     //! get actual strides:
-    template <class HeaderType> 
+    template <class HeaderType>
       inline List get_actual (HeaderType& header)
       {
         List strides (get (header));
@@ -264,7 +265,7 @@ namespace MR
       }
 
     //! get actual strides:
-    template <class HeaderType> 
+    template <class HeaderType>
       inline List get_actual (const List& strides, const HeaderType& header)
       {
         List out (strides);
@@ -275,7 +276,7 @@ namespace MR
 
 
     //! convert strides from actual to symbolic strides
-    template <class HeaderType> 
+    template <class HeaderType>
       void symbolise (HeaderType& header)
       {
         vector<size_t> p (order (header));
@@ -284,7 +285,7 @@ namespace MR
             header.stride (p[i]) = header.stride (p[i]) < 0 ? -(i+1) : i+1;
       }
     //! convert strides from actual to symbolic strides
-    template <> 
+    template <>
       inline void symbolise (List& strides)
       {
         Wrapper wrapper (strides);
@@ -292,7 +293,7 @@ namespace MR
       }
 
     //! get symbolic strides:
-    template <class HeaderType> 
+    template <class HeaderType>
       inline List get_symbolic (const HeaderType& header)
       {
         List strides (get (header));
@@ -301,7 +302,7 @@ namespace MR
       }
 
     //! get symbolic strides:
-    template <> 
+    template <>
       inline List get_symbolic (const List& list)
       {
         List strides (list);
@@ -313,7 +314,7 @@ namespace MR
     //! calculate offset to start of data
     /*! this function caculate the offset (in number of voxels) from the start of the data region
      * to the first voxel value (i.e. at voxel [ 0 0 0 ... ]). */
-    template <class HeaderType> 
+    template <class HeaderType>
       size_t offset (const HeaderType& header)
       {
         size_t offset = 0;
@@ -327,7 +328,7 @@ namespace MR
     /*! this function caculate the offset (in number of voxels) from the start of the data region
      * to the first voxel value (i.e. at voxel [ 0 0 0 ... ]), assuming the
      * strides in \a strides and HeaderType dimensions of \a header. */
-    template <class HeaderType> 
+    template <class HeaderType>
       size_t offset (List& strides, const HeaderType& header)
       {
         InfoWrapper<HeaderType> wrapper (strides, header);
@@ -358,7 +359,7 @@ namespace MR
      * - \c current: [ -2 4 -3 1 ], \c desired: [ 1 2 3 0 ] => [ 1 2 3 4 ]
      * - \c current: [ -1 2 -3 4 ], \c desired: [ 1 2 3 0 ] => [ -1 2 -3 4 ]
      *   */
-    template <class HeaderType> 
+    template <class HeaderType>
       List get_nearest_match (const HeaderType& current, const List& desired)
       {
         List in (get_symbolic (current)), out (desired);
@@ -368,9 +369,9 @@ namespace MR
         for (size_t n = 0; n < dims.size(); ++n)
           dims[n] = current.size(n);
 
-        for (size_t i = 0; i < out.size(); ++i) 
-          if (out[i]) 
-            if (std::abs (out[i]) != std::abs (in[i])) 
+        for (size_t i = 0; i < out.size(); ++i)
+          if (out[i])
+            if (std::abs (out[i]) != std::abs (in[i]))
               return sanitise (in, out, dims);
 
         sanitise (in, current);
@@ -381,7 +382,7 @@ namespace MR
 
 
     //! convenience function to get volume-contiguous strides
-    inline List contiguous_along_axis (size_t axis) 
+    inline List contiguous_along_axis (size_t axis)
     {
       List strides (axis+1,0);
       strides[axis] = 1;
@@ -389,8 +390,8 @@ namespace MR
     }
 
     //! convenience function to get volume-contiguous strides
-    template <class HeaderType> 
-      inline List contiguous_along_axis (size_t axis, const HeaderType& header) 
+    template <class HeaderType>
+      inline List contiguous_along_axis (size_t axis, const HeaderType& header)
       {
         return get_nearest_match (header, contiguous_along_axis (axis));
       }
@@ -410,13 +411,13 @@ namespace MR
     List __from_command_line (const List& current);
 
 
-    template <class HeaderType> 
+    template <class HeaderType>
       inline void set_from_command_line (HeaderType& header, const List& default_strides = List())
       {
         auto cmdline_strides = __from_command_line (get (header));
         if (cmdline_strides.size())
           set (header, cmdline_strides);
-        else if (default_strides.size()) 
+        else if (default_strides.size())
           set (header, default_strides);
       }
 

@@ -14,6 +14,7 @@
 
 #ifndef __dwi_tractography_tracking_early_exit_h__
 #define __dwi_tractography_tracking_early_exit_h__
+#include "__mrtrix_plugin.h"
 
 #include <Eigen/Core>
 

@@ -14,6 +14,7 @@
 
 #ifndef __file_key_value_h__
 #define __file_key_value_h__
+#include "__mrtrix_plugin.h"
 
 #include <fstream>
 #include "mrtrix.h"

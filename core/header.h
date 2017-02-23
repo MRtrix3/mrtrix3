@@ -14,6 +14,7 @@
 
 #ifndef __header_h__
 #define __header_h__
+#include "__mrtrix_plugin.h"
 
 #include <map>
 #include <functional>
@@ -26,7 +27,7 @@
 #include "stride.h"
 #include "file/mmap.h"
 #include "image_helpers.h"
-#include "image_io/base.h" 
+#include "image_io/base.h"
 
 
 namespace MR
@@ -35,7 +36,7 @@ namespace MR
   extern const App::Option NoRealignOption;
 
   /*! \defgroup ImageAPI Image access
-   * \brief Classes and functions providing access to image data. 
+   * \brief Classes and functions providing access to image data.
    *
    * See @ref image_access for details. */
   // @{
@@ -108,7 +109,7 @@ namespace MR
           Header (static_cast<const Header&> (original)) { }
 
       //! copy constructor from type of class other than Header
-      /*! This copies all relevant parameters over from \a original. */ 
+      /*! This copies all relevant parameters over from \a original. */
       template <class HeaderType, typename std::enable_if<!std::is_base_of<Header, HeaderType>::value, void*>::type = nullptr>
         Header (const HeaderType& original) :
           transform_ (original.transform()),
@@ -171,7 +172,7 @@ namespace MR
           return *this;
         }
 
-      ~Header () { 
+      ~Header () {
         if (io) {
           try { io->close (*this); }
           catch (Exception& E) {
@@ -211,7 +212,7 @@ namespace MR
             return stream;
           }
         private:
-          vector<Axis>& axes; 
+          vector<Axis>& axes;
       };
 
       //! return the number of dimensions (axes) of image
@@ -300,17 +301,17 @@ namespace MR
 
       //! return an Image to access the data
       /*! when this method is invoked, the image data will actually be made
-       * available (i.e. it will be mapped, loaded or allocated into memory). 
+       * available (i.e. it will be mapped, loaded or allocated into memory).
        *
        * If \a read_write_if_existing is set, the data will be available
        * read-write even for input images (by default, these are opened
-       * read-only). 
+       * read-only).
        *
        * \note this call will invalidate the invoking Header, by passing the
        * relevant internal structures into the Image produced. The Header will
        * no longer be valid(), and subsequent calls to get_image() will fail.
        * This done to ensure ownership of the internal data structures remains
-       * clearly defined. 
+       * clearly defined.
        *
        * \warning do not modify the Header between its instantiation with the
        * open(), create() or scratch() calls, and obtaining an image via the
@@ -336,20 +337,20 @@ namespace MR
 
       //! return a string with the full description of the header
       std::string description() const;
-      //! print out debugging information 
+      //! print out debugging information
       friend std::ostream& operator<< (std::ostream& stream, const Header& H);
 
     protected:
-      vector<Axis> axes_; 
-      transform_type transform_; 
+      vector<Axis> axes_;
+      transform_type transform_;
       std::string name_;
       std::map<std::string, std::string> keyval_;
       const char* format_;
 
       //! additional information relevant for images stored on file
-      std::unique_ptr<ImageIO::Base> io; 
+      std::unique_ptr<ImageIO::Base> io;
       //! the type of the data as stored on file
-      DataType datatype_; 
+      DataType datatype_;
       //! the values by which to scale the intensities
       default_type offset_, scale_;
 
@@ -389,7 +390,7 @@ namespace MR
   inline default_type& Header::spacing (size_t axis) { return axes_[axis].spacing; }
 
   inline const ssize_t& Header::stride (size_t axis) const { return axes_[axis].stride; }
-  inline ssize_t& Header::stride (size_t axis) { return axes_[axis].stride; } 
+  inline ssize_t& Header::stride (size_t axis) { return axes_[axis].stride; }
 
   //! @}
 }

@@ -14,6 +14,7 @@
 
 #ifndef __gui_app_h__
 #define __gui_app_h__
+#include "__mrtrix_plugin.h"
 
 #include "app.h"
 #include "file/config.h"
@@ -61,7 +62,7 @@ namespace MR
           QLocale::setDefault(QLocale::c());
 
           new QApplication (cmdline_argc, cmdline_argv);
-          ::MR::App::init (cmdline_argc, cmdline_argv); 
+          ::MR::App::init (cmdline_argc, cmdline_argv);
           qApp->setAttribute (Qt::AA_DontCreateNativeWidgetSiblings);
         }
 
@@ -81,7 +82,7 @@ namespace MR
   auto __expected_context = ::MR::GUI::Context::get (window); \
   assert (__current_context == __expected_context); \
 }
-#else 
+#else
 # define ASSERT_GL_CONTEXT_IS_CURRENT(window)
 #endif
 

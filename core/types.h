@@ -14,17 +14,7 @@
 
 #ifndef __mrtrix_types_h__
 #define __mrtrix_types_h__
-
-#include <stddef.h>
-
-#ifdef MRTRIX_MAX_ALIGN_T_NOT_DEFINED
-using std::max_align_t;
-#endif
-
-#ifdef MRTRIX_STD_MAX_ALIGN_T_NOT_DEFINED
-namespace std { using ::max_align_t; }
-#endif
-
+#include "__mrtrix_plugin.h"
 
 #include <stdint.h>
 #include <complex>
@@ -56,7 +46,7 @@ namespace MR {
  * function is called recursively. They can be used safely in cases where the
  * size of the array is expected to be small, and the function will not be
  * called recursively, and in these cases may avoid the overhead of allocation
- * that might be incurred by the use of e.g. a vector. 
+ * that might be incurred by the use of e.g. a vector.
  */
 
 //! \{
@@ -93,14 +83,14 @@ namespace MR {
 /*! \def NON_POD_VLA
  * define a variable-length array of non-POD data if supported by the compiler,
  * or a vector otherwise. This may have performance implications in the
- * latter case if this forms part of a tight loop.  
+ * latter case if this forms part of a tight loop.
  * \sa VLA_MAX
  */
 
 /*! \def NON_POD_VLA_MAX
  * define a variable-length array of non-POD data if supported by the compiler,
  * or a fixed-length array of size \a max  otherwise. This may have performance
- * implications in the latter case if this forms part of a tight loop.  
+ * implications in the latter case if this forms part of a tight loop.
  * \note this should not be used in recursive functions, unless the maximum
  * number of calls is known to be small. Large amounts of recursion will run
  * the risk of overrunning the stack.
@@ -136,18 +126,18 @@ namespace MR {
 
 template <class T> class __has_custom_new_operator { NOMEMALIGN
     template <typename C> static inline char test (decltype(C::operator new (sizeof(C)))) ;
-    template <typename C> static inline long test (...);    
+    template <typename C> static inline long test (...);
   public:
     enum { value = sizeof(test<T>(nullptr)) == sizeof(char) };
 };
 
 
 inline void* __aligned_malloc (std::size_t size) {
-  auto* original = std::malloc (size + EIGEN_DEFAULT_ALIGN_BYTES); 
-  if (!original) throw std::bad_alloc(); 
+  auto* original = std::malloc (size + EIGEN_DEFAULT_ALIGN_BYTES);
+  if (!original) throw std::bad_alloc();
   void *aligned = reinterpret_cast<void*>((reinterpret_cast<std::size_t>(original) & ~(std::size_t(EIGEN_DEFAULT_ALIGN_BYTES-1))) + EIGEN_DEFAULT_ALIGN_BYTES);
-  *(reinterpret_cast<void**>(aligned) - 1) = original; 
-  return aligned; 
+  *(reinterpret_cast<void**>(aligned) - 1) = original;
+  return aligned;
 }
 
 inline void __aligned_free (void* ptr) { if (ptr) std::free (*(reinterpret_cast<void**>(ptr) - 1)); }
@@ -166,7 +156,7 @@ inline void __aligned_free (void* ptr) { if (ptr) std::free (*(reinterpret_cast<
  * requirements exceed that of the default allocator, and if so whether it has
  * custom operator new methods defined to deal with this. Conversely, it also
  * checks whether a custom allocator has been defined needlessly, which is to
- * be avoided for performance reasons. 
+ * be avoided for performance reasons.
  *
  * The compiler will check whether this is indeed needed, and fail with an
  * appropriate warning if this is not true. In this case, you need to replace
@@ -191,7 +181,7 @@ namespace MR
   template <typename T>
     struct container_cast : public T { MEMALIGN(container_cast<T>)
       template <typename U>
-        container_cast (const U& x) : 
+        container_cast (const U& x) :
         T (x.begin(), x.end()) { }
     };
 
@@ -211,8 +201,8 @@ namespace MR
 
 
   //! check whether type is compatible with MRtrix3's file IO backend:
-  template <class ValueType> 
-    struct is_data_type : 
+  template <class ValueType>
+    struct is_data_type :
       std::integral_constant<bool, std::is_arithmetic<ValueType>::value || is_complex<ValueType>::value> { NOMEMALIGN };
 
 
@@ -232,9 +222,9 @@ namespace MR
 
 }
 
-namespace std 
+namespace std
 {
-  // these are not defined in the standard, but are needed 
+  // these are not defined in the standard, but are needed
   // for use in generic templates:
   inline uint8_t abs (uint8_t x) { return x; }
   inline uint16_t abs (uint16_t x) { return x; }
@@ -244,7 +234,7 @@ namespace std
   template <class T> inline ostream& operator<< (ostream& stream, const vector<T>& V)
   {
     stream << "[ ";
-    for (size_t n = 0; n < V.size(); n++) 
+    for (size_t n = 0; n < V.size(); n++)
       stream << V[n] << " ";
     stream << "]";
     return stream;
@@ -253,7 +243,7 @@ namespace std
   template <class T, std::size_t N> inline ostream& operator<< (ostream& stream, const array<T,N>& V)
   {
     stream << "[ ";
-    for (size_t n = 0; n < N; n++) 
+    for (size_t n = 0; n < N; n++)
       stream << V[n] << " ";
     stream << "]";
     return stream;

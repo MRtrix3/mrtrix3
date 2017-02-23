@@ -14,6 +14,7 @@
 
 #ifndef __mrtrix_h__
 #define __mrtrix_h__
+#include "__mrtrix_plugin.h"
 
 #include <climits>
 #include <cstdio>
@@ -46,8 +47,8 @@ namespace MR
   inline std::istream& getline (std::istream& stream, std::string& string)
   {
     std::getline (stream, string);
-    if (string.size() > 0) 
-      if (string[string.size()-1] == 015) 
+    if (string.size() > 0)
+      if (string[string.size()-1] == 015)
         string.resize (string.size()-1);
     return stream;
   }
@@ -98,12 +99,12 @@ namespace MR
   }
 
 
-  //! convert a long string to 'beginningofstring...endofstring' for display 
+  //! convert a long string to 'beginningofstring...endofstring' for display
   inline std::string shorten (const std::string& text, size_t longest = 40, size_t prefix = 10)
   {
     if (text.size() > longest)
       return (text.substr (0,prefix) + "..." + text.substr (text.size()-longest+prefix+3));
-    else 
+    else
       return text;
   }
 
@@ -164,7 +165,7 @@ namespace MR
   inline std::string strip (const std::string& string, const char* ws = " \t\n", bool left = true, bool right = true)
   {
     std::string::size_type start = (left ? string.find_first_not_of (ws) : 0);
-    if (start == std::string::npos) 
+    if (start == std::string::npos)
       return "";
     std::string::size_type end = (right ? string.find_last_not_of (ws) + 1 : std::string::npos);
     return string.substr (start, end - start);
@@ -184,7 +185,7 @@ namespace MR
     size_t start_pos = 0;
     while((start_pos = str.find(from, start_pos)) != std::string::npos) {
       str.replace (start_pos, from.length(), to);
-      start_pos += to.length(); 
+      start_pos += to.length();
     }
   }
 
@@ -219,7 +220,7 @@ namespace MR
     if (!null_terminated_array)
       return ret;
     ret = null_terminated_array[0];
-    for (const char* const* p = null_terminated_array+1; *p; ++p) 
+    for (const char* const* p = null_terminated_array+1; *p; ++p)
       ret += delimiter + *p;
     return ret;
   }
@@ -243,10 +244,10 @@ namespace MR
   template <> inline std::string str<cfloat> (const cfloat& value, int precision)
   {
     std::ostringstream stream;
-    if (precision > 0) 
+    if (precision > 0)
       stream.precision (precision);
     stream << value.real();
-    if (value.imag()) 
+    if (value.imag())
       stream << std::showpos << value.imag() << "i";
     if (stream.fail())
       throw Exception ("error converting value to string");
@@ -268,7 +269,7 @@ namespace MR
       return cfloat (0.0f, real);
 
     stream >> imag;
-    if (stream.fail()) 
+    if (stream.fail())
       return cfloat (real, 0.0f);
     else if (stream.peek() != 'i' && stream.peek() != 'j')
       throw Exception ("error converting string \"" + string + "\"");
@@ -281,10 +282,10 @@ namespace MR
   template <> inline std::string str<cdouble> (const cdouble& value, int precision)
   {
     std::ostringstream stream;
-    if (precision > 0) 
+    if (precision > 0)
       stream.precision (precision);
     stream << value.real();
-    if (value.imag()) 
+    if (value.imag())
       stream << std::showpos << value.imag() << "i";
     if (stream.fail())
       throw Exception ("error converting value to string");
@@ -302,11 +303,11 @@ namespace MR
     if (stream.eof())
       return cdouble (real, 0.0);
 
-    if (stream.peek() == 'i' || stream.peek() == 'j') 
+    if (stream.peek() == 'i' || stream.peek() == 'j')
       return cdouble (0.0, real);
 
     stream >> imag;
-    if (stream.fail()) 
+    if (stream.fail())
       return cdouble (real, 0.0);
     else if (stream.peek() != 'i' && stream.peek() != 'j')
       throw Exception ("error converting string \"" + string + "\"");
@@ -318,9 +319,9 @@ namespace MR
   template <> inline bool to<bool> (const std::string& string)
   {
     std::string value = lowercase (string);
-    if (value == "true" || value == "yes") 
+    if (value == "true" || value == "yes")
       return true;
-    if (value == "false" || value == "no") 
+    if (value == "false" || value == "no")
       return false;
     return to<int> (value);
   }

@@ -14,6 +14,7 @@
 
 #ifndef __file_json_utils_h__
 #define __file_json_utils_h__
+#include "__mrtrix_plugin.h"
 
 #include "file/json.h"
 

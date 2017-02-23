@@ -14,6 +14,7 @@
 
 #ifndef __dwi_directions_load_h__
 #define __dwi_directions_load_h__
+#include "__mrtrix_plugin.h"
 
 #include "math/sphere.h"
 
@@ -24,29 +25,29 @@ namespace MR {
       Eigen::MatrixXd load_cartesian (const std::string& filename);
 
       template <class MatrixType>
-        inline void save_cartesian (const MatrixType& directions, const std::string& filename) 
+        inline void save_cartesian (const MatrixType& directions, const std::string& filename)
         {
-          if (directions.cols() == 2) 
+          if (directions.cols() == 2)
             save_matrix (Math::Sphere::spherical2cartesian (directions), filename);
-          else 
+          else
             save_matrix (directions, filename);
         }
 
       template <class MatrixType>
-        inline void save_spherical (const MatrixType& directions, const std::string& filename) 
+        inline void save_spherical (const MatrixType& directions, const std::string& filename)
         {
-          if (directions.cols() == 3) 
+          if (directions.cols() == 3)
             save_matrix (Math::Sphere::cartesian2spherical (directions), filename);
-          else 
+          else
             save_matrix (directions, filename);
         }
 
       template <class MatrixType>
-        inline void save (const MatrixType& directions, const std::string& filename, bool cartesian) 
+        inline void save (const MatrixType& directions, const std::string& filename, bool cartesian)
         {
-          if (cartesian) 
+          if (cartesian)
             save_cartesian (directions, filename);
-          else 
+          else
             save_spherical (directions, filename);
         }
 

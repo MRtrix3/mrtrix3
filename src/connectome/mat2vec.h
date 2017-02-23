@@ -14,6 +14,7 @@
 
 #ifndef __connectome_mat2vec_h__
 #define __connectome_mat2vec_h__
+#include "__mrtrix_plugin.h"
 
 
 #include <stdint.h>

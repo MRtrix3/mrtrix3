@@ -14,6 +14,7 @@
 
 #ifndef __registration_transform_initialiser_h__
 #define __registration_transform_initialiser_h__
+#include "__mrtrix_plugin.h"
 
 #include "image.h"
 #include "transform.h"

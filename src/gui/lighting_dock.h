@@ -14,6 +14,7 @@
 
 #ifndef __gui_lighting_dock_h__
 #define __gui_lighting_dock_h__
+#include "__mrtrix_plugin.h"
 
 #include "gui/opengl/lighting.h"
 

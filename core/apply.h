@@ -14,6 +14,7 @@
 
 #ifndef __apply_h__
 #define __apply_h__
+#include "__mrtrix_plugin.h"
 
 #include <tuple>
 #include <type_traits>
@@ -77,7 +78,7 @@ namespace MR {
 
   //! invoke \c f(x) for each entry in \c t
   template <class F, class T>
-    FORCE_INLINE void apply (F && f, T && t) 
+    FORCE_INLINE void apply (F && f, T && t)
     {
       Apply< ::std::tuple_size<
         typename ::std::decay<T>::type

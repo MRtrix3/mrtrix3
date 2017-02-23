@@ -14,6 +14,7 @@
 
 #ifndef __timer_h__
 #define __timer_h__
+#include "__mrtrix_plugin.h"
 
 #include <chrono>
 
@@ -59,7 +60,7 @@ namespace MR
        * false until another interval has elapsed. */
       operator bool() {
         auto now = std::chrono::high_resolution_clock::now();
-        if (now < next_time) 
+        if (now < next_time)
           return false;
         from = now;
         next_time += interval;

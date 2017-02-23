@@ -14,6 +14,7 @@
 
 #ifndef __app_h__
 #define __app_h__
+#include "__mrtrix_plugin.h"
 
 #include <string.h>
 #include <string>
@@ -61,7 +62,7 @@ namespace MR
     std::string help_synopsis (int format);
     std::string help_tail (int format);
     std::string usage_syntax (int format);
-    
+
 
 
 
@@ -128,12 +129,12 @@ namespace MR
 
 
 
-    inline void check_overwrite (const std::string& name) 
+    inline void check_overwrite (const std::string& name)
     {
       if (Path::exists (name) && !overwrite_files) {
         if (check_overwrite_files_func)
           check_overwrite_files_func (name);
-        else 
+        else
           throw Exception ("output file \"" + name + "\" already exists (use -force option to force overwrite)");
       }
     }
@@ -266,7 +267,7 @@ namespace MR
      * a paragraph to the description using the '+' operator, e.g.:
      * \code
      * void usage() {
-     *   DESCRIPTION 
+     *   DESCRIPTION
      *   + "This command can be used in lots of ways "
      *     "and is very versatile."
      *
@@ -289,7 +290,7 @@ namespace MR
      *   ARGUMENTS
      *   + Argument ("in", "the input image").type_image_in()
      *   + Argument ("factor", "the factor to use in the analysis").type_float()
-     *   + Argument ("out", "the output image").type_image_out(); 
+     *   + Argument ("out", "the output image").type_image_out();
      * }
      * \endcode
      */
@@ -358,12 +359,12 @@ namespace MR
      * }
      * \endcode */
     const vector<ParsedOption> get_options (const std::string& name);
-    
-    
+
+
     //! Returns the option value if set, and the default otherwise.
     /*! Returns the value of (the first occurence of) option \c name
      *  or the default value provided as second argument.
-     * 
+     *
      * Use:
      * \code
      *  float arg1 = get_option_value("myopt", arg1_default);
@@ -377,7 +378,7 @@ namespace MR
       T r = (opt.size()) ? opt[0][0] : default_value;
       return r;
     }
-    
+
 
     //! convenience function provided mostly to ease writing Exception strings
     inline std::string operator+ (const char* left, const App::ParsedArgument& right)

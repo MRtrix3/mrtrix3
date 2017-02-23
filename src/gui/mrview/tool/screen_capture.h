@@ -14,6 +14,7 @@
 
 #ifndef __gui_mrview_tool_screen_capture_h__
 #define __gui_mrview_tool_screen_capture_h__
+#include "__mrtrix_plugin.h"
 
 #include <deque>
 

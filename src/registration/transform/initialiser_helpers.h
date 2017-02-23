@@ -14,6 +14,7 @@
 
 #ifndef __registration_transform_initialiser_helpers_h__
 #define __registration_transform_initialiser_helpers_h__
+#include "__mrtrix_plugin.h"
 
 #include <algorithm>
 #include <Eigen/Geometry>

@@ -14,6 +14,7 @@
 
 #ifndef __math_average_space_h__
 #define __math_average_space_h__
+#include "__mrtrix_plugin.h"
 
 #include <unsupported/Eigen/MatrixFunctions>
 #include <Eigen/SVD>

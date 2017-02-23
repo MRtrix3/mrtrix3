@@ -14,6 +14,7 @@
 
 #ifndef __dwi_tractography_weights_h__
 #define __dwi_tractography_weights_h__
+#include "__mrtrix_plugin.h"
 
 #include "cmdline_option.h"
 

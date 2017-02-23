@@ -14,6 +14,7 @@
 
 #ifndef __math_math_h__
 #define __math_math_h__
+#include "__mrtrix_plugin.h"
 
 #include <cmath>
 #include <cstdlib>

@@ -10,7 +10,7 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
+#include "__mrtrix_plugin.h"
 
 #ifdef SIGALRM
     __SIGNAL (SIGALRM, "Timer expiration");

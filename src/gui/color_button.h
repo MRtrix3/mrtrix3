@@ -14,6 +14,7 @@
 
 #ifndef __gui_color_button_h__
 #define __gui_color_button_h__
+#include "__mrtrix_plugin.h"
 
 #include "gui/opengl/gl.h"
 

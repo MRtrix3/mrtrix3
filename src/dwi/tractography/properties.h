@@ -14,6 +14,7 @@
 
 #ifndef __dwi_tractography_properties_h__
 #define __dwi_tractography_properties_h__
+#include "__mrtrix_plugin.h"
 
 #include <map>
 #include "timer.h"
@@ -35,7 +36,7 @@ namespace MR
       class Properties : public std::map<std::string, std::string> { MEMALIGN(Properties)
         public:
 
-          Properties () { 
+          Properties () {
             set_timestamp();
           }
 
@@ -55,13 +56,13 @@ namespace MR
           std::multimap<std::string, std::string> roi;
 
 
-          void  clear () { 
-            std::map<std::string, std::string>::clear(); 
+          void  clear () {
+            std::map<std::string, std::string>::clear();
             seeds.clear();
             include.clear();
             exclude.clear();
             mask.clear();
-            comments.clear(); 
+            comments.clear();
             roi.clear();
           }
 
@@ -74,7 +75,7 @@ namespace MR
       };
 
 
-      inline void check_timestamps (const Properties& a, const Properties& b, const std::string& type) 
+      inline void check_timestamps (const Properties& a, const Properties& b, const std::string& type)
       {
         Properties::const_iterator stamp_a = a.find ("timestamp");
         Properties::const_iterator stamp_b = b.find ("timestamp");
@@ -87,7 +88,7 @@ namespace MR
 
 
 
-      inline void check_counts (const Properties& a, const Properties& b, const std::string& type, bool abort_on_fail) 
+      inline void check_counts (const Properties& a, const Properties& b, const std::string& type, bool abort_on_fail)
       {
         Properties::const_iterator count_a = a.find ("count");
         Properties::const_iterator count_b = b.find ("count");

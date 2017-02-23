@@ -14,7 +14,7 @@
 
 #ifndef __raw_h__
 #define __raw_h__
-
+#include "__mrtrix_plugin.h"
 /** \defgroup Binary Binary access functions
  * \brief functions to provide easy access to binary data. */
 
@@ -45,7 +45,7 @@ namespace MR
 
     template <typename ValueType>
       inline typename std::enable_if<std::is_fundamental<ValueType>::value && sizeof(ValueType) == 1, ValueType>::type swap (ValueType v) {
-        return v; 
+        return v;
       }
 
     template <typename ValueType>
@@ -83,7 +83,7 @@ namespace MR
       }
 
     template <typename ValueType>
-      inline typename std::enable_if<is_complex<ValueType>::value, ValueType>::type swap (ValueType v) { return { swap (v.real()), swap (v.imag()) }; } 
+      inline typename std::enable_if<is_complex<ValueType>::value, ValueType>::type swap (ValueType v) { return { swap (v.real()), swap (v.imag()) }; }
 
     template <typename ValueType>
       inline ValueType LE (ValueType v) { return TO_LE (v); }
@@ -91,7 +91,7 @@ namespace MR
     template <typename ValueType>
       inline ValueType BE (ValueType v) { return TO_BE (v); }
 
-    template <typename ValueType> 
+    template <typename ValueType>
       inline ValueType swap (const ValueType value, bool is_big_endian) { return is_big_endian ? BE (value) : LE (value); }
 
   }
@@ -105,75 +105,75 @@ namespace MR
 
 
     // GET from pointer:
-    template <typename ValueType> 
+    template <typename ValueType>
       inline ValueType fetch_LE (const void* address) { return ByteOrder::LE (*as<ValueType> (address)); }
 
-    template <typename ValueType> 
+    template <typename ValueType>
       inline ValueType fetch_BE (const void* address) { return ByteOrder::BE (*as<ValueType> (address)); }
 
-    template <typename ValueType> 
+    template <typename ValueType>
       inline ValueType fetch_ (const void* address, bool is_big_endian = MRTRIX_IS_BIG_ENDIAN) { return ByteOrder::swap (*as<ValueType>(address), is_big_endian); }
 
-    template <typename ValueType> 
+    template <typename ValueType>
       inline ValueType fetch__native (const void* address) { return *as<ValueType>(address); }
 
     // PUT at pointer:
-    template <typename ValueType> 
+    template <typename ValueType>
       inline void store_LE (const ValueType value, void* address) { *as<ValueType>(address) = ByteOrder::LE (value); }
 
-    template <typename ValueType> 
+    template <typename ValueType>
       inline void store_BE (const ValueType value, void* address) { *as<ValueType>(address) = ByteOrder::BE (value); }
 
-    template <typename ValueType> 
+    template <typename ValueType>
       inline void store (const ValueType value, void* address, bool is_big_endian = MRTRIX_IS_BIG_ENDIAN) { *as<ValueType>(address) = ByteOrder::swap (value, is_big_endian); }
 
-    template <typename ValueType> 
+    template <typename ValueType>
       inline void store_native (const ValueType value, void* address) { *as<ValueType>(address) = value; }
 
 
 
-    //! fetch \a value in little-endian format from offset \a i from \a data 
-    template <typename ValueType> 
+    //! fetch \a value in little-endian format from offset \a i from \a data
+    template <typename ValueType>
       inline ValueType fetch_LE (const void* data, size_t i) { return ByteOrder::LE (as<ValueType>(data)[i]); }
 
-    //! fetch \a value in big-endian format from offset \a i from \a data 
-    template <typename ValueType> 
+    //! fetch \a value in big-endian format from offset \a i from \a data
+    template <typename ValueType>
       inline ValueType fetch_BE (const void* data, size_t i) { return ByteOrder::BE (as<ValueType>(data)[i]); }
 
-    //! fetch \a value in format \a is_big_endian from offset \a i from \a data 
-    template <typename ValueType> 
+    //! fetch \a value in format \a is_big_endian from offset \a i from \a data
+    template <typename ValueType>
       inline ValueType fetch (const void* data, size_t i, bool is_big_endian = MRTRIX_IS_BIG_ENDIAN) { return ByteOrder::swap (as<ValueType>(data)[i], is_big_endian); }
 
-    //! fetch \a value in native format from offset \a i from \a data 
-    template <typename ValueType> 
+    //! fetch \a value in native format from offset \a i from \a data
+    template <typename ValueType>
       inline ValueType fetch_native (const void* data, size_t i) { return as<ValueType>(data)[i]; }
 
 
 
-    //! store \a value in little-endian format at offset \a i from \a data 
-    template <typename ValueType> 
+    //! store \a value in little-endian format at offset \a i from \a data
+    template <typename ValueType>
       inline void store_LE (const ValueType value, void* data, size_t i) { as<ValueType>(data)[i] = ByteOrder::LE (value); }
 
-    //! store \a value in big-endian format at offset \a i from \a data 
-    template <typename ValueType> 
+    //! store \a value in big-endian format at offset \a i from \a data
+    template <typename ValueType>
       inline void store_BE (const ValueType value, void* data, size_t i) { as<ValueType>(data)[i] = ByteOrder::BE (value); }
 
-    //! store \a value in format \a is_big_endian at offset \a i from \a data 
-    template <typename ValueType> 
+    //! store \a value in format \a is_big_endian at offset \a i from \a data
+    template <typename ValueType>
       inline void store (const ValueType value, void* data, size_t i, bool is_big_endian = MRTRIX_IS_BIG_ENDIAN) { as<ValueType>(data)[i] = ByteOrder::swap (value, is_big_endian); }
 
-    //! store \a value in native format at offset \a i from \a data 
-    template <typename ValueType> 
+    //! store \a value in native format at offset \a i from \a data
+    template <typename ValueType>
       inline void store_native (const ValueType value, void* data, size_t i) { as<ValueType>(data)[i] = value; }
 
 
     //! \cond skip
 
 
-    template <> 
+    template <>
       inline bool fetch_native<bool> (const void* data, size_t i) { return ( as<uint8_t>(data)[i/8]) & (BITMASK >> i%8 ); }
 
-    template <> 
+    template <>
       inline void store_native<bool> (const bool value, void* data, size_t i) {
         std::atomic<uint8_t>* at = reinterpret_cast<std::atomic<uint8_t>*> (as<uint8_t>(data) + (i/8));
         uint8_t prev = *at, new_value;
@@ -184,10 +184,10 @@ namespace MR
       }
 
 
-    template <> 
+    template <>
       inline bool fetch<bool> (const void* data, size_t i, bool) { return fetch_native<bool> (data, i); }
 
-    template <> 
+    template <>
       inline void store<bool> (const bool value, void* data, size_t i, bool) { store_native<bool> (value, data, i); }
 
     //! \endcond

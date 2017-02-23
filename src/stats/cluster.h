@@ -14,6 +14,7 @@
 
 #ifndef __stats_cluster_h__
 #define __stats_cluster_h__
+#include "__mrtrix_plugin.h"
 
 #include "filter/connected_components.h"
 #include "math/stats/typedefs.h"

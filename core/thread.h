@@ -14,6 +14,7 @@
 
 #ifndef __mrtrix_thread_h__
 #define __mrtrix_thread_h__
+#include "__mrtrix_plugin.h"
 
 #include <thread>
 #include <future>
@@ -29,8 +30,8 @@
  * These functions and associated classes provide a simple interface for
  * multi-threading in MRtrix applications. Most of the low-level funtionality
  * relies on the C++11 `std::thread` API. MRtrix3 builds on this to add three
- * convenience methods: 
- * 
+ * convenience methods:
+ *
  * - [Thread::run()](@ref Thread::run()) to launch one or more worker threads;
  *
  * - [ThreadedLoop()](@ref image_thread_looping) to run an operation over all voxels
@@ -61,11 +62,11 @@ namespace MR
         __Backend();
         ~__Backend();
 
-        static void register_thread () { 
+        static void register_thread () {
           std::lock_guard<std::mutex> lock (mutex);
           if (!backend)
             backend = new __Backend;
-          ++backend->refcount; 
+          ++backend->refcount;
         }
         static void unregister_thread () {
           assert (backend);
@@ -109,7 +110,7 @@ namespace MR
         public:
           template <class Functor>
             __single_thread (Functor&& functor, const std::string& name = "unnamed") :
-            __thread_base (name) { 
+            __thread_base (name) {
               DEBUG ("launching thread \"" + name + "\"...");
               typedef typename std::remove_reference<Functor>::type F;
               thread = std::async (std::launch::async, &F::execute, &functor);
@@ -119,7 +120,7 @@ namespace MR
 
           void wait () noexcept (false) {
             DEBUG ("waiting for completion of thread \"" + name + "\"...");
-            thread.get(); 
+            thread.get();
             DEBUG ("thread \"" + name + "\" completed OK");
           }
 
@@ -139,11 +140,11 @@ namespace MR
         class __multi_thread : public __thread_base { NOMEMALIGN
           public:
             __multi_thread (Functor& functor, size_t nthreads, const std::string& name = "unnamed") :
-              __thread_base (name), functors ( (nthreads>0 ? nthreads-1 : 0), functor) { 
+              __thread_base (name), functors ( (nthreads>0 ? nthreads-1 : 0), functor) {
                 DEBUG ("launching " + str (nthreads) + " threads \"" + name + "\"...");
                 typedef typename std::remove_reference<Functor>::type F;
                 threads.reserve (nthreads);
-                for (auto& f : functors) 
+                for (auto& f : functors)
                   threads.push_back (std::async (std::launch::async, &F::execute, &f));
                 threads.push_back (std::async (std::launch::async, &F::execute, &functor));
               }
@@ -155,22 +156,22 @@ namespace MR
               DEBUG ("waiting for completion of threads \"" + name + "\"...");
               bool exception_thrown = false;
               for (auto& t : threads) {
-                if (!t.valid()) 
+                if (!t.valid())
                   continue;
                 try { t.get(); }
-                catch (Exception& E) { 
+                catch (Exception& E) {
                   exception_thrown = true;
-                  E.display(); 
+                  E.display();
                 }
               }
-              if (exception_thrown) 
+              if (exception_thrown)
                 throw Exception ("exception thrown from one or more threads \"" + name + "\"");
               DEBUG ("threads \"" + name + "\" completed OK");
             }
 
             bool any_valid () const {
-              for (auto& t : threads) 
-                if (t.valid()) 
+              for (auto& t : threads)
+                if (t.valid())
                   return true;
               return false;
             }
@@ -188,7 +189,7 @@ namespace MR
         };
 
 
-      template <class Functor> 
+      template <class Functor>
         class __Multi { NOMEMALIGN
           public:
             __Multi (Functor& object, size_t number) : functor (object), num (number) { }
@@ -233,7 +234,7 @@ namespace MR
      * multi-threaded applications, in practice the \ref image_thread_looping
      * and \ref thread_queue APIs provide much more convenient and powerful
      * ways of developing robust and efficient applications.
-     * 
+     *
      * @{ */
 
     /*! the number of cores to use for multi-threading, as specified in the
@@ -247,12 +248,12 @@ namespace MR
     /*! This function is used in combination with Thread::run or
      * Thread::run_queue to request that the functor \a object be run in
      * parallel using \a number threads of execution (defaults to
-     * Thread::number_of_threads()). 
-     * \sa Thread::run() 
+     * Thread::number_of_threads()).
+     * \sa Thread::run()
      * \sa Thread::run_queue() */
     template <class Functor>
-      inline __Multi<typename std::remove_reference<Functor>::type> 
-      multi (Functor&& functor, size_t nthreads = number_of_threads()) 
+      inline __Multi<typename std::remove_reference<Functor>::type>
+      multi (Functor&& functor, size_t nthreads = number_of_threads())
       {
         return { functor, nthreads };
       }
@@ -309,7 +310,7 @@ namespace MR
      * threads from throwing exceptions. This means you should perform all
      * error checking within a single-threaded context, before starting
      * processing-intensive threads, so as to minimise the chances of anything
-     * going wrong at that stage. 
+     * going wrong at that stage.
      *
      * In this implementation, the wait() function can be used to wait until
      * all threads have completed, at which point any exceptions thrown will be
@@ -330,12 +331,12 @@ namespace MR
      * within the same scope, each of which might throw. In these cases, it is
      * best to explicitly call wait() for each of the objects returned by
      * Thread::run(), rather than relying on the destructor alone (note
-     * Thread::Queue already does this). 
+     * Thread::Queue already does this).
      *
      * \sa Thread::multi()
      */
     template <class Functor>
-      inline typename __run<Functor>::type run (Functor&& functor, const std::string& name = "unnamed") 
+      inline typename __run<Functor>::type run (Functor&& functor, const std::string& name = "unnamed")
       {
         return __run<typename std::remove_reference<Functor>::type>() (functor, name);
       }
