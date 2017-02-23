@@ -15,23 +15,34 @@
 #ifndef __mrtrix_types_h__
 #define __mrtrix_types_h__
 
-#include <stddef.h>
-
-#ifdef MRTRIX_MAX_ALIGN_T_NOT_DEFINED
-using std::max_align_t;
-#endif
-
-#ifdef MRTRIX_STD_MAX_ALIGN_T_NOT_DEFINED
-namespace std { using ::max_align_t; }
-#endif
-
 
 #include <stdint.h>
 #include <complex>
 #include <iostream>
 #include <vector>
+#include <cstddef>
+
+#define NOMEMALIGN
 
 namespace MR {
+
+#ifdef MRTRIX_MAX_ALIGN_T_NOT_DEFINED
+# ifdef MRTRIX_STD_MAX_ALIGN_T_NOT_DEFINED
+  // needed for clang 3.4:
+  typedef struct { NOMEMALIGN
+    long long __clang_max_align_nonce1
+        __attribute__((__aligned__(__alignof__(long long))));
+    long double __clang_max_align_nonce2
+        __attribute__((__aligned__(__alignof__(long double))));
+  } __max_align_t;
+  constexpr size_t malloc_align = alignof (__max_align_t);
+# else
+  constexpr size_t malloc_align = alignof (std::max_align_t);
+# endif
+#else 
+  constexpr size_t malloc_align = alignof (::max_align_t);
+#endif
+
   namespace Helper {
     template <class ImageType> class ConstRow;
     template <class ImageType> class Row;
@@ -132,7 +143,6 @@ namespace MR {
 # define EIGEN_DEFAULT_ALIGN_BYTES 16
 #endif
 
-#define NOMEMALIGN
 
 template <class T> class __has_custom_new_operator { NOMEMALIGN
     template <typename C> static inline char test (decltype(C::operator new (sizeof(C)))) ;
@@ -154,10 +164,10 @@ inline void __aligned_free (void* ptr) { if (ptr) std::free (*(reinterpret_cast<
 
 
 #define MEMALIGN(...) public: \
-  FORCE_INLINE void* operator new (std::size_t size) { return (alignof(__VA_ARGS__)>alignof(::max_align_t)) ? __aligned_malloc (size) : ::operator new (size); } \
-  FORCE_INLINE void* operator new[] (std::size_t size) { return (alignof(__VA_ARGS__)>alignof(::max_align_t)) ? __aligned_malloc (size) : ::operator new[] (size); } \
-  FORCE_INLINE void operator delete (void* ptr) { if (alignof(__VA_ARGS__)>alignof(::max_align_t)) __aligned_free (ptr); else ::operator delete (ptr); } \
-  FORCE_INLINE void operator delete[] (void* ptr) { if (alignof(__VA_ARGS__)>alignof(::max_align_t)) __aligned_free (ptr); else ::operator delete[] (ptr); }
+  FORCE_INLINE void* operator new (std::size_t size) { return (alignof(__VA_ARGS__)>alignof(malloc_align)) ? __aligned_malloc (size) : ::operator new (size); } \
+  FORCE_INLINE void* operator new[] (std::size_t size) { return (alignof(__VA_ARGS__)>alignof(malloc_align)) ? __aligned_malloc (size) : ::operator new[] (size); } \
+  FORCE_INLINE void operator delete (void* ptr) { if (alignof(__VA_ARGS__)>alignof(malloc_align)) __aligned_free (ptr); else ::operator delete (ptr); } \
+  FORCE_INLINE void operator delete[] (void* ptr) { if (alignof(__VA_ARGS__)>alignof(malloc_align)) __aligned_free (ptr); else ::operator delete[] (ptr); }
 
 
 /*! \def CHECK_MEM_ALIGN
@@ -175,7 +185,7 @@ inline void __aligned_free (void* ptr) { if (ptr) std::free (*(reinterpret_cast<
  * \sa MEMALIGN
  */
 #define CHECK_MEM_ALIGN(...) \
-    static_assert ( (alignof(__VA_ARGS__) <= alignof(::max_align_t) ) || __has_custom_new_operator<__VA_ARGS__>::value, \
+    static_assert ( (alignof(__VA_ARGS__) <= alignof(malloc_align) ) || __has_custom_new_operator<__VA_ARGS__>::value, \
         "class requires over-alignment, but no operator new defined! Please insert MEMALIGN() into class definition.")
 
 
@@ -216,7 +226,7 @@ namespace MR
       std::integral_constant<bool, std::is_arithmetic<ValueType>::value || is_complex<ValueType>::value> { NOMEMALIGN };
 
 
-  template <typename X, int N=(alignof(X)>alignof(::max_align_t))>
+  template <typename X, int N=(alignof(X)>alignof(malloc_align))>
     class vector : public ::std::vector<X, Eigen::aligned_allocator<X>> { NOMEMALIGN
       public:
         using ::std::vector<X,Eigen::aligned_allocator<X>>::vector;
