@@ -577,8 +577,22 @@ int main() {
   except:
     error ('unexpected exception!' + configure_log_hint)
   else:
-    break
-
+    report ('Checking for ::max_align_t: ')
+    try:
+      compile ('''
+#include <cstddef>
+using ::max_align_t;
+int main() {
+  return 0;
+}
+''', cpp_flags, ld_flags)
+      report ('ok\n')
+    except (CompileError, LinkError, RuntimeError):
+      report ('test failed (see configure.log for details)\n')
+    except:
+      error ('unexpected exception!' + configure_log_hint)
+    else:
+      break
 else:
   error ('''no suitable compiler found!
 
