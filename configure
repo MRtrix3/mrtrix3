@@ -581,7 +581,7 @@ int main() {
     report ('Checking for ::max_align_t: ')
     try:
       compile ('''
-#include <cstddef>
+#include <stddef.h>
 using ::max_align_t;
 int main() {
   return 0;
@@ -598,7 +598,7 @@ int main() {
     report ('Checking for std::max_align_t: ')
     try:
       compile ('''
-#include <cstddef>
+#include <stddef.h>
 using std::max_align_t;
 int main() {
   return 0;

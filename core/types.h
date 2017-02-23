@@ -15,7 +15,7 @@
 #ifndef __mrtrix_types_h__
 #define __mrtrix_types_h__
 
-#include <cstddef>
+#include <stddef.h>
 
 #ifdef MRTRIX_MAX_ALIGN_T_NOT_DEFINED
 using std::max_align_t;
