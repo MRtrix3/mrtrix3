@@ -474,7 +474,7 @@ namespace MR
                 evaluate.set_directions (aPSF_directions);
 
               INFO ("registration stage running...");
-              for (auto stage_iter = 1; stage_iter <= stage.stage_iterations; ++stage_iter) {
+              for (auto stage_iter = 1U; stage_iter <= stage.stage_iterations; ++stage_iter) {
                 if (stage.gd_max_iter > 0 and stage.optimisers[stage_iter - 1] == OptimiserAlgoType::bbgd) {
                   Math::GradientDescentBB<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
                   optim (evaluate, *transform.get_gradient_descent_updator());
