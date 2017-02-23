@@ -7,16 +7,17 @@ echo "" >> $LOG
 
 retval=0
 
-for f in $(find . -type f -name '*.h' -o -name '*.cpp' | grep -v '_moc.cpp'); do 
+for f in $(find . -type f -name '*.h' -o -name '*.cpp' | grep -v '_moc.cpp'); do
 
 # files to ignore:
-  [[ "$f" -ef "src/gui/shview/icons.h" || 
-     "$f" -ef "src/gui/shview/icons.cpp" || 
-     "$f" -ef "src/gui/mrview/icons.h" || 
-     "$f" -ef "src/gui/mrview/icons.cpp" || 
-     "$f" -ef "core/file/mgh.h" || 
-     "$f" -ef "core/file/json.h" || 
-     "$f" -ef "core/file/nifti2.h" || 
+  [[ "$f" -ef "src/gui/shview/icons.h" ||
+     "$f" -ef "src/gui/shview/icons.cpp" ||
+     "$f" -ef "src/gui/mrview/icons.h" ||
+     "$f" -ef "src/gui/mrview/icons.cpp" ||
+     "$f" -ef "core/file/mgh.h" ||
+     "$f" -ef "core/file/json.h" ||
+     "$f" -ef "core/file/nifti2.h" ||
+     "$f" -ef "core/__mrtrix_plugin.h" ||
      "$f" -ef "core/signal_handler.h" ||
      "$f" -ef "core/signal_handler.cpp" ]] && continue
 
@@ -73,26 +74,26 @@ for f in $(find . -type f -name '*.h' -o -name '*.cpp' | grep -v '_moc.cpp'); do
     perl -pe 's|<[^{};<]*?>||g' | \
     perl -pe 's|<[^{};<]*?>||g' | \
 # match for the parts we're interested in and output just the bits that match:
-    grep -Eo '(?<!::)std::vector\>' 
+    grep -Eo '(?<!::)std::vector\>'
   )
 
 # if anything is left after that, show it:
-  if [[ ! -z $res ]]; then 
+  if [[ ! -z $res ]]; then
     echo "################################### $f" >> $LOG
     echo "$res" >> $LOG
     retval=1
-  fi 
+  fi
 
 done
 
 
 # set exit code:
 if [[ $retval == 0 ]]; then
-  echo "OK" 
+  echo "OK"
   echo "no issues detected" >> $LOG
 else
   echo "FAIL"
-  
+
   echo "" >> $LOG
   echo "Please add MEMALIGN() macro to the class declarations identified above
 and replace all occurrences of std::vector with MR::vector" >> $LOG
