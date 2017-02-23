@@ -406,8 +406,7 @@ void run() {
     write_fixel_output (Path::join (output_fixel_directory, "cfe_neg.mif"), *cfe_output_neg, output_header);
 
   // Perform permutation testing
-  opt = get_options ("notest");
-  if (!opt.size()) {
+  if (!get_options ("notest").size()) {
     vector_type perm_distribution (num_perms);
     std::shared_ptr<vector_type> perm_distribution_neg;
     vector_type uncorrected_pvalues (num_fixels);
