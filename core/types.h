@@ -15,6 +15,22 @@
 #ifndef __mrtrix_types_h__
 #define __mrtrix_types_h__
 
+#include <cstddef>
+
+#ifdef MRTRIX_MAX_ALIGN_T_NOT_DEFINED
+using std::max_align_t;
+#endif
+
+#ifdef MRTRIX_STD_MAX_ALIGN_T_NOT_DEFINED
+namespace std { using ::max_align_t; }
+#endif
+
+
+#include <stdint.h>
+#include <complex>
+#include <iostream>
+#include <vector>
+
 namespace MR {
   namespace Helper {
     template <class ImageType> class ConstRow;
@@ -28,21 +44,6 @@ namespace MR {
 #define EIGEN_ARRAYBASE_PLUGIN "eigen_plugins/dense_base.h"
 #define EIGEN_MATRIX_PLUGIN "eigen_plugins/matrix.h"
 #define EIGEN_ARRAY_PLUGIN "eigen_plugins/array.h"
-
-
-#include <stdint.h>
-#include <complex>
-#include <iostream>
-#include <vector>
-#include <cstddef>
-
-#ifdef MRTRIX_MAX_ALIGN_T_NOT_DEFINED
-using std::max_align_t;
-#endif
-
-#ifdef MRTRIX_STD_MAX_ALIGN_T_NOT_DEFINED
-namespace std { using ::max_align_t; }
-#endif
 
 #include <Eigen/Geometry>
 
