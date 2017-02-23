@@ -7,6 +7,7 @@ addons:
     packages:
       - zlib1g-dev
       - libqt4-opengl-dev
+      - g++-4.8
       - python3
 compiler:
   - clang
