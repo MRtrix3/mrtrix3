@@ -44,7 +44,7 @@ void usage ()
 
   SYNOPSIS = "Voxel-based analysis using permutation testing and threshold-free cluster enhancement";
 
-  REFERENCES 
+  REFERENCES
    + "* If not using the -threshold command-line option:\n"
    "Smith, S. M. & Nichols, T. E. "
    "Threshold-free cluster enhancement: Addressing problems of smoothing, threshold dependence and localisation in cluster inference. "
@@ -113,7 +113,7 @@ void run() {
   const bool use_tfce = !std::isfinite (cluster_forming_threshold);
   int num_perms = get_option_value ("nperms", DEFAULT_NUMBER_PERMUTATIONS);
   int nperms_nonstationary = get_option_value ("nperms_nonstationary", DEFAULT_NUMBER_PERMUTATIONS_NONSTATIONARITY);
-  
+
   const bool do_26_connectivity = get_options("connectivity").size();
   const bool do_nonstationary_adjustment = get_options ("nonstationary").size();
 
@@ -203,14 +203,12 @@ void run() {
   const std::string prefix (argument[4]);
   bool compute_negative_contrast = get_options("negative").size();
 
-  vector_type perm_distribution (num_perms);
-  std::shared_ptr<vector_type> perm_distribution_neg;
   vector_type default_cluster_output (num_vox);
   std::shared_ptr<vector_type> default_cluster_output_neg;
   vector_type tvalue_output (num_vox);
   vector_type empirical_enhanced_statistic;
-  vector_type uncorrected_pvalue (num_vox);
-  std::shared_ptr<vector_type> uncorrected_pvalue_neg;
+  if (compute_negative_contrast)
+    default_cluster_output_neg.reset (new vector_type (num_vox));
 
   Math::Stats::GLMTTest glm (data, design, contrast);
 
@@ -252,6 +250,7 @@ void run() {
     }
     ++progress;
     if (compute_negative_contrast) {
+      assert (default_cluster_output_neg);
       auto cluster_image_neg = Image<float>::create (prefix + (use_tfce ? "tfce_neg.mif" : "cluster_sizes_neg.mif"), output_header);
       write_output (*default_cluster_output_neg, mask_indices, cluster_image_neg);
       ++progress;
@@ -282,6 +281,17 @@ void run() {
   }
 
   if (!get_options ("notest").size()) {
+
+    vector_type perm_distribution (num_perms);
+    std::shared_ptr<vector_type> perm_distribution_neg;
+    vector_type uncorrected_pvalue (num_vox);
+    std::shared_ptr<vector_type> uncorrected_pvalue_neg;
+
+    if (compute_negative_contrast) {
+      perm_distribution_neg.reset (new vector_type (num_perms));
+      uncorrected_pvalue_neg.reset (new vector_type (num_vox));
+    }
+
     if (permutations.size()) {
       Stats::PermTest::run_permutations (permutations, glm, enhancer, empirical_enhanced_statistic,
                                          default_cluster_output, default_cluster_output_neg,
@@ -295,8 +305,10 @@ void run() {
     }
 
     save_matrix (perm_distribution, prefix + "perm_dist.txt");
-    if (compute_negative_contrast)
+    if (compute_negative_contrast) {
+      assert (perm_distribution_neg);
       save_matrix (*perm_distribution_neg, prefix + "perm_dist_neg.txt");
+    }
 
     ProgressBar progress ("generating output", compute_negative_contrast ? 4 : 2);
     {
@@ -312,6 +324,8 @@ void run() {
     }
     ++progress;
     if (compute_negative_contrast) {
+      assert (uncorrected_pvalue_neg);
+      assert (perm_distribution_neg);
       auto uncorrected_pvalue_image_neg = Image<float>::create (prefix + "uncorrected_pvalue_neg.mif", output_header);
       write_output (*uncorrected_pvalue_neg, mask_indices, uncorrected_pvalue_image_neg);
       ++progress;
