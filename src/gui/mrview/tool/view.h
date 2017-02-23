@@ -14,7 +14,6 @@
 
 #ifndef __gui_mrview_tool_view_h__
 #define __gui_mrview_tool_view_h__
-#include "__mrtrix_plugin.h"
 
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/mode/base.h"
@@ -34,7 +33,7 @@ namespace MR
       {
 
 
-        class ClipPlane
+        class ClipPlane 
         { MEMALIGN (ClipPlane)
           public:
             GL::vec4 plane;

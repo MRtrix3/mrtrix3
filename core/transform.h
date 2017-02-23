@@ -14,7 +14,6 @@
 
 #ifndef __image_transform_h__
 #define __image_transform_h__
-#include "__mrtrix_plugin.h"
 
 #include "types.h"
 

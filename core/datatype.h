@@ -14,7 +14,6 @@
 
 #ifndef __data_type_h__
 #define __data_type_h__
-#include "__mrtrix_plugin.h"
 
 #include "cmdline_option.h"
 

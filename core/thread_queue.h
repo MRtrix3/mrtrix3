@@ -14,7 +14,6 @@
 
 #ifndef __mrtrix_thread_queue_h__
 #define __mrtrix_thread_queue_h__
-#include "__mrtrix_plugin.h"
 
 #include <stack>
 #include <condition_variable>
@@ -37,7 +36,7 @@ namespace MR
       /********************************************************************
        * convenience Functor classes for use in Thread::run_queue()
        ********************************************************************/
-      template <class Item>
+      template <class Item> 
         class __Batch { NOMEMALIGN
           public:
             __Batch (size_t number) : num (number) { }
@@ -47,7 +46,7 @@ namespace MR
 
 
       // to handle batched / unbatched seamlessly:
-      template <class X> class __item { NOMEMALIGN public: typedef X type; };
+      template <class X> class __item { NOMEMALIGN public: typedef X type; }; 
       template <class X> class __item <__Batch<X>> { NOMEMALIGN public: typedef X type; };
 
       // to get multi/single job/functor seamlessly:
@@ -80,7 +79,7 @@ namespace MR
 
     }
 
-    //! \endcond
+    //! \endcond 
 
 
 
@@ -91,14 +90,14 @@ namespace MR
 
 
     /** \defgroup thread_queue Thread-safe queue
-     * \brief Functionality for thread-safe parallel processing of queued items
+     * \brief Functionality for thread-safe parallel processing of queued items 
      *
      * These functions and classes provide functionality for one or more \e
      * source threads to feed items into a first-in first-out queue, and one or
      * more \e sink threads to consume items. This pipeline can also extend
      * over two queues, with one or more \e pipe threads consuming items of one
      * type from the first queue, and feeding items of another type onto the
-     * second queue.
+     * second queue. 
      *
      * As a graphical representation of the pipeline, the following workflows
      * can be achieved:
@@ -117,20 +116,20 @@ namespace MR
      *     [source] \                / [pipe]  \                 / [sink]
      *     [source] -- queue<item1> -- [pipe]  -- queue<item2>  -- [sink]
      *     [source] /                \ [pipe]  /                 \ [sink]
-     *        ..                         ..                          ..
+     *        ..                         ..                          ..    
      *     N_source                    N_pipe                      N_sink
      * \endcode
      *
      * By default, items are push to and pulled from the queue one by one. In
      * situations where the amount of processing per item is small, items can
      * be sent in batches to reduce the overhead of thread management (mutex
-     * locking/unlocking, etc).
+     * locking/unlocking, etc). 
      *
      * The simplest way to use this functionality is via the
      * Thread::run_queue() and associated Thread::multi() and Thread::batch()
      * functions. In complex situations, it may be necessary to use the
      * Thread::Queue class directly, although that should very rarely (if ever)
-     * be needed.
+     * be needed. 
      *
      * \sa Thread::run_queue()
      * \sa Thread::Queue
@@ -142,7 +141,7 @@ namespace MR
     //! A first-in first-out thread-safe item queue
     /*! This class implements a thread-safe means of pushing data items into a
      * queue, so that they can each be processed in one or more separate
-     * threads.
+     * threads. 
      *
      * \note In practice, it is almost always simpler to use the convenience
      * function Thread::run_queue(). You should never need to use the
@@ -223,7 +222,7 @@ namespace MR
      * queue. For this reason, the items are accessed via the Writer::Item &
      * Reader::Item classes. This allows items to be recycled once they have
      * been processed, reducing overheads associated with memory
-     * allocation/deallocation.
+     * allocation/deallocation. 
      *
      * \note It is important that all instances of Thread::Queue::Writer and
      * Thread::Queue::Reader are created \e before any of the threads are
@@ -641,13 +640,13 @@ namespace MR
 
         class Writer { NOMEMALIGN
           public:
-            Writer (Queue<__Batch<T>>& queue) :
+            Writer (Queue<__Batch<T>>& queue) : 
               batch_writer (queue.batch_queue), batch_size (queue.batch_size) { }
 
             class Item { NOMEMALIGN
               public:
-                Item (const Writer& writer) :
-                  batch_item (writer.batch_writer), batch_size (writer.batch_size), n (0) {
+                Item (const Writer& writer) : 
+                  batch_item (writer.batch_writer), batch_size (writer.batch_size), n (0) { 
                     batch_item->resize (batch_size);
                 }
                 ~Item () {
@@ -658,7 +657,7 @@ namespace MR
                 }
                 FORCE_INLINE bool write () {
                   if (++n >= batch_size) {
-                    if (!batch_item.write())
+                    if (!batch_item.write()) 
                       return false;
                     n = 0;
                     batch_item->resize (batch_size);
@@ -685,18 +684,18 @@ namespace MR
 
         class Reader { NOMEMALIGN
           public:
-            Reader (Queue<__Batch<T>>& queue) :
+            Reader (Queue<__Batch<T>>& queue) : 
               batch_reader (queue.batch_queue), batch_size (queue.batch_size) { }
 
             class Item { NOMEMALIGN
               public:
                 Item (const Reader& reader) : batch_item (reader.batch_reader), batch_size (reader.batch_size), n (0) { }
                 FORCE_INLINE bool read () {
-                  if (!batch_item)
+                  if (!batch_item) 
                     return batch_item.read();
 
                   if (++n >= batch_item->size()) {
-                    if (!batch_item.read())
+                    if (!batch_item.read()) 
                       return false;
                     n = 0;
                   }
@@ -746,7 +745,7 @@ namespace MR
              void execute () {
                typename Queue<Type>::Writer::Item out (writer);
                do {
-                 if (!func (*out))
+                 if (!func (*out)) 
                    return;
                } while (out.write());
              }
@@ -767,7 +766,7 @@ namespace MR
                typename Queue<Type1>::Reader::Item in (reader);
                typename Queue<Type2>::Writer::Item out (writer);
                do {
-                 do { if (!in.read()) return; }
+                 do { if (!in.read()) return; } 
                  while (!func (*in, *out));
                } while (out.write());
              }
@@ -809,10 +808,10 @@ namespace MR
 
 
 
-
+ 
     //! used to request batched processing of items
     /*! This function is used in combination with Thread::run_queue to request
-     * that the items \a object be processed in batches of \a number items
+     * that the items \a object be processed in batches of \a number items 
      * (defaults to MRTRIX_QUEUE_DEFAULT_BATCH_SIZE).
      * \sa Thread::run_queue() */
     template <class Item>
@@ -827,12 +826,12 @@ namespace MR
 
 
     //! convenience function to set up and run a 2-stage multi-threaded pipeline.
-    /*! This function (and its 3-stage equivalent
-     * Thread::run_queue(const Source&, const Type1&, const Pipe&, const Type2&, const Sink&, size_t))
+    /*! This function (and its 3-stage equivalent 
+     * Thread::run_queue(const Source&, const Type1&, const Pipe&, const Type2&, const Sink&, size_t)) 
      * simplify the process of setting up a multi-threaded processing chain
      * that should meet most users' needs.
      *
-     * The arguments to this function correspond to an instance of the Source,
+     * The arguments to this function correspond to an instance of the Source, 
      * the Sink, and optionally the Pipe functors, in addition to an instance
      * of the Items to be passed through each stage of the pipeline - these are
      * provided purely to specify the type of object to pass through the
@@ -843,9 +842,9 @@ namespace MR
      * The 3 types of functors each have a specific purpose, and corresponding
      * requirements as described below:
      *
-     * \par Source: the input functor
+     * \par Source: the input functor 
      * The Source class must at least provide the method:
-     * \code
+     * \code 
      * bool operator() (Type& item);
      * \endcode
      * This function prepares the \a item passed to it, and should return \c
@@ -853,9 +852,9 @@ namespace MR
      * no further items are to be sent through the queue (at which point the
      * corresponding thread(s) will exit).
      *
-     * \par Sink: the output functor
+     * \par Sink: the output functor 
      * The Sink class must at least provide the method:
-     * \code
+     * \code 
      * bool operator() (const Type& item);
      * \endcode
      * This function processes the \a item passed to it, and should return \c
@@ -864,7 +863,7 @@ namespace MR
      *
      * \par Pipe: the processing functor (for 3-stage pipeline only)
      * The Pipe class must at least provide the method:
-     * \code
+     * \code 
      * bool operator() (const Type1& item_in, Type2& item_out);
      * \endcode
      * This function processes the \a item_in passed to it, and prepares
@@ -872,7 +871,7 @@ namespace MR
      * true if the item processed is to be sent to the next stage in the
      * pipeline, and false if it is to be discarded - note that this is
      * very different from the other functors, where returning false signals
-     * end of processing.
+     * end of processing. 
      *
      * \section thread_run_queue_example Simple example
      *
@@ -895,7 +894,7 @@ namespace MR
      * // the functor that will consume the items:
      * class Sink {
      *   public:
-     *     Sink (size_t& total) :
+     *     Sink (size_t& total) : 
      *       grand_total (grand_total),
      *       total (0) { }
      *     ~Sink () { // update grand_total in destructor
@@ -909,7 +908,7 @@ namespace MR
      *    size_t& grand_total;
      * };
      *
-     * void run ()
+     * void run () 
      * {
      *   size_t grand_total = 0;
      *   Source source;
@@ -931,10 +930,10 @@ namespace MR
      *
      * For example, using the code above:
      *
-     * \code
+     * \code 
      * ...
      *
-     * void run ()
+     * void run () 
      * {
      *   ...
      *
@@ -953,10 +952,10 @@ namespace MR
      * above, the Source functor could have been wrapped in Thread::multi()
      * instead if this was the behaviour required:
      *
-     * \code
+     * \code 
      * ...
      *
-     * void run ()
+     * void run () 
      * {
      *   ...
      *
@@ -975,10 +974,10 @@ namespace MR
      * drastically reduces the number of accesses to the queue. This can be
      * done by wrapping the items in a call to Thread::batch():
      *
-     * \code
+     * \code 
      * ...
      *
-     * void run ()
+     * void run () 
      * {
      *   ...
      *
@@ -991,10 +990,10 @@ namespace MR
      * (defined as 128). This can be set explicitly by providing the desired
      * size as an additional argument to Thread::batch():
      *
-     * \code
+     * \code 
      * ...
      *
-     * void run ()
+     * void run () 
      * {
      *   ...
      *
@@ -1004,19 +1003,19 @@ namespace MR
      * \endcode
      *
      * Obviously, Thread::multi() and Thread::batch() can be used in any
-     * combination to perform the operations required.
+     * combination to perform the operations required. 
      */
 
     template <class Source, class Type, class Sink>
       inline void run_queue (
-          Source&& source,
-          const Type& item_type,
-          Sink&& sink,
+          Source&& source, 
+          const Type& item_type, 
+          Sink&& sink, 
           size_t capacity = MRTRIX_QUEUE_DEFAULT_CAPACITY)
       {
         if (number_of_threads() == 0) {
           typename __item<Type>::type item;
-          while (__job<Source>::functor (source) (item))
+          while (__job<Source>::functor (source) (item)) 
             if (!__job<Sink>::functor (sink) (item))
               return;
           return;
@@ -1037,7 +1036,7 @@ namespace MR
 
     //! convenience functions to set up and run a 3-stage multi-threaded pipeline.
     /*! This function extends the 2-stage Thread::run_queue() function to allow
-     * a 3-stage pipeline. For example, using the example from
+     * a 3-stage pipeline. For example, using the example from 
      * Thread::run_queue(), the following would add an additional stage to the
      * pipeline to double the numbers as they come through:
      *
@@ -1055,16 +1054,16 @@ namespace MR
      *
      * ...
      *
-     * void run ()
+     * void run () 
      * {
      *   ...
      *
      *   // run a single-source => multi-pipe => single-sink pipeline on batches of size_t items:
      *   Thread::run_queue (
-     *       source,
-     *       Thread::batch (size_t()),
+     *       source, 
+     *       Thread::batch (size_t()), 
      *       Thread::multi (pipe)
-     *       Thread::batch (size_t()),
+     *       Thread::batch (size_t()), 
      *       sink);
      * }
      * \endcode
@@ -1077,15 +1076,15 @@ namespace MR
      *
      * As with the 2-stage pipeline, any functor can be executed in parallel
      * (i.e. wrapped in Thread::multi()), Items do not need to be of the same
-     * type, and can be batched independently with any desired size.
+     * type, and can be batched independently with any desired size. 
      * */
     template <class Source, class Type1, class Pipe, class Type2, class Sink>
       inline void run_queue (
           Source&& source,
-          const Type1& item_type1,
-          Pipe&& pipe,
-          const Type2& item_type2,
-          Sink&& sink,
+          const Type1& item_type1, 
+          Pipe&& pipe, 
+          const Type2& item_type2, 
+          Sink&& sink, 
           size_t capacity = MRTRIX_QUEUE_DEFAULT_CAPACITY)
       {
         if (number_of_threads() == 0) {
@@ -1124,12 +1123,12 @@ namespace MR
     template <class Source, class Type1, class Pipe1, class Type2, class Pipe2, class Type3, class Sink>
       inline void run_queue (
           Source&& source,
-          const Type1& item_type1,
-          Pipe1&& pipe1,
-          const Type2& item_type2,
-          Pipe2&& pipe2,
-          const Type3& item_type3,
-          Sink&& sink,
+          const Type1& item_type1, 
+          Pipe1&& pipe1, 
+          const Type2& item_type2, 
+          Pipe2&& pipe2, 
+          const Type3& item_type3, 
+          Sink&& sink, 
           size_t capacity = MRTRIX_QUEUE_DEFAULT_CAPACITY)
       {
         if (number_of_threads() == 0) {

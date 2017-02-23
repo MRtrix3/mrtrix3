@@ -14,7 +14,6 @@
 
 #ifndef __stats_permtest_h__
 #define __stats_permtest_h__
-#include "__mrtrix_plugin.h"
 
 #include <memory>
 #include <mutex>

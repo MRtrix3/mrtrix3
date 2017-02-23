@@ -14,7 +14,6 @@
 
 #ifndef __signal_handler_h__
 #define __signal_handler_h__
-#include "__mrtrix_plugin.h"
 
 #include <atomic>
 #include <string>
@@ -26,7 +25,7 @@ namespace MR
 
 
   class SignalHandler
-  {
+  { 
     public:
       SignalHandler();
       SignalHandler (const SignalHandler&) = delete;

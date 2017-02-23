@@ -14,7 +14,6 @@
 
 #ifndef __math_sphere_h__
 #define __math_sphere_h__
-#include "__mrtrix_plugin.h"
 
 #include <cmath>
 #include <sys/types.h>

@@ -14,7 +14,6 @@
 
 #ifndef __dwi_tractography_rng_h__
 #define __dwi_tractography_rng_h__
-#include "__mrtrix_plugin.h"
 
 #include "math/rng.h"
 
@@ -30,7 +29,7 @@ namespace MR
       extern __thread Math::RNG* rng;
 #else
       extern thread_local Math::RNG* rng;
-#endif
+#endif 
 
     }
   }

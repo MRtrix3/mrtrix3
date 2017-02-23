@@ -14,7 +14,6 @@
 
 #ifndef __bitset_h__
 #define __bitset_h__
-#include "__mrtrix_plugin.h"
 
 
 #include <atomic>

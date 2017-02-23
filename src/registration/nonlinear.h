@@ -14,7 +14,6 @@
 
 #ifndef __registration_nonlinear_h__
 #define __registration_nonlinear_h__
-#include "__mrtrix_plugin.h"
 
 #include <vector>
 #include "image.h"

@@ -14,7 +14,6 @@
 
 #ifndef __memory_h__
 #define __memory_h__
-#include "__mrtrix_plugin.h"
 
 #include <memory>
 
@@ -26,7 +25,7 @@
 namespace MR
 {
 
-  template<class T, class Deleter = std::default_delete<T>>
+  template<class T, class Deleter = std::default_delete<T>> 
     class copy_ptr : public std::unique_ptr<T, Deleter>
   { NOMEMALIGN
     public:

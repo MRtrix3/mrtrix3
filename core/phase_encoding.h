@@ -14,7 +14,7 @@
 
 #ifndef __phaseencoding_h__
 #define __phaseencoding_h__
-#include "__mrtrix_plugin.h"
+
 
 #include <Eigen/Dense>
 

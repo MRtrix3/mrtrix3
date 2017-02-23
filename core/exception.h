@@ -14,7 +14,6 @@
 
 #ifndef __mrtrix_exception_h__
 #define __mrtrix_exception_h__
-#include "__mrtrix_plugin.h"
 
 #include <cerrno>
 #include <string>
@@ -29,18 +28,18 @@
 
 namespace MR
 {
-  namespace App
+  namespace App 
   {
     extern int log_level;
     extern std::string NAME;
   }
 
-  //! print primary output to stdout as-is.
+  //! print primary output to stdout as-is. 
   /*! This function is intended for cases where the command's primary output is text, not
    * image data, etc. It is \e not designed for error or status reports: it
    * prints to stdout, whereas all reporting functions print to stderr. This is
    * to allow the output of the command to be used directly in text processing
-   * pipeline or redirected to file.
+   * pipeline or redirected to file. 
    * \note the use of stdout is normally reserved for piping data files (or at
    * least their filenames) between MRtrix commands. This function should
    * therefore never be used in commands that produce output images, as the two
@@ -50,10 +49,10 @@ namespace MR
 
 
   //! \cond skip
-
+  
   // for internal use only
-
-  inline void __print_stderr (const std::string& text)
+  
+  inline void __print_stderr (const std::string& text) 
   {
 #ifdef MRTRIX_AS_R_LIBRARY
     REprintf (text.c_str());
@@ -63,7 +62,7 @@ namespace MR
   }
   //! \endcond
 
-  //! display error, warning, debug, etc. message to user
+  //! display error, warning, debug, etc. message to user 
   /*! types are: 0: error; 1: warning; 2: additional information; 3:
    * debugging information; anything else: none. */
   extern void (*report_to_user_func) (const std::string& msg, int type);

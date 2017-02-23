@@ -14,7 +14,7 @@
 
 #ifndef __stats_h_
 #define __stats_h_
-#include "__mrtrix_plugin.h"
+
 
 #include "app.h"
 #include "file/ofstream.h"

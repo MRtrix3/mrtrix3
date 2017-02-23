@@ -14,7 +14,6 @@
 
 #ifndef __image_h__
 #define __image_h__
-#include "__mrtrix_plugin.h"
 
 #include <functional>
 #include <type_traits>
@@ -36,7 +35,7 @@ namespace MR
 
   template <typename ValueType>
     class Image :
-      public ImageBase<Image<ValueType>, ValueType>
+      public ImageBase<Image<ValueType>, ValueType> 
   { MEMALIGN (Image<ValueType>)
       public:
         typedef ValueType value_type;
@@ -103,10 +102,10 @@ namespace MR
           return stream;
         }
 
-        //! write out the contents of a direct IO image to file
-        /*!
+        //! write out the contents of a direct IO image to file 
+        /*! 
          * returns the name of the image - needed by display() to get the
-         * name of the temporary file to supply to MRView.
+         * name of the temporary file to supply to MRView. 
          *
          * \note this is \e not the recommended way to save an image - only use
          * this function when you absolutely need to minimise RAM usage on
@@ -124,44 +123,44 @@ namespace MR
         std::string dump_to_mrtrix_file (std::string filename, bool use_multi_threading = true) const;
 
         //! return a new Image using direct IO
-        /*!
+        /*! 
          * this will preload the data into RAM if the datatype on file doesn't
          * match that on file (or if any scaling is applied to the data). The
          * optional \a with_strides argument is used to additionally enforce
-         * preloading if the strides aren't compatible with those specified.
+         * preloading if the strides aren't compatible with those specified. 
          *
          * Example:
          * \code
          * auto image = Header::open (argument[0]).get_image().with_direct_io();
-         * \endcode
+         * \endcode 
          * \note this invalidate the invoking Image - do not use the original
          * image in subsequent code.*/
         Image with_direct_io (Stride::List with_strides = Stride::List());
 
         //! return a new Image using direct IO
-        /*!
+        /*! 
          * this is a convenience function, performing the same function as
          * with_direct_io(Stride::List). The difference is that the \a axis
          * argument specifies which axis should be contiguous, or if \a axis is
          * negative, that the spatial axes should be contiguous (the \c
          * SpatiallyContiguous constexpr, set to -1, is provided for clarity).
          * In other words:
-         * \code
+         * \code 
          * auto image = Image<float>::open (filename).with_direct_io (3);
          * \endcode
          * is equivalent to:
-         * \code
+         * \code 
          * auto header = Header::open (filename);
          * auto image = header.get_image<float>().with_direct_io (Stride::contiguous_along_axis (3, header));
          * \endcode
          * and
-         * \code
+         * \code 
          * auto image = Image<float>::open (filename).with_direct_io (-1);
          * // or;
          * auto image = Image<float>::open (filename).with_direct_io (SpatiallyContiguous);
          * \endcode
          * is equivalent to:
-         * \code
+         * \code 
          * auto header = Header::open (filename);
          * auto image = header.get_image<float>().with_direct_io (Stride::contiguous_along_spatial_axes (header));
          * \endcode
@@ -177,7 +176,7 @@ namespace MR
         /*! \note this will only work if image access is direct (i.e. for a
          * scratch image, with preloading, or when the data type is native and
          * without scaling. */
-        ValueType* address () const {
+        ValueType* address () const { 
           assert (data_pointer != nullptr && "Image::address() can only be used when image access is via direct RAM access");
           return data_pointer ? static_cast<ValueType*>(data_pointer) + data_offset : nullptr; }
 
@@ -211,7 +210,7 @@ namespace MR
 
 
 
-  template <typename ValueType>
+  template <typename ValueType> 
     class Image<ValueType>::Buffer : public Header { MEMALIGN (Image<ValueType>::Buffer)
       public:
         Buffer() {} // TODO: delete this line! Only for testing memory alignment issues.
@@ -220,7 +219,7 @@ namespace MR
         Buffer (Buffer&&) = default;
         Buffer& operator= (const Buffer&) = delete;
         Buffer& operator= (Buffer&&) = default;
-        Buffer (const Buffer& b) :
+        Buffer (const Buffer& b) : 
           Header (b), fetch_func (b.fetch_func), store_func (b.store_func) { }
 
 
@@ -268,12 +267,12 @@ namespace MR
 
     // lightweight struct to copy data into:
     template <typename ValueType>
-      struct TmpImage :
-        public ImageBase<TmpImage<ValueType>, ValueType>
+      struct TmpImage : 
+        public ImageBase<TmpImage<ValueType>, ValueType> 
     { MEMALIGN (TmpImage<ValueType>)
         typedef ValueType value_type;
 
-      TmpImage (const typename Image<ValueType>::Buffer& b, void* const data,
+      TmpImage (const typename Image<ValueType>::Buffer& b, void* const data, 
           vector<ssize_t> x, const Stride::List& strides, size_t offset) :
         b (b), data (data), x (x), strides (strides), offset (offset) { }
 
@@ -292,10 +291,10 @@ namespace MR
       FORCE_INLINE ssize_t get_index (size_t axis) const { return x[axis]; }
         FORCE_INLINE void move_index (size_t axis, ssize_t increment) { offset += stride (axis) * increment; x[axis] += increment; }
 
-      FORCE_INLINE value_type get_value () const { return Raw::fetch_native<ValueType> (data, offset); }
+      FORCE_INLINE value_type get_value () const { return Raw::fetch_native<ValueType> (data, offset); } 
         FORCE_INLINE void set_value (ValueType val) { Raw::store_native<ValueType> (val, data, offset); }
       };
-
+    
     CHECK_MEM_ALIGN (TmpImage<float>);
 
   }
@@ -310,13 +309,13 @@ namespace MR
   template <typename ValueType>
     Image<ValueType>::Buffer::Buffer (Header& H, bool read_write_if_existing) :
       Header (H) {
-        assert (H.valid() && "IO handler must be set when creating an Image");
+        assert (H.valid() && "IO handler must be set when creating an Image"); 
         assert ((H.is_file_backed() ? is_data_type<ValueType>::value : true) && "class types cannot be stored on file using the Image class");
 
         acquire_io (H);
         io->set_readwrite_if_existing (read_write_if_existing);
         io->open (*this, footprint<ValueType> (voxel_count (*this)));
-        if (io->is_file_backed())
+        if (io->is_file_backed()) 
           set_fetch_store_functions ();
       }
 
@@ -325,8 +324,8 @@ namespace MR
 
 
 
-  template <typename ValueType>
-    void* Image<ValueType>::Buffer::get_data_pointer ()
+  template <typename ValueType> 
+    void* Image<ValueType>::Buffer::get_data_pointer () 
     {
       if (data_buffer) // already allocated via with_direct_io()
         return data_buffer.get();
@@ -362,7 +361,7 @@ namespace MR
 
   template <typename ValueType>
     FORCE_INLINE Image<ValueType>::Image () :
-      data_pointer (nullptr),
+      data_pointer (nullptr), 
       data_offset (0) { }
 
   template <typename ValueType>
@@ -372,10 +371,10 @@ namespace MR
       x (ndim(), 0),
       strides (desired_strides.size() ? desired_strides : Stride::get (*buffer)),
       data_offset (Stride::offset (*this))
-      {
+      { 
         assert (buffer);
         assert (data_pointer || buffer->get_io());
-        DEBUG ("image \"" + name() + "\" initialised with strides = " + str(strides) + ", start = " + str(data_offset)
+        DEBUG ("image \"" + name() + "\" initialised with strides = " + str(strides) + ", start = " + str(data_offset) 
             + ", using " + ( is_direct_io() ? "" : "in" ) + "direct IO");
       }
 
@@ -384,7 +383,7 @@ namespace MR
 
 
   template <typename ValueType>
-    Image<ValueType>::~Image ()
+    Image<ValueType>::~Image () 
     {
       if (buffer.unique()) {
         // was image preloaded and read/write? If so,need to write back:
@@ -393,7 +392,7 @@ namespace MR
             auto data_buffer = std::move (buffer->data_buffer);
             TmpImage<ValueType> src = { *buffer, data_buffer.get(), vector<ssize_t> (ndim(), 0), strides, Stride::offset (*this) };
             Image<ValueType> dest (buffer);
-            threaded_copy_with_progress_message ("writing back direct IO buffer for \"" + name() + "\"", src, dest);
+            threaded_copy_with_progress_message ("writing back direct IO buffer for \"" + name() + "\"", src, dest); 
           }
         }
       }
@@ -417,10 +416,10 @@ namespace MR
         preload |= ( new_strides != Stride::get (*this) );
         with_strides = new_strides;
       }
-      else
-        with_strides = Stride::get (*this);
+      else 
+        with_strides = Stride::get (*this); 
 
-      if (!preload)
+      if (!preload) 
         return std::move (*this);
 
       // do the preload:
@@ -436,7 +435,7 @@ namespace MR
       else {
         auto src (*this);
         TmpImage<ValueType> dest = { *buffer, buffer->data_buffer.get(), vector<ssize_t> (ndim(), 0), with_strides, Stride::offset (with_strides, *this) };
-        threaded_copy_with_progress_message ("preloading data for \"" + name() + "\"", src, dest);
+        threaded_copy_with_progress_message ("preloading data for \"" + name() + "\"", src, dest); 
       }
 
       return Image (buffer, with_strides);
@@ -447,7 +446,7 @@ namespace MR
 
 
   template <typename ValueType>
-    std::string Image<ValueType>::dump_to_mrtrix_file (std::string filename, bool) const
+    std::string Image<ValueType>::dump_to_mrtrix_file (std::string filename, bool) const 
     {
       if (!data_pointer || ( !Path::has_suffix (filename, ".mih") && !Path::has_suffix (filename, ".mif") ))
         throw Exception ("FIXME: image not suitable for use with 'Image::dump_to_mrtrix_file()'");
@@ -476,7 +475,7 @@ namespace MR
         data_filename = filename.substr (0, filename.size()-4) + ".dat";
         out << Path::basename (data_filename) << "\n";
         out.close();
-        out.open (data_filename, std::ios::out | std::ios::binary);
+        out.open (data_filename, std::ios::out | std::ios::binary); 
       }
 
       const int64_t data_size = footprint (*buffer);
@@ -485,7 +484,7 @@ namespace MR
       if (!out.good())
         throw Exception ("error writing back contents of file \"" + data_filename + "\": " + strerror(errno));
       out.close();
-
+     
       // If data_size exceeds some threshold, ostream artificially increases the file size beyond that required at close()
       // TODO check whether this is still needed...?
       File::resize (data_filename, offset + data_size);
@@ -515,7 +514,7 @@ namespace MR
   //! save contents of an existing image to file (for debugging only)
   template <class ImageType>
     typename std::enable_if<is_adapter_type<typename std::remove_reference<ImageType>::type>::value, std::string>::type
-    save (ImageType&& x, const std::string& filename, bool use_multi_threading = true)
+    save (ImageType&& x, const std::string& filename, bool use_multi_threading = true) 
     {
       return __save_generic (x, filename, use_multi_threading);
     }
@@ -523,7 +522,7 @@ namespace MR
   //! save contents of an existing image to file (for debugging only)
   template <class ImageType>
     typename std::enable_if<is_pure_image<typename std::remove_reference<ImageType>::type>::value, std::string>::type
-    save (ImageType&& x, const std::string& filename, bool use_multi_threading = true)
+    save (ImageType&& x, const std::string& filename, bool use_multi_threading = true) 
     {
       try { return x.dump_to_mrtrix_file (filename, use_multi_threading); }
       catch (...) { }

@@ -14,7 +14,6 @@
 
 #ifndef __gt_internalenergy_h__
 #define __gt_internalenergy_h__
-#include "__mrtrix_plugin.h"
 
 #include <vector>
 
@@ -31,11 +30,11 @@ namespace MR {
   namespace DWI {
     namespace Tractography {
       namespace GT {
-
-        class InternalEnergyComputer : public EnergyComputer
+        
+        class InternalEnergyComputer : public EnergyComputer 
         { MEMALIGN(InternalEnergyComputer)
         public:
-
+          
           InternalEnergyComputer(Stats& s, ParticleGrid& pgrid)
             : EnergyComputer(s), pGrid(pgrid), cpot(1.0), dEint(0.0), neighbourhood(), normalization(1.0), rng_uniform()
           {
@@ -48,8 +47,8 @@ namespace MR {
             pe.e_conn = 0.0;
             neighbourhood.push_back(pe);
           }
-
-
+          
+          
           double stageShift(const Particle* par, const Point_t& pos, const Point_t& dir)
           {
             dEint = 0.0;
@@ -69,7 +68,7 @@ namespace MR {
             }
             return dEint / stats.getTint();
           }
-
+          
           double stageRemove(const Particle* par)
           {
             dEint = 0.0;
@@ -83,52 +82,52 @@ namespace MR {
             }
             return dEint / stats.getTint();
           }
-
+                    
           double stageConnect(const ParticleEnd& pe1, ParticleEnd& pe2);
-
-          void acceptChanges()
+          
+          void acceptChanges() 
           {
             stats.incEintTotal(dEint);
           }
-
+          
           EnergyComputer* clone() const { return new InternalEnergyComputer(*this); }
-
+          
           double getConnPot() const
           {
             return cpot;
           }
-
+          
           void setConnPot(const double connpot)
           {
             cpot = connpot;
           }
-
-
+          
+          
         protected:
           ParticleGrid& pGrid;
           double cpot, dEint;
           vector<ParticleEnd> neighbourhood;
           double normalization;
           Math::RNG::Uniform<double> rng_uniform;
-
-
+          
+          
           double calcEnergy(const Particle* P1, const int ep1, const Particle* P2, const int ep2)
           {
             return calcEnergy(P1->getPosition(), P1->getEndPoint(ep1), P2->getPosition(), P2->getEndPoint(ep2));
           }
-
+          
           double calcEnergy(const Point_t& pos1, const Point_t& ep1, const Point_t& pos2, const Point_t& ep2)
           {
             Point_t Xm = (pos1 + pos2) * 0.5;	// midpoint between both segments
             double Ucon = ( (ep1 - Xm).squaredNorm() + (ep2 - Xm).squaredNorm() ) / (Particle::L * Particle::L);
             return Ucon - cpot;
           }
-
+          
           void scanNeighbourhood(const Particle* p, const int alpha0, const double currTemp);
-
+          
           ParticleEnd pickNeighbour();
-
-
+          
+          
         };
 
 

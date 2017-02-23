@@ -14,7 +14,6 @@
 
 #ifndef __stats_tfce_h__
 #define __stats_tfce_h__
-#include "__mrtrix_plugin.h"
 
 #include "thread_queue.h"
 #include "filter/connected_components.h"

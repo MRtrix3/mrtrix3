@@ -14,7 +14,6 @@
 
 #ifndef __dwi_fmls_h__
 #define __dwi_fmls_h__
-#include "__mrtrix_plugin.h"
 
 #include <map> // Used for sorting FOD samples
 
@@ -177,7 +176,7 @@ namespace MR
           Eigen::Array3i vox;
       };
 
-      class FODQueueWriter
+      class FODQueueWriter 
       { MEMALIGN (FODQueueWriter)
 
           typedef Image<float> FODImageType;
@@ -219,7 +218,7 @@ namespace MR
       // Store a vector of weights to be applied when computing integrals, to account for non-uniformities in direction distribution
       // These weights are applied to the amplitude along each direction as the integral for each lobe is summed,
       //   in order to take into account the relative spacing between adjacent directions
-      class IntegrationWeights
+      class IntegrationWeights 
       { MEMALIGN (IntegrationWeights)
         public:
           IntegrationWeights (const DWI::Directions::Set& dirs);

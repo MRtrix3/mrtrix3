@@ -14,7 +14,6 @@
 
 #ifndef __gt_particle_h__
 #define __gt_particle_h__
-#include "__mrtrix_plugin.h"
 
 #include "types.h"
 
@@ -24,21 +23,21 @@ namespace MR {
   namespace DWI {
     namespace Tractography {
       namespace GT {
-
+        
         typedef Eigen::Vector3f Point_t;
-
+        
         /**
          * A particle is a segment of a track and consists of a position and a direction.
          */
         class Particle
         { MEMALIGN(Particle)
         public:
-
+          
           // Particle length
           static float L;
-
+          
           // Constructors and destructor --------------------------------------------------
-
+          
           Particle()
           {
             predecessor = nullptr;
@@ -46,17 +45,17 @@ namespace MR {
             visited = false;
             alive = false;
           }
-
+          
           Particle(const Point_t& p, const Point_t& d)
           {
             init(p, d);
           }
-
+          
           ~Particle()
           {
             finalize();
           }
-
+          
           inline void init(const Point_t& p, const Point_t& d)
           {
             setPosition(p);
@@ -66,7 +65,7 @@ namespace MR {
             visited = false;
             alive = true;
           }
-
+          
           inline void finalize()
           {
             if (predecessor)
@@ -75,46 +74,46 @@ namespace MR {
               removeSuccessor();
             alive = false;
           }
-
-
+          
+          
           // Getters and setters ----------------------------------------------------------
-
+          
           Point_t getPosition() const
           {
             return pos;
           }
-
+          
           void setPosition(const Point_t& p)
           {
             pos = p;
           }
-
+          
           Point_t getDirection() const
           {
             return dir;
           }
-
+          
           void setDirection(const Point_t& d)
           {
             dir = d;
             dir.normalize();
           }
-
+          
           Point_t getEndPoint(const int a) const
           {
             return (pos + a*L*dir);
           }
-
+          
           bool hasPredecessor() const
           {
             return (predecessor != nullptr);
           }
-
+          
           Particle* getPredecessor() const
           {
             return predecessor;
           }
-
+          
           void connectPredecessor(Particle* p1, const int a1)
           {
             assert(p1 != nullptr);
@@ -124,7 +123,7 @@ namespace MR {
             if (a1 == -1)
               p1->setPredecessor(this);
           }
-
+          
           void removePredecessor()
           {
             assert(predecessor != nullptr);
@@ -135,17 +134,17 @@ namespace MR {
               predecessor->successor = nullptr;
             predecessor = nullptr;
           }
-
+          
           bool hasSuccessor() const
           {
             return (successor != nullptr);
           }
-
+          
           Particle* getSuccessor() const
           {
             return successor;
           }
-
+          
           void connectSuccessor(Particle* p1, const int a1)
           {
             assert(p1 != nullptr);
@@ -155,7 +154,7 @@ namespace MR {
             if (a1 == -1)
               p1->setPredecessor(this);
           }
-
+          
           void removeSuccessor()
           {
             assert(successor != nullptr);
@@ -166,49 +165,49 @@ namespace MR {
               successor->successor = nullptr;
             successor = nullptr;
           }
-
+          
           bool isVisited() const
           {
             return visited;
           }
-
+          
           void setVisited(const bool v)
           {
             visited = v;
           }
-
+          
           bool isAlive() const
           {
             return alive;
           }
-
+          
 
         protected:
-
+          
           Point_t pos, dir;
           Particle* predecessor;
           Particle* successor;
           bool visited;
           bool alive;
-
+          
           void setPredecessor(Particle* p1)
           {
             if (predecessor)
               removePredecessor();
             predecessor = p1;
           }
-
+          
           void setSuccessor(Particle* p1)
           {
             if (successor)
               removeSuccessor();
             successor = p1;
           }
-
+          
         };
 
-
-
+        
+        
         /**
          * Small data structure that refers to one end of a particle.
          * It is used to represent candidate neighbours of a given particle,
@@ -221,9 +220,9 @@ namespace MR {
           float e_conn;
           double p_suc;
         };
-
-
-
+        
+        
+        
       }
     }
   }

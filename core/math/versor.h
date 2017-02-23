@@ -14,7 +14,6 @@
 
 #ifndef __math_versor_h__
 #define __math_versor_h__
-#include "__mrtrix_plugin.h"
 
 #include <Eigen/Geometry>
 
@@ -27,7 +26,7 @@ namespace MR {
 
 
     template <typename ValueType>
-    class Versor : public Eigen::Quaternion<ValueType>
+    class Versor : public Eigen::Quaternion<ValueType> 
     { MEMALIGN(Versor<ValueType>)
 
         typedef ValueType value_type;

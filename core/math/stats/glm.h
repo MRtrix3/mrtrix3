@@ -14,7 +14,6 @@
 
 #ifndef __math_stats_glm_h__
 #define __math_stats_glm_h__
-#include "__mrtrix_plugin.h"
 
 #include "math/least_squares.h"
 #include "math/stats/typedefs.h"

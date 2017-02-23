@@ -14,7 +14,6 @@
 
 #ifndef __stats_permstack_h__
 #define __stats_permstack_h__
-#include "__mrtrix_plugin.h"
 
 #include <mutex>
 #include <stdint.h>
@@ -39,7 +38,7 @@ namespace MR
       };
 
 
-      class PermutationStack
+      class PermutationStack 
       { MEMALIGN (PermutationStack)
         public:
           PermutationStack (const size_t num_permutations, const size_t num_samples, const std::string msg, const bool include_default = true);

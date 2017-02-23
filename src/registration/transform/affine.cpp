@@ -11,7 +11,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "__mrtrix_plugin.h"
+
 #include <iterator>
 #include "registration/transform/affine.h"
 #include "math/gradient_descent.h"

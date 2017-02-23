@@ -14,7 +14,6 @@
 
 #ifndef __cursor_h__
 #define __cursor_h__
-#include "__mrtrix_plugin.h"
 
 #include "gui/opengl/gl.h"
 

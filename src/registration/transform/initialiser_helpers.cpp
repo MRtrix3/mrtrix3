@@ -11,10 +11,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "registration/transform/initialiser_helpers.h"
+
 #include <Eigen/Geometry>
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
+#include "registration/transform/initialiser_helpers.h"
 #include "registration/transform/search.h"
 
 #include "algo/loop.h"

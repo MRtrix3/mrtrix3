@@ -14,7 +14,6 @@
 
 #ifndef __math_stats_permutation_h__
 #define __math_stats_permutation_h__
-#include "__mrtrix_plugin.h"
 
 #include <vector>
 

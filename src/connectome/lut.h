@@ -14,7 +14,6 @@
 
 #ifndef __connectome_lut_h__
 #define __connectome_lut_h__
-#include "__mrtrix_plugin.h"
 
 
 #include "app.h"

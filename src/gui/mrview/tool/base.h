@@ -14,7 +14,6 @@
 
 #ifndef __gui_mrview_tool_base_h__
 #define __gui_mrview_tool_base_h__
-#include "__mrtrix_plugin.h"
 
 #include "file/config.h"
 

@@ -14,7 +14,6 @@
 
 #ifndef __registration_linear_h__
 #define __registration_linear_h__
-#include "__mrtrix_plugin.h"
 
 #include <vector>
 

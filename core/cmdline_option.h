@@ -14,7 +14,6 @@
 
 #ifndef __cmdline_option_h__
 #define __cmdline_option_h__
-#include "__mrtrix_plugin.h"
 
 #include <cassert>
 #include <string>
@@ -76,7 +75,7 @@ namespace MR
      *
      * The list of arguments is provided by adding to the ARGUMENTS vector, like this:
      * \code
-     * ARGUMENTS
+     * ARGUMENTS 
      *   + Argument ("input", "the input image")
      *     .type_image_in()
      *
@@ -287,7 +286,7 @@ namespace MR
      * The list of options is provided using the OPTIONS macro, like this:
      * \code
      * OPTIONS
-     *   + Option ("exact",
+     *   + Option ("exact", 
      *        "do not use approximations when processing")
      *
      *   + Option ("mask",
@@ -295,11 +294,11 @@ namespace MR
      *        "the binary image specified")
      *     + Argument ("image").type_image_in()
      *
-     *   + Option ("regularisation",
+     *   + Option ("regularisation", 
      *        "set the regularisation term")
      *     + Argument ("value").type_float (0.0, 1.0, 100.0)
      *
-     *   Option ("dump",
+     *   Option ("dump", 
      *        "dump all intermediate values to file")
      *     + Argument ("file").type_file();
      * \endcode
@@ -389,18 +388,18 @@ namespace MR
      *   + Option ("option2", ...);
      * }
      * \endcode
-     */
+     */  
     class OptionGroup : public vector<Option> { NOMEMALIGN
       public:
         OptionGroup (const char* group_name = "OPTIONS") : name (group_name) { }
         const char* name;
 
-        OptionGroup& operator+ (const Option& option) {
+        OptionGroup& operator+ (const Option& option) { 
           push_back (option);
           return *this;
         }
 
-        OptionGroup& operator+ (const Argument& argument) {
+        OptionGroup& operator+ (const Argument& argument) { 
           assert (!empty());
           back() + argument;
           return *this;

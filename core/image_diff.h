@@ -14,7 +14,6 @@
 
 #ifndef __image_check__h__
 #define __image_check__h__
-#include "__mrtrix_plugin.h"
 
 #include "image_helpers.h"
 #include "algo/loop.h"

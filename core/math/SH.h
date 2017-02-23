@@ -14,7 +14,6 @@
 
 #ifndef __math_SH_h__
 #define __math_SH_h__
-#include "__mrtrix_plugin.h"
 
 #ifdef USE_NON_ORTHONORMAL_SH_BASIS
 # warning using non-orthonormal SH basis

@@ -14,7 +14,6 @@
 
 #ifndef __file_mgh_utils_h__
 #define __file_mgh_utils_h__
-#include "__mrtrix_plugin.h"
 
 #include "file/mgh.h"
 

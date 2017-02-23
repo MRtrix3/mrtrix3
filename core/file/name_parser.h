@@ -14,7 +14,6 @@
 
 #ifndef __file_name_parser_h__
 #define __file_name_parser_h__
-#include "__mrtrix_plugin.h"
 
 #include <memory>
 
@@ -154,7 +153,7 @@ namespace MR
         //! a class to hold a set of parsed image filenames
         class List { NOMEMALIGN
           public:
-            vector<int> parse_scan_check (const std::string& specifier,
+            vector<int> parse_scan_check (const std::string& specifier, 
                 size_t max_num_sequences = std::numeric_limits<size_t>::max());
 
             void scan (NameParser& parser);
