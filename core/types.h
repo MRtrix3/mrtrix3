@@ -144,10 +144,10 @@ inline void __aligned_free (void* ptr) { if (ptr) std::free (*(reinterpret_cast<
 
 
 #define MEMALIGN(...) public: \
-  FORCE_INLINE void* operator new (std::size_t size) { return (alignof(__VA_ARGS__)>alignof(std::max_align_t)) ? __aligned_malloc (size) : ::operator new (size); } \
-  FORCE_INLINE void* operator new[] (std::size_t size) { return (alignof(__VA_ARGS__)>alignof(std::max_align_t)) ? __aligned_malloc (size) : ::operator new[] (size); } \
-  FORCE_INLINE void operator delete (void* ptr) { if (alignof(__VA_ARGS__)>alignof(std::max_align_t)) __aligned_free (ptr); else ::operator delete (ptr); } \
-  FORCE_INLINE void operator delete[] (void* ptr) { if (alignof(__VA_ARGS__)>alignof(std::max_align_t)) __aligned_free (ptr); else ::operator delete[] (ptr); }
+  FORCE_INLINE void* operator new (std::size_t size) { return (alignof(__VA_ARGS__)>alignof(::max_align_t)) ? __aligned_malloc (size) : ::operator new (size); } \
+  FORCE_INLINE void* operator new[] (std::size_t size) { return (alignof(__VA_ARGS__)>alignof(::max_align_t)) ? __aligned_malloc (size) : ::operator new[] (size); } \
+  FORCE_INLINE void operator delete (void* ptr) { if (alignof(__VA_ARGS__)>alignof(::max_align_t)) __aligned_free (ptr); else ::operator delete (ptr); } \
+  FORCE_INLINE void operator delete[] (void* ptr) { if (alignof(__VA_ARGS__)>alignof(::max_align_t)) __aligned_free (ptr); else ::operator delete[] (ptr); }
 
 
 /*! \def CHECK_MEM_ALIGN
@@ -165,7 +165,7 @@ inline void __aligned_free (void* ptr) { if (ptr) std::free (*(reinterpret_cast<
  * \sa MEMALIGN
  */
 #define CHECK_MEM_ALIGN(...) \
-    static_assert ( (alignof(__VA_ARGS__) <= alignof(std::max_align_t) ) || __has_custom_new_operator<__VA_ARGS__>::value, \
+    static_assert ( (alignof(__VA_ARGS__) <= alignof(::max_align_t) ) || __has_custom_new_operator<__VA_ARGS__>::value, \
         "class requires over-alignment, but no operator new defined! Please insert MEMALIGN() into class definition.")
 
 
@@ -206,7 +206,7 @@ namespace MR
       std::integral_constant<bool, std::is_arithmetic<ValueType>::value || is_complex<ValueType>::value> { NOMEMALIGN };
 
 
-  template <typename X, int N=(alignof(X)>alignof(std::max_align_t))>
+  template <typename X, int N=(alignof(X)>alignof(::max_align_t))>
     class vector : public ::std::vector<X, Eigen::aligned_allocator<X>> { NOMEMALIGN
       public:
         using ::std::vector<X,Eigen::aligned_allocator<X>>::vector;
