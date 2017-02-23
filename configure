@@ -581,7 +581,6 @@ int main() {
     try:
       compile ('''
 #include <cstddef>
-using ::max_align_t;
 int main() {
   return 0;
 }
