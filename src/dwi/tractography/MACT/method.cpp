@@ -47,13 +47,6 @@ MACT_Method_additions::MACT_Method_additions( const SharedBase& shared )
 }
 
 
-const std::shared_ptr< SceneModeller >&
-MACT_Method_additions::sceneModeller() const
-{
-  return _sceneModeller;
-}
-
-
 /* Method using 'tissue encapsulation': it can be compuationally intensive as it
  * requires checking every tissue type for each position
  *
@@ -100,7 +93,7 @@ term_t MACT_Method_additions::check_structural( const Eigen::Vector3f& old_pos,
     {
       return _sgm_depth ? EXIT_SGM : ENTER_CSF;
     }
-    else if ( tissue->type() == WM )
+    else if ( tissue->type() == CBR_WM )
     {
       if ( _crop_at_gmwmi )
       {
@@ -142,7 +135,7 @@ term_t MACT_Method_additions::check_structural( const Eigen::Vector3f& old_pos,
       // the point moves from wm to sgm
       _point_in_sgm = true;
     }
-    else if ( tissue->type() == CGM )
+    else if ( tissue->type() == CBR_GM )
     {
       // outer surface can be used to prevent cross sulcus connections
       // For instance:
@@ -152,19 +145,34 @@ term_t MACT_Method_additions::check_structural( const Eigen::Vector3f& old_pos,
       //   ENTER_CGM
       return ENTER_CGM;
     }
-    /* possible method to deal with cerebellum
-    else if ( tissue->type() == CBM )
+    else if ( tissue->type() == CBL_WM )
     {
-      if ( _sceneModeller->inTissue( from, CBM_WHITE ) )
+      if ( intersections.count() > 1 )
       {
-        // the track's coming from white matter of CBM -> keep the track
-        // return ENTER_CGM;
+        if ( intersections.intersection( 1 )._tissue->type() == CBL_GM )
+        {
+          return ENTER_CGM;
+        }
       }
       else
       {
-        // the track's coming outside the brain -> reject the track
+        return CONTINUE;
       }
-    }*/
+    }
+    else if ( tissue->type() == CBL_GM )
+    {
+      if ( intersections.count() > 1 )
+      {
+        if ( intersections.intersection( 1 )._tissue->type() == CBL_WM )
+        {
+          return ENTER_CGM;
+        }
+      }
+      else
+      {
+        return ENTER_EXCLUDE;
+      }
+    }
   }
   if ( _point_in_sgm )
   {
@@ -221,7 +229,7 @@ bool MACT_Method_additions::seed_is_unidirectional( Eigen::Vector3f& pos,
   Eigen::Vector3d p = pos.cast< double >();
   Eigen::Vector3d d = dir.cast< double >();
   Intersection intersection;
-  if ( _sceneModeller->onTissue( p, WM, intersection ) )
+  if ( _sceneModeller->onTissue( p, CBR_WM, intersection ) )
   {
     // seed is considered to be on WM surface but can actually locate inside or
     // outside the surface due to numerical precision error
@@ -248,12 +256,6 @@ bool MACT_Method_additions::seed_is_unidirectional( Eigen::Vector3f& pos,
     return true;
   }
   return false;
-}
-
-
-bool MACT_Method_additions::fetch_tissue_data( const Eigen::Vector3f& pos )
-{
-  return true;
 }
 
 

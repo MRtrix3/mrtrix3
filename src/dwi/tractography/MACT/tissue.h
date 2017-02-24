@@ -39,7 +39,7 @@ class SceneModeller;
 
 enum TissueType
 {
-  CGM, SGM, WM, CSF, BST, OTHER
+  CBR_GM, CBR_WM, SGM, CBL_GM, CBL_WM, CSF, BST, OTHER
 };
 
 

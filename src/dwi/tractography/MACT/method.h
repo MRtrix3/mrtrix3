@@ -47,8 +47,6 @@ class MACT_Method_additions
     MACT_Method_additions( const MACT_Method_additions& ) = delete;
     MACT_Method_additions() = delete;
 
-    const std::shared_ptr< SceneModeller >& sceneModeller() const;
-
     // term_t check_structural( const Eigen::Vector3f& pos );
     term_t check_structural( const Eigen::Vector3f& old_pos,
                              Eigen::Vector3f& new_pos );
@@ -57,7 +55,6 @@ class MACT_Method_additions
     bool seed_is_unidirectional( Eigen::Vector3f& pos,
                                  Eigen::Vector3f& dir ) const;
 
-    bool fetch_tissue_data( const Eigen::Vector3f& pos );
     bool in_pathology() const;
     void reverse_track();
 

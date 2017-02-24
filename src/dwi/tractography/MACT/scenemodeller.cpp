@@ -107,7 +107,7 @@ const TissueLut& SceneModeller::tissueLut() const
 
 bool SceneModeller::nearestTissue( const Eigen::Vector3d& point,
                                    Intersection& intersection,
-                                   size_t stride ) const
+                                   int32_t stride ) const
 {
   if ( _tissues.empty() )
   {

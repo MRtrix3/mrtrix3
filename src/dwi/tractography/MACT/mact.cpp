@@ -39,16 +39,24 @@ namespace MACT
     /*
      * Hard codes: options for adding tissue meshes
      */
-    + Option( "ctx_outer", "outer surface of cerebrum and cerebellum" )
-      + Argument( "outer surface mesh of cerebral and cerebellar cortices" )
+    + Option( "cbr_gm", "outer surface of cerebral cortex" )
+      + Argument( "outer surface mesh of cerebral cortex" )
         .type_file_in()
 
-    + Option( "ctx_inner", "GM-WM interface of cerebrum and cerebellum" )
-      + Argument( "inner surface mesh of cerebral and cerebellar cortices" )
+    + Option( "cbr_wm", "GM-WM interface of cerebral cortex" )
+      + Argument( "inner surface mesh of cerebral cortex" )
         .type_file_in()
 
     + Option( "sgm", "sub-cortical gray matter" )
       + Argument( "surface mesh of sub-cortical gray matter" )
+        .type_file_in()
+
+    + Option( "cbl_gm", "gray matter of cerebellum" )
+      + Argument( "surface mesh of cerebellar gray matter" )
+        .type_file_in()
+
+    + Option( "cbl_wm", "white matter of cerebellum" )
+      + Argument( "surface mesh of cerebellar white matter" )
         .type_file_in()
 
     + Option( "csf", "ventricles of the brain" )
@@ -71,23 +79,23 @@ namespace MACT
     {
       properties[ "mact" ] = "1";
 
-      opt = get_options( "ctx_outer" );
+      opt = get_options( "cbr_gm" );
       if ( opt.size() )
       {
-        properties[ "mact_ctx_outer" ] = std::string( opt[ 0 ][ 0 ] );
+        properties[ "mact_cbr_gm" ] = std::string( opt[ 0 ][ 0 ] );
       }
       else
       {
-        throw Exception( "fail to run mact: no input outer ctx mesh provided" );
+        throw Exception( "mact failed: no input outer brain mesh provided" );
       }
-      opt = get_options( "ctx_inner" );
+      opt = get_options( "cbr_wm" );
       if ( opt.size() )
       {
-        properties[ "mact_ctx_inner" ] = std::string( opt[ 0 ][ 0 ] );
+        properties[ "mact_cbr_wm" ] = std::string( opt[ 0 ][ 0 ] );
       }
       else
       {
-        throw Exception( "fail to run mact: no input inner ctx mesh provided" );
+        throw Exception( "mact failed: no input inner brain mesh provided" );
       }
       opt = get_options( "sgm" );
       if ( opt.size() )
@@ -96,7 +104,25 @@ namespace MACT
       }
       else
       {
-        throw Exception( "fail to run mact: no input sgm mesh provided" );
+        throw Exception( "mact failed: no input sgm mesh provided" );
+      }
+      opt = get_options( "cbl_gm" );
+      if ( opt.size() )
+      {
+        properties[ "mact_cbl_gm" ] = std::string( opt[ 0 ][ 0 ] );
+      }
+      else
+      {
+        throw Exception( "mact failed: no input cerebellar gm mesh provided" );
+      }
+      opt = get_options( "cbl_wm" );
+      if ( opt.size() )
+      {
+        properties[ "mact_cbl_wm" ] = std::string( opt[ 0 ][ 0 ] );
+      }
+      else
+      {
+        throw Exception( "mact failed: no input cerebellar wm mesh provided" );
       }
       opt = get_options( "csf" );
       if ( opt.size() )
@@ -105,7 +131,7 @@ namespace MACT
       }
       else
       {
-        throw Exception( "fail to run mact: no input csf mesh provided" );
+        throw Exception( "mact failed: no input csf mesh provided" );
       }
 
       // other properties
