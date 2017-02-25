@@ -135,7 +135,7 @@ def parse():
     sys.exit(0)
 
   args = cmdline.parse_args()
-  
+
   if args.help:
     cmdline._printHelp()
     sys.exit(0)
@@ -206,15 +206,13 @@ def makeTempDir():
   if args.tempdir:
     dir_path = os.path.abspath(args.tempdir)
   else:
-    if 'TmpFileDir' in config:
-      dir_path = config['TmpFileDir']
+    if 'ScriptTmpDir' in config:
+      dir_path = config['ScriptTmpDir']
     else:
-      if os.name == 'posix':
-        dir_path = '/tmp'
-      else:
-        dir_path = _workingDir
-  if 'TmpFilePrefix' in config:
-    prefix = config['TmpFilePrefix']
+      # Defaulting to working directory since too many users have encountered storage issues
+      dir_path = _workingDir
+  if 'ScriptTmpPrefix' in config:
+    prefix = config['ScriptTmpPrefix']
   else:
     prefix = os.path.basename(sys.argv[0]) + '-tmp-'
   _tempDir = dir_path
@@ -273,7 +271,7 @@ colourDebug = ''
 colourError = ''
 colourExec = ''
 colourWarn = ''
-  
+
 def console(text):
   import os, sys
   global colourClear, colourConsole
