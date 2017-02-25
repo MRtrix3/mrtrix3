@@ -137,36 +137,44 @@ term_t MACT_Method_additions::check_structural( const Eigen::Vector3f& old_pos,
     }
     else if ( tissue->type() == CBR_GM )
     {
-      // outer surface can be used to prevent cross sulcus connections
-      // For instance:
-      // if the old position is above the CGM
-      //   reject the track
-      // else
-      //   ENTER_CGM
-      return ENTER_CGM;
-    }
-    else if ( tissue->type() == CBL_WM )
-    {
+      /* method for preventing cross sulcus connections */
       if ( intersections.count() > 1 )
       {
-        if ( intersections.intersection( 1 )._tissue->type() == CBL_GM )
+        if ( intersections.intersection( 1 )._tissue->type() == CBR_GM )
         {
-          return ENTER_CGM;
+          // the track a) leaves outer cgm and then enters again; or
+          //           b) enters outer cgm from outside and then leaves again
+          return ENTER_EXCLUDE;
         }
       }
       else
       {
-        return CONTINUE;
+        // the point locates outside the outer cgm surface
+        auto v1 = tissue->mesh().vert( firstIntersection._triangle[ 0 ] );
+        auto v2 = tissue->mesh().vert( firstIntersection._triangle[ 1 ] );
+        auto v3 = tissue->mesh().vert( firstIntersection._triangle[ 2 ] );
+        auto n = ( v2 - v1 ).cross( v3 - v1 );
+        if ( n.dot( v1 - from ) < 0 )
+        {
+          return ENTER_EXCLUDE;
+        }
+      }
+      return ENTER_CGM;
+    }
+    else if ( tissue->type() == CBL_WM )
+    {
+      if ( intersections.count() > 1 &&
+           intersections.intersection( 1 )._tissue->type() == CBL_GM )
+      {
+        return ENTER_CGM;
       }
     }
     else if ( tissue->type() == CBL_GM )
     {
-      if ( intersections.count() > 1 )
+      if ( intersections.count() > 1 &&
+           intersections.intersection( 1 )._tissue->type() == CBL_WM )
       {
-        if ( intersections.intersection( 1 )._tissue->type() == CBL_WM )
-        {
-          return ENTER_CGM;
-        }
+        return ENTER_CGM;
       }
       else
       {
