@@ -72,6 +72,9 @@ def command(cmd, exitOnError=True):
       if is_mrtrix_exe:
         item = versionMatch(item)
       item = exeName(item)
+      shebang = _shebang(item)
+      if len(shebang):
+        new_cmdsplit.extend(shebang)
       next_is_exe = False
     if item == '|':
       if is_mrtrix_exe:
@@ -80,8 +83,8 @@ def command(cmd, exitOnError=True):
         # Get MRtrix3 binaries to output additional INFO-level information if running in debug mode
         if app._verbosity == 3:
           new_cmdsplit.append('-info')
-#        elif app._verbosity < 2:
-#          new_cmdsplit.append('-quiet')
+        elif not app._verbosity:
+          new_cmdsplit.append('-quiet')
       next_is_exe = True
     new_cmdsplit.append(item)
   if is_mrtrix_exe:
@@ -89,8 +92,8 @@ def command(cmd, exitOnError=True):
       new_cmdsplit.extend( [ '-nthreads', str(app._nthreads) ] )
     if app._verbosity == 3:
       new_cmdsplit.append('-info')
-#    elif app._verbosity < 2:
-#      new_cmdsplit.append('-quiet')
+    elif not app._verbosity:
+      new_cmdsplit.append('-quiet')
   cmdsplit = new_cmdsplit
 
   # If the piping symbol appears anywhere, we need to split this into multiple commands and execute them separately
@@ -314,7 +317,7 @@ def exeName(item):
 #   (e.g. C:\Windows\system32\mrinfo.exe; On Windows, subprocess uses CreateProcess(),
 #   which checks system32\ before PATH)
 def versionMatch(item):
-  import distutils, os, sys
+  import os
   from distutils.spawn import find_executable
   from mrtrix3 import app
   global _mrtrix_bin_path, _mrtrix_exe_list
@@ -335,3 +338,52 @@ def versionMatch(item):
 
   app.error('Unable to find executable for MRtrix3 command ' + item)
 
+
+
+# If the target executable is not a binary, but is actually a script, use the
+#   shebang at the start of the file to alter the subprocess call
+def _shebang(item):
+  import os
+  from mrtrix3 import app
+  from distutils.spawn import find_executable
+  # If a complete path has been provided rather than just a file name, don't perform any additional file search
+  if os.sep in item:
+    path = item
+  else:
+    path = versionMatch(item)
+    if path == item:
+      path = find_executable(exeName(item))
+  if not path:
+    app.debug('File \"' + item + '\": Could not find file to query')
+    return []
+  # Read the first 1024 bytes of the file
+  with open(path, 'rb') as f:
+    data = f.read(1024)
+  # List of permissible text characters
+  textchars = bytearray({7,8,9,10,12,13,27} | set(range(0x20, 0x100)) - {0x7f})
+  # Are there any non-text characters? If so, it's a binary file, so don't go looking for a shebang
+  if data.translate(None, textchars):
+    app.debug('File \"' + item + '\": Not a text file')
+    return []
+  # Try to find the shebang line
+  for line in data.splitlines():
+    line = line.strip()
+    if len(line) > 2 and line[0:2] == '#!':
+      shebang = line[2:].split(' ')
+      if app.isWindows():
+        # On Windows, /usr/bin/env can't be easily found, and any direct interpreter path will have a similar issue.
+        #   Instead, manually find the right interpreter to call using distutils
+        if shebang[0] == '/usr/bin/env':
+          new_shebang = [ os.path.abspath(find_executable(exeName(shebang[1]))) ]
+          new_shebang.extend(shebang[2:])
+          shebang = new_shebang
+        else:
+          new_shebang = [ os.path.abspath(find_executable(exeName(os.path.basename(shebang[0])))) ]
+          new_shebang.extend(shebang[1:])
+          shebang = new_shebang
+        if not shebang or not shebang[0]:
+          app.error('Malformed shebang in file \"' + item + '\": \"' + line + '\"')
+      app.debug('File \"' + item + '\": string \"' + line + '\": ' + str(shebang))
+      return shebang
+  app.debug('File \"' + item + '\": No shebang found')
+  return []
