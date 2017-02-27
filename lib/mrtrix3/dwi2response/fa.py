@@ -10,8 +10,6 @@ def initialise(base_parser, subparsers):
   options.add_argument('-number', type=int, default=300, help='The number of highest-FA voxels to use')
   options.add_argument('-threshold', type=float, help='Apply a hard FA threshold, rather than selecting the top voxels')
   parser.flagMutuallyExclusiveOptions( [ 'number', 'threshold' ] )
-  parser.set_defaults(single_shell=True)
-  parser.set_defaults(needs_bzero=True)
 
 
 
@@ -23,6 +21,13 @@ def checkOutputPaths():
 
 def getInputs():
   pass
+
+
+
+def isSingleShell():
+  return True
+def needsBZero():
+  return True
 
 
 

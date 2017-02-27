@@ -31,10 +31,6 @@ common_options.add_argument('-grad', help='Pass the diffusion gradient table in 
 common_options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Pass the diffusion gradient table in FSL bvecs/bvals format')
 app.cmdline.flagMutuallyExclusiveOptions( [ 'grad', 'fslgrad' ] )
 
-# Set default parameters; certain algorithms will need to override these
-app.cmdline.set_defaults(single_shell=False)
-app.cmdline.set_defaults(needs_bzero=False)
-
 # Import the command-line settings for all algorithms found in the relevant directory
 algorithm.initialise()
 
@@ -60,7 +56,7 @@ if app.args.lmax:
       app.error('Value of lmax must be even')
   except:
     app.error('Parameter lmax must be a number')
-  if app.args.single_shell and not len(lmax) == 1:
+  if alg.isSingleShell() and not len(lmax) == 1:
     app.error('Can only specify a single lmax value for single-shell algorithms')
 shell_option = ''
 if app.args.shell:
@@ -68,11 +64,11 @@ if app.args.shell:
     shell_values = [ int(x) for x in app.args.shell.split(',') ]
   except:
     app.error('-shell option should provide a comma-separated list of b-values')
-  if app.args.single_shell and not len(shell_values) == 1:
+  if alg.isSingleShell() and not len(shell_values) == 1:
     app.error('Can only specify a single b-value shell for single-shell algorithms')
   shell_option = ' -shell ' + app.args.shell
 singleshell_option = ''
-if app.args.single_shell:
+if alg.isSingleShell():
   singleshell_option = ' -singleshell -no-bzero'
 
 grad_import_option = ''
@@ -86,11 +82,11 @@ elif not image.headerField(path.fromUser(app.args.input, False), 'dwgrad'):
 app.makeTempDir()
 
 # Get standard input data into the temporary directory
-if app.args.single_shell or shell_option:
+if alg.isSingleShell() or shell_option:
   run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' - -stride 0,0,0,1' + grad_import_option + ' | dwiextract - ' + path.toTemp('dwi.mif', True) + shell_option + singleshell_option)
 else: # Don't want to discard b=0 in multi-shell algorithms, which dwiextract will do
   run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('dwi.mif', True) + ' -stride 0,0,0,1' + grad_import_option)
-if app.args.needs_bzero:
+if alg.needsBZero():
   run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' - -stride 0,0,0,1' + grad_import_option + ' | dwiextract - ' + path.toTemp('bzero.mif', True) + " -bzero")
 if app.args.mask:
   run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + path.toTemp('mask.mif', True) + ' -datatype bit')
@@ -98,7 +94,7 @@ if app.args.mask:
 alg.getInputs()
 
 app.gotoTempDir()
-  
+
 
 # Generate a brain mask (if necessary)
 # Otherwise, check that the mask provided is appropriate

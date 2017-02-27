@@ -29,6 +29,13 @@ def getInputs():
 
 
 
+def isSingleShell():
+  return False
+def needsBZero():
+  return False
+
+
+
 def execute():
   import os, shutil
   from mrtrix3 import app, image, path, run

@@ -10,7 +10,6 @@ def initialise(base_parser, subparsers):
   options.add_argument('-sf_voxels', type=int, default=300, help='Number of single-fibre voxels to use when calculating response function')
   options.add_argument('-dilate', type=int, default=1, help='Number of mask dilation steps to apply when deriving voxel mask to test in the next iteration')
   options.add_argument('-max_iters', type=int, default=10, help='Maximum number of iterations')
-  parser.set_defaults(single_shell=True)
 
 
 
@@ -22,6 +21,13 @@ def checkOutputPaths():
 
 def getInputs():
   pass
+
+
+
+def isSingleShell():
+  return True
+def needsBZero():
+  return False
 
 
 
@@ -104,6 +110,6 @@ def execute():
     app.console('Exiting after maximum ' + str(app.args.max_iters) + ' iterations')
     run.function(shutil.copyfile, 'iter' + str(app.args.max_iters-1) + '_RF.txt', 'response.txt')
     run.function(shutil.move, 'iter' + str(app.args.max_iters-1) + '_SF.mif', 'voxels.mif')
-    
+
   run.function(shutil.copyfile, 'response.txt', path.fromUser(app.args.output, False))
 
