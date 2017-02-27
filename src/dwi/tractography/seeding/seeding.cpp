@@ -70,6 +70,14 @@ namespace MR
           + Argument ("number").type_integer (0)
 
 
+      + Option ("num_seeds", "set the number of seeds that tckgen will attempt to track from. "
+                             "This overrides both -select and -max_seeds. Use this option if you "
+                             "genuinely need a constant number of seeds rather than selected streamlines. "
+                             "However, note that in most cases, the -seed_random_per_voxel or "
+                             "-seed_grid_per_voxel options are likely to be more appropriate.")
+          + Argument ("number").type_integer (0)
+
+
       + Option ("max_seed_attempts", "set the maximum number of times that the tracking algorithm should "
                                      "attempt to find an appropriate tracking direction from a given seed point")
         + Argument ("number").type_integer (1)
@@ -142,6 +150,10 @@ namespace MR
 
         opt = get_options ("max_seeds");
         if (opt.size()) properties["max_num_attempts"] = str<unsigned int> (opt[0][0]);
+        
+        opt = get_options ("num_seeds");
+        if (opt.size()) properties["exact_num_attempts"] = str<unsigned int> (opt[0][0]);
+        //TODO: This property is not being used by any algorithm in practice yet.
 
         opt = get_options ("max_seed_attempts");
         if (opt.size()) properties["max_seed_attempts"] = str<unsigned int> (opt[0][0]);

@@ -77,6 +77,8 @@ Tractography seeding options
 
 -  **-max_seeds number** set the maximum number of tracks to generate. The program will not generate more tracks than this number, even if the desired number of tracks hasn't yet been reached (default is 100 x number); set to 0 to ignore limit.
 
+-  **-num_seeds number** set the number of seeds that tckgen will attempt to track from. This overrides both -select and -max_seeds. Use this option if you genuinely need a constant number of seeds rather than selected streamlines. However, note that in most cases, the -seed_random_per_voxel or -seed_grid_per_voxel options are likely to be more appropriate.
+
 -  **-max_seed_attempts number** set the maximum number of times that the tracking algorithm should attempt to find an appropriate tracking direction from a given seed point
 
 -  **-output_seeds path** output the seed location of all successful streamlines to a file
