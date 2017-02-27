@@ -215,7 +215,7 @@ def command(cmd, exitOnError=True):
   _processes = [ ]
 
   if (error):
-    app.cleanup = False
+    app._cleanup = False
     if exitOnError:
       caller = inspect.getframeinfo(inspect.stack()[1][0])
       app.console('')
