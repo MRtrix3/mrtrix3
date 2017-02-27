@@ -33,6 +33,13 @@ def getInputs():
 
 
 
+def isSingleShell():
+  return False
+def needsBZero():
+  return False
+
+
+
 def execute():
   import math, os, shutil
   from mrtrix3 import app, image, path, run
@@ -46,7 +53,7 @@ def execute():
   # Get shell information
   shells = [ int(round(float(x))) for x in image.headerField('dwi.mif', 'shells').split() ]
   if len(shells) < 3:
-    app.warn('Less than three b-value shells; response functions will not be applicable in MSMT-CSD algorithm')
+    app.warn('Less than three b-value shells; response functions will not be applicable in resolving three tissues using MSMT-CSD algorithm')
 
   # Get lmax information (if provided)
   wm_lmax = [ ]
@@ -75,7 +82,7 @@ def execute():
   recursive_cleanup_option=''
   if not app._cleanup:
     recursive_cleanup_option = ' -nocleanup'
-  run.command('dwi2response ' + app.args.wm_algo + ' dwi.mif wm_ss_response.txt -mask wm_mask.mif -voxels wm_sf_mask.mif -quiet -tempdir ' + app._tempDir + recursive_cleanup_option)
+  run.command('dwi2response ' + app.args.wm_algo + ' dwi.mif wm_ss_response.txt -mask wm_mask.mif -voxels wm_sf_mask.mif -tempdir ' + app._tempDir + recursive_cleanup_option)
 
   # Check for empty masks
   wm_voxels  = int(image.statistic('wm_sf_mask.mif', 'count', 'wm_sf_mask.mif'))

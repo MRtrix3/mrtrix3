@@ -9,7 +9,6 @@ def initialise(base_parser, subparsers):
   options.add_argument('-peak_ratio', type=float, default=0.1, help='Second-to-first-peak amplitude ratio threshold')
   options.add_argument('-max_iters', type=int, default=20, help='Maximum number of iterations')
   options.add_argument('-convergence', type=float, default=0.5, help='Percentile change in any RF coefficient required to continue iterating')
-  parser.set_defaults(single_shell=True)
 
 
 
@@ -21,6 +20,13 @@ def checkOutputPaths():
 
 def getInputs():
   pass
+
+
+
+def isSingleShell():
+  return True
+def needsBZero():
+  return False
 
 
 

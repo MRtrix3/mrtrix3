@@ -21,11 +21,18 @@ def checkOutputPaths():
   app.checkOutputPath(app.args.out_sfwm)
   app.checkOutputPath(app.args.out_gm)
   app.checkOutputPath(app.args.out_csf)
-  
-  
-  
+
+
+
 def getInputs():
   pass
+
+
+
+def isSingleShell():
+  return False
+def needsBZero():
+  return False
 
 
 
