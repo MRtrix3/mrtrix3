@@ -32,8 +32,6 @@ Streamlines tractography options
 
 -  **-angle theta** set the maximum angle between successive steps (default is 90deg x stepsize / voxelsize).
 
--  **-maxnum tracks** set the maximum number of tracks to generate. The program will not generate more tracks than this number, even if the desired number of tracks hasn't yet been reached (default is 100 x number); set to 0 to ignore limit.
-
 -  **-maxlength value** set the maximum length of any track in mm (default is 100 x voxelsize).
 
 -  **-minlength value** set the minimum length of any track in mm (default is 5 x voxelsize without ACT, 2 x voxelsize with ACT).
@@ -77,7 +75,9 @@ Tractography seeding options
 
 -  **-seed_dynamic fod_image** determine seed points dynamically using the SIFT model (must not provide any other seeding mechanism). Note that while this seeding mechanism improves the distribution of reconstructed streamlines density, it should NOT be used as a substitute for the SIFT method itself.
 
--  **-max_seed_attempts count** set the maximum number of times that the tracking algorithm should attempt to find an appropriate tracking direction from a given seed point
+-  **-max_seeds number** set the maximum number of tracks to generate. The program will not generate more tracks than this number, even if the desired number of tracks hasn't yet been reached (default is 100 x number); set to 0 to ignore limit.
+
+-  **-max_seed_attempts number** set the maximum number of times that the tracking algorithm should attempt to find an appropriate tracking direction from a given seed point
 
 -  **-output_seeds path** output the seed location of all successful streamlines to a file
 

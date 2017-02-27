@@ -42,13 +42,6 @@ namespace MR
             "set the maximum angle between successive steps (default is 90deg x stepsize / voxelsize).")
           + Argument ("theta").type_float (0.0)
 
-      + Option ("maxnum",
-            "set the maximum number of tracks to generate. The program will "
-            "not generate more tracks than this number, even if the desired "
-            "number of tracks hasn't yet been reached (default is 100 x number); "
-            "set to 0 to ignore limit.")
-          + Argument ("tracks").type_integer (0)
-
       + Option ("maxlength",
             "set the maximum length of any track in mm (default is 100 x voxelsize).")
           + Argument ("value").type_float (0.0)
@@ -119,9 +112,6 @@ namespace MR
 
         opt = get_options ("angle");
         if (opt.size()) properties["max_angle"] = std::string (opt[0][0]);
-
-        opt = get_options ("maxnum");
-        if (opt.size()) properties["max_num_attempts"] = str<unsigned int> (opt[0][0]);
 
         opt = get_options ("maxlength");
         if (opt.size()) properties["max_dist"] = std::string (opt[0][0]);

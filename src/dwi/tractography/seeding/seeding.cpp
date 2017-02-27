@@ -63,9 +63,16 @@ namespace MR
         + Argument ("fod_image").type_image_in()
 
 
+      + Option ("max_seeds", "set the maximum number of tracks to generate. The program will "
+                             "not generate more tracks than this number, even if the desired "
+                             "number of tracks hasn't yet been reached (default is 100 x number); "
+                             "set to 0 to ignore limit.")
+          + Argument ("number").type_integer (0)
+
+
       + Option ("max_seed_attempts", "set the maximum number of times that the tracking algorithm should "
                                      "attempt to find an appropriate tracking direction from a given seed point")
-        + Argument ("count").type_integer (1)
+        + Argument ("number").type_integer (1)
 
 
       + Option ("output_seeds", "output the seed location of all successful streamlines to a file")
@@ -132,6 +139,9 @@ namespace MR
         } else if (!list.num_seeds()) {
           throw Exception ("Must provide at least one source of streamline seeds!");
         }
+
+        opt = get_options ("max_seeds");
+        if (opt.size()) properties["max_num_attempts"] = str<unsigned int> (opt[0][0]);
 
         opt = get_options ("max_seed_attempts");
         if (opt.size()) properties["max_seed_attempts"] = str<unsigned int> (opt[0][0]);
