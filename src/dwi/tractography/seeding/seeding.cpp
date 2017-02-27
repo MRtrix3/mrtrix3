@@ -63,10 +63,13 @@ namespace MR
         + Argument ("fod_image").type_image_in()
 
 
-      + Option ("max_seeds", "set the maximum number of tracks to generate. The program will "
-                             "not generate more tracks than this number, even if the desired "
-                             "number of tracks hasn't yet been reached (default is 100 x number); "
-                             "set to 0 to ignore limit.")
+      + Option ("max_seeds", "set the maximum number of seeds that tckgen will attempt "
+                             "to track from. This is used to prevent the program from "
+                             "running indefinitely when no streamlines can be found that "
+                             "match the selection criteria. By default, this is set to "
+                             "100× the number of selected streamlines. Set to zero to "
+                             "disable, which will result in streamlines being generated "
+                             "until the number specified by -select has been reached.")
           + Argument ("number").type_integer (0)
 
 
