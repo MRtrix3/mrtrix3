@@ -23,15 +23,6 @@ Options
 
 -  **-algorithm name** specify the tractography algorithm to use. Valid choices are: FACT, iFOD1, iFOD2, Nulldist1, Nulldist2, SD_Stream, Seedtest, Tensor_Det, Tensor_Prob (default: iFOD2).
 
-Region Of Interest processing options
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
--  **-include spec** specify an inclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines must traverse ALL inclusion regions to be accepted.
-
--  **-exclude spec** specify an exclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines that enter ANY exclude region will be discarded.
-
--  **-mask spec** specify a masking region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). If defined, streamlines exiting the mask will be truncated.
-
 Streamlines tractography options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -69,15 +60,6 @@ Streamlines tractography options
 
 -  **-downsample factor** downsample the generated streamlines to reduce output file size (default is (samples-1) for iFOD2, no downsampling for all other algorithms)
 
-Anatomically-Constrained Tractography options
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
--  **-act image** use the Anatomically-Constrained Tractography framework during tracking;provided image must be in the 5TT (five-tissue-type) format
-
--  **-backtrack** allow tracks to be truncated and re-tracked if a poor structural termination is encountered
-
--  **-crop_at_gmwmi** crop streamline endpoints more precisely as they cross the GM-WM interface
-
 Tractography seeding options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -98,6 +80,24 @@ Tractography seeding options
 -  **-max_seed_attempts count** set the maximum number of times that the tracking algorithm should attempt to find an appropriate tracking direction from a given seed point
 
 -  **-output_seeds path** output the seed location of all successful streamlines to a file
+
+Region Of Interest processing options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-include spec** specify an inclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines must traverse ALL inclusion regions to be accepted.
+
+-  **-exclude spec** specify an exclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines that enter ANY exclude region will be discarded.
+
+-  **-mask spec** specify a masking region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). If defined, streamlines exiting the mask will be truncated.
+
+Anatomically-Constrained Tractography options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-act image** use the Anatomically-Constrained Tractography framework during tracking;provided image must be in the 5TT (five-tissue-type) format
+
+-  **-backtrack** allow tracks to be truncated and re-tracked if a poor structural termination is encountered
+
+-  **-crop_at_gmwmi** crop streamline endpoints more precisely as they cross the GM-WM interface
 
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

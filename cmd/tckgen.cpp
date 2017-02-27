@@ -123,14 +123,14 @@ void usage ()
               "FACT, iFOD1, iFOD2, Nulldist1, Nulldist2, SD_Stream, Seedtest, Tensor_Det, Tensor_Prob (default: iFOD2).")
     + Argument ("name").type_choice (algorithms)
 
-  + DWI::Tractography::ROIOption
-
   + DWI::Tractography::Tracking::TrackOption
+
+  + DWI::Tractography::Seeding::SeedOption
+
+  + DWI::Tractography::ROIOption
 
   + DWI::Tractography::ACT::ACTOption
 
-  + DWI::Tractography::Seeding::SeedOption
-  
   + DWI::GradImportOptions();
 
 }
