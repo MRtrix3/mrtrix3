@@ -13,9 +13,9 @@ def initialise(base_parser, subparsers):
   options.add_argument('-mask', help='Manually provide a brain mask, rather than deriving one in the script')
   options.add_argument('-premasked', action='store_true', help='Indicate that brain masking has already been applied to the input image')
   parser.flagMutuallyExclusiveOptions( [ 'mask', 'premasked' ] )
-  
-  
-  
+
+
+
 def checkOutputPaths():
   pass
 
@@ -37,8 +37,8 @@ def getInputs():
 def execute():
   import os
   from distutils.spawn import find_executable
-  from mrtrix3 import app, fsl, image, run
-  
+  from mrtrix3 import app, file, fsl, image, run
+
   if app.isWindows():
     app.error('\'fsl\' algorithm of 5ttgen script cannot be run on Windows: FSL not available on Windows')
 
@@ -80,7 +80,7 @@ def execute():
   sgm_structures = [ 'L_Accu', 'R_Accu', 'L_Caud', 'R_Caud', 'L_Pall', 'R_Pall', 'L_Puta', 'R_Puta', 'L_Thal', 'R_Thal' ]
   if app.args.sgm_amyg_hipp:
     sgm_structures.extend([ 'L_Amyg', 'R_Amyg', 'L_Hipp', 'R_Hipp' ])
-  
+
   run.command('mrconvert input.mif T1.nii -stride -1,+2,+3')
 
   fast_t1_input = 'T1.nii'
@@ -90,7 +90,7 @@ def execute():
   if os.path.exists('mask.mif'):
 
     fast_t1_input = 'T1_masked' + fsl_suffix
-    
+
     # Check to see if the mask matches the T1 image
     if image.match('T1.nii', 'mask.mif'):
       run.command('mrcalc T1.nii mask.mif -mult ' + fast_t1_input)
@@ -104,13 +104,13 @@ def execute():
     if os.path.exists('T2.nii'):
       fast_t2_input = 'T2_masked' + fsl_suffix
       run.command('mrcalc T2.nii ' + mask_path + ' -mult ' + fast_t2_input)
-      
+
   elif app.args.premasked:
-  
+
     fast_t1_input = 'T1.nii'
     if os.path.exists('T2.nii'):
       fast_t2_input = 'T2.nii'
-    
+
   else:
 
     # Use FSL command standard_space_roi to do an initial masking of the image before BET
@@ -124,8 +124,6 @@ def execute():
       mni_mask_path = os.path.join(fsl_path, 'data', 'standard', 'MNI152_T1_2mm_brain_mask_dil.nii.gz')
       if os.path.exists (mni_mask_path):
         mni_mask_dilation = 2;
-
-    # standard_space_roi can sometimes crash; if this happens, try to allow the script to continue
     if mni_mask_dilation:
       run.command('maskfilter ' + mni_mask_path + ' dilate mni_mask.nii -npass ' + str(mni_mask_dilation))
       if app.args.nocrop:
@@ -136,9 +134,9 @@ def execute():
     else:
       run.command(ssroi_cmd + ' T1.nii T1_preBET' + fsl_suffix + ' -b', False)
 
-    if not os.path.exists('T1_preBET' + fsl_suffix):
-      app.warn('FSL command ' + ssroi_cmd + ' appears to have failed; passing T1 directly to BET')
-      run.command('mrconvert input.mif T1_preBET' + fsl_suffix + ' -stride -1,+2,+3')
+    # For whatever reason, the output file from standard_space_roi may not be
+    #   completed before BET is run
+    file.waitFor('T1_preBET' + fsl_suffix)
 
     # BET
     fast_t1_input = 'T1_BET' + fsl_suffix
@@ -173,8 +171,9 @@ def execute():
     pve_image_path = 'mesh2pve_' + struct + '.mif'
     vtk_in_path = 'first-' + struct + '_first.vtk'
     vtk_temp_path = struct + '.vtk'
-    if not os.path.exists(vtk_in_path):
-      app.error('Missing .vtk file for structure ' + struct + '; run_first_all must have failed')
+    # If SGE is used, run_first_all may return without error even though
+    #   the output files haven't actually been created yet
+    file.waitFor(vtk_in_path)
     run.command('meshconvert ' + vtk_in_path + ' ' + vtk_temp_path + ' -transform first2real T1.nii')
     run.command('mesh2pve ' + vtk_temp_path + ' ' + fast_t1_input + ' ' + pve_image_path)
     pve_image_list.append(pve_image_path)

@@ -1,5 +1,3 @@
-_env = None
-
 import os
 _mrtrix_bin_path = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(os.path.abspath(__file__))), os.pardir, os.pardir, 'bin'))
 # Remember to remove the '.exe' from Windows binary executables
@@ -14,16 +12,7 @@ def command(cmd, exitOnError=True):
   import inspect, os, subprocess, sys, tempfile
   from mrtrix3 import app
 
-  global _env, _mrtrix_exe_list
-
-  if not _env:
-    _env = os.environ.copy()
-    # Prevent _any_ SGE-compatible commands from running in SGE mode;
-    #   this is a simpler solution than trying to monitor a queued job
-    # If one day somebody wants to use this scripting framework to execute queued commands,
-    #   an alternative solution will need to be found
-    if os.environ.get('SGE_ROOT'):
-      del _env['SGE_ROOT']
+  global _mrtrix_exe_list
 
   # Vectorise the command string, preserving anything encased within quotation marks
   # TODO Use shlex.split()?
@@ -145,7 +134,7 @@ def command(cmd, exitOnError=True):
       handle_err = file_err.fileno()
     # Set off the processes
     try:
-      process = subprocess.Popen (command, stdin=handle_in, stdout=handle_out, stderr=handle_err, env=_env)
+      process = subprocess.Popen (command, stdin=handle_in, stdout=handle_out, stderr=handle_err)
       _processes.append(process)
       tempfiles.append( ( file_out, file_err ) )
     # FileNotFoundError not defined in Python 2.7
