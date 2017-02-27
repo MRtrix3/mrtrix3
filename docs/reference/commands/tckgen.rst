@@ -26,15 +26,15 @@ Options
 Streamlines tractography options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-select number** set the desired number of tracks to select for output (default: 1000). The program will continue to generate tracks until this number of tracks has been selected and written to the output file; set to 0 to ignore limit.
+-  **-select number** set the desired number of streamlines to be selected by tckgen, after all selection criteria have been applied (i.e. inclusion/exclusion ROIs, min/max length, etc). tckgen will keep seeding streamlines until this number of streamlines have been selected, or the maximum allowed number of seeds has been exceeded (see -max_seeds option). By default, 1000 streamlines are to be selected.
 
 -  **-step size** set the step size of the algorithm in mm (default is 0.1 x voxelsize; for iFOD2: 0.5 x voxelsize).
 
 -  **-angle theta** set the maximum angle between successive steps (default is 90deg x stepsize / voxelsize).
 
--  **-maxlength value** set the maximum length of any track in mm (default is 100 x voxelsize).
-
 -  **-minlength value** set the minimum length of any track in mm (default is 5 x voxelsize without ACT, 2 x voxelsize with ACT).
+
+-  **-maxlength value** set the maximum length of any track in mm (default is 100 x voxelsize).
 
 -  **-cutoff value** set the FA or FOD amplitude cutoff for terminating tracks (default is 0.1).
 
