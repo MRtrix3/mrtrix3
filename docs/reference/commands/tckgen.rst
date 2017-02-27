@@ -38,13 +38,7 @@ Streamlines tractography options
 
 -  **-cutoff value** set the FA or FOD amplitude cutoff for terminating tracks (default is 0.1).
 
--  **-initcutoff value** set the minimum FA or FOD amplitude for initiating tracks (default is the same as the normal cutoff).
-
 -  **-trials number** set the maximum number of sampling trials at each point (only used for probabilistic tracking).
-
--  **-unidirectional** track from the seed point in one direction only (default is to track in both directions).
-
--  **-initdirection dir** specify an initial direction for the tracking (this should be supplied as a vector of 3 comma-separated values.
 
 -  **-noprecomputed** do NOT pre-compute legendre polynomial values. Warning: this will slow down the algorithm by a factor of approximately 4.
 
@@ -61,9 +55,9 @@ Streamlines tractography options
 Tractography seeding options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-seed_sphere spec** spherical seed as four comma-separated values (XYZ position and radius)
+-  **-seed_image image** seed streamlines entirely at random within a mask image 
 
--  **-seed_image image** seed streamlines entirely at random within a mask image (this is the same behaviour as the streamline seeding in MRtrix 0.2)
+-  **-seed_sphere spec** spherical seed as four comma-separated values (XYZ position and radius)
 
 -  **-seed_random_per_voxel image num_per_voxel** seed a fixed number of streamlines per voxel in a mask image; random placement of seeds in each voxel
 
@@ -74,6 +68,12 @@ Tractography seeding options
 -  **-seed_gmwmi image** seed from the grey matter - white matter interface (only valid if using ACT framework). Input image should be a 3D seeding volume; seeds drawn within this image will be optimised to the interface using the 5TT image provided using the -act option.
 
 -  **-seed_dynamic fod_image** determine seed points dynamically using the SIFT model (must not provide any other seeding mechanism). Note that while this seeding mechanism improves the distribution of reconstructed streamlines density, it should NOT be used as a substitute for the SIFT method itself.
+
+-  **-seed_cutoff value** set the minimum FA or FOD amplitude for seeding tracks (default is the same as the normal -cutoff).
+
+-  **-seed_unidirectional** track from the seed point in one direction only (default is to track in both directions).
+
+-  **-seed_direction dir** specify a seeding direction for the tracking (this should be supplied as a vector of 3 comma-separated values.
 
 -  **-max_seeds number** set the maximum number of seeds that tckgen will attempt to track from. This is used to prevent the program from running indefinitely when no streamlines can be found that match the selection criteria. By default, this is set to 100× the number of selected streamlines. Set to zero to disable, which will result in streamlines being generated until the number specified by -select has been reached.
 
@@ -86,11 +86,11 @@ Tractography seeding options
 Region Of Interest processing options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-include spec** specify an inclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines must traverse ALL inclusion regions to be accepted.
+-  **-include image** specify an inclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines must traverse ALL inclusion regions to be accepted.
 
--  **-exclude spec** specify an exclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines that enter ANY exclude region will be discarded.
+-  **-exclude image** specify an exclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines that enter ANY exclude region will be discarded.
 
--  **-mask spec** specify a masking region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). If defined, streamlines exiting the mask will be truncated.
+-  **-mask image** specify a masking region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). If defined, streamlines exiting the mask will be truncated.
 
 Anatomically-Constrained Tractography options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

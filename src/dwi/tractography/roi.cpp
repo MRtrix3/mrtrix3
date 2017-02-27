@@ -32,21 +32,21 @@ namespace MR {
             "or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines "
             "must traverse ALL inclusion regions to be accepted.")
           .allow_multiple()
-          + Argument ("spec").type_text()
+          + Argument ("image").type_text()
 
       + Option ("exclude",
             "specify an exclusion region of interest, as either a binary mask image, "
             "or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines "
             "that enter ANY exclude region will be discarded.")
           .allow_multiple()
-          + Argument ("spec").type_text()
+          + Argument ("image").type_text()
 
       + Option ("mask",
             "specify a masking region of interest, as either a binary mask image, "
             "or as a sphere using 4 comma-separared values (x,y,z,radius). If defined, "
             "streamlines exiting the mask will be truncated.")
           .allow_multiple()
-          + Argument ("spec").type_text();
+          + Argument ("image").type_text();
 
 
 

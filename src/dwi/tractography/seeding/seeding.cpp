@@ -33,12 +33,11 @@ namespace MR
 
       const OptionGroup SeedOption = OptionGroup ("Tractography seeding options")
 
+      + Option ("seed_image", "seed streamlines entirely at random within a mask image ").allow_multiple()
+        + Argument ("image").type_image_in()
+
       + Option ("seed_sphere", "spherical seed as four comma-separated values (XYZ position and radius)").allow_multiple()
         + Argument ("spec").type_sequence_float()
-
-      + Option ("seed_image", "seed streamlines entirely at random within a mask image "
-                              "(this is the same behaviour as the streamline seeding in MRtrix 0.2)").allow_multiple()
-        + Argument ("image").type_image_in()
 
       + Option ("seed_random_per_voxel", "seed a fixed number of streamlines per voxel in a mask image; random placement of seeds in each voxel").allow_multiple()
         + Argument ("image").type_image_in()
@@ -62,6 +61,16 @@ namespace MR
                                 "it should NOT be used as a substitute for the SIFT method itself.") // Don't allow multiple
         + Argument ("fod_image").type_image_in()
 
+      + Option ("seed_cutoff", "set the minimum FA or FOD amplitude for seeding tracks "
+                               "(default is the same as the normal -cutoff).")
+          + Argument ("value").type_float (0.0)
+
+      + Option ("seed_unidirectional","track from the seed point in one direction only (default is to "
+                                      "track in both directions).")
+
+      + Option ("seed_direction","specify a seeding direction for the tracking (this should be "
+                                 "supplied as a vector of 3 comma-separated values.")
+          + Argument ("dir").type_sequence_float()
 
       + Option ("max_seeds", "set the maximum number of seeds that tckgen will attempt "
                              "to track from. This is used to prevent the program from "
@@ -100,15 +109,15 @@ namespace MR
 
         List& list (properties.seeds);
 
-        auto opt = get_options ("seed_sphere");
+        auto opt = get_options ("seed_image");
         for (size_t i = 0; i < opt.size(); ++i) {
-          Sphere* seed = new Sphere (opt[i][0]);
+          SeedMask* seed = new SeedMask (opt[i][0]);
           list.add (seed);
         }
 
-        opt = get_options ("seed_image");
+        opt = get_options ("seed_sphere");
         for (size_t i = 0; i < opt.size(); ++i) {
-          SeedMask* seed = new SeedMask (opt[i][0]);
+          Sphere* seed = new Sphere (opt[i][0]);
           list.add (seed);
         }
 
@@ -150,6 +159,15 @@ namespace MR
         } else if (!list.num_seeds()) {
           throw Exception ("Must provide at least one source of streamline seeds!");
         }
+
+        opt = get_options ("seed_cutoff");
+        if (opt.size()) properties["init_threshold"] = std::string (opt[0][0]);
+
+        opt = get_options ("seed_unidirectional");
+        if (opt.size()) properties["unidirectional"] = "1";
+
+        opt = get_options ("seed_direction");
+        if (opt.size()) properties["init_direction"] = std::string (opt[0][0]);
 
         opt = get_options ("max_seeds");
         if (opt.size()) properties["max_num_attempts"] = str<unsigned int> (opt[0][0]);

@@ -60,24 +60,10 @@ namespace MR
             "(default is " + str(DEFAULT_TRACTOGRAPHY_CUTOFF, 2) + ").")
           + Argument ("value").type_float (0.0)
 
-      + Option ("initcutoff",
-            "set the minimum FA or FOD amplitude for initiating tracks "
-            "(default is the same as the normal cutoff).")
-          + Argument ("value").type_float (0.0)
-
       + Option ("trials",
             "set the maximum number of sampling trials at each point (only "
             "used for probabilistic tracking).")
           + Argument ("number").type_integer (1)
-
-      + Option ("unidirectional",
-            "track from the seed point in one direction only (default is to "
-            "track in both directions).")
-
-      + Option ("initdirection",
-            "specify an initial direction for the tracking (this should be "
-            "supplied as a vector of 3 comma-separated values.")
-          + Argument ("dir").type_sequence_float()
 
       + Option ("noprecomputed",
             "do NOT pre-compute legendre polynomial values. Warning: "
@@ -126,17 +112,8 @@ namespace MR
         opt = get_options ("cutoff");
         if (opt.size()) properties["threshold"] = std::string (opt[0][0]);
 
-        opt = get_options ("initcutoff");
-        if (opt.size()) properties["init_threshold"] = std::string (opt[0][0]);
-
         opt = get_options ("trials");
         if (opt.size()) properties["max_trials"] = str<unsigned int> (opt[0][0]);
-
-        opt = get_options ("unidirectional");
-        if (opt.size()) properties["unidirectional"] = "1";
-
-        opt = get_options ("initdirection");
-        if (opt.size()) properties["init_direction"] = std::string (opt[0][0]);
 
         opt = get_options ("noprecomputed");
         if (opt.size()) properties["sh_precomputed"] = "0";
