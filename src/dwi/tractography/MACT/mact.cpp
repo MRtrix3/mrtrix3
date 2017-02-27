@@ -59,6 +59,10 @@ namespace MACT
       + Argument( "surface mesh of cerebellar white matter" )
         .type_file_in()
 
+    + Option( "bst", "brain stem" )
+      + Argument( "surface mesh of brain stem" )
+        .type_file_in()
+
     + Option( "csf", "ventricles of the brain" )
       + Argument( "surface mesh of brain ventricles" )
         .type_file_in()
@@ -123,6 +127,15 @@ namespace MACT
       else
       {
         throw Exception( "mact failed: no input cerebellar wm mesh provided" );
+      }
+      opt = get_options( "bst" );
+      if ( opt.size() )
+      {
+        properties[ "mact_bst" ] = std::string( opt[ 0 ][ 0 ] );
+      }
+      else
+      {
+        throw Exception( "mact failed: no input bst mesh provided" );
       }
       opt = get_options( "csf" );
       if ( opt.size() )

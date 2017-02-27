@@ -31,7 +31,8 @@ namespace MACT
 
 
 MACT_Shared_additions::MACT_Shared_additions( Properties& property_set )
-                      : _backtrack( false ),
+                      : _source( Image< float >::open( property_set[ "source" ] ) ),
+                        _backtrack( false ),
                         _crop_at_gmwmi( false )
 {
   /* need a progess bar */

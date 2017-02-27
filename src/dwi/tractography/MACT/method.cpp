@@ -38,11 +38,12 @@ using namespace MR::DWI::Tractography::Tracking;
 
 MACT_Method_additions::MACT_Method_additions( const SharedBase& shared )
                       : _sgm_depth( 0 ),
+                        _source( shared.mact()._source ),
+                        _sceneModeller( shared.mact()._sceneModeller ),
                         _seed_in_sgm( false ),
                         _sgm_seed_to_wm( false ),
                         _point_in_sgm( false ),
-                        _crop_at_gmwmi( shared.mact()._crop_at_gmwmi ),
-                        _sceneModeller( shared.mact()._sceneModeller )
+                        _crop_at_gmwmi( shared.mact()._crop_at_gmwmi )
 {
 }
 
@@ -83,6 +84,11 @@ term_t MACT_Method_additions::check_structural( const Eigen::Vector3f& old_pos,
    */
   Eigen::Vector3d from = old_pos.cast< double >();
   Eigen::Vector3d to = new_pos.cast< double >();
+  if ( !fetch_source_data( to ) )
+  {
+    return EXIT_IMAGE;
+  }
+
   IntersectionSet intersections( *_sceneModeller, from, to );
   if ( intersections.count() )
   {
@@ -135,17 +141,15 @@ term_t MACT_Method_additions::check_structural( const Eigen::Vector3f& old_pos,
       // the point moves from wm to sgm
       _point_in_sgm = true;
     }
+    // method for preventing cross sulcus connections */
     else if ( tissue->type() == CBR_GM )
     {
-      /* method for preventing cross sulcus connections */
-      if ( intersections.count() > 1 )
+      if ( intersections.count() > 1 &&
+           intersections.intersection( 1 )._tissue->type() == CBR_GM)
       {
-        if ( intersections.intersection( 1 )._tissue->type() == CBR_GM )
-        {
-          // the track a) leaves outer cgm and then enters again; or
-          //           b) enters outer cgm from outside and then leaves again
-          return ENTER_EXCLUDE;
-        }
+        // the track a) leaves outer cgm and then enters again; or
+        //           b) enters outer cgm from outside and then leaves again
+        return ENTER_EXCLUDE;
       }
       else
       {
@@ -161,6 +165,7 @@ term_t MACT_Method_additions::check_structural( const Eigen::Vector3f& old_pos,
       }
       return ENTER_CGM;
     }
+    // method for preventing tracks jumping from brain stem to outer cerebellum
     else if ( tissue->type() == CBL_WM )
     {
       if ( intersections.count() > 1 &&
@@ -264,6 +269,17 @@ bool MACT_Method_additions::seed_is_unidirectional( Eigen::Vector3f& pos,
     return true;
   }
   return false;
+}
+
+
+bool MACT_Method_additions::fetch_source_data( const Eigen::Vector3d& pos )
+{
+  Eigen::Vector3d voxel = Transform( _source ).scanner2voxel * pos;
+  for ( size_t axis = 0; axis < 3; axis++ )
+  {
+    _source.index( axis ) = ssize_t( std::round( voxel[ axis ] ) );
+  }
+  return ( _source.value() != 0 ) && ( _source.value() != NAN );
 }
 
 
