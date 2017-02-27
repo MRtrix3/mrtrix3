@@ -135,7 +135,7 @@ def command(cmd, exitOnError=True):
     else:
       file_out = tempfile.TemporaryFile()
       handle_out = file_out.fileno()
-    # If we're in debug / verbose mode, the contents of stderr will be read and printed to the terminal
+    # If we're in debug / info mode, the contents of stderr will be read and printed to the terminal
     #   as the command progresses, hence this needs to go to a pipe; otherwise, write it to a temporary
     #   file so that the contents can be read later
     if app._verbosity > 1:
@@ -145,7 +145,6 @@ def command(cmd, exitOnError=True):
       handle_err = file_err.fileno()
     # Set off the processes
     try:
-      # FIXME On Python 2.7 and Windows, subprocess refuses to run scripts
       process = subprocess.Popen (command, stdin=handle_in, stdout=handle_out, stderr=handle_err, env=_env)
       _processes.append(process)
       tempfiles.append( ( file_out, file_err ) )
@@ -184,10 +183,10 @@ def command(cmd, exitOnError=True):
           stderrdata += line
           if not line and process.poll() is not None:
             break
-        return_stderr += stderrdata + '\n'
+        return_stderr += stderrdata
         if process.returncode:
           error = True
-          error_text += stderrdata + '\n'
+          error_text += stderrdata
     else:
       for process in _processes:
         process.wait()
@@ -200,13 +199,17 @@ def command(cmd, exitOnError=True):
   #   printed to the terminal during execution, read it here.
   for index in range(len(cmdstack)):
     if tempfiles[index][0] is not None:
-      stdout_text = tempfiles[index][0].read().decode('utf-8') + '\n'
+      tempfiles[index][0].flush()
+      tempfiles[index][0].seek(0)
+      stdout_text = tempfiles[index][0].read().decode('utf-8')
       return_stdout += stdout_text
       if _processes[index].returncode:
         error = True
         error_text += stdout_text
     if tempfiles[index][1] is not None:
-      stderr_text = tempfiles[index][1].read().decode('utf-8') + '\n'
+      tempfiles[index][1].flush()
+      tempfiles[index][1].seek(0)
+      stderr_text = tempfiles[index][1].read().decode('utf-8')
       return_stderr += stderr_text
       if _processes[index].returncode:
         error = True
