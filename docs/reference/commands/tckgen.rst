@@ -26,11 +26,11 @@ Options
 Streamlines tractography options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+-  **-select number** set the desired number of tracks to select for output (default: 1000). The program will continue to generate tracks until this number of tracks has been selected and written to the output file; set to 0 to ignore limit.
+
 -  **-step size** set the step size of the algorithm in mm (default is 0.1 x voxelsize; for iFOD2: 0.5 x voxelsize).
 
 -  **-angle theta** set the maximum angle between successive steps (default is 90deg x stepsize / voxelsize).
-
--  **-number tracks** set the desired number of tracks. The program will continue to generate tracks until this number of tracks have been selected and written to the output file; set to 0 to ignore limit.
 
 -  **-maxnum tracks** set the maximum number of tracks to generate. The program will not generate more tracks than this number, even if the desired number of tracks hasn't yet been reached (default is 100 x number); set to 0 to ignore limit.
 

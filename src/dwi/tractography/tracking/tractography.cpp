@@ -28,6 +28,12 @@ namespace MR
 
       const OptionGroup TrackOption = OptionGroup ("Streamlines tractography options")
 
+      + Option ("select",
+            "set the desired number of tracks to select for output (default: 1000). "
+            "The program will continue to generate tracks until this number of tracks has "
+            "been selected and written to the output file; set to 0 to ignore limit.")
+          + Argument ("number").type_integer (0)
+
       + Option ("step",
             "set the step size of the algorithm in mm (default is 0.1 x voxelsize; for iFOD2: 0.5 x voxelsize).")
           + Argument ("size").type_float (0.0)
@@ -35,12 +41,6 @@ namespace MR
       + Option ("angle",
             "set the maximum angle between successive steps (default is 90deg x stepsize / voxelsize).")
           + Argument ("theta").type_float (0.0)
-
-      + Option ("number",
-            "set the desired number of tracks. The program will continue to "
-            "generate tracks until this number of tracks have been selected "
-            "and written to the output file; set to 0 to ignore limit.")
-          + Argument ("tracks").type_integer (0)
 
       + Option ("maxnum",
             "set the maximum number of tracks to generate. The program will "
@@ -111,29 +111,14 @@ namespace MR
 
         using namespace MR::App;
 
-        auto opt = get_options ("include");
-        for (size_t i = 0; i < opt.size(); ++i)
-          properties.include.add (ROI (opt[i][0]));
-
-        opt = get_options ("exclude");
-        for (size_t i = 0; i < opt.size(); ++i)
-          properties.exclude.add (ROI (opt[i][0]));
-
-        opt = get_options ("mask");
-        for (size_t i = 0; i < opt.size(); ++i)
-          properties.mask.add (ROI (opt[i][0]));
-
-        opt = get_options ("grad");
-        if (opt.size()) properties["DW_scheme"] = std::string (opt[0][0]);
+        auto opt = get_options ("select");
+        if (opt.size()) properties["max_num_tracks"] = str<unsigned int> (opt[0][0]);
 
         opt = get_options ("step");
         if (opt.size()) properties["step_size"] = std::string (opt[0][0]);
 
         opt = get_options ("angle");
         if (opt.size()) properties["max_angle"] = std::string (opt[0][0]);
-
-        opt = get_options ("number");
-        if (opt.size()) properties["max_num_tracks"] = str<unsigned int> (opt[0][0]);
 
         opt = get_options ("maxnum");
         if (opt.size()) properties["max_num_attempts"] = str<unsigned int> (opt[0][0]);
@@ -171,6 +156,18 @@ namespace MR
         opt = get_options ("rk4");
         if (opt.size()) properties["rk4"] = "1";
 
+        opt = get_options ("include");
+        for (size_t i = 0; i < opt.size(); ++i)
+          properties.include.add (ROI (opt[i][0]));
+
+        opt = get_options ("exclude");
+        for (size_t i = 0; i < opt.size(); ++i)
+          properties.exclude.add (ROI (opt[i][0]));
+
+        opt = get_options ("mask");
+        for (size_t i = 0; i < opt.size(); ++i)
+          properties.mask.add (ROI (opt[i][0]));
+
         opt = get_options ("stop");
         if (opt.size()) {
           if (properties.include.size())
@@ -181,6 +178,9 @@ namespace MR
 
         opt = get_options ("downsample");
         if (opt.size()) properties["downsample_factor"] = str<unsigned int> (opt[0][0]);
+
+        opt = get_options ("grad");
+        if (opt.size()) properties["DW_scheme"] = std::string (opt[0][0]);
 
       }
 
