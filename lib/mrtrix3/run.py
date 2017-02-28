@@ -41,10 +41,10 @@ def command(cmd, exitOnError=True):
         cmdtotest = entry.split('=')[1]
       else:
         cmdtotest = entry
-      filetotest = [ app._lastFile, os.path.splitext(app.lastFile)[0] ]
+      filetotest = [ app._lastFile, os.path.splitext(app._lastFile)[0] ]
       if cmdtotest in filetotest:
         app.debug('Detected last file \'' + app._lastFile + '\' in command \'' + cmd + '\'; this is the last run.command() / run.function() call that will be skipped')
-        app.lastFile = ''
+        app._lastFile = ''
         break
     if app._verbosity:
       sys.stderr.write(app.colourExec + 'Skipping command:' + app.colourClear + ' ' + cmd + '\n')
@@ -264,7 +264,7 @@ def function(fn, *args):
       filetotest = [ app._lastFile, os.path.splitext(app._lastFile)[0] ]
       if totest in filetotest:
         app.debug('Detected last file \'' + app._lastFile + '\' in function \'' + fnstring + '\'; this is the last run.command() / run.function() call that will be skipped')
-        app.lastFile = ''
+        app._lastFile = ''
         break
     if app._verbosity:
       sys.stderr.write(app.colourExec + 'Skipping function:' + app.colourClear + ' ' + fnstring + '\n')
