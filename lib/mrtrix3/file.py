@@ -3,7 +3,7 @@
 
 
 # These functions can (and should in some instances) be called upon any file / directory
-#   that is no longer required by the script. If the script has been instructed to retain 
+#   that is no longer required by the script. If the script has been instructed to retain
 #   all temporaries, the resource will be retained; if not, it will be deleted (in particular
 #   to dynamically free up storage space used by the script).
 def delTempFile(path):
@@ -68,3 +68,33 @@ def newTempFile(suffix):
   app.debug(full_path)
   return full_path
 
+
+
+# Wait until a particular file not only exists, but also does not have any
+#   other process operating on it (so hopefully whatever created it has
+#   finished its work)
+# Using open() rather than os.path.exists() ensures that not only has the file
+#   appeared in the directory listing, but the data are there and a file handle
+#   can be obtained.
+# Initially, checks for the file once every 1/1000th of a second; this gradually
+#   increases if the file still doesn't exist, until the program is only checking
+#   for the file once a minute.
+def waitFor(path):
+  import time
+  from mrtrix3 import app
+  try:
+    open(path)
+    return
+  except:
+    pass
+  app.console('Waiting for finalization of new file \"' + path + '\"')
+  delay = 1.0/1024.0
+  while True:
+    try:
+      with open(path):
+        pass
+      return
+    except IOError:
+      time.sleep(delay)
+      delay = max(60.0, delay*2.0)
+  app.debug('File \"' + path + '\" appears to be complete')
