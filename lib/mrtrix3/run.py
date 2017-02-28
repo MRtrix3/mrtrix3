@@ -342,7 +342,6 @@ def versionMatch(item):
 #   shebang at the start of the file to alter the subprocess call
 def _shebang(item):
   import os
-  import sys
   from mrtrix3 import app
   from distutils.spawn import find_executable
   # If a complete path has been provided rather than just a file name, don't perform any additional file search
@@ -369,7 +368,8 @@ def _shebang(item):
   for line in data.splitlines():
     line = line.strip()
     if len(line) > 2 and line[0:2] == '#!':
-      shebang = line[2:].split(' ')
+      # Need to strip first in case there's a gap between the shebang symbol and the interpreter path
+      shebang = line[2:].strip().split(' ')
       if app.isWindows():
         # On Windows, /usr/bin/env can't be easily found, and any direct interpreter path will have a similar issue.
         #   Instead, manually find the right interpreter to call using distutils
