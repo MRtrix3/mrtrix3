@@ -68,14 +68,14 @@ void usage ()
     + Option ("outputmap","Weight the computed DEC map by a provided outputmap. If the outputmap has a different grid, the DEC map is first resliced and renormalised. To achieve panchromatic sharpening, provide an image with a higher spatial resolution than the input FOD image; e.g., a T1 anatomical volume. Only the DEC is subject to the mask, so as to allow for partial colouring of the outputmap. \nDefault when this option is *not* provided: integral of input FOD, subject to the same mask/threshold as used for DEC computation.")
     + Argument ("image").type_image_in()
 
-    + Option ("no-weight","Do not weight the DEC map (reslicing and renormalising still possible by explicitly providing the outputmap option as a template).")
+    + Option ("no_weight","Do not weight the DEC map (reslicing and renormalising still possible by explicitly providing the outputmap option as a template).")
 
     + Option ("lum","Correct for luminance/perception, using default values Cr,Cg,Cb = " + str(DEFAULT_LUM_CR, 2) + "," + str(DEFAULT_LUM_CG, 2) + "," + str(DEFAULT_LUM_CB, 2) + " and gamma = " + str(DEFAULT_LUM_GAMMA, 2) + " (*not* correcting is the theoretical equivalent of Cr,Cg,Cb = 1,1,1 and gamma = 2).")
 
-    + Option ("lum-coefs","The coefficients Cr,Cg,Cb to correct for luminance/perception. \nNote: this implicitly switches on luminance/perception correction, using a default gamma = " + str(DEFAULT_LUM_GAMMA, 2) + " unless specified otherwise.")
+    + Option ("lum_coefs","The coefficients Cr,Cg,Cb to correct for luminance/perception. \nNote: this implicitly switches on luminance/perception correction, using a default gamma = " + str(DEFAULT_LUM_GAMMA, 2) + " unless specified otherwise.")
     + Argument ("values").type_sequence_float()
 
-    + Option ("lum-gamma","The gamma value to correct for luminance/perception. \nNote: this implicitly switches on luminance/perception correction, using a default Cr,Cg,Cb = " + str(DEFAULT_LUM_CR, 2) + "," + str(DEFAULT_LUM_CG, 2) + "," + str(DEFAULT_LUM_CB, 2) + " unless specified otherwise.")
+    + Option ("lum_gamma","The gamma value to correct for luminance/perception. \nNote: this implicitly switches on luminance/perception correction, using a default Cr,Cg,Cb = " + str(DEFAULT_LUM_CR, 2) + "," + str(DEFAULT_LUM_CG, 2) + "," + str(DEFAULT_LUM_CB, 2) + " unless specified otherwise.")
     + Argument ("value").type_float();
 }
 
@@ -222,15 +222,15 @@ void run () {
   bool needtolum = false;
   Eigen::Array<value_type, 3, 1> coefs (1.0, 1.0, 1.0);
   value_type gamma = 2.0;
-  auto optlc = get_options("lum-coefs");
-  auto optlg = get_options("lum-gamma");
+  auto optlc = get_options("lum_coefs");
+  auto optlg = get_options("lum_gamma");
   if (get_options("lum").size() || optlc.size() || optlg.size()) {
     needtolum = true;
     coefs << DEFAULT_LUM_CR , DEFAULT_LUM_CG , DEFAULT_LUM_CB; gamma = DEFAULT_LUM_GAMMA;
     if (optlc.size()) {
       auto lc = parse_floats(optlc[0][0]);
       if (lc.size() != 3)
-        throw Exception ("expecting exactly 3 coefficients for the lum-coefs option, provided as a comma-separated list Cr,Cg,Cb ; e.g., " + str(DEFAULT_LUM_CR, 2) + "," + str(DEFAULT_LUM_CG, 2) + "," + str(DEFAULT_LUM_CB, 2) + "");
+        throw Exception ("expecting exactly 3 coefficients for the lum_coefs option, provided as a comma-separated list Cr,Cg,Cb ; e.g., " + str(DEFAULT_LUM_CR, 2) + "," + str(DEFAULT_LUM_CG, 2) + "," + str(DEFAULT_LUM_CB, 2) + "");
       coefs(0) = lc[0]; coefs(1) = lc[1]; coefs(2) = lc[2];
     }
     if (optlg.size())
@@ -269,7 +269,7 @@ void run () {
       if (mask_hdr.valid())
         mask_img = mask_hdr.get_image<bool>();
 
-      if (!get_options("no-weight").size() && !map_hdr) {
+      if (!get_options("no_weight").size() && !map_hdr) {
         auto int_hdr = Header(dec_img);
         int_hdr.size(3) = 1;
         w_img = Image<value_type>::scratch(int_hdr,"FOD integral map");
@@ -292,7 +292,7 @@ void run () {
       copy (dec_img, out_img);
   }
 
-  if (!get_options("no-weight").size() && map_hdr.valid())
+  if (!get_options("no_weight").size() && map_hdr.valid())
     w_img = map_hdr.get_image<value_type>();
 
   if (w_img.valid() || needtolum || needtoslice)
