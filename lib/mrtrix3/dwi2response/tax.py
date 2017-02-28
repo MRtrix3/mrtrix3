@@ -23,10 +23,8 @@ def getInputs():
 
 
 
-def isSingleShell():
+def needsSingleShell():
   return True
-def needsBZero():
-  return False
 
 
 

@@ -24,16 +24,17 @@ def getInputs():
 
 
 
-def isSingleShell():
-  return True
-def needsBZero():
-  return True
+def needsSingleShell():
+  return False
 
 
 
 def execute():
   import os, shutil
-  from mrtrix3 import app, path, run
+  from mrtrix3 import app, image, path, run
+  bvalues = [ int(round(float(x))) for x in image.headerField('dwi.mif', 'shells').split() ]
+  if len(bvalues) < 2:
+    app.error('Need at least 2 unique b-values (including b=0).')
   lmax_option = ''
   if app.args.lmax:
     lmax_option = ' -lmax ' + app.args.lmax
@@ -42,13 +43,13 @@ def execute():
     mask_path = 'mask_eroded.mif'
   else:
     mask_path = 'mask.mif'
-  run.command('mrcat bzero.mif dwi.mif - -axis 3 | dwi2tensor - -mask ' + mask_path + ' tensor.mif')
+  run.command('dwi2tensor dwi.mif -mask ' + mask_path + ' tensor.mif')
   run.command('tensor2metric tensor.mif -fa fa.mif -vector vector.mif -mask ' + mask_path)
   if app.args.threshold:
     run.command('mrthreshold fa.mif voxels.mif -abs ' + str(app.args.threshold))
   else:
     run.command('mrthreshold fa.mif voxels.mif -top ' + str(app.args.number))
-  run.command('amp2response dwi.mif voxels.mif vector.mif response.txt' + lmax_option)
+  run.command('dwiextract dwi.mif - -singleshell -no_bzero | amp2response - voxels.mif vector.mif response.txt' + lmax_option)
 
   run.function(shutil.copyfile, 'response.txt', path.fromUser(app.args.output, False))
 

@@ -33,9 +33,7 @@ def getInputs():
 
 
 
-def isSingleShell():
-  return False
-def needsBZero():
+def needsSingleShell():
   return False
 
 
