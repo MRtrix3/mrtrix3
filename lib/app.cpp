@@ -831,7 +831,7 @@ namespace MR
 
 
 
-    void load_standard_options()
+    void parse_standard_options()
     {
       if (get_options ("info").size()) {
         if (log_level < 2)
@@ -975,7 +975,7 @@ namespace MR
         }
       }
 
-      load_standard_options();
+      parse_standard_options();
 
       File::Config::init ();
 
