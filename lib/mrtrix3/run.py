@@ -363,7 +363,7 @@ def _shebang(item):
   if data.translate(None, textchars):
     app.debug('File \"' + item + '\": Not a text file')
     return []
-  data = data.decode('utf-8')
+  data = str(data.decode('utf-8'))
   # Try to find the shebang line
   for line in data.splitlines():
     line = line.strip()
