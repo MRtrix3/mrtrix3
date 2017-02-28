@@ -10,6 +10,7 @@ _processes = [ ]
 def command(cmd, exitOnError=True):
 
   import inspect, os, subprocess, sys, tempfile
+  from distutils.spawn import find_executable
   from mrtrix3 import app
 
   global _mrtrix_exe_list
@@ -64,6 +65,11 @@ def command(cmd, exitOnError=True):
       shebang = _shebang(item)
       if len(shebang):
         new_cmdsplit.extend(shebang)
+        if not is_mrtrix_exe:
+          # If a shebang is found, and this call is therefore invoking an
+          #   interpreter, can't rely on the interpreter finding the script
+          #   from PATH; need to find the full path ourselves.
+          item = find_executable(item)
       next_is_exe = False
     if item == '|':
       if is_mrtrix_exe:
@@ -336,6 +342,7 @@ def versionMatch(item):
 #   shebang at the start of the file to alter the subprocess call
 def _shebang(item):
   import os
+  import sys
   from mrtrix3 import app
   from distutils.spawn import find_executable
   # If a complete path has been provided rather than just a file name, don't perform any additional file search
@@ -357,6 +364,7 @@ def _shebang(item):
   if data.translate(None, textchars):
     app.debug('File \"' + item + '\": Not a text file')
     return []
+  data = data.decode('utf-8')
   # Try to find the shebang line
   for line in data.splitlines():
     line = line.strip()
