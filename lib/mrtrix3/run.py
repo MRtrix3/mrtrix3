@@ -1,5 +1,3 @@
-_env = None
-
 import os
 _mrtrix_bin_path = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(os.path.abspath(__file__))), os.pardir, os.pardir, 'bin'))
 # Remember to remove the '.exe' from Windows binary executables
@@ -12,18 +10,10 @@ _processes = [ ]
 def command(cmd, exitOnError=True):
 
   import inspect, os, subprocess, sys, tempfile
+  from distutils.spawn import find_executable
   from mrtrix3 import app
 
-  global _env, _mrtrix_exe_list
-
-  if not _env:
-    _env = os.environ.copy()
-    # Prevent _any_ SGE-compatible commands from running in SGE mode;
-    #   this is a simpler solution than trying to monitor a queued job
-    # If one day somebody wants to use this scripting framework to execute queued commands,
-    #   an alternative solution will need to be found
-    if os.environ.get('SGE_ROOT'):
-      del _env['SGE_ROOT']
+  global _mrtrix_exe_list
 
   # Vectorise the command string, preserving anything encased within quotation marks
   # TODO Use shlex.split()?
@@ -75,6 +65,11 @@ def command(cmd, exitOnError=True):
       shebang = _shebang(item)
       if len(shebang):
         new_cmdsplit.extend(shebang)
+        if not is_mrtrix_exe:
+          # If a shebang is found, and this call is therefore invoking an
+          #   interpreter, can't rely on the interpreter finding the script
+          #   from PATH; need to find the full path ourselves.
+          item = find_executable(item)
       next_is_exe = False
     if item == '|':
       if is_mrtrix_exe:
@@ -145,7 +140,7 @@ def command(cmd, exitOnError=True):
       handle_err = file_err.fileno()
     # Set off the processes
     try:
-      process = subprocess.Popen (command, stdin=handle_in, stdout=handle_out, stderr=handle_err, env=_env)
+      process = subprocess.Popen (command, stdin=handle_in, stdout=handle_out, stderr=handle_err)
       _processes.append(process)
       tempfiles.append( ( file_out, file_err ) )
     # FileNotFoundError not defined in Python 2.7
@@ -368,11 +363,13 @@ def _shebang(item):
   if data.translate(None, textchars):
     app.debug('File \"' + item + '\": Not a text file')
     return []
+  data = str(data.decode('utf-8'))
   # Try to find the shebang line
   for line in data.splitlines():
     line = line.strip()
     if len(line) > 2 and line[0:2] == '#!':
-      shebang = line[2:].split(' ')
+      # Need to strip first in case there's a gap between the shebang symbol and the interpreter path
+      shebang = line[2:].strip().split(' ')
       if app.isWindows():
         # On Windows, /usr/bin/env can't be easily found, and any direct interpreter path will have a similar issue.
         #   Instead, manually find the right interpreter to call using distutils
