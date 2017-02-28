@@ -69,7 +69,7 @@ if app.args.shell:
   shell_option = ' -shell ' + app.args.shell
 singleshell_option = ''
 if alg.isSingleShell():
-  singleshell_option = ' -singleshell -no-bzero'
+  singleshell_option = ' -singleshell -no_bzero'
 
 grad_import_option = ''
 if app.args.grad:

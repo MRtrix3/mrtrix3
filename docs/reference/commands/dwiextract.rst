@@ -23,9 +23,9 @@ Options
 
 -  **-bzero** Output b=0 volumes (instead of the diffusion weighted volumes, if -singleshell is not specified).
 
--  **-no-bzero** Output only non b=0 volumes (default, if -singleshell is not specified).
+-  **-no_bzero** Output only non b=0 volumes (default, if -singleshell is not specified).
 
--  **-singleshell** Force a single-shell (single non b=0 shell) output. This will include b=0 volumes, if present. Use with -bzero to enforce presence of b=0 volumes (error if not present) or with -no-bzero to exclude them.
+-  **-singleshell** Force a single-shell (single non b=0 shell) output. This will include b=0 volumes, if present. Use with -bzero to enforce presence of b=0 volumes (error if not present) or with -no_bzero to exclude them.
 
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

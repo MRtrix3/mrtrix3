@@ -39,8 +39,8 @@ void usage ()
 
   OPTIONS
     + Option ("bzero", "Output b=0 volumes (instead of the diffusion weighted volumes, if -singleshell is not specified).")
-    + Option ("no-bzero", "Output only non b=0 volumes (default, if -singleshell is not specified).")
-    + Option ("singleshell", "Force a single-shell (single non b=0 shell) output. This will include b=0 volumes, if present. Use with -bzero to enforce presence of b=0 volumes (error if not present) or with -no-bzero to exclude them.")
+    + Option ("no_bzero", "Output only non b=0 volumes (default, if -singleshell is not specified).")
+    + Option ("singleshell", "Force a single-shell (single non b=0 shell) output. This will include b=0 volumes, if present. Use with -bzero to enforce presence of b=0 volumes (error if not present) or with -no_bzero to exclude them.")
     + DWI::GradImportOptions()
     + DWI::ShellOption
     + PhaseEncoding::ImportOptions
@@ -63,7 +63,7 @@ void run()
   bool bzero = get_options ("bzero").size();
   if (get_options ("shell").size() || get_options ("singleshell").size()) {
     DWI::Shells shells (grad);
-    shells.select_shells (get_options ("singleshell").size(),get_options ("bzero").size(),get_options ("no-bzero").size());
+    shells.select_shells (get_options ("singleshell").size(),get_options ("bzero").size(),get_options ("no_bzero").size());
     for (size_t s = 0; s != shells.count(); ++s) {
       DEBUG ("Including data from shell b=" + str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev()));
       for (const auto v : shells[s].get_volumes()) 
