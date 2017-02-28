@@ -31,7 +31,12 @@ void usage ()
   AUTHOR = "J-Donald Tournier (d.tournier@brain.org.au), Dave Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
-  + "the MRtrix image viewer.";
+  + "the MRtrix image viewer."
+  
+  + "Any images listed as arguments will be loaded and available through the "
+    "image menu, with the first listed displayed. Any subsequent command-line "
+    "options will be processed as if the corresponding action had been performed "
+    "through the GUI.";
 
   REFERENCES 
     + "Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
@@ -64,6 +69,7 @@ void run ()
 {
   GUI::MRView::Window window;
   window.show();
+  window.parse_arguments();
 
   if (qApp->exec())
     throw Exception ("error running Qt application");

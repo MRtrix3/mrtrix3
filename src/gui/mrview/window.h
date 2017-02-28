@@ -81,6 +81,7 @@ namespace MR
           Window();
           ~Window();
 
+          void parse_arguments ();
           void add_images (std::vector<std::unique_ptr<MR::Header>>& list);
 
           const QPoint& mouse_position () const { return mouse_position_; }
@@ -321,8 +322,6 @@ namespace MR
           void closeEvent (QCloseEvent* event) override;
           void create_tool (QAction* action, bool show);
 
-          void process_commandline_option (const MR::App::ParsedOption& opt);
-
           template <class Event> void grab_mouse_state (Event* event);
           template <class Event> void update_mouse_state (Event* event);
 
@@ -331,7 +330,7 @@ namespace MR
           std::vector<double> render_times;
           double best_FPS, best_FPS_time;
           bool show_FPS;
-          char* const* current_arg;
+          size_t current_option;
 
           friend class ImageBase;
           friend class Mode::Base;
