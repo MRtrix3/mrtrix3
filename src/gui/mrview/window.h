@@ -322,6 +322,8 @@ namespace MR
           void closeEvent (QCloseEvent* event) override;
           void create_tool (QAction* action, bool show);
 
+          void process_commandline_option ();
+
           template <class Event> void grab_mouse_state (Event* event);
           template <class Event> void update_mouse_state (Event* event);
 

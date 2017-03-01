@@ -714,12 +714,33 @@ namespace MR
 
       void Window::parse_arguments ()
       {
-        std::vector<std::unique_ptr<MR::Header>> list;
-        for (size_t n = 0; n < MR::App::argument.size(); ++n) {
-          try { list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (MR::App::argument[n])))); }
-          catch (Exception& e) { e.display(); }
+        if (MR::App::argument.size()) {
+          if (MR::App::option.size())  {
+            // check that first non-standard option appears after last argument:
+            size_t last_arg_pos = 1;
+            for (; MR::App::argv[last_arg_pos] != MR::App::argument.back().c_str(); ++last_arg_pos)
+              if (MR::App::argv[last_arg_pos] == nullptr)
+                throw Exception ("FIXME: error determining position of last argument!");
+
+            // identify first non-standard option:
+            size_t first_option = 0; 
+            for (; first_option < MR::App::option.size(); ++first_option) { 
+              if (size_t (MR::App::option[first_option].opt - &MR::App::__standard_options[0]) >= MR::App::__standard_options.size())
+                break;
+            }
+              
+            first_option = MR::App::option[first_option].args - MR::App::argv;
+            if (first_option < last_arg_pos)
+              throw Exception ("options must appear after the last argument - see help page for details");
+          }
+
+          std::vector<std::unique_ptr<MR::Header>> list;
+          for (size_t n = 0; n < MR::App::argument.size(); ++n) {
+            try { list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (MR::App::argument[n])))); }
+            catch (Exception& e) { e.display(); }
+          }
+          add_images (list);
         }
-        add_images (list);
 
         QTimer::singleShot (10, this, SLOT(process_commandline_option_slot()));
       }
@@ -1724,6 +1745,19 @@ namespace MR
         if (current_option >= MR::App::option.size())
           return;
 
+        process_commandline_option();
+        ++current_option;
+
+        QTimer::singleShot (10, this, SLOT(process_commandline_option_slot()));
+        glarea->update();
+      }
+
+
+
+
+
+      void Window::process_commandline_option () 
+      {
         auto& opt (MR::App::option[current_option]);
 
 #undef TOOL
@@ -1983,10 +2017,6 @@ namespace MR
           E.display();
           qApp->quit();
         }
-
-        QTimer::singleShot (10, this, SLOT(process_commandline_option_slot()));
-        glarea->update();
-
       }
 
 
