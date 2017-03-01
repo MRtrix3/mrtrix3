@@ -43,7 +43,8 @@ namespace MR {
         constexpr value_type hermite_tension = value_type(0.1);
 
 
-        class Base { NOMEMALIGN
+        class Base
+        { NOMEMALIGN
           public:
             Base() { }
 
@@ -55,7 +56,7 @@ namespace MR {
 
         template <class Derived>
         class BaseCRTP : public Base
-        {
+        { NOMEMALIGN
           public:
             virtual Base* clone() const {
               return new Derived(static_cast<Derived const&>(*this));
