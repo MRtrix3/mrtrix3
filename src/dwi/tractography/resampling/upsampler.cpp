@@ -27,7 +27,7 @@ namespace MR {
 
         bool Upsampler::operator() (const Streamline<>& in, Streamline<>& out) const
         {
-          if (get_ratio() == 1) {
+          if (get_ratio() == 1 || in.size() < 2) {
             out = in;
             return true;
           }
@@ -35,8 +35,7 @@ namespace MR {
           out.index = in.index;
           out.weight = in.weight;
           Streamline<> in_padded (in);
-          if (!interp_prepare (in_padded))
-            return false;
+          interp_prepare (in_padded);
           for (size_t i = 3; i < in_padded.size(); ++i) {
             out.push_back (in_padded[i-2]);
             increment (in_padded[i]);
@@ -70,10 +69,9 @@ namespace MR {
 
 
 
-        bool Upsampler::interp_prepare (Streamline<>& in) const
+        void Upsampler::interp_prepare (Streamline<>& in) const
         {
-          if (!M.rows() || in.size() < 2)
-            return false;
+          assert (in.size() >= 2);
           // Abandoned curvature-based extrapolation - badly posed when step size is not guaranteed to be consistent,
           //   and probably makes little difference anyways
           const size_t s = in.size();
@@ -85,7 +83,6 @@ namespace MR {
             data(2,i) = (in[1])[i];
             data(3,i) = (in[2])[i];
           }
-          return true;
         }
 
 

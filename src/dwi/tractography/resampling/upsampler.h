@@ -58,7 +58,7 @@ namespace MR {
             Eigen::MatrixXf M;
             mutable Eigen::MatrixXf temp, data;
 
-            bool interp_prepare (Streamline<>&) const;
+            void interp_prepare (Streamline<>&) const;
             void increment (const point_type&) const;
 
         };
