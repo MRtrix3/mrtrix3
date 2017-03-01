@@ -24,9 +24,6 @@
 #include "dwi/tractography/ACT/tissues.h"
 
 
-#define MIN_TISSUE_CHANGE 0.01 // Just accounting for floating-point errors
-
-
 
 using namespace MR;
 using namespace App;

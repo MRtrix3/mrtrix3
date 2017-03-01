@@ -29,15 +29,18 @@ namespace MR
 
       group 
         + Option ("grad",
-            "specify the diffusion-weighted gradient scheme used in the acquisition. "
-            "The program will normally attempt to use the encoding stored in the image "
-            "header. This should be supplied as a 4xN text file with each line is in "
-            "the format [ X Y Z b ], where [ X Y Z ] describe the direction of the "
-            "applied gradient, and b gives the b-value in units of s/mm^2.")
-        +   Argument ("encoding").type_file_in()
+            "Provide the diffusion-weighted gradient scheme used in the acquisition "
+            "in a text file. This should be supplied as a 4xN text file with each line "
+            "is in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the "
+            "applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion "
+            "gradient scheme is present in the input image header, the data provided with "
+            "this option will be instead used.")
+        +   Argument ("file").type_file_in()
 
         + Option ("fslgrad",
-            "specify the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format.")
+            "Provide the diffusion-weighted gradient scheme used in the acquisition in FSL "
+            "bvecs/bvals format files. If a diffusion gradient scheme is present in the "
+            "input image header, the data provided with this option will be instead used.")
         +   Argument ("bvecs").type_file_in()
         +   Argument ("bvals").type_file_in();
 
