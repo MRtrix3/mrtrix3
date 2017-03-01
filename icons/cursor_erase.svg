@@ -1,104 +1,12 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!-- Created with Inkscape (http://www.inkscape.org/) -->
-
-<svg
-   xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://creativecommons.org/ns#"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="32"
-   height="32"
-   id="svg6430"
-   version="1.1"
-   inkscape:version="0.91 r13725"
-   sodipodi:docname="cursor_erase.svg">
-  <defs
-     id="defs6432" />
-  <sodipodi:namedview
-     id="base"
-     pagecolor="#ffffff"
-     bordercolor="#666666"
-     borderopacity="1.0"
-     inkscape:pageopacity="0.0"
-     inkscape:pageshadow="2"
-     inkscape:zoom="14.684264"
-     inkscape:cx="16.591873"
-     inkscape:cy="18.165609"
-     inkscape:document-units="px"
-     inkscape:current-layer="layer1"
-     showgrid="true"
-     inkscape:window-width="1920"
-     inkscape:window-height="1013"
-     inkscape:window-x="1920"
-     inkscape:window-y="0"
-     inkscape:window-maximized="1">
-    <inkscape:grid
-       empspacing="5"
-       visible="true"
-       enabled="true"
-       snapvisiblegridlinesonly="true"
-       type="xygrid"
-       id="grid6438" />
-  </sodipodi:namedview>
-  <metadata
-     id="metadata6435">
-    <rdf:RDF>
-      <cc:Work
-         rdf:about="">
-        <dc:format>image/svg+xml</dc:format>
-        <dc:type
-           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
-      </cc:Work>
-    </rdf:RDF>
-  </metadata>
-  <g
-     inkscape:label="Layer 1"
-     inkscape:groupmode="layer"
-     id="layer1"
-     transform="translate(0,-1020.3622)">
-    <g
-       id="g3000"
-       transform="translate(-14,-6)">
-      <path
-         sodipodi:nodetypes="cc"
-         id="path3684-2"
-         d="m 22.5,1027.8622 c 0,0 0,14 0,14"
-         style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
-         inkscape:connector-curvature="0" />
-      <path
-         sodipodi:nodetypes="cc"
-         id="path3684-6-3"
-         d="m 29.5,1034.8622 c 0,0 -14,0 -14,0"
-         style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
-         inkscape:connector-curvature="0" />
-      <path
-         sodipodi:nodetypes="cc"
-         id="path3684"
-         d="m 22.5,1027.8622 c 0,0 0,14 0,14"
-         style="fill:none;stroke:#ffffff;stroke-width:1px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1"
-         inkscape:connector-curvature="0" />
-      <path
-         sodipodi:nodetypes="cc"
-         id="path3684-6"
-         d="m 29.5,1034.8622 c 0,0 -14,0 -14,0"
-         style="fill:none;stroke:#ffffff;stroke-width:1px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1"
-         inkscape:connector-curvature="0" />
+<svg height="32" version="1.1" width="32" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(0 -1020.3622)">
+    <g fill="none" stroke-linecap="round" transform="translate(-14 -6)">
+      <path d="m 22.5 1027.8622 c 0 0 0 14 0 14" stroke="#000" stroke-width="3"/>
+      <path d="m 29.5 1034.8622 c 0 0 -14 0 -14 0" stroke="#000" stroke-width="3"/>
+      <path d="m 22.5 1027.8622 c 0 0 0 14 0 14" stroke="#fff"/>
+      <path d="m 29.5 1034.8622 c 0 0 -14 0 -14 0" stroke="#fff"/>
     </g>
-    <path
-       style="fill:#ffffff;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;fill-opacity:1"
-       d="m 24.667259,1030.1092 6.363961,6.3639 -14.495689,14.4957 -6.363961,-6.364 z"
-       id="path3021"
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="ccccc" />
-    <path
-       style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       d="m 30.677666,1038.2409 -7.778174,-7.7782 -9.899495,9.8995 7.778174,7.7782 z"
-       id="path3023"
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="ccccc" />
+    <path d="m 24.667259 1030.1092 l 6.363961 6.3639 l -14.495689 14.4957 l -6.363961 -6.364 z" fill="#fff" stroke="#000"/>
+    <path d="m 30.677666 1038.2409 l -7.778174 -7.7782 l -9.899495 9.8995 l 7.778174 7.7782 z" stroke="#000"/>
   </g>
 </svg>
