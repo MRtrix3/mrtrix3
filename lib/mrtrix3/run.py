@@ -9,26 +9,14 @@ _processes = [ ]
 
 def command(cmd, exitOnError=True):
 
-  import inspect, os, subprocess, sys, tempfile
+  import inspect, itertools, os, shlex, subprocess, sys, tempfile
   from distutils.spawn import find_executable
   from mrtrix3 import app
 
   global _mrtrix_exe_list
 
   # Vectorise the command string, preserving anything encased within quotation marks
-  # TODO Use shlex.split()?
-  quotation_split = cmd.split('\"')
-  if not len(quotation_split)%2:
-    app.error('Malformed command \"' + cmd + '\": odd number of quotation marks')
-  cmdsplit = [ ]
-  if len(quotation_split) == 1:
-    cmdsplit = cmd.split()
-  else:
-    for index, item in enumerate(quotation_split):
-      if index%2:
-        cmdsplit.append(item)
-      else:
-        cmdsplit.extend(item.split())
+  cmdsplit = shlex.split(cmd)
 
   if app._lastFile:
     # Check to see if the last file produced in the previous script execution is
@@ -51,55 +39,34 @@ def command(cmd, exitOnError=True):
       sys.stderr.flush()
     return
 
-  # For any MRtrix commands, need to insert -nthreads / -quiet / -info calls
-  # Also make sure that the appropriate version of that MRtrix command will be invoked
-  new_cmdsplit = [ ]
-  is_mrtrix_exe = False
-  next_is_exe = True
-  for item in cmdsplit:
-    if next_is_exe:
-      is_mrtrix_exe = item in _mrtrix_exe_list
-      if is_mrtrix_exe:
-        item = versionMatch(item)
-      item = exeName(item)
-      shebang = _shebang(item)
-      if len(shebang):
-        new_cmdsplit.extend(shebang)
-        if not is_mrtrix_exe:
-          # If a shebang is found, and this call is therefore invoking an
-          #   interpreter, can't rely on the interpreter finding the script
-          #   from PATH; need to find the full path ourselves.
-          item = find_executable(item)
-      next_is_exe = False
-    if item == '|':
-      if is_mrtrix_exe:
-        if app._nthreads is not None:
-          new_cmdsplit.extend( [ '-nthreads', str(app._nthreads) ] )
-        # Get MRtrix3 binaries to output additional INFO-level information if running in debug mode
-        if app._verbosity == 3:
-          new_cmdsplit.append('-info')
-        elif not app._verbosity:
-          new_cmdsplit.append('-quiet')
-      next_is_exe = True
-    new_cmdsplit.append(item)
-  if is_mrtrix_exe:
-    if app._nthreads is not None:
-      new_cmdsplit.extend( [ '-nthreads', str(app._nthreads) ] )
-    if app._verbosity == 3:
-      new_cmdsplit.append('-info')
-    elif not app._verbosity:
-      new_cmdsplit.append('-quiet')
-  cmdsplit = new_cmdsplit
+  # This splits the command string based on the piping character '|', such that each
+  #   individual executable (along with its arguments) appears as its own list
+  # Note that for Pyton2 support, it is necessary to convert itertools() output from
+  #   a generator to a list before it is passed to filter()
+  cmdstack = [ list(g) for k, g in filter(lambda t : t[0], ((k, list(g)) for k, g in itertools.groupby(cmdsplit, lambda s : s is not '|') ) ) ]
 
-  # If the piping symbol appears anywhere, we need to split this into multiple commands and execute them separately
-  # If no piping symbols, the entire command should just appear as a single row in cmdstack
-  cmdstack = [ ]
-  prev = 0
-  for index, item in enumerate(cmdsplit):
-    if item == '|':
-      cmdstack.append(cmdsplit[prev:index])
-      prev = index + 1
-  cmdstack.append(cmdsplit[prev:])
+  for line in cmdstack:
+    is_mrtrix_exe = line[0] in _mrtrix_exe_list
+    if is_mrtrix_exe:
+      line[0] = versionMatch(line[0])
+      if app._nthreads is not None:
+        line.extend( [ '-nthreads', str(app._nthreads) ] )
+      # Get MRtrix3 binaries to output additional INFO-level information if running in debug mode
+      if app._verbosity == 3:
+        line.append('-info')
+      elif not app._verbosity:
+        line.append('-quiet')
+    else:
+      line[0] = exeName(line[0])
+    shebang = _shebang(line[0])
+    if len(shebang):
+      if not is_mrtrix_exe:
+        # If a shebang is found, and this call is therefore invoking an
+        #   interpreter, can't rely on the interpreter finding the script
+        #   from PATH; need to find the full path ourselves.
+        line[0] = find_executable(line[0])
+      for item in reversed(shebang):
+        line.insert(0, item)
 
   if app._verbosity:
     sys.stderr.write(app.colourExec + 'Command:' + app.colourClear + '  ' + cmd + '\n')
