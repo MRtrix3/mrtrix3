@@ -41,7 +41,7 @@ def command(cmd, exitOnError=True):
 
   # This splits the command string based on the piping character '|', such that each
   #   individual executable (along with its arguments) appears as its own list
-  # Note that for Pyton2 support, it is necessary to convert itertools() output from
+  # Note that for Python2 support, it is necessary to convert groupby() output from
   #   a generator to a list before it is passed to filter()
   cmdstack = [ list(g) for k, g in filter(lambda t : t[0], ((k, list(g)) for k, g in itertools.groupby(cmdsplit, lambda s : s is not '|') ) ) ]
 
