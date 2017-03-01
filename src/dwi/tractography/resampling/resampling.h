@@ -18,7 +18,9 @@
 
 #include <vector>
 
-#include "dwi/tractography/tracking/generated_track.h"
+#include "app.h"
+
+#include "dwi/tractography/streamline.h"
 
 
 namespace MR {
@@ -30,23 +32,34 @@ namespace MR {
 
         extern const App::OptionGroup ResampleOption;
 
+
         class Base;
         Base* get_resampler();
 
-        // cubic interpolation (tension = 0.0) looks 'bulgy' between control points
-        constexpr float hermite_tension = 0.1f;
+        typedef float value_type;
+        typedef typename Streamline<>::point_type point_type;
 
+        // cubic interpolation (tension = 0.0) looks 'bulgy' between control points
+        constexpr value_type hermite_tension = value_type(0.1);
 
 
         class Base { NOMEMALIGN
           public:
             Base() { }
 
-            virtual bool operator() (vector<Eigen::Vector3f>&) const = 0;
-
+            virtual Base* clone() const = 0;
+            virtual bool operator() (const Streamline<>&, Streamline<>&) const = 0;
             virtual bool valid () const = 0;
-            virtual bool limits (const vector<Eigen::Vector3f>&) { return true; }
 
+        };
+
+        template <class Derived>
+        class BaseCRTP : public Base
+        {
+          public:
+            virtual Base* clone() const {
+              return new Derived(static_cast<Derived const&>(*this));
+            }
         };
 
 

@@ -24,42 +24,44 @@ namespace MR {
 
 
 
-        bool FixedNumPoints::operator() (vector<Eigen::Vector3f>& tck) const
+        bool FixedNumPoints::operator() (const Streamline<>& in, Streamline<>& out) const
         {
           // Perform an explicit calculation of streamline length
           // From this, derive the spline position of each sample
-          assert (tck.size() > 1);
-          float length = 0.0;
-          vector<float> steps;
-          for (size_t i = 1; i != tck.size(); ++i) {
-            const float dist = (tck[i] - tck[i-1]).norm();
+          assert (in.size() > 1);
+          out.clear();
+          out.index = in.index;
+          out.weight = in.weight;
+          value_type length = 0.0;
+          vector<value_type> steps;
+          for (size_t i = 1; i != in.size(); ++i) {
+            const value_type dist = (in[i] - in[i-1]).norm();
             length += dist;
             steps.push_back (dist);
           }
-          steps.push_back (0.0f);
+          steps.push_back (value_type(0));
 
-          Math::Hermite<float> interp (hermite_tension);
-          vector<Eigen::Vector3f> output;
-          const size_t s = tck.size();
-          tck.insert    (tck.begin(), tck[0] + (tck[0] - tck[ 1 ]));
-          tck.push_back (             tck[s] + (tck[s] - tck[s-1]));
+          Math::Hermite<value_type> interp (hermite_tension);
+          Streamline<> temp (in);
+          const size_t s = temp.size();
+          temp.insert    (temp.begin(), temp[0] + (temp[0] - temp[ 1 ]));
+          temp.push_back (              temp[s] + (temp[s] - temp[s-1]));
 
-          float cumulative_length = 0.0;
+          value_type cumulative_length = value_type(0);
           size_t input_index = 0;
           for (size_t output_index = 0; output_index != num_points; ++output_index) {
-            const float target_length = length * output_index / float(num_points-1);
+            const value_type target_length = length * output_index / value_type(num_points-1);
             while (input_index < s && (cumulative_length + steps[input_index] < target_length))
               cumulative_length += steps[input_index++];
             if (input_index == s) {
-              output.push_back (tck[s]);
+              out.push_back (temp[s]);
               break;
             }
-            const float mu = (target_length - cumulative_length) / steps[input_index];
+            const value_type mu = (target_length - cumulative_length) / steps[input_index];
             interp.set (mu);
-            output.push_back (interp.value (tck[input_index], tck[input_index+1], tck[input_index+2], tck[input_index+3]));
+            out.push_back (interp.value (temp[input_index], temp[input_index+1], temp[input_index+2], temp[input_index+3]));
           }
 
-          std::swap (tck, output);
           return true;
         }
 

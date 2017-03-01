@@ -49,6 +49,15 @@ void usage ()
 
   SYNOPSIS = "Perform various editing operations on track files";
 
+  DESCRIPTION
+  + "This command can be used to perform various manipulations on track data. "
+    "This includes: "
+    "merging data from multiple track files into one; "
+    "extracting only a finite number of tracks; "
+    "selecting a subset of tracks based on various criteria, for instance regions of interest."
+
+  + DWI::Tractography::preserve_track_order_desc;
+
   ARGUMENTS
   + Argument ("tracks_in",  "the input track file(s)").type_tracks_in().allow_multiple()
   + Argument ("tracks_out", "the output track file").type_tracks_out();

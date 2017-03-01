@@ -18,6 +18,7 @@
 
 #include <vector>
 
+#include "dwi/tractography/tracking/generated_track.h"
 #include "dwi/tractography/resampling/resampling.h"
 
 
@@ -28,14 +29,14 @@ namespace MR {
 
 
 
-        class Downsampler : public Base
+        class Downsampler : public BaseCRTP<Downsampler>
         { MEMALIGN(Downsampler)
 
           public:
             Downsampler () : ratio (1) { }
             Downsampler (const size_t downsample_ratio) : ratio (downsample_ratio) { }
 
-            bool operator() (vector<Eigen::Vector3f>&) const override;
+            bool operator() (const Streamline<>&, Streamline<>&) const override;
             bool valid() const override { return (ratio > 1); }
 
             // This version guarantees that the seed point is retained, and

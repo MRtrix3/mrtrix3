@@ -109,7 +109,7 @@ namespace MR {
 
 
             template <class Cont>
-              bool operator() (Streamline<>& in, Cont& out) const
+              bool operator() (const Streamline<>& in, Cont& out) const
               {
                 out.clear();
                 out.index = in.index;
@@ -117,14 +117,15 @@ namespace MR {
                 if (in.empty())
                   return true;
                 if (preprocess (in, out) || map_zero) {
-                  upsampler (in);
+                  Streamline<> temp;
+                  upsampler (in, temp);
                   if (precise)
-                    voxelise_precise (in, out);
+                    voxelise_precise (temp, out);
                   else if (ends_only)
-                    voxelise_ends (in, out);
+                    voxelise_ends (temp, out);
                   else
-                    voxelise (in, out);
-                  postprocess (in, out);
+                    voxelise (temp, out);
+                  postprocess (temp, out);
                 }
                 return true;
               }

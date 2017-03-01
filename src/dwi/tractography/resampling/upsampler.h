@@ -28,7 +28,7 @@ namespace MR {
 
 
 
-        class Upsampler : public Base
+        class Upsampler : public BaseCRTP<Upsampler>
         { MEMALIGN(Upsampler)
 
           public:
@@ -48,7 +48,7 @@ namespace MR {
             ~Upsampler() { }
 
 
-            bool operator() (vector<Eigen::Vector3f>&) const override;
+            bool operator() (const Streamline<>&, Streamline<>&) const override;
             bool valid () const override { return (M.rows()); }
 
             void set_ratio (const size_t);
@@ -58,8 +58,8 @@ namespace MR {
             Eigen::MatrixXf M;
             mutable Eigen::MatrixXf temp, data;
 
-            bool interp_prepare (vector<Eigen::Vector3f>&) const;
-            void increment (const Eigen::Vector3f&) const;
+            bool interp_prepare (Streamline<>&) const;
+            void increment (const point_type&) const;
 
         };
 
