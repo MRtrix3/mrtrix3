@@ -39,7 +39,7 @@
          id="stop3913" />
       <stop
          id="stop3921"
-         offset="0.75"
+         offset="0.69710231"
          style="stop-color:#808080;stop-opacity:1;" />
       <stop
          style="stop-color:#c0c0c0;stop-opacity:1;"
@@ -50,10 +50,10 @@
        inkscape:collect="always"
        xlink:href="#linearGradient3911"
        id="linearGradient3917"
-       x1="11.5"
-       y1="19.5"
-       x2="29.5"
-       y2="33.5"
+       x1="24.5"
+       y1="37.5"
+       x2="13.023923"
+       y2="20.80554"
        gradientUnits="userSpaceOnUse" />
     <linearGradient
        inkscape:collect="always"
@@ -73,13 +73,13 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="13.360749"
-     inkscape:cx="17.022911"
-     inkscape:cy="28.048284"
+     inkscape:cx="5.1972267"
+     inkscape:cy="27.898592"
      inkscape:document-units="px"
      inkscape:current-layer="layer2"
      showgrid="true"
      inkscape:window-width="1920"
-     inkscape:window-height="986"
+     inkscape:window-height="983"
      inkscape:window-x="0"
      inkscape:window-y="27"
      inkscape:window-maximized="1">
@@ -114,7 +114,7 @@
      style="display:inline">
     <path
        style="fill:url(#linearGradient3929);fill-opacity:1;stroke:#000000;stroke-opacity:1"
-       d="m 37.5,22.5 c 0,0 -1,22 5,22 4,0 4,-16 2,-22 -2,-5 -6,-6 -15,-6 z"
+       d="m 37.5,22.5 c 0,0 -1.286828,21.60246 5,22 3.550923,0.224538 3.545412,-14.684716 2,-20.577924 C 42.845445,18.848153 37.5,14.5 29.5,16.5 Z"
        id="path3919"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="ccccc" />
@@ -124,13 +124,13 @@
        id="path3909"
        inkscape:connector-curvature="0" />
     <path
-       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1"
+       style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
        d="m 23.5,4.5 0,19"
        id="path3137"
        inkscape:connector-curvature="0" />
     <path
        sodipodi:type="arc"
-       style="fill:#404040;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       style="fill:#989898;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
        id="path3907"
        sodipodi:cx="23.5"
        sodipodi:cy="23.5"

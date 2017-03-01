@@ -8,6 +8,7 @@
    xmlns:svg="http://www.w3.org/2000/svg"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    width="48"
    height="48"
@@ -15,7 +16,8 @@
    version="1.1"
    inkscape:version="0.91 r13725"
    inkscape:export-xdpi="90"
-   inkscape:export-ydpi="90">
+   inkscape:export-ydpi="90"
+   sodipodi:docname="brush.svg">
   <defs
      id="defs4">
     <linearGradient
@@ -87,10 +89,10 @@
        inkscape:collect="always"
        xlink:href="#linearGradient4243"
        id="linearGradient4249"
-       x1="263.5"
-       y1="446.86218"
-       x2="271.5"
-       y2="452.86218"
+       x1="271.5"
+       y1="454.86218"
+       x2="262.5"
+       y2="445.86218"
        gradientUnits="userSpaceOnUse" />
   </defs>
   <sodipodi:namedview
@@ -101,13 +103,13 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="9.4474762"
-     inkscape:cx="-48.098847"
-     inkscape:cy="13.813181"
+     inkscape:cx="-6.5141508"
+     inkscape:cy="13.601484"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
      inkscape:window-width="1920"
-     inkscape:window-height="986"
+     inkscape:window-height="983"
      inkscape:window-x="0"
      inkscape:window-y="27"
      inkscape:window-maximized="1">

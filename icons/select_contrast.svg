@@ -23,11 +23,11 @@
       <stop
          id="stop4211"
          offset="0"
-         style="stop-color:#dcc7f8;stop-opacity:0.29411766" />
+         style="stop-color:#ffffff;stop-opacity:1" />
       <stop
          id="stop4213"
          offset="1"
-         style="stop-color:#6f609d;stop-opacity:0.74509805" />
+         style="stop-color:#8a7eb0;stop-opacity:1" />
     </linearGradient>
     <linearGradient
        id="linearGradient3796">
@@ -122,13 +122,13 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="10.510417"
-     inkscape:cx="-19.409134"
+     inkscape:cx="2.5785809"
      inkscape:cy="27.191248"
      inkscape:document-units="px"
      inkscape:current-layer="g3098"
      showgrid="false"
      inkscape:window-width="1920"
-     inkscape:window-height="986"
+     inkscape:window-height="983"
      inkscape:window-x="0"
      inkscape:window-y="27"
      inkscape:window-maximized="1">
