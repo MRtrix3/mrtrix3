@@ -10,7 +10,7 @@ Synopsis
 
     shview [ options ] [ coefs ]
 
--  *coefs*: a text file containing the even spherical harmonics coefficients to display.
+-  *coefs*: a text file containing the even order spherical harmonics coefficients to display.
 
 Description
 -----------
@@ -20,7 +20,7 @@ view spherical harmonics surface plots.
 Options
 -------
 
--  **-response** assume SH coefficients file only contains even, m=0 terms. Used to display the response function as produced by estimate_response
+-  **-response** assume SH coefficients file only contains m=0 terms (zonal harmonics). Used to display the response function as produced by estimate_response
 
 Standard options
 ^^^^^^^^^^^^^^^^

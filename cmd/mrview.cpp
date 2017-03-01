@@ -42,14 +42,14 @@ void usage ()
     "command-line) are opened before the GUI is shown, subsequent actions to be "
     "performed via the various command-line options must appear after the last "
     "argument. This is to avoid confusion about which option will apply to which "
-    "image. If you need fine control over this, please use the -load or -selectimage "
+    "image. If you need fine control over this, please use the -load or -select_image "
     "options. For example:"
     
-  + "$ mrview -load image1.mif -interpolation off -load image2.mif -interpolation off"
+  + "$ mrview -load image1.mif -interpolation 0 -load image2.mif -interpolation 0"
   
   + "or"
   
-  + "$ mrview image1.mif image2.mif -interpolation off -selectimage 1 -interpolation off";
+  + "$ mrview image1.mif image2.mif -interpolation 0 -select_image 2 -interpolation 0";
 
   REFERENCES 
     + "Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
