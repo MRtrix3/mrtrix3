@@ -1,184 +1,22 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!-- Created with Inkscape (http://www.inkscape.org/) -->
-
-<svg
-   xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://creativecommons.org/ns#"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:xlink="http://www.w3.org/1999/xlink"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="48"
-   height="48"
-   id="svg6430"
-   version="1.1"
-   inkscape:version="0.91 r13725"
-   sodipodi:docname="odf_sh.svg">
-  <defs
-     id="defs6432">
-    <linearGradient
-       id="linearGradient4474">
-      <stop
-         id="stop4476"
-         offset="0"
-         style="stop-color:#000000;stop-opacity:1;" />
-      <stop
-         id="stop4478"
-         offset="1"
-         style="stop-color:#808080;stop-opacity:1" />
-    </linearGradient>
-    <linearGradient
-       id="linearGradient4253">
-      <stop
-         id="stop4255"
-         offset="0"
-         style="stop-color:#00ff00;stop-opacity:1" />
-      <stop
-         style="stop-color:#c0c000;stop-opacity:1"
-         offset="0.5"
-         id="stop4387" />
-      <stop
-         id="stop4257"
-         offset="1"
-         style="stop-color:#af0000;stop-opacity:1" />
-    </linearGradient>
-    <linearGradient
-       id="linearGradient5863-1-8">
-      <stop
-         style="stop-color:#000000;stop-opacity:1;"
-         offset="0"
-         id="stop5865-9-4" />
-      <stop
-         style="stop-color:#808080;stop-opacity:1"
-         offset="1"
-         id="stop5867-2-3" />
-    </linearGradient>
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient4253"
-       id="linearGradient4462"
-       x1="24.769655"
-       y1="1027.1742"
-       x2="50.899273"
-       y2="1038.0021"
-       gradientUnits="userSpaceOnUse" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient4474"
-       id="linearGradient4470"
-       x1="48.192299"
-       y1="1044.5344"
-       x2="27.476627"
-       y2="1020.6418"
-       gradientUnits="userSpaceOnUse" />
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient5863-1-8"
-       id="linearGradient4472"
-       gradientUnits="userSpaceOnUse"
-       x1="48.192299"
-       y1="1044.5344"
-       x2="27.476627"
-       y2="1020.6418" />
-  </defs>
-  <sodipodi:namedview
-     id="base"
-     pagecolor="#ffffff"
-     bordercolor="#666666"
-     borderopacity="1.0"
-     inkscape:pageopacity="0.0"
-     inkscape:pageshadow="2"
-     inkscape:zoom="16"
-     inkscape:cx="31.656729"
-     inkscape:cy="19.01886"
-     inkscape:document-units="px"
-     inkscape:current-layer="layer2"
-     showgrid="true"
-     inkscape:window-width="1920"
-     inkscape:window-height="1013"
-     inkscape:window-x="1920"
-     inkscape:window-y="0"
-     inkscape:window-maximized="1">
-    <inkscape:grid
-       empspacing="5"
-       visible="true"
-       enabled="true"
-       snapvisiblegridlinesonly="true"
-       type="xygrid"
-       id="grid6438" />
-  </sodipodi:namedview>
-  <metadata
-     id="metadata6435">
-    <rdf:RDF>
-      <cc:Work
-         rdf:about="">
-        <dc:format>image/svg+xml</dc:format>
-        <dc:type
-           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
-      </cc:Work>
-    </rdf:RDF>
-  </metadata>
-  <g
-     inkscape:groupmode="layer"
-     id="layer3"
-     inkscape:label="BG"
-     sodipodi:insensitive="true"
-     style="display:none">
-    <rect
-       style="opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
-       id="rect4454"
-       width="48"
-       height="48"
-       x="0"
-       y="0" />
+<svg height="48" version="1.1" width="48" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <linearGradient id="a">
+    <stop offset="0" stop-color="#0f0"/>
+    <stop offset=".5" stop-color="#c0c000"/>
+    <stop offset="1" stop-color="#af0000"/>
+  </linearGradient>
+  <linearGradient id="b" gradientUnits="userSpaceOnUse" x1="24.769655" x2="50.899273" xlink:href="#a" y1="1027.1742" y2="1038.0021"/>
+  <linearGradient id="c" gradientUnits="userSpaceOnUse" x1="48.192299" x2="27.476627" y1="1044.5344" y2="1020.6418">
+    <stop offset="0"/>
+    <stop offset="1" stop-color="#808080"/>
+  </linearGradient>
+  <linearGradient id="d" gradientUnits="userSpaceOnUse" x1="24.769655" x2="55.677811" xlink:href="#a" y1="1027.1742" y2="1033.8589"/>
+  <g fill="none" stroke-linecap="round" stroke-width="2" transform="translate(0 -1004.3622)">
+    <path d="m 30 1042.3622 l -20 0" stroke="#f00"/>
+    <path d="m 10 1042.3622 l 0 -20" stroke="#0f0"/>
+    <path d="m 10 1042.3622 l -5 6" stroke="#00f"/>
   </g>
-  <g
-     inkscape:label="Axes"
-     inkscape:groupmode="layer"
-     id="layer1"
-     transform="translate(0,-1004.3622)">
-    <path
-       style="fill:none;fill-rule:evenodd;stroke:#00ff00;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="m 10,1042.3622 0,-20"
-       id="path3414"
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="cc" />
-    <path
-       style="fill:none;fill-rule:evenodd;stroke:#ff0000;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="m 30,1042.3622 -20,0"
-       id="path3416"
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="cc" />
-    <path
-       style="fill:none;fill-rule:evenodd;stroke:#0000ff;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="m 10,1042.3622 -5,6"
-       id="path3412"
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="cc" />
-  </g>
-  <g
-     inkscape:groupmode="layer"
-     id="layer2"
-     inkscape:label="FOD">
-    <g
-       id="g4433"
-       style="stroke:url(#linearGradient4470);stroke-width:1.5;stroke-miterlimit:4;stroke-dasharray:none;fill-opacity:1;fill:url(#linearGradient4462)"
-       transform="matrix(0.92393762,0.38254316,-0.38254316,0.92393762,380.05284,-940.52033)">
-      <path
-         sodipodi:nodetypes="czzzc"
-         inkscape:connector-curvature="0"
-         id="path4220-9-1"
-         d="m 40,1027.3622 c 0,0 4.970417,-5.0001 5,-13 0.02958,-8 -3.000014,-11.9927 -5,-12 -1.999987,-0.01 -4.970417,4 -5,12 -0.02958,8 5,13 5,13 z"
-         style="fill:url(#linearGradient4462);fill-opacity:1;fill-rule:evenodd;stroke:url(#linearGradient4472);stroke-width:1.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
-      <path
-         sodipodi:nodetypes="czzzc"
-         inkscape:connector-curvature="0"
-         id="path4220-9-1-8"
-         d="m 40.000085,1027.3622 c 0,0 -4.970417,5.0001 -5,13 -0.02958,8 3.000014,11.9927 5,12 1.999987,0.01 4.970417,-4 5,-12 0.02958,-8 -5,-13 -5,-13 z"
-         style="fill:url(#linearGradient4462);fill-opacity:1;fill-rule:evenodd;stroke:url(#linearGradient4470);stroke-width:1.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
-    </g>
+  <g fill="url(#b)" stroke="url(#c)" stroke-width="1.5" transform="matrix(.92393762 .38254316 -.38254316 .92393762 380.05284 -940.52033)">
+    <path d="m 40 1027.3622 c 0 0 4.970417 -5.0001 5 -13 c .02958 -8 -3.000014 -11.9927 -5 -12 c -1.999987 -.01 -4.970417 4 -5 12 c -.02958 8 5 13 5 13 z" fill="url(#d)" fill-rule="evenodd" stroke="#000" stroke-linejoin="round" stroke-width="1.1"/>
+    <path d="m 40.000085 1027.3622 c 0 0 -4.970417 5.0001 -5 13 c -.02958 8 3.000014 11.9927 5 12 c 1.999987 .01 4.970417 -4 5 -12 c .02958 -8 -5 -13 -5 -13 z" fill="url(#b)" fill-rule="evenodd" stroke="#000" stroke-linejoin="round" stroke-width="1.1"/>
   </g>
 </svg>
