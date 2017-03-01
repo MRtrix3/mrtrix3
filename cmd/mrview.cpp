@@ -34,9 +34,22 @@ void usage ()
   + "the MRtrix image viewer."
   
   + "Any images listed as arguments will be loaded and available through the "
-    "image menu, with the first listed displayed. Any subsequent command-line "
-    "options will be processed as if the corresponding action had been performed "
-    "through the GUI.";
+    "image menu, with the first listed displayed initially. Any subsequent "
+    "command-line options will be processed as if the corresponding action had "
+    "been performed through the GUI."
+    
+  + "Note that because images loaded as arguments (i.e. simply listed on the "
+    "command-line) are opened before the GUI is shown, subsequent actions to be "
+    "performed via the various command-line options must appear after the last "
+    "argument. This is to avoid confusion about which option will apply to which "
+    "image. If you need fine control over this, please use the -load or -selectimage "
+    "options. For example:"
+    
+  + "$ mrview -load image1.mif -interpolation off -load image2.mif -interpolation off"
+  
+  + "or"
+  
+  + "$ mrview image1.mif image2.mif -interpolation off -selectimage 1 -interpolation off";
 
   REFERENCES 
     + "Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
