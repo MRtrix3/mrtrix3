@@ -357,15 +357,14 @@ def _shebang(item):
   # Read the first 1024 bytes of the file
   with open(path, 'rb') as f:
     data = f.read(1024)
-  # List of permissible text characters
-  textchars = bytearray({7,8,9,10,12,13,27} | set(range(0x20, 0x100)) - {0x7f})
-  # Are there any non-text characters? If so, it's a binary file, so don't go looking for a shebang
-  if data.translate(None, textchars):
-    app.debug('File \"' + item + '\": Not a text file')
-    return []
-  data = str(data.decode('utf-8'))
   # Try to find the shebang line
   for line in data.splitlines():
+    # Are there any non-text characters? If so, it's a binary file, so no need to looking for a shebang
+    try :
+      line = str(line.decode('utf-8'))
+    except:
+      app.debug('File \"' + item + '\": Not a text file')
+      return []
     line = line.strip()
     if len(line) > 2 and line[0:2] == '#!':
       # Need to strip first in case there's a gap between the shebang symbol and the interpreter path
@@ -373,7 +372,7 @@ def _shebang(item):
       if app.isWindows():
         # On Windows, /usr/bin/env can't be easily found, and any direct interpreter path will have a similar issue.
         #   Instead, manually find the right interpreter to call using distutils
-        if shebang[0] == '/usr/bin/env':
+        if os.path.basename(shebang[0]) == 'env':
           new_shebang = [ os.path.abspath(find_executable(exeName(shebang[1]))) ]
           new_shebang.extend(shebang[2:])
           shebang = new_shebang
