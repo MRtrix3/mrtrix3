@@ -2025,13 +2025,13 @@ namespace MR
         options
           + OptionGroup ("View options")
 
-          + Option ("mode", "Switch to view mode specified by the integer index. as per the view menu.").allow_multiple()
+          + Option ("mode", "Switch to view mode specified by the integer index, as per the view menu.").allow_multiple()
           +   Argument ("index").type_integer()
 
           + Option ("load", "Load image specified and make it current.").allow_multiple()
           +   Argument ("image").type_image_in()
 
-          + Option ("reset", "Reset the view according to current image. This resets the FOV, projection, and focus.").allow_multiple()
+          + Option ("reset", "Reset the view according to current image. This resets the FOV, projection and focus.").allow_multiple()
 
           + Option ("fov", "Set the field of view, in mm.").allow_multiple()
           +   Argument ("value").type_float()
@@ -2069,10 +2069,10 @@ namespace MR
 
           + Option ("noannotations", "Hide all image annotation overlays").allow_multiple()
 
-          + Option ("comments", "Show of hide image comments overlay.").allow_multiple()
+          + Option ("comments", "Show or hide image comments overlay.").allow_multiple()
           +   Argument ("boolean").type_bool ()
 
-          + Option ("voxelinfo", "Show or hide voxel information overlay").allow_multiple()
+          + Option ("voxelinfo", "Show or hide voxel information overlay.").allow_multiple()
           +   Argument ("boolean").type_bool ()
 
           + Option ("orientationlabel", "Show or hide orientation label overlay.").allow_multiple()
@@ -2084,7 +2084,7 @@ namespace MR
           + Option ("imagevisible", "Show or hide the main image.").allow_multiple()
           +   Argument ("boolean").type_bool ()
 
-          + Option ("intensity_range", "Set the image intensity range to that specified").allow_multiple()
+          + Option ("intensity_range", "Set the image intensity range to that specified.").allow_multiple()
           +   Argument ("min,max").type_sequence_int()
 
           + OptionGroup ("Window management options")
@@ -2097,7 +2097,7 @@ namespace MR
 
           + Option ("fullscreen", "Start fullscreen.")
 
-          + Option ("exit", "quit MRView")
+          + Option ("exit", "Quit MRView.")
 
           + OptionGroup ("Debugging options")
 

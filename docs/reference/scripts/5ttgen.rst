@@ -6,17 +6,17 @@
 Synopsis
 --------
 
+Generate the 5TT image based on a FreeSurfer parcellation image
+
+Usage
+--------
+
 ::
 
-    5ttgen freesurfer [ options ] input output
+    5ttgen freesurfer input output [ options ]
 
 -  *input*: The input FreeSurfer parcellation image (any image containing 'aseg' in its name)
 -  *output*: The output 5TT image
-
-Description
------------
-
-Generate the 5TT image based on a FreeSurfer parcellation image
 
 Options
 -------
@@ -50,20 +50,14 @@ Standard options
 
 - **-quiet** Suppress all console output during script execution
 
-- **-verbose** Display additional information for every command invoked
+- **-info** Display additional information and progress for every command invoked
+
+- **-debug** Display additional debugging information over and above the output of -info
 
 References
 ^^^^^^^^^^
 
 * Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. NeuroImage, 2012, 62, 1924-1938
-
-* If using 'fsl' algorithm: Smith, S. M. Fast robust automated brain extraction. Human Brain Mapping, 2002, 17, 143-155
-
-* If using 'fsl' algorithm: Zhang, Y.; Brady, M. & Smith, S. Segmentation of brain MR images through a hidden Markov random field model and the expectation-maximization algorithm. IEEE Transactions on Medical Imaging, 2001, 20, 45-57
-
-* If using 'fsl' algorithm: Patenaude, B.; Smith, S. M.; Kennedy, D. N. & Jenkinson, M. A Bayesian model of shape and appearance for subcortical brain segmentation. NeuroImage, 2011, 56, 907-922
-
-* If using 'fsl' algorithm: Smith, S. M.; Jenkinson, M.; Woolrich, M. W.; Beckmann, C. F.; Behrens, T. E.; Johansen-Berg, H.; Bannister, P. R.; De Luca, M.; Drobnjak, I.; Flitney, D. E.; Niazy, R. K.; Saunders, J.; Vickers, J.; Zhang, Y.; De Stefano, N.; Brady, J. M. & Matthews, P. M. Advances in functional and structural MR image analysis and implementation as FSL. NeuroImage, 2004, 23, S208-S219
 
 --------------
 
@@ -71,17 +65,17 @@ References
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
+**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, You can obtain one at http://mozilla.org/MPL/2.0/
+file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 MRtrix is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+but WITHOUT ANY WARRANTY; without even the implied warranty
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see www.mrtrix.org
+For more details, see http://www.mrtrix.org/.
 
 .. _5ttgen_fsl:
 
@@ -91,17 +85,17 @@ For more details, see www.mrtrix.org
 Synopsis
 --------
 
+Use FSL commands to generate the 5TT image based on a T1-weighted image
+
+Usage
+--------
+
 ::
 
-    5ttgen fsl [ options ] input output
+    5ttgen fsl input output [ options ]
 
 -  *input*: The input T1-weighted image
 -  *output*: The output 5TT image
-
-Description
------------
-
-Use FSL commands to generate the 5TT image based on a T1-weighted image
 
 Options
 -------
@@ -139,20 +133,22 @@ Standard options
 
 - **-quiet** Suppress all console output during script execution
 
-- **-verbose** Display additional information for every command invoked
+- **-info** Display additional information and progress for every command invoked
+
+- **-debug** Display additional debugging information over and above the output of -info
 
 References
 ^^^^^^^^^^
 
 * Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. NeuroImage, 2012, 62, 1924-1938
 
-* If using 'fsl' algorithm: Smith, S. M. Fast robust automated brain extraction. Human Brain Mapping, 2002, 17, 143-155
+* Smith, S. M. Fast robust automated brain extraction. Human Brain Mapping, 2002, 17, 143-155
 
-* If using 'fsl' algorithm: Zhang, Y.; Brady, M. & Smith, S. Segmentation of brain MR images through a hidden Markov random field model and the expectation-maximization algorithm. IEEE Transactions on Medical Imaging, 2001, 20, 45-57
+* Zhang, Y.; Brady, M. & Smith, S. Segmentation of brain MR images through a hidden Markov random field model and the expectation-maximization algorithm. IEEE Transactions on Medical Imaging, 2001, 20, 45-57
 
-* If using 'fsl' algorithm: Patenaude, B.; Smith, S. M.; Kennedy, D. N. & Jenkinson, M. A Bayesian model of shape and appearance for subcortical brain segmentation. NeuroImage, 2011, 56, 907-922
+* Patenaude, B.; Smith, S. M.; Kennedy, D. N. & Jenkinson, M. A Bayesian model of shape and appearance for subcortical brain segmentation. NeuroImage, 2011, 56, 907-922
 
-* If using 'fsl' algorithm: Smith, S. M.; Jenkinson, M.; Woolrich, M. W.; Beckmann, C. F.; Behrens, T. E.; Johansen-Berg, H.; Bannister, P. R.; De Luca, M.; Drobnjak, I.; Flitney, D. E.; Niazy, R. K.; Saunders, J.; Vickers, J.; Zhang, Y.; De Stefano, N.; Brady, J. M. & Matthews, P. M. Advances in functional and structural MR image analysis and implementation as FSL. NeuroImage, 2004, 23, S208-S219
+* Smith, S. M.; Jenkinson, M.; Woolrich, M. W.; Beckmann, C. F.; Behrens, T. E.; Johansen-Berg, H.; Bannister, P. R.; De Luca, M.; Drobnjak, I.; Flitney, D. E.; Niazy, R. K.; Saunders, J.; Vickers, J.; Zhang, Y.; De Stefano, N.; Brady, J. M. & Matthews, P. M. Advances in functional and structural MR image analysis and implementation as FSL. NeuroImage, 2004, 23, S208-S219
 
 --------------
 
@@ -160,17 +156,17 @@ References
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
+**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, You can obtain one at http://mozilla.org/MPL/2.0/
+file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 MRtrix is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+but WITHOUT ANY WARRANTY; without even the implied warranty
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see www.mrtrix.org
+For more details, see http://www.mrtrix.org/.
 
 .. _5ttgen:
 

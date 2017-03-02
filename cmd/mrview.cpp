@@ -31,7 +31,7 @@ void usage ()
   AUTHOR = "J-Donald Tournier (d.tournier@brain.org.au), Dave Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
-  + "the MRtrix image viewer."
+  + "The MRtrix image viewer."
   
   + "Any images listed as arguments will be loaded and available through the "
     "image menu, with the first listed displayed initially. Any subsequent "
@@ -57,7 +57,7 @@ void usage ()
     "Int. J. Imaging Syst. Technol., 2012, 22, 53-66";
 
   ARGUMENTS
-    + Argument ("image", "an image to be loaded.")
+    + Argument ("image", "An image to be loaded.")
     .optional()
     .allow_multiple()
     .type_image_in ();
