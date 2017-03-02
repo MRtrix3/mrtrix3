@@ -17,8 +17,10 @@ app.cmdline.addDescription('Test runCommand')
 app.cmdline.add_argument('dummy', help='anything')
 app.parse()
 
+import subprocess
+p = subprocess.check_output("base64 /dev/urandom | head -c 10000000 > /tmp/text", shell=True)
 app.console('start run.command')
-run.command ('base64 /dev/urandom | head -c 100000')
+run.command ('cat /tmp/text | echo')
 app.console('done')
 
 
