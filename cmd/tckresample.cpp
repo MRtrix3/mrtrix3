@@ -128,12 +128,12 @@ void run ()
   }
 
   float new_step_size = NaN;
-  if (typeid (*resampler) == typeid (Resampling::FixedStepSize)) {
+  if (dynamic_cast<Resampling::FixedStepSize*>(resampler.get())) {
     new_step_size = dynamic_cast<Resampling::FixedStepSize*> (resampler.get())->get_step_size();
   } else if (std::isfinite (old_step_size)) {
-    if (typeid (*resampler) == typeid (Resampling::Downsampler))
+    if (dynamic_cast<Resampling::Downsampler*>(resampler.get()))
       new_step_size = old_step_size * dynamic_cast<Resampling::Downsampler*> (resampler.get())->get_ratio();
-    if (typeid (*resampler) == typeid (Resampling::Upsampler))
+    if (dynamic_cast<Resampling::Upsampler*>(resampler.get()))
       new_step_size = old_step_size / dynamic_cast<Resampling::Upsampler*> (resampler.get())->get_ratio();
   }
   properties["output_step_size"] = std::isfinite (new_step_size) ? str(new_step_size) : "variable";
