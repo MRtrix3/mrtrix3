@@ -22,13 +22,13 @@ namespace MR {
 
 
 
-        bool Endpoints::operator() (vector<Eigen::Vector3f>& tck) const
+        bool Endpoints::operator() (const Streamline<>& in, Streamline<>& out) const
         {
-          vector<Eigen::Vector3f> output;
-          output.reserve (2);
-          output.push_back (tck.front());
-          output.push_back (tck.back());
-          std::swap (tck, output);
+          out.resize (2);
+          out.index = in.index;
+          out.weight = in.weight;
+          out[0] = in.front();
+          out[1] = in.back();
           return true;
         }
 

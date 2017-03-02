@@ -169,7 +169,7 @@ if app.args.readout_time:
 if not grad:
   app.error('No diffusion gradient table found')
 if not len(grad) == num_volumes:
-  app.error('Number of volumes in gradient table does not match input image')
+  app.error('Number of lines in gradient table (' + str(len(grad)) + ') does not match input image (' + str(num_volumes) + ' volumes); check your input data')
 
 
 

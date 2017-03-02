@@ -26,7 +26,7 @@ namespace MR {
 
 
 
-        class FixedNumPoints : public Base 
+        class FixedNumPoints : public BaseCRTP<FixedNumPoints>
         { NOMEMALIGN
 
           public:
@@ -36,7 +36,7 @@ namespace MR {
             FixedNumPoints (const size_t n) :
                 num_points (n) { }
 
-            bool operator() (vector<Eigen::Vector3f>&) const override;
+            bool operator() (const Streamline<>&, Streamline<>&) const override;
             bool valid() const override { return num_points; }
 
             void set_num_points (const size_t n) { num_points = n; }

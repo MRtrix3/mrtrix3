@@ -62,7 +62,7 @@ namespace MR
       if (num_axes > 7) throw Exception ("cannot create NIfTI-1.1 image with more than 7 dimensions");
 
       H.ndim() = num_axes;
-      File::NIfTI::check (H, true);
+      File::NIfTI::check (H, false);
 
       return true;
     }

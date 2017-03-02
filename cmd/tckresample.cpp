@@ -15,6 +15,8 @@
 #include "command.h"
 #include "math/math.h"
 #include "image.h"
+#include "thread.h"
+#include "thread_queue.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/resampling/arc.h"
@@ -43,7 +45,9 @@ void usage ()
   DESCRIPTION
   + "This may be either increasing or decreasing the number of samples along "
     "each streamline, or changing the positions of the samples according to "
-    "some specified trajectory.";
+    "some specified trajectory."
+
+  + DWI::Tractography::preserve_track_order_desc;
 
   ARGUMENTS
   + Argument ("in_tracks",  "the input track file").type_tracks_in()
@@ -59,12 +63,55 @@ void usage ()
 
 typedef float value_type;
 
+
+
+class Worker
+{ NOMEMALIGN
+  public:
+    Worker (const std::unique_ptr<Resampling::Base>& in) :
+        resampler (in->clone()) { }
+
+    Worker (const Worker& that) :
+        resampler (that.resampler->clone()) { }
+
+    bool operator() (const Streamline<value_type>& in, Streamline<value_type>& out) const {
+      return (*resampler) (in, out);
+    }
+
+  private:
+    std::unique_ptr<Resampling::Base> resampler;
+};
+
+
+
+class Receiver
+{ NOMEMALIGN
+  public:
+    Receiver (const std::string& path, const Properties& properties) :
+        writer (path, properties),
+        progress ("resampling streamlines") { }
+
+    bool operator() (const Streamline<value_type>& tck) {
+      auto progress_message = [&](){ return "resampling streamlines (count: " + str(writer.count) + ", skipped: " + str(writer.total_count - writer.count) + ")"; };
+      writer (tck);
+      progress.set_text (progress_message());
+      return true;
+    }
+
+  private:
+    Writer<value_type> writer;
+    ProgressBar progress;
+
+};
+
+
+
 void run ()
 {
   Properties properties;
   Reader<value_type> read (argument[0], properties);
 
-  Resampling::Base* resampler = Resampling::get_resampler();
+  const std::unique_ptr<Resampling::Base> resampler (Resampling::get_resampler());
 
   float old_step_size = NaN;
   try {
@@ -82,12 +129,12 @@ void run ()
 
   float new_step_size = NaN;
   if (typeid (*resampler) == typeid (Resampling::FixedStepSize)) {
-    new_step_size = dynamic_cast<Resampling::FixedStepSize*> (resampler)->get_step_size();
+    new_step_size = dynamic_cast<Resampling::FixedStepSize*> (resampler.get())->get_step_size();
   } else if (std::isfinite (old_step_size)) {
     if (typeid (*resampler) == typeid (Resampling::Downsampler))
-      new_step_size = old_step_size * dynamic_cast<Resampling::Downsampler*> (resampler)->get_ratio();
+      new_step_size = old_step_size * dynamic_cast<Resampling::Downsampler*> (resampler.get())->get_ratio();
     if (typeid (*resampler) == typeid (Resampling::Upsampler))
-      new_step_size = old_step_size / dynamic_cast<Resampling::Upsampler*> (resampler)->get_ratio();
+      new_step_size = old_step_size / dynamic_cast<Resampling::Upsampler*> (resampler.get())->get_ratio();
   }
   properties["output_step_size"] = std::isfinite (new_step_size) ? str(new_step_size) : "variable";
 
@@ -95,22 +142,13 @@ void run ()
   if (downsample != properties.end())
     properties.erase (downsample);
 
-  DWI::Tractography::Writer<value_type> writer (argument[1], properties);
-
-  size_t skipped = 0, count = 0;
-  auto progress_message = [&](){ return "sampling streamlines (count: " + str(count) + ", skipped: " + str(skipped) + ")"; };
-  ProgressBar progress ("sampling streamlines");
-
-  // Single-threaded in order to retain order of streamlines in the output file
-  DWI::Tractography::Streamline<value_type> tck;
-  while (read (tck)) {
-    if (!resampler->limits (tck)) { skipped++; continue; }
-    (*resampler) (tck);
-    writer (tck);
-    ++count;
-    progress.update (progress_message);
-  }
-  progress.set_text (progress_message());
+  Worker worker (resampler);
+  Receiver receiver (argument[1], properties);
+  Thread::run_queue (read,
+                     Thread::batch (Streamline<value_type>()),
+                     Thread::multi (worker),
+                     Thread::batch (Streamline<value_type>()),
+                     receiver);
 
 }
 

@@ -26,24 +26,24 @@ namespace MR {
 
 
 
-        class FixedStepSize : public Base
+        class FixedStepSize : public BaseCRTP<FixedStepSize>
         { MEMALIGN(FixedStepSize)
 
           public:
             FixedStepSize () :
-              step_size (0.0) { }
+              step_size (value_type(0)) { }
 
             FixedStepSize (const float ss) :
               step_size (ss) { }
 
-            bool operator() (vector<Eigen::Vector3f>&) const override;
+            bool operator() (const Streamline<>&, Streamline<>&) const override;
             bool valid() const override { return step_size; }
 
-            void set_step_size (const float ss) { step_size = ss; }
+            void set_step_size (const value_type ss) { step_size = ss; }
             float get_step_size() const { return step_size; }
 
           private:
-            float step_size;
+            value_type step_size;
 
         };
 

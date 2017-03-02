@@ -16,6 +16,8 @@
 #include "image.h"
 #include "image_helpers.h"
 #include "memory.h"
+#include "thread.h"
+#include "thread_queue.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/scalar_file.h"

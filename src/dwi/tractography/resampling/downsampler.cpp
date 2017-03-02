@@ -44,21 +44,23 @@ namespace MR {
 
 
 
-        bool Downsampler::operator() (vector<Eigen::Vector3f>& tck) const
+        bool Downsampler::operator() (const Streamline<>& in, Streamline<>& out) const
         {
-          if (ratio <= 1 || tck.empty())
+          out.clear();
+          out.index = in.index;
+          out.weight = in.weight;
+          if (ratio <= 1 || in.empty())
             return false;
-          if (tck.size() == 1)
+          if (in.size() == 1)
             return true;
-          const size_t midpoint = tck.size()/2;
-          size_t index_old = (((midpoint - 1) % ratio) + 1);
-          size_t index_new = 1;
-          while (index_old < tck.size() - 1) {
-            tck[index_new++] = tck[index_old];
-            index_old += ratio;
+          out.push_back (in.front());
+          const size_t midpoint = in.size()/2;
+          size_t index = (((midpoint - 1) % ratio) + 1);
+          while (index < in.size() - 1) {
+            out.push_back (in[index]);
+            index += ratio;
           }
-          tck[index_new] = tck.back();
-          tck.resize (index_new + 1);
+          out.push_back (in.back());
           return true;
         }
 

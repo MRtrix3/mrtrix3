@@ -25,20 +25,25 @@ namespace MR {
 
 
 
-        bool Upsampler::operator() (vector<Eigen::Vector3f>& in) const
+        bool Upsampler::operator() (const Streamline<>& in, Streamline<>& out) const
         {
-          if (!interp_prepare (in))
-            return false;
-          vector<Eigen::Vector3f> out;
-          for (size_t i = 3; i < in.size(); ++i) {
-            out.push_back (in[i-2]);
-            increment (in[i]);
+          if (get_ratio() == 1 || in.size() < 2) {
+            out = in;
+            return true;
+          }
+          out.clear();
+          out.index = in.index;
+          out.weight = in.weight;
+          Streamline<> in_padded (in);
+          interp_prepare (in_padded);
+          for (size_t i = 3; i < in_padded.size(); ++i) {
+            out.push_back (in_padded[i-2]);
+            increment (in_padded[i]);
             temp = M * data;
             for (ssize_t row = 0; row != temp.rows(); ++row)
               out.push_back (Eigen::Vector3f (temp.row (row)));
           }
-          out.push_back (in[in.size() - 2]);
-          out.swap (in);
+          out.push_back (in_padded[in_padded.size() - 2]);
           return true;
         }
 
@@ -48,10 +53,10 @@ namespace MR {
         {
           if (upsample_ratio > 1) {
             const size_t dim = upsample_ratio - 1;
-            Math::Hermite<float> interp (hermite_tension);
+            Math::Hermite<value_type> interp (hermite_tension);
             M.resize (dim, 4);
             for (size_t i = 0; i != dim; ++i) {
-              interp.set ((i+1.0) / float(upsample_ratio));
+              interp.set ((i+1.0) / value_type(upsample_ratio));
               for (size_t j = 0; j != 4; ++j)
                 M(i,j) = interp.coef(j);
             }
@@ -64,10 +69,9 @@ namespace MR {
 
 
 
-        bool Upsampler::interp_prepare (vector<Eigen::Vector3f>& in) const
+        void Upsampler::interp_prepare (Streamline<>& in) const
         {
-          if (!M.rows() || in.size() < 2)
-            return false;
+          assert (in.size() >= 2);
           // Abandoned curvature-based extrapolation - badly posed when step size is not guaranteed to be consistent,
           //   and probably makes little difference anyways
           const size_t s = in.size();
@@ -79,12 +83,11 @@ namespace MR {
             data(2,i) = (in[1])[i];
             data(3,i) = (in[2])[i];
           }
-          return true;
         }
 
 
 
-        void Upsampler::increment (const Eigen::Vector3f& a) const
+        void Upsampler::increment (const point_type& a) const
         {
           for (size_t i = 0; i != 3; ++i) {
             data(0,i) = data(1,i);

@@ -26,13 +26,13 @@ namespace MR {
 
 
 
-        class Endpoints : public Base
+        class Endpoints : public BaseCRTP<Endpoints>
         { NOMEMALIGN
 
           public:
             Endpoints() { }
 
-            bool operator() (vector<Eigen::Vector3f>&) const override;
+            bool operator() (const Streamline<>&, Streamline<>&) const override;
             bool valid() const override { return true; }
 
         };

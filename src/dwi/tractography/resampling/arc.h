@@ -27,9 +27,7 @@ namespace MR {
 
 
         // Also handles resampling along a fixed line
-        class Arc : public Base { MEMALIGN(Arc)
-            typedef float value_type;
-            typedef Eigen::Vector3f point_type;
+        class Arc : public BaseCRTP<Arc> { MEMALIGN(Arc)
           private:
             class Plane { MEMALIGN(Plane)
               public:
@@ -70,16 +68,15 @@ namespace MR {
               init_arc (w);
             }
 
-            bool operator() (vector<Eigen::Vector3f>&) const override;
+            bool operator() (const Streamline<>&, Streamline<>&) const override;
             bool valid() const override { return nsamples; }
-            bool limits (const vector<Eigen::Vector3f>&) override;
 
           private:
             const size_t nsamples;
             const point_type start, mid, end;
 
-            size_t idx_start, idx_end;
-            point_type start_dir, mid_dir, end_dir;
+            mutable size_t idx_start, idx_end;
+            mutable point_type start_dir, mid_dir, end_dir;
 
             void init_line();
             void init_arc (const point_type&);
