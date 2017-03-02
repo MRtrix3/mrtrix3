@@ -82,7 +82,13 @@ void run ()
 {
   GUI::MRView::Window window;
   window.show();
-  window.parse_arguments();
+  try {
+    window.parse_arguments();
+  }
+  catch (Exception& e) {
+    e.display();
+    return;
+  }
 
   if (qApp->exec())
     throw Exception ("error running Qt application");
