@@ -17,13 +17,11 @@
 
 
 #include <stdint.h>
-#include <vector>
-
-#include <Eigen/Dense>
 
 #include "types.h"
 
 #include "connectome/connectome.h"
+
 
 
 
@@ -32,28 +30,33 @@ namespace MR {
 
 
 
-
     class Mat2Vec
-    { MEMALIGN (Mat2Vec)
+    { NOMEMALIGN
 
       public:
-        Mat2Vec (const node_t);
-
-        Mat2Vec& operator= (Mat2Vec&&);
+        Mat2Vec (const node_t i) : dim (i) { }
 
         size_t operator() (const node_t i, const node_t j) const
         {
           assert (i < dim);
           assert (j < dim);
-          return lookup[i][j];
+          if (i < j)
+            return j + (dim * i) - ((i * (i+1)) / 2);
+          else
+            return i + (dim * j) - ((j * (j+1)) / 2);
         }
+
         std::pair<node_t, node_t> operator() (const size_t i) const
         {
-          assert (i < inv_lookup.size());
-          return inv_lookup[i];
+          static const size_t temp = 2*dim+1;
+          static const size_t temp_sq = temp * temp;
+          const node_t row = std::floor ((temp - std::sqrt(temp_sq - (8*i))) / 2);
+          const node_t col = i - (dim*row) + ((row * (row+1))/2);
+          return std::make_pair (row, col);
         }
+
         node_t mat_size() const { return dim; }
-        size_t vec_size() const { return inv_lookup.size(); }
+        size_t vec_size() const { return (dim * (dim+1) / 2); }
 
         // Complete Matrix->Vector and Vector->Matrix conversion
         template <class MatType, class VecType>
@@ -69,10 +72,7 @@ namespace MR {
 
 
       private:
-        node_t dim;
-        // Lookup tables
-        vector< vector<size_t> > lookup;
-        vector< std::pair<node_t, node_t> > inv_lookup;
+        const node_t dim;
 
     };
 
