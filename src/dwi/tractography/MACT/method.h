@@ -55,7 +55,6 @@ class MACT_Method_additions
     bool seed_is_unidirectional( Eigen::Vector3f& pos,
                                  Eigen::Vector3f& dir ) const;
 
-    bool fetch_source_data( const Eigen::Vector3d& pos );
     bool in_pathology() const;
     void reverse_track();
 
@@ -65,7 +64,6 @@ class MACT_Method_additions
 
   private:
 
-    Image< float > _source;
     std::shared_ptr< SceneModeller > _sceneModeller;
     bool _seed_in_sgm;
     bool _sgm_seed_to_wm;

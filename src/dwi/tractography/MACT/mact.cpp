@@ -39,37 +39,30 @@ namespace MACT
     /*
      * Hard codes: options for adding tissue meshes
      */
-    + Option( "cbr_gm", "outer surface of cerebral cortex" )
-      + Argument( "outer surface mesh of cerebral cortex" )
-        .type_file_in()
+    + Option( "cbr_gm", "outer surface mesh of cerebral cortex" )
+      + Argument( "mesh" ).type_file_in()
 
-    + Option( "cbr_wm", "GM-WM interface of cerebral cortex" )
-      + Argument( "inner surface mesh of cerebral cortex" )
-        .type_file_in()
+    + Option( "cbr_wm", "inner surface mesh of cerebral cortex (GM-WM interface)" )
+      + Argument( "mesh" ).type_file_in()
 
-    + Option( "sgm", "sub-cortical gray matter" )
-      + Argument( "surface mesh of sub-cortical gray matter" )
-        .type_file_in()
+    + Option( "sgm", "surface mesh of sub-cortical gray matter" )
+      + Argument( "mesh" ).type_file_in()
 
-    + Option( "cbl_gm", "gray matter of cerebellum" )
-      + Argument( "surface mesh of cerebellar gray matter" )
-        .type_file_in()
+    + Option( "cbl_gm", "surface mesh of cerebellar gray matter" )
+      + Argument( "mesh" ).type_file_in()
 
-    + Option( "cbl_wm", "white matter of cerebellum" )
-      + Argument( "surface mesh of cerebellar white matter" )
-        .type_file_in()
+    + Option( "cbl_wm", "surface mesh of cerebellar white matter" )
+      + Argument( "mesh" ).type_file_in()
 
-    + Option( "bst", "brain stem" )
-      + Argument( "surface mesh of brain stem" )
-        .type_file_in()
+    + Option( "bst", "surface mesh of brain stem" )
+      + Argument( "mesh" ).type_file_in()
 
-    + Option( "csf", "ventricles of the brain" )
-      + Argument( "surface mesh of brain ventricles" )
-        .type_file_in()
+    + Option( "csf", "surface mesh of brain ventricles" )
+      + Argument( "mesh" ).type_file_in()
 
     // other properties
-    + Option( "lut", "cubic size in mm for spatial lookup table (default=0.2mm)" )
-      + Argument( "edge length" ).type_float( 0.0, 25.0 )
+    + Option( "lut", "edge length in mm for spatial lookup table (default=0.2mm)" )
+      + Argument( "value" ).type_float( 0.0, 25.0 )
 
     + Option( "backtrack", "allow tracks to be truncated and re-tracked if a poor structural termination is encountered" )
 
@@ -150,7 +143,7 @@ namespace MACT
       // other properties
       opt = get_options( "lut" );
       properties[ "mact_lut" ] = opt.size() ? std::string( opt[ 0 ][ 0 ] ) :
-                                              std::to_string( 0.5 );
+                                              std::to_string( 0.2 );
       opt = get_options( "backtrack" );
       if ( opt.size() )
       {

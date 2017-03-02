@@ -31,32 +31,36 @@ namespace MACT
 
 
 MACT_Shared_additions::MACT_Shared_additions( Properties& property_set )
-                      : _source( Image< float >::open( property_set[ "source" ] ) ),
-                        _backtrack( false ),
+                      : _backtrack( false ),
                         _crop_at_gmwmi( false )
 {
   /* need a progess bar */
 
-  // import all meshes and determine the bounding box based on meshes
+  // import the meshes
   std::map< std::string, Surface::Mesh > meshes;
   meshes[ "cbr_gm" ] = Surface::Mesh{ property_set[ "mact_cbr_gm" ] };
   meshes[ "cbr_wm" ] = Surface::Mesh{ property_set[ "mact_cbr_wm" ] };
   meshes[ "sgm"    ] = Surface::Mesh{ property_set[ "mact_sgm"    ] };
   meshes[ "cbl_gm" ] = Surface::Mesh{ property_set[ "mact_cbl_gm" ] };
   meshes[ "cbl_wm" ] = Surface::Mesh{ property_set[ "mact_cbl_wm" ] };
+  meshes[ "bst"    ] = Surface::Mesh{ property_set[ "mact_bst"    ] };
   meshes[ "csf"    ] = Surface::Mesh{ property_set[ "mact_csf"    ] };
 
+  // determine the mesh bounding box based on cerebral gm and brain stem
   Eigen::Vector3d lower_p = meshes.begin()->second.vert( 0 );
   Eigen::Vector3d upper_p = meshes.begin()->second.vert( 0 );
   for ( auto m = meshes.begin(); m != meshes.end(); ++ m )
   {
-    for ( size_t v = 0; v < m->second.num_vertices(); v++ )
+    if ( m->first == "cbr_gm" || m->first == "bst" )
     {
-      Surface::Vertex thisVertex = m->second.vert( v );
-      for ( size_t axis = 0; axis < 3; axis++ )
+      for ( size_t v = 0; v < m->second.num_vertices(); v++ )
       {
-        lower_p[ axis ] = std::min( lower_p[ axis ], thisVertex[ axis ] );
-        upper_p[ axis ] = std::max( upper_p[ axis ], thisVertex[ axis ] );
+        Surface::Vertex thisVertex = m->second.vert( v );
+        for ( size_t axis = 0; axis < 3; axis++ )
+        {
+          lower_p[ axis ] = std::min( lower_p[ axis ], thisVertex[ axis ] );
+          upper_p[ axis ] = std::max( upper_p[ axis ], thisVertex[ axis ] );
+        }
       }
     }
   }
@@ -83,6 +87,8 @@ MACT_Shared_additions::MACT_Shared_additions( Properties& property_set )
   tissue.reset( new Tissue( CBL_GM, "cbl_gm", meshes[ "cbl_gm" ], _sceneModeller ) );
   tissues.insert( tissue );
   tissue.reset( new Tissue( CBL_WM, "cbl_wm", meshes[ "cbl_wm" ], _sceneModeller ) );
+  tissues.insert( tissue );
+  tissue.reset( new Tissue( BST   , "bst"   , meshes[ "bst"    ], _sceneModeller ) );
   tissues.insert( tissue );
   tissue.reset( new Tissue( CSF   , "csf"   , meshes[ "csf"    ], _sceneModeller ) );
   tissues.insert( tissue );

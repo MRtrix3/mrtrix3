@@ -48,10 +48,9 @@ class MACT_Shared_additions
 
   private:
 
-    Image< float > _source;
+    std::shared_ptr< SceneModeller > _sceneModeller;
     bool _backtrack;
     bool _crop_at_gmwmi;
-    std::shared_ptr< SceneModeller > _sceneModeller;
 
   protected:
 
