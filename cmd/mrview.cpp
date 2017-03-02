@@ -31,7 +31,25 @@ void usage ()
   AUTHOR = "J-Donald Tournier (d.tournier@brain.org.au), Dave Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
-  + "the MRtrix image viewer.";
+  + "The MRtrix image viewer."
+  
+  + "Any images listed as arguments will be loaded and available through the "
+    "image menu, with the first listed displayed initially. Any subsequent "
+    "command-line options will be processed as if the corresponding action had "
+    "been performed through the GUI."
+    
+  + "Note that because images loaded as arguments (i.e. simply listed on the "
+    "command-line) are opened before the GUI is shown, subsequent actions to be "
+    "performed via the various command-line options must appear after the last "
+    "argument. This is to avoid confusion about which option will apply to which "
+    "image. If you need fine control over this, please use the -load or -select_image "
+    "options. For example:"
+    
+  + "$ mrview -load image1.mif -interpolation 0 -load image2.mif -interpolation 0"
+  
+  + "or"
+  
+  + "$ mrview image1.mif image2.mif -interpolation 0 -select_image 2 -interpolation 0";
 
   REFERENCES 
     + "Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
@@ -39,7 +57,7 @@ void usage ()
     "Int. J. Imaging Syst. Technol., 2012, 22, 53-66";
 
   ARGUMENTS
-    + Argument ("image", "an image to be loaded.")
+    + Argument ("image", "An image to be loaded.")
     .optional()
     .allow_multiple()
     .type_image_in ();
@@ -64,6 +82,13 @@ void run ()
 {
   GUI::MRView::Window window;
   window.show();
+  try {
+    window.parse_arguments();
+  }
+  catch (Exception& e) {
+    e.display();
+    return;
+  }
 
   if (qApp->exec())
     throw Exception ("error running Qt application");

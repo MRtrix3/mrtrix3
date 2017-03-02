@@ -81,7 +81,7 @@ namespace MR
     const char* build_date = __DATE__;
 
     int argc = 0;
-    char** argv = nullptr;
+    const char* const* argv = nullptr;
 
     bool overwrite_files = false;
     void (*check_overwrite_files_func) (const std::string& name) = nullptr;
@@ -831,7 +831,7 @@ namespace MR
 
 
 
-    void load_standard_options()
+    void parse_standard_options()
     {
       if (get_options ("info").size()) {
         if (log_level < 2)
@@ -975,7 +975,7 @@ namespace MR
         }
       }
 
-      load_standard_options();
+      parse_standard_options();
 
       File::Config::init ();
 
@@ -1024,7 +1024,7 @@ namespace MR
 
 
 
-    void init (int cmdline_argc, char** cmdline_argv)
+    void init (int cmdline_argc, const char* const* cmdline_argv)
     {
 #ifdef MRTRIX_WINDOWS
       // force stderr to be unbuffered, and stdout to be line-buffered:
