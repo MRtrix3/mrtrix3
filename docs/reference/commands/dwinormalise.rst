@@ -22,7 +22,7 @@ Usage
 Options
 -------
 
--  **-intensity value** normalise the b=0 signal to the specified value (Default: 1e+003)
+-  **-intensity value** normalise the b=0 signal to the specified value (Default: 1e+03)
 
 -  **-percentile value** define the percentile of the mask intensties used for normalisation. If this option is not supplied then the median value (50th percentile) will be normalised to the desired intensity value.
 

@@ -188,7 +188,7 @@ List of MRtrix3 commands
     :ref:`mrstats`, "Compute images statistics"
     :ref:`mrthreshold`, "Create bitwise image by thresholding image intensity"
     :ref:`mrtransform`, "Apply spatial transformations to an image"
-    :ref:`mrview`, "The MRtrix image viewer"
+    :ref:`mrview`, "The MRtrix image viewer."
     :ref:`mtbin`, "Multi-Tissue Bias field correction and Intensity Normalisation (MTBIN)"
     :ref:`mtnormalise`, "Multi-tissue normalise"
     :ref:`peaks2amp`, "Convert peak directions image to amplitudes"

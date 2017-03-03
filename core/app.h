@@ -47,7 +47,7 @@ namespace MR
     extern bool terminal_use_colour;
 
     extern int argc;
-    extern char** argv;
+    extern const char* const* argv;
 
     extern const char* project_version;
     extern const char* build_date;
@@ -145,7 +145,7 @@ namespace MR
     /*! this function must be called from within main(), immediately after the
      * argument and options have been specified, and before any further
      * processing takes place. */
-    void init (int argc, char** argv);
+    void init (int argc, const char* const* argv);
 
     //! do the actual parsing of the command-line [used internally]
     void parse ();
@@ -221,7 +221,7 @@ namespace MR
 
         friend class ParsedOption;
         friend class Options;
-        friend void  MR::App::init (int argc, char** argv);
+        friend void  MR::App::init (int argc, const char* const* argv);
         friend void  MR::App::parse ();
         friend void  MR::App::sort_arguments (int argc, const char* const* argv);
     };
