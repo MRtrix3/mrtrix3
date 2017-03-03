@@ -108,6 +108,8 @@ def command(cmd, exitOnError=True):
     # Set off the processes
     try:
       process = subprocess.Popen (command, stdin=handle_in, stdout=handle_out, stderr=handle_err)
+      if handle_in is not None:
+        _processes[index-1].stdout.close()
       _processes.append(process)
       tempfiles.append( ( file_out, file_err ) )
     # FileNotFoundError not defined in Python 2.7
