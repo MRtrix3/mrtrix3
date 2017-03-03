@@ -36,27 +36,31 @@ namespace MR {
       public:
         Mat2Vec (const node_t i) : dim (i) { }
 
-        size_t operator() (const node_t i, const node_t j) const
+        uint64_t operator() (const node_t i, const node_t j) const
         {
           assert (i < dim);
           assert (j < dim);
+          const uint64_t i64 (i);
+          const uint64_t j64 (j);
           if (i < j)
-            return j + (dim * i) - ((i * (i+1)) / 2);
+            return j64 + (uint64_t(dim) * i64) - ((i64 * (i64+1)) / 2);
           else
-            return i + (dim * j) - ((j * (j+1)) / 2);
+            return i64 + (uint64_t(dim) * j64) - ((j64 * (j64+1)) / 2);
         }
 
-        std::pair<node_t, node_t> operator() (const size_t i) const
+        std::pair<node_t, node_t> operator() (const uint64_t i) const
         {
-          static const size_t temp = 2*dim+1;
-          static const size_t temp_sq = temp * temp;
-          const node_t row = std::floor ((temp - std::sqrt(temp_sq - (8*i))) / 2);
-          const node_t col = i - (dim*row) + ((row * (row+1))/2);
-          return std::make_pair (row, col);
+          static const uint64_t temp = 2*dim+1;
+          static const uint64_t temp_sq = temp * temp;
+          const uint64_t row = std::floor ((temp - std::sqrt(temp_sq - (8*i))) / 2);
+          const uint64_t col = i - (uint64_t(dim)*row) + ((row * (row+1))/2);
+          assert (row < dim);
+          assert (col < dim);
+          return std::make_pair (node_t(row), node_t(col));
         }
 
         node_t mat_size() const { return dim; }
-        size_t vec_size() const { return (dim * (dim+1) / 2); }
+        uint64_t vec_size() const { return (uint64_t(dim) * (uint64_t(dim)+1) / 2); }
 
         // Complete Matrix->Vector and Vector->Matrix conversion
         template <class MatType, class VecType>
