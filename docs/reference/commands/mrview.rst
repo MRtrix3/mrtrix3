@@ -6,7 +6,7 @@ mrview
 Synopsis
 --------
 
-The MRtrix image viewer
+The MRtrix image viewer.
 
 Usage
 --------
@@ -15,7 +15,20 @@ Usage
 
     mrview [ options ] [ image ... ]
 
--  *image*: an image to be loaded.
+-  *image*: An image to be loaded.
+
+Description
+-----------
+
+Any images listed as arguments will be loaded and available through the image menu, with the first listed displayed initially. Any subsequent command-line options will be processed as if the corresponding action had been performed through the GUI.
+
+Note that because images loaded as arguments (i.e. simply listed on the command-line) are opened before the GUI is shown, subsequent actions to be performed via the various command-line options must appear after the last argument. This is to avoid confusion about which option will apply to which image. If you need fine control over this, please use the -load or -select_image options. For example:
+
+$ mrview -load image1.mif -interpolation 0 -load image2.mif -interpolation 0
+
+or
+
+$ mrview image1.mif image2.mif -interpolation 0 -select_image 2 -interpolation 0
 
 Options
 -------
@@ -23,11 +36,11 @@ Options
 View options
 ^^^^^^^^^^^^
 
--  **-mode index** Switch to view mode specified by the integer index. as per the view menu.
+-  **-mode index** Switch to view mode specified by the integer index, as per the view menu.
 
 -  **-load image** Load image specified and make it current.
 
--  **-reset** Reset the view according to current image. This resets the FOV, projection, and focus.
+-  **-reset** Reset the view according to current image. This resets the FOV, projection and focus.
 
 -  **-fov value** Set the field of view, in mm.
 
@@ -51,9 +64,9 @@ View options
 
 -  **-noannotations** Hide all image annotation overlays
 
--  **-comments boolean** Show of hide image comments overlay.
+-  **-comments boolean** Show or hide image comments overlay.
 
--  **-voxelinfo boolean** Show or hide voxel information overlay
+-  **-voxelinfo boolean** Show or hide voxel information overlay.
 
 -  **-orientationlabel boolean** Show or hide orientation label overlay.
 
@@ -61,7 +74,7 @@ View options
 
 -  **-imagevisible boolean** Show or hide the main image.
 
--  **-intensity_range min,max** Set the image intensity range to that specified
+-  **-intensity_range min,max** Set the image intensity range to that specified.
 
 Window management options
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -72,7 +85,7 @@ Window management options
 
 -  **-fullscreen** Start fullscreen.
 
--  **-exit** quit MRView
+-  **-exit** Quit MRView.
 
 Debugging options
 ^^^^^^^^^^^^^^^^^
