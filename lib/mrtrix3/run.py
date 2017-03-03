@@ -15,8 +15,26 @@ def command(cmd, exitOnError=True):
 
   global _mrtrix_exe_list
 
-  # Vectorise the command string, preserving anything encased within quotation marks
-  cmdsplit = shlex.split(cmd)
+  if isinstance(cmd, str):
+    # Vectorise the command string, preserving anything encased within quotation marks
+    cmdsplit = shlex.split(cmd)
+    # This splits the command string based on the piping character '|', such that each
+    #   individual executable (along with its arguments) appears as its own list
+    # Note that for Python2 support, it is necessary to convert groupby() output from
+    #   a generator to a list before it is passed to filter()
+    cmdstack = [ list(g) for k, g in filter(lambda t : t[0], ((k, list(g)) for k, g in itertools.groupby(cmdsplit, lambda s : s is not '|') ) ) ]
+  elif isinstance(cmd, list):
+    if isinstance(cmd[0], str):
+      cmdstack = [list(g) for k, g in filter(lambda t : t[0], ((k, list(g)) for k, g in itertools.groupby(cmd, lambda s : s is not '|') ) ) ]
+      cmd = " ".join(cmd)
+    elif isinstance(cmd[0], list) and isinstance(cmd[0][0], str):
+      cmdstack = cmd
+      cmd = " | ".join([" ".join(x) for x in cmd])
+    else:
+      app.error('command could not be parsed: ' + str(cmd))
+  else:
+    app.error('command could not be parsed: ' + str(cmd))
+
 
   if app._lastFile:
     # Check to see if the last file produced in the previous script execution is
@@ -24,26 +42,22 @@ def command(cmd, exitOnError=True):
     #   command that gets skipped by the -continue option
     # It's possible that the file might be defined in a '--option=XXX' style argument
     #   It's also possible that the filename in the command string has the file extension omitted
-    for entry in cmdsplit:
-      if entry.startswith('--') and '=' in entry:
-        cmdtotest = entry.split('=')[1]
-      else:
-        cmdtotest = entry
-      filetotest = [ app._lastFile, os.path.splitext(app._lastFile)[0] ]
-      if cmdtotest in filetotest:
-        app.debug('Detected last file \'' + app._lastFile + '\' in command \'' + cmd + '\'; this is the last run.command() / run.function() call that will be skipped')
-        app._lastFile = ''
-        break
-    if app._verbosity:
-      sys.stderr.write(app.colourExec + 'Skipping command:' + app.colourClear + ' ' + cmd + '\n')
-      sys.stderr.flush()
-    return
+    for stage in cmdstack:
+      for entry in stage:
+        if entry.startswith('--') and '=' in entry:
+          cmdtotest = entry.split('=')[1]
+        else:
+          cmdtotest = entry
+        filetotest = [ app._lastFile, os.path.splitext(app._lastFile)[0] ]
+        if cmdtotest in filetotest:
+          app.debug('Detected last file \'' + app._lastFile + '\' in command \'' + cmd + '\'; this is the last run.command() / run.function() call that will be skipped')
+          app._lastFile = ''
+          break
+      if app._verbosity:
+        sys.stderr.write(app.colourExec + 'Skipping command:' + app.colourClear + ' ' + cmd + '\n')
+        sys.stderr.flush()
+      return
 
-  # This splits the command string based on the piping character '|', such that each
-  #   individual executable (along with its arguments) appears as its own list
-  # Note that for Python2 support, it is necessary to convert groupby() output from
-  #   a generator to a list before it is passed to filter()
-  cmdstack = [ list(g) for k, g in filter(lambda t : t[0], ((k, list(g)) for k, g in itertools.groupby(cmdsplit, lambda s : s is not '|') ) ) ]
 
   for line in cmdstack:
     is_mrtrix_exe = line[0] in _mrtrix_exe_list
