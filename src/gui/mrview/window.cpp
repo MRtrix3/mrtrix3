@@ -1811,7 +1811,7 @@ namespace MR
             return;
           }
 
-          else if (opt.opt->is ("fov")) {
+          if (opt.opt->is ("fov")) {
             float fov = opt[0];
             set_FOV (fov);
             glarea->update();
