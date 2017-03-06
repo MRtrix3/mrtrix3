@@ -36,7 +36,7 @@ namespace MR
       class VertexTransform : public Base
       {
         public:
-          enum class transform_t { UNDEFINED, FIRST2REAL, REAL2FIRST, VOXEL2REAL, REAL2VOXEL };
+          enum class transform_t { UNDEFINED, FIRST2REAL, REAL2FIRST, VOXEL2REAL, REAL2VOXEL, FS2REAL };
 
           VertexTransform (const Header& H) :
               header (H),
@@ -47,6 +47,7 @@ namespace MR
           void set_real2first() { mode = transform_t::REAL2FIRST; }
           void set_voxel2real() { mode = transform_t::VOXEL2REAL; }
           void set_real2voxel() { mode = transform_t::REAL2VOXEL; }
+          void set_fs2real   () { mode = transform_t::FS2REAL   ; }
 
           transform_t get_mode() const { return mode; }
 
