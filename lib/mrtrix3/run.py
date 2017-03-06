@@ -122,8 +122,6 @@ def command(cmd, exitOnError=True):
     # Set off the processes
     try:
       process = subprocess.Popen (command, stdin=handle_in, stdout=handle_out, stderr=handle_err)
-      if handle_in is not None:
-        _processes[index-1].stdout.close()
       _processes.append(process)
       tempfiles.append( ( file_out, file_err ) )
     # FileNotFoundError not defined in Python 2.7
@@ -152,6 +150,8 @@ def command(cmd, exitOnError=True):
     #   depending on whether or not the user has specified -verbose or -debug option
     if app._verbosity > 1:
       for process in _processes:
+        if process != _processes[-1] and process.stdout is not None:
+          process.stdout.close()
         stderrdata = ''
         while True:
           # Have to read one character at a time: Waiting for a newline character using e.g. readline() will prevent MRtrix progressbars from appearing
@@ -167,6 +167,8 @@ def command(cmd, exitOnError=True):
           error_text += stderrdata
     else:
       for process in _processes:
+        if process != _processes[-1] and process.stdout is not None:
+          process.stdout.close()
         process.wait()
 
   except (KeyboardInterrupt, SystemExit):
