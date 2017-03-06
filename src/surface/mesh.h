@@ -180,6 +180,7 @@ namespace MR
         void save_vtk (const std::string&, const bool) const;
         void save_stl (const std::string&, const bool) const;
         void save_obj (const std::string&) const;
+        void save_fs  (const std::string&) const;
 
         void verify_data() const;
 

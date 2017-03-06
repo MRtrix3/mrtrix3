@@ -64,7 +64,16 @@ namespace MR
       else if (path.substr (path.size() - 4) == ".obj")
         save_obj (path);
       else
-        throw Exception ("Output mesh file format not supported");
+      {
+        try
+        {
+          save_fs( path );
+          WARN( "No output file extension specified: the mesh is saved using FreeSurfer's mesh format." );
+        } catch ( ... )
+        {
+          throw Exception ("Output mesh file format not supported");
+        }
+      }
     }
 
 
@@ -709,6 +718,70 @@ namespace MR
         out << "f " << str((*t)[0]+1) << " " << str((*t)[1]+1) << " " << str((*t)[2]+1) << "\n";
       for (QuadList::const_iterator q = quads.begin(); q != quads.end(); ++q)
         out << "f " << str((*q)[0]+1) << " " << str((*q)[1]+1) << " " << str((*q)[2]+1) << " " << str((*q)[3]+1) << "\n";
+    }
+
+
+
+    void Mesh::save_fs( const std::string& path ) const
+    {
+      File::OFStream out( path );
+
+      if ( quads.size() )
+      {
+        throw Exception( "Quadrangle surface file is currently not supported." );
+      }
+      if ( triangles.size() )
+      {
+        ProgressBar progress( "writing mesh to file", vertices.size() + triangles.size() );
+
+        // write freesurfer magic number
+        const size_t TRIANGLE_FILE_MAGIC_NUMBER = 16777214;
+        uint8_t Int3[ 3 ];
+        Int3[ 0 ] = ( uint8_t )( TRIANGLE_FILE_MAGIC_NUMBER >> 16 );
+        Int3[ 1 ] = ( uint8_t )( TRIANGLE_FILE_MAGIC_NUMBER >> 8 );
+        Int3[ 2 ] = ( uint8_t )( TRIANGLE_FILE_MAGIC_NUMBER );
+        out.write( reinterpret_cast< const char* >( &Int3 ), 3 * sizeof( uint8_t ) );
+  
+        // write header
+        time_t now = time( 0 );
+        const std::string info = std::string( "created by mrtrix_version:" ) +
+                                 App::mrtrix_version +
+                                 std::string( " on " ) + ctime( &now ) + "\n";
+        char header[ info.length() ];
+        strncpy( header, info.c_str(), info.length() );
+        out.write( header, info.length() );
+  
+        // write vertex count
+        uint8_t buffer[ 4 ];
+        Raw::store_BE< uint32_t >( num_vertices(), &buffer );
+        out.write( reinterpret_cast< const char* >( &buffer ), sizeof( uint32_t ) );
+  
+        // write triangle count
+        Raw::store_BE< uint32_t >( num_triangles(), &buffer );
+        out.write( reinterpret_cast< const char* >( &buffer ), sizeof( uint32_t ) );
+  
+        // write vertices
+        for ( auto v = vertices.begin(); v != vertices.end(); ++v )
+        {
+          for ( size_t axis = 0; axis < 3; axis++ )
+          {
+            Raw::store_BE< float >( ( *v )[ axis ], &buffer );
+            out.write( reinterpret_cast< const char* >( &buffer ), sizeof( float ) );
+          }
+          ++ progress;
+        }
+  
+        // write triangles
+        for ( auto t = triangles.begin(); t != triangles.end(); ++t )
+        {
+          for ( size_t v = 0; v < 3; v++ )
+          {
+            Raw::store_BE< uint32_t >( ( *t )[ v ], &buffer );
+            out.write( reinterpret_cast< const char* >( &buffer ), sizeof( uint32_t ) );
+          }
+          ++ progress;
+        }        
+      }
     }
 
 
