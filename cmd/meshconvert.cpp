@@ -27,7 +27,7 @@ using namespace MR::Surface;
 
 
 
-const char* transform_choices[] = { "first2real", "real2first", "voxel2real", "real2voxel", nullptr };
+const char* transform_choices[] = { "first2real", "real2first", "voxel2real", "real2voxel", "fs2real", nullptr };
 
 
 
@@ -46,7 +46,8 @@ void usage ()
   + Option ("binary", "write the output mesh file in binary format (if supported)")
 
   + Option ("transform", "transform vertices from one coordinate space to another, based on a template image; "
-                         "options are: " + join(transform_choices, ", "))
+                         "options are: " + join(transform_choices, ", ") + ". "
+                         "(When using fs2real, the relevant .mgz file must be provided.)")
     + Argument ("mode").type_choice (transform_choices)
     + Argument ("image").type_image_in();
 
@@ -79,6 +80,7 @@ void run ()
       case 1: transform->set_real2first(); break;
       case 2: transform->set_voxel2real(); break;
       case 3: transform->set_real2voxel(); break;
+      case 4: transform->set_fs2real   (); break;
       default: throw Exception ("Unexpected mode for spatial transformation of vertices");
     }
     MeshMulti temp;
