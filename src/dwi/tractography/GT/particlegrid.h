@@ -38,6 +38,7 @@ namespace MR {
         class ParticleGrid
         {
         public:
+          EIGEN_MAKE_ALIGNED_OPERATOR_NEW
           
           typedef std::vector<Particle*> ParticleVectorType;
           

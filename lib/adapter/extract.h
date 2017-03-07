@@ -31,6 +31,8 @@ namespace MR
         using Base<ImageType>::parent;
         typedef typename ImageType::value_type value_type;
 
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
         Extract1D (const ImageType& original, const size_t axis, const std::vector<int>& indices) :
           Base<ImageType> (original),
           extract_axis (axis),

@@ -22,7 +22,10 @@ namespace MR
 {
   class Transform
   {
+
     public:
+
+      EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
       //! An object for transforming between voxel, scanner and image coordinate spaces
       template <class HeaderType>

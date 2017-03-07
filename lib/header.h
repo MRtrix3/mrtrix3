@@ -47,6 +47,8 @@ namespace MR
     public:
       class Axis;
 
+      EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
       Header () :
         transform_ (Eigen::Matrix<default_type,3,4>::Constant (NaN)),
         format_ (nullptr),
