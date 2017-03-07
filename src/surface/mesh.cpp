@@ -34,17 +34,20 @@ namespace MR
 
     Mesh::Mesh (const std::string& path)
     {
-      if (path.substr (path.size() - 4) == ".vtk" || path.substr (path.size() - 4) == ".VTK") {
-        load_vtk (path);
-      } else if (path.substr (path.size() - 4) == ".stl" || path.substr (path.size() - 4) == ".STL") {
-        load_stl (path);
-      } else if (path.substr (path.size() - 4) == ".obj" || path.substr (path.size() - 4) == ".OBJ") {
-        load_obj (path);
-      } else {
-        try {
-          load_fs (path);
-        } catch (...) {
-          clear();
+      try
+      {
+        load_fs( path );
+      }
+      catch (...)
+      {
+        clear();
+        if (path.substr (path.size() - 4) == ".vtk" || path.substr (path.size() - 4) == ".VTK") {
+          load_vtk (path);
+        } else if (path.substr (path.size() - 4) == ".stl" || path.substr (path.size() - 4) == ".STL") {
+          load_stl (path);
+        } else if (path.substr (path.size() - 4) == ".obj" || path.substr (path.size() - 4) == ".OBJ") {
+          load_obj (path);
+        } else {
           throw Exception ("Input surface mesh file not in supported format");
         }
       }
@@ -57,22 +60,24 @@ namespace MR
 
     void Mesh::save (const std::string& path, const bool binary) const
     {
-      if (path.substr (path.size() - 4) == ".vtk")
-        save_vtk (path, binary);
-      else if (path.substr (path.size() - 4) == ".stl")
-        save_stl (path, binary);
-      else if (path.substr (path.size() - 4) == ".obj")
-        save_obj (path);
-      else
+      if ( path.size() > 4 )
       {
-        try
+        if (path.substr (path.size() - 4) == ".vtk")
+          save_vtk (path, binary);
+        else if (path.substr (path.size() - 4) == ".stl")
+          save_stl (path, binary);
+        else if (path.substr (path.size() - 4) == ".obj")
+          save_obj (path);
+        else
         {
           save_fs( path );
-          WARN( "No output file extension specified: the mesh is saved using FreeSurfer's mesh format." );
-        } catch ( ... )
-        {
-          throw Exception ("Output mesh file format not supported");
+          WARN( "The output mesh is saved in FreeSurfer's mesh format." );
         }
+      }
+      else
+      {
+        save_fs( path );
+        WARN( "The output mesh is saved in FreeSurfer's mesh format." );
       }
     }
 
