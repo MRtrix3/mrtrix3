@@ -210,7 +210,7 @@ NIfTI headers (i.e. the ``sform`` / ``qform``); the transform as reported by
 with the data), as the *MRtrix3* image loading backend will try to provide the
 image transform in a near-axial orientation (by inverting / exchanging columns
 of the transform, and adjusting the :ref:`strides` to match - see
-:ref:`transfom`_ for details). To find out the actual transform that
+:ref:`transform`_ for details). To find out the actual transform that
 was stored in the NIfTI header, use ``mrinfo`` with the ``-norealign`` option.
 
 
