@@ -53,7 +53,9 @@ namespace MR
       IntSeq,
       FloatSeq,
       TracksIn,
-      TracksOut
+      TracksOut,
+      ImageSeqIn,
+      ImageSeqOut
     } ArgType;
 
     typedef int ArgFlags;
@@ -75,7 +77,7 @@ namespace MR
      *
      * The list of arguments is provided by adding to the ARGUMENTS vector, like this:
      * \code
-     * ARGUMENTS 
+     * ARGUMENTS
      *   + Argument ("input", "the input image")
      *     .type_image_in()
      *
@@ -175,6 +177,20 @@ namespace MR
         Argument& type_image_out () {
           assert (type == Undefined);
           type = ImageOut;
+          return *this;
+        }
+
+        //! specifies that the argument should be a sequence of comma-separated images.
+        Argument& type_sequence_image_in () {
+          assert (type == Undefined);
+          type = ImageSeqIn;
+          return *this;
+        }
+
+        //! specifies that the argument should be a sequence of comma-separated images.
+        Argument& type_sequence_image_out () {
+          assert (type == Undefined);
+          type = ImageSeqOut;
           return *this;
         }
 
@@ -286,7 +302,7 @@ namespace MR
      * The list of options is provided using the OPTIONS macro, like this:
      * \code
      * OPTIONS
-     *   + Option ("exact", 
+     *   + Option ("exact",
      *        "do not use approximations when processing")
      *
      *   + Option ("mask",
@@ -294,11 +310,11 @@ namespace MR
      *        "the binary image specified")
      *     + Argument ("image").type_image_in()
      *
-     *   + Option ("regularisation", 
+     *   + Option ("regularisation",
      *        "set the regularisation term")
      *     + Argument ("value").type_float (0.0, 1.0, 100.0)
      *
-     *   Option ("dump", 
+     *   Option ("dump",
      *        "dump all intermediate values to file")
      *     + Argument ("file").type_file();
      * \endcode
@@ -343,7 +359,7 @@ namespace MR
          * OPTIONS
          *   + Option ("roi",
          *       "the region of interest over which to perform the processing. "
-         *       "Mulitple such regions can be specified")
+         *       "Multiple such regions can be specified")
          *     .required()
          *     .allow_multiple()
          *     + Argument ("image").type_image_in();
@@ -388,18 +404,18 @@ namespace MR
      *   + Option ("option2", ...);
      * }
      * \endcode
-     */  
+     */
     class OptionGroup : public vector<Option> { NOMEMALIGN
       public:
         OptionGroup (const char* group_name = "OPTIONS") : name (group_name) { }
         const char* name;
 
-        OptionGroup& operator+ (const Option& option) { 
+        OptionGroup& operator+ (const Option& option) {
           push_back (option);
           return *this;
         }
 
-        OptionGroup& operator+ (const Argument& argument) { 
+        OptionGroup& operator+ (const Argument& argument) {
           assert (!empty());
           back() + argument;
           return *this;

@@ -205,6 +205,13 @@ namespace MR
             throw Exception ("the lmax must be defined for all stages (1 or " + str(stages.size())+")");
         }
 
+        int get_lmax () {
+          ssize_t lmax=0;
+          for (auto& s : stages)
+            lmax = std::max(s.fod_lmax, lmax);
+          return (int) lmax;
+        }
+
         void set_loop_density (const vector<default_type>& loop_density_){
           for (size_t d = 0; d < loop_density_.size(); ++d)
             if (loop_density_[d] < 0.0 or loop_density_[d] > 1.0 )

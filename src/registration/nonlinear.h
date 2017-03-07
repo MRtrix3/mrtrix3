@@ -374,6 +374,10 @@ namespace MR
             fod_lmax = lmax;
           }
 
+          int get_lmax () {
+            return (int) *std::max_element(fod_lmax.begin(), fod_lmax.end());
+          }
+
           std::shared_ptr<Image<default_type> > get_im1_to_mid() {
             return im1_to_mid;
           }

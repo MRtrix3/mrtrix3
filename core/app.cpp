@@ -46,7 +46,7 @@ namespace MR
       + Option ("info", "display information messages.")
       + Option ("quiet", "do not display information messages or progress status.")
       + Option ("debug", "display debugging messages.")
-      + Option ("force", "force overwrite of output files. " 
+      + Option ("force", "force overwrite of output files. "
           "Caution: Using the same file as input and output might cause unexpected behaviour.")
       + Option ("nthreads", "use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)")
         + Argument ("number").type_integer (0)
@@ -198,6 +198,10 @@ namespace MR
           return ("tracks in");
         case TracksOut:
           return ("tracks out");
+        case ImageSeqIn:
+          return ("image sequence in");
+        case ImageSeqOut:
+          return ("image sequence out");
         default:
           return ("undefined");
       }
@@ -205,20 +209,20 @@ namespace MR
 
 
 
-    std::string help_head (int format) 
+    std::string help_head (int format)
     {
-      std::string cmd_version = project_version ? 
-        std::string ("external module, version ") + project_version + "\n\n" : 
+      std::string cmd_version = project_version ?
+        std::string ("external module, version ") + project_version + "\n\n" :
         std::string ("part of the MRtrix package\n\n");
 
-      if (!format) 
+      if (!format)
         return std::string (NAME) + ": " + cmd_version;
 
       std::string mrtrix_version_string = std::string("MRtrix ") + mrtrix_version;
       std::string date (build_date);
 
-      std::string topline = mrtrix_version_string + 
-        std::string (std::max (1, 40-size(mrtrix_version_string)-size(App::NAME)/2), ' ') 
+      std::string topline = mrtrix_version_string +
+        std::string (std::max (1, 40-size(mrtrix_version_string)-size(App::NAME)/2), ' ')
         + bold (App::NAME);
       topline += std::string (80-size(topline)-size(date), ' ') + date;
 
@@ -238,20 +242,20 @@ namespace MR
 
 
 
-    std::string help_tail (int format) 
+    std::string help_tail (int format)
     {
       std::string retval;
-      if (!format) 
+      if (!format)
         return retval;
 
-      return bold ("AUTHOR") + "\n" 
+      return bold ("AUTHOR") + "\n"
         + paragraph ("", AUTHOR, HELP_PURPOSE_INDENT) + "\n"
-        + bold ("COPYRIGHT") + "\n" 
+        + bold ("COPYRIGHT") + "\n"
         + paragraph ("", COPYRIGHT, HELP_PURPOSE_INDENT) + "\n"
-        + [&](){ 
+        + [&](){
           if (REFERENCES.size() == 0) return std::string();
           std::string s = bold ("REFERENCES") + "\n";
-          for (size_t n = 0; n < REFERENCES.size(); ++n) 
+          for (size_t n = 0; n < REFERENCES.size(); ++n)
             s += paragraph ("", REFERENCES[n], HELP_PURPOSE_INDENT) + "\n";
           return s;
         }();
@@ -267,9 +271,9 @@ namespace MR
       if (!size())
         return std::string();
       std::string s;
-      if (format) 
+      if (format)
         s += bold ("DESCRIPTION") + "\n\n";
-      for (size_t i = 0; i < size(); ++i) 
+      for (size_t i = 0; i < size(); ++i)
         s += paragraph ("", (*this)[i], HELP_PURPOSE_INDENT) + "\n";
       return s;
     }
@@ -282,7 +286,7 @@ namespace MR
       std::string s = "USAGE";
       if (format)
         s = bold (s) + "\n\n     ";
-      else 
+      else
         s += ": ";
       s += ( format ? underline (NAME) : NAME ) + " [ options ]";
 
@@ -309,7 +313,7 @@ namespace MR
     std::string Argument::syntax (int format) const
     {
       std::string retval = paragraph (( format ? underline (id) : id ), desc, HELP_ARG_INDENT);
-      if (format) 
+      if (format)
         retval += "\n";
       return retval;
     }
@@ -341,11 +345,11 @@ namespace MR
       for (size_t i = 0; i < size(); ++i)
         opt += std::string (" ") + (*this)[i].id;
 
-      if (format) 
+      if (format)
         opt = "  " + opt + "\n" + paragraph ("", desc, HELP_PURPOSE_INDENT);
       else
         opt = paragraph (opt, desc, HELP_OPTION_INDENT);
-      if (format) 
+      if (format)
         opt += "\n";
       return opt;
     }
@@ -361,7 +365,7 @@ namespace MR
     std::string OptionGroup::contents (int format) const
     {
       std::string s;
-      for (size_t i = 0; i < size(); ++i) 
+      for (size_t i = 0; i < size(); ++i)
         s += (*this)[i].syntax (format);
       return s;
     }
@@ -377,7 +381,7 @@ namespace MR
     {
       vector<std::string> group_names;
       for (size_t i = 0; i < size(); ++i) {
-        if (std::find (group_names.begin(), group_names.end(), (*this)[i].name) == group_names.end()) 
+        if (std::find (group_names.begin(), group_names.end(), (*this)[i].name) == group_names.end())
           group_names.push_back ((*this)[i].name);
       }
 
@@ -454,6 +458,12 @@ namespace MR
         case TracksOut:
           stream << "TRACKSOUT";
           break;
+        case ImageSeqIn:
+          stream << "IMAGESEQUENCEIN";
+          break;
+        case ImageSeqOut:
+          stream << "IMAGESEQUENCEOUT";
+          break;
         default:
           assert (0);
       }
@@ -485,7 +495,7 @@ namespace MR
 
 
 
-    std::string get_help_string (int format) 
+    std::string get_help_string (int format)
     {
       return
         help_head (format)
@@ -511,7 +521,7 @@ namespace MR
       //CONF default: less
       //CONF The command to use to display each command's help page (leave
       //CONF empty to send directly to the terminal).
-      const std::string help_display_command = File::Config::get ("HelpCommand", MRTRIX_HELP_COMMAND); 
+      const std::string help_display_command = File::Config::get ("HelpCommand", MRTRIX_HELP_COMMAND);
 
       if (help_display_command.size()) {
         std::string help_string = get_help_string (1);
@@ -529,7 +539,7 @@ namespace MR
         INFO ("error launching help display command \"" + help_display_command + "\"");
       }
 
-      if (help_display_command.size()) 
+      if (help_display_command.size())
         INFO ("displaying help page using fail-safe output:\n");
 
       print (get_help_string (0));
@@ -541,16 +551,16 @@ namespace MR
 
     std::string version_string ()
     {
-      std::string version = 
+      std::string version =
         "== " + App::NAME + " " + ( project_version ? project_version : mrtrix_version ) + " ==\n" +
-        str(8*sizeof (size_t)) + " bit " 
+        str(8*sizeof (size_t)) + " bit "
 #ifdef NDEBUG
         "release"
 #else
         "debug"
 #endif
-        " version, built " __DATE__ 
-        + ( project_version ? std::string(" against MRtrix ") + mrtrix_version : std::string("") ) 
+        " version, built " __DATE__
+        + ( project_version ? std::string(" against MRtrix ") + mrtrix_version : std::string("") )
         + ", using Eigen " + str(EIGEN_WORLD_VERSION) + "." + str(EIGEN_MAJOR_VERSION) + "." + str(EIGEN_MINOR_VERSION) + "\n"
         "Author(s): " + AUTHOR + "\n" +
         COPYRIGHT + "\n";
@@ -625,14 +635,14 @@ namespace MR
       s += "\n\n";
 
       auto indent_newlines = [](std::string text) {
-        size_t index = 0; 
-        while ((index = text.find("\n", index)) != std::string::npos ) 
+        size_t index = 0;
+        while ((index = text.find("\n", index)) != std::string::npos )
           text.replace (index, 1, "<br>");
         return text;
       };
 
       // Argument description:
-      for (size_t i = 0; i < ARGUMENTS.size(); ++i) 
+      for (size_t i = 0; i < ARGUMENTS.size(); ++i)
         s += std::string("- *") + ARGUMENTS[i].id + "*: " + indent_newlines (ARGUMENTS[i].desc) + "\n";
 
       if (DESCRIPTION.size()) {
@@ -644,7 +654,7 @@ namespace MR
 
       vector<std::string> group_names;
       for (size_t i = 0; i < OPTIONS.size(); ++i) {
-        if (std::find (group_names.begin(), group_names.end(), OPTIONS[i].name) == group_names.end()) 
+        if (std::find (group_names.begin(), group_names.end(), OPTIONS[i].name) == group_names.end())
           group_names.push_back (OPTIONS[i].name);
       }
 
@@ -665,7 +675,7 @@ namespace MR
           s += std::string ("#### ") + OPTIONS[n].name + "\n\n";
         while (n < OPTIONS.size()) {
           if (OPTIONS[n].name == group_names[i]) {
-            for (size_t o = 0; o < OPTIONS[n].size(); ++o) 
+            for (size_t o = 0; o < OPTIONS[n].size(); ++o)
               s += format_option (OPTIONS[n][o]);
           }
           ++n;
@@ -673,16 +683,16 @@ namespace MR
       }
 
       s += "#### Standard options\n\n";
-      for (size_t i = 0; i < __standard_options.size(); ++i) 
+      for (size_t i = 0; i < __standard_options.size(); ++i)
         s += format_option (__standard_options[i]);
 
-      if (REFERENCES.size()) { 
+      if (REFERENCES.size()) {
         s += std::string ("## References\n\n");
         for (size_t i = 0; i < REFERENCES.size(); ++i)
           s += indent_newlines (REFERENCES[i]) + "\n\n";
       }
       s += std::string("---\n\nMRtrix ") + mrtrix_version + ", built " + build_date + "\n\n"
-        "\n\n**Author:** " + AUTHOR 
+        "\n\n**Author:** " + AUTHOR
         + "\n\n**Copyright:** " + COPYRIGHT + "\n\n";
 
       return s;
@@ -943,7 +953,7 @@ namespace MR
           if (!(flags & Optional))
             ++num_args_required;
         }
-        else 
+        else
           ++num_args_required;
       }
 
@@ -1101,7 +1111,7 @@ namespace MR
       vector<ParsedOption> matches;
       for (size_t i = 0; i < option.size(); ++i) {
         assert (option[i].opt);
-        if (option[i].opt->is (name)) 
+        if (option[i].opt->is (name))
           matches.push_back ({ option[i].opt, option[i].args });
       }
       return matches;

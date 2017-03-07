@@ -119,10 +119,6 @@ namespace MR
 
 
 
-
-
-
-
   vector<std::string> split (const std::string& string, const char* delimiters, bool ignore_empty_fields, size_t num)
   {
     vector<std::string> V;
