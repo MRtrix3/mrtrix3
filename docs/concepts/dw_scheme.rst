@@ -20,7 +20,7 @@ input dataset.
 
 In addition, it can also import or export this information from/to two different
 external file formats, which we typically refer to as the `MRtrix format`_ and
-the `FSL format`_.  These differ in a number of respects:
+the `FSL format`_.  These differ in a number of respects, as outlined below.
 
 MRtrix format
 .............
@@ -67,7 +67,7 @@ This format consists of a pair of ASCII text files, typically named ``bvecs`` & 
 space-separated floating-point values, all in one row, with one value per
 volume in the DWI dataset. The ``bvecs`` consists of 3 rows of space-separated
 floating-point values, with the first row corresponding to the *x*-component 
-of the DW gradient vectors, one values per volume in the dataset; the second
+of the DW gradient vectors, one value per volume in the dataset; the second
 row corresponding to the *y*-component, and the third row to the *z*-component.
 A typical pair of FSL format DW gradient files might look like:
 
@@ -86,11 +86,12 @@ It is important to note that in this format, the gradient vectors are provided
 *with respect to the image axes*, **not** in real or scanner coordinates
 (actually, it's a little bit more complicated than that, refer to the `FSL wiki
 <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FDT/FAQ#What_conventions_do_the_bvecs_use.3F>`_
-for details). This is a rich source of confusion, described in further detail
-in following sections.  The main point to note is that a particular
-``bvals/bvecs`` pair is only valid for the particular image that they
-correspond to. 
-
+for details). This is a rich source of confusion, since seemingly innocuous
+changes to the image can introduce inconsistencies in the *b*-vectors. For
+example, simply reformatting the image from sagittal to axial will effectively
+rotate the *b*-vectors, since this operation changes the image axes. It is
+also important to remember that a particular ``bvals/bvecs`` pair is only valid
+for the particular image that it corresponds to. 
 
 
 Using the DW gradient table in *MRtrix3* applications
@@ -101,9 +102,9 @@ Querying the DW gradient table
 
 As mentioned above, *MRtrix3* will use the DW gradient table from the image
 headers when it is available. Currently, only the :ref:`dicom_format` and
-:ref:`mrtrix_image_formats` support storing this. The Dw gradient table can be
-queried for any particular image using the ``mrinfo`` command in combination
-with the ``-dwgrad`` option. For example::
+:ref:`mrtrix_image_formats` support this. The DW gradient table can be queried
+for any particular image using the ``mrinfo`` command in combination with the
+``-dwgrad`` option. For example::
 
   $ mrinfo DICOM/ -dwgrad
   mrinfo: [done] scanning DICOM folder "DICOM/"
@@ -142,7 +143,7 @@ it. For example::
 results in a ``grad.b`` file in `MRtrix format`_, while::
 
   $ mrconvert DICOM/ dwi.nii.gz -export_grad_fsl bvecs bvals 
-  mrconvert: [done] scanning DICOM folder "/home/jdt1...OM/Siemens Skyra - various/"
+  mrconvert: [done] scanning DICOM folder "DICOM/"
   mrconvert: [100%] reading DICOM series "BRI 64 directions ep2d_diff_3scan_trace_p2"
   mrconvert: [100%] reformatting DICOM mosaic images
   mrconvert: [100%] copying from "DICOM data...ns ep2d_diff_3scan_trace_p2" to "dwi.nii.gz"
@@ -158,13 +159,14 @@ Importing the DW gradient table
 ...............................
 
 If the image headers already contain the DW information, then no further action
-is required. If this is not the case (e.g. the image format does not support
+is required - the *MRtrix3* application will be able to find it and use it
+directly. If this is not the case (e.g. the image format does not support
 including it in the header), or the information contained is not correct,
-*MRtrix3* applications will also allow the DW gradient table to be imported
-using the ``-grad`` option (for the `MRtrix format`_) or the
-``-fslgrad`` option (for the `FSL format`_). Note that this will override the
-information found in the image headers if it was there. This can be used during
-conversion using ``mrconvert``, or at the point of use. For example::
+*MRtrix3* applications also allow the DW gradient table to be imported using
+the ``-grad`` option (for the `MRtrix format`_) or the ``-fslgrad`` option (for
+the `FSL format`_). Note that this will override the information found in the
+image headers if it was there. This can be used during conversion using
+``mrconvert``, or at the point of use. For example::
 
   $ mrconvert dwi.nii -fslgrad dwi_bvecs dwi_bvals dwi.mif
 
@@ -198,7 +200,7 @@ To convert them to the internal representation used in *MRtrix3* (and in the
 `MRtrix format`_ gradient table), these vectors need to be transformed into the
 real / scanner coordinate system. To do this requires knowledge of the DWI
 dataset these vectors correspond to, in particular the image transform. In
-essence, this consits of rotating the gradient vectors according to the
+essence, this consists of rotating the gradient vectors according to the
 rotation part of the transform (i.e. the top-left 3×3 part of the matrix). This
 will introduce differences between the components of the gradient vectors when stored in `MRtrix format`_ compared to the `FSL format`_, particularly for images not acquired in a pure axial orientation (i.e. images where the rotation part of the image transform is identity). 
 
@@ -208,7 +210,7 @@ NIfTI headers (i.e. the ``sform`` / ``qform``); the transform as reported by
 with the data), as the *MRtrix3* image loading backend will try to provide the
 image transform in a near-axial orientation (by inverting / exchanging columns
 of the transform, and adjusting the :ref:`strides` to match - see
-:ref:`transfom` for details). To find out the actual transform that
+:ref:`transfom`_ for details). To find out the actual transform that
 was stored in the NIfTI header, use ``mrinfo`` with the ``-norealign`` option.
 
 
@@ -224,14 +226,13 @@ for writing). If the DW gradient table is imported via the ``-grad`` or
 ``-fslgrad`` option, it will also be passed through as-is (although including
 the modifications mentioned above `When using the FSL format`_). If the output
 format does not allow storing the DW gradient table in the image header, the
-``-export_grad_mrtrix`` and/or ``-export_grad_fsl`` options can be used to
-write it out to separate files, ready for use with third party applications, or
-directly within *MRtrix3* if users prefer to keep their data organised in this
-way. 
+``-export_grad_mrtrix`` or ``-export_grad_fsl`` options can be used to write it
+out to separate files, ready for use with third party applications, or directly
+within *MRtrix3* if users prefer to keep their data organised in this way. 
 
 
-When using the informtion for processing
-........................................
+When using the information for processing
+.........................................
 
 Applications that actually need to make use of the DW gradient information
 (e.g. ``dwi2tensor``, ``dwi2fod``, ``dwiextract``, ...) will perform additional
@@ -246,7 +247,7 @@ sanity checks and modifications, beyond those described above. These include:
 - scaling the *b*-values by the square of the gradient vector amplitude - see
   `b-value scaling`_ for details. 
 
-Note that ``mrinfo`` will perform most of these checks. While there is no
+Note that ``mrinfo`` will also perform most of these checks. While there is no
 technical reason for it to interpret the DW gradient information, in practice
 it is generally helpful to view the information as it would be interpreted by
 other *MRtrix3* applications. If this is not desired, you can add the
@@ -269,7 +270,7 @@ to the desired value. For example, if this was the desired gradient table::
   1    0    0 2800
 
 This could be achieved on some systems by supplying this custom diffusion
-vectors file, now containing only *b* = 0 and *b* = 2800::
+vectors file, now nominally containing only *b* = 0 and *b* = 2800 s/mm²::
 
   0    0    0    0
   0.5  0    0 2800
