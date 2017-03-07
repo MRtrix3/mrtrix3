@@ -179,3 +179,107 @@ will process the DWI dataset found in the ``DICOM/`` folder (in
 :ref:`dicom_format` format) using the DW gradient information found in the `MRtrix
 format`_ file ``encoding.b``. 
 
+
+Operations performed by *MRtrix3* when handling DW gradient tables
+------------------------------------------------------------------
+
+*MRtrix3* applications will perform a number of sanity checks and modifications
+to the information in the DW gradient table, depending on the nature of the
+operation, and its original format.
+
+
+When using the FSL format
+.........................
+
+In this format, the gradient vectors are provided relative to the image axes
+(as detailed in the `FSL wiki
+<https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FDT/FAQ#What_conventions_do_the_bvecs_use.3F>`_).
+To convert them to the internal representation used in *MRtrix3* (and in the
+`MRtrix format`_ gradient table), these vectors need to be transformed into the
+real / scanner coordinate system. To do this requires knowledge of the DWI
+dataset these vectors correspond to, in particular the image transform. In
+essence, this consits of rotating the gradient vectors according to the
+rotation part of the transform (i.e. the top-left 3×3 part of the matrix). This
+will introduce differences between the components of the gradient vectors when stored in `MRtrix format`_ compared to the `FSL format`_, particularly for images not acquired in a pure axial orientation (i.e. images where the rotation part of the image transform is identity). 
+
+Note that in this operation, what matters is the transform as stored in the
+NIfTI headers (i.e. the ``sform`` / ``qform``); the transform as reported by
+``mrinfo`` can differ substantially from this (while still being consistent
+with the data), as the *MRtrix3* image loading backend will try to provide the
+image transform in a near-axial orientation (by inverting / exchanging columns
+of the transform, and adjusting the :ref:`strides` to match - see
+:ref:`transfom` for details). To find out the actual transform that
+was stored in the NIfTI header, use ``mrinfo`` with the ``-norealign`` option.
+
+
+When copying or converting
+..........................
+
+Applications like ``mrconvert`` that don't actually need to interpret the DW
+gradient table will simply pass the information through to the output
+unmodified. If the DW gradient table was found in the input image header, it
+will be written to the output image header if the image format supports it
+(i.e. if the output is in :ref:`mrtrix_image_formats` - DICOM is not supported
+for writing). If the DW gradient table is imported via the ``-grad`` or
+``-fslgrad`` option, it will also be passed through as-is (although including
+the modifications mentioned above `When using the FSL format`_). If the output
+format does not allow storing the DW gradient table in the image header, the
+``-export_grad_mrtrix`` and/or ``-export_grad_fsl`` options can be used to
+write it out to separate files, ready for use with third party applications, or
+directly within *MRtrix3* if users prefer to keep their data organised in this
+way. 
+
+
+When using the informtion for processing
+........................................
+
+Applications that actually need to make use of the DW gradient information
+(e.g. ``dwi2tensor``, ``dwi2fod``, ``dwiextract``, ...) will perform additional
+sanity checks and modifications, beyond those described above. These include:
+
+- verifying that the number of volumes in the DWI dataset matches the number of
+  entries in the DW gradient table;
+- where relevant, verifying that the DW gradient tables contains the data in a
+  shell structure, by clustering similar *b*-values together (see ``mrinfo``'s
+  ``-shell`` and ``-shellcount`` options);
+- normalising the gradient vectors to unit amplitude;
+- scaling the *b*-values by the square of the gradient vector amplitude - see
+  `b-value scaling`_ for details. 
+
+Note that ``mrinfo`` will perform most of these checks. While there is no
+technical reason for it to interpret the DW gradient information, in practice
+it is generally helpful to view the information as it would be interpreted by
+other *MRtrix3* applications. If this is not desired, you can add the
+``-raw_dwgrad`` option to ``mrinfo`` to disable these modifications when
+querying the DW gradient table. 
+
+b-value scaling
+---------------
+
+By default, *MRtrix3* applications will scale the *b*-values by the squared
+amplitude of the gradient vectors. This is to allow correct processing of
+multi-shell datasets that were acquired on MRI scanners that do not explicitly
+allow for such schemes. To get around these limitations, a common workaround is
+to scale the amplitude of the gradient vectors in such a way that the
+*b*-value applied for that volume is reduced compared to the nominal *b*-value,
+to the desired value. For example, if this was the desired gradient table::
+
+  0    0    0    0
+  1    0    0  700
+  1    0    0 2800
+
+This could be achieved on some systems by supplying this custom diffusion
+vectors file, now containing only *b* = 0 and *b* = 2800::
+
+  0    0    0    0
+  0.5  0    0 2800
+  1    0    0 2800
+
+While this scaling allows such datasets to be processed seamlessly, it will
+introduce minor variations in the *b*-values for other datasets, due to minor
+rounding errors in the components of the direction vectors. These are benign,
+and have no consequence on the correct operation of *MRtrix3* applications,
+since the deviations are typically very small, and the strategy used to group
+*b*-values into shells is robust to such variations. If however this becomes a
+problem (e.g. for third-party applications), this feature can be disabled
+using the ``-bvalue_scaling 0`` option for those applications that support it. 
