@@ -611,6 +611,8 @@ ignored. Obviously, the qform fields will be used if they are present on their
 own.
 
 
+.. _compressed_nifti_format:
+
 Compressed NIfTI (``.nii.gz``)
 ..............................
 
