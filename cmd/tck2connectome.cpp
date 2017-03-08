@@ -75,9 +75,63 @@ void usage ()
 
 
 
+template <typename T>
+void execute (Image<node_t>& node_image, const node_t max_node_index, const std::set<node_t>& missing_nodes)
+{
+  // Are we generating a matrix or a vector?
+  const bool vector_output = get_options ("vector").size();
+
+  // Do we need to keep track of the nodes to which each streamline is
+  //   assigned, or would it be a waste of memory?
+  const bool track_assignments = get_options ("out_assignments").size();
+
+  // Get the metric, assignment mechanism & per-edge statistic for connectome construction
+  Metric metric;
+  Tractography::Connectome::setup_metric (metric, node_image);
+  std::unique_ptr<Tck2nodes_base> tck2nodes (load_assignment_mode (node_image));
+  auto opt = get_options ("stat_edge");
+  const stat_edge statistic = opt.size() ? stat_edge(int(opt[0][0])) : stat_edge::SUM;
+
+  // Prepare for reading the track data
+  Tractography::Properties properties;
+  Tractography::Reader<float> reader (argument[0], properties);
+
+  // Initialise classes in preparation for multi-threading
+  Mapping::TrackLoader loader (reader, properties["count"].empty() ? 0 : to<size_t>(properties["count"]), "Constructing connectome");
+  Tractography::Connectome::Mapper mapper (*tck2nodes, metric);
+  Tractography::Connectome::Matrix<T> connectome (max_node_index, statistic, vector_output, track_assignments);
+
+  // Multi-threaded connectome construction
+  if (tck2nodes->provides_pair()) {
+    Thread::run_queue (
+        loader,
+        Thread::batch (Tractography::Streamline<float>()),
+        Thread::multi (mapper),
+        Thread::batch (Mapped_track_nodepair()),
+        connectome);
+  } else {
+    Thread::run_queue (
+        loader,
+        Thread::batch (Tractography::Streamline<float>()),
+        Thread::multi (mapper),
+        Thread::batch (Mapped_track_nodelist()),
+        connectome);
+  }
+
+  connectome.finalize();
+  connectome.error_check (missing_nodes);
+
+  connectome.save (argument[2], get_options ("keep_unassigned").size(), get_options ("symmetric").size(), get_options ("zero_diagonal").size());
+
+  opt = get_options ("out_assignments");
+  if (opt.size())
+    connectome.write_assignments (opt[0][0]);
+}
+
+
+
 void run ()
 {
-
   auto node_image = Image<node_t>::open (argument[1]);
 
   // First, find out how many segmented nodes there are, so the matrix can be pre-allocated
@@ -107,65 +161,10 @@ void run ()
     WARN ("(This may indicate poor parcellation image preparation, use of incorrect or incomplete LUT file(s) in labelconvert, or very poor registration)");
   }
 
-  // Are we generating a matrix or a vector?
-  const bool vector_output = get_options ("vector").size();
-
-  // Get the metric, assignment mechanism & per-edge statistic for connectome construction
-  Metric metric;
-  Tractography::Connectome::setup_metric (metric, node_image);
-  std::unique_ptr<Tck2nodes_base> tck2nodes (load_assignment_mode (node_image));
-  auto opt = get_options ("stat_edge");
-  stat_edge statistic = opt.size() ? stat_edge(int(opt[0][0])) : stat_edge::SUM;
-
-  // Prepare for reading the track data
-  Tractography::Properties properties;
-  Tractography::Reader<float> reader (argument[0], properties);
-
-  // Initialise classes in preparation for multi-threading
-  Mapping::TrackLoader loader (reader, properties["count"].empty() ? 0 : to<size_t>(properties["count"]), "Constructing connectome");
-  Tractography::Connectome::Mapper mapper (*tck2nodes, metric);
-  Tractography::Connectome::Matrix connectome (max_node_index, statistic, vector_output);
-
-  // Multi-threaded connectome construction
-  if (tck2nodes->provides_pair()) {
-    Thread::run_queue (
-        loader,
-        Thread::batch (Tractography::Streamline<float>()),
-        Thread::multi (mapper),
-        Thread::batch (Mapped_track_nodepair()),
-        connectome);
+  if (max_node_index >= node_count_ram_limit) {
+    INFO ("Very large number of nodes detected; using single-precision floating-point storage");
+    execute<float> (node_image, max_node_index, missing_nodes);
   } else {
-    Thread::run_queue (
-        loader,
-        Thread::batch (Tractography::Streamline<float>()),
-        Thread::multi (mapper),
-        Thread::batch (Mapped_track_nodelist()),
-        connectome);
+    execute<double> (node_image, max_node_index, missing_nodes);
   }
-
-  connectome.finalize();
-  connectome.error_check (missing_nodes);
-
-  if (!get_options ("keep_unassigned").size())
-    connectome.remove_unassigned();
-
-  MR::Connectome::matrix_type data = connectome.get();
-
-  // These only modify the matrix as it is written to file
-  if (get_options ("symmetric").size()) {
-    if (vector_output) {
-      WARN ("Option -symmetric not applicable when generating connectivity vector");
-    } else {
-      MR::Connectome::to_symmetric (data);
-    }
-  }
-  if (get_options ("zero_diagonal").size())
-    data.matrix().diagonal().setZero();
-
-  save_matrix (data, argument[2]);
-
-  opt = get_options ("out_assignments");
-  if (opt.size())
-    connectome.write_assignments (opt[0][0]);
-
 }
