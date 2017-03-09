@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "connectome/connectome.h"
+#include "connectome/mat2vec.h"
 #include "math/math.h"
 
 #include "dwi/tractography/connectome/connectome.h"
@@ -37,46 +38,71 @@ extern const char* statistics[];
 extern const App::Option EdgeStatisticOption;
 
 
+// The number of nodes that must be exceeded in a connectome matrix in
+//   order for mechanisms relating to RAM usage reduction to be activated
+constexpr node_t node_count_ram_limit = 1024;
 
 
+template <typename T>
 class Matrix
 { MEMALIGN(Matrix)
 
   public:
-    Matrix (const node_t max_node_index, const stat_edge stat, const bool vector_output = false) :
-        data   (MR::Connectome::matrix_type::Zero (vector_output ? 1 : (max_node_index + 1), max_node_index + 1)),
-        counts (MR::Connectome::matrix_type::Zero (vector_output ? 1 : (max_node_index + 1), max_node_index + 1)),
-        statistic (stat)
+    typedef Eigen::Matrix<T, Eigen::Dynamic, 1> vector_type;
+
+    Matrix (const node_t max_node_index, const stat_edge stat, const bool vector_output, const bool track_assignments) :
+        statistic (stat),
+        vector_output (vector_output),
+        track_assignments (track_assignments),
+        mat2vec (vector_output ?
+                 nullptr :
+                 new MR::Connectome::Mat2Vec (max_node_index+1)),
+        data   (vector_type::Zero (vector_output ?
+                                   (max_node_index + 1) :
+                                   mat2vec->vec_size())),
+        counts (stat == stat_edge::MEAN ?
+                vector_type::Zero (vector_output ?
+                                   (max_node_index + 1) :
+                                   mat2vec->vec_size()) :
+                vector_type())
     {
       if (statistic == stat_edge::MIN)
-        data = MR::Connectome::matrix_type::Constant (vector_output ? 1 : (max_node_index + 1), max_node_index + 1, std::numeric_limits<default_type>::infinity());
+        data = vector_type::Constant (vector_output ? (max_node_index + 1) : mat2vec->vec_size(), std::numeric_limits<T>::infinity());
       else if (statistic == stat_edge::MAX)
-        data = MR::Connectome::matrix_type::Constant (vector_output ? 1 : (max_node_index + 1), max_node_index + 1, -std::numeric_limits<default_type>::infinity());
+        data = vector_type::Constant (vector_output ? (max_node_index + 1) : mat2vec->vec_size(), -std::numeric_limits<T>::infinity());
     }
 
     bool operator() (const Mapped_track_nodepair&);
     bool operator() (const Mapped_track_nodelist&);
 
     void finalize();
-    void remove_unassigned();
 
     void error_check (const std::set<node_t>&);
 
     void write_assignments (const std::string&) const;
 
-    bool is_vector() const { return (data.rows() == 1); }
+    bool is_vector() const { return (vector_output); }
 
-    const MR::Connectome::matrix_type get() const { return data; }
+    void save (const std::string&, const bool, const bool, const bool) const;
 
 
   private:
-    MR::Connectome::matrix_type data, counts;
     const stat_edge statistic;
+    const bool vector_output;
+    const bool track_assignments;
+
+    const std::unique_ptr<MR::Connectome::Mat2Vec> mat2vec;
+
+    vector_type data, counts;
     vector<node_t> assignments_single;
     vector<NodePair> assignments_pairs;
     vector< vector<node_t> > assignments_lists;
 
-    void apply (double&, const double, const double);
+    FORCE_INLINE void apply_data (const size_t, const T, const T);
+    FORCE_INLINE void apply_data (const size_t, const size_t, const T, const T);
+    FORCE_INLINE void apply_data (T&, const T, const T);
+    FORCE_INLINE void inc_count (const size_t, const T);
+    FORCE_INLINE void inc_count (const size_t, const size_t, const T);
 
 };
 

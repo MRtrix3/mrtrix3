@@ -105,8 +105,18 @@ namespace MR
         throw Exception (e, "Unable to import files \"" + bvecs_path + "\" and \"" + bvals_path + "\" as FSL bvecs/bvals pair");
       }
 
-      if (bvals.rows() != 1) throw Exception ("bvals file must contain 1 row only (file \"" + bvals_path + "\" has " + str(bvals.rows()) + ")");
-      if (bvecs.rows() != 3) throw Exception ("bvecs file must contain exactly 3 rows (file \"" + bvecs_path + "\" has " + str(bvecs.rows()) + ")");
+      if (bvals.rows() != 1) {
+        if (bvals.cols() == 1)
+          bvals.transposeInPlace();  // transpose if file contains column vector
+        else
+          throw Exception ("bvals file must contain 1 row or column only (file \"" + bvals_path + "\" has " + str(bvals.rows()) + ")");
+      }
+      if (bvecs.rows() != 3) {
+        if (bvecs.cols() == 3)
+          bvecs.transposeInPlace();
+        else
+          throw Exception ("bvecs file must contain exactly 3 rows or columns (file \"" + bvecs_path + "\" has " + str(bvecs.rows()) + ")");
+      }
 
       if (bvals.cols() != bvecs.cols())
         throw Exception ("bvecs and bvals files must have same number of diffusion directions (file \"" + bvecs_path + "\" has " + str(bvecs.cols()) + ", file \"" + bvals_path + "\" has " + str(bvals.cols()) + ")");
