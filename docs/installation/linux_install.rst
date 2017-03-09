@@ -4,8 +4,8 @@ Linux installation
 ==================
 
 We outline the steps for installing *MRtrix3* on a Linux machine. Please consult 
-:ref:`troubleshooting` if you encounter any issues with the configure, build
-or runtime operations of *MRtrix3*.
+the `MRtrix3 forum <http://community.mrtrix.org/>`__ if you encounter any
+issues with the configure, build or runtime operations of *MRtrix3*.
 
 Check requirements
 ------------------
