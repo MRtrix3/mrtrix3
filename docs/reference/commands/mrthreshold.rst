@@ -16,7 +16,9 @@ Synopsis
 Description
 -----------
 
-create bitwise image by thresholding image intensity. By default, an optimal threshold is determined using a parameter-free method. Alternatively the threshold can be defined manually by the user or using a histogram-based analysis to cut out the background.
+create bitwise image by thresholding image intensity.
+
+By default, an optimal threshold is determined using a parameter-free method. Alternatively the threshold can be defined manually by the user or using a histogram-based analysis to cut out the background.
 
 Options
 -------

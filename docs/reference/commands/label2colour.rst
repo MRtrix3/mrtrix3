@@ -16,7 +16,9 @@ Synopsis
 Description
 -----------
 
-convert a parcellated image (where values are node indices) into a colour image (many software packages handle this colouring internally within their viewer program; this binary explicitly converts a parcellation image into a colour image that should be viewable in any software)
+convert a parcellated image (where values are node indices) into a colour image 
+
+Many software packages handle this colouring internally within their viewer program; this binary explicitly converts a parcellation image into a colour image that should be viewable in any software.
 
 Options
 -------

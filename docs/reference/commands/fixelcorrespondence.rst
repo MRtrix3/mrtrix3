@@ -17,7 +17,9 @@ Synopsis
 Description
 -----------
 
-Obtain angular correpondence by mapping subject fixels to a template fixel mask. It is assumed that the subject image has already been spatially normalised and is aligned with the template.
+Obtain angular correpondence by mapping subject fixels to a template fixel mask. 
+
+It is assumed that the subject image has already been spatially normalised and is aligned with the template.
 
 Options
 -------

@@ -16,9 +16,9 @@ Synopsis
 Description
 -----------
 
-convert a set of amplitudes (defined along a set of corresponding directions) to their spherical harmonic representation. The spherical harmonic decomposition is calculated by least-squares linear fitting.
+convert a set of amplitudes to their spherical harmonic representation.
 
-The directions can be defined either as a DW gradient scheme (for example to compute the SH representation of the DW signal) or a set of [az el] pairs as output by the dirgen command. The DW gradient scheme or direction set can be supplied within the input image header or using the -gradient or -directions option. Note that if a direction set and DW gradient scheme can be found, the direction set will be used by default.
+The spherical harmonic decomposition is calculated by least-squares linear fitting.The directions along which the amplitudes are given can be defined either as a DW gradient scheme (for example to compute the SH representation of the DW signal) or a set of [az el] pairs as output by the dirgen command. The DW gradient scheme or direction set can be supplied within the input image header or using the -gradient or -directions option. Note that if a direction set and DW gradient scheme can be found, the direction set will be used by default.
 
 Note that this program makes use of implied symmetries in the diffusion profile. First, the fact the signal attenuation profile is real implies that it has conjugate symmetry, i.e. Y(l,-m) = Y(l,m)* (where * denotes the complex conjugate). Second, the diffusion profile should be antipodally symmetric (i.e. S(x) = S(-x)), implying that all odd l components should be zero. Therefore, this program only computes the even elements.
 
