@@ -1,10 +1,12 @@
+.. _troubleshooting:
+
 Troubleshooting
-=====
+===============
 
 .. _remote_display:
 
 Remote display issues
----------
+---------------------
 
 The GUI components in *MRtrix3* (``mrview`` & ``shview``) use the OpenGL
 3.3 API to make full use of modern graphics cards. Unfortunately, X11
@@ -40,7 +42,7 @@ So it is not possible to use ``mrview`` or ``shview`` over a standard
 remote X11 connection.
 
 Why does *MRtrix3* use OpenGL 3.3 if it come with such limitations?
-^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Because it's clearly the most future-proof option. The `older OpenGL
 versions are
@@ -51,7 +53,7 @@ provide better performance. Finally, as explained above, X11 will
 eventually be phased out anyway...
 
 What can be done about this?
-^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 There are a number of options available to deal with this, each with
 their own idiosyncraties. The simplest is to render locally (option 1),
@@ -59,7 +61,7 @@ the other options require a fair bit of setting up on the server, and
 potentially also on the clients.
 
 1. Use MRView locally
-"""""""""""""""""""
+"""""""""""""""""""""
 
 This is the simplest option, and allows the use of the local graphics
 hardware (much like X11 forwarding would have). To use this relatively
@@ -84,7 +86,7 @@ already have an SSH account), and is readily available on all platforms
 `OSXFuse <http://osxfuse.github.io/>`__ on MacOSX).
 
 2. Use an OpenGL-capable VNC server
-""""""""""""""""""""""""""""""""""
+"""""""""""""""""""""""""""""""""""
 
 Using the `VNC
 protocol <http://en.wikipedia.org/wiki/Virtual_Network_Computing>`__,
@@ -183,7 +185,7 @@ When running *MRtrix3* commands on certain terminal emulators, you may see
 unusual characters appearing in the terminal output, that look something
 like the following:
 
-.. code::
+.. code-block:: console
 
     $ mrinfo fa.mif -debug
     mrinfo: ←[00;32m[INFO] opening image "fa.mif"...←[0m

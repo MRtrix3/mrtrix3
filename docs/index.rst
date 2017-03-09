@@ -1,5 +1,5 @@
 Welcome to the MRtrix user documentation!
-==================================
+=========================================
 
 *MRtrix* provides a set of tools to perform diffusion-weighted MRI white matter tractography in the presence of crossing fibres, using Constrained Spherical Deconvolution (`Tournier et al.. 2004`_; `Tournier et al. 2007`_), and a probabilisitic streamlines algorithm (`Tournier et al., 2012`_). These applications have been written from scratch in C++, using the functionality provided by `Eigen`_, and `Qt`_. The software is currently capable of handling DICOM, NIfTI and AnalyseAVW image formats, amongst others. The source code is distributed under the `Mozilla Public License`_.
 
@@ -12,11 +12,7 @@ Welcome to the MRtrix user documentation!
 
 
 .. toctree::
-   :maxdepth: 2
-   :caption: 
-
-.. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Install
 
    installation/before_install
@@ -26,7 +22,7 @@ Welcome to the MRtrix user documentation!
    installation/hpc_clusters_install
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Getting started
    
    getting_started/key_features
@@ -36,7 +32,7 @@ Welcome to the MRtrix user documentation!
    getting_started/troubleshooting
    
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Tutorials
    
    tutorials/basic_dwi_processing
@@ -49,7 +45,7 @@ Welcome to the MRtrix user documentation!
    tutorials/FAQ
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Workflows
 
    workflows/DWI_preprocessing_for_quantitative_analysis
@@ -61,9 +57,10 @@ Welcome to the MRtrix user documentation!
    workflows/multi_tissue_csd
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Concepts
   
+   concepts/dw_scheme
    concepts/orthonormal_basis
    concepts/dixels_fixels
    concepts/afd_connectivity
