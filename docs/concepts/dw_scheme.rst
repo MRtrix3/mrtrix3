@@ -34,7 +34,8 @@ consisting of 4 space-separated floating-point values; these correspond to
 and ``b`` is the *b*-value in units of s/mm². A typical *MRtrix* format DW
 gradient table file might look like this:
 
-**grad.b**::
+.. code-block:: text
+  :caption: **grad.b:**
 
            0           0           0           0
            0           0           0           0
@@ -54,8 +55,8 @@ gradient table file might look like this:
 It is important to note that in this format, the direction vectors are assumed
 to be provided with respect to *real* or *scanner* coordinates. This is the same
 convention as is used in the DICOM format. Also note that the file does not
-need to have the file type extension "``.b``"; this is simply a historical
-convention.
+need to have the file type extension ``.b`` (or any other particular suffix);
+this is simply a historical convention.
 
 .. _embedded_dw_scheme:
 
@@ -80,7 +81,7 @@ For these reasons, the general recommendation of the *MRtrix3* team is to make
 use of the :ref:`mrtrix_image_formats` whenever possible.
 
 This embedding is achieved by writing an entry into the Image
-:ref:`header_keyvalue_pairs_, using the key "``dw_scheme``". The value of this
+:ref:`header_keyvalue_pairs`, using the key ``dw_scheme``. The value of this
 entry is the complete diffusion gradient table, stored in the `MRtrix format`_.
 However, this entry should generally *not be accessed or manipulated directly*
 by users; instead, users should rely on the internal handling of these data as
@@ -99,13 +100,15 @@ of the DW gradient vectors, one value per volume in the dataset; the second
 row corresponding to the *y*-component, and the third row to the *z*-component.
 A typical pair of FSL format DW gradient files might look like:
  
-**bvecs**::
+.. code-block:: text
+  :caption: **bvecs:**
 
   0 0 -4.30812931665e-05 -0.00028279245503 -0.528846962834659 -0.781281266220383 0.014299684287952  0.36785999072309 -0.66507232482745  0.237350171404029  0.721877079467007 -0.880754419294581 0 -0.870185851757858 ...
   0 0 -0.002606397951389 -0.97091525561761 -0.846605326714759  0.615840299891175 0.403330065122241 -0.70377676751476 -0.67378508548543 -0.971399047063277 -0.513131073140676 -0.423391107245363 0 -0.416501756655988 ...
   0 0 -0.999996760803023  0.23942421337746  0.059831733802001 -0.101684552642539 0.914942902775223  0.60776414747636 -0.32201498900359  0.007004078617919 -0.464317089148873  0.212157919445896 0 -0.263255013300656 ...
 
-**bvals**::
+.. code-block:: text
+  :caption: **bvals:**
 
   0 0 3000 3000 3000 3000 3000 3000 3000 3000 3000 3000 ...
 
@@ -131,8 +134,10 @@ As mentioned above, *MRtrix3* will use the DW gradient table from the image
 headers when it is available. Currently, only the :ref:`dicom_format` and
 :ref:`mrtrix_image_formats` support this. The DW gradient table can be queried
 for any particular image using the ``mrinfo`` command in combination with the
-``-dwgrad`` option. For example::
+``-dwgrad`` option. For example:
 
+.. code-block:: console
+  
   $ mrinfo DICOM/ -dwgrad
   mrinfo: [done] scanning DICOM folder "DICOM/"
   mrinfo: [100%] reading DICOM series "BRI 64 directions ep2d_diff_3scan_trace_p2"
@@ -163,11 +168,15 @@ Exporting the DW gradient table
 This information can also be exported from the image headers using the
 ``-export_grad_mrtrix`` option (for the `MRtrix format`_) or
 ``-export_grad_fsl`` option (for the `FSL format`_) in commands that support
-it. For example::
+it. For example:
+
+.. code-block:: console
 
   $ mrinfo dwi.mif -export_grad_mrtrix grad.b
 
-results in a ``grad.b`` file in `MRtrix format`_, while::
+results in a ``grad.b`` file in `MRtrix format`_, while:
+
+.. code-block:: console
 
   $ mrconvert DICOM/ dwi.nii.gz -export_grad_fsl bvecs bvals 
   mrconvert: [done] scanning DICOM folder "DICOM/"
@@ -193,14 +202,18 @@ including it in the header), or the information contained is not correct,
 the ``-grad`` option (for the `MRtrix format`_) or the ``-fslgrad`` option (for
 the `FSL format`_). Note that this will override the information found in the
 image headers if it was there. This can be used during conversion using
-``mrconvert``, or at the point of use. For example::
+``mrconvert``, or at the point of use. For example:
+
+.. code-block:: console
 
   $ mrconvert dwi.nii -fslgrad dwi_bvecs dwi_bvals dwi.mif
 
 will convert the ``dwi.nii`` from :ref:`nifti_format` to
 :ref:`mrtrix_image_formats`, embedding the DW gradient table information found
 in the ``dwi_bvecs`` & ``dwi_bvals`` files (in `FSL format`_) directly into the
-output image header. As another example::
+output image header. As another example:
+
+.. code-block:: console
 
   $ dwi2tensor DICOM/ -grad encoding.b tensor.nii
 
@@ -304,14 +317,18 @@ desired *b*-value, but use gradient vector directions that have *less than unit
 norm*. This results in diffusion sensitisation gradients with reduced strength,
 and hence images with lower *b*-values.
 
-For example, if this was the desired gradient table::
+For example, if this was the desired gradient table:
+
+.. code-block:: text
 
   0    0    0    0
   1    0    0  700
   1    0    0 2800
 
 This could be achieved on some systems by supplying this custom diffusion
-vectors file, now nominally containing only *b* = 0 and *b* = 2800 s/mm²::
+vectors file, now nominally containing only *b* = 0 and *b* = 2800 s/mm²:
+
+.. code-block:: text
 
   0    0    0    0
   0.5  0    0 2800
