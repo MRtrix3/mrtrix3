@@ -402,12 +402,20 @@ is an image in MRtrix format. The last line of the header should read
 only ``END`` to signal the end of the header, after which all data will
 be considered as binary.
 
+All lines *between* these two entries must be represented as key-value
+pairs, as described below.
+
+.. _header_keyvalue_pairs:
+
+Header key-value pairs
+......................
+
 All following lines are in the format ``key: value``, with the value
 entry extending up to the end of the line. All whitespace characters
 before and after the value entry are ignored. Some keys are required to
-read the images, others are optional, and any key not recognised by
-MRtrix will simply be ignored. Recognised keys are listed below, along
-with the expected format of the corresponding values.
+read the images, others are optional (sensible defaults will be
+substituted if they are absent). Recognised keys are provided in the 
+list below, along with the expected format of the corresponding values.
 
 -  **dim** [required]
 
@@ -480,17 +488,23 @@ with the expected format of the corresponding values.
        transform: 0.0540858,0.998535,-0.00179436,-100.645
        transform: 0.0331575,2.34007e-08,0.99945,-125.84
 
--  **comments** [optional]
-
-   used to add generic comments to the header. Multiple such entries can
-   be provided. For example: ``comment: some information``
-
 -  **scaling** [optional]
 
    used to specify how intensity values should be scaled, provided as an
    offset and scale. Voxel values will be read as value\_returned =
    offset + scale \* value\_read. For example: ``scaling: -1,2``.
    Default is ``0,1`` (no modification).
+
+In addition to these keys, it is also possible to store additional
+key-value pairs within the header of these image files. If a particular
+key is not recognised by *MRtrix3*, it is simply ignored (but may be
+carried over to any outputs resulting from the command, depending on the
+particular command).
+
+There are some keys that are utilized by particular *MRtrix3* commands
+in order to preserve important information as image data are passed
+between commands. A prominent example is "``dw_scheme``", which is used
+to embed the diffusion gradient table within the :ref:`embedded_dw_scheme`.
 
 
 .. _mrtrix_sparse_format:
