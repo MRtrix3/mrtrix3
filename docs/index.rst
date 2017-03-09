@@ -12,7 +12,7 @@ Welcome to the MRtrix user documentation!
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Install
 
    installation/before_install
@@ -22,7 +22,7 @@ Welcome to the MRtrix user documentation!
    installation/hpc_clusters_install
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Getting started
    
    getting_started/key_features
@@ -32,7 +32,7 @@ Welcome to the MRtrix user documentation!
    getting_started/troubleshooting
    
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Tutorials
    
    tutorials/basic_dwi_processing
@@ -45,7 +45,7 @@ Welcome to the MRtrix user documentation!
    tutorials/FAQ
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Workflows
 
    workflows/DWI_preprocessing_for_quantitative_analysis
@@ -57,7 +57,7 @@ Welcome to the MRtrix user documentation!
    workflows/multi_tissue_csd
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Concepts
   
    concepts/dw_scheme
