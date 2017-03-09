@@ -21,10 +21,6 @@
 #include "dwi/tractography/seeding/basic.h"
 
 
-#define GMWMI_SEED_ATTEMPTS 10000
-
-
-
 
 namespace MR
 {
