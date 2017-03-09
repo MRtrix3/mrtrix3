@@ -740,11 +740,10 @@ namespace MR
         ProgressBar progress( "writing mesh to file", vertices.size() + triangles.size() );
 
         // write freesurfer magic number
-        const size_t TRIANGLE_FILE_MAGIC_NUMBER = 16777214;
         uint8_t Int3[ 3 ];
-        Int3[ 0 ] = ( uint8_t )( TRIANGLE_FILE_MAGIC_NUMBER >> 16 );
-        Int3[ 1 ] = ( uint8_t )( TRIANGLE_FILE_MAGIC_NUMBER >> 8 );
-        Int3[ 2 ] = ( uint8_t )( TRIANGLE_FILE_MAGIC_NUMBER );
+        Int3[ 0 ] = ( uint8_t )( FreeSurfer::triangle_file_magic_number >> 16 );
+        Int3[ 1 ] = ( uint8_t )( FreeSurfer::triangle_file_magic_number >> 8 );
+        Int3[ 2 ] = ( uint8_t )( FreeSurfer::triangle_file_magic_number );
         out.write( reinterpret_cast< const char* >( &Int3 ), 3 * sizeof( uint8_t ) );
   
         // write header
