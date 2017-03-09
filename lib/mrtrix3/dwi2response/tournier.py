@@ -64,7 +64,7 @@ def execute():
     file.delTempFile(prefix + 'FOD.mif')
     if iteration:
       file.delTempFile(mask_in_path)
-    run.command('fixel2voxel ' + prefix + 'fixel/peaks.mif split_data ' + prefix + 'amps.mif')
+    run.command('fixel2voxel ' + prefix + 'fixel/peaks.mif split_data ' + prefix + 'amps.mif -number 2')
     run.command('mrconvert ' + prefix + 'amps.mif ' + prefix + 'first_peaks.mif -coord 3 0 -axes 0,1,2')
     run.command('mrconvert ' + prefix + 'amps.mif ' + prefix + 'second_peaks.mif -coord 3 1 -axes 0,1,2')
     file.delTempFile(prefix + 'amps.mif')
