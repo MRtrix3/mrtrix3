@@ -1,9 +1,11 @@
+.. _command_line:
+
 Command-line usage
-==============
+==================
 
 *MRtrix3* generally follows a relatively standard Unix syntax, namely:
 
-.. code::
+.. code-block:: console
 
     $ command [options] argument1 argument2 ...
 
@@ -12,32 +14,32 @@ plenty of tutorials online to get you started. There are however a few notable
 features specific to *MRtrix3*, which are outlined below.
 
 Using short option names
--------------
+------------------------
 
 Options do not need to be provided in full, as long as the initial part
 of the option provided is sufficient to unambiguously identify it. For
 example:
 
-.. code::
+.. code-block:: console
 
     $ mrconvert -debug in.mif out.nii.gz
 
 is the same as:
 
-.. code::
+.. code-block:: console
 
     $ mrconvert -de in.mif out.nii.gz
 
 but will conflict with the ``-datatype`` option if shortened any
 further:
 
-.. code::
+.. code-block:: console
 
     $ mrconvert -d in.mif out.nii.gz 
     mrconvert: [ERROR] several matches possible for option "-d": "-datatype, "-debug"
 
 Ordering of options on the command-line
-----------------
+---------------------------------------
 
 Options can typically occur anywhere on the command-line, in any order -
 they do not usually need to precede the arguments. However, there are a
@@ -46,7 +48,7 @@ few commands where the order does matter, particularly ``mrcalc``.
 .. _number_sequences:
 
 Number sequences and floating-point lists
-----------------
+-----------------------------------------
 
 Options often expect arguments in the form of *number sequences* or
 *floating-point lists of numbers*. The former consists or a series of
@@ -70,14 +72,14 @@ numbers, for example:
 .. _unix_pipelines:
 
 Unix Pipelines
---------
+--------------
 
 The output of one program can be fed straight through to the input of
 another program via `Unix
 pipes <http://en.wikipedia.org/wiki/Pipeline_%28Unix%29>`__ in a single
 command. The appropriate syntax is illustrated in this example:
 
-.. code:: 
+.. code-block:: console
 
     $ dwi2tensor /data/DICOM_folder/ - | tensor2metric - -vector ev.mif
     dwi2tensor: [done] scanning DICOM folder "/data/DICOM_folder/"
@@ -107,7 +109,7 @@ For this to work properly, it is important to know which arguments each
 program will interpret as input images, and which as output images. For
 example, this command will fail:
 
-.. code:: 
+.. code-block:: console
 
     dwi2tensor - /data/DICOM_folder/ | tensor2metric - ev.mif
 
@@ -122,7 +124,7 @@ Advanced pipeline usage
 Such pipelines are not limited to two programs. Complex operations can
 be performed in one line using this technique. Here is a longer example:
 
-.. code:: 
+.. code-block:: console
 
     $ dwi2tensor /data/DICOM_folder/ - | tensor2metric - -vector - | mrcalc -
     mask.nii -mult - | mrview -
@@ -153,30 +155,30 @@ This command will execute the following actions:
    and display the resulting image.
 
 How is it implemented?
-'''''''''''''''''''''''''''''''''''''''''
+''''''''''''''''''''''
 
-The procedure used in *MRtrix3* to feed data sets down a pipeline is
-somewhat different from the more traditional use of pipes. Given the
-large amounts of data typically contained in a data set, the 'standard'
-practice of feeding the entire data set through the pipe would be
-prohibitively inefficient. *MRtrix3* applications access the data via
-memory-mapping (when this is possible), and do not need to explicitly
-copy the data into their own memory space. When using pipes, *MRtrix3*
-applications will simply generate a temporary file and feed its filename
-through to the next stage once their processing is done. The next
-program in the pipeline will then simply read this filename and access
-the corresponding file. The latter program is then responsible for
-deleting the temporary file once its processing is done.
+The procedure used in *MRtrix3* to feed data sets down a pipeline is somewhat
+different from the more traditional use of pipes. Given the large amounts of
+data typically contained in a data set, the 'standard' practice of feeding the
+entire data set through the pipe would be prohibitively inefficient. *MRtrix3*
+applications access the data via memory-mapping (when this is possible), and do
+not need to explicitly copy the data into their own memory space. When using
+pipes, *MRtrix3* applications will simply generate a temporary file and feed
+its filename through to the next stage once their processing is done. The next
+program in the pipeline will then simply read this filename and access the
+corresponding file. The latter program is then responsible for deleting the
+temporary file once its processing is done.
 
 This implies that any errors during processing may result in undeleted
-temporary files. By default, these will be created within the ``/tmp``
-folder (on Unix, or the current folder on Windows) with a filename of
-the form ``mrtrix-tmp-XXXXXX.xyz`` (note this can be changed by
-specifying a custom ``TmpFileDir`` and ``TmpFilePrefix`` in the :ref:`mrtrix_config`). 
-If a piped command has failed, and no other *MRtrix* programs are currently running, these can be safely deleted.
+temporary files. By default, these will be created within the ``/tmp`` folder
+(on Unix, or the current folder on Windows) with a filename of the form
+``mrtrix-tmp-XXXXXX.xyz`` (note this can be changed by specifying a custom
+``TmpFileDir`` and ``TmpFilePrefix`` in the :ref:`mrtrix_config`).  If a piped
+command has failed, and no other *MRtrix* programs are currently running, these
+can be safely deleted.
 
 *Really* advanced pipeline usage
-'''''''''''''''''''''''''''''''''''''''''
+''''''''''''''''''''''''''''''''
 
 As implemented, *MRtrix3* commands treat image file names that start with
 the ``TmpFilePrefix`` (default is ``mrtrix-tmp-``) as temporary. When
@@ -185,7 +187,7 @@ image file name will trivially match this. But this also means that it
 is possible to provide such a file as a normal *argument*, and it will
 be treated as a temporary *piped* image. For example:
 
-.. code:: 
+.. code-block:: console
 
     $ mrconvert /data/DICOM/ -datatype float32 -
     mrconvert: [done] scanning DICOM folder "/data/DICOM/"
@@ -201,7 +203,7 @@ this file is now present in the ``/tmp`` folder. You can use this file
 by copy/pasting it as an *argument* to another *MRtrix* command (be
 careful though, it will be deleted once this command exits):
 
-.. code:: 
+.. code-block:: console
 
     $ mrstats /tmp/mrtrix-tmp-zcD1nr.mif
             channel         mean       median    std. dev.          min          max       count
@@ -216,7 +218,7 @@ pipeline as an argument into a second pipeline. In BASH, output capture
 is achieved using the ``$(commands)`` syntax, or equivalently using
 backticks: ```commands```. For example:
 
-.. code:: 
+.. code-block:: console
 
     $ dwi2tensor /data/DICOM/ - | tensor2metric - -mask $(dwi2mask /data/DICOM/ - | maskfilter - erode -npass 3 - ) -vec ev.mif -fa - | mrthreshold - -top 300 highFA.mif
     dwi2mask: [done] scanning DICOM folder "/data/DICOM/"
@@ -240,9 +242,7 @@ backticks: ```commands```. For example:
     mrthreshold: [100%] thresholding "/tmp/mrtrix-tmp-UHvhc2.mif" at 300th top voxel...
 
 In this one command, we asked the system to perform this non-linear
-pipeline:
-
-::
+pipeline::
 
                   dwi2tensor \  
                               |--> tensor2metric  ---> mrthreshold

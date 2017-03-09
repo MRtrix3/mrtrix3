@@ -133,7 +133,7 @@ Querying the DW gradient table
 As mentioned above, *MRtrix3* will use the DW gradient table from the image
 headers when it is available. Currently, only the :ref:`dicom_format` and
 :ref:`mrtrix_image_formats` support this. The DW gradient table can be queried
-for any particular image using the ``mrinfo`` command in combination with the
+for any particular image using the :ref:`mrinfo` command in combination with the
 ``-dwgrad`` option. For example:
 
 .. code-block:: console
@@ -258,12 +258,12 @@ for details.
 
 Note that in this operation, what matters is the transform as stored in the
 NIfTI headers (i.e. the ``sform`` / ``qform``); the transform as reported by
-``mrinfo`` can differ substantially from this (while still being consistent
+:ref:`mrinfo` can differ substantially from this (while still being consistent
 with the data), as the *MRtrix3* image loading backend will try to provide the
 image transform in a near-axial orientation (by inverting / exchanging columns
 of the transform, and adjusting the :ref:`strides` to match - see
 :ref:`transform` for details). To find out the actual transform that
-was stored in the NIfTI header, use ``mrinfo`` with the ``-norealign`` option.
+was stored in the NIfTI header, use :ref:`mrinfo` with the ``-norealign`` option.
 
 
 When copying or converting
@@ -295,21 +295,23 @@ These include:
 - verifying that the number of volumes in the DWI dataset matches the number of
   entries in the DW gradient table;
 - where relevant, verifying that the DW gradient tables contains the data in a
-  shell structure, by clustering similar *b*-values together (see ``mrinfo``'s
+  shell structure, by clustering similar *b*-values together (see :ref:`mrinfo`'s
   ``-shell`` and ``-shellcount`` options);
 - normalising the gradient vectors to unit amplitude;
 - scaling the *b*-values by the square of the gradient vector amplitude - see
   `b-value scaling`_ for details. 
 
-Note that ``mrinfo`` will also perform most of these checks. While there is no
-technical reason for it to interpret the DW gradient information, in practice
-it is generally helpful to view the information as it would be interpreted by
-other *MRtrix3* applications. If this is not desired, you can add the
-``-raw_dwgrad`` option to ``mrinfo`` to disable these modifications when
-querying the DW gradient table. 
+.. NOTE::
 
-b-value scaling
----------------
+  :ref:`mrinfo` will also perform most of these checks. While there is no
+  technical reason for it to interpret the DW gradient information, in practice
+  it is generally helpful to view the information as it would be interpreted by
+  other *MRtrix3* applications. If this is not desired, you can add the
+  ``-raw_dwgrad`` option to :ref:`mrinfo` to disable these modifications when
+  querying the DW gradient table. 
+
+*b*-value scaling
+-----------------
 
 On MRI scanners that do not explicitly allow for multi-shell datasets, a
 common workaround is to set the scanning protocol according to the largest

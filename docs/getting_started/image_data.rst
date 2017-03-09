@@ -1,3 +1,5 @@
+.. _image_handling:
+
 Images and other data
 =====================
 
@@ -480,9 +482,7 @@ list below, along with the expected format of the corresponding values.
    first 12 such values will be used to fill the first 3 rows of the
    transform matrix. Multiple such entries can be provided to fill the
    matrix; for example, *MRtrix3* will normally produce 3 lines for the
-   transform, with one row of 4 values per entry:
-
-   ::
+   transform, with one row of 4 values per entry::
 
        transform: 0.997986,-0.0541156,-0.033109,-74.0329
        transform: 0.0540858,0.998535,-0.00179436,-100.645
@@ -503,7 +503,7 @@ particular command).
 
 There are some keys that are utilized by particular *MRtrix3* commands
 in order to preserve important information as image data are passed
-between commands. A prominent example is "``dw_scheme``", which is used
+between commands. A prominent example is ``dw_scheme``, which is used
 to embed the diffusion gradient table within the :ref:`embedded_dw_scheme`.
 
 
@@ -620,9 +620,10 @@ interoperation with other packages such as `SPM <http://www.fil.ion.ucl.ac.uk/sp
 or `FSL <http://fsl.fmrib.ox.ac.uk/fsl/>`__. 
 
 .. NOTE::
-if both qform and sform orientation fields are present, the qform fields are
-ignored. Obviously, the qform fields will be used if they are present on their
-own.
+
+  if both qform and sform orientation fields are present, the qform fields are
+  ignored. Obviously, the qform fields will be used if they are present on
+  their own.
 
 
 .. _compressed_nifti_format:
@@ -671,7 +672,7 @@ appropriately according to the standard.
 
 .. WARNING::
   By default, Analyse format images will be assumed to be stored using RAS
-  (radiological) convention. This can modified in the `configuration`_ file, by
+  (radiological) convention. This can modified in the :ref:`mrtrix_config` file, by
   setting the ``Analyse.LeftToRight`` entry to ``true``.
 
 
