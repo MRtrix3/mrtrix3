@@ -171,15 +171,7 @@ term_t MACT_Method_additions::check_structural( const Eigen::Vector3f& old_pos,
     }
     else if ( tissue->type() == CBL_GM )
     {
-      if ( intersections.count() > 1 &&
-           intersections.intersection( 1 )._tissue->type() == CBL_WM )
-      {
-        return ENTER_CGM;
-      }
-      else
-      {
-        return ENTER_EXCLUDE;
-      }
+      return _sceneModeller->inTissue( from, CBL_WM ) ? ENTER_CGM : ENTER_EXCLUDE;
     }
   }
   if ( !_sceneModeller->boundingBox().contains( to ) )
@@ -199,7 +191,9 @@ bool MACT_Method_additions::check_seed( Eigen::Vector3f& pos )
   Eigen::Vector3d p = pos.cast< double >();
   _sgm_depth = 0;
 
-  if ( _sceneModeller->inTissue( p, CSF ) )
+  if ( _sceneModeller->inTissue( p, CSF ) ||
+       _sceneModeller->inTissue( p, CBL_GM )
+       /*currently disable seeding inside cerebellum GM*/ )
   {
     return false;
   }
