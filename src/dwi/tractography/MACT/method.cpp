@@ -162,15 +162,23 @@ term_t MACT_Method_additions::check_structural( const Eigen::Vector3f& old_pos,
     }
     // method for preventing tracks jumping from brain stem to outer cerebellum
     else if ( tissue->type() == CBL_WM )
-    {
+    { 
       if ( intersections.count() > 1 &&
            intersections.intersection( 1 )._tissue->type() == CBL_GM )
       {
         return ENTER_CGM;
       }
+      if ( _sceneModeller->inTissue( to, CBL_GM ) )
+      {
+        return ENTER_EXCLUDE;
+      }
     }
     else if ( tissue->type() == CBL_GM )
     {
+      if ( _sceneModeller->inTissue( from, CBL_GM ) )
+      {
+        return ENTER_EXCLUDE;
+      }
       return _sceneModeller->inTissue( from, CBL_WM ) ? ENTER_CGM : ENTER_EXCLUDE;
     }
   }
