@@ -53,7 +53,9 @@ gradient table file might look like this:
  
 It is important to note that in this format, the direction vectors are assumed
 to be provided with respect to *real* or *scanner* coordinates. This is the same
-convention as is used in the DICOM format.
+convention as is used in the DICOM format. Also note that the file does not
+need to have the file type extension "``.b``"; this is simply a historical
+convention.
 
 .. _embedded_dw_scheme:
 
@@ -79,10 +81,10 @@ use of the :ref:`mrtrix_image_formats` whenever possible.
 
 This embedding is achieved by writing an entry into the Image
 :ref:`header_keyvalue_pairs_, using the key "``dw_scheme``". The value of this
-entry is the complete diffusion gradient table, stored in the `MRtrix file format`_.
+entry is the complete diffusion gradient table, stored in the `MRtrix format`_.
 However, this entry should generally *not be accessed or manipulated directly*
 by users; instead, users should rely on the internal handling of these data as
-performed by *MRtrix3* commands, or where relevant, use the relevant interface
+performed by *MRtrix3* commands, or where relevant, use the command-line
 options provided as part of specific *MRtrix3 commands*, as detailed later.
 
 FSL format
@@ -96,10 +98,6 @@ floating-point values, with the first row corresponding to the *x*-component
 of the DW gradient vectors, one value per volume in the dataset; the second
 row corresponding to the *y*-component, and the third row to the *z*-component.
 A typical pair of FSL format DW gradient files might look like:
-
-**bvals**::
-
-  0 0 3000 3000 3000 3000 3000 3000 3000 3000 3000 3000 ...
  
 **bvecs**::
 
@@ -107,6 +105,9 @@ A typical pair of FSL format DW gradient files might look like:
   0 0 -0.002606397951389 -0.97091525561761 -0.846605326714759  0.615840299891175 0.403330065122241 -0.70377676751476 -0.67378508548543 -0.971399047063277 -0.513131073140676 -0.423391107245363 0 -0.416501756655988 ...
   0 0 -0.999996760803023  0.23942421337746  0.059831733802001 -0.101684552642539 0.914942902775223  0.60776414747636 -0.32201498900359  0.007004078617919 -0.464317089148873  0.212157919445896 0 -0.263255013300656 ...
 
+**bvals**::
+
+  0 0 3000 3000 3000 3000 3000 3000 3000 3000 3000 3000 ...
 
 It is important to note that in this format, the gradient vectors are provided
 *with respect to the image axes*, **not** in real or scanner coordinates
@@ -231,9 +232,11 @@ rotation part of the transform (i.e. the top-left 3×3 part of the matrix). This
 will introduce differences between the components of the gradient vectors when
 stored in `MRtrix format`_ compared to the `FSL format`_, particularly for images
 not acquired in a pure axial orientation (i.e. images where the rotation part of
-the image transform is identity). Additionally, this rotation must take into
-account that the `FSL format`_ assumes a left-handed coordinate system, regardless
-of the handed-ness of the image with which it is associated.
+the image transform is identity). Indeed, as mentioned earlier, there is an
+additional confound related to the handed-ness of the coordinate system; see the
+`FSL wiki
+<https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FDT/FAQ#What_conventions_do_the_bvecs_use.3F>`_
+for details.
 
 .. warning:: **Never** perform a manual conversion between MRtrix and FSL
    gradient table formats using a text editor or basic shell script. This
@@ -246,7 +249,7 @@ NIfTI headers (i.e. the ``sform`` / ``qform``); the transform as reported by
 with the data), as the *MRtrix3* image loading backend will try to provide the
 image transform in a near-axial orientation (by inverting / exchanging columns
 of the transform, and adjusting the :ref:`strides` to match - see
-:ref:`transform`_ for details). To find out the actual transform that
+:ref:`transform` for details). To find out the actual transform that
 was stored in the NIfTI header, use ``mrinfo`` with the ``-norealign`` option.
 
 
@@ -260,11 +263,12 @@ will be written to the output image header if the image format supports it
 (i.e. if the output is in :ref:`mrtrix_image_formats` - DICOM is not supported
 for writing). If the DW gradient table is imported via the ``-grad`` or
 ``-fslgrad`` option, it will also be passed through as-is (although including
-the modifications mentioned above `When using the FSL format`_). If the output
-format does not allow storing the DW gradient table in the image header, the
-``-export_grad_mrtrix`` or ``-export_grad_fsl`` options can be used to write it
-out to separate files, ready for use with third-party applications, or directly
-within *MRtrix3* if users prefer to keep their data organised in this way. 
+the modifications mentioned above in the `When using the FSL format`_ section).
+If the output image format does not allow storing the DW gradient table in the
+image header, the ``-export_grad_mrtrix`` or ``-export_grad_fsl`` options can
+be used to write it out to separate files, ready for use with third-party
+applications, or directly within *MRtrix3* if users prefer to keep their data
+organised in this way. 
 
 
 When using the information for processing
@@ -314,8 +318,9 @@ vectors file, now nominally containing only *b* = 0 and *b* = 2800 s/mm²::
   1    0    0 2800
 
 By default, *MRtrix3* applications will **automatically** scale the *b*-values
-by the squared amplitude of the gradient vectors, in order to more sensibly
-reflect the nature of the image data.
+by the squared amplitude of the gradient vectors (so that the stored gradient
+table is equivalent to the first example), in order to more sensibly reflect
+the nature of the image data.
 
 While this scaling allows such datasets to be processed seamlessly, it will
 introduce minor variations in the *b*-values for other datasets, due to minor
@@ -324,6 +329,4 @@ and have no consequence on the correct operation of *MRtrix3* applications,
 since the deviations are typically very small, and the strategy used to group
 *b*-values into shells is robust to such variations. If however this becomes a
 problem (e.g. for third-party applications), this feature can be disabled
-using the ``-bvalue_scaling 0`` option for those applications that support it.
-In addition, relevant commands have the option ``-bvalue_scaling`` that will
-bypass this particular process.
+using the ``-bvalue_scaling`` option for those applications that support it.
