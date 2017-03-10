@@ -1,0 +1,33 @@
+name: mrview
+version: master
+summary: set of tools to perform various advanced diffusion MRI analyses
+description: |
+  MRtrix provides a set of tools to perform various advanced diffusion MRI
+  analyses, including constrained spherical deconvolution (CSD), probabilistic
+  tractography, track-density imaging, and apparent fibre density
+
+grade: devel # must be 'stable' to release into candidate/stable channels
+confinement: strict
+
+apps:
+  mrview:
+    command: desktop-launch mrview
+    plugs: [unity7, opengl, home]
+
+parts:
+  mrtrix:
+    source: .
+    plugin: nil
+    build: |
+      ./configure
+      ./build
+    install: mv release/* $SNAPCRAFT_PART_INSTALL
+    build-packages:
+      - g++
+      - python
+      - python-numpy
+      - libeigen3-dev
+      - zlib1g-dev
+      - libqt4-opengl-dev
+      - libgl1-mesa-dev
+    after: [desktop-qt4]
