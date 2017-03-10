@@ -23,6 +23,7 @@ List of MRtrix3 commands
 
 " > reference/commands_list.rst
 
+  rm -rf   reference/commands
   mkdir -p reference/commands
   toctree_file=$(mktemp)
   table_file=$(mktemp)
@@ -66,6 +67,7 @@ List of MRtrix3 scripts
 
 " > reference/scripts_list.rst
 
+  rm -rf   reference/scripts
   mkdir -p reference/scripts
   toctree_file=$(mktemp)
   table_file=$(mktemp)
