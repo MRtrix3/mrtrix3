@@ -279,10 +279,11 @@ void run ()
   opt = get_options ("clear_property");
   for (size_t n = 0; n < opt.size(); ++n) {
     auto entry = header_out.keyval().find (opt[n][0]);
-    if (entry == header_out.keyval().end()) 
+    if (entry == header_out.keyval().end()) {
       WARN ("No header key/value entry \"" + opt[n][0] + "\" found; ignored");
-    else 
+    } else {
       header_out.keyval().erase (entry);
+    }
   }
 
   opt = get_options ("set_property");

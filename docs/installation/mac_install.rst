@@ -1,10 +1,9 @@
-=============
 macOS installation
-=============
+==================
 
 We outline the steps for installing *MRtrix3* on macOS. Please consult 
-:ref:`mac_trouble_shooting` if you encounter any issues with the configure, build
-or runtime operations of *MRtrix3*.
+the `MRtrix3 forum <http://community.mrtrix.org/>`__ if you encounter any issues
+with the configure, build or runtime operations of *MRtrix3*.
 
 Check requirements
 ------------------
@@ -20,13 +19,15 @@ To install *MRtrix3* , you will need the following:
    important: versions prior to this will *not* work
 
 .. WARNING:: 
+
     To run the GUI components of *MRtrix3*  (``mrview`` & ``shview``), you will also need:
 
-    -  an `OpenGL <https://en.wikipedia.org/wiki/OpenGL>`__ 3.3 compliant
+    - an `OpenGL <https://en.wikipedia.org/wiki/OpenGL>`__ 3.3 compliant
       graphics card and corresponding software driver - thankfully OpenGL 3.3
       is supported across the entire macOS range with OS versions >= 10.9.
     
 .. NOTE:: 
+
     If you currently do not plan to contribute to the *MRtrix3* code, the most
     convenient way to install Mrtrix3 on macOS is to install it via homebrew. 
  
@@ -67,12 +68,14 @@ Install Dependencies
    <http://community.mrtrix.org>`__ if needed for advice and troubleshooting. 
 
    - With `Homebrew <http://brew.sh/>`__:
+
        - Install Eigen3: ``brew install eigen``
        - Install Qt5: ``brew install qt5``
        - Install pkg-config: ``brew install pkg-config``
        - Add Qt's binaries to your path: ``export PATH=`brew --prefix`/opt/qt5/bin:$PATH``
       
    - With `MacPorts <http://macports.org/>`__:
+
        - Install Eigen3: ``port install eigen3``
        - Install Qt5: ``port install qt5``
        - Install pkg-config: ``port install pkgconfig``
@@ -81,6 +84,7 @@ Install Dependencies
    - As a last resort, you can manually install Eigen3 and Qt5:
      You can use this procedure if you have good reasons to avoid the other options, or if for some reason 
      you cannot get either `Homebrew <http://brew.sh/>`__ or `MacPorts <http://macports.org/>`__ to work.
+
        - Install Eigen3: download and extract the source code from `eigen.tuxfamily.org <http://eigen.tuxfamily.org/>`__ 
        - Install Qt5: download and install the latest version from `<http://download.qt.io/official_releases/qt/>`__ 
            You need to select the file labelled ``qt-opensource-mac-x64-clang-5.X.X.dmg``.
@@ -103,7 +107,7 @@ Set up your git environment as per the `Git instructions
 page <https://help.github.com/articles/set-up-git/#setting-up-git>`__
 
 Build *MRtrix3* 
--------------
+---------------
 
 1. Clone the *MRtrix3*  repository::
 
@@ -127,7 +131,7 @@ Build *MRtrix3*
        ./build
 
 Set up *MRtrix3* 
---------------
+----------------
 
 1. Update the shell startup file, so that the shell can locate the *MRtrix3*
    commands and scripts, by adding the ``bin/`` folder to your ``PATH``
@@ -149,19 +153,18 @@ Set up *MRtrix3*
    and set anything you think might be required on your system.
    
   .. NOTE:: 
+
     The above assumes that your shell will read the ``~/.bash_profile`` file
     at startup time. This is not always guaranteed, depending on how your
     system is configured. If you find that the above doesn't work (e.g. typing
     ``mrview`` returns a 'command not found' error), try changing step 1 to
     instruct the ``set_path`` script to update ``PATH`` within a different
-    file, for example ``~/.profile`` or ``~/.bashrc``, e.g. as follows:
-
-    ::
+    file, for example ``~/.profile`` or ``~/.bashrc``, e.g. as follows::
 
       ./set_path ~/.profile
 
 Keeping *MRtrix3* up to date
---------------------------
+----------------------------
 
 1. You can update your installation at any time by opening a terminal,
    navigating to the *MRtrix3* folder (e.g. ``cd mrtrix3``), and typing::
