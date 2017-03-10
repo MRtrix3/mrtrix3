@@ -77,6 +77,24 @@ void usage ()
             "effect for floating-point and binary images.")
   + Argument ("values").type_sequence_float()
 
+
+  + OptionGroup ("Modify generic header entries")
+
+  + Option ("clear_property", 
+            "remove the specified key from the image header altogether.").allow_multiple()
+  + Argument ("key").type_text()
+
+  + Option ("set_property", 
+            "set the value of the specified key in the image header.").allow_multiple()
+  + Argument ("key").type_text()
+  + Argument ("value").type_text()
+
+  + Option ("append_property", 
+            "append the given value to the specified key in the image header (this adds the value specified as a new line in the header value).").allow_multiple()
+  + Argument ("key").type_text()
+  + Argument ("value").type_text()
+
+
   + Stride::Options
 
   + DataType::options()
@@ -210,10 +228,23 @@ void run ()
   if (header_in.datatype().is_complex() && !header_out.datatype().is_complex())
     WARN ("requested datatype is real but input datatype is complex - imaginary component will be ignored");
 
+  auto opt = get_options ("clear_property");
+  for (size_t n = 0; n < opt.size(); ++n) 
+    header_out.keyval().erase (opt[n][0].as_text());
+
+  opt = get_options ("set_property");
+  for (size_t n = 0; n < opt.size(); ++n) 
+    header_out.keyval()[opt[n][0].as_text()] = opt[n][1].as_text();
+
+  opt = get_options ("append_property");
+  for (size_t n = 0; n < opt.size(); ++n) 
+    add_line (header_out.keyval()[opt[n][0].as_text()], opt[n][1].as_text());
+
+
   if (get_options ("grad").size() || get_options ("fslgrad").size())
     DWI::set_DW_scheme (header_out, DWI::get_DW_scheme (header_in));
 
-  auto opt = get_options ("coord");
+  opt = get_options ("coord");
   std::vector<std::vector<int>> pos;
   if (opt.size()) {
     pos.assign (header_in.ndim(), std::vector<int>());
