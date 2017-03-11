@@ -108,6 +108,10 @@ class Matrix
 
 
 
+extern template class Matrix<float>;
+extern template class Matrix<double>;
+
+
 
 
 
