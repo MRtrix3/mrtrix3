@@ -69,7 +69,7 @@ namespace MR
               unidirectional (false),
               rk4 (false),
               stop_on_all_include (false),
-              implicit_max_num_attempts (properties.find ("max_num_attempts") == properties.end()),
+              implicit_max_num_seeds (properties.find ("max_num_seeds") == properties.end()),
               downsampler ()
 #ifdef DEBUG_TERMINATIONS
             , debug_header (Header::open (properties.find ("act") == properties.end() ? diff_path : properties["act"])),
@@ -88,8 +88,8 @@ namespace MR
                 init_threshold = threshold;
                 properties.set (init_threshold, "init_threshold");
 
-                max_num_attempts = 100 * max_num_tracks;
-                properties.set (max_num_attempts, "max_num_attempts");
+                max_num_seeds = 100 * max_num_tracks;
+                properties.set (max_num_seeds, "max_num_seeds");
 
                 assert (properties.seeds.num_seeds());
                 max_seed_attempts = properties.seeds[0]->get_max_attempts();
@@ -172,7 +172,7 @@ namespace MR
                   case TRAVERSE_ALL_INCLUDE: term_type = "Traversed all include regions"; to_print = stop_on_all_include; break;
                 }
                 if (to_print)
-                  INFO ("  " + term_type + ": " + str (100.0 * terminations[i] / (double)sum_terminations) + "\%");
+                  INFO ("  " + term_type + ": " + str (100.0 * terminations[i] / (double)sum_terminations, 3) + "\%");
               }
 
               INFO ("Track rejection counts:");
@@ -205,11 +205,11 @@ namespace MR
             Image<float> source;
             Properties& properties;
             Eigen::Vector3f init_dir;
-            size_t max_num_tracks, max_num_attempts, min_num_points, max_num_points;
+            size_t max_num_tracks, max_num_seeds, min_num_points, max_num_points;
             float max_angle, max_angle_rk4, cos_max_angle, cos_max_angle_rk4;
             float step_size, threshold, init_threshold;
             size_t max_seed_attempts;
-            bool unidirectional, rk4, stop_on_all_include, implicit_max_num_attempts;
+            bool unidirectional, rk4, stop_on_all_include, implicit_max_num_seeds;
             DWI::Tractography::Resampling::Downsampler downsampler;
 
             // Additional members for ACT

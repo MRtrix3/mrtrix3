@@ -26,7 +26,7 @@ Options
 Streamlines tractography options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-select number** set the desired number of streamlines to be selected by tckgen, after all selection criteria have been applied (i.e. inclusion/exclusion ROIs, min/max length, etc). tckgen will keep seeding streamlines until this number of streamlines have been selected, or the maximum allowed number of seeds has been exceeded (see -max_seeds option). By default, 1000 streamlines are to be selected.
+-  **-select number** set the desired number of streamlines to be selected by tckgen, after all selection criteria have been applied (i.e. inclusion/exclusion ROIs, min/max length, etc). tckgen will keep seeding streamlines until this number of streamlines have been selected, or the maximum allowed number of seeds has been exceeded (see -max_seeds option). By default, 1000 streamlines are to be selected. Set to zero to disable, which will result in streamlines being seeded until the number specified by -seeds has been reached.
 
 -  **-step size** set the step size of the algorithm in mm (default is 0.1 x voxelsize; for iFOD2: 0.5 x voxelsize).
 
@@ -52,8 +52,8 @@ Streamlines tractography options
 
 -  **-downsample factor** downsample the generated streamlines to reduce output file size (default is (samples-1) for iFOD2, no downsampling for all other algorithms)
 
-Tractography seeding options
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Tractography seeding mechanisms; at least one must be provided
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-seed_image image** seed streamlines entirely at random within a mask image 
 
@@ -69,17 +69,18 @@ Tractography seeding options
 
 -  **-seed_dynamic fod_image** determine seed points dynamically using the SIFT model (must not provide any other seeding mechanism). Note that while this seeding mechanism improves the distribution of reconstructed streamlines density, it should NOT be used as a substitute for the SIFT method itself.
 
+Tractography seeding options and parameters
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-seeds number** set the maximum number of seeds that tckgen will attempt to track from. This is used to prevent the program from running indefinitely when no streamlines can be found that match the selection criteria. By default, this is set to 100× the number of selected streamlines. Set to zero to disable, which will result in streamlines being generated until the number specified by -select has been reached.
+
+-  **-max_seed_attempts number** set the maximum number of times that the tracking algorithm should attempt to find an appropriate tracking direction from a given seed point
+
 -  **-seed_cutoff value** set the minimum FA or FOD amplitude for seeding tracks (default is the same as the normal -cutoff).
 
 -  **-seed_unidirectional** track from the seed point in one direction only (default is to track in both directions).
 
 -  **-seed_direction dir** specify a seeding direction for the tracking (this should be supplied as a vector of 3 comma-separated values.
-
--  **-max_seeds number** set the maximum number of seeds that tckgen will attempt to track from. This is used to prevent the program from running indefinitely when no streamlines can be found that match the selection criteria. By default, this is set to 100× the number of selected streamlines. Set to zero to disable, which will result in streamlines being generated until the number specified by -select has been reached.
-
--  **-num_seeds number** set the number of seeds that tckgen will attempt to track from. This overrides both -select and -max_seeds. Use this option if you genuinely need a constant number of seeds rather than selected streamlines. However, note that in most cases, the -seed_random_per_voxel or -seed_grid_per_voxel options are likely to be more appropriate.
-
--  **-max_seed_attempts number** set the maximum number of times that the tracking algorithm should attempt to find an appropriate tracking direction from a given seed point
 
 -  **-output_seeds path** output the seed location of all successful streamlines to a file
 

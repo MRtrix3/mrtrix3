@@ -125,7 +125,9 @@ void usage ()
 
   + DWI::Tractography::Tracking::TrackOption
 
-  + DWI::Tractography::Seeding::SeedOption
+  + DWI::Tractography::Seeding::SeedMechanismOption
+
+  + DWI::Tractography::Seeding::SeedParameterOption
 
   + DWI::Tractography::ROIOption
 
@@ -156,7 +158,8 @@ void run ()
 
   ACT::load_act_properties (properties);
 
-  Seeding::load_tracking_seeds (properties);
+  Seeding::load_seed_mechanisms (properties);
+  Seeding::load_seed_parameters (properties);
 
   // Check validity of options -number and -maxnum; these are meaningless if seeds are number-limited
   // By over-riding the values in properties, the progress bar should still be valid

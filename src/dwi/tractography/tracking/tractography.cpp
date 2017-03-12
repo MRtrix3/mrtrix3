@@ -35,7 +35,10 @@ namespace MR
             "tckgen will keep seeding streamlines until this number of "
             "streamlines have been selected, or the maximum allowed "
             "number of seeds has been exceeded (see -max_seeds option). "
-            "By default, 1000 streamlines are to be selected.")
+            "By default, 1000 streamlines are to be selected. "
+            "Set to zero to disable, which will result in streamlines "
+            "being seeded until the number specified by -seeds has been "
+            "reached.")
           + Argument ("number").type_integer (0)
 
       + Option ("step",

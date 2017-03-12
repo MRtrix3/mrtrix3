@@ -31,7 +31,7 @@ namespace MR
 
       using namespace App;
 
-      const OptionGroup SeedOption = OptionGroup ("Tractography seeding options")
+      const OptionGroup SeedMechanismOption = OptionGroup ("Tractography seeding mechanisms; at least one must be provided")
 
       + Option ("seed_image", "seed streamlines entirely at random within a mask image ").allow_multiple()
         + Argument ("image").type_image_in()
@@ -59,41 +59,36 @@ namespace MR
       + Option ("seed_dynamic", "determine seed points dynamically using the SIFT model (must not provide any other seeding mechanism). "
                                 "Note that while this seeding mechanism improves the distribution of reconstructed streamlines density, "
                                 "it should NOT be used as a substitute for the SIFT method itself.") // Don't allow multiple
-        + Argument ("fod_image").type_image_in()
+        + Argument ("fod_image").type_image_in();
+
+
+
+
+      const OptionGroup SeedParameterOption = OptionGroup ("Tractography seeding options and parameters")
+
+      + Option ("seeds", "set the maximum number of seeds that tckgen will attempt "
+                         "to track from. This is used to prevent the program from "
+                         "running indefinitely when no streamlines can be found that "
+                         "match the selection criteria. By default, this is set to "
+                         "100× the number of selected streamlines. Set to zero to "
+                         "disable, which will result in streamlines being generated "
+                         "until the number specified by -select has been reached.")
+        + Argument ("number").type_integer (0)
+
+      + Option ("max_seed_attempts", "set the maximum number of times that the tracking algorithm should "
+                                     "attempt to find an appropriate tracking direction from a given seed point")
+        + Argument ("number").type_integer (1)
 
       + Option ("seed_cutoff", "set the minimum FA or FOD amplitude for seeding tracks "
                                "(default is the same as the normal -cutoff).")
-          + Argument ("value").type_float (0.0)
+        + Argument ("value").type_float (0.0)
 
       + Option ("seed_unidirectional","track from the seed point in one direction only (default is to "
                                       "track in both directions).")
 
       + Option ("seed_direction","specify a seeding direction for the tracking (this should be "
                                  "supplied as a vector of 3 comma-separated values.")
-          + Argument ("dir").type_sequence_float()
-
-      + Option ("max_seeds", "set the maximum number of seeds that tckgen will attempt "
-                             "to track from. This is used to prevent the program from "
-                             "running indefinitely when no streamlines can be found that "
-                             "match the selection criteria. By default, this is set to "
-                             "100× the number of selected streamlines. Set to zero to "
-                             "disable, which will result in streamlines being generated "
-                             "until the number specified by -select has been reached.")
-          + Argument ("number").type_integer (0)
-
-
-      + Option ("num_seeds", "set the number of seeds that tckgen will attempt to track from. "
-                             "This overrides both -select and -max_seeds. Use this option if you "
-                             "genuinely need a constant number of seeds rather than selected streamlines. "
-                             "However, note that in most cases, the -seed_random_per_voxel or "
-                             "-seed_grid_per_voxel options are likely to be more appropriate.")
-          + Argument ("number").type_integer (0)
-
-
-      + Option ("max_seed_attempts", "set the maximum number of times that the tracking algorithm should "
-                                     "attempt to find an appropriate tracking direction from a given seed point")
-        + Argument ("number").type_integer (1)
-
+        + Argument ("dir").type_sequence_float()
 
       + Option ("output_seeds", "output the seed location of all successful streamlines to a file")
         + Argument ("path").type_file_out();
@@ -104,9 +99,8 @@ namespace MR
 
 
 
-      void load_tracking_seeds (Properties& properties)
+      void load_seed_mechanisms (Properties& properties)
       {
-
         List& list (properties.seeds);
 
         auto opt = get_options ("seed_image");
@@ -156,9 +150,21 @@ namespace MR
           if (list.num_seeds())
             throw Exception ("If performing dynamic streamline seeding, cannot specify any other type of seed!");
           properties["seed_dynamic"] = str(opt[0][0]);
-        } else if (!list.num_seeds()) {
-          throw Exception ("Must provide at least one source of streamline seeds!");
         }
+
+        if (!list.num_seeds())
+          throw Exception ("Must provide at least one source of streamline seeds!");
+      }
+
+
+
+      void load_seed_parameters (Properties& properties)
+      {
+        auto opt = get_options ("seeds");
+        if (opt.size()) properties["max_num_seeds"] = str<unsigned int> (opt[0][0]);
+
+        opt = get_options ("max_seed_attempts");
+        if (opt.size()) properties["max_seed_attempts"] = str<unsigned int> (opt[0][0]);
 
         opt = get_options ("seed_cutoff");
         if (opt.size()) properties["init_threshold"] = std::string (opt[0][0]);
@@ -169,23 +175,9 @@ namespace MR
         opt = get_options ("seed_direction");
         if (opt.size()) properties["init_direction"] = std::string (opt[0][0]);
 
-        opt = get_options ("max_seeds");
-        if (opt.size()) properties["max_num_attempts"] = str<unsigned int> (opt[0][0]);
-        
-        opt = get_options ("num_seeds");
-        if (opt.size()) properties["exact_num_attempts"] = str<unsigned int> (opt[0][0]);
-        //TODO: This property is not being used by any algorithm in practice yet.
-
-        opt = get_options ("max_seed_attempts");
-        if (opt.size()) properties["max_seed_attempts"] = str<unsigned int> (opt[0][0]);
-
         opt = get_options ("output_seeds");
         if (opt.size()) properties["seed_output"] = std::string (opt[0][0]);
-
       }
-
-
-
 
 
 

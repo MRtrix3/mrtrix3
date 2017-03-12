@@ -25,22 +25,26 @@
 // These constants set how many times a tracking algorithm should attempt to propagate
 //   from a given seed point, based on the mechanism used to provide the seed point
 //
+// Update 12/03/2017: By default a greater number of attempts will be made to
+//   find an appropriate direction in which to initiate tracking from all
+//   seeding mechanisms
+//
 // Mechanisms that provide random seed locations
-#define MAX_TRACKING_SEED_ATTEMPTS_RANDOM 1
+#define MAX_TRACKING_SEED_ATTEMPTS_RANDOM 100
 //
 // Dynamic seeding also provides the mean direction of the fixel, so only a small number of
 //   attempts should be required to find a direction above the FOD amplitude threshold;
 //   this will however depend on this threshold as well as the angular threshold
-#define MAX_TRACKING_SEED_ATTEMPTS_DYNAMIC 50
+#define MAX_TRACKING_SEED_ATTEMPTS_DYNAMIC 100
 //
 // GM-WM interface seeding incurs a decent overhead when generating the seed points;
 //   therefore want to make maximal use of each seed point generated, bearing in mind that
 //   the FOD amplitudes may be small there.
-#define MAX_TRACKING_SEED_ATTEMPTS_GMWMI 300
+#define MAX_TRACKING_SEED_ATTEMPTS_GMWMI 100
 //
 // Mechanisms that provide a fixed number of seed points; hence the maximum effort should
 //   be made to find an appropriate tracking direction from every seed point provided
-#define MAX_TRACKING_SEED_ATTEMPTS_FIXED 5000
+#define MAX_TRACKING_SEED_ATTEMPTS_FIXED 1000
 
 
 
