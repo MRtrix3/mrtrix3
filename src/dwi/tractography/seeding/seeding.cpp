@@ -150,10 +150,9 @@ namespace MR
           if (list.num_seeds())
             throw Exception ("If performing dynamic streamline seeding, cannot specify any other type of seed!");
           properties["seed_dynamic"] = str(opt[0][0]);
-        }
-
-        if (!list.num_seeds())
+        } else if (!list.num_seeds()) {
           throw Exception ("Must provide at least one source of streamline seeds!");
+        }
       }
 
 
