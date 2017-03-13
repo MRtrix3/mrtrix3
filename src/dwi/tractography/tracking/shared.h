@@ -15,6 +15,7 @@
 #ifndef __dwi_tractography_tracking_shared_h__
 #define __dwi_tractography_tracking_shared_h__
 
+#include <atomic>
 #include <vector>
 
 #include "header.h"
@@ -180,6 +181,7 @@ namespace MR
                 std::string reject_type;
                 bool to_print = false;
                 switch (i) {
+                  case INVALID_SEED:              reject_type = "Invalid seed point";              to_print = true;     break;
                   case NO_PROPAGATION_FROM_SEED:  reject_type = "No propagation from seed";        to_print = true;     break;
                   case TRACK_TOO_SHORT:           reject_type = "Shorter than minimum length";     to_print = true;     break;
                   case TRACK_TOO_LONG:            reject_type = "Longer than maximum length";      to_print = is_act(); break;
@@ -260,14 +262,14 @@ namespace MR
             virtual float internal_step_size() const { return step_size; }
 
 
-            void add_termination (const term_t i)   const { ++terminations[i]; }
-            void add_rejection   (const reject_t i) const { ++rejections[i]; }
+            void add_termination (const term_t i)   const { terminations[i].fetch_add (1, std::memory_order_relaxed); }
+            void add_rejection   (const reject_t i) const { rejections[i]  .fetch_add (1, std::memory_order_relaxed); }
 
 
 #ifdef DEBUG_TERMINATIONS
             void add_termination (const term_t i, const Eigen::Vector3f& p) const
             {
-              ++terminations[i];
+              terminations[i].fetch_add (1, std::memory_order_relaxed);
               Image<uint32_t> image (*debug_images[i]);
               const auto pv = transform.scanner2voxel * p.cast<default_type>();
               image.index(0) = ssize_t (std::round (pv[0]));
@@ -280,8 +282,8 @@ namespace MR
 
 
           private:
-            mutable size_t terminations[TERMINATION_REASON_COUNT];
-            mutable size_t rejections  [REJECTION_REASON_COUNT];
+            mutable std::atomic<size_t> terminations[TERMINATION_REASON_COUNT];
+            mutable std::atomic<size_t> rejections  [REJECTION_REASON_COUNT];
 
             std::unique_ptr<ACT::ACT_Shared_additions> act_shared_additions;
 

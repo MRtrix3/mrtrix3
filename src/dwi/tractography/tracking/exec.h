@@ -119,6 +119,7 @@ namespace MR
                 return false;
               if (track_excluded) {
                 item.set_status (GeneratedTrack::status_t::SEED_REJECTED);
+                S.add_rejection (INVALID_SEED);
                 return true;
               }
               gen_track (item);
@@ -190,30 +191,24 @@ namespace MR
                 if (!method.check_seed() || !method.init()) {
                   track_excluded = true;
                   tck.set_status (GeneratedTrack::status_t::SEED_REJECTED);
-                  return true;
                 }
+                return true;
 
               } else {
 
                 for (size_t num_attempts = 0; num_attempts != MAX_NUM_SEED_ATTEMPTS; ++num_attempts) {
                   if (S.properties.seeds.get_seed (method.pos, method.dir)) {
-                    if (method.check_seed() && method.init()) {
-                      break;
-                    } else {
+                    if (!(method.check_seed() && method.init())) {
                       track_excluded = true;
                       tck.set_status (GeneratedTrack::status_t::SEED_REJECTED);
-                      return true;
                     }
+                    return true;
                   }
                 }
-                if (!method.pos.allFinite()) {
-                  FAIL ("Failed to find suitable seed point after " + str (MAX_NUM_SEED_ATTEMPTS) + " attempts - aborting");
-                  return false;
-                }
+                FAIL ("Failed to find suitable seed point after " + str (MAX_NUM_SEED_ATTEMPTS) + " attempts - aborting");
+                return false;
 
               }
-              assert (0);
-              return true;
             }
 
 
