@@ -1,4 +1,3 @@
-============
 Key features
 ============
 
@@ -11,8 +10,8 @@ which will be invisible to the end-user. Specifically, *MRtrix3* features:
 -  a consistent :ref:`command-line interface <command-line-interface>`, with
    inline documentation for each command
 
--  universal import/export capabilities when :ref:`image_file_formats`
-   across all *MRtrix3* applications.
+-  universal import/export capabilities when 
+   :ref:`accessing image data <image_handling>` across all *MRtrix3* applications.
 
 -  :ref:`multi_file_image_file_formats` to load multiple images as a 
    single multi-dimensional dataset
