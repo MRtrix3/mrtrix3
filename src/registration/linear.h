@@ -415,14 +415,18 @@ namespace MR
                 stage_contrasts.push_back(mc);
               }
 
+              DEBUG ("before downsampling:");
               for (const auto & mc : stage_contrasts)
-                INFO (str(mc));
+                DEBUG (str(mc));
 
               INFO ("smoothing image 1");
               auto im1_smoothed = Registration::multi_resolution_lmax (im1_image, stage.scale_factor, do_reorientation, stage_contrasts);
               INFO ("smoothing image 2");
-              auto im2_smoothed = Registration::multi_resolution_lmax (im2_image, stage.scale_factor, do_reorientation, stage_contrasts);
+              auto im2_smoothed = Registration::multi_resolution_lmax (im2_image, stage.scale_factor, do_reorientation, stage_contrasts, &stage_contrasts);
 
+              DEBUG ("after downsampling:");
+              for (const auto & mc : stage_contrasts)
+                INFO (str(mc));
 
 
               Filter::Resize midway_resize_filter (midway_image_header);

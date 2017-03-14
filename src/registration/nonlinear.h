@@ -146,11 +146,15 @@ namespace MR
                 MultiContrastSetting mc (im1_image.size(3), do_reorientation, fod_lmax[level]);
                 stage_contrasts.push_back(mc);
               }
+
               for (const auto & mc : stage_contrasts)
-                INFO (str(mc));
+                DEBUG (str(mc));
 
               auto im1_smoothed = Registration::multi_resolution_lmax (im1_image, scale_factor[level], do_reorientation, stage_contrasts);
-              auto im2_smoothed = Registration::multi_resolution_lmax (im2_image, scale_factor[level], do_reorientation, stage_contrasts);
+              auto im2_smoothed = Registration::multi_resolution_lmax (im2_image, scale_factor[level], do_reorientation, stage_contrasts, &stage_contrasts);
+
+              for (const auto & mc : stage_contrasts)
+                INFO (str(mc));
 
               DEBUG ("Initialising scratch images");
               Header warped_header (midway_image_header_resized);

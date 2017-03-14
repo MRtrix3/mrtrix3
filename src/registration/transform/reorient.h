@@ -350,11 +350,11 @@ namespace MR
         if (multi_contrast_settings.size())
           start_nvols = multiContrastSetting2start_nvols (multi_contrast_settings, max_n_SH);
         if (start_nvols.size()) {
-          DEBUG ("NonLinearKernelMultiContrast");
+          DEBUG ("reorienting warp using MultiContrast NonLinearKernel");
           ThreadedLoop (progress_message, fod_image, 0, 3)
               .run (NonLinearKernelMultiContrast<FODImageType>(fod_image.size(3), (ssize_t) max_n_SH, warp, directions, start_nvols, modulate), fod_image);
         } else {
-          DEBUG ("NonLinearKernel");
+          DEBUG ("reorienting warp using NonLinearKernel");
           ThreadedLoop (progress_message, fod_image, 0, 3)
               .run (NonLinearKernel<FODImageType>(fod_image.size(3), warp, directions, modulate), fod_image);
         }
@@ -375,11 +375,11 @@ namespace MR
           start_nvols = multiContrastSetting2start_nvols (multi_contrast_settings, max_n_SH);
 
         if (start_nvols.size()) {
-          DEBUG ("NonLinearKernelMultiContrast");
+          DEBUG ("reorienting warp using MultiContrast NonLinearKernel");
           ThreadedLoop (fod_image, 0, 3)
               .run (NonLinearKernelMultiContrast<FODImageType>(fod_image.size(3), (ssize_t) max_n_SH, warp, directions, start_nvols, modulate), fod_image);
         } else {
-          DEBUG ("NonLinearKernel");
+          DEBUG ("reorienting warp using NonLinearKernel");
           ThreadedLoop (fod_image, 0, 3)
               .run (NonLinearKernel<FODImageType>(fod_image.size(3), warp, directions, modulate), fod_image);
         }

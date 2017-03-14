@@ -99,11 +99,11 @@ namespace MR
                 //   Registration::Transform::reorient (params.im1_image, *im1_image_reoriented, params.transformation.get_transform_half(), directions);
                 //   Registration::Transform::reorient (params.im2_image, *im2_image_reoriented, params.transformation.get_transform_half_inverse(), directions);
                   if (params.mc_settings.size()) {
-                    INFO ("Tissue contrast specific FOD reorientation");
+                    DEBUG ("Tissue contrast specific FOD reorientation");
                     Registration::Transform::reorient (params.im1_image, *im1_image_reoriented, params.transformation.get_transform_half(), directions, false, params.mc_settings);
                     Registration::Transform::reorient (params.im2_image, *im2_image_reoriented, params.transformation.get_transform_half_inverse(), directions, false, params.mc_settings);
                   } else {
-                    INFO ("FOD reorientation");
+                    DEBUG ("FOD reorientation");
                     Registration::Transform::reorient (params.im1_image, *im1_image_reoriented, params.transformation.get_transform_half(), directions);
                     Registration::Transform::reorient (params.im2_image, *im2_image_reoriented, params.transformation.get_transform_half_inverse(), directions);
                   }
@@ -232,11 +232,11 @@ namespace MR
                 {
                   // LogLevelLatch log_level (0); // TODO uncomment
                   if (params.mc_settings.size()) {
-                    INFO ("Tissue contrast specific FOD reorientation");
+                    DEBUG ("Tissue contrast specific FOD reorientation");
                     Registration::Transform::reorient (params.im1_image, *im1_image_reoriented, params.transformation.get_transform_half(), directions, false, params.mc_settings);
                     Registration::Transform::reorient (params.im2_image, *im2_image_reoriented, params.transformation.get_transform_half_inverse(), directions, false, params.mc_settings);
                   } else {
-                    INFO ("FOD reorientation");
+                    DEBUG ("FOD reorientation");
                     Registration::Transform::reorient (params.im1_image, *im1_image_reoriented, params.transformation.get_transform_half(), directions);
                     Registration::Transform::reorient (params.im2_image, *im2_image_reoriented, params.transformation.get_transform_half_inverse(), directions);
                   }
