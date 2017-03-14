@@ -29,6 +29,7 @@
 #include "registration/metric/demons4D.h"
 #include "registration/multi_resolution_lmax.h"
 #include "math/average_space.h"
+#include "registration/multi_contrast.h"
 
 namespace MR
 {
@@ -135,8 +136,21 @@ namespace MR
                                                                 + midway_image_header_resized.spacing(1)
                                                                 + midway_image_header_resized.spacing(2)) / 3.0);
 
-              auto im1_smoothed = Registration::multi_resolution_lmax (im1_image, scale_factor[level], do_reorientation, fod_lmax[level]);
-              auto im2_smoothed = Registration::multi_resolution_lmax (im2_image, scale_factor[level], do_reorientation, fod_lmax[level]);
+
+              // define or adjust tissue contrast lmax, nvols for this stage
+              stage_contrasts = contrasts;
+              if (stage_contrasts.size()) {
+                for (auto & mc : stage_contrasts)
+                  mc.lower_lmax (fod_lmax[level]);
+              } else {
+                MultiContrastSetting mc (im1_image.size(3), do_reorientation, fod_lmax[level]);
+                stage_contrasts.push_back(mc);
+              }
+              for (const auto & mc : stage_contrasts)
+                INFO (str(mc));
+
+              auto im1_smoothed = Registration::multi_resolution_lmax (im1_image, scale_factor[level], do_reorientation, stage_contrasts);
+              auto im2_smoothed = Registration::multi_resolution_lmax (im2_image, scale_factor[level], do_reorientation, stage_contrasts);
 
               DEBUG ("Initialising scratch images");
               Header warped_header (midway_image_header_resized);
@@ -221,8 +235,8 @@ namespace MR
 
                 if (do_reorientation && fod_lmax[level]) {
                   DEBUG ("Reorienting FODs");
-                  Registration::Transform::reorient_warp (im1_warped, im1_deform_field, aPSF_directions);
-                  Registration::Transform::reorient_warp (im2_warped, im2_deform_field, aPSF_directions);
+                  Registration::Transform::reorient_warp (im1_warped, im1_deform_field, aPSF_directions, false, stage_contrasts);
+                  Registration::Transform::reorient_warp (im2_warped, im2_deform_field, aPSF_directions, false, stage_contrasts);
                 }
 
                 DEBUG ("warping mask images");
@@ -329,7 +343,6 @@ namespace MR
             is_initialised = true;
           }
 
-
           void set_max_iter (const vector<int>& maxiter) {
             for (size_t i = 0; i < maxiter.size (); ++i)
               if (maxiter[i] < 0)
@@ -374,8 +387,13 @@ namespace MR
             fod_lmax = lmax;
           }
 
-          int get_lmax () {
-            return (int) *std::max_element(fod_lmax.begin(), fod_lmax.end());
+          // needs to be set after set_lmax
+          void set_mc_parameters (const vector<MultiContrastSetting>& mcs) {
+            contrasts = mcs;
+          }
+
+          ssize_t get_lmax () {
+            return (ssize_t) *std::max_element(fod_lmax.begin(), fod_lmax.end());
           }
 
           std::shared_ptr<Image<default_type> > get_im1_to_mid() {
@@ -482,6 +500,8 @@ namespace MR
           transform_type im1_to_mid_linear;
           transform_type im2_to_mid_linear;
           Header midway_image_header;
+
+          vector<MultiContrastSetting> contrasts, stage_contrasts;
 
           // Internally the warp is stored as a displacement field to enable easy smoothing near the boundaries
           std::shared_ptr<Image<default_type> > im1_to_mid_new;

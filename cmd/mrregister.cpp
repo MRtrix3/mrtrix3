@@ -18,6 +18,7 @@
 #include "filter/reslice.h"
 #include "interp/cubic.h"
 #include "transform.h"
+#include "registration/multi_contrast.h"
 #include "registration/linear.h"
 #include "registration/nonlinear.h"
 #include "registration/metric/demons.h"
@@ -110,119 +111,12 @@ void usage ()
 
 typedef double value_type;
 
-vector<Header> parse_image_sequence (const std::string& spec)
-{
-  vector<Header> V;
-  if (!spec.size()) throw Exception ("image sequence specifier is empty");
-  try {
-    for (auto& filename : split(spec,",")) {
-      INFO("reading header of " + filename);
-      // auto image = Image<value_type>::open (filename).with_direct_io (Stride::contiguous_along_axis (3));
-      V.push_back (Header::open (filename));
-    }
-  } catch (Exception& E) {
-    throw Exception (E, "can't parse image sequence specifier \"" + spec + "\"");
-  }
-  return (V);
-}
-
-class CopyFunctor4D {
-public:
-  CopyFunctor4D (size_t out_start_vol, size_t nvols) :
-    start_vol (out_start_vol),
-    nvols (nvols) { }
-  template <class VoxeltypeIn, class VoxeltypeOut>
-    void operator() (VoxeltypeIn& in, VoxeltypeOut& out) {
-      auto loop = Loop (3);
-      auto l = loop (in);
-      for (size_t ivol = 0; ivol < nvols; ++ivol) {
-        assert(l);
-        out.index(3) = in.index(3) + start_vol;
-        out.value() = in.value();
-        ++l;
-      }
-    }
-protected:
-  size_t start_vol, nvols;
-};
-
-class CopyFunctor3D {
-public:
-  CopyFunctor3D (size_t out_start_vol) :
-    start_vol (out_start_vol) { }
-  template <class VoxeltypeIn, class VoxeltypeOut>
-    void operator() (VoxeltypeIn& in, VoxeltypeOut& out) {
-      // assign_pos_of(in,0,3).to(out);
-      assert(out.index(0)==in.index(0));
-      assert(out.index(1)==in.index(1));
-      assert(out.index(2)==in.index(2));
-      out.index(3) = start_vol;
-      out.value() = in.value();
-      out.index(3) = 0; // TODO do we need this?
-    }
-protected:
-  size_t start_vol;
-};
-
-void preload_data(vector<Header>& input,
-  Image<value_type>& images,
-  const vector<std::array<size_t, 2>>& mc_start_nvols) {
-
-  const size_t n_images = input.size();
-  assert (mc_start_nvols.size() == input.size());
-  size_t sumvols (0);
-  for (auto& n : mc_start_nvols)
-    sumvols += n[1];
-  Header h1 = Header (input[0]);
-  if (sumvols  > 1) {
-    h1.ndim() = 4;
-    h1.size(3) = sumvols;
-  } else
-    h1.ndim() = 3;
-
-  {
-    LogLevelLatch log_level (0);
-    images = Image<default_type>::scratch (h1).with_direct_io(Stride::contiguous_along_axis (3));
-  }
-
-  if (sumvols == 1) {
-    auto image_in = input[0].get_image<value_type>();
-    threaded_copy(image_in, images, 0, 3, 2);
-  } else {
-    for (size_t idx = 0; idx < n_images; idx++) {
-      size_t ndim = input[idx].ndim();
-      std::vector<size_t> from (ndim, 0);
-      std::vector<size_t> size (ndim, 1);
-      for (size_t dim = 0; dim < 3; ++dim)
-        size[dim] = input[idx].size(dim);
-      if (ndim==4)
-        size[3] = mc_start_nvols[idx][1];
-
-      auto image_in = input[idx].get_image<value_type>();
-      INFO (str("index " + str(mc_start_nvols[idx][0]))+": "+
-        str(mc_start_nvols[idx][1]) + " volumes from " + image_in.name());
-      if (ndim == 4) {
-        TRACE;
-        Adapter::Subset<Image<default_type>> subset (image_in, from, size);
-        TRACE;
-        auto loop = ThreadedLoop (subset, 0, 3);
-        loop.run (CopyFunctor4D(mc_start_nvols[idx][0], mc_start_nvols[idx][1]), subset, images);
-      } else {
-        auto loop = ThreadedLoop (image_in, 0, 3);
-        assert(mc_start_nvols[idx][1] == 1);
-        loop.run (CopyFunctor3D(mc_start_nvols[idx][0]), image_in, images);
-      }
-    }
-  }
-  if (log_level >= 3)
-    display<Image<default_type>> (images);
-}
-
 void run () {
-  auto input1 = parse_image_sequence(argument[0]);
-  auto input2 = parse_image_sequence(argument[1]);
+  auto input1 = Registration::parse_image_sequence(argument[0]);
+  auto input2 = Registration::parse_image_sequence(argument[1]);
 
   size_t n_images = input1.size();
+
   if (n_images != input2.size()) {
     throw Exception ("require same number of input images for image 1 and image 2");
   }
@@ -282,13 +176,15 @@ void run () {
   if (opt.size())
     directions_cartesian = Math::Sphere::spherical2cartesian (load_matrix (opt[0][0])).transpose();
 
+  // parse multi contrast parameters
   // compare input1 and input2 for consistency
-  // define lmax and do_reorientation for each compartment
-  vector<int> mc_image_lmax (n_images, 0);
-  vector<size_t> mc_image_maxvols (n_images, 0);
-  vector<bool> mc_do_reorientation (n_images, do_reorientation);
-  int max_dim (3);
-
+  // set lmax and do_reorientation for each compartment
+  vector<Registration::MultiContrastSetting> mc_params (n_images);
+  for (auto& mc : mc_params) {
+    mc.lmax = 0;
+    mc.image_lmax = 0;
+    mc.do_reorientation = do_reorientation;
+  }
   for (size_t i=0; i<n_images; i++) {
     if (i>0) check_dimensions (input1[i], input1[i-1], 0, 3);
     if (i>0) check_dimensions (input2[i], input2[i-1], 0, 3);
@@ -296,30 +192,33 @@ void run () {
     if (input1[i].ndim() > 4) {
       throw Exception ("image dimensions larger than 4 are not supported");
     } else if (input1[i].ndim() == 3) {
-      mc_do_reorientation[i] = false;
-      mc_image_maxvols[i] = 1;
+      mc_params[i].do_reorientation = false;
+      mc_params[i].image_nvols = 1;
     } else if (input1[i].ndim() == 4) {
       if (input1[i].size(3) != input2[i].size(3))
         throw Exception ("input images do not have the same number of volumes in the 4th dimension");
-      max_dim = 4;
-      mc_image_maxvols[i] = input1[i].size(3);
+      mc_params[i].image_nvols = input1[i].size(3);
       value_type val = (std::sqrt (float (1 + 8 * input1[i].size(3))) - 3.0) / 4.0;
-      if (!(val - (int)val) && mc_do_reorientation[i] && input1[i].size(3) > 1) {
+      if (!(val - (int)val) && mc_params[i].do_reorientation && input1[i].size(3) > 1) {
         CONSOLE ("SH series detected in image "+input1[i].name()+", performing FOD registration");
-        mc_image_lmax[i] = Math::SH::LforN (input1[i].size(3));
-        mc_do_reorientation[i] = true;
+        mc_params[i].image_lmax = Math::SH::LforN (input1[i].size(3));
+        mc_params[i].lmax = mc_params[i].image_lmax;
+        mc_params[i].do_reorientation = true;
         if (!directions_cartesian.cols())
           directions_cartesian = Math::Sphere::spherical2cartesian (
             DWI::Directions::electrostatic_repulsion_60()).transpose();
       } else {
-        mc_do_reorientation[i] = false;
+        mc_params[i].do_reorientation = false;
       }
     }
   }
-  int max_mc_image_lmax = *std::max_element(mc_image_lmax.begin(), mc_image_lmax.end());
-  int max_image_nvols = *std::max_element(mc_image_maxvols.begin(), mc_image_maxvols.end());
-  do_reorientation = std::any_of(mc_do_reorientation.begin(), mc_do_reorientation.end(), [](bool const i){return i;});
-  INFO("maximum dimension in any image: "+str(max_dim));
+
+  ssize_t max_mc_image_lmax = std::max_element(mc_params.begin(), mc_params.end(),
+    [](const Registration::MultiContrastSetting& x, const Registration::MultiContrastSetting& y)
+    {return x.lmax < y.lmax;})->lmax;
+  do_reorientation = std::any_of(mc_params.begin(), mc_params.end(),
+    [](Registration:: MultiContrastSetting const& i){return i.do_reorientation;});
+
   INFO("maximum lmax in any image: "+str(max_mc_image_lmax));
   INFO("do reorientation: "+str(do_reorientation));
   if (!do_reorientation and directions_cartesian.cols())
@@ -347,7 +246,7 @@ void run () {
   Image<value_type> im1_mask;
   if (opt.size ()) {
     im1_mask = Image<value_type>::open(opt[0][0]);
-    check_dimensions (input1[0], im1_mask, 0, 3); // TODO do we need this?
+    check_dimensions (input1[0], im1_mask, 0, 3); // TODO can we relax this?
   }
 
 
@@ -355,7 +254,7 @@ void run () {
   Image<value_type> im2_mask;
   if (opt.size ()) {
     im2_mask = Image<value_type>::open(opt[0][0]);
-    check_dimensions (input2[0], im2_mask, 0, 3); // TODO do we need this?
+    check_dimensions (input2[0], im2_mask, 0, 3); // TODO  can we relax this?
   }
 
 
@@ -505,6 +404,8 @@ void run () {
     linear_logstream.open (opt[0][0]);
     rigid_registration.set_log_stream (linear_logstream.rdbuf());
   }
+
+
   // ****** AFFINE REGISTRATION OPTIONS *******
   Registration::Linear affine_registration;
   opt = get_options ("affine");
@@ -790,41 +691,43 @@ void run () {
 
 
   // ******  MC options  *******
-  // TODO MC: separate lmax
+  // TODO: set tissue specific lmax?
 
+  {
+    ssize_t max_requested_lmax = 0; // TODO max_requested_lmax for each contrast type
+    if (do_rigid) max_requested_lmax = std::max(max_requested_lmax, rigid_registration.get_lmax());
+    if (do_affine) max_requested_lmax = std::max(max_requested_lmax, affine_registration.get_lmax());
+    if (do_nonlinear) max_requested_lmax = std::max(max_requested_lmax, nl_registration.get_lmax());
+    INFO ("max requested lmax: "+str(max_requested_lmax));
+    for (size_t idx = 0; idx < n_images; ++idx) {
+      mc_params[idx].lmax = std::min (mc_params[idx].image_lmax, max_requested_lmax);
+      if (input1[idx].ndim() == 3)
+        mc_params[idx].nvols = 1;
+      else if (mc_params[idx].do_reorientation) {
+        mc_params[idx].nvols = Math::SH::NforL (mc_params[idx].lmax);
+      } else
+        mc_params[idx].nvols = input1[idx].size(3);
+    }
+    mc_params[0].start = 0;
+    for (size_t idx = 1; idx < n_images; ++idx)
+      mc_params[idx].start = mc_params[idx-1].start + mc_params[idx-1].nvols;
+  }
 
+  if (mc_params.size() > 1) {
+    if (do_rigid) rigid_registration.set_mc_parameters (mc_params);
+    if (do_affine) affine_registration.set_mc_parameters (mc_params);
+    if (do_nonlinear) nl_registration.set_mc_parameters (mc_params);
+  }
 
   // ****** PARSING DONE, PRELOAD THE DATA *******
   // only load the volumes we actually need for the highest lmax requested
   // load multiple tissue types into the same 4D image
   // drop last axis if input is 4D with one volume for speed reasons
-  // TODO: use tissue specific lmax to speed up preloading
   Image<value_type> images1, images2;
-  int max_requested_lmax = 0;
-  vector<int> mc_maxlmax = mc_image_lmax;
-  vector<std::array<size_t,2>> mc_start_nvols(n_images);
-  {
-    if (do_rigid) max_requested_lmax = std::max(max_requested_lmax,rigid_registration.get_lmax());
-    if (do_affine) max_requested_lmax = std::max(max_requested_lmax,affine_registration.get_lmax());
-    if (do_nonlinear) max_requested_lmax = std::max(max_requested_lmax,nl_registration.get_lmax());
-    INFO ("max requested lmax: "+str(max_requested_lmax));
-    for (size_t idx = 0; idx < n_images; ++idx) {
-      mc_maxlmax[idx] = std::min (mc_image_lmax[idx], max_requested_lmax);
-      if (input1[idx].ndim() == 3)
-        mc_start_nvols[idx][1] = 1;
-      else if (mc_do_reorientation[idx]) {
-        mc_start_nvols[idx][1] = Math::SH::NforL (mc_maxlmax[idx]);
-      } else
-        mc_start_nvols[idx][1] = input1[idx].size(3);
-    }
-    mc_start_nvols[0][0] = 0;
-    for (size_t idx = 1; idx < n_images; ++idx)
-      mc_start_nvols[idx][0] = mc_start_nvols[idx-1][0] + mc_start_nvols[idx-1][1];
-  }
   INFO ("preloading input1...");
-  preload_data (input1, images1, mc_start_nvols);
+  Registration::preload_data (input1, images1, mc_params);
   INFO ("preloading input2...");
-  preload_data (input2, images2, mc_start_nvols);
+  Registration::preload_data (input2, images2, mc_params);
   INFO ("preloading input images done");
 
 
@@ -963,6 +866,8 @@ void run () {
       save_transform (affine.get_transform_half_inverse(), affine_2tomid_filename);
   }
 
+#endif
+
 
   // ****** RUN NON-LINEAR REGISTRATION *******
   if (do_nonlinear) {
@@ -972,14 +877,14 @@ void run () {
       nl_registration.set_aPSF_directions (directions_cartesian);
 
     if (do_affine || init_affine_matrix_set) {
-      nl_registration.run (affine, im1_image, im2_image, im1_mask, im2_mask);
+      nl_registration.run (affine, images1, images2, im1_mask, im2_mask);
     } else if (do_rigid || init_rigid_matrix_set) {
-      nl_registration.run (rigid, im1_image, im2_image, im1_mask, im2_mask);
+      nl_registration.run (rigid, images1, images2, im1_mask, im2_mask);
     } else {
       Registration::Transform::Affine identity_transform;
-      nl_registration.run (identity_transform, im1_image, im2_image, im1_mask, im2_mask);
+      nl_registration.run (identity_transform, images1, images2, im1_mask, im2_mask);
     }
-
+#ifndef REFACTOR
     if (warp_full_filename.size()) {
       //TODO add affine parameters to comments too?
       Header output_header = nl_registration.get_output_warps_header();
@@ -991,7 +896,7 @@ void run () {
     }
 
     if (warp1_filename.size()) {
-      Header output_header (im2_image);
+      Header output_header (images2);
       output_header.ndim() = 4;
       output_header.size(3) =3;
       nl_registration.write_params_to_header (output_header);
@@ -1015,9 +920,11 @@ void run () {
                                                     *(nl_registration.get_im2_to_mid()),
                                                     nl_registration.get_im2_to_mid_linear(), warp2);
     }
+#endif
   }
 
 
+#ifndef REFACTOR
 
   if (im1_transformed.valid()) {
     INFO ("Outputting tranformed input images...");
@@ -1094,5 +1001,6 @@ void run () {
 
   if (get_options ("affine_log").size() or get_options ("rigid_log").size())
     linear_logstream.close();
+
 #endif
 }

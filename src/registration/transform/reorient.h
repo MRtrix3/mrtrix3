@@ -19,6 +19,7 @@
 #include "math/SH.h"
 #include "math/least_squares.h"
 #include "adapter/jacobian.h"
+#include "registration/multi_contrast.h"
 
 namespace MR
 {
@@ -37,6 +38,70 @@ namespace MR
         }
         return aPSF_matrix;
       }
+
+      FORCE_INLINE vector<std::vector<ssize_t>> multiContrastSetting2start_nvols (const vector<MultiContrastSetting>& mcsettings, size_t& max_n_SH)
+      {
+        max_n_SH = 0;
+        vector<std::vector<ssize_t>> start_nvols;
+        if (mcsettings.size() != 0) {
+          for (const auto & mc : mcsettings) {
+            if (mc.do_reorientation && mc.lmax > 0) {
+              start_nvols.emplace_back(std::initializer_list<ssize_t>{(ssize_t) mc.start, (ssize_t) mc.nvols});
+              max_n_SH = std::max (mc.nvols, max_n_SH);
+            }
+          }
+        }
+        assert (max_n_SH > 1);
+        assert (start_nvols.size());
+        return start_nvols;
+      }
+
+      template <class FODImageType>
+      class LinearKernelMultiContrast { MEMALIGN(LinearKernelMultiContrast<FODImageType>)
+
+        public:
+          LinearKernelMultiContrast (ssize_t n_vol,
+                        ssize_t max_n_SH,
+                        const transform_type& linear_transform,
+                        const Eigen::MatrixXd& directions,
+                        const vector<std::vector<ssize_t>>& vstart_nvols,
+                        const bool modulate) : fod (n_vol), max_n_SH (max_n_SH), start_nvols (vstart_nvols)
+          {
+            assert (n_vol > max_n_SH);
+            assert (start_nvols.size());
+            Eigen::MatrixXd transformed_directions = linear_transform.linear().inverse() * directions;
+            // precompute projection for maximum requested lmax
+            if (modulate) {
+              Eigen::VectorXd modulation_factors = transformed_directions.colwise().norm() / linear_transform.linear().inverse().determinant();
+              transformed_directions.colwise().normalize();
+              transform.noalias() = aPSF_weights_to_FOD_transform (max_n_SH, transformed_directions) * modulation_factors.asDiagonal()
+                                  * Math::pinv (aPSF_weights_to_FOD_transform (max_n_SH, directions));
+            } else {
+              transformed_directions.colwise().normalize();
+              transform.noalias() = aPSF_weights_to_FOD_transform (max_n_SH, transformed_directions)
+                                  * Math::pinv (aPSF_weights_to_FOD_transform (max_n_SH, directions));
+            }
+          }
+
+          void operator() (FODImageType& in, FODImageType& out) {
+            in.index(3) = 0; // TODO do we need this?
+            // TODO is it faster to check whether any voxel contains an FOD before copying the row?
+            fod = in.row(3);
+            for (auto const & sn : start_nvols) {
+              if (fod[sn[0]] > 0.0) { // only reorient voxels that contain an FOD
+                fod.segment(sn[0],sn[1]) = transform.block(0,0,sn[1],sn[1]) * fod.segment(sn[0],sn[1]);
+              }
+            }
+            in.index(3) = 0; // TODO do we need this?
+            out.row(3) = fod;
+          }
+
+        protected:
+          Eigen::VectorXd fod;
+          ssize_t max_n_SH;
+          vector<std::vector<ssize_t>> start_nvols;
+          Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> transform;
+      };
 
 
 
@@ -66,7 +131,7 @@ namespace MR
           void operator() (FODImageType& in, FODImageType& out)
           {
             in.index(3) = 0;
-            if (in.value() > 0.0) { // only reorient voxels that contain a FOD
+            if (in.value() > 0.0) { // only reorient voxels that contain an FOD
               fod = in.row(3);
               fod = transform * fod;
               out.row(3) = fod;
@@ -74,8 +139,8 @@ namespace MR
           }
 
         protected:
-          Eigen::MatrixXd transform;
-          Eigen::VectorXd fod; 
+          Eigen::VectorXd fod;
+          Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> transform;
       };
 
 
@@ -88,11 +153,25 @@ namespace MR
                      FODImageType& output_fod_image,
                      const transform_type& transform,
                      const Eigen::MatrixXd& directions,
-                     bool modulate = false)
+                     bool modulate = false,
+                     vector<MultiContrastSetting> multi_contrast_settings = vector<MultiContrastSetting>())
       {
         assert (directions.cols() > directions.rows());
-        ThreadedLoop (input_fod_image, 0, 3)
-            .run (LinearKernel<FODImageType>(input_fod_image.size(3), transform, directions, modulate), input_fod_image, output_fod_image);
+        vector<std::vector<ssize_t>> start_nvols;
+        size_t max_n_SH (0);
+        if (multi_contrast_settings.size())
+          start_nvols = multiContrastSetting2start_nvols (multi_contrast_settings, max_n_SH);
+
+        if (start_nvols.size()) {
+          assert (max_n_SH > 1);
+          ThreadedLoop (input_fod_image, 0, 3)
+              .run (LinearKernelMultiContrast<FODImageType>(input_fod_image.size(3), max_n_SH, transform, directions, start_nvols, modulate),
+                input_fod_image, output_fod_image);
+        } else {
+          ThreadedLoop (input_fod_image, 0, 3)
+              .run (LinearKernel<FODImageType>(input_fod_image.size(3), transform, directions, modulate),
+                input_fod_image, output_fod_image);
+        }
       }
 
 
@@ -106,14 +185,104 @@ namespace MR
                      FODImageType& output_fod_image,
                      const transform_type& transform,
                      const Eigen::MatrixXd& directions,
-                     bool modulate = false)
+                     bool modulate = false,
+                     vector<MultiContrastSetting> multi_contrast_settings = vector<MultiContrastSetting>())
       {
         assert (directions.cols() > directions.rows());
-        ThreadedLoop (progress_message, input_fod_image, 0, 3)
-            .run (LinearKernel<FODImageType>(input_fod_image.size(3), transform, directions, modulate), input_fod_image, output_fod_image);
+        vector<std::vector<ssize_t>> start_nvols;
+        size_t max_n_SH (0);
+        if (multi_contrast_settings.size())
+          start_nvols = multiContrastSetting2start_nvols (multi_contrast_settings, max_n_SH);
+
+        if (start_nvols.size()) {
+          assert (max_n_SH > 1);
+          ThreadedLoop (progress_message, input_fod_image, 0, 3)
+              .run (LinearKernelMultiContrast<FODImageType>(input_fod_image.size(3), max_n_SH, transform, directions, start_nvols, modulate),
+                input_fod_image, output_fod_image);
+        } else {
+          ThreadedLoop (progress_message, input_fod_image, 0, 3)
+              .run (LinearKernel<FODImageType>(input_fod_image.size(3), transform, directions, modulate),
+                input_fod_image, output_fod_image);
+        }
       }
 
+      template <class FODImageType>
+      class NonLinearKernelMultiContrast { MEMALIGN(NonLinearKernelMultiContrast<FODImageType>)
 
+        public:
+          NonLinearKernelMultiContrast (ssize_t n_vol,
+                        ssize_t max_n_SH,
+                        Image<default_type>& warp,
+                        const Eigen::MatrixXd& directions,
+                        const vector<std::vector<ssize_t>>& vstart_nvols,
+                        const bool modulate) :
+          max_n_SH (max_n_SH), n_dirs (directions.cols()), jacobian_adapter (warp), directions (directions),
+          modulate (modulate), start_nvols (vstart_nvols), fod (n_vol)
+          {
+            for (auto const & sn : start_nvols)
+              map_FOD_to_aPSF_transform[sn[1]] = Math::pinv (aPSF_weights_to_FOD_transform (sn[1], directions));
+            assert (n_vol > 0);
+            assert (start_nvols.size());
+          }
+
+          void operator() (FODImageType& image) {
+            // get highest n_SH for compartments that contain a non-zero FOD in this voxel
+            ssize_t max_n_SHvox = 0;
+            for (auto const & sn : start_nvols) {
+              image.index(3) = sn[0];
+              if (image.value() > 0.0) {
+                max_n_SHvox = std::max (max_n_SHvox, sn[1]);
+              }
+            }
+            if (max_n_SHvox == 0)
+              return;
+
+            image.index(3) = 0;
+            fod = image.row(3);
+
+            for (size_t dim = 0; dim < 3; ++dim)
+              jacobian_adapter.index(dim) = image.index(dim);
+            Eigen::MatrixXd jacobian = jacobian_adapter.value().inverse().template cast<default_type>();
+            Eigen::MatrixXd transformed_directions = jacobian * directions;
+
+            if (modulate)
+              modulation_factors = transformed_directions.colwise().norm() / jacobian.determinant();
+
+            transformed_directions.colwise().normalize();
+
+            if (modulate) {
+              Eigen::MatrixXd temp = aPSF_weights_to_FOD_transform (max_n_SHvox, transformed_directions);
+              for (ssize_t i = 0; i < n_dirs; ++i)
+                temp.col(i) = temp.col(i) * modulation_factors(0,i);
+
+              transform.noalias() = temp * map_FOD_to_aPSF_transform[max_n_SHvox];
+              // TODO: make this work?
+              // transform.noalias() = (aPSF_weights_to_FOD_transform (max_n_SHvox, transformed_directions).colwise() * modulation_factors.transpose()) * map_FOD_to_aPSF_transform[max_n_SHvox];
+            } else {
+              transform.noalias() = aPSF_weights_to_FOD_transform (max_n_SHvox, transformed_directions) * map_FOD_to_aPSF_transform[max_n_SHvox];
+            }
+
+            // reorient voxels that contain an FOD
+            for (auto const & sn : start_nvols)
+              if (fod[sn[0]] > 0.0)
+                fod.segment(sn[0],sn[1]) = transform.block(0,0,sn[1],sn[1]) * fod.segment(sn[0],sn[1]);
+
+            image.index(3) = 0; // TODO do we need this?
+            image.row(3) = fod;
+          }
+
+          protected:
+            const ssize_t max_n_SH, n_dirs;
+            Adapter::Jacobian<Image<default_type> > jacobian_adapter;
+            const Eigen::MatrixXd& directions;
+            const bool modulate;
+            const vector<std::vector<ssize_t>> start_nvols;
+            Eigen::VectorXd fod;
+            std::map<ssize_t, Eigen::MatrixXd> map_FOD_to_aPSF_transform;
+            ssize_t max_n_SHvox;
+            Eigen::MatrixXd transform;
+            Eigen::MatrixXd modulation_factors;
+      };
 
 
       template <class FODImageType>
@@ -171,24 +340,49 @@ namespace MR
                           FODImageType& fod_image,
                           Image<default_type>& warp,
                           const Eigen::MatrixXd& directions,
-                          const bool modulate = false)
+                          const bool modulate = false,
+                          vector<MultiContrastSetting> multi_contrast_settings = vector<MultiContrastSetting>())
       {
         assert (directions.cols() > directions.rows());
         check_dimensions (fod_image, warp, 0, 3);
-        ThreadedLoop (progress_message, fod_image, 0, 3)
-            .run (NonLinearKernel<FODImageType>(fod_image.size(3), warp, directions, modulate), fod_image);
+        vector<std::vector<ssize_t>> start_nvols;
+        size_t max_n_SH (0);
+        if (multi_contrast_settings.size())
+          start_nvols = multiContrastSetting2start_nvols (multi_contrast_settings, max_n_SH);
+        if (start_nvols.size()) {
+          DEBUG ("NonLinearKernelMultiContrast");
+          ThreadedLoop (progress_message, fod_image, 0, 3)
+              .run (NonLinearKernelMultiContrast<FODImageType>(fod_image.size(3), (ssize_t) max_n_SH, warp, directions, start_nvols, modulate), fod_image);
+        } else {
+          DEBUG ("NonLinearKernel");
+          ThreadedLoop (progress_message, fod_image, 0, 3)
+              .run (NonLinearKernel<FODImageType>(fod_image.size(3), warp, directions, modulate), fod_image);
+        }
       }
 
       template <class FODImageType>
       void reorient_warp (FODImageType& fod_image,
                           Image<default_type>& warp,
                           const Eigen::MatrixXd& directions,
-                          const bool modulate = false)
+                          const bool modulate = false,
+                          vector<MultiContrastSetting> multi_contrast_settings = vector<MultiContrastSetting>())
       {
         assert (directions.cols() > directions.rows());
         check_dimensions (fod_image, warp, 0, 3);
-        ThreadedLoop (fod_image, 0, 3)
-            .run (NonLinearKernel<FODImageType>(fod_image.size(3), warp, directions, modulate), fod_image);
+        vector<std::vector<ssize_t>> start_nvols;
+        size_t max_n_SH (0);
+        if (multi_contrast_settings.size())
+          start_nvols = multiContrastSetting2start_nvols (multi_contrast_settings, max_n_SH);
+
+        if (start_nvols.size()) {
+          DEBUG ("NonLinearKernelMultiContrast");
+          ThreadedLoop (fod_image, 0, 3)
+              .run (NonLinearKernelMultiContrast<FODImageType>(fod_image.size(3), (ssize_t) max_n_SH, warp, directions, start_nvols, modulate), fod_image);
+        } else {
+          DEBUG ("NonLinearKernel");
+          ThreadedLoop (fod_image, 0, 3)
+              .run (NonLinearKernel<FODImageType>(fod_image.size(3), warp, directions, modulate), fod_image);
+        }
       }
 
 

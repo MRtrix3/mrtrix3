@@ -93,11 +93,22 @@ namespace MR
                 std::shared_ptr<Image<default_type> > im2_image_reoriented;
                 im1_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im1_image));
                 im2_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im2_image));
+
                 {
-                   LogLevelLatch log_level (0);
-                  Registration::Transform::reorient (params.im1_image, *im1_image_reoriented, params.transformation.get_transform_half(), directions);
-                  Registration::Transform::reorient (params.im2_image, *im2_image_reoriented, params.transformation.get_transform_half_inverse(), directions);
+                //    LogLevelLatch log_level (0); TODO uncomment
+                //   Registration::Transform::reorient (params.im1_image, *im1_image_reoriented, params.transformation.get_transform_half(), directions);
+                //   Registration::Transform::reorient (params.im2_image, *im2_image_reoriented, params.transformation.get_transform_half_inverse(), directions);
+                  if (params.mc_settings.size()) {
+                    INFO ("Tissue contrast specific FOD reorientation");
+                    Registration::Transform::reorient (params.im1_image, *im1_image_reoriented, params.transformation.get_transform_half(), directions, false, params.mc_settings);
+                    Registration::Transform::reorient (params.im2_image, *im2_image_reoriented, params.transformation.get_transform_half_inverse(), directions, false, params.mc_settings);
+                  } else {
+                    INFO ("FOD reorientation");
+                    Registration::Transform::reorient (params.im1_image, *im1_image_reoriented, params.transformation.get_transform_half(), directions);
+                    Registration::Transform::reorient (params.im2_image, *im2_image_reoriented, params.transformation.get_transform_half_inverse(), directions);
+                  }
                 }
+
                 params.set_im1_iterpolator (*im1_image_reoriented);
                 params.set_im2_iterpolator (*im2_image_reoriented);
               }
@@ -217,11 +228,20 @@ namespace MR
                 std::shared_ptr<Image<default_type> > im2_image_reoriented;
                 im1_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im1_image));
                 im2_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im2_image));
+
                 {
-                   LogLevelLatch log_level (0);
-                  Registration::Transform::reorient (params.im1_image, *im1_image_reoriented, params.transformation.get_transform_half(), directions);
-                  Registration::Transform::reorient (params.im2_image, *im2_image_reoriented, params.transformation.get_transform_half_inverse(), directions);
+                  // LogLevelLatch log_level (0); // TODO uncomment
+                  if (params.mc_settings.size()) {
+                    INFO ("Tissue contrast specific FOD reorientation");
+                    Registration::Transform::reorient (params.im1_image, *im1_image_reoriented, params.transformation.get_transform_half(), directions, false, params.mc_settings);
+                    Registration::Transform::reorient (params.im2_image, *im2_image_reoriented, params.transformation.get_transform_half_inverse(), directions, false, params.mc_settings);
+                  } else {
+                    INFO ("FOD reorientation");
+                    Registration::Transform::reorient (params.im1_image, *im1_image_reoriented, params.transformation.get_transform_half(), directions);
+                    Registration::Transform::reorient (params.im2_image, *im2_image_reoriented, params.transformation.get_transform_half_inverse(), directions);
+                  }
                 }
+
                 params.set_im1_iterpolator (*im1_image_reoriented);
                 params.set_im2_iterpolator (*im2_image_reoriented);
               }

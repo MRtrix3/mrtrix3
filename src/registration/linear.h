@@ -38,6 +38,7 @@
 #include "math/math.h"
 #include <iostream>
 #include "registration/multi_resolution_lmax.h"
+#include "registration/multi_contrast.h"
 
 namespace MR
 {
@@ -93,8 +94,7 @@ namespace MR
       std::vector<std::string> diagnostics_images;
     } ;
 
-    class Linear
-    { MEMALIGN(Linear)
+    class Linear { MEMALIGN(Linear)
 
       public:
 
@@ -205,11 +205,9 @@ namespace MR
             throw Exception ("the lmax must be defined for all stages (1 or " + str(stages.size())+")");
         }
 
-        int get_lmax () {
-          ssize_t lmax=0;
-          for (auto& s : stages)
-            lmax = std::max(s.fod_lmax, lmax);
-          return (int) lmax;
+        // needs to be set after set_lmax
+        void set_mc_parameters (const vector<MultiContrastSetting>& mcs) {
+          contrasts = mcs;
         }
 
         void set_loop_density (const vector<default_type>& loop_density_){
@@ -268,6 +266,12 @@ namespace MR
           log_stream = stream;
         }
 
+        ssize_t get_lmax () {
+          ssize_t lmax=0;
+          for (auto& s : stages)
+            lmax = std::max(s.fod_lmax, lmax);
+          return (int) lmax;
+        }
 
         Header get_midway_header () {
           return Header(midway_image_header);
@@ -342,7 +346,7 @@ namespace MR
             INFO ("Transformation before registration:");
             INFO (transform.info());
 
-            INFO("Linear registration stage parameters:");
+            INFO ("Linear registration stage parameters:");
             for (auto & stage : stages) {
               INFO(stage.info());
             }
@@ -401,10 +405,25 @@ namespace MR
 
               CONSOLE ("linear stage " + str(istage + 1) + "/"+str(stages.size()) + ", " + stage.info(do_reorientation));
 
+              // define or adjust tissue contrast lmax, nvols for this stage
+              stage_contrasts = contrasts;
+              if (stage_contrasts.size()) {
+                for (auto & mc : stage_contrasts)
+                  mc.lower_lmax (stage.fod_lmax);
+              } else {
+                MultiContrastSetting mc (im1_image.size(3), do_reorientation, stage.fod_lmax);
+                stage_contrasts.push_back(mc);
+              }
+
+              for (const auto & mc : stage_contrasts)
+                INFO (str(mc));
+
               INFO ("smoothing image 1");
-              auto im1_smoothed = Registration::multi_resolution_lmax (im1_image, stage.scale_factor, do_reorientation, stage.fod_lmax);
+              auto im1_smoothed = Registration::multi_resolution_lmax (im1_image, stage.scale_factor, do_reorientation, stage_contrasts);
               INFO ("smoothing image 2");
-              auto im2_smoothed = Registration::multi_resolution_lmax (im2_image, stage.scale_factor, do_reorientation, stage.fod_lmax);
+              auto im2_smoothed = Registration::multi_resolution_lmax (im2_image, stage.scale_factor, do_reorientation, stage_contrasts);
+
+
 
               Filter::Resize midway_resize_filter (midway_image_header);
               midway_resize_filter.set_scale_factor (stage.scale_factor);
@@ -412,6 +431,10 @@ namespace MR
 
               ParamType parameters (transform, im1_smoothed, im2_smoothed, midway_resized, im1_mask, im2_mask);
               parameters.loop_density = stage.loop_density;
+              if (contrasts.size())
+                parameters.set_mc_settings (stage_contrasts);
+
+
               // if (robust_estimate)
               //   INFO ("using robust estimate");
               // parameters.robust_estimate = robust_estimate; // TODO
@@ -564,6 +587,7 @@ namespace MR
 
       protected:
         vector<StageSetting> stages;
+        vector<MultiContrastSetting> contrasts, stage_contrasts;
         vector<size_t> kernel_extent;
         default_type grad_tolerance;
         default_type step_tolerance;

@@ -19,6 +19,7 @@
 #include "interp/linear.h"
 #include "interp/nearest.h"
 #include "adapter/reslice.h"
+#include "registration/multi_contrast.h"
 
 namespace MR
 {
@@ -42,7 +43,7 @@ namespace MR
                 class ProcMaskType = Image<bool>,
                 class ProcessedMaskInterpolatorType = Interp::Nearest<Image<bool>>>
       class Params {
-        MEMALIGN(Params<TransformType,Im1ImageType,Im2ImageType,MidwayImageType,
+        MEMALIGN (Params<TransformType,Im1ImageType,Im2ImageType,MidwayImageType,
             Im1MaskType,Im2MaskType,Im1ImageInterpType,Im2ImageInterpType,
             Im1MaskInterpolatorType,Im2MaskInterpolatorType,ProcImageType,ProcImageInterpolatorType,
             ProcMaskType,ProcessedMaskInterpolatorType>)
@@ -86,6 +87,11 @@ namespace MR
           }
 
           void set_extent (vector<size_t> extent_vector) { extent=std::move(extent_vector); }
+
+          void set_mc_settings (const vector<MultiContrastSetting>& mc_vector) {
+            DEBUG ("setting mc_settings");
+            mc_settings = mc_vector;
+          }
 
           template <class VectorType>
           void set_control_points_extent(const VectorType& extent) {
@@ -191,6 +197,7 @@ namespace MR
           Eigen::Vector3 control_point_exent;
           Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> control_points;
           vector<size_t> extent;
+          vector<MultiContrastSetting> mc_settings;
 
           ProcImageType processed_image;
           MR::copy_ptr<ProcImageInterpolatorType> processed_image_interp;

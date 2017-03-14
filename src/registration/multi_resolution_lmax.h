@@ -16,7 +16,9 @@
 #define __registration_multi_resolution_lmax_h__
 
 #include "adapter/subset.h"
+#include "adapter/extract.h"
 #include "filter/smooth.h"
+#include "registration/multi_contrast.h"
 
 namespace MR
 {
@@ -36,6 +38,34 @@ namespace MR
       if (do_reorientation)
         size[3] = Math::SH::NforL (lmax);
       Adapter::Subset<ImageType> subset (input, from, size);
+      Filter::Smooth smooth_filter (subset);
+      vector<default_type> stdev(3);
+      for (size_t dim = 0; dim < 3; ++dim)
+        stdev[dim] = input.spacing(dim) / (2.0 * scale_factor);
+
+      smooth_filter.set_stdev (stdev);
+      DEBUG ("creating scratch image for smoothing input image...");
+      auto smoothed = ImageType::scratch (smooth_filter);
+      threaded_copy (subset, smoothed);
+      DEBUG ("smoothing input image based on scale factor...");
+      smooth_filter (smoothed);
+      return smoothed;
+    }
+
+    template <class ImageType>
+    FORCE_INLINE ImageType multi_resolution_lmax (ImageType& input,
+                                                  const default_type scale_factor,
+                                                  const bool do_reorientation,
+                                                  const vector<MultiContrastSetting>& contrast)
+    {
+      vector<int> volume_indices;
+      for (auto const& mc : contrast) {
+        volume_indices.push_back((int) mc.start);
+        for (size_t i = 1; i < mc.nvols; i++)
+          volume_indices.push_back((int) (mc.start + i));
+      }
+      Adapter::Extract1D<ImageType> subset (input, 3, volume_indices);
+
       Filter::Smooth smooth_filter (subset);
       vector<default_type> stdev(3);
       for (size_t dim = 0; dim < 3; ++dim)
