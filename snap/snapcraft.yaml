@@ -12,7 +12,7 @@ confinement: strict
 apps:
   mrview:
     command: desktop-launch mrview
-    plugs: [unity7, opengl, home]
+    plugs: [x11, unity7, opengl, home]
     aliases: [mrview]
 
 parts:
