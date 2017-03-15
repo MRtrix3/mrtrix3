@@ -14,6 +14,42 @@ apps:
     command: desktop-launch mrview
     plugs: [x11, unity7, opengl, home]
     aliases: [mrview]
+  mraverageheader:
+    command: mraverageheader
+  mrcalc:
+    command: mrcalc
+  mrcat:
+    command: mrcat
+  mrcheckerboardmask:
+    command: mrcheckerboardmask
+  mrclusterstats:
+    command: mrclusterstats
+  mrconvert:
+    command: mrconvert
+  mrcrop:
+    command: mrcrop
+  mrfilter:
+    command: mrfilter
+  mrinfo:
+    command: mrinfo
+  mrmath:
+    command: mrmath
+  mrmesh:
+    command: mrmesh
+  mrmetric:
+    command: mrmetric
+  mrpad:
+    command: mrpad
+  mrregister:
+    command: mrregister
+  mrresize:
+    command: mrresize
+  mrstats:
+    command: mrstats
+  mrthreshold:
+    command: mrthreshold
+  mrtransform:
+    command: mrtransform
 
 parts:
   mrtrix3:
