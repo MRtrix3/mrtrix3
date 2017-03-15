@@ -14,6 +14,7 @@ apps:
     command: desktop-launch mrview
     plugs: [x11, unity7, opengl, home]
     aliases: [mrview]
+    desktop: mrtrix-mrview.desktop
   mraverageheader:
     command: mraverageheader
   mrcalc:
@@ -58,7 +59,11 @@ parts:
     build: |
       ARCH= ./configure
       ./build
-    install: mv release/* $SNAPCRAFT_PART_INSTALL
+    install: |
+      mv release/* $SNAPCRAFT_PART_INSTALL
+      mv icons/desktop/128x128/mrtrix.png $SNAPCRAFT_PART_INSTALL/
+      sed -i "s/Icon=*/Icon=\$SNAP\/mrtrix.png/g" mrtrix-mrview.desktop
+      mv mrtrix-mrview.desktop $SNAPCRAFT_PART_INSTALL/
     build-packages:
       - g++
       - python
