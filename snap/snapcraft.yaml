@@ -1,4 +1,4 @@
-name: mrview
+name: mrtrix3
 version: master
 summary: set of tools to perform various advanced diffusion MRI analyses
 description: |
@@ -13,9 +13,10 @@ apps:
   mrview:
     command: desktop-launch mrview
     plugs: [unity7, opengl, home]
+    aliases: [mrview]
 
 parts:
-  mrtrix:
+  mrtrix3:
     source: .
     plugin: nil
     build: |
@@ -30,4 +31,4 @@ parts:
       - zlib1g-dev
       - libqt4-opengl-dev
       - libgl1-mesa-dev
-    after: [desktop-qt4]
+    after: [desktop-qt5]
