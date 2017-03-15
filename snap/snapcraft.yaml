@@ -20,7 +20,7 @@ parts:
     source: .
     plugin: nil
     build: |
-      ./configure
+      ARCH= ./configure
       ./build
     install: mv release/* $SNAPCRAFT_PART_INSTALL
     build-packages:
