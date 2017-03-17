@@ -23,6 +23,8 @@
 #include "algo/loop.h"
 #include "adapter/subset.h"
 
+#include "connectome/connectome.h"
+
 #include "surface/mesh.h"
 #include "surface/mesh_multi.h"
 #include "surface/algo/image2mesh.h"
@@ -58,8 +60,7 @@ void run ()
 {
 
   Header labels_header = Header::open (argument[0]);
-  if (!labels_header.datatype().is_integer())
-    throw Exception ("Input image must have an integer data type");
+  Connectome::check (labels_header);
   auto labels = labels_header.get_image<uint32_t>();
 
   typedef Eigen::Array<int, 3, 1> voxel_corner_t;
