@@ -549,43 +549,28 @@ namespace MR
             INFO (transform.info());
           }
 
-        template<class Im1ImageType, class Im2ImageType, class TransformType>
-        void write_transformed_images (
-          const Im1ImageType& im1_image,
-          const Im2ImageType& im2_image,
-          const TransformType& transformation,
-          const std::string& im1_path,
-          const std::string& im2_path,
-          const bool do_reorientation) {
-
+          template<class ImageType, class TransformType>
+          void transform_image_midway (const ImageType& input, const TransformType& transformation,
+            const bool do_reorientation, const bool input_is_one, const std::string& out_path, const Header& h_midway) {
             if (do_reorientation and aPSF_directions.size() == 0)
               throw Exception ("directions have to be calculated before reorientation");
 
-            Image<typename Im1ImageType::value_type> image1_midway;
-            Image<typename Im2ImageType::value_type> image2_midway;
-
-            Header image1_midway_header (midway_image_header);
-            image1_midway_header.datatype() = DataType::Float64;
-            image1_midway_header.ndim() = im1_image.ndim();
-            for (size_t dim = 3; dim < im1_image.ndim(); ++dim){
-              image1_midway_header.spacing(dim) = im1_image.spacing(dim);
-              image1_midway_header.size(dim) = im1_image.size(dim);
+            Image<typename ImageType::value_type> image_midway;
+            Header midway_header (h_midway);
+            midway_header.ndim() = input.ndim();
+            for (size_t dim = 3; dim < input.ndim(); ++dim) {
+              midway_header.spacing(dim) = input.spacing(dim);
+              midway_header.size(dim) = input.size(dim);
             }
-            image1_midway = Image<typename Im1ImageType::value_type>::create (im1_path, image1_midway_header).with_direct_io();
-            Header image2_midway_header (midway_image_header);
-            image2_midway_header.datatype() = DataType::Float64;
-            image2_midway_header.ndim() = im2_image.ndim();
-            for (size_t dim = 3; dim < im2_image.ndim(); ++dim){
-              image2_midway_header.spacing(dim) = im2_image.spacing(dim);
-              image2_midway_header.size(dim) = im2_image.size(dim);
-            }
-            image2_midway = Image<typename Im2ImageType::value_type>::create (im2_path, image2_midway_header).with_direct_io();
-
-            Filter::reslice<Interp::Cubic> (im1_image, image1_midway, transformation.get_transform_half(), Adapter::AutoOverSample, 0.0);
-            Filter::reslice<Interp::Cubic> (im2_image, image2_midway, transformation.get_transform_half_inverse(), Adapter::AutoOverSample, 0.0);
-            if (do_reorientation){
-              Transform::reorient ("reorienting...", image1_midway, image1_midway, transformation.get_transform_half(), aPSF_directions);
-              Transform::reorient ("reorienting...", image2_midway, image2_midway, transformation.get_transform_half_inverse(), aPSF_directions);
+            image_midway = Image<typename ImageType::value_type>::create (out_path, midway_header).with_direct_io();
+            if (input_is_one) {
+              Filter::reslice<Interp::Cubic> (input, image_midway, transformation.get_transform_half(), Adapter::AutoOverSample, 0.0);
+              if (do_reorientation)
+                Transform::reorient ("reorienting...", image_midway, image_midway, transformation.get_transform_half(), aPSF_directions);
+            } else {
+              Filter::reslice<Interp::Cubic> (input, image_midway, transformation.get_transform_half_inverse(), Adapter::AutoOverSample, 0.0);
+              if (do_reorientation)
+                Transform::reorient ("reorienting...", image_midway, image_midway, transformation.get_transform_half_inverse(), aPSF_directions);
             }
           }
 

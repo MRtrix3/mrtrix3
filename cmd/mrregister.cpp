@@ -11,8 +11,6 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#define REFACTOR
-
 #include "command.h"
 #include "image.h"
 #include "filter/reslice.h"
@@ -31,6 +29,7 @@
 #include "math/average_space.h"
 #include "math/SH.h"
 #include "math/sphere.h"
+#include "transform.h"
 
 
 using namespace MR;
@@ -112,8 +111,8 @@ void usage ()
 typedef double value_type;
 
 void run () {
-  auto input1 = Registration::parse_image_sequence(argument[0]);
-  auto input2 = Registration::parse_image_sequence(argument[1]);
+  auto input1 = Registration::parse_image_sequence_input (argument[0]);
+  auto input2 = Registration::parse_image_sequence_input (argument[1]);
 
   size_t n_images = input1.size();
 
@@ -126,6 +125,7 @@ void run () {
       throw Exception ("input images " + input1[i].name() + " and "
         + input2[i].name() + " do not have the same number of dimensions");
   }
+
 
   auto opt = get_options ("type");
   bool do_rigid  = false;
@@ -177,18 +177,29 @@ void run () {
     directions_cartesian = Math::Sphere::spherical2cartesian (load_matrix (opt[0][0])).transpose();
 
   // parse multi contrast parameters
-  // compare input1 and input2 for consistency
-  // set lmax and do_reorientation for each compartment
   vector<Registration::MultiContrastSetting> mc_params (n_images);
   for (auto& mc : mc_params) {
     mc.lmax = 0;
     mc.image_lmax = 0;
     mc.do_reorientation = do_reorientation;
+    mc.weight = 1.0;
   }
+  // check header transformations for equality
+  Eigen::MatrixXd trafo = MR::Transform(input1[0]).scanner2voxel.linear();
+  for (size_t i=1; i<n_images; i++) {
+    if (!trafo.isApprox(MR::Transform(input1[i]).scanner2voxel.linear(),1e-5))
+      WARN ("Multi contrast image has different header transformation from first image and will be ignored: " + str(input1[i].name()));
+  }
+  trafo = MR::Transform(input2[0]).scanner2voxel.linear();
+  for (size_t i=1; i<n_images; i++) {
+    if (!trafo.isApprox(MR::Transform(input2[i]).scanner2voxel.linear(),1e-5))
+      WARN ("Multi contrast image has different header transformation from first image and will be ignored: " + str(input2[i].name()));
+  }
+  // compare input1 and input2 for consistency
+  // set lmax and do_reorientation for each compartment
   for (size_t i=0; i<n_images; i++) {
     if (i>0) check_dimensions (input1[i], input1[i-1], 0, 3);
     if (i>0) check_dimensions (input2[i], input2[i-1], 0, 3);
-    // TODO check header transformations for equality
     if (input1[i].ndim() > 4) {
       throw Exception ("image dimensions larger than 4 are not supported");
     } else if (input1[i].ndim() == 3) {
@@ -217,29 +228,25 @@ void run () {
     [](const Registration::MultiContrastSetting& x, const Registration::MultiContrastSetting& y)
     {return x.lmax < y.lmax;})->lmax;
   do_reorientation = std::any_of(mc_params.begin(), mc_params.end(),
-    [](Registration:: MultiContrastSetting const& i){return i.do_reorientation;});
+    [](Registration::MultiContrastSetting const& i){return i.do_reorientation;});
 
   INFO("maximum lmax in any image: "+str(max_mc_image_lmax));
   INFO("do reorientation: "+str(do_reorientation));
   if (!do_reorientation and directions_cartesian.cols())
     WARN ("-directions option ignored since no FOD reorientation is being performed");
 
-  // TODO: MC output
   opt = get_options ("transformed");
-  Image<value_type> im1_transformed;
-  if (opt.size()){
-    Header transformed_header (input2[0]);
-    transformed_header.datatype() = DataType::from_command_line (DataType::Float32);
-    im1_transformed = Image<value_type>::create (opt[0][0], transformed_header).with_direct_io();
-  }
+  vector<std::string> im1_transformed_paths;
+  if (opt.size())
+    im1_transformed_paths = Registration::parse_image_sequence_output (opt[0][0], input2);
 
-  // TODO: MC output
-  std::string im1_midway_transformed_path;
-  std::string im2_midway_transformed_path;
+
+  vector<std::string> input1_midway_transformed_paths;
+  vector<std::string> input2_midway_transformed_paths;
   opt = get_options ("transformed_midway");
-  if (opt.size()){
-    im1_midway_transformed_path = str(opt[0][0]);
-    im2_midway_transformed_path = str(opt[0][1]);
+  if (opt.size()) {
+    input1_midway_transformed_paths = Registration::parse_image_sequence_output (opt[0][0], input2);
+    input2_midway_transformed_paths = Registration::parse_image_sequence_output (opt[0][1], input1);
   }
 
   opt = get_options ("mask1");
@@ -694,7 +701,7 @@ void run () {
   // TODO: set tissue specific lmax?
 
   {
-    ssize_t max_requested_lmax = 0; // TODO max_requested_lmax for each contrast type
+    ssize_t max_requested_lmax = 0; // TODO max_requested_lmax for each contrast type if we have tissue specific lmax
     if (do_rigid) max_requested_lmax = std::max(max_requested_lmax, rigid_registration.get_lmax());
     if (do_affine) max_requested_lmax = std::max(max_requested_lmax, affine_registration.get_lmax());
     if (do_nonlinear) max_requested_lmax = std::max(max_requested_lmax, nl_registration.get_lmax());
@@ -794,8 +801,6 @@ void run () {
       save_transform (rigid.get_transform(), rigid_filename);
   }
 
-#ifndef REFACTOR
-
   // ****** RUN AFFINE REGISTRATION *******
   if (do_affine) {
     CONSOLE ("running affine registration");
@@ -806,27 +811,26 @@ void run () {
       affine_registration.set_init_translation_type (Registration::Transform::Init::none);
     }
 
-    // for (size_t i=0; i<n_images; ++i ) {
-      if (im1_image[i].ndim() == 4) {
+    if (images2.ndim() == 4) {
       if (do_reorientation)
         affine_registration.set_directions (directions_cartesian);
       // if (affine_metric == Registration::NCC) // TODO
       if (affine_metric == Registration::Diff) {
         if (affine_estimator == Registration::None) {
           Registration::Metric::MeanSquared4D<Image<value_type>, Image<value_type>> metric;
-          affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
+          affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
         } else if (affine_estimator == Registration::L1) {
           Registration::Metric::L1 estimator;
-          Registration::Metric::DifferenceRobust4D<Image<value_type>, Image<value_type>, Registration::Metric::L1> metric (im1_image, im2_image, estimator);
-          affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
+          Registration::Metric::DifferenceRobust4D<Image<value_type>, Image<value_type>, Registration::Metric::L1> metric (images1, images2, estimator);
+          affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
         } else if (affine_estimator == Registration::L2) {
           Registration::Metric::L2 estimator;
-          Registration::Metric::DifferenceRobust4D<Image<value_type>, Image<value_type>, Registration::Metric::L2> metric (im1_image, im2_image, estimator);
-          affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
+          Registration::Metric::DifferenceRobust4D<Image<value_type>, Image<value_type>, Registration::Metric::L2> metric (images1, images2, estimator);
+          affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
         } else if (affine_estimator == Registration::LP) {
           Registration::Metric::LP estimator;
-          Registration::Metric::DifferenceRobust4D<Image<value_type>, Image<value_type>, Registration::Metric::LP> metric (im1_image, im2_image, estimator);
-          affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
+          Registration::Metric::DifferenceRobust4D<Image<value_type>, Image<value_type>, Registration::Metric::LP> metric (images1, images2, estimator);
+          affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
         } else throw Exception ("FIXME: estimator selection");
       } else throw Exception ("FIXME: metric selection");
     } else { // 3D
@@ -834,39 +838,36 @@ void run () {
         Registration::Metric::NormalisedCrossCorrelation metric;
         vector<size_t> extent(3,3);
         affine_registration.set_extent (extent);
-        affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
+        affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
       }
       else if (affine_metric == Registration::Diff) {
         if (affine_estimator == Registration::None) {
           Registration::Metric::MeanSquared metric;
-          affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
+          affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
         } else if (affine_estimator == Registration::L1) {
           Registration::Metric::L1 estimator;
           Registration::Metric::DifferenceRobust<Registration::Metric::L1> metric(estimator);
-          affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
+          affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
         } else if (affine_estimator == Registration::L2) {
           Registration::Metric::L2 estimator;
           Registration::Metric::DifferenceRobust<Registration::Metric::L2> metric(estimator);
-          affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
+          affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
         } else if (affine_estimator == Registration::LP) {
           Registration::Metric::LP estimator;
           Registration::Metric::DifferenceRobust<Registration::Metric::LP> metric(estimator);
-          affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
+          affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
         } else throw Exception ("FIXME: estimator selection");
       } else throw Exception ("FIXME: metric selection");
     }
-
-    if (output_affine)
-      save_transform (affine.get_transform(), affine_filename);
-
     if (output_affine_1tomid)
       save_transform (affine.get_transform_half(), affine_1tomid_filename);
 
     if (output_affine_2tomid)
       save_transform (affine.get_transform_half_inverse(), affine_2tomid_filename);
-  }
 
-#endif
+    if (output_affine)
+      save_transform (affine.get_transform(), affine_filename);
+  }
 
 
   // ****** RUN NON-LINEAR REGISTRATION *******
@@ -884,7 +885,6 @@ void run () {
       Registration::Transform::Affine identity_transform;
       nl_registration.run (identity_transform, images1, images2, im1_mask, im2_mask);
     }
-#ifndef REFACTOR
     if (warp_full_filename.size()) {
       //TODO add affine parameters to comments too?
       Header output_header = nl_registration.get_output_warps_header();
@@ -909,7 +909,7 @@ void run () {
     }
 
     if (warp2_filename.size()) {
-      Header output_header (im1_image);
+      Header output_header (images1);
       output_header.ndim() = 4;
       output_header.size(3) = 3;
       nl_registration.write_params_to_header (output_header);
@@ -920,87 +920,138 @@ void run () {
                                                     *(nl_registration.get_im2_to_mid()),
                                                     nl_registration.get_im2_to_mid_linear(), warp2);
     }
-#endif
   }
 
 
-#ifndef REFACTOR
+  if (im1_transformed_paths.size()) {
+    INFO ("Outputting input images1 transformed to space of images2...");
 
-  if (im1_transformed.valid()) {
-    INFO ("Outputting tranformed input images...");
-
+    Image<default_type> deform_field;
     if (do_nonlinear) {
-      Header deform_header (im1_transformed);
+      Header deform_header (input2[0]);
       deform_header.ndim() = 4;
       deform_header.size(3) = 3;
-      Image<default_type> deform_field = Image<default_type>::scratch (deform_header);
+      deform_field = Image<default_type>::scratch (deform_header);
       Registration::Warp::compute_full_deformation (nl_registration.get_im2_to_mid_linear().inverse(),
                                                     *(nl_registration.get_mid_to_im2()),
                                                     *(nl_registration.get_im1_to_mid()),
                                                     nl_registration.get_im1_to_mid_linear(),
                                                     deform_field);
+    }
 
-      Filter::warp<Interp::Cubic> (im1_image, im1_transformed, deform_field, 0.0);
-      if (do_reorientation)
-        Registration::Transform::reorient_warp ("reorienting FODs",
-                                                im1_transformed,
-                                                deform_field,
-                                                Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+    for (size_t idx = 0; idx < n_images; idx++) {
+      INFO ("    " + im1_transformed_paths[idx]);
+      // preload full input image
+      Image<value_type> im1_image = Image<value_type>::open (input1[idx].name()).with_direct_io (Stride::contiguous_along_axis (3));
 
-    } else if (do_affine) {
-      Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, affine.get_transform(), Adapter::AutoOverSample, 0.0);
-      if (do_reorientation)
-        Registration::Transform::reorient ("reorienting FODs",
-                                           im1_transformed,
-                                           im1_transformed,
-                                           affine.get_transform(),
-                                           Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
-    } else { // rigid
-      Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, rigid.get_transform(), Adapter::AutoOverSample, 0.0);
-      if (do_reorientation)
-        Registration::Transform::reorient ("reorienting FODs",
-                                           im1_transformed,
-                                           im1_transformed,
-                                           rigid.get_transform(),
-                                           Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+      Header transformed_header (input2[idx]);
+      transformed_header.datatype() = DataType::from_command_line (DataType::Float32);
+      Image<value_type> im1_transformed = Image<value_type>::create (im1_transformed_paths[idx], transformed_header).with_direct_io();
+
+
+      if (do_nonlinear) {
+        Filter::warp<Interp::Cubic> (im1_image, im1_transformed, deform_field, 0.0);
+        if (mc_params[idx].do_reorientation)
+          Registration::Transform::reorient_warp ("reorienting FODs",
+                                                  im1_transformed,
+                                                  deform_field,
+                                                  Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+
+      } else if (do_affine) {
+        Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, affine.get_transform(), Adapter::AutoOverSample, 0.0);
+        if (mc_params[idx].do_reorientation)
+          Registration::Transform::reorient ("reorienting FODs",
+                                             im1_transformed,
+                                             im1_transformed,
+                                             affine.get_transform(),
+                                             Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+      } else { // rigid
+        Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, rigid.get_transform(), Adapter::AutoOverSample, 0.0);
+        if (mc_params[idx].do_reorientation)
+          Registration::Transform::reorient ("reorienting FODs",
+                                             im1_transformed,
+                                             im1_transformed,
+                                             rigid.get_transform(),
+                                             Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+      }
     }
   }
 
 
-  if (!im1_midway_transformed_path.empty() and !im2_midway_transformed_path.empty()) {
+  if (input1_midway_transformed_paths.size() and input2_midway_transformed_paths.size()) {
+    // im1_midway_transformed_path
+    // im2_midway_transformed_path
+    Header midway_header;
+    Image<default_type> im1_deform_field, im2_deform_field;
+
+    if (do_nonlinear)
+      midway_header = Header (*nl_registration.get_im1_to_mid());
+    else if (do_affine)
+      midway_header = affine_registration.get_midway_header();
+    else // rigid
+      midway_header = rigid_registration.get_midway_header();
+    midway_header.datatype() = DataType::from_command_line (DataType::Float32);
+
+    // process input1 then input2 to reduce memory consumption
+    CONSOLE ("Writing input1 transformed to midway...");
     if (do_nonlinear) {
-      Header midway_header (*nl_registration.get_im1_to_mid());
-      midway_header.datatype() = DataType::from_command_line (DataType::Float32);
+      im1_deform_field = Image<default_type>::scratch (*(nl_registration.get_im1_to_mid()));
+      Registration::Warp::compose_linear_deformation (nl_registration.get_im1_to_mid_linear(), *(nl_registration.get_im1_to_mid()), im1_deform_field);
+    }
+
+    for (size_t idx = 0; idx < n_images; idx++) {
+      CONSOLE ("..." + input1_midway_transformed_paths[idx]);
+      // preload full input image
+      Image<value_type> im1_image = Image<value_type>::open (input1[idx].name()).with_direct_io (Stride::contiguous_along_axis (3));
       midway_header.ndim() = im1_image.ndim();
       if (midway_header.ndim() == 4)
         midway_header.size(3) = im1_image.size(3);
 
-      Image<default_type> im1_deform_field = Image<default_type>::scratch (*(nl_registration.get_im1_to_mid()));
-      Registration::Warp::compose_linear_deformation (nl_registration.get_im1_to_mid_linear(), *(nl_registration.get_im1_to_mid()), im1_deform_field);
+      if (do_nonlinear) {
+        auto im1_midway = Image<default_type>::create (input1_midway_transformed_paths[idx], midway_header).with_direct_io();
+        Filter::warp<Interp::Cubic> (im1_image, im1_midway, im1_deform_field, 0.0);
+        if (mc_params[idx].do_reorientation)
+          Registration::Transform::reorient_warp ("reorienting FODs", im1_midway, im1_deform_field,
+                                                  Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+      } else if (do_affine) {
+        affine_registration.transform_image_midway (im1_image, affine, mc_params[idx].do_reorientation, 1, input1_midway_transformed_paths[idx], midway_header);
+      } else { // rigid
+        rigid_registration.transform_image_midway (im1_image, rigid, mc_params[idx].do_reorientation, 1, input1_midway_transformed_paths[idx], midway_header);
+      }
+    }
 
-      auto im1_midway = Image<default_type>::create (im1_midway_transformed_path, midway_header).with_direct_io();
-      Filter::warp<Interp::Cubic> (im1_image, im1_midway, im1_deform_field, 0.0);
-      if (do_reorientation)
-        Registration::Transform::reorient_warp ("reorienting FODs", im1_midway, im1_deform_field,
-                                                Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
-
-      Image<default_type> im2_deform_field = Image<default_type>::scratch (*(nl_registration.get_im2_to_mid()));
+    CONSOLE ("Writing input2 transformed to midway...");
+    if (do_nonlinear) {
+      im2_deform_field = Image<default_type>::scratch (*(nl_registration.get_im2_to_mid()));
       Registration::Warp::compose_linear_deformation (nl_registration.get_im2_to_mid_linear(), *(nl_registration.get_im2_to_mid()), im2_deform_field);
-      auto im2_midway = Image<default_type>::create (im2_midway_transformed_path, midway_header).with_direct_io();
-      Filter::warp<Interp::Cubic> (im2_image, im2_midway, im2_deform_field, 0.0);
-      if (do_reorientation)
-        Registration::Transform::reorient_warp ("reorienting FODs", im2_midway, im2_deform_field,
-                                                Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+    }
 
-    } else if (do_affine) {
-      affine_registration.write_transformed_images (im1_image, im2_image, affine, im1_midway_transformed_path, im2_midway_transformed_path, do_reorientation);
-    } else {
-      rigid_registration.write_transformed_images (im1_image, im2_image, rigid, im1_midway_transformed_path, im2_midway_transformed_path, do_reorientation);
+    for (size_t idx = 0; idx < n_images; idx++) {
+      CONSOLE ("..." + input2_midway_transformed_paths[idx]);
+      // preload full input image
+      Image<value_type> im2_image = Image<value_type>::open (input2[idx].name()).with_direct_io (Stride::contiguous_along_axis (3));
+      midway_header.ndim() = im2_image.ndim();
+      if (midway_header.ndim() == 4)
+        midway_header.size(3) = im2_image.size(3);
+      TRACE;
+
+      if (do_nonlinear) {
+        TRACE;
+        auto im2_midway = Image<default_type>::create (input2_midway_transformed_paths[idx], midway_header).with_direct_io();
+        TRACE;
+        Filter::warp<Interp::Cubic> (im2_image, im2_midway, im2_deform_field, 0.0);
+        if (mc_params[idx].do_reorientation)
+          Registration::Transform::reorient_warp ("reorienting FODs", im2_midway, im2_deform_field,
+                                                  Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+      } else if (do_affine) {
+        affine_registration.transform_image_midway (im2_image, affine, mc_params[idx].do_reorientation, 0, input2_midway_transformed_paths[idx], midway_header);
+      } else { // rigid
+        rigid_registration.transform_image_midway (im2_image, rigid, mc_params[idx].do_reorientation, 0, input2_midway_transformed_paths[idx], midway_header);
+      }
     }
   }
 
   if (get_options ("affine_log").size() or get_options ("rigid_log").size())
     linear_logstream.close();
 
-#endif
 }
