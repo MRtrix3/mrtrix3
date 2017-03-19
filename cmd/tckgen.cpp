@@ -166,12 +166,12 @@ void run ()
   if (properties.seeds.is_finite()) {
 
     if (properties["max_num_tracks"].size())
-      WARN ("Overriding -number option (desired number of successful streamlines) as seeds can only provide a finite number");
+      WARN ("Overriding -select option (desired number of successful streamline selections), as seeds can only provide a finite number");
     properties["max_num_tracks"] = str (properties.seeds.get_total_count());
 
-    if (properties["max_num_attempts"].size())
-      WARN ("Overriding -maxnum option (maximum number of streamline attempts) as seeds can only provide a finite number");
-    properties["max_num_attempts"] = str (properties.seeds.get_total_count());
+    if (properties["max_num_seeds"].size())
+      WARN ("Overriding -seeds option (maximum number of seeds that will be attempted to track from), as seeds can only provide a finite number");
+    properties["max_num_seeds"] = str (properties.seeds.get_total_count());
 
   }
 
