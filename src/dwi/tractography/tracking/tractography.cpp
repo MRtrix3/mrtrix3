@@ -34,7 +34,7 @@ namespace MR
             "(i.e. inclusion/exclusion ROIs, min/max length, etc). "
             "tckgen will keep seeding streamlines until this number of "
             "streamlines have been selected, or the maximum allowed "
-            "number of seeds has been exceeded (see -max_seeds option). "
+            "number of seeds has been exceeded (see -seeds option). "
             "By default, 1000 streamlines are to be selected. "
             "Set to zero to disable, which will result in streamlines "
             "being seeded until the number specified by -seeds has been "
