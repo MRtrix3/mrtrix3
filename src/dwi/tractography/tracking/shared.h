@@ -30,6 +30,9 @@
 
 #define MAX_TRIALS 1000
 
+#define TCKGEN_DEFAULT_NUM_TRACKS 1000
+#define TCKGEN_DEFAULT_SEED_TO_SELECT_RATIO 100
+
 
 // If this is enabled, images will be output in the current directory showing the density of streamline terminations due to different termination mechanisms throughout the brain
 //#define DEBUG_TERMINATIONS
@@ -58,7 +61,6 @@ namespace MR
               source (Image<float>::open (diff_path).with_direct_io (3)),
               properties (property_set),
               init_dir ({ NaN, NaN, NaN }),
-              max_num_tracks (1000),
               min_num_points (0),
               max_num_points (0),
               max_angle (NaN),
@@ -78,9 +80,12 @@ namespace MR
 #endif
               {
 
+                if (properties.find ("max_num_tracks") == properties.end())
+                  max_num_tracks = (properties.find ("max_num_seeds") == properties.end()) ? TCKGEN_DEFAULT_NUM_TRACKS : 0;
+                properties.set (max_num_tracks, "max_num_tracks");
+
                 properties.set (threshold, "threshold");
                 properties.set (unidirectional, "unidirectional");
-                properties.set (max_num_tracks, "max_num_tracks");
                 properties.set (rk4, "rk4");
                 properties.set (stop_on_all_include, "stop_on_all_include");
 
@@ -89,7 +94,7 @@ namespace MR
                 init_threshold = threshold;
                 properties.set (init_threshold, "init_threshold");
 
-                max_num_seeds = 100 * max_num_tracks;
+                max_num_seeds = TCKGEN_DEFAULT_SEED_TO_SELECT_RATIO * max_num_tracks;
                 properties.set (max_num_seeds, "max_num_seeds");
 
                 assert (properties.seeds.num_seeds());
