@@ -76,7 +76,8 @@ namespace MR
         + Argument ("number").type_integer (0)
 
       + Option ("max_seed_attempts", "set the maximum number of times that the tracking algorithm should "
-                                     "attempt to find an appropriate tracking direction from a given seed point")
+                                     "attempt to find an appropriate tracking direction from a given seed point. "
+                                     "(default: 1000)")
         + Argument ("number").type_integer (1)
 
       + Option ("seed_cutoff", "set the minimum FA or FOD amplitude for seeding tracks "
