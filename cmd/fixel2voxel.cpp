@@ -130,7 +130,7 @@ struct LoopFixelsInVoxelWithMax { NOMEMALIGN
       apply (set_offset (offset), data);
     }
     FORCE_INLINE operator bool() const { return max_fixels ? (fixel_index < max_fixels) : (fixel_index < num_fixels); }
-    FORCE_INLINE void operator++() { if (!padding()) { apply (inc_fixel (), data); ++fixel_index; } }
+    FORCE_INLINE void operator++() { if (!padding()) apply (inc_fixel (), data); ++fixel_index; }
     FORCE_INLINE void operator++(int) { operator++(); }
     FORCE_INLINE bool padding() const { return (max_fixels && fixel_index >= num_fixels); }
     FORCE_INLINE size_t count() const { return max_fixels ? max_fixels : num_fixels; }
@@ -481,13 +481,13 @@ class SplitDir : protected Base
       for (auto f = Base::Loop (index) (data); f; ++f) {
         if (f.padding()) {
           for (size_t axis = 0; axis < 3; ++axis) {
-            data.index(1) = axis;
-            out.value() = data.value();
+            out.value() = pad_value;
             ++out.index(3);
           }
         } else {
           for (size_t axis = 0; axis < 3; ++axis) {
-            out.value() = pad_value;
+            data.index(1) = axis;
+            out.value() = data.value();
             ++out.index(3);
           }
         }

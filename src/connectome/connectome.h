@@ -20,6 +20,7 @@
 
 #include "app.h"
 #include "exception.h"
+#include "header.h"
 #include "mrtrix.h"
 #include "types.h"
 
@@ -115,6 +116,10 @@ namespace MR {
 
       } }
     }
+
+
+
+    void check (Header&);
 
 
 

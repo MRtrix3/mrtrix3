@@ -261,18 +261,27 @@ def function(fn, *args):
 # When running on Windows, add the necessary '.exe' so that hopefully the correct
 #   command is found by subprocess
 def exeName(item):
+  import os
   from distutils.spawn import find_executable
   from mrtrix3 import app
+  global _mrtrix_bin_path
   if not app.isWindows():
-    return item
-  if item.endswith('.exe'):
-    return item
-  if find_executable(item) is not None:
-    return item
-  if find_executable(item + '.exe') is not None:
-    return item + '.exe'
+    path = item
+  elif item.endswith('.exe'):
+    path = item
+  elif os.path.isfile(os.path.join(_mrtrix_bin_path, item)):
+    path = item
+  elif os.path.isfile(os.path.join(_mrtrix_bin_path, item + '.exe')):
+    path = item + '.exe'
+  elif find_executable(item) is not None:
+    path = item
+  elif find_executable(item + '.exe') is not None:
+    path = item + '.exe'
   # If it can't be found, return the item as-is; find_executable() fails to identify Python scripts
-  return item
+  else:
+    path = item
+  app.debug(item + ' -> ' + path)
+  return path
 
 
 

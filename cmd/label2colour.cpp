@@ -62,6 +62,7 @@ void run ()
 {
 
   auto H = Header::open (argument[0]);
+  Connectome::check (H);
   auto nodes = H.get_image<node_t>();
 
   LUT lut;

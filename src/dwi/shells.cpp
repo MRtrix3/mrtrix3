@@ -243,7 +243,7 @@ namespace MR
           // default: keep everything
           to_retain.clear (true);
         }
-        
+
         if (force_with_bzero && !has_bzero())
           throw Exception ("No b=0 data found, but the command requires the presence of b=0 data");
 
@@ -292,7 +292,7 @@ namespace MR
       const size_t num_shells = clusterBvalues (bvals, clusters);
 
       if ((num_shells < 1) || (num_shells > std::sqrt (default_type(grad.rows()))))
-        throw Exception ("Gradient encoding matrix does not represent a HARDI sequence");
+        throw Exception ("DWI volumes could not be classified into b-value shells; gradient encoding may not represent a HARDI sequence");
 
       for (size_t shellIdx = 0; shellIdx <= num_shells; shellIdx++) {
 
@@ -324,7 +324,7 @@ namespace MR
       } else {
         INFO ("Diffusion gradient encoding data clustered into " + str(num_shells) + " shells (no b=0 volumes)");
       }
-      DEBUG ("Shells: b = { " + 
+      DEBUG ("Shells: b = { " +
           str ([&]{ std::string m; for (auto& s : shells) m += str(s.get_mean()) + "(" + str(s.count()) + ") "; return m; }())
           + "}");
     }
