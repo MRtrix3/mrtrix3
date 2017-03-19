@@ -161,7 +161,7 @@ void run ()
   Seeding::load_seed_mechanisms (properties);
   Seeding::load_seed_parameters (properties);
 
-  // Check validity of options -number and -maxnum; these are meaningless if seeds are number-limited
+  // Check validity of options -select and -seeds; these are meaningless if seeds are number-limited
   // By over-riding the values in properties, the progress bar should still be valid
   if (properties.seeds.is_finite()) {
 
