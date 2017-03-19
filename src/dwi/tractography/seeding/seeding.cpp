@@ -75,9 +75,12 @@ namespace MR
                          "until the number specified by -select has been reached.")
         + Argument ("number").type_integer (0)
 
-      + Option ("max_seed_attempts", "set the maximum number of times that the tracking algorithm should "
+      + Option ("max_attempts_per_seed", "set the maximum number of times that the tracking algorithm should "
                                      "attempt to find an appropriate tracking direction from a given seed point. "
-                                     "(default: 1000)")
+                                     "This should be set high enough to ensure that an actual plausible seed point is "
+                                     "not discarded prematurely as being unable to initiate tracking from. "
+                                     "Higher settings may affect performance if many seeds are genuinely impossible "
+                                     "to track from, as many attempts will still be made in vain for such seeds. (default: 1000)")
         + Argument ("number").type_integer (1)
 
       + Option ("seed_cutoff", "set the minimum FA or FOD amplitude for seeding tracks "
@@ -163,7 +166,7 @@ namespace MR
         auto opt = get_options ("seeds");
         if (opt.size()) properties["max_num_seeds"] = str<unsigned int> (opt[0][0]);
 
-        opt = get_options ("max_seed_attempts");
+        opt = get_options ("max_attempts_per_seed");
         if (opt.size()) properties["max_seed_attempts"] = str<unsigned int> (opt[0][0]);
 
         opt = get_options ("seed_cutoff");

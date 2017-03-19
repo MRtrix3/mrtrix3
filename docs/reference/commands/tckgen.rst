@@ -74,7 +74,7 @@ Tractography seeding options and parameters
 
 -  **-seeds number** set the maximum number of seeds that tckgen will attempt to track from. This is used to prevent the program from running indefinitely when no streamlines can be found that match the selection criteria. By default, this is set to 100× the number of selected streamlines. Set to zero to disable, which will result in streamlines being generated until the number specified by -select has been reached.
 
--  **-max_seed_attempts number** set the maximum number of times that the tracking algorithm should attempt to find an appropriate tracking direction from a given seed point. (default: 1000)
+-  **-max_attempts_per_seed number** set the maximum number of times that the tracking algorithm should attempt to find an appropriate tracking direction from a given seed point. This should be set high enough to ensure that an actual plausible seed point is not discarded prematurely as being unable to initiate tracking from. Higher settings may affect performance if many seeds are genuinely impossible to track from, as many attempts will still be made in vain for such seeds. (default: 1000)
 
 -  **-seed_cutoff value** set the minimum FA or FOD amplitude for seeding tracks (default is the same as the normal -cutoff).
 
