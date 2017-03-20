@@ -66,25 +66,32 @@ namespace MR
 
       const OptionGroup SeedParameterOption = OptionGroup ("Tractography seeding options and parameters")
 
-      + Option ("seeds", "set the maximum number of seeds that tckgen will attempt "
-                         "to track from. This is used to prevent the program from "
-                         "running indefinitely when no streamlines can be found that "
-                         "match the selection criteria. By default, this is set to "
-                         "100× the number of selected streamlines. Set to zero to "
-                         "disable, which will result in streamlines being generated "
-                         "until the number specified by -select has been reached.")
-        + Argument ("number").type_integer (0)
+      + Option ("seeds", 
+          "set the number of seeds that tckgen will attempt to track from. If "
+          "this option is NOT provided, the default number of seeds is set to "
+          "100× the number of selected streamlines. "
+          "If -select is NOT also specified, tckgen will continue tracking until "
+          "this number of seeds has been attempted. However, if -select is also "
+          "specified, tckgen will stop when the number of seeds attempted "
+          "reaches the number specified here, OR when the number of streamlines "
+          "selected reaches the number requested with the -select option. This "
+          "can be used to prevent the program from running indefinitely when no "
+          "or very few streamlines can be found that match the selection "
+          "criteria. Setting this to zero will cause tckgen to keep attempting "
+          "seeds until the number specified by -select has been reached.") +
+      Argument ("number").type_integer (0)
 
-      + Option ("max_attempts_per_seed", "set the maximum number of times that the tracking algorithm should "
-                                     "attempt to find an appropriate tracking direction from a given seed point. "
-                                     "This should be set high enough to ensure that an actual plausible seed point is "
-                                     "not discarded prematurely as being unable to initiate tracking from. "
-                                     "Higher settings may affect performance if many seeds are genuinely impossible "
-                                     "to track from, as many attempts will still be made in vain for such seeds. (default: 1000)")
-        + Argument ("number").type_integer (1)
+      + Option ("max_attempts_per_seed", 
+          "set the maximum number of times that the tracking algorithm should "
+          "attempt to find an appropriate tracking direction from a given seed point. "
+          "This should be set high enough to ensure that an actual plausible seed point is "
+          "not discarded prematurely as being unable to initiate tracking from. "
+          "Higher settings may affect performance if many seeds are genuinely impossible "
+          "to track from, as many attempts will still be made in vain for such seeds. (default: 1000)")
+      + Argument ("number").type_integer (1)
 
       + Option ("seed_cutoff", "set the minimum FA or FOD amplitude for seeding tracks "
-                               "(default is the same as the normal -cutoff).")
+          "(default is the same as the normal -cutoff).")
         + Argument ("value").type_float (0.0)
 
       + Option ("seed_unidirectional","track from the seed point in one direction only (default is to "
