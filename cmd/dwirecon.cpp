@@ -74,10 +74,10 @@ void run ()
   // auto out = Image<value_type>::create (argument[1], header);
 
   // Select subset
-  auto dwisub = Adapter::Extract1D(dwi, 3, idx);
+  auto dwisub = Adapter::Extract1D<decltype(dwi)>(dwi, 3, idx);
 
   // Set up scattered data matrix
-  ReconMatrix R (dwisub, dirs, 4);
+  DWI::ReconMatrix R (dwisub, dirs, 4);
 
   // Fit scattered data in basis...
 
