@@ -68,13 +68,13 @@ void run ()
   DWI::Shells shells (grad);
   shells.select_shells (true, false, true);
   auto idx = shells.largest().get_volumes();
-  auto dirs = DWI::gen_direction_matrix (grad, idx);
+  auto dirs = DWI::gen_direction_matrix (grad, idx).template cast<float>();
   DWI::stash_DW_scheme (header, grad);
   
   // auto out = Image<value_type>::create (argument[1], header);
 
   // Select subset
-  auto dwisub = Adapter::Extract1D<decltype(dwi)>(dwi, 3, idx);
+  auto dwisub = Adapter::make <Adapter::Extract1D> (dwi, 3, container_cast<vector<int>> (idx));
 
   // Set up scattered data matrix
   DWI::ReconMatrix R (dwisub, dirs, 4);

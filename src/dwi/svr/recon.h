@@ -46,7 +46,7 @@ namespace MR
   {
 
     class ReconMatrix : public Eigen::EigenBase<ReconMatrix>
-    {
+    {  MEMALIGN(ReconMatrix);
     public:
       // Required typedefs, constants, and method:
       typedef float Scalar;
