@@ -61,7 +61,6 @@ typedef float value_type;
 void run ()
 {
   auto dwi = Image<value_type>::open(argument[0]).with_direct_io(3);
-  Header header (dwi);
 
   // force single-shell until multi-shell basis is implemented
   auto grad = DWI::get_valid_DW_scheme (dwi);
@@ -69,9 +68,6 @@ void run ()
   shells.select_shells (true, false, true);
   auto idx = shells.largest().get_volumes();
   auto dirs = DWI::gen_direction_matrix (grad, idx).template cast<float>();
-  DWI::stash_DW_scheme (header, grad);
-  
-  // auto out = Image<value_type>::create (argument[1], header);
 
   // Select subset
   auto dwisub = Adapter::make <Adapter::Extract1D> (dwi, 3, container_cast<vector<int>> (idx));
@@ -79,8 +75,20 @@ void run ()
   // Set up scattered data matrix
   DWI::ReconMatrix R (dwisub, dirs, 4);
 
-  // Fit scattered data in basis...
+  // Read input data to vector
+  Eigen::VectorXf y;
+  // ...
 
+  // Fit scattered data in basis...
+  Eigen::LeastSquaresConjugateGradient<DWI::ReconMatrix, Eigen::IdentityPreconditioner> lscg;
+  lscg.compute(R);
+  auto x = lscg.solve(y);
+
+  // Write result to output file
+  Header header (dwisub);
+  DWI::stash_DW_scheme (header, grad);
+  auto out = Image<value_type>::create (argument[1], header);
+  // ...
 
 
 }

@@ -115,5 +115,28 @@ namespace MR
 }
 
 
+// Implementation of ReconMatrix * Eigen::DenseVector though a specialization of internal::generic_product_impl:
+namespace Eigen {
+  namespace internal {
+
+    template<typename Rhs>
+    struct generic_product_impl<MR::DWI::ReconMatrix, Rhs, SparseShape, DenseShape, GemvProduct>
+      : generic_product_impl_base<MR::DWI::ReconMatrix,Rhs,generic_product_impl<MR::DWI::ReconMatrix,Rhs> >
+    {
+      typedef typename Product<MR::DWI::ReconMatrix,Rhs>::Scalar Scalar;
+
+      template<typename Dest>
+      static void scaleAndAddTo(Dest& dst, const MR::DWI::ReconMatrix& lhs, const Rhs& rhs, const Scalar& alpha)
+      {
+        // This method should implement "dst += alpha * lhs * rhs" inplace,
+
+
+      }
+    };
+
+  }
+}
+
+
 #endif
 
