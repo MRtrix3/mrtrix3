@@ -47,7 +47,7 @@ namespace MR
                   SharedBase (diff_path, property_set),
                   lmax (Math::SH::LforN (source.size(3))),
                   num_samples (TCKGEN_DEFAULT_IFOD2_NSAMPLES),
-                  max_trials (TCKGEN_DEFAULT_MAX_ATTEMPTS_PER_SEED),
+                  max_trials (TCKGEN_DEFAULT_MAX_TRIALS_PER_STEP),
                   sin_max_angle (std::sin (max_angle)),
                   mean_samples (0.0),
                   mean_truncations (0.0),
