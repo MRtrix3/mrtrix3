@@ -69,7 +69,7 @@ namespace MR
       + Option ("seeds", 
           "set the number of seeds that tckgen will attempt to track from. If "
           "this option is NOT provided, the default number of seeds is set to "
-          "100× the number of selected streamlines. "
+          "1000× the number of selected streamlines. "
           "If -select is NOT also specified, tckgen will continue tracking until "
           "this number of seeds has been attempted. However, if -select is also "
           "specified, tckgen will stop when the number of seeds attempted "

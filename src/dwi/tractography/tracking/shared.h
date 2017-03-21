@@ -31,7 +31,7 @@
 #define MAX_TRIALS 1000
 
 #define TCKGEN_DEFAULT_NUM_TRACKS 1000
-#define TCKGEN_DEFAULT_SEED_TO_SELECT_RATIO 100
+#define TCKGEN_DEFAULT_SEED_TO_SELECT_RATIO 1000
 
 
 // If this is enabled, images will be output in the current directory showing the density of streamline terminations due to different termination mechanisms throughout the brain
