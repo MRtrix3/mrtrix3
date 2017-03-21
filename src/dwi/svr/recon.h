@@ -60,6 +60,7 @@ namespace MR
       Eigen::Index rows() const { return M.rows(); }
       Eigen::Index cols() const { return M.cols()*Y.cols(); }
 
+
       template<typename Rhs>
       Eigen::Product<ReconMatrix,Rhs,Eigen::AliasFreeProduct> operator*(const Eigen::MatrixBase<Rhs>& x) const {
         return Eigen::Product<ReconMatrix,Rhs,Eigen::AliasFreeProduct>(*this, x.derived());
@@ -85,13 +86,14 @@ namespace MR
       {
         // Identity matrix for now.
         // TODO: complete with proper voxel weights later
-        size_t i = 0;
-        size_t j = 0;
-        for (size_t x = 0; x < in.size(0); x++)
-          for (size_t y = 0; y < in.size(1); y++)
-            for (size_t z = 0; z < in.size(2); z++, j++)
-              for (size_t v = 0; v < in.size(3); v++, i++)
+        size_t i = 0, j = 0;
+        for (size_t v = 0; v < in.size(3); v++) {
+          j = 0;
+          for (size_t z = 0; z < in.size(2); z++)
+            for (size_t y = 0; y < in.size(1); y++)
+              for (size_t x = 0; x < in.size(0); x++, i++)
                 M.insert(i,j) = 1.0;
+        }
       }
 
       void init_Y(const Header& in, const Eigen::MatrixXf& grad)
@@ -103,7 +105,7 @@ namespace MR
           vec = {grad(i, 0), grad(i, 1), grad(i, 2)};
           for (size_t j = 0; j < in.size(2); j++) {
             // TODO: rotate vector with motion parameters
-            Y.row(j*in.size(3)+i) = Math::SH::delta(delta, vec, lmax);
+            Y.row(i*in.size(2)+j) = Math::SH::delta(delta, vec, lmax);
           }
         }
       }
@@ -129,6 +131,7 @@ namespace Eigen {
       static void scaleAndAddTo(Dest& dst, const MR::DWI::ReconMatrix& lhs, const Rhs& rhs, const Scalar& alpha)
       {
         // This method should implement "dst += alpha * lhs * rhs" inplace,
+        // TODO
 
 
       }
