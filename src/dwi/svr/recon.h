@@ -27,6 +27,7 @@
 namespace MR {
   namespace DWI {
     class ReconMatrix;
+    class ReconMatrixAdjoint;
   }
 }
 
@@ -34,7 +35,11 @@ namespace Eigen {
   namespace internal {
     // ReconMatrix inherits its traits from SparseMatrix
     template<>
-    struct traits<MR::DWI::ReconMatrix> : public Eigen::internal::traits<Eigen::SparseMatrix<double> >
+    struct traits<MR::DWI::ReconMatrix> : public Eigen::internal::traits<Eigen::SparseMatrix<float> >
+    {};
+
+    template<>
+    struct traits<MR::DWI::ReconMatrixAdjoint> : public Eigen::internal::traits<Eigen::SparseMatrix<float> >
     {};
   }
 }
@@ -82,6 +87,8 @@ namespace MR
 
       inline const size_t get_grad_idx(const size_t idx) const { return idx / nxy; }
 
+      const ReconMatrixAdjoint adjoint() const;
+
     private:
       const int lmax;
       const size_t nxy, nz, nv;
@@ -120,6 +127,36 @@ namespace MR
     };
 
 
+    class ReconMatrixAdjoint : public Eigen::EigenBase<ReconMatrixAdjoint>
+    {  MEMALIGN(ReconMatrixAdjoint);
+    public:
+      // Required typedefs, constants, and method:
+      typedef float Scalar;
+      typedef float RealScalar;
+      typedef int StorageIndex;
+      enum {
+        ColsAtCompileTime = Eigen::Dynamic,
+        MaxColsAtCompileTime = Eigen::Dynamic,
+        IsRowMajor = false
+      };
+      Eigen::Index rows() const { return R.cols(); }
+      Eigen::Index cols() const { return R.rows(); }
+
+      template<typename Rhs>
+      Eigen::Product<ReconMatrixAdjoint,Rhs,Eigen::AliasFreeProduct> operator*(const Eigen::MatrixBase<Rhs>& x) const {
+        return Eigen::Product<ReconMatrixAdjoint,Rhs,Eigen::AliasFreeProduct>(*this, x.derived());
+      }
+
+      ReconMatrixAdjoint(const ReconMatrix& R)
+        : R(R)
+      {  }
+
+      const ReconMatrix& R;
+
+    };
+
+
+
   }
 }
 
@@ -156,6 +193,35 @@ namespace Eigen {
       }
 
     };
+
+
+    template<typename Rhs>
+    struct generic_product_impl<MR::DWI::ReconMatrixAdjoint, Rhs, SparseShape, DenseShape, GemvProduct>
+      : generic_product_impl_base<MR::DWI::ReconMatrixAdjoint,Rhs,generic_product_impl<MR::DWI::ReconMatrixAdjoint,Rhs> >
+    {
+      typedef typename Product<MR::DWI::ReconMatrixAdjoint,Rhs>::Scalar Scalar;
+
+      template<typename Dest>
+      static void scaleAndAddTo(Dest& dst, const MR::DWI::ReconMatrixAdjoint& lhs, const Rhs& rhs, const Scalar& alpha)
+      {
+        // This method should implement "dst += alpha * lhs * rhs" inplace
+        assert(alpha==Scalar(1) && "scaling is not implemented");
+
+        auto Y = lhs.R.getY();
+        size_t nc = Y.cols();
+        size_t nxyz = lhs.R.getM().cols();
+        VectorXf r;
+        for (size_t j = 0; j < nc; j++) {
+          r = rhs;
+          for (size_t i = 0; i < lhs.cols(); i++)
+            r *= Y(lhs.R.get_grad_idx(i), j);
+          dst.segment(j*nxyz, nxyz) = lhs.R.getM().adjoint() * r;
+        }
+
+      }
+
+    };
+
 
   }
 }
