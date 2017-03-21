@@ -60,7 +60,7 @@ typedef float value_type;
 
 void run ()
 {
-  auto dwi = Image<value_type>::open(argument[0]).with_direct_io(3);
+  auto dwi = Image<value_type>::open(argument[0]);
 
   // force single-shell until multi-shell basis is implemented
   auto grad = DWI::get_valid_DW_scheme (dwi);
@@ -76,8 +76,10 @@ void run ()
   DWI::ReconMatrix R (dwisub, dirs, 4);
 
   // Read input data to vector
-  Eigen::VectorXf y;
-  // ...
+  Eigen::VectorXf y (dwisub.size(0)*dwisub.size(1)*dwisub.size(2)*dwisub.size(3));
+  size_t j = 0;
+  for (auto l = Loop("loading image data", {0, 1, 2, 3})(dwisub); l; l++, j++)
+    y[j] = dwisub.value();
 
   // Fit scattered data in basis...
   Eigen::LeastSquaresConjugateGradient<DWI::ReconMatrix, Eigen::IdentityPreconditioner> lscg;
@@ -86,9 +88,13 @@ void run ()
 
   // Write result to output file
   Header header (dwisub);
-  DWI::stash_DW_scheme (header, grad);
+  DWI::stash_DW_scheme (header, dirs);
+  header.size(3) = 28;
   auto out = Image<value_type>::create (argument[1], header);
-  // ...
+
+  j = 0;
+  for (auto l = Loop("writing result to image", {0, 1, 2, 3})(out); l; l++, j++)
+    out.value() = x[j];
 
 
 }
