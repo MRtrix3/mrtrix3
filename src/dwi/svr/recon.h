@@ -32,7 +32,7 @@ namespace MR {
 
 namespace Eigen {
   namespace internal {
-    // ReconMatrix looks-like a SparseMatrix, so let's inherits its traits:
+    // ReconMatrix inherits its traits from SparseMatrix
     template<>
     struct traits<MR::DWI::ReconMatrix> : public Eigen::internal::traits<Eigen::SparseMatrix<double> >
     {};
@@ -69,15 +69,22 @@ namespace MR
       // Custom API:
       ReconMatrix(const Header& in, const Eigen::MatrixXf& grad, const int lmax)
         : lmax(lmax),
-          M(in.size(0)*in.size(1)*in.size(2)*in.size(3), in.size(0)*in.size(1)*in.size(2)),
-          Y(in.size(2)*in.size(3), Math::SH::NforL(lmax))
+          nxy (in.size(0)*in.size(1)), nz (in.size(2)), nv (in.size(3)),
+          M(nxy*nz*nv, nxy*nz),
+          Y(nz*nv, Math::SH::NforL(lmax))
       {
         init_M(in);
         init_Y(in, grad);
       }
 
+      const Eigen::SparseMatrix<float>& getM() const { return M; }
+      const Eigen::MatrixXf& getY() const { return Y; }
+
+      inline const size_t get_grad_idx(const size_t idx) const { return idx / nxy; }
+
     private:
       const int lmax;
+      const size_t nxy, nz, nv;
       Eigen::SparseMatrix<float> M;
       Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> Y;
 
@@ -130,11 +137,24 @@ namespace Eigen {
       template<typename Dest>
       static void scaleAndAddTo(Dest& dst, const MR::DWI::ReconMatrix& lhs, const Rhs& rhs, const Scalar& alpha)
       {
-        // This method should implement "dst += alpha * lhs * rhs" inplace,
-        // TODO
+        // This method should implement "dst += alpha * lhs * rhs" inplace
+        assert(alpha==Scalar(1) && "scaling is not implemented");
 
+        auto Y = lhs.getY();
+        size_t nc = Y.cols();
+        size_t nxyz = lhs.getM().cols();
+        VectorXf r (nxyz);
+        float a;
+        for (size_t i = 0; i < lhs.rows(); i++) {
+          r = lhs.getM().row(i);
+          for (size_t j = 0; j < nc; j++) {
+            a = r.dot(rhs.segment(j*nxyz, nxyz));
+            dst[i] += a * Y(lhs.get_grad_idx(i), j);
+          }
+        }
 
       }
+
     };
 
   }
