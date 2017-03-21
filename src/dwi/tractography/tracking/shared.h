@@ -27,11 +27,7 @@
 #include "dwi/tractography/ACT/shared.h"
 #include "dwi/tractography/resampling/downsampler.h"
 #include "dwi/tractography/tracking/types.h"
-
-#define MAX_TRIALS 1000
-
-#define TCKGEN_DEFAULT_NUM_TRACKS 1000
-#define TCKGEN_DEFAULT_SEED_TO_SELECT_RATIO 1000
+#include "dwi/tractography/tracking/tractography.h"
 
 
 // If this is enabled, images will be output in the current directory showing the density of streamline terminations due to different termination mechanisms throughout the brain
@@ -81,7 +77,7 @@ namespace MR
               {
 
                 if (properties.find ("max_num_tracks") == properties.end())
-                  max_num_tracks = (properties.find ("max_num_seeds") == properties.end()) ? TCKGEN_DEFAULT_NUM_TRACKS : 0;
+                  max_num_tracks = (properties.find ("max_num_seeds") == properties.end()) ? TCKGEN_DEFAULT_NUM_SELECTED_TRACKS : 0;
                 properties.set (max_num_tracks, "max_num_tracks");
 
                 properties.set (threshold, "threshold");

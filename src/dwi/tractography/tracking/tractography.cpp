@@ -60,7 +60,7 @@ namespace MR
 
       + Option ("cutoff",
             "set the FA or FOD amplitude cutoff for terminating tracks "
-            "(default is " + str(DEFAULT_TRACTOGRAPHY_CUTOFF, 2) + ").")
+            "(default is " + str(TCKGEN_DEFAULT_CUTOFF, 2) + ").")
           + Argument ("value").type_float (0.0)
 
       + Option ("trials",
@@ -78,7 +78,7 @@ namespace MR
 
       + Option ("samples",
             "set the number of FOD samples to take per step for the 2nd order "
-            "(iFOD2) method (Default: " + str(DEFAULT_TRACTOGRAPHY_IFOD2_NSAMPLES) + ").")
+            "(iFOD2) method (Default: " + str(TCKGEN_DEFAULT_IFOD2_NSAMPLES) + ").")
           + Argument ("number").type_integer (2, 100)
 
       + Option ("rk4", "use 4th-order Runge-Kutta integration "
