@@ -18,6 +18,13 @@ Usage
 -  *source*: the image containing the source data. The type of data depends on the algorithm used:- FACT: the directions file (each triplet of volumes is the X,Y,Z direction of a fibre population).- iFOD1/2, Nulldist2 & SD_Stream: the SH image resulting from CSD.- Nulldist1 & SeedTest: any image (will not be used).- Tensor_Det / Tensor_Prob: the DWI image.
 -  *tracks*: the output file containing the tracks generated.
 
+Description
+-----------
+
+By default, tckgen produces a fixed number of streamlines, by attempting to seed from new random locations until the target number of streamlines have been selected (in other words, after all inclusion & exclusion criteria have been applied), or the maximum number of seeds has been exceeded (by default, this is 1000× the desired number of selected streamlines). Use the -select and/or -seeds options to modify as required. See also the Seeding options section for alternative seeding strategies.
+
+Note that the source data required as input depends on the algorithm selected, as detailed in the description for the 'source' argument.
+
 Options
 -------
 
@@ -72,7 +79,7 @@ Tractography seeding mechanisms; at least one must be provided
 Tractography seeding options and parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-seeds number** set the maximum number of seeds that tckgen will attempt to track from. This is used to prevent the program from running indefinitely when no streamlines can be found that match the selection criteria. By default, this is set to 100× the number of selected streamlines. Set to zero to disable, which will result in streamlines being generated until the number specified by -select has been reached.
+-  **-seeds number** set the number of seeds that tckgen will attempt to track from. If this option is NOT provided, the default number of seeds is set to 1000× the number of selected streamlines. If -select is NOT also specified, tckgen will continue tracking until this number of seeds has been attempted. However, if -select is also specified, tckgen will stop when the number of seeds attempted reaches the number specified here, OR when the number of streamlines selected reaches the number requested with the -select option. This can be used to prevent the program from running indefinitely when no or very few streamlines can be found that match the selection criteria. Setting this to zero will cause tckgen to keep attempting seeds until the number specified by -select has been reached.
 
 -  **-max_attempts_per_seed number** set the maximum number of times that the tracking algorithm should attempt to find an appropriate tracking direction from a given seed point. This should be set high enough to ensure that an actual plausible seed point is not discarded prematurely as being unable to initiate tracking from. Higher settings may affect performance if many seeds are genuinely impossible to track from, as many attempts will still be made in vain for such seeds. (default: 1000)
 
