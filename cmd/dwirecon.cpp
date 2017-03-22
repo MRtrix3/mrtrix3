@@ -67,14 +67,16 @@ void run ()
   DWI::Shells shells (grad);
   shells.select_shells (true, false, true);
   auto idx = shells.largest().get_volumes();
-  auto dirs = DWI::gen_direction_matrix (grad, idx).template cast<float>();
 
   // Select subset
   auto dwisub = Adapter::make <Adapter::Extract1D> (dwi, 3, container_cast<vector<int>> (idx));
+  Eigen::MatrixXf gradsub (idx.size(), grad.cols());
+  for (size_t i = 0; i < idx.size(); i++)
+    gradsub.row(i) = grad.row(idx[i]).template cast<float>();
 
   // Set up scattered data matrix
   INFO("initialise reconstruction matrix");
-  DWI::ReconMatrix R (dwisub, dirs, 4);
+  DWI::ReconMatrix R (dwisub, gradsub, 4);
 
   // Read input data to vector
   Eigen::VectorXf y (dwisub.size(0)*dwisub.size(1)*dwisub.size(2)*dwisub.size(3));
@@ -87,13 +89,13 @@ void run ()
   Eigen::LeastSquaresConjugateGradient<DWI::ReconMatrix, Eigen::IdentityPreconditioner> lscg;
   lscg.compute(R);
   lscg.setTolerance(1e-4);
-  lscg.setMaxIterations(10);
+  lscg.setMaxIterations(100);
   Eigen::VectorXf x = lscg.solve(y);
   std::cout << "LSCG: #iterations: " << lscg.iterations() << ", estimated error: " << lscg.error() << std::endl;
 
   // Write result to output file
   Header header (dwisub);
-  DWI::stash_DW_scheme (header, dirs);
+  DWI::stash_DW_scheme (header, gradsub);
   header.size(3) = 15;
   auto out = Image<value_type>::create (argument[1], header);
 
