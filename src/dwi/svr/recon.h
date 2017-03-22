@@ -35,11 +35,11 @@ namespace Eigen {
   namespace internal {
     // ReconMatrix inherits its traits from SparseMatrix
     template<>
-    struct traits<MR::DWI::ReconMatrix> : public Eigen::internal::traits<Eigen::SparseMatrix<float> >
+    struct traits<MR::DWI::ReconMatrix> : public Eigen::internal::traits<Eigen::SparseMatrix<float,Eigen::ColMajor,ssize_t> >
     {};
 
     template<>
-    struct traits<MR::DWI::ReconMatrixAdjoint> : public Eigen::internal::traits<Eigen::SparseMatrix<float> >
+    struct traits<MR::DWI::ReconMatrixAdjoint> : public Eigen::internal::traits<Eigen::SparseMatrix<float,Eigen::ColMajor,ssize_t> >
     {};
   }
 }
@@ -56,7 +56,7 @@ namespace MR
       // Required typedefs, constants, and method:
       typedef float Scalar;
       typedef float RealScalar;
-      typedef int StorageIndex;
+      typedef ssize_t StorageIndex;
       enum {
         ColsAtCompileTime = Eigen::Dynamic,
         MaxColsAtCompileTime = Eigen::Dynamic,
@@ -82,7 +82,7 @@ namespace MR
         init_Y(in, grad);
       }
 
-      const Eigen::SparseMatrix<float>& getM() const { return M; }
+      const Eigen::SparseMatrix<float, Eigen::ColMajor, StorageIndex>& getM() const { return M; }
       const Eigen::MatrixXf& getY() const { return Y; }
 
       inline const size_t get_grad_idx(const size_t idx) const { return idx / nxy; }
@@ -92,7 +92,7 @@ namespace MR
     private:
       const int lmax;
       const size_t nxy, nz, nv;
-      Eigen::SparseMatrix<float> M;
+      Eigen::SparseMatrix<float, Eigen::ColMajor, StorageIndex> M;
       Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> Y;
 
 
@@ -107,6 +107,7 @@ namespace MR
           for (size_t z = 0; z < in.size(2); z++)
             for (size_t xy = 0; xy < nxy; xy++, i++, j++)
               M.insert(i,j) = 1.0;
+          VAR(v);
         }
       }
 
@@ -134,7 +135,7 @@ namespace MR
       // Required typedefs, constants, and method:
       typedef float Scalar;
       typedef float RealScalar;
-      typedef int StorageIndex;
+      typedef ssize_t StorageIndex;
       enum {
         ColsAtCompileTime = Eigen::Dynamic,
         MaxColsAtCompileTime = Eigen::Dynamic,
@@ -171,7 +172,12 @@ namespace Eigen {
       : generic_product_impl_base<MR::DWI::ReconMatrix,Rhs,generic_product_impl<MR::DWI::ReconMatrix,Rhs> >
     {
       typedef typename Product<MR::DWI::ReconMatrix,Rhs>::Scalar Scalar;
-
+        // Custom API:
+          MatrixReplacement() : mp_mat(0) {}
+          void attachMyMatrix(const SparseMatrix<double> &mat) {
+            mp_mat = &mat;
+          }
+          const SparseMatrix<double> my_matrix() const { return *mp_mat; }
       template<typename Dest>
       static void scaleAndAddTo(Dest& dst, const MR::DWI::ReconMatrix& lhs, const Rhs& rhs, const Scalar& alpha)
       {
