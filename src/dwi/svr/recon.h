@@ -178,6 +178,7 @@ namespace Eigen {
         // This method should implement "dst += alpha * lhs * rhs" inplace
         assert(alpha==Scalar(1) && "scaling is not implemented");
 
+        TRACE;
         auto Y = lhs.getY();
         size_t nc = Y.cols();
         size_t nxyz = lhs.getM().cols();
@@ -208,6 +209,7 @@ namespace Eigen {
         // This method should implement "dst += alpha * lhs * rhs" inplace
         assert(alpha==Scalar(1) && "scaling is not implemented");
 
+        TRACE;
         auto Y = lhs.R.getY();
         size_t nc = Y.cols();
         size_t nxyz = lhs.R.getM().cols();
@@ -215,7 +217,7 @@ namespace Eigen {
         for (size_t j = 0; j < nc; j++) {
           r = rhs;
           for (size_t i = 0; i < lhs.cols(); i++)
-            r *= Y(lhs.R.get_grad_idx(i), j);
+            r[i] *= Y(lhs.R.get_grad_idx(i), j);
           dst.segment(j*nxyz, nxyz) = lhs.R.getM().adjoint() * r;
         }
 
