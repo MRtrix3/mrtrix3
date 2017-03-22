@@ -20,6 +20,9 @@
 #include "adapter/extract.h"
 #include "dwi/svr/recon.h"
 
+#define DEFAULT_LMAX 4
+#define DEFAULT_TOL 1e-4
+#define DEFAULT_MAXITER 100
 
 using namespace MR;
 using namespace App;
@@ -40,7 +43,7 @@ void usage ()
 
   OPTIONS
   + Option ("lmax",
-            "set the maximum harmonic order for the output series.")
+            "set the maximum harmonic order for the output series. (default = " + str(DEFAULT_LMAX) + ")")
     + Argument ("order").type_integer(0, 30)
 
   + Option ("motion", 
@@ -49,7 +52,14 @@ void usage ()
 
   + DWI::GradImportOptions()
 
-  + DWI::ShellOption;
+  + DWI::ShellOption
+
+  + Option ("tolerance", "the tolerance on the conjugate gradient solver. (default = " + str(DEFAULT_TOL) + ")")
+    + Argument ("t").type_float(0.0, 1.0)
+
+  + Option ("maxiter",
+            "the maximum number of iterations of the conjugate gradient solver. (default = " + str(DEFAULT_MAXITER) + ")")
+    + Argument ("n").type_integer(1);
 
 }
 
@@ -61,6 +71,11 @@ typedef float value_type;
 void run ()
 {
   auto dwi = Image<value_type>::open(argument[0]);
+
+  // read parameters
+  int lmax = get_option_value("lmax", DEFAULT_LMAX);
+  value_type tol = get_option_value("tolerance", DEFAULT_TOL);
+  size_t maxiter = get_option_value("maxiter", DEFAULT_MAXITER);
 
   // force single-shell until multi-shell basis is implemented
   auto grad = DWI::get_valid_DW_scheme (dwi);
@@ -76,7 +91,7 @@ void run ()
 
   // Set up scattered data matrix
   INFO("initialise reconstruction matrix");
-  DWI::ReconMatrix R (dwisub, gradsub, 4);
+  DWI::ReconMatrix R (dwisub, gradsub, lmax);
 
   // Read input data to vector
   Eigen::VectorXf y (dwisub.size(0)*dwisub.size(1)*dwisub.size(2)*dwisub.size(3));
@@ -88,15 +103,15 @@ void run ()
   INFO("solve with conjugate gradient method");
   Eigen::LeastSquaresConjugateGradient<DWI::ReconMatrix, Eigen::IdentityPreconditioner> lscg;
   lscg.compute(R);
-  lscg.setTolerance(1e-4);
-  lscg.setMaxIterations(100);
+  lscg.setTolerance(tol);
+  lscg.setMaxIterations(maxiter);
   Eigen::VectorXf x = lscg.solve(y);
   std::cout << "LSCG: #iterations: " << lscg.iterations() << ", estimated error: " << lscg.error() << std::endl;
 
   // Write result to output file
   Header header (dwisub);
   DWI::stash_DW_scheme (header, gradsub);
-  header.size(3) = 15;
+  header.size(3) = Math::SH::NforL(lmax);
   auto out = Image<value_type>::create (argument[1], header);
 
   j = 0;
