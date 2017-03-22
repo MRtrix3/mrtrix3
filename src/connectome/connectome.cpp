@@ -30,21 +30,21 @@ namespace MR {
 
 
 
-    void check (Header& H)
+    void check (const Header& H)
     {
       if (H.datatype().is_floating_point()) {
-        auto test = H.get_image<float>();
-        for (auto l = Loop(H) (test); l; ++l) {
-          if (std::round (float(test.value())) != test.value())
-            throw Exception ("Floating-point number detected in image \"" + H.name() + "\"; label images should contain integers only");
-        }
+        // auto test = H.get_image<float>();
+        // for (auto l = Loop(test) (test); l; ++l) {
+        //   if (std::round (float(test.value())) != test.value())
+        //     throw Exception ("Floating-point number detected in image \"" + H.name() + "\"; label images should contain integers only");
+        // }
         WARN ("Image \"" + H.name() + "\" stored as floating-point; it is preferable to store label images using an unsigned integer type");
       } else if (H.datatype().is_signed()) {
-        auto test = H.get_image<int64_t>();
-        for (auto l = Loop(H) (test); l; ++l) {
-          if (std::round (int64_t(test.value())))
-            throw Exception ("Negative values detected in image \"" + H.name() + "\"; label images should be strictly non-negative");
-        }
+        // auto test = H.get_image<int64_t>();
+        // for (auto l = Loop(test) (test); l; ++l) {
+        //   if (int64_t(test.value()) < int64_t(0))
+        //     throw Exception ("Negative values detected in image \"" + H.name() + "\"; label images should be strictly non-negative");
+        // }
         WARN ("Image \"" + H.name() + "\" stored as signed integer; it is preferable to store label images using an unsigned integer type");
       }
     }
