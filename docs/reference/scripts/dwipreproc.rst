@@ -26,9 +26,9 @@ Options for specifying the acquisition phase-encoding design; note that one of t
 
 - **-rpe_none** Specify that no reversed phase-encoding image data is being provided; eddy will perform eddy current and motion correction only
 
-- **-rpe_pair** Specify that a set of images will be provided for use in inhomogeneity field estimation (using the -se_epi option), where it is assumed that the FIRST volume(s) of this image has the same phase-encoding direction as the input DWIs, and the LAST volume(s) has precisely the OPPOSITE phase encoding
+- **-rpe_pair** Specify that a set of images (typically b=0 volumes) will be provided for use in inhomogeneity field estimation only (using the -se_epi option). It is assumed that the FIRST volume(s) of this image has the SAME phase-encoding direction as the input DWIs, and the LAST volume(s) has precisely the OPPOSITE phase encoding
 
-- **-rpe_all** Specify that all DWIs have been acquired with opposing phase-encoding, where it is assumed that the second half of the volumes in the input DWIs have corresponding diffusion sensitisation directions to the first half, but were acquired using the opposite phase-encoding direction
+- **-rpe_all** Specify that ALL DWIs have been acquired with opposing phase-encoding; this information will be used to perform a recombination of image volumes (each pair of volumes with the same b-vector but different phase encoding directions will be combined together into a single volume). It is assumed that the SECOND HALF of the volumes in the input DWIs have corresponding diffusion sensitisation directions to the FIRST HALF, but were acquired using precisely the opposite phase-encoding direction
 
 - **-rpe_header** Specify that the phase-encoding information can be found in the image header(s), and that this is the information that the script should use
 

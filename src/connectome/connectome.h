@@ -119,7 +119,7 @@ namespace MR {
 
 
 
-    void check (Header&);
+    void check (const Header&);
 
 
 
