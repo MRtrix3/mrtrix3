@@ -73,6 +73,7 @@ void run ()
   auto dwisub = Adapter::make <Adapter::Extract1D> (dwi, 3, container_cast<vector<int>> (idx));
 
   // Set up scattered data matrix
+  INFO("initialise reconstruction matrix");
   DWI::ReconMatrix R (dwisub, dirs, 4);
 
   // Read input data to vector
@@ -82,19 +83,24 @@ void run ()
     y[j] = dwisub.value();
 
   // Fit scattered data in basis...
+  INFO("solve with conjugate gradient method");
   Eigen::LeastSquaresConjugateGradient<DWI::ReconMatrix, Eigen::IdentityPreconditioner> lscg;
   lscg.compute(R);
-  auto x = lscg.solve(y);
+  lscg.setTolerance(1e-4);
+  lscg.setMaxIterations(10);
+  Eigen::VectorXf x = lscg.solve(y);
+  std::cout << "LSCG: #iterations: " << lscg.iterations() << ", estimated error: " << lscg.error() << std::endl;
 
   // Write result to output file
   Header header (dwisub);
   DWI::stash_DW_scheme (header, dirs);
-  header.size(3) = 28;
+  header.size(3) = 15;
   auto out = Image<value_type>::create (argument[1], header);
 
   j = 0;
-  for (auto l = Loop("writing result to image", {0, 1, 2, 3})(out); l; l++, j++)
+  for (auto l = Loop("writing result to image", {0, 1, 2, 3})(out); l; l++, j++) {
     out.value() = x[j];
+  }
 
 
 }

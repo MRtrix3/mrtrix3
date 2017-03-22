@@ -98,6 +98,7 @@ namespace MR
 
       void init_M(const Header& in)
       {
+        DEBUG("initialise M");
         // Identity matrix for now.
         // TODO: complete with proper voxel weights later
         size_t i = 0, j = 0;
@@ -111,6 +112,7 @@ namespace MR
 
       void init_Y(const Header& in, const Eigen::MatrixXf& grad)
       {
+        DEBUG("initialise Y");
         assert (in.size(3) == grad.rows());     // one gradient per volume
         Eigen::Vector3f vec;
         Eigen::VectorXf delta;
