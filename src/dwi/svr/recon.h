@@ -182,14 +182,12 @@ namespace Eigen {
         auto Y = lhs.getY();
         size_t nc = Y.cols();
         size_t nxyz = lhs.getM().cols();
-        VectorXf r (nxyz);
-        float a;
-        for (size_t i = 0; i < lhs.rows(); i++) {
-          r = lhs.getM().row(i);
-          for (size_t j = 0; j < nc; j++) {
-            a = r.dot(rhs.segment(j*nxyz, nxyz));
-            dst[i] += a * Y(lhs.get_grad_idx(i), j);
-          }
+        VectorXf r (lhs.rows());
+
+        for (size_t j = 0; j < nc; j++) {
+          r = lhs.getM() * rhs.segment(j*nxyz, nxyz);
+          for (size_t i = 0; i < lhs.rows(); i++)
+            dst[i] += r[i] * Y(lhs.get_grad_idx(i), j);
         }
 
       }
@@ -213,12 +211,13 @@ namespace Eigen {
         auto Y = lhs.R.getY();
         size_t nc = Y.cols();
         size_t nxyz = lhs.R.getM().cols();
-        VectorXf r;
+        VectorXf r (lhs.cols());
+
         for (size_t j = 0; j < nc; j++) {
           r = rhs;
           for (size_t i = 0; i < lhs.cols(); i++)
             r[i] *= Y(lhs.R.get_grad_idx(i), j);
-          dst.segment(j*nxyz, nxyz) = lhs.R.getM().adjoint() * r;
+          dst.segment(j*nxyz, nxyz) += lhs.R.getM().adjoint() * r;
         }
 
       }
