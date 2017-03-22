@@ -104,8 +104,8 @@ namespace MR
         size_t i = 0, j = 0;
         for (size_t v = 0; v < in.size(3); v++) {
           j = 0;
-          for (size_t z = 0; z < in.size(2); z++, j++)
-            for (size_t xy = 0; xy < nxy; xy++, i++)
+          for (size_t z = 0; z < in.size(2); z++)
+            for (size_t xy = 0; xy < nxy; xy++, i++, j++)
               M.insert(i,j) = 1.0;
         }
       }
