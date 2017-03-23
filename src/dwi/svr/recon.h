@@ -35,11 +35,11 @@ namespace Eigen {
   namespace internal {
     // ReconMatrix inherits its traits from SparseMatrix
     template<>
-    struct traits<MR::DWI::ReconMatrix> : public Eigen::internal::traits<Eigen::SparseMatrix<float,Eigen::ColMajor,ssize_t> >
+    struct traits<MR::DWI::ReconMatrix> : public Eigen::internal::traits<Eigen::SparseMatrix<float,Eigen::RowMajor> >
     {};
 
     template<>
-    struct traits<MR::DWI::ReconMatrixAdjoint> : public Eigen::internal::traits<Eigen::SparseMatrix<float,Eigen::ColMajor,ssize_t> >
+    struct traits<MR::DWI::ReconMatrixAdjoint> : public Eigen::internal::traits<Eigen::SparseMatrix<float,Eigen::RowMajor> >
     {};
   }
 }
@@ -56,11 +56,11 @@ namespace MR
       // Required typedefs, constants, and method:
       typedef float Scalar;
       typedef float RealScalar;
-      typedef ssize_t StorageIndex;
+      typedef int StorageIndex;
       enum {
         ColsAtCompileTime = Eigen::Dynamic,
         MaxColsAtCompileTime = Eigen::Dynamic,
-        IsRowMajor = false
+        IsRowMajor = true
       };
       Eigen::Index rows() const { return M.rows(); }
       Eigen::Index cols() const { return M.cols()*Y.cols(); }
@@ -70,6 +70,10 @@ namespace MR
       Eigen::Product<ReconMatrix,Rhs,Eigen::AliasFreeProduct> operator*(const Eigen::MatrixBase<Rhs>& x) const {
         return Eigen::Product<ReconMatrix,Rhs,Eigen::AliasFreeProduct>(*this, x.derived());
       }
+
+
+      typedef Eigen::SparseMatrix<float, Eigen::RowMajor> SparseMat;
+
 
       // Custom API:
       ReconMatrix(const Header& in, const Eigen::MatrixXf& grad, const int lmax)
@@ -82,18 +86,19 @@ namespace MR
         init_Y(in, grad);
       }
 
-      const Eigen::SparseMatrix<float, Eigen::ColMajor, StorageIndex>& getM() const { return M; }
+      const SparseMat& getM() const { return M; }
       const Eigen::MatrixXf& getY() const { return Y; }
 
       inline const size_t get_grad_idx(const size_t idx) const { return idx / nxy; }
 
       const ReconMatrixAdjoint adjoint() const;
 
+
     private:
       const int lmax;
       const size_t nxy, nz, nv;
-      Eigen::SparseMatrix<float, Eigen::ColMajor, StorageIndex> M;
-      Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> Y;
+      SparseMat M;
+      Eigen::MatrixXf Y;
 
 
       void init_M(const Header& in)
@@ -101,14 +106,19 @@ namespace MR
         DEBUG("initialise M");
         // Identity matrix for now.
         // TODO: complete with proper voxel weights later
-        size_t i = 0, j = 0;
+        // Note that this step is highly time and memory critical!
+        // Special care must be taken when inserting elements and it is advised to reserve appropriate memory in advance.
+
+        // reserve memory for 1 element along each row (outer strides with row-major order).
+        M.reserve(Eigen::VectorXi::Constant(nv*nz*nxy, 1));
+
+        // fill weights
         for (size_t v = 0; v < in.size(3); v++) {
-          j = 0;
-          for (size_t z = 0; z < in.size(2); z++)
-            for (size_t xy = 0; xy < nxy; xy++, i++, j++)
-              M.insert(i,j) = 1.0;
-          VAR(v);
+          for (size_t i = 0; i < nxy*nz; i++)
+            M.insert(v*nxy*nz+i,i) = 1.0f;
         }
+
+        M.makeCompressed();
       }
 
       void init_Y(const Header& in, const Eigen::MatrixXf& grad)
@@ -135,11 +145,11 @@ namespace MR
       // Required typedefs, constants, and method:
       typedef float Scalar;
       typedef float RealScalar;
-      typedef ssize_t StorageIndex;
+      typedef int StorageIndex;
       enum {
         ColsAtCompileTime = Eigen::Dynamic,
         MaxColsAtCompileTime = Eigen::Dynamic,
-        IsRowMajor = false
+        IsRowMajor = true
       };
       Eigen::Index rows() const { return R.cols(); }
       Eigen::Index cols() const { return R.rows(); }
@@ -172,12 +182,7 @@ namespace Eigen {
       : generic_product_impl_base<MR::DWI::ReconMatrix,Rhs,generic_product_impl<MR::DWI::ReconMatrix,Rhs> >
     {
       typedef typename Product<MR::DWI::ReconMatrix,Rhs>::Scalar Scalar;
-        // Custom API:
-          MatrixReplacement() : mp_mat(0) {}
-          void attachMyMatrix(const SparseMatrix<double> &mat) {
-            mp_mat = &mat;
-          }
-          const SparseMatrix<double> my_matrix() const { return *mp_mat; }
+
       template<typename Dest>
       static void scaleAndAddTo(Dest& dst, const MR::DWI::ReconMatrix& lhs, const Rhs& rhs, const Scalar& alpha)
       {
