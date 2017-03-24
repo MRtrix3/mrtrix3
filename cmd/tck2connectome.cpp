@@ -65,7 +65,8 @@ void usage ()
   + Option ("keep_unassigned", "By default, the program discards the information regarding those streamlines that are not successfully assigned to a node pair. "
                                "Set this option to keep these values (will be the first row/column in the output matrix)")
 
-  + Option ("out_assignments", "output the node assignments of each streamline to a file")
+  + Option ("out_assignments", "output the node assignments of each streamline to a file; "
+                               "this can be used subsequently e.g. by the command connectome2tck")
     + Argument ("path").type_file_out()
 
   + Option ("vector", "output a vector representing connectivities from a given seed point to target nodes, "

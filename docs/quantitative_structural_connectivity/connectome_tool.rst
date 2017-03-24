@@ -160,7 +160,7 @@ by which those nodes are inter-connected. This can be achieved as
 follows:
 
 -  When generating the connectome using :ref:`tck2connectome`, use the
-   ``-assignments`` option. This will produce a text file where each
+   ``-out_assignments`` option. This will produce a text file where each
    line contains the indices of the two nodes to which that particular
    streamline was assigned.
 
