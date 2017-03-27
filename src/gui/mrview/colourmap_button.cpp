@@ -32,6 +32,10 @@ const std::vector<Entry> ColourMapButton::core_colourmaps_entries{{
         "color.rgb = vec3 (amplitude);\n",
         [] (float amplitude) { return Eigen::Vector3f (amplitude, amplitude, amplitude); }),
 
+    Entry ("RedBlackGreen",
+        "color.rgb = scale*vec3 (offset-amplitude, amplitude-offset, 0.0);\n",
+         Entry::basic_map_fn(), "color.r", true),
+
     Entry ("Hot",
         "color.rgb = vec3 (2.7213 * amplitude, 2.7213 * amplitude - 1.0, 3.7727 * amplitude - 2.7727);\n",
         [] (float amplitude) { return Eigen::Vector3f (2.7213 * amplitude, 2.7213 * amplitude - 1.0, 3.7727 * amplitude - 2.7727); }),
