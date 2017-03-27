@@ -76,14 +76,14 @@ namespace MR
 
 
       // Custom API:
-      ReconMatrix(const Header& in, const Eigen::MatrixXf& grad, const int lmax)
+      ReconMatrix(const Header& in, const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad, const int lmax)
         : lmax(lmax),
           nxy (in.size(0)*in.size(1)), nz (in.size(2)), nv (in.size(3)),
           M(nxy*nz*nv, nxy*nz),
           Y(nz*nv, Math::SH::NforL(lmax))
       {
-        init_M(in);
-        init_Y(in, grad);
+        init_M(in, rigid);
+        init_Y(in, rigid, grad);
       }
 
       const SparseMat& getM() const { return M; }
@@ -101,7 +101,7 @@ namespace MR
       Eigen::MatrixXf Y;
 
 
-      void init_M(const Header& in)
+      void init_M(const Header& in, const Eigen::MatrixXf& rigid)
       {
         DEBUG("initialise M");
         // Identity matrix for now.
@@ -121,7 +121,7 @@ namespace MR
         M.makeCompressed();
       }
 
-      void init_Y(const Header& in, const Eigen::MatrixXf& grad)
+      void init_Y(const Header& in, const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad)
       {
         DEBUG("initialise Y");
         assert (in.size(3) == grad.rows());     // one gradient per volume
