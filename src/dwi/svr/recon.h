@@ -101,7 +101,7 @@ namespace MR
       Eigen::MatrixXf Y;
 
 
-      void init_M(const Header& in, const Eigen::MatrixXf& rigid)
+      inline void init_M(const Header& in, const Eigen::MatrixXf& rigid)
       {
         DEBUG("initialise M");
         // Identity matrix for now.
@@ -113,7 +113,7 @@ namespace MR
         M.reserve(Eigen::VectorXi::Constant(nv*nz*nxy, 1));
 
         // fill weights
-        for (size_t v = 0; v < in.size(3); v++) {
+        for (size_t v = 0; v < nv; v++) {
           for (size_t i = 0; i < nxy*nz; i++)
             M.insert(v*nxy*nz+i,i) = 1.0f;
         }
@@ -121,20 +121,45 @@ namespace MR
         M.makeCompressed();
       }
 
-      void init_Y(const Header& in, const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad)
+
+      inline void init_Y(const Header& in, const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad)
       {
         DEBUG("initialise Y");
-        assert (in.size(3) == grad.rows());     // one gradient per volume
+        assert (grad.rows() == nv);     // one gradient per volume
+
         Eigen::Vector3f vec;
+        Eigen::Matrix3f rot;
+        rot.setIdentity();
         Eigen::VectorXf delta;
-        for (size_t i = 0; i < in.size(3); i++) {
+
+        for (size_t i = 0; i < nv; i++) {
           vec = {grad(i, 0), grad(i, 1), grad(i, 2)};
-          for (size_t j = 0; j < in.size(2); j++) {
-            // TODO: rotate vector with motion parameters
-            Y.row(i*in.size(2)+j) = Math::SH::delta(delta, vec, lmax);
+          if (rigid.rows() == nv)
+            rot = get_rotation(rigid(i,3), rigid(i,4), rigid(i,5));
+
+          for (size_t j = 0; j < nz; j++) {
+            // rotate vector with motion parameters
+            if (rigid.rows() == nv*nz)
+              rot = get_rotation(rigid(i*nz+j,3), rigid(i*nz+j,4), rigid(i*nz+j,5));
+
+            // evaluate basis functions
+            Y.row(i*nz+j) = Math::SH::delta(delta, rot*vec, lmax);
           }
+
         }
+
       }
+
+
+      inline Eigen::Matrix3f get_rotation(float a1, float a2, float a3) const
+      {
+        Eigen::Matrix3f m;
+        m = Eigen::AngleAxisf(a1, Eigen::Vector3f::UnitX())
+          * Eigen::AngleAxisf(a2, Eigen::Vector3f::UnitY())
+          * Eigen::AngleAxisf(a3, Eigen::Vector3f::UnitZ());
+        return m;
+      }
+
 
     };
 
