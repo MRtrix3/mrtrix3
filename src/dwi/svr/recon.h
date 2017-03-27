@@ -20,8 +20,11 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
+#include "types.h"
 #include "header.h"
+#include "transform.h"
 #include "math/SH.h"
+
 
 
 namespace MR {
@@ -30,6 +33,7 @@ namespace MR {
     class ReconMatrixAdjoint;
   }
 }
+
 
 namespace Eigen {
   namespace internal {
@@ -62,6 +66,7 @@ namespace MR
         MaxColsAtCompileTime = Eigen::Dynamic,
         IsRowMajor = true
       };
+
       Eigen::Index rows() const { return M.rows(); }
       Eigen::Index cols() const { return M.cols()*Y.cols(); }
 
@@ -104,18 +109,55 @@ namespace MR
       inline void init_M(const Header& in, const Eigen::MatrixXf& rigid)
       {
         DEBUG("initialise M");
-        // Identity matrix for now.
-        // TODO: complete with proper voxel weights later
+        // Tri-linear interpolation for now.
+        // TODO: add point spread function for superresolution
+
         // Note that this step is highly time and memory critical!
         // Special care must be taken when inserting elements and it is advised to reserve appropriate memory in advance.
 
-        // reserve memory for 1 element along each row (outer strides with row-major order).
-        M.reserve(Eigen::VectorXi::Constant(nv*nz*nxy, 1));
+        // reserve memory for 8 elements along each row (outer strides with row-major order).
+        M.reserve(Eigen::VectorXi::Constant(nv*nz*nxy, 8));
+
+        // set up transform
+        Transform T0 (in);          // assume output transform = input transform; needs extending for superresolution
+
+        transform_type T;
+        T.setIdentity();
+
+        Eigen::Vector3 p, pp0;
+        Eigen::Vector3i p0;
+        Eigen::Vector3f w;
 
         // fill weights
+        size_t i = 0;
         for (size_t v = 0; v < nv; v++) {
-          for (size_t i = 0; i < nxy*nz; i++)
-            M.insert(v*nxy*nz+i,i) = 1.0f;
+          if (rigid.rows() == nv)
+            T = get_transform(rigid.row(v));
+
+          for (size_t z = 0; z < nz; z++) {
+            if (rigid.rows() == nv*nz)
+              T = get_transform(rigid.row(v*nz+z));
+
+            for (size_t y = 0; y < in.size(1); y++) {
+              for (size_t x = 0; x < in.size(0); x++, i++) {
+                p = T0.scanner2voxel * T * T0.voxel2scanner * Eigen::Vector3(x, y, z);
+                pp0 = Eigen::Vector3(std::floor(p[0]), std::floor(p[1]), std::floor(p[2]));
+                p0 = pp0.template cast<int>();
+                w = (p - pp0).template cast<float>();
+
+                if (inbounds(in, p0[0]  , p0[1]  , p0[2]  )) M.insert(i, get_idx(in, p0[0]  , p0[1]  , p0[2]  )) = (1 - w[0]) * (1 - w[1]) * (1 - w[2]);
+                if (inbounds(in, p0[0]+1, p0[1]  , p0[2]  )) M.insert(i, get_idx(in, p0[0]+1, p0[1]  , p0[2]  )) =      w[0]  * (1 - w[1]) * (1 - w[2]);
+                if (inbounds(in, p0[0]  , p0[1]+1, p0[2]  )) M.insert(i, get_idx(in, p0[0]  , p0[1]+1, p0[2]  )) = (1 - w[0]) *      w[1]  * (1 - w[2]);
+                if (inbounds(in, p0[0]+1, p0[1]+1, p0[2]  )) M.insert(i, get_idx(in, p0[0]+1, p0[1]+1, p0[2]  )) =      w[0]  *      w[1]  * (1 - w[2]);
+                if (inbounds(in, p0[0]  , p0[1]  , p0[2]+1)) M.insert(i, get_idx(in, p0[0]  , p0[1]  , p0[2]+1)) = (1 - w[0]) * (1 - w[1]) *      w[2] ;
+                if (inbounds(in, p0[0]+1, p0[1]  , p0[2]+1)) M.insert(i, get_idx(in, p0[0]+1, p0[1]  , p0[2]+1)) =      w[0]  * (1 - w[1]) *      w[2] ;
+                if (inbounds(in, p0[0]  , p0[1]+1, p0[2]+1)) M.insert(i, get_idx(in, p0[0]  , p0[1]+1, p0[2]+1)) = (1 - w[0]) *      w[1]  *      w[2] ;
+                if (inbounds(in, p0[0]+1, p0[1]+1, p0[2]+1)) M.insert(i, get_idx(in, p0[0]+1, p0[1]+1, p0[2]+1)) =      w[0]  *      w[1]  *      w[2] ;
+
+              }
+            }
+
+          }
         }
 
         M.makeCompressed();
@@ -151,13 +193,36 @@ namespace MR
       }
 
 
-      inline Eigen::Matrix3f get_rotation(float a1, float a2, float a3) const
+      inline Eigen::Matrix3f get_rotation(const float a1, const float a2, const float a3) const
       {
         Eigen::Matrix3f m;
         m = Eigen::AngleAxisf(a1, Eigen::Vector3f::UnitX())
           * Eigen::AngleAxisf(a2, Eigen::Vector3f::UnitY())
           * Eigen::AngleAxisf(a3, Eigen::Vector3f::UnitZ());
         return m;
+      }
+
+
+      inline transform_type get_transform(const Eigen::VectorXf& p) const
+      {
+        transform_type T;
+        T.translation() = Eigen::Vector3d( double(p[0]), double(p[1]), double(p[2]) );
+        T.linear() = get_rotation(p[3], p[4], p[5]).template cast<double>();
+        return T;
+      }
+
+
+      inline size_t get_idx(const Header& h, const int x, const int y, const int z) const
+      {
+        return size_t(z*h.size(1)*h.size(0) + y*h.size(0) + x);
+      }
+
+
+      inline bool inbounds(const Header& h, const int x, const int y, const int z) const
+      {
+        return (x >= 0) && (x < h.size(0))
+            && (y >= 0) && (y < h.size(1))
+            && (z >= 0) && (z < h.size(2));
       }
 
 
