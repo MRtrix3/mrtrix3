@@ -49,7 +49,6 @@ namespace MR {
   }
 }
 
-#define EIGEN_DONT_PARALLELIZE
 #define EIGEN_DENSEBASE_PLUGIN "eigen_plugins/dense_base.h"
 #define EIGEN_MATRIXBASE_PLUGIN "eigen_plugins/dense_base.h"
 #define EIGEN_ARRAYBASE_PLUGIN "eigen_plugins/dense_base.h"

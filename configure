@@ -42,9 +42,9 @@ OPTIONS
 
     -verbose     enable more informative output.
 
-    -dev         enable the extended development build process
+    -dev         enable the extended development build process.
 
-    -R           used to generate an R module (implies -noshared)
+    -R           used to generate an R module (implies -noshared).
 
 
 ENVIRONMENT VARIABLES
@@ -776,6 +776,8 @@ except ( LinkError, RuntimeError ) as e:
   This shouldn't happen!''' + configure_log_hint)
 except:
   error ('unexpected exception!' + configure_log_hint)
+
+eigen_cflags += [ '-D'+'EIGEN_DONT_PARALLELIZE', ]
 
 
 
