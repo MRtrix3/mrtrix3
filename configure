@@ -3,7 +3,7 @@
 usage_string = '''
 USAGE
 
-    [ENV] ./configure [name] [-debug] [-assert] [-profile] [-nogui] [-noshared]
+    [ENV] ./configure [-debug] [-assert] [-profile] [-nogui] [-noshared]
 
 
 DESCRIPTION
