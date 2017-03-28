@@ -119,11 +119,20 @@ void run ()
 
   // Fit scattered data in basis...
   INFO("solve with conjugate gradient method");
+
+  Eigen::initParallel();
+  Eigen::setNbThreads(Thread::number_of_threads());
+  VAR(Thread::number_of_threads());
+  VAR(Eigen::nbThreads());
+
   Eigen::LeastSquaresConjugateGradient<DWI::ReconMatrix, Eigen::IdentityPreconditioner> lscg;
   lscg.compute(R);
+
   lscg.setTolerance(tol);
   lscg.setMaxIterations(maxiter);
+
   Eigen::VectorXf x = lscg.solve(y);
+
   std::cout << "LSCG: #iterations: " << lscg.iterations() << ", estimated error: " << lscg.error() << std::endl;
 
 
