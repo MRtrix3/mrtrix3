@@ -46,6 +46,8 @@ OPTIONS
 
     -R           used to generate an R module (implies -noshared).
 
+    -openmp      enable OpenMP compiler flags.
+
 
 ENVIRONMENT VARIABLES
 
@@ -139,6 +141,7 @@ noshared = False
 static = False
 verbose = False
 R_module = False
+openmp = False
 sh_basis_def = None
 dev = False
 
@@ -158,6 +161,7 @@ for arg in sys.argv[1:]:
     R_module = True
     #noshared = True
     nogui = True
+  elif '-openmp'.startswith (arg): openmp = True
   else:
     print (usage_string)
     sys.exit (1)
@@ -777,7 +781,8 @@ except ( LinkError, RuntimeError ) as e:
 except:
   error ('unexpected exception!' + configure_log_hint)
 
-eigen_cflags += [ '-D'+'EIGEN_DONT_PARALLELIZE', ]
+if not openmp:
+  eigen_cflags += [ '-DEIGEN_DONT_PARALLELIZE' ]
 
 
 
@@ -1142,9 +1147,6 @@ if R_module:
 
 
 
-
-
-
 # add debugging or profiling flags if requested:
 
 cpp_flags += [ '-Wall' ]
@@ -1168,7 +1170,19 @@ elif not debug:
 
 
 
-#
+
+
+# add openmp flags as required
+
+if openmp:
+  cpp_flags += [ '-fopenmp' ]
+  ld_flags += [ '-fopenmp' ]
+  ld_lib_flags += [ '-fopenmp' ]
+
+
+
+
+
 # set macro for non-orthonormal SH basis if requested:
 if sh_basis_def is not None:
   cpp_flags += [ sh_basis_def ]
