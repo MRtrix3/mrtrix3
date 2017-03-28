@@ -27,7 +27,7 @@ namespace MR
 {
    namespace Math
    {
-      void matrix_average (vector<Eigen::MatrixXd> const &mat_in, Eigen::MatrixXd& mat_avg, bool verbose = false);
+      double matrix_average (vector<Eigen::MatrixXd> const &mat_in, Eigen::MatrixXd& mat_avg, bool verbose = false);
    }
  }
 

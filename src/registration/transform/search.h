@@ -149,6 +149,7 @@ namespace MR
               transform_type T;
               {
                 ParamType parameters = get_parameters ();
+                // parameters.make_diagnostics_image ("/tmp/debugme"+str(iteration)+".mif", true); // REMOVEME
                 Metric::ThreadKernel<MetricType, ParamType> kernel (metric, parameters, cost, gradient, &cnt);
                 ThreadedLoop (parameters.midway_image, 0, 3).run (kernel);
                 assert (cnt > 0);
@@ -168,23 +169,25 @@ namespace MR
 
               while ( ++iteration < iterations ) {
                 ++progress;
-                if (global_search) {
+                if (global_search)
                   gen_random_quaternion ();
-                }
-                else {
+                else
                   gen_local_quaternion ();
-                }
-                R0.linear() = quat.matrix();
+
+                R0.linear() = quat.normalized().toRotationMatrix();
                 transform_type T = Tc2 * To * R0 * Tc2.inverse();
+
                 local_trafo.set_transform<decltype(T)>(T);
                 ParamType parameters = get_parameters ();
-                // parameters.transformation.set_transform<decltype(T)>(T);
+                // parameters.make_diagnostics_image ("/tmp/debugme"+str(iteration)+".mif", true); // REMOVEME
                 cost.fill(0);
                 cnt = 0;
                 Metric::ThreadKernel<MetricType, ParamType> kernel (metric, parameters, cost, gradient, &cnt);
                 ThreadedLoop (parameters.midway_image, 0, 3).run (kernel);
                 DEBUG ("rotation search: iteration " + str(iteration) + " cost: " + str(cost) + " cnt: " + str(cnt));
                 // write_images ( "im1_" + str(iteration) + ".mif", "im2_" + str(iteration) + ".mif");
+                if (cnt == 0)
+                  WARN ("rotation search: overlap count is zero");
                 overlap_it[iteration] = cnt;
                 cost_it[iteration] = cost(0) / static_cast<default_type>(cnt);
                 trafo_it.push_back (T);
@@ -219,7 +222,7 @@ namespace MR
             };
 
           private:
-            ParamType get_parameters () {
+            FORCE_INLINE ParamType get_parameters () {
               // create resized midway image
               vector<Eigen::Transform<default_type, 3, Eigen::Projective>> init_transforms;
               {
@@ -228,7 +231,7 @@ namespace MR
                 init_transforms.push_back (init_trafo_1);
                 init_transforms.push_back (init_trafo_2);
               }
-              auto padding = Eigen::Matrix<default_type, 4, 1>(0.0, 0.0, 0.0, 0.0);
+              auto padding = Eigen::Matrix<default_type, 4, 1>(1.0, 1.0, 1.0, 1.0);
               int subsample = 1;
               vector<Header> headers;
               headers.push_back (Header (im1));
@@ -244,18 +247,25 @@ namespace MR
               return parameters;
             }
 
-            // gen_random_quaternion generates random quaternion (rotation around random direction
-            // by random angle)
-            inline void gen_random_quaternion () {
-              Eigen::Matrix<default_type, 4, 1> v(rndn(), rndn(), rndn(), rndn());
-              v.array() /= v.norm();
-              quat = Eigen::Quaternion<default_type> (v);
-            };
+            // gen_random_quaternion generates random element of SO(3)
+            FORCE_INLINE void gen_random_quaternion () {
+              // Eigen 3.3.0: quat = Eigen::Quaternion<default_type,Eigen::autoalign>::UnitRandom ();
+              // http://planning.cs.uiuc.edu/node198.html
+              const default_type u1 = rnd ();
+              const default_type u2 = rnd () * 2.0 * Math::pi;
+              const default_type u3 = rnd () * 2.0 * Math::pi;
+              assert (u1 < 1.0 && u1 >= 0.0);
+              assert (u2 < 2.0 * Math::pi && u2 >= 0.0);
+              assert (u3 < 2.0 * Math::pi && u3 >= 0.0);
+              const default_type a = std::sqrt(1.0 - u1);
+              const default_type b = std::sqrt(u1);
+              quat = Eigen::Quaternion<default_type> (a * std::sin(u2), a * std::cos(u2), b * std::sin(u3), b * std::cos(u3));
+            }
 
             // gen_uniform_rotation_axes generates roughly uniformly distributed points on sphere
             // starting on z-axis up to -z-axis (max_cone_angle_deg=180). points are stored as matrix
             // of azimuth and elevation
-            void gen_uniform_rotation_axes ( const size_t& n_dir, const default_type& max_cone_angle_deg ) {
+            FORCE_INLINE void gen_uniform_rotation_axes ( const size_t& n_dir, const default_type& max_cone_angle_deg ) {
               assert (n_dir > 1);
               assert (max_cone_angle_deg > 0.0);
               assert (max_cone_angle_deg <= 180.0);
@@ -277,7 +287,7 @@ namespace MR
             }
 
             // convert spherical coordinates (az_el) to cartesian coordinates (xyz)
-            inline void az_el_to_cartesian () {
+            FORCE_INLINE void az_el_to_cartesian () {
               xyz.resize (az_el.rows(), 3);
               Eigen::VectorXd el_sin = az_el.col(1).array().sin();
               xyz.col(0).array() = el_sin.array() * az_el.col(0).array().cos();
@@ -285,7 +295,7 @@ namespace MR
               xyz.col(2).array() = az_el.col(1).array().cos();
             }
 
-            inline void gen_local_quaternion () {
+            FORCE_INLINE void gen_local_quaternion () {
               // Eigen::Vector3d normal ( -std::cos (az_el(idx,1)), -std::sin (az_el(idx,0)) * std::cos (az_el(idx,0)), 0.0);
               // Eigen::AngleAxis<default_type> aa (az_el(idx,1), normal);
               // Eigen::Vector3d normal ( xyz.row(idx) );
@@ -298,6 +308,7 @@ namespace MR
               quat = Eigen::Quaternion<default_type> ( Eigen::AngleAxis<default_type> (rot_angles[idx_angle], xyz.row(idx_dir)) );
               ++idx_dir;
             }
+
             Image<default_type> im1, im2, mask1, mask2, midway_image, midway_resized;
             Header midway_resized_header;
             MetricType metric;
@@ -305,7 +316,8 @@ namespace MR
             Registration::Transform::Init::LinearInitialisationParams& init_options;
             const Eigen::Vector3d centre;
             const Eigen::Vector3d offset;
-            Math::RNG::Normal<default_type> rndn;
+            // Math::RNG::Normal<default_type> rndn;
+            Math::RNG::Uniform<default_type> rnd;
             Eigen::Quaternion<default_type> quat;
             transform_type best_trafo;
             Header midway_image_header;
