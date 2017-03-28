@@ -102,7 +102,7 @@ void run ()
   // Check dimensions
   if (motion.size() && motion.cols() != 6)
     throw Exception("No. columns in motion parameters must equal 6.");
-  if (motion.size() && (motion.rows() != dwisub.size(3) || motion.rows() != dwisub.size(3) * dwisub.size(2)))
+  if (motion.size() && (motion.rows() != dwisub.size(3)) && (motion.rows() != dwisub.size(3) * dwisub.size(2)))
     throw Exception("No. rows in motion parameters must equal the number of DWI volumes or slices.");
 
 
