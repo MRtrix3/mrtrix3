@@ -404,14 +404,14 @@ namespace MR
               auto& stage = stages[istage];
 
               CONSOLE ("linear stage " + str(istage + 1) + "/"+str(stages.size()) + ", " + stage.info(do_reorientation));
-
               // define or adjust tissue contrast lmax, nvols for this stage
               stage_contrasts = contrasts;
               if (stage_contrasts.size()) {
-                for (auto & mc : stage_contrasts)
+                for (auto & mc : stage_contrasts) {
                   mc.lower_lmax (stage.fod_lmax);
+                }
               } else {
-                MultiContrastSetting mc (im1_image.size(3), do_reorientation, stage.fod_lmax);
+                MultiContrastSetting mc (im1_image.ndim()<4? 1:im1_image.size(3), do_reorientation, stage.fod_lmax);
                 stage_contrasts.push_back(mc);
               }
 

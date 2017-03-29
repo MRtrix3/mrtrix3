@@ -178,12 +178,14 @@ void run () {
 
   // parse multi contrast parameters
   vector<Registration::MultiContrastSetting> mc_params (n_images);
-  for (auto& mc : mc_params) {
-    mc.lmax = 0;
-    mc.image_lmax = 0;
-    mc.do_reorientation = do_reorientation;
-    mc.weight = 1.0;
-  }
+  // for (auto& mc : mc_params) {
+  //   mc.lmax = 0;
+  //   mc.nvols = 1;
+  //   mc.image_nvols = 1;
+  //   mc.image_lmax = 0;
+  //   mc.do_reorientation = do_reorientation;
+  //   mc.weight = 1.0;
+  // }
   // check header transformations for equality
   Eigen::MatrixXd trafo = MR::Transform(input1[0]).scanner2voxel.linear();
   for (size_t i=1; i<n_images; i++) {
@@ -200,12 +202,15 @@ void run () {
   for (size_t i=0; i<n_images; i++) {
     if (i>0) check_dimensions (input1[i], input1[i-1], 0, 3);
     if (i>0) check_dimensions (input2[i], input2[i-1], 0, 3);
+    mc_params[i].weight = 1.0;
     if (input1[i].ndim() > 4) {
       throw Exception ("image dimensions larger than 4 are not supported");
-    } else if (input1[i].ndim() == 3) {
+    } else if (input1[i].ndim() == 3) { // 3D
       mc_params[i].do_reorientation = false;
       mc_params[i].image_nvols = 1;
-    } else if (input1[i].ndim() == 4) {
+      mc_params[i].image_lmax = 0;
+      mc_params[i].lmax = 0;
+    } else if (input1[i].ndim() == 4) { // 4D
       if (input1[i].size(3) != input2[i].size(3))
         throw Exception ("input images do not have the same number of volumes in the 4th dimension");
       mc_params[i].image_nvols = input1[i].size(3);
@@ -219,6 +224,9 @@ void run () {
           directions_cartesian = Math::Sphere::spherical2cartesian (
             DWI::Directions::electrostatic_repulsion_60()).transpose();
       } else {
+        mc_params[i].do_reorientation = false;
+        mc_params[i].image_lmax = 0;
+        mc_params[i].lmax = 0;
         mc_params[i].do_reorientation = false;
       }
     }
@@ -702,10 +710,12 @@ void run () {
 
   {
     ssize_t max_requested_lmax = 0; // TODO max_requested_lmax for each contrast type if we have tissue specific lmax
-    if (do_rigid) max_requested_lmax = std::max(max_requested_lmax, rigid_registration.get_lmax());
-    if (do_affine) max_requested_lmax = std::max(max_requested_lmax, affine_registration.get_lmax());
-    if (do_nonlinear) max_requested_lmax = std::max(max_requested_lmax, nl_registration.get_lmax());
-    INFO ("max requested lmax: "+str(max_requested_lmax));
+    if (max_mc_image_lmax != 0) {
+      if (do_rigid) max_requested_lmax = std::max(max_requested_lmax, rigid_registration.get_lmax());
+      if (do_affine) max_requested_lmax = std::max(max_requested_lmax, affine_registration.get_lmax());
+      if (do_nonlinear) max_requested_lmax = std::max(max_requested_lmax, nl_registration.get_lmax());
+    }
+    DEBUG ("max requested lmax: "+str(max_requested_lmax));
     for (size_t idx = 0; idx < n_images; ++idx) {
       mc_params[idx].lmax = std::min (mc_params[idx].image_lmax, max_requested_lmax);
       if (input1[idx].ndim() == 3)
@@ -718,6 +728,9 @@ void run () {
     mc_params[0].start = 0;
     for (size_t idx = 1; idx < n_images; ++idx)
       mc_params[idx].start = mc_params[idx-1].start + mc_params[idx-1].nvols;
+
+    for (const auto & mc : mc_params)
+      DEBUG (str(mc));
   }
 
   if (mc_params.size() > 1) {

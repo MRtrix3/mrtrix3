@@ -47,7 +47,7 @@ namespace MR
       size_t start; // index to volume in image holding all tissue contrasts
       size_t nvols; // number of volumes preloaded into image holding all tissue contrasts
       ssize_t lmax;  // maximum requested lmax
-      bool do_reorientation;
+      bool do_reorientation; // registration treats this image as (possibly 4D) scalar image
       size_t image_nvols; // number of volumes in original image
       ssize_t image_lmax; // lmax available in image, 0 if not an FOD image
       default_type weight;
@@ -66,20 +66,20 @@ namespace MR
         }
 
       FORCE_INLINE void lower_lmax (ssize_t new_lmax) {
-        if (do_reorientation && new_lmax < lmax) {
+        assert (new_lmax >= 0);
+        if (new_lmax < lmax) {
           lmax = new_lmax;
           if (new_lmax > 0) {
             nvols =  Math::SH::NforL (new_lmax);
           } else {
             nvols = 1;
-            do_reorientation = 0;
           }
         }
       }
     };
 
     inline std::ostream& operator << (std::ostream & o, const MultiContrastSetting & a) {
-      o << "MultiContrast: [start:" << a.start << ", nvols:" << a.nvols << ", lmax:" << a.lmax
+      o << "MultiContrast: [start:" << a.start << ", nvols:" << a.nvols << ", lmax:" << a.lmax << ", image_lmax:" << a.image_lmax
       << ", reorient:" << a.do_reorientation << ", weight:" << a.weight << "]";
       return o;
     }

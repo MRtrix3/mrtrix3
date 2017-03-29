@@ -143,7 +143,7 @@ namespace MR
                 for (auto & mc : stage_contrasts)
                   mc.lower_lmax (fod_lmax[level]);
               } else {
-                MultiContrastSetting mc (im1_image.size(3), do_reorientation, fod_lmax[level]);
+                MultiContrastSetting mc (im1_image.ndim()<4? 1:im1_image.size(3), do_reorientation, fod_lmax[level]);
                 stage_contrasts.push_back(mc);
               }
 
