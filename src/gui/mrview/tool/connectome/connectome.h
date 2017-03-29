@@ -243,7 +243,7 @@ namespace MR
 
 
             // For converting connectome matrices to vectors
-            MR::Connectome::Mat2Vec mat2vec;
+            std::unique_ptr<MR::Connectome::Mat2Vec> mat2vec;
 
 
             // If a lookup table is provided, this container will store the

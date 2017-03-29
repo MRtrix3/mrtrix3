@@ -76,6 +76,7 @@ void run ()
 
   // Open the input file
   auto H = Header::open (argument[0]);
+  Connectome::check (H);
   auto in = H.get_image<node_t>();
 
   // Load the lookup tables
@@ -101,7 +102,7 @@ void run ()
       user_warn = true;
   }
   if (user_warn)
-    WARN ("Unexpected values detected in input image (negative values?); suggest checking input image thoroughly");
+    WARN ("Unexpected values detected in input image; suggest checking input image thoroughly");
 
   // Need to manually search through the output LUT to see if the
   //   'Spinal_column' node is in there, and appears only once

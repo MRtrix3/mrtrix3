@@ -22,9 +22,8 @@ These applications have been written from scratch in C++, using the functionalit
 .. _Mozilla Public License: http://mozilla.org/MPL/2.0/
 
 
-
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Install
 
    installation/before_install
@@ -34,7 +33,7 @@ These applications have been written from scratch in C++, using the functionalit
    installation/hpc_clusters_install
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Getting started
    
    getting_started/key_features
@@ -45,14 +44,14 @@ These applications have been written from scratch in C++, using the functionalit
    getting_started/config
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: DWI Pre-processing
 
    dwi_preprocessing/denoising
    dwi_preprocessing/dwipreproc   
    
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Constrained Spherical Deconvolution
 
    constrained_spherical_deconvolution/response_function_estimation
@@ -60,7 +59,7 @@ These applications have been written from scratch in C++, using the functionalit
    constrained_spherical_deconvolution/multi_tissue_csd
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Quantitative Structural Connectivity
 
    quantitative_structural_connectivity/act
@@ -82,7 +81,7 @@ These applications have been written from scratch in C++, using the functionalit
 ..   fixel_based_analysis/fba_of_other_measures
    
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Spatial Normalisation
 
    spatial_normalisation/warping_images_with_warps_from_other_packages
@@ -90,22 +89,23 @@ These applications have been written from scratch in C++, using the functionalit
 ..   spatial_normalisation/transforming_streamlines
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Concepts
   
+   concepts/dw_scheme
    concepts/global_intensity_normalisation
    concepts/orthonormal_basis
    concepts/dixels_fixels
    concepts/afd_connectivity
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Tips and Tricks
 
    tips_and_tricks/batch_processing_with_foreach
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 1
    :caption: Troubleshooting
 
    troubleshooting/FAQ

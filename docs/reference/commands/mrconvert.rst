@@ -41,14 +41,14 @@ Options for handling JSON (JavaScript Object Notation) files
 
 -  **-json_export file** export data from an image header key-value pairs into a JSON file
 
-Options for manipulating image header key/value entries
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Options to modify generic header entries
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-header_cat key value** concatenate a header key/value entry with the specified text
+-  **-clear_property key** remove the specified key from the image header altogether.
 
--  **-header_erase key** erase a header key/value entry
+-  **-set_property key value** set the value of the specified key in the image header.
 
--  **-header_set key value** set a header key/value entry to the specified text (will erase any existing entry)
+-  **-append_property key value** append the given value to the specified key in the image header (this adds the value specified as a new line in the header value).
 
 Stride options
 ^^^^^^^^^^^^^^

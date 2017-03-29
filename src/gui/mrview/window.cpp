@@ -289,8 +289,8 @@ namespace MR
           action->setShortcut (tr ("Ctrl+M"));
           addAction (action);
 
-          // File menu:
 
+          // File menu:
           menu = new QMenu (tr ("File menu"), this);
 
           action = menu->addAction (tr ("Open..."), this, SLOT (image_open_slot()));
@@ -329,7 +329,6 @@ namespace MR
 
 
           // Image menu:
-
           image_menu = new QMenu (tr ("Image menu"), this);
 
           image_group = new QActionGroup (this);
@@ -397,7 +396,6 @@ namespace MR
 
 
           // Colourmap menu:
-
           colourmap_button = new ColourMapButton (this, *this, true, true, false);
           colourmap_button->setText ("Colourmap");
           colourmap_button->setToolButtonStyle (button_style);
@@ -427,8 +425,6 @@ namespace MR
           addAction (image_interpolate_action);
 
           toolbar->addWidget (colourmap_button);
-
-
 
 
           // Mode menu:
@@ -570,45 +566,10 @@ namespace MR
           button->setPopupMode (QToolButton::InstantPopup);
           toolbar->addWidget (button);
 
-
-
-
-          // Tool menu:
-          tool_group = new QActionGroup (this);
-          tool_group->setExclusive (false);
-          connect (tool_group, SIGNAL (triggered (QAction*)), this, SLOT (select_tool_slot (QAction*)));
-
-          menu = new QMenu (tr ("Tools"), this);
-#undef TOOL
-#define TOOL(classname, name, description) \
-          menu->addAction (new Action<Tool::classname> (tool_group, #name, #description, n++));
-          {
-            using namespace Tool;
-            size_t n = 1;
-#include "gui/mrview/tool/list.h"
-          }
-          for (int n = 0; n < tool_group->actions().size(); ++n)
-            addAction (tool_group->actions()[n]);
-
-          button = new QToolButton (this);
-          button->setText ("Tool");
-          button->setToolButtonStyle (button_style);
-          button->setToolTip (tr ("Open different tools"));
-          button->setIcon (QIcon (":/tools.svg"));
-          button->setMenu (menu);
-          button->setPopupMode (QToolButton::InstantPopup);
-          toolbar->addWidget (button);
-
-
-
-
           toolbar->addSeparator();
 
 
-
           // Mouse mode actions:
-
-
           mode_action_group = new QActionGroup (this);
           mode_action_group->setExclusive (true);
           connect (mode_action_group, SIGNAL (triggered (QAction*)), this, SLOT (select_mouse_mode_slot (QAction*)));
@@ -666,11 +627,41 @@ namespace MR
 
           toolbar->addSeparator();
 
-          // Dynamic spacer
 
+          // Dynamic spacer:
           QWidget* spacer = new QWidget();
           spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
           toolbar->addWidget (spacer);
+
+
+          // Tool menu:
+          tool_group = new QActionGroup (this);
+          tool_group->setExclusive (false);
+          connect (tool_group, SIGNAL (triggered (QAction*)), this, SLOT (select_tool_slot (QAction*)));
+
+          menu = new QMenu (tr ("Tools"), this);
+#undef TOOL
+#define TOOL(classname, name, description) \
+          menu->addAction (new Action<Tool::classname> (tool_group, #name, #description, n++));
+          {
+            using namespace Tool;
+            size_t n = 1;
+#include "gui/mrview/tool/list.h"
+          }
+          for (int n = 0; n < tool_group->actions().size(); ++n)
+            addAction (tool_group->actions()[n]);
+
+          button = new QToolButton (this);
+          button->setText ("Tool");
+          button->setToolButtonStyle (button_style);
+          button->setToolTip (tr ("Open different tools"));
+          button->setIcon (QIcon (":/tools.svg"));
+          button->setMenu (menu);
+          button->setPopupMode (QToolButton::InstantPopup);
+          toolbar->addWidget (button);
+
+          toolbar->addSeparator();
+
 
           // Information menu:
 

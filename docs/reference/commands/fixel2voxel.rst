@@ -39,6 +39,8 @@ Fixel data can be reduced to voxel data in a number of ways:
 Options
 -------
 
+-  **-number N** use only the largest N fixels in calculation of the voxel-wise statistic; in the case of "split_data" and "split_dir", output only the largest N fixels, padding where necessary.
+
 -  **-weighted fixel_in** weight the contribution of each fixel to the per-voxel result according to its volume. E.g. when estimating a voxel-based measure of mean axon diameter, a fixel's mean axon diameter should be weigthed by its relative volume within the voxel. Note that AFD can be used as a psuedomeasure of fixel volume.
 
 Standard options

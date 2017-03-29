@@ -47,7 +47,7 @@ namespace MR
 
         Connectome::Connectome (Dock* parent) :
             Base (parent),
-            mat2vec (0),
+            mat2vec (nullptr),
             lighting (this),
             lighting_dock (nullptr),
             node_list (new Tool::Dock ("Connectome node list")),
@@ -2303,13 +2303,13 @@ namespace MR
             }
           }
 
-          mat2vec = MR::Connectome::Mat2Vec (num_nodes());
+          mat2vec.reset (new MR::Connectome::Mat2Vec (num_nodes()));
 
           edges.clear();
-          edges.reserve (mat2vec.vec_size());
-          for (size_t edge_index = 0; edge_index != mat2vec.vec_size(); ++edge_index) {
-            const node_t one = mat2vec(edge_index).first + 1;
-            const node_t two = mat2vec(edge_index).second + 1;
+          edges.reserve (mat2vec->vec_size());
+          for (size_t edge_index = 0; edge_index != mat2vec->vec_size(); ++edge_index) {
+            const node_t one = (*mat2vec)(edge_index).first + 1;
+            const node_t two = (*mat2vec)(edge_index).second + 1;
             edges.push_back (Edge (one, two, nodes[one].get_com(), nodes[two].get_com()));
           }
 
@@ -2340,7 +2340,7 @@ namespace MR
               if (matrix.rows() != num_nodes())
                 throw Exception ("Matrix file \"" + Path::basename(list[i]) + "\" is incorrect size");
               FileDataVector temp;
-              mat2vec.M2V (matrix, temp);
+              mat2vec->M2V (matrix, temp);
               temp.calc_stats();
               temp.set_name (list[i]);
               data.push_back (std::move (temp));
@@ -2737,7 +2737,7 @@ namespace MR
             e.display();
             return false;
           }
-          mat2vec.M2V (temp, data);
+          mat2vec->M2V (temp, data);
           data.calc_stats();
           data.set_name (Path::basename (path));
           return true;
@@ -2826,7 +2826,7 @@ namespace MR
                 bool any = false, all = true;
                 for (node_t j = 1; j <= num_nodes(); ++j) {
                   if (selected_nodes[j]) {
-                    const float value = data[mat2vec (i-1, j-1)];
+                    const float value = data[(*mat2vec) (i-1, j-1)];
                     if (value >= threshold)
                       any = true;
                     else
@@ -2865,7 +2865,7 @@ namespace MR
                 bool any = false, all = true;
                 for (node_t j = 1; j <= num_nodes(); ++j) {
                   if (selected_nodes[j]) {
-                    const float value = node_values_from_file_visibility[mat2vec (i-1, j-1)];
+                    const float value = node_values_from_file_visibility[(*mat2vec) (i-1, j-1)];
                     if (value >= threshold)
                       any = true;
                     else
@@ -2935,7 +2935,7 @@ namespace MR
                   float min = std::numeric_limits<float>::infinity(), sum = 0.0f, max = -std::numeric_limits<float>::infinity();
                   for (node_t j = 1; j <= num_nodes(); ++j) {
                     if (selected_nodes[j]) {
-                      const float value = data[mat2vec (i-1, j-1)];
+                      const float value = data[(*mat2vec) (i-1, j-1)];
                       min = std::min (min, value);
                       sum += value;
                       max = std::max (max, value);
@@ -2990,7 +2990,7 @@ namespace MR
                   float min = std::numeric_limits<float>::infinity(), sum = 0.0f, max = -std::numeric_limits<float>::infinity();
                   for (node_t j = 1; j <= num_nodes(); ++j) {
                     if (selected_nodes[j]) {
-                      const float value = node_values_from_file_colour[mat2vec (i-1, j-1)];
+                      const float value = node_values_from_file_colour[(*mat2vec) (i-1, j-1)];
                       min = std::min (min, value);
                       sum += value;
                       max = std::max (max, value);
@@ -3051,7 +3051,7 @@ namespace MR
                   float min = std::numeric_limits<float>::infinity(), sum = 0.0f, max = -std::numeric_limits<float>::infinity();
                   for (node_t j = 1; j <= num_nodes(); ++j) {
                     if (selected_nodes[j]) {
-                      const float value = data[mat2vec (i-1, j-1)];
+                      const float value = data[(*mat2vec) (i-1, j-1)];
                       min = std::min (min, value);
                       sum += value;
                       max = std::max (max, value);
@@ -3105,7 +3105,7 @@ namespace MR
                   float min = std::numeric_limits<float>::infinity(), sum = 0.0f, max = -std::numeric_limits<float>::infinity();
                   for (node_t j = 1; j <= num_nodes(); ++j) {
                     if (selected_nodes[j]) {
-                      const float value = node_values_from_file_size[mat2vec (i-1, j-1)];
+                      const float value = node_values_from_file_size[(*mat2vec) (i-1, j-1)];
                       min = std::min (min, value);
                       sum += value;
                       max = std::max (max, value);
@@ -3155,7 +3155,7 @@ namespace MR
                   float min = std::numeric_limits<float>::infinity(), sum = 0.0f, max = -std::numeric_limits<float>::infinity();
                   for (node_t j = 1; j <= num_nodes(); ++j) {
                     if (selected_nodes[j]) {
-                      const float value = data[mat2vec (i-1, j-1)];
+                      const float value = data[(*mat2vec) (i-1, j-1)];
                       min = std::min (min, value);
                       sum += value;
                       max = std::max (max, value);
@@ -3221,7 +3221,7 @@ namespace MR
                   float min = std::numeric_limits<float>::infinity(), sum = 0.0f, max = -std::numeric_limits<float>::infinity();
                   for (node_t j = 1; j <= num_nodes(); ++j) {
                     if (selected_nodes[j]) {
-                      const float value = node_values_from_file_alpha[mat2vec (i-1, j-1)];
+                      const float value = node_values_from_file_alpha[(*mat2vec) (i-1, j-1)];
                       min = std::min (min, value);
                       sum += value;
                       max = std::max (max, value);

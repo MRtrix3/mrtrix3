@@ -135,7 +135,7 @@ single-tissue voxels in the diffusion images. This algorithm is
 hard-wired to provide response functions for the most typical use case
 for MSMT CSD: An isotropic grey matter response, an anisotropic white
 matter response, and an isotropic CSF response; the output response
-functions are provided in the format expected by the :ref:`msdwi2fod`
+functions are provided in the format expected by the :ref:`dwi2fod`
 command. Those wishing to experiment with different multi-tissue
 response function configurations will need to use the ``manual``
 algorithm (which will provide a multi-shell response function if the

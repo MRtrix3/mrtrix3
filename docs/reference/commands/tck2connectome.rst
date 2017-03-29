@@ -62,7 +62,7 @@ Other options for tck2connectome
 
 -  **-keep_unassigned** By default, the program discards the information regarding those streamlines that are not successfully assigned to a node pair. Set this option to keep these values (will be the first row/column in the output matrix)
 
--  **-out_assignments path** output the node assignments of each streamline to a file
+-  **-out_assignments path** output the node assignments of each streamline to a file; this can be used subsequently e.g. by the command connectome2tck
 
 -  **-vector** output a vector representing connectivities from a given seed point to target nodes, rather than a matrix of node-node connectivities
 
