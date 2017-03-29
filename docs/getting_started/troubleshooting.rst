@@ -262,7 +262,8 @@ Linux: very slow performance when writing large images
 This might be due to the Linux Disk Caching or the kernel's handling of 
 _`dirty pages <https://lonesysadmin.net/2013/12/22/better-linux-disk-caching-performance-vm-dirty_ratio/>`__.
 
-On Ubuntu, you can get your current dirty page handling settings with ``sysctl -a | grep dirty``. Those settings can be modifyed in ``/etc/sysctl.conf`` by adding the following two lines to ``/etc/sysctl.conf``::
+On Ubuntu, you can get your current dirty page handling settings with ``sysctl -a | grep dirty``. 
+Those settings can be modified in ``/etc/sysctl.conf`` by adding the following two lines to ``/etc/sysctl.conf``::
 
     vm.dirty_background_ratio = 60
     vm.dirty_ratio = 80
