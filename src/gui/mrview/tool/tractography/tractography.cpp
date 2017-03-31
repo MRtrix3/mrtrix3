@@ -169,22 +169,19 @@ namespace MR
 
             general_groupbox->setLayout (general_opt_grid);
 
-            QSlider* slider;
-            slider = new QSlider (Qt::Horizontal);
-            opacity_slider = slider;
-            slider->setRange (1,1000);
-            slider->setSliderPosition (1000);
-            connect (slider, SIGNAL (valueChanged (int)), this, SLOT (opacity_slot (int)));
+            opacity_slider = new QSlider (Qt::Horizontal);
+            opacity_slider->setRange (1,1000);
+            opacity_slider->setSliderPosition (1000);
+            connect (opacity_slider, SIGNAL (valueChanged (int)), this, SLOT (opacity_slot (int)));
             general_opt_grid->addWidget (new QLabel ("opacity"), 0, 0);
-            general_opt_grid->addWidget (slider, 0, 1);
+            general_opt_grid->addWidget (opacity_slider, 0, 1);
 
-            slider = new QSlider (Qt::Horizontal);
-            thickness_slider = slider;
-            slider->setRange (-1000,1000);
-            slider->setSliderPosition (0);
-            connect (slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
+            thickness_slider = new QSlider (Qt::Horizontal);
+            thickness_slider->setRange (-1000,1000);
+            thickness_slider->setSliderPosition (0);
+            connect (thickness_slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
             general_opt_grid->addWidget (new QLabel ("line thickness"), 1, 0);
-            general_opt_grid->addWidget (slider, 1, 1);
+            general_opt_grid->addWidget (thickness_slider, 1, 1);
 
             QGroupBox* slab_group_box = new QGroupBox (tr("crop to slab"));
             slab_group_box->setCheckable (true);
@@ -668,11 +665,11 @@ namespace MR
             + Option ("tractography.load", "Load the specified tracks file into the tractography tool.").allow_multiple()
             +   Argument ("tracks").type_file_in()
 
-            + Option ("tractography.thickness", "Line thickness of tractography display, [-1.0, 1.0], default is 0.0.")
-            +   Argument("thickness").type_float ( -1.0, 1.0 )
+            + Option ("tractography.thickness", "Line thickness of tractography display, [-1.0, 1.0], default is 0.0.").allow_multiple()
+            +   Argument("value").type_float ( -1.0, 1.0 )
 
-            + Option ("tractography.opacity", "Opacity of tractography display, [0.0, 1.0], default is 1.0.")
-            +   Argument("opacity").type_float ( 0.0, 1.0 )
+            + Option ("tractography.opacity", "Opacity of tractography display, [0.0, 1.0], default is 1.0.").allow_multiple()
+            +   Argument("value").type_float ( 0.0, 1.0 )
             ;
           
         }
@@ -691,7 +688,7 @@ namespace MR
 
           if (opt.opt->is ("tractography.thickness")) {
             // Thickness runs from -1000 to 1000, 
-            float thickness = (float) opt[0] * 1000.0;
+            float thickness = float(opt[0]) * 1000.0f;
             try { 
               thickness_slider->setValue(thickness);
             }
@@ -701,7 +698,7 @@ namespace MR
 
           if (opt.opt->is ("tractography.opacity")) {
             // Opacity runs from 0 to 1000, so multiply by 1000
-            float opacity = (float) opt[0] * 1000;
+            float opacity = float(opt[0]) * 1000.0f;
             try {
               opacity_slider->setValue(opacity);
             }
