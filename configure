@@ -1176,8 +1176,23 @@ elif not debug:
 
 if openmp:
   cpp_flags += [ '-fopenmp' ]
-  ld_flags += [ '-fopenmp' ]
-  ld_lib_flags += [ '-fopenmp' ]
+  ld_flags  += [ '-fopenmp' ]
+  report ('Checking for OpenMP support: ')
+  try:
+    compile ('''
+    #include <Eigen/Core>
+    int main()
+    {
+      Eigen::initParallel();
+      Eigen::setNbThreads(4);
+      return (Eigen::nbThreads() == 4) ? 0 : 1;
+    }
+    ''', cpp_flags + eigen_cflags, ld_flags)
+    report ('ok\n')
+  except (CompileError, LinkError):
+    error ('OpenMP not found for this compiler/system.')
+  except:
+    error ('OpenMP not working as expected.')
 
 
 
