@@ -816,6 +816,32 @@ except:
 
 
 
+# add openmp flags if required and available
+
+if openmp:
+  cpp_flags += [ '-fopenmp' ]
+  ld_flags  += [ '-fopenmp' ]
+  report ('Checking for OpenMP support: ')
+  try:
+    compile ('''
+    #include <Eigen/Core>
+    int main()
+    {
+      Eigen::initParallel();
+      Eigen::setNbThreads(4);
+      return (Eigen::nbThreads() == 4) ? 0 : 1;
+    }
+    ''', cpp_flags + eigen_cflags, ld_flags)
+    report ('ok\n')
+  except (CompileError, LinkError):
+    error ('OpenMP not found for this compiler/system.')
+  except:
+    error ('OpenMP not working as expected.')
+
+
+
+
+
 # shared library generation:
 if not noshared:
   report ('Checking shared library generation: ')
@@ -1168,31 +1194,6 @@ if asserts:
 elif not debug:
   cpp_flags += [ '-DNDEBUG' ]
 
-
-
-
-
-# add openmp flags as required
-
-if openmp:
-  cpp_flags += [ '-fopenmp' ]
-  ld_flags  += [ '-fopenmp' ]
-  report ('Checking for OpenMP support: ')
-  try:
-    compile ('''
-    #include <Eigen/Core>
-    int main()
-    {
-      Eigen::initParallel();
-      Eigen::setNbThreads(4);
-      return (Eigen::nbThreads() == 4) ? 0 : 1;
-    }
-    ''', cpp_flags + eigen_cflags, ld_flags)
-    report ('ok\n')
-  except (CompileError, LinkError):
-    error ('OpenMP not found for this compiler/system.')
-  except:
-    error ('OpenMP not working as expected.')
 
 
 
