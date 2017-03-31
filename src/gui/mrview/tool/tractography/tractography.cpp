@@ -171,6 +171,7 @@ namespace MR
 
             QSlider* slider;
             slider = new QSlider (Qt::Horizontal);
+            opacity_slider = slider;
             slider->setRange (1,1000);
             slider->setSliderPosition (1000);
             connect (slider, SIGNAL (valueChanged (int)), this, SLOT (opacity_slot (int)));
@@ -178,6 +179,7 @@ namespace MR
             general_opt_grid->addWidget (slider, 0, 1);
 
             slider = new QSlider (Qt::Horizontal);
+            thickness_slider = slider;
             slider->setRange (-1000,1000);
             slider->setSliderPosition (0);
             connect (slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
@@ -664,7 +666,15 @@ namespace MR
             + OptionGroup ("Tractography tool options")
 
             + Option ("tractography.load", "Load the specified tracks file into the tractography tool.").allow_multiple()
-            +   Argument ("tracks").type_file_in();
+            +   Argument ("tracks").type_file_in()
+
+            + Option ("tractography.thickness", "Line thickness of tractography display, [-1.0, 1.0], default is 0.0.")
+            +   Argument("thickness").type_float ( -1.0, 1.0 )
+
+            + Option ("tractography.opacity", "Opacity of tractography display, [0.0, 1.0], default is 1.0.")
+            +   Argument("opacity").type_float ( 0.0, 1.0 )
+            ;
+          
         }
 
         bool Tractography::process_commandline_option (const MR::App::ParsedOption& opt) 
@@ -674,6 +684,26 @@ namespace MR
             try { 
               tractogram_list_model->add_items (list, *this); 
               window().updateGL();
+            }
+            catch (Exception& E) { E.display(); }
+            return true;
+          }
+
+          if (opt.opt->is ("tractography.thickness")) {
+            // Thickness runs from -1000 to 1000, 
+            float thickness = (float) opt[0] * 1000.0;
+            try { 
+              thickness_slider->setValue(thickness);
+            }
+            catch (Exception& E) { E.display(); }
+            return true;
+          }
+
+          if (opt.opt->is ("tractography.opacity")) {
+            // Opacity runs from 0 to 1000, so multiply by 1000
+            float opacity = (float) opt[0] * 1000;
+            try {
+              opacity_slider->setValue(opacity);
             }
             catch (Exception& E) { E.display(); }
             return true;
