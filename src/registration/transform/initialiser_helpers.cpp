@@ -191,7 +191,7 @@ namespace MR
             metric,
             transform,
             init);
-          search.run();
+          search.run(false);
         }
 
         void initialise_using_image_mass (Image<default_type>& im1,

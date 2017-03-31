@@ -46,6 +46,7 @@ namespace MR
               default_type scale;
               size_t directions;
               bool run_global;
+              double translation_extent;
               struct global_search { MEMALIGN(global_search)
                 size_t iterations;
                 global_search () :
@@ -56,7 +57,8 @@ namespace MR
                 angles (5),
                 scale (0.15),
                 directions (250),
-                run_global (false) {
+                run_global (false),
+                translation_extent (0.05) {
                   angles[0] =  2.0 / 180.0 * Math::pi;
                   angles[1] =  5.0 / 180.0 * Math::pi;
                   angles[2] = 10.0 / 180.0 * Math::pi;

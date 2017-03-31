@@ -171,21 +171,14 @@ void run () {
     do_reorientation = false;
 
 
+
   Eigen::MatrixXd directions_cartesian;
   opt = get_options ("directions");
   if (opt.size())
     directions_cartesian = Math::Sphere::spherical2cartesian (load_matrix (opt[0][0])).transpose();
 
-  // parse multi contrast parameters
+  // multi contrast settings
   vector<Registration::MultiContrastSetting> mc_params (n_images);
-  // for (auto& mc : mc_params) {
-  //   mc.lmax = 0;
-  //   mc.nvols = 1;
-  //   mc.image_nvols = 1;
-  //   mc.image_lmax = 0;
-  //   mc.do_reorientation = do_reorientation;
-  //   mc.weight = 1.0;
-  // }
   // check header transformations for equality
   Eigen::MatrixXd trafo = MR::Transform(input1[0]).scanner2voxel.linear();
   for (size_t i=1; i<n_images; i++) {
@@ -197,39 +190,39 @@ void run () {
     if (!trafo.isApprox(MR::Transform(input2[i]).scanner2voxel.linear(),1e-5))
       WARN ("Multi contrast image has different header transformation from first image and will be ignored: " + str(input2[i].name()));
   }
-  // compare input1 and input2 for consistency
-  // set lmax and do_reorientation for each compartment
+
+  // set parameters for each contrast
   for (size_t i=0; i<n_images; i++) {
+    // compare input1 and input2 for consistency
     if (i>0) check_dimensions (input1[i], input1[i-1], 0, 3);
     if (i>0) check_dimensions (input2[i], input2[i-1], 0, 3);
-    mc_params[i].weight = 1.0;
+    // set image_lmax and do_reorientation
     if (input1[i].ndim() > 4) {
       throw Exception ("image dimensions larger than 4 are not supported");
     } else if (input1[i].ndim() == 3) { // 3D
       mc_params[i].do_reorientation = false;
-      mc_params[i].image_nvols = 1;
       mc_params[i].image_lmax = 0;
-      mc_params[i].lmax = 0;
+      CONSOLE ("Treating images "+input1[i].name()+", "+input2[i].name()+" as scalar images");
     } else if (input1[i].ndim() == 4) { // 4D
       if (input1[i].size(3) != input2[i].size(3))
         throw Exception ("input images do not have the same number of volumes in the 4th dimension");
-      mc_params[i].image_nvols = input1[i].size(3);
       value_type val = (std::sqrt (float (1 + 8 * input1[i].size(3))) - 3.0) / 4.0;
-      if (!(val - (int)val) && mc_params[i].do_reorientation && input1[i].size(3) > 1) {
-        CONSOLE ("SH series detected in image "+input1[i].name()+", performing FOD registration");
-        mc_params[i].image_lmax = Math::SH::LforN (input1[i].size(3));
-        mc_params[i].lmax = mc_params[i].image_lmax;
+      if (!(val - (int)val) && do_reorientation && input1[i].size(3) > 1) {
+        CONSOLE ("SH series detected in images "+input1[i].name()+", "+input2[i].name());
         mc_params[i].do_reorientation = true;
+        mc_params[i].image_lmax = Math::SH::LforN (input1[i].size(3));
         if (!directions_cartesian.cols())
-          directions_cartesian = Math::Sphere::spherical2cartesian (
-            DWI::Directions::electrostatic_repulsion_60()).transpose();
+          directions_cartesian = Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_60()).transpose();
       } else {
+        CONSOLE ("Treating images "+input1[i].name()+", "+input2[i].name()+" as scalar images");
         mc_params[i].do_reorientation = false;
         mc_params[i].image_lmax = 0;
-        mc_params[i].lmax = 0;
-        mc_params[i].do_reorientation = false;
       }
     }
+    // set lmax to image_lmax and set image_nvols, weight
+    mc_params[i].lmax = mc_params[i].image_lmax;
+    mc_params[i].image_nvols = input1[i].ndim() < 4? 1 : input1[i].size(3);
+    mc_params[i].weight = 1.0 / n_images;
   }
 
   ssize_t max_mc_image_lmax = std::max_element(mc_params.begin(), mc_params.end(),
@@ -237,11 +230,12 @@ void run () {
     {return x.lmax < y.lmax;})->lmax;
   do_reorientation = std::any_of(mc_params.begin(), mc_params.end(),
     [](Registration::MultiContrastSetting const& i){return i.do_reorientation;});
-
-  INFO("maximum lmax in any image: "+str(max_mc_image_lmax));
-  INFO("do reorientation: "+str(do_reorientation));
+  if (do_reorientation)
+    CONSOLE("performing FOD registration");
   if (!do_reorientation and directions_cartesian.cols())
     WARN ("-directions option ignored since no FOD reorientation is being performed");
+
+  INFO("maximum lmax: "+str(max_mc_image_lmax));
 
   opt = get_options ("transformed");
   vector<std::string> im1_transformed_paths;
@@ -324,8 +318,6 @@ void run () {
 
   opt = get_options ("rigid_init_rotation");
   if (opt.size()) {
-    if (init_rigid_matrix_set)
-      throw Exception ("options -rigid_init_matrix and -rigid_init_rotation are mutually exclusive");
     Registration::set_init_rotation_model_from_option (rigid_registration, (int)opt[0][0]);
   }
 
@@ -953,39 +945,42 @@ void run () {
     }
 
     for (size_t idx = 0; idx < n_images; idx++) {
-      INFO ("    " + im1_transformed_paths[idx]);
-      // preload full input image
-      Image<value_type> im1_image = Image<value_type>::open (input1[idx].name()).with_direct_io (Stride::contiguous_along_axis (3));
+      CONSOLE ("... " + im1_transformed_paths[idx]);
+      {
+        LogLevelLatch log_level (0);
+        // preload full input image
+        Image<value_type> im1_image = Image<value_type>::open (input1[idx].name()).with_direct_io (Stride::contiguous_along_axis (3));
 
-      Header transformed_header (input2[idx]);
-      transformed_header.datatype() = DataType::from_command_line (DataType::Float32);
-      Image<value_type> im1_transformed = Image<value_type>::create (im1_transformed_paths[idx], transformed_header).with_direct_io();
+        Header transformed_header (input2[idx]);
+        transformed_header.datatype() = DataType::from_command_line (DataType::Float32);
+        Image<value_type> im1_transformed = Image<value_type>::create (im1_transformed_paths[idx], transformed_header).with_direct_io();
 
 
-      if (do_nonlinear) {
-        Filter::warp<Interp::Cubic> (im1_image, im1_transformed, deform_field, 0.0);
-        if (mc_params[idx].do_reorientation)
-          Registration::Transform::reorient_warp ("reorienting FODs",
-                                                  im1_transformed,
-                                                  deform_field,
-                                                  Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+        if (do_nonlinear) {
+          Filter::warp<Interp::Cubic> (im1_image, im1_transformed, deform_field, 0.0);
+          if (mc_params[idx].do_reorientation)
+            Registration::Transform::reorient_warp ("reorienting FODs",
+                                                    im1_transformed,
+                                                    deform_field,
+                                                    Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
 
-      } else if (do_affine) {
-        Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, affine.get_transform(), Adapter::AutoOverSample, 0.0);
-        if (mc_params[idx].do_reorientation)
-          Registration::Transform::reorient ("reorienting FODs",
-                                             im1_transformed,
-                                             im1_transformed,
-                                             affine.get_transform(),
-                                             Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
-      } else { // rigid
-        Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, rigid.get_transform(), Adapter::AutoOverSample, 0.0);
-        if (mc_params[idx].do_reorientation)
-          Registration::Transform::reorient ("reorienting FODs",
-                                             im1_transformed,
-                                             im1_transformed,
-                                             rigid.get_transform(),
-                                             Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+        } else if (do_affine) {
+          Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, affine.get_transform(), Adapter::AutoOverSample, 0.0);
+          if (mc_params[idx].do_reorientation)
+            Registration::Transform::reorient ("reorienting FODs",
+                                               im1_transformed,
+                                               im1_transformed,
+                                               affine.get_transform(),
+                                               Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+        } else { // rigid
+          Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, rigid.get_transform(), Adapter::AutoOverSample, 0.0);
+          if (mc_params[idx].do_reorientation)
+            Registration::Transform::reorient ("reorienting FODs",
+                                               im1_transformed,
+                                               im1_transformed,
+                                               rigid.get_transform(),
+                                               Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+        }
       }
     }
   }
@@ -1013,23 +1008,26 @@ void run () {
     }
 
     for (size_t idx = 0; idx < n_images; idx++) {
-      CONSOLE ("..." + input1_midway_transformed_paths[idx]);
-      // preload full input image
-      Image<value_type> im1_image = Image<value_type>::open (input1[idx].name()).with_direct_io (Stride::contiguous_along_axis (3));
-      midway_header.ndim() = im1_image.ndim();
-      if (midway_header.ndim() == 4)
-        midway_header.size(3) = im1_image.size(3);
+      CONSOLE ("... " + input1_midway_transformed_paths[idx]);
+      {
+        LogLevelLatch log_level (0);
+        // preload full input image
+        Image<value_type> im1_image = Image<value_type>::open (input1[idx].name()).with_direct_io (Stride::contiguous_along_axis (3));
+        midway_header.ndim() = im1_image.ndim();
+        if (midway_header.ndim() == 4)
+          midway_header.size(3) = im1_image.size(3);
 
-      if (do_nonlinear) {
-        auto im1_midway = Image<default_type>::create (input1_midway_transformed_paths[idx], midway_header).with_direct_io();
-        Filter::warp<Interp::Cubic> (im1_image, im1_midway, im1_deform_field, 0.0);
-        if (mc_params[idx].do_reorientation)
-          Registration::Transform::reorient_warp ("reorienting FODs", im1_midway, im1_deform_field,
-                                                  Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
-      } else if (do_affine) {
-        affine_registration.transform_image_midway (im1_image, affine, mc_params[idx].do_reorientation, 1, input1_midway_transformed_paths[idx], midway_header);
-      } else { // rigid
-        rigid_registration.transform_image_midway (im1_image, rigid, mc_params[idx].do_reorientation, 1, input1_midway_transformed_paths[idx], midway_header);
+        if (do_nonlinear) {
+          auto im1_midway = Image<default_type>::create (input1_midway_transformed_paths[idx], midway_header).with_direct_io();
+          Filter::warp<Interp::Cubic> (im1_image, im1_midway, im1_deform_field, 0.0);
+          if (mc_params[idx].do_reorientation)
+            Registration::Transform::reorient_warp ("reorienting FODs", im1_midway, im1_deform_field,
+                                                    Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+        } else if (do_affine) {
+          affine_registration.transform_image_midway (im1_image, affine, mc_params[idx].do_reorientation, 1, input1_midway_transformed_paths[idx], midway_header);
+        } else { // rigid
+          rigid_registration.transform_image_midway (im1_image, rigid, mc_params[idx].do_reorientation, 1, input1_midway_transformed_paths[idx], midway_header);
+        }
       }
     }
 
@@ -1040,26 +1038,26 @@ void run () {
     }
 
     for (size_t idx = 0; idx < n_images; idx++) {
-      CONSOLE ("..." + input2_midway_transformed_paths[idx]);
-      // preload full input image
-      Image<value_type> im2_image = Image<value_type>::open (input2[idx].name()).with_direct_io (Stride::contiguous_along_axis (3));
-      midway_header.ndim() = im2_image.ndim();
-      if (midway_header.ndim() == 4)
-        midway_header.size(3) = im2_image.size(3);
-      TRACE;
+      CONSOLE ("... " + input2_midway_transformed_paths[idx]);
+      {
+        LogLevelLatch log_level (0);
+        // preload full input image
+        Image<value_type> im2_image = Image<value_type>::open (input2[idx].name()).with_direct_io (Stride::contiguous_along_axis (3));
+        midway_header.ndim() = im2_image.ndim();
+        if (midway_header.ndim() == 4)
+          midway_header.size(3) = im2_image.size(3);
 
-      if (do_nonlinear) {
-        TRACE;
-        auto im2_midway = Image<default_type>::create (input2_midway_transformed_paths[idx], midway_header).with_direct_io();
-        TRACE;
-        Filter::warp<Interp::Cubic> (im2_image, im2_midway, im2_deform_field, 0.0);
-        if (mc_params[idx].do_reorientation)
-          Registration::Transform::reorient_warp ("reorienting FODs", im2_midway, im2_deform_field,
-                                                  Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
-      } else if (do_affine) {
-        affine_registration.transform_image_midway (im2_image, affine, mc_params[idx].do_reorientation, 0, input2_midway_transformed_paths[idx], midway_header);
-      } else { // rigid
-        rigid_registration.transform_image_midway (im2_image, rigid, mc_params[idx].do_reorientation, 0, input2_midway_transformed_paths[idx], midway_header);
+        if (do_nonlinear) {
+          auto im2_midway = Image<default_type>::create (input2_midway_transformed_paths[idx], midway_header).with_direct_io();
+          Filter::warp<Interp::Cubic> (im2_image, im2_midway, im2_deform_field, 0.0);
+          if (mc_params[idx].do_reorientation)
+            Registration::Transform::reorient_warp ("reorienting FODs", im2_midway, im2_deform_field,
+                                                    Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+        } else if (do_affine) {
+          affine_registration.transform_image_midway (im2_image, affine, mc_params[idx].do_reorientation, 0, input2_midway_transformed_paths[idx], midway_header);
+        } else { // rigid
+          rigid_registration.transform_image_midway (im2_image, rigid, mc_params[idx].do_reorientation, 0, input2_midway_transformed_paths[idx], midway_header);
+        }
       }
     }
   }

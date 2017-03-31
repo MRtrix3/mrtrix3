@@ -80,10 +80,15 @@ namespace MR
             local_search_directions (init.init_rotation.search.directions),
             image_scale_factor (init.init_rotation.search.scale),
             global_search (init.init_rotation.search.run_global),
+            translation_extent (init.init_rotation.search.translation_extent),
             idx_angle (0),
             idx_dir (0) {
               local_trafo.set_centre_without_transform_update (centre);
               local_trafo.set_translation (offset);
+              Eigen::Matrix<default_type, 3, 3> lin = input_trafo.get_transform().linear();
+              local_trafo.set_matrix_const_translation(lin);
+              INFO ("before search:");
+              INFO (local_trafo.info());
             };
 
 
@@ -129,7 +134,6 @@ namespace MR
             }
 
             void run ( bool debug = false ) {
-
               std::string what = global_search? "global" : "local";
               size_t iterations = global_search? global_search_iterations : (rot_angles.size() * local_search_directions);
               ProgressBar progress ("performing " + what + " search for best rotation", iterations);
@@ -147,37 +151,53 @@ namespace MR
               Eigen::Matrix<default_type, Eigen::Dynamic, 1> gradient (local_trafo.size());
               Eigen::VectorXd cost = Eigen::VectorXd::Zero(1,1);
               transform_type T;
-              {
+              const Eigen::Translation<default_type, 3> Tc2 (centre - 0.5 * offset), To (offset);
+              transform_type R0;
+              R0.translation().fill(0);
+
+              Eigen::Vector3d extent(0,0,0);
+              if (translation_extent != 0) {
                 ParamType parameters = get_parameters ();
-                // parameters.make_diagnostics_image ("/tmp/debugme"+str(iteration)+".mif", true); // REMOVEME
-                Metric::ThreadKernel<MetricType, ParamType> kernel (metric, parameters, cost, gradient, &cnt);
-                ThreadedLoop (parameters.midway_image, 0, 3).run (kernel);
-                assert (cnt > 0);
-                overlap_it[0] = cnt;
-                cost_it[0] = cost(0) / static_cast<default_type>(cnt);
-                T = parameters.transformation.get_transform();
-                trafo_it.push_back (T);
+                extent << midway_image_header.spacing(0) * translation_extent * (midway_image_header.size(0) - 0.5),
+                                  midway_image_header.spacing(1) * translation_extent * (midway_image_header.size(1) - 0.5),
+                                  midway_image_header.spacing(2) * translation_extent * (midway_image_header.size(2) - 0.5);
               }
 
-              transform_type Tc2, To, R0;
-              Tc2.setIdentity();
-              To.setIdentity();
-              R0.setIdentity();
-              To.translation() = offset;
-              Tc2.translation() = centre - 0.5 * offset;
-
+              // first iteration
+              // {
+              //
+              //   // parameters.make_diagnostics_image ("/tmp/debugme"+str(iteration)+".mif", true); // REMOVEME
+              //   Metric::ThreadKernel<MetricType, ParamType> kernel (metric, parameters, cost, gradient, &cnt);
+              //   ThreadedLoop (parameters.midway_image, 0, 3).run (kernel);
+              //   if (cnt == 0)
+              //     throw Exception ("zero voxel overlap at initialisation. input matrix wrong?");
+              //   overlap_it[0] = cnt;
+              //   cost_it[0] = cost(0) / static_cast<default_type>(cnt);
+              //   T = parameters.transformation.get_transform();
+              //   trafo_it.push_back (T);
+              //   if (debug)
+              //     std::cout << str(iteration) + " " + str(cost) + " " + str(cnt) << " " << T.matrix().row(0) << " " << T.matrix().row(1) << " " << T.matrix().row(2) << std::endl;
+              // }
 
               while ( ++iteration < iterations ) {
                 ++progress;
-                if (global_search)
-                  gen_random_quaternion ();
-                else
-                  gen_local_quaternion ();
+                if (iteration > 0) {
+                  if (global_search)
+                    gen_random_quaternion ();
+                  else
+                    gen_local_quaternion ();
 
-                R0.linear() = quat.normalized().toRotationMatrix();
-                transform_type T = Tc2 * To * R0 * Tc2.inverse();
+                  R0.linear() = quat.normalized().toRotationMatrix();
+                  if (translation_extent != 0) {
+                    gen_random_quaternion (); // overwrites quat
+                    R0.translation() = rndn () * (quat * extent);
+                    DEBUG("translation: " + str(R0.translation().transpose()));
+                  }
 
-                local_trafo.set_transform<decltype(T)>(T);
+                  T = Tc2 * To * R0 * Tc2.inverse();
+                  local_trafo.set_transform<transform_type>(T);
+                }
+
                 ParamType parameters = get_parameters ();
                 // parameters.make_diagnostics_image ("/tmp/debugme"+str(iteration)+".mif", true); // REMOVEME
                 cost.fill(0);
@@ -185,9 +205,14 @@ namespace MR
                 Metric::ThreadKernel<MetricType, ParamType> kernel (metric, parameters, cost, gradient, &cnt);
                 ThreadedLoop (parameters.midway_image, 0, 3).run (kernel);
                 DEBUG ("rotation search: iteration " + str(iteration) + " cost: " + str(cost) + " cnt: " + str(cnt));
+                if (debug)
+                  std::cout << str(iteration) + " " + str(cost) + " " + str(cnt) << " " << T.matrix().row(0) << " " << T.matrix().row(1) << " " << T.matrix().row(2) << std::endl;
                 // write_images ( "im1_" + str(iteration) + ".mif", "im2_" + str(iteration) + ".mif");
-                if (cnt == 0)
+                if (cnt == 0) {
+                  if (iteration == 0)
+                    throw Exception ("zero voxel overlap at initialisation. input matrix wrong?");
                   WARN ("rotation search: overlap count is zero");
+                }
                 overlap_it[iteration] = cnt;
                 cost_it[iteration] = cost(0) / static_cast<default_type>(cnt);
                 trafo_it.push_back (T);
@@ -199,6 +224,7 @@ namespace MR
               //  best trafo := lowest cost per voxel with at least mean overlap
               {
                 auto max_ = Eigen::MatrixXd::Constant(cost_it.rows(), 1, std::numeric_limits<default_type>::max());
+                // default_type max_overlap = overlap_it.maxCoeff();
                 default_type mean_overlap = static_cast<default_type>(overlap_it.sum()) / static_cast<default_type>(iterations);
                 // reject solutions with less than mean overlap by setting cost to max
                 cost_it = (overlap_it.array() > mean_overlap).select(cost_it, max_);
@@ -218,7 +244,6 @@ namespace MR
               //   write_images ( "/tmp/im1_best.mif", "/tmp/im2_best.mif");
               // }
               input_trafo.set_transform<transform_type> (best_trafo);
-
             };
 
           private:
@@ -316,7 +341,7 @@ namespace MR
             Registration::Transform::Init::LinearInitialisationParams& init_options;
             const Eigen::Vector3d centre;
             const Eigen::Vector3d offset;
-            // Math::RNG::Normal<default_type> rndn;
+            Math::RNG::Normal<default_type> rndn;
             Math::RNG::Uniform<default_type> rnd;
             Eigen::Quaternion<default_type> quat;
             transform_type best_trafo;
@@ -329,6 +354,7 @@ namespace MR
             size_t local_search_directions;
             default_type image_scale_factor;
             bool global_search;
+            double translation_extent;
             size_t idx_angle, idx_dir;
             Registration::Transform::Rigid local_trafo;
             Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_el;
