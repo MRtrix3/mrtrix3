@@ -71,7 +71,6 @@ if len(grad_mrtrix[-1]) <= 1:
   grad_mrtrix.pop()
 if len(grad_fsl[-1]) <= 1:
   grad_fsl.pop()
-print(grad_mrtrix)
 # Turn into float matrices
 grad_mrtrix = [ [ float(f) for f in line.split(' ') ] for line in grad_mrtrix ]
 grad_fsl = [ [ float(f) for f in line.split() ] for line in grad_fsl ]
