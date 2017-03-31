@@ -184,7 +184,10 @@ namespace MR
           format = gl::RGB;
           internal_format = gl::RGB32F;
 
-          if (tex_positions[plane] >= 0 && tex_positions[plane] < header().size (plane)) {
+          if (tex_positions[plane] < 0 || tex_positions[plane] >= header().size (plane)) {
+            value_min = 0.0f;
+            value_max = 0.0f;
+          } else {
             // copy data:
             image.index (plane) = slice;
             slice_min[plane] = std::numeric_limits<float>::infinity();
@@ -228,6 +231,8 @@ namespace MR
 
           if (tex_positions[plane] < 0 || tex_positions[plane] >= header().size (plane)) {
             for (auto& d : data) d = 0.0f;
+            value_min = 0.0f;
+            value_max = 0.0f;
           }
           else {
             // copy data:
@@ -241,7 +246,7 @@ namespace MR
                 data[idx] = val.real();
                 data[idx+1] = val.imag();
                 float mag = std::abs (val);
-                if (std::isfinite (mag)) 
+                if (std::isfinite (mag))
                   slice_max[plane] = std::max (slice_max[plane], mag);
               }
             }
@@ -258,6 +263,8 @@ namespace MR
 
           if (tex_positions[plane] < 0 || tex_positions[plane] >= header().size (plane)) {
             for (auto& d : data) d = 0.0f;
+            value_min = 0.0f;
+            value_max = 0.0f;
           }
           else {
             // copy data:
@@ -305,7 +312,7 @@ namespace MR
 
         if (volume_unchanged() && !texture_mode_changed)
           return;
-        
+
         std::string cmap_name = ColourMap::maps[colourmap].name;
 
         if (cmap_name == "RGB") format = gl::RGB;
@@ -406,7 +413,7 @@ namespace MR
 
           }
         }
-        else 
+        else
           copy_texture_3D_complex();
 
         min_max_set ();
@@ -414,10 +421,10 @@ namespace MR
 
       // required to shut up clang's compiler warnings about std::abs() when
       // instantiating Image::copy_texture_3D() with unsigned types:
-      template <typename ValueType> 
+      template <typename ValueType>
         inline ValueType abs_if_signed (ValueType x, typename std::enable_if<!std::is_unsigned<ValueType>::value>::type* = nullptr) { return std::abs(x); }
 
-      template <typename ValueType> 
+      template <typename ValueType>
         inline ValueType abs_if_signed (ValueType x, typename std::enable_if<std::is_unsigned<ValueType>::value>::type* = nullptr) { return x; }
 
 
@@ -431,7 +438,7 @@ namespace MR
 
             WithType (const MR::Image<cfloat>& source) : MR::Image<cfloat> (source) {
               __set_fetch_store_functions (fetch_func, store_func, buffer->datatype());
-            } 
+            }
             FORCE_INLINE ValueType value () const {
               ssize_t nseg = data_offset / buffer->get_io()->segment_size();
               return fetch_func (buffer->get_io()->segment (nseg), data_offset - nseg*buffer->get_io()->segment_size(), buffer->intensity_offset(), buffer->intensity_scale());
@@ -445,7 +452,7 @@ namespace MR
 
           ProgressBar progress ("loading image data", V.size(2));
 
-          for (size_t n = 3; n < V.ndim(); ++n) 
+          for (size_t n = 3; n < V.ndim(); ++n)
             V.index (n) = tex_positions[n];
 
           value_min = std::numeric_limits<float>::infinity();
@@ -494,10 +501,10 @@ namespace MR
                   }
                 }
 
-                if (V.ndim() <= 3) 
+                if (V.ndim() <= 3)
                   break;
               }
-              if (V.ndim() > 3) 
+              if (V.ndim() > 3)
                 V.index (3) = tex_positions[3];
 
             }
@@ -583,7 +590,7 @@ namespace MR
           }
         }
 
-        if (!is_unchanged) 
+        if (!is_unchanged)
           tex_positions[0] = tex_positions[1] = tex_positions[2] = -1;
 
         return is_unchanged;
