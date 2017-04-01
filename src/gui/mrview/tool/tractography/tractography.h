@@ -102,6 +102,9 @@ namespace MR
             TrackScalarFileOptions *scalar_file_options;
             LightingDock *lighting_dock;
 
+            QSlider* opacity_slider;
+            QSlider* thickness_slider;
+            
             void dropEvent (QDropEvent* event) override;
             void update_scalar_options();
 
