@@ -129,7 +129,50 @@ void write_fixel_output (const std::string& filename,
 
 
 
-void run() {
+// TODO Define data importer class that willl obtain fixel data for a
+//   specific subject based on the string path to the image file for
+//   that subject
+class SubjectFixelImport : public SubjectDataImportBase
+{ NOMEMALIGN
+  public:
+    SubjectFixelImport (const std::string& path) :
+        SubjectDataImportBase (path),
+        H (Header::open (path)),
+        data (H.get_image<float>())
+    {
+      for (size_t axis = 1; axis < data.ndim(); ++axis) {
+        if (data.size(axis) > 1)
+          throw Exception ("Image file \"" + path + "\" does not contain fixel data (wrong dimensions)");
+      }
+    }
+
+    void operator() (matrix_type::ColXpr column) const override
+    {
+      assert (column.rows() == data.size(0));
+      Image<float> temp (data); // For thread-safety
+      column = temp.row(0);
+    }
+
+    default_type operator[] (const size_t index) const override
+    {
+      assert (index < data.size(0));
+      Image<float> temp (data); // For thread-safety
+      temp.index(0) = index;
+      return default_type(temp.value());
+    }
+
+    const Header& header() const { return H; }
+
+  private:
+    Header H;
+    const Image<float> data;
+
+};
+
+
+
+void run()
+{
 
   auto opt = get_options ("negative");
   bool compute_negative_contrast = opt.size() ? true : false;
@@ -173,30 +216,18 @@ void run() {
       }
     }
   }
+
   // Read identifiers and check files exist
-  vector<std::string> identifiers;
-  Header header;
-  {
-    ProgressBar progress ("validating input files...");
-    std::ifstream ifs (argument[1].c_str());
-    std::string temp;
-    while (getline (ifs, temp)) {
-      std::string filename (Path::join (input_fixel_directory, temp));
-      size_t p = filename.find_last_not_of(" \t");
-      if (std::string::npos != p)
-        filename.erase(p+1);
-      if (!MR::Path::exists (filename))
-        throw Exception ("input fixel image not found: " + filename);
-      header = Header::open (filename);
-      Fixel::fixels_match (index_header, header);
-      identifiers.push_back (filename);
-      progress++;
-    }
+  CohortDataImport importer;
+  importer.initialise<SubjectFixelImport> (argument[1]);
+  for (size_t i = 0; i != importer.size(); ++i) {
+    if (!Fixel::fixels_match (index_header, dynamic_cast<SubjectFixelImport*>(importer[i].get())->header()))
+      throw Exception ("Fixel data file \"" + importer[i]->name() + "\" does not match template fixel image");
   }
 
   // Load design matrix:
   const matrix_type design = load_matrix (argument[2]);
-  if (design.rows() != (ssize_t)identifiers.size())
+  if (design.rows() != (ssize_t)importer.size())
     throw Exception ("number of input files does not match number of rows in design matrix");
 
   // Load permutations file if supplied
@@ -213,10 +244,14 @@ void run() {
   opt = get_options("permutations_nonstationary");
   vector<vector<size_t> > permutations_nonstationary;
   if (opt.size()) {
-    permutations_nonstationary = Math::Stats::Permutation::load_permutations_file (opt[0][0]);
-    nperms_nonstationary = permutations_nonstationary.size();
-    if (permutations_nonstationary[0].size() != (size_t)design.rows())
-      throw Exception ("number of rows in the nonstationary permutations file (" + str(opt[0][0]) + ") does not match number of rows in design matrix");
+    if (do_nonstationary_adjustment) {
+      permutations_nonstationary = Math::Stats::Permutation::load_permutations_file (opt[0][0]);
+      nperms_nonstationary = permutations_nonstationary.size();
+      if (permutations_nonstationary[0].size() != (size_t)design.rows())
+        throw Exception ("number of rows in the nonstationary permutations file (" + str(opt[0][0]) + ") does not match number of rows in design matrix");
+    } else {
+      WARN ("-permutations_nonstationary option ignored: nonstationarity correction is not being performed (-nonstationary option)");
+    }
   }
 
   // Load contrast matrix:
@@ -306,7 +341,7 @@ void run() {
     }
   }
 
-  Header output_header (header);
+  Header output_header (dynamic_cast<SubjectFixelImport*>(importer[0].get())->header());
   output_header.keyval()["num permutations"] = str(num_perms);
   output_header.keyval()["dh"] = str(cfe_dh);
   output_header.keyval()["cfe_e"] = str(cfe_e);
@@ -318,42 +353,29 @@ void run() {
 
 
   // Load input data
-  matrix_type data (num_fixels, identifiers.size());
+  matrix_type data (num_fixels, importer.size());
   data.setZero();
+
   {
-    ProgressBar progress ("loading input images", identifiers.size());
-    for (size_t subject = 0; subject < identifiers.size(); subject++) {
-      LogLevelLatch log_level (0);
-
-      auto subject_data = Image<value_type>::open (identifiers[subject]).with_direct_io();
-      vector<value_type> subject_data_vector (num_fixels, 0.0);
-      for (auto i = Loop (index_image, 0, 3)(index_image); i; ++i) {
-        index_image.index(3) = 1;
-        uint32_t offset = index_image.value();
-        uint32_t fixel_index = 0;
-        for (auto f = Fixel::Loop (index_image) (subject_data); f; ++f, ++fixel_index) {
-          if (!std::isfinite(static_cast<value_type>(subject_data.value())))
-            throw Exception ("subject data file " + identifiers[subject] + " contains non-finite value: " + str(subject_data.value()));
-          subject_data_vector[offset + fixel_index] = subject_data.value();
-        }
-      }
-
+    ProgressBar progress ("loading input images", importer.size());
+    for (size_t subject = 0; subject < importer.size(); subject++) {
+      (*importer[subject]) (data.col (subject));
       // Smooth the data
+      vector_type smoothed_data (vector_type::Zero (num_fixels));
       for (size_t fixel = 0; fixel < num_fixels; ++fixel) {
         value_type value = 0.0;
         std::map<uint32_t, connectivity_value_type>::const_iterator it = smoothing_weights[fixel].begin();
-        for (; it != smoothing_weights[fixel].end(); ++it) {
-          value += subject_data_vector[it->first] * it->second;
-        }
-        data (fixel, subject) = value;
+        for (; it != smoothing_weights[fixel].end(); ++it)
+          value += data (it->first, subject) * it->second;
+        smoothed_data (fixel) = value;
       }
-      progress++;
+      if (!smoothed_data.allFinite())
+        throw Exception ("Input fixel data \"" + importer[subject]->name() + "\" contains at least one non-finite value");
+      data.col (subject) = smoothed_data;
     }
+    progress++;
   }
 
-
-  if (!data.allFinite())
-    throw Exception ("input data contains non-finite value(s)");
   {
     ProgressBar progress ("outputting beta coefficients, effect size and standard deviation");
     auto temp = Math::Stats::GLM::solve_betas (data, design);

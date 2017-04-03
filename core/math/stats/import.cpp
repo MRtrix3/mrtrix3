@@ -30,7 +30,7 @@ namespace MR
       {
         vector_type result (files.size());
         for (size_t i = 0; i != files.size(); ++i)
-          (*files[i]) [element]; // Get the intensity for just a particular element from this input data file
+          result[i] = (*files[i]) [element]; // Get the intensity for just a particular element from this input data file
         return result;
       }
 

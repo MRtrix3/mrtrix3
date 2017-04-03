@@ -54,13 +54,15 @@ namespace MR
           * @param column the column of a matrix into which the data from this
           * particular file should be loaded
           */
-          virtual void operator() (Eigen::Block<matrix_type, 1, Eigen::Dynamic>& column) = 0;
+          virtual void operator() (matrix_type::ColXpr column) const = 0;
 
           /*!
            * @param index extract the data from this file corresponding to a particular
            * row in the measurements vector
            */
-          virtual void operator[] (const size_t index) = 0;
+          virtual default_type operator[] (const size_t index) const = 0;
+
+          const std::string& name() const { return path; }
 
         protected:
           const std::string path;
@@ -99,7 +101,13 @@ namespace MR
            */
           vector_type operator() (const size_t index) const;
 
-          bool valid() const { return files.size(); }
+          size_t size() const { return files.size(); }
+
+          std::shared_ptr<SubjectDataImportBase> operator[] (const size_t i) const
+          {
+            assert (i < files.size());
+            return files[i];
+          }
 
         protected:
           std::vector<std::shared_ptr<SubjectDataImportBase>> files;
