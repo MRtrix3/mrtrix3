@@ -7,24 +7,29 @@ import inspect, os, sys
 lib_folder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile(inspect.currentframe()))[0], os.pardir, 'lib')))
 if not os.path.isdir(lib_folder):
   sys.stderr.write('Unable to locate MRtrix3 Python libraries')
-  sys.exit(1)
+  syWs.exit(1)
 sys.path.insert(0, lib_folder)
 
-import copy, decimal, numbers, os, sys
+import copy, decimal, numbers, os, sys, shutil
 from mrtrix3 import app, image, run, path
 
 app.init('Robert E. Smith (robert.smith@florey.edu.au)', 'Check the orientation of the diffusion gradient table')
 app.cmdline.addCitation('','Jeurissen, B.; Leemans, A.; Sijbers, J. Automated correction of improperly rotated diffusion gradient orientations in diffusion weighted MRI. Medical Image Analysis, 2014, 18(7), 953-962', False)
 app.cmdline.add_argument('input', help='The input DWI series to be checked')
-app.cmdline.add_argument('-mask', help='Provide a brain mask image')
-app.cmdline.add_argument('-number', type=int, default=10000, help='Set the number of tracks to generate for each test')
-grad_import = app.cmdline.add_argument_group('Options for importing the gradient table')
-grad_import.add_argument('-grad', help='Provide a gradient table in MRtrix format')
-grad_import.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Provide a gradient table in FSL bvecs/bvals format')
-app.cmdline.flagMutuallyExclusiveOptions( ['grad', 'fslgrad' ])
+
 grad_export = app.cmdline.add_argument_group('Options for exporting the estimated best gradient table')
 grad_export.add_argument('-export_grad_mrtrix', metavar='grad', help='Export the final gradient table in MRtrix format')
 grad_export.add_argument('-export_grad_fsl', nargs=2, metavar=('bvecs', 'bvals'), help='Export the final gradient table in FSL bvecs/bvals format')
+
+grad_import = app.cmdline.add_argument_group('Options for importing the gradient table')
+grad_import.add_argument('-grad', help='Provide a gradient table in MRtrix format')
+grad_import.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Provide a gradient table in FSL bvecs/bvals format')
+
+options = app.cmdline.add_argument_group('Options for the dwigradcheck script')
+options.add_argument('-mask', help='Provide a brain mask image')
+options.add_argument('-number', type=int, default=10000, help='Set the number of tracks to generate for each test')
+
+app.cmdline.flagMutuallyExclusiveOptions( ['grad', 'fslgrad' ])
 app.cmdline.flagMutuallyExclusiveOptions( ['export_grad_mrtrix', 'export_grad_fsl' ])
 app.parse()
 
@@ -39,10 +44,10 @@ app.makeTempDir()
 run.command('mrconvert ' + app.args.input + ' ' + path.toTemp('data.mif', True) + ' -stride 0,0,0,1 -datatype float32')
 
 if app.args.grad:
-  os.copy(path.fromUser(app.args.grad, False), path.toTemp('grad.b', False))
+  shutil.copy(path.fromUser(app.args.grad, False), path.toTemp('grad.b', False))
 elif app.args.fslgrad:
-  os.copy(path.fromUser(app.args.fslgrad[0], False), path.toTemp('bvecs', False))
-  os.copy(path.fromUser(app.args.fslgrad[1], False), path.toTemp('bvals', False))
+  shutil.copy(path.fromUser(app.args.fslgrad[0], False), path.toTemp('bvecs', False))
+  shutil.copy(path.fromUser(app.args.fslgrad[1], False), path.toTemp('bvals', False))
 if app.args.mask:
   run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + path.toTemp('mask.mif', True) + ' -datatype bit')
 
