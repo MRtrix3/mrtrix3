@@ -139,8 +139,10 @@ void Matrix<T>::finalize()
     case stat_edge::MEAN:
       assert (counts.size());
       for (ssize_t i = 0; i != data.size(); ++i) {
-        data[i] /= counts[i];
-        counts[i] = T(1.0);
+        if (counts[i]) {
+          data[i] /= counts[i];
+          counts[i] = T(1.0);
+        }
       }
       return;
     case stat_edge::MIN:
