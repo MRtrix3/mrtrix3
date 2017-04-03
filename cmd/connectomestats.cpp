@@ -262,7 +262,7 @@ void run()
     save_vector (stdevs.col(0), output_prefix + "_std_dev.csv");
   }
 
-  Math::Stats::GLMTTest glm_ttest (data, design, contrast);
+  Math::Stats::GLMTTestFixed glm_ttest (data, design, contrast);
 
   // If performing non-stationarity adjustment we need to pre-compute the empirical statistic
   vector_type empirical_statistic;

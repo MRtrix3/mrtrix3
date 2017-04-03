@@ -158,7 +158,7 @@ void run()
     save_vector (stdevs.col(0), output_prefix + "_std_dev.csv");
   }
 
-  Math::Stats::GLMTTest glm_ttest (data, design, contrast);
+  Math::Stats::GLMTTestFixed glm_ttest (data, design, contrast);
 
   // Precompute default statistic
   // Don't use convenience function: No enhancer!

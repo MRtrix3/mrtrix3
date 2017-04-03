@@ -370,7 +370,7 @@ void run() {
     write_fixel_output (Path::join (output_fixel_directory, "std_dev.mif"), temp.row(0), output_header);
   }
 
-  Math::Stats::GLMTTest glm_ttest (data, design, contrast);
+  Math::Stats::GLMTTestFixed glm_ttest (data, design, contrast);
   std::shared_ptr<Stats::EnhancerBase> cfe_integrator;
   cfe_integrator.reset (new Stats::CFE::Enhancer (connectivity_matrix, cfe_dh, cfe_e, cfe_h));
   vector_type empirical_cfe_statistic;

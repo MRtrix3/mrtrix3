@@ -210,7 +210,7 @@ void run() {
   if (compute_negative_contrast)
     default_cluster_output_neg.reset (new vector_type (num_vox));
 
-  Math::Stats::GLMTTest glm (data, design, contrast);
+  Math::Stats::GLMTTestFixed glm (data, design, contrast);
 
   std::shared_ptr<Stats::EnhancerBase> enhancer;
   if (use_tfce) {
