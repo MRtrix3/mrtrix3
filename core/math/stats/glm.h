@@ -229,7 +229,7 @@ namespace MR
       // The same class would also be used in the cmd/ files to do the initial measurement matrix fill
       class GLMTTestVariable : public GLMTestBase { NOMEMALIGN
         public:
-          GLMTTestVariable (vector<CohortDataImport>& importers, const matrix_type& measurements, const matrix_type& design, const matrix_type& contrasts);
+          GLMTTestVariable (const vector<CohortDataImport>& importers, const matrix_type& measurements, const matrix_type& design, const matrix_type& contrasts);
 
           /*! Compute the t-statistics
            * @param perm_labelling a vector to shuffle the rows in the design matrix (for permutation testing)
@@ -240,8 +240,12 @@ namespace MR
            */
           void operator() (const vector<size_t>& perm_labelling, vector_type& stats) const override;
 
+          // TODO A function to acquire the design matrix for the default permutation
+          //   (note that this needs to be re-run for each element being tested)
+          matrix_type default_design (const matrix_type& design, const size_t index) const;
+
         protected:
-          const vector<CohortDataImport> importers;
+          const vector<CohortDataImport>& importers;
       };
 
 

@@ -102,6 +102,10 @@ void usage ()
   + Option ("negative", "automatically test the negative (opposite) contrast. By computing the opposite contrast simultaneously "
                         "the computation time is reduced.")
 
+  + Option ("column", "add a column to the design matrix corresponding to subject fixel-wise values "
+                      "(the contrast vector length must include columns for these additions)").allow_multiple()
+  + Argument ("path").type_file_in()
+
   + Option ("smooth", "smooth the fixel value along the fibre tracts using a Gaussian kernel with the supplied FWHM (default: " + str(DEFAULT_SMOOTHING_STD, 2) + "mm)")
   + Argument ("FWHM").type_float (0.0, 200.0)
 
@@ -129,7 +133,7 @@ void write_fixel_output (const std::string& filename,
 
 
 
-// TODO Define data importer class that willl obtain fixel data for a
+// Define data importer class that willl obtain fixel data for a
 //   specific subject based on the string path to the image file for
 //   that subject
 class SubjectFixelImport : public SubjectDataImportBase
@@ -254,11 +258,22 @@ void run()
     }
   }
 
-  // Load contrast matrix:
+  // Load contrast matrix
   const matrix_type contrast = load_matrix (argument[3]);
 
-  if (contrast.cols() != design.cols())
-    throw Exception ("the number of columns per contrast does not equal the number of columns in the design matrix");
+  // Before validating the contrast matrix, we first need to see if there are any
+  //   additional design matrix columns coming from fixel-wise subject data
+  vector<CohortDataImport> extra_columns;
+  opt = get_options ("column");
+  for (size_t i = 0; i != opt.size(); ++i) {
+    extra_columns.push_back (CohortDataImport());
+    extra_columns[i].initialise<SubjectFixelImport> (opt[i][0]);
+  }
+
+  if (contrast.cols() + ssize_t(extra_columns.size()) != design.cols())
+    throw Exception ("the number of columns per contrast (" + str(contrast.cols()) + ")"
+                     + (extra_columns.size() ? " (in addition to the " + str(extra_columns.size()) + " uses of -column)" : "")
+                     + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")");
   if (contrast.rows() > 1)
     throw Exception ("only a single contrast vector (defined as a row) is currently supported");
 
@@ -376,7 +391,9 @@ void run()
     progress++;
   }
 
-  {
+  if (extra_columns.size()) {
+    WARN ("Beta coefficients, effect size and standard deviation outputs not yet implemented for fixel-wise extra columns");
+  } else {
     ProgressBar progress ("outputting beta coefficients, effect size and standard deviation");
     auto temp = Math::Stats::GLM::solve_betas (data, design);
 
@@ -392,20 +409,27 @@ void run()
     write_fixel_output (Path::join (output_fixel_directory, "std_dev.mif"), temp.row(0), output_header);
   }
 
-  Math::Stats::GLMTTestFixed glm_ttest (data, design, contrast);
-  std::shared_ptr<Stats::EnhancerBase> cfe_integrator;
-  cfe_integrator.reset (new Stats::CFE::Enhancer (connectivity_matrix, cfe_dh, cfe_e, cfe_h));
-  vector_type empirical_cfe_statistic;
+  // Construct the class for performing the initial statistical tests
+  std::shared_ptr<GLMTestBase> glm_test;
+  if (extra_columns.size()) {
+    glm_test.reset (new GLMTTestVariable (extra_columns, data, design, contrast));
+  } else {
+    glm_test.reset (new GLMTTestFixed (data, design, contrast));
+  }
+
+  // Construct the class for performing fixel-based statistical enhancement
+  std::shared_ptr<Stats::EnhancerBase> cfe_integrator (new Stats::CFE::Enhancer (connectivity_matrix, cfe_dh, cfe_e, cfe_h));
 
   // If performing non-stationarity adjustment we need to pre-compute the empirical CFE statistic
+  vector_type empirical_cfe_statistic;
   if (do_nonstationary_adjustment) {
 
     if (permutations_nonstationary.size()) {
       Stats::PermTest::PermutationStack permutations (permutations_nonstationary, "precomputing empirical statistic for non-stationarity adjustment");
-      Stats::PermTest::precompute_empirical_stat (glm_ttest, cfe_integrator, permutations, empirical_cfe_statistic);
+      Stats::PermTest::precompute_empirical_stat (glm_test, cfe_integrator, permutations, empirical_cfe_statistic);
     } else {
       Stats::PermTest::PermutationStack permutations (nperms_nonstationary, design.rows(), "precomputing empirical statistic for non-stationarity adjustment", false);
-      Stats::PermTest::precompute_empirical_stat (glm_ttest, cfe_integrator, permutations, empirical_cfe_statistic);
+      Stats::PermTest::precompute_empirical_stat (glm_test, cfe_integrator, permutations, empirical_cfe_statistic);
     }
     output_header.keyval()["nonstationary adjustment"] = str(true);
     write_fixel_output (Path::join (output_fixel_directory, "cfe_empirical.mif"), empirical_cfe_statistic, output_header);
@@ -420,7 +444,7 @@ void run()
   if (compute_negative_contrast)
     cfe_output_neg.reset (new vector_type (num_fixels));
 
-  Stats::PermTest::precompute_default_permutation (glm_ttest, cfe_integrator, empirical_cfe_statistic, cfe_output, cfe_output_neg, tvalue_output);
+  Stats::PermTest::precompute_default_permutation (glm_test, cfe_integrator, empirical_cfe_statistic, cfe_output, cfe_output_neg, tvalue_output);
 
   write_fixel_output (Path::join (output_fixel_directory, "cfe.mif"), cfe_output, output_header);
   write_fixel_output (Path::join (output_fixel_directory, "tvalue.mif"), tvalue_output, output_header);
@@ -440,12 +464,12 @@ void run()
     }
 
     if (permutations.size()) {
-      Stats::PermTest::run_permutations (permutations, glm_ttest, cfe_integrator, empirical_cfe_statistic,
+      Stats::PermTest::run_permutations (permutations, glm_test, cfe_integrator, empirical_cfe_statistic,
                                          cfe_output, cfe_output_neg,
                                          perm_distribution, perm_distribution_neg,
                                          uncorrected_pvalues, uncorrected_pvalues_neg);
     } else {
-      Stats::PermTest::run_permutations (num_perms, glm_ttest, cfe_integrator, empirical_cfe_statistic,
+      Stats::PermTest::run_permutations (num_perms, glm_test, cfe_integrator, empirical_cfe_statistic,
                                          cfe_output, cfe_output_neg,
                                          perm_distribution, perm_distribution_neg,
                                          uncorrected_pvalues, uncorrected_pvalues_neg);

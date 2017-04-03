@@ -158,7 +158,7 @@ void run()
     save_vector (stdevs.col(0), output_prefix + "_std_dev.csv");
   }
 
-  Math::Stats::GLMTTestFixed glm_ttest (data, design, contrast);
+  std::shared_ptr<Math::Stats::GLMTestBase> glm_ttest (new Math::Stats::GLMTTestFixed (data, design, contrast));
 
   // Precompute default statistic
   // Don't use convenience function: No enhancer!
@@ -167,7 +167,7 @@ void run()
   for (size_t i = 0; i != filenames.size(); ++i)
     default_permutation[i] = i;
   vector_type default_tvalues;
-  glm_ttest (default_permutation, default_tvalues);
+  (*glm_ttest) (default_permutation, default_tvalues);
   save_vector (default_tvalues, output_prefix + "_tvalue.csv");
 
   // Perform permutation testing

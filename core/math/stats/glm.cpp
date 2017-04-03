@@ -161,7 +161,7 @@ namespace MR
 
 
 
-      GLMTTestVariable::GLMTTestVariable (vector<CohortDataImport>& importers, const matrix_type& measurements, const matrix_type& design, const matrix_type& contrasts) :
+      GLMTTestVariable::GLMTTestVariable (const vector<CohortDataImport>& importers, const matrix_type& measurements, const matrix_type& design, const matrix_type& contrasts) :
           GLMTestBase (measurements, design, contrasts),
           importers (importers)
       {
@@ -219,6 +219,17 @@ namespace MR
           output[element] = val;
 
         }
+      }
+
+
+
+      matrix_type GLMTTestVariable::default_design (const matrix_type& design, const size_t index) const
+      {
+        matrix_type output (design.rows(), design.cols() + importers.size());
+        output.block (0, 0, design.rows(), design.cols()) = design;
+        for (size_t i = 0; i != importers.size(); ++i)
+          output.col (design.cols() + i) = importers[i] (index);
+        return output;
       }
 
 
