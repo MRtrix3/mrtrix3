@@ -422,7 +422,8 @@ for level in range(0, len(linear_scales)):
                  datatype +
                  output +
                  mrregister_log)
-    check_linear_transformation('linear_transforms_%i/%s.txt' % (level, i.prefix), pause_on_warn=do_pause_on_warn)
+    if os.path.isfile('linear_transforms_%i/%s.txt' % (level, i.prefix)): # not true if -continue option is used
+      check_linear_transformation('linear_transforms_%i/%s.txt' % (level, i.prefix), pause_on_warn=do_pause_on_warn)
 
   # Here we ensure the template doesn't drift or scale
   runCommand('transformcalc ' + allindir('linear_transforms_%i' % level) + ' average linear_transform_average.txt -force -quiet')
