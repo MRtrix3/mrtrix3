@@ -788,6 +788,32 @@ if not openmp:
 
 
 
+# add openmp flags if required and available
+
+if openmp:
+  cpp_flags += [ '-fopenmp' ]
+  ld_flags  += [ '-fopenmp' ]
+  report ('Checking for OpenMP support: ')
+  try:
+    compile ('''
+    #include <Eigen/Core>
+    int main()
+    {
+      Eigen::initParallel();
+      Eigen::setNbThreads(4);
+      return (Eigen::nbThreads() == 4) ? 0 : 1;
+    }
+    ''', cpp_flags + eigen_cflags, ld_flags)
+    report ('ok\n')
+  except (CompileError, LinkError):
+    error ('OpenMP not found for this compiler/system.')
+  except:
+    error ('OpenMP not working as expected.')
+
+
+
+
+
 # Test that JSON for Modern C++ will compile, since it enforces its own requirements
 
 report('Checking JSON for Modern C++ requirements: ')
@@ -812,31 +838,6 @@ except ( CompileError, LinkError ):
 except:
   error ('unexpected exception!' + configure_log_hint)
 
-
-
-
-
-# add openmp flags if required and available
-
-if openmp:
-  cpp_flags += [ '-fopenmp' ]
-  ld_flags  += [ '-fopenmp' ]
-  report ('Checking for OpenMP support: ')
-  try:
-    compile ('''
-    #include <Eigen/Core>
-    int main()
-    {
-      Eigen::initParallel();
-      Eigen::setNbThreads(4);
-      return (Eigen::nbThreads() == 4) ? 0 : 1;
-    }
-    ''', cpp_flags + eigen_cflags, ld_flags)
-    report ('ok\n')
-  except (CompileError, LinkError):
-    error ('OpenMP not found for this compiler/system.')
-  except:
-    error ('OpenMP not working as expected.')
 
 
 
