@@ -18,12 +18,14 @@ app.cmdline.addCitation('','Jeurissen, B.; Leemans, A.; Sijbers, J. Automated co
 app.cmdline.add_argument('input', help='The input DWI series to be checked')
 app.cmdline.add_argument('-mask', help='Provide a brain mask image')
 app.cmdline.add_argument('-number', type=int, default=10000, help='Set the number of tracks to generate for each test')
-grad_import = app.cmdline.add_mutually_exclusive_group()
+grad_import = app.cmdline.add_argument_group('Options for importing the gradient table')
 grad_import.add_argument('-grad', help='Provide a gradient table in MRtrix format')
 grad_import.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Provide a gradient table in FSL bvecs/bvals format')
-grad_export = app.cmdline.add_mutually_exclusive_group()
+app.cmdline.flagMutuallyExclusiveOptions( ['grad', 'fslgrad' ])
+grad_export = app.cmdline.add_argument_group('Options for exporting the estimated best gradient table')
 grad_export.add_argument('-export_grad_mrtrix', metavar='grad', help='Export the final gradient table in MRtrix format')
 grad_export.add_argument('-export_grad_fsl', nargs=2, metavar=('bvecs', 'bvals'), help='Export the final gradient table in FSL bvecs/bvals format')
+app.cmdline.flagMutuallyExclusiveOptions( ['export_grad_mrtrix', 'export_grad_fsl' ])
 app.parse()
 
 image_dimensions = [ int(i) for i in image.headerField(app.args.input, 'size').split() ]
@@ -37,12 +39,12 @@ app.makeTempDir()
 run.command('mrconvert ' + app.args.input + ' ' + path.toTemp('data.mif', True) + ' -stride 0,0,0,1 -datatype float32')
 
 if app.args.grad:
-  os.copy(app.args.grad, path.toTemp('grad.b', False))
+  os.copy(path.fromUser(app.args.grad, False), path.toTemp('grad.b', False))
 elif app.args.fslgrad:
-  os.copy(app.args.fslgrad[0], path.toTemp('bvecs', False))
-  os.copy(app.args.fslgrad[1], path.toTemp('bvals', False))
+  os.copy(path.fromUser(app.args.fslgrad[0], False), path.toTemp('bvecs', False))
+  os.copy(path.fromUser(app.args.fslgrad[1], False), path.toTemp('bvals', False))
 if app.args.mask:
-  run.command('mrconvert ' + app.args.mask + ' ' + path.toTemp('mask.mif', True) + ' -datatype bit')
+  run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + path.toTemp('mask.mif', True) + ' -datatype bit')
 
 app.gotoTempDir()
 
@@ -157,7 +159,7 @@ for flip in axis_flips:
       run.command('tckgen -algorithm tensor_det data.mif' + grad_option + ' -seed_image mask.mif -mask mask.mif' + number_option + ' -minlength 0 -downsample 5 tracks' + suffix + '.tck')
 
       # Get the mean track length
-      meanlength=float(run.command('tckstats ' + 'tracks' + suffix + '.tck'  + ' -output ' + 'mean' + ' -ignorezero')[0])
+      meanlength=float(run.command('tckstats tracks' + suffix + '.tck -output mean -ignorezero')[0])
 
       # Add to the database
       lengths.append([meanlength,flip,permutation,basis])
@@ -182,9 +184,9 @@ for line in lengths:
 #   export it in the format requested by the user
 grad_export_option = ''
 if app.args.export_grad_mrtrix:
-  grad_export_option = ' -export_grad_mrtrix ' + getUserPath(app.args.export_grad_mrtrix, True)
+  grad_export_option = ' -export_grad_mrtrix ' + path.fromUser(app.args.export_grad_mrtrix, True)
 elif app.args.export_grad_fsl:
-  grad_export_option = ' -export_grad_fsl ' + getUserPath(app.args.export_grad_fsl[0], True) + ' ' + getUserPath(app.args.export_grad_fsl[1], True)
+  grad_export_option = ' -export_grad_fsl ' + path.fromUser(app.args.export_grad_fsl[0], True) + ' ' + path.fromUser(app.args.export_grad_fsl[1], True)
 if grad_export_option:
   best = lengths[0]
   suffix = '_flip' + str(best[1]) + '_perm' + ''.join(str(item) for item in best[2]) + '_' + best[3]
