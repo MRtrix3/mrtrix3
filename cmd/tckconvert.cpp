@@ -25,7 +25,7 @@ using namespace MR::DWI::Tractography;
 
 void usage ()
 {
-  AUTHOR = "Daan Christiaens (daan.christiaens@gmail.com), "
+  AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk), "
            "J-Donald Tournier (jdtournier@gmail.com), "
            "Philip Broser (philip.broser@me.com).";
 
