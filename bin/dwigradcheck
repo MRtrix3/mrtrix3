@@ -7,7 +7,7 @@ import inspect, os, sys
 lib_folder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile(inspect.currentframe()))[0], os.pardir, 'lib')))
 if not os.path.isdir(lib_folder):
   sys.stderr.write('Unable to locate MRtrix3 Python libraries')
-  syWs.exit(1)
+  sys.exit(1)
 sys.path.insert(0, lib_folder)
 
 import copy, decimal, numbers, os, sys, shutil
