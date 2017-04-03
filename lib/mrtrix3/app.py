@@ -488,8 +488,9 @@ class Parser(argparse.ArgumentParser):
 
     w = textwrap.TextWrapper(width=80, initial_indent='     ', subsequent_indent='     ')
     w_arg = textwrap.TextWrapper(width=80, initial_indent='', subsequent_indent='                     ')
+    from _version import __version__
 
-    s = 'MRtrix ' + appVersion() + '\t' + bold(self.prog) + '\n'
+    s = 'MRtrix ' + __version__ + '\t' + bold(self.prog) + '\t bin version: ' + appVersion() + '\n\n'
     s += '\n'
     s += '     ' + bold(self.prog) + ': Script using the MRtrix3 Python library\n'
     s += '\n'
