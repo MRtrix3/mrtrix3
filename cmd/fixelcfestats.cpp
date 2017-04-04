@@ -159,7 +159,7 @@ class SubjectFixelImport : public SubjectDataImportBase
 
     default_type operator[] (const size_t index) const override
     {
-      assert (index < data.size(0));
+      assert (index < size_t(data.size(0)));
       Image<float> temp (data); // For thread-safety
       temp.index(0) = index;
       return default_type(temp.value());
@@ -275,10 +275,10 @@ void run()
     extra_columns[i].initialise<SubjectFixelImport> (opt[i][0]);
   }
 
-  if (contrast.cols() + ssize_t(extra_columns.size()) != design.cols())
+  if (contrast.cols() != design.cols() + ssize_t(extra_columns.size()))
     throw Exception ("the number of columns per contrast (" + str(contrast.cols()) + ")"
-                     + (extra_columns.size() ? " (in addition to the " + str(extra_columns.size()) + " uses of -column)" : "")
-                     + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")");
+                     + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")"
+                     + (extra_columns.size() ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
   if (contrast.rows() > 1)
     throw Exception ("only a single contrast vector (defined as a row) is currently supported");
 

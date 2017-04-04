@@ -167,7 +167,7 @@ namespace MR
       {
         // Make sure that the specified contrasts reflect the full design matrix (with additional
         //   data loaded)
-        assert (contrasts.cols() == X.cols() + importers.size());
+        assert (contrasts.cols() == X.cols() + ssize_t(importers.size()));
       }
 
 

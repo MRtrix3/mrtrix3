@@ -254,7 +254,7 @@ namespace MR
       std::string fname;
       while ((fname = dir_walker.read_name()).size()) {
         if (is_directions_filename (fname)) {
-          const Header tmp_header = Header::open (Path::join (fixel_directory_path, fname));
+          Header tmp_header = Header::open (Path::join (fixel_directory_path, fname));
           if (is_directions_file (tmp_header)) {
             if (fixels_match (index_header, tmp_header)) {
               if (directions_found == true)

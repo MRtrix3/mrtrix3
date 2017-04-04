@@ -125,13 +125,17 @@ namespace MR
         std::ifstream ifs (path.c_str());
         std::string line;
         while (getline (ifs, line)) {
-          std::string filename (Path::join (directory, line));
-          size_t p = filename.find_last_not_of(" \t");
-          if (std::string::npos != p)
-            filename.erase(p+1);
-          if (!Path::exists (filename))
-            throw Exception ("Reading text file \"" + Path::basename (path) + "\": input data file not found: \"" + filename + "\"");
-          files.push_back (std::make_shared<SubjectDataImport> (filename));
+          size_t p = line.find_last_not_of(" \t");
+          if (p != std::string::npos)
+            line.erase (p+1);
+          if (line.size()) {
+            const std::string filename (Path::join (directory, line));
+            try {
+              files.push_back (std::make_shared<SubjectDataImport> (filename));
+            } catch (Exception& e) {
+              throw Exception (e, "Reading text file \"" + Path::basename (path) + "\": input image data file not found: \"" + filename + "\"");
+            }
+          }
         }
       }
 
