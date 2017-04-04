@@ -221,16 +221,14 @@ void run()
     }
   }
 
-  // Read identifiers and check files exist
+  // Read file names and check files exist
   CohortDataImport importer;
   importer.initialise<SubjectFixelImport> (argument[1]);
   for (size_t i = 0; i != importer.size(); ++i) {
     if (!Fixel::fixels_match (index_header, dynamic_cast<SubjectFixelImport*>(importer[i].get())->header()))
       throw Exception ("Fixel data file \"" + importer[i]->name() + "\" does not match template fixel image");
   }
-  if (importer.size()) {
-    CONSOLE ("number of element-wise design matrix columns: " + str(importer.size()));
-  }
+  CONSOLE ("Number of subjects: " + str(importer.size()));
 
   // Load design matrix:
   const matrix_type design = load_matrix (argument[2]);
@@ -274,6 +272,9 @@ void run()
     extra_columns.push_back (CohortDataImport());
     extra_columns[i].initialise<SubjectFixelImport> (opt[i][0]);
   }
+  if (extra_columns.size()) {
+    CONSOLE ("number of element-wise design matrix columns: " + str(extra_columns.size()));
+  }
 
   if (contrast.cols() != design.cols() + ssize_t(extra_columns.size()))
     throw Exception ("the number of columns per contrast (" + str(contrast.cols()) + ")"
@@ -293,7 +294,7 @@ void run()
   if (!num_tracks)
     throw Exception ("no tracks found in input file");
   if (num_tracks < 1000000)
-    WARN ("more than 1 million tracks should be used to ensure robust fixel-fixel connectivity");
+    WARN ("more than 1 million tracks is preferable to ensure robust fixel-fixel connectivity; file \"" + track_filename + "\" contains only " + str(num_tracks));
   {
     typedef DWI::Tractography::Mapping::SetVoxelDir SetVoxelDir;
     DWI::Tractography::Mapping::TrackLoader loader (track_file, num_tracks, "pre-computing fixel-fixel connectivity");
@@ -328,7 +329,7 @@ void run()
       auto it = connectivity_matrix[fixel].begin();
       while (it != connectivity_matrix[fixel].end()) {
         const connectivity_value_type connectivity = it->second.value / connectivity_value_type (fixel_TDI[fixel]);
-        if (connectivity < connectivity_threshold)  {
+        if (connectivity < connectivity_threshold) {
           connectivity_matrix[fixel].erase (it++);
         } else {
           if (do_smoothing) {
