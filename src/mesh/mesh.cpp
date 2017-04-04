@@ -169,7 +169,7 @@ namespace MR
       auto init_seg = Image<uint8_t>::scratch (H);
 
       // For every voxel, stores those polygons that may intersect the voxel
-      typedef std::map< Vox, std::vector<size_t> > Vox2Poly;
+      using Vox2Poly = std::map< Vox, std::vector<size_t>>;
       Vox2Poly voxel2poly;
 
       // Map each polygon to the underlying voxels

@@ -34,8 +34,8 @@ namespace MR
         class Streamline : public std::vector<Eigen::Matrix<ValueType,3,1>>
       {
         public:
-          typedef Eigen::Matrix<ValueType,3,1> point_type;
-          typedef ValueType value_type;
+          using point_type = Eigen::Matrix<ValueType,3,1>;
+          using value_type = ValueType;
 
           Streamline () : index (-1), weight (1.0f) { }
 

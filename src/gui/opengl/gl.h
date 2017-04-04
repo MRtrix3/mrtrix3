@@ -63,8 +63,8 @@ namespace MR
     {
 
 #if QT_VERSION >= 0x050400
-      typedef QOpenGLWidget Area;
-      typedef QSurfaceFormat Format;
+      using Area = QOpenGLWidget;
+      using Format = QSurfaceFormat;
       struct CheckContext {
 # ifndef NDEBUG
         CheckContext () : __context (nullptr) { }
@@ -87,7 +87,7 @@ namespace MR
           using QGLWidget::QGLWidget;
           QImage grabFramebuffer () { return QGLWidget::grabFrameBuffer(); }
       };
-      typedef QGLFormat Format;
+      using Format = QGLFormat;
       struct CheckContext {
         void grab_context () { }
         void check_context () const { }

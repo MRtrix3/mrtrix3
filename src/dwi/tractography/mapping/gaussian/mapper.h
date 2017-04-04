@@ -37,7 +37,7 @@ namespace MR {
           class TrackMapper : public Mapping::TrackMapperTWI
           {
 
-            typedef Mapping::TrackMapperTWI BaseMapper;
+            using BaseMapper = Mapping::TrackMapperTWI;
 
             public:
             template <class HeaderType>
@@ -154,7 +154,7 @@ namespace MR {
           template <class Cont>
             void TrackMapper::voxelise_precise (const Streamline<>& tck, Cont& out) const
             {
-              typedef Eigen::Vector3f PointF;
+              using PointF = Eigen::Vector3f;
 
               static const float accuracy = Math::pow2 (0.005 * std::min (info.spacing (0), std::min (info.spacing (1), info.spacing (2))));
 

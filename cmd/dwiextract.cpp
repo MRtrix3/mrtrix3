@@ -26,7 +26,7 @@ using namespace MR;
 using namespace App;
 using namespace std;
 
-typedef float value_type;
+using value_type = float;
 
 void usage ()
 {

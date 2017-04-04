@@ -35,7 +35,7 @@ namespace MR
       class Gradient3D : public Gradient1D<ImageType> {
 
       public:
-        typedef typename ImageType::value_type value_type;
+        using value_type = typename ImageType::value_type;
 
         Gradient3D (const ImageType& parent,
                     bool wrt_scanner = false) :

@@ -38,7 +38,7 @@ using namespace App;
 using namespace MR::DWI::Tractography::Mapping;
 using Sparse::FixelMetric;
 
-typedef float value_type;
+using value_type = float;
 
 #define DEFAULT_PERMUTATIONS 5000
 #define DEFAULT_CFE_DH 0.1
@@ -236,7 +236,7 @@ void run() {
   if (num_tracks < 1000000)
     WARN ("more than 1 million tracks should be used to ensure robust fixel-fixel connectivity");
   {
-    typedef DWI::Tractography::Mapping::SetVoxelDir SetVoxelDir;
+    using SetVoxelDir = DWI::Tractography::Mapping::SetVoxelDir;
     DWI::Tractography::Mapping::TrackLoader loader (track_file, num_tracks, "pre-computing fixel-fixel connectivity");
     DWI::Tractography::Mapping::TrackMapperBase mapper (input_header);
     mapper.set_upsample_ratio (DWI::Tractography::Mapping::determine_upsample_ratio (input_header, properties, 0.333f));

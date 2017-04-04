@@ -52,7 +52,7 @@ namespace MR
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         class MapVoxel;
-        typedef Image<MapVoxel*> VoxelAccessor;
+        using VoxelAccessor = Image<MapVoxel*>;
 
         virtual ~Fixel_map()
         {

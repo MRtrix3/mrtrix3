@@ -22,7 +22,7 @@ namespace MR {
 
       void Properties::load_ROIs ()
       {
-        typedef std::multimap<std::string,std::string>::const_iterator iter;
+        using iter = std::multimap<std::string,std::string>::const_iterator;
 
         std::pair<iter,iter> range = roi.equal_range ("include");
         for (iter it = range.first; it != range.second; ++it) include.add (it->second);

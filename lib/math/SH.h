@@ -85,7 +85,7 @@ namespace MR
         Eigen::Matrix<typename MatrixType::Scalar,Eigen::Dynamic, Eigen::Dynamic> init_transform (const MatrixType& dirs, const int lmax)
         {
           using namespace Eigen;
-          typedef typename MatrixType::Scalar value_type;
+          using value_type = typename MatrixType::Scalar;
           if (dirs.cols() != 2)
             throw Exception ("direction matrix should have 2 columns: [ azimuth elevation ]");
           Matrix<value_type,Dynamic,Dynamic> SHT (dirs.rows(), NforL (lmax));
@@ -160,7 +160,7 @@ namespace MR
       template <typename ValueType>
       class Transform {
         public:
-          typedef Eigen::Matrix<ValueType,Eigen::Dynamic,Eigen::Dynamic> matrix_type;
+          using matrix_type = Eigen::Matrix<ValueType,Eigen::Dynamic,Eigen::Dynamic>;
 
           template <class MatrixType>
             Transform (const MatrixType& dirs, int lmax) :
@@ -208,7 +208,7 @@ namespace MR
             typename VectorType::Scalar sin_azimuth,
             int lmax)
         {
-          typedef typename VectorType::Scalar value_type;
+          using value_type = typename VectorType::Scalar;
           value_type amplitude = 0.0;
           Eigen::Matrix<value_type,Eigen::Dynamic,1,0,64> AL (lmax+1);
           Legendre::Plm_sph (AL, lmax, 0, cos_elevation);
@@ -244,7 +244,7 @@ namespace MR
       template <class VectorType1, class VectorType2>
         inline typename VectorType1::Scalar value (const VectorType1& coefs, const VectorType2& unit_dir, int lmax)
         {
-          typedef typename VectorType1::Scalar value_type;
+          using value_type = typename VectorType1::Scalar;
           value_type rxy = std::sqrt ( pow2(unit_dir[1]) + pow2(unit_dir[0]) );
           value_type cp = (rxy) ? unit_dir[0]/rxy : 1.0;
           value_type sp = (rxy) ? unit_dir[1]/rxy : 0.0;
@@ -255,7 +255,7 @@ namespace MR
       template <class VectorType1, class VectorType2>
         inline VectorType1& delta (VectorType1& delta_vec, const VectorType2& unit_dir, int lmax)
         {
-          typedef typename VectorType1::Scalar value_type;
+          using value_type = typename VectorType1::Scalar;
           delta_vec.resize (NforL (lmax));
           value_type rxy = std::sqrt ( pow2(unit_dir[1]) + pow2(unit_dir[0]) );
           value_type cp = (rxy) ? unit_dir[0]/rxy : 1.0;
@@ -289,7 +289,7 @@ namespace MR
       template <class VectorType1, class VectorType2>
         inline VectorType1& SH2RH (VectorType1& RH, const VectorType2& sh)
         {
-          typedef typename VectorType2::Scalar value_type;
+          using value_type = typename VectorType2::Scalar;
           RH.resize (sh.size());
           int lmax = 2*sh.size() +1;
           Eigen::Matrix<value_type,Eigen::Dynamic,1,0,64> AL (lmax+1);
@@ -343,7 +343,7 @@ namespace MR
 
 
       namespace {
-        template <typename> struct __dummy { typedef int type; };
+        template <typename> struct __dummy { using type = int; };
       }
 
 
@@ -468,7 +468,7 @@ namespace MR
       template <typename ValueType> class PrecomputedAL
       {
         public:
-          typedef ValueType value_type;
+          using value_type = ValueType;
 
           PrecomputedAL () : lmax (0), ndir (0), nAL (0), inc (0.0) { }
           PrecomputedAL (int up_to_lmax, int num_dir = 512) {
@@ -587,7 +587,7 @@ namespace MR
             UnitVectorType& unit_init_dir,
             PrecomputedAL<typename VectorType::Scalar>* precomputer = nullptr)
         {
-          typedef typename VectorType::Scalar value_type;
+          using value_type = typename VectorType::Scalar;
           assert (std::isfinite (unit_init_dir[0]));
           for (int i = 0; i < 50; i++) {
             value_type az = std::atan2 (unit_init_dir[1], unit_init_dir[0]);
@@ -644,7 +644,7 @@ namespace MR
             typename VectorType::Scalar& d2SH_daz2,
             PrecomputedAL<typename VectorType::Scalar>* precomputer)
         {
-          typedef typename VectorType::Scalar value_type;
+          using value_type = typename VectorType::Scalar;
           value_type sel = std::sin (elevation);
           value_type cel = std::cos (elevation);
           bool atpole = sel < 1e-4;

@@ -26,8 +26,8 @@ namespace MR
     namespace CFE
     {
 
-      typedef float value_type;
-      typedef DWI::Tractography::Mapping::SetVoxelDir SetVoxelDir;
+      using value_type = float;
+      using SetVoxelDir = DWI::Tractography::Mapping::SetVoxelDir;
 
 
       /** \addtogroup Statistics

@@ -29,7 +29,7 @@ namespace MR
         using Base<ImageType>::ndim;
         using Base<ImageType>::spacing;
         using Base<ImageType>::parent;
-        typedef typename ImageType::value_type value_type;
+        using value_type = typename ImageType::value_type;
 
         Extract1D (const ImageType& original, const size_t axis, const std::vector<int>& indices) :
           Base<ImageType> (original),
@@ -110,7 +110,7 @@ namespace MR
         using Base<ImageType>::ndim;
         using Base<ImageType>::spacing;
         using Base<ImageType>::parent;
-        typedef typename ImageType::value_type value_type;
+        using value_type = typename ImageType::value_type;
 
         Extract (const ImageType& original, const std::vector<std::vector<int>>& indices) :
           Base<ImageType> (original),

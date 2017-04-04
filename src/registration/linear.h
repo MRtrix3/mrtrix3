@@ -170,7 +170,7 @@ namespace MR
           TransformType& transform,
           Im1ImageType& im1_image,
           Im2ImageType& im2_image) {
-            typedef Image<float> BogusMaskType;
+            using BogusMaskType = Image<float>;
             run_masked<MetricType, TransformType, Im1ImageType, Im2ImageType, BogusMaskType, BogusMaskType >
               (metric, transform, im1_image, im2_image, nullptr, nullptr);
           }
@@ -182,7 +182,7 @@ namespace MR
           Im1ImageType& im1_image,
           Im2ImageType& im2_image,
           std::unique_ptr<Im2MaskType>& im2_mask) {
-            typedef Image<float> BogusMaskType;
+            using BogusMaskType = Image<float>;
             run_masked<MetricType, TransformType, Im1ImageType, Im2ImageType, BogusMaskType, Im2MaskType >
               (metric, transform, im1_image, im2_image, nullptr, im2_mask);
           }
@@ -195,7 +195,7 @@ namespace MR
           Im1ImageType& im1_image,
           Im2ImageType& im2_image,
           std::unique_ptr<Im1MaskType>& im1_mask) {
-            typedef Image<float> BogusMaskType;
+            using BogusMaskType = Image<float>;
             run_masked<MetricType, TransformType, Im1ImageType, Im2ImageType, Im1MaskType, BogusMaskType >
               (metric, transform, im1_image, im2_image, im1_mask, nullptr);
           }
@@ -261,21 +261,21 @@ namespace MR
             //   // transform.debug();
             // }
 
-            typedef Header MidwayImageType;
-            typedef Im1ImageType ProcessedImageType;
-            typedef Image<bool> ProcessedMaskType;
+            using MidwayImageType = Header;
+            using ProcessedImageType = Im1ImageType;
+            using ProcessedMaskType = Image<bool>;
 
 #ifdef REGISTRATION_CUBIC_INTERP
             // typedef Interp::SplineInterp<Im1ImageType, Math::UniformBSpline<typename Im1ImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative> Im1ImageInterpolatorType;
             // typedef Interp::SplineInterp<Im2ImageType, Math::UniformBSpline<typename Im2ImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative> Im2ImageInterpolatorType;
             // typedef Interp::SplineInterp<ProcessedImageType, Math::UniformBSpline<typename ProcessedImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative> ProcessedImageInterpolatorType;
 #else
-            typedef Interp::LinearInterp<Im1ImageType, Interp::LinearInterpProcessingType::ValueAndDerivative> Im1ImageInterpolatorType;
-            typedef Interp::LinearInterp<Im2ImageType, Interp::LinearInterpProcessingType::ValueAndDerivative> Im2ImageInterpolatorType;
-            typedef Interp::LinearInterp<ProcessedImageType, Interp::LinearInterpProcessingType::ValueAndDerivative> ProcessedImageInterpolatorType;
+            using Im1ImageInterpolatorType = Interp::LinearInterp<Im1ImageType, Interp::LinearInterpProcessingType::ValueAndDerivative>;
+            using Im2ImageInterpolatorType = Interp::LinearInterp<Im2ImageType, Interp::LinearInterpProcessingType::ValueAndDerivative>;
+            using ProcessedImageInterpolatorType = Interp::LinearInterp<ProcessedImageType, Interp::LinearInterpProcessingType::ValueAndDerivative>;
 #endif
 
-            typedef Metric::Params<TransformType,
+            using ParamType = Metric::Params<TransformType,
                                    Im1ImageType,
                                    Im2ImageType,
                                    MidwayImageType,
@@ -288,7 +288,7 @@ namespace MR
                                    ProcessedImageType,
                                    ProcessedImageInterpolatorType,
                                    ProcessedMaskType,
-                                   Interp::Nearest<ProcessedMaskType>> ParamType;
+                                   Interp::Nearest<ProcessedMaskType>>;
 
             Eigen::Matrix<typename TransformType::ParameterType, Eigen::Dynamic, 1> optimiser_weights = transform.get_optimiser_weights();
             const Eigen::Matrix<default_type, 4, 1> midspace_padding = Eigen::Matrix<default_type, 4, 1>(1.0, 1.0, 1.0, 1.0);

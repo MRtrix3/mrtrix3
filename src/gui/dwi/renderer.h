@@ -45,9 +45,9 @@ namespace MR
       class Renderer
       {
 
-          typedef Eigen::MatrixXf matrix_t;
-          typedef Eigen::VectorXf vector_t;
-          typedef Eigen::Matrix3f tensor_t;
+          using matrix_t = Eigen::MatrixXf;
+          using vector_t = Eigen::VectorXf;
+          using tensor_t = Eigen::Matrix3f;
 
         public:
 
@@ -200,7 +200,7 @@ namespace MR
 
           class Dixel : public ModeBase
           {
-              typedef MR::DWI::Directions::dir_t dir_t;
+              using dir_t = MR::DWI::Directions::dir_t;
             public:
               Dixel (Renderer& parent) :
                   ModeBase (parent),

@@ -38,8 +38,7 @@
 namespace MR
 {
   template <class K, class V> struct UnorderedMap {
-    typedef
-    MRTRIX_HASH_MAP_TYPE <K,V> Type;
+    using Type = MRTRIX_HASH_MAP_TYPE <K,V>;
   };
 }
 

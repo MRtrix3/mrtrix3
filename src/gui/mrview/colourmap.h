@@ -50,7 +50,7 @@ namespace MR
         class Entry {
           public:
 
-            typedef std::function< Eigen::Array3f (float) > basic_map_fn;
+            using basic_map_fn = std::function< Eigen::Array3f (float) >;
 
             Entry (const char* name, const char* glsl_mapping, basic_map_fn basic_mapping,
                 const char* amplitude = NULL, bool special = false, bool is_colour = false) :

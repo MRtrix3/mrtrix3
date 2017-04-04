@@ -51,7 +51,7 @@ namespace MR
       class GradientDescent
       {
         public:
-          typedef typename Function::value_type value_type;
+          using value_type = typename Function::value_type;
 
           GradientDescent (Function& function, UpdateFunctor update_functor = LinearUpdate(), value_type step_size_upfactor = 3.0, value_type step_size_downfactor = 0.1, bool verbose = false) :
             func (function),

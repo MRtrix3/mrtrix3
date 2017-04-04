@@ -94,8 +94,8 @@ void usage ()
 class OpBase
 {
   protected:
-    typedef Sparse::Image<FixelMetric> in_type;
-    typedef Image<float> out_type;
+    using in_type = Sparse::Image<FixelMetric>;
+    using out_type = Image<float>;
 
   public:
     OpBase (const bool weighted) :

@@ -71,8 +71,8 @@ namespace MR {
 
 
         namespace {
-          typedef float value_type;
-          typedef Eigen::Vector3f point_type;
+          using value_type = float;
+          using point_type = Eigen::Vector3f;
           point_type get_pos (const std::vector<default_type>& s)
           {
             if (s.size() != 3)

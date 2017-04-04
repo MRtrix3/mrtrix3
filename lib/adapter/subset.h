@@ -27,7 +27,7 @@ namespace MR
       class Subset : public Base<ImageType>
     {
       public:
-        typedef typename ImageType::value_type value_type;
+        using value_type = typename ImageType::value_type;
 
         using Base<ImageType>::name;
         using Base<ImageType>::spacing;

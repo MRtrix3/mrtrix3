@@ -44,9 +44,9 @@ ARGUMENTS
 }
 
 
-typedef double value_type;
-typedef std::array<value_type,3> Direction;
-typedef std::vector<Direction> DirectionSet;
+using value_type = double;
+using Direction = std::array<value_type,3>;
+using DirectionSet = std::vector<Direction>;
 
 struct OutDir {
   Direction d;

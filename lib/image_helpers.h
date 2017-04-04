@@ -442,7 +442,7 @@ namespace MR
     template <class ImageType> 
       class Value {
         public:
-          typedef typename ImageType::value_type value_type;
+          using value_type = typename ImageType::value_type;
           Value () = delete;
           Value (const Value&) = delete;
           FORCE_INLINE Value (Value&&) = default;

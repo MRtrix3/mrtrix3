@@ -35,7 +35,7 @@ void usage ()
   + Argument ("output", "the output track scalar file").type_file_out();
 }
 
-typedef float value_type;
+using value_type = float;
 
 
 void run ()

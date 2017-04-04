@@ -26,9 +26,9 @@ namespace MR {
 namespace Connectome {
 
 
-typedef uint32_t node_t;
+using node_t = uint32_t;
 
-typedef Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> matrix_type;
+using matrix_type = Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic>;
 
 
 void verify_matrix (matrix_type&, const node_t);

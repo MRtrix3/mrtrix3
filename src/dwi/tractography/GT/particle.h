@@ -24,7 +24,7 @@ namespace MR {
     namespace Tractography {
       namespace GT {
         
-        typedef Eigen::Vector3f Point_t;
+        using Point_t = Eigen::Vector3f;
         
         /**
          * A particle is a segment of a track and consists of a position and a direction.

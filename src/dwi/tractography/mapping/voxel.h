@@ -270,7 +270,7 @@ namespace MR {
         class SetVoxel : public std::set<Voxel>, public SetVoxelExtras
         {
           public:
-            typedef Voxel VoxType;
+            using VoxType = Voxel;
             inline void insert (const Voxel& v)
             {
               iterator existing = std::set<Voxel>::find (v);
@@ -293,7 +293,7 @@ namespace MR {
         class SetVoxelDEC : public std::set<VoxelDEC>, public SetVoxelExtras
         {
           public:
-            typedef VoxelDEC VoxType;
+            using VoxType = VoxelDEC;
             inline void insert (const VoxelDEC& v)
             {
               iterator existing = std::set<VoxelDEC>::find (v);
@@ -320,7 +320,7 @@ namespace MR {
         class SetVoxelDir : public std::set<VoxelDir>, public SetVoxelExtras
         {
           public:
-            typedef VoxelDir VoxType;
+            using VoxType = VoxelDir;
             inline void insert (const VoxelDir& v)
             {
               iterator existing = std::set<VoxelDir>::find (v);
@@ -345,7 +345,7 @@ namespace MR {
         class SetDixel : public std::set<Dixel>, public SetVoxelExtras
         {
           public:
-            typedef Dixel VoxType;
+            using VoxType = Dixel;
             inline void insert (const Dixel& v)
             {
               iterator existing = std::set<Dixel>::find (v);
@@ -373,7 +373,7 @@ namespace MR {
         class SetVoxelTOD : public std::set<VoxelTOD>, public SetVoxelExtras
         {
           public:
-            typedef VoxelTOD VoxType;
+            using VoxType = VoxelTOD;
             inline void insert (const VoxelTOD& v)
             {
               iterator existing = std::set<VoxelTOD>::find (v);

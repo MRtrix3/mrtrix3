@@ -214,7 +214,7 @@ namespace MR
           using __WriterBase__<ValueType>::update_counts;
           using __WriterBase__<ValueType>::open_success;
 
-          typedef Eigen::Matrix<ValueType,3,1> vector_type;
+          using vector_type = Eigen::Matrix<ValueType,3,1>;
 
           //! create a new track file with the specified properties
           WriterUnbuffered (const std::string& file, const Properties& properties) :
@@ -358,7 +358,7 @@ namespace MR
           using WriterUnbuffered<ValueType>::format_point;
           using WriterUnbuffered<ValueType>::weights_name;
           using WriterUnbuffered<ValueType>::write_weights;
-          typedef typename WriterUnbuffered<ValueType>::vector_type vector_type;
+          using vector_type = typename WriterUnbuffered<ValueType>::vector_type;
 
           //! create new RAM-buffered track file with specified properties
           /*! the capacity of the RAM buffer can be specified as a config file

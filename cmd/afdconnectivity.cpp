@@ -83,9 +83,9 @@ void usage ()
 }
 
 
-typedef float value_type;
-typedef DWI::Tractography::Mapping::SetDixel SetDixel;
-typedef DWI::Tractography::SIFT::FixelBase FixelBase;
+using value_type = float;
+using DWI::Tractography::Mapping::SetDixel;
+using DWI::Tractography::SIFT::FixelBase;
 
 
 

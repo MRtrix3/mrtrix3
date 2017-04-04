@@ -50,7 +50,7 @@ namespace MR
       class Warp
     {
       public:
-        typedef typename ImageType::value_type value_type;
+        using value_type = typename ImageType::value_type;
 
           Warp (const ImageType& original,
                 const WarpType& warp,

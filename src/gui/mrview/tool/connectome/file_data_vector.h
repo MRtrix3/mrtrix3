@@ -33,7 +33,7 @@ namespace MR
       class FileDataVector : public Eigen::VectorXf
       {
         public:
-          typedef Eigen::VectorXf base_t;
+          using base_t = Eigen::VectorXf;
           FileDataVector ();
           FileDataVector (const FileDataVector&);
           FileDataVector (FileDataVector&&);

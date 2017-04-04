@@ -111,10 +111,10 @@
 namespace MR
 {
 
-  typedef float  float32;
-  typedef double float64;
-  typedef std::complex<double> cdouble;
-  typedef std::complex<float> cfloat;
+  using float32 = float ;
+  using float64 = double;
+  using cdouble = std::complex<double>;
+  using cfloat = std::complex<float>;
 
   template <typename T>
     struct container_cast : public T {
@@ -124,13 +124,13 @@ namespace MR
     };
 
   //! the default type used throughout MRtrix
-  typedef double default_type;
+  using default_type = double;
 
   constexpr default_type NaN = std::numeric_limits<default_type>::quiet_NaN();
   constexpr default_type Inf = std::numeric_limits<default_type>::infinity();
 
   //! the type for the affine transform of an image:
-  typedef Eigen::Transform<default_type, 3, Eigen::AffineCompact> transform_type;
+  using transform_type = Eigen::Transform<default_type, 3, Eigen::AffineCompact>;
 
 
   //! check whether type is complex:
@@ -176,8 +176,8 @@ namespace std
 }
 
 namespace Eigen {
-  typedef Matrix<MR::default_type,3,1> Vector3;
-  typedef Matrix<MR::default_type,4,1> Vector4;
+  using Vector3 = Matrix<MR::default_type,3,1>;
+  using Vector4 = Matrix<MR::default_type,4,1>;
 }
 
 #endif

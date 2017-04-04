@@ -41,7 +41,7 @@ namespace MR
       class Fixel : public SIFT::FixelBase
       {
 
-        typedef SIFT::track_t track_t;
+        using track_t = SIFT::track_t;
 
         public:
           Fixel () :

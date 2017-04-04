@@ -181,7 +181,7 @@ namespace MR
               }
 
             //type_trait to indicate return type of operator()
-            typedef int is_vector_type;
+            using is_vector_type = int;
 
             template <class Params>
               Eigen::Matrix<default_type, Eigen::Dynamic, 1> operator() (Params& params,

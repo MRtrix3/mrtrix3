@@ -48,7 +48,7 @@ namespace MR
         template <class ImageType>
           class Interpolator {
             public:
-              typedef Interp::Linear<ImageType> type;
+              using type = Interp::Linear<ImageType>;
           };
 
 

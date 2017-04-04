@@ -28,9 +28,9 @@ namespace MR
       namespace Tool
       {
 
-      typedef MR::Connectome::node_t   node_t;
-      typedef MR::Connectome::LUT_node LUT_node;
-      typedef MR::Connectome::LUT      LUT;
+      using MR::Connectome::node_t;
+      using MR::Connectome::LUT_node;
+      using MR::Connectome::LUT;
 
       enum class node_visibility_t { ALL, NONE, DEGREE, CONNECTOME, VECTOR_FILE, MATRIX_FILE };
       enum class node_geometry_t   { SPHERE, CUBE, OVERLAY, MESH };

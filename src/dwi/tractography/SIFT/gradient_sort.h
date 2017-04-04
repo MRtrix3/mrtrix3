@@ -82,14 +82,14 @@ namespace MR
       class MT_gradient_vector_sorter
       {
 
-          typedef std::vector<Cost_fn_gradient_sort> VecType;
-          typedef VecType::iterator VecItType;
+          using VecType = std::vector<Cost_fn_gradient_sort>;
+          using VecItType = VecType::iterator;
 
           class Comparator {
             public:
               bool operator() (const VecItType& a, const VecItType& b) const { return (a->get_gradient_per_unit_length() < b->get_gradient_per_unit_length()); }
           };
-          typedef std::set<VecItType, Comparator> SetType;
+          using SetType = std::set<VecItType, Comparator>;
 
 
         public:

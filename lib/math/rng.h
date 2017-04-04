@@ -82,7 +82,7 @@ namespace MR
       class RNG::Uniform {
         public:
           RNG rng;
-          typedef ValueType result_type;
+          using result_type = ValueType;
           // static const ValueType max() const { return static_cast<ValueType>(1.0); }
           // static const ValueType min() const { return static_cast<ValueType>(0.0); }
           std::uniform_real_distribution<ValueType> dist;
@@ -93,7 +93,7 @@ namespace MR
       class RNG::Normal {
         public:
           RNG rng;
-          typedef ValueType result_type;
+          using result_type = ValueType;
           std::normal_distribution<ValueType> dist;
           ValueType operator() () { return dist (rng); }
       };

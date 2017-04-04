@@ -160,7 +160,7 @@ namespace MR
         public:
           /** requires_precompute:
           type_trait to distinguish metric types that require a call to precompute before the operator() is called */
-          typedef int requires_precompute;
+          using requires_precompute = int;
 
 
 
@@ -189,18 +189,18 @@ namespace MR
             default_type precompute (ParamType& parameters) {
               DEBUG ("precomputing cross correlation data...");
 
-              typedef decltype(parameters.im1_image) Im1Type;
-              typedef decltype(parameters.im2_image) Im2Type;
-              typedef decltype(parameters.midway_image) MidwayImageType;
-              typedef decltype(parameters.im1_mask) Im1MaskType;
-              typedef decltype(parameters.im2_mask) Im2MaskType;
-              typedef typename ParamType::Im1InterpType Im1ImageInterpolatorType;
-              typedef typename ParamType::Im2InterpType Im2ImageInterpolatorType;
-              typedef typename ParamType::ProcessedImageType PImageType;
+              using Im1Type = decltype(parameters.im1_image);
+              using Im2Type = decltype(parameters.im2_image);
+              using MidwayImageType = decltype(parameters.midway_image);
+              using Im1MaskType = decltype(parameters.im1_mask);
+              using Im2MaskType = decltype(parameters.im2_mask);
+              using Im1ImageInterpolatorType = typename ParamType::Im1InterpType;
+              using Im2ImageInterpolatorType = typename ParamType::Im2InterpType;
+              using PImageType = typename ParamType::ProcessedImageType;
               // typedef Interp::LinearInterp<Im1MaskType, Interp::LinearInterpProcessingType::Value> Im1MaskInterpolatorType;
               // typedef Interp::LinearInterp<Im2MaskType, Interp::LinearInterpProcessingType::Value> Im2MaskInterpolatorType;
-              typedef typename ParamType::Mask1InterpolatorType Im1MaskInterpolatorType;
-              typedef typename ParamType::Mask2InterpolatorType Im2MaskInterpolatorType;
+              using Im1MaskInterpolatorType = typename ParamType::Mask1InterpolatorType;
+              using Im2MaskInterpolatorType = typename ParamType::Mask2InterpolatorType;
 
               assert (parameters.midway_image.ndim() == 3);
               mean1 = 0.0;

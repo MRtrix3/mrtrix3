@@ -27,7 +27,7 @@ namespace MR
       class Gradient1D : public Base<ImageType> {
       public:
 
-        typedef typename ImageType::value_type value_type;
+        using value_type = typename ImageType::value_type;
 
         Gradient1D (const ImageType& parent,
                     size_t axis = 0,

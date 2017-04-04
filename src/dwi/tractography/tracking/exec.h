@@ -73,9 +73,9 @@ namespace MR
                   throw Exception ("Dynamic seeding requires setting the desired number of tracks using the -number option");
                 const size_t num_tracks = to<size_t>(max_num_tracks);
 
-                typedef Mapping::SetDixel SetDixel;
-                typedef Mapping::TrackMapperBase TckMapper;
-                typedef Seeding::WriteKernelDynamic Writer;
+                using SetDixel = Mapping::SetDixel;
+                using TckMapper = Mapping::TrackMapperBase;
+                using Writer = Seeding::WriteKernelDynamic;
 
                 DWI::Directions::FastLookupSet dirs (1281);
                 auto fod_data = Image<float>::open (fod_path);

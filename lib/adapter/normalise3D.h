@@ -37,8 +37,8 @@ namespace MR
             set_extent (extent);
           }
 
-        typedef typename ImageType::value_type value_type;
-        typedef Normalise3D voxel_type;
+        using value_type = typename ImageType::value_type;
+        using voxel_type = Normalise3D;
 
         void set_extent (const std::vector<int>& ext)
         {

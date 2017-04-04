@@ -99,7 +99,7 @@ void usage ()
 }
 
 
-typedef bool value_type;
+using value_type = bool;
 
 void run () {
 

@@ -73,7 +73,7 @@ template <class InType1, class InType2, class MaskType1, class MaskType2>
                             ssize_t& n_voxels,
                             Eigen::VectorXd& sos) {
 
-    typedef typename InType1::value_type value_type;
+    using value_type = typename InType1::value_type;
 
     if (use_mask1 or use_mask2)
       n_voxels = 0;
@@ -180,8 +180,8 @@ void usage ()
 
 }
 
-typedef double value_type;
-typedef Image<bool> MaskType;
+using value_type = double;
+using MaskType = Image<bool>;
 
 void run ()
 {
@@ -298,9 +298,9 @@ void run ()
     if (space == 3) {
       INFO ("space: average space");
 
-      typedef Image<value_type> ImageType1;
-      typedef Image<value_type> ImageType2;
-      typedef Header ImageTypeM;
+      using ImageType1 = Image<value_type>;
+      using ImageType2 = Image<value_type>;
+      using ImageTypeM = Header;
 
       n_voxels = 0;
       std::vector<Header> headers;
@@ -312,16 +312,16 @@ void run ()
 
       Header midway_image_header = compute_minimum_average_header (headers, 1, padding, init_transforms);
 
-      typedef Interp::LinearInterp<Image<value_type>, Interp::LinearInterpProcessingType::Value> LinearInterpolatorType1;
-      typedef Interp::LinearInterp<Image<value_type>, Interp::LinearInterpProcessingType::Value> LinearInterpolatorType2;
-      typedef Interp::SplineInterp<ImageType1, Math::UniformBSpline<typename ImageType1::value_type>, Math::SplineProcessingType::Value> CubicInterpolatorType1;
-      typedef Interp::SplineInterp<ImageType2, Math::UniformBSpline<typename ImageType2::value_type>, Math::SplineProcessingType::Value> CubicInterpolatorType2;
-      typedef Interp::Nearest<Image<bool>> MaskInterpolatorType1;
-      typedef Interp::Nearest<Image<bool>> MaskInterpolatorType2;
-      typedef Image<default_type> ProcessedImageType;
-      typedef Image<bool> ProcessedMaskType;
+      using LinearInterpolatorType1 = Interp::LinearInterp<Image<value_type>, Interp::LinearInterpProcessingType::Value>;
+      using LinearInterpolatorType2 = Interp::LinearInterp<Image<value_type>, Interp::LinearInterpProcessingType::Value>;
+      using CubicInterpolatorType1 = Interp::SplineInterp<ImageType1, Math::UniformBSpline<typename ImageType1::value_type>, Math::SplineProcessingType::Value>;
+      using CubicInterpolatorType2 = Interp::SplineInterp<ImageType2, Math::UniformBSpline<typename ImageType2::value_type>, Math::SplineProcessingType::Value>;
+      using MaskInterpolatorType1 = Interp::Nearest<Image<bool>>;
+      using MaskInterpolatorType2 = Interp::Nearest<Image<bool>>;
+      using ProcessedImageType = Image<default_type>;
+      using ProcessedMaskType = Image<bool>;
 
-      typedef Registration::Metric::Params <
+      using LinearParamType = Registration::Metric::Params <
                                Registration::Transform::Rigid,
                                ImageType1,
                                ImageType2,
@@ -336,8 +336,8 @@ void run ()
                                Interp::LinearInterp<ProcessedImageType, Interp::LinearInterpProcessingType::Value>,
                                ProcessedMaskType,
                                Interp::Nearest<ProcessedMaskType>
-                               > LinearParamType;
-      typedef Registration::Metric::Params <
+                               >;
+      using CubicParamType = Registration::Metric::Params <
                                Registration::Transform::Rigid,
                                ImageType1,
                                ImageType2,
@@ -352,7 +352,7 @@ void run ()
                                Interp::LinearInterp<ProcessedImageType, Interp::LinearInterpProcessingType::Value>,
                                ProcessedMaskType,
                                Interp::Nearest<ProcessedMaskType>
-                               > CubicParamType;
+                               >;
 
         ImageTypeM midway_image (midway_image_header);
 

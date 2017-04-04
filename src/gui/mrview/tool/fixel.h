@@ -170,8 +170,8 @@ namespace MR
               }
         };
 
-        typedef MR::Sparse::Image<MR::Sparse::FixelMetric> FixelSparseImageType;
-        typedef MR::Image<float> FixelPackedImageType;
+        using FixelSparseImageType = MR::Sparse::Image<MR::Sparse::FixelMetric>;
+        using FixelPackedImageType = MR::Image<float>;
 
         // Subclassed specialisations of template wrapper
         // This is because loading of image data is dependent on particular buffer type
