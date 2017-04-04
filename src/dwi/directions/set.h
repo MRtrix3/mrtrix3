@@ -21,7 +21,7 @@
 
 
 
-#include <stdint.h>
+#include <cstdint>
 #include <vector>
 
 #include "progressbar.h"

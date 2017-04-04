@@ -19,7 +19,7 @@
 
 
 #include <atomic>
-#include <stdint.h>
+#include <cstdint>
 #include "mrtrix.h"
 
 

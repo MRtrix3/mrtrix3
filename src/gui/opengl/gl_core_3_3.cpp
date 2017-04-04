@@ -13,8 +13,8 @@
  * 
  */
 #include <algorithm>
-#include <string.h>
-#include <stddef.h>
+#include <cstring>
+#include <cstddef>
 #include "gui/opengl/gl_core_3_3.h"
 
 #if defined(__APPLE__)
@@ -32,7 +32,7 @@ static void* AppleGLGetProcAddress (const char* name)
 
 #if defined(__sgi) || defined (__sun)
 #include <dlfcn.h>
-#include <stdio.h>
+#include <cstdio>
 
 static void* SunGetProcAddress (const GLubyte* name)
 {

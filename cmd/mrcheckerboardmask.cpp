@@ -13,7 +13,7 @@
  *
  */
 
-#include <math.h> 
+#include <cmath>
 #include "command.h"
 #include "image.h"
 #include "image_helpers.h"

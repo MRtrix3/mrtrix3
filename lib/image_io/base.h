@@ -17,7 +17,7 @@
 #define __image_io_base_h__
 
 #include <vector>
-#include <stdint.h>
+#include <cstdint>
 #include <unistd.h>
 #include <cassert>
 

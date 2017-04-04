@@ -18,7 +18,7 @@
 
 #include <iostream>
 #include <cassert>
-#include <stdint.h>
+#include <cstdint>
 
 #include "types.h"
 #include "file/entry.h"

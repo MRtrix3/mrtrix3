@@ -18,7 +18,7 @@
 #define __debug_h__
 
 #include <iostream>
-#include <string.h>
+#include <cstring>
 
 namespace MR {
   namespace App {

@@ -18,7 +18,7 @@
 
 #include <cassert>
 #include <cstring>
-#include <stdio.h>
+#include <cstdio>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>

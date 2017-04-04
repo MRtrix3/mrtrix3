@@ -18,7 +18,7 @@
 
 #define EIGEN_DONT_PARALLELIZE
 
-#include <stdint.h>
+#include <cstdint>
 #include <complex>
 #include <iostream>
 #include <vector>

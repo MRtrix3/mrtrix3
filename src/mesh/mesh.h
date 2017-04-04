@@ -19,7 +19,7 @@
 
 #include <fstream>
 #include <vector>
-#include <stdint.h>
+#include <cstdint>
 
 #include "header.h"
 #include "image.h"
