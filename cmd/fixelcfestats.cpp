@@ -397,12 +397,57 @@ void run()
     progress++;
   }
 
+  // Construct the class for performing the initial statistical tests
+  std::shared_ptr<GLMTestBase> glm_test;
   if (extra_columns.size()) {
-    WARN ("Beta coefficients, effect size and standard deviation outputs not yet implemented for fixel-wise extra columns");
-    // TODO
+    glm_test.reset (new GLMTTestVariable (extra_columns, data, design, contrast));
   } else {
-    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation");
+    glm_test.reset (new GLMTTestFixed (data, design, contrast));
+  }
+
+  if (extra_columns.size()) {
+
+    // For each variable of interest (e.g. beta coefficients, effect size etc.) need to:
+    //   Construct the output data vector, with size = num_fixels
+    //   For each fixel:
+    //     Use glm_test to obtain the design matrix for the default permutation for that fixel
+    //     Use the relevant Math::Stats::GLM function to get the value of interest for just that fixel
+    //       (will still however need to come out as a matrix_type)
+    //     Write that value to data vector
+    //   Finally, use write_fixel_output() function to write to an image file
+    matrix_type betas (contrast.cols(), num_fixels);
+    vector_type abs_effect_size (num_fixels), std_effect_size (num_fixels), stdev (num_fixels);
+    {
+      ProgressBar progress ("estimating beta coefficients, effect size and standard deviation", num_fixels);
+      for (size_t f = 0; f != num_fixels; ++f) {
+        const auto design_f = dynamic_cast<GLMTTestVariable*>(glm_test.get())->default_design (f);
+        auto temp = Math::Stats::GLM::solve_betas (data.row(f), design_f);
+        betas.col(f) = temp;
+        temp = Math::Stats::GLM::abs_effect_size (data, design_f, contrast);
+        abs_effect_size[f] = temp(0,0);
+        temp = Math::Stats::GLM::std_effect_size (data, design_f, contrast);
+        std_effect_size[f] = temp(0,0);
+        temp = Math::Stats::GLM::stdev (data, design_f);
+        stdev[f] = temp(0,0);
+        ++progress;
+      }
+    }
+    {
+      ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", contrast.cols() + 3);
+      for (ssize_t i = 0; i != contrast.cols(); ++i) {
+        write_fixel_output (Path::join (output_fixel_directory, "beta" + str(i) + ".mif"), betas.row(i), output_header);
+        ++progress;
+      }
+      write_fixel_output (Path::join (output_fixel_directory, "abs_effect.mif"), abs_effect_size, output_header); ++progress;
+      write_fixel_output (Path::join (output_fixel_directory, "std_effect.mif"), std_effect_size, output_header); ++progress;
+      write_fixel_output (Path::join (output_fixel_directory, "std_dev.mif"), stdev, output_header);
+    }
+
+  } else {
+
+    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", contrast.cols() + 7);
     auto temp = Math::Stats::GLM::solve_betas (data, design);
+    ++progress;
     for (ssize_t i = 0; i < contrast.cols(); ++i) {
       write_fixel_output (Path::join (output_fixel_directory, "beta" + str(i) + ".mif"), temp.row(i), output_header);
       ++progress;
@@ -413,14 +458,7 @@ void run()
     write_fixel_output (Path::join (output_fixel_directory, "std_effect.mif"), temp.row(0), output_header); ++progress;
     temp = Math::Stats::GLM::stdev (data, design); ++progress;
     write_fixel_output (Path::join (output_fixel_directory, "std_dev.mif"), temp.row(0), output_header);
-  }
 
-  // Construct the class for performing the initial statistical tests
-  std::shared_ptr<GLMTestBase> glm_test;
-  if (extra_columns.size()) {
-    glm_test.reset (new GLMTTestVariable (extra_columns, data, design, contrast));
-  } else {
-    glm_test.reset (new GLMTTestFixed (data, design, contrast));
   }
 
   // Construct the class for performing fixel-based statistical enhancement
