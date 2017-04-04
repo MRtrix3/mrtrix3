@@ -228,9 +228,13 @@ void run()
     if (!Fixel::fixels_match (index_header, dynamic_cast<SubjectFixelImport*>(importer[i].get())->header()))
       throw Exception ("Fixel data file \"" + importer[i]->name() + "\" does not match template fixel image");
   }
+  if (importer.size()) {
+    CONSOLE ("number of element-wise design matrix columns: " + str(importer.size()));
+  }
 
   // Load design matrix:
   const matrix_type design = load_matrix (argument[2]);
+  CONSOLE ("design matrix dimensions: " + str(design.rows()) + " x " + str(design.cols()));
   if (design.rows() != (ssize_t)importer.size())
     throw Exception ("number of input files does not match number of rows in design matrix");
 
@@ -260,6 +264,7 @@ void run()
 
   // Load contrast matrix
   const matrix_type contrast = load_matrix (argument[3]);
+  CONSOLE ("Contrast matrix dimensions: " + str(contrast.rows()) + " x " + str(contrast.cols()));
 
   // Before validating the contrast matrix, we first need to see if there are any
   //   additional design matrix columns coming from fixel-wise subject data
@@ -393,10 +398,10 @@ void run()
 
   if (extra_columns.size()) {
     WARN ("Beta coefficients, effect size and standard deviation outputs not yet implemented for fixel-wise extra columns");
+    // TODO
   } else {
     ProgressBar progress ("outputting beta coefficients, effect size and standard deviation");
     auto temp = Math::Stats::GLM::solve_betas (data, design);
-
     for (ssize_t i = 0; i < contrast.cols(); ++i) {
       write_fixel_output (Path::join (output_fixel_directory, "beta" + str(i) + ".mif"), temp.row(i), output_header);
       ++progress;

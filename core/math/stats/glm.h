@@ -222,11 +222,6 @@ namespace MR
        * particular type of data being tested. Therefore an Importer class must be
        * defined that is responsible for acquiring and vectorising these data.
        */
-      // TODO Define a "standard" interface for data import: Receives as input a
-      //   text string corresponding to a file, and writes the result to a
-      //   vector / block vector
-      // If this could be defined using a base class, it would remove the templating here...
-      // The same class would also be used in the cmd/ files to do the initial measurement matrix fill
       class GLMTTestVariable : public GLMTestBase { NOMEMALIGN
         public:
           GLMTTestVariable (const vector<CohortDataImport>& importers, const matrix_type& measurements, const matrix_type& design, const matrix_type& contrasts);
@@ -235,7 +230,7 @@ namespace MR
            * @param perm_labelling a vector to shuffle the rows in the design matrix (for permutation testing)
            * @param stats the vector containing the output t-statistics
            *
-           * TODO In GLMTTestVariable, this function will additionally need to import the
+           * In GLMTTestVariable, this function has to import the
            * extra external data individually for each element tested.
            */
           void operator() (const vector<size_t>& perm_labelling, vector_type& stats) const override;
@@ -253,6 +248,7 @@ namespace MR
             @{ */
       /*! A class to compute F-statistics using a fixed General Linear Model.
        * This class produces a single F-statistic across all contrasts of interest.
+       * NOT YET IMPLEMENTED
        */
       class GLMFTestFixed : public GLMTestBase { MEMALIGN(GLMFTestFixed)
         public:
@@ -270,7 +266,6 @@ namespace MR
           void operator() (const vector<size_t>& perm_labelling, vector_type& stats) const override;
 
         protected:
-          // TODO How to deal with contrast scaling?
           // TODO How to deal with f-tests that apply to specific contrasts only?
           const matrix_type ftests;
       };
