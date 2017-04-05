@@ -25,7 +25,7 @@ namespace MR
     namespace Cluster
     {
 
-      typedef float value_type;
+      using value_type = float;
 
 
       /** \addtogroup Statistics

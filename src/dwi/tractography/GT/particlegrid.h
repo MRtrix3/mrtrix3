@@ -39,7 +39,7 @@ namespace MR {
         {
         public:
           
-          typedef std::vector<Particle*> ParticleVectorType;
+          using ParticleVectorType = std::vector<Particle*>;
           
           template <class HeaderType>
           ParticleGrid(const HeaderType& image)

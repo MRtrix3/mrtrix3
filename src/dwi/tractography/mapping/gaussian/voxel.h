@@ -50,7 +50,7 @@ namespace MR {
 
           class Voxel : public Mapping::Voxel, public VoxelAddon
           {
-            typedef Mapping::Voxel Base;
+            using Base = Mapping::Voxel;
             public:
             Voxel (const int x, const int y, const int z) : Base (x, y, z) , VoxelAddon () { }
             Voxel (const Eigen::Vector3i& that) : Base (that), VoxelAddon() { }
@@ -71,7 +71,7 @@ namespace MR {
 
           class VoxelDEC : public Mapping::VoxelDEC, public VoxelAddon
           {
-            typedef Mapping::VoxelDEC Base;
+            using Base = Mapping::VoxelDEC;
             public:
             VoxelDEC () : Base (), VoxelAddon () { }
             VoxelDEC (const Eigen::Vector3i& V) : Base (V), VoxelAddon () { }
@@ -94,7 +94,7 @@ namespace MR {
 
           class Dixel : public Mapping::Dixel, public VoxelAddon
           {
-            typedef Mapping::Dixel Base;
+            using Base = Mapping::Dixel;
             public:
             Dixel () : Base (), VoxelAddon () { }
             Dixel (const Eigen::Vector3i& V) : Base (V), VoxelAddon () { }
@@ -115,7 +115,7 @@ namespace MR {
 
           class VoxelTOD : public Mapping::VoxelTOD, public VoxelAddon
           {
-            typedef Mapping::VoxelTOD Base;
+            using Base = Mapping::VoxelTOD;
             public:
             VoxelTOD () : Base (), VoxelAddon () { }
             VoxelTOD (const Eigen::Vector3i& V) : Base (V), VoxelAddon () { }
@@ -157,7 +157,7 @@ namespace MR {
           class SetVoxel : public std::set<Voxel>, public Mapping::SetVoxelExtras
           {
             public:
-              typedef Voxel VoxType;
+              using VoxType = Voxel;
               inline void insert (const Eigen::Vector3i& v, const float l, const float f)
               {
                 const Voxel temp (v, l, f);
@@ -171,7 +171,7 @@ namespace MR {
           class SetVoxelDEC : public std::set<VoxelDEC>, public Mapping::SetVoxelExtras
           {
             public:
-              typedef VoxelDEC VoxType;
+              using VoxType = VoxelDEC;
               inline void insert (const Eigen::Vector3i& v, const Eigen::Vector3f& d, const float l, const float f)
               {
                 const VoxelDEC temp (v, d, l, f);
@@ -185,7 +185,7 @@ namespace MR {
           class SetDixel : public std::set<Dixel>, public Mapping::SetVoxelExtras
           {
             public:
-              typedef Dixel VoxType;
+              using VoxType = Dixel;
               inline void insert (const Eigen::Vector3i& v, const size_t d, const float l, const float f)
               {
                 const Dixel temp (v, d, l, f);
@@ -199,7 +199,7 @@ namespace MR {
           class SetVoxelTOD : public std::set<VoxelTOD>, public Mapping::SetVoxelExtras
           {
             public:
-              typedef VoxelTOD VoxType;
+              using VoxType = VoxelTOD;
               inline void insert (const Eigen::Vector3i& v, const Eigen::VectorXf& t, const float l, const float f)
               {
                 const VoxelTOD temp (v, t, l, f);

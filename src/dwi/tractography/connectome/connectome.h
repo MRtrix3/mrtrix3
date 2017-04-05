@@ -38,8 +38,8 @@ namespace Connectome {
 #define TCK2NODES_FORWARDSEARCH_DEFAULT_DIST 3.0
 
 
-typedef MR::Connectome::node_t node_t;
-typedef std::pair<node_t, node_t> NodePair;
+using node_t = MR::Connectome::node_t;
+using NodePair = std::pair<node_t, node_t>;
 
 class Tck2nodes_base;
 class Metric;

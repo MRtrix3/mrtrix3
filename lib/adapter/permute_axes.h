@@ -29,7 +29,7 @@ namespace MR
       public:
         using Base<ImageType>::size;
         using Base<ImageType>::parent;
-        typedef typename ImageType::value_type value_type;
+        using value_type = typename ImageType::value_type;
 
         PermuteAxes (const ImageType& original, const std::vector<int>& axes) :
           Base<ImageType> (original), 

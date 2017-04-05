@@ -211,7 +211,7 @@ namespace MR {
         template <class Cont>
           void TrackMapperBase::voxelise_precise (const Streamline<>& tck, Cont& out) const
           {
-            typedef Eigen::Vector3f PointF;
+            using PointF = Eigen::Vector3f;
 
             const float accuracy = Math::pow2 (0.005 * std::min (info.spacing (0), std::min (info.spacing (1), info.spacing (2))));
 

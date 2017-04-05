@@ -67,7 +67,7 @@ namespace MR
       template <typename T = float> class ScalarReader : public __ReaderBase__
       {
         public:
-          typedef T value_type;
+          using value_type = T;
 
           ScalarReader (const std::string& file, Properties& properties) {
             open (file, "track scalars", properties);
@@ -162,7 +162,7 @@ namespace MR
       class ScalarWriter : public __WriterBase__<T>
       {
         public:
-          typedef T value_type;
+          using value_type = T;
           using __WriterBase__<T>::count;
           using __WriterBase__<T>::count_offset;
           using __WriterBase__<T>::total_count;

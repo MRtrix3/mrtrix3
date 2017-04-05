@@ -36,7 +36,7 @@ namespace MR
     class GeneratedTrack : public std::vector<Eigen::Vector3f>
     {
 
-        typedef std::vector<Eigen::Vector3f> BaseType;
+        using BaseType = std::vector<Eigen::Vector3f>;
 
       public:
         GeneratedTrack() : seed_index (0) { }

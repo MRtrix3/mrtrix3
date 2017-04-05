@@ -30,7 +30,7 @@ namespace MR {
     class Versor : public Eigen::Quaternion<ValueType>
     {
 
-        typedef ValueType value_type;
+        using value_type = ValueType;
 
       public:
         Versor () : Eigen::Quaternion<ValueType> (NAN, NAN, NAN, NAN) { }
@@ -79,8 +79,8 @@ namespace MR {
 
     };
 
-    typedef Versor<float>  Versorf;
-    typedef Versor<double> Versord;
+    using Versorf = Versor<float>;
+    using Versord = Versor<double>;
 
     template <typename value_type>
     inline std::ostream& operator<< (std::ostream& stream, const Versor<value_type>& v)

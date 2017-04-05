@@ -105,7 +105,7 @@ void usage ()
   + DataType::options();
 }
 
-typedef double value_type;
+using value_type = double;
 
 
 

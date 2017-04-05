@@ -110,7 +110,7 @@ namespace MR
       template <typename VectorType> 
         inline void Plm_sph (VectorType& array, const int lmax, const int m, const typename VectorType::Scalar x)
         {
-          typedef typename VectorType::Scalar value_type;
+          using value_type = typename VectorType::Scalar;
           value_type x2 = pow2 (x);
           if (m && x2 >= 1.0) {
             for (int n = m; n <= lmax; ++n)
@@ -141,7 +141,7 @@ namespace MR
       template <typename VectorType> 
         inline void Plm_sph_deriv (VectorType& array, const int lmax, const int m, const typename VectorType::Scalar x)
         {
-          typedef typename VectorType::Scalar value_type;
+          using value_type = typename VectorType::Scalar;
           value_type x2 = pow2 (x);
           if (x2 >= 1.0) {
             for (int n = m; n <= lmax; n++) 

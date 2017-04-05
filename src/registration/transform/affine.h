@@ -81,10 +81,10 @@ namespace MR
       class Affine : public Base  {
         public:
 
-          typedef typename Base::ParameterType ParameterType;
-          typedef AffineUpdate UpdateType;
-          typedef AffineRobustEstimator RobustEstimatorType;
-          typedef int has_robust_estimator;
+          using ParameterType = typename Base::ParameterType;
+          using UpdateType = AffineUpdate;
+          using RobustEstimatorType = AffineRobustEstimator;
+          using has_robust_estimator = int;
 
           EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 

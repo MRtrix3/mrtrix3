@@ -26,7 +26,7 @@ namespace MR
     template <typename T = float> class Sinc
     {
       public:
-        typedef T value_type;
+        using value_type = T;
 
         Sinc (const size_t w) :
           window_size (w),

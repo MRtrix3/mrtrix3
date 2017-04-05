@@ -26,7 +26,7 @@ namespace MR
     namespace TFCE
     {
 
-      typedef float value_type;
+      using value_type = float;
 
 
       /** \addtogroup Statistics

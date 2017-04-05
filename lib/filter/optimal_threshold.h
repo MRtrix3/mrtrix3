@@ -132,8 +132,8 @@ namespace MR
         class ImageCorrelationCostFunction {
 
           public:
-            typedef typename ImageType::value_type value_type;
-            typedef typename MaskType::value_type mask_value_type;
+            using value_type = typename ImageType::value_type;
+            using mask_value_type = typename MaskType::value_type;
 
             ImageCorrelationCostFunction (ImageType& input, MaskType& mask) :
                 input (input),
@@ -184,7 +184,7 @@ namespace MR
       template <class ImageType, class MaskType>
         typename ImageType::value_type estimate_optimal_threshold (ImageType& input, MaskType& mask)
         {
-          typedef typename ImageType::value_type input_value_type;
+          using input_value_type = typename ImageType::value_type;
 
           input_value_type min, max;
           min_max (input, min, max);
@@ -253,7 +253,7 @@ namespace MR
             void operator() (InputImageType& input, OutputImageType& output, MaskType& mask)
             {
               axes_.resize (4);
-              typedef typename InputImageType::value_type input_value_type;
+              using input_value_type = typename InputImageType::value_type;
 
               input_value_type optimal_threshold = estimate_optimal_threshold (input, mask);
               

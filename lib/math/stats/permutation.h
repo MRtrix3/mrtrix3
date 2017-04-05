@@ -22,7 +22,7 @@ namespace MR
     namespace Stats
     {
 
-      typedef float value_type;
+      using value_type = float;
 
 
       inline bool is_duplicate_vector (const std::vector<size_t>& v1, const std::vector<size_t>& v2)

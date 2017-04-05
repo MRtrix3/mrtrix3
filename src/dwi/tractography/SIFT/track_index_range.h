@@ -36,8 +36,8 @@ namespace MR
 
 
 
-      typedef std::pair<track_t, track_t> TrackIndexRange;
-      typedef Thread::Queue< TrackIndexRange > TrackIndexRangeQueue;
+      using TrackIndexRange = std::pair<track_t, track_t>;
+      using TrackIndexRangeQueue = Thread::Queue< TrackIndexRange >;
 
 
 

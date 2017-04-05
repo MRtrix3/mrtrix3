@@ -32,8 +32,8 @@ namespace MR
     extern const char * field_choices[];
     extern const App::OptionGroup Options;
 
-    typedef float value_type;
-    typedef cfloat complex_type;
+    using value_type = float;
+    using complex_type = cfloat;
 
 
     class CalibrateHistogram

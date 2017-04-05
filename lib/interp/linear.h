@@ -70,13 +70,13 @@ namespace MR
     template <class C>
     struct value_type_of
     {
-      typedef C type;
+      using type = C;
     };
 
     template <class X>
     struct value_type_of<std::complex<X>>
     {
-      typedef X type;
+      using type = X;
     };
 
     enum LinearInterpProcessingType
@@ -95,7 +95,7 @@ namespace MR
     {
       public:
         using typename Base<ImageType>::value_type;
-        typedef typename value_type_of<value_type>::type coef_type;
+        using coef_type = typename value_type_of<value_type>::type;
 
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
@@ -134,8 +134,8 @@ namespace MR
         using LinearBase = LinearInterpBase<ImageType, LinearInterpProcessingType::Value>;
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
-        typedef typename LinearBase::value_type value_type;
-        typedef typename LinearBase::coef_type coef_type;
+        using value_type = typename LinearBase::value_type;
+        using coef_type = typename LinearBase::coef_type;
         using LinearBase::P;
         using LinearBase::clamp;
         using LinearBase::bounds;
@@ -261,8 +261,8 @@ namespace MR
         using LinearBase = LinearInterpBase<ImageType, LinearInterpProcessingType::Derivative>;
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
-        typedef typename LinearBase::value_type value_type;
-        typedef typename LinearBase::coef_type coef_type;
+        using value_type = typename LinearBase::value_type;
+        using coef_type = typename LinearBase::coef_type;
         using LinearBase::P;
         using LinearBase::clamp;
         using LinearBase::bounds;
@@ -411,8 +411,8 @@ namespace MR
         using LinearBase = LinearInterpBase<ImageType, LinearInterpProcessingType::ValueAndDerivative>;
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
-        typedef typename LinearBase::value_type value_type;
-        typedef typename LinearBase::coef_type coef_type;
+        using value_type = typename LinearBase::value_type;
+        using coef_type = typename LinearBase::coef_type;
         using LinearBase::P;
         using LinearBase::clamp;
         using LinearBase::bounds;

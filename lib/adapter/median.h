@@ -38,8 +38,8 @@ namespace MR
             set_extent (extent);
           }
 
-        typedef typename ImageType::value_type value_type;
-        typedef Median voxel_type;
+        using value_type = typename ImageType::value_type;
+        using voxel_type = Median;
 
         void set_extent (const std::vector<int>& ext)
         {

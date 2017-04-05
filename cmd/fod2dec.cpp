@@ -79,7 +79,7 @@ void usage ()
     + Argument ("value").type_float();
 }
 
-typedef float value_type;
+using value_type = float;
 const value_type UNIT = 1.0 / std::sqrt(3.0);
 
 class DecTransform {

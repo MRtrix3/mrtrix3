@@ -49,7 +49,7 @@ namespace MR
       class GradientDescentBB
       {
         public:
-          typedef typename Function::value_type value_type;
+          using value_type = typename Function::value_type;
 
           GradientDescentBB (Function& function, UpdateFunctor update_functor = LinearUpdateBB(), bool verbose = false) :
             func (function),

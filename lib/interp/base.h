@@ -67,7 +67,7 @@ namespace MR
     template <class ImageType> class Base : public ImageType, public Transform
     {
       public:
-        typedef typename ImageType::value_type value_type;
+        using value_type = typename ImageType::value_type;
 
         //! construct an Interp object to obtain interpolated values using the
         //! parent ImageType class

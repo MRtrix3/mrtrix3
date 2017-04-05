@@ -59,7 +59,7 @@ namespace MR
   namespace Stride
   {
 
-    typedef std::vector<ssize_t> List;
+    using List = std::vector<ssize_t>;
 
     extern const App::OptionGroup Options;
 

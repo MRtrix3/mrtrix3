@@ -36,7 +36,7 @@ namespace MR
             wrt_scanner (wrt_scanner) { }
 
 
-          typedef typename WarpType::value_type value_type;
+          using value_type = typename WarpType::value_type;
 
 
           Eigen::Matrix<value_type, 3, 3> value ()

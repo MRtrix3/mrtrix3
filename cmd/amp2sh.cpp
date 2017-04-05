@@ -87,7 +87,7 @@ void usage ()
 #define RICIAN_POWER 2.25
 
 
-typedef float value_type;
+using value_type = float;
 
 class Amp2SHCommon {
   public:

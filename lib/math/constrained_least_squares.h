@@ -45,9 +45,9 @@ namespace MR
         class Problem {
           public:
 
-            typedef ValueType value_type;
-            typedef Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic> matrix_type;
-            typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vector_type;
+            using value_type = ValueType;
+            using matrix_type = Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic>;
+            using vector_type = Eigen::Matrix<value_type,Eigen::Dynamic,1>;
 
             Problem () { }
             //! set up constrained least-squares problem
@@ -130,9 +130,9 @@ namespace MR
         class Solver {
           public:
 
-            typedef ValueType value_type;
-            typedef Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic> matrix_type;
-            typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vector_type;
+            using value_type = ValueType;
+            using matrix_type = Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic>;
+            using vector_type = Eigen::Matrix<value_type,Eigen::Dynamic,1>;
 
             Solver (const Problem<value_type>& problem) :
               P (problem),

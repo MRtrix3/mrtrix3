@@ -48,16 +48,16 @@ namespace MR
 
 
       // to handle batched / unbatched seamlessly:
-      template <class X> class __item { public: typedef X type; }; 
-      template <class X> class __item <__Batch<X>> { public: typedef X type; };
+      template <class X> class __item { public: using type = X; };
+      template <class X> class __item <__Batch<X>> { public: using type = X; };
 
       // to get multi/single job/functor seamlessly:
       template <class X>
         class __job
         {
           public:
-            typedef typename std::remove_reference<X>::type type;
-            typedef typename std::remove_reference<X>::type& member_type;
+            using type = typename std::remove_reference<X>::type;
+            using member_type = typename std::remove_reference<X>::type&;
             static X& functor (X& job) { return job; }
 
             template <class SingleFunctor>
@@ -70,8 +70,8 @@ namespace MR
         class __job <__Multi<X>>
         {
           public:
-            typedef typename std::remove_reference<X>::type type;
-            typedef typename std::remove_reference<X>::type member_type;
+            using type = typename std::remove_reference<X>::type;
+            using member_type = typename std::remove_reference<X>::type;
             static X& functor (__Multi<X>& job) { return job.functor; }
 
             template <class SingleFunctor>
@@ -639,8 +639,8 @@ namespace MR
     template <class T> class Queue<__Batch<T>>
     {
       private:
-        typedef std::vector<T> BatchType;
-        typedef Queue<BatchType> BatchQueue;
+        using BatchType = std::vector<T>;
+        using BatchQueue = Queue<BatchType>;
 
       public:
         Queue (const __Batch<T>& item_type, const std::string& description = "unnamed", size_t buffer_size = MRTRIX_QUEUE_DEFAULT_CAPACITY) :

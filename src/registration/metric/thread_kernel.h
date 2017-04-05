@@ -31,37 +31,37 @@ namespace MR
       namespace {
         template<class T>
         struct Void {
-          typedef void type;
+          using type = void;
         };
 
         template <class MetricType, typename U = void>
         struct is_neighbourhood_metric {
-          typedef int no;
+          using no = int;
         };
 
         template <class MetricType>
         struct is_neighbourhood_metric<MetricType, typename Void<typename MetricType::is_neighbourhood>::type> {
-          typedef int yes;
+          using yes = int;
         };
 
         template <class MetricType, typename U = void>
         struct use_processed_image {
-          typedef int no;
+          using no = int;
         };
 
         template <class MetricType>
         struct use_processed_image<MetricType, typename Void<typename MetricType::requires_precompute>::type> {
-          typedef int yes;
+          using yes = int;
         };
 
         template <class MetricType, typename U = void>
         struct cost_is_vector {
-          typedef int no;
+          using no = int;
         };
 
         template <class MetricType>
         struct cost_is_vector<MetricType, typename Void<typename MetricType::is_vector_type>::type> {
-          typedef int yes;
+          using yes = int;
         };
       }
       //! \endcond

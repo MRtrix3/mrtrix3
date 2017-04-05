@@ -108,7 +108,7 @@ namespace MR
         using SplineBase = SplineInterpBase<ImageType, SplineType, Math::SplineProcessingType::Value>;
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
-        typedef typename SplineBase::value_type value_type;
+        using value_type = typename SplineBase::value_type;
         using SplineBase::P;
         using SplineBase::H;
         using SplineBase::clamp;
@@ -224,7 +224,7 @@ namespace MR
         using SplineBase = SplineInterpBase<ImageType, SplineType, Math::SplineProcessingType::Derivative>;
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
-        typedef typename SplineBase::value_type value_type;
+        using value_type = typename SplineBase::value_type;
         using SplineBase::P;
         using SplineBase::H;
         using SplineBase::clamp;
@@ -371,7 +371,7 @@ namespace MR
         using SplineBase = SplineInterpBase<ImageType, SplineType, Math::SplineProcessingType::ValueAndDerivative>;
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
-        typedef typename SplineBase::value_type value_type;
+        using value_type = typename SplineBase::value_type;
         using SplineBase::P;
         using SplineBase::H;
         using SplineBase::clamp;

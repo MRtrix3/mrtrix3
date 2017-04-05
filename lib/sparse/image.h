@@ -106,8 +106,8 @@ namespace MR
         Image (const std::string& image_name, const Header& template_header) :
           ::MR::Image<uint64_t> (::MR::Image<uint64_t>::create (image_name, template_header)), io (nullptr) { check(); }
 
-        typedef uint64_t value_type;
-        typedef DataType sparse_data_type;
+        using value_type = uint64_t;
+        using sparse_data_type = DataType;
 
         Value<DataType> value () { return { *this, *io }; }
         const Value<DataType> value () const { return { *this, *io }; }

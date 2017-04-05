@@ -16,7 +16,7 @@
 #ifndef __file_ops_h__
 #define __file_ops_h__
 
-#include <stdint.h>
+#include <cstdint>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>

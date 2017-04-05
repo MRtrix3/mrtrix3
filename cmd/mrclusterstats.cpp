@@ -115,7 +115,7 @@ void write_output (const VectorType& data,
 
 
 
-typedef Stats::TFCE::value_type value_type;
+using value_type = Stats::TFCE::value_type;
 
 
 void run() {

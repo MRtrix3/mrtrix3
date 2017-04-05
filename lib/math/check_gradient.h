@@ -31,7 +31,7 @@ namespace MR {
           bool show_hessian = false,
           Eigen::Matrix<typename Function::value_type, Eigen::Dynamic, 1> conditioner = Eigen::Matrix<typename Function::value_type, Eigen::Dynamic, 1>())
       {
-        typedef typename Function::value_type value_type;
+        using value_type = typename Function::value_type;
         const size_t N = function.size();
         Eigen::Matrix<value_type, Eigen::Dynamic, 1> g (N);
 

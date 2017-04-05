@@ -74,7 +74,7 @@ namespace MR
       class Reslice
     {
       public:
-        typedef typename ImageType::value_type value_type;
+        using value_type = typename ImageType::value_type;
 
         template <class HeaderType>
           Reslice (const ImageType& original,

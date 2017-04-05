@@ -27,7 +27,7 @@ namespace MR
     template <class Set> class Histogram
     {
       public:
-        typedef typename Set::value_type value_type;
+        using value_type = typename Set::value_type;
 
         Histogram (Set& D, const size_t num_buckets=100) {
           if (num_buckets < 10)

@@ -47,10 +47,8 @@ OPTIONS
   + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z] instead of [az el].");
 }
 
-
-typedef double value_type;
-typedef Eigen::Vector3d vector3_type;
-
+using value_type = double;
+using vector3_type = Eigen::Vector3d;
 
 
 class Shared {

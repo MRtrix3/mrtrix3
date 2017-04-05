@@ -29,8 +29,8 @@ namespace MR {
 
         // Also handles resampling along a fixed line
         class Arc : public Base {
-            typedef float value_type;
-            typedef Eigen::Vector3f point_type;
+            using value_type = float;
+            using point_type = Eigen::Vector3f;
           private:
             class Plane {
               public:

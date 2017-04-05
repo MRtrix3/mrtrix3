@@ -140,7 +140,7 @@ namespace MR
         class Rejection : public Base
         {
           public:
-            typedef Eigen::Transform<float, 3, Eigen::AffineCompact> transform_type;
+            using transform_type = Eigen::Transform<float, 3, Eigen::AffineCompact>;
             Rejection (const std::string&);
 
             EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;

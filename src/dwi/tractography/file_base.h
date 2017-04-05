@@ -59,7 +59,7 @@ namespace MR
         class __WriterBase__
         {
           public:
-            typedef ValueType value_type;
+            using value_type = ValueType;
 
             __WriterBase__(const std::string& name) :
               count (0),

@@ -187,8 +187,8 @@ namespace MR
       class FODQueueWriter
       {
 
-          typedef Image<float> FODImageType;
-          typedef Image<float> MaskImageType;
+          using FODImageType = Image<float>;
+          using MaskImageType = Image<float>;
 
         public:
           FODQueueWriter (const FODImageType& fod_image, const MaskImageType& mask_image = MaskImageType()) :

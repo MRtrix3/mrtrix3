@@ -19,7 +19,7 @@
 
 #include <fstream>
 #include <vector>
-#include <stdint.h>
+#include <cstdint>
 
 #include "header.h"
 #include "image.h"
@@ -36,8 +36,8 @@ namespace MR
   {
 
 
-    typedef Eigen::Vector3 Vertex;
-    typedef std::vector<Vertex> VertexList;
+    using Vertex = Eigen::Vector3;
+    using VertexList = std::vector<Vertex>;
 
     class Vox : public Eigen::Array3i
     {
@@ -91,10 +91,10 @@ namespace MR
 
     template <> bool Polygon<3>::shares_edge (const Polygon<3>&) const;
 
-    typedef Polygon<3> Triangle;
-    typedef std::vector<Triangle> TriangleList;
-    typedef Polygon<4> Quad;
-    typedef std::vector<Quad> QuadList;
+    using Triangle = Polygon<3>;
+    using TriangleList = std::vector<Triangle>;
+    using Quad = Polygon<4>;
+    using QuadList = std::vector<Quad>;
 
 
 

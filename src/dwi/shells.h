@@ -157,7 +157,7 @@ namespace MR
 
       private:
 
-        typedef decltype(std::declval<const Eigen::MatrixXd>().col(0)) BValueList;
+        using BValueList = decltype(std::declval<const Eigen::MatrixXd>().col(0));
 
         // Functions for current b-value clustering implementation
         size_t clusterBvalues (const BValueList&, std::vector<size_t>&) const;

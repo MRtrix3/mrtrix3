@@ -37,7 +37,7 @@ namespace MR
   template <typename ValueType>
     class Image {
       public:
-        typedef ValueType value_type;
+        using value_type = ValueType;
         class Buffer;
 
         Image ();
@@ -278,7 +278,7 @@ namespace MR
     // lightweight struct to copy data into:
     template <typename ValueType>
       struct TmpImage {
-        typedef ValueType value_type;
+        using value_type = ValueType;
 
         const typename Image<ValueType>::Buffer& b;
         void* const data;

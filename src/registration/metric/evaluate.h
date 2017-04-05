@@ -33,27 +33,27 @@ namespace MR
       namespace {
         template<class T>
         struct Void2 {
-          typedef void type;
+          using type = void;
         };
 
         template <class MetricType, typename U = void>
         struct metric_requires_precompute {
-          typedef int no;
+          using no = int;
         };
 
         template <class MetricType>
         struct metric_requires_precompute<MetricType, typename Void2<typename MetricType::requires_precompute>::type> {
-          typedef int yes;
+          using yes = int;
         };
 
         template <class MetricType, typename U = void>
         struct metric_requires_initialisation {
-          typedef int no;
+          using no = int;
         };
 
         template <class MetricType>
         struct metric_requires_initialisation<MetricType, typename Void2<typename MetricType::requires_initialisation>::type> {
-          typedef int yes;
+          using yes = int;
         };
       }
       //! \endcond
@@ -62,8 +62,8 @@ namespace MR
         class Evaluate {
           public:
 
-            typedef typename ParamType::TransformParamType TransformParamType;
-            typedef default_type value_type;
+            using TransformParamType = typename ParamType::TransformParamType;
+            using value_type = default_type;
 
             template <class U = MetricType>
             Evaluate (const MetricType& metric_, ParamType& parameters, typename metric_requires_initialisation<U>::yes = 0) :

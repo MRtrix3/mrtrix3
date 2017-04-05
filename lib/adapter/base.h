@@ -37,7 +37,7 @@ namespace MR
             parent_ (parent) {
             }
 
-          typedef typename ImageType::value_type value_type;
+          using value_type = typename ImageType::value_type;
 
           template <class U> 
             const Base& operator= (const U& V) { return parent_ = V; }

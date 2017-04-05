@@ -83,7 +83,7 @@ namespace MR
       class Base  {
         public:
 
-          typedef default_type ParameterType;
+          using ParameterType = default_type;
           Base (size_t number_of_parameters) :
             number_of_parameters(number_of_parameters),
             optimiser_weights (number_of_parameters) {

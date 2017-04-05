@@ -21,7 +21,7 @@
 
 
 
-#include <stdint.h>
+#include <cstdint>
 #include <vector>
 
 #include "progressbar.h"
@@ -33,7 +33,7 @@ namespace MR {
 
 
 
-      typedef unsigned int dir_t;
+      using dir_t = unsigned int;
 
 
 

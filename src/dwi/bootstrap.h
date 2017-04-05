@@ -38,7 +38,7 @@ namespace MR {
             }
         };
 
-        typedef typename ImageType::value_type value_type;
+        using value_type = typename ImageType::value_type;
         using Adapter::Base<ImageType>::size;
         using Adapter::Base<ImageType>::index;
 
