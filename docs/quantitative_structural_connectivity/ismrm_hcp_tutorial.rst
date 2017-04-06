@@ -128,7 +128,7 @@ Connectome generation
 
 1. Generate the initial tractogram:
 
-``tckgen WM_FODs.mif 100M.tck -act 5TT.mif -backtrack -crop_at_gmwmi -seed_dynamic WM_FODs.mif -maxlength 250 -number 100M -cutoff 0.06``
+``tckgen WM_FODs.mif 100M.tck -act 5TT.mif -backtrack -crop_at_gmwmi -seed_dynamic WM_FODs.mif -maxlength 250 -select 100M -cutoff 0.06``
 
 Explicitly setting the maximum length is highly recommended for HCP
 data, as the default heuristic - 100 times the voxel size - would result

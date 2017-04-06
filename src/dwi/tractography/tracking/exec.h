@@ -115,11 +115,21 @@ namespace MR
 
             bool operator() (GeneratedTrack& item) {
               rng = &thread_local_RNG;
-              if (!gen_track (item))
+              if (!seed_track (item))
                 return false;
-              if (track_rejected (item))
+              if (track_excluded) {
+                item.set_status (GeneratedTrack::status_t::SEED_REJECTED);
+                S.add_rejection (INVALID_SEED);
+                return true;
+              }
+              gen_track (item);
+              if (track_rejected (item)) {
                 item.clear();
-              S.downsampler (item);
+                item.set_status (GeneratedTrack::status_t::TRACK_REJECTED);
+              } else {
+                S.downsampler (item);
+                item.set_status (GeneratedTrack::status_t::ACCEPTED);
+              }
               return true;
             }
 
@@ -166,14 +176,13 @@ namespace MR
             }
 
 
-            bool gen_track (GeneratedTrack& tck)
+
+            bool seed_track (GeneratedTrack& tck)
             {
               tck.clear();
               track_excluded = false;
               track_included.assign (track_included.size(), false);
               method.dir = { NaN, NaN, NaN };
-
-              bool unidirectional = S.unidirectional;
 
               if (S.properties.seeds.is_finite()) {
 
@@ -181,22 +190,32 @@ namespace MR
                   return false;
                 if (!method.check_seed() || !method.init()) {
                   track_excluded = true;
-                  return true;
+                  tck.set_status (GeneratedTrack::status_t::SEED_REJECTED);
                 }
+                return true;
 
               } else {
 
                 for (size_t num_attempts = 0; num_attempts != MAX_NUM_SEED_ATTEMPTS; ++num_attempts) {
-                  if (S.properties.seeds.get_seed (method.pos, method.dir) && method.check_seed() && method.init())
-                    break;
+                  if (S.properties.seeds.get_seed (method.pos, method.dir)) {
+                    if (!(method.check_seed() && method.init())) {
+                      track_excluded = true;
+                      tck.set_status (GeneratedTrack::status_t::SEED_REJECTED);
+                    }
+                    return true;
+                  }
                 }
-                if (!method.pos.allFinite()) {
-                  FAIL ("Failed to find suitable seed point after " + str (MAX_NUM_SEED_ATTEMPTS) + " attempts - aborting");
-                  return false;
-                }
+                FAIL ("Failed to find suitable seed point after " + str (MAX_NUM_SEED_ATTEMPTS) + " attempts - aborting");
+                return false;
 
               }
+            }
 
+
+
+            bool gen_track (GeneratedTrack& tck)
+            {
+              bool unidirectional = S.unidirectional;
               if (S.is_act() && !unidirectional)
                 unidirectional = method.act().seed_is_unidirectional (method.pos, method.dir);
 
@@ -216,7 +235,6 @@ namespace MR
               }
 
               return true;
-
             }
 
 

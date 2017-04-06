@@ -46,8 +46,8 @@ namespace MR
                 Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
                   SharedBase (diff_path, property_set),
                   lmax (Math::SH::LforN (source.size(3))),
-                  num_samples (DEFAULT_TRACTOGRAPHY_IFOD2_NSAMPLES),
-                  max_trials (DEFAULT_TRACTOGRAPHY_MAX_TRIALS),
+                  num_samples (TCKGEN_DEFAULT_IFOD2_NSAMPLES),
+                  max_trials (TCKGEN_DEFAULT_MAX_TRIALS_PER_STEP),
                   sin_max_angle (std::sin (max_angle)),
                   mean_samples (0.0),
                   mean_truncations (0.0),

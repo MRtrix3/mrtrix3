@@ -26,7 +26,6 @@
 #define TCKGEN_EARLY_EXIT_ZVALUE -4.753408 // For a p-value of 1e-6; should be negative
 #endif
 
-#include "dwi/tractography/file.h"
 #include "dwi/tractography/tracking/shared.h"
 
 
@@ -47,15 +46,15 @@ namespace MR
         { NOMEMALIGN
           public:
             EarlyExit (const SharedBase& shared) :
-              max_num_attempts (shared.max_num_attempts),
+              max_num_seeds (shared.max_num_seeds),
               max_num_tracks (shared.max_num_tracks),
               counter (0),
-              next_test ((max_num_attempts && max_num_tracks) ? (10 * max_num_attempts / max_num_tracks) : 0) { }
+              next_test ((max_num_seeds && max_num_tracks) ? (10 * max_num_seeds / max_num_tracks) : 0) { }
 
-            bool operator() (const Writer<>&);
+            bool operator() (const size_t, const size_t);
 
           private:
-            const size_t max_num_attempts, max_num_tracks;
+            const size_t max_num_seeds, max_num_tracks;
             size_t counter, next_test;
         };
 

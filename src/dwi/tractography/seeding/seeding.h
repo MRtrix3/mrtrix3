@@ -40,8 +40,10 @@ namespace MR
       {
 
 
-        extern const App::OptionGroup SeedOption;
-        void load_tracking_seeds (Properties&);
+        extern const App::OptionGroup SeedMechanismOption;
+        extern const App::OptionGroup SeedParameterOption;
+        void load_seed_mechanisms (Properties&);
+        void load_seed_parameters (Properties&);
 
 
 
