@@ -28,8 +28,8 @@ namespace MR
     { MEMALIGN (PermuteAxes<ImageType>)
         public:
 
-        typedef Base<PermuteAxes<ImageType>,ImageType> base_type;
-        typedef typename ImageType::value_type value_type;
+        using base_type = Base<PermuteAxes<ImageType>, ImageType>;
+        using value_type = typename ImageType::value_type;
 
         using base_type::size;
         using base_type::parent;

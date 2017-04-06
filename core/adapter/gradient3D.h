@@ -30,7 +30,7 @@ namespace MR
 
       public:
 
-        typedef Eigen::Matrix<typename ImageType::value_type,3,1> value_type;
+        using value_type = Eigen::Matrix<typename ImageType::value_type,3,1>;
 
         Gradient3D (const ImageType& parent,
                     bool wrt_scanner = false) :

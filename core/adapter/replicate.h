@@ -30,8 +30,8 @@ namespace MR
     { MEMALIGN(Replicate<ImageType>)
       public:
 
-        typedef Base<Replicate<ImageType>,ImageType> base_type;
-        typedef typename ImageType::value_type value_type;
+        using base_type = Base<Replicate<ImageType>, ImageType>;
+        using value_type = typename ImageType::value_type;
 
         using base_type::name;
         using base_type::ndim;

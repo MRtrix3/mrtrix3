@@ -56,7 +56,7 @@ namespace MR
       TracksOut
     } ArgType;
 
-    typedef int ArgFlags;
+    using ArgFlags = int;
     constexpr ArgFlags None = 0;
     constexpr ArgFlags Optional = 0x1;
     constexpr ArgFlags AllowMultiple = 0x2;

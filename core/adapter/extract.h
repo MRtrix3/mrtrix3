@@ -28,8 +28,8 @@ namespace MR
     { MEMALIGN (Extract1D<ImageType>)
       public:
 
-        typedef Base<Extract1D<ImageType>,ImageType> base_type;
-        typedef typename ImageType::value_type value_type;
+        using base_type = Base<Extract1D<ImageType>, ImageType>;
+        using value_type = typename ImageType::value_type;
 
         using base_type::ndim;
         using base_type::spacing;
@@ -112,9 +112,16 @@ namespace MR
         public Base<Extract<ImageType>,ImageType>
     { MEMALIGN (Extract<ImageType>)
       public:
+<<<<<<< HEAD:core/adapter/extract.h
 
         typedef Base<Extract<ImageType>,ImageType> base_type;
         typedef typename ImageType::value_type value_type;
+=======
+        using Base<ImageType>::ndim;
+        using Base<ImageType>::spacing;
+        using Base<ImageType>::parent;
+        using value_type = typename ImageType::value_type;
+>>>>>>> master:lib/adapter/extract.h
 
         using base_type::ndim;
         using base_type::spacing;

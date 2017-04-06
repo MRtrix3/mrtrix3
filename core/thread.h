@@ -111,7 +111,7 @@ namespace MR
             __single_thread (Functor&& functor, const std::string& name = "unnamed") :
             __thread_base (name) { 
               DEBUG ("launching thread \"" + name + "\"...");
-              typedef typename std::remove_reference<Functor>::type F;
+              using F = typename std::remove_reference<Functor>::type;
               thread = std::async (std::launch::async, &F::execute, &functor);
             }
           __single_thread (const __single_thread&) = delete;
@@ -141,7 +141,7 @@ namespace MR
             __multi_thread (Functor& functor, size_t nthreads, const std::string& name = "unnamed") :
               __thread_base (name), functors ( (nthreads>0 ? nthreads-1 : 0), functor) { 
                 DEBUG ("launching " + str (nthreads) + " threads \"" + name + "\"...");
-                typedef typename std::remove_reference<Functor>::type F;
+                using F = typename std::remove_reference<Functor>::type;
                 threads.reserve (nthreads);
                 for (auto& f : functors) 
                   threads.push_back (std::async (std::launch::async, &F::execute, &f));
@@ -203,7 +203,7 @@ namespace MR
       template <class Functor>
         class __run { NOMEMALIGN
           public:
-            typedef __single_thread type;
+            using type = __single_thread;
             type operator() (Functor& functor, const std::string& name) {
               return { functor, name };
             }
@@ -212,7 +212,7 @@ namespace MR
       template <class Functor>
         class __run<__Multi<Functor>> { NOMEMALIGN
           public:
-            typedef __multi_thread<Functor> type;
+            using type = __multi_thread<Functor>;
             type operator() (__Multi<Functor>& functor, const std::string& name) {
               return { functor.functor, functor.num, name };
             }
