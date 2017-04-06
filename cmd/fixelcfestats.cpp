@@ -415,15 +415,6 @@ void run()
     //       (will still however need to come out as a matrix_type)
     //     Write that value to data vector
     //   Finally, use write_fixel_output() function to write to an image file
-    //
-    // TODO Over and above multi-threading, this is very slow
-    //   Need to find out whether it's something to do with:
-    //   - The data loading
-    //   - The increased number of matrix solves
-    //   - The fact that the matrices are not transposed (like they are for GLMTTestFixed)
-    //   Things to try:
-    //   - Use GLMTTestFixed class rather than solve_betas()
-    //     (is JacobiSVD slower than getting the pseudoinverse?)
     matrix_type betas (contrast.cols(), num_fixels);
     vector_type abs_effect_size (num_fixels), std_effect_size (num_fixels), stdev (num_fixels);
     {
@@ -433,19 +424,22 @@ void run()
           Source (const size_t num_fixels) :
               num_fixels (num_fixels),
               counter (0),
-              progress ("estimating beta coefficients, effect size and standard deviation", num_fixels) { }
+              progress (new ProgressBar ("estimating beta coefficients, effect size and standard deviation", num_fixels)) { }
           bool operator() (size_t& fixel_index)
           {
             fixel_index = counter++;
-            if (counter >= num_fixels)
+            if (counter >= num_fixels) {
+              progress.reset();
               return false;
-            ++progress;
+            }
+            assert (progress);
+            ++(*progress);
             return true;
           }
         private:
           const size_t num_fixels;
           size_t counter;
-          ProgressBar progress;
+          std::unique_ptr<ProgressBar> progress;
       };
 
       class Functor
@@ -487,21 +481,6 @@ void run()
       Functor functor (data, glm_test, contrast,
                        betas, abs_effect_size, std_effect_size, stdev);
       Thread::run_queue (source, size_t(), functor);
-/*
-      ProgressBar progress ("estimating beta coefficients, effect size and standard deviation", num_fixels);
-      for (size_t f = 0; f != num_fixels; ++f) {
-        const auto design_f = dynamic_cast<GLMTTestVariable*>(glm_test.get())->default_design (f);
-        auto temp = Math::Stats::GLM::solve_betas (data.row(f), design_f);
-        betas.col(f) = temp;
-        temp = Math::Stats::GLM::abs_effect_size (data.row(f), design_f, contrast);
-        abs_effect_size[f] = temp(0,0);
-        temp = Math::Stats::GLM::std_effect_size (data.row(f), design_f, contrast);
-        std_effect_size[f] = temp(0,0);
-        temp = Math::Stats::GLM::stdev (data.row(f), design_f);
-        stdev[f] = temp(0,0);
-        ++progress;
-      }
-*/
     }
     {
       ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", contrast.cols() + 3);
@@ -516,19 +495,20 @@ void run()
 
   } else {
 
-    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", contrast.cols() + 7);
-    auto temp = Math::Stats::GLM::solve_betas (data, design);
+    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", contrast.cols() + 4);
+    matrix_type betas, abs_effect_size, std_effect_size, stdev;
+    Math::Stats::GLM::all_stats (data, design, contrast,
+                                 betas, abs_effect_size, std_effect_size, stdev);
     ++progress;
     for (ssize_t i = 0; i < contrast.cols(); ++i) {
-      write_fixel_output (Path::join (output_fixel_directory, "beta" + str(i) + ".mif"), temp.row(i), output_header);
+      write_fixel_output (Path::join (output_fixel_directory, "beta" + str(i) + ".mif"), betas.row(i), output_header);
       ++progress;
     }
-    temp = Math::Stats::GLM::abs_effect_size (data, design, contrast); ++progress;
-    write_fixel_output (Path::join (output_fixel_directory, "abs_effect.mif"), temp.row(0), output_header); ++progress;
-    temp = Math::Stats::GLM::std_effect_size (data, design, contrast); ++progress;
-    write_fixel_output (Path::join (output_fixel_directory, "std_effect.mif"), temp.row(0), output_header); ++progress;
-    temp = Math::Stats::GLM::stdev (data, design); ++progress;
-    write_fixel_output (Path::join (output_fixel_directory, "std_dev.mif"), temp.row(0), output_header);
+    write_fixel_output (Path::join (output_fixel_directory, "abs_effect.mif"), abs_effect_size.row(0), output_header);
+    ++progress;
+    write_fixel_output (Path::join (output_fixel_directory, "std_effect.mif"), std_effect_size.row(0), output_header);
+    ++progress;
+    write_fixel_output (Path::join (output_fixel_directory, "std_dev.mif"), stdev.row(0), output_header);
 
   }
 
