@@ -415,22 +415,93 @@ void run()
     //       (will still however need to come out as a matrix_type)
     //     Write that value to data vector
     //   Finally, use write_fixel_output() function to write to an image file
+    //
+    // TODO Over and above multi-threading, this is very slow
+    //   Need to find out whether it's something to do with:
+    //   - The data loading
+    //   - The increased number of matrix solves
+    //   - The fact that the matrices are not transposed (like they are for GLMTTestFixed)
+    //   Things to try:
+    //   - Use GLMTTestFixed class rather than solve_betas()
+    //     (is JacobiSVD slower than getting the pseudoinverse?)
     matrix_type betas (contrast.cols(), num_fixels);
     vector_type abs_effect_size (num_fixels), std_effect_size (num_fixels), stdev (num_fixels);
     {
+      class Source
+      {
+        public:
+          Source (const size_t num_fixels) :
+              num_fixels (num_fixels),
+              counter (0),
+              progress ("estimating beta coefficients, effect size and standard deviation", num_fixels) { }
+          bool operator() (size_t& fixel_index)
+          {
+            fixel_index = counter++;
+            if (counter >= num_fixels)
+              return false;
+            ++progress;
+            return true;
+          }
+        private:
+          const size_t num_fixels;
+          size_t counter;
+          ProgressBar progress;
+      };
+
+      class Functor
+      {
+        public:
+          Functor (const matrix_type& data, std::shared_ptr<GLMTestBase> glm_test, const matrix_type& contrasts,
+                   matrix_type& betas, vector_type& abs_effect_size, vector_type& std_effect_size, vector_type& stdev) :
+              data (data),
+              glm_test (glm_test),
+              contrasts (contrasts),
+              global_betas (betas),
+              global_abs_effect_size (abs_effect_size),
+              global_std_effect_size (std_effect_size),
+              global_stdev (stdev) { }
+          bool operator() (const size_t& fixel_index)
+          {
+            const matrix_type data_f = data.row (fixel_index);
+            const matrix_type design_f = dynamic_cast<GLMTTestVariable*>(glm_test.get())->default_design (fixel_index);
+            Math::Stats::GLM::all_stats (data_f, design_f, contrasts,
+                                         local_betas, local_abs_effect_size, local_std_effect_size, local_stdev);
+            global_betas.col (fixel_index) = local_betas;
+            global_abs_effect_size[fixel_index] = local_abs_effect_size(0,0);
+            global_std_effect_size[fixel_index] = local_std_effect_size(0,0);
+            global_stdev[fixel_index] = local_stdev(0,0);
+            return true;
+          }
+
+        private:
+          const matrix_type& data;
+          const std::shared_ptr<GLMTestBase> glm_test;
+          const matrix_type& contrasts;
+          matrix_type& global_betas;
+          vector_type& global_abs_effect_size, global_std_effect_size, global_stdev;
+          matrix_type local_betas, local_abs_effect_size, local_std_effect_size, local_stdev;
+          std::shared_ptr<ProgressBar> progress;
+      };
+
+      Source source (num_fixels);
+      Functor functor (data, glm_test, contrast,
+                       betas, abs_effect_size, std_effect_size, stdev);
+      Thread::run_queue (source, size_t(), functor);
+/*
       ProgressBar progress ("estimating beta coefficients, effect size and standard deviation", num_fixels);
       for (size_t f = 0; f != num_fixels; ++f) {
         const auto design_f = dynamic_cast<GLMTTestVariable*>(glm_test.get())->default_design (f);
         auto temp = Math::Stats::GLM::solve_betas (data.row(f), design_f);
         betas.col(f) = temp;
-        temp = Math::Stats::GLM::abs_effect_size (data, design_f, contrast);
+        temp = Math::Stats::GLM::abs_effect_size (data.row(f), design_f, contrast);
         abs_effect_size[f] = temp(0,0);
-        temp = Math::Stats::GLM::std_effect_size (data, design_f, contrast);
+        temp = Math::Stats::GLM::std_effect_size (data.row(f), design_f, contrast);
         std_effect_size[f] = temp(0,0);
-        temp = Math::Stats::GLM::stdev (data, design_f);
+        temp = Math::Stats::GLM::stdev (data.row(f), design_f);
         stdev[f] = temp(0,0);
         ++progress;
       }
+*/
     }
     {
       ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", contrast.cols() + 3);

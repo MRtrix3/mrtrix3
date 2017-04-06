@@ -28,21 +28,10 @@ namespace MR
       namespace GLM
       {
 
-
-
-
-
-
-
-
-
-
-
         matrix_type solve_betas (const matrix_type& measurements, const matrix_type& design)
         {
           return design.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(measurements.transpose());
         }
-
 
 
         matrix_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const matrix_type& contrasts)
@@ -65,6 +54,26 @@ namespace MR
         {
           return abs_effect_size (measurements, design, contrasts).array() / stdev (measurements, design).array();
         }
+
+
+        void all_stats (const matrix_type& measurements,
+                        const matrix_type& design,
+                        const matrix_type& contrasts,
+                        matrix_type& betas,
+                        matrix_type& abs_effect_size,
+                        matrix_type& std_effect_size,
+                        matrix_type& stdev)
+        {
+          betas = solve_betas (measurements, design);
+          abs_effect_size = contrasts * betas;
+          matrix_type residuals = measurements.transpose() - design * betas;
+          residuals = residuals.array().pow(2.0);
+          matrix_type one_over_dof (1, measurements.cols());
+          one_over_dof.fill (1.0 / value_type(design.rows()-Math::rank (design)));
+          stdev = (one_over_dof * residuals).array().sqrt();
+          std_effect_size = abs_effect_size.array() / stdev.array();
+        }
+
       }
 
 

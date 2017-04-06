@@ -36,7 +36,7 @@ namespace MR
         /*! Compute a matrix of the beta coefficients
          * @param measurements a matrix storing the measured data for each subject in a column
          * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
-         * @return the matrix containing the output effect
+         * @return the matrix containing the output GLM betas
          */
         matrix_type solve_betas (const matrix_type& measurements, const matrix_type& design);
 
@@ -55,7 +55,7 @@ namespace MR
         /*! Compute the pooled standard deviation
          * @param measurements a matrix storing the measured data for each subject in a column
          * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
-         * @return the matrix containing the output standard deviation size
+         * @return the matrix containing the output standard deviation
          */
         matrix_type stdev (const matrix_type& measurements, const matrix_type& design);
 
@@ -68,6 +68,20 @@ namespace MR
          * @return the matrix containing the output standardised effect size
          */
         matrix_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const matrix_type& contrast);
+
+
+
+        /*! Compute all GLM-related statistics
+         * @param measurements a matrix storing the measured data for each subject in a column
+         * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
+         * @param contrast a matrix defining the group difference
+         * @param betas the matrix containing the output GLM betas
+         * @param abs_effect_size the matrix containing the output effect
+         * @param std_effect_size the matrix containing the output standardised effect size
+         * @param stdev the matrix containing the output standard deviation
+         */
+        void all_stats (const matrix_type& measurements, const matrix_type& design, const matrix_type& contrasts,
+                        matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, matrix_type& stdev);
         //! @}
 
       } // End GLM namespace
