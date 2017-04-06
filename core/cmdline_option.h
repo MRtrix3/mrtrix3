@@ -39,7 +39,7 @@ namespace MR
    * */
 
     //! \cond skip
-    typedef enum {
+    using ArgType = enum {
       Undefined,
       Text,
       Boolean,
@@ -54,7 +54,7 @@ namespace MR
       FloatSeq,
       TracksIn,
       TracksOut
-    } ArgType;
+    };
 
     using ArgFlags = int;
     constexpr ArgFlags None = 0;

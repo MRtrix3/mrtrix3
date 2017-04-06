@@ -29,12 +29,12 @@ namespace MR {
 #ifdef MRTRIX_MAX_ALIGN_T_NOT_DEFINED
 # ifdef MRTRIX_STD_MAX_ALIGN_T_NOT_DEFINED
   // needed for clang 3.4:
-  typedef struct { NOMEMALIGN
+  using __max_align_t = struct { NOMEMALIGN
     long long __clang_max_align_nonce1
         __attribute__((__aligned__(__alignof__(long long))));
     long double __clang_max_align_nonce2
         __attribute__((__aligned__(__alignof__(long double))));
-  } __max_align_t;
+  };
   constexpr size_t malloc_align = alignof (__max_align_t);
 # else
   constexpr size_t malloc_align = alignof (std::max_align_t);
@@ -196,10 +196,10 @@ inline void __aligned_free (void* ptr) { if (ptr) std::free (*(reinterpret_cast<
 namespace MR
 {
 
-  typedef float  float32;
-  typedef double float64;
-  typedef std::complex<double> cdouble;
-  typedef std::complex<float> cfloat;
+  using float32 = float;
+  using float64 = double;
+  using cdouble = std::complex<double>;
+  using cfloat  = std::complex<float>;
 
   template <typename T>
     struct container_cast : public T { MEMALIGN(container_cast<T>)
@@ -209,13 +209,13 @@ namespace MR
     };
 
   //! the default type used throughout MRtrix
-  typedef double default_type;
+  using default_type = double;
 
   constexpr default_type NaN = std::numeric_limits<default_type>::quiet_NaN();
   constexpr default_type Inf = std::numeric_limits<default_type>::infinity();
 
   //! the type for the affine transform of an image:
-  typedef Eigen::Transform<default_type, 3, Eigen::AffineCompact> transform_type;
+  using transform_type = Eigen::Transform<default_type, 3, Eigen::AffineCompact>;
 
 
   //! check whether type is complex:
@@ -275,8 +275,8 @@ namespace std
 }
 
 namespace Eigen {
-  typedef Matrix<MR::default_type,3,1> Vector3;
-  typedef Matrix<MR::default_type,4,1> Vector4;
+  using Vector3 = Matrix<MR::default_type, 3, 1>;
+  using Vector4 = Matrix<MR::default_type, 4, 1>;
 }
 
 #endif
