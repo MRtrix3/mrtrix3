@@ -57,8 +57,8 @@ namespace MR
       { MEMALIGN(Model<Fixel>)
 
         protected:
-        typedef typename Fixel_map<Fixel>::MapVoxel MapVoxel;
-        typedef typename Fixel_map<Fixel>::VoxelAccessor VoxelAccessor;
+          using MapVoxel = typename Fixel_map<Fixel>::MapVoxel;
+          using VoxelAccessor = typename Fixel_map<Fixel>::VoxelAccessor;
 
         public:
           template <class Set>

@@ -64,7 +64,7 @@ OPTIONS
 void run () {
 
   auto input = Image<float>::open (argument[0]).with_direct_io (3);
-  auto grad = DWI::get_DW_scheme (input);
+  auto grad = DWI::get_valid_DW_scheme (input);
 
   if (input.ndim() != 4)
     throw Exception ("input DWI image must be 4D");

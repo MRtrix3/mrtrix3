@@ -84,7 +84,7 @@ void usage ()
 }
 
 
-typedef float value_type;
+using value_type = float;
 
 
 template <class ImageType>

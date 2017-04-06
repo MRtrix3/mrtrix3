@@ -16,7 +16,7 @@
 #define __dwi_tractography_sift2_streamline_stats_h__
 
 
-#include <assert.h>
+#include <cassert>
 #include <limits>
 
 #include "math/math.h"

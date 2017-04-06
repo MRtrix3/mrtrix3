@@ -91,7 +91,7 @@ class Energy { MEMALIGN(Energy)
       return p == 1 ? x : fast_pow (x*x, p/2);
     }
 
-    typedef double value_type;
+    using value_type = double;
 
     size_t size () const { return 3 * ndir; }
 

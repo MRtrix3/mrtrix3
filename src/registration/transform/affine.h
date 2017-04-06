@@ -95,10 +95,10 @@ namespace MR
       class Affine : public Base  { MEMALIGN(Affine)
         public:
 
-          typedef typename Base::ParameterType ParameterType;
-          typedef AffineUpdate UpdateType;
-          typedef AffineRobustEstimator RobustEstimatorType;
-          typedef int has_robust_estimator;
+          using ParameterType = typename Base::ParameterType;
+          using UpdateType = AffineUpdate;
+          using RobustEstimatorType = AffineRobustEstimator;
+          using has_robust_estimator = int;
 
 
           Affine () : Base (12) {

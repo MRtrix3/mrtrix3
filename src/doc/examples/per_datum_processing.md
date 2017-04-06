@@ -34,7 +34,7 @@ void usage ()
 
 // It is a good idea to use typedef's to help with flexibility if types need to
 // be changed later on.
-typedef float value_type;
+using value_type = float;
 
 
 // This is where execution proper starts - the equivalent of main(). 
