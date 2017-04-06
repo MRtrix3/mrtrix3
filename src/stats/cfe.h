@@ -30,12 +30,13 @@ namespace MR
     namespace CFE
     {
 
-      typedef Math::Stats::value_type value_type;
-      typedef Math::Stats::vector_type vector_type;
-      typedef float connectivity_value_type;
-      typedef Eigen::Matrix<value_type, 3, 1> direction_type;
-      typedef Eigen::Array<connectivity_value_type, Eigen::Dynamic, 1> connectivity_vector_type;
-      typedef DWI::Tractography::Mapping::SetVoxelDir SetVoxelDir;
+      using value_type = Math::Stats::value_type;
+      using vector_type = Math::Stats::vector_type;
+      using connectivity_value_type = float;
+      using direction_type = Eigen::Matrix<value_type, 3, 1>;
+      using connectivity_vector_type = Eigen::Array<connectivity_value_type, Eigen::Dynamic, 1>;
+      using SetVoxelDir = DWI::Tractography::Mapping::SetVoxelDir;
+
 
 
       /** \addtogroup Statistics

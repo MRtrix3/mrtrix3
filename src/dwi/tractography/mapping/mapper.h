@@ -210,8 +210,9 @@ namespace MR {
         template <class Cont>
           void TrackMapperBase::voxelise_precise (const Streamline<>& tck, Cont& out) const
           {
-            typedef Streamline<>::point_type point_type;
-            typedef Streamline<>::value_type value_type;
+
+            using point_type = Streamline<>::point_type;
+            using value_type = Streamline<>::value_type;
 
             const default_type accuracy = Math::pow2 (0.005 * std::min (info.spacing (0), std::min (info.spacing (1), info.spacing (2))));
 

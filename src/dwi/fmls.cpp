@@ -174,7 +174,8 @@ namespace MR {
         Eigen::Matrix<default_type, Eigen::Dynamic, 1> values (dirs.size());
         transform->SH2A (values, in);
 
-        typedef std::multimap<default_type, index_type, Max_abs> map_type;
+        using map_type = std::multimap<default_type, index_type, Max_abs>;
+
         map_type data_in_order;
         for (size_t i = 0; i != size_t(values.size()); ++i)
           data_in_order.insert (std::make_pair (values[i], i));

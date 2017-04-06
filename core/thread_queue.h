@@ -629,13 +629,8 @@ namespace MR
 
     template <class T> class Queue<__Batch<T>> { NOMEMALIGN
       private:
-<<<<<<< HEAD:core/thread_queue.h
-        typedef vector<T> BatchType;
-        typedef Queue<BatchType> BatchQueue;
-=======
         using BatchType = std::vector<T>;
         using BatchQueue = Queue<BatchType>;
->>>>>>> master:lib/thread_queue.h
 
       public:
         Queue (const __Batch<T>& item_type, const std::string& description = "unnamed", size_t buffer_size = MRTRIX_QUEUE_DEFAULT_CAPACITY) :

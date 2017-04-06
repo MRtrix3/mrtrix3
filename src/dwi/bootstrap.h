@@ -28,8 +28,8 @@ namespace MR {
     { MEMALIGN (Bootstrap<ImageType,Functor,NUM_VOX_PER_CHUNK>)
       public:
 
-        typedef Adapter::Base<Bootstrap<ImageType,Functor,NUM_VOX_PER_CHUNK>,ImageType> base_type;
-        typedef typename ImageType::value_type value_type;
+        using base_type = Adapter::Base<Bootstrap<ImageType,Functor,NUM_VOX_PER_CHUNK>, ImageType>;
+        using value_type = typename ImageType::value_type;
 
         using base_type::ndim;
         using base_type::size;
@@ -44,6 +44,7 @@ namespace MR {
               return false;
             }
         };
+
 
         Bootstrap (const ImageType& Image, const Functor& functor) :
           base_type (Image),

@@ -73,7 +73,7 @@ namespace MR
             current_pos += increment;
             if (current_pos < nsize) 
               parent().index(axis) += indices[current_pos] - prev_pos;
-            else 
+            else
               parent().index(axis) = 0;
           }
           else 
@@ -112,16 +112,9 @@ namespace MR
         public Base<Extract<ImageType>,ImageType>
     { MEMALIGN (Extract<ImageType>)
       public:
-<<<<<<< HEAD:core/adapter/extract.h
 
-        typedef Base<Extract<ImageType>,ImageType> base_type;
-        typedef typename ImageType::value_type value_type;
-=======
-        using Base<ImageType>::ndim;
-        using Base<ImageType>::spacing;
-        using Base<ImageType>::parent;
+        using base_type = Base<Extract<ImageType>, ImageType>;
         using value_type = typename ImageType::value_type;
->>>>>>> master:lib/adapter/extract.h
 
         using base_type::ndim;
         using base_type::spacing;

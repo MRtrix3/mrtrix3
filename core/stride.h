@@ -58,7 +58,7 @@ namespace MR
   namespace Stride
   {
 
-    using List = std::vector<ssize_t>;
+    using List = vector<ssize_t>;
 
     extern const App::OptionGroup Options;
 
