@@ -95,8 +95,10 @@ namespace MR
       if (H.ndim() > 4)
         throw Exception ("MGZ format cannot support more than 4 dimensions for image \"" + H.name() + "\"");
 
-      if (H.datatype().bytes() > 1)
+      if (H.datatype().bytes() > 1) {
         H.datatype().set_flag (DataType::BigEndian);
+        H.datatype().unset_flag (DataType::LittleEndian);
+      }
 
       std::unique_ptr<ImageIO::GZ> io_handler (new ImageIO::GZ (H, MGH_DATA_OFFSET));
 
