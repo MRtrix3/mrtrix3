@@ -501,7 +501,7 @@ namespace MR
     { NOMEMALIGN
       public:
 
-        typedef typename ImageType::value_type value_type;
+        using value_type = typename ImageType::value_type;
 
         Row (ImageType& image, size_t axis) : ConstRow<ImageType> (image, axis) { }
 
@@ -575,7 +575,7 @@ namespace MR
     class ImageBase 
     { MEMALIGN (ImageBase<Derived,ValueType>)
       public:
-        typedef ValueType value_type;
+        using value_type = ValueType;
 
         FORCE_INLINE Helper::Index<Derived> index (size_t axis) { return { static_cast<Derived&> (*this), axis }; }
         FORCE_INLINE ssize_t index (size_t axis) const { return static_cast<const Derived*>(this)->get_index (axis); }

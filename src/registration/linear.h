@@ -358,9 +358,9 @@ namespace MR
             using ProcessedMaskType = Image<bool>;
 
 #ifdef REGISTRATION_CUBIC_INTERP
-            // typedef Interp::SplineInterp<Im1ImageType, Math::UniformBSpline<typename Im1ImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative> Im1ImageInterpolatorType;
-            // typedef Interp::SplineInterp<Im2ImageType, Math::UniformBSpline<typename Im2ImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative> Im2ImageInterpolatorType;
-            // typedef Interp::SplineInterp<ProcessedImageType, Math::UniformBSpline<typename ProcessedImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative> ProcessedImageInterpolatorType;
+            // using Im1ImageInterpolatorType = Interp::SplineInterp<Im1ImageType, Math::UniformBSpline<typename Im1ImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative>;
+            // using Im2ImageInterpolatorType = Interp::SplineInterp<Im2ImageType, Math::UniformBSpline<typename Im2ImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative>;
+            // using ProcessedImageInterpolatorType = Interp::SplineInterp<ProcessedImageType, Math::UniformBSpline<typename ProcessedImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative>;
 #else
             using Im1ImageInterpolatorType = Interp::LinearInterp<Im1ImageType, Interp::LinearInterpProcessingType::ValueAndDerivative>;
             using Im2ImageInterpolatorType = Interp::LinearInterp<Im2ImageType, Interp::LinearInterpProcessingType::ValueAndDerivative>;

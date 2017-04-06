@@ -195,8 +195,8 @@ namespace MR
               using Im1ImageInterpolatorType = typename ParamType::Im1InterpType;
               using Im2ImageInterpolatorType = typename ParamType::Im2InterpType;
               using PImageType = typename ParamType::ProcessedImageType;
-              // typedef Interp::LinearInterp<Im1MaskType, Interp::LinearInterpProcessingType::Value> Im1MaskInterpolatorType;
-              // typedef Interp::LinearInterp<Im2MaskType, Interp::LinearInterpProcessingType::Value> Im2MaskInterpolatorType;
+              // using Im1MaskInterpolatorType = Interp::LinearInterp<Im1MaskType, Interp::LinearInterpProcessingType::Value>;
+              // using Im2MaskInterpolatorType = Interp::LinearInterp<Im2MaskType, Interp::LinearInterpProcessingType::Value>;
               using Im1MaskInterpolatorType = typename ParamType::Mask1InterpolatorType;
               using Im2MaskInterpolatorType = typename ParamType::Mask2InterpolatorType;
 

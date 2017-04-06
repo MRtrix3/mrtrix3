@@ -92,8 +92,8 @@ namespace MR
       { MEMALIGN (Data)
         public:
 
-          typedef Eigen::Array<size_t, Eigen::Dynamic, 1> vector_type;
-          typedef Eigen::Array<default_type, Eigen::Dynamic, 1> cdf_type;
+          using vector_type = Eigen::Array<size_t, Eigen::Dynamic, 1>;
+          using cdf_type = Eigen::Array<default_type, Eigen::Dynamic, 1>;
 
           Data (const Calibrator& calibrate) :
               info (calibrate),
@@ -209,7 +209,7 @@ namespace MR
       class Matcher
       { MEMALIGN (Matcher)
 
-          typedef Eigen::Array<default_type, Eigen::Dynamic, 1> vector_type;
+          using vector_type = Eigen::Array<default_type, Eigen::Dynamic, 1>;
 
         public:
           Matcher (const Data& input, const Data& target);

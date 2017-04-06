@@ -61,7 +61,7 @@ void usage () {
 
 
 
-typedef default_type value_type;
+using value_type = default_type;
 
 
 

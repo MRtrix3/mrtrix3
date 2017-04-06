@@ -158,7 +158,7 @@ namespace MR {
 
           public:
 
-            typedef DWI::Directions::index_type dir_index_type;
+            using dir_index_type = DWI::Directions::index_type;
 
             Dixel () :
               Voxel (),
@@ -203,7 +203,7 @@ namespace MR {
 
           public:
 
-            typedef Eigen::Matrix<default_type, Eigen::Dynamic, 1> vector_type;
+            using vector_type = Eigen::Matrix<default_type, Eigen::Dynamic, 1>;
 
             VoxelTOD () :
               Voxel (),
