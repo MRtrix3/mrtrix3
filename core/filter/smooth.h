@@ -209,7 +209,7 @@ namespace MR
                   compute_kernel();
               }
 
-            typedef typename ImageType::value_type value_type;
+            using value_type = typename ImageType::value_type;
 
             void compute_kernel() {
               if ((radius < 1) || stdev <= 0.0)

@@ -94,8 +94,8 @@ void usage ()
 
 
 
-typedef float value_type;
-typedef Eigen::VectorXf vector_type;
+using value_type = float;
+using vector_type = Eigen::VectorXf;
 
 
 

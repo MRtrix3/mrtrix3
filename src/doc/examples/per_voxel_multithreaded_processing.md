@@ -44,7 +44,7 @@ void usage ()
 // dataset (I typically use float rather than double to keep RAM usage low),
 // the other for the values used in the computation itself (this often
 // needs to be higher precision to avoid rounding errors, etc).
-typedef float value_type;
+using value_type = float;
 typedef float compute_type;
 
 

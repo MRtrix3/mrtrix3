@@ -28,9 +28,9 @@ namespace MR
 
 
 
-      typedef MR::default_type value_type;
-      typedef Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> matrix_type;
-      typedef Eigen::Array<value_type, Eigen::Dynamic, 1> vector_type;
+      using value_type = MR::default_type;
+      using matrix_type = Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic>;
+      using vector_type = Eigen::Array<value_type, Eigen::Dynamic, 1>;
 
 
 

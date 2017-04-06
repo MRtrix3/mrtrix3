@@ -70,7 +70,11 @@ namespace MR {
 
 
         namespace {
-          point_type get_pos (const vector<default_type>& s)
+
+          using value_type = float;
+          using point_type = Eigen::Vector3f;
+
+          point_type get_pos (const std::vector<default_type>& s)
           {
             if (s.size() != 3)
               throw Exception ("position expected as a comma-seperated list of 3 values");

@@ -34,7 +34,7 @@ namespace MR
 
 
         // TODO Remove
-        typedef GUI::DWI::Renderer::mode_t odf_type_t;
+        using odf_type_t = GUI::DWI::Renderer::mode_t;
 
 
 

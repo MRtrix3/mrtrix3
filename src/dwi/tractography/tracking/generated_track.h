@@ -35,9 +35,11 @@ namespace MR
         class GeneratedTrack : public vector<Eigen::Vector3f>
         { MEMALIGN(GeneratedTrack)
 
+
           public:
 
-            typedef vector<Eigen::Vector3f> BaseType;
+            using BaseType = std::vector<Eigen::Vector3f>;
+
             enum class status_t { INVALID, SEED_REJECTED, TRACK_REJECTED, ACCEPTED };
 
             GeneratedTrack() : seed_index (0), status (status_t::INVALID) { }

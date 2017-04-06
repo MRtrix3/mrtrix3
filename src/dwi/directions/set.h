@@ -17,7 +17,7 @@
 
 
 
-#include <stdint.h>
+#include <cstdint>
 #include <vector>
 
 #include "progressbar.h"
@@ -29,8 +29,7 @@ namespace MR {
 
 
 
-      typedef unsigned int index_type;
-
+      using index_type = unsigned int;
 
 
       class Set { MEMALIGN(Set)

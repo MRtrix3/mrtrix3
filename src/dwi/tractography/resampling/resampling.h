@@ -36,8 +36,8 @@ namespace MR {
         class Base;
         Base* get_resampler();
 
-        typedef float value_type;
-        typedef typename Streamline<>::point_type point_type;
+        using value_type = float;
+        using point_type = typename Streamline<>::point_type;
 
         // cubic interpolation (tension = 0.0) looks 'bulgy' between control points
         constexpr value_type hermite_tension = value_type(0.1);

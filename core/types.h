@@ -49,7 +49,10 @@ namespace MR {
   }
 }
 
-#define EIGEN_DONT_PARALLELIZE
+#ifdef EIGEN_HAS_OPENMP
+# undef EIGEN_HAS_OPENMP
+#endif
+
 #define EIGEN_DENSEBASE_PLUGIN "eigen_plugins/dense_base.h"
 #define EIGEN_MATRIXBASE_PLUGIN "eigen_plugins/dense_base.h"
 #define EIGEN_ARRAYBASE_PLUGIN "eigen_plugins/dense_base.h"

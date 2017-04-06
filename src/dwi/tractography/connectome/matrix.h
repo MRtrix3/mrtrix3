@@ -48,7 +48,7 @@ class Matrix
 { MEMALIGN(Matrix)
 
   public:
-    typedef Eigen::Matrix<T, Eigen::Dynamic, 1> vector_type;
+    using vector_type = Eigen::Matrix<T, Eigen::Dynamic, 1>;
 
     Matrix (const node_t max_node_index, const stat_edge stat, const bool vector_output, const bool track_assignments) :
         statistic (stat),

@@ -116,12 +116,12 @@ namespace MR
   template <class Cont, typename ReturnType = int>
   class container_value_type { NOMEMALIGN
     public:
-     typedef typename Cont::value_type type;
+     using type = typename Cont::value_type;
   };
   template <class Cont>
   class container_value_type <Cont, typename std::enable_if<is_eigen_type<Cont>::value, int>::type> { NOMEMALIGN
     public:
-      typedef typename Cont::Scalar type;
+      using type = typename Cont::Scalar;
   };
 
 

@@ -79,8 +79,10 @@ void usage ()
     + Argument ("value").type_float();
 }
 
-typedef float value_type;
-constexpr value_type UNIT = 0.577350269189626; // 1/sqrt(3) , component of 3D unit vector wrt L2-norm
+
+using value_type = float;
+const value_type UNIT = 1.0 / std::sqrt(3.0);  // component of 3D unit vector wrt L2-norm
+
 
 class DecTransform { MEMALIGN(DecTransform)
 

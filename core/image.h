@@ -38,7 +38,7 @@ namespace MR
       public ImageBase<Image<ValueType>, ValueType> 
   { MEMALIGN (Image<ValueType>)
       public:
-        typedef ValueType value_type;
+        using value_type = ValueType;
         class Buffer;
 
         Image ();
@@ -270,7 +270,7 @@ namespace MR
       struct TmpImage : 
         public ImageBase<TmpImage<ValueType>, ValueType> 
     { MEMALIGN (TmpImage<ValueType>)
-        typedef ValueType value_type;
+        using value_type = ValueType;
 
       TmpImage (const typename Image<ValueType>::Buffer& b, void* const data, 
           vector<ssize_t> x, const Stride::List& strides, size_t offset) :

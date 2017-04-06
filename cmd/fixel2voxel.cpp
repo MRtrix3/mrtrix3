@@ -94,8 +94,8 @@ void usage ()
 
 
 
-typedef Image<uint32_t> FixelIndexType;
-typedef Image<float> FixelDataType;
+using FixelIndexType = Image<uint32_t>;
+using FixelDataType = Image<float>;
 
 
 

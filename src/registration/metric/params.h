@@ -48,18 +48,18 @@ namespace MR
             ProcMaskType,ProcessedMaskInterpolatorType>)
         public:
 
-          typedef typename TransformType::ParameterType TransformParamType;
-          typedef typename Im1ImageInterpType::value_type Im1ValueType;
-          typedef typename Im2ImageInterpType::value_type Im2ValueType;
-          typedef Im1ImageInterpType Im1InterpType;
-          typedef Im2ImageInterpType Im2InterpType;
-          typedef Im1MaskInterpolatorType Mask1InterpolatorType;
-          typedef Im2MaskInterpolatorType Mask2InterpolatorType;
-          typedef typename ProcImageInterpolatorType::value_type ProcessedValueType;
-          typedef ProcImageType ProcessedImageType;
-          typedef ProcMaskType ProcessedMaskType;
-          typedef ProcImageInterpolatorType ProcessedImageInterpType;
-          typedef ProcessedMaskInterpolatorType ProcessedMaskInterpType;
+          using TransformParamType = typename TransformType::ParameterType;
+          using Im1ValueType = typename Im1ImageInterpType::value_type;
+          using Im2ValueType = typename Im2ImageInterpType::value_type;
+          using Im1InterpType = Im1ImageInterpType;
+          using Im2InterpType = Im2ImageInterpType;
+          using Mask1InterpolatorType = Im1MaskInterpolatorType;
+          using Mask2InterpolatorType = Im2MaskInterpolatorType;
+          using ProcessedValueType = typename ProcImageInterpolatorType::value_type;
+          using ProcessedImageType = ProcImageType;
+          using ProcessedMaskType = ProcMaskType;
+          using ProcessedImageInterpType = ProcImageInterpolatorType;
+          using ProcessedMaskInterpType = ProcessedMaskInterpolatorType;
 
           Params (TransformType& transform,
                   Im1ImageType& im1_image,

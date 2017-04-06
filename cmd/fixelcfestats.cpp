@@ -240,7 +240,7 @@ void run() {
   if (num_tracks < 1000000)
     WARN ("more than 1 million tracks should be used to ensure robust fixel-fixel connectivity");
   {
-    typedef DWI::Tractography::Mapping::SetVoxelDir SetVoxelDir;
+    using SetVoxelDir = DWI::Tractography::Mapping::SetVoxelDir;
     DWI::Tractography::Mapping::TrackLoader loader (track_file, num_tracks, "pre-computing fixel-fixel connectivity");
     DWI::Tractography::Mapping::TrackMapperBase mapper (index_image);
     mapper.set_upsample_ratio (DWI::Tractography::Mapping::determine_upsample_ratio (index_header, properties, 0.333f));

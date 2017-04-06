@@ -3,7 +3,7 @@
 usage_string = '''
 USAGE
 
-    [ENV] ./configure [name] [-debug] [-assert] [-profile] [-nogui] [-noshared]
+    [ENV] ./configure [-debug] [-assert] [-profile] [-nogui] [-noshared]
 
 
 DESCRIPTION
@@ -42,9 +42,11 @@ OPTIONS
 
     -verbose     enable more informative output.
 
-    -dev         enable the extended development build process
+    -dev         enable the extended development build process.
 
-    -R           used to generate an R module (implies -noshared)
+    -R           used to generate an R module (implies -noshared).
+
+    -openmp      enable OpenMP compiler flags.
 
 
 ENVIRONMENT VARIABLES
@@ -139,6 +141,7 @@ noshared = False
 static = False
 verbose = False
 R_module = False
+openmp = False
 sh_basis_def = None
 dev = False
 
@@ -158,6 +161,7 @@ for arg in sys.argv[1:]:
     R_module = True
     #noshared = True
     nogui = True
+  elif '-openmp'.startswith (arg): openmp = True
   else:
     print (usage_string)
     sys.exit (1)
@@ -777,6 +781,35 @@ except ( LinkError, RuntimeError ) as e:
 except:
   error ('unexpected exception!' + configure_log_hint)
 
+if not openmp:
+  eigen_cflags += [ '-DEIGEN_DONT_PARALLELIZE' ]
+
+
+
+
+
+# add openmp flags if required and available
+
+if openmp:
+  cpp_flags += [ '-fopenmp' ]
+  ld_flags  += [ '-fopenmp' ]
+  report ('Checking for OpenMP support: ')
+  try:
+    compile ('''
+    #include <Eigen/Core>
+    int main()
+    {
+      Eigen::initParallel();
+      Eigen::setNbThreads(4);
+      return (Eigen::nbThreads() == 4) ? 0 : 1;
+    }
+    ''', cpp_flags + eigen_cflags, ld_flags)
+    report ('ok\n')
+  except (CompileError, LinkError):
+    error ('OpenMP not found for this compiler/system.')
+  except:
+    error ('OpenMP not working as expected.')
+
 
 
 
@@ -804,6 +837,7 @@ except ( CompileError, LinkError ):
   MRtrix3 was unable to compile a test program involving JSON for Modern C++. Your compiler may not be sufficiently up-to-date.''' + configure_log_hint)
 except:
   error ('unexpected exception!' + configure_log_hint)
+
 
 
 
@@ -1140,9 +1174,6 @@ if R_module:
 
 
 
-
-
-
 # add debugging or profiling flags if requested:
 
 cpp_flags += [ '-Wall' ]
@@ -1166,7 +1197,9 @@ elif not debug:
 
 
 
-#
+
+
+
 # set macro for non-orthonormal SH basis if requested:
 if sh_basis_def is not None:
   cpp_flags += [ sh_basis_def ]

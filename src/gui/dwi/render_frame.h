@@ -39,7 +39,7 @@ namespace MR
       { MEMALIGN(RenderFrame)
           Q_OBJECT
 
-          typedef Renderer::mode_t mode_t;
+          using mode_t = Renderer::mode_t;
 
         public:
           RenderFrame (QWidget* parent);

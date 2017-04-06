@@ -32,7 +32,7 @@ namespace MR
       class FileDataVector : public Eigen::VectorXf
       { MEMALIGN(FileDataVector)
         public:
-          typedef Eigen::VectorXf base_t;
+          using base_t = Eigen::VectorXf;
           FileDataVector ();
           FileDataVector (const FileDataVector&);
           FileDataVector (FileDataVector&&);

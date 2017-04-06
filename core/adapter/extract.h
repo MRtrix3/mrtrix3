@@ -28,8 +28,8 @@ namespace MR
     { MEMALIGN (Extract1D<ImageType>)
       public:
 
-        typedef Base<Extract1D<ImageType>,ImageType> base_type;
-        typedef typename ImageType::value_type value_type;
+        using base_type = Base<Extract1D<ImageType>, ImageType>;
+        using value_type = typename ImageType::value_type;
 
         using base_type::ndim;
         using base_type::spacing;
@@ -73,7 +73,7 @@ namespace MR
             current_pos += increment;
             if (current_pos < nsize) 
               parent().index(axis) += indices[current_pos] - prev_pos;
-            else 
+            else
               parent().index(axis) = 0;
           }
           else 
@@ -113,8 +113,8 @@ namespace MR
     { MEMALIGN (Extract<ImageType>)
       public:
 
-        typedef Base<Extract<ImageType>,ImageType> base_type;
-        typedef typename ImageType::value_type value_type;
+        using base_type = Base<Extract<ImageType>, ImageType>;
+        using value_type = typename ImageType::value_type;
 
         using base_type::ndim;
         using base_type::spacing;

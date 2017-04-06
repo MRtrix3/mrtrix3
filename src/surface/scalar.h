@@ -29,7 +29,7 @@ namespace MR
     { MEMALIGN (Scalar)
 
       public:
-        typedef Eigen::Array<default_type, Eigen::Dynamic, 1> Base;
+        using Base = Eigen::Array<default_type, Eigen::Dynamic, 1>;
 
         Scalar (const std::string&, const Mesh&);
 

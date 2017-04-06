@@ -74,9 +74,9 @@ namespace MR
             friend class Program;
         };
 
-        typedef Object<gl::VERTEX_SHADER> Vertex;
-        typedef Object<gl::GEOMETRY_SHADER> Geometry;
-        typedef Object<gl::FRAGMENT_SHADER> Fragment;
+        using Vertex = Object<gl::VERTEX_SHADER>;
+        using Geometry = Object<gl::GEOMETRY_SHADER>;
+        using Fragment = Object<gl::FRAGMENT_SHADER>;
 
 
 

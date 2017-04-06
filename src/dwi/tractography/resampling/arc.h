@@ -28,6 +28,10 @@ namespace MR {
 
         // Also handles resampling along a fixed line
         class Arc : public BaseCRTP<Arc> { MEMALIGN(Arc)
+
+            using value_type = float;
+            using point_type = Eigen::Vector3f;
+
           private:
             class Plane { MEMALIGN(Plane)
               public:

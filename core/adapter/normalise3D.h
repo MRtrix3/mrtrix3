@@ -29,9 +29,9 @@ namespace MR
     { MEMALIGN(Normalise3D<ImageType>)
       public:
 
-        typedef Base<Normalise3D<ImageType>,ImageType> base_type;
-        typedef typename ImageType::value_type value_type;
-        typedef Normalise3D voxel_type;
+        using base_type = Base<Normalise3D<ImageType>, ImageType>;
+        using value_type = typename ImageType::value_type;
+        using voxel_type = Normalise3D;
 
         using base_type::name;
         using base_type::size;

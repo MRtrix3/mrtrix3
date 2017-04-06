@@ -25,7 +25,7 @@ namespace MR
       template <class ImageType>
       class __MinMax { NOMEMALIGN
         public:
-          typedef typename ImageType::value_type value_type;
+          using value_type = typename ImageType::value_type;
 
           __MinMax (value_type& overal_min, value_type& overal_max) :
             overal_min (overal_min), overal_max (overal_max),

@@ -45,14 +45,13 @@ OPTIONS
   + Stats::Options
 
   + OptionGroup ("Additional options for mrstats")
-  + Option ("allvolumes", "generate statistics across all image volumes, rather than one set of statistics per image volume")
-  + Option ("ignorezero", "ignore zero-valued input voxels.");
+  + Option ("allvolumes", "generate statistics across all image volumes, rather than one set of statistics per image volume");
 
 }
 
 
-typedef Stats::value_type value_type;
-typedef Stats::complex_type complex_type;
+using value_type = Stats::value_type;
+using complex_type = Stats::complex_type;
 
 
 class Volume_loop
@@ -128,7 +127,7 @@ void run ()
 
   vector<std::string> fields;
   opt = get_options ("output");
-  for (size_t n = 0; n < opt.size(); ++n) 
+  for (size_t n = 0; n < opt.size(); ++n)
     fields.push_back (opt[n][0]);
 
   if (App::log_level && fields.empty())

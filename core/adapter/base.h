@@ -35,7 +35,7 @@ namespace MR
     { MEMALIGN (Base<AdapterType,ImageType>)
       public:
 
-        typedef typename ImageType::value_type value_type;
+        using value_type = typename ImageType::value_type;
 
         Base (const ImageType& parent) : parent_ (parent) { }
 

@@ -16,9 +16,9 @@
 #define __min_mem_array_h__
 
 #include <algorithm>
-#include <assert.h>
-#include <stddef.h>
-#include <stdint.h>
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
 
 #include "types.h"
 

@@ -58,7 +58,7 @@ void usage ()
 }
 
 
-typedef float value_type;
+using value_type = float;
 
 
 void run ()

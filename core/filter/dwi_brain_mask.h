@@ -66,7 +66,7 @@ namespace MR
 
         template <class InputImageType, class OutputImageType>
         void operator() (InputImageType& input, OutputImageType& output) {
-            typedef typename InputImageType::value_type value_type;
+            using value_type = typename InputImageType::value_type;
 
             Header header (input);
             header.ndim() = 3;
