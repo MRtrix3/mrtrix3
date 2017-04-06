@@ -97,6 +97,9 @@ namespace MR
       if (H.ndim() > 4)
         throw Exception ("MGH format cannot support more than 4 dimensions for image \"" + H.name() + "\"");
 
+      if (H.datatype().bytes() > 1)
+        H.datatype().set_flag (DataType::BigEndian);
+
       mgh_header MGHH;
       mgh_other  MGHO;
       memset (&MGHH, 0x00, MGH_HEADER_SIZE);

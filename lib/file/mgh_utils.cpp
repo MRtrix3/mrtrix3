@@ -116,7 +116,7 @@ namespace MR
         if (Raw::fetch_<float> (&MGHO.tr, is_BE) != 0.0f)
           add_line (H.keyval()["comments"], "TR: "   + str (Raw::fetch_<float> (&MGHO.tr, is_BE)) + "ms");
         if (Raw::fetch_<float> (&MGHO.flip_angle, is_BE) != 0.0f)
-          add_line (H.keyval()["comments"], "Flip: " + str (Raw::fetch_<float> (&MGHO.flip_angle, is_BE) * 180.0 / Math::pi) + "deg");
+          add_line (H.keyval()["comments"], "Flip: " + str (Raw::fetch_<float> (&MGHO.flip_angle, is_BE)) + "deg");
         if (Raw::fetch_<float> (&MGHO.te, is_BE) != 0.0f)
           add_line (H.keyval()["comments"], "TE: "   + str (Raw::fetch_<float> (&MGHO.te, is_BE)) + "ms");
         if (Raw::fetch_<float> (&MGHO.ti, is_BE) != 0.0f)
@@ -135,7 +135,7 @@ namespace MR
 
       void write_header (mgh_header& MGHH, const Header& H)
       {
-        bool is_BE = H.datatype().is_big_endian();
+        const bool is_BE = true;
 
         const size_t ndim = H.ndim();
         if (ndim > 4)
@@ -212,8 +212,7 @@ namespace MR
 
       void write_other (mgh_other& MGHO, const Header& H)
       {
-
-        bool is_BE = H.datatype().is_big_endian();
+        const bool is_BE = true;
 
         const auto comments = H.keyval().find("comments");
         if (comments != H.keyval().end()) {
@@ -232,7 +231,6 @@ namespace MR
           }
         }
         Raw::store<float> (0.0, &MGHO.fov, is_BE);
-
       }
 
 
