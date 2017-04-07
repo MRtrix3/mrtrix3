@@ -1,1 +1,1 @@
-from _version import __version__
+from mrtrix3._version import __version__
