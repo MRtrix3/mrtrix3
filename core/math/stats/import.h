@@ -72,13 +72,6 @@ namespace MR
 
 
 
-      // TODO Implementation of the above class would be more difficult for 0.3.15 version of
-      //   fixelcfestats because it would need to keep track of a mapping between template
-      //   fixel index, and subject voxel / fixel index. Would it be preferable to do the
-      //   0.3.16 merge first?
-
-
-
       // During the initial import, the above class can simply be fed one subject at a time
       //   according to per-file path
       // However for use in GLMTTestVariable, a class is needed that stores a list of text files,
@@ -110,7 +103,7 @@ namespace MR
           }
 
         protected:
-          std::vector<std::shared_ptr<SubjectDataImportBase>> files;
+          vector<std::shared_ptr<SubjectDataImportBase>> files;
       };
 
 
@@ -118,7 +111,7 @@ namespace MR
       template <class SubjectDataImport>
       void CohortDataImport::initialise (const std::string& path)
       {
-        // TODO Read the provided text file one at a time
+        // Read the provided text file one at a time
         // For each file, create an instance of SubjectDataImport
         //   (which must derive from SubjectDataImportBase)
         const std::string directory = Path::dirname (path);
@@ -131,7 +124,8 @@ namespace MR
           if (line.size()) {
             const std::string filename (Path::join (directory, line));
             try {
-              files.push_back (std::make_shared<SubjectDataImport> (filename));
+              std::shared_ptr<SubjectDataImport> subject (new SubjectDataImport (filename));
+              files.emplace_back (subject);
             } catch (Exception& e) {
               throw Exception (e, "Reading text file \"" + Path::basename (path) + "\": input image data file not found: \"" + filename + "\"");
             }
