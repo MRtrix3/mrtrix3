@@ -39,7 +39,7 @@ namespace MR
    * */
 
     //! \cond skip
-    using ArgType = enum {
+    enum ArgType {
       Undefined,
       Text,
       Boolean,
