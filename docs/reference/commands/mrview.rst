@@ -122,6 +122,10 @@ Tractography tool options
 
 -  **-tractography.load tracks** Load the specified tracks file into the tractography tool.
 
+-  **-tractography.thickness value** Line thickness of tractography display, [-1.0, 1.0], default is 0.0.
+
+-  **-tractography.opacity value** Opacity of tractography display, [0.0, 1.0], default is 1.0.
+
 ODF tool options
 ^^^^^^^^^^^^^^^^
 

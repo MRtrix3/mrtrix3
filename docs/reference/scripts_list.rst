@@ -14,8 +14,8 @@ List of MRtrix3 scripts
     scripts/5ttgen
     scripts/dwi2response
     scripts/dwibiascorrect
-    scripts/dwiintensitynorm
     scripts/dwigradcheck
+    scripts/dwiintensitynorm
     scripts/dwipreproc
     scripts/labelsgmfix
     scripts/population_template
