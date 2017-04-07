@@ -13,6 +13,8 @@
  * 
  */
 
+#include <cctype>
+
 #include "header.h"
 #include "raw.h"
 #include "file/ofstream.h"
@@ -111,22 +113,42 @@ namespace MR
 
 
 
-      void read_other (Header& H, const mgh_other& MGHO, const bool is_BE) {
-
+      void read_other (Header& H, const mgh_other& MGHO, const bool is_BE)
+      {
         if (Raw::fetch_<float> (&MGHO.tr, is_BE) != 0.0f)
-          add_line (H.keyval()["comments"], "TR: "   + str (Raw::fetch_<float> (&MGHO.tr, is_BE)) + "ms");
-        if (Raw::fetch_<float> (&MGHO.flip_angle, is_BE) != 0.0f)
-          add_line (H.keyval()["comments"], "Flip: " + str (Raw::fetch_<float> (&MGHO.flip_angle, is_BE)) + "deg");
+          add_line (H.keyval()["comments"], "TR: "   + str (Raw::fetch_<float> (&MGHO.tr, is_BE), 6) + "ms");
+        if (Raw::fetch_<float> (&MGHO.flip_angle, is_BE) != 0.0f) // Radians in MGHO -> degrees in header
+          add_line (H.keyval()["comments"], "Flip: " + str (Raw::fetch_<float> (&MGHO.flip_angle, is_BE) * 180.0 / Math::pi, 6) + "deg");
         if (Raw::fetch_<float> (&MGHO.te, is_BE) != 0.0f)
-          add_line (H.keyval()["comments"], "TE: "   + str (Raw::fetch_<float> (&MGHO.te, is_BE)) + "ms");
+          add_line (H.keyval()["comments"], "TE: "   + str (Raw::fetch_<float> (&MGHO.te, is_BE), 6) + "ms");
         if (Raw::fetch_<float> (&MGHO.ti, is_BE) != 0.0f)
-          add_line (H.keyval()["comments"], "TI: "   + str (Raw::fetch_<float> (&MGHO.ti, is_BE)) + "ms");
+          add_line (H.keyval()["comments"], "TI: "   + str (Raw::fetch_<float> (&MGHO.ti, is_BE), 6) + "ms");
 
         // Ignore FoV field
 
-        for (const auto i : MGHO.tags) 
-          add_line (H.keyval()["comments"], i);
+/*
+ * Although this code removes the wacky nullspace that these image files have
+ * between the actual tag fields, greatly neatening the header "comments"
+ * contents, FreeSurfer is subsequently unable to open that file. It seems as
+ * though they expect literally a std::vector object at &MGHO.tags, rather
+ * than a list of null-terminated strings...
 
+        for (const auto i : MGHO.tags) {
+          std::string s;
+          for (auto c : i) {
+            if (isprint(c)) {
+              s.push_back (c);
+            } else if (s.size()) {
+              add_line (H.keyval()["comments"], s);
+              s.clear();
+            }
+          }
+          if (s.size())
+            add_line (H.keyval()["comments"], s);
+        }
+*/
+        for (const auto i : MGHO.tags)
+          add_line (H.keyval()["comments"], i);
       }
 
 
@@ -220,8 +242,8 @@ namespace MR
             const std::string key = i.substr (0, i.find_first_of (':'));
             if (key == "TR")
               Raw::store<float> (to<float> (i.substr (3)), &MGHO.tr, is_BE);
-            else if (key == "Flip")
-              Raw::store<float> (to<float> (i.substr (5)), &MGHO.flip_angle, is_BE);
+            else if (key == "Flip") // Degrees in header -> radians in MGHO
+              Raw::store<float> (to<float> (i.substr (5)) * Math::pi / 180.0, &MGHO.flip_angle, is_BE);
             else if (key == "TE")
               Raw::store<float> (to<float> (i.substr (3)), &MGHO.te, is_BE);
             else if (key == "TI")
@@ -240,8 +262,10 @@ namespace MR
       {
         File::OFStream out (path, std::ios_base::out | std::ios_base::app);
         out.write ((char*) &MGHO, 5 * sizeof (float));
-        for (std::vector<std::string>::const_iterator i = MGHO.tags.begin(); i != MGHO.tags.end(); ++i)
+        for (std::vector<std::string>::const_iterator i = MGHO.tags.begin(); i != MGHO.tags.end(); ++i) {
+          //std::cerr << "Length " << i->size() << ", string: " << i->c_str() << "\n";
           out.write (i->c_str(), i->size() + 1);
+        }
         out.close();
       }
 

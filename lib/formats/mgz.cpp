@@ -41,7 +41,7 @@ namespace MR
 
       try {
 
-        mgh_other  MGHO;
+        mgh_other MGHO;
         memset (&MGHO, 0x00, 5 * sizeof(float));
         MGHO.tags.clear();
 
