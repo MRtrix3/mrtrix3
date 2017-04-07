@@ -193,7 +193,7 @@ namespace MR
        * particular type of data being tested. Therefore an Importer class must be
        * defined that is responsible for acquiring and vectorising these data.
        */
-      class GLMTTestVariable : public GLMTestBase { NOMEMALIGN
+      class GLMTTestVariable : public GLMTestBase { MEMALIGN(GLMTTestVariable)
         public:
           GLMTTestVariable (const vector<CohortDataImport>& importers, const matrix_type& measurements, const matrix_type& design, const matrix_type& contrasts);
 

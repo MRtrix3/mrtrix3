@@ -137,7 +137,7 @@ void write_fixel_output (const std::string& filename,
 //   specific subject based on the string path to the image file for
 //   that subject
 class SubjectFixelImport : public SubjectDataImportBase
-{ NOMEMALIGN
+{ MEMALIGN(SubjectFixelImport)
   public:
     SubjectFixelImport (const std::string& path) :
         SubjectDataImportBase (path),
@@ -419,7 +419,7 @@ void run()
     vector_type abs_effect_size (num_fixels), std_effect_size (num_fixels), stdev (num_fixels);
     {
       class Source
-      {
+      { NOMEMALIGN
         public:
           Source (const size_t num_fixels) :
               num_fixels (num_fixels),
@@ -443,7 +443,7 @@ void run()
       };
 
       class Functor
-      {
+      { MEMALIGN(Functor)
         public:
           Functor (const matrix_type& data, std::shared_ptr<GLMTestBase> glm_test, const matrix_type& contrasts,
                    matrix_type& betas, vector_type& abs_effect_size, vector_type& std_effect_size, vector_type& stdev) :

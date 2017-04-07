@@ -45,7 +45,7 @@ namespace MR
        * cases, within the design matrix).
        */
       class SubjectDataImportBase
-      {
+      { NOMEMALIGN
         public:
           SubjectDataImportBase (const std::string& path) :
               path (path) { }
@@ -86,7 +86,7 @@ namespace MR
       //   for each subject a mechanism of data access is spawned & remains open throughout
       //   processing.
       class CohortDataImport
-      {
+      { NOMEMALIGN
         public:
           CohortDataImport() { }
 
