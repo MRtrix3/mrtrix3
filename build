@@ -86,6 +86,7 @@ bin_dir = 'bin'
 cmd_dir = 'cmd'
 lib_dir = 'core'
 misc_dir = 'src'
+script_dir = os.path.join('lib', 'mrtrix3')
 tmp_dir = 'tmp'
 
 cpp_suffix = '.cpp'
@@ -1090,7 +1091,7 @@ def update_user_docs ():
 #                              SCRIPT VERSION                             #
 ###########################################################################
 
-with open (os.path.join(target_lib_dir,'mrtrix3','_version.py'),'w') as vfile:
+with open (os.path.join(script_dir,'_version.py'),'w') as vfile:
   vfile.write('__version__ = "'+get_git_version (mrtrix_dir[-1])+'"\n')
 
 
