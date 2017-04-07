@@ -126,13 +126,7 @@ namespace MR
 
         // Ignore FoV field
 
-/*
- * Although this code removes the wacky nullspace that these image files have
- * between the actual tag fields, greatly neatening the header "comments"
- * contents, FreeSurfer is subsequently unable to open that file. It seems as
- * though they expect literally a std::vector object at &MGHO.tags, rather
- * than a list of null-terminated strings...
-
+        // Do this manually to get rid of a lot of non-printable bytes
         for (const auto i : MGHO.tags) {
           std::string s;
           for (auto c : i) {
@@ -146,9 +140,6 @@ namespace MR
           if (s.size())
             add_line (H.keyval()["comments"], s);
         }
-*/
-        for (const auto i : MGHO.tags)
-          add_line (H.keyval()["comments"], i);
       }
 
 
@@ -262,10 +253,11 @@ namespace MR
       {
         File::OFStream out (path, std::ios_base::out | std::ios_base::app);
         out.write ((char*) &MGHO, 5 * sizeof (float));
-        for (std::vector<std::string>::const_iterator i = MGHO.tags.begin(); i != MGHO.tags.end(); ++i) {
-          //std::cerr << "Length " << i->size() << ", string: " << i->c_str() << "\n";
-          out.write (i->c_str(), i->size() + 1);
-        }
+        // Do *not* write metadata string fields; don't yet know
+        //   formatting expected by FreeSurfer (is more than just
+        //   null-terminated strings)
+        //for (std::vector<std::string>::const_iterator i = MGHO.tags.begin(); i != MGHO.tags.end(); ++i)
+        //  out.write (i->c_str(), i->size() + 1);
         out.close();
       }
 
