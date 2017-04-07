@@ -20,6 +20,7 @@
 #include "file/mgh_utils.h"
 #include "image_io/default.h"
 #include "formats/list.h"
+#include "raw.h"
 
 namespace MR
 {
@@ -43,8 +44,21 @@ namespace MR
         mgh_other MGHO;
         memcpy (&MGHO, fmap.address() + other_offset, other_floats_size);
         MGHO.tags.clear();
-        if (other_tags_offset < fmap.size()) {
 
+        uint8_t* p_current = fmap.address() + other_tags_offset;
+
+        while (p_current < fmap.address() + fmap.size()) {
+
+          int32_t tag = Raw::fetch_BE<int32_t> (p_current);
+          int64_t size = Raw::fetch_BE<int64_t> (p_current+4);
+          if (size) 
+            add_line (H.keyval()["comments"], "[TAG "+str(tag) + "]: "   + (const char*) (p_current+12));
+
+          p_current += 12 + size;
+        }
+
+        /*
+        if (other_tags_offset < fmap.size()) {
           // It's memory-mapped, so should be able to use memcpy to do the initial grab
           const size_t total_text_length = fmap.size() - other_tags_offset;
           char* const tags = new char [total_text_length];
@@ -60,8 +74,8 @@ namespace MR
           }
 
           delete[] tags;
-
         }
+*/
 
         File::MGH::read_other (H, MGHO, is_BE);
 
