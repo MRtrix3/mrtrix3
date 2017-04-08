@@ -7,7 +7,7 @@ echo "" >> $LOG
 
 retval=0
 
-for f in $(find . -type f -name '*.h' -o -name '*.cpp' | grep -v '_moc.cpp'); do 
+for f in $(find cmd core src -type f -name '*.h' -o -name '*.cpp' | grep -v '_moc.cpp'); do 
 
 # files to ignore:
   [[ "$f" -ef "src/gui/shview/icons.h" || 
@@ -66,14 +66,8 @@ for f in $(find . -type f -name '*.h' -o -name '*.cpp' | grep -v '_moc.cpp'); do
     perl -pe 's|/\*.*?\*/||g' | \
 # remove quoted strings:
     perl -pe 's/(")(\\"|.)*?"//g' | \
-# remove any text within a template declaration (i.e. within <>):
-    perl -pe 's|<[^{};<]*?>||g' | \
-# and do it multiple times to handle nested declarations:
-    perl -pe 's|<[^{};<]*?>||g' | \
-    perl -pe 's|<[^{};<]*?>||g' | \
-    perl -pe 's|<[^{};<]*?>||g' | \
 # match for the parts we're interested in and output just the bits that match:
-    grep -Eo '(?<!::)std::vector\>' 
+    grep -Po '(?<!::)std::vector\b' 
   )
 
 
@@ -92,14 +86,8 @@ for f in $(find . -type f -name '*.h' -o -name '*.cpp' | grep -v '_moc.cpp'); do
     perl -pe 's|/\*.*?\*/||g' | \
 # remove quoted strings:
     perl -pe 's/(")(\\"|.)*?"//g' | \
-# remove any text within a template declaration (i.e. within <>):
-    perl -pe 's|<[^{};<]*?>||g' | \
-# and do it multiple times to handle nested declarations:
-    perl -pe 's|<[^{};<]*?>||g' | \
-    perl -pe 's|<[^{};<]*?>||g' | \
-    perl -pe 's|<[^{};<]*?>||g' | \
 # match for the parts we're interested in and output just the bits that match:
-    grep -Eo '(?<!::)std::make_shared\>' 
+    grep -Po '(?<!::)std::make_shared\b' 
   )
 
 # if anything is left after that, show it:
@@ -120,8 +108,9 @@ else
   echo "FAIL"
   
   echo "" >> $LOG
-  echo "Please add MEMALIGN() macro to the class declarations identified above
-and replace all occurrences of std::vector with MR::vector" >> $LOG
+  echo "Please add MEMALIGN() macro to the class declarations identified above,
+replace all occurrences of std::vector with MR::vector,
+and avoid use of std::make_shared" >> $LOG
   exit 1
 fi
 
