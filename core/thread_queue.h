@@ -629,7 +629,7 @@ namespace MR
 
     template <class T> class Queue<__Batch<T>> { NOMEMALIGN
       private:
-        using BatchType = std::vector<T>;
+        using BatchType = vector<T>;
         using BatchQueue = Queue<BatchType>;
 
       public:

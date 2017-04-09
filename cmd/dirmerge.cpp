@@ -44,7 +44,7 @@ ARGUMENTS
 
 using value_type = double;
 using Direction = std::array<value_type,3>;
-using DirectionSet = std::vector<Direction>;
+using DirectionSet = vector<Direction>;
 
 
 struct OutDir { MEMALIGN(OutDir)
