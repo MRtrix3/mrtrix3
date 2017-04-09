@@ -91,8 +91,8 @@ namespace MR
                 DEBUG ("Reorienting FODs...");
                 std::shared_ptr<Image<default_type> > im1_image_reoriented;
                 std::shared_ptr<Image<default_type> > im2_image_reoriented;
-                im1_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im1_image));
-                im2_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im2_image));
+                im1_image_reoriented = make_shared<Image<default_type>>(Image<default_type>::scratch (params.im1_image));
+                im2_image_reoriented = make_shared<Image<default_type>>(Image<default_type>::scratch (params.im2_image));
                 {
                    LogLevelLatch log_level (0);
                   Registration::Transform::reorient (params.im1_image, *im1_image_reoriented, params.transformation.get_transform_half(), directions);
@@ -215,8 +215,8 @@ namespace MR
                 DEBUG ("Reorienting FODs...");
                 std::shared_ptr<Image<default_type> > im1_image_reoriented;
                 std::shared_ptr<Image<default_type> > im2_image_reoriented;
-                im1_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im1_image));
-                im2_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im2_image));
+                im1_image_reoriented = make_shared<Image<default_type>>(Image<default_type>::scratch (params.im1_image));
+                im2_image_reoriented = make_shared<Image<default_type>>(Image<default_type>::scratch (params.im2_image));
                 {
                    LogLevelLatch log_level (0);
                   Registration::Transform::reorient (params.im1_image, *im1_image_reoriented, params.transformation.get_transform_half(), directions);

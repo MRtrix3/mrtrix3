@@ -38,7 +38,7 @@ namespace MR
 
           public:
 
-            using BaseType = std::vector<Eigen::Vector3f>;
+            using BaseType = vector<Eigen::Vector3f>;
 
             enum class status_t { INVALID, SEED_REJECTED, TRACK_REJECTED, ACCEPTED };
 

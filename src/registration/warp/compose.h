@@ -175,8 +175,8 @@ namespace MR
         } else {
           scale_factor = std::pow (2, std::ceil (std::log ((max_norm * step) / (min_vox_size / 2.0)) / std::log (2.0)));
 
-          std::shared_ptr<Image<default_type>> scaled_update = std::make_shared<Image<default_type> >(Image<default_type>::scratch (update));
-          std::shared_ptr<Image<default_type>> composed = std::make_shared<Image<default_type> >(Image<default_type>::scratch (update));
+          std::shared_ptr<Image<default_type>> scaled_update = make_shared<Image<default_type> >(Image<default_type>::scratch (update));
+          std::shared_ptr<Image<default_type>> composed = make_shared<Image<default_type> >(Image<default_type>::scratch (update));
 
           // Scaling
           default_type scaled_step = step / scale_factor; // apply the step size and scale factor at once

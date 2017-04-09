@@ -86,11 +86,11 @@ namespace MR
       }
       size_t stage_iterations, gd_max_iter;
       default_type scale_factor;
-      std::vector<OptimiserAlgoType> optimisers;
+      vector<OptimiserAlgoType> optimisers;
       OptimiserAlgoType optimiser_default, optimiser_first, optimiser_last;
       default_type loop_density;
       ssize_t fod_lmax;
-      std::vector<std::string> diagnostics_images;
+      vector<std::string> diagnostics_images;
     } ;
 
     class Linear

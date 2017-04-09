@@ -38,7 +38,7 @@ namespace MR {
         { MEMALIGN(ParticleGrid)
         public:
           
-          using ParticleVectorType = std::vector<Particle*>;
+          using ParticleVectorType = vector<Particle*>;
           
           template <class HeaderType>
           ParticleGrid(const HeaderType& image)

@@ -180,7 +180,7 @@ void run ()
     stdev += i->get_weight() * Math::pow2 (i->get_length() - mean_length);
   stdev = std::sqrt (stdev / (((count - 1) / float(count)) * sum_weights));
 
-  std::vector<std::string> fields;
+  vector<std::string> fields;
   auto opt = get_options ("output");
   for (size_t n = 0; n < opt.size(); ++n)
     fields.push_back (opt[n][0]);
