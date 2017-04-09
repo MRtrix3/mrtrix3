@@ -1091,7 +1091,7 @@ def update_user_docs ():
 #                              SCRIPT VERSION                             #
 ###########################################################################
 
-with open (os.path.join(script_dir,'_version.py'),'w') as vfile:
+with open (os.path.join(mrtrix_dir[-1], script_dir, '_version.py'),'w') as vfile:
   vfile.write('__version__ = "'+get_git_version (mrtrix_dir[-1])+'"\n')
 
 
