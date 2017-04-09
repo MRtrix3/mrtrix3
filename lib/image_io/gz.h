@@ -29,19 +29,25 @@ namespace MR
     {
       public:
         GZ (GZ&&) = default;
-        GZ (const Header& header, size_t file_header_size) :
+        GZ (const Header& header, size_t file_header_size, size_t file_tailer_size = 0) :
           Base (header), 
           lead_in_size (file_header_size),
-          lead_in (file_header_size ? new uint8_t [file_header_size] : nullptr) { }
+          lead_out_size (file_tailer_size),
+          lead_in (file_header_size ? new uint8_t [file_header_size] : nullptr),
+          lead_out (file_tailer_size ? new uint8_t [file_tailer_size] : nullptr) { }
 
         uint8_t* header () {
           return lead_in.get();
         }
 
+        uint8_t* tailer () {
+          return lead_out.get();
+        }
+
       protected:
         int64_t  bytes_per_segment;
-        size_t   lead_in_size;
-        std::unique_ptr<uint8_t[]> lead_in;
+        size_t   lead_in_size, lead_out_size;
+        std::unique_ptr<uint8_t[]> lead_in, lead_out;
 
         virtual void load (const Header&, size_t);
         virtual void unload (const Header&);

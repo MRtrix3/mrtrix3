@@ -96,6 +96,8 @@ namespace MR
             }
             last += BYTES_PER_ZCALL;
             zf.write (reinterpret_cast<const char*> (address), last - address);
+            if (lead_out)
+              zf.write (reinterpret_cast<const char*> (lead_out.get()), lead_out_size);
           }
         }
 
