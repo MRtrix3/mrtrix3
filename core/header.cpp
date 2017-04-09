@@ -288,7 +288,7 @@ namespace MR
     H.reset_intensity_scaling();
     H.sanitise();
     H.format_ = "scratch image";
-    H.io = std::unique_ptr<ImageIO::Scratch> (new ImageIO::Scratch (H)); 
+    H.io = make_unique<ImageIO::Scratch> (H); 
     return H;
   }
 

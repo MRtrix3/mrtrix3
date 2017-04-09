@@ -250,6 +250,11 @@ namespace MR
       return std::shared_ptr<X> (new X (std::forward<Args> (args)...));
     }
 
+  template <typename X, typename... Args>
+    inline std::unique_ptr<X> make_unique (Args&&... args) {
+      return std::unique_ptr<X> (new X (std::forward<Args> (args)...));
+    }
+
 }
 
 namespace std
