@@ -18,6 +18,7 @@
 #include "file/gz.h"
 #include "file/mgh_utils.h"
 #include "header.h"
+#include "raw.h"
 #include "image_io/gz.h"
 #include "formats/list.h"
 
@@ -47,18 +48,24 @@ namespace MR
 
         zf.seek (MGH_DATA_OFFSET + footprint (H));
         zf.read (reinterpret_cast<char*> (&MGHO), 5 * sizeof(float));
+        File::MGH::read_other (H, MGHO, is_BE);
 
         try {
 
           do {
-            std::string tag = zf.getline();
-            if (!tag.empty())
-              MGHO.tags.push_back (tag);
+            int32_t tag; zf.read (reinterpret_cast<char*> (&tag), sizeof(tag)); tag = ByteOrder::BE (tag); 
+            int64_t size; zf.read (reinterpret_cast<char*> (&size), sizeof(size)); size = ByteOrder::BE (size);
+            if (size > 0) {
+              std::unique_ptr<char[]> buf (new char [size+1]);
+              zf.read (buf.get(), size);
+              buf[size] = '\0';
+              if (buf[0])
+                add_line (H.keyval()["comments"], "[MGH TAG "+str(tag) + "]: "   + buf.get());
+            }
           } while (!zf.eof());
 
         } catch (...) { }
 
-        File::MGH::read_other (H, MGHO, is_BE);
 
       } catch (...) { }
 

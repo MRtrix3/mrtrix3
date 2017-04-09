@@ -43,41 +43,21 @@ namespace MR
 
         mgh_other MGHO;
         memcpy (&MGHO, fmap.address() + other_offset, other_floats_size);
-        MGHO.tags.clear();
+        File::MGH::read_other (H, MGHO, is_BE);
 
+        MGHO.tags.clear();
         uint8_t* p_current = fmap.address() + other_tags_offset;
 
         while (p_current < fmap.address() + fmap.size()) {
 
           int32_t tag = Raw::fetch_BE<int32_t> (p_current);
           int64_t size = Raw::fetch_BE<int64_t> (p_current+4);
-          if (size) 
-            add_line (H.keyval()["comments"], "[TAG "+str(tag) + "]: "   + (const char*) (p_current+12));
+          if (size & p_current[12]) 
+            add_line (H.keyval()["comments"], "[MGH TAG "+str(tag) + "]: "   + (const char*) (p_current+12));
 
           p_current += 12 + size;
         }
 
-        /*
-        if (other_tags_offset < fmap.size()) {
-          // It's memory-mapped, so should be able to use memcpy to do the initial grab
-          const size_t total_text_length = fmap.size() - other_tags_offset;
-          char* const tags = new char [total_text_length];
-          memcpy (tags, fmap.address() + other_tags_offset, total_text_length);
-
-          // Extract and separate null-terminated strings
-          size_t char_offset = 0;
-          while (char_offset < total_text_length) {
-            std::string line (tags + char_offset);
-            if (line.size())
-              MGHO.tags.push_back (line);
-            char_offset += line.size() + 1;
-          }
-
-          delete[] tags;
-        }
-*/
-
-        File::MGH::read_other (H, MGHO, is_BE);
 
       } // End reading other data beyond the end of the image data
 
