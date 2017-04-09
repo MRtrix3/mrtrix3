@@ -66,13 +66,13 @@ namespace MR
         template <class InputImageType, class OutputImageType>
         void operator() (InputImageType& input, OutputImageType& output)
         {
-          std::shared_ptr <Image<bool> > in = std::make_shared<Image<bool> > (Image<bool>::scratch (input));
+          std::shared_ptr <Image<bool> > in = make_shared<Image<bool> > (Image<bool>::scratch (input));
           copy (input, *in);
           std::shared_ptr <Image<bool> > out;
           std::shared_ptr<ProgressBar> progress (message.size() ? new ProgressBar (message, npass + 1) : nullptr);
 
           for (unsigned int pass = 0; pass < npass; pass++) {
-            out = std::make_shared<Image<bool> > (Image<bool>::scratch (input));
+            out = make_shared<Image<bool> > (Image<bool>::scratch (input));
             for (auto l = Loop (*in) (*in, *out); l; ++l)
              out->value() = erode (*in);
 
