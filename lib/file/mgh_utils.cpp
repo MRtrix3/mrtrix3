@@ -125,7 +125,7 @@ namespace MR
           add_line (H.keyval()["comments"], "TI: "   + str (Raw::fetch_<float> (&MGHO.ti, is_BE), 6) + "ms");
 
         // Ignore FoV field
-
+/*
         // Do this manually to get rid of a lot of non-printable bytes
         for (const auto i : MGHO.tags) {
           std::string s;
@@ -140,6 +140,7 @@ namespace MR
           if (s.size())
             add_line (H.keyval()["comments"], s);
         }
+        */
       }
 
 
@@ -225,6 +226,7 @@ namespace MR
 
       void write_other (mgh_other& MGHO, const Header& H)
       {
+        MGHO.tags.clear();
         const bool is_BE = true;
 
         const auto comments = H.keyval().find("comments");
@@ -239,30 +241,20 @@ namespace MR
               Raw::store<float> (to<float> (i.substr (3)), &MGHO.te, is_BE);
             else if (key == "TI")
               Raw::store<float> (to<float> (i.substr (3)), &MGHO.ti, is_BE);
-            else
-              MGHO.tags.push_back (i);
+            else if (key.compare (0, 9, "[MGH TAG ") == 0) {
+              auto pos = key.find ("]");
+              if (pos == key.npos) 
+                continue;
+              int32_t tag = ByteOrder::BE (to<int32_t> (key.substr (9, pos)));
+              auto content = i.substr (pos+3);
+              int64_t size = ByteOrder::BE (int64_t (content.size()));
+              MGHO.tags.push_back (std::make_tuple (tag, size, content));
+            }
           }
         }
+
         Raw::store<float> (0.0, &MGHO.fov, is_BE);
       }
-
-
-
-
-      void write_other_to_file (const std::string& path, const mgh_other& MGHO)
-      {
-        File::OFStream out (path, std::ios_base::out | std::ios_base::app);
-        out.write ((char*) &MGHO, 5 * sizeof (float));
-        // Do *not* write metadata string fields; don't yet know
-        //   formatting expected by FreeSurfer (is more than just
-        //   null-terminated strings)
-        //for (std::vector<std::string>::const_iterator i = MGHO.tags.begin(); i != MGHO.tags.end(); ++i)
-        //  out.write (i->c_str(), i->size() + 1);
-        out.close();
-      }
-
-
-
 
     }
   }

@@ -107,14 +107,27 @@ namespace MR
         H.datatype().unset_flag (DataType::LittleEndian);
       }
 
-      std::unique_ptr<ImageIO::GZ> io_handler (new ImageIO::GZ (H, MGH_DATA_OFFSET));
+      mgh_other  MGHO;
+      memset (&MGHO, 0x00, 5 * sizeof(float));
+      MGHO.tags.clear();
+      File::MGH::write_other (MGHO, H);
+      size_t lead_out_size = 5*sizeof(float);
+      for (const auto& tag : MGHO.tags) 
+        lead_out_size += sizeof(int32_t) + sizeof(int64_t) + std::get<2>(tag).size();
+
+      std::unique_ptr<ImageIO::GZ> io_handler (new ImageIO::GZ (H, MGH_DATA_OFFSET, lead_out_size));
 
       File::MGH::write_header (*reinterpret_cast<mgh_header*> (io_handler->header()), H);
 
-      // Figure out how to write the post-data header information to the zipped file
-      // This is not possible without implementation of a dedicated io_handler
-      // Not worth the effort, unless a use case arises where this information absolutely
-      //   must be written
+      uint8_t* p = io_handler->tailer();
+      memcpy (p, &MGHO, 5*sizeof (float));
+      p += 5*sizeof(float);
+
+      for (const auto& tag : MGHO.tags) {
+        memcpy (p, &std::get<0>(tag), sizeof(int32_t)); p += sizeof(int32_t);
+        memcpy (p, &std::get<1>(tag), sizeof(int64_t)); p += sizeof(int64_t);
+        memcpy (p, std::get<2>(tag).c_str(), std::get<2>(tag).size()); p += std::get<2>(tag).size();
+      }
 
       File::create (H.name());
       io_handler->files.push_back (File::Entry (H.name(), MGH_DATA_OFFSET));

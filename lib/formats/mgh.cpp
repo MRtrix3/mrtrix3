@@ -110,7 +110,14 @@ namespace MR
 
       File::resize (H.name(), MGH_DATA_OFFSET + footprint(H));
 
-      File::MGH::write_other_to_file (H.name(), MGHO);
+      out.open (H.name(), std::ios_base::out | std::ios_base::app);
+      out.write ((char*) &MGHO, 5 * sizeof (float));
+      for (const auto& tag : MGHO.tags) {
+        out.write (reinterpret_cast<const char*> (&std::get<0>(tag)), sizeof(int32_t));
+        out.write (reinterpret_cast<const char*> (&std::get<1>(tag)), sizeof(int64_t));
+        out.write (std::get<2>(tag).c_str(), std::get<2>(tag).size());
+      }
+      out.close();
 
       std::unique_ptr<ImageIO::Base> io_handler (new ImageIO::Default (H));
       io_handler->files.push_back (File::Entry (H.name(), MGH_DATA_OFFSET));

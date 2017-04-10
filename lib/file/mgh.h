@@ -88,7 +88,7 @@ extern "C" {
     float ti;         /*!< milliseconds */
     float fov;        /*!< IGNORE THIS FIELD (data is inconsistent) */
 
-    std::vector<std::string> tags; /*!< variable length char strings */
+    std::vector<std::tuple<int32_t,int64_t,std::string>> tags; /*!< variable length char strings */
 
   };
 

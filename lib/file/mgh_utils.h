@@ -35,8 +35,6 @@ namespace MR
       void write_header (mgh_header& MGHH, const Header& H);
       void write_other  (mgh_other&  MGHO, const Header& H);
 
-      void write_other_to_file (const std::string&, const mgh_other&);
-
     }
   }
 }
