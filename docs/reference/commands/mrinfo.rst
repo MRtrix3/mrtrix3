@@ -29,6 +29,8 @@ The command can also write the diffusion gradient table from a single input imag
 Options
 -------
 
+-  **-all** print all properties, rather than the first 5 of each.
+
 -  **-format** image file format
 
 -  **-ndim** number of image dimensions

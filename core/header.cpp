@@ -1,4 +1,3 @@
-<<<<<<< HEAD:core/header.cpp
 /* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
