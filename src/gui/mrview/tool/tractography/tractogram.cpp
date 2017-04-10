@@ -1,17 +1,17 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
- */  
+ *
+ */
 
 #include "progressbar.h"
 #include "gui/mrview/tool/tractography/tractogram.h"
@@ -40,7 +40,7 @@ namespace MR
         {
           const Tractogram& tractogram = dynamic_cast<const Tractogram&>(displayable);
 
-          std::string source = 
+          std::string source =
             "layout (location = 0) in vec3 vertex;\n"
             "layout (location = 1) in vec3 prev_vertex;\n"
             "layout (location = 2) in vec3 next_vertex;\n";
@@ -141,7 +141,7 @@ namespace MR
             source += "out vec3 g_tangent;\n";
 
           if (color_type == TrackColourType::ScalarFile || color_type == TrackColourType::Ends)
-            source += 
+            source +=
               "in vec3 v_colour[];\n"
               "out vec3 fColour;\n";
 
@@ -152,8 +152,8 @@ namespace MR
 
           source += "void main() {\n";
 
-          if (do_crop_to_slab) 
-            source += 
+          if (do_crop_to_slab)
+            source +=
               "  if (v_include[0] < 0.0 && v_include[1] < 0.0) return;\n"
               "  if (v_include[0] > 1.0 && v_include[1] > 1.0) return;\n";
 
@@ -169,7 +169,7 @@ namespace MR
 
           if (use_lighting)
             source += "  g_height = 0.0;\n";
-          source += 
+          source +=
             "  gl_Position = gl_in[0].gl_Position - vec4(v_end[0],0,0);\n"
             "  EmitVertex();\n";
 
@@ -197,7 +197,7 @@ namespace MR
 
           if (use_lighting)
             source += "  g_height = PI;\n";
-          source += 
+          source +=
             "  gl_Position = gl_in[1].gl_Position + vec4 (v_end[1],0,0);\n"
             "  EmitVertex();\n"
             "}\n";
@@ -225,7 +225,7 @@ namespace MR
             source += "in float g_amp;\n";
 
           if (use_lighting)
-            source += 
+            source +=
               "uniform float ambient, diffuse, specular, shine;\n"
               "uniform vec3 light_pos;\n"
               "in float g_height;\n";
@@ -305,7 +305,7 @@ namespace MR
 
 
 
-        void Tractogram::Shader::update (const Displayable& object) 
+        void Tractogram::Shader::update (const Displayable& object)
         {
           const Tractogram& tractogram (dynamic_cast<const Tractogram&> (object));
           do_crop_to_slab = tractogram.tractography_tool.crop_to_slab();
@@ -579,10 +579,10 @@ namespace MR
           file.close();
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
-        
-        
-        
-        
+
+
+
+
         void Tractogram::load_end_colours()
         {
           // These data are now retained in memory - no need to re-scan track file
@@ -795,9 +795,9 @@ namespace MR
 
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
-        
-        
-        
+
+
+
         void Tractogram::erase_colour_data()
         {
           MRView::GrabContext context;
@@ -873,7 +873,7 @@ namespace MR
         void Tractogram::load_tracks_onto_GPU (std::vector<Eigen::Vector3f>& buffer,
             std::vector<GLint>& starts,
             std::vector<GLint>& sizes,
-            size_t& tck_count) 
+            size_t& tck_count)
         {
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
@@ -900,12 +900,12 @@ namespace MR
           tck_count = 0;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
-        
-        
-        
-        
-        
-        void Tractogram::load_end_colours_onto_GPU (std::vector<Eigen::Vector3f>& buffer) 
+
+
+
+
+
+        void Tractogram::load_end_colours_onto_GPU (std::vector<Eigen::Vector3f>& buffer)
         {
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 

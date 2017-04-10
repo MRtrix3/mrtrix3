@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 
 #include "mrtrix.h"
@@ -213,7 +213,7 @@ namespace MR
 
             main_box->addWidget (general_groupbox, 0);
 
-            lighting = new GL::Lighting (parent); 
+            lighting = new GL::Lighting (parent);
             lighting->diffuse = 0.8;
             lighting->shine = 5.0;
             connect (lighting, SIGNAL (changed()), SLOT (hide_all_slot()));
@@ -336,7 +336,7 @@ namespace MR
         }
 
 
-        void Tractography::toggle_shown_slot (const QModelIndex& index, const QModelIndex& index2) 
+        void Tractography::toggle_shown_slot (const QModelIndex& index, const QModelIndex& index2)
         {
           if (index.row() == index2.row()) {
             tractogram_list_view->setCurrentIndex(index);
@@ -443,8 +443,8 @@ namespace MR
           update_scalar_options();
           window().updateGL();
         }
-        
-        
+
+
         void Tractography::colour_track_by_ends_slot()
         {
           QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
@@ -657,8 +657,8 @@ namespace MR
 
 
 
-        void Tractography::add_commandline_options (MR::App::OptionList& options) 
-        { 
+        void Tractography::add_commandline_options (MR::App::OptionList& options)
+        {
           using namespace MR::App;
           options
             + OptionGroup ("Tractography tool options")
@@ -672,88 +672,88 @@ namespace MR
             + Option ("tractography.opacity", "Opacity of tractography display, [0.0, 1.0], default is 1.0.").allow_multiple()
             +   Argument("value").type_float ( 0.0, 1.0 )
 
-			  + Option("tractography.slab", "Slab thickness of tractography display, in mm. -1 to turn off crop to slab.").allow_multiple()
-			  + Argument("value").type_float(-1, 1e6)
+            + Option("tractography.slab", "Slab thickness of tractography display, in mm. -1 to turn off crop to slab.").allow_multiple()
+            +   Argument("value").type_float(-1, 1e6)
 
             + Option ("tractography.tsf", "Load the track scalar file. Filename RangeMin,RangeMax,ThresholdMin,ThesholdMax (Range and threshold optional).").allow_multiple()
             +   Argument("tsf").type_file_in()
-			+	Argument("range").type_sequence_float().optional()
+            +	Argument("range").type_sequence_float().optional()
             ;
-          
+
         }
 
-        bool Tractography::process_commandline_option (const MR::App::ParsedOption& opt) 
+        bool Tractography::process_commandline_option (const MR::App::ParsedOption& opt)
         {
 
-          if (opt.opt->is ("tractography.load")) 
-		  {
+          if (opt.opt->is ("tractography.load"))
+          {
             std::vector<std::string> list (1, std::string(opt[0]));
-            try 
-			{ 
-				tractogram_list_model->add_items (list, *this); 
-				window().updateGL();
-				return true;
+            try
+            {
+              tractogram_list_model->add_items (list, *this);
+              window().updateGL();
+              return true;
             }
             catch (Exception& E) { E.display(); }
             return true;
           }
 
 
-		  if (opt.opt->is("tractography.tsf"))
-		  {
-			  try
-			  {
-				  int count = tractogram_list_model->rowCount();
-				  if (count == 0)
-				  {
-					  QMessageBox::warning(QApplication::activeWindow(),
-						  tr("Tractogram colour error"),
-						  tr("TSF specified but no tractography loaded. Ensure TSF argument follows the tractography.load argument."),
-						  QMessageBox::Ok,
-						  QMessageBox::Ok);
-				  }
-				  else
-				  {
-					  //Select the last loaded tck file in the gui
-					  QModelIndex index = tractogram_list_view->model()->index(count-1, 0);
-					  tractogram_list_view->setCurrentIndex(index);
+          if (opt.opt->is("tractography.tsf"))
+          {
+            try
+            {
+              int count = tractogram_list_model->rowCount();
+              if (count == 0)
+              {
+                QMessageBox::warning(QApplication::activeWindow(),
+                    tr("Tractogram colour error"),
+                    tr("TSF specified but no tractography loaded. Ensure TSF argument follows the tractography.load argument."),
+                    QMessageBox::Ok,
+                    QMessageBox::Ok);
+              }
+              else
+              {
+                //Select the last loaded tck file in the gui
+                QModelIndex index = tractogram_list_view->model()->index(count-1, 0);
+                tractogram_list_view->setCurrentIndex(index);
 
-					  //set its tsf filename and load the tsf file
-					  Tractogram* tractogram = dynamic_cast<Tractogram*>(tractogram_list_model->items[index.row()].get());
-					  scalar_file_options->set_tractogram(tractogram);
-					  scalar_file_options->open_intensity_track_scalar_file_slot(std::string(opt[0]));
+                //set its tsf filename and load the tsf file
+                Tractogram* tractogram = dynamic_cast<Tractogram*>(tractogram_list_model->items[index.row()].get());
+                scalar_file_options->set_tractogram(tractogram);
+                scalar_file_options->open_intensity_track_scalar_file_slot(std::string(opt[0]));
 
-					  //Set the GUI to use the file for visualisation
-					  colour_combobox->setCurrentIndex(4); // Set combobox to "File"
+                //Set the GUI to use the file for visualisation
+                colour_combobox->setCurrentIndex(4); // Set combobox to "File"
 
-					  //Set the visualisation range/threshold if supplied
-					  if (opt.opt->size() > 1)
-					  {
-						  std::vector<default_type> range = opt[1].as_sequence_float();
-						  
-						  if (range.size() > 1)
-						  {
-							  //Range supplied
-							  scalar_file_options->set_scaling(range[0], range[1]);
+                //Set the visualisation range/threshold if supplied
+                if (opt.opt->size() > 1)
+                {
+                  std::vector<default_type> range = opt[1].as_sequence_float();
 
-							  if (range.size() > 3)
-							  {
-								  //Thresholds supplied
-								  scalar_file_options->set_threshold(TrackThresholdType::UseColourFile, range[2], range[3]);
-							  }
-						  }
-					  }
-				  }
-			  }
-			  catch(Exception& E) { E.display(); }
+                  if (range.size() > 1)
+                  {
+                    //Range supplied
+                    scalar_file_options->set_scaling(range[0], range[1]);
 
-			  return true;
-		  }
+                    if (range.size() > 3)
+                    {
+                      //Thresholds supplied
+                      scalar_file_options->set_threshold(TrackThresholdType::UseColourFile, range[2], range[3]);
+                    }
+                  }
+                }
+              }
+            }
+            catch(Exception& E) { E.display(); }
+
+            return true;
+          }
 
           if (opt.opt->is ("tractography.thickness")) {
-            // Thickness runs from -1000 to 1000, 
+            // Thickness runs from -1000 to 1000,
             float thickness = float(opt[0]) * 1000.0f;
-            try { 
+            try {
               thickness_slider->setValue(thickness);
             }
             catch (Exception& E) { E.display(); }
@@ -770,21 +770,21 @@ namespace MR
             return true;
           }
 
-		  if (opt.opt->is("tractography.slab")) {
-			  float thickness = opt[0];
-			  try {
-				  bool crop = thickness > 0;
-				  slab_group_box->setChecked(crop);
-				  on_crop_to_slab_slot(crop);//Needs to be manually bumped
-				  if(crop)
-				  {
-					  slab_entry->setValue(thickness);
-					  on_slab_thickness_slot();//Needs to be manually bumped
-				  }
-			  }
-			  catch (Exception& E) { E.display(); }
-			  return true;
-		  }
+          if (opt.opt->is("tractography.slab")) {
+            float thickness = opt[0];
+            try {
+              bool crop = thickness > 0;
+              slab_group_box->setChecked(crop);
+              on_crop_to_slab_slot(crop);//Needs to be manually bumped
+              if(crop)
+              {
+                slab_entry->setValue(thickness);
+                on_slab_thickness_slot();//Needs to be manually bumped
+              }
+            }
+            catch (Exception& E) { E.display(); }
+            return true;
+          }
 
           return false;
         }

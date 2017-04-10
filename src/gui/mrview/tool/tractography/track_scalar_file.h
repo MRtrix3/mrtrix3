@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *  
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 
 #ifndef __gui_mrtrix_tools_tractography_scalar_file_options_h__
@@ -47,14 +47,14 @@ namespace MR
               void render_tractogram_colourbar (const Tool::Tractogram&) override;
 
               void update_UI();
-			  void set_scaling(default_type min, default_type max);
-			  void set_threshold(GUI::MRView::Tool::TrackThresholdType dataSource, default_type min, default_type max);
-			  
+              void set_scaling(default_type min, default_type max);
+              void set_threshold(GUI::MRView::Tool::TrackThresholdType dataSource, default_type min, default_type max);
+
 
             public slots:
               bool open_intensity_track_scalar_file_slot ();
-			  bool open_intensity_track_scalar_file_slot(std::string);
-			  
+              bool open_intensity_track_scalar_file_slot(std::string);
+
 
             private slots:
               void show_colour_bar_slot();
