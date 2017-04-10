@@ -10,7 +10,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * 
  * For more details, see www.mrtrix.org
- * 
+ *  
  */
 
 #ifndef __gui_mrview_tool_tractography_h__
@@ -102,6 +102,7 @@ namespace MR
             TrackScalarFileOptions *scalar_file_options;
             LightingDock *lighting_dock;
 
+			QGroupBox* slab_group_box;
             QSlider* opacity_slider;
             QSlider* thickness_slider;
             

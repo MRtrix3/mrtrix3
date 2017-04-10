@@ -183,7 +183,7 @@ namespace MR
             general_opt_grid->addWidget (new QLabel ("line thickness"), 1, 0);
             general_opt_grid->addWidget (thickness_slider, 1, 1);
 
-            QGroupBox* slab_group_box = new QGroupBox (tr("crop to slab"));
+            slab_group_box = new QGroupBox (tr("crop to slab"));
             slab_group_box->setCheckable (true);
             slab_group_box->setChecked (true);
             general_opt_grid->addWidget (slab_group_box, 4, 0, 1, 2);
@@ -532,6 +532,7 @@ namespace MR
                                   QMessageBox::Ok);
             return;
           }
+
           Tractogram* tractogram = tractogram_list_model->get_tractogram (indices[0]);
           scalar_file_options->set_tractogram (tractogram);
           if (tractogram->intensity_scalar_filename.empty()) {
@@ -670,21 +671,84 @@ namespace MR
 
             + Option ("tractography.opacity", "Opacity of tractography display, [0.0, 1.0], default is 1.0.").allow_multiple()
             +   Argument("value").type_float ( 0.0, 1.0 )
+
+			  + Option("tractography.slab", "Slab thickness of tractography display, in mm. -1 to turn off crop to slab.").allow_multiple()
+			  + Argument("value").type_float(-1, 1e6)
+
+            + Option ("tractography.tsf", "Load the track scalar file. Filename RangeMin,RangeMax,ThresholdMin,ThesholdMax (Range and threshold optional).").allow_multiple()
+            +   Argument("tsf").type_file_in()
+			+	Argument("range").type_sequence_float().optional()
             ;
           
         }
 
         bool Tractography::process_commandline_option (const MR::App::ParsedOption& opt) 
         {
-          if (opt.opt->is ("tractography.load")) {
+
+          if (opt.opt->is ("tractography.load")) 
+		  {
             std::vector<std::string> list (1, std::string(opt[0]));
-            try { 
-              tractogram_list_model->add_items (list, *this); 
-              window().updateGL();
+            try 
+			{ 
+				tractogram_list_model->add_items (list, *this); 
+				window().updateGL();
+				return true;
             }
             catch (Exception& E) { E.display(); }
             return true;
           }
+
+
+		  if (opt.opt->is("tractography.tsf"))
+		  {
+			  try
+			  {
+				  int count = tractogram_list_model->rowCount();
+				  if (count == 0)
+				  {
+					  QMessageBox::warning(QApplication::activeWindow(),
+						  tr("Tractogram colour error"),
+						  tr("TSF specified but no tractography loaded. Ensure TSF argument follows the tractography.load argument."),
+						  QMessageBox::Ok,
+						  QMessageBox::Ok);
+				  }
+				  else
+				  {
+					  //Select the last loaded tck file in the gui
+					  QModelIndex index = tractogram_list_view->model()->index(count-1, 0);
+					  tractogram_list_view->setCurrentIndex(index);
+
+					  //set its tsf filename and load the tsf file
+					  Tractogram* tractogram = dynamic_cast<Tractogram*>(tractogram_list_model->items[index.row()].get());
+					  scalar_file_options->set_tractogram(tractogram);
+					  scalar_file_options->open_intensity_track_scalar_file_slot(std::string(opt[0]));
+
+					  //Set the GUI to use the file for visualisation
+					  colour_combobox->setCurrentIndex(4); // Set combobox to "File"
+
+					  //Set the visualisation range/threshold if supplied
+					  if (opt.opt->size() > 1)
+					  {
+						  std::vector<default_type> range = opt[1].as_sequence_float();
+						  
+						  if (range.size() > 1)
+						  {
+							  //Range supplied
+							  scalar_file_options->set_scaling(range[0], range[1]);
+
+							  if (range.size() > 3)
+							  {
+								  //Thresholds supplied
+								  scalar_file_options->set_threshold(TrackThresholdType::UseColourFile, range[2], range[3]);
+							  }
+						  }
+					  }
+				  }
+			  }
+			  catch(Exception& E) { E.display(); }
+
+			  return true;
+		  }
 
           if (opt.opt->is ("tractography.thickness")) {
             // Thickness runs from -1000 to 1000, 
@@ -705,6 +769,22 @@ namespace MR
             catch (Exception& E) { E.display(); }
             return true;
           }
+
+		  if (opt.opt->is("tractography.slab")) {
+			  float thickness = opt[0];
+			  try {
+				  bool crop = thickness > 0;
+				  slab_group_box->setChecked(crop);
+				  on_crop_to_slab_slot(crop);//Needs to be manually bumped
+				  if(crop)
+				  {
+					  slab_entry->setValue(thickness);
+					  on_slab_thickness_slot();//Needs to be manually bumped
+				  }
+			  }
+			  catch (Exception& E) { E.display(); }
+			  return true;
+		  }
 
           return false;
         }
