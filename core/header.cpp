@@ -1,3 +1,4 @@
+<<<<<<< HEAD:core/header.cpp
 /* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -126,7 +127,7 @@ namespace MR
       }
 
       H.sanitise();
-      if (!do_not_realign_transform) 
+      if (!do_not_realign_transform)
         H.realign_transform();
 
     }
@@ -139,14 +140,14 @@ namespace MR
 
 
   namespace {
-    inline bool check_strides_match (const vector<ssize_t>& a, const vector<ssize_t>& b) 
+    inline bool check_strides_match (const vector<ssize_t>& a, const vector<ssize_t>& b)
     {
       size_t n = 0;
-      for (; n < std::min (a.size(), b.size()); ++n) 
-        if (a[n] != b[n]) return false; 
-      for (size_t i = n; i < a.size(); ++i) 
+      for (; n < std::min (a.size(), b.size()); ++n)
+        if (a[n] != b[n]) return false;
+      for (size_t i = n; i < a.size(); ++i)
         if (a[i] > 1) return false;
-      for (size_t i = n; i < b.size(); ++i) 
+      for (size_t i = n; i < b.size(); ++i)
         if (b[i] > 1) return false;
       return true;
     }
@@ -226,7 +227,7 @@ namespace MR
         size_t axis = 0;
         while (axis < limits.size()) {
           pos[axis]++;
-          if (pos[axis] < limits[axis]) 
+          if (pos[axis] < limits[axis])
             return true;
           pos[axis] = 0;
           axis++;
@@ -255,7 +256,7 @@ namespace MR
         H.axes_.resize (n + Pdim.size());
 
         for (size_t i = 0; i < Pdim.size(); ++i) {
-          while (H.stride(a)) 
+          while (H.stride(a))
             ++a;
           H.size(a) = Pdim[i];
           H.stride(a) = ++next_stride;
@@ -281,14 +282,14 @@ namespace MR
 
 
 
-  Header Header::scratch (const Header& template_header, const std::string& label) 
+  Header Header::scratch (const Header& template_header, const std::string& label)
   {
     Header H (template_header);
     H.name() = label;
     H.reset_intensity_scaling();
     H.sanitise();
     H.format_ = "scratch image";
-    H.io = make_unique<ImageIO::Scratch> (H); 
+    H.io = make_unique<ImageIO::Scratch> (H);
     return H;
   }
 
@@ -299,14 +300,14 @@ namespace MR
 
 
 
-  std::ostream& operator<< (std::ostream& stream, const Header& H) 
+  std::ostream& operator<< (std::ostream& stream, const Header& H)
   {
     stream << "\"" << H.name() << "\", " << H.datatype().specifier() << ", size [ ";
     for (size_t n = 0; n < H.ndim(); ++n) stream << H.size(n) << " ";
     stream << "], voxel size [ ";
-    for (size_t n = 0; n < H.ndim(); ++n) stream << H.spacing(n) << " "; 
+    for (size_t n = 0; n < H.ndim(); ++n) stream << H.spacing(n) << " ";
     stream << "], strides [ ";
-    for (size_t n = 0; n < H.ndim(); ++n) stream << H.stride(n) << " "; 
+    for (size_t n = 0; n < H.ndim(); ++n) stream << H.stride(n) << " ";
     stream << "]";
     return stream;
   }
@@ -315,7 +316,7 @@ namespace MR
 
 
 
-  std::string Header::description() const
+  std::string Header::description (bool print_all) const
   {
     std::string desc (
         "************************************************\n"
@@ -364,17 +365,16 @@ namespace MR
 
     for (const auto& p : keyval()) {
       std::string key = "  " + p.first + ": ";
-      if (key.size() < 21) 
+      if (key.size() < 21)
         key.resize (21, ' ');
       const auto entries = split_lines (p.second);
-      if (entries.size() > 5) 
-        desc += key + "[ " + str (entries.size()) + " entries ]\n";
-      else {
-        for (const auto value : entries) {
-          desc += key + value + "\n";
-          key = "                     ";
-        }
+      size_t n = 0, N = ( print_all ? entries.size() : std::min (entries.size(), size_t(5U)) );
+      for (; n < N; ++n) {
+        desc += key + entries[n] + "\n";
+        key = "                     ";
       }
+      if (!print_all && entries.size() > 5)
+        desc += key + "[ + " + str (entries.size()-5) + " more ]\n";
     }
 
     return desc;
@@ -426,13 +426,13 @@ namespace MR
       size_t num_valid_vox = 0;
       for (size_t i = 0; i < 3; ++i) {
         if (std::isfinite(spacing(i))) {
-          ++num_valid_vox; 
+          ++num_valid_vox;
           mean_vox_size += spacing(i);
         }
       }
       mean_vox_size /= num_valid_vox;
-      for (size_t i = 0; i < 3; ++i) 
-        if (!std::isfinite(spacing(i))) 
+      for (size_t i = 0; i < 3; ++i)
+        if (!std::isfinite(spacing(i)))
           spacing(i) = mean_vox_size;
     }
   }
