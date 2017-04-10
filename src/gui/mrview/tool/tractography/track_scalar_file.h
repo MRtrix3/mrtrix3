@@ -8,7 +8,7 @@
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *  
  * For more details, see www.mrtrix.org
  * 
  */
@@ -19,6 +19,8 @@
 #include "gui/mrview/adjust_button.h"
 #include "gui/mrview/displayable.h"
 #include "gui/mrview/tool/base.h"
+#include "gui/mrview/tool/tractography/tractogram_enums.h"
+
 
 
 namespace MR
@@ -30,7 +32,6 @@ namespace MR
 
       namespace Tool
       {
-
         class Tractogram;
 
           class TrackScalarFileOptions : public QGroupBox, public DisplayableVisitor
@@ -46,9 +47,14 @@ namespace MR
               void render_tractogram_colourbar (const Tool::Tractogram&) override;
 
               void update_UI();
+			  void set_scaling(default_type min, default_type max);
+			  void set_threshold(GUI::MRView::Tool::TrackThresholdType dataSource, default_type min, default_type max);
+			  
 
             public slots:
               bool open_intensity_track_scalar_file_slot ();
+			  bool open_intensity_track_scalar_file_slot(std::string);
+			  
 
             private slots:
               void show_colour_bar_slot();
