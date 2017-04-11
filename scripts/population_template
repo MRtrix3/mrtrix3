@@ -69,6 +69,9 @@ def check_linear_transformation (transformation, max_scaling = 0.5, max_shear = 
 
   bGood = True
   runCommand ('transformcalc ' + transformation + ' decompose ' + transformation + 'decomp')
+  if not os.path.isfile(transformation + 'decomp'): # does not exist if run with -continue option
+    printMessage (transformation + 'decomp not found. skipping check')
+    return True
   data = load_key_value(transformation + 'decomp')
   os.remove(transformation + 'decomp')
   scaling = [float(x) for x in data['scaling']]
@@ -422,8 +425,7 @@ for level in range(0, len(linear_scales)):
                  datatype +
                  output +
                  mrregister_log)
-    if os.path.isfile('linear_transforms_%i/%s.txt' % (level, i.prefix)): # not true if -continue option is used
-      check_linear_transformation('linear_transforms_%i/%s.txt' % (level, i.prefix), pause_on_warn=do_pause_on_warn)
+    check_linear_transformation('linear_transforms_%i/%s.txt' % (level, i.prefix), pause_on_warn=do_pause_on_warn)
 
   # Here we ensure the template doesn't drift or scale
   runCommand('transformcalc ' + allindir('linear_transforms_%i' % level) + ' average linear_transform_average.txt -force -quiet')
