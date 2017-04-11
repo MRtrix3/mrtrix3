@@ -14,6 +14,8 @@
 
 #include "math/stats/glm.h"
 
+#include "debug.h"
+
 #define GLM_BATCH_SIZE 1024
 
 namespace MR
@@ -65,13 +67,22 @@ namespace MR
                         matrix_type& stdev)
         {
           betas = solve_betas (measurements, design);
+          //std::cerr << "Betas: " << betas.rows() << " x " << betas.cols() << ", max " << betas.array().maxCoeff() << "\n";
           abs_effect_size = contrasts * betas;
+          //std::cerr << "abs_effect_size: " << abs_effect_size.rows() << " x " << abs_effect_size.cols() << ", max " << abs_effect_size.array().maxCoeff() << "\n";
           matrix_type residuals = measurements.transpose() - design * betas;
           residuals = residuals.array().pow(2.0);
+          //std::cerr << "residuals: " << residuals.rows() << " x " << residuals.cols() << ", max " << residuals.array().maxCoeff() << "\n";
           matrix_type one_over_dof (1, measurements.cols());
           one_over_dof.fill (1.0 / value_type(design.rows()-Math::rank (design)));
+          //std::cerr << "one_over_dof: " << one_over_dof.rows() << " x " << one_over_dof.cols() << ", max " << one_over_dof.array().maxCoeff() << "\n";
+          //VAR (design.rows());
+          //VAR (Math::rank (design));
           stdev = (one_over_dof * residuals).array().sqrt();
+          //std::cerr << "stdev: " << stdev.rows() << " x " << stdev.cols() << ", max " << stdev.array().maxCoeff() << "\n";
           std_effect_size = abs_effect_size.array() / stdev.array();
+          //std::cerr << "std_effect_size: " << std_effect_size.rows() << " x " << std_effect_size.cols() << ", max " << std_effect_size.array().maxCoeff() << "\n";
+          //TRACE;
         }
 
       }
@@ -257,21 +268,33 @@ namespace MR
                                     vector_type& betas,
                                     vector_type& residuals) const
       {
+        //std::cerr << "Design: " << design.rows() << " x " << design.cols() << ", max " << design.array().maxCoeff() << "\n";
+        //std::cerr << "Measurements: " << measurements.rows() << " x " << measurements.cols() << ", max " << measurements.array().maxCoeff() << "\n";
         matrix_type pinv_design = Math::pinv (design);
+        //std::cerr << "PINV Design: " << pinv_design.rows() << " x " << pinv_design.cols() << ", max " << pinv_design.array().maxCoeff() << "\n";
         const matrix_type XtX = design.transpose() * design;
+        //std::cerr << "XtX: " << XtX.rows() << " x " << XtX.cols() << ", max " << XtX.array().maxCoeff() << "\n";
         const matrix_type pinv_XtX = (XtX.transpose() * XtX).fullPivLu().solve (XtX.transpose());
+        //std::cerr << "PINV XtX: " << pinv_XtX.rows() << " x " << pinv_XtX.cols() << ", max " << pinv_XtX.array().maxCoeff() << "\n";
         betas = pinv_design * measurements.matrix();
+        //std::cerr << "Betas: " << betas.rows() << " x " << betas.cols() << ", max " << betas.array().maxCoeff() << "\n";
         residuals = measurements - (design * betas.matrix()).array();
+        //std::cerr << "Residuals: " << residuals.rows() << " x " << residuals.cols() << ", max " << residuals.array().maxCoeff() << "\n";
         tvalues = c * betas.matrix();
-        const default_type variance = residuals.matrix().squaredNorm() / (design.cols() - rank(design));
+        //std::cerr << "T-values: " << tvalues.rows() << " x " << tvalues.cols() << ", max " << tvalues.array().maxCoeff() << "\n";
+        //VAR (Math::rank (design));
+        const default_type variance = residuals.matrix().squaredNorm() / default_type(design.rows() - Math::rank(design));
+        //VAR (variance);
         // The fact that we're only able to test one element at a time here should be
         //   placing a restriction on the dimensionality of tvalues
         // Previously, could be (number of elements) * (number of contrasts);
         //   now can only reflect the number of contrasts
         for (size_t n = 0; n != size_t(tvalues.size()); ++n) {
           const default_type ct_pinv_XtX_c = c.row(n).dot (pinv_XtX * c.row(n).transpose());
+          //VAR (ct_pinv_XtX_c);
           tvalues[n] /= std::sqrt (variance * ct_pinv_XtX_c);
         }
+        //std::cerr << "T-values: " << tvalues.rows() << " x " << tvalues.cols() << ", max " << tvalues.array().maxCoeff() << "\n";
       }
 
 

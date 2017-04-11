@@ -472,9 +472,10 @@ void run()
           const std::shared_ptr<GLMTestBase> glm_test;
           const matrix_type& contrasts;
           matrix_type& global_betas;
-          vector_type& global_abs_effect_size, global_std_effect_size, global_stdev;
+          vector_type& global_abs_effect_size;
+          vector_type& global_std_effect_size;
+          vector_type& global_stdev;
           matrix_type local_betas, local_abs_effect_size, local_std_effect_size, local_stdev;
-          std::shared_ptr<ProgressBar> progress;
       };
 
       Source source (num_fixels);
