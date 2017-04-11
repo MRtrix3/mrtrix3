@@ -29,7 +29,8 @@ void usage () {
 
 DESCRIPTION
   + "Generates a whole brain mask from a DWI image. "
-    "All diffusion weighted and b=0 volumes are used to "
+
+  + "All diffusion weighted and b=0 volumes are used to "
     "obtain a mask that includes both brain tissue and CSF. "
     "\nIn a second step peninsula-like extensions, where the "
     "peninsula itself is wider than the bridge connecting it "

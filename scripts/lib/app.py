@@ -59,6 +59,10 @@ def initialise():
     parser.printUsageRst()
     exit(0)
 
+  if sys.argv[-1] == '__print_synopsis__':
+    parser.printSynopsis()
+    exit(0)
+
   workingDir = os.getcwd()
 
   args = parser.parse_args()

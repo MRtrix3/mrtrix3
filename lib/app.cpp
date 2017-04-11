@@ -861,6 +861,10 @@ namespace MR
         throw Exception ("No author specified for command " + std::string(NAME));
 
       if (argc == 2) {
+        if (strcmp (argv[1], "__print_synopsis__") == 0) {
+          print (DESCRIPTION[0] + std::string("\n"));
+          throw 0;
+        }
         if (strcmp (argv[1], "__print_full_usage__") == 0) {
           print (full_usage ());
           throw 0;

@@ -36,8 +36,9 @@ void usage ()
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   DESCRIPTION
-  + "create bitwise image by thresholding image intensity. By default, an "
-    "optimal threshold is determined using a parameter-free method. "
+  + "create bitwise image by thresholding image intensity."
+ 
+  + "By default, an optimal threshold is determined using a parameter-free method. "
     "Alternatively the threshold can be defined manually by the user "
     "or using a histogram-based analysis to cut out the background.";
 

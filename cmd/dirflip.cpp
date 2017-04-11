@@ -35,7 +35,9 @@ void usage ()
   DESCRIPTION
     + "optimise the polarity of the directions in a scheme with respect to a "
     "unipolar electrostatic repulsion model, by inversion of individual "
-    "directions. The orientations themselves are not affected, only their "
+    "directions."
+    
+    + "The orientations themselves are not affected, only their "
     "polarity. This is necessary to ensure near-optimal distribution of DW "
     "directions for eddy-current correction.";
      

@@ -198,6 +198,9 @@ class Parser(argparse.ArgumentParser):
 
 
 
+  def printSynopsis(self):
+    print (self.description)
+
   def printUsageRst(self):
     import subprocess, sys
     import lib.app
