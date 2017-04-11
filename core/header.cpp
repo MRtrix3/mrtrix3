@@ -367,13 +367,23 @@ namespace MR
       if (key.size() < 21)
         key.resize (21, ' ');
       const auto entries = split_lines (p.second);
-      size_t n = 0, N = ( print_all ? entries.size() : std::min (entries.size(), size_t(5U)) );
-      for (; n < N; ++n) {
+      bool shorten = (!print_all && entries.size() > 5);
+      desc += key + entries[0] + "\n";
+      if (entries.size() > 5) {
+        key = "  [" + str(entries.size()) + " entries] ";
+        if (key.size() < 21)
+          key.resize (21, ' ');
+      }
+      else key = "                     ";
+      for (size_t n = 1; n < (shorten ? size_t(2) : entries.size()); ++n) {
         desc += key + entries[n] + "\n";
         key = "                     ";
       }
-      if (!print_all && entries.size() > 5)
-        desc += key + "[ + " + str (entries.size()-5) + " more ]\n";
+      if (!print_all && entries.size() > 5) {
+        desc += key + "...\n";
+        for (size_t n = entries.size()-2; n < entries.size(); ++n )
+          desc += key + entries[n] + "\n";
+      }
     }
 
     return desc;
