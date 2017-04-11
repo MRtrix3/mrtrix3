@@ -169,11 +169,18 @@ void print_properties (const Header& header, const std::string& key, const size_
     const auto values = header.keyval().find (key);
     if (values != header.keyval().end()) {
       auto lines = split (values->second, "\n");
+      const size_t indenterr (App::get_options ("quiet").size() ? 0 : key.size() + 2);
+      if (indenterr)
+        std::cerr << key << ": ";
       std::cout << lines[0] << "\n";
       for (size_t i = 1; i != lines.size(); ++i) {
         lines[i].insert (0, indent, ' ');
+        if (indenterr)
+          std::cerr << std::string(indenterr, ' ');
         std::cout << lines[i] << "\n";
       }
+      if (indenterr)
+        std::cerr << std::endl;
     } else {
       WARN ("no \"" + key + "\" entries found in \"" + header.name() + "\"");
     }
