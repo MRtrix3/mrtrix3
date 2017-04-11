@@ -481,7 +481,7 @@ void run()
       Source source (num_fixels);
       Functor functor (data, glm_test, contrast,
                        betas, abs_effect_size, std_effect_size, stdev);
-      Thread::run_queue (source, size_t(), functor);
+      Thread::run_queue (source, size_t(), Thread::multi (functor));
     }
     {
       ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", contrast.cols() + 3);
