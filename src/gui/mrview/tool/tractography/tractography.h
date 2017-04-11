@@ -108,6 +108,9 @@ namespace MR
 
             void dropEvent (QDropEvent* event) override;
             void update_scalar_options();
+            void select_last_added_tractogram();
+            bool process_commandline_option_tsf_check_tracto_loaded ();
+            bool process_commandline_option_tsf_option (const MR::App::ParsedOption&, uint, std::vector<default_type>& range);
 
         };
       }

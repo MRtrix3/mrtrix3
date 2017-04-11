@@ -675,13 +675,32 @@ namespace MR
             + Option("tractography.slab", "Slab thickness of tractography display, in mm. -1 to turn off crop to slab.").allow_multiple()
             +   Argument("value").type_float(-1, 1e6)
 
-            + Option ("tractography.tsf", "Load the track scalar file. Filename RangeMin,RangeMax,ThresholdMin,ThesholdMax (Range and threshold optional).").allow_multiple()
-            +   Argument("tsf").type_file_in()
-            +	Argument("range").type_sequence_float().optional()
+            + Option ("tractography.tsf_load", "Load the specified tractography scalar file.").allow_multiple()
+            +  Argument("tsf").type_file_in()
+            
+            + Option ("tractography.tsf_range", "Set range for the tractography scalar file. Requires tractography.tsf_load already provided. RangeMin,RangeMax").allow_multiple()
+            +  Argument("range").type_sequence_float()
+
+            + Option ("tractography.tsf_thresh", "Set thresholds for the tractography scalar file. Requires tractography.tsf_load already provided. ThresholdMin,ThesholdMax").allow_multiple()
+            +  Argument("thresh").type_sequence_float()
             ;
 
+            
         }
 
+        /*
+          Selects the last tractogram in the tractogram_list_view and updates the window. If no tractograms are in the list view, no action is taken.
+        */
+        void Tractography::select_last_added_tractogram()
+        {
+            int count = tractogram_list_model->rowCount();
+            if(count != 0){
+              QModelIndex index = tractogram_list_view->model()->index(count-1, 0);
+              tractogram_list_view->setCurrentIndex(index);
+              window().updateGL();
+            }
+        }
+        
         bool Tractography::process_commandline_option (const MR::App::ParsedOption& opt)
         {
 
@@ -691,7 +710,7 @@ namespace MR
             try
             {
               tractogram_list_model->add_items (list, *this);
-              window().updateGL();
+              select_last_added_tractogram();//select track file in the gui. Req for tractography.tsf_* to work
               return true;
             }
             catch (Exception& E) { E.display(); }
@@ -699,57 +718,65 @@ namespace MR
           }
 
 
-          if (opt.opt->is("tractography.tsf"))
+          if (opt.opt->is("tractography.tsf_load"))
           {
             try
             {
-              int count = tractogram_list_model->rowCount();
-              if (count == 0)
+              
+              if(process_commandline_option_tsf_check_tracto_loaded())
               {
-                QMessageBox::warning(QApplication::activeWindow(),
-                    tr("Tractogram colour error"),
-                    tr("TSF specified but no tractography loaded. Ensure TSF argument follows the tractography.load argument."),
-                    QMessageBox::Ok,
-                    QMessageBox::Ok);
-              }
-              else
-              {
-                //Select the last loaded tck file in the gui
-                QModelIndex index = tractogram_list_view->model()->index(count-1, 0);
-                tractogram_list_view->setCurrentIndex(index);
-
-                //set its tsf filename and load the tsf file
-                Tractogram* tractogram = dynamic_cast<Tractogram*>(tractogram_list_model->items[index.row()].get());
-                scalar_file_options->set_tractogram(tractogram);
-                scalar_file_options->open_intensity_track_scalar_file_slot(std::string(opt[0]));
-
-                //Set the GUI to use the file for visualisation
-                colour_combobox->setCurrentIndex(4); // Set combobox to "File"
-
-                //Set the visualisation range/threshold if supplied
-                if (opt.opt->size() > 1)
-                {
-                  std::vector<default_type> range = opt[1].as_sequence_float();
-
-                  if (range.size() > 1)
-                  {
-                    //Range supplied
-                    scalar_file_options->set_scaling(range[0], range[1]);
-
-                    if (range.size() > 3)
-                    {
-                      //Thresholds supplied
-                      scalar_file_options->set_threshold(TrackThresholdType::UseColourFile, range[2], range[3]);
-                    }
-                  }
+                QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+        
+                if(indices.size() == 1) {//just in case future edits break this assumption
+                  Tractogram* tractogram = tractogram_list_model->get_tractogram (indices[0]);
+                  
+                  //set its tsf filename and load the tsf file
+                  scalar_file_options->set_tractogram(tractogram);
+                  scalar_file_options->open_intensity_track_scalar_file_slot(std::string(opt[0]));
+          
+                  //Set the GUI to use the file for visualisation
+                  colour_combobox->setCurrentIndex(4); // Set combobox to "File"
                 }
-              }
+              }              
             }
             catch(Exception& E) { E.display(); }
 
             return true;
           }
 
+          if (opt.opt->is("tractography.tsf_range"))
+          {
+            try
+            {
+              //Set the tsf visualisation range
+                std::vector<default_type> range;
+                if(process_commandline_option_tsf_option(opt,2, range))      
+                {      
+                  scalar_file_options->set_scaling(range[0], range[1]);
+                } 
+            }
+              catch(Exception& E) { E.display(); }
+              return true;
+          }
+          
+          
+          if (opt.opt->is("tractography.tsf_thresh"))
+          {
+            try
+            {
+              //Set the tsf visualisation threshold
+              std::vector<default_type> range;
+                if(process_commandline_option_tsf_option(opt,2, range))      
+                {      
+                  scalar_file_options->set_threshold(TrackThresholdType::UseColourFile,range[0], range[1]);
+                } 
+            }
+            catch(Exception& E) { E.display(); }
+            return true;
+          }
+        
+      
+      
           if (opt.opt->is ("tractography.thickness")) {
             // Thickness runs from -1000 to 1000,
             float thickness = float(opt[0]) * 1000.0f;
@@ -790,7 +817,43 @@ namespace MR
         }
 
 
-
+      /*Checks whether any tractography has been loaded and warns the user if it has not*/
+        bool Tractography::process_commandline_option_tsf_check_tracto_loaded()
+        {
+          int count = tractogram_list_model->rowCount();
+          if (count == 0){
+            //Error to std error to save many dialogs appearing for a single missed argument
+            std::cerr << "TSF argument specified but no tractography loaded. Ensure TSF arguments follow the tractography.load argument.\n";
+          }
+          return count != 0;
+        }
+      
+      /*Checks whether legal to apply tsf options and prepares the scalar_file_options to do so. Returns the vector of floats parsed from the options, or null on fail*/
+        bool Tractography::process_commandline_option_tsf_option(const MR::App::ParsedOption& opt, uint reqArgSize, std::vector<default_type>& range)
+        {
+          if(process_commandline_option_tsf_check_tracto_loaded()){
+            QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+            range = opt[0].as_sequence_float();
+            if(indices.size() == 1 && range.size() == reqArgSize){
+              //values supplied
+              Tractogram* tractogram = tractogram_list_model->get_tractogram (indices[0]);
+              if(tractogram->get_color_type() == TrackColourType::ScalarFile){
+                //prereq options supplied/executed
+                scalar_file_options->set_tractogram(tractogram);
+                return true;
+              }
+              else
+              {
+                std::cerr << "Could not apply TSF argument - tractography.load_tsf not supplied.\n";
+              }
+            }
+            else
+            {
+              std::cerr << "Could not apply TSF argument - insufficient number of arguments provided.\n";
+            }
+          }
+        return false;
+        }
       }
     }
   }
