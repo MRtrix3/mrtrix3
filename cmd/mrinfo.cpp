@@ -169,6 +169,7 @@ void print_properties (const Header& header, const std::string& key, const size_
     const auto values = header.keyval().find (key);
     if (values != header.keyval().end()) {
       auto lines = split (values->second, "\n");
+      INFO ("showing property " + key + ":");
       std::cout << lines[0] << "\n";
       for (size_t i = 1; i != lines.size(); ++i) {
         lines[i].insert (0, indent, ' ');
