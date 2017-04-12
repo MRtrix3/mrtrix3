@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 
 
@@ -35,7 +35,16 @@ void usage ()
   + "Convert between different track file formats."
 
   + "The program currently supports MRtrix .tck files (input/output), "
-    "ascii text files (input/output), and VTK polydata files (output only).";
+    "ascii text files (input/output), and VTK polydata files (output only)."
+
+  + "Note that ascii files will be stored with one streamline per numbered file. "
+    "To support this, the command will use the multi-file numbering syntax, "
+    "where square brackets denote the position of the numbering for the files, "
+    "for example:"
+
+   + "$ tckconvert input.tck output-[].txt"
+
+   + "will produce files named output-0000.txt, output-0001.txt, output-0002.txt, ...";
 
   ARGUMENTS
   + Argument ("input", "the input track file.").type_text ()
@@ -61,7 +70,7 @@ void usage ()
       "if specified, the properties of this image will be used to convert "
       "track point positions from image coordinates (in mm) into real (scanner) coordinates.")
   +    Argument ("reference").type_image_in ();
-  
+
 }
 
 
@@ -127,7 +136,7 @@ class ASCIIReader: public ReaderInterface<float>
 {
 public:
     ASCIIReader(const std::string& file) {
-        auto num = list.parse_scan_check(file);
+      auto num = list.parse_scan_check(file);
     }
 
     bool operator() (Streamline<float>& tck) {
@@ -157,6 +166,8 @@ public:
     ASCIIWriter(const std::string& file) {
         count.push_back(0);
         parser.parse(file);
+        if (parser.ndim() != 1)
+          throw Exception ("output file specifier should contain one placeholder for numbering (e.g. output-[].txt)");
         parser.calculate_padding({1000000});
     }
 
@@ -206,7 +217,7 @@ void run ()
         throw Exception("Unsupported input file type.");
     }
 
-    
+
     // Writer
     std::unique_ptr<WriterInterface<float> > writer;
     if (has_suffix(argument[1], ".tck")) {
@@ -221,8 +232,8 @@ void run ()
     else {
         throw Exception("Unsupported output file type.");
     }
-    
-    
+
+
     // Tranform matrix
     transform_type T;
     T.setIdentity();
@@ -255,7 +266,7 @@ void run ()
         throw Exception("Transform options are mutually exclusive.");
     }
 
-    
+
     // Copy
     Streamline<float> tck;
     while ( (*reader)(tck) )
