@@ -29,7 +29,7 @@ The command can also write the diffusion gradient table from a single input imag
 Options
 -------
 
--  **-all** print all properties, rather than the first 5 of each.
+-  **-all** print all properties, rather than the first and last 2 of each.
 
 -  **-format** image file format
 

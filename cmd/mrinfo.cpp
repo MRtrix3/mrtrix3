@@ -57,7 +57,7 @@ void usage ()
     + Argument ("image", "the input image(s).").allow_multiple().type_image_in();
 
   OPTIONS
-    +   Option ("all", "print all properties, rather than the first 5 of each.")
+    +   Option ("all", "print all properties, rather than the first and last 2 of each.")
     +   Option ("format", "image file format")
     +   Option ("ndim", "number of image dimensions")
     +   Option ("size", "image size along each axis")
