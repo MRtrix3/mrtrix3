@@ -93,7 +93,7 @@ if not os.path.exists('mask.mif'):
   run.command('dwi2mask data.mif mask.mif')
 
 # How many tracks are we going to generate?
-number_option = ' -number ' + str(app.args.number)
+number_option = ' -select ' + str(app.args.number)
 
 
 # 
