@@ -50,7 +50,7 @@ using Stats::CFE::connectivity_value_type;
 
 void usage ()
 {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Fixel-based analysis using connectivity-based fixel enhancement and non-parametric permutation testing";
 
@@ -323,6 +323,7 @@ void run()
   }
 
   {
+    // TODO This could trivially be multi-threaded; fixels are handled independently
     ProgressBar progress ("normalising and thresholding fixel-fixel connectivity matrix", num_fixels);
     for (uint32_t fixel = 0; fixel < num_fixels; ++fixel) {
 
@@ -481,7 +482,7 @@ void run()
       Source source (num_fixels);
       Functor functor (data, glm_test, contrast,
                        betas, abs_effect_size, std_effect_size, stdev);
-      Thread::run_queue (source, size_t(), Thread::multi (functor));
+      Thread::run_queue (source, Thread::batch (size_t()), Thread::multi (functor));
     }
     {
       ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", contrast.cols() + 3);
@@ -519,7 +520,7 @@ void run()
   // If performing non-stationarity adjustment we need to pre-compute the empirical CFE statistic
   vector_type empirical_cfe_statistic;
   if (do_nonstationary_adjustment) {
-
+    empirical_cfe_statistic = vector_type::Zero (num_fixels);
     if (permutations_nonstationary.size()) {
       Stats::PermTest::PermutationStack permutations (permutations_nonstationary, "precomputing empirical statistic for non-stationarity adjustment");
       Stats::PermTest::precompute_empirical_stat (glm_test, cfe_integrator, permutations, empirical_cfe_statistic);

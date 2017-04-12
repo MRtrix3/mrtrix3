@@ -193,6 +193,11 @@ namespace MR
        * particular type of data being tested. Therefore an Importer class must be
        * defined that is responsible for acquiring and vectorising these data.
        */
+
+
+      // TODO This is still slower than I'd like
+      // Would some transposing trickery help with execution speed?
+      // Is it to do with the data fetching?
       class GLMTTestVariable : public GLMTestBase { MEMALIGN(GLMTTestVariable)
         public:
           GLMTTestVariable (const vector<CohortDataImport>& importers, const matrix_type& measurements, const matrix_type& design, const matrix_type& contrasts);
