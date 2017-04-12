@@ -31,6 +31,15 @@ Options
 
 -  **-scaling values** specify the data scaling parameters used to rescale the intensity values. These take the form of a comma-separated 2-vector of floating-point values, corresponding to offset & scale, with final intensity values being given by offset + scale * stored_value. By default, the values in the input image header are passed through to the output image header when writing to an integer image, and reset to 0,1 (no scaling) for floating-point and binary images. Note that his option has no effect for floating-point and binary images.
 
+Modify generic header entries
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-clear_property key** remove the specified key from the image header altogether.
+
+-  **-set_property key value** set the value of the specified key in the image header.
+
+-  **-append_property key value** append the given value to the specified key in the image header (this adds the value specified as a new line in the header value).
+
 Stride options
 ^^^^^^^^^^^^^^
 
