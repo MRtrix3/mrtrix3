@@ -13,7 +13,7 @@
  * 
  */
 
-
+#include <cstdio>
 #include "command.h"
 #include "file/ofstream.h"
 #include "file/name_parser.h"
@@ -179,6 +179,172 @@ private:
 };
 
 
+class PLYWriter: public WriterInterface<float>
+{
+public:
+    PLYWriter(const std::string& file) : out(file) {
+        vertexFilename = File::create_tempfile(0,".vertex");
+        faceFilename = File::create_tempfile(0,".face");
+        
+        vertexOF.open(vertexFilename);
+        faceOF.open(faceFilename);
+        num_faces = 0;
+        num_vertices = 0;
+    }
+
+    bool operator() (const Streamline<float>& tck) {
+        // Need at least 5 points, silently ignore...
+        if ( tck.size() < 5 ) { return true; }
+
+        auto nSides = 9;
+        auto radius = .1;
+        Eigen::MatrixXf coords(nSides,2);
+        Eigen::MatrixXi faces(nSides,6);
+        auto theta = 2.0 * M_PI / float(nSides);
+        for ( auto i = 0; i < nSides; i++ ) {
+            coords(i,0) = cos((double)i*theta);
+            coords(i,1) = sin((double)i*theta);
+            // Face offsets
+            faces(i,0) = i;
+            faces(i,1) = (i+1) % nSides;
+            faces(i,2) = i+nSides;
+            faces(i,3) = (i+1) % nSides;
+            faces(i,4) = (i+1) % nSides + nSides;
+            faces(i,5) = i+nSides;
+        }
+
+        auto first_point = 1;
+        auto last_point = tck.size() - 2;
+        for ( auto idx = 1; idx < tck.size() - 1; idx++ ) {
+            auto p = tck[idx];
+            auto prior = p;
+            auto next = p;
+            // if ( idx == 0 ) {
+            //     // Project the next point backwards
+            //     next = tck[idx+1];
+            //     prior = p + ( p - tck[idx+2]);
+            // } else if ( idx == tck.size() -1 ) {
+                // prior = tck[idx-1];
+                // next = p + ( p - tck[idx-2] );
+            // } else {
+                prior = tck[idx-1];
+                next = tck[idx+1];
+            // }
+            auto T = (next - p).normalized();
+            auto T2 = (p - prior).normalized();
+            auto N = T.cross(T2).normalized();
+            auto B = T.cross(N).normalized();
+
+            if ( idx < 2 ) {
+                std::cout << "\n\nidx: " << idx << "\n";
+                Eigen::IOFormat fmt(Eigen::StreamPrecision, 0, ", ", ", ", "", "", "[", "];");
+
+                std::cout << "p = " << p.format(fmt) << "\n";
+                std::cout << "next = " << next.format(fmt) << "\n";
+                std::cout << "prior = " << prior.format(fmt) << "\n";
+                std::cout << "T = " << T.format(fmt) << "\n";
+                std::cout << "N = " << N.format(fmt) << "\n";
+                std::cout << "B = " << B.format(fmt) << "\n";
+                std::cout << "T2 = " << T2.format(fmt) << "\n";
+
+                Eigen::IOFormat OctaveFmt(Eigen::StreamPrecision, 0, ", ", ";\n", "", "", "[", "]");
+
+                std::cout << " coords = " << coords.format(OctaveFmt) << "\n";
+                std::cout << " faces = " << faces.format(OctaveFmt) << "\n";
+
+                auto sidePoint = p + radius * ( N * coords(0,0) + B * coords(0,1));
+                std::cout << "sidePoint = " << sidePoint.format(fmt) << "\n";
+            }
+
+            
+            // have our coordinate frame, now add circles
+            for ( auto sideIdx = 0; sideIdx < nSides; sideIdx++ ) {
+                auto sidePoint = p + radius * ( N * coords(sideIdx,0) + B * coords(sideIdx,1));
+                vertexOF << sidePoint[0] << " "<< sidePoint[1] << " " << sidePoint[2] << " ";
+                // Write the color
+                vertexOF << (int)( 255 * fabs(N[0])) << " " << (int)( 255 * fabs(N[1])) << " " << (int)( 255 * fabs(N[2])) << "\n";
+                if ( idx != last_point ) {
+                    faceOF << "3"
+                           << " " << num_vertices + faces(sideIdx,0)
+                           << " " << num_vertices + faces(sideIdx,1)
+                           << " " << num_vertices + faces(sideIdx,2) << "\n";
+                    faceOF << "3"
+                           << " " << num_vertices + faces(sideIdx,3)
+                           << " " << num_vertices + faces(sideIdx,4)
+                           << " " << num_vertices + faces(sideIdx,5) << "\n";
+                    num_faces += 2;
+                }
+            }
+            // Cap the first point, remebering the right hand rule
+            if ( idx == first_point ) {
+                for ( auto sideIdx = nSides - 1; sideIdx >= 2; --sideIdx ) {
+                    faceOF << "3"
+                           << " " << num_vertices + sideIdx
+                           << " " << num_vertices + sideIdx - 1
+                           << " " << num_vertices << "\n";
+                }
+                num_faces += nSides - 2;
+            }
+            if ( idx == last_point ) {
+                // std::cout << "Writing end cap, num_vertices = " << num_vertices << "\n";
+                for ( auto sideIdx = 2; sideIdx <= nSides - 1; ++sideIdx ) {
+                    faceOF << "3"
+                           << " " << num_vertices
+                           << " " << num_vertices + sideIdx
+                           << " " << num_vertices + sideIdx - 1 << "\n";
+                }
+                num_faces += nSides - 2;
+            }
+            // We needed to maintain the number of vertices for the caps, now increment for the "circles"
+            num_vertices += nSides;
+        }
+        return true;
+    }
+
+    ~PLYWriter() {
+        // write out list of tracks:
+        vertexOF.close();
+        faceOF.close();
+        
+        out <<
+            "ply\n"
+            "format ascii 1.0\n"
+            "comment written by tckconvert v" << mrtrix_version << "\n"
+            "comment part of the mtrix3 suite of tools (http://www.mrtrix.org/)\n"
+            "element vertex " << num_vertices << "\n"
+            "property float32 x\n"
+            "property float32 y\n"
+            "property float32 z\n"
+            "property uchar red\n"
+            "property uchar green\n"
+            "property uchar blue\n"
+            "element face " << num_faces << "\n"
+            "property list uint8 int32 vertex_indices\n"
+            "end_header\n";
+
+        std::ifstream vertexIF(vertexFilename);
+        out << vertexIF.rdbuf();
+        vertexIF.close();
+        std::ifstream faceIF(faceFilename);
+        out << faceIF.rdbuf();
+        faceIF.close();
+        std::remove ( vertexFilename.c_str() );
+        std::remove ( faceFilename.c_str() );
+        out.close();
+    }
+
+private:
+    std::string vertexFilename;
+    std::string faceFilename;
+    File::OFStream out;
+    File::OFStream vertexOF;
+    File::OFStream faceOF;
+    size_t face_offset;
+    size_t vertex_offset;
+    size_t num_vertices;
+    size_t num_faces;
+};
+
 
 
 bool has_suffix(const std::string &str, const std::string &suffix)
@@ -214,6 +380,9 @@ void run ()
     }
     else if (has_suffix(argument[1], ".vtk")) {
         writer.reset( new VTKWriter(argument[1]) );
+    }
+    else if (has_suffix(argument[1], ".ply")) {
+        writer.reset( new PLYWriter(argument[1]) );
     }
     else if (has_suffix(argument[1], ".txt")) {
         writer.reset( new ASCIIWriter(argument[1]) );
