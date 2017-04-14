@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 
 #include <cstdio>
@@ -35,7 +35,16 @@ void usage ()
   + "Convert between different track file formats."
 
   + "The program currently supports MRtrix .tck files (input/output), "
-    "ascii text files (input/output), and VTK polydata files (output only).";
+    "ascii text files (input/output), and VTK polydata files (output only)."
+
+  + "Note that ascii files will be stored with one streamline per numbered file. "
+    "To support this, the command will use the multi-file numbering syntax, "
+    "where square brackets denote the position of the numbering for the files, "
+    "for example:"
+
+   + "$ tckconvert input.tck output-[].txt"
+
+   + "will produce files named output-0000.txt, output-0001.txt, output-0002.txt, ...";
 
   ARGUMENTS
   + Argument ("input", "the input track file.").type_text ()
@@ -66,7 +75,7 @@ void usage ()
       + Option ("sides", "number of sides for streamlines") + Argument("sides").type_integer(3,15)
       + Option ("increment", "generate streamline points at every (increment) points") + Argument("increment").type_integer(1);
 
-  
+
 }
 
 
@@ -132,7 +141,7 @@ class ASCIIReader: public ReaderInterface<float>
 {
 public:
     ASCIIReader(const std::string& file) {
-        auto num = list.parse_scan_check(file);
+      auto num = list.parse_scan_check(file);
     }
 
     bool operator() (Streamline<float>& tck) {
@@ -162,6 +171,8 @@ public:
     ASCIIWriter(const std::string& file) {
         count.push_back(0);
         parser.parse(file);
+        if (parser.ndim() != 1)
+          throw Exception ("output file specifier should contain one placeholder for numbering (e.g. output-[].txt)");
         parser.calculate_padding({1000000});
     }
 
@@ -190,12 +201,12 @@ public:
     PLYWriter(const std::string& file, int increment = 1, float radius = 0.1, int sides = 5) : out(file), increment(increment), radius(radius), sides(sides) {
         vertexFilename = File::create_tempfile(0,".vertex");
         faceFilename = File::create_tempfile(0,".face");
-        
+
         vertexOF.open(vertexFilename);
         faceOF.open(faceFilename);
         num_faces = 0;
         num_vertices = 0;
-        
+
     }
 
     Eigen::Vector3f computeNormal ( const Streamline<float>& tck ) {
@@ -220,7 +231,7 @@ public:
         Eigen::Vector3f plane_normal = svd.matrixU().rightCols<1>();
         return plane_normal;
     }
-    
+
     void computeNormals ( const Streamline<float>& tck, Streamline<float>& normals) {
         Eigen::Vector3f sPrev, sNext, pt1, pt2, n, normal;
         sPrev = (tck[1] - tck[0]).normalized();
@@ -277,17 +288,17 @@ public:
         }
     }
 
-    
+
     bool operator() (const Streamline<float>& intck) {
         // Need at least 5 points, silently ignore...
         if ( intck.size() < (increment * 3) ) { return true; }
 
         std::cout << "Radius: " << radius << " Sides: " << sides << " Increment: " << increment << "\n";
-        
+
         auto nSides = sides;
         Eigen::MatrixXf coords(nSides,2);
         Eigen::MatrixXi faces(nSides,6);
-        auto theta = 2.0 * M_PI / float(nSides);
+        auto theta = 2.0 * Math::pi / float(nSides);
         for ( auto i = 0; i < nSides; i++ ) {
             coords(i,0) = cos((double)i*theta);
             coords(i,1) = sin((double)i*theta);
@@ -311,7 +322,7 @@ public:
         }
         tck.push_back(intck[intck.size()-2]);
         tck.push_back(intck[intck.size()-1]);
-        
+
         Streamline<float> normals;
         this->computeNormals(tck,normals);
         auto globalNormal = computeNormal(tck);
@@ -319,7 +330,7 @@ public:
         auto isFirst = true;
         for ( auto idx = 1; idx < tck.size() - 1; ++idx ) {
             auto isLast = idx == tck.size() - 2;
-            
+
             // vtkTubeFilter.cxx:386
             Eigen::Vector3f p = tck[idx];
             Eigen::Vector3f pNext = tck[idx+1];
@@ -343,7 +354,7 @@ public:
             auto N = T.cross(globalNormal).normalized();
             auto B = T.cross(N).normalized();
             N = B.cross(T).normalized();
-                
+
             // auto w = s.cross(n).normalized();
             // auto nP = w.cross(s).normalized();
             // auto N = n.normalized();
@@ -382,7 +393,7 @@ public:
             //     std::cout << "sidePoint = " << sidePoint.format(fmt) << "\n";
             }
 
-            
+
             // have our coordinate frame, now add circles
             for ( auto sideIdx = 0; sideIdx < nSides; sideIdx++ ) {
                 auto sidePoint = p + radius * ( N * coords(sideIdx,0) + B * coords(sideIdx,1));
@@ -431,7 +442,7 @@ public:
         // write out list of tracks:
         vertexOF.close();
         faceOF.close();
-        
+
         out <<
             "ply\n"
             "format ascii 1.0\n"
@@ -499,7 +510,7 @@ void run ()
         throw Exception("Unsupported input file type.");
     }
 
-    
+
     // Writer
     std::unique_ptr<WriterInterface<float> > writer;
     if (has_suffix(argument[1], ".tck")) {
@@ -520,8 +531,8 @@ void run ()
     else {
         throw Exception("Unsupported output file type.");
     }
-    
-    
+
+
     // Tranform matrix
     transform_type T;
     T.setIdentity();
@@ -554,7 +565,7 @@ void run ()
         throw Exception("Transform options are mutually exclusive.");
     }
 
-    
+
     // Copy
     Streamline<float> tck;
     while ( (*reader)(tck) )
