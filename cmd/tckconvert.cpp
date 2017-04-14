@@ -242,7 +242,7 @@ public:
         sPrev = (tck[1] - tck[0]).normalized();
 
         // Find a good starting normal
-        for ( auto idx = 1; idx < tck.size(); idx++ ) {
+        for (size_t idx = 1; idx < tck.size(); idx++) {
             pt1 = tck[idx];
             pt2 = tck[idx+1];
             sNext = (pt2 - pt1).normalized();
@@ -254,7 +254,7 @@ public:
             }
         }
         normal.normalize();  // vtkPolyLine.cxx:170
-        for ( auto idx = 0; idx < tck.size(); idx++ ) {
+        for (size_t idx = 0; idx < tck.size(); idx++) {
             pt1 = tck[idx];
             pt2 = tck[idx+1];
             sNext = (pt2 - pt1).normalized();
@@ -296,7 +296,7 @@ public:
 
     bool operator() (const Streamline<float>& intck) {
         // Need at least 5 points, silently ignore...
-        if ( intck.size() < (increment * 3) ) { return true; }
+        if (intck.size() < size_t(increment * 3)) { return true; }
 
         std::cout << "Radius: " << radius << " Sides: " << sides << " Increment: " << increment << "\n";
 
@@ -322,7 +322,7 @@ public:
         // Push on the first 2 points
         tck.push_back(intck[0]);
         tck.push_back(intck[1]);
-        for ( auto idx = 3; idx < intck.size() - 2; idx += increment ) {
+        for (size_t idx = 3; idx < intck.size() - 2; idx += increment) {
             tck.push_back(intck[idx]);
         }
         tck.push_back(intck[intck.size()-2]);
@@ -333,7 +333,7 @@ public:
         auto globalNormal = computeNormal(tck);
         Eigen::Vector3f sNext = tck[1] - tck[0];
         auto isFirst = true;
-        for ( auto idx = 1; idx < tck.size() - 1; ++idx ) {
+        for (size_t idx = 1; idx < tck.size() - 1; ++idx) {
             auto isLast = idx == tck.size() - 2;
 
             // vtkTubeFilter.cxx:386
