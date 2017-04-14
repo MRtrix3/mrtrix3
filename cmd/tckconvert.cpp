@@ -60,7 +60,12 @@ void usage ()
   + Option ("image2scanner",
       "if specified, the properties of this image will be used to convert "
       "track point positions from image coordinates (in mm) into real (scanner) coordinates.")
-  +    Argument ("reference").type_image_in ();
+  +    Argument ("reference").type_image_in ()
+
+      + Option ("radius", "radius of the streamlines") + Argument("radius").type_float(0.0f)
+      + Option ("sides", "number of sides for streamlines") + Argument("sides").type_integer(3,15)
+      + Option ("increment", "generate streamline points at every (increment) points") + Argument("increment").type_integer(1);
+
   
 }
 
@@ -182,7 +187,7 @@ private:
 class PLYWriter: public WriterInterface<float>
 {
 public:
-    PLYWriter(const std::string& file) : out(file) {
+    PLYWriter(const std::string& file, int increment = 1, float radius = 0.1, int sides = 5) : out(file), increment(increment), radius(radius), sides(sides) {
         vertexFilename = File::create_tempfile(0,".vertex");
         faceFilename = File::create_tempfile(0,".face");
         
@@ -190,14 +195,96 @@ public:
         faceOF.open(faceFilename);
         num_faces = 0;
         num_vertices = 0;
+        
     }
 
-    bool operator() (const Streamline<float>& tck) {
-        // Need at least 5 points, silently ignore...
-        if ( tck.size() < 5 ) { return true; }
+    Eigen::Vector3f computeNormal ( const Streamline<float>& tck ) {
+        // copy coordinates to  matrix in Eigen format
+        size_t num_atoms = tck.size();
+        Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic > coord(3, num_atoms);
+        for (size_t i = 0; i < num_atoms; ++i) {
+            coord.col(i) = tck[i];
+        }
 
-        auto nSides = 9;
-        auto radius = .1;
+        // calculate centroid
+        Eigen::Vector3 centroid(coord.row(0).mean(), coord.row(1).mean(), coord.row(2).mean());
+
+        // subtract centroid
+        coord.row(0).array() -= centroid(0);
+        coord.row(1).array() -= centroid(1);
+        coord.row(2).array() -= centroid(2);
+
+        // we only need the left-singular matrix here
+        //  http://math.stackexchange.com/questions/99299/best-fitting-plane-given-a-set-of-points
+        auto svd = coord.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV);
+        Eigen::Vector3f plane_normal = svd.matrixU().rightCols<1>();
+        return plane_normal;
+    }
+    
+    void computeNormals ( const Streamline<float>& tck, Streamline<float>& normals) {
+        Eigen::Vector3f sPrev, sNext, pt1, pt2, n, normal;
+        sPrev = (tck[1] - tck[0]).normalized();
+
+        // Find a good starting normal
+        for ( auto idx = 1; idx < tck.size(); idx++ ) {
+            pt1 = tck[idx];
+            pt2 = tck[idx+1];
+            sNext = (pt2 - pt1).normalized();
+            n = sPrev.cross(sNext);
+            if ( n.norm() > 1.0E-3 ) {
+                normal = n;
+                sPrev = sNext;
+                break;
+            }
+        }
+        normal.normalize();  // vtkPolyLine.cxx:170
+        for ( auto idx = 0; idx < tck.size(); idx++ ) {
+            pt1 = tck[idx];
+            pt2 = tck[idx+1];
+            sNext = (pt2 - pt1).normalized();
+
+            // compute rotation vector vtkPolyLine.cxx:187
+            auto w = sPrev.cross(normal);
+            if ( w.norm() == 0.0 ) {
+                // copy the normal and continue
+                normals.push_back ( normal );
+                continue;
+            }
+            // compute rotation of line segment
+            auto q = sNext.cross(sPrev);
+            if ( q.norm() == 0.0 ) {
+                // copy the normal and continue
+                normals.push_back ( normal );
+                continue;
+            }
+            auto f1 = q.dot(normal);
+            auto f2 = 1.0 - ( f1 * f1 );
+            if ( f2 > 0.0 ) {
+                f2 = sqrt(1.0 - (f1*f1));
+            } else {
+                f2 = 0.0;
+            }
+
+            auto c = (sNext + sPrev).normalized();
+            w = c.cross(q);
+            c = sPrev.cross(q);
+            if ( ( normal.dot(c) * w.dot(c)) < 0 ) {
+                f2 = -1.0 * f2;
+            }
+            normals.push_back(normal);
+            sPrev = sNext;
+            normal = ( f1 * q ) + (f2 * w);
+        }
+    }
+
+    
+    bool operator() (const Streamline<float>& intck) {
+        // Need at least 5 points, silently ignore...
+        if ( intck.size() < (increment * 3) ) { return true; }
+
+        std::cout << "Radius: " << radius << " Sides: " << sides << " Increment: " << increment << "\n";
+        
+        auto nSides = sides;
         Eigen::MatrixXf coords(nSides,2);
         Eigen::MatrixXi faces(nSides,6);
         auto theta = 2.0 * M_PI / float(nSides);
@@ -213,47 +300,86 @@ public:
             faces(i,5) = i+nSides;
         }
 
-        auto first_point = 1;
-        auto last_point = tck.size() - 2;
-        for ( auto idx = 1; idx < tck.size() - 1; idx++ ) {
-            auto p = tck[idx];
+        // to handle the increment, we want to keep the first 2 and last 2 points, but we can skip inside
+        Streamline<float> tck;
+
+        // Push on the first 2 points
+        tck.push_back(intck[0]);
+        tck.push_back(intck[1]);
+        for ( auto idx = 3; idx < intck.size() - 2; idx += increment ) {
+            tck.push_back(intck[idx]);
+        }
+        tck.push_back(intck[intck.size()-2]);
+        tck.push_back(intck[intck.size()-1]);
+        
+        Streamline<float> normals;
+        this->computeNormals(tck,normals);
+        auto globalNormal = computeNormal(tck);
+        Eigen::Vector3f sNext = tck[1] - tck[0];
+        auto isFirst = true;
+        for ( auto idx = 1; idx < tck.size() - 1; ++idx ) {
+            auto isLast = idx == tck.size() - 2;
+            
+            // vtkTubeFilter.cxx:386
+            Eigen::Vector3f p = tck[idx];
+            Eigen::Vector3f pNext = tck[idx+1];
+            Eigen::Vector3f sPrev = sNext;
+            sNext = pNext - p;
+            Eigen::Vector3f n = normals[idx];
+
+            sNext.normalize();
+            if ( sNext.norm() == 0.0 ) {
+                continue;
+            }
+
+            // Average vectors
+            Eigen::Vector3f s = ( sPrev + sNext ) / 2.0;
+            s.normalize();
+            if ( s.norm() == 0.0 ) {
+                s = sPrev.cross(n).normalized();
+            }
+
+            auto T = s;
+            auto N = T.cross(globalNormal).normalized();
+            auto B = T.cross(N).normalized();
+            N = B.cross(T).normalized();
+                
+            // auto w = s.cross(n).normalized();
+            // auto nP = w.cross(s).normalized();
+            // auto N = n.normalized();
+            // auto B = nP;
+            // auto T = w;
+
+            /*
             auto prior = p;
             auto next = p;
-            // if ( idx == 0 ) {
-            //     // Project the next point backwards
-            //     next = tck[idx+1];
-            //     prior = p + ( p - tck[idx+2]);
-            // } else if ( idx == tck.size() -1 ) {
-                // prior = tck[idx-1];
-                // next = p + ( p - tck[idx-2] );
-            // } else {
                 prior = tck[idx-1];
                 next = tck[idx+1];
-            // }
             auto T = (next - p).normalized();
             auto T2 = (p - prior).normalized();
             auto N = T.cross(T2).normalized();
             auto B = T.cross(N).normalized();
+            */
 
             if ( idx < 2 ) {
-                std::cout << "\n\nidx: " << idx << "\n";
+                // std::cout << "\n\nidx: " << idx << "\n";
                 Eigen::IOFormat fmt(Eigen::StreamPrecision, 0, ", ", ", ", "", "", "[", "];");
 
                 std::cout << "p = " << p.format(fmt) << "\n";
-                std::cout << "next = " << next.format(fmt) << "\n";
-                std::cout << "prior = " << prior.format(fmt) << "\n";
-                std::cout << "T = " << T.format(fmt) << "\n";
+                // std::cout << "next = " << next.format(fmt) << "\n";
+                // std::cout << "prior = " << prior.format(fmt) << "\n";
+                // std::cout << "T = " << T.format(fmt) << "\n";
                 std::cout << "N = " << N.format(fmt) << "\n";
-                std::cout << "B = " << B.format(fmt) << "\n";
-                std::cout << "T2 = " << T2.format(fmt) << "\n";
+                // std::cout << "B = " << B.format(fmt) << "\n";
+                // std::cout << "T2 = " << T2.format(fmt) << "\n";
 
                 Eigen::IOFormat OctaveFmt(Eigen::StreamPrecision, 0, ", ", ";\n", "", "", "[", "]");
 
-                std::cout << " coords = " << coords.format(OctaveFmt) << "\n";
-                std::cout << " faces = " << faces.format(OctaveFmt) << "\n";
+            //     std::cout << " coords = " << coords.format(OctaveFmt) << "\n";
+            //     std::cout << " faces = " << faces.format(OctaveFmt) << "\n";
 
-                auto sidePoint = p + radius * ( N * coords(0,0) + B * coords(0,1));
-                std::cout << "sidePoint = " << sidePoint.format(fmt) << "\n";
+            //     auto sidePoint = p + radius * ( N * coords(0,0) + B * coords(0,1));
+            //     std::cout << "sidePoint = " << sidePoint.format(fmt) << "\n";
             }
 
             
@@ -261,9 +387,8 @@ public:
             for ( auto sideIdx = 0; sideIdx < nSides; sideIdx++ ) {
                 auto sidePoint = p + radius * ( N * coords(sideIdx,0) + B * coords(sideIdx,1));
                 vertexOF << sidePoint[0] << " "<< sidePoint[1] << " " << sidePoint[2] << " ";
-                // Write the color
-                vertexOF << (int)( 255 * fabs(N[0])) << " " << (int)( 255 * fabs(N[1])) << " " << (int)( 255 * fabs(N[2])) << "\n";
-                if ( idx != last_point ) {
+                vertexOF << (int)( 255 * fabs(T[0])) << " " << (int)( 255 * fabs(T[1])) << " " << (int)( 255 * fabs(T[2])) << "\n";
+                if ( !isLast ) {
                     faceOF << "3"
                            << " " << num_vertices + faces(sideIdx,0)
                            << " " << num_vertices + faces(sideIdx,1)
@@ -276,7 +401,7 @@ public:
                 }
             }
             // Cap the first point, remebering the right hand rule
-            if ( idx == first_point ) {
+            if ( isFirst ) {
                 for ( auto sideIdx = nSides - 1; sideIdx >= 2; --sideIdx ) {
                     faceOF << "3"
                            << " " << num_vertices + sideIdx
@@ -284,9 +409,10 @@ public:
                            << " " << num_vertices << "\n";
                 }
                 num_faces += nSides - 2;
+                isFirst = false;
             }
-            if ( idx == last_point ) {
-                // std::cout << "Writing end cap, num_vertices = " << num_vertices << "\n";
+            if ( isLast ) {
+                // faceOF << "Writing end cap, num_vertices = " << num_vertices << "\n";
                 for ( auto sideIdx = 2; sideIdx <= nSides - 1; ++sideIdx ) {
                     faceOF << "3"
                            << " " << num_vertices
@@ -339,10 +465,11 @@ private:
     File::OFStream out;
     File::OFStream vertexOF;
     File::OFStream faceOF;
-    size_t face_offset;
-    size_t vertex_offset;
     size_t num_vertices;
     size_t num_faces;
+    int increment;
+    float radius;
+    int sides;
 };
 
 
@@ -382,7 +509,10 @@ void run ()
         writer.reset( new VTKWriter(argument[1]) );
     }
     else if (has_suffix(argument[1], ".ply")) {
-        writer.reset( new PLYWriter(argument[1]) );
+        auto increment = get_options("increment").size() ? get_options("increment")[0][0].as_int() : 1;
+        auto radius = get_options("radius").size() ? get_options("radius")[0][0].as_float() : 0.1f;
+        auto sides = get_options("sides").size() ? get_options("sides")[0][0].as_int() : 5;
+        writer.reset( new PLYWriter(argument[1], increment, radius, sides) );
     }
     else if (has_suffix(argument[1], ".txt")) {
         writer.reset( new ASCIIWriter(argument[1]) );
