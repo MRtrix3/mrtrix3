@@ -71,11 +71,16 @@ void usage ()
       "track point positions from image coordinates (in mm) into real (scanner) coordinates.")
   +    Argument ("reference").type_image_in ()
 
-      + Option ("radius", "radius of the streamlines") + Argument("radius").type_float(0.0f)
-      + Option ("sides", "number of sides for streamlines") + Argument("sides").type_integer(3,15)
-      + Option ("increment", "generate streamline points at every (increment) points") + Argument("increment").type_integer(1);
+  + OptionGroup ("Options specific to PLY writer")
 
+  + Option ("radius", "radius of the streamlines")
+  +   Argument("radius").type_float(0.0f)
 
+  + Option ("sides", "number of sides for streamlines")
+  +   Argument("sides").type_integer(3,15)
+
+  + Option ("increment", "generate streamline points at every (increment) points")
+  +   Argument("increment").type_integer(1);
 }
 
 
