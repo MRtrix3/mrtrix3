@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 
 #include "header.h"
@@ -36,9 +36,9 @@ namespace MR {
         Patient* patient (series[0]->study->patient);
         std::string sbuf = ( patient->name.size() ? patient->name : "unnamed" );
         sbuf += " " + format_ID (patient->ID);
-        if (series[0]->modality.size()) sbuf 
+        if (series[0]->modality.size()) sbuf
           += std::string (" [") + series[0]->modality + "]";
-        if (series[0]->name.size()) 
+        if (series[0]->name.size())
           sbuf += std::string (" ") + series[0]->name;
         add_line (H.keyval()["comments"], sbuf);
         H.name() = sbuf;
@@ -51,9 +51,9 @@ namespace MR {
           try {
             series_it->read();
           }
-          catch (Exception& E) { 
+          catch (Exception& E) {
             E.display();
-            throw Exception ("error reading series " + str (series_it->number) + " of DICOM image \"" + H.name() + "\""); 
+            throw Exception ("error reading series " + str (series_it->number) + " of DICOM image \"" + H.name() + "\"");
           }
 
           std::sort (series_it->begin(), series_it->end(), compare_ptr_contents());
@@ -63,11 +63,11 @@ namespace MR {
             // if multi-frame, loop over frames in image:
             if (image_it->frames.size()) {
               std::sort (image_it->frames.begin(), image_it->frames.end(), compare_ptr_contents());
-              for (auto frame_it : image_it->frames) 
+              for (auto frame_it : image_it->frames)
                 frames.push_back (frame_it.get());
             }
             // otherwise add image frame:
-            else 
+            else
               frames.push_back (image_it.get());
           }
         }
@@ -83,23 +83,23 @@ namespace MR {
         if (dim[0] > 1) { // switch axes so slice dim is inner-most:
           std::vector<Frame*> list (frames);
           std::vector<Frame*>::iterator it = frames.begin();
-          for (size_t k = 0; k < dim[2]; ++k) 
-            for (size_t i = 0; i < dim[0]; ++i) 
-              for (size_t j = 0; j < dim[1]; ++j) 
+          for (size_t k = 0; k < dim[2]; ++k)
+            for (size_t i = 0; i < dim[0]; ++i)
+              for (size_t j = 0; j < dim[1]; ++j)
                 *(it++) = list[i+dim[0]*(j+dim[1]*k)];
         }
 
         default_type slice_separation = Frame::get_slice_separation (frames, dim[1]);
 
-        if (series[0]->study->name.size()) 
+        if (series[0]->study->name.size())
           add_line (H.keyval()["comments"], std::string ("study: " + series[0]->study->name));
 
-        if (patient->DOB.size()) 
+        if (patient->DOB.size())
           add_line (H.keyval()["comments"], std::string ("DOB: " + format_date (patient->DOB)));
 
         if (series[0]->date.size()) {
           sbuf = "DOS: " + format_date (series[0]->date);
-          if (series[0]->time.size()) 
+          if (series[0]->time.size())
             sbuf += " " + format_time (series[0]->time);
           add_line (H.keyval()["comments"], sbuf);
         }
@@ -111,7 +111,7 @@ namespace MR {
         const Image& image (*(*series[0])[0]);
 
         size_t nchannels = image.frames.size() ? 1 : image.data_size / (image.dim[0] * image.dim[1] * (image.bits_alloc/8));
-        if (nchannels > 1) 
+        if (nchannels > 1)
           INFO ("data segment is larger than expected from image dimensions - interpreting as multi-channel data");
 
         H.ndim() = 3 + (dim[0]*dim[2]>1) + (nchannels>1);
@@ -143,16 +143,16 @@ namespace MR {
         }
 
 
-        if (image.bits_alloc == 8) 
+        if (image.bits_alloc == 8)
           H.datatype() = DataType::UInt8;
         else if (image.bits_alloc == 16) {
           H.datatype() = DataType::UInt16;
-          if (image.is_BE) 
+          if (image.is_BE)
             H.datatype() = DataType::UInt16 | DataType::BigEndian;
-          else 
+          else
             H.datatype() = DataType::UInt16 | DataType::LittleEndian;
         }
-        else throw Exception ("unexpected number of allocated bits per pixel (" + str (image.bits_alloc) 
+        else throw Exception ("unexpected number of allocated bits per pixel (" + str (image.bits_alloc)
             + ") in file \"" + H.name() + "\"");
 
         H.set_intensity_scaling (image.scale_slope, image.scale_intercept);
@@ -202,11 +202,21 @@ namespace MR {
 
           H.size(0) = image.acq_dim[0];
           H.size(1) = image.acq_dim[1];
-          H.size(2) = image.images_in_mosaic;
+          // if Siemens mosaic, use images_in_mosaic as number of slices.
+          // If images_in_mosaic is max(size_t), this means that information is
+          // missing, although the images were detected as mosaic (because
+          // ImageType DICOM tag contains the string 'MOSAIC'), in which case
+          // we use a best guess: the max number of slices that can fit based
+          // on the size of the mosaic and the size of the acquired matrix.
+          H.size(2) = (
+              ( image.images_in_mosaic == std::numeric_limits<size_t>::max() ) ?
+              (image.dim[0]/image.acq_dim[0]) * (image.dim[1]/image.acq_dim[1]) :
+              image.images_in_mosaic
+              );
 
           if (image.dim[0] % image.acq_dim[0] || image.dim[1] % image.acq_dim[1]) {
-            WARN ("acquisition matrix [ " + str (image.acq_dim[0]) + " " + str (image.acq_dim[1]) 
-                + " ] does not fit into DICOM mosaic [ " + str (image.dim[0]) + " " + str (image.dim[1]) 
+            WARN ("acquisition matrix [ " + str (image.acq_dim[0]) + " " + str (image.acq_dim[1])
+                + " ] does not fit into DICOM mosaic [ " + str (image.dim[0]) + " " + str (image.dim[1])
                 + " ] -  adjusting matrix size to suit");
             H.size(0) = image.dim[0] / size_t (float(image.dim[0]) / float(image.acq_dim[0]));
             H.size(1) = image.dim[1] / size_t (float(image.dim[1]) / float(image.acq_dim[1]));
@@ -214,15 +224,15 @@ namespace MR {
 
           float xinc = H.spacing(0) * (image.dim[0] - H.size(0)) / 2.0;
           float yinc = H.spacing(1) * (image.dim[1] - H.size(1)) / 2.0;
-          for (size_t i = 0; i < 3; i++) 
+          for (size_t i = 0; i < 3; i++)
             H.transform()(i,3) += xinc * H.transform()(i,0) + yinc * H.transform()(i,1);
 
           io_handler.reset (new MR::ImageIO::Mosaic (H, image.dim[0], image.dim[1], H.size (0), H.size (1), H.size (2)));
         }
-        else 
+        else
           io_handler.reset (new MR::ImageIO::Default (H));
 
-        for (size_t n = 0; n < frames.size(); ++n) 
+        for (size_t n = 0; n < frames.size(); ++n)
           io_handler->files.push_back (File::Entry (frames[n]->filename, frames[n]->data));
 
         return io_handler;
