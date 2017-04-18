@@ -79,7 +79,7 @@ Options for controlling the SIFT2 optimisation algorithm
 
 -  **-max_coeff_step step** maximum change to a streamline's weighting coefficient in a single iteration (default: 1)
 
--  **-min_cf_decrease frac** minimum decrease in the cost function (as a fraction of the initial value) that must occur each iteration for the algorithm to continue (default: 2.5e-05)
+-  **-min_cf_decrease frac** minimum decrease in the cost function (as a fraction of the initial value) that must occur each iteration for the algorithm to continue (default: 2.5e-005)
 
 Standard options
 ^^^^^^^^^^^^^^^^
