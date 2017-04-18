@@ -16,6 +16,8 @@
 #ifndef __dwi_tensor_h__
 #define __dwi_tensor_h__
 
+#include <Eigen/SVD>
+
 #include "types.h"
 
 #include "dwi/shells.h"
@@ -71,6 +73,10 @@ namespace MR
           bmat (i,21) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,1) * grad(i,2) * grad(i,2) * T(2.0);
         }
       }
+      auto v = Eigen::JacobiSVD<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic>> (bmat).singularValues();
+      auto cond = v[0] / v[v.size()-1];
+      if (cond >= 5e7)
+        WARN ("b-matrix is ill-conditioned (condition number " + str(cond) + "); tensor estimation may be ill-posed (do you have enough b-values?)");
       return bmat;
     }
 
