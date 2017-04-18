@@ -75,15 +75,30 @@ def newTempFile(suffix):
 #   finished its work)
 # Using open() rather than os.path.exists() ensures that not only has the file
 #   appeared in the directory listing, but the data are there and a file handle
-#   can be obtained.
+#   can be obtained. Additionally, opening the file in append mode should fail if
+#   some other process still has that file open for writing.
+# There's a plausible race condition where if the file is deleted between
+#   os.path.exists() and open() then an empty file will be created, but this is
+#   hopefully unlikely to occur in realistic use.
 # Initially, checks for the file once every 1/1000th of a second; this gradually
 #   increases if the file still doesn't exist, until the program is only checking
 #   for the file once a minute.
 def waitFor(path):
-  import time
+  import os, time
   from mrtrix3 import app
+  if not os.path.exists(path):
+    delay = 1.0/1024.0
+    app.console('Waiting for creation of new file \"' + path + '\"')
+    while not os.path.exists(path):
+      time.sleep(delay)
+      delay = max(60.0, delay*2.0)
+    app.debug('File \"' + path + '\" appears to have been created')
+  if not os.access(path, os.W_OK):
+    app.warn('User does not have write access to file \"' + path + '\"; unable to verify file is complete')
+    return
+  flags = os.O_RDWR | os.O_EXLOCK
   try:
-    open(path)
+    open(path, flags)
     return
   except:
     pass
@@ -91,10 +106,10 @@ def waitFor(path):
   delay = 1.0/1024.0
   while True:
     try:
-      with open(path):
-        pass
+      open(path, flags)
+      app.debug('File \"' + path + '\" appears to have been finalized')
       return
     except IOError:
       time.sleep(delay)
       delay = max(60.0, delay*2.0)
-  app.debug('File \"' + path + '\" appears to be complete')
+
