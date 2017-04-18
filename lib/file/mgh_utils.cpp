@@ -16,7 +16,6 @@
 #include <cctype>
 
 #include "header.h"
-#include "raw.h"
 #include "file/ofstream.h"
 #include "file/mgh_utils.h"
 #include "file/nifti1_utils.h"
@@ -102,68 +101,63 @@ namespace MR
 
 
 
-      bool read_header (Header& H, const mgh_header& MGHH)
+
+
+
+
+
+      void read_header (Header& H, const mgh_header& MGHH)
       {
-        bool is_BE = false;
-        if (Raw::fetch_<int32_t> (&MGHH.version, is_BE) != 1) {
-          is_BE = true;
-          if (Raw::fetch_<int32_t> (&MGHH.version, is_BE) != 1)
-            throw Exception ("image \"" + H.name() + "\" is not in MGH format (version != 1)");
-        }
+        if (Raw::fetch_BE<int32_t> (&MGHH.version) != 1)
+          throw Exception ("image \"" + H.name() + "\" is not in MGH format (version != 1)");
 
-        const size_t ndim = (Raw::fetch_<int32_t> (&MGHH.nframes, is_BE) > 1) ? 4 : 3;
+        const size_t ndim = (ByteOrder::BE (MGHH.nframes) > 1) ? 4 : 3;
         H.ndim() = ndim;
-        H.size (0) = Raw::fetch_<int32_t> (&MGHH.width, is_BE);
-        H.size (1) = Raw::fetch_<int32_t> (&MGHH.height, is_BE);
-        H.size (2) = Raw::fetch_<int32_t> (&MGHH.depth, is_BE);
+        H.size (0) = ByteOrder::BE (MGHH.width);
+        H.size (1) = ByteOrder::BE (MGHH.height);
+        H.size (2) = ByteOrder::BE (MGHH.depth);
         if (ndim == 4)
-          H.size (3) = Raw::fetch_<int32_t> (&MGHH.nframes, is_BE);
+          H.size (3) = ByteOrder::BE (MGHH.nframes);
 
-        H.spacing (0) = Raw::fetch_<float> (&MGHH.spacing_x, is_BE);
-        H.spacing (1) = Raw::fetch_<float> (&MGHH.spacing_y, is_BE);
-        H.spacing (2) = Raw::fetch_<float> (&MGHH.spacing_z, is_BE);
+        H.spacing (0) = ByteOrder::BE (MGHH.spacing_x);
+        H.spacing (1) = ByteOrder::BE (MGHH.spacing_y);
+        H.spacing (2) = ByteOrder::BE (MGHH.spacing_z);
 
         for (size_t i = 0; i != ndim; ++i)
           H.stride (i) = i + 1;
 
         DataType dtype;
-        int32_t type = Raw::fetch_<int32_t> (&MGHH.type, is_BE);
+        int32_t type = ByteOrder::BE (MGHH.type);
         switch (type) {
           case MGH_TYPE_UCHAR: dtype = DataType::UInt8;   break;
-          case MGH_TYPE_SHORT: dtype = DataType::Int16;   break;
-          case MGH_TYPE_INT:   dtype = DataType::Int32;   break;
-          case MGH_TYPE_FLOAT: dtype = DataType::Float32; break;
+          case MGH_TYPE_SHORT: dtype = DataType::Int16BE;   break;
+          case MGH_TYPE_INT:   dtype = DataType::Int32BE;   break;
+          case MGH_TYPE_FLOAT: dtype = DataType::Float32BE; break;
           default: throw Exception ("unknown data type for MGH image \"" + H.name() + "\" (" + str (type) + ")");
-        }
-        if (dtype != DataType::UInt8) {
-          if (is_BE)
-            dtype.set_flag (DataType::BigEndian);
-          else
-            dtype.set_flag (DataType::LittleEndian);
         }
         H.datatype() = dtype;
         H.reset_intensity_scaling();
 
         transform_type& M (H.transform());
 
-        const int16_t RAS = Raw::fetch_<int16_t> (&MGHH.goodRASFlag, is_BE);
+        const int16_t RAS = ByteOrder::BE (MGHH.goodRASFlag);
         if (RAS) {
 
-          M(0,0) = Raw::fetch_<float> (&MGHH.x_r, is_BE);
-          M(0,1) = Raw::fetch_<float> (&MGHH.y_r, is_BE);
-          M(0,2) = Raw::fetch_<float> (&MGHH.z_r, is_BE);
+          M(0,0) = ByteOrder::BE (MGHH.x_r);
+          M(0,1) = ByteOrder::BE (MGHH.y_r);
+          M(0,2) = ByteOrder::BE (MGHH.z_r);
 
-          M(1,0) = Raw::fetch_<float> (&MGHH.x_a, is_BE);
-          M(1,1) = Raw::fetch_<float> (&MGHH.y_a, is_BE);
-          M(1,2) = Raw::fetch_<float> (&MGHH.z_a, is_BE);
+          M(1,0) = ByteOrder::BE (MGHH.x_a);
+          M(1,1) = ByteOrder::BE (MGHH.y_a);
+          M(1,2) = ByteOrder::BE (MGHH.z_a);
 
-          M(2,0) = Raw::fetch_<float> (&MGHH.x_s, is_BE);
-          M(2,1) = Raw::fetch_<float> (&MGHH.y_s, is_BE);
-          M(2,2) = Raw::fetch_<float> (&MGHH.z_s, is_BE);
+          M(2,0) = ByteOrder::BE (MGHH.x_s);
+          M(2,1) = ByteOrder::BE (MGHH.y_s);
+          M(2,2) = ByteOrder::BE (MGHH.z_s);
 
-          M(0,3) = Raw::fetch_<float> (&MGHH.c_r, is_BE);
-          M(1,3) = Raw::fetch_<float> (&MGHH.c_a, is_BE);
-          M(2,3) = Raw::fetch_<float> (&MGHH.c_s, is_BE);
+          M(0,3) = ByteOrder::BE (MGHH.c_r);
+          M(1,3) = ByteOrder::BE (MGHH.c_a);
+          M(2,3) = ByteOrder::BE (MGHH.c_s);
 
           for (size_t i = 0; i < 3; ++i) {
             for (size_t j = 0; j < 3; ++j)
@@ -180,41 +174,40 @@ namespace MR
 
         }
 
-        return is_BE;
-
       }
 
 
 
-      void read_other (Header& H, const mgh_other& MGHO, const bool is_BE)
+
+
+
+
+      void read_other (Header& H, const mgh_other& MGHO)
       {
-        if (Raw::fetch_<float> (&MGHO.tr, is_BE) != 0.0f)
-          add_line (H.keyval()["comments"], "TR: "   + str (Raw::fetch_<float> (&MGHO.tr, is_BE), 6) + "ms");
-        if (Raw::fetch_<float> (&MGHO.flip_angle, is_BE) != 0.0f) // Radians in MGHO -> degrees in header
-          add_line (H.keyval()["comments"], "Flip: " + str (Raw::fetch_<float> (&MGHO.flip_angle, is_BE) * 180.0 / Math::pi, 6) + "deg");
-        if (Raw::fetch_<float> (&MGHO.te, is_BE) != 0.0f)
-          add_line (H.keyval()["comments"], "TE: "   + str (Raw::fetch_<float> (&MGHO.te, is_BE), 6) + "ms");
-        if (Raw::fetch_<float> (&MGHO.ti, is_BE) != 0.0f)
-          add_line (H.keyval()["comments"], "TI: "   + str (Raw::fetch_<float> (&MGHO.ti, is_BE), 6) + "ms");
-
-        // Ignore FoV field
-/*
-        // Do this manually to get rid of a lot of non-printable bytes
-        for (const auto i : MGHO.tags) {
-          std::string s;
-          for (auto c : i) {
-            if (isprint(c)) {
-              s.push_back (c);
-            } else if (s.size()) {
-              add_line (H.keyval()["comments"], s);
-              s.clear();
-            }
-          }
-          if (s.size())
-            add_line (H.keyval()["comments"], s);
-        }
-        */
+        if (ByteOrder::BE (MGHO.tr) != 0.0f)
+          add_line (H.keyval()["comments"], "TR: "   + str (ByteOrder::BE (MGHO.tr), 6) + "ms");
+        if (ByteOrder::BE (MGHO.flip_angle) != 0.0f) // Radians in MGHO -> degrees in header
+          add_line (H.keyval()["comments"], "Flip: " + str (ByteOrder::BE (MGHO.flip_angle) * 180.0 / Math::pi, 6) + "deg");
+        if (ByteOrder::BE (MGHO.te) != 0.0f)
+          add_line (H.keyval()["comments"], "TE: "   + str (ByteOrder::BE (MGHO.te), 6) + "ms");
+        if (ByteOrder::BE (MGHO.ti) != 0.0f)
+          add_line (H.keyval()["comments"], "TI: "   + str (ByteOrder::BE (MGHO.ti), 6) + "ms");
       }
+
+
+
+
+
+
+
+
+      void read_tag (Header& H, const mgh_tag& tag)
+      {
+        if (tag.content.size())
+          add_line (H.keyval()["comments"], tag_ID_to_string(tag.id) + ": " + tag.content);
+      }
+
+
 
 
 
@@ -222,8 +215,6 @@ namespace MR
 
       void write_header (mgh_header& MGHH, const Header& H)
       {
-        const bool is_BE = true;
-
         const size_t ndim = H.ndim();
         if (ndim > 4)
           throw Exception ("MGH file format does not support images of more than 4 dimensions");
@@ -231,11 +222,11 @@ namespace MR
         std::vector<size_t> axes;
         auto M = File::NIfTI::adjust_transform (H, axes);
 
-        Raw::store<int32_t> (1, &MGHH.version, is_BE);
-        Raw::store<int32_t> (H.size (axes[0]), &MGHH.width, is_BE);
-        Raw::store<int32_t> ((ndim > 1) ? H.size (axes[1]) : 1, &MGHH.height, is_BE);
-        Raw::store<int32_t> ((ndim > 2) ? H.size (axes[2]) : 1, &MGHH.depth, is_BE);
-        Raw::store<int32_t> ((ndim > 3) ? H.size (3) : 1, &MGHH.nframes, is_BE);
+        Raw::store_BE<int32_t> (1, &MGHH.version);
+        Raw::store_BE<int32_t> (H.size (axes[0]), &MGHH.width);
+        Raw::store_BE<int32_t> ((ndim > 1) ? H.size (axes[1]) : 1, &MGHH.height);
+        Raw::store_BE<int32_t> ((ndim > 2) ? H.size (axes[2]) : 1, &MGHH.depth);
+        Raw::store_BE<int32_t> ((ndim > 3) ? H.size (3) : 1, &MGHH.nframes);
 
         const DataType& dt = H.datatype();
         if (dt.is_complex())
@@ -260,35 +251,35 @@ namespace MR
           case DataType::Float32: case DataType::Float32BE: case DataType::Float32LE: type = MGH_TYPE_FLOAT; break;
           default: throw Exception ("Error in MGH file format data type parsing");
         }
-        Raw::store<int32_t> (type, &MGHH.type, is_BE);
+        Raw::store_BE<int32_t> (type, &MGHH.type);
 
-        Raw::store<int32_t> (0, &MGHH.dof, is_BE);
-        Raw::store<int16_t> (1, &MGHH.goodRASFlag, is_BE);
-        Raw::store<float> (H.spacing (axes[0]), &MGHH.spacing_x, is_BE);
-        Raw::store<float> (H.spacing (axes[1]), &MGHH.spacing_y, is_BE);
-        Raw::store<float> (H.spacing (axes[2]), &MGHH.spacing_z, is_BE);
+        Raw::store_BE<int32_t> (0, &MGHH.dof);
+        Raw::store_BE<int16_t> (1, &MGHH.goodRASFlag);
+        Raw::store_BE<float32> (H.spacing (axes[0]), &MGHH.spacing_x);
+        Raw::store_BE<float32> (H.spacing (axes[1]), &MGHH.spacing_y);
+        Raw::store_BE<float32> (H.spacing (axes[2]), &MGHH.spacing_z);
 
         //const Math::Matrix<float>& M (H.transform());
-        Raw::store<float> (M(0,0), &MGHH.x_r, is_BE);
-        Raw::store<float> (M(0,1), &MGHH.y_r, is_BE);
-        Raw::store<float> (M(0,2), &MGHH.z_r, is_BE);
+        Raw::store_BE<float32> (M(0,0), &MGHH.x_r);
+        Raw::store_BE<float32> (M(0,1), &MGHH.y_r);
+        Raw::store_BE<float32> (M(0,2), &MGHH.z_r);
 
-        Raw::store<float> (M(1,0), &MGHH.x_a, is_BE);
-        Raw::store<float> (M(1,1), &MGHH.y_a, is_BE);
-        Raw::store<float> (M(1,2), &MGHH.z_a, is_BE);
+        Raw::store_BE<float32> (M(1,0), &MGHH.x_a);
+        Raw::store_BE<float32> (M(1,1), &MGHH.y_a);
+        Raw::store_BE<float32> (M(1,2), &MGHH.z_a);
 
-        Raw::store<float> (M(2,0), &MGHH.x_s, is_BE);
-        Raw::store<float> (M(2,1), &MGHH.y_s, is_BE);
-        Raw::store<float> (M(2,2), &MGHH.z_s, is_BE);
+        Raw::store_BE<float32> (M(2,0), &MGHH.x_s);
+        Raw::store_BE<float32> (M(2,1), &MGHH.y_s);
+        Raw::store_BE<float32> (M(2,2), &MGHH.z_s);
 
         for (size_t i = 0; i != 3; ++i) {
           default_type offset = M(i, 3);
           for (size_t j = 0; j != 3; ++j)
             offset += 0.5 * H.size(axes[j]) * H.spacing(axes[j]) * M(i,j);
           switch (i) {
-            case 0: Raw::store<float> (offset, &MGHH.c_r, is_BE); break;
-            case 1: Raw::store<float> (offset, &MGHH.c_a, is_BE); break;
-            case 2: Raw::store<float> (offset, &MGHH.c_s, is_BE); break;
+            case 0: Raw::store_BE<float32> (offset, &MGHH.c_r); break;
+            case 1: Raw::store_BE<float32> (offset, &MGHH.c_a); break;
+            case 2: Raw::store_BE<float32> (offset, &MGHH.c_s); break;
           }
         }
 
@@ -297,36 +288,40 @@ namespace MR
 
 
 
+
+
+
+
       void write_other (mgh_other& MGHO, const Header& H)
       {
         MGHO.tags.clear();
-        const bool is_BE = true;
 
         const auto comments = H.keyval().find("comments");
         if (comments != H.keyval().end()) {
           for (const auto i : split_lines (comments->second)) {
-            const std::string key = i.substr (0, i.find_first_of (':'));
+            auto pos = i.find_first_of (": ");
+            const std::string key = i.substr (0, pos);
+            const std::string value = i.substr (pos+2);
             if (key == "TR")
-              Raw::store<float> (to<float> (i.substr (3)), &MGHO.tr, is_BE);
+              Raw::store_BE<float32> (to<float32> (value), &MGHO.tr);
             else if (key == "Flip") // Degrees in header -> radians in MGHO
-              Raw::store<float> (to<float> (i.substr (5)) * Math::pi / 180.0, &MGHO.flip_angle, is_BE);
+              Raw::store_BE<float32> (to<float32> (value) * Math::pi / 180.0, &MGHO.flip_angle);
             else if (key == "TE")
-              Raw::store<float> (to<float> (i.substr (3)), &MGHO.te, is_BE);
+              Raw::store_BE<float32> (to<float32> (value), &MGHO.te);
             else if (key == "TI")
-              Raw::store<float> (to<float> (i.substr (3)), &MGHO.ti, is_BE);
-            else if (key.compare (0, 9, "[MGH TAG ") == 0) {
-              auto pos = key.find ("]");
-              if (pos == key.npos)
-                continue;
-              int32_t tag = ByteOrder::BE (to<int32_t> (key.substr (9, pos)));
-              auto content = i.substr (pos+3);
-              int64_t size = ByteOrder::BE (int64_t (content.size()));
-              MGHO.tags.push_back (std::make_tuple (tag, size, content));
+              Raw::store_BE<float32> (to<float32> (value), &MGHO.ti);
+            else {
+              auto id = string_to_tag_ID (key);
+              if (id) {
+                auto tag = prepare_tag (id, value.size());
+                tag.content = value;
+                MGHO.tags.push_back (tag);
+              }
             }
           }
         }
 
-        Raw::store<float> (0.0, &MGHO.fov, is_BE);
+        Raw::store_BE<float32> (0.0, &MGHO.fov);
       }
 
     }

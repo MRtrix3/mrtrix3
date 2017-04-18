@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 
 #include "header.h"
@@ -32,7 +32,7 @@ namespace MR
       if (!Path::has_suffix (H.name(), ".mgh"))
         return std::unique_ptr<ImageIO::Base>();
       File::MMap fmap (H.name());
-      bool is_BE = File::MGH::read_header (H, * ( (const mgh_header*) fmap.address()));
+      File::MGH::read_header (H, * ( (const mgh_header*) fmap.address()));
 
       // Remaining header items appear AFTER the data
       // It's possible that these data may not even be there; need to make sure that we don't go over the file size
@@ -43,19 +43,16 @@ namespace MR
 
         mgh_other MGHO;
         memcpy (&MGHO, fmap.address() + other_offset, other_floats_size);
-        File::MGH::read_other (H, MGHO, is_BE);
+        File::MGH::read_other (H, MGHO);
 
-        MGHO.tags.clear();
         uint8_t* p_current = fmap.address() + other_tags_offset;
 
         while (p_current < fmap.address() + fmap.size()) {
-
-          int32_t tag = Raw::fetch_BE<int32_t> (p_current);
-          int64_t size = Raw::fetch_BE<int64_t> (p_current+4);
-          if (size & p_current[12]) 
-            add_line (H.keyval()["comments"], "[MGH TAG "+str(tag) + "]: "   + (const char*) (p_current+12));
-
-          p_current += 12 + size;
+          auto tag = File::MGH::prepare_tag (*reinterpret_cast<int32_t*>(p_current), *reinterpret_cast<int64_t*> (p_current+sizeof(int32_t)));
+          p_current += sizeof(int32_t)+sizeof(int64_t);
+          tag.content = std::string (reinterpret_cast<const char*> (p_current), tag.size);
+          File::MGH::read_tag (H, tag);
+          p_current += tag.size;
         }
 
 
@@ -113,9 +110,9 @@ namespace MR
       out.open (H.name(), std::ios_base::out | std::ios_base::app);
       out.write ((char*) &MGHO, 5 * sizeof (float));
       for (const auto& tag : MGHO.tags) {
-        out.write (reinterpret_cast<const char*> (&std::get<0>(tag)), sizeof(int32_t));
-        out.write (reinterpret_cast<const char*> (&std::get<1>(tag)), sizeof(int64_t));
-        out.write (std::get<2>(tag).c_str(), std::get<2>(tag).size());
+        out.write (reinterpret_cast<const char*> (&tag.id), sizeof(tag.id));
+        out.write (reinterpret_cast<const char*> (&tag.size), sizeof(tag.size));
+        out.write (tag.content.c_str(), tag.content.size());
       }
       out.close();
 

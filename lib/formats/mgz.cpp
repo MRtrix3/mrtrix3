@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 
 #include "file/utils.h"
@@ -38,7 +38,7 @@ namespace MR
       File::GZ zf (H.name(), "rb");
       zf.read (reinterpret_cast<char*> (&MGHH), MGH_HEADER_SIZE);
 
-      bool is_BE = File::MGH::read_header (H, MGHH);
+      File::MGH::read_header (H, MGHH);
 
       try {
 
@@ -48,19 +48,21 @@ namespace MR
 
         zf.seek (MGH_DATA_OFFSET + footprint (H));
         zf.read (reinterpret_cast<char*> (&MGHO), 5 * sizeof(float));
-        File::MGH::read_other (H, MGHO, is_BE);
+        File::MGH::read_other (H, MGHO);
 
         try {
 
           do {
-            int32_t tag; zf.read (reinterpret_cast<char*> (&tag), sizeof(tag)); tag = ByteOrder::BE (tag); 
-            int64_t size; zf.read (reinterpret_cast<char*> (&size), sizeof(size)); size = ByteOrder::BE (size);
-            if (size > 0) {
-              std::unique_ptr<char[]> buf (new char [size+1]);
-              zf.read (buf.get(), size);
-              buf[size] = '\0';
-              if (buf[0])
-                add_line (H.keyval()["comments"], "[MGH TAG "+str(tag) + "]: "   + buf.get());
+            mgh_tag tag;
+            zf.read (reinterpret_cast<char*> (&tag.id), sizeof(tag.id));
+            zf.read (reinterpret_cast<char*> (&tag.size), sizeof(tag.size));
+            tag = File::MGH::prepare_tag (tag.id, tag.size);
+            if (tag.size > 0) {
+              std::unique_ptr<char[]> buf (new char [tag.size+1]);
+              zf.read (buf.get(), tag.size);
+              buf[tag.size] = '\0';
+              tag.content = buf.get();
+              File::MGH::read_tag (H, tag);
             }
           } while (!zf.eof());
 
@@ -107,13 +109,13 @@ namespace MR
         H.datatype().unset_flag (DataType::LittleEndian);
       }
 
-      mgh_other  MGHO;
+      mgh_other MGHO;
       memset (&MGHO, 0x00, 5 * sizeof(float));
-      MGHO.tags.clear();
       File::MGH::write_other (MGHO, H);
+
       size_t lead_out_size = 5*sizeof(float);
-      for (const auto& tag : MGHO.tags) 
-        lead_out_size += sizeof(int32_t) + sizeof(int64_t) + std::get<2>(tag).size();
+      for (const auto& tag : MGHO.tags)
+        lead_out_size += sizeof(tag.id) + sizeof(tag.size) + tag.content.size();
 
       std::unique_ptr<ImageIO::GZ> io_handler (new ImageIO::GZ (H, MGH_DATA_OFFSET, lead_out_size));
 
@@ -124,9 +126,9 @@ namespace MR
       p += 5*sizeof(float);
 
       for (const auto& tag : MGHO.tags) {
-        memcpy (p, &std::get<0>(tag), sizeof(int32_t)); p += sizeof(int32_t);
-        memcpy (p, &std::get<1>(tag), sizeof(int64_t)); p += sizeof(int64_t);
-        memcpy (p, std::get<2>(tag).c_str(), std::get<2>(tag).size()); p += std::get<2>(tag).size();
+        memcpy (p, &tag.id, sizeof(tag.id)); p += sizeof(tag.id);
+        memcpy (p, &tag.size, sizeof(tag.size)); p += sizeof(tag.size);
+        memcpy (p, tag.content.c_str(), tag.content.size()); p += tag.content.size();
       }
 
       File::create (H.name());
