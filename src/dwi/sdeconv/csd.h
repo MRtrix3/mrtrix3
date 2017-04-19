@@ -99,7 +99,7 @@ namespace MR
               INFO ("loading response function from file \"" + path + "\"");
               response = load_vector (path);
 
-              lmax_response = 2*(response.size()-1);
+              lmax_response = Math::ZSH::LforN (response.size());
               INFO ("setting response function using even SH coefficients: " + str (response.transpose()));
             }
 
