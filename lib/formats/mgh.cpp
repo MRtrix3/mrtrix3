@@ -48,11 +48,21 @@ namespace MR
         uint8_t* p_current = fmap.address() + other_tags_offset;
 
         while (p_current < fmap.address() + fmap.size()) {
-          auto tag = File::MGH::prepare_tag (*reinterpret_cast<int32_t*>(p_current), *reinterpret_cast<int64_t*> (p_current+sizeof(int32_t)));
-          p_current += sizeof(int32_t)+sizeof(int64_t);
-          tag.content = std::string (reinterpret_cast<const char*> (p_current), tag.size);
-          File::MGH::read_tag (H, tag);
-          p_current += tag.size;
+          mgh_tag tag;
+          Raw::store_BE<int32_t> (0, &tag.id);
+          Raw::store_BE<int64_t> (0, &tag.size);
+          tag.id = *reinterpret_cast<int32_t*>(p_current);
+          p_current += sizeof(int32_t);
+          tag.size = *reinterpret_cast<int64_t*> (p_current);
+          p_current += sizeof(int64_t);
+          if (ByteOrder::BE (tag.size)) {
+            std::unique_ptr<char[]> buf (new char [ByteOrder::BE (tag.size) + 1]);
+            strncpy (buf.get(), reinterpret_cast<const char*> (p_current), ByteOrder::BE (tag.size));
+            buf[ByteOrder::BE (tag.size)] = '\0';
+            tag.content = buf.get();
+            File::MGH::read_tag (H, tag);
+            p_current += ByteOrder::BE (tag.size);
+          }
         }
 
 
@@ -112,6 +122,7 @@ namespace MR
       for (const auto& tag : MGHO.tags) {
         out.write (reinterpret_cast<const char*> (&tag.id), sizeof(tag.id));
         out.write (reinterpret_cast<const char*> (&tag.size), sizeof(tag.size));
+        assert (size_t(ByteOrder::BE (tag.size)) == tag.content.size());
         out.write (tag.content.c_str(), tag.content.size());
       }
       out.close();

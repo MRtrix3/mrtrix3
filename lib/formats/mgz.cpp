@@ -54,13 +54,14 @@ namespace MR
 
           do {
             mgh_tag tag;
-            zf.read (reinterpret_cast<char*> (&tag.id), sizeof(tag.id));
-            zf.read (reinterpret_cast<char*> (&tag.size), sizeof(tag.size));
-            tag = File::MGH::prepare_tag (tag.id, tag.size);
-            if (tag.size > 0) {
-              std::unique_ptr<char[]> buf (new char [tag.size+1]);
-              zf.read (buf.get(), tag.size);
-              buf[tag.size] = '\0';
+            Raw::store_BE<int32_t> (0, &tag.id);
+            Raw::store_BE<int64_t> (0, &tag.size);
+            zf.read (reinterpret_cast<char*> (&tag.id),   sizeof(int32_t));
+            zf.read (reinterpret_cast<char*> (&tag.size), sizeof(int64_t));
+            if (!zf.eof() && ByteOrder::BE (tag.size) > 0) {
+              std::unique_ptr<char[]> buf (new char [ByteOrder::BE (tag.size) + 1]);
+              zf.read (reinterpret_cast<char*> (buf.get()), ByteOrder::BE (tag.size));
+              buf[ByteOrder::BE (tag.size)] = '\0';
               tag.content = buf.get();
               File::MGH::read_tag (H, tag);
             }
@@ -114,8 +115,10 @@ namespace MR
       File::MGH::write_other (MGHO, H);
 
       size_t lead_out_size = 5*sizeof(float);
-      for (const auto& tag : MGHO.tags)
+      for (const auto& tag : MGHO.tags) {
+        assert (tag.content.size() == size_t(ByteOrder::BE (tag.size)));
         lead_out_size += sizeof(tag.id) + sizeof(tag.size) + tag.content.size();
+      }
 
       std::unique_ptr<ImageIO::GZ> io_handler (new ImageIO::GZ (H, MGH_DATA_OFFSET, lead_out_size));
 
@@ -128,6 +131,7 @@ namespace MR
       for (const auto& tag : MGHO.tags) {
         memcpy (p, &tag.id, sizeof(tag.id)); p += sizeof(tag.id);
         memcpy (p, &tag.size, sizeof(tag.size)); p += sizeof(tag.size);
+        assert (size_t(ByteOrder::BE (tag.size)) == tag.content.size());
         memcpy (p, tag.content.c_str(), tag.content.size()); p += tag.content.size();
       }
 

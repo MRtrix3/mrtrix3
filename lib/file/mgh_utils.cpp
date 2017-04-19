@@ -31,9 +31,9 @@ namespace MR
 
       namespace {
 
-        std::string tag_ID_to_string (int num)
+        std::string tag_ID_to_string (const int32_t tag)
         {
-          switch (num) {
+          switch (tag) {
             case 1: return "MGH_TAG_OLD_COLORTABLE";
             case 2: return "MGH_TAG_OLD_USEREALRAS";
             case 3: return "MGH_TAG_CMDLINE";
@@ -59,12 +59,12 @@ namespace MR
 
             default: break;
           }
-          return "MGH_TAG_" + str(num);
+          return "MGH_TAG_" + str(tag);
         }
 
 
 
-        int string_to_tag_ID (const std::string& key)
+        int32_t string_to_tag_ID (const std::string& key)
         {
           if (key.compare (0, 8, "MGH_TAG_") == 0) {
 
@@ -129,7 +129,7 @@ namespace MR
         DataType dtype;
         int32_t type = ByteOrder::BE (MGHH.type);
         switch (type) {
-          case MGH_TYPE_UCHAR: dtype = DataType::UInt8;   break;
+          case MGH_TYPE_UCHAR: dtype = DataType::UInt8;     break;
           case MGH_TYPE_SHORT: dtype = DataType::Int16BE;   break;
           case MGH_TYPE_INT:   dtype = DataType::Int32BE;   break;
           case MGH_TYPE_FLOAT: dtype = DataType::Float32BE; break;
@@ -204,7 +204,7 @@ namespace MR
       void read_tag (Header& H, const mgh_tag& tag)
       {
         if (tag.content.size())
-          add_line (H.keyval()["comments"], tag_ID_to_string(tag.id) + ": " + tag.content);
+          add_line (H.keyval()["comments"], tag_ID_to_string (ByteOrder::BE (tag.id)) + ": " + tag.content);
       }
 
 
@@ -313,7 +313,9 @@ namespace MR
             else {
               auto id = string_to_tag_ID (key);
               if (id) {
-                auto tag = prepare_tag (id, value.size());
+                mgh_tag tag;
+                tag.id = ByteOrder::BE (id);
+                tag.size = ByteOrder::BE (value.size());
                 tag.content = value;
                 MGHO.tags.push_back (tag);
               }

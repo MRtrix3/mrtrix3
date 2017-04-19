@@ -31,13 +31,6 @@ namespace MR
     namespace MGH
     {
 
-      inline mgh_tag prepare_tag (int32_t id, int64_t size) {
-        mgh_tag tag;
-        tag.id = ByteOrder::BE (id);
-        tag.size = ByteOrder::BE (size);
-        return tag;
-      }
-
       void read_header  (Header& H, const mgh_header& MGHH);
       void read_other   (Header& H, const mgh_other& MGHO);
       void read_tag     (Header& H, const mgh_tag& tag);
