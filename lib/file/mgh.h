@@ -64,10 +64,20 @@ namespace MR
       {
         if (num_axes < 3) throw Exception ("cannot create MGH image with less than 3 dimensions");
         if (num_axes > 4) throw Exception ("cannot create MGH image with more than 4 dimensions");
-
-        // TODO: substitute data type if not supported.
-
         H.ndim() = num_axes;
+
+        if (H.datatype().is_complex())
+          throw Exception ("MGH file format does not support complex types");
+
+        switch (H.datatype()() & ( DataType::Type | DataType::Signed )) {
+          case DataType::Bit: 
+          case DataType::Int8: H.datatype() = DataType::UInt8; break;
+          case DataType::UInt16: H.datatype() = DataType::Int16BE; break;
+          case DataType::UInt32: 
+          case DataType::Int64:
+          case DataType::UInt64: H.datatype() = DataType::Int32BE; break;
+          case DataType::Float64: H.datatype() = DataType::Float32BE; break;
+        }
 
         if (H.datatype().bytes() > 1) {
           H.datatype().set_flag (DataType::BigEndian);
@@ -216,29 +226,13 @@ namespace MR
           store<int32_t> ((ndim > 2) ? H.size (axes[2]) : 1, out); // depth
           store<int32_t> ((ndim > 3) ? H.size (3) : 1, out); // nframes
 
-          const DataType& dt = H.datatype();
-          if (dt.is_complex())
-            throw Exception ("MGH file format does not support complex types");
-          if ((dt() & DataType::Type) == DataType::Bit)
-            throw Exception ("MGH file format does not support bit type");
-          if (((dt() & DataType::Type) == DataType::UInt8) && dt.is_signed())
-            throw Exception ("MGH file format does not support signed 8-bit integers; unsigned only");
-          if (((dt() & DataType::Type) == DataType::UInt16) && !dt.is_signed())
-            throw Exception ("MGH file format does not support unsigned 16-bit integers; signed only");
-          if (((dt() & DataType::Type) == DataType::UInt32) && !dt.is_signed())
-            throw Exception ("MGH file format does not support unsigned 32-bit integers; signed only");
-          if ((dt() & DataType::Type) == DataType::UInt64)
-            throw Exception ("MGH file format does not support 64-bit integer data");
-          if ((dt() & DataType::Type) == DataType::Float64)
-            throw Exception ("MGH file format does not support 64-bit floating-point data");
-
           int32_t type;
-          switch (dt()) {
-            case DataType::UInt8: type = MGH_TYPE_UCHAR; break;
-            case DataType::Int16:   case DataType::Int16BE:   case DataType::Int16LE:   type = MGH_TYPE_SHORT; break;
-            case DataType::Int32:   case DataType::Int32BE:   case DataType::Int32LE:   type = MGH_TYPE_INT;   break;
-            case DataType::Float32: case DataType::Float32BE: case DataType::Float32LE: type = MGH_TYPE_FLOAT; break;
-            default: throw Exception ("Error in MGH file format data type parsing");
+          switch (H.datatype()()) {
+            case DataType::UInt8:     type = MGH_TYPE_UCHAR; break;
+            case DataType::Int16BE:   type = MGH_TYPE_SHORT; break;
+            case DataType::Int32BE:   type = MGH_TYPE_INT;   break;
+            case DataType::Float32BE: type = MGH_TYPE_FLOAT; break;
+            default: throw Exception ("Error in MGH file format data type parsing: invalid datatype");
           }
           store<int32_t> (type, out); // type
           store<int32_t> (0, out); // dof
