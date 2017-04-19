@@ -16,7 +16,7 @@
 #include "file/utils.h"
 #include "file/path.h"
 #include "file/gz.h"
-#include "file/mgh_utils.h"
+#include "file/mgh.h"
 #include "header.h"
 #include "raw.h"
 #include "image_io/gz.h"
@@ -28,54 +28,32 @@ namespace MR
   {
 
 
+
     std::unique_ptr<ImageIO::Base> MGZ::read (Header& H) const
     {
       if (!Path::has_suffix (H.name(), ".mgh.gz") && !Path::has_suffix (H.name(), ".mgz"))
         return std::unique_ptr<ImageIO::Base>();
 
-      mgh_header MGHH;
+      std::string mgh_header (MGH_DATA_OFFSET, '\0');
+      File::GZ in (H.name(), "rb");
+      in.read (reinterpret_cast<char*> (&mgh_header[0]), MGH_DATA_OFFSET);
+      std::istringstream s (mgh_header);
+      File::MGH::read_header (H, s);
 
-      File::GZ zf (H.name(), "rb");
-      zf.read (reinterpret_cast<char*> (&MGHH), MGH_HEADER_SIZE);
+      // Remaining header items appear AFTER the data
+      // It's possible that these data may not even be there; need to make sure that we don't go over the file size
+      in.seek (MGH_DATA_OFFSET + footprint (H));
+      File::MGH::read_other (H, in);
+      in.close();
 
-      File::MGH::read_header (H, MGHH);
+      // need to fill in GZ handler's header and tailer entries in case image
+      // is opened read/write:
+      std::ostringstream mgh_tailer;
+      File::MGH::write_other (H, mgh_tailer);
 
-      try {
-
-        mgh_other MGHO;
-        memset (&MGHO, 0x00, 5 * sizeof(float));
-        MGHO.tags.clear();
-
-        zf.seek (MGH_DATA_OFFSET + footprint (H));
-        zf.read (reinterpret_cast<char*> (&MGHO), 5 * sizeof(float));
-        File::MGH::read_other (H, MGHO);
-
-        try {
-
-          do {
-            mgh_tag tag;
-            Raw::store_BE<int32_t> (0, &tag.id);
-            Raw::store_BE<int64_t> (0, &tag.size);
-            zf.read (reinterpret_cast<char*> (&tag.id),   sizeof(int32_t));
-            zf.read (reinterpret_cast<char*> (&tag.size), sizeof(int64_t));
-            if (!zf.eof() && ByteOrder::BE (tag.size) > 0) {
-              std::unique_ptr<char[]> buf (new char [ByteOrder::BE (tag.size) + 1]);
-              zf.read (reinterpret_cast<char*> (buf.get()), ByteOrder::BE (tag.size));
-              buf[ByteOrder::BE (tag.size)] = '\0';
-              tag.content = buf.get();
-              File::MGH::read_tag (H, tag);
-            }
-          } while (!zf.eof());
-
-        } catch (...) { }
-
-
-      } catch (...) { }
-
-      zf.close();
-
-      std::unique_ptr<ImageIO::Base> io_handler (new ImageIO::GZ (H, MGH_DATA_OFFSET));
-      memcpy (dynamic_cast<ImageIO::GZ*>(io_handler.get())->header(), &MGHH, sizeof(mgh_header));
+      std::unique_ptr<ImageIO::GZ> io_handler (new ImageIO::GZ (H, MGH_DATA_OFFSET, mgh_tailer.str().size()));
+      memcpy (io_handler->header(), mgh_header.c_str(), mgh_header.size());
+      memcpy (io_handler->tailer(), mgh_tailer.str().c_str(), mgh_tailer.str().size());
       io_handler->files.push_back (File::Entry (H.name(), MGH_DATA_OFFSET));
 
       return io_handler;
@@ -88,12 +66,7 @@ namespace MR
     bool MGZ::check (Header& H, size_t num_axes) const
     {
       if (!Path::has_suffix (H.name(), ".mgh.gz") && !Path::has_suffix (H.name(), ".mgz")) return false;
-      if (num_axes < 3) throw Exception ("cannot create MGZ image with less than 3 dimensions");
-      if (num_axes > 4) throw Exception ("cannot create MGZ image with more than 4 dimensions");
-
-      H.ndim() = num_axes;
-
-      return true;
+      return File::MGH::check (H, num_axes);
     }
 
 
@@ -102,43 +75,18 @@ namespace MR
 
     std::unique_ptr<ImageIO::Base> MGZ::create (Header& H) const
     {
-      if (H.ndim() > 4)
-        throw Exception ("MGZ format cannot support more than 4 dimensions for image \"" + H.name() + "\"");
-
-      if (H.datatype().bytes() > 1) {
-        H.datatype().set_flag (DataType::BigEndian);
-        H.datatype().unset_flag (DataType::LittleEndian);
-      }
-
-      mgh_other MGHO;
-      memset (&MGHO, 0x00, 5 * sizeof(float));
-      File::MGH::write_other (MGHO, H);
-
-      size_t lead_out_size = 5*sizeof(float);
-      for (const auto& tag : MGHO.tags) {
-        assert (tag.content.size() == size_t(ByteOrder::BE (tag.size)));
-        lead_out_size += sizeof(tag.id) + sizeof(tag.size) + tag.content.size();
-      }
-
-      std::unique_ptr<ImageIO::GZ> io_handler (new ImageIO::GZ (H, MGH_DATA_OFFSET, lead_out_size));
-
-      File::MGH::write_header (*reinterpret_cast<mgh_header*> (io_handler->header()), H);
-
-      uint8_t* p = io_handler->tailer();
-      memcpy (p, &MGHO, 5*sizeof (float));
-      p += 5*sizeof(float);
-
-      for (const auto& tag : MGHO.tags) {
-        memcpy (p, &tag.id, sizeof(tag.id)); p += sizeof(tag.id);
-        memcpy (p, &tag.size, sizeof(tag.size)); p += sizeof(tag.size);
-        assert (size_t(ByteOrder::BE (tag.size)) == tag.content.size());
-        memcpy (p, tag.content.c_str(), tag.content.size()); p += tag.content.size();
-      }
+      std::ostringstream mgh_header, mgh_tailer;
+      File::MGH::write_header (H, mgh_header);
+      File::MGH::write_other (H, mgh_tailer);
 
       File::create (H.name());
+      std::unique_ptr<ImageIO::GZ> io_handler (new ImageIO::GZ (H, MGH_DATA_OFFSET, mgh_tailer.str().size()));
+      memset (io_handler->header(), 0, MGH_DATA_OFFSET);
+      memcpy (io_handler->header(), mgh_header.str().c_str(), mgh_header.str().size());
+      memcpy (io_handler->tailer(), mgh_tailer.str().c_str(), mgh_tailer.str().size());
       io_handler->files.push_back (File::Entry (H.name(), MGH_DATA_OFFSET));
 
-      return std::move (io_handler);
+      return io_handler;
     }
 
   }
