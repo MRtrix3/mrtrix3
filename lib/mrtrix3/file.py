@@ -83,7 +83,13 @@ def newTempFile(suffix):
 #   increases if the file still doesn't exist, until the program is only checking
 #   for the file once a minute.
 def waitFor(path):
-  import fcntl, os, time
+  import os, time
+  
+  try:
+    import fcntl
+    do_fcntl = True
+  except ImportError:
+    do_fcntl = False
   from mrtrix3 import app
   if not os.path.exists(path):
     delay = 1.0/1024.0
@@ -97,8 +103,9 @@ def waitFor(path):
     return
   try:
     with open(path, 'rb+') as f:
-      fcntl.lockf(f, fcntl.LOCK_EX)
-      fcntl.lockf(f, fcntl.LOCK_UN)
+      if do_fcntl:
+        fcntl.lockf(f, fcntl.LOCK_EX)
+        fcntl.lockf(f, fcntl.LOCK_UN)
     app.debug('File \"' + path + '\" immediately ready')
     return
   except:
@@ -108,8 +115,9 @@ def waitFor(path):
   while True:
     try:
       with open(path, 'rb+') as f:
-        fcntl.lockf(f, fcntl.LOCK_EX)
-        fcntl.lockf(f, fcntl.LOCK_UN)
+        if do_fcntl:
+          fcntl.lockf(f, fcntl.LOCK_EX)
+          fcntl.lockf(f, fcntl.LOCK_UN)
       app.debug('File \"' + path + '\" appears to have been finalized')
       return
     except (IOError, OSError):
