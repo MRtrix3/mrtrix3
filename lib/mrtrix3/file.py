@@ -75,16 +75,15 @@ def newTempFile(suffix):
 #   finished its work)
 # Using open() rather than os.path.exists() ensures that not only has the file
 #   appeared in the directory listing, but the data are there and a file handle
-#   can be obtained. Additionally, opening the file in append mode should fail if
-#   some other process still has that file open for writing.
-# There's a plausible race condition where if the file is deleted between
-#   os.path.exists() and open() then an empty file will be created, but this is
-#   hopefully unlikely to occur in realistic use.
+#   can be obtained. Additionally, an exclusive file lock is obtained.
+# 'r+' mode is used since it includes write access (which may fail if some other
+#   process also has write access to that file), but will _not_ create a new file
+#   if the file is somehow deleted between os.path.exists() and open().
 # Initially, checks for the file once every 1/1000th of a second; this gradually
 #   increases if the file still doesn't exist, until the program is only checking
 #   for the file once a minute.
 def waitFor(path):
-  import os, time
+  import fcntl, os, time
   from mrtrix3 import app
   if not os.path.exists(path):
     delay = 1.0/1024.0
@@ -96,9 +95,11 @@ def waitFor(path):
   if not os.access(path, os.W_OK):
     app.warn('User does not have write access to file \"' + path + '\"; unable to verify file is complete')
     return
-  flags = os.O_RDWR | os.O_EXLOCK
   try:
-    open(path, flags)
+    with open(path, 'rb+') as f:
+      fcntl.lockf(f, fcntl.LOCK_EX)
+      fcntl.lockf(f, fcntl.LOCK_UN)
+    app.debug('File \"' + path + '\" immediately ready')
     return
   except:
     pass
@@ -106,10 +107,12 @@ def waitFor(path):
   delay = 1.0/1024.0
   while True:
     try:
-      open(path, flags)
+      with open(path, 'rb+') as f:
+        fcntl.lockf(f, fcntl.LOCK_EX)
+        fcntl.lockf(f, fcntl.LOCK_UN)
       app.debug('File \"' + path + '\" appears to have been finalized')
       return
-    except IOError:
+    except (IOError, OSError):
       time.sleep(delay)
       delay = max(60.0, delay*2.0)
 
