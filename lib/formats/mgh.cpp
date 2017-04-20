@@ -34,7 +34,6 @@ namespace MR
 
       std::ifstream in (H.name(), std::ios_base::binary);
       File::MGH::read_header (H, in);
-      VAR (in.tellg());
 
       // Remaining header items appear AFTER the data
       // It's possible that these data may not even be there; need to make sure that we don't go over the file size

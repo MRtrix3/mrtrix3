@@ -69,19 +69,23 @@ namespace MR
         if (H.datatype().is_complex())
           throw Exception ("MGH file format does not support complex types");
 
-        switch (H.datatype()() & ( DataType::Type | DataType::Signed )) {
+        switch (H.datatype()() & (DataType::Type | DataType::Signed)) {
           case DataType::Bit: 
-          case DataType::Int8: H.datatype() = DataType::UInt8; break;
-          case DataType::UInt16: H.datatype() = DataType::Int16BE; break;
-          case DataType::UInt32: 
+          case DataType::UInt8:
+            H.datatype() = DataType::UInt8; break;
+          case DataType::Int8:
+          case DataType::UInt16:
+          case DataType::Int16:
+            H.datatype() = DataType::Int16BE; break;
+          case DataType::UInt32:
+          case DataType::Int32:
+          case DataType::UInt64:
           case DataType::Int64:
-          case DataType::UInt64: H.datatype() = DataType::Int32BE; break;
-          case DataType::Float64: H.datatype() = DataType::Float32BE; break;
-        }
-
-        if (H.datatype().bytes() > 1) {
-          H.datatype().set_flag (DataType::BigEndian);
-          H.datatype().unset_flag (DataType::LittleEndian);
+            H.datatype() = DataType::Int32BE; break;
+          case DataType::Float32:
+          case DataType::Float64:
+            H.datatype() = DataType::Float32BE; break;
+          default: throw Exception ("Unsupported data type for MGH format (" + std::string(H.datatype().specifier()) + ")");
         }
 
         return true;
@@ -232,7 +236,7 @@ namespace MR
             case DataType::Int16BE:   type = MGH_TYPE_SHORT; break;
             case DataType::Int32BE:   type = MGH_TYPE_INT;   break;
             case DataType::Float32BE: type = MGH_TYPE_FLOAT; break;
-            default: throw Exception ("Error in MGH file format data type parsing: invalid datatype");
+            default: throw Exception ("Error in MGH file format header write: invalid datatype (" + std::string(H.datatype().specifier()) + ")");
           }
           store<int32_t> (type, out); // type
           store<int32_t> (0, out); // dof
