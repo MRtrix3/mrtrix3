@@ -161,10 +161,6 @@ namespace MR
       throw Exception ("no name supplied to open image!");
 
     Header H (template_header);
-    std::string cmd = App::argv[0];
-    for (int n = 1; n < App::argc; ++n)
-      cmd += std::string(" \"") + App::argv[n] + "\"";
-    add_line (H.keyval()["command_history"], cmd);
 
     try {
       INFO ("creating image \"" + image_name + "\"...");
@@ -172,6 +168,15 @@ namespace MR
       H.keyval()["mrtrix_version"] = App::mrtrix_version;
       if (App::project_version)
         H.keyval()["project_version"] = App::project_version;
+
+      std::string cmd = App::argv[0];
+      for (int n = 1; n < App::argc; ++n)
+        cmd += std::string(" \"") + App::argv[n] + "\"";
+      cmd += std::string ("  (version=") + App::mrtrix_version;
+      if (App::project_version)
+        cmd += std::string (", project=") + App::project_version;
+      cmd += ")";
+      add_line (H.keyval()["command_history"], cmd);
 
       H.sanitise();
 
