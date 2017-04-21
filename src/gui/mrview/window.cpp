@@ -723,12 +723,12 @@ namespace MR
                 throw Exception ("FIXME: error determining position of last argument!");
 
             // identify first non-standard option:
-            size_t first_option = 0; 
-            for (; first_option < MR::App::option.size(); ++first_option) { 
+            size_t first_option = 0;
+            for (; first_option < MR::App::option.size(); ++first_option) {
               if (size_t (MR::App::option[first_option].opt - &MR::App::__standard_options[0]) >= MR::App::__standard_options.size())
                 break;
             }
-              
+
             first_option = MR::App::option[first_option].args - MR::App::argv;
             if (first_option < last_arg_pos)
               throw Exception ("options must appear after the last argument - see help page for details");
@@ -1756,7 +1756,7 @@ namespace MR
 
 
 
-      void Window::process_commandline_option () 
+      void Window::process_commandline_option ()
       {
         auto& opt (MR::App::option[current_option]);
 
@@ -2009,6 +2009,7 @@ namespace MR
           if (opt.opt->is ("exit")) {
             qApp->processEvents();
             qApp->quit();
+            return;
           }
 
           assert ("shouldn't reach here!" && false);

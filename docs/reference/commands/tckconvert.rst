@@ -23,6 +23,12 @@ Description
 
 The program currently supports MRtrix .tck files (input/output), ascii text files (input/output), and VTK polydata files (output only).
 
+Note that ascii files will be stored with one streamline per numbered file. To support this, the command will use the multi-file numbering syntax, where square brackets denote the position of the numbering for the files, for example:
+
+$ tckconvert input.tck output-[].txt
+
+will produce files named output-0000.txt, output-0001.txt, output-0002.txt, ...
+
 Options
 -------
 

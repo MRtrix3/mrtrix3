@@ -324,7 +324,7 @@ namespace MR
 
 
 
-  std::string Header::description() const
+  std::string Header::description (bool print_all) const
   {
     std::string desc (
         "************************************************\n"
@@ -376,13 +376,22 @@ namespace MR
       if (key.size() < 21)
         key.resize (21, ' ');
       const auto entries = split_lines (p.second);
-      if (entries.size() > 5)
-        desc += key + "[ " + str (entries.size()) + " entries ]\n";
-      else {
-        for (const auto value : entries) {
-          desc += key + value + "\n";
-          key = "                     ";
-        }
+      bool shorten = (!print_all && entries.size() > 5);
+      desc += key + entries[0] + "\n";
+      if (entries.size() > 5) {
+        key = "  [" + str(entries.size()) + " entries] ";
+        if (key.size() < 21)
+          key.resize (21, ' ');
+      }
+      else key = "                     ";
+      for (size_t n = 1; n < (shorten ? size_t(2) : entries.size()); ++n) {
+        desc += key + entries[n] + "\n";
+        key = "                     ";
+      }
+      if (!print_all && entries.size() > 5) {
+        desc += key + "...\n";
+        for (size_t n = entries.size()-2; n < entries.size(); ++n )
+          desc += key + entries[n] + "\n";
       }
     }
 
