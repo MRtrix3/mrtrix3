@@ -169,6 +169,15 @@ namespace MR
       if (App::project_version)
         H.keyval()["project_version"] = App::project_version;
 
+      std::string cmd = App::argv[0];
+      for (int n = 1; n < App::argc; ++n)
+        cmd += std::string(" \"") + App::argv[n] + "\"";
+      cmd += std::string ("  (version=") + App::mrtrix_version;
+      if (App::project_version)
+        cmd += std::string (", project=") + App::project_version;
+      cmd += ")";
+      add_line (H.keyval()["command_history"], cmd);
+
       H.sanitise();
 
       File::NameParser parser;
