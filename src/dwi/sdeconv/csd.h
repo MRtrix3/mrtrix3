@@ -25,6 +25,7 @@
 
 #define NORM_LAMBDA_MULTIPLIER 0.0002
 
+#define DEFAULT_CSD_LMAX 8
 #define DEFAULT_CSD_NEG_LAMBDA 1.0
 #define DEFAULT_CSD_NORM_LAMBDA 1.0
 #define DEFAULT_CSD_THRESHOLD 0.0
@@ -50,6 +51,9 @@ namespace MR
               neg_lambda (DEFAULT_CSD_NEG_LAMBDA),
               norm_lambda (DEFAULT_CSD_NORM_LAMBDA),
               threshold (DEFAULT_CSD_THRESHOLD),
+              lmax_response (0),
+              lmax_cmdline (0),
+              lmax (0),
               niter (DEFAULT_CSD_NITER) {
                 grad = DWI::get_valid_DW_scheme (dwi_header);
                 // Discard b=0 (b=0 normalisation not supported in this version)
@@ -58,8 +62,6 @@ namespace MR
                 DW_dirs = DWI::gen_direction_matrix (grad, dwis);
 
                 lmax_data = Math::SH::LforN (dwis.size()); 
-                lmax = std::min (8, lmax_data);
-                lmax_response = 0;
               }
 
 
@@ -71,11 +73,11 @@ namespace MR
                 auto list = parse_ints (opt[0][0]);
                 if (list.size() != 1)
                   throw Exception ("CSD algorithm expects a single lmax to be specified");
-                lmax = list.front();
+                lmax_cmdline = list.front();
               }
               opt = get_options ("filter");
               if (opt.size())
-                init_filter = load_vector<> (opt[0][0]);
+                init_filter = load_vector (opt[0][0]);
               opt = get_options ("directions");
               if (opt.size())
                 HR_dirs = load_matrix (opt[0][0]);
@@ -97,10 +99,7 @@ namespace MR
             void set_response (const std::string& path)
             {
               INFO ("loading response function from file \"" + path + "\"");
-              response = load_vector (path);
-
-              lmax_response = Math::ZSH::LforN (response.size());
-              INFO ("setting response function using even SH coefficients: " + str (response.transpose()));
+              set_response (load_vector (path));
             }
 
             template <class Derived>
@@ -108,12 +107,21 @@ namespace MR
               {
                 response = in;
                 lmax_response = Math::ZSH::LforN (response.size());
+                INFO ("setting response function using even SH coefficients: " + str (response.transpose()));
               }
 
 
             void init ()
             {
               using namespace Math::SH;
+
+              if (lmax_data <= 0)
+                throw Exception ("data contain too few directions even for lmax = 2");
+
+              if (lmax_response <= 0)
+                throw Exception ("response function does not contain anisotropic terms");
+
+              lmax = ( lmax_cmdline ? lmax_cmdline : std::min (lmax_response, DEFAULT_CSD_LMAX) );
 
               if (lmax <= 0 || lmax % 2)
                 throw Exception ("lmax must be a positive even integer");
@@ -208,7 +216,7 @@ namespace MR
             Eigen::MatrixXd rconv, HR_trans, M, Mt_M;
             default_type neg_lambda, norm_lambda, threshold;
             vector<size_t> dwis;
-            int lmax_response, lmax_data, lmax;
+            int lmax_response, lmax_data, lmax_cmdline, lmax;
             size_t niter;
         };
 
