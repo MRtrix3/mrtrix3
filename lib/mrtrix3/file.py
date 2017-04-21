@@ -78,8 +78,11 @@ def newTempFile(suffix):
 #   - On Windows, two processes cannot open the same file in read mode. Therefore,
 #     try to open the file in 'rb+' mode, which requests write access but does not
 #     create a new file if none exists
-#   - If command fuser is available, parse its output and look for any processes
-#     that have write access to the file.
+#   - If command fuser is available, use it to test if any processes are currently
+#     accessing the file (note that since fuser's silent mode is used and a decision
+#     is made based on the return code, other processes accessing the file will
+#     result in the script pausing regardless of whether or not those processes have
+#     write mode access)
 #   - If neither of those applies, no additional safety check can be performed.
 # Initially, checks for the file once every 1/1000th of a second; this gradually
 #   increases if the file still doesn't exist, until the program is only checking
@@ -102,18 +105,9 @@ def waitFor(path):
         return True
     if not find_executable('fuser'):
       return None
-    # Apparently the 'F' for open with write access only appears in the verbose output
-    proc = subprocess.Popen(['fuser', '-v', path], shell=False, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
-    (stdout, stderr) = proc.communicate()
-    # fuser writes process IDs to stdout, and all other info to stderr - even when tabulated together in the verbose output
-    # Need to first remove the leading printout, which is the path being queried
-    stderr = stderr.decode('utf-8').lstrip(':')
-    # Now look for a line where a 'F' appears in the ACCESS field
-    for line in stderr.splitlines():
-      line = line.split()
-      if len(line) == 3 and 'F' in line[1]:
-        return True
-    return False
+    # fuser returns zero if there IS at least one process accessing the file
+    # A fatal error will result in a non-zero code -> inUse() = False, so waitFor() can return
+    return not subprocess.call(['fuser', '-s', path], shell=False, stdin=None, stdout=None, stderr=None)
 
   if not os.path.exists(path):
     delay = 1.0/1024.0
@@ -122,9 +116,12 @@ def waitFor(path):
       time.sleep(delay)
       delay = max(60.0, delay*2.0)
     app.debug('File \"' + path + '\" appears to have been created')
+  if not os.path.isfile(path):
+    app.debug('Path \"' + path + '\" is not a file; not testing for finalization')
+    return
   init_test = inUse(path)
   if init_test is None:
-    app.warn('Unable to test for finalization of new file \"' + path + '\"')
+    app.debug('Unable to test for finalization of new file \"' + path + '\"')
     return
   if not init_test:
     app.debug('File \"' + path + '\" immediately ready')
@@ -138,4 +135,3 @@ def waitFor(path):
     else:
       app.debug('File \"' + path + '\" appears to have been finalized')
       return
-
