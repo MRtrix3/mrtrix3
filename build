@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import platform, sys, os, time, threading, subprocess, copy, codecs, glob, atexit, tempfile
+import platform, sys, os, time, threading, subprocess, copy, codecs, glob, atexit, tempfile, shutil
 
 
 config_name = None
@@ -378,7 +378,11 @@ moc_obj_suffix = '_moc' + obj_suffix
 
 
 
-
+# remove any files that might have been left over from older installations in
+# different locations:
+if os.path.isdir ('bin'):
+  disp ("WARNING: removing 'bin/' folder - most likely left over from a previous installation\n\n")
+  shutil.rmtree ('bin')
 
 
 
