@@ -541,9 +541,9 @@ moc_obj_suffix = '_moc' + obj_suffix
 
 # remove any files that might have been left over from older installations in
 # different locations:
-if os.path.isdir ('bin'):
-  disp ("WARNING: removing 'bin/' folder - most likely left over from a previous installation\n\n")
-  shutil.rmtree ('bin')
+if os.path.isdir ('release'):
+  disp ("WARNING: removing 'release/' folder - most likely left over from a previous installation\n\n")
+  shutil.rmtree ('release')
 
 
 
