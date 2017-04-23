@@ -29,11 +29,12 @@ def getInputFiles():
 def execute():
   import os, shutil
   import lib.app
-  from lib.delFile      import delFile
-  from lib.getImageStat import getImageStat
-  from lib.getUserPath  import getUserPath
-  from lib.printMessage import printMessage
-  from lib.runCommand   import runCommand
+  from lib.delFile       import delFile
+  from lib.getHeaderInfo import getHeaderInfo
+  from lib.getImageStat  import getImageStat
+  from lib.getUserPath   import getUserPath
+  from lib.printMessage  import printMessage
+  from lib.runCommand    import runCommand
   
   lmax_option = ''
   if lib.app.args.lmax:
@@ -68,14 +69,26 @@ def execute():
     delFile(prefix + 'FOD.mif')
     if iteration:
       delFile(mask_in_path)
-    runCommand('fixel2voxel ' + prefix + 'peaks.msf split_value ' + prefix + 'amps.mif')
-    runCommand('mrconvert ' + prefix + 'amps.mif ' + prefix + 'first_peaks.mif -coord 3 0 -axes 0,1,2')
-    runCommand('mrconvert ' + prefix + 'amps.mif ' + prefix + 'second_peaks.mif -coord 3 1 -axes 0,1,2')
-    delFile(prefix + 'amps.mif')
     runCommand('fixel2voxel ' + prefix + 'peaks.msf split_dir ' + prefix + 'all_dirs.mif')
     delFile(prefix + 'peaks.msf')
     runCommand('mrconvert ' + prefix + 'all_dirs.mif ' + prefix + 'first_dir.mif -coord 3 0:2')
     delFile(prefix + 'all_dirs.mif')
+    runCommand('fixel2voxel ' + prefix + 'peaks.msf split_value ' + prefix + 'amps.mif')
+    if [ int(size) for size in getHeaderInfo(prefix + 'amps.mif', 'size').split() ][3] == 1:
+      if iteration:
+        printMessage('No crosing fibres detected in / surrounding mask from iteration ' + str(iteration-1) + '; using response from that iteration')
+        shutil.copyfile('iter' + str(iteration-1) + '_RF.txt', 'response.txt')
+        shutil.copyfile('iter' + str(iteration-1) + '_SF.mif', 'voxels.mif')
+        break
+      else:
+        warnMessage('No crossing fibres detected in input mask; using all input voxels for response function estimation')
+        runCommand('sh2response dwiSH.mif mask.mif ' + prefix + 'first_dir.mif ' + prefix + 'response.txt' + iter_lmax_option)
+        shutil.copyfile('mask.mif', 'voxels.mif')
+        break
+      
+    runCommand('mrconvert ' + prefix + 'amps.mif ' + prefix + 'first_peaks.mif -coord 3 0 -axes 0,1,2')
+    runCommand('mrconvert ' + prefix + 'amps.mif ' + prefix + 'second_peaks.mif -coord 3 1 -axes 0,1,2')
+    delFile(prefix + 'amps.mif')
     # Calculate the 'cost function' Donald derived for selecting single-fibre voxels
     # https://github.com/MRtrix3/mrtrix3/pull/426
     #  sqrt(|peak1|) * (1 - |peak2| / |peak1|)^2
@@ -97,7 +110,7 @@ def execute():
         printMessage('Convergence of SF voxel selection detected at iteration ' + str(iteration))
         delFile(prefix + 'CF.mif')
         shutil.copyfile(prefix + 'RF.txt', 'response.txt')
-        shutil.move(prefix + 'SF.mif', 'voxels.mif')
+        shutil.copyfile(prefix + 'SF.mif', 'voxels.mif')
         break
 
     # Select a greater number of top single-fibre voxels, and dilate (within bounds of initial mask);
