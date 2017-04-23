@@ -50,6 +50,7 @@ options.add_argument('-pe_dir', metavar=('PE'), help='Manually specify the phase
 options.add_argument('-readout_time', metavar=('time'), type=float, help='Manually specify the total readout time of the input series (in seconds)')
 options.add_argument('-se_epi', metavar=('file'), help='Provide an additional image series consisting of spin-echo EPI images, which is to be used exclusively by topup for estimating the inhomogeneity field (i.e. it will not form part of the output image series)')
 options.add_argument('-json_import', metavar=('JSON_file'), help='Import image header information from an associated JSON file (may be necessary to determine phase encoding information)')
+options.add_argument('-eddy_options', metavar=('Options'), help='Manually provide additional command-line options to the eddy command')
 options.add_argument('-cuda', help='Use the CUDA version of eddy (if available)', action='store_true', default=False)
 rpe_options = app.cmdline.add_argument_group('Options for specifying the acquisition phase-encoding design; note that one of the -rpe_* options MUST be provided')
 rpe_options.add_argument('-rpe_none', action='store_true', help='Specify that no reversed phase-encoding image data is being provided; eddy will perform eddy current and motion correction only')
@@ -453,10 +454,12 @@ else:
 
 
 # Run eddy
-# TODO Detect eddy version and use outlier replacement if available
 run.command('mrconvert dwi.mif' + import_dwi_pe_table_option + ' dwi.nii -stride -1,+2,+3,+4 -export_grad_fsl bvecs bvals -export_pe_eddy eddy_config.txt eddy_indices.txt')
 file.delTempFile('dwi.mif')
-run.command(eddy_cmd + ' --imain=dwi.nii --mask=mask.nii --acqp=eddy_config.txt --index=eddy_indices.txt --bvecs=bvecs --bvals=bvals' + eddy_in_topup_option + ' --out=dwi_post_eddy')
+eddy_manual_options = ''
+if app.args.eddy_options:
+  eddy_manual_options = ' ' + app.args.eddy_options.strip()
+run.command(eddy_cmd + ' --imain=dwi.nii --mask=mask.nii --acqp=eddy_config.txt --index=eddy_indices.txt --bvecs=bvecs --bvals=bvals' + eddy_in_topup_option + eddy_manual_options + ' --out=dwi_post_eddy')
 
 
 
