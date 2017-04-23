@@ -79,10 +79,14 @@ namespace MR
             use_lighting = yesno;
             update();
           }
-          void set_normalise (bool yesno = true) {
-            normalise = yesno;
+          void set_scale (float new_scale) {
+            scale = new_scale;
             update();
           }
+          void reset_scale () {
+            set_scale (NaN);
+          }
+          void reset_view ();
           void set_lmax (int lmax) {
             assert (mode == mode_t::SH);
             if (lmax != lmax_computed) 
@@ -112,6 +116,10 @@ namespace MR
             recompute_mesh = recompute_amplitudes = true;
             update();
           }
+          void set_text (const std::string& text_to_display) {
+            text = text_to_display;
+            update();
+          }
 
           int  get_LOD () const { return lod_computed; }
           int  get_lmax () const { return lmax_computed; }
@@ -126,14 +134,14 @@ namespace MR
           void screenshot (int oversampling, const std::string& image_name);
 
         protected:
-          float view_angle, distance, line_width, scale;
+          float view_angle, distance, scale;
           int lmax_computed, lod_computed;
           mode_t mode;
           bool recompute_mesh, recompute_amplitudes, show_axes, hide_neg_values, color_by_dir, use_lighting, normalise;
           std::unique_ptr<MR::DWI::Directions::Set> dirs;
 
           QPoint last_pos;
-          GL::Font font;
+          GL::Font glfont;
           Projection projection;
           Math::Versorf orientation;
           Eigen::Vector3f focus;
@@ -150,11 +158,12 @@ namespace MR
           Renderer renderer;
           Eigen::VectorXf values;
 
+          std::string text;
+
         protected:
           virtual void initializeGL () override;
           virtual void resizeGL (int w, int h) override;
           virtual void paintGL () override;
-          void mouseDoubleClickEvent (QMouseEvent* event) override;
           void mousePressEvent (QMouseEvent* event) override;
           void mouseMoveEvent (QMouseEvent* event) override;
           void wheelEvent (QWheelEvent* event) override;

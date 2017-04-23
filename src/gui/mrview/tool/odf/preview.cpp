@@ -116,6 +116,7 @@ namespace MR
           if (lock_orientation_to_image_box->isChecked()) {
             const Projection* proj = window().get_current_mode()->get_current_projection();
             if (!proj) return;
+            render_frame->reset_view();
             render_frame->set_rotation (proj->modelview());
           }
         }

@@ -57,7 +57,8 @@ namespace MR
           void show_axes_slot (bool is_checked);
           void hide_negative_lobes_slot (bool is_checked);
           void colour_by_direction_slot (bool is_checked);
-          void normalise_slot (bool is_checked);
+          void reset_scale_slot ();
+          void reset_view_slot ();
           void response_slot (bool is_checked);
           void previous_slot ();
           void next_slot ();

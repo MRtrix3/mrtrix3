@@ -39,11 +39,6 @@ namespace MR
             {
               public:
                 RenderFrame (QWidget* parent);
-                
-                void set_scale (float sc) {
-                  scale = sc;
-                  update();
-                }
 
                 void set_colour (const QColor& c) {
                   renderer.set_colour (c);
