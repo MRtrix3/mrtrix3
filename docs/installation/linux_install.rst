@@ -204,22 +204,34 @@ compile *MRtrix3* on a modern distro (within a virtual machine for
 example), package it up, and install it on any Linux system without
 worrying about dependencies.
 
-Important: setting the CPU architecture
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Setting the CPU architecture for optimal performance
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-By default, ``configure`` will cause the build script to generate code
-suitable to run on your current CPU (using the ``-march=native``
-option). This means the executables will likely *not run* on a different
-CPUs with different instruction sets, resulting in 'illegal instruction'
-runtime errors. If you intend to run *MRtrix3* on a variety of different
-systems with a range of CPUs, or you have no idea what the CPU is on
-your target system, it is safest to specify an empty (generic) architecture
-when configuring *MRtrix3*, before invoking ``./build``::
+By default, ``configure`` will cause the build script to produce generic code
+suitable for any current CPU. If you want to ensure optimal performance on your
+system, you can request that ``configure`` produce code tailored to your
+specific CPU architecture, which will allow it to use all available CPU
+instructions and tune the code differently. This can improve performance
+particularly for linear algebra operations as `Eigen
+<http://eigen.tuxfamily.org>`__ will then make use of these extensions.
+However, note that this means the executables produced will likely *not run* on
+a different CPUs with different instruction sets, resulting in 'illegal
+instruction' runtime errors. If you intend to run *MRtrix3* on a variety of
+different systems with a range of CPUs, or you have no idea what the CPU is on
+your target system, it is safest to avoid changing the default. 
 
-    ARCH= ./configure
+Specifying a different CPU architecture is done by setting the ``ARCH`` environment
+variable prior to invoking ``./configure``. The value of this variable will
+then be passed to the compiler via the ``-march`` option. To get the best
+performance *on the current system*, you can specify ``native`` as
+the architecture, leaving it up to the compiler to detect your particular CPU
+and its available instructions. For example::
+
+    export ARCH=native 
+    ./configure
     ./build
 
-For more specific architectures, you can provide any values from the `list of
+For more specific architectures, you can provide any value from the `list of
 specifiers understood by the compiler
 <https://gcc.gnu.org/onlinedocs/gcc-6.2.0/gcc/x86-Options.html#x86-Options>`_,
 for example ``ARCH='sandybridge' ./configure``
@@ -238,7 +250,7 @@ required). Then, from the main *MRtrix3* folder::
 
     ./build clean
     git pull
-    ARCH="" ./configure -static [-nogui]
+    ./configure -static [-nogui]
     ./build
 
 Note that this requires the availability of static versions of the
@@ -341,7 +353,7 @@ required). Then, from the main *MRtrix3* folder::
 
     ./build clean
     git pull
-    ARCH="" ./configure [-nogui]
+    ./configure [-nogui]
     ./build
     ./package_mrtrix -standalone
 

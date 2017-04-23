@@ -309,7 +309,7 @@ If you encounter an error during the build process that resembles the following:
 
     ERROR: (#/#) [CC] release/cmd/command.o
     
-    /usr/bin/g++-4.8 -c -std=c++11 -pthread -fPIC -march=native -I/home/user/mrtrix3/eigen -Wall -O2 -DNDEBUG -Isrc -Icmd -I./lib -Icmd cmd/command.cpp -o release/cmd/command.o
+    /usr/bin/g++-4.8 -c -std=c++11 -pthread -fPIC -I/home/user/mrtrix3/eigen -Wall -O2 -DNDEBUG -Isrc -Icmd -I./lib -Icmd cmd/command.cpp -o release/cmd/command.o
     
     failed with output
     

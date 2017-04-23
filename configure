@@ -86,9 +86,10 @@ ENVIRONMENT VARIABLES
 
     ARCH
         the specific CPU architecture to compile for. This variable will be
-        passed to the compiler using -march=$ARCH. If set to an empty string,
-        no -march flag will be passed to the compiler.  The default is
-        'native'.
+        passed to the compiler using -march=$ARCH. You can use 'ARCH=native' to
+        get the best performance for your system. Note that this will result in
+        executables that may not run on other systems if the same CPU
+        extensions are not available.
 
     CFLAGS
         Any additional flags to the compiler.
@@ -515,11 +516,6 @@ if 'ARCH' in os.environ.keys():
   if march:
     report ('Machine architecture set by ARCH environment variable to: ' + march + '\n')
     cpp_flags += [ '-march='+march ]
-  else:
-    report ('Empty ARCH string found: will not pass -march flag to compiler.\n')
-else:
-  if system != 'darwin':
-    cpp_flags += [ '-march=native' ]
 
 
 
