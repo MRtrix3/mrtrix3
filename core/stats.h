@@ -30,8 +30,8 @@ namespace MR
     extern const char * field_choices[];
     extern const App::OptionGroup Options;
 
-    typedef default_type value_type;
-    typedef cdouble complex_type;
+    using value_type = default_type;
+    using complex_type = cdouble;
 
 
     class Stats { NOMEMALIGN

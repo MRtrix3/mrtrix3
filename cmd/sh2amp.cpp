@@ -53,7 +53,7 @@ void usage ()
 }
 
 
-typedef float value_type;
+using value_type = float;
 
 
 class SH2Amp { MEMALIGN(SH2Amp)

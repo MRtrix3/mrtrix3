@@ -28,8 +28,8 @@ namespace MR
     { MEMALIGN(Subset<ImageType>) 
       public:
 
-        typedef Base<Subset<ImageType>,ImageType> base_type;
-        typedef typename ImageType::value_type value_type;
+        using base_type = Base<Subset<ImageType>, ImageType>;
+        using value_type = typename ImageType::value_type;
 
         using base_type::name;
         using base_type::spacing;

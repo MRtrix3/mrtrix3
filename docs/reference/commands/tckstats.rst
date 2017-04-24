@@ -20,9 +20,13 @@ Usage
 Options
 -------
 
+-  **-output field** output only the field specified. Multiple such options can be supplied if required. Choices are: mean, median, std, min, max, count. Useful for use in scripts.
+
 -  **-histogram path** output a histogram of streamline lengths
 
 -  **-dump path** dump the streamlines lengths to a text file
+
+-  **-ignorezero** do not generate a warning if the track file contains streamlines with zero length
 
 -  **-tck_weights_in path** specify a text scalar file containing the streamline weights
 

@@ -50,10 +50,10 @@ namespace MR
     namespace RotationSearch
     {
 
-      typedef transform_type TrafoType;
-      typedef Eigen::Matrix<default_type, 3, 3> MatType;
-      typedef Eigen::Matrix<default_type, 3, 1> VecType;
-      typedef Eigen::Quaternion<default_type> QuatType;
+      using TrafoType = transform_type;
+      using MatType = Eigen::Matrix<default_type, 3, 3>;
+      using VecType = Eigen::Matrix<default_type, 3, 1>;
+      using QuatType = Eigen::Quaternion<default_type>;
 
       template <class MetricType = Registration::Metric::MeanSquaredNoGradient>
         class ExhaustiveRotationSearch { MEMALIGN(ExhaustiveRotationSearch<MetricType>)
@@ -92,7 +92,7 @@ namespace MR
             };
 
 
-            typedef Metric::Params<Registration::Transform::Rigid,
+            using ParamType = Metric::Params<Registration::Transform::Rigid,
                                      Image<default_type>,
                                      Image<default_type>,
                                      Header,
@@ -106,7 +106,7 @@ namespace MR
                                      Image<default_type>,
                                      Interp::LinearInterp<Image<default_type>, Interp::LinearInterpProcessingType::Value>,
                                      Image<default_type>,
-                                     Interp::Nearest<Image<default_type>>> ParamType;
+                                     Interp::Nearest<Image<default_type>>>;
 
             void write_images (const std::string& im1_path, const std::string& im2_path) {
               Image<default_type> image1_midway;

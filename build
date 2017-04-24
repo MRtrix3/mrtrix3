@@ -77,7 +77,7 @@ OPTIONS
 #                          COMMON DEFINITIONS                              #
 ############################################################################
 
-import platform, sys, os, time, threading, subprocess, copy, codecs, glob, atexit, tempfile
+import platform, sys, os, time, threading, subprocess, copy, codecs, glob, atexit, tempfile, shutil
 
 global todo, headers, object_deps, file_flags, lock, print_lock, stop, main_cindex
 global include_paths
@@ -86,6 +86,7 @@ bin_dir = 'bin'
 cmd_dir = 'cmd'
 lib_dir = 'core'
 misc_dir = 'src'
+script_dir = os.path.join('lib', 'mrtrix3')
 tmp_dir = 'tmp'
 
 cpp_suffix = '.cpp'
@@ -538,8 +539,11 @@ moc_obj_suffix = '_moc' + obj_suffix
 
 
 
-
-
+# remove any files that might have been left over from older installations in
+# different locations:
+if os.path.isdir ('release'):
+  disp ("WARNING: removing 'release/' folder - most likely left over from a previous installation\n\n")
+  shutil.rmtree ('release')
 
 
 
@@ -1087,6 +1091,12 @@ def update_user_docs ():
     sys.exit (1)
   
 
+###########################################################################
+#                              SCRIPT VERSION                             #
+###########################################################################
+
+with open (os.path.join(mrtrix_dir[-1], script_dir, '_version.py'),'w') as vfile:
+  vfile.write('__version__ = "'+get_git_version (mrtrix_dir[-1])+'"\n')
 
 
 ###########################################################################

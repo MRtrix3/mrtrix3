@@ -42,7 +42,7 @@ namespace MR {
                     EnergyComputer* e, Image<bool>& m)
             : props(p), stats(s), pGrid(pgrid), E(e), T(dwi), 
               dims{size_t(dwi.size(0)), size_t(dwi.size(1)), size_t(dwi.size(2))}, 
-              mask(m), lock(std::make_shared<SpatialLock<float>>(5*Particle::L)), 
+              mask(m), lock(make_shared<SpatialLock<float>>(5*Particle::L)), 
               sigpos(Particle::L / 8.), sigdir(0.2)
           {
             DEBUG("Initialise Metropolis Hastings sampler.");

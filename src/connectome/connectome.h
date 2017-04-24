@@ -29,13 +29,12 @@ namespace MR {
   namespace Connectome {
 
 
+    using node_t = uint32_t;
 
-    typedef uint32_t node_t;
-
-    typedef default_type value_type;
-    typedef Eigen::Array<value_type, Eigen::Dynamic, Eigen::Dynamic> matrix_type;
-    typedef Eigen::Array<value_type, Eigen::Dynamic, 1> vector_type;
-    typedef Eigen::Array<bool, Eigen::Dynamic, Eigen::Dynamic> mask_type;
+    using value_type = default_type;
+    using matrix_type = Eigen::Array<value_type, Eigen::Dynamic, Eigen::Dynamic>;
+    using vector_type = Eigen::Array<value_type, Eigen::Dynamic, 1>;
+    using mask_type = Eigen::Array<bool, Eigen::Dynamic, Eigen::Dynamic>;
 
 
 

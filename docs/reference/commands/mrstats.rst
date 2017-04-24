@@ -34,8 +34,6 @@ Additional options for mrstats
 
 -  **-allvolumes** generate statistics across all image volumes, rather than one set of statistics per image volume
 
--  **-ignorezero** ignore zero-valued input voxels.
-
 Standard options
 ^^^^^^^^^^^^^^^^
 

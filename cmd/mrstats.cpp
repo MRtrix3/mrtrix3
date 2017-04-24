@@ -50,8 +50,8 @@ OPTIONS
 }
 
 
-typedef Stats::value_type value_type;
-typedef Stats::complex_type complex_type;
+using value_type = Stats::value_type;
+using complex_type = Stats::complex_type;
 
 
 class Volume_loop

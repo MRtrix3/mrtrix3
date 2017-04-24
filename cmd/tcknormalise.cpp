@@ -39,8 +39,8 @@ void usage ()
 
 
 
-typedef float value_type;
-typedef Tractography::Streamline<value_type> TrackType;
+using value_type = float;
+using TrackType = Tractography::Streamline<value_type>;
 
 
 

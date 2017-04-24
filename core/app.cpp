@@ -58,15 +58,15 @@ namespace MR
     const char* COPYRIGHT =
        "Copyright (c) 2008-2017 the MRtrix3 contributors"
        "\n\n"
-       "This Source Code Form is subject to the terms of the Mozilla Public "
-       "License, v. 2.0. If a copy of the MPL was not distributed with this "
-       "file, you can obtain one at http://mozilla.org/MPL/2.0/."
-       "\n\n"
-       "MRtrix is distributed in the hope that it will be useful, "
-       "but WITHOUT ANY WARRANTY; without even the implied warranty "
-       "of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."
-       "\n\n"
-       "For more details, see http://www.mrtrix.org/.";
+       "This Source Code Form is subject to the terms of the Mozilla Public\n"
+       "License, v. 2.0. If a copy of the MPL was not distributed with this\n"
+       "file, you can obtain one at http://mozilla.org/MPL/2.0/.\n"
+       "\n"
+       "MRtrix is distributed in the hope that it will be useful,\n"
+       "but WITHOUT ANY WARRANTY; without even the implied warranty\n"
+       "of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n"
+       "\n"
+       "For more details, see http://www.mrtrix.org/.\n";
     const char* SYNOPSIS = nullptr;
 
 

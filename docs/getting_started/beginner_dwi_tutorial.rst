@@ -75,7 +75,7 @@ tractography, using default reconstruction parameters.
 
 .. code::
 
-    $ tckgen <Input FOD image> <Output track file> -seed_image <Input DWI mask> -mask <Input DWI mask> -number <Number of tracks>
+    $ tckgen <Input FOD image> <Output track file> -seed_image <Input DWI mask> -mask <Input DWI mask> -select <Number of tracks>
     $ mrview <Input DWI> -tractography.load <Output track file>
 
 Note: Loading a very large number of tracks can inevitably make the ``mrview`` software run very slowly. When this occurs, it may be preferable to instead view only a subset of the generated tracks, e.g.:

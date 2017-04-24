@@ -108,7 +108,7 @@ void usage ()
   + DataType::options();
 }
 
-typedef double value_type;
+using value_type = double;
 
 void run () {
   auto input1 = Registration::parse_image_sequence_input (argument[0]);

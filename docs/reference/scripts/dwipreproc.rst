@@ -18,6 +18,11 @@ Usage
 -  *input*: The input DWI series to be corrected
 -  *output*: The output corrected image series
 
+Description
+-----------
+
+Note that this script does not perform any explicit registration between images provided to topup via the -se_epi option, and the DWI volumes provided to eddy. In some instances (motion between acquisitions) this can result in erroneous application of the inhomogeneity field during distortion correction. If this could potentially be a problem for your data, a possible solution is to insert the first b=0 DWI volume to be the first volume of the image file provided via the -se_epi option. This will hopefully be addressed within the script itself in a future update.
+
 Options
 -------
 
@@ -42,6 +47,8 @@ Other options for the dwipreproc script
 - **-se_epi file** Provide an additional image series consisting of spin-echo EPI images, which is to be used exclusively by topup for estimating the inhomogeneity field (i.e. it will not form part of the output image series)
 
 - **-json_import JSON_file** Import image header information from an associated JSON file (may be necessary to determine phase encoding information)
+
+- **-eddy_options Options** Manually provide additional command-line options to the eddy command
 
 - **-cuda** Use the CUDA version of eddy (if available)
 

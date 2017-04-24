@@ -41,9 +41,11 @@ ARGUMENTS
 }
 
 
-typedef double value_type;
-typedef std::array<value_type,3> Direction;
-typedef vector<Direction> DirectionSet;
+
+using value_type = double;
+using Direction = std::array<value_type,3>;
+using DirectionSet = vector<Direction>;
+
 
 struct OutDir { MEMALIGN(OutDir)
   Direction d;

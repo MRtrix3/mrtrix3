@@ -32,8 +32,8 @@ namespace MR {
         class SpatialLock
         { MEMALIGN(SpatialLock)
         public:
-          typedef T value_type;
-          typedef Eigen::Matrix<value_type, 3, 1> point_type;
+          using value_type = T;
+          using point_type = Eigen::Matrix<value_type, 3, 1>;
           
           SpatialLock() : _tx(0), _ty(0), _tz(0) { }
           SpatialLock(const value_type t) : _tx(t), _ty(t), _tz(t) { }

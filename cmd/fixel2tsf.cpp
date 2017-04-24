@@ -59,7 +59,7 @@ void usage ()
 
 }
 
-typedef DWI::Tractography::Mapping::SetVoxelDir SetVoxelDir;
+using SetVoxelDir = DWI::Tractography::Mapping::SetVoxelDir;
 
 
 void run ()

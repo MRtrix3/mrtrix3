@@ -479,10 +479,20 @@ class Parser(argparse.ArgumentParser):
     def underline(text):
       return ''.join( '_' + chr(0x08) + c for c in text)
 
+    def appVersion():
+      import subprocess, os
+      from mrtrix3.run import _mrtrix_bin_path
+      p = subprocess.Popen([os.path.join(_mrtrix_bin_path,'mrinfo'),'-version'],stdout=subprocess.PIPE)
+      line = p.stdout.readline()
+      return line.replace('==','').replace('mrinfo','').lstrip().rstrip()
+
     w = textwrap.TextWrapper(width=80, initial_indent='     ', subsequent_indent='     ')
     w_arg = textwrap.TextWrapper(width=80, initial_indent='', subsequent_indent='                     ')
+    from _version import __version__
 
-    s = '     ' + bold(self.prog) + ': Script using the MRtrix3 Python library\n'
+    s = 'MRtrix ' + __version__ + '\t' + bold(self.prog) + '\t bin version: ' + appVersion() + '\n\n'
+    s += '\n'
+    s += '     ' + bold(self.prog) + ': Script using the MRtrix3 Python library\n'
     s += '\n'
     s += bold('SYNOPSIS') + '\n'
     s += '\n'

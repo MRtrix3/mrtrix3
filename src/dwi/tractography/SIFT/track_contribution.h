@@ -16,7 +16,7 @@
 #define __dwi_tractography_sift_track_contribution_h__
 
 
-#include <stdint.h>
+#include <cstdint>
 
 #include "header.h"
 #include "min_mem_array.h"

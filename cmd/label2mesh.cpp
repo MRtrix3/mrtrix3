@@ -63,7 +63,7 @@ void run ()
   Connectome::check (labels_header);
   auto labels = labels_header.get_image<uint32_t>();
 
-  typedef Eigen::Array<int, 3, 1> voxel_corner_t;
+  using voxel_corner_t = Eigen::Array<int, 3, 1>;
 
   vector<voxel_corner_t> lower_corners, upper_corners;
 

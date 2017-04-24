@@ -83,10 +83,10 @@ namespace MR
       class Rigid : public Base  { MEMALIGN(Rigid)
         public:
 
-          typedef typename Base::ParameterType ParameterType;
-          typedef RigidLinearNonSymmetricUpdate UpdateType;
-          typedef RigidRobustEstimator RobustEstimatorType;
-          typedef int has_robust_estimator;
+          using ParameterType = typename Base::ParameterType;
+          using UpdateType = RigidLinearNonSymmetricUpdate;
+          using RobustEstimatorType = RigidRobustEstimator;
+          using has_robust_estimator = int;
 
           Rigid () : Base (12) {
             default_type w1 (MR::File::Config::get_float ("reg_gdweight_matrix", 0.0003f));

@@ -28,8 +28,8 @@ namespace MR
     { MEMALIGN (Gradient1D<ImageType>)
       public:
 
-        typedef Base<Gradient1D<ImageType>,ImageType> base_type;
-        typedef typename ImageType::value_type value_type;
+        using base_type = Base<Gradient1D<ImageType>, ImageType>;
+        using value_type = typename ImageType::value_type;
 
         using base_type::name;
         using base_type::size;

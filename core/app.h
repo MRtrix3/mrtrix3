@@ -15,7 +15,7 @@
 #ifndef __app_h__
 #define __app_h__
 
-#include <string.h>
+#include <cstring>
 #include <string>
 #include <vector>
 #include <limits>

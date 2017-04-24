@@ -32,27 +32,27 @@ namespace MR
       namespace {
         template<class T>
         struct Void2 { NOMEMALIGN
-          typedef void type;
+          using type = void;
         };
 
         template <class MetricType, typename U = void>
         struct metric_requires_precompute { NOMEMALIGN
-          typedef int no;
+          using no = int;
         };
 
         template <class MetricType>
         struct metric_requires_precompute<MetricType, typename Void2<typename MetricType::requires_precompute>::type> { NOMEMALIGN
-          typedef int yes;
+          using yes = int;
         };
 
         template <class MetricType, typename U = void>
         struct metric_requires_initialisation { NOMEMALIGN
-          typedef int no;
+          using no = int;
         };
 
         template <class MetricType>
         struct metric_requires_initialisation<MetricType, typename Void2<typename MetricType::requires_initialisation>::type> { NOMEMALIGN
-          typedef int yes;
+          using yes = int;
         };
       }
       //! \endcond
@@ -61,8 +61,8 @@ namespace MR
         class Evaluate { MEMALIGN(Evaluate<MetricType,ParamType>)
           public:
 
-            typedef typename ParamType::TransformParamType TransformParamType;
-            typedef default_type value_type;
+            using TransformParamType = typename ParamType::TransformParamType;
+            using value_type = default_type;
 
             template <class U = MetricType>
             Evaluate (const MetricType& metric_, ParamType& parameters, typename metric_requires_initialisation<U>::yes = 0) :
@@ -91,8 +91,8 @@ namespace MR
                 DEBUG ("Reorienting FODs...");
                 std::shared_ptr<Image<default_type> > im1_image_reoriented;
                 std::shared_ptr<Image<default_type> > im2_image_reoriented;
-                im1_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im1_image));
-                im2_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im2_image));
+                im1_image_reoriented = make_shared<Image<default_type>>(Image<default_type>::scratch (params.im1_image));
+                im2_image_reoriented = make_shared<Image<default_type>>(Image<default_type>::scratch (params.im2_image));
 
                 {
                 //    LogLevelLatch log_level (0); TODO uncomment
@@ -226,8 +226,8 @@ namespace MR
                 DEBUG ("Reorienting FODs...");
                 std::shared_ptr<Image<default_type> > im1_image_reoriented;
                 std::shared_ptr<Image<default_type> > im2_image_reoriented;
-                im1_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im1_image));
-                im2_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im2_image));
+                im1_image_reoriented = make_shared<Image<default_type>>(Image<default_type>::scratch (params.im1_image));
+                im2_image_reoriented = make_shared<Image<default_type>>(Image<default_type>::scratch (params.im2_image));
 
                 {
                   // LogLevelLatch log_level (0); // TODO uncomment

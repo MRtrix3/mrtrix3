@@ -31,6 +31,7 @@ from mrtrix3 import app, file, fsl, image, path, phaseEncoding, run
 
 app.init ('Robert E. Smith (robert.smith@florey.edu.au)',
           'Perform diffusion image pre-processing using FSL\'s eddy tool; including inhomogeneity distortion correction using FSL\'s topup tool if possible')
+app.cmdline.addDescription('Note that this script does not perform any explicit registration between images provided to topup via the -se_epi option, and the DWI volumes provided to eddy. In some instances (motion between acquisitions) this can result in erroneous application of the inhomogeneity field during distortion correction. If this could potentially be a problem for your data, a possible solution is to insert the first b=0 DWI volume to be the first volume of the image file provided via the -se_epi option. This will hopefully be addressed within the script itself in a future update.')
 app.cmdline.addCitation('', 'Andersson, J. L. & Sotiropoulos, S. N. An integrated approach to correction for off-resonance effects and subject movement in diffusion MR imaging. NeuroImage, 2015, 125, 1063-1078', True)
 app.cmdline.addCitation('', 'Smith, S. M.; Jenkinson, M.; Woolrich, M. W.; Beckmann, C. F.; Behrens, T. E.; Johansen-Berg, H.; Bannister, P. R.; De Luca, M.; Drobnjak, I.; Flitney, D. E.; Niazy, R. K.; Saunders, J.; Vickers, J.; Zhang, Y.; De Stefano, N.; Brady, J. M. & Matthews, P. M. Advances in functional and structural MR image analysis and implementation as FSL. NeuroImage, 2004, 23, S208-S219', True)
 app.cmdline.addCitation('If performing recombination of diffusion-weighted volume pairs with opposing phase encoding directions', 'Skare, S. & Bammer, R. Jacobian weighting of distortion corrected EPI data. Proceedings of the International Society for Magnetic Resonance in Medicine, 2010, 5063', True)
@@ -50,6 +51,7 @@ options.add_argument('-pe_dir', metavar=('PE'), help='Manually specify the phase
 options.add_argument('-readout_time', metavar=('time'), type=float, help='Manually specify the total readout time of the input series (in seconds)')
 options.add_argument('-se_epi', metavar=('file'), help='Provide an additional image series consisting of spin-echo EPI images, which is to be used exclusively by topup for estimating the inhomogeneity field (i.e. it will not form part of the output image series)')
 options.add_argument('-json_import', metavar=('JSON_file'), help='Import image header information from an associated JSON file (may be necessary to determine phase encoding information)')
+options.add_argument('-eddy_options', metavar=('Options'), help='Manually provide additional command-line options to the eddy command')
 options.add_argument('-cuda', help='Use the CUDA version of eddy (if available)', action='store_true', default=False)
 rpe_options = app.cmdline.add_argument_group('Options for specifying the acquisition phase-encoding design; note that one of the -rpe_* options MUST be provided')
 rpe_options.add_argument('-rpe_none', action='store_true', help='Specify that no reversed phase-encoding image data is being provided; eddy will perform eddy current and motion correction only')
@@ -176,18 +178,18 @@ if not len(grad) == num_volumes:
 do_topup = (not PE_design == 'None')
 
 
-
+# Manually generate a phase-encoding table for the input DWI based on user input
 dwi_manual_pe_scheme = None
 topup_manual_pe_scheme = None
 auto_trt = 0.1
-auto_trt_warning = False
+dwi_auto_trt_warning = False
 if manual_pe_dir:
 
   if manual_trt:
     trt = manual_trt
   else:
     trt = auto_trt
-    auto_trt_warning = True
+    dwi_auto_trt_warning = True
 
   # Still construct the manual PE scheme even with 'None' or 'Pair':
   #   there may be information in the header that we need to compare against
@@ -202,6 +204,8 @@ if manual_pe_dir:
     line.append(trt)
     dwi_manual_pe_scheme = [ line ] * num_volumes
     num_topup_volumes = topup_size[3]
+    if num_topup_volumes%2:
+      app.error('If using -rpe_pair option, image provided using -se_epi must contain an even number of volumes')
     # Assume that first half of volumes have same direction as series;
     #   second half have the opposite direction
     topup_manual_pe_scheme = [ line ] * int(num_topup_volumes/2)
@@ -257,8 +261,10 @@ def scheme_times_match(one, two):
 
 
 
+# Determine whether or not the phase encoding table generated manually should be used
+#   (possibly instead of a table present in the image header)
+overwrite_dwi_pe_scheme = False
 if dwi_pe_scheme:
-  overwrite_scheme = False
   if manual_pe_dir:
     # Compare manual specification to that read from the header;
     #   overwrite & give warning to user if they differ
@@ -267,23 +273,23 @@ if dwi_pe_scheme:
     #   PE scheme for the input volume based on the diffusion gradient table
     if not scheme_dirs_match(dwi_pe_scheme, dwi_manual_pe_scheme):
       app.warn('User-defined phase-encoding direction design does not match what is stored in DWI image header; proceeding with user specification')
-      overwrite_scheme = True
+      overwrite_dwi_pe_scheme = True
   if manual_trt:
     # Compare manual specification to that read from the header
     if not scheme_times_match(dwi_pe_scheme, dwi_manual_pe_scheme):
       app.warn('User-defined total readout time does not match what is stored in DWI image header; proceeding with user specification')
-      overwrite_scheme = True
-  if overwrite_scheme:
+      overwrite_dwi_pe_scheme = True
+  if overwrite_dwi_pe_scheme:
     dwi_pe_scheme = dwi_manual_pe_scheme # May be used later for triggering volume recombination
   else:
-    dwi_manual_pe_scheme = None # To guarantee that the scheme stored within the header will be used
+    dwi_manual_pe_scheme = None # To guarantee that these generated data are never used
 else:
   # Nothing in the header; rely entirely on user specification
   if PE_design == 'Header':
     app.error('No phase encoding information found in DWI image header')
   if not manual_pe_dir:
     app.error('No phase encoding information provided either in header or at command-line')
-  if auto_trt_warning:
+  if dwi_auto_trt_warning:
     app.warn('Total readout time not provided at command-line; assuming sane default of ' + str(auto_trt))
   dwi_pe_scheme = dwi_manual_pe_scheme # May be needed later for triggering volume recombination
 
@@ -297,29 +303,17 @@ if dwi_manual_pe_scheme:
 
 
 
-# This may be required when setting up the topup call
-import_topup_pe_table_option = ''
-if topup_manual_pe_scheme:
-  with open('topup_manual_pe_scheme.txt', 'w') as f:
-    for line in topup_manual_pe_scheme:
-      f.write(' '.join( [ str(value) for value in line ] ) + '\n')
-  import_topup_pe_table_option = ' -import_pe_table topup_manual_pe_scheme.txt'
-
-
-
 # Deal with the phase-encoding of the images to be fed to topup (if applicable)
+overwrite_topup_pe_scheme = False
 if app.args.se_epi:
 
   # 3 possible sources of PE information: DWI header, topup image header, command-line
   # Any pair of these may conflict, and any one could be absent
-  auto_trt_warning = False
-  overwrite_scheme = False
+
+  topup_auto_trt_warning = False
 
   # Have to switch here based on phase-encoding acquisition design
   if PE_design == 'Pair':
-    num_topup_volumes = topup_size[3]
-    if num_topup_volumes%2:
-      app.error('If using -rpe_pair option, image provided using -se_epi must contain an even number of volumes');
     # Criteria:
     #   * If present in own header, ignore DWI header entirely -
     #     - If also provided at command-line, look for conflict & report
@@ -330,31 +324,19 @@ if app.args.se_epi:
     if topup_pe_scheme:
       if manual_pe_dir:
         if not scheme_dirs_match(topup_pe_scheme, topup_manual_pe_scheme):
-          app.warn('User-defined phase-encoding direction design does not match what is stored in topup image header; proceeding with user specification')
-          overwrite_scheme = True
+          app.warn('User-defined phase-encoding direction design does not match what is stored in SE EPI image header; proceeding with user specification')
+          overwrite_topup_pe_scheme = True
       if manual_trt:
         if not scheme_times_match(topup_pe_scheme, topup_manual_pe_scheme):
-          app.warn('User-defined total readout time does not match what is stored in topup image header; proceeding with user specification')
-          overwrite_scheme = True
-      if not overwrite_scheme:
-        topup_manual_pe_scheme = None # So that the scheme stored within the hedaer will be used
-    else:
-      if manual_trt:
-        trt = manual_trt
-      else:
-        trt = auto_trt
-      if manual_pe_dir:
+          app.warn('User-defined total readout time does not match what is stored in SE EPI image header; proceeding with user specification')
+          overwrite_topup_pe_scheme = True
+      if overwrite_topup_pe_scheme:
         topup_pe_scheme = topup_manual_pe_scheme
-        if not manual_trt:
-          auto_trt_warning = True
       else:
-        if not dwi_pe_scheme:
-          app.error('Unable to determine phase-encoding design of topup images')
-        line = list(dwi_pe_scheme[0])
-        topup_manual_pe_scheme = [ ' '.join(str(i) for i in line) ] * int(num_topup_volumes/2)
-        line = [ (-i if i else 0.0) for i in line[0:3] ]
-        line.append(trt)
-        topup_manual_pe_scheme.append( [ ' '.join(str(i) for i in line) ] * int(num_topup_volumes/2))
+        topup_manual_pe_scheme = None # To guarantee that these data are never used
+    else:
+      overwrite_topup_pe_scheme = True
+      topup_pe_scheme = topup_manual_pe_scheme
 
   elif PE_design == 'All':
     # Criteria:
@@ -364,7 +346,7 @@ if app.args.se_epi:
     #     - Don't have enough information to proceed
     #     - Is this too harsh? (e.g. Have rules by which it may be inferred from the DWI header / command-line)
     if not topup_pe_scheme:
-      app.error('If explicitly including topup images when using -rpe_all option, they must come with their own associated phase-encoding information')
+      app.error('If explicitly including SE EPI images when using -rpe_all option, they must come with their own associated phase-encoding information')
 
   elif PE_design == 'Header':
     # Criteria:
@@ -373,31 +355,39 @@ if app.args.se_epi:
     #   * If _not_ present in own header:
     #       Cannot proceed
     if not topup_pe_scheme:
-      app.error('No phase-encoding information present in topup image header');
+      app.error('No phase-encoding information present in SE EPI image header');
 
-elif not PE_design == 'None': # No topup images explicitly provided: In some cases, can extract appropriate b=0 images from DWI
+elif not PE_design == 'None': # No SE EPI images explicitly provided: In some cases, can extract appropriate b=0 images from DWI
 
   # If using 'All' or 'Header', and haven't been given any topup images, need to extract the b=0 volumes from the series,
   #   preserving phase-encoding information while doing so
   # Preferably also make sure that there's some phase-encoding contrast in there...
   # With -rpe_all, need to write inferred phase-encoding to file and import before using dwiextract so that the phase-encoding
   #   of the extracted b=0's is propagated to the generated b=0 series
-  if PE_design == 'All':
-    run.command('mrconvert dwi.mif' + import_dwi_pe_table_option + ' - | dwiextract - topup_in.mif -bzero')
-    topup_size = [ int(s) for s in image.headerField('topup_in.mif', 'size').split() ]
-  elif PE_design == 'Header':
-    run.command('dwiextract dwi.mif -bzero bzeros.mif')
-    # If there's no contrast remaining in the phase-encoding scheme, it'll be written to
-    #   PhaseEncodingDirection and TotalReadoutTime rather than pe_scheme
-    # In this scenario, we will be unable to run topup
-    if image.headerKeyValue('bzeros.mif', 'pe_scheme'):
-      run.command('mrconvert bzeros.mif topup_in.mif -stride -1,+2,+3,+4 -export_pe_table topup_datain.txt')
-      topup_size = [ int(s) for s in image.headerField('topup_in.mif', 'size').split() ]
-    else:
-      app.warn('DWI header indicates no phase encoding contrast in b=0 images; proceeding without inhomogeneity field estimation')
-      do_topup = False
-    file.delTempFile('bzeros.mif')
+  run.command('mrconvert dwi.mif' + import_dwi_pe_table_option + ' - | dwiextract - bzeros.mif -bzero')
 
+  # If there's no contrast remaining in the phase-encoding scheme, it'll be written to
+  #   PhaseEncodingDirection and TotalReadoutTime rather than pe_scheme
+  # In this scenario, we will be unable to run topup, or volume recombination
+  if not image.headerKeyValue('bzeros.mif', 'pe_scheme'):
+    if PE_design == 'All':
+      app.error('DWI header indicates no phase encoding contrast between b=0 images; cannot proceed with volume recombination-based pre-processing')
+    else:
+      app.warn('DWI header indicates no phase encoding contrast between b=0 images; proceeding without inhomogeneity field estimation')
+      do_topup = False
+  if do_topup:
+    run.function(shutil.move, 'bzeros.mif', 'topup_in.mif')
+    topup_size = [int(s) for s in image.headerField('topup_in.mif', 'size').split()]
+  file.delTempFile('bzeros.mif')
+
+
+# This may be required when setting up the topup call
+import_topup_pe_table_option = ''
+if topup_manual_pe_scheme:
+  with open('topup_manual_pe_scheme.txt', 'w') as f:
+    for line in topup_manual_pe_scheme:
+      f.write(' '.join([str(value) for value in line]) + '\n')
+  import_topup_pe_table_option = ' -import_pe_table topup_manual_pe_scheme.txt'
 
 
 # Need gradient table if running dwi2mask after applytopup to derive a brain mask for eddy
@@ -425,6 +415,7 @@ if do_topup:
 
   # Do the conversion in preparation for topup
   run.command('mrconvert ' + topup_in_path + ' topup_in.nii' + import_topup_pe_table_option + ' -stride -1,+2,+3,+4 -export_pe_table topup_datain.txt')
+  file.delTempFile(topup_in_path)
 
   # Run topup
   run.command(topup_cmd + ' --imain=topup_in.nii --datain=topup_datain.txt --out=field --fout=field_map' + fsl_suffix + ' --config=' + topup_config_path)
@@ -464,10 +455,12 @@ else:
 
 
 # Run eddy
-# TODO Detect eddy version and use outlier replacement if available
 run.command('mrconvert dwi.mif' + import_dwi_pe_table_option + ' dwi.nii -stride -1,+2,+3,+4 -export_grad_fsl bvecs bvals -export_pe_eddy eddy_config.txt eddy_indices.txt')
 file.delTempFile('dwi.mif')
-run.command(eddy_cmd + ' --imain=dwi.nii --mask=mask.nii --acqp=eddy_config.txt --index=eddy_indices.txt --bvecs=bvecs --bvals=bvals' + eddy_in_topup_option + ' --out=dwi_post_eddy')
+eddy_manual_options = ''
+if app.args.eddy_options:
+  eddy_manual_options = ' ' + app.args.eddy_options.strip()
+run.command(eddy_cmd + ' --imain=dwi.nii --mask=mask.nii --acqp=eddy_config.txt --index=eddy_indices.txt --bvecs=bvecs --bvals=bvals' + eddy_in_topup_option + eddy_manual_options + ' --out=dwi_post_eddy')
 
 
 

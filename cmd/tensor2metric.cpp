@@ -23,7 +23,7 @@
 using namespace MR;
 using namespace App;
 
-typedef float value_type;
+using value_type = float;
 const char* modulate_choices[] = { "none", "fa", "eigval", NULL };
 
 void usage ()

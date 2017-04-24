@@ -28,8 +28,8 @@ namespace MR
     { MEMALIGN (NeighbourhoodCoord<ImageType>)
       public:
 
-        typedef Base<NeighbourhoodCoord<ImageType>,ImageType> base_type;
-        typedef typename ImageType::value_type value_type;
+        using base_type = Base<NeighbourhoodCoord<ImageType>, ImageType>;
+        using value_type = typename ImageType::value_type;
 
         using base_type::name;
         using base_type::spacing;

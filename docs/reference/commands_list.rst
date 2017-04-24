@@ -183,7 +183,7 @@ List of MRtrix3 commands
     :ref:`mrmetric`, "Computes a dissimilarity metric between two images"
     :ref:`mrmodelfield`, "Model an input image using low frequency 3D polynomial basis functions"
     :ref:`mrpad`, "Pad an image to increase the FOV"
-    :ref:`mrregister`, "Register two images together using a rigid, affine or a non-linear transformation model"
+    :ref:`mrregister`, "Register two images together using a symmetric rigid, affine or non-linear transformation model"
     :ref:`mrresize`, "Resize an image by defining the new image resolution, voxel size or a scale factor"
     :ref:`mrstats`, "Compute images statistics"
     :ref:`mrthreshold`, "Create bitwise image by thresholding image intensity"

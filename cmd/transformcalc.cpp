@@ -45,44 +45,50 @@ void usage ()
   SYNOPSIS = "Perform calculations on linear transformation matrices";
 
   ARGUMENTS
-  + Argument ("input", "the input for the specified operation").allow_multiple()
-  + Argument ("operation", "the operation to perform, one of: " + join(operations, ", ") + "."
-    + "\n\ninvert: invert the input transformation:\nmatrix_in invert output"
+  + Argument ("inputs", "the inputs for the specified operation").allow_multiple()
+  + Argument ("operation", "the operation to perform, one of: " + join(operations, ", ") + " (see description section for details).").type_choice (operations)
+  + Argument ("output", "the output transformation matrix.").type_file_out ();
 
-    + "\n\nhalf: calculate the matrix square root of the input transformation:\nmatrix_in half output"
+  DESCRIPTION
+      + "invert: invert the input transformation:"
+      + "matrix_in invert output"
 
-    + "\n\nrigid: calculate the rigid transformation of the affine input transformation:\nmatrix_in rigid output"
+      + "half: calculate the matrix square root of the input transformation:"
+      + "matrix_in half output"
 
-    + "\n\nheader: calculate the transformation matrix from an original image and an image with modified header:\nmov mapmovhdr header output"
+      + "rigid: calculate the rigid transformation of the affine input transformation:"
+      + "matrix_in rigid output"
 
-    + "\n\naverage: calculate the average affine matrix of all input matrices:\ninput ... average output"
+      + "header: calculate the transformation matrix from an original image and an image with modified header:"
+      + "mov mapmovhdr header output"
 
-    + "\n\ninterpolate: create interpolated transformation matrix between input (t=0) and input2 (t=1). "
+      + "average: calculate the average affine matrix of all input matrices:"
+      + "input ... average output"
+
+      + "interpolate: create interpolated transformation matrix between input (t=0) and input2 (t=1). "
         "Based on matrix decomposition with linear interpolation of "
-        " translation, rotation and stretch described in "
-        " Shoemake, K., Hill, M., & Duff, T. (1992). Matrix Animation and Polar Decomposition. "
-        " Matrix, 92, 258-264. doi:10.1.1.56.1336"
-        "\ninput input2 interpolate output"
+        "translation, rotation and stretch described in "
+        "Shoemake, K., Hill, M., & Duff, T. (1992). Matrix Animation and Polar Decomposition. "
+        "Matrix, 92, 258-264. doi:10.1.1.56.1336:"
+      + "input input2 interpolate output"
 
-    + "\n\ndecompose: decompose transformation matrix M into translation, rotation and stretch and shear (M = T * R * S). "
-        "The output is a key-value text file "
-        "scaling: vector of 3 scaling factors in x, y, z direction, "
-        "shear: list of shear factors for xy, xz, yz axes, "
-        "angles: list of Euler angles about static x, y, z axes in radians in the range [0:pi]x[-pi:pi]x[-pi:pi], "
-        "angle_axis: angle in radians and rotation axis, "
-        "translation : translation vector along x, y, z axes in mm, "
-        "R: composed roation matrix (R = rot_x * rot_y * rot_z), "
-        "S: composed scaling and shear matrix."
-        "\nmatrix_in decompose output"
+      + "decompose: decompose transformation matrix M into translation, rotation and stretch and shear (M = T * R * S). "
+        "The output is a key-value text file containing: "
+        "scaling: vector of 3 scaling factors in x, y, z direction; "
+        "shear: list of shear factors for xy, xz, yz axes; "
+        "angles: list of Euler angles about static x, y, z axes in radians in the range [0:pi]x[-pi:pi]x[-pi:pi]; "
+        "angle_axis: angle in radians and rotation axis; "
+        "translation : translation vector along x, y, z axes in mm; "
+        "R: composed roation matrix (R = rot_x * rot_y * rot_z); "
+        "S: composed scaling and shear matrix:"
+      + "matrix_in decompose output"
 
-    + "\n\nalign_vertices_rigid: align two sets of landmarks using a rigid transformation. "
+      + "align_vertices_rigid: align two sets of landmarks using a rigid transformation. "
         "Vertex coordinates are in scanner space, corresponding vertices must be stored in the same row "
         "of moving.txt and fixed.txt. Requires 3 or more vertices in each file. "
-        " algorithm: Kabsch 'A solution for the best rotation to relate two sets of vectors' DOI:10.1107/S0567739476001873"
-        ":\ninput moving.txt fixed.txt align_vertices_rigid output"
+        "Algorithm: Kabsch 'A solution for the best rotation to relate two sets of vectors' DOI:10.1107/S0567739476001873:"
+      + "input moving.txt fixed.txt align_vertices_rigid output";
 
-    ).type_choice (operations)
-  + Argument ("output", "the output transformation matrix.").type_file_out ();
 }
 
 template <typename T> int sgn(T val) {

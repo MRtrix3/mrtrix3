@@ -49,7 +49,7 @@ namespace MR
         { MEMALIGN(GMWMI_finder)
 
           protected:
-            typedef Interp::Linear<Image<float>> Interp;
+            using Interp = Interp::Linear<Image<float>>;
 
           public:
             GMWMI_finder (const Image<float>& buffer) :

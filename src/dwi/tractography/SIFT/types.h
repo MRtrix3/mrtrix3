@@ -29,8 +29,8 @@ namespace MR
       {
 
 
-      typedef unsigned int track_t;
-      typedef unsigned int voxel_t;
+      using track_t = unsigned int;
+      using voxel_t = unsigned int;
 
 
       }
