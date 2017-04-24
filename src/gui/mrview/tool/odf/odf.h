@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __gui_mrview_tool_odf_odf_h__
 #define __gui_mrview_tool_odf_odf_h__
@@ -44,7 +43,7 @@ namespace MR
         class ODF_Preview;
 
         class ODF : public Base
-        {
+        { MEMALIGN(ODF)
             Q_OBJECT
 
           public:
@@ -103,7 +102,7 @@ namespace MR
 
              int lmax;
              
-             void add_images (std::vector<std::string>& list, const odf_type_t mode);
+             void add_images (vector<std::string>& list, const odf_type_t mode);
 
              virtual void closeEvent (QCloseEvent* event) override;
 

@@ -1,17 +1,17 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
+
 #include "debug.h"
 #include "math/math.h"
 #include "gui/opengl/font.h"
@@ -52,7 +52,7 @@ namespace MR
 
 
 
-      void Font::initGL () 
+      void Font::initGL (bool with_shadow) 
       {
         const int first_char = ' ', last_char = '~', default_char = '?';
         DEBUG ("loading font into OpenGL texture...");
@@ -85,29 +85,31 @@ namespace MR
           font_width[c] = metric.width (c);
           const int current_font_width = font_width[c] + 2;
 
-          // blur along x:
-          for (int row = 0; row < font_height; ++row) {
-            for (int col = 0; col < current_font_width; ++col) {
-              const int tex_idx = 2 * (current_x + col + row*tex_width);
-              const int pix_idx = 4 * (col + row*max_font_width);
-              float val = 0.0f;
-              for (int x = -1; x <= 1; ++x)
-                if (col+x >= 0 && col+x < current_font_width) 
-                  val += std::exp (-x*x/2.0f) * pix_data[pix_idx+4*x];
-              tex_data[tex_idx] = val;
+          if (with_shadow) {
+            // blur along x:
+            for (int row = 0; row < font_height; ++row) {
+              for (int col = 0; col < current_font_width; ++col) {
+                const int tex_idx = 2 * (current_x + col + row*tex_width);
+                const int pix_idx = 4 * (col + row*max_font_width);
+                float val = 0.0f;
+                for (int x = -1; x <= 1; ++x)
+                  if (col+x >= 0 && col+x < current_font_width) 
+                    val += std::exp (-x*x/2.0f) * pix_data[pix_idx+4*x];
+                tex_data[tex_idx] = val;
+              }
             }
-          }
 
-          // blur along y and store as alpha component:
-          for (int row = 0; row < font_height; ++row) {
-            for (int col = 0; col < current_font_width; ++col) {
-              const int tex_idx = 2 * (current_x + col + row*tex_width);
-              const int pix_idx = 4 * (col + row*max_font_width);
-              float val = 0.0f;
-              for (int x = -1; x <= 1; ++x) 
-                if (row+x >= 0 && row+x < font_height) 
-                  val += std::exp (-x*x/2.0) * tex_data[tex_idx+2*tex_width*x];
-              tex_data[tex_idx+1] = pix_data[pix_idx] ? 1.0f : 0.005f*val;
+            // blur along y and store as alpha component:
+            for (int row = 0; row < font_height; ++row) {
+              for (int col = 0; col < current_font_width; ++col) {
+                const int tex_idx = 2 * (current_x + col + row*tex_width);
+                const int pix_idx = 4 * (col + row*max_font_width);
+                float val = 0.0f;
+                for (int x = -1; x <= 1; ++x) 
+                  if (row+x >= 0 && row+x < font_height) 
+                    val += std::exp (-x*x/2.0) * tex_data[tex_idx+2*tex_width*x];
+                tex_data[tex_idx+1] = pix_data[pix_idx] ? 1.0f : 0.005f*val;
+              }
             }
           }
 
@@ -117,6 +119,8 @@ namespace MR
               const int tex_idx = 2 * (current_x + col + row*tex_width);
               const int pix_idx = 4 * (col + row*max_font_width);
               tex_data[tex_idx] = pix_data[pix_idx] / 255.0f;
+              if (!with_shadow)
+                tex_data[tex_idx+1] = tex_data[tex_idx];
             }
           }
 

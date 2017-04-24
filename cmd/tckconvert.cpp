@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -27,13 +25,13 @@ using namespace MR::DWI::Tractography;
 
 void usage ()
 {
-  AUTHOR = "Daan Christiaens (daan.christiaens@gmail.com), "
+  AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk), "
            "J-Donald Tournier (jdtournier@gmail.com), "
            "Philip Broser (philip.broser@me.com).";
 
-  DESCRIPTION
-  + "Convert between different track file formats."
+  SYNOPSIS = "Convert between different track file formats";
 
+  DESCRIPTION
   + "The program currently supports MRtrix .tck files (input/output), "
     "ascii text files (input/output), and VTK polydata files (output only)."
 
@@ -74,8 +72,7 @@ void usage ()
 }
 
 
-class VTKWriter: public WriterInterface<float>
-{
+class VTKWriter: public WriterInterface<float> { MEMALIGN(VTKWriter)
 public:
     VTKWriter(const std::string& file) : VTKout (file) {
         // create and write header of VTK output file:
@@ -124,7 +121,7 @@ public:
 private:
     File::OFStream VTKout;
     size_t offset_num_points;
-    std::vector<std::pair<size_t,size_t>> track_list;
+    vector<std::pair<size_t,size_t>> track_list;
     size_t current_index = 0;
 
 };
@@ -132,8 +129,7 @@ private:
 
 
 
-class ASCIIReader: public ReaderInterface<float>
-{
+class ASCIIReader: public ReaderInterface<float> { MEMALIGN(ASCIIReader)
 public:
     ASCIIReader(const std::string& file) {
       auto num = list.parse_scan_check(file);
@@ -160,8 +156,7 @@ private:
 };
 
 
-class ASCIIWriter: public WriterInterface<float>
-{
+class ASCIIWriter: public WriterInterface<float> { MEMALIGN(ASCIIWriter)
 public:
     ASCIIWriter(const std::string& file) {
         count.push_back(0);
@@ -185,7 +180,7 @@ public:
 
 private:
     File::NameParser parser;
-    std::vector<int> count;
+    vector<int> count;
 
 };
 

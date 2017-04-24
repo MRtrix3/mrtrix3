@@ -1,20 +1,18 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
-
+#include <mutex>
 #include <vector>
 
 #include "command.h"
@@ -25,13 +23,16 @@
 #include "algo/loop.h"
 #include "adapter/subset.h"
 
-#include "mesh/mesh.h"
-#include "mesh/vox2mesh.h"
+#include "connectome/connectome.h"
+
+#include "surface/mesh.h"
+#include "surface/mesh_multi.h"
+#include "surface/algo/image2mesh.h"
 
 
 using namespace MR;
 using namespace App;
-using namespace MR::Mesh;
+using namespace MR::Surface;
 
 
 void usage ()
@@ -39,8 +40,7 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "generate meshes from a label image.";
+  SYNOPSIS = "Generate meshes from a label image";
 
   ARGUMENTS
   + Argument ("nodes_in", "the input node parcellation image").type_image_in()
@@ -60,13 +60,12 @@ void run ()
 {
 
   Header labels_header = Header::open (argument[0]);
-  if (!labels_header.datatype().is_integer())
-    throw Exception ("Input image must have an integer data type");
+  Connectome::check (labels_header);
   auto labels = labels_header.get_image<uint32_t>();
 
   using voxel_corner_t = Eigen::Array<int, 3, 1>;
 
-  std::vector<voxel_corner_t> lower_corners, upper_corners;
+  vector<voxel_corner_t> lower_corners, upper_corners;
 
   {
     for (auto i = Loop ("Importing label image", labels) (labels); i; ++i) {
@@ -87,7 +86,7 @@ void run ()
     }
   }
 
-  MeshMulti meshes (lower_corners.size(), MR::Mesh::Mesh());
+  MeshMulti meshes (lower_corners.size(), MR::Surface::Mesh());
   meshes[0].set_name ("none");
   const bool blocky = get_options ("blocky").size();
 
@@ -98,7 +97,7 @@ void run ()
 
     auto worker = [&] (const size_t& in)
     {
-      std::vector<int> from, dimensions;
+      vector<int> from, dimensions;
       for (size_t axis = 0; axis != 3; ++axis) {
         from.push_back (lower_corners[in][axis]);
         dimensions.push_back (upper_corners[in][axis] - lower_corners[in][axis] + 1);
@@ -110,10 +109,9 @@ void run ()
         scratch.value() = (subset.value() == in);
 
       if (blocky)
-        MR::Mesh::vox2mesh (scratch, meshes[in]);
+        MR::Surface::Algo::image2mesh_blocky (scratch, meshes[in]);
       else
-        MR::Mesh::vox2mesh_mc (scratch, 0.5, meshes[in]);
-      meshes[in].transform_voxel_to_realspace (scratch);
+        MR::Surface::Algo::image2mesh_mc (scratch, meshes[in], 0.5);
       meshes[in].set_name (str(in));
       std::lock_guard<std::mutex> lock (mutex);
       ++progress;

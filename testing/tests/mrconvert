@@ -1,11 +1,11 @@
-mrconvert mrconvert/in.mif - | testing_diff_data - mrconvert/in.mif
-mrconvert mrconvert/in.mif -stride 2,-1,3 - | testing_diff_data - mrconvert/in.mif
-mrconvert mrconvert/in.mif -datatype cfloat32 - | testing_diff_data - mrconvert/in.mif
-mrconvert mrconvert/in.mif -stride 3,1,2 tmp.mif  && testing_diff_data tmp.mif mrconvert/in.mif
-mrconvert mrconvert/in.mif -stride 1,-3,2 -datatype float32be tmp.mih  && testing_diff_data tmp.mih mrconvert/in.mif
-mrconvert mrconvert/in.mif -datatype float32 tmp.mif.gz  && testing_diff_data tmp.mif.gz mrconvert/in.mif
-mrconvert mrconvert/in.mif tmp.nii  && testing_diff_data tmp.nii mrconvert/in.mif
-mrconvert mrconvert/in.mif -datatype float32 tmp.nii.gz  && testing_diff_data tmp.nii.gz mrconvert/in.mif
-mrconvert mrconvert/in.mif -stride 3,2,1 tmp.mgh  && testing_diff_data tmp.mgh mrconvert/in.mif
-mrconvert mrconvert/in.mif -stride 1,3,2 -datatype int16 tmp.mgz  && testing_diff_data tmp.mgz mrconvert/in.mif
-mrconvert dwi.mif tmp-[].mif; testing_diff_data dwi.mif tmp-[].mif
+mrconvert mrconvert/in.mif - | testing_diff_image - mrconvert/in.mif
+mrconvert mrconvert/in.mif -stride 2,-1,3 - | testing_diff_image - mrconvert/in.mif
+mrconvert mrconvert/in.mif -datatype cfloat32 - | testing_diff_image - mrconvert/in.mif
+mrconvert mrconvert/in.mif -stride 3,1,2 tmp.mif  && testing_diff_image tmp.mif mrconvert/in.mif
+mrconvert mrconvert/in.mif -stride 1,-3,2 -datatype float32be tmp.mih  && testing_diff_image tmp.mih mrconvert/in.mif
+mrconvert mrconvert/in.mif -datatype float32 tmp.mif.gz  && testing_diff_image tmp.mif.gz mrconvert/in.mif
+mrconvert mrconvert/in.mif tmp.nii  && testing_diff_image tmp.nii mrconvert/in.mif
+mrconvert mrconvert/in.mif -datatype float32 tmp.nii.gz  && testing_diff_image tmp.nii.gz mrconvert/in.mif
+mrconvert mrconvert/in.mif -stride 3,2,1 tmp.mgh  && testing_diff_image tmp.mgh mrconvert/in.mif
+mrconvert mrconvert/in.mif -stride 1,3,2 -datatype int16 tmp.mgz  && testing_diff_image tmp.mgz mrconvert/in.mif
+mrconvert dwi.mif tmp-[].mif; testing_diff_image dwi.mif tmp-[].mif

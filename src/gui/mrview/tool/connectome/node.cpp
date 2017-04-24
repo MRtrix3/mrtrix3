@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "gui/mrview/window.h"
 #include "gui/mrview/tool/connectome/node.h"
@@ -20,7 +19,6 @@
 
 #include "exception.h"
 #include "gui/mrview/window.h"
-#include "mesh/vox2mesh.h"
 
 namespace MR
 {
@@ -70,13 +68,13 @@ namespace MR
 
 
 
-        Node::Mesh::Mesh (MR::Mesh::Mesh& in) :
+        Node::Mesh::Mesh (MR::Surface::Mesh& in) :
             count (3 * in.num_triangles())
         {
           MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
-          std::vector<float> vertices;
+          vector<float> vertices;
           vertices.reserve (3 * in.num_vertices());
           for (size_t v = 0; v != in.num_vertices(); ++v) {
             for (size_t axis = 0; axis != 3; ++axis)
@@ -89,7 +87,7 @@ namespace MR
 
           if (!in.have_normals())
             in.calculate_normals();
-          std::vector<float> normals;
+          vector<float> normals;
           normals.reserve (3 * in.num_vertices());
           for (size_t n = 0; n != in.num_vertices(); ++n) {
             for (size_t axis = 0; axis != 3; ++axis)
@@ -109,7 +107,7 @@ namespace MR
           gl::EnableVertexAttribArray (1);
           gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
 
-          std::vector<unsigned int> indices;
+          vector<unsigned int> indices;
           indices.reserve (3 * in.num_triangles());
           for (size_t i = 0; i != in.num_triangles(); ++i) {
             for (size_t v = 0; v != 3; ++v)

@@ -13,7 +13,7 @@ function write_mrtrix (image, filename)
 %    image.datatype:        the datatype specifier (default: float32) [optional]
 %    image.mrtrix_version:  a character array [optional]
 %    image.transform:       a 4x4 matrix [optional]
-%    image.DW_scheme:       a NDWx4 matrix of gradient directions [optional]
+%    image.dw_scheme:       a NDWx4 matrix of gradient directions [optional]
 
 fid = fopen (filename, 'w');
 assert(fid ~= -1, 'error opening %s', filename);
@@ -97,10 +97,10 @@ if isstruct (image) && isfield (image, 'transform')
   fprintf (fid, ',%.6f', image.transform(3,2:4));
 end
 
-if isstruct (image) && isfield (image, 'DW_scheme')
-  for i=1:size(image.DW_scheme,1)
-    fprintf (fid, '\nDW_scheme: %.6f', image.DW_scheme(i,1));
-    fprintf (fid, ',%.6f', image.DW_scheme(i,2:4));
+if isstruct (image) && isfield (image, 'dw_scheme')
+  for i=1:size(image.dw_scheme,1)
+    fprintf (fid, '\ndw_scheme: %.6f', image.dw_scheme(i,1));
+    fprintf (fid, ',%.6f', image.dw_scheme(i,2:4));
    end
 end
 

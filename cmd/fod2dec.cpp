@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -20,6 +18,7 @@
 #include "progressbar.h"
 #include "algo/threaded_loop.h"
 #include "image.h"
+#include "math/sphere.h"
 #include "math/SH.h"
 #include "dwi/directions/predefined.h"
 #include "filter/reslice.h"
@@ -42,8 +41,9 @@ void usage ()
     "This is free software; see the source for copying conditions. "
     "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.";
 
+  SYNOPSIS = "Generate FOD-based DEC maps, with optional panchromatic sharpening and/or luminance/perception correction";
+
   DESCRIPTION
-    + "Generate FOD-based DEC maps, with optional panchromatic sharpening and/or luminance/perception correction."
     + "By default, the FOD-based DEC is weighted by the integral of the FOD. To weight by another scalar map, use the outputmap option. This option can also be used for panchromatic sharpening, e.g., by supplying a T1 (or other sensible) anatomical volume with a higher spatial resolution.";
 
   REFERENCES
@@ -68,21 +68,23 @@ void usage ()
     + Option ("outputmap","Weight the computed DEC map by a provided outputmap. If the outputmap has a different grid, the DEC map is first resliced and renormalised. To achieve panchromatic sharpening, provide an image with a higher spatial resolution than the input FOD image; e.g., a T1 anatomical volume. Only the DEC is subject to the mask, so as to allow for partial colouring of the outputmap. \nDefault when this option is *not* provided: integral of input FOD, subject to the same mask/threshold as used for DEC computation.")
     + Argument ("image").type_image_in()
 
-    + Option ("no-weight","Do not weight the DEC map (reslicing and renormalising still possible by explicitly providing the outputmap option as a template).")
+    + Option ("no_weight","Do not weight the DEC map (reslicing and renormalising still possible by explicitly providing the outputmap option as a template).")
 
     + Option ("lum","Correct for luminance/perception, using default values Cr,Cg,Cb = " + str(DEFAULT_LUM_CR, 2) + "," + str(DEFAULT_LUM_CG, 2) + "," + str(DEFAULT_LUM_CB, 2) + " and gamma = " + str(DEFAULT_LUM_GAMMA, 2) + " (*not* correcting is the theoretical equivalent of Cr,Cg,Cb = 1,1,1 and gamma = 2).")
 
-    + Option ("lum-coefs","The coefficients Cr,Cg,Cb to correct for luminance/perception. \nNote: this implicitly switches on luminance/perception correction, using a default gamma = " + str(DEFAULT_LUM_GAMMA, 2) + " unless specified otherwise.")
+    + Option ("lum_coefs","The coefficients Cr,Cg,Cb to correct for luminance/perception. \nNote: this implicitly switches on luminance/perception correction, using a default gamma = " + str(DEFAULT_LUM_GAMMA, 2) + " unless specified otherwise.")
     + Argument ("values").type_sequence_float()
 
-    + Option ("lum-gamma","The gamma value to correct for luminance/perception. \nNote: this implicitly switches on luminance/perception correction, using a default Cr,Cg,Cb = " + str(DEFAULT_LUM_CR, 2) + "," + str(DEFAULT_LUM_CG, 2) + "," + str(DEFAULT_LUM_CB, 2) + " unless specified otherwise.")
+    + Option ("lum_gamma","The gamma value to correct for luminance/perception. \nNote: this implicitly switches on luminance/perception correction, using a default Cr,Cg,Cb = " + str(DEFAULT_LUM_CR, 2) + "," + str(DEFAULT_LUM_CG, 2) + "," + str(DEFAULT_LUM_CB, 2) + " unless specified otherwise.")
     + Argument ("value").type_float();
 }
 
-using value_type = float;
-const value_type UNIT = 1.0 / std::sqrt(3.0);
 
-class DecTransform {
+using value_type = float;
+const value_type UNIT = 1.0 / std::sqrt(3.0);  // component of 3D unit vector wrt L2-norm
+
+
+class DecTransform { MEMALIGN(DecTransform)
 
   public:
 
@@ -92,22 +94,19 @@ class DecTransform {
 
   DecTransform (int lmax, const Eigen::Matrix<double, Eigen::Dynamic, 2>& dirs, double thresh) :
     sht (Math::SH::init_transform(dirs, lmax)),
-    decs (Math::SH::spherical2cartesian(dirs).cwiseAbs()),
+    decs (Math::Sphere::spherical2cartesian(dirs).cwiseAbs()),
     thresh (thresh) { }
 
 };
 
-class DecComputer {
+class DecComputer { MEMALIGN(DecComputer)
 
   private:
 
   const DecTransform& dectrans;
   Image<bool> mask_img;
   Image<value_type> int_img;
-  Eigen::VectorXd amps;
-  Eigen::RowVector3d dec;
-  double ampsum;
-  double decnorm;
+  Eigen::VectorXd amps, fod;
 
   public:
 
@@ -115,37 +114,39 @@ class DecComputer {
     dectrans (dectrans),
     mask_img (mask_img),
     int_img (int_img),
-    amps (dectrans.sht.rows()) { }
+    amps (dectrans.sht.rows()),
+    fod (dectrans.sht.cols()) { }
 
   void operator() (Image<value_type>& fod_img, Image<value_type>& dec_img) {
 
     if (mask_img.valid()) {
       assign_pos_of(fod_img, 0, 3).to(mask_img);
       if (!mask_img.value()) {
-        dec_img.row(3).fill(UNIT);
+        dec_img.row(3) = UNIT;
         return;
       }
     }
 
-    amps.noalias() = dectrans.sht * fod_img.row(3).cast<double>();
+    fod = fod_img.row(3);
+    amps.noalias() = dectrans.sht * fod;
 
-    dec.setZero();
-    ampsum = 0.0;
+    Eigen::Vector3d dec = Eigen::Vector3d::Zero();
+    double ampsum = 0.0;
     for (ssize_t i = 0; i < amps.rows(); i++) {
       if (!std::isnan(dectrans.thresh) && amps(i) < dectrans.thresh)
         continue;
-      dec += dectrans.decs.row(i) * amps(i);
+      dec += dectrans.decs.row(i).transpose() * amps(i);
       ampsum += amps(i);
     }
     dec = dec.cwiseMax(0.0);
     ampsum = std::max(ampsum, 0.0);
 
-    decnorm = dec.norm();
+    double decnorm = dec.norm();
 
     if (decnorm == 0.0)
-      dec_img.row(3).fill(UNIT);
+      dec_img.row(3) = UNIT;
     else
-      dec_img.row(3) = (dec / decnorm).cast<value_type>();
+      dec_img.row(3) = dec / decnorm;
 
     if (int_img.valid()) {
       assign_pos_of(fod_img, 0, 3).to(int_img);
@@ -156,7 +157,7 @@ class DecComputer {
 
 };
 
-class DecWeighter {
+class DecWeighter { MEMALIGN(DecWeighter)
 
   private:
 
@@ -164,9 +165,6 @@ class DecWeighter {
   value_type gamma;
   Image<value_type> w_img;
   value_type grey;
-  Eigen::Array<value_type, 3, 1> dec;
-  value_type w;
-  value_type br;
 
   public:
 
@@ -178,7 +176,7 @@ class DecWeighter {
 
   void operator() (Image<value_type>& dec_img) {
 
-    w = 1.0;
+    value_type w = 1.0;
     if (w_img.valid()) {
       assign_pos_of(dec_img, 0, 3).to(w_img);
       w = w_img.value();
@@ -189,12 +187,13 @@ class DecWeighter {
       }
     }
 
+    Eigen::Array<value_type, 3, 1> dec;
     for (auto l = Loop (3) (dec_img); l; ++l)
       dec[dec_img.index(3)] = dec_img.value();
 
     dec = dec.cwiseMax(0.0);
 
-    br = std::pow((dec.pow(gamma) * coefs).sum() , 1.0 / gamma);
+    value_type br = std::pow((dec.pow(gamma) * coefs).sum() , 1.0 / gamma);
 
     if (br == 0.0)
       dec.fill(grey * w);
@@ -225,15 +224,15 @@ void run () {
   bool needtolum = false;
   Eigen::Array<value_type, 3, 1> coefs (1.0, 1.0, 1.0);
   value_type gamma = 2.0;
-  auto optlc = get_options("lum-coefs");
-  auto optlg = get_options("lum-gamma");
+  auto optlc = get_options("lum_coefs");
+  auto optlg = get_options("lum_gamma");
   if (get_options("lum").size() || optlc.size() || optlg.size()) {
     needtolum = true;
     coefs << DEFAULT_LUM_CR , DEFAULT_LUM_CG , DEFAULT_LUM_CB; gamma = DEFAULT_LUM_GAMMA;
     if (optlc.size()) {
       auto lc = parse_floats(optlc[0][0]);
       if (lc.size() != 3)
-        throw Exception ("expecting exactly 3 coefficients for the lum-coefs option, provided as a comma-separated list Cr,Cg,Cb ; e.g., " + str(DEFAULT_LUM_CR, 2) + "," + str(DEFAULT_LUM_CG, 2) + "," + str(DEFAULT_LUM_CB, 2) + "");
+        throw Exception ("expecting exactly 3 coefficients for the lum_coefs option, provided as a comma-separated list Cr,Cg,Cb ; e.g., " + str(DEFAULT_LUM_CR, 2) + "," + str(DEFAULT_LUM_CG, 2) + "," + str(DEFAULT_LUM_CB, 2) + "");
       coefs(0) = lc[0]; coefs(1) = lc[1]; coefs(2) = lc[2];
     }
     if (optlg.size())
@@ -247,7 +246,7 @@ void run () {
     map_hdr = Header::open(opto[0][0]);
     if (!dimensions_match(map_hdr, fod_hdr, 0, 3) ||
         !spacings_match(map_hdr, fod_hdr, 0, 3) ||
-        !map_hdr.transform().isApprox(map_hdr.transform(),1e-42))
+        !map_hdr.transform().isApprox(fod_hdr.transform(),1e-42))
       needtoslice = true;
   }
 
@@ -272,7 +271,7 @@ void run () {
       if (mask_hdr.valid())
         mask_img = mask_hdr.get_image<bool>();
 
-      if (!get_options("no-weight").size() && !map_hdr) {
+      if (!get_options("no_weight").size() && !map_hdr) {
         auto int_hdr = Header(dec_img);
         int_hdr.size(3) = 1;
         w_img = Image<value_type>::scratch(int_hdr,"FOD integral map");
@@ -295,7 +294,7 @@ void run () {
       copy (dec_img, out_img);
   }
 
-  if (!get_options("no-weight").size() && map_hdr.valid())
+  if (!get_options("no_weight").size() && map_hdr.valid())
     w_img = map_hdr.get_image<value_type>();
 
   if (w_img.valid() || needtolum || needtoslice)

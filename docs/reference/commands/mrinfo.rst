@@ -1,9 +1,14 @@
 .. _mrinfo:
 
 mrinfo
-===========
+===================
 
 Synopsis
+--------
+
+Display image header information, or extract specific information from the header
+
+Usage
 --------
 
 ::
@@ -15,8 +20,6 @@ Synopsis
 Description
 -----------
 
-display header information, or extract specific information from the header.
-
 By default, all information contained in each image header will be printed to the console in a reader-friendly format.
 
 Alternatively, command-line options may be used to extract specific details from the header(s); these are printed to the console in a format more appropriate for scripting purposes or piping to file. If multiple options and/or images are provided, the requested header fields will be printed in the order in which they appear in the help page, with all requested details from each input image in sequence printed before the next image is processed.
@@ -25,6 +28,8 @@ The command can also write the diffusion gradient table from a single input imag
 
 Options
 -------
+
+-  **-all** print all properties, rather than the first and last 2 of each.
 
 -  **-format** image file format
 
@@ -44,16 +49,18 @@ Options
 
 -  **-transform** the voxel to image transformation
 
--  **-norealign** do not realign transform to near-default RAS coordinate system (the default behaviour on image load). This is useful to inspect the transform and strides as they are actually stored in the header, rather than as MRtrix interprets them.
+-  **-norealign** do not realign transform to near-default RAS coordinate system (the default behaviour on image load). This is useful to inspect the image and/or header contents as they are actually stored in the header, rather than as MRtrix interprets them.
 
 -  **-property key** any text properties embedded in the image header under the specified key (use 'all' to list all keys found)
+
+-  **-json_export file** export header key/value entries to a JSON file
 
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-grad encoding** specify the diffusion-weighted gradient scheme used in the acquisition. The program will normally attempt to use the encoding stored in the image header. This should be supplied as a 4xN text file with each line is in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2.
+-  **-grad file** Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line is in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
--  **-fslgrad bvecs bvals** specify the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format.
+-  **-fslgrad bvecs bvals** Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
 -  **-bvalue_scaling mode** specifies whether the b-values should be scaled by the square of the corresponding DW gradient norm, as often required for multi-shell or DSI DW acquisition schemes. The default action can also be set in the MRtrix config file, under the BValueScaling entry. Valid choices are yes/no, true/false, 0/1 (default: true).
 
@@ -71,6 +78,15 @@ DW gradient table export options
 -  **-shells** list the average b-value of each shell
 
 -  **-shellcounts** list the number of volumes in each shell
+
+Options for exporting phase-encode tables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-export_pe_table file** export phase-encoding table to file
+
+-  **-export_pe_eddy config indices** export phase-encoding information to an EDDY-style config / index file pair
+
+-  **-petable** print the phase encoding table
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -97,11 +113,11 @@ Standard options
 
 **Author:** J-Donald Tournier (d.tournier@brain.org.au) and Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
+**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors
 
-This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/
+This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 MRtrix is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see www.mrtrix.org
+For more details, see http://www.mrtrix.org/.
 

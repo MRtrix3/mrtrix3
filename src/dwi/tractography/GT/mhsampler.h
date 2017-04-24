@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __gt_mhsampler_h__
 #define __gt_mhsampler_h__
@@ -37,13 +36,13 @@ namespace MR {
          * @brief The MHSampler class
          */
         class MHSampler
-        {
+        { MEMALIGN(MHSampler)
         public:
           MHSampler(const Image<float>& dwi, Properties &p, Stats &s, ParticleGrid &pgrid, 
                     EnergyComputer* e, Image<bool>& m)
             : props(p), stats(s), pGrid(pgrid), E(e), T(dwi), 
               dims{size_t(dwi.size(0)), size_t(dwi.size(1)), size_t(dwi.size(2))}, 
-              mask(m), lock(std::make_shared<SpatialLock<float>>(5*Particle::L)), 
+              mask(m), lock(make_shared<SpatialLock<float>>(5*Particle::L)), 
               sigpos(Particle::L / 8.), sigdir(0.2)
           {
             DEBUG("Initialise Metropolis Hastings sampler.");
@@ -77,7 +76,7 @@ namespace MR {
           EnergyComputer* E;      // Polymorphic copy requires call to EnergyComputer::clone(), hence references or smart pointers won't do.
           
           Transform T;
-          std::vector<size_t> dims;
+          vector<size_t> dims;
           Image<bool> mask;
           
           std::shared_ptr< SpatialLock<float> > lock;

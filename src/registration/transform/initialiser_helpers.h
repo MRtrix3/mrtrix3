@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __registration_transform_initialiser_helpers_h__
 #define __registration_transform_initialiser_helpers_h__
@@ -65,7 +64,7 @@ namespace MR
                           default_type& mu020,
                           default_type& mu002);
 
-        class FODInitialiser {
+        class FODInitialiser { MEMALIGN(FODInitialiser)
           public:
             FODInitialiser (Image<default_type>& image1,
                                 Image<default_type>& image2,
@@ -88,11 +87,10 @@ namespace MR
                 sh1.setZero();
                 sh2.resize(N);
                 sh2.setZero();
-              };
+              }
 
             void run ();
 
-            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3
 
           protected:
             void init (Image<default_type>& image,
@@ -111,7 +109,7 @@ namespace MR
             Eigen::Matrix<default_type, Eigen::Dynamic, 1> sh1, sh2;
         };
 
-        class MomentsInitialiser {
+        class MomentsInitialiser { MEMALIGN(MomentsInitialiser)
           public:
             MomentsInitialiser (Image<default_type>& image1,
                                 Image<default_type>& image2,
@@ -124,11 +122,10 @@ namespace MR
               transform(transform),
               mask1(mask1),
               mask2(mask2),
-              use_mask_values_instead (mask_is_intensity) {};
+              use_mask_values_instead (mask_is_intensity) {}
 
             void run ();
 
-            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3
 
           protected:
             bool calculate_eigenvectors (

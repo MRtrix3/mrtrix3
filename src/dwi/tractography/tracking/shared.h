@@ -1,21 +1,21 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __dwi_tractography_tracking_shared_h__
 #define __dwi_tractography_tracking_shared_h__
 
+#include <atomic>
 #include <vector>
 
 #include "header.h"
@@ -27,8 +27,7 @@
 #include "dwi/tractography/ACT/shared.h"
 #include "dwi/tractography/resampling/downsampler.h"
 #include "dwi/tractography/tracking/types.h"
-
-#define MAX_TRIALS 1000
+#include "dwi/tractography/tracking/tractography.h"
 
 
 // If this is enabled, images will be output in the current directory showing the density of streamline terminations due to different termination mechanisms throughout the brain
@@ -49,7 +48,7 @@ namespace MR
 
 
 
-        class SharedBase {
+        class SharedBase { MEMALIGN(SharedBase)
 
           public:
 
@@ -58,7 +57,6 @@ namespace MR
               source (Image<float>::open (diff_path).with_direct_io (3)),
               properties (property_set),
               init_dir ({ NaN, NaN, NaN }),
-              max_num_tracks (1000),
               min_num_points (0),
               max_num_points (0),
               max_angle (NaN),
@@ -70,7 +68,7 @@ namespace MR
               unidirectional (false),
               rk4 (false),
               stop_on_all_include (false),
-              implicit_max_num_attempts (properties.find ("max_num_attempts") == properties.end()),
+              implicit_max_num_seeds (properties.find ("max_num_seeds") == properties.end()),
               downsampler ()
 #ifdef DEBUG_TERMINATIONS
             , debug_header (Header::open (properties.find ("act") == properties.end() ? diff_path : properties["act"])),
@@ -78,9 +76,12 @@ namespace MR
 #endif
               {
 
+                if (properties.find ("max_num_tracks") == properties.end())
+                  max_num_tracks = (properties.find ("max_num_seeds") == properties.end()) ? TCKGEN_DEFAULT_NUM_SELECTED_TRACKS : 0;
+                properties.set (max_num_tracks, "max_num_tracks");
+
                 properties.set (threshold, "threshold");
                 properties.set (unidirectional, "unidirectional");
-                properties.set (max_num_tracks, "max_num_tracks");
                 properties.set (rk4, "rk4");
                 properties.set (stop_on_all_include, "stop_on_all_include");
 
@@ -89,8 +90,8 @@ namespace MR
                 init_threshold = threshold;
                 properties.set (init_threshold, "init_threshold");
 
-                max_num_attempts = 100 * max_num_tracks;
-                properties.set (max_num_attempts, "max_num_attempts");
+                max_num_seeds = TCKGEN_DEFAULT_SEED_TO_SELECT_RATIO * max_num_tracks;
+                properties.set (max_num_seeds, "max_num_seeds");
 
                 assert (properties.seeds.num_seeds());
                 max_seed_attempts = properties.seeds[0]->get_max_attempts();
@@ -127,7 +128,7 @@ namespace MR
                   switch (i) {
                     case CONTINUE:              name = "undefined";      break;
                     case ENTER_CGM:             name = "enter_cgm";      break;
-                    case CALIBRATE_FAIL:        name = "calibrate_fail"; break;
+                    case CALIBRATOR:            name = "calibrator";     break;
                     case EXIT_IMAGE:            name = "exit_image";     break;
                     case ENTER_CSF:             name = "enter_csf";      break;
                     case BAD_SIGNAL:            name = "bad_signal";     break;
@@ -160,7 +161,7 @@ namespace MR
                 switch (i) {
                   case CONTINUE:             term_type = "Unknown";                       to_print = false;    break;
                   case ENTER_CGM:            term_type = "Entered cortical grey matter";  to_print = is_act(); break;
-                  case CALIBRATE_FAIL:       term_type = "Calibrator failed";             to_print = true;     break;
+                  case CALIBRATOR:           term_type = "Calibrator sub-threshold";      to_print = true;     break;
                   case EXIT_IMAGE:           term_type = "Exited image";                  to_print = true;     break;
                   case ENTER_CSF:            term_type = "Entered CSF";                   to_print = is_act(); break;
                   case BAD_SIGNAL:           term_type = "Bad diffusion signal";          to_print = true;     break;
@@ -173,7 +174,7 @@ namespace MR
                   case TRAVERSE_ALL_INCLUDE: term_type = "Traversed all include regions"; to_print = stop_on_all_include; break;
                 }
                 if (to_print)
-                  INFO ("  " + term_type + ": " + str (100.0 * terminations[i] / (double)sum_terminations) + "\%");
+                  INFO ("  " + term_type + ": " + str (100.0 * terminations[i] / (double)sum_terminations, 3) + "\%");
               }
 
               INFO ("Track rejection counts:");
@@ -181,6 +182,7 @@ namespace MR
                 std::string reject_type;
                 bool to_print = false;
                 switch (i) {
+                  case INVALID_SEED:              reject_type = "Invalid seed point";              to_print = true;     break;
                   case NO_PROPAGATION_FROM_SEED:  reject_type = "No propagation from seed";        to_print = true;     break;
                   case TRACK_TOO_SHORT:           reject_type = "Shorter than minimum length";     to_print = true;     break;
                   case TRACK_TOO_LONG:            reject_type = "Longer than maximum length";      to_print = is_act(); break;
@@ -206,11 +208,11 @@ namespace MR
             Image<float> source;
             Properties& properties;
             Eigen::Vector3f init_dir;
-            size_t max_num_tracks, max_num_attempts, min_num_points, max_num_points;
+            size_t max_num_tracks, max_num_seeds, min_num_points, max_num_points;
             float max_angle, max_angle_rk4, cos_max_angle, cos_max_angle_rk4;
             float step_size, threshold, init_threshold;
             size_t max_seed_attempts;
-            bool unidirectional, rk4, stop_on_all_include, implicit_max_num_attempts;
+            bool unidirectional, rk4, stop_on_all_include, implicit_max_num_seeds;
             DWI::Tractography::Resampling::Downsampler downsampler;
 
             // Additional members for ACT
@@ -261,14 +263,14 @@ namespace MR
             virtual float internal_step_size() const { return step_size; }
 
 
-            void add_termination (const term_t i)   const { ++terminations[i]; }
-            void add_rejection   (const reject_t i) const { ++rejections[i]; }
+            void add_termination (const term_t i)   const { terminations[i].fetch_add (1, std::memory_order_relaxed); }
+            void add_rejection   (const reject_t i) const { rejections[i]  .fetch_add (1, std::memory_order_relaxed); }
 
 
 #ifdef DEBUG_TERMINATIONS
             void add_termination (const term_t i, const Eigen::Vector3f& p) const
             {
-              ++terminations[i];
+              terminations[i].fetch_add (1, std::memory_order_relaxed);
               Image<uint32_t> image (*debug_images[i]);
               const auto pv = transform.scanner2voxel * p.cast<default_type>();
               image.index(0) = ssize_t (std::round (pv[0]));
@@ -281,8 +283,8 @@ namespace MR
 
 
           private:
-            mutable size_t terminations[TERMINATION_REASON_COUNT];
-            mutable size_t rejections  [REJECTION_REASON_COUNT];
+            mutable std::atomic<size_t> terminations[TERMINATION_REASON_COUNT];
+            mutable std::atomic<size_t> rejections  [REJECTION_REASON_COUNT];
 
             std::unique_ptr<ACT::ACT_Shared_additions> act_shared_additions;
 

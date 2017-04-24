@@ -1,9 +1,14 @@
 .. _5tt2gmwmi:
 
 5tt2gmwmi
-===========
+===================
 
 Synopsis
+--------
+
+Generate a mask image appropriate for seeding streamlines on the grey matter-white matter interface
+
+Usage
 --------
 
 ::
@@ -12,11 +17,6 @@ Synopsis
 
 -  *5tt_in*: the input 5TT segmented anatomical image
 -  *mask_out*: the output mask image
-
-Description
------------
-
-Generate a mask image appropriate for seeding streamlines on the grey matter - white matter interface
 
 Options
 -------
@@ -53,11 +53,11 @@ Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. Anatomically-constra
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
+**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors
 
-This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/
+This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 MRtrix is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see www.mrtrix.org
+For more details, see http://www.mrtrix.org/.
 
