@@ -76,7 +76,7 @@ namespace MR
     template <class MatrixType, class VectorTypeOut, class VectorTypeIn>
       inline void dwi2tensor (VectorTypeOut& dt, const MatrixType& binv, VectorTypeIn& dwi)
     {
-      typedef typename VectorTypeIn::Scalar T;
+      using T = typename VectorTypeIn::Scalar;
       for (ssize_t i = 0; i < dwi.size(); ++i)
         dwi[i] = dwi[i] > T(0.0) ? -std::log (dwi[i]) : T(0.0);
       dt = binv * dwi;
@@ -85,14 +85,14 @@ namespace MR
 
     template <class VectorType> inline typename VectorType::Scalar tensor2ADC (const VectorType& dt)
     {
-      typedef typename VectorType::Scalar T;
+      using T = typename VectorType::Scalar;
       return (dt[0]+dt[1]+dt[2]) / T (3.0);
     }
 
 
     template <class VectorType> inline typename VectorType::Scalar tensor2FA (const VectorType& dt)
     {
-      typedef typename VectorType::Scalar T;
+      using T = typename VectorType::Scalar;
       T trace = tensor2ADC (dt);
       T a[] = { dt[0]-trace, dt[1]-trace, dt[2]-trace };
       trace = dt[0]*dt[0] + dt[1]*dt[1] + dt[2]*dt[2] + T (2.0) * (dt[3]*dt[3] + dt[4]*dt[4] + dt[5]*dt[5]);
@@ -104,7 +104,7 @@ namespace MR
 
     template <class VectorType> inline typename VectorType::Scalar tensor2RA (const VectorType& dt)
     {
-      typedef typename VectorType::Scalar T;
+      using T = typename VectorType::Scalar;
       T trace = tensor2ADC (dt);
       T a[] = { dt[0]-trace, dt[1]-trace, dt[2]-trace };
       return trace ?

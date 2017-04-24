@@ -89,6 +89,9 @@ namespace MR
               {
                 if (lmax.empty()) {
                   lmax = lmax_response;
+                  for (size_t t = 0; t != num_tissues(); ++t) {
+                    lmax[t] = std::min (8, lmax[t]);
+                  }
                 } else {
                   if (lmax.size() != num_tissues())
                     throw Exception ("Number of lmaxes specified does not match number of tissues");
@@ -229,8 +232,9 @@ namespace MR
                   // Clip off any empty columns, i.e. degrees containing zero coefficients for all shells
                   r.conservativeResize (r.rows(), n);
                   // Store the lmax for each tissue based on their response functions;
-                  //   if the user doesn't manually specify lmax, these will determine
-                  //   the lmax of each tissue ODF output
+                  //   if the user doesn't manually specify lmax, these will determine the
+                  //   lmax of each tissue ODF output, with a further default lmax=8
+                  //   restriction at that stage
                   lmax_response.push_back (Math::ZSH::LforN (r.cols()));
                 }
               }

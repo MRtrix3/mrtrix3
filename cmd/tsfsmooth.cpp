@@ -40,7 +40,7 @@ void usage ()
   + Argument ("sigma").type_float(1e-6);
 }
 
-typedef float value_type;
+using value_type = float;
 
 
 void run ()

@@ -38,7 +38,7 @@ namespace MR
       class Edge
       { MEMALIGN(Edge)
 
-          typedef MR::Connectome::node_t node_t;
+          using node_t = MR::Connectome::node_t;
 
         public:
           Edge (const node_t, const node_t, const Eigen::Vector3f&, const Eigen::Vector3f&);

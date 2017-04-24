@@ -36,7 +36,7 @@ namespace MR {
           class TrackMapper : public Mapping::TrackMapperTWI
           { MEMALIGN(TrackMapper)
 
-            typedef Mapping::TrackMapperTWI BaseMapper;
+            using BaseMapper = Mapping::TrackMapperTWI;
 
             public:
             template <class HeaderType>
@@ -153,8 +153,10 @@ namespace MR {
           template <class Cont>
             void TrackMapper::voxelise_precise (const Streamline<>& tck, Cont& out) const
             {
-              typedef Streamline<>::point_type point_type;
-              typedef Streamline<>::value_type value_type;
+
+              using point_type = Streamline<>::point_type;
+              using value_type = Streamline<>::value_type;
+
 
               static const default_type accuracy = Math::pow2 (0.005 * std::min (info.spacing (0), std::min (info.spacing (1), info.spacing (2))));
 

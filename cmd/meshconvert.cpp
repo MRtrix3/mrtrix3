@@ -72,7 +72,7 @@ void run ()
   auto opt = get_options ("transform");
   if (opt.size()) {
     auto H = Header::open (opt[0][1]);
-    std::unique_ptr<Surface::Filter::VertexTransform> transform (new Surface::Filter::VertexTransform (H));
+    auto transform = make_unique<Surface::Filter::VertexTransform> (H);
     switch (int(opt[0][0])) {
       case 0: transform->set_first2real(); break;
       case 1: transform->set_real2first(); break;

@@ -206,10 +206,10 @@ namespace MR
         { MEMALIGN(Dynamic)
           private:
 
-            typedef Fixel_TD_seed Fixel;
+            using Fixel = Fixel_TD_seed;
 
-            typedef Fixel_map<Fixel>::MapVoxel MapVoxel;
-            typedef Fixel_map<Fixel>::VoxelAccessor VoxelAccessor;
+            using MapVoxel = Fixel_map<Fixel>::MapVoxel;
+            using VoxelAccessor = Fixel_map<Fixel>::VoxelAccessor;
 
 
         public:

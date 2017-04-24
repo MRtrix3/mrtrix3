@@ -28,8 +28,8 @@ namespace MR
     { MEMALIGN (Gaussian1D<ImageType>) 
       public:
 
-        typedef Base<Gaussian1D<ImageType>,ImageType> base_type;
-        typedef typename ImageType::value_type value_type;
+        using base_type = Base<Gaussian1D<ImageType>, ImageType>;
+        using value_type = typename ImageType::value_type;
 
         using base_type::name;
         using base_type::size;

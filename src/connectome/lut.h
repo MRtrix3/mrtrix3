@@ -38,7 +38,7 @@ class LUT_node
 
   public:
 
-    typedef Eigen::Array<uint8_t, 3, 1> RGB;
+    using RGB = Eigen::Array<uint8_t, 3, 1>;
 
     LUT_node (const std::string& n) :
       name (n),
@@ -93,7 +93,7 @@ class LUT : public std::multimap<node_t, LUT_node>
 { MEMALIGN(LUT)
     enum file_format { LUT_NONE, LUT_BASIC, LUT_FREESURFER, LUT_AAL, LUT_ITKSNAP, LUT_MRTRIX };
   public:
-    typedef std::multimap<node_t, LUT_node> map_type;
+    using map_type = std::multimap<node_t, LUT_node>;
     LUT () : exclusive (true) { }
     LUT (const std::string&);
     void load (const std::string&);

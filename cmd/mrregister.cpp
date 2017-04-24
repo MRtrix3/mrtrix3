@@ -42,7 +42,7 @@ void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
 
-  SYNOPSIS = "Register two images together using a rigid, affine or a non-linear transformation model";
+  SYNOPSIS = "Register two images together using a symmetric rigid, affine or non-linear transformation model";
 
   DESCRIPTION
       + "By default this application will perform an affine, followed by non-linear registration."
@@ -108,7 +108,7 @@ void usage ()
   + DataType::options();
 }
 
-typedef double value_type;
+using value_type = double;
 
 void run () {
   auto input1 = Registration::parse_image_sequence_input (argument[0]);

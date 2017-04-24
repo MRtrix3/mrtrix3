@@ -31,11 +31,11 @@ Options
 Region Of Interest processing options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-include spec** specify an inclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines must traverse ALL inclusion regions to be accepted.
+-  **-include image** specify an inclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines must traverse ALL inclusion regions to be accepted.
 
--  **-exclude spec** specify an exclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines that enter ANY exclude region will be discarded.
+-  **-exclude image** specify an exclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines that enter ANY exclude region will be discarded.
 
--  **-mask spec** specify a masking region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). If defined, streamlines exiting the mask will be truncated.
+-  **-mask image** specify a masking region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). If defined, streamlines exiting the mask will be truncated.
 
 Streamline length threshold options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

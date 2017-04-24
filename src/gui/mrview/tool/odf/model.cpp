@@ -35,7 +35,7 @@ namespace MR
           vector<std::unique_ptr<MR::Header>> hlist;
           for (size_t i = 0; i < list.size(); ++i) {
             try {
-              std::unique_ptr<MR::Header> header (new MR::Header (MR::Header::open (list[i])));
+              auto header = make_unique<MR::Header> (MR::Header::open (list[i]));
               switch (type) {
                 case odf_type_t::SH:
                   Math::SH::check (*header);
@@ -61,7 +61,7 @@ namespace MR
           if (hlist.size()) {
             beginInsertRows (QModelIndex(), items.size(), items.size()+hlist.size());
             for (size_t i = 0; i < hlist.size(); ++i)
-              items.push_back (std::unique_ptr<ODF_Item> (new ODF_Item (std::move (*hlist[i]), type, scale, hide_negative_lobes, colour_by_direction)));
+              items.push_back (make_unique<ODF_Item> (std::move (*hlist[i]), type, scale, hide_negative_lobes, colour_by_direction));
             endInsertRows();
           }
 

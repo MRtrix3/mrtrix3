@@ -95,7 +95,7 @@ namespace MR
           out.index(1) = mask.index(1);
           out.index(2) = mask.index(2);
           out.index(3) = 0;
-          typedef typename ImageType3::value_type value_type;
+          using value_type = typename ImageType3::value_type;
           in1.index(0) = mask.index(0);
           in1.index(1) = mask.index(1);
           in1.index(2) = mask.index(2);
@@ -209,23 +209,23 @@ namespace MR
 
           public:
             /** typedef int is_neighbourhood: type_trait to distinguish voxel-wise and neighbourhood based metric types */
-            typedef int is_neighbourhood;
+            using is_neighbourhood = int;
             /** requires_precompute int is_neighbourhood: type_trait to distinguish metric types that require a call to precompute before the operator() is called */
-            typedef int requires_precompute;
+            using requires_precompute = int;
 
             template <class ParamType>
               default_type precompute(ParamType& parameters) {
                 INFO("precomputing cross correlation data...");
                 throw Exception ("TODO");
 
-                typedef decltype(parameters.im1_image) Im1Type;
-                typedef decltype(parameters.im2_image) Im2Type;
-                typedef decltype(parameters.im1_mask) Im1MaskType;
-                typedef decltype(parameters.im2_mask) Im2MaskType;
-                typedef typename ParamType::ProcessedValueType ProcessedImageValueType;
-                typedef typename ParamType::ProcessedMaskType ProcessedMaskType;
-                typedef typename ParamType::ProcessedMaskInterpType ProcessedMaskInterpolatorType;
-                typedef typename ParamType::ProcessedImageInterpType CCInterpType;
+                using Im1Type = decltype(parameters.im1_image);
+                using Im2Type = decltype(parameters.im2_image);
+                using Im1MaskType = decltype(parameters.im1_mask);
+                using Im2MaskType = decltype(parameters.im2_mask);
+                using ProcessedImageValueType = typename ParamType::ProcessedValueType;
+                using ProcessedMaskType = typename ParamType::ProcessedMaskType;
+                using ProcessedMaskInterpolatorType = typename ParamType::ProcessedMaskInterpType;
+                using CCInterpType = typename ParamType::ProcessedImageInterpType;
 
                 Header midway_header (parameters.midway_image);
                 midway_v2s = MR::Transform (midway_header).voxel2scanner;

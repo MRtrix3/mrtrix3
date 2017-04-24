@@ -30,14 +30,13 @@ namespace MR
     {
 
 
-
       const App::OptionGroup Options (const default_type, const default_type, const default_type);
 
 
 
 
-      typedef Math::Stats::value_type value_type;
-      typedef Math::Stats::vector_type vector_type;
+      using value_type = Math::Stats::value_type;
+      using vector_type = Math::Stats::vector_type;
 
 
 

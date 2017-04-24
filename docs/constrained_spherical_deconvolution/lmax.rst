@@ -111,7 +111,7 @@ command being used; e.g.:
    remains under-determined.
 
 -  If performing Track Orientation Density Imaging (TODI) using
-   ``tckgen -tod``, then the apodized point spread functions (aPSFs) can be
+   ``tckmap -tod``, then the apodized point spread functions (aPSFs) can be
    generated at any value of ``lmax`` for which aPSF data are available
    (currently ``lmax = 16``, since the angular resolution of the original image
    data is not a limiting factor here.

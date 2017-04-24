@@ -29,8 +29,8 @@ namespace MR
     template <typename T> class CubicSpline
     { MEMALIGN(CubicSpline<T>)
       public:
-        typedef Eigen::Matrix<T, 4, 4> BasisMatrix;
-        typedef Eigen::Matrix<T, 1, 4> WeightVector;
+        using BasisMatrix = Eigen::Matrix<T, 4, 4>;
+        using WeightVector = Eigen::Matrix<T, 1, 4>;
         WeightVector weights, deriv_weights;
 
         void set (T position) {
@@ -90,7 +90,7 @@ namespace MR
     template <typename T> class HermiteSpline :
     public CubicSpline<T> { MEMALIGN(HermiteSpline<T>)
       public:
-        typedef typename CubicSpline<T>::BasisMatrix BasisMatrix;
+        using BasisMatrix = typename CubicSpline<T>::BasisMatrix;
         static const BasisMatrix hermite_basis_mtrx;
         static const BasisMatrix hermite_derivative_basis_mtrx;
 
@@ -103,7 +103,7 @@ namespace MR
     template <typename T> class UniformBSpline :
     public CubicSpline<T> { MEMALIGN(UniformBSpline<T>)
       public:
-        typedef typename CubicSpline<T>::BasisMatrix BasisMatrix;
+        using BasisMatrix = typename CubicSpline<T>::BasisMatrix;
         static const BasisMatrix uniform_bspline_basis_mtrx;
         static const BasisMatrix uniform_bspline_derivative_basis_mtrx;
 

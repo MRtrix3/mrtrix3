@@ -27,7 +27,7 @@ namespace MR
     template <typename T> class Hermite
     { NOMEMALIGN
       public:
-        typedef T value_type;
+        using value_type = T;
 
         Hermite (value_type tension = 0.0) : t (T (0.5) *tension) { }
 

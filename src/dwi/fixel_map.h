@@ -47,7 +47,7 @@ namespace MR
         Fixel_map (const Fixel_map&) = delete;
 
         class MapVoxel;
-        typedef Image<MapVoxel*> VoxelAccessor;
+        using VoxelAccessor = Image<MapVoxel*>;
 
         virtual ~Fixel_map()
         {

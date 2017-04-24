@@ -33,7 +33,7 @@ namespace MR
       {
 
 
-        class ClipPlane 
+        class ClipPlane
         { MEMALIGN (ClipPlane)
           public:
             GL::vec4 plane;
@@ -80,6 +80,8 @@ namespace MR
             void onCheckThreshold (bool);
             void onModeChanged ();
             void hide_image_slot (bool flag);
+            void copy_focus_slot ();
+            void copy_voxel_slot ();
             void clip_planes_right_click_menu_slot (const QPoint& pos);
             void clip_planes_selection_changed_slot ();
             void clip_planes_toggle_shown_slot();
@@ -102,6 +104,8 @@ namespace MR
 
           private:
             QPushButton *hide_button;
+            QPushButton *copy_focus_button;
+            QPushButton *copy_voxel_button;
             AdjustButton *focus_x, *focus_y, *focus_z;
             AdjustButton *voxel_x, *voxel_y, *voxel_z;
             SpinBox *vol_index, *vol_group;

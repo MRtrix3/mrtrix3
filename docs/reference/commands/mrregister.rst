@@ -6,7 +6,7 @@ mrregister
 Synopsis
 --------
 
-Register two images together using a rigid, affine or a non-linear transformation model
+Register two images together using a symmetric rigid, affine or non-linear transformation model
 
 Usage
 --------

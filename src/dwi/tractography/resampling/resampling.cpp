@@ -70,6 +70,10 @@ namespace MR {
 
 
         namespace {
+
+          using value_type = float;
+          using point_type = Eigen::Vector3f;
+
           point_type get_pos (const vector<default_type>& s)
           {
             if (s.size() != 3)

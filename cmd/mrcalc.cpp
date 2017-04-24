@@ -134,8 +134,9 @@ OPTIONS
 }
 
 
-typedef float real_type;
-typedef cfloat complex_type;
+
+using real_type = float;
+using complex_type = cfloat;
 static bool transform_mis_match_reported (false);
 
 

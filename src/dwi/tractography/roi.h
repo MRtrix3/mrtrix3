@@ -37,7 +37,7 @@ namespace MR
 
       class Mask : public Image<bool> { MEMALIGN(Mask)
         public:
-          typedef Eigen::Transform<float, 3, Eigen::AffineCompact> transform_type;
+          using transform_type = Eigen::Transform<float, 3, Eigen::AffineCompact>;
           Mask (const Mask&) = default;
           Mask (const std::string& name) :
               Image<bool> (__get_mask (name)),

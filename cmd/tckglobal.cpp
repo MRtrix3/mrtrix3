@@ -57,7 +57,7 @@ using namespace App;
 void usage ()
 {
 
-  AUTHOR = "Daan Christiaens (daan.christiaens@kuleuven.be)";
+  AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk)";
   
   COPYRIGHT = "Copyright (C) 2015 KU Leuven, Dept. Electrical Engineering, ESAT/PSI,\n"
               "Herestraat 49 box 7003, 3000 Leuven, Belgium \n\n"

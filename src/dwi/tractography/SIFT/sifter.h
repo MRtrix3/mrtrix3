@@ -45,9 +45,9 @@ namespace MR
       { MEMALIGN(SIFTer)
 
         protected:
-        typedef Model<Fixel> MapType;
-        typedef Fixel_map<Fixel>::MapVoxel MapVoxel;
-        typedef Fixel_map<Fixel>::VoxelAccessor VoxelAccessor;
+        using MapType = Model<Fixel>;
+        using MapVoxel = Fixel_map<Fixel>::MapVoxel;
+        using VoxelAccessor = Fixel_map<Fixel>::VoxelAccessor;
 
 
         public:
