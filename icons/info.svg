@@ -1,0 +1,10 @@
+<svg height="49" version="1.1" width="49" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <radialGradient id="a" cx="25.068247" cy="26.027599" gradientTransform="matrix(.85297014 -.00156672 .00148108 .80633941 3.9502369 5.5972196)" gradientUnits="userSpaceOnUse" r="17">
+    <stop offset="0" stop-color="#7693ff"/>
+    <stop offset="1" stop-color="#001254"/>
+  </radialGradient>
+  <g transform="translate(.5000003 -1003.8622031)">
+    <circle cx="25.5" cy="26.5" fill="url(#a)" opacity=".85714285" r="16.5" stroke="#000" stroke-width=".65656251" transform="matrix(1.4545454 0 0 1.4545454 -13.090908 989.81675)"/>
+    <path d="m 20.172358 1015.9982 q 0 -1.5821 1.09375 -2.6563 q 1.09375 -1.0937 2.675781 -1.0937 q 1.542969 0 2.617187 1.0937 q 1.09375 1.0742 1.09375 2.6563 q 0 1.5429 -1.09375 2.6367 q -1.074218 1.0742 -2.617187 1.0742 q -1.582031 0 -2.675781 -1.0742 q -1.09375 -1.0742 -1.09375 -2.6367 z m 7.558593 24.2773 l 2.96875 0 l 0 2.3633 l -12.832031 0 l 0 -2.3633 l 2.949219 0 l 0 -16.0351 l -2.949219 0 l 0 -2.3633 l 9.863281 0 l 0 18.3984 z" fill="#fff"/>
+  </g>
+</svg>

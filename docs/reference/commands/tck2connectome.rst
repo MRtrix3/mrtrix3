@@ -1,9 +1,14 @@
 .. _tck2connectome:
 
 tck2connectome
-===========
+===================
 
 Synopsis
+--------
+
+Generate a connectome matrix from a streamlines file and a node parcellation image
+
+Usage
 --------
 
 ::
@@ -13,11 +18,6 @@ Synopsis
 -  *tracks_in*: the input track file
 -  *nodes_in*: the input node parcellation image
 -  *connectome_out*: the output .csv file containing edge weights
-
-Description
------------
-
-generate a connectome matrix from a streamlines file and a node parcellation image
 
 Options
 -------
@@ -46,6 +46,13 @@ Structural connectome metric options
 
 -  **-scale_file path** scale each contribution to the connectome edge according to the values in a vector file
 
+Options for outputting connectome matrices
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-symmetric** Make matrices symmetric on output
+
+-  **-zero_diagonal** Set matrix diagonal to zero on output
+
 Other options for tck2connectome
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -55,9 +62,7 @@ Other options for tck2connectome
 
 -  **-keep_unassigned** By default, the program discards the information regarding those streamlines that are not successfully assigned to a node pair. Set this option to keep these values (will be the first row/column in the output matrix)
 
--  **-out_assignments path** output the node assignments of each streamline to a file
-
--  **-zero_diagonal** set all diagonal entries in the matrix to zero (these represent streamlines that connect to the same node at both ends)
+-  **-out_assignments path** output the node assignments of each streamline to a file; this can be used subsequently e.g. by the command connectome2tck
 
 -  **-vector** output a vector representing connectivities from a given seed point to target nodes, rather than a matrix of node-node connectivities
 
@@ -86,11 +91,11 @@ Standard options
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
+**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors
 
-This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/
+This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 MRtrix is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see www.mrtrix.org
+For more details, see http://www.mrtrix.org/.
 

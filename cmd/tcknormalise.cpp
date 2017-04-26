@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -31,8 +29,7 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  DESCRIPTION
-  + "apply a normalisation map to a tracks file.";
+  SYNOPSIS = "Apply a normalisation map to a tracks file";
 
   ARGUMENTS
   + Argument ("tracks", "the input track file.").type_tracks_in()
@@ -42,13 +39,12 @@ void usage ()
 
 
 
-typedef float value_type;
-typedef Tractography::Streamline<value_type> TrackType;
+using value_type = float;
+using TrackType = Tractography::Streamline<value_type>;
 
 
 
-class Loader 
-{
+class Loader { MEMALIGN(Loader)
   public:
     Loader (const std::string& file) : reader (file, properties) {}
 
@@ -63,8 +59,7 @@ class Loader
 
 
 
-class Warper
-{
+class Warper { MEMALIGN(Warper)
   public:
     Warper (const Image<value_type>& warp) :
       interp (warp) { }
@@ -93,8 +88,7 @@ class Warper
 
 
 
-class Writer 
-{
+class Writer { MEMALIGN(Writer)
   public:
     Writer (const std::string& file, const Tractography::Properties& properties) :
       progress ("normalising tracks"),

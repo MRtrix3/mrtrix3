@@ -1,22 +1,21 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
 #include "command.h"
 #include "image.h"
 #include "algo/loop.h"
+#include "phase_encoding.h"
 #include "progressbar.h"
 #include "dwi/gradient.h"
 
@@ -26,8 +25,7 @@ using namespace App;
 void usage () {
 AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-DESCRIPTION
-  + "concatenate several images into one";
+SYNOPSIS = "Concatenate several images into one";
 
 ARGUMENTS
   + Argument ("image1", "the first input image.")
@@ -52,14 +50,14 @@ OPTIONS
 }
 
 
-typedef float value_type;
+using value_type = float;
 
 
 void run () {
   int axis = get_option_value ("axis", -1);
 
   int num_images = argument.size()-1;
-  std::vector<Header, Eigen::aligned_allocator<Header>> in (num_images);
+  vector<Header> in (num_images);
   in[0] = Header::open (argument[0]);
 
   int ndims = 0;
@@ -113,28 +111,65 @@ void run () {
   
 
 
-  if (axis > 2) { // concatenate DW schemes
-    size_t nrows = 0;
-    std::vector<Eigen::MatrixXd> input_grads;
+  if (axis > 2) {
+    // concatenate DW schemes
+    ssize_t nrows = 0, ncols = 0;
+    vector<Eigen::MatrixXd> input_grads;
     for (int n = 0; n < num_images; ++n) {
       auto grad = DWI::get_DW_scheme (in[n]);
-      input_grads.push_back (grad);
       if (grad.rows() == 0 || grad.cols() < 4) {
         nrows = 0;
         break;
-      }   
+      }
+      if (!ncols) {
+        ncols = grad.cols();
+      } else if (grad.cols() != ncols) {
+        nrows = 0;
+        break;
+      }
       nrows += grad.rows();
+      input_grads.push_back (std::move (grad));
     }   
-
     if (nrows) {
       Eigen::MatrixXd grad_out (nrows, 4);
       int row = 0;
-      for (int n = 0; n < num_images; ++n) 
+      for (int n = 0; n < num_images; ++n) {
         for (ssize_t i = 0; i < input_grads[n].rows(); ++i, ++row)
-          for (size_t j = 0; j < 4; ++j) 
-            grad_out (row,j) = input_grads[n](i,j);
+          grad_out.row(row) = input_grads[n].row(i);
+      }
       DWI::set_DW_scheme (header_out, grad_out);
+    } else {
+      header_out.keyval().erase ("dw_scheme");
     }
+
+    // concatenate PE schemes
+    nrows = 0; ncols = 0;
+    vector<Eigen::MatrixXd> input_schemes;
+    for (int n = 0; n != num_images; ++n) {
+      auto scheme = PhaseEncoding::parse_scheme (in[n]);
+      if (!scheme.rows()) {
+        nrows = 0;
+        break;
+      }
+      if (!ncols) {
+        ncols = scheme.cols();
+      } else if (scheme.cols() != ncols) {
+        nrows = 0;
+        break;
+      }
+      nrows += scheme.rows();
+      input_schemes.push_back (std::move (scheme));
+    }
+    Eigen::MatrixXd scheme_out;
+    if (nrows) {
+      scheme_out.resize (nrows, ncols);
+      size_t row = 0;
+      for (int n = 0; n != num_images; ++n)  {
+        for (ssize_t i = 0; i != input_schemes[n].rows(); ++i, ++row)
+          scheme_out.row(row) = input_schemes[n].row(i);
+      }
+    }
+    PhaseEncoding::set_scheme (header_out, scheme_out);
   }
 
 

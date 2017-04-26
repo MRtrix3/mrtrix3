@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "mrtrix.h"
 #include "gui/mrview/window.h"
@@ -36,13 +35,13 @@ namespace MR
       {
 
         class Tractography::Model : public ListModelBase
-        {
+        { MEMALIGN(Tractography::Model)
 
           public:
             Model (QObject* parent) :
               ListModelBase (parent) { }
 
-            void add_items (std::vector<std::string>& filenames,
+            void add_items (vector<std::string>& filenames,
                             Tractography& tractography_tool) {
 
               for (size_t i = 0; i < filenames.size(); ++i) {
@@ -169,20 +168,19 @@ namespace MR
 
             general_groupbox->setLayout (general_opt_grid);
 
-            QSlider* slider;
-            slider = new QSlider (Qt::Horizontal);
-            slider->setRange (1,1000);
-            slider->setSliderPosition (1000);
-            connect (slider, SIGNAL (valueChanged (int)), this, SLOT (opacity_slot (int)));
+            opacity_slider = new QSlider (Qt::Horizontal);
+            opacity_slider->setRange (1,1000);
+            opacity_slider->setSliderPosition (1000);
+            connect (opacity_slider, SIGNAL (valueChanged (int)), this, SLOT (opacity_slot (int)));
             general_opt_grid->addWidget (new QLabel ("opacity"), 0, 0);
-            general_opt_grid->addWidget (slider, 0, 1);
+            general_opt_grid->addWidget (opacity_slider, 0, 1);
 
-            slider = new QSlider (Qt::Horizontal);
-            slider->setRange (-1000,1000);
-            slider->setSliderPosition (0);
-            connect (slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
+            thickness_slider = new QSlider (Qt::Horizontal);
+            thickness_slider->setRange (-1000,1000);
+            thickness_slider->setSliderPosition (0);
+            connect (thickness_slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
             general_opt_grid->addWidget (new QLabel ("line thickness"), 1, 0);
-            general_opt_grid->addWidget (slider, 1, 1);
+            general_opt_grid->addWidget (thickness_slider, 1, 1);
 
             QGroupBox* slab_group_box = new QGroupBox (tr("crop to slab"));
             slab_group_box->setCheckable (true);
@@ -200,7 +198,7 @@ namespace MR
             connect (slab_entry, SIGNAL (valueChanged()), this, SLOT (on_slab_thickness_slot()));
             slab_layout->addWidget (slab_entry, 0, 1);
 
-            QGroupBox* lighting_group_box = new QGroupBox (tr("lighting"));
+            QGroupBox* lighting_group_box = new QGroupBox (tr("use lighting"));
             lighting_group_box->setCheckable (true);
             lighting_group_box->setChecked (false);
             general_opt_grid->addWidget (lighting_group_box, 5, 0, 1, 2);
@@ -208,7 +206,8 @@ namespace MR
             connect (lighting_group_box, SIGNAL (clicked (bool)), this, SLOT (on_use_lighting_slot (bool)));
 
             VBoxLayout* lighting_layout = new VBoxLayout (lighting_group_box);
-            QPushButton* lighting_button = new QPushButton ("settings...");
+            QPushButton* lighting_button = new QPushButton ("Track lighting...");
+            lighting_button->setIcon (QIcon (":/light.svg"));
             connect (lighting_button, SIGNAL (clicked()), this, SLOT (on_lighting_settings()));
             lighting_layout->addWidget (lighting_button);
 
@@ -288,7 +287,7 @@ namespace MR
 
         void Tractography::tractogram_open_slot ()
         {
-          std::vector<std::string> list = Dialog::File::get_files (this, "Select tractograms to open", "Tractograms (*.tck)");
+          vector<std::string> list = Dialog::File::get_files (this, "Select tractograms to open", "Tractograms (*.tck)");
           if (list.empty())
             return;
           try {
@@ -307,7 +306,7 @@ namespace MR
 
           const QMimeData* mimeData = event->mimeData();
           if (mimeData->hasUrls()) {
-            std::vector<std::string> list;
+            vector<std::string> list;
             QList<QUrl> urlList = mimeData->urls();
             for (int i = 0; i < urlList.size() && i < max_files; ++i) {
                 list.push_back (urlList.at (i).path().toUtf8().constData());
@@ -664,16 +663,44 @@ namespace MR
             + OptionGroup ("Tractography tool options")
 
             + Option ("tractography.load", "Load the specified tracks file into the tractography tool.").allow_multiple()
-            +   Argument ("tracks").type_file_in();
+            +   Argument ("tracks").type_file_in()
+
+            + Option ("tractography.thickness", "Line thickness of tractography display, [-1.0, 1.0], default is 0.0.").allow_multiple()
+            +   Argument("value").type_float ( -1.0, 1.0 )
+
+            + Option ("tractography.opacity", "Opacity of tractography display, [0.0, 1.0], default is 1.0.").allow_multiple()
+            +   Argument("value").type_float ( 0.0, 1.0 )
+            ;
+          
         }
 
         bool Tractography::process_commandline_option (const MR::App::ParsedOption& opt) 
         {
           if (opt.opt->is ("tractography.load")) {
-            std::vector<std::string> list (1, std::string(opt[0]));
+            vector<std::string> list (1, std::string(opt[0]));
             try { 
               tractogram_list_model->add_items (list, *this); 
               window().updateGL();
+            }
+            catch (Exception& E) { E.display(); }
+            return true;
+          }
+
+          if (opt.opt->is ("tractography.thickness")) {
+            // Thickness runs from -1000 to 1000, 
+            float thickness = float(opt[0]) * 1000.0f;
+            try { 
+              thickness_slider->setValue(thickness);
+            }
+            catch (Exception& E) { E.display(); }
+            return true;
+          }
+
+          if (opt.opt->is ("tractography.opacity")) {
+            // Opacity runs from 0 to 1000, so multiply by 1000
+            float opacity = float(opt[0]) * 1000.0f;
+            try {
+              opacity_slider->setValue(opacity);
             }
             catch (Exception& E) { E.display(); }
             return true;

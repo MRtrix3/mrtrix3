@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "gui/mrview/tool/overlay.h"
 
@@ -33,20 +32,20 @@ namespace MR
 
 
 
-        class Overlay::Item : public Image {
+        class Overlay::Item : public Image { MEMALIGN(Overlay::Item)
           public:
             Item (MR::Header&& H) : Image (std::move (H)) { }
             Mode::Slice::Shader slice_shader; 
         };
 
 
-        class Overlay::Model : public ListModelBase
-        {
+        class Overlay::Model : public ListModelBase 
+        { MEMALIGN(Overlay::Model)
           public:
             Model (QObject* parent) : 
               ListModelBase (parent) { }
 
-            void add_items (std::vector<std::unique_ptr<MR::Header>>& list);
+            void add_items (vector<std::unique_ptr<MR::Header>>& list);
 
             Item* get_image (QModelIndex& index) {
               return dynamic_cast<Item*>(items[index.row()].get());
@@ -54,7 +53,7 @@ namespace MR
         };
 
 
-        void Overlay::Model::add_items (std::vector<std::unique_ptr<MR::Header>>& list)
+        void Overlay::Model::add_items (vector<std::unique_ptr<MR::Header>>& list)
         {
           beginInsertRows (QModelIndex(), items.size(), items.size()+list.size());
           for (size_t i = 0; i < list.size(); ++i) {
@@ -197,12 +196,12 @@ namespace MR
 
         void Overlay::image_open_slot ()
         {
-          std::vector<std::string> overlay_names = Dialog::File::get_images (this, "Select overlay images to open");
+          vector<std::string> overlay_names = Dialog::File::get_images (this, "Select overlay images to open");
           if (overlay_names.empty())
             return;
-          std::vector<std::unique_ptr<MR::Header>> list;
+          vector<std::unique_ptr<MR::Header>> list;
           for (size_t n = 0; n < overlay_names.size(); ++n)
-            list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (overlay_names[n]))));
+            list.push_back (make_unique<MR::Header> (MR::Header::open (overlay_names[n])));
 
           add_images (list);
         }
@@ -211,7 +210,7 @@ namespace MR
 
 
 
-        void Overlay::add_images (std::vector<std::unique_ptr<MR::Header>>& list)
+        void Overlay::add_images (vector<std::unique_ptr<MR::Header>>& list)
         {
           size_t previous_size = image_list_model->rowCount();
           image_list_model->add_items (list);
@@ -230,11 +229,11 @@ namespace MR
 
           const QMimeData* mimeData = event->mimeData();
           if (mimeData->hasUrls()) {
-            std::vector<std::unique_ptr<MR::Header>> list;
+            vector<std::unique_ptr<MR::Header>> list;
             QList<QUrl> urlList = mimeData->urls();
             for (int i = 0; i < urlList.size() && i < max_files; ++i) {
               try {
-                list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (urlList.at (i).path().toUtf8().constData()))));
+                list.push_back (make_unique<MR::Header> (MR::Header::open (urlList.at (i).path().toUtf8().constData())));
               }
               catch (Exception& e) {
                 e.display();
@@ -692,14 +691,14 @@ namespace MR
             + Option ("overlay.load", "Loads the specified image on the overlay tool.").allow_multiple()
             +   Argument ("image").type_image_in()
 
-            + Option ("overlay.opacity", "Sets the overlay opacity to floating value [0-1].")
+            + Option ("overlay.opacity", "Sets the overlay opacity to floating value [0-1].").allow_multiple()
             +   Argument ("value").type_float (0.0, 1.0)
 
-            + Option ("overlay.interpolation_on", "Enables overlay image interpolation.")
+            + Option ("overlay.interpolation_on", "Enables overlay image interpolation.").allow_multiple()
 
-            + Option ("overlay.interpolation_off", "Disables overlay image interpolation.")
+            + Option ("overlay.interpolation_off", "Disables overlay image interpolation.").allow_multiple()
 
-            + Option ("overlay.colourmap", "Sets the colourmap of the overlay as indexed in the colourmap dropdown menu.")
+            + Option ("overlay.colourmap", "Sets the colourmap of the overlay as indexed in the colourmap dropdown menu.").allow_multiple()
             +   Argument ("index").type_integer();
             
         }
@@ -707,8 +706,8 @@ namespace MR
         bool Overlay::process_commandline_option (const MR::App::ParsedOption& opt) 
         {
           if (opt.opt->is ("overlay.load")) {
-            std::vector<std::unique_ptr<MR::Header>> list;
-            try { list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (opt[0])))); }
+            vector<std::unique_ptr<MR::Header>> list;
+            try { list.push_back (make_unique<MR::Header> (MR::Header::open (opt[0]))); }
             catch (Exception& e) { e.display(); }
             add_images (list);
             return true;

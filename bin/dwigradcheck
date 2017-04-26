@@ -1,0 +1,206 @@
+#!/usr/bin/env python
+
+# Script for checking the orientation of the diffusion gradient table
+
+# Make the corresponding MRtrix3 Python libraries available
+import inspect, os, sys
+lib_folder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile(inspect.currentframe()))[0], os.pardir, 'lib')))
+if not os.path.isdir(lib_folder):
+  sys.stderr.write('Unable to locate MRtrix3 Python libraries')
+  sys.exit(1)
+sys.path.insert(0, lib_folder)
+
+import copy, decimal, numbers, os, sys, shutil
+from mrtrix3 import app, image, run, path
+
+app.init('Robert E. Smith (robert.smith@florey.edu.au)', 'Check the orientation of the diffusion gradient table')
+app.cmdline.addCitation('','Jeurissen, B.; Leemans, A.; Sijbers, J. Automated correction of improperly rotated diffusion gradient orientations in diffusion weighted MRI. Medical Image Analysis, 2014, 18(7), 953-962', False)
+app.cmdline.add_argument('input', help='The input DWI series to be checked')
+
+grad_export = app.cmdline.add_argument_group('Options for exporting the estimated best gradient table')
+grad_export.add_argument('-export_grad_mrtrix', metavar='grad', help='Export the final gradient table in MRtrix format')
+grad_export.add_argument('-export_grad_fsl', nargs=2, metavar=('bvecs', 'bvals'), help='Export the final gradient table in FSL bvecs/bvals format')
+
+grad_import = app.cmdline.add_argument_group('Options for importing the gradient table')
+grad_import.add_argument('-grad', help='Provide a gradient table in MRtrix format')
+grad_import.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Provide a gradient table in FSL bvecs/bvals format')
+
+options = app.cmdline.add_argument_group('Options for the dwigradcheck script')
+options.add_argument('-mask', help='Provide a brain mask image')
+options.add_argument('-number', type=int, default=10000, help='Set the number of tracks to generate for each test')
+
+app.cmdline.flagMutuallyExclusiveOptions( ['grad', 'fslgrad' ])
+app.cmdline.flagMutuallyExclusiveOptions( ['export_grad_mrtrix', 'export_grad_fsl' ])
+app.parse()
+
+image_dimensions = [ int(i) for i in image.headerField(app.args.input, 'size').split() ]
+if len(image_dimensions) != 4:
+  app.error('Input image must be a 4D image')
+num_volumes = image_dimensions[3]
+
+app.makeTempDir()
+
+# Make sure the image data can be memory-mapped
+run.command('mrconvert ' + app.args.input + ' ' + path.toTemp('data.mif', True) + ' -stride 0,0,0,1 -datatype float32')
+
+if app.args.grad:
+  shutil.copy(path.fromUser(app.args.grad, False), path.toTemp('grad.b', False))
+elif app.args.fslgrad:
+  shutil.copy(path.fromUser(app.args.fslgrad[0], False), path.toTemp('bvecs', False))
+  shutil.copy(path.fromUser(app.args.fslgrad[1], False), path.toTemp('bvals', False))
+if app.args.mask:
+  run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + path.toTemp('mask.mif', True) + ' -datatype bit')
+
+app.gotoTempDir()
+
+
+
+# Make sure we have gradient table stored externally to header in both MRtrix and FSL formats
+if not os.path.isfile('grad.b'):
+  if os.path.isfile('bvecs'):
+    run.command('mrinfo data.mif -fslgrad bvecs bvals -export_grad_mrtrix grad.b')
+  else:
+    run.command('mrinfo data.mif -export_grad_mrtrix grad.b')
+
+if not os.path.isfile('bvecs'):
+  if os.path.isfile('grad.b'):
+    run.command('mrinfo data.mif -grad grad.b -export_grad_fsl bvecs bvals')
+  else:
+    run.command('mrinfo data.mif -export_grad_fsl bvecs bvals')
+
+# Import both of these into local memory
+with open('grad.b', 'r') as f:
+  grad_mrtrix = f.read().split('\n')
+with open('bvecs', 'r') as f:
+  grad_fsl = f.read().split('\n')
+# Erase the empty last line if necessary
+if len(grad_mrtrix[-1]) <= 1:
+  grad_mrtrix.pop()
+if len(grad_fsl[-1]) <= 1:
+  grad_fsl.pop()
+# Turn into float matrices
+grad_mrtrix = [ [ float(f) for f in line.split(' ') ] for line in grad_mrtrix ]
+grad_fsl = [ [ float(f) for f in line.split() ] for line in grad_fsl ]
+# Is our gradient table of the correct length?
+if not len(grad_mrtrix) == num_volumes:
+  app.error('Number of entries in gradient table does not match number of DWI volumes')
+if not len(grad_fsl) == 3 or not len(grad_fsl[0]) == num_volumes:
+  app.error('Internal error (inconsistent gradient table storage)')
+
+  
+# Generate a brain mask if we weren't provided with one
+if not os.path.exists('mask.mif'):
+  run.command('dwi2mask data.mif mask.mif')
+
+# How many tracks are we going to generate?
+number_option = ' -select ' + str(app.args.number)
+
+
+# 
+# TODO What variations of gradient errors can we conceive?
+
+# Done:
+# * Has an axis been flipped? (none, 0, 1, 2)
+# * Have axes been swapped? (012 021 102 120 201 210)
+# * For both flips & swaps, it could occur in either scanner or image space...
+
+# To do:
+# * Have the gradients been defined with respect to image space rather than scanner space?
+# * After conversion to gradients in image space, are they _then_ defined with respect to scanner space?
+#   (should the above two be tested independently from the axis flips / permutations?)
+
+
+axis_flips = [ 'none', 0, 1, 2 ]
+axis_permutations = [ ( 0, 1, 2 ), (0, 2, 1), (1, 0, 2), (1, 2, 0), (2, 0, 1), (2, 1, 0) ]
+grad_basis = [ 'scanner', 'image' ]
+
+
+# List where the first element is the mean length
+lengths = [ ]
+
+for flip in axis_flips:
+  for permutation in axis_permutations:
+    for basis in grad_basis:
+
+      suffix = '_flip' + str(flip) + '_perm' + ''.join(str(item) for item in permutation) + '_' + basis
+
+      if basis == 'scanner':
+
+        grad = copy.copy(grad_mrtrix)
+
+        # Don't do anything if there aren't any axis flips occurring (flip == 'none')
+        if isinstance(flip, numbers.Number):
+          multiplier = [ 1.0, 1.0, 1.0, 1.0 ]
+          multiplier[flip] = -1.0
+          grad = [ [ r*m for r,m in zip(row, multiplier) ] for row in grad ]
+
+        grad = [ [ row[permutation[0]], row[permutation[1]], row[permutation[2]], row[3] ] for row in grad ]
+
+        # Create the gradient table file
+        grad_path = 'grad' + suffix + '.b'
+        with open(grad_path, 'w') as f:
+          for line in grad:
+            f.write (','.join([str(v) for v in line]) + '\n')
+
+        grad_option = ' -grad ' + grad_path
+
+      elif basis == 'image':
+
+        grad = copy.copy(grad_fsl)
+
+        if isinstance(flip, numbers.Number):
+          grad[flip] = [ -v for v in grad[flip] ]
+
+        grad = [ grad[permutation[0]], grad[permutation[1]], grad[permutation[2]] ]
+
+        grad_path = 'bvecs' + suffix
+        with open(grad_path, 'w') as f:
+          for line in grad:
+            f.write (' '.join([str(v) for v in line]) + '\n')
+
+        grad_option = ' -fslgrad ' + grad_path + ' bvals'
+
+      # Run the tracking experiment
+      run.command('tckgen -algorithm tensor_det data.mif' + grad_option + ' -seed_image mask.mif -mask mask.mif' + number_option + ' -minlength 0 -downsample 5 tracks' + suffix + '.tck')
+
+      # Get the mean track length
+      meanlength=float(run.command('tckstats tracks' + suffix + '.tck -output mean -ignorezero')[0])
+
+      # Add to the database
+      lengths.append([meanlength,flip,permutation,basis])
+
+
+# Sort the list to find the best gradient configuration(s)
+lengths.sort()
+lengths.reverse()
+
+
+# Provide a printout of the mean streamline length of each gradient table manipulation
+print ('Mean length     Axis flipped    Axis permutations    Axis basis')
+for line in lengths:
+  if isinstance(line[1], numbers.Number):
+    flip_str = "{:4d}".format(line[1])
+  else:
+    flip_str = line[1]
+  print ("{:5.2f}".format(line[0]) + '         ' + flip_str + '                ' + str(line[2]) + '           ' + line[3])
+
+
+# If requested, extract what has been detected as the best gradient table, and
+#   export it in the format requested by the user
+grad_export_option = ''
+if app.args.export_grad_mrtrix:
+  grad_export_option = ' -export_grad_mrtrix ' + path.fromUser(app.args.export_grad_mrtrix, True)
+elif app.args.export_grad_fsl:
+  grad_export_option = ' -export_grad_fsl ' + path.fromUser(app.args.export_grad_fsl[0], True) + ' ' + path.fromUser(app.args.export_grad_fsl[1], True)
+if grad_export_option:
+  best = lengths[0]
+  suffix = '_flip' + str(best[1]) + '_perm' + ''.join(str(item) for item in best[2]) + '_' + best[3]
+  if best[3] == 'scanner':
+    grad_import_option = ' -grad grad' + suffix + '.b'
+  elif best[3] == 'image':
+    grad_import_option = ' -fslgrad bvecs' + suffix + ' bvals'
+  run.command('mrinfo data.mif' + grad_import_option + grad_export_option)
+
+
+app.complete()
+

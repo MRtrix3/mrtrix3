@@ -1,9 +1,14 @@
 .. _tckglobal:
 
 tckglobal
-===========
+===================
 
 Synopsis
+--------
+
+Multi-Shell Multi-Tissue Global Tractography
+
+Usage
 --------
 
 ::
@@ -16,8 +21,6 @@ Synopsis
 
 Description
 -----------
-
-Multi-Shell Multi-Tissue Global Tractography.
 
 This command will reconstruct the global white matter fibre tractogram that best explains the input DWI data, using a multi-tissue spherical convolution model.
 
@@ -112,7 +115,7 @@ Christiaens, D.; Reisert, M.; Dhollander, T.; Sunaert, S.; Suetens, P. & Maes, F
 
 
 
-**Author:** Daan Christiaens (daan.christiaens@kuleuven.be)
+**Author:** Daan Christiaens (daan.christiaens@kcl.ac.uk)
 
 **Copyright:** Copyright (C) 2015 KU Leuven, Dept. Electrical Engineering, ESAT/PSI,
 Herestraat 49 box 7003, 3000 Leuven, Belgium 

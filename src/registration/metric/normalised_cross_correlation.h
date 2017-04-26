@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __image_registration_metric_norm_cross_correlation_h__
 #define __image_registration_metric_norm_cross_correlation_h__
@@ -30,7 +29,7 @@ namespace MR
     namespace Metric
     {
       template <typename ImageType1, typename ImageType2>
-      struct NCCPrecomputeFunctorMasked_DEBUG {
+      struct NCCPrecomputeFunctorMasked_DEBUG { MEMALIGN(NCCPrecomputeFunctorMasked_DEBUG<ImageType1,ImageType2>)
         template <typename MaskType, typename ImageType3>
         void operator() (MaskType& mask, ImageType3& out) {
           out.index(0) = mask.index(0);
@@ -75,19 +74,19 @@ namespace MR
           mask.index(2) = out.index(2);
         }
 
-        NCCPrecomputeFunctorMasked_DEBUG(const std::vector<size_t>& ext, ImageType1& adapter1, ImageType2& adapter2) :
+        NCCPrecomputeFunctorMasked_DEBUG(const vector<size_t>& ext, ImageType1& adapter1, ImageType2& adapter2) :
           extent(ext),
           in1(adapter1),
           in2(adapter2) { /* TODO check dimensions and extent */ }
 
         protected:
-          std::vector<size_t> extent;
+          vector<size_t> extent;
           ImageType1 in1; // Adapter::Reslice<Interp::Cubic, Image<float>>) :
           ImageType2 in2;
       };
 
       template <typename ImageType1, typename ImageType2>
-      struct NCCPrecomputeFunctorMasked_Naive {
+      struct NCCPrecomputeFunctorMasked_Naive { MEMALIGN(NCCPrecomputeFunctorMasked_Naive<ImageType1,ImageType2>)
         template <typename MaskType, typename ImageType3>
         void operator() (MaskType& mask, ImageType3& out) {
           if (!mask.value())
@@ -96,7 +95,7 @@ namespace MR
           out.index(1) = mask.index(1);
           out.index(2) = mask.index(2);
           out.index(3) = 0;
-          typedef typename ImageType3::value_type value_type;
+          using value_type = typename ImageType3::value_type;
           in1.index(0) = mask.index(0);
           in1.index(1) = mask.index(1);
           in1.index(2) = mask.index(2);
@@ -104,7 +103,7 @@ namespace MR
           if (value_in1 != value_in1){ // nan in image 1, update mask
             DEBUG("nan in image 1.");
             mask.value() = false;
-            out.row(3) << 0, 0, 0, 0, 0;
+            out.row(3) = 0.0;
             return;
           }
           in2.index(0) = mask.index(0);
@@ -114,7 +113,7 @@ namespace MR
           if (value_in2 != value_in2){ // nan in image 2, update mask
             DEBUG("nan in image 2.");
             mask.value() = false;
-            out.row(3) << 0, 0, 0, 0, 0;
+            out.row(3) = 0.0;
             return;
           }
           auto niter = NeighbourhoodIterator(mask, extent);
@@ -182,7 +181,7 @@ namespace MR
           // out.index(3) = 4;
           // out.value() = v2_2;
 
-          out.row(3) << value_in1 - mean1, value_in2 - mean2, v1_v2, v1_2, v2_2;
+          out.row(3) = ( Eigen::Matrix<default_type,5,1>() << value_in1 - mean1, value_in2 - mean2, v1_v2, v1_2, v2_2 ).finished();
           // HACK for debug:
           // in2.index(0) = out.index(0);
           // in2.index(1) = out.index(1);
@@ -193,40 +192,40 @@ namespace MR
           // out.row(3) << value_in1 - mean1, value_in2 - mean2, in1.value(), in2.value(), v2_2;
         }
 
-        NCCPrecomputeFunctorMasked_Naive (const std::vector<size_t>& ext, ImageType1& adapter1, ImageType2& adapter2) :
+        NCCPrecomputeFunctorMasked_Naive (const vector<size_t>& ext, ImageType1& adapter1, ImageType2& adapter2) :
           extent(ext),
           in1(adapter1),
           in2(adapter2) { /* TODO check dimensions and extent */ }
 
         protected:
-          std::vector<size_t> extent;
+          vector<size_t> extent;
           ImageType1 in1; // store reslice adapter in functor to avoid iterating over it when mask is false
           ImageType2 in2;
       };
 
-      class NormalisedCrossCorrelation {
+      class NormalisedCrossCorrelation { MEMALIGN(NormalisedCrossCorrelation)
           private:
             transform_type midway_v2s;
 
           public:
             /** typedef int is_neighbourhood: type_trait to distinguish voxel-wise and neighbourhood based metric types */
-            typedef int is_neighbourhood;
+            using is_neighbourhood = int;
             /** requires_precompute int is_neighbourhood: type_trait to distinguish metric types that require a call to precompute before the operator() is called */
-            typedef int requires_precompute;
+            using requires_precompute = int;
 
             template <class ParamType>
               default_type precompute(ParamType& parameters) {
                 INFO("precomputing cross correlation data...");
                 throw Exception ("TODO");
 
-                typedef decltype(parameters.im1_image) Im1Type;
-                typedef decltype(parameters.im2_image) Im2Type;
-                typedef decltype(parameters.im1_mask) Im1MaskType;
-                typedef decltype(parameters.im2_mask) Im2MaskType;
-                typedef typename ParamType::ProcessedValueType ProcessedImageValueType;
-                typedef typename ParamType::ProcessedMaskType ProcessedMaskType;
-                typedef typename ParamType::ProcessedMaskInterpType ProcessedMaskInterpolatorType;
-                typedef typename ParamType::ProcessedImageInterpType CCInterpType;
+                using Im1Type = decltype(parameters.im1_image);
+                using Im2Type = decltype(parameters.im2_image);
+                using Im1MaskType = decltype(parameters.im1_mask);
+                using Im2MaskType = decltype(parameters.im2_mask);
+                using ProcessedImageValueType = typename ParamType::ProcessedValueType;
+                using ProcessedMaskType = typename ParamType::ProcessedMaskType;
+                using ProcessedMaskInterpolatorType = typename ParamType::ProcessedMaskInterpType;
+                using CCInterpType = typename ParamType::ProcessedImageInterpType;
 
                 Header midway_header (parameters.midway_image);
                 midway_v2s = MR::Transform (midway_header).voxel2scanner;

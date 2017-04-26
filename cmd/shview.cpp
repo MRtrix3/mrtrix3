@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -30,19 +28,18 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  DESCRIPTION
-  + "view spherical harmonics surface plots.";
+  SYNOPSIS = "View spherical harmonics surface plots";
 
   ARGUMENTS
   + Argument ("coefs",
-              "a text file containing the even spherical harmonics coefficients to display.")
+              "a text file containing the even order spherical harmonics coefficients to display.")
   .optional()
   .type_file_in();
 
   OPTIONS
   + Option ("response",
-            "assume SH coefficients file only contains even, m=0 terms. Used to "
-            "display the response function as produced by estimate_response");
+            "assume SH coefficients file only contains m=0 terms (zonal harmonics). "
+            "Used to display the response function as produced by estimate_response");
 
   REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
 }

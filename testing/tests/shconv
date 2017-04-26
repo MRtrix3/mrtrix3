@@ -1,2 +1,2 @@
-shconv dwi2fod/out.mif response.txt - | testing_diff_data - shconv/out.mif -frac 1e-5
-shconv dwi2fod/out.mif -mask mask.mif response.txt - | testing_diff_data - shconv/out_mask.mif -frac 1e-5
+shconv dwi2fod/out.mif response.txt - | testing_diff_image - shconv/out.mif -frac 1e-5
+shconv dwi2fod/out.mif -mask mask.mif response.txt - | testing_diff_image - shconv/out_mask.mif -frac 1e-5

@@ -1,17 +1,17 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
+
 #ifndef __gui_mrview_window_h__
 #define __gui_mrview_window_h__
 
@@ -50,13 +50,13 @@ namespace MR
 
 
       class Window : public QMainWindow, ColourMapButtonObserver
-      {
+      { MEMALIGN(Window)
           Q_OBJECT
 
         private:
           Cursor cursors_do_not_use;
 
-          class GLArea : public GL::Area {
+          class GLArea : public GL::Area { MEMALIGN(GLArea)
             public:
               GLArea (Window& parent);
               QSize sizeHint () const override;
@@ -81,7 +81,8 @@ namespace MR
           Window();
           ~Window();
 
-          void add_images (std::vector<std::unique_ptr<MR::Header>>& list);
+          void parse_arguments ();
+          void add_images (vector<std::unique_ptr<MR::Header>>& list);
 
           const QPoint& mouse_position () const { return mouse_position_; }
           const QPoint& mouse_displacement () const { return mouse_displacement_; }
@@ -174,6 +175,7 @@ namespace MR
         public slots:
           void on_scaling_changed ();
           void updateGL ();
+          void drawGL ();
 
         private slots:
           void image_open_slot ();
@@ -200,7 +202,9 @@ namespace MR
           void image_previous_slot ();
           void image_next_volume_slot ();
           void image_previous_volume_slot ();
+          void image_goto_volume_slot ();
           void image_next_volume_group_slot ();
+          void image_goto_volume_group_slot ();
           void image_previous_volume_group_slot ();
           void image_reset_slot ();
           void image_interpolate_slot ();
@@ -213,8 +217,7 @@ namespace MR
           void about_slot ();
           void aboutQt_slot ();
 
-          void process_commandline_options ();
-
+          void process_commandline_option_slot ();
 
 
         private:
@@ -271,11 +274,13 @@ namespace MR
                   *prev_image_action,
                   *next_image_volume_action,
                   *prev_image_volume_action,
+                  *goto_image_volume_action,
                   *next_slice_action,
                   *prev_slice_action,
                   *reset_view_action,
                   *next_image_volume_group_action,
                   *prev_image_volume_group_action,
+                  *goto_image_volume_group_action,
                   *image_list_area,
 
                   *reset_windowing_action,
@@ -315,15 +320,19 @@ namespace MR
           void set_image_navigation_menu ();
 
           void closeEvent (QCloseEvent* event) override;
+          void create_tool (QAction* action, bool show);
+
+          void process_commandline_option ();
 
           template <class Event> void grab_mouse_state (Event* event);
           template <class Event> void update_mouse_state (Event* event);
 
           Tool::Base* tool_has_focus;
 
-          std::vector<double> render_times;
+          vector<double> render_times;
           double best_FPS, best_FPS_time;
           bool show_FPS;
+          size_t current_option;
 
           friend class ImageBase;
           friend class Mode::Base;
@@ -334,7 +343,7 @@ namespace MR
       };
 
 
-      class GrabContext : private Context::Grab {
+      class GrabContext : private Context::Grab { NOMEMALIGN
         public:
           GrabContext () : Context::Grab (Window::main->glarea) { }
       };
@@ -342,7 +351,7 @@ namespace MR
 
 #ifndef NDEBUG
 # define ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT ASSERT_GL_CONTEXT_IS_CURRENT (::MR::GUI::MRView::Window::main->glwidget())
-#else 
+#else
 # define ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT
 #endif
 

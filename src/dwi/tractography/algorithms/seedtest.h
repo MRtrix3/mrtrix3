@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __dwi_tractography_algorithms_seedtest_h__
 #define __dwi_tractography_algorithms_seedtest_h__
@@ -29,11 +28,11 @@ namespace Algorithms {
 
 using namespace MR::DWI::Tractography::Tracking;
 
-class Seedtest : public MethodBase {
+class Seedtest : public MethodBase { MEMALIGN(Seedtest)
 
   public:
 
-  class Shared : public SharedBase {
+  class Shared : public SharedBase { MEMALIGN(Shared)
     public:
     Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
         SharedBase (diff_path, property_set)

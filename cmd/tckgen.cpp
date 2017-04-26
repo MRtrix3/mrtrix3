@@ -1,18 +1,15 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 
 #include "command.h"
@@ -54,8 +51,20 @@ void usage ()
 
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "perform streamlines tractography.";
+  SYNOPSIS = "Perform streamlines tractography";
+
+  DESCRIPTION 
+    + "By default, tckgen produces a fixed number of streamlines, by attempting "
+    "to seed from new random locations until the target number of "
+    "streamlines have been selected (in other words, after all inclusion & "
+    "exclusion criteria have been applied), or the maximum number of seeds "
+    "has been exceeded (by default, this is 1000× the desired number of selected "
+    "streamlines). Use the -select and/or -seeds options to modify as "
+    "required. See also the Seeding options section for alternative seeding "
+    "strategies."
+
+    + "Note that the source data required as input depends on the algorithm "
+    "selected, as detailed in the description for the 'source' argument.";
 
   REFERENCES 
    + "References based on streamlines algorithm used:"
@@ -127,14 +136,16 @@ void usage ()
               "FACT, iFOD1, iFOD2, Nulldist1, Nulldist2, SD_Stream, Seedtest, Tensor_Det, Tensor_Prob (default: iFOD2).")
     + Argument ("name").type_choice (algorithms)
 
-  + DWI::Tractography::ROIOption
-
   + DWI::Tractography::Tracking::TrackOption
+
+  + DWI::Tractography::Seeding::SeedMechanismOption
+
+  + DWI::Tractography::Seeding::SeedParameterOption
+
+  + DWI::Tractography::ROIOption
 
   + DWI::Tractography::ACT::ACTOption
 
-  + DWI::Tractography::Seeding::SeedOption
-  
   + DWI::GradImportOptions();
 
 }
@@ -160,19 +171,20 @@ void run ()
 
   ACT::load_act_properties (properties);
 
-  Seeding::load_tracking_seeds (properties);
+  Seeding::load_seed_mechanisms (properties);
+  Seeding::load_seed_parameters (properties);
 
-  // Check validity of options -number and -maxnum; these are meaningless if seeds are number-limited
+  // Check validity of options -select and -seeds; these are meaningless if seeds are number-limited
   // By over-riding the values in properties, the progress bar should still be valid
   if (properties.seeds.is_finite()) {
 
     if (properties["max_num_tracks"].size())
-      WARN ("Overriding -number option (desired number of successful streamlines) as seeds can only provide a finite number");
+      WARN ("Overriding -select option (desired number of successful streamline selections), as seeds can only provide a finite number");
     properties["max_num_tracks"] = str (properties.seeds.get_total_count());
 
-    if (properties["max_num_attempts"].size())
-      WARN ("Overriding -maxnum option (maximum number of streamline attempts) as seeds can only provide a finite number");
-    properties["max_num_attempts"] = str (properties.seeds.get_total_count());
+    if (properties["max_num_seeds"].size())
+      WARN ("Overriding -seeds option (maximum number of seeds that will be attempted to track from), as seeds can only provide a finite number");
+    properties["max_num_seeds"] = str (properties.seeds.get_total_count());
 
   }
 

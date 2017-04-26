@@ -1,9 +1,14 @@
 .. _tckconvert:
 
 tckconvert
-===========
+===================
 
 Synopsis
+--------
+
+Convert between different track file formats
+
+Usage
 --------
 
 ::
@@ -16,9 +21,13 @@ Synopsis
 Description
 -----------
 
-Convert between different track file formats.
-
 The program currently supports MRtrix .tck files (input/output), ascii text files (input/output), and VTK polydata files (output only).
+
+Note that ascii files will be stored with one streamline per numbered file. To support this, the command will use the multi-file numbering syntax, where square brackets denote the position of the numbering for the files, for example:
+
+$ tckconvert input.tck output-[].txt
+
+will produce files named output-0000.txt, output-0001.txt, output-0002.txt, ...
 
 Options
 -------
@@ -54,13 +63,13 @@ Standard options
 
 
 
-**Author:** Daan Christiaens (daan.christiaens@gmail.com), J-Donald Tournier (jdtournier@gmail.com), Philip Broser (philip.broser@me.com).
+**Author:** Daan Christiaens (daan.christiaens@kcl.ac.uk), J-Donald Tournier (jdtournier@gmail.com), Philip Broser (philip.broser@me.com).
 
-**Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
+**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors
 
-This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/
+This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 MRtrix is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see www.mrtrix.org
+For more details, see http://www.mrtrix.org/.
 

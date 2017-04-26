@@ -1,18 +1,15 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 
 #include <map>
@@ -40,10 +37,11 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
+  SYNOPSIS = "Convert a parcellated image (where values are node indices) into a colour image";
+
   DESCRIPTION
-  + "convert a parcellated image (where values are node indices) into a colour image "
-    "(many software packages handle this colouring internally within their viewer program; this binary "
-    "explicitly converts a parcellation image into a colour image that should be viewable in any software)";
+  + "Many software packages handle this colouring internally within their viewer program; this binary "
+    "explicitly converts a parcellation image into a colour image that should be viewable in any software.";
 
   ARGUMENTS
   + Argument ("nodes_in",   "the input node parcellation image").type_image_in()
@@ -64,6 +62,7 @@ void run ()
 {
 
   auto H = Header::open (argument[0]);
+  Connectome::check (H);
   auto nodes = H.get_image<node_t>();
 
   LUT lut;

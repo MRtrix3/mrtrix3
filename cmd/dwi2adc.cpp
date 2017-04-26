@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -31,8 +29,7 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  DESCRIPTION 
-    + "convert mean dwi (trace-weighted) images to mean adc maps";
+  SYNOPSIS = "Convert mean dwi (trace-weighted) images to mean ADC maps";
 
   ARGUMENTS 
     + Argument ("input", "the input image.").type_image_in ()
@@ -44,11 +41,11 @@ void usage ()
 
 
 
-typedef float value_type;
+using value_type = float;
 
 
 
-class DWI2ADC {
+class DWI2ADC { MEMALIGN(DWI2ADC)
   public:
     DWI2ADC (const Eigen::MatrixXd& binv, size_t dwi_axis) :
       dwi (binv.cols()),
@@ -101,6 +98,7 @@ void run () {
   header.datatype() = DataType::Float32;
   header.ndim() = 4;
   header.size(3) = 2;
+  DWI::stash_DW_scheme (header, grad);
 
   auto adc = Image<value_type>::create (argument[1], header);
 
