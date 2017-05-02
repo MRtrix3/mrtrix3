@@ -14,8 +14,10 @@
 
 #include "command.h"
 #include "image.h"
+
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
+
 
 #define DEFAULT_SIZE 5
 
@@ -23,6 +25,7 @@ using namespace MR;
 using namespace App;
 
 const char* const dtypes[] = { "float32", "float64", NULL };
+
 
 void usage ()
 {
@@ -93,13 +96,14 @@ using value_type = float;
 
 
 template <class ImageType, typename F = float>
-class DenoisingFunctor { MEMALIGN(DenoisingFunctor)
-  public:
+class DenoisingFunctor {
+  MEMALIGN(DenoisingFunctor)
+
+public:
 
   typedef Eigen::Matrix<F, Eigen::Dynamic, Eigen::Dynamic> MatrixX;
   typedef Eigen::Matrix<F, Eigen::Dynamic, 1> VectorX;
 
-  public:
   DenoisingFunctor (ImageType& dwi, vector<int> extent, Image<bool>& mask, ImageType& noise)
     : extent {{extent[0]/2, extent[1]/2, extent[2]/2}},
       m (dwi.size(3)),
@@ -114,6 +118,7 @@ class DenoisingFunctor { MEMALIGN(DenoisingFunctor)
 
   void operator () (ImageType& dwi, ImageType& out)
   {
+    // Process voxels in mask only
     if (mask.valid()) {
       assign_pos_of (dwi).to (mask);
       if (!mask.value())
@@ -174,7 +179,6 @@ class DenoisingFunctor { MEMALIGN(DenoisingFunctor)
     }
   }
 
-
   void load_data (ImageType& dwi)
   {
     pos[0] = dwi.index(0); pos[1] = dwi.index(1); pos[2] = dwi.index(2);
@@ -194,7 +198,7 @@ class DenoisingFunctor { MEMALIGN(DenoisingFunctor)
     dwi.index(0) = pos[0];
     dwi.index(1) = pos[1];
     dwi.index(2) = pos[2];
-  }
+  }  
 
 private:
   const std::array<ssize_t, 3> extent;
