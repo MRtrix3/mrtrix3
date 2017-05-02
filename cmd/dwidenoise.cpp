@@ -149,11 +149,11 @@ public:
     VectorX s = eig.eigenvalues();
 
     // Marchenko-Pastur optimal threshold
-    const double lam_r = std::max(double(s[1]), 0.0) / r;
+    const double lam_r = std::max(double(s[0]), 0.0) / r;
     double clam = 0.0;
     sigma2 = NaN;
     ssize_t cutoff_p = 0;
-    for (ssize_t p = 1; p < r; ++p)
+    for (ssize_t p = 0; p < r; ++p)
     {
       double lam = std::max(double(s[p]), 0.0) / r;
       clam += lam;
