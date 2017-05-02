@@ -110,7 +110,7 @@ public:
       n (extent[0]*extent[1]*extent[2]),
       r ((m<n) ? m : n),
       X (m,n),
-      Xm (m),
+      Xm (r),
       pos {{0, 0, 0}},
       mask (mask),
       noise (noise)
@@ -131,9 +131,19 @@ public:
     // Compute Eigendecomposition:
     MatrixX XtX (r,r);
     if (m <= n)
+    {
+      Xm = X.rowwise().mean();
+      X.colwise() -= Xm;                // data centring
+
       XtX.template triangularView<Eigen::Lower>() = X * X.adjoint();
+    }
     else
+    {
+      Xm = X.colwise().mean();
+      X.rowwise() -= Xm.transpose();    // data centring
+
       XtX.template triangularView<Eigen::Lower>() = X.adjoint() * X;
+    }
     Eigen::SelfAdjointEigenSolver<MatrixX> eig (XtX);
     // eigenvalues provide squared singular values, sorted in increasing order:
     VectorX s = eig.eigenvalues();
@@ -169,8 +179,14 @@ public:
 
     // Store output
     assign_pos_of(dwi).to(out);
-    for (auto l = Loop (3) (out); l; ++l)
-      out.value() = value_type (X(out.index(3), n/2) + Xm(out.index(3)));
+    if (m <= n) {
+      for (auto l = Loop (3) (out); l; ++l)
+        out.value() = value_type (X(out.index(3), n/2) + Xm(out.index(3)));
+    }
+    else {
+      for (auto l = Loop (3) (out); l; ++l)
+        out.value() = value_type (X(out.index(3), n/2) + Xm(n/2));
+    }
 
     // store noise map if requested:
     if (noise.valid()) {
@@ -189,10 +205,6 @@ public:
         for (dwi.index(0) = pos[0]-extent[0]; dwi.index(0) <= pos[0]+extent[0]; ++dwi.index(0), ++k)
           if (! is_out_of_bounds(dwi,0,3))
             X.col(k) = dwi.row(3);
-
-    // data centring
-    Xm = X.rowwise().mean();
-    X.colwise() -= Xm;
 
     // reset image position
     dwi.index(0) = pos[0];
