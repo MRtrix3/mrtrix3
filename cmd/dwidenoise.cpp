@@ -149,16 +149,16 @@ public:
     VectorX s = eig.eigenvalues();
 
     // Marchenko-Pastur optimal threshold
-    const double lam_r = std::max(double(s[0]), 0.0) / r;
+    const double lam_r = std::max(double(s[0]), 0.0) / std::max(m,n);
     double clam = 0.0;
     sigma2 = NaN;
     ssize_t cutoff_p = 0;
-    for (ssize_t p = 0; p < r; ++p)
-    {
-      double lam = std::max(double(s[p]), 0.0) / r;
+    for (ssize_t p = 0; p < r; ++p)     // p+1 is the number of noise components
+    {                                   // (as opposed to the paper where p is defined as the number of signal components)
+      double lam = std::max(double(s[p]), 0.0) / std::max(m,n);
       clam += lam;
-      double gam = double(std::max(m,n)-r+p+1) / double(r);
-      double sigsq1 = clam / (p * std::max (gam, 1.0));
+      double gam = double(p+1) / std::max(m,n);
+      double sigsq1 = clam / double(p+1);
       double sigsq2 = (lam - lam_r) / (4.0 * std::sqrt(gam));
       // sigsq2 > sigsq1 if signal else noise
       if (sigsq2 < sigsq1) {
