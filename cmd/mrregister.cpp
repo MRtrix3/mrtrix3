@@ -178,14 +178,14 @@ void run () {
 
   // parse multi contrast parameters
   vector<Registration::MultiContrastSetting> mc_params (n_images);
-  // for (auto& mc : mc_params) {
+  for (auto& mc : mc_params) {
   //   mc.lmax = 0;
   //   mc.nvols = 1;
   //   mc.image_nvols = 1;
   //   mc.image_lmax = 0;
-  //   mc.do_reorientation = do_reorientation;
+    mc.do_reorientation = do_reorientation;
   //   mc.weight = 1.0;
-  // }
+  }
   // check header transformations for equality
   Eigen::MatrixXd trafo = MR::Transform(input1[0]).scanner2voxel.linear();
   for (size_t i=1; i<n_images; i++) {
