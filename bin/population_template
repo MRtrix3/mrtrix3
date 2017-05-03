@@ -335,8 +335,8 @@ if app.args.warp_dir:
   app.checkOutputPath(app.args.warp_dir)
 
 if app.args.transformed_dir:
-  app.args.transformed_dir = [relpath(d) for d in app.args.transformed_dir]
-  if len(app.args.transformed_dir) != len(inputDir):
+  app.args.transformed_dir = [relpath(d) for d in app.args.transformed_dir.split(',')]
+  if len(app.args.transformed_dir) != n_contrasts:
     app.error ('require multiple transformed directories if multi-contrast registration is used')
   for d in app.args.transformed_dir:
     app.checkOutputPath(d)
@@ -810,7 +810,7 @@ if dononlinear:
       if (nl_scales[level] < nl_scales[level + 1]):
         upsample_factor = nl_scales[level + 1] / nl_scales[level]
         for i in input:
-          run.command('mrresize ' + os.path.join('warps_%i' % level, '%s.mif' % i.prefix) + ' -scale %f tmp.mif' % upsample_factor)
+          run.command('mrresize ' + os.path.join('warps_%i' % level, '%s.mif' % i.prefix) + ' -force -scale %f tmp.mif' % upsample_factor)
           run.function(move, 'tmp.mif', os.path.join('warps_' + str(level), '%s.mif' % i.prefix))
     else:
       for i in input:
