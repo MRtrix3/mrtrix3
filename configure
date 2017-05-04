@@ -205,6 +205,23 @@ if nogui: report (' [command-line only]')
 report ('\n\n')
 
 
+# remove any mention of anaconda from PATH:
+path = os.environ['PATH']
+if path.endswith ('\\'):
+  path = path[:-1]
+cleanpath = [];
+oldpath = path.split(':')
+for entry in oldpath:
+  if 'anaconda' not in entry.lower():
+    cleanpath += [ entry ]
+if not oldpath == cleanpath:
+  report ('WARNING: Anaconda removed from PATH to avoid conflicts\n\n')
+path = os.pathsep.join(cleanpath)
+
+os.environ['PATH'] = path
+
+
+
 
 
 global cpp, cpp_cmd, ld, ld_args, ld_cmd
@@ -1218,9 +1235,6 @@ for line in config_report.splitlines():
   cache.write ('# ' + line + '\n')
 cache.write ('\n\n')
 
-path = os.environ['PATH']
-if path.endswith ('\\'):
-  path = path[:-1]
 cache.write ("PATH = r'" + path + "'\n")
 
 commit ('obj_suffix', obj_suffix)
