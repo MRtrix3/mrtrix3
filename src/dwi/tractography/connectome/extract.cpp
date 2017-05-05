@@ -1,18 +1,15 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 
 #include "dwi/tractography/connectome/extract.h"
@@ -29,7 +26,7 @@ namespace Connectome {
 
 bool Selector::operator() (const node_t node) const
 {
-  for (std::vector<node_t>::const_iterator i = list.begin(); i != list.end(); ++i) {
+  for (vector<node_t>::const_iterator i = list.begin(); i != list.end(); ++i) {
     if (*i == node)
       return true;
   }
@@ -45,7 +42,7 @@ bool Selector::operator() (const NodePair& nodes) const
   if (exact_match && list.size() == 2)
     return ((nodes.first == list[0] && nodes.second == list[1]) || (nodes.first == list[1] && nodes.second == list[0]));
   bool found_first = false, found_second = false;
-  for (std::vector<node_t>::const_iterator i = list.begin(); i != list.end(); ++i) {
+  for (vector<node_t>::const_iterator i = list.begin(); i != list.end(); ++i) {
     if (*i == nodes.first)  found_first = true;
     if (*i == nodes.second) found_second = true;
   }
@@ -55,10 +52,10 @@ bool Selector::operator() (const NodePair& nodes) const
     return (found_first || found_second);
 }
 
-bool Selector::operator() (const std::vector<node_t>& nodes) const
+bool Selector::operator() (const vector<node_t>& nodes) const
 {
   BitSet found (list.size());
-  for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
+  for (vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
     for (size_t i = 0; i != list.size(); ++i)
       if (*n == list[i]) found[i] = true;
   }
@@ -75,7 +72,7 @@ bool Selector::operator() (const std::vector<node_t>& nodes) const
 
 
 
-WriterExemplars::WriterExemplars (const Tractography::Properties& properties, const std::vector<node_t>& nodes, const bool exclusive, const node_t first_node, const std::vector<Eigen::Vector3f>& COMs) :
+WriterExemplars::WriterExemplars (const Tractography::Properties& properties, const vector<node_t>& nodes, const bool exclusive, const node_t first_node, const vector<Eigen::Vector3f>& COMs) :
     step_size (NAN)
 {
   // Determine how many points to use in the initial representation of each exemplar
@@ -146,7 +143,7 @@ bool WriterExemplars::operator() (const Tractography::Connectome::Streamline_nod
 void WriterExemplars::finalize()
 {
   ProgressBar progress ("finalizing exemplars", exemplars.size());
-  for (std::vector<Exemplar>::iterator i = exemplars.begin(); i != exemplars.end(); ++i) {
+  for (vector<Exemplar>::iterator i = exemplars.begin(); i != exemplars.end(); ++i) {
     i->finalize (step_size);
     ++progress;
   }
@@ -195,11 +192,11 @@ void WriterExemplars::write (const std::string& path, const std::string& weights
   Tractography::Properties properties;
   properties["step_size"] = str(step_size);
   Tractography::Writer<float> writer (path, properties);
-  for (std::vector<Exemplar>::const_iterator i = exemplars.begin(); i != exemplars.end(); ++i)
+  for (vector<Exemplar>::const_iterator i = exemplars.begin(); i != exemplars.end(); ++i)
     writer (i->get());
   if (weights_path.size()) {
     File::OFStream output (weights_path);
-    for (std::vector<Exemplar>::const_iterator i = exemplars.begin(); i != exemplars.end(); ++i)
+    for (vector<Exemplar>::const_iterator i = exemplars.begin(); i != exemplars.end(); ++i)
       output << str(i->get_weight()) << "\n";
   }
 }
@@ -213,7 +210,7 @@ void WriterExemplars::write (const std::string& path, const std::string& weights
 
 
 
-WriterExtraction::WriterExtraction (const Tractography::Properties& p, const std::vector<node_t>& nodes, const bool exclusive, const bool keep_self) :
+WriterExtraction::WriterExtraction (const Tractography::Properties& p, const vector<node_t>& nodes, const bool exclusive, const bool keep_self) :
     properties (p),
     node_list (nodes),
     exclusive (exclusive),
@@ -248,7 +245,7 @@ void WriterExtraction::add (const node_t node_one, const node_t node_two, const 
   }
 }
 
-void WriterExtraction::add (const std::vector<node_t>& list, const std::string& path, const std::string weights_path = "")
+void WriterExtraction::add (const vector<node_t>& list, const std::string& path, const std::string weights_path = "")
 {
   selectors.push_back (Selector (list, exclusive, keep_self));
   writers.push_back (new Tractography::WriterUnbuffered<float> (path, properties));
@@ -276,7 +273,7 @@ bool WriterExtraction::operator() (const Connectome::Streamline_nodepair& in) co
     // Make sure that both nodes are within the list of nodes of interest;
     //   if not, don't pass to any of the selectors
     bool first_in_list = false, second_in_list = false;
-    for (std::vector<node_t>::const_iterator i = node_list.begin(); i != node_list.end(); ++i) {
+    for (vector<node_t>::const_iterator i = node_list.begin(); i != node_list.end(); ++i) {
       if (*i == in.get_nodes().first)  first_in_list = true;
       if (*i == in.get_nodes().second) second_in_list = true;
     }
@@ -297,7 +294,7 @@ bool WriterExtraction::operator() (const Connectome::Streamline_nodelist& in) co
     // Make sure _all_ nodes are within the list of nodes of interest;
     //   if not, don't pass to any of the selectors
     BitSet in_list (in.get_nodes().size());
-    for (std::vector<node_t>::const_iterator i = node_list.begin(); i != node_list.end(); ++i) {
+    for (vector<node_t>::const_iterator i = node_list.begin(); i != node_list.end(); ++i) {
       for (size_t n = 0; n != in.get_nodes().size(); ++n)
         if (*i == in.get_nodes()[n]) in_list[n] = true;
     }

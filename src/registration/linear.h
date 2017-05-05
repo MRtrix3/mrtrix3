@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __registration_linear_h__
 #define __registration_linear_h__
@@ -46,25 +45,63 @@ namespace MR
   {
 
     extern const App::OptionGroup adv_init_options;
+    extern const App::OptionGroup lin_stage_options;
     extern const App::OptionGroup rigid_options;
     extern const App::OptionGroup affine_options;
     extern const App::OptionGroup fod_options;
+    extern const char* optim_algo_names[];
 
     enum LinearMetricType {Diff, NCC};
     enum LinearRobustMetricEstimatorType {L1, L2, LP, None};
+    enum OptimiserAlgoType {bbgd, gd, none};
+
+
+    struct StageSetting {  MEMALIGN(StageSetting)
+      StageSetting() :
+        stage_iterations (1),
+        gd_max_iter (500),
+        scale_factor (1.0),
+        optimisers (1, OptimiserAlgoType::bbgd),
+        optimiser_default (OptimiserAlgoType::bbgd),
+        optimiser_first (OptimiserAlgoType::bbgd),
+        optimiser_last (OptimiserAlgoType::gd),
+        loop_density (1.0),
+        fod_lmax (-1) {}
+
+      std::string info (const bool& do_reorientation = true) {
+        std::string st;
+        st = "scale factor " + str(scale_factor, 3);
+        if (do_reorientation)
+          st += ", lmax " + str(fod_lmax);
+        st += ", GD max_iter " + str(gd_max_iter);
+        if (loop_density < 1.0)
+          st += ", GD density: " + str(loop_density);
+        if (stage_iterations > 1)
+          st += ", iterations: " + str(stage_iterations);
+        st += ", optimiser: ";
+        for (auto & optim : optimisers) {
+          st += str(optim_algo_names[optim]) + " ";
+        }
+        return st;
+      }
+      size_t stage_iterations, gd_max_iter;
+      default_type scale_factor;
+      vector<OptimiserAlgoType> optimisers;
+      OptimiserAlgoType optimiser_default, optimiser_first, optimiser_last;
+      default_type loop_density;
+      ssize_t fod_lmax;
+      vector<std::string> diagnostics_images;
+    } ;
 
     class Linear
-    {
+    { MEMALIGN(Linear)
 
       public:
 
         Transform::Init::LinearInitialisationParams init;
 
         Linear () :
-          max_iter (1, 500),
-          gd_repetitions (1, 1),
-          scale_factor (3),
-          loop_density (1, 1.0),
+          stages (3),
           kernel_extent (3, 1),
           grad_tolerance (1.0e-6),
           step_tolerance (1.0e-10),
@@ -73,59 +110,134 @@ namespace MR
           init_rotation_type (Transform::Init::none),
           robust_estimate (false),
           do_reorientation (false),
-          fod_lmax (3),
-          //CONF option: reg_bbgd
-          //CONF default: 1 (true)
-          //CONF Linear registration: use Barzilai Borwein gradient descent
-          reg_bbgd (File::Config::get_bool ("reg_bbgd", true)),
           //CONF option: reg_analyse_descent
           //CONF default: 0 (false)
           //CONF Linear registration: write comma separated gradient descent parameters and gradients
           //CONF to stdout and verbose gradient descent output to stderr
           analyse_descent (File::Config::get_bool ("reg_analyse_descent", false)) {
-          scale_factor[0] = 0.25;
-          scale_factor[1] = 0.5;
-          scale_factor[2] = 1.0;
-          fod_lmax[0] = 0;
-          fod_lmax[1] = 2;
-          fod_lmax[2] = 4;
+            stages[0].scale_factor = 0.25;
+            stages[0].fod_lmax = 0;
+            stages[1].scale_factor = 0.5;
+            stages[1].fod_lmax = 2;
+            stages[2].scale_factor = 1.0;
+            stages[2].fod_lmax = 4;
         }
 
-        void set_max_iter (const std::vector<int>& maxiter) {
+        // set_scale_factor needs to be the first option that is set as it overwrites the stage vector
+        void set_scale_factor (const vector<default_type>& scalefactor) {
+          stages.resize (scalefactor.size());
+          for (size_t level = 0; level < scalefactor.size(); ++level) {
+            if (scalefactor[level] <= 0 || scalefactor[level] > 1.0)
+              throw Exception ("the linear registration scale factor for each multi-resolution level must be between 0 and 1");
+            stages[level].scale_factor = scalefactor[level];
+          }
+        }
+
+        // needs to be set before set_stage_iterations is set
+        void set_stage_optimiser_default (const  OptimiserAlgoType& type) {
+          for (auto & stage : stages)
+            stage.optimiser_default = type;
+        }
+
+        // needs to be set before set_stage_iterations is set
+        void set_stage_optimiser_first (const OptimiserAlgoType& type) {
+          for (auto & stage : stages)
+            stage.optimiser_first = type;
+        }
+
+        // needs to be set before set_stage_iterations is set
+        void set_stage_optimiser_last (const OptimiserAlgoType& type) {
+          for (auto & stage : stages)
+            stage.optimiser_last = type;
+        }
+
+        void set_stage_iterations (const vector<int>& it) {
+          for (size_t i = 0; i < it.size (); ++i)
+            if (it[i] <= 0)
+              throw Exception ("the number of stage iterations must be positive");
+          if (it.size() == stages.size()) {
+            for (size_t i = 0; i < stages.size (); ++i)
+              stages[i].stage_iterations = it[i];
+          } else if (it.size() == 1) {
+            for (size_t i = 0; i < stages.size (); ++i)
+              stages[i].stage_iterations = it[0];
+          } else
+              throw Exception ("the number of stage iterations must be defined for all stages (1 or " + str(stages.size())+")");
+          for (auto & stage : stages) {
+            stage.optimisers.resize(stage.stage_iterations, stage.optimiser_default);
+            stage.optimisers[0] = stage.optimiser_first;
+            if (stage.stage_iterations > 1)
+            stage.optimisers[stage.stage_iterations - 1] = stage.optimiser_last;
+          }
+        }
+
+        void set_max_iter (const vector<int>& maxiter) {
           for (size_t i = 0; i < maxiter.size (); ++i)
             if (maxiter[i] < 0)
-              throw Exception ("the number of iterations must be positive");
-          max_iter = maxiter;
+              throw Exception ("the number of iterations must be non-negative");
+          if (maxiter.size() == stages.size()) {
+            for (size_t i = 0; i < stages.size (); ++i)
+              stages[i].gd_max_iter = maxiter[i];
+          } else if (maxiter.size() == 1) {
+            for (size_t i = 0; i < stages.size (); ++i)
+              stages[i].gd_max_iter = maxiter[0];
+          } else
+            throw Exception ("the number of gradient descent iterations must be defined for all stages (1 or " + str(stages.size())+")");
         }
 
-        void set_gradient_descent_repetitions (const std::vector<int>& rep) {
-          for (size_t i = 0; i < rep.size (); ++i)
-            if (rep[i] < 0)
-              throw Exception ("the number of repetitions must be positive");
-          gd_repetitions = rep;
+        // needs to be set before set_lmax
+        void set_directions (Eigen::MatrixXd& dir) {
+          aPSF_directions = dir;
+          do_reorientation = true;
         }
 
-        void set_scale_factor (const std::vector<default_type>& scalefactor) {
-          for (size_t level = 0; level < scalefactor.size(); ++level) {
-            if (scalefactor[level] <= 0 || scalefactor[level] > 1)
-              throw Exception ("the linear registration scale factor for each multi-resolution level must be between 0 and 1");
+        void set_lmax (const vector<int>& lmax) {
+          for (size_t i = 0; i < lmax.size (); ++i)
+            if (lmax[i] < 0 || lmax[i] % 2)
+              throw Exception ("the input lmax must be positive and even");
+          if (lmax.size() == stages.size()) {
+            for (size_t i = 0; i < stages.size (); ++i)
+              stages[i].fod_lmax = lmax[i];
+          } else if (lmax.size() == 1) {
+            for (size_t i = 0; i < stages.size (); ++i)
+              stages[i].fod_lmax = lmax[0];
+          } else
+            throw Exception ("the lmax must be defined for all stages (1 or " + str(stages.size())+")");
+        }
+
+        void set_loop_density (const vector<default_type>& loop_density_){
+          for (size_t d = 0; d < loop_density_.size(); ++d)
+            if (loop_density_[d] < 0.0 or loop_density_[d] > 1.0 )
+              throw Exception ("loop density must be between 0.0 and 1.0");
+          if (loop_density_.size() == stages.size()) {
+            for (size_t i = 0; i < stages.size (); ++i)
+              stages[i].loop_density = loop_density_[i];
+          } else if (loop_density_.size() == 1) {
+            for (size_t i = 0; i < stages.size (); ++i)
+              stages[i].loop_density = loop_density_[0];
+          } else
+            throw Exception ("the lmax must be defined for all stages (1 or " + str(stages.size())+")");
+        }
+
+        void set_diagnostics_image_prefix (const std::basic_string<char>& diagnostics_image_prefix) {
+          for (size_t level = 0; level < stages.size(); ++level) {
+            auto & stage = stages[level];
+            for (size_t iter = 1; iter <= stage.stage_iterations; ++iter) {
+              std::ostringstream oss;
+              oss << diagnostics_image_prefix << "_stage-" << level + 1 << "_iter-" << iter << ".mif";
+              if (Path::exists(oss.str()) && !App::overwrite_files)
+                throw Exception ("diagnostics image file \"" + oss.str() + "\" already exists (use -force option to force overwrite)");
+              stage.diagnostics_images.push_back(oss.str());
+            }
           }
-          scale_factor = scalefactor;
         }
 
-        void set_extent (const std::vector<size_t> extent) {
+        void set_extent (const vector<size_t> extent) {
           for (size_t d = 0; d < extent.size(); ++d) {
             if (extent[d] < 1)
               throw Exception ("the neighborhood kernel extent must be at least 1 voxel");
           }
           kernel_extent = extent;
-        }
-
-        void set_loop_density (const std::vector<default_type>& loop_density_){
-          for (size_t d = 0; d < loop_density_.size(); ++d)
-            if (loop_density_[d] < 0.0 or loop_density_[d] > 1.0 )
-              throw Exception ("loop density must be between 0.0 and 1.0");
-          loop_density = loop_density_;
         }
 
         void set_init_translation_type (Transform::Init::InitType type) {
@@ -140,10 +252,6 @@ namespace MR
           robust_estimate = use;
         }
 
-        void set_directions (Eigen::MatrixXd& dir) {
-          aPSF_directions = dir;
-          do_reorientation = true;
-        }
 
         void set_grad_tolerance (const float& tolerance) {
           grad_tolerance = tolerance;
@@ -153,12 +261,6 @@ namespace MR
           log_stream = stream;
         }
 
-        void set_lmax (const std::vector<int>& lmax) {
-          for (size_t i = 0; i < lmax.size (); ++i)
-            if (lmax[i] < 0 || lmax[i] % 2)
-              throw Exception ("the input rigid and affine lmax must be positive and even");
-          fod_lmax = lmax;
-        }
 
         Header get_midway_header () {
           return Header(midway_image_header);
@@ -209,25 +311,10 @@ namespace MR
           Im1MaskType& im1_mask,
           Im2MaskType& im2_mask) {
 
-            if (max_iter.size() == 1)
-              max_iter.resize (scale_factor.size(), max_iter[0]);
-            else if (max_iter.size() != scale_factor.size())
-              throw Exception ("the max number of iterations needs to be defined for each multi-resolution level (scale factor)");
-
-            if (do_reorientation and (fod_lmax.size() != scale_factor.size()))
-              throw Exception ("the lmax needs to be defined for each multi-resolution level (scale factor)");
-            else
-              fod_lmax.resize (scale_factor.size(), 0);
-
-            if (gd_repetitions.size() == 1)
-              gd_repetitions.resize (scale_factor.size(), gd_repetitions[0]);
-            else if (gd_repetitions.size() != scale_factor.size())
-              throw Exception ("the number of gradient descent repetitions needs to be defined for each multi-resolution level");
-
-            if (loop_density.size() == 1)
-              loop_density.resize (scale_factor.size(), loop_density[0]);
-            else if (loop_density.size() != scale_factor.size())
-              throw Exception ("the loop density level needs to be defined for each multi-resolution level");
+            if (do_reorientation)
+              for (auto & s : stages)
+                if (s.fod_lmax < 0)
+                  throw Exception ("the lmax needs to be defined for each registration stage");
 
             if (init_translation_type == Transform::Init::mass)
               Transform::Init::initialise_using_image_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init);
@@ -248,6 +335,11 @@ namespace MR
             INFO ("Transformation before registration:");
             INFO (transform.info());
 
+            INFO("Linear registration stage parameters:");
+            for (auto & stage : stages) {
+              INFO(stage.info());
+            }
+
             // TODO global search
             // if (global_search) {
             //   GlobalSearch::GlobalSearch transformation_search;
@@ -266,9 +358,9 @@ namespace MR
             using ProcessedMaskType = Image<bool>;
 
 #ifdef REGISTRATION_CUBIC_INTERP
-            // typedef Interp::SplineInterp<Im1ImageType, Math::UniformBSpline<typename Im1ImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative> Im1ImageInterpolatorType;
-            // typedef Interp::SplineInterp<Im2ImageType, Math::UniformBSpline<typename Im2ImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative> Im2ImageInterpolatorType;
-            // typedef Interp::SplineInterp<ProcessedImageType, Math::UniformBSpline<typename ProcessedImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative> ProcessedImageInterpolatorType;
+            // using Im1ImageInterpolatorType = Interp::SplineInterp<Im1ImageType, Math::UniformBSpline<typename Im1ImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative>;
+            // using Im2ImageInterpolatorType = Interp::SplineInterp<Im2ImageType, Math::UniformBSpline<typename Im2ImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative>;
+            // using ProcessedImageInterpolatorType = Interp::SplineInterp<ProcessedImageType, Math::UniformBSpline<typename ProcessedImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative>;
 #else
             using Im1ImageInterpolatorType = Interp::LinearInterp<Im1ImageType, Interp::LinearInterpProcessingType::ValueAndDerivative>;
             using Im2ImageInterpolatorType = Interp::LinearInterp<Im2ImageType, Interp::LinearInterpProcessingType::ValueAndDerivative>;
@@ -297,30 +389,22 @@ namespace MR
             // calculate midway (affine average) space which will be constant for each resolution level
             midway_image_header = compute_minimum_average_header (im1_image, im2_image, transform, midspace_voxel_subsampling, midspace_padding);
 
-            for (size_t level = 0; level < scale_factor.size(); level++) {
-              if (max_iter[level] == 0)
-                continue;
-              {
-                std::string st;
-                loop_density[level] < 1.0 ? st = ", loop density: " + str(loop_density[level]) : st = "";
-                if (do_reorientation) {
-                  CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor " + str(scale_factor[level]) + st + ", lmax " + str(fod_lmax[level]) );
-                } else {
-                  CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor " + str(scale_factor[level]) + st);
-                }
-              }
+            for (size_t istage = 0; istage < stages.size(); istage++) {
+              auto& stage = stages[istage];
 
-              INFO("smoothing image 1");
-              auto im1_smoothed = Registration::multi_resolution_lmax (im1_image, scale_factor[level], do_reorientation, fod_lmax[level]);
-              INFO("smoothing image 2");
-              auto im2_smoothed = Registration::multi_resolution_lmax (im2_image, scale_factor[level], do_reorientation, fod_lmax[level]);
+              CONSOLE ("linear stage " + str(istage + 1) + "/"+str(stages.size()) + ", " + stage.info(do_reorientation));
+
+              INFO ("smoothing image 1");
+              auto im1_smoothed = Registration::multi_resolution_lmax (im1_image, stage.scale_factor, do_reorientation, stage.fod_lmax);
+              INFO ("smoothing image 2");
+              auto im2_smoothed = Registration::multi_resolution_lmax (im2_image, stage.scale_factor, do_reorientation, stage.fod_lmax);
 
               Filter::Resize midway_resize_filter (midway_image_header);
-              midway_resize_filter.set_scale_factor (scale_factor[level]);
+              midway_resize_filter.set_scale_factor (stage.scale_factor);
               Header midway_resized (midway_resize_filter);
 
               ParamType parameters (transform, im1_smoothed, im2_smoothed, midway_resized, im1_mask, im2_mask);
-              parameters.loop_density = loop_density[level];
+              parameters.loop_density = stage.loop_density;
               // if (robust_estimate)
               //   INFO ("using robust estimate");
               // parameters.robust_estimate = robust_estimate; // TODO
@@ -344,72 +428,91 @@ namespace MR
               Eigen::Vector3d stop(spacing);
               //CONF option: reg_coherence_len
               //CONF default: 3.0
-              //CONF Linear registration: estimated spatial coherence length in voxel
+              //CONF Linear registration: estimated spatial coherence length in voxels
               default_type reg_coherence_len = File::Config::get_float ("reg_coherence_len", 3.0); // = 3 stdev blur
-              coherence *= reg_coherence_len * 1.0 / (2.0 * scale_factor[level]);
+              coherence *= reg_coherence_len * 1.0 / (2.0 * stage.scale_factor);
               //CONF option: reg_stop_len
               //CONF default: 0.0001
-              //CONF Linear registration: smallest step in fraction of voxel at which to stop registration
+              //CONF Linear registration: smallest gradient descent step measured in fraction of a voxel at which to stop registration
               default_type reg_stop_len = File::Config::get_float ("reg_stop_len", 0.0001);
               stop.array() *= reg_stop_len;
               DEBUG ("coherence length: " + str(coherence));
               DEBUG ("stop length:      " + str(stop));
-              transform.get_gradient_descent_updator()->set_control_points(
-                parameters.control_points, coherence, stop, spacing);
+              transform.get_gradient_descent_updator()->set_control_points (parameters.control_points, coherence, stop, spacing);
+
+              // convergence check using slope of smoothed parameter trajectories
+              Eigen::VectorXd slope_threshold = Eigen::VectorXd::Ones (12);
+              //CONF option: reg_gd_convergence_thresh
+              //CONF default: 5e-3
+              //CONF Linear registration: threshold for convergence check using the smoothed control point trajectories
+              //CONF measured in fraction of a voxel
+              slope_threshold.fill (spacing.mean() * File::Config::get_float ("reg_gd_convergence_thresh", 5e-3f));
+              DEBUG ("convergence slope threshold: " + str(slope_threshold[0]));
+              //CONF option: reg_gd_convergence_data_smooth
+              //CONF default: 0.8
+              //CONF Linear registration: control point trajectory smoothing value used in convergence check
+              //CONF parameter range: [0...1]
+              const default_type alpha (MR::File::Config::get_float ("reg_gd_convergence_data_smooth", 0.8));
+              if ( (alpha < 0.0f ) || (alpha > 1.0f) )
+                throw Exception ("config file option reg_gd_convergence_data_smooth has to be in the range: [0...1]");
+              //CONF option: reg_gd_convergence_slope_smooth
+              //CONF default: 0.1
+              //CONF Linear registration: control point trajectory slope smoothing value used in convergence check
+              //CONF parameter range: [0...1]
+              const default_type beta (MR::File::Config::get_float ("reg_gd_convergence_slope_smooth", 0.1));
+              if ( (beta < 0.0f ) || (beta > 1.0f) )
+                throw Exception ("config file option reg_gd_convergence_slope_smooth has to be in the range: [0...1]");
+              size_t buffer_len (MR::File::Config::get_float ("reg_gd_convergence_buffer_len", 4));
+              //CONF option: reg_gd_convergence_min_iter
+              //CONF default: 10
+              //CONF Linear registration: minimum number of iterations until convergence check is activated
+              size_t min_iter (MR::File::Config::get_float ("reg_gd_convergence_min_iter", 10));
+              transform.get_gradient_descent_updator()->set_convergence_check (slope_threshold, alpha, beta, buffer_len, min_iter);
 
               Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
-              if (do_reorientation && fod_lmax[level] > 0)
+              if (do_reorientation && stage.fod_lmax > 0)
                 evaluate.set_directions (aPSF_directions);
 
-              INFO("linear registration...");
-              for (auto gd_iteration = 0; gd_iteration < gd_repetitions[level]; ++gd_iteration){
-                if (reg_bbgd) {
+              INFO ("registration stage running...");
+              for (auto stage_iter = 1U; stage_iter <= stage.stage_iterations; ++stage_iter) {
+                if (stage.gd_max_iter > 0 and stage.optimisers[stage_iter - 1] == OptimiserAlgoType::bbgd) {
                   Math::GradientDescentBB<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
-                    optim (evaluate, *transform.get_gradient_descent_updator());
+                  optim (evaluate, *transform.get_gradient_descent_updator());
                   optim.be_verbose (analyse_descent);
                   optim.precondition (optimiser_weights);
-                  if (log_stream)
-                    optim.run (max_iter[level], grad_tolerance, log_stream);
-                  else if (analyse_descent)
-                    optim.run (max_iter[level], grad_tolerance, std::cout.rdbuf());
-                  else
-                      optim.run (max_iter[level], grad_tolerance);
-                  DEBUG ("gradient descent ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
-                  if (!is_finite(optim.state())) {
-                    throw Exception ("registration failed: encountered NaN in parameters.");
-                  }
-                  parameters.transformation.set_parameter_vector (optim.state());
-                  parameters.update_control_points();
-                } else {
+                  optim.run (stage.gd_max_iter, grad_tolerance, analyse_descent ? std::cout.rdbuf() : log_stream);
+                  parameters.optimiser_update (optim, evaluate.overlap());
+                  INFO ("    iteration: "+str(stage_iter)+"/"+str(stage.stage_iterations)+" GD iterations: "+
+                  str(optim.function_evaluations())+" cost: "+str(optim.value())+" overlap: "+str(evaluate.overlap()));
+                } else if (stage.gd_max_iter > 0) {
                   Math::GradientDescent<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
                     optim (evaluate, *transform.get_gradient_descent_updator());
                   optim.be_verbose (analyse_descent);
                   optim.precondition (optimiser_weights);
-                  if (log_stream)
-                    optim.run (max_iter[level], grad_tolerance, log_stream);
-                  else if (analyse_descent)
-                    optim.run (max_iter[level], grad_tolerance, std::cout.rdbuf());
-                  else
-                      optim.run (max_iter[level], grad_tolerance);
-                  DEBUG ("gradient descent ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
-                  if (!is_finite(optim.state())) {
-                    throw Exception ("registration failed due to NaN in parameters");
-                  }
-                  parameters.transformation.set_parameter_vector (optim.state());
-                  parameters.update_control_points();
+                  optim.run (stage.gd_max_iter, grad_tolerance, analyse_descent ? std::cout.rdbuf() : log_stream);
+                  parameters.optimiser_update (optim, evaluate.overlap());
+                  INFO ("    iteration: "+str(stage_iter)+"/"+str(stage.stage_iterations)+" GD iterations: "+
+                  str(optim.function_evaluations())+" cost: "+str(optim.value())+" overlap: "+str(evaluate.overlap()));
                 }
-                if (log_stream){
+
+                if (log_stream) {
                   std::ostream log_os(log_stream);
                   log_os << "\n\n"; // two empty lines for gnuplot's index recognition
                 }
+                // debug cost function gradient
                 // auto params = optim.state();
                 // VAR(optim.function_evaluations());
                 // Math::check_function_gradient (evaluate, params, 0.0001, true, optimiser_weights);
+                if (stage.diagnostics_images.size()) {
+                  CONSOLE("    creating diagnostics image: " + stage.diagnostics_images[stage_iter - 1]);
+                  parameters.make_diagnostics_image (stage.diagnostics_images[stage_iter - 1], File::Config::get_bool ("reg_linreg_diagnostics_image_masked", false));
+                }
               }
               // update midway (affine average) space using the current transformations
-              midway_image_header = compute_minimum_average_header(im1_image, im2_image, parameters.transformation, midspace_voxel_subsampling, midspace_padding);
+              midway_image_header = compute_minimum_average_header (im1_image, im2_image, parameters.transformation, midspace_voxel_subsampling, midspace_padding);
             }
             INFO("linear registration done");
+            INFO (transform.info());
           }
 
         template<class Im1ImageType, class Im2ImageType, class TransformType>
@@ -453,11 +556,8 @@ namespace MR
           }
 
       protected:
-        std::vector<int> max_iter;
-        std::vector<int> gd_repetitions;
-        std::vector<default_type> scale_factor;
-        std::vector<default_type> loop_density;
-        std::vector<size_t> kernel_extent;
+        vector<StageSetting> stages;
+        vector<size_t> kernel_extent;
         default_type grad_tolerance;
         default_type step_tolerance;
         std::streambuf* log_stream;
@@ -465,15 +565,14 @@ namespace MR
         bool robust_estimate;
         bool do_reorientation;
         Eigen::MatrixXd aPSF_directions;
-        std::vector<int> fod_lmax;
-        const bool reg_bbgd, analyse_descent;
+        const bool analyse_descent;
 
         Header midway_image_header;
     };
 
     void set_init_translation_model_from_option (Registration::Linear& registration, const int& option);
     void set_init_rotation_model_from_option (Registration::Linear& registration, const int& option);
-    void parse_general_init_options (Registration::Linear& registration);
+    void parse_general_options (Registration::Linear& registration);
   }
 }
 

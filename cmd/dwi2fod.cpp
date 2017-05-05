@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "command.h"
 #include "header.h"
@@ -61,9 +60,9 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and Ben Jeurissen (ben.jeurissen@uantwerpen.be)";
 
-  DESCRIPTION
-    + "estimate fibre orientation distributions from diffusion data using spherical deconvolution."
+  SYNOPSIS = "Estimate fibre orientation distributions from diffusion data using spherical deconvolution";
 
+  DESCRIPTION
     + Math::SH::encoding_description;
 
   REFERENCES
@@ -99,8 +98,7 @@ void usage ()
 
 
 
-class CSD_Processor
-{
+class CSD_Processor { MEMALIGN(CSD_Processor)
   public:
     CSD_Processor (const DWI::SDeconv::CSD::Shared& shared, Image<bool>& mask) :
       sdeconv (shared),
@@ -166,10 +164,9 @@ class CSD_Processor
 
 
 
-class MSMT_Processor
-{
+class MSMT_Processor { MEMALIGN (MSMT_Processor)
   public:
-    MSMT_Processor (const DWI::SDeconv::MSMT_CSD::Shared& shared, Image<bool>& mask_image, std::vector< Image<float> > odf_images) :
+    MSMT_Processor (const DWI::SDeconv::MSMT_CSD::Shared& shared, Image<bool>& mask_image, vector< Image<float> > odf_images) :
         sdeconv (shared),
         mask_image (mask_image),
         odf_images (odf_images),
@@ -206,7 +203,7 @@ class MSMT_Processor
   private:
     DWI::SDeconv::MSMT_CSD sdeconv;
     Image<bool> mask_image;
-    std::vector< Image<float> > odf_images;
+    vector< Image<float> > odf_images;
     Eigen::VectorXd dwi_data;
     Eigen::VectorXd output_data;
 };
@@ -251,6 +248,7 @@ void run ()
     shared.init();
 
     header_out.size(3) = shared.nSH();
+    DWI::stash_DW_scheme (header_out, shared.grad);
     auto fod = Image<float>::create (argument[3], header_out);
 
     CSD_Processor processor (shared, mask);
@@ -267,8 +265,8 @@ void run ()
     shared.parse_cmdline_options();
 
     const size_t num_tissues = (argument.size()-2)/2;
-    std::vector<std::string> response_paths;
-    std::vector<std::string> odf_paths;
+    vector<std::string> response_paths;
+    vector<std::string> odf_paths;
     for (size_t i = 0; i < num_tissues; ++i) {
       response_paths.push_back (argument[i*2+2]);
       odf_paths.push_back (argument[i*2+3]);
@@ -282,7 +280,9 @@ void run ()
 
     shared.init();
 
-    std::vector< Image<float> > odfs;
+    DWI::stash_DW_scheme (header_out, shared.grad);
+
+    vector< Image<float> > odfs;
     for (size_t i = 0; i < num_tissues; ++i) {
       header_out.size (3) = Math::SH::NforL (shared.lmax[i]);
       odfs.push_back (Image<float> (Image<float>::create (odf_paths[i], header_out)));

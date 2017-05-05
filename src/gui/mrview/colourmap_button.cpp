@@ -1,17 +1,17 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
+
 #include "gui/mrview/colourmap_button.h"
 #include "gui/mrview/colourmap.h"
 #include "math/rng.h"
@@ -25,50 +25,12 @@ namespace MRView
 {
 
 
-// FIXME Why is this duplicating colourmap code?
-using Entry = ColourMap::Entry;
-const std::vector<Entry> ColourMapButton::core_colourmaps_entries{{
-    Entry ("Gray",
-        "color.rgb = vec3 (amplitude);\n",
-        [] (float amplitude) { return Eigen::Vector3f (amplitude, amplitude, amplitude); }),
-
-    Entry ("Hot",
-        "color.rgb = vec3 (2.7213 * amplitude, 2.7213 * amplitude - 1.0, 3.7727 * amplitude - 2.7727);\n",
-        [] (float amplitude) { return Eigen::Vector3f (2.7213 * amplitude, 2.7213 * amplitude - 1.0, 3.7727 * amplitude - 2.7727); }),
-
-    Entry ("Cool",
-        "color.rgb = 1.0 - (vec3 (2.7213 * (1.0 - amplitude), 2.7213 * (1.0 - amplitude) - 1.0, 3.7727 * (1.0 - amplitude) - 2.7727));\n",
-        [] (float amplitude) { return Eigen::Vector3f (1.0 - (2.7213 * (1.0 - amplitude)), 1.0 - (2.7213 * (1.0 - amplitude) - 1.0), 1.0 - (3.7727 * (1.0 - amplitude) - 2.7727)); }),
-
-    Entry ("Jet",
-        "color.rgb = 1.5 - 4.0 * abs (1.0 - amplitude - vec3(0.25, 0.5, 0.75));\n",
-        [] (float amplitude) { return Eigen::Vector3f (1.5 - 4.0 * std::abs (1.0 - amplitude - 0.25), 1.5 - 4.0 * std::abs (1.0 - amplitude - 0.5), 1.5 - 4.0 * std::abs (1.0 - amplitude - 0.75)); })
-}};
-
-
-const std::vector<Entry> ColourMapButton::special_colourmaps_entries{{
-    Entry ("RGB",
-           "color.rgb = scale * (abs(color.rgb) - offset);\n",
-           Entry::basic_map_fn(),
-           "length (color.rgb)", true),
-
-    Entry ("Complex",
-           "float phase = atan (color.r, color.g) * 0.954929658551372;\n"
-           "color.rgb = phase + vec3 (-2.0, 0.0, 2.0);\n"
-           "if (phase > 2.0) color.b -= 6.0;\n"
-           "if (phase < -2.0) color.r += 6.0;\n"
-           "color.rgb = clamp (scale * (amplitude - offset), 0.0, 1.0) * (2.0 - abs (color.rgb));\n",
-           Entry::basic_map_fn(),
-           "length (color.rg)", true)
-}};
-
 
 ColourMapButton::ColourMapButton(QWidget* parent, ColourMapButtonObserver& obs,
                                  bool use_shortcuts,
                                  bool use_special_colourmaps,
                                  bool use_customise_state_items) :
     QToolButton(parent),
-    colourmap_actions(ColourMapButton::core_colourmaps_entries.size()),
     observer(obs),
     core_colourmaps_actions(new QActionGroup(parent))
 {
@@ -85,20 +47,22 @@ void ColourMapButton::init_core_menu_items(bool create_shortcuts)
     core_colourmaps_actions->setExclusive(true);
 
     size_t n = 0;
-    for(const auto& colourmap_entry : ColourMapButton::core_colourmaps_entries)
+    for (size_t i = 0; ColourMap::maps[i].name; ++i)
     {
-      QAction* action = new QAction(colourmap_entry.name, this);
-      action->setCheckable(true);
-      core_colourmaps_actions->addAction(action);
+      if (!ColourMap::maps[i].special && !ColourMap::maps[i].is_colour) {
+        QAction* action = new QAction (ColourMap::maps[i].name, this);
+        action->setCheckable(true);
+        core_colourmaps_actions->addAction(action);
 
-      colourmap_menu->addAction(action);
-      addAction(action);
+        colourmap_menu->addAction(action);
+        addAction(action);
 
-      if(create_shortcuts)
-        action->setShortcut(QObject::tr(std::string ("Ctrl+" + str (n+1)).c_str()));
+        if (create_shortcuts)
+          action->setShortcut(QObject::tr(std::string ("Ctrl+" + str (n+1)).c_str()));
 
-      colourmap_actions[n] = action;
-      n++;
+        colourmap_actions.push_back (action);
+        n++;
+      }
     }
 
     connect(core_colourmaps_actions, SIGNAL(triggered (QAction*)), this, SLOT(select_colourmap_slot(QAction*)));
@@ -128,20 +92,22 @@ void ColourMapButton::init_custom_colour_menu_items()
 void ColourMapButton::init_special_colour_menu_items(bool create_shortcuts)
 {
     size_t n = colourmap_actions.size();
-    for(const auto& colourmap_entry : ColourMapButton::special_colourmaps_entries)
+    for (size_t i = 0; ColourMap::maps[i].name; ++i)
     {
-      QAction* action = new QAction(colourmap_entry.name, this);
-      action->setCheckable(true);
-      core_colourmaps_actions->addAction(action);
+      if (ColourMap::maps[i].special) {
+        QAction* action = new QAction (ColourMap::maps[i].name, this);
+        action->setCheckable(true);
+        core_colourmaps_actions->addAction(action);
 
-      colourmap_menu->addAction(action);
-      addAction(action);
+        colourmap_menu->addAction(action);
+        addAction(action);
 
-      if(create_shortcuts)
-        action->setShortcut(QObject::tr(std::string ("Ctrl+" + str (n+1)).c_str()));
+        if (create_shortcuts)
+          action->setShortcut(QObject::tr(std::string ("Ctrl+" + str (n+1)).c_str()));
 
-      colourmap_actions.push_back(action);
-      n++;
+        colourmap_actions.push_back(action);
+        n++;
+      }
     }
 }
 

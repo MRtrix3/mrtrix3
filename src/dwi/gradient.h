@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __dwi_gradient_h__
 #define __dwi_gradient_h__
@@ -27,6 +26,7 @@
 #include "file/path.h"
 #include "file/config.h"
 #include "header.h"
+#include "math/sphere.h"
 #include "math/SH.h"
 #include "dwi/shells.h"
 
@@ -90,7 +90,7 @@ namespace MR
       if (dirs.cols() == 2) // spherical coordinates:
         g = dirs;
       else // Cartesian to spherical:
-        g = Math::SH::cartesian2spherical (dirs).leftCols(2);
+        g = Math::Sphere::cartesian2spherical (dirs).leftCols(2);
 
       auto v = Eigen::JacobiSVD<Eigen::MatrixXd> (Math::SH::init_transform (g, lmax)).singularValues();
       return v[0] / v[v.size()-1];
@@ -139,6 +139,10 @@ namespace MR
     template <class MatrixType> 
       void set_DW_scheme (Header& header, const MatrixType& G)
       {
+        if (!G.rows()) {
+          header.keyval().erase ("dw_scheme");
+          return;
+        }
         std::string dw_scheme;
         for (ssize_t row = 0; row < G.rows(); ++row) {
           std::string line;
@@ -162,6 +166,26 @@ namespace MR
      * structure, under the key 'dw_scheme'.
      */
     Eigen::MatrixXd parse_DW_scheme (const Header& header);
+
+
+
+    //! 'stash' the DW gradient table
+    /*! Store the _used_ DW gradient table to Header::keyval() key
+     *  'prior_dw_scheme', and delete the key 'dw_scheme' if it exists.
+     *  This means that the scheme will no longer be identified by function
+     *  parse_DW_scheme(), but still resides within the header data and
+     *  can be extracted manually. This should be used when
+     *  diffusion-weighted images are used to generate something that is
+     *  _not_ diffusion_weighted volumes.
+     */
+    template <class MatrixType>
+    void stash_DW_scheme (Header& header, const MatrixType& grad)
+    {
+      set_DW_scheme (header, grad);
+      auto dw_scheme = header.keyval().find ("dw_scheme");
+      header.keyval()["prior_dw_scheme"] = dw_scheme->second;
+      header.keyval().erase (dw_scheme);
+    }
 
 
 
@@ -200,13 +224,24 @@ namespace MR
     void export_grad_commandline (const Header& header);
 
 
+    /*! \brief validate the DW encoding matrix \a grad and
+     * check that it matches the DW header in \a header 
+     *
+     * This ensures the dimensions match the corresponding DWI data, applies
+     * b-value scaling if specified, and normalises the gradient vectors. */
+    void validate_DW_scheme (Eigen::MatrixXd& grad, const Header& header, bool nofail = false);
 
     /*! \brief get the DW encoding matrix as per get_DW_scheme(), and
      * check that it matches the DW header in \a header 
      *
      * This is the version that should be used in any application that
      * processes the DWI raw data. */
-    Eigen::MatrixXd get_valid_DW_scheme (const Header& header, bool nofail = false);
+    inline Eigen::MatrixXd get_valid_DW_scheme (const Header& header, bool nofail = false) 
+    {
+      auto grad = get_DW_scheme (header);
+      validate_DW_scheme (grad, header, nofail);
+      return grad;
+    }
 
 
     //! \brief get the matrix mapping SH coefficients to amplitudes

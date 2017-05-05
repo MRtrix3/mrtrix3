@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __dwi_tractography_act_method_h__
 #define __dwi_tractography_act_method_h__
@@ -40,7 +39,7 @@ namespace MR
 
       using namespace MR::DWI::Tractography::Tracking;
 
-        class ACT_Method_additions {
+        class ACT_Method_additions { MEMALIGN(ACT_Method_additions)
 
           public:
             ACT_Method_additions (const SharedBase& shared) :
@@ -52,7 +51,6 @@ namespace MR
             ACT_Method_additions (const ACT_Method_additions&) = delete;
             ACT_Method_additions() = delete;
 
-            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
             const Tissues& tissues() const { return tissue_values; }
 

@@ -1,20 +1,19 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
+
 #include "dwi/gradient.h"
-#include "file/nifti1_utils.h"
+#include "file/nifti_utils.h"
 
 namespace MR
 {
@@ -30,15 +29,18 @@ namespace MR
 
       group 
         + Option ("grad",
-            "specify the diffusion-weighted gradient scheme used in the acquisition. "
-            "The program will normally attempt to use the encoding stored in the image "
-            "header. This should be supplied as a 4xN text file with each line is in "
-            "the format [ X Y Z b ], where [ X Y Z ] describe the direction of the "
-            "applied gradient, and b gives the b-value in units of s/mm^2.")
-        +   Argument ("encoding").type_file_in()
+            "Provide the diffusion-weighted gradient scheme used in the acquisition "
+            "in a text file. This should be supplied as a 4xN text file with each line "
+            "is in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the "
+            "applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion "
+            "gradient scheme is present in the input image header, the data provided with "
+            "this option will be instead used.")
+        +   Argument ("file").type_file_in()
 
         + Option ("fslgrad",
-            "specify the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format.")
+            "Provide the diffusion-weighted gradient scheme used in the acquisition in FSL "
+            "bvecs/bvals format files. If a diffusion gradient scheme is present in the "
+            "input image header, the data provided with this option will be instead used.")
         +   Argument ("bvecs").type_file_in()
         +   Argument ("bvals").type_file_in();
 
@@ -103,8 +105,18 @@ namespace MR
         throw Exception (e, "Unable to import files \"" + bvecs_path + "\" and \"" + bvals_path + "\" as FSL bvecs/bvals pair");
       }
 
-      if (bvals.rows() != 1) throw Exception ("bvals file must contain 1 row only (file \"" + bvals_path + "\" has " + str(bvals.rows()) + ")");
-      if (bvecs.rows() != 3) throw Exception ("bvecs file must contain exactly 3 rows (file \"" + bvecs_path + "\" has " + str(bvecs.rows()) + ")");
+      if (bvals.rows() != 1) {
+        if (bvals.cols() == 1)
+          bvals.transposeInPlace();  // transpose if file contains column vector
+        else
+          throw Exception ("bvals file must contain 1 row or column only (file \"" + bvals_path + "\" has " + str(bvals.rows()) + ")");
+      }
+      if (bvecs.rows() != 3) {
+        if (bvecs.cols() == 3)
+          bvecs.transposeInPlace();
+        else
+          throw Exception ("bvecs file must contain exactly 3 rows or columns (file \"" + bvecs_path + "\" has " + str(bvecs.rows()) + ")");
+      }
 
       if (bvals.cols() != bvecs.cols())
         throw Exception ("bvecs and bvals files must have same number of diffusion directions (file \"" + bvecs_path + "\" has " + str(bvecs.cols()) + ", file \"" + bvals_path + "\" has " + str(bvals.cols()) + ")");
@@ -115,7 +127,7 @@ namespace MR
       // bvecs format actually assumes a LHS coordinate system even if image is
       // stored using RHS - x axis is flipped to make linear 3x3 part of
       // transform have negative determinant:
-      std::vector<size_t> order;
+      vector<size_t> order;
       auto adjusted_transform = File::NIfTI::adjust_transform (header, order);
       if (adjusted_transform.linear().determinant() > 0.0) 
         bvecs.row(0) = -bvecs.row(0);
@@ -152,7 +164,7 @@ namespace MR
 
       // deal with FSL requiring gradient directions to coincide with data strides
       // also transpose matrices in preparation for file output
-      std::vector<size_t> order;
+      vector<size_t> order;
       auto adjusted_transform = File::NIfTI::adjust_transform (header, order);
       Eigen::MatrixXd bvecs (3, grad.rows());
       Eigen::MatrixXd bvals (1, grad.rows());
@@ -213,9 +225,8 @@ namespace MR
 
 
 
-    Eigen::MatrixXd get_valid_DW_scheme (const Header& header, bool nofail)
+    void validate_DW_scheme (Eigen::MatrixXd& grad, const Header& header, bool nofail)
     {
-      auto grad = get_DW_scheme (header);
       if (grad.rows() == 0) 
         throw Exception ("no diffusion encoding information found in image \"" + header.name() + "\"");
 
@@ -238,14 +249,13 @@ namespace MR
         scale_bvalue_by_G_squared (grad);
 
       try {
-        normalise_grad (grad);
         check_DW_scheme (header, grad);
+        normalise_grad (grad);
       }
       catch (Exception& e) {
         if (!nofail)
           throw Exception (e, "unable to get valid diffusion gradient table for image \"" + header.name() + "\"");
       }
-      return grad;
     }
 
 

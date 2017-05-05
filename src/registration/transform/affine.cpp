@@ -1,20 +1,17 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
 
-#include <deque>
-#include <algorithm> // std::min_element
+
 #include <iterator>
 #include "registration/transform/affine.h"
 #include "math/gradient_descent.h"
@@ -29,88 +26,6 @@ namespace MR
   {
     namespace Transform
     {
-      // TODO: implement gradient descent oscillation detection via DoubleExpSmoothSlopeCheck
-      class DoubleExpSmoothSlopeCheck
-      {
-        public:
-          DoubleExpSmoothSlopeCheck (const Eigen::Matrix<default_type, Eigen::Dynamic, 1> slope_threshold,
-            default_type alpha = 0.8,
-            default_type beta = 0.55,
-            size_t buffer_len = 4,
-            size_t min_iter = 5):
-            stop_cnt (0),
-            alpha (alpha),
-            beta (beta),
-            thresh (slope_threshold),
-            buffer_len (buffer_len),
-            min_iter (min_iter),
-            iter_count (0),
-            len (0) { }
-
-            bool go_on (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& element) {
-              ++iter_count;
-              // initialise
-              if (len == 0) {
-                if (!x0.size()) {
-                  x0 = element;
-                  return true;
-                } else {
-                  ds.emplace_back(element);
-                  db.emplace_back(element - x0);
-                  if (check_all(db.back()))
-                    ++stop_cnt;
-                  else
-                    stop_cnt = 0;
-                  ++len;
-                  return true;
-                }
-              }
-              // add smoothed elements
-              ds.emplace_back(alpha * element + (1.0-alpha) * (ds.back() + db.back()));
-              db.emplace_back(beta * (ds.at(len) - ds.at(len - 1)) + (1.0-beta) * db.at(len-1));
-              if (check_all(db.back()))
-                ++stop_cnt;
-              else
-                stop_cnt = 0;
-
-              // trim if buffer full
-              if (len == buffer_len) {
-                ds.pop_front();
-                db.pop_front();
-                if (stop_cnt > buffer_len) --stop_cnt;
-              } else {
-                ++len;
-              }
-              return (stop_cnt != buffer_len) or (iter_count < min_iter);
-            }
-
-            bool last_b (Eigen::Matrix<default_type, Eigen::Dynamic, 1>& b) const {
-              if (!len) return false;
-              b = db.back();
-              return true;
-            }
-
-            bool last_s (Eigen::Matrix<default_type, Eigen::Dynamic, 1>& s) const {
-              if (!len) return false;
-              s = ds.back();
-              return true;
-            }
-
-        private:
-          size_t stop_cnt;
-          default_type alpha, beta;
-          const Eigen::Matrix<default_type, Eigen::Dynamic, 1> thresh;
-          Eigen::Matrix<default_type, Eigen::Dynamic, 1> x0;
-          const size_t buffer_len, min_iter;
-          size_t iter_count, len;
-          std::deque<Eigen::Matrix<default_type, Eigen::Dynamic, 1>> ds, db;
-
-          inline bool check_all (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& vec) {
-            return (vec.array().abs() < thresh.array()).all();
-          }
-
-        };
-
 
       bool AffineUpdate::operator() (Eigen::Matrix<default_type, Eigen::Dynamic, 1>& newx,
           const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x,
@@ -121,7 +36,7 @@ namespace MR
           assert (g.size() == 12);
 
           Eigen::Matrix<default_type, 12, 1> delta;
-          Eigen::Matrix<default_type, 4, 4> X, Delta, G, A, Asqrt, B, Bsqrt, Bsqrtinv, Xnew, P, Diff;
+          Eigen::Matrix<default_type, 4, 4> X, Delta, G, A, Asqrt, B, Bsqrt, Bsqrtinv, Xnew, P, Diff, XnewP;
           Registration::Transform::param_vec2mat(g, G);
           Registration::Transform::param_vec2mat(x, X);
 
@@ -213,33 +128,40 @@ namespace MR
 
           Registration::Transform::param_mat2vec(Xnew, newx);
 
-          // stop criterion based on max shift of control points
+          if (newx.isApprox(x)) {
+            DEBUG ("parameters unchanged");
+            return false;
+          }
+
           if (control_points.size()) {
+            XnewP = (Xnew * P).eval();
+
+            // stop criterion based on slope of smoothed control point trajectories
+            if (use_convergence_check) {
+              Registration::Transform::param_mat2vec (XnewP, new_control_points_vec);
+              if (MR::File::Config::get_bool ("reg_gd_convergence_debug", false))
+                convergence_check.debug(new_control_points_vec);
+              if (!convergence_check.go_on (new_control_points_vec)) {
+                DEBUG ("control point trajectories converged");
+                return false;
+              }
+            }
+
+            // stop criterion based on maximum shift of control points
+            Diff.noalias() = (XnewP - X * P).cwiseAbs();
             Diff.row(0) *= recip_spacing(0);
             Diff.row(1) *= recip_spacing(1);
             Diff.row(2) *= recip_spacing(2);
             Diff.colwise() -= stop_len;
-            // MAT(Diff);
             if (Diff.template block<3,4>(0,0).maxCoeff() <= 0.0) {
-              DEBUG("max control point movement (" + str(Diff.template block<3,4>(0,0).maxCoeff()) +
+              DEBUG ("max control point movement (" + str(Diff.template block<3,4>(0,0).maxCoeff()) +
               ") smaller than tolerance" );
               return false;
             }
           }
-// #ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG
-//             if (newx.isApprox(x)){
-//               ValueType debug = 0;
-//               for (ssize_t i=0; i<newx.size(); ++i){
-//                 debug += std::abs(newx[i]-x[i]);
-//               }
-//               INFO("affine update parameter cumulative change: " + str(debug));
-//               VEC(newx);
-//               VEC(g);
-//               VAR(step_size);
-//             }
-// #endif
-            return !(newx.isApprox(x));
-          }
+
+          return true;
+        }
 
           void AffineUpdate::set_control_points (
             const Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic>& points,
@@ -309,7 +231,7 @@ namespace MR
 
           bool Affine::robust_estimate (
             Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient,
-            std::vector<Eigen::Matrix<default_type, Eigen::Dynamic, 1>>& grad_estimates,
+            vector<Eigen::Matrix<default_type, Eigen::Dynamic, 1>>& grad_estimates,
             const Eigen::Matrix<default_type, 4, 4>& control_points,
             const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& parameter_vector,
             const default_type& weiszfeld_precision = 1.0e-6,

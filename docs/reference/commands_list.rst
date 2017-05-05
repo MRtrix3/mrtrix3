@@ -1,198 +1,230 @@
 
-################
+.. _list-of-mrtrix3-commands:
+
+########################
 List of MRtrix3 commands
-################
+########################
+
+
 
 
 .. toctree::
-   :maxdepth: 1
-
-
-
-   commands/5tt2gmwmi
-
-   commands/5tt2vis
-
-   commands/5ttedit
-
-   commands/afdconnectivity
-
-   commands/amp2sh
-
-   commands/connectome2tck
-
-   commands/dcmedit
-
-   commands/dcminfo
-
-   commands/dirflip
-
-   commands/dirgen
-
-   commands/dirmerge
-
-   commands/dirorder
-
-   commands/dirsplit
-
-   commands/dirstat
-
-   commands/dwi2adc
-
-   commands/dwi2fod
-
-   commands/dwi2mask
-
-   commands/dwi2noise
-
-   commands/dwi2tensor
-
-   commands/dwidenoise
-
-   commands/dwiextract
-
-   commands/dwinormalise
-
-   commands/fixel2sh
-
-   commands/fixel2tsf
-
-   commands/fixel2voxel
-
-   commands/fixelcalc
-
-   commands/fixelcfestats
-
-   commands/fixelcorrespondence
-
-   commands/fixellog
-
-   commands/fixelreorient
-
-   commands/fixelstats
-
-   commands/fixelthreshold
-
-   commands/fod2dec
-
-   commands/fod2fixel
-
-   commands/label2colour
-
-   commands/label2mesh
-
-   commands/labelconvert
-
-   commands/maskfilter
-
-   commands/mesh2pve
-
-   commands/meshconvert
-
-   commands/meshfilter
-
-   commands/mraverageheader
-
-   commands/mrcalc
-
-   commands/mrcat
-
-   commands/mrcheckerboardmask
-
-   commands/mrclusterstats
-
-   commands/mrconvert
-
-   commands/mrcrop
-
-   commands/mrfilter
-
-   commands/mrinfo
-
-   commands/mrmath
-
-   commands/mrmesh
-
-   commands/mrmetric
-
-   commands/mrpad
-
-   commands/mrregister
-
-   commands/mrresize
-
-   commands/mrstats
-
-   commands/mrthreshold
-
-   commands/mrtransform
-
-   commands/mrview
-
-   commands/peaks2amp
-
-   commands/sh2amp
-
-   commands/sh2peaks
-
-   commands/sh2power
-
-   commands/sh2response
-
-   commands/shbasis
-
-   commands/shconv
-
-   commands/shview
-
-   commands/tck2connectome
-
-   commands/tckconvert
-
-   commands/tckedit
-
-   commands/tckgen
-
-   commands/tckglobal
-
-   commands/tckinfo
-
-   commands/tckmap
-
-   commands/tcknormalise
-
-   commands/tckresample
-
-   commands/tcksample
-
-   commands/tcksift
-
-   commands/tcksift2
-
-   commands/tckstats
-
-   commands/tensor2metric
-
-   commands/transformcalc
-
-   commands/transformconvert
-
-   commands/tsfdivide
-
-   commands/tsfinfo
-
-   commands/tsfmult
-
-   commands/tsfsmooth
-
-   commands/tsfthreshold
-
-   commands/voxel2fixel
-
-   commands/warp2metric
-
-   commands/warpconvert
-
-   commands/warpcorrect
-
-   commands/warpinit
+    :hidden:
+
+    commands/5tt2gmwmi
+    commands/5tt2vis
+    commands/5ttcheck
+    commands/5ttedit
+    commands/afdconnectivity
+    commands/amp2response
+    commands/amp2sh
+    commands/connectome2tck
+    commands/connectomestats
+    commands/dcmedit
+    commands/dcminfo
+    commands/dirflip
+    commands/dirgen
+    commands/dirmerge
+    commands/dirorder
+    commands/dirsplit
+    commands/dirstat
+    commands/dwi2adc
+    commands/dwi2fod
+    commands/dwi2mask
+    commands/dwi2noise
+    commands/dwi2tensor
+    commands/dwidenoise
+    commands/dwiextract
+    commands/dwinormalise
+    commands/fixel2sh
+    commands/fixel2tsf
+    commands/fixel2voxel
+    commands/fixelcfestats
+    commands/fixelconvert
+    commands/fixelcorrespondence
+    commands/fixelcrop
+    commands/fixelreorient
+    commands/fod2dec
+    commands/fod2fixel
+    commands/label2colour
+    commands/label2mesh
+    commands/labelconvert
+    commands/maskdump
+    commands/maskfilter
+    commands/mesh2pve
+    commands/meshconvert
+    commands/meshfilter
+    commands/mraverageheader
+    commands/mrcalc
+    commands/mrcat
+    commands/mrcheckerboardmask
+    commands/mrclusterstats
+    commands/mrconvert
+    commands/mrcrop
+    commands/mrdump
+    commands/mredit
+    commands/mrfilter
+    commands/mrhistmatch
+    commands/mrhistogram
+    commands/mrinfo
+    commands/mrmath
+    commands/mrmesh
+    commands/mrmetric
+    commands/mrmodelfield
+    commands/mrpad
+    commands/mrregister
+    commands/mrresize
+    commands/mrstats
+    commands/mrthreshold
+    commands/mrtransform
+    commands/mrview
+    commands/mtbin
+    commands/mtnormalise
+    commands/peaks2amp
+    commands/sh2amp
+    commands/sh2peaks
+    commands/sh2power
+    commands/sh2response
+    commands/shbasis
+    commands/shconv
+    commands/shview
+    commands/tck2connectome
+    commands/tck2fixel
+    commands/tckconvert
+    commands/tckedit
+    commands/tckgen
+    commands/tckglobal
+    commands/tckinfo
+    commands/tckmap
+    commands/tcknormalise
+    commands/tckresample
+    commands/tcksample
+    commands/tcksift2
+    commands/tcksift
+    commands/tckstats
+    commands/tensor2metric
+    commands/transformcalc
+    commands/transformcompose
+    commands/transformconvert
+    commands/tsfdivide
+    commands/tsfinfo
+    commands/tsfmult
+    commands/tsfsmooth
+    commands/tsfthreshold
+    commands/vectorstats
+    commands/voxel2fixel
+    commands/warp2metric
+    commands/warpconvert
+    commands/warpcorrect
+    commands/warpinit
+
+
+.. csv-table::
+    :header: "Command", "Synopsis"
+
+    :ref:`5tt2gmwmi`, "Generate a mask image appropriate for seeding streamlines on the grey matter-white matter interface"
+    :ref:`5tt2vis`, "Generate an image for visualisation purposes from an ACT 5TT segmented anatomical image"
+    :ref:`5ttcheck`, "Thoroughly check that one or more images conform to the expected ACT five-tissue-type (5TT) format"
+    :ref:`5ttedit`, "Manually set the partial volume fractions in an ACT five-tissue-type (5TT) image using mask images"
+    :ref:`afdconnectivity`, "Obtain an estimate of fibre connectivity between two regions using AFD and streamlines tractography"
+    :ref:`amp2response`, "Estimate response function coefficients based on the DWI signal in single-fibre voxels"
+    :ref:`amp2sh`, "Convert a set of amplitudes (defined along a set of corresponding directions) to their spherical harmonic representation"
+    :ref:`connectome2tck`, "Extract streamlines from a tractogram based on their assignment to parcellated nodes"
+    :ref:`connectomestats`, "Connectome group-wise statistics at the edge level using non-parametric permutation testing"
+    :ref:`dcmedit`, "Edit DICOM file in-place"
+    :ref:`dcminfo`, "Output DICOM fields in human-readable format"
+    :ref:`dirflip`, "Optimise the polarity of the directions in a scheme with respect to a unipolar electrostatic repulsion model, by inversion of individual directions"
+    :ref:`dirgen`, "Generate a set of uniformly distributed directions using a bipolar electrostatic repulsion model"
+    :ref:`dirmerge`, "Splice or merge sets of directions over multiple shells into a single set, in such a way as to maintain near-optimality upon truncation"
+    :ref:`dirorder`, "Reorder a set of directions to ensure near-uniformity upon truncation - i.e. if the scan is terminated early, the acquired directions are still close to optimal"
+    :ref:`dirsplit`, "Split a set of evenly distributed directions (as generated by dirgen) into approximately uniformly distributed subsets"
+    :ref:`dirstat`, "Report statistics on a direction set"
+    :ref:`dwi2adc`, "Convert mean dwi (trace-weighted) images to mean ADC maps"
+    :ref:`dwi2fod`, "Estimate fibre orientation distributions from diffusion data using spherical deconvolution"
+    :ref:`dwi2mask`, "Generates a whole brain mask from a DWI image"
+    :ref:`dwi2noise`, "Estimate noise level voxel-wise using residuals from a truncated SH fit"
+    :ref:`dwi2tensor`, "Diffusion (kurtosis) tensor estimation using iteratively reweighted linear least squares estimator"
+    :ref:`dwidenoise`, "Denoise DWI data and estimate the noise level based on the optimal threshold for PCA"
+    :ref:`dwiextract`, "Extract diffusion-weighted volumes, b=0 volumes, or certain shells from a DWI dataset"
+    :ref:`dwinormalise`, "Intensity normalise the b=0 signal within a supplied white matter mask"
+    :ref:`fixel2sh`, "Convert a fixel-based sparse-data image into an spherical harmonic image"
+    :ref:`fixel2tsf`, "Map fixel values to a track scalar file based on an input tractogram"
+    :ref:`fixel2voxel`, "Convert a fixel-based sparse-data image into some form of scalar image"
+    :ref:`fixelcfestats`, "Fixel-based analysis using connectivity-based fixel enhancement and non-parametric permutation testing"
+    :ref:`fixelconvert`, "Convert between the old format fixel image (.msf / .msh) and the new fixel directory format"
+    :ref:`fixelcorrespondence`, "Obtain fixel-fixel correpondence between a subject fixel image and a template fixel mask"
+    :ref:`fixelcrop`, "Crop/remove fixels from sparse fixel image using a binary fixel mask"
+    :ref:`fixelreorient`, "Reorient fixel directions"
+    :ref:`fod2dec`, "Generate FOD-based DEC maps, with optional panchromatic sharpening and/or luminance/perception correction"
+    :ref:`fod2fixel`, "Use a fast-marching level-set method to segment fibre orientation distributions, and save parameters of interest as fixel images"
+    :ref:`label2colour`, "Convert a parcellated image (where values are node indices) into a colour image"
+    :ref:`label2mesh`, "Generate meshes from a label image"
+    :ref:`labelconvert`, "Convert a connectome node image from one lookup table to another"
+    :ref:`maskdump`, "Print out the locations of all non-zero voxels in a mask image"
+    :ref:`maskfilter`, "Perform filtering operations on 3D / 4D mask images"
+    :ref:`mesh2pve`, "Convert a mesh surface to a partial volume estimation image"
+    :ref:`meshconvert`, "Convert meshes between different formats, and apply transformations"
+    :ref:`meshfilter`, "Apply filter operations to meshes"
+    :ref:`mraverageheader`, "Calculate the average (unbiased) coordinate space of all input images"
+    :ref:`mrcalc`, "Apply generic voxel-wise mathematical operations to images"
+    :ref:`mrcat`, "Concatenate several images into one"
+    :ref:`mrcheckerboardmask`, "Create bitwise checkerboard image"
+    :ref:`mrclusterstats`, "Voxel-based analysis using permutation testing and threshold-free cluster enhancement"
+    :ref:`mrconvert`, "Perform conversion between different file types and optionally extract a subset of the input image"
+    :ref:`mrcrop`, "Crop an image to a reduced field of view"
+    :ref:`mrdump`, "Print out the values within an image"
+    :ref:`mredit`, "Directly edit the intensities within an image from the command-line"
+    :ref:`mrfilter`, "Perform filtering operations on 3D / 4D MR images"
+    :ref:`mrhistmatch`, "Modify the intensities of one image to match the histogram of another via a non-linear transform"
+    :ref:`mrhistogram`, "Generate a histogram of image intensities"
+    :ref:`mrinfo`, "Display image header information, or extract specific information from the header"
+    :ref:`mrmath`, "Compute summary statistic on image intensities either across images, or along a specified axis of a single image"
+    :ref:`mrmesh`, "Generate a mesh file from an image"
+    :ref:`mrmetric`, "Computes a dissimilarity metric between two images"
+    :ref:`mrmodelfield`, "Model an input image using low frequency 3D polynomial basis functions"
+    :ref:`mrpad`, "Pad an image to increase the FOV"
+    :ref:`mrregister`, "Register two images together using a symmetric rigid, affine or non-linear transformation model"
+    :ref:`mrresize`, "Resize an image by defining the new image resolution, voxel size or a scale factor"
+    :ref:`mrstats`, "Compute images statistics"
+    :ref:`mrthreshold`, "Create bitwise image by thresholding image intensity"
+    :ref:`mrtransform`, "Apply spatial transformations to an image"
+    :ref:`mrview`, "The MRtrix image viewer."
+    :ref:`mtbin`, "Multi-Tissue Bias field correction and Intensity Normalisation (MTBIN)"
+    :ref:`mtnormalise`, "Multi-tissue normalise"
+    :ref:`peaks2amp`, "Convert peak directions image to amplitudes"
+    :ref:`sh2amp`, "Evaluate the amplitude of an image of spherical harmonic functions along specified directions"
+    :ref:`sh2peaks`, "Extract the peaks of a spherical harmonic function at each voxel, by commencing a Newton search along a set of specified directions"
+    :ref:`sh2power`, "Compute the total power of a spherical harmonics image"
+    :ref:`sh2response`, "Generate an appropriate response function from the image data for spherical deconvolution"
+    :ref:`shbasis`, "Examine the values in spherical harmonic images to estimate (and optionally change) the SH basis used"
+    :ref:`shconv`, "Perform a spherical convolution"
+    :ref:`shview`, "View spherical harmonics surface plots"
+    :ref:`tck2connectome`, "Generate a connectome matrix from a streamlines file and a node parcellation image"
+    :ref:`tck2fixel`, "Compute a fixel TDI map from a tractogram"
+    :ref:`tckconvert`, "Convert between different track file formats"
+    :ref:`tckedit`, "Perform various editing operations on track files"
+    :ref:`tckgen`, "Perform streamlines tractography"
+    :ref:`tckglobal`, "Multi-Shell Multi-Tissue Global Tractography"
+    :ref:`tckinfo`, "Print out information about a track file"
+    :ref:`tckmap`, "Use track data as a form of contrast for producing a high-resolution image"
+    :ref:`tcknormalise`, "Apply a normalisation map to a tracks file"
+    :ref:`tckresample`, "Resample each streamline in a track file to a new set of vertices"
+    :ref:`tcksample`, "Sample values of an associated image along tracks"
+    :ref:`tcksift2`, "Successor to the SIFT method; instead of removing streamlines, use an EM framework to find an appropriate cross-section multiplier for each streamline"
+    :ref:`tcksift`, "Filter a whole-brain fibre-tracking data set such that the streamline densities match the FOD lobe integrals"
+    :ref:`tckstats`, "Calculate statistics on streamlines length"
+    :ref:`tensor2metric`, "Generate maps of tensor-derived parameters"
+    :ref:`transformcalc`, "Perform calculations on linear transformation matrices"
+    :ref:`transformcompose`, "Compose any number of linear transformations and/or warps into a single transformation"
+    :ref:`transformconvert`, "Convert linear transformation matrices"
+    :ref:`tsfdivide`, "Divide corresponding values in track scalar files"
+    :ref:`tsfinfo`, "Print out information about a track scalar file"
+    :ref:`tsfmult`, "Multiply corresponding values in track scalar files"
+    :ref:`tsfsmooth`, "Gaussian filter a track scalar file"
+    :ref:`tsfthreshold`, "Threshold and invert track scalar files"
+    :ref:`vectorstats`, "Statistical testing of vector data using non-parametric permutation testing"
+    :ref:`voxel2fixel`, "Map the scalar value in each voxel to all fixels within that voxel"
+    :ref:`warp2metric`, "Compute fixel-wise or voxel-wise metrics from a 4D deformation field"
+    :ref:`warpconvert`, "Convert between different representations of a non-linear warp"
+    :ref:`warpcorrect`, "Replaces voxels in a deformation field that point to 0,0,0 with nan,nan,nan"
+    :ref:`warpinit`, "Create an initial warp image, representing an identity transformation"
