@@ -12,54 +12,49 @@
  */
 
 #include "registration/multi_contrast.h"
-#include "header.h"
-#include "image_io/default.h"
-#include "image_io/scratch.h"
-#include "file/name_parser.h"
-#include "formats/list.h"
 
 namespace MR
 {
   namespace Registration
   {
-    vector<std::string> parse_image_sequence_output (const std::string& output_sequence, const vector<Header>& image_sequence_input) {
-      vector<std::string> V;
-      if (!output_sequence.size()) throw Exception ("image sequence specifier is empty");
+    // vector<std::string> parse_image_sequence_output (const std::string& output_sequence, const vector<Header>& image_sequence_input) {
+    //   vector<std::string> V;
+    //   if (!output_sequence.size()) throw Exception ("image sequence specifier is empty");
 
-      auto output_image_names = split (output_sequence, ",");
-      if (output_image_names.size() != image_sequence_input.size())
-        throw Exception ("image output sequence has to be of equal length to input image sequence. output sequence:\n" + str(output_sequence));
+    //   auto output_image_names = split (output_sequence, ",");
+    //   if (output_image_names.size() != image_sequence_input.size())
+    //     throw Exception ("image output sequence has to be of equal length to input image sequence. output sequence:\n" + str(output_sequence));
 
-      for (size_t idx = 0; idx < output_image_names.size(); idx++) {
-        std::string image_name = output_image_names[idx];
+    //   for (size_t idx = 0; idx < output_image_names.size(); idx++) {
+    //     std::string image_name = output_image_names[idx];
 
-        if (Path::exists (image_name) && !App::overwrite_files)
-          throw Exception ("output image \"" + image_name + "\" already exists (use -force option to force overwrite)");
+    //     if (Path::exists (image_name) && !App::overwrite_files)
+    //       throw Exception ("output image \"" + image_name + "\" already exists (use -force option to force overwrite)");
 
-        Header H = image_sequence_input[idx];
-        File::NameParser parser;
-        parser.parse (image_name);
-        vector<int> Pdim (parser.ndim());
+    //     Header H = image_sequence_input[idx];
+    //     File::NameParser parser;
+    //     parser.parse (image_name);
+    //     vector<int> Pdim (parser.ndim());
 
-        H.name() = image_name;
+    //     H.name() = image_name;
 
-        const Formats::Base** format_handler = Formats::handlers;
-        for (; *format_handler; format_handler++)
-          if ((*format_handler)->check (H, H.ndim() - Pdim.size()))
-            break;
+    //     const Formats::Base** format_handler = Formats::handlers;
+    //     for (; *format_handler; format_handler++)
+    //       if ((*format_handler)->check (H, H.ndim() - Pdim.size()))
+    //         break;
 
-        if (!*format_handler) {
-          const std::string basename = Path::basename (image_name);
-          const size_t extension_index = basename.find_last_of (".");
-          if (extension_index == std::string::npos)
-            throw Exception ("unknown format for image \"" + image_name + "\" (no file extension specified)");
-          else
-            throw Exception ("unknown format for image \"" + image_name + "\" (unsupported file extension: " + basename.substr (extension_index) + ")");
-        }
-        V.push_back (image_name);
-      }
-      return V;
-    }
+    //     if (!*format_handler) {
+    //       const std::string basename = Path::basename (image_name);
+    //       const size_t extension_index = basename.find_last_of (".");
+    //       if (extension_index == std::string::npos)
+    //         throw Exception ("unknown format for image \"" + image_name + "\" (no file extension specified)");
+    //       else
+    //         throw Exception ("unknown format for image \"" + image_name + "\" (unsupported file extension: " + basename.substr (extension_index) + ")");
+    //     }
+    //     V.push_back (image_name);
+    //   }
+    //   return V;
+    // }
 
     class CopyFunctor4D {
     public:

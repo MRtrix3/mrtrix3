@@ -76,21 +76,23 @@ void usage ()
 
 
   ARGUMENTS
-    + Argument ("image1", "input image 1 ('moving')").type_sequence_image_in ()
-    + Argument ("image2", "input image 2 ('template')").type_sequence_image_in ();
+    + Argument ("image1 image2", "input image 1 ('moving') and input image 2 ('template')").type_image_in()
+    + Argument ("+ contrast1 contrast2", "optional list of additional input images used as additional contrasts. "
+      "Can be used multiple times. contrastX and imageX must share the same coordinate system. ").type_image_in().optional().allow_multiple();
 
   OPTIONS
   + Option ("type", "the registration type. Valid choices are: "
                     "rigid, affine, nonlinear, rigid_affine, rigid_nonlinear, affine_nonlinear, rigid_affine_nonlinear (Default: affine_nonlinear)")
     + Argument ("choice").type_choice (transformation_choices)
 
-  + Option ("transformed", "image1 after registration transformed to the space of image2")
-    + Argument ("image").type_sequence_image_out ()
+  + Option ("transformed", "image1 after registration transformed to the space of image2. "
+    "Note that -transformed needs to be repeated for each contrast if multi-constrast registration is used.").allow_multiple()
+    + Argument ("image").type_image_out ()
 
-  + Option ("transformed_midway", "image1 and image2 after registration transformed "
-        "to the midway space")
-    + Argument ("image1_transformed").type_sequence_image_out ()
-    + Argument ("image2_transformed").type_sequence_image_out ()
+  + Option ("transformed_midway", "image1 and image2 after registration transformed to the midway space. "
+    "Note that -transformed_midway needs to be repeated for each contrast if multi-constrast registration is used.").allow_multiple()
+    + Argument ("image1_transformed").type_image_out ()
+    + Argument ("image2_transformed").type_image_out ()
 
   + Option ("mask1", "a mask to define the region of image1 to use for optimisation.")
     + Argument ("filename").type_image_in ()
@@ -118,14 +120,31 @@ void usage ()
 using value_type = double;
 
 void run () {
-  auto input1 = Registration::parse_image_sequence_input (argument[0]);
-  auto input2 = Registration::parse_image_sequence_input (argument[1]);
 
-  size_t n_images = input1.size();
+  vector<Header> input1, input2;
+  const size_t n_images = 1 + (argument.size() - 2 ) / 3;
+  { // parse arguments and load input headers
+    if (std::abs(float (n_images) - (1.0 + float (argument.size() - 2 ) / 3.0)) > 1.e-6) {
+      std::string err;
+      for (const auto & a : argument)
+        err += " " + str(argument);
+      throw Exception ("unexpected number of input images. arguments:" + err);
+    }
 
-  if (n_images != input2.size()) {
-    throw Exception ("require same number of input images for image 1 and image 2");
+    bool is1 = true;
+    for (const auto& arg : argument) {
+      if (str(arg) == "+")
+        continue;
+      if (is1)
+        input1.push_back (Header::open (str(arg)));
+      else
+        input2.push_back (Header::open (str(arg)));
+      is1 = !is1;
+    }
   }
+  assert (input1.size() == n_images);
+  if (input1.size() != input2.size())
+    throw Exception ("require same number of input images for image 1 and image 2");
 
   for (size_t i=0; i<n_images; i++) {
     if (input1[i].ndim() != input2[i].ndim())
@@ -217,19 +236,19 @@ void run () {
     } else if (input1[i].ndim() == 3) { // 3D
       mc_params[i].do_reorientation = false;
       mc_params[i].image_lmax = 0;
-      CONSOLE ("Treating images "+input1[i].name()+", "+input2[i].name()+" as scalar images");
+      CONSOLE ("Treating input pair "+input1[i].name()+", "+input2[i].name()+" as scalar images");
     } else if (input1[i].ndim() == 4) { // 4D
       if (input1[i].size(3) != input2[i].size(3))
         throw Exception ("input images do not have the same number of volumes in the 4th dimension");
       value_type val = (std::sqrt (float (1 + 8 * input1[i].size(3))) - 3.0) / 4.0;
       if (!(val - (int)val) && do_reorientation && input1[i].size(3) > 1) {
-        CONSOLE ("SH series detected in images "+input1[i].name()+", "+input2[i].name());
+        CONSOLE ("SH series detected in input pair "+input1[i].name()+", "+input2[i].name());
         mc_params[i].do_reorientation = true;
         mc_params[i].image_lmax = Math::SH::LforN (input1[i].size(3));
         if (!directions_cartesian.cols())
           directions_cartesian = Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_60()).transpose();
       } else {
-        CONSOLE ("Treating images "+input1[i].name()+", "+input2[i].name()+" as scalar images");
+        CONSOLE ("Treating input pair "+input1[i].name()+", "+input2[i].name()+" as scalar images");
         mc_params[i].do_reorientation = false;
         mc_params[i].image_lmax = 0;
       }
@@ -254,31 +273,49 @@ void run () {
 
   opt = get_options ("transformed");
   vector<std::string> im1_transformed_paths;
-  if (opt.size())
-    im1_transformed_paths = Registration::parse_image_sequence_output (opt[0][0], input2);
+  if (opt.size()) {
+    if (opt.size() > n_images)
+      throw Exception ("number of -transformed images exceeds number of contrasts");
+    if (opt.size() != n_images)
+      WARN ("number of -transformed images lower than number of contrasts");
+    for (size_t c = 0; c < opt.size(); c++) {
+      Registration::check_image_output (opt[c][0], input2[c]);
+      im1_transformed_paths.push_back(opt[c][0]);
+      INFO (input1[c].name() + ", transformed to space of image2, will be written to " + im1_transformed_paths[c]);
+    }
+  }
 
 
   vector<std::string> input1_midway_transformed_paths;
   vector<std::string> input2_midway_transformed_paths;
   opt = get_options ("transformed_midway");
   if (opt.size()) {
-    input1_midway_transformed_paths = Registration::parse_image_sequence_output (opt[0][0], input2);
-    input2_midway_transformed_paths = Registration::parse_image_sequence_output (opt[0][1], input1);
+    if (opt.size() > n_images)
+      throw Exception ("number of -transformed_midway images exceeds number of contrasts");
+    if (opt.size() != n_images)
+      WARN ("number of -transformed_midway images lower than number of contrasts");
+    for (size_t c = 0; c < opt.size(); c++) {
+      Registration::check_image_output (opt[c][0], input2[c]);
+      input1_midway_transformed_paths.push_back(opt[c][0]);
+      INFO (input1[c].name() + ", transformed to midway space, will be written to " + input1_midway_transformed_paths[c]);
+      Registration::check_image_output (opt[c][1], input1[c]);
+      input2_midway_transformed_paths.push_back(opt[c][1]);
+      INFO (input2[c].name() + ", transformed to midway space, will be written to " + input2_midway_transformed_paths[c]);
+    }
   }
 
   opt = get_options ("mask1");
   Image<value_type> im1_mask;
   if (opt.size ()) {
     im1_mask = Image<value_type>::open(opt[0][0]);
-    check_dimensions (input1[0], im1_mask, 0, 3); // TODO can we relax this?
+    check_dimensions (input1[0], im1_mask, 0, 3);
   }
-
 
   opt = get_options ("mask2");
   Image<value_type> im2_mask;
   if (opt.size ()) {
     im2_mask = Image<value_type>::open(opt[0][0]);
-    check_dimensions (input2[0], im2_mask, 0, 3); // TODO  can we relax this?
+    check_dimensions (input2[0], im2_mask, 0, 3);
   }
 
 
@@ -977,7 +1014,7 @@ void run () {
                                                     deform_field);
     }
 
-    for (size_t idx = 0; idx < n_images; idx++) {
+    for (size_t idx = 0; idx < im1_transformed_paths.size(); idx++) {
       CONSOLE ("... " + im1_transformed_paths[idx]);
       {
         LogLevelLatch log_level (0);
@@ -1040,7 +1077,7 @@ void run () {
       Registration::Warp::compose_linear_deformation (nl_registration.get_im1_to_mid_linear(), *(nl_registration.get_im1_to_mid()), im1_deform_field);
     }
 
-    for (size_t idx = 0; idx < n_images; idx++) {
+    for (size_t idx = 0; idx < input1_midway_transformed_paths.size(); idx++) {
       CONSOLE ("... " + input1_midway_transformed_paths[idx]);
       {
         LogLevelLatch log_level (0);
@@ -1070,7 +1107,7 @@ void run () {
       Registration::Warp::compose_linear_deformation (nl_registration.get_im2_to_mid_linear(), *(nl_registration.get_im2_to_mid()), im2_deform_field);
     }
 
-    for (size_t idx = 0; idx < n_images; idx++) {
+    for (size_t idx = 0; idx < input2_midway_transformed_paths.size(); idx++) {
       CONSOLE ("... " + input2_midway_transformed_paths[idx]);
       {
         LogLevelLatch log_level (0);
@@ -1097,5 +1134,4 @@ void run () {
 
   if (get_options ("affine_log").size() or get_options ("rigid_log").size())
     linear_logstream.close();
-
 }
