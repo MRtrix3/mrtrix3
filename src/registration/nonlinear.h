@@ -262,10 +262,12 @@ namespace MR
                 size_t voxel_count = 0;
 
                 if (im1_image.ndim() == 4) {
-                  Metric::Demons4D<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped);
+                  Metric::Demons4D<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (
+                    cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, &stage_contrasts);
                   ThreadedLoop (im1_warped, 0, 3).run (metric, im1_warped, im2_warped, *im1_update_new, *im2_update_new);
                 } else {
-                  Metric::Demons<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped);
+                  Metric::Demons<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (
+                    cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped);
                   ThreadedLoop (im1_warped, 0, 3).run (metric, im1_warped, im2_warped, *im1_update_new, *im2_update_new);
                 }
 

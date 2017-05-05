@@ -14,6 +14,7 @@
 
 #include "registration/transform/initialiser.h"
 #include "registration/transform/initialiser_helpers.h"
+#include "registration/multi_contrast.h"
 
 namespace MR
 {
@@ -29,7 +30,8 @@ namespace MR
           Image<default_type>& mask1,
           Image<default_type>& mask2,
           Registration::Transform::Base& transform,
-          Registration::Transform::Init::LinearInitialisationParams& init) {
+          Registration::Transform::Init::LinearInitialisationParams& init,
+          const vector<MultiContrastSetting>& contrast_settings) {
 
           CONSOLE ("initialising centre of rotation using centre of mass");
           Eigen::Vector3 im1_centre_mass, im2_centre_mass;
@@ -37,10 +39,8 @@ namespace MR
 
           Image<default_type> bogus_mask;
 
-          // TODO: add option to use mask instead of image intensities
-
-          get_centre_of_mass (im1, init.init_translation.unmasked1 ? bogus_mask : mask1, im1_centre_mass);
-          get_centre_of_mass (im2, init.init_translation.unmasked2 ? bogus_mask : mask2, im2_centre_mass);
+          get_centre_of_mass (im1, init.init_translation.unmasked1 ? bogus_mask : mask1, im1_centre_mass, contrast_settings);
+          get_centre_of_mass (im2, init.init_translation.unmasked2 ? bogus_mask : mask2, im2_centre_mass, contrast_settings);
 
           transform.transform_half_inverse (im1_centre_mass_transformed, im1_centre_mass);
           transform.transform_half (im2_centre_mass_transformed, im2_centre_mass);
@@ -98,17 +98,11 @@ namespace MR
           Image<default_type>& mask1,
           Image<default_type>& mask2,
           Registration::Transform::Base& transform,
-          Registration::Transform::Init::LinearInitialisationParams& init) {
+          Registration::Transform::Init::LinearInitialisationParams& init,
+          const vector<MultiContrastSetting>& contrast_settings) {
 
           Image<default_type> bogus_mask;
-          bool use_mask_values_instead = false; // TODO add to options
-          if (use_mask_values_instead) {
-            if (!(mask1.valid() or mask2.valid()))
-              throw Exception ("cannot run image moments initialisation using mask values without a valid mask");
-            CONSOLE ("initialising using image moments using mask values instead of image values");
-          }
-          else
-            CONSOLE ("initialising using image moments");
+          CONSOLE ("initialising using image moments");
 
           auto moments_init = Transform::Init::MomentsInitialiser (
             im1,
@@ -116,7 +110,7 @@ namespace MR
             init.init_rotation.unmasked1 ? bogus_mask : mask1,
             init.init_rotation.unmasked2 ? bogus_mask : mask2,
             transform,
-            use_mask_values_instead);
+            contrast_settings);
           moments_init.run();
         }
 
@@ -157,7 +151,8 @@ namespace MR
           Image<default_type>& mask1,
           Image<default_type>& mask2,
           Registration::Transform::Base& transform,
-          Registration::Transform::Init::LinearInitialisationParams& init);
+          Registration::Transform::Init::LinearInitialisationParams& init,
+          const vector<MultiContrastSetting>& contrast_settings);
       }
     }
   }

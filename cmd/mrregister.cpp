@@ -37,6 +37,11 @@ using namespace App;
 
 const char* transformation_choices[] = { "rigid", "affine", "nonlinear", "rigid_affine", "rigid_nonlinear", "affine_nonlinear", "rigid_affine_nonlinear", NULL };
 
+const OptionGroup multiContrastOptions =
+  OptionGroup ("Multi-contrast options")
+  + Option ("mc_weights", "relative weight of images used for multi-contrast registration. Default: 1.0 (equal weighting)")
+    + Argument ("weights").type_sequence_float ();
+
 
 void usage ()
 {
@@ -104,6 +109,8 @@ void usage ()
   + Registration::nonlinear_options
 
   + Registration::fod_options
+
+  + multiContrastOptions
 
   + DataType::options();
 }
@@ -230,7 +237,7 @@ void run () {
     // set lmax to image_lmax and set image_nvols, weight
     mc_params[i].lmax = mc_params[i].image_lmax;
     mc_params[i].image_nvols = input1[i].ndim() < 4? 1 : input1[i].size(3);
-    mc_params[i].weight = 1.0 / n_images;
+    mc_params[i].weight = 1.0;
   }
 
   ssize_t max_mc_image_lmax = std::max_element(mc_params.begin(), mc_params.end(),
@@ -692,7 +699,7 @@ void run () {
 
   opt = get_options ("nl_lmax");
   vector<int> nl_lmax;
-  if (opt.size ()) {
+  if (opt.size()) {
     if (!do_nonlinear)
       throw Exception ("the -nl_lmax option has been set when no non-linear registration is requested");
     if (input1[0].ndim() < 4)
@@ -707,6 +714,24 @@ void run () {
 
   // ******  MC options  *******
   // TODO: set tissue specific lmax?
+
+  opt = get_options ("mc_weights");
+  if (opt.size()) {
+    vector<default_type> mc_weights = parse_floats (opt[0][0]);
+    if (mc_weights.size() == 1)
+      mc_weights.resize (n_images, mc_weights[0]);
+    else if (mc_weights.size() != n_images)
+      throw Exception ("number of mc_weights does not match number of contrasts");
+    for (const default_type & w : mc_weights)
+      if (w < 0.0) throw Exception ("mc_weights must be non-negative");
+
+    default_type sm = 0.0;
+    std::for_each (mc_weights.begin(), mc_weights.end(), [&] (default_type n) {sm += n;});
+    if (std::abs (sm - n_images) > 1.e-6)
+      WARN ("mc_weights do not sum to the number of contrasts. This changes the regularisation.");
+    for (size_t idx = 0; idx < n_images; idx++)
+      mc_params[idx].weight = mc_weights[idx];
+  }
 
   {
     ssize_t max_requested_lmax = 0; // TODO max_requested_lmax for each contrast type if we have tissue specific lmax
@@ -937,7 +962,7 @@ void run () {
 
 
   if (im1_transformed_paths.size()) {
-    INFO ("Outputting input images1 transformed to space of images2...");
+    CONSOLE ("Writing input images1 transformed to space of images2...");
 
     Image<default_type> deform_field;
     if (do_nonlinear) {

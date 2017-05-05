@@ -328,16 +328,16 @@ namespace MR
                   throw Exception ("the lmax needs to be defined for each registration stage");
 
             if (init_translation_type == Transform::Init::mass)
-              Transform::Init::initialise_using_image_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init);
+              Transform::Init::initialise_using_image_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts);
             else if (init_translation_type == Transform::Init::geometric)
               Transform::Init::initialise_using_image_centres (im1_image, im2_image, im1_mask, im2_mask, transform, init);
             else if (init_translation_type == Transform::Init::set_centre_mass) // doesn't change translation or linear matrix
-              Transform::Init::set_centre_via_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init);
+              Transform::Init::set_centre_via_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts);
             else if (init_translation_type == Transform::Init::set_centre_geometric) // doesn't change translation or linear matrix
               Transform::Init::set_centre_via_image_centres (im1_image, im2_image, im1_mask, im2_mask, transform, init);
 
             if (init_rotation_type == Transform::Init::moments)
-              Transform::Init::initialise_using_image_moments (im1_image, im2_image, im1_mask, im2_mask, transform, init);
+              Transform::Init::initialise_using_image_moments (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts);
             else if (init_rotation_type == Transform::Init::rot_search) {
               Transform::Init::initialise_using_rotation_search (
                 im1_image, im2_image, im1_mask, im2_mask, transform, init);

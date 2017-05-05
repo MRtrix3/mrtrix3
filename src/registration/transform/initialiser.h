@@ -81,7 +81,8 @@ namespace MR
           Image<default_type>& mask1,
           Image<default_type>& mask2,
           Registration::Transform::Base& transform,
-          Registration::Transform::Init::LinearInitialisationParams& init);
+          Registration::Transform::Init::LinearInitialisationParams& init,
+          const vector<MultiContrastSetting>& contrast_settings);
 
         extern void set_centre_via_image_centres (
           const Image<default_type>& im1,
@@ -105,7 +106,8 @@ namespace MR
           Image<default_type>& mask1,
           Image<default_type>& mask2,
           Registration::Transform::Base& transform,
-          Registration::Transform::Init::LinearInitialisationParams& init);
+          Registration::Transform::Init::LinearInitialisationParams& init,
+          const vector<MultiContrastSetting>& contrast_settings);
 
         extern void initialise_using_FOD (
           Image<default_type>& im1,
@@ -130,7 +132,8 @@ namespace MR
           Image<default_type>& mask1,
           Image<default_type>& mask2,
           Registration::Transform::Base& transform,
-          Registration::Transform::Init::LinearInitialisationParams& init);
+          Registration::Transform::Init::LinearInitialisationParams& init,
+          const vector<MultiContrastSetting>& contrast_settings);
       }
     }
   }
