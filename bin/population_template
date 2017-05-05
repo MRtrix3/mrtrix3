@@ -237,7 +237,7 @@ if app.args.mc_weight_initial_alignment:
     if len(app.args.mc_weight_initial_alignment) != n_contrasts:
       app.error('mc_weight_initial_alignment needs to be defined for each contrast')
 else:
-  app.args.mc_weight_initial_alignment =  n_contrasts * [1.0]
+  app.args.mc_weight_initial_alignment =  n_contrasts * ["1"]
 
 if app.args.mc_weight_rigid:
   if n_contrasts == 1:
@@ -247,7 +247,7 @@ if app.args.mc_weight_rigid:
     if len(app.args.mc_weight_rigid) != n_contrasts:
       app.error('mc_weight_rigid needs to be defined for each contrast')
 else:
-  app.args.mc_weight_rigid = n_contrasts * [1.0]
+  app.args.mc_weight_rigid = n_contrasts * ["1"]
 
 if app.args.mc_weight_affine:
   if n_contrasts == 1:
@@ -257,7 +257,7 @@ if app.args.mc_weight_affine:
     if len(app.args.mc_weight_affine) != n_contrasts:
       app.error('mc_weight_affine needs to be defined for each contrast')
 else:
-  app.args.mc_weight_affine = n_contrasts * [1.0]
+  app.args.mc_weight_affine = n_contrasts * ["1"]
 
 if app.args.mc_weight_nl:
   if n_contrasts == 1:
@@ -267,7 +267,7 @@ if app.args.mc_weight_nl:
     if len(app.args.mc_weight_nl) != n_contrasts:
       app.error('mc_weight_nl needs to be defined for each contrast')
 else:
-  app.args.mc_weight_nl =  n_contrasts * [1.0]
+  app.args.mc_weight_nl =  n_contrasts * ["1"]
 
 
 for inputDir in app.args.input_dir:
@@ -463,7 +463,7 @@ app.console ('initial alignment of images: %s' % initial_alignment)
 app.console ('-'*60)
 if n_contrasts > 1:
   for c in range(n_contrasts):
-    app.console ('\tcontrast: %s, weight: %f, suffix: %s' % (app.args.input_dir[c], app.args.mc_weight_initial_alignment[c], contrasts[c]))
+    app.console ('\tcontrast: %s, weight: %s, suffix: %s' % (app.args.input_dir[c], app.args.mc_weight_initial_alignment[c], contrasts[c]))
 
 if dolinear:
   app.console ('-'*60)
@@ -471,10 +471,10 @@ if dolinear:
   app.console ('-'*60)
   if 'rigid' in linear_type and n_contrasts > 1:
     for c in range(n_contrasts):
-      app.console ('\tcontrast (rigid): %s, weight: %f, suffix: %s' % (app.args.input_dir[c], app.args.mc_weight_rigid[c], contrasts[c]))
+      app.console ('\tcontrast (rigid): %s, weight: %s, suffix: %s' % (app.args.input_dir[c], app.args.mc_weight_rigid[c], contrasts[c]))
   if 'affine' in linear_type and n_contrasts > 1:
     for c in range(n_contrasts):
-      app.console ('\tcontrast (affine): %s, weight: %f, suffix: %s' % (app.args.input_dir[c], app.args.mc_weight_affine[c], contrasts[c]))
+      app.console ('\tcontrast (affine): %s, weight: %s, suffix: %s' % (app.args.input_dir[c], app.args.mc_weight_affine[c], contrasts[c]))
 
   if do_fod_registration:
     for istage, [tpe, scale, lmax, niter] in enumerate(zip (linear_type, linear_scales, linear_lmax, linear_niter)):
@@ -507,7 +507,7 @@ else:
   app.console ('-'*60)
   if n_contrasts > 1:
     for c in range(n_contrasts):
-      app.console ('\tcontrast: %s, weight: %f, suffix: %s' % (app.args.input_dir[c], app.args.mc_weight_nl[c], contrasts[c]))
+      app.console ('\tcontrast: %s, weight: %s, suffix: %s' % (app.args.input_dir[c], app.args.mc_weight_nl[c], contrasts[c]))
 
   if do_fod_registration:
     if len(nl_scales) != len(nl_lmax):
@@ -596,7 +596,7 @@ else:
   else:
     lmax = ' -noreorientation '
   if n_contrasts > 1:
-    contrast_weight = ' -mc_contrast ' + lib.app.mc_weight_initial_alignment + ' '
+    contrast_weight = ' -mc_weights ' + ','.join(app.args.mc_weight_initial_alignment) + ' '
   else:
     contrast_weight = ''
   for i in input:
@@ -699,7 +699,7 @@ else:
         regtype = ' -type rigid'
         output = ' -rigid ' + os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix)
         if n_contrasts > 1:
-          contrast_weight = ' -mc_contrast ' + lib.app.mc_weight_rigid + ' '
+          contrast_weight = ' -mc_weights ' + ','.join(app.args.mc_weight_rigid) + ' '
         if level > 0:
           initialise = ' -rigid_init_matrix ' + os.path.join('linear_transforms_%i' % (level - 1), '%s.txt' % i.prefix)
         if do_fod_registration:
@@ -716,7 +716,7 @@ else:
         regtype = ' -type affine'
         output = ' -affine ' + os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix)
         if n_contrasts > 1:
-          contrast_weight = ' -mc_contrast ' + lib.app.mc_weight_affine + ' '
+          contrast_weight = ' -mc_weights ' + ','.join(app.args.mc_weight_affine) + ' '
         if level > 0:
           initialise = ' -affine_init_matrix ' + os.path.join('linear_transforms_%i' % (level - 1), '%s.txt' % i.prefix)
         if do_fod_registration:
@@ -815,7 +815,7 @@ if dononlinear:
 
       contrast_weight = ''
       if n_contrasts > 1:
-        contrast_weight = ' -mc_contrast ' + lib.app.mc_weight_nl + ' '
+        contrast_weight = ' -mc_weights ' + ','.join(app.args.mc_weight_nl) + ' '
 
       run.command('mrregister ' + ','.join(i.paths_in) + ' ' + ','.join(current_template) +
                  ' -type nonlinear' +
