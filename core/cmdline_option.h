@@ -25,6 +25,7 @@
 #endif
 
 #include "mrtrix.h"
+#include "debug.h"
 
 namespace MR
 {
@@ -53,9 +54,7 @@ namespace MR
       IntSeq,
       FloatSeq,
       TracksIn,
-      TracksOut,
-      ImageSeqIn,
-      ImageSeqOut
+      TracksOut
     };
 
     using ArgFlags = int;
@@ -177,20 +176,6 @@ namespace MR
         Argument& type_image_out () {
           assert (type == Undefined);
           type = ImageOut;
-          return *this;
-        }
-
-        //! specifies that the argument should be a sequence of comma-separated images.
-        Argument& type_sequence_image_in () {
-          assert (type == Undefined);
-          type = ImageSeqIn;
-          return *this;
-        }
-
-        //! specifies that the argument should be a sequence of comma-separated images.
-        Argument& type_sequence_image_out () {
-          assert (type == Undefined);
-          type = ImageSeqOut;
           return *this;
         }
 
