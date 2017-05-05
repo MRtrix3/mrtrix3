@@ -179,9 +179,10 @@ app.cmdline.add_argument('input_dir', help='The input directory containing all i
 app.cmdline.add_argument('template', help='The output template image. Comma separated images if multi-contrast registration is to be performed.')
 
 options = app.cmdline.add_argument_group('Multi-contrast options')
-options.add_argument('-mc_weight_initial_alignment', help='Weight contribution of each contrast to the initial alignment.')
-options.add_argument('-mc_weight_linear', help='Weight contribution of each contrast to the linear registration.')
-options.add_argument('-mc_weight_nl', help='Weight contribution of each contrast to the nonlinear registration.')
+options.add_argument('-mc_weight_initial_alignment', help='Weight contribution of each contrast to the initial alignment. Comma separated, default: 1.0')
+options.add_argument('-mc_weight_rigid', help='Weight contribution of each contrast to the rigid registration. Comma separated, default: 1.0')
+options.add_argument('-mc_weight_affine', help='Weight contribution of each contrast to the affine registration. Comma separated, default: 1.0')
+options.add_argument('-mc_weight_nl', help='Weight contribution of each contrast to the nonlinear registration. Comma separated, default: 1.0')
 
 linoptions = app.cmdline.add_argument_group('Options for the linear registration')
 linoptions.add_argument('-linear_no_pause', action='store_true', help='Do not pause the script if a linear registration seems implausible')
@@ -228,19 +229,45 @@ if len(app.args.input_dir) > 1:
   n_contrasts = len(app.args.input_dir)
   app.console ('Generating population template using multi-contrast registration')
 
-if n_contrasts == 1:
-  if app.args.mc_weight_linear:
-    app.error('-mc_weight_linear requires multiple input contrasts');
-  if app.args.mc_weight_initial_alignment:
+if app.args.mc_weight_initial_alignment:
+  if n_contrasts == 1:
     app.error('mc_weight_initial_alignment requires multiple input contrasts');
-  if app.args.mc_weight_nl:
-    app.error('mc_weight_nl requires multiple input contrasts');
+  else:
+    app.args.mc_weight_initial_alignment = app.args.mc_weight_initial_alignment.split(',')
+    if len(app.args.mc_weight_initial_alignment) != n_contrasts:
+      app.error('mc_weight_initial_alignment needs to be defined for each contrast')
 else:
-  if app.args.mc_weight_linear or app.args.mc_weight_initial_alignment or app.args.mc_weight_nl:
-    app.error('TODO mc_weight_*')
-  app.args.mc_weight_initial_alignment = n_contrasts * [1.0]
-  app.args.mc_weight_linear = n_contrasts * [1.0]
-  app.args.mc_weight_nl = n_contrasts * [1.0]
+  app.args.mc_weight_initial_alignment =  n_contrasts * [1.0]
+
+if app.args.mc_weight_rigid:
+  if n_contrasts == 1:
+    app.error('mc_weight_rigid requires multiple input contrasts');
+  else:
+    app.args.mc_weight_rigid = app.args.mc_weight_rigid.split(',')
+    if len(app.args.mc_weight_rigid) != n_contrasts:
+      app.error('mc_weight_rigid needs to be defined for each contrast')
+else:
+  app.args.mc_weight_rigid = n_contrasts * [1.0]
+
+if app.args.mc_weight_affine:
+  if n_contrasts == 1:
+    app.error('mc_weight_affine requires multiple input contrasts');
+  else:
+    app.args.mc_weight_affine = app.args.mc_weight_affine.split(',')
+    if len(app.args.mc_weight_affine) != n_contrasts:
+      app.error('mc_weight_affine needs to be defined for each contrast')
+else:
+  app.args.mc_weight_affine = n_contrasts * [1.0]
+
+if app.args.mc_weight_nl:
+  if n_contrasts == 1:
+    app.error('mc_weight_nl requires multiple input contrasts');
+  else:
+    app.args.mc_weight_nl = app.args.mc_weight_nl.split(',')
+    if len(app.args.mc_weight_nl) != n_contrasts:
+      app.error('mc_weight_nl needs to be defined for each contrast')
+else:
+  app.args.mc_weight_nl =  n_contrasts * [1.0]
 
 
 for inputDir in app.args.input_dir:
@@ -436,15 +463,19 @@ app.console ('initial alignment of images: %s' % initial_alignment)
 app.console ('-'*60)
 if n_contrasts > 1:
   for c in range(n_contrasts):
-    app.console ('\tcontrast: %s, weight: %f, dir: %s' % (contrasts[c], app.args.mc_weight_initial_alignment[c], app.args.input_dir[c]))
+    app.console ('\tcontrast: %s, weight: %f, suffix: %s' % (app.args.input_dir[c], app.args.mc_weight_initial_alignment[c], contrasts[c]))
 
 if dolinear:
   app.console ('-'*60)
   app.console ('linear registration stages:')
   app.console ('-'*60)
-  if n_contrasts > 1:
+  if 'rigid' in linear_type and n_contrasts > 1:
     for c in range(n_contrasts):
-      app.console ('\tcontrast: %s, weight: %f, dir: %s' % (contrasts[c], app.args.mc_weight_linear[c], app.args.input_dir[c]))
+      app.console ('\tcontrast (rigid): %s, weight: %f, suffix: %s' % (app.args.input_dir[c], app.args.mc_weight_rigid[c], contrasts[c]))
+  if 'affine' in linear_type and n_contrasts > 1:
+    for c in range(n_contrasts):
+      app.console ('\tcontrast (affine): %s, weight: %f, suffix: %s' % (app.args.input_dir[c], app.args.mc_weight_affine[c], contrasts[c]))
+
   if do_fod_registration:
     for istage, [tpe, scale, lmax, niter] in enumerate(zip (linear_type, linear_scales, linear_lmax, linear_niter)):
       app.console ('(%02i) %s scale: %.4f, niter: %i, lmax: %i' %(istage, tpe.ljust(9), scale, niter, lmax))
@@ -476,7 +507,7 @@ else:
   app.console ('-'*60)
   if n_contrasts > 1:
     for c in range(n_contrasts):
-      app.console ('\tcontrast: %s, weight: %f, dir: %s' % (contrasts[c], app.args.mc_weight_nl[c], app.args.input_dir[c]))
+      app.console ('\tcontrast: %s, weight: %f, suffix: %s' % (app.args.input_dir[c], app.args.mc_weight_nl[c], contrasts[c]))
 
   if do_fod_registration:
     if len(nl_scales) != len(nl_lmax):
@@ -560,21 +591,25 @@ if initial_alignment == 'none':
         fout.write('1 0 0 0\n0 1 0 0\n0 0 1 0\n0 0 0 1\n')
 else:
   mask = ''
+  if do_fod_registration:
+    lmax = ' -rigid_lmax 0 '
+  else:
+    lmax = ' -noreorientation '
+  if n_contrasts > 1:
+    contrast_weight = ' -mc_contrast ' + lib.app.mc_weight_initial_alignment + ' '
+  else:
+    contrast_weight = ''
   for i in input:
     if useMasks:
       mask = ' -mask1 ' + i.mask
     output = ' -rigid ' + os.path.join('linear_transforms_initial', i.prefix + '.txt')
-    if do_fod_registration:
-      lmax = ' -rigid_lmax 0 '
-    else:
-      lmax = ' -noreorientation '
     run.command('mrregister ' + ','.join(i.paths_in) + ' ' + ','.join(current_template) +
                 mask +
                 ' -rigid_scale 1 ' +
                 ' -rigid_niter 0 ' +
                 ' -type rigid ' +
                 lmax +
-                # TODO weight
+                contrast_weight +
                 ' -rigid_init_translation ' + initial_alignment + ' ' +
                 datatype +
                 output)
@@ -657,11 +692,14 @@ else:
       lmax = ''
       metric = ''
       mrregister_log = ''
+      contrast_weight = ''
       if linear_type[level] == 'rigid':
         scale = ' -rigid_scale ' + str(linear_scales[level])
         niter = ' -rigid_niter ' + str(linear_niter[level])
         regtype = ' -type rigid'
         output = ' -rigid ' + os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix)
+        if n_contrasts > 1:
+          contrast_weight = ' -mc_contrast ' + lib.app.mc_weight_rigid + ' '
         if level > 0:
           initialise = ' -rigid_init_matrix ' + os.path.join('linear_transforms_%i' % (level - 1), '%s.txt' % i.prefix)
         if do_fod_registration:
@@ -677,6 +715,8 @@ else:
         niter = ' -affine_niter ' + str(linear_niter[level])
         regtype = ' -type affine'
         output = ' -affine ' + os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix)
+        if n_contrasts > 1:
+          contrast_weight = ' -mc_contrast ' + lib.app.mc_weight_affine + ' '
         if level > 0:
           initialise = ' -affine_init_matrix ' + os.path.join('linear_transforms_%i' % (level - 1), '%s.txt' % i.prefix)
         if do_fod_registration:
@@ -698,6 +738,7 @@ else:
                   regtype + \
                   metric + \
                   datatype + \
+                  contrast_weight + \
                   output + \
                   mrregister_log
       run.command(command)
@@ -772,6 +813,10 @@ if dononlinear:
       else:
         lmax = ' -noreorientation'
 
+      contrast_weight = ''
+      if n_contrasts > 1:
+        contrast_weight = ' -mc_contrast ' + lib.app.mc_weight_nl + ' '
+
       run.command('mrregister ' + ','.join(i.paths_in) + ' ' + ','.join(current_template) +
                  ' -type nonlinear' +
                  ' -nl_niter ' + str(nl_niter[level]) +
@@ -782,6 +827,7 @@ if dononlinear:
                  ' -nl_grad_step ' +  app.args.nl_grad_step +
                  ' -force ' +
                    initialise +
+                   mc_weight_nl +
                    scale +
                    mask +
                    datatype +
