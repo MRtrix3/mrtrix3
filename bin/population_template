@@ -175,8 +175,8 @@ registration_modes = ["rigid","affine","nonlinear","rigid_affine","rigid_nonline
 app.init('David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk) & Thijs Dhollander (thijs.dhollander@gmail.com)',
          'Generates an unbiased group-average template from a series of images')
 app.cmdline.addDescription('First a template is optimised with linear registration (rigid or affine, affine is default), then non-linear registration is used to optimise the template further.')
-app.cmdline.add_argument('input_dir', help='The input directory containing all images used to build the template. Comma separated direcotries if multi-contrast registration is to be performed.')
-app.cmdline.add_argument('template', help='The output template image. Comma separated images if multi-contrast registration is to be performed.')
+
+app.cmdline.add_argument("input", nargs='+', action=app.cmdline.PlusSep, metavar=('input_dir','template'), help='Pair of an input directory containing all images used to build the template and the output template image. For multi-contrast registration, provide multiple pairs separated by a plus sign. Example: wm_dir template_wm.mif + gm_dir template_gm.mif' )
 
 options = app.cmdline.add_argument_group('Multi-contrast options')
 options.add_argument('-mc_weight_initial_alignment', help='Weight contribution of each contrast to the initial alignment. Comma separated, default: 1.0')
@@ -222,12 +222,20 @@ dolinear    = dorigid or doaffine
 dononlinear = "nonlinear" in app.args.type
 assert (dorigid + doaffine + dononlinear >= 1), "FIXME: registration type not valid"
 
-
-n_contrasts = 1
-app.args.input_dir = [relpath(d) for d in app.args.input_dir.split(',')]
-if len(app.args.input_dir) > 1:
-  n_contrasts = len(app.args.input_dir)
+app.args.input = app.args.input[0]
+n_contrasts = len(app.args.input)
+if n_contrasts > 1:
   app.console ('Generating population template using multi-contrast registration')
+
+app.args.input_dir = []
+app.args.template = []
+for t in app.args.input:
+  if len(t) != 2:
+    app.error('expected two arguments per contrast, received %i: %s' % (len(t), ', '.join(t)))
+  app.console('\tcontrast: %s, template: %s' % (t[0], t[1]))
+  app.args.input_dir.append(relpath(t[0]))
+  app.args.template.append(path.fromUser(t[1], True))
+
 
 if app.args.mc_weight_initial_alignment:
   if n_contrasts == 1:
@@ -350,7 +358,6 @@ if app.args.linear_no_pause:
   if not dolinear:
     app.error ("linear option set when no linear registration is performed")
 
-app.args.template = [path.fromUser(d, True) for d in app.args.template.split(',')]
 if len(app.args.template) != n_contrasts:
   app.error ('mismatch between number of output templates (%i) and number of contrasts (%i)' %
     (len(app.args.template),n_contrasts))
@@ -603,7 +610,8 @@ else:
     if useMasks:
       mask = ' -mask1 ' + i.mask
     output = ' -rigid ' + os.path.join('linear_transforms_initial', i.prefix + '.txt')
-    run.command('mrregister ' + ','.join(i.paths_in) + ' ' + ','.join(current_template) +
+    images = ' + '.join( [p+' '+t for p, t in zip(i.paths_in, current_template) ] )
+    run.command('mrregister ' + images +
                 mask +
                 ' -rigid_scale 1 ' +
                 ' -rigid_niter 0 ' +
@@ -727,8 +735,8 @@ else:
           metric = ' -affine_metric.diff.estimator ' + linear_estimator
         if write_log:
           mrregister_log = ' -info -affine_log ' + os.path.join('log', i.prefix + '_' + str(level) + '.log')
-
-      command = 'mrregister ' + ','.join(i.paths_in) + ' ' + ','.join(current_template) + \
+      images = ' + '.join( [p+' '+t for p, t in zip(i.paths_in, current_template) ] )
+      command = 'mrregister ' + images + \
                   ' -force' + \
                   initialise + \
                   mask + \
@@ -816,8 +824,8 @@ if dononlinear:
       contrast_weight = ''
       if n_contrasts > 1:
         contrast_weight = ' -mc_weights ' + ','.join(app.args.mc_weight_nl) + ' '
-
-      run.command('mrregister ' + ','.join(i.paths_in) + ' ' + ','.join(current_template) +
+      images = ' + '.join( [p+' '+t for p, t in zip(i.paths_in, current_template) ] )
+      run.command('mrregister ' + images +
                  ' -type nonlinear' +
                  ' -nl_niter ' + str(nl_niter[level]) +
                  ' -nl_warp_full ' + os.path.join('warps_%i' % level, '%s.mif' % i.prefix) +
