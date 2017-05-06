@@ -129,7 +129,7 @@ namespace MR
             thread_voxel_count += nvols;
 
             total_update.fill(0.0);
-            for (ssize_t vol = 0; vol <= nvols; ++vol) {
+            for (ssize_t vol = 0; vol < nvols; ++vol) {
               if (std::abs (speed[vol]) * weight[vol] < intensity_difference_threshold)
                 continue;
               im1_gradient.index(3) = vol;
