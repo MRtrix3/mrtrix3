@@ -28,20 +28,22 @@ namespace MR
         LinearBase ( ) : weighted (false) {}
 
         /** requires_precompute:
-          type_trait to distinguish metric types that require a call to precompute before the operator() is called */
-          // using requires_precompute = int;
+          using requires_precompute = int;
+          type_trait to distinguish metric types that require a call to precompute before the operator() is called
+          evaluate loops over processed_image instead of midway_image
+        */
         template <class ParamType>
           default_type precompute (ParamType& parameters) { assert (0 && "FIXME: requires_precompute defined but precompute not implemented for this metric."); }
 
         /** requires_initialisation:
+          using requires_initialisation = int;
           type_trait to distinguish metric types that require a call to init (im1, im2) before the operator() is called */
-          // using requires_initialisation = int;
         template <class Im1Type = Image<default_type>, class Im2Type = Image<default_type>>
           void init (const Im1Type& im1, const Im2Type& im2) { assert (0 && "FIXME: requires_initialisation defined but init not implemented for this metric."); }
 
         /** is_neighbourhood:
+          using is_neighbourhood = int;
           type_trait to distinguish voxel-wise and neighbourhood based metric types (affects ThreadKernel) */
-        // using is_neighbourhood = int;
 
         // set contrast weights for 4D metrics
         void set_weights (Eigen::VectorXd weights) {

@@ -17,8 +17,11 @@
 #include <Eigen/Eigenvalues>
 #include "registration/transform/initialiser_helpers.h"
 #include "registration/transform/search.h"
+#include "registration/multi_resolution_lmax.h"
+#include "registration/multi_contrast.h"
 
 #include "algo/loop.h"
+#include "algo/threaded_loop.h"
 #include "debug.h"
 // #include "timer.h"
 // #define DEBUG_INIT
@@ -214,11 +217,11 @@ namespace MR
         class WeightedMassFunctor {
         public:
           WeightedMassFunctor (const ImageType& image,
+            const MaskType& mask,
             default_type& weighted_mass,
             Eigen::Vector3d& weighted_centre_of_mass,
-            const MaskType& mask,
             const vector<MultiContrastSetting>& contrast_settings) :
-            transform (image), mass (0.0), global_mass (weighted_mass), global_centre_of_mass (weighted_centre_of_mass), mask (mask) {
+            transform (image), mask (mask), mass (0.0), global_mass (weighted_mass), global_centre_of_mass (weighted_centre_of_mass) {
               centre_of_mass.setZero();
               start_vol.resize (std::max(contrast_settings.size(), size_t(1)), 0);
               weight.resize (std::max(contrast_settings.size(), size_t(1)), 1.0);
@@ -256,10 +259,10 @@ namespace MR
 
         protected:
           MR::Transform transform;
+          MaskType mask;
           default_type mass;
           default_type& global_mass;
           Eigen::Vector3d& global_centre_of_mass;
-          MaskType mask;
           Eigen::Vector3d centre_of_mass;
           vector<size_t> start_vol;
           vector<default_type> weight;
@@ -273,7 +276,7 @@ namespace MR
           centre_of_mass.setZero();
           default_type mass (0.0);
 
-          ThreadedLoop (im, 0, 3, 2).run (WeightedMassFunctor<Image<default_type>, Image<default_type>> (im, mass, centre_of_mass, mask, contrast_settings), im);
+          ThreadedLoop (im, 0, 3, 2).run (WeightedMassFunctor<Image<default_type>, Image<default_type>> (im, mask, mass, centre_of_mass, contrast_settings), im);
 
           if (mass == default_type(0.0))
             throw Exception("centre of mass initialisation not possible for empty image");
@@ -282,24 +285,50 @@ namespace MR
         }
 
         void initialise_using_rotation_search (
-                                          Image<default_type>& im1,
-                                          Image<default_type>& im2,
-                                          Image<default_type>& mask1,
-                                          Image<default_type>& mask2,
-                                          Registration::Transform::Base& transform,
-                                          Registration::Transform::Init::LinearInitialisationParams& init) {
+          Image<default_type>& im1,
+          Image<default_type>& im2,
+          Image<default_type>& mask1,
+          Image<default_type>& mask2,
+          Registration::Transform::Base& transform,
+          Registration::Transform::Init::LinearInitialisationParams& init,
+          const vector<MultiContrastSetting>& contrast_settings) {
 
           CONSOLE ("searching for best rotation");
-          Registration::Metric::MeanSquaredNoGradient metric; // TODO replace with CrossCorrelationNoGradient
+          Registration::Metric::MeanSquaredNoGradient metric; // replace with CrossCorrelationNoGradient?
           Image<default_type> bogus_mask;
-          RotationSearch::ExhaustiveRotationSearch<decltype(metric)> search (
+          if (contrast_settings.size()>1)
+            WARN ("rotation search does not support multiple contrasts. using only first volume of first contrasts");
+
+          // Image<default_type> im1_0, im2_0;
+          // struct CropNWeight { MEMALIGN (CropNWeight)
+          //   CropNWeight (const vector<MultiContrastSetting>& contrast_settings)  {
+          //     for (auto & mc : contrast_settings) {
+          //       ivols.push_back (mc.start);
+          //       w.push_back (mc.weight);
+          //     }
+          //   }
+
+          //   void operator() (Image<default_type>& output, Image<default_type>& input) {
+          //     for (size_t ovol = 0; ovol < w.size(); ++ovol) {
+          //       output.index(3) = ovol;
+          //       input.index(3) = ivols[ovol];
+          //       output.value() = w[ovol] * input.value();
+          //     }
+          //   }
+          //   vector<default_type> w;
+          //   vector<size_t> ivols;
+          // };
+
+          // ThreadedLoop (im1, 0 , 3).run (CropNWeight(contrast_settings), im1, im1_0);
+          // ThreadedLoop (im2, 0 , 3).run (CropNWeight(contrast_settings), im2, im2_0);
+
+          RotationSearch::ExhaustiveRotationSearch<decltype(metric)> (
             im1, im2,
             init.init_translation.unmasked1 ? bogus_mask : mask1,
             init.init_translation.unmasked2 ? bogus_mask : mask2,
             metric,
             transform,
-            init);
-          search.run(false);
+            init).run (false);
         }
 
         void initialise_using_image_mass (Image<default_type>& im1,

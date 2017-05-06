@@ -338,10 +338,9 @@ namespace MR
 
             if (init_rotation_type == Transform::Init::moments)
               Transform::Init::initialise_using_image_moments (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts);
-            else if (init_rotation_type == Transform::Init::rot_search) {
-              Transform::Init::initialise_using_rotation_search (
-                im1_image, im2_image, im1_mask, im2_mask, transform, init);
-            }
+            else if (init_rotation_type == Transform::Init::rot_search)
+              Transform::Init::initialise_using_rotation_search (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts);
+
 
             INFO ("Transformation before registration:");
             INFO (transform.info());

@@ -124,7 +124,8 @@ namespace MR
           Image<default_type>& mask1,
           Image<default_type>& mask2,
           Registration::Transform::Base& transform,
-          Registration::Transform::Init::LinearInitialisationParams& init);
+          Registration::Transform::Init::LinearInitialisationParams& init,
+          const vector<MultiContrastSetting>& contrast_settings);
 
         extern void initialise_using_image_mass (
           Image<default_type>& im1,
