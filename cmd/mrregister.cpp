@@ -127,7 +127,7 @@ void run () {
     if (std::abs(float (n_images) - (1.0 + float (argument.size() - 2 ) / 3.0)) > 1.e-6) {
       std::string err;
       for (const auto & a : argument)
-        err += " " + str(argument);
+        err += " " + str(a);
       throw Exception ("unexpected number of input images. arguments:" + err);
     }
 
