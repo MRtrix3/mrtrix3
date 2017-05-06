@@ -15,8 +15,6 @@
 #ifndef __registration_metric_evaluate_h__
 #define __registration_metric_evaluate_h__
 
-#include "algo/random_threaded_loop.h"
-#include "algo/random_loop.h"
 #include "registration/metric/thread_kernel.h"
 #include "algo/threaded_loop.h"
 #include "registration/transform/reorient.h"
@@ -96,8 +94,6 @@ namespace MR
 
                 {
                 //    LogLevelLatch log_level (0); TODO uncomment
-                //   Registration::Transform::reorient (params.im1_image, *im1_image_reoriented, params.transformation.get_transform_half(), directions);
-                //   Registration::Transform::reorient (params.im2_image, *im2_image_reoriented, params.transformation.get_transform_half_inverse(), directions);
                   if (params.mc_settings.size()) {
                     DEBUG ("Tissue contrast specific FOD reorientation");
                     Registration::Transform::reorient (params.im1_image, *im1_image_reoriented, params.transformation.get_transform_half(), directions, false, params.mc_settings);
@@ -127,62 +123,6 @@ namespace MR
               return overall_cost_function(0);
             }
 
-            struct ThreadFunctor { MEMALIGN(ThreadFunctor)
-              public:
-                ThreadFunctor (
-                    const vector<size_t>& inner_axes,
-                    const default_type density,
-                    const MetricType& metric,
-                    const ParamType& parameters,
-                    Eigen::VectorXd& overall_cost_function,
-                    Eigen::VectorXd& overall_grad,
-                    Math::RNG& rng_engine,
-                    ssize_t* overlap_count = nullptr) :
-                  inner_axes (inner_axes),
-                  density (density),
-                  metric (metric),
-                  params (parameters),
-                  cost_function (overall_cost_function.size()),
-                  gradient (overall_grad.size()),
-                  overall_cost_function (overall_cost_function),
-                  overall_gradient (overall_grad),
-                  rng (rng_engine),
-                  overlap_count (overlap_count)  {
-                    gradient.setZero();
-                    cost_function.setZero();
-                    assert(inner_axes.size() >= 2);
-                    assert(overall_cost_function.size() == 1);
-                  }
-
-                ~ThreadFunctor () {
-                  overall_cost_function += cost_function;
-                  overall_gradient += gradient;
-                }
-
-                void operator() (const Iterator& iter) {
-                  auto engine = std::default_random_engine{static_cast<std::default_random_engine::result_type>(rng.get_seed())};
-                  auto kern = ThreadKernel<MetricType, ParamType> (metric, params, cost_function, gradient, overlap_count);
-                  Iterator iterator (iter);
-                  assign_pos_of(iter).to(iterator);
-                  auto inner_loop = Random_loop<Iterator, std::default_random_engine>(iterator, engine, inner_axes[1], (float) iterator.size(inner_axes[1]) * density);
-                  for (auto j = inner_loop; j; ++j)
-                    for (auto k = Loop (inner_axes[0]) (iterator); k; ++k) {
-                      kern (iterator);
-                    }
-                }
-              protected:
-                vector<size_t> inner_axes;
-                default_type density;
-                MetricType metric;
-                ParamType params;
-                Eigen::VectorXd cost_function;
-                Eigen::VectorXd gradient;
-                Eigen::VectorXd& overall_cost_function;
-                Eigen::VectorXd& overall_gradient;
-                Math::RNG rng;
-                ssize_t* overlap_count;
-            };
-
             template <class TransformType_>
               void
               estimate (TransformType_&& trafo,
@@ -203,7 +143,7 @@ namespace MR
                     auto loop = ThreadedLoop (params.midway_image, 0, 3, 2);
                     if (overlap_count)
                       *overlap_count = 0;
-                    ThreadFunctor functor (loop.inner_axes, params.loop_density, metric, params, cost, gradient, rng, overlap_count);
+                    StochasticThreadKernel <MetricType, ParamType> functor (loop.inner_axes, params.loop_density, metric, params, cost, gradient, rng, overlap_count);
                     loop.run_outer (functor);
                   }
                 }

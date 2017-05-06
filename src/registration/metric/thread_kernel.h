@@ -18,6 +18,8 @@
 #include "image.h"
 #include "algo/iterator.h"
 #include "transform.h"
+#include "algo/random_threaded_loop.h"
+#include "algo/random_loop.h"
 
 namespace MR
 {
@@ -219,6 +221,63 @@ namespace MR
             Eigen::VectorXd& overall_gradient;
             ssize_t* overall_cnt;
             MR::Transform transform;
+      };
+
+      template <class MetricType, class ParamType>
+      struct StochasticThreadKernel { MEMALIGN(StochasticThreadKernel)
+        public:
+          StochasticThreadKernel (
+              const vector<size_t>& inner_axes,
+              const default_type density,
+              const MetricType& metric,
+              const ParamType& parameters,
+              Eigen::VectorXd& overall_cost_function,
+              Eigen::VectorXd& overall_grad,
+              Math::RNG& rng_engine,
+              ssize_t* overlap_count = nullptr) :
+            inner_axes (inner_axes),
+            density (density),
+            metric (metric),
+            params (parameters),
+            cost_function (overall_cost_function.size()),
+            gradient (overall_grad.size()),
+            overall_cost_function (overall_cost_function),
+            overall_gradient (overall_grad),
+            rng (rng_engine),
+            overlap_count (overlap_count)  {
+              gradient.setZero();
+              cost_function.setZero();
+              assert(inner_axes.size() >= 2);
+              assert(overall_cost_function.size() == 1);
+            }
+
+          ~StochasticThreadKernel () {
+            overall_cost_function += cost_function;
+            overall_gradient += gradient;
+          }
+
+          void operator() (const Iterator& iter) {
+            auto engine = std::default_random_engine{static_cast<std::default_random_engine::result_type>(rng.get_seed())};
+            auto kern = ThreadKernel<MetricType, ParamType> (metric, params, cost_function, gradient, overlap_count);
+            Iterator iterator (iter);
+            assign_pos_of(iter).to(iterator);
+            auto inner_loop = Random_loop<Iterator, std::default_random_engine>(iterator, engine, inner_axes[1], (float) iterator.size(inner_axes[1]) * density);
+            for (auto j = inner_loop; j; ++j)
+              for (auto k = Loop (inner_axes[0]) (iterator); k; ++k) {
+                kern (iterator);
+              }
+          }
+        protected:
+          vector<size_t> inner_axes;
+          default_type density;
+          MetricType metric;
+          ParamType params;
+          Eigen::VectorXd cost_function;
+          Eigen::VectorXd gradient;
+          Eigen::VectorXd& overall_cost_function;
+          Eigen::VectorXd& overall_gradient;
+          Math::RNG rng;
+          ssize_t* overlap_count;
       };
     }
   }

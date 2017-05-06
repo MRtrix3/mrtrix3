@@ -36,7 +36,6 @@
 #include "registration/metric/mean_squared.h"
 #include "registration/metric/params.h"
 #include "registration/metric/normalised_cross_correlation.h"
-#include "registration/metric/evaluate.h"
 #include "registration/metric/thread_kernel.h"
 #include "registration/transform/initialiser.h"
 #include "registration/transform/rigid.h"
