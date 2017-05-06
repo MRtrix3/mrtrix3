@@ -17,6 +17,7 @@
 
 #include "transform.h"
 #include "interp/linear.h"
+#include "registration/metric/linear_base.h"
 
 namespace MR
 {
@@ -24,7 +25,104 @@ namespace MR
   {
     namespace Metric
     {
-      class CrossCorrelationNoGradient { MEMALIGN(CrossCorrelationNoGradient)
+      class CrossCorrelationNoGradient : public LinearBase { MEMALIGN(CrossCorrelationNoGradient)
+
+        public:
+          /** requires_precompute:
+          type_trait to distinguish metric types that require a call to precompute before the operator() is called */
+          using requires_precompute = int;
+
+          template <class Params>
+            default_type operator() (Params& params,
+                                     const Iterator& iter,
+                                     Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
+
+              // const Eigen::Vector3 pos = Eigen::Vector3 (iter.index(0), iter.index(1), iter.index(2));
+
+              assert (params.processed_mask.valid());
+              assert (params.processed_image.valid());
+              assert (!this->weighted && "FIXME: set_weights not implemented for CrossCorrelationNoGradient metric");
+
+              assign_pos_of (iter, 0, 3). to (params.processed_mask);
+              if (!params.processed_mask.value())
+                return 0.0;
+
+              default_type val1 = params.processed_image.value();
+              ++params.processed_image.index(3);
+              default_type val2 = params.processed_image.value();
+              --params.processed_image.index(3);
+
+              return (mean1 - val1) * (val2 - mean2); // negative cross correlation
+          }
+
+          template <class ParamType>
+            default_type precompute (ParamType& parameters) {
+              DEBUG ("precomputing cross correlation data...");
+
+              using Im1Type = decltype(parameters.im1_image);
+              using Im2Type = decltype(parameters.im2_image);
+              using MidwayImageType = decltype(parameters.midway_image);
+              using Im1MaskType = decltype(parameters.im1_mask);
+              using Im2MaskType = decltype(parameters.im2_mask);
+              using Im1ImageInterpolatorType = typename ParamType::Im1InterpType;
+              using Im2ImageInterpolatorType = typename ParamType::Im2InterpType;
+              using PImageType = typename ParamType::ProcessedImageType;
+              // using Im1MaskInterpolatorType = Interp::LinearInterp<Im1MaskType, Interp::LinearInterpProcessingType::Value>;
+              // using Im2MaskInterpolatorType = Interp::LinearInterp<Im2MaskType, Interp::LinearInterpProcessingType::Value>;
+              using Im1MaskInterpolatorType = typename ParamType::Mask1InterpolatorType;
+              using Im2MaskInterpolatorType = typename ParamType::Mask2InterpolatorType;
+
+              assert (parameters.midway_image.ndim() == 3);
+              mean1 = 0.0;
+              mean2 = 0.0;
+              size_t overlap (0);
+
+              Header midway_header (parameters.midway_image);
+              MR::Transform transform (midway_header);
+
+              parameters.processed_mask = Header::scratch (midway_header).template get_image<bool>();
+              // processed_image: 2 volumes: interpolated image1 value, interpolated image2 value if both masks' values are >= 0.5
+              auto cc_header = Header::scratch (parameters.midway_image);
+              cc_header.ndim() = 4;
+              cc_header.size(3) = 2;
+              // PImageType cc_image = PImageType::scratch (cc_header);
+              parameters.processed_image = PImageType::scratch (cc_header);
+
+              auto loop = ThreadedLoop ("precomputing cross correlation data...", parameters.processed_image, 0, 3);
+              loop.run (CCNoGradientPrecomputeFunctor<decltype(parameters.transformation),
+                                                      Im1Type,
+                                                      Im2Type,
+                                                      MidwayImageType,
+                                                      Im1MaskType,
+                                                      Im2MaskType,
+                                                      Im1ImageInterpolatorType,
+                                                      Im2ImageInterpolatorType,
+                                                      Im1MaskInterpolatorType,
+                                                      Im2MaskInterpolatorType> (
+                                                        parameters.transformation,
+                                                        parameters.im1_image,
+                                                        parameters.im2_image,
+                                                        parameters.midway_image,
+                                                        parameters.im1_mask,
+                                                        parameters.im2_mask,
+                                                        mean1,
+                                                        mean2,
+                                                        overlap), parameters.processed_image, parameters.processed_mask);
+              // display<Im1Type>(parameters.im1_image);
+              // display<Im2Type>(parameters.im2_image);
+              // display<Image<bool>>(parameters.processed_mask);
+              // VAR(overlap);
+              // VAR(mean1);
+              // VAR(mean2);
+              if (overlap > 0 ) {
+                mean1 /= static_cast<default_type>(overlap);
+                mean2 /= static_cast<default_type>(overlap);
+              } else {
+                DEBUG ("Cross Correlation metric: zero overlap");
+              }
+
+              return 0;
+          }
 
         private:
           default_type mean1;
@@ -154,105 +252,6 @@ namespace MR
                 MR::copy_ptr<Im1MaskInterpolatorType> im1_mask_interp;
                 MR::copy_ptr<Im2MaskInterpolatorType> im2_mask_interp;
             };
-
-        public:
-          /** requires_precompute:
-          type_trait to distinguish metric types that require a call to precompute before the operator() is called */
-          using requires_precompute = int;
-
-          void set_weights (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& weights) {
-              assert ("FIXME: set_weights not implemented");
-            }
-
-          template <class Params>
-            default_type operator() (Params& params,
-                                     const Iterator& iter,
-                                     Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
-
-              // const Eigen::Vector3 pos = Eigen::Vector3 (iter.index(0), iter.index(1), iter.index(2));
-
-              assert (params.processed_mask.valid());
-              assert (params.processed_image.valid());
-              assign_pos_of (iter, 0, 3). to (params.processed_mask);
-              if (!params.processed_mask.value())
-                return 0.0;
-
-              default_type val1 = params.processed_image.value();
-              ++params.processed_image.index(3);
-              default_type val2 = params.processed_image.value();
-              --params.processed_image.index(3);
-
-              return (mean1 - val1) * (val2 - mean2); // negative cross correlation
-          }
-
-          template <class ParamType>
-            default_type precompute (ParamType& parameters) {
-              DEBUG ("precomputing cross correlation data...");
-
-              using Im1Type = decltype(parameters.im1_image);
-              using Im2Type = decltype(parameters.im2_image);
-              using MidwayImageType = decltype(parameters.midway_image);
-              using Im1MaskType = decltype(parameters.im1_mask);
-              using Im2MaskType = decltype(parameters.im2_mask);
-              using Im1ImageInterpolatorType = typename ParamType::Im1InterpType;
-              using Im2ImageInterpolatorType = typename ParamType::Im2InterpType;
-              using PImageType = typename ParamType::ProcessedImageType;
-              // using Im1MaskInterpolatorType = Interp::LinearInterp<Im1MaskType, Interp::LinearInterpProcessingType::Value>;
-              // using Im2MaskInterpolatorType = Interp::LinearInterp<Im2MaskType, Interp::LinearInterpProcessingType::Value>;
-              using Im1MaskInterpolatorType = typename ParamType::Mask1InterpolatorType;
-              using Im2MaskInterpolatorType = typename ParamType::Mask2InterpolatorType;
-
-              assert (parameters.midway_image.ndim() == 3);
-              mean1 = 0.0;
-              mean2 = 0.0;
-              size_t overlap (0);
-
-              Header midway_header (parameters.midway_image);
-              MR::Transform transform (midway_header);
-
-              parameters.processed_mask = Header::scratch (midway_header).template get_image<bool>();
-              // processed_image: 2 volumes: interpolated image1 value, interpolated image2 value if both masks' values are >= 0.5
-              auto cc_header = Header::scratch (parameters.midway_image);
-              cc_header.ndim() = 4;
-              cc_header.size(3) = 2;
-              // PImageType cc_image = PImageType::scratch (cc_header);
-              parameters.processed_image = PImageType::scratch (cc_header);
-
-              auto loop = ThreadedLoop ("precomputing cross correlation data...", parameters.processed_image, 0, 3);
-              loop.run (CCNoGradientPrecomputeFunctor<decltype(parameters.transformation),
-                                                      Im1Type,
-                                                      Im2Type,
-                                                      MidwayImageType,
-                                                      Im1MaskType,
-                                                      Im2MaskType,
-                                                      Im1ImageInterpolatorType,
-                                                      Im2ImageInterpolatorType,
-                                                      Im1MaskInterpolatorType,
-                                                      Im2MaskInterpolatorType> (
-                                                        parameters.transformation,
-                                                        parameters.im1_image,
-                                                        parameters.im2_image,
-                                                        parameters.midway_image,
-                                                        parameters.im1_mask,
-                                                        parameters.im2_mask,
-                                                        mean1,
-                                                        mean2,
-                                                        overlap), parameters.processed_image, parameters.processed_mask);
-              // display<Im1Type>(parameters.im1_image);
-              // display<Im2Type>(parameters.im2_image);
-              // display<Image<bool>>(parameters.processed_mask);
-              // VAR(overlap);
-              // VAR(mean1);
-              // VAR(mean2);
-              if (overlap > 0 ) {
-                mean1 /= static_cast<default_type>(overlap);
-                mean2 /= static_cast<default_type>(overlap);
-              } else {
-                DEBUG ("Cross Correlation metric: zero overlap");
-              }
-
-              return 0;
-            }
       };
     }
   }
