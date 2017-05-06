@@ -48,7 +48,7 @@ namespace MR
         // set contrast weights for 4D metrics
         void set_weights (Eigen::VectorXd weights) {
           mc_weights = weights;
-          weighted = mc_weights.cols() > 0;
+          weighted = mc_weights.rows() > 0;
         }
 
         template <class Params>
