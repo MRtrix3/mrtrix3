@@ -11,20 +11,15 @@ if not os.path.isdir(lib_folder):
   sys.exit(1)
 sys.path.insert(0, lib_folder)
 
-
-
 import shutil
+import math
+from mrtrix3 import app, file, image, path, run
+
 move      = shutil.move
 copy      = shutil.copy2
 copytree  = shutil.copytree
 rmtree    = shutil.rmtree
 remove    = os.remove
-
-
-import math, shutil
-from mrtrix3 import app, file, image, path, run
-
-
 
 def abspath(*arg):
   return os.path.abspath(os.path.join(*arg))
@@ -34,8 +29,6 @@ def relpath(*arg):
 
 def allindir(dir):
   return ' '.join( [ os.path.join(dir, file) for file in os.listdir(dir) ] )
-
-
 
 try:
   from numpy import loadtxt, savetxt, dot
@@ -829,13 +822,13 @@ if dononlinear:
                  ' -type nonlinear' +
                  ' -nl_niter ' + str(nl_niter[level]) +
                  ' -nl_warp_full ' + os.path.join('warps_%i' % level, '%s.mif' % i.prefix) +
-                 ' -transformed ' + ','.join([os.path.join('input_transformed'+contrast, '%s.mif' % i.prefix) for contrast in contrasts]) +
+                 ' -transformed ' + ' -transformed '.join([os.path.join('input_transformed'+contrast, '%s.mif' % i.prefix) for contrast in contrasts]) + ' ' +
                  ' -nl_update_smooth ' +  app.args.nl_update_smooth +
                  ' -nl_disp_smooth ' +  app.args.nl_disp_smooth +
                  ' -nl_grad_step ' +  app.args.nl_grad_step +
                  ' -force ' +
                    initialise +
-                   mc_weight_nl +
+                   contrast_weight +
                    scale +
                    mask +
                    datatype +
