@@ -63,19 +63,23 @@ namespace MR
             using value_type = default_type;
 
             template <class U = MetricType>
+            Evaluate () = delete;
+
+            template <class U = MetricType>
             Evaluate (const MetricType& metric_, ParamType& parameters, typename metric_requires_initialisation<U>::yes = 0) :
               metric (metric_),
               params (parameters),
               iteration (1) {
                 // update number of volumes
                 metric.init (parameters.im1_image, parameters.im2_image);
+                metric.set_weights(params.get_weights());
             }
 
             template <class U = MetricType>
-            Evaluate (const MetricType& metric, ParamType& parameters, typename metric_requires_initialisation<U>::no = 0) :
-              metric (metric),
+            Evaluate (const MetricType& metric_, ParamType& parameters, typename metric_requires_initialisation<U>::no = 0) :
+              metric (metric_),
               params (parameters),
-              iteration (1) { }
+              iteration (1) { metric.set_weights(params.get_weights()); }
 
             //  metric_requires_precompute<U>::yes: operator() loops over processed_image instead of midway_image
             template <class U = MetricType>
@@ -124,8 +128,7 @@ namespace MR
             }
 
             template <class TransformType_>
-              void
-              estimate (TransformType_&& trafo,
+              void estimate (TransformType_&& trafo,
                   const MetricType& metric,
                   const ParamType& params,
                   Eigen::VectorXd& cost,
@@ -133,19 +136,18 @@ namespace MR
                   const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x,
                   ssize_t* overlap_count = nullptr) {
 
+                if (params.robust_estimate) {
+                  throw Exception ("TODO robust estimate not implemented");
+                }
                 if (params.loop_density < 1.0) {
                   DEBUG ("stochastic gradient descent, density: " + str(params.loop_density));
-                  if (params.robust_estimate){
-                    throw Exception ("TODO robust estimate not implemented");
-                  } else {
-                    Math::RNG rng;
-                    gradient.setZero();
-                    auto loop = ThreadedLoop (params.midway_image, 0, 3, 2);
-                    if (overlap_count)
-                      *overlap_count = 0;
-                    StochasticThreadKernel <MetricType, ParamType> functor (loop.inner_axes, params.loop_density, metric, params, cost, gradient, rng, overlap_count);
-                    loop.run_outer (functor);
-                  }
+                  Math::RNG rng;
+                  gradient.setZero();
+                  auto loop = ThreadedLoop (params.midway_image, 0, 3, 2);
+                  if (overlap_count)
+                    *overlap_count = 0;
+                  StochasticThreadKernel <MetricType, ParamType> functor (loop.inner_axes, params.loop_density, metric, params, cost, gradient, rng, overlap_count);
+                  loop.run_outer (functor);
                 }
                 else {
                   if (overlap_count)
@@ -214,12 +216,12 @@ namespace MR
             }
 
           protected:
-              MetricType metric;
-              ParamType params;
-              vector<size_t> extent;
-              size_t iteration;
-              Eigen::MatrixXd directions;
-              ssize_t overlap_count;
+            MetricType metric;
+            ParamType params;
+            vector<size_t> extent;
+            size_t iteration;
+            Eigen::MatrixXd directions;
+            ssize_t overlap_count;
 
       };
     }

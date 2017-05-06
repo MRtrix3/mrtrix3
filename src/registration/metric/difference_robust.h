@@ -29,6 +29,10 @@ namespace MR
           public:
             DifferenceRobust (Estimator est) : estimator(est) {}
 
+            void set_weights (Eigen::Matrix<default_type, Eigen::Dynamic, 1> weights) {
+              assert (weights.rows() == 0 && "FIXME: DifferenceRobust is unweighted (3D)");
+            }
+
             template <class Params>
               default_type operator() (Params& params,
                                        const Eigen::Vector3 im1_point,
@@ -74,6 +78,10 @@ namespace MR
               im2_values.resize(volumes, 1);
               diff_values.resize(volumes, 1);
             };
+
+            void set_weights (Eigen::Matrix<default_type, Eigen::Dynamic, 1> weights) {
+              assert ("FIXME: set_weights not implemented");
+            }
 
           /** requires_initialisation:
           type_trait to distinguish metric types that require a call to init before the operator() is called */

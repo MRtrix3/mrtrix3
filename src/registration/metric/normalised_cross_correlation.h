@@ -213,6 +213,10 @@ namespace MR
             /** requires_precompute int is_neighbourhood: type_trait to distinguish metric types that require a call to precompute before the operator() is called */
             using requires_precompute = int;
 
+            void set_weights (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& weights) {
+              assert ("FIXME: set_weights not implemented");
+            }
+
             template <class ParamType>
               default_type precompute(ParamType& parameters) {
                 INFO("precomputing cross correlation data...");

@@ -89,8 +89,29 @@ namespace MR
           void set_extent (vector<size_t> extent_vector) { extent=std::move(extent_vector); }
 
           void set_mc_settings (const vector<MultiContrastSetting>& mc_vector) {
-            DEBUG ("setting mc_settings");
             mc_settings = mc_vector;
+
+            // set multi contrast weights
+            size_t nvols (0);
+            for (const auto& mc : mc_settings)
+              nvols += mc.nvols;
+
+            if (nvols == 1) {
+              mc_weights = Eigen::Matrix<default_type, Eigen::Dynamic, 1>();
+              return;
+            }
+
+            mc_weights.resize (nvols);
+            for (const auto& mc : mc_settings) {
+              mc_weights.segment(mc.start,mc.nvols).fill(mc.weight);
+            }
+
+            if ((mc_weights.array() == 1.0).all())
+              mc_weights = Eigen::Matrix<default_type, Eigen::Dynamic, 1>();
+          }
+
+          Eigen::VectorXd get_weights () const {
+            return mc_weights;
           }
 
           template <class VectorType>
@@ -203,6 +224,9 @@ namespace MR
           MR::copy_ptr<ProcImageInterpolatorType> processed_image_interp;
           ProcMaskType processed_mask;
           MR::copy_ptr<ProcessedMaskInterpolatorType> processed_mask_interp;
+
+        private:
+          Eigen::Matrix<default_type, Eigen::Dynamic, 1> mc_weights;
       };
     }
   }

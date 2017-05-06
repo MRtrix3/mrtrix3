@@ -26,6 +26,10 @@ namespace MR
       class MeanSquared { MEMALIGN(MeanSquared)
 
         public:
+          void set_weights (Eigen::Matrix<default_type, Eigen::Dynamic, 1> weights) {
+            assert (weights.rows() == 0 && "FIXME: MeanSquared is unweighted (3D)");
+          }
+
           template <class Params>
             default_type operator() (Params& params,
                                      const Eigen::Vector3& im1_point,
@@ -59,6 +63,10 @@ namespace MR
 
       class MeanSquaredNoGradient { MEMALIGN(MeanSquaredNoGradient)
         public:
+          void set_weights (Eigen::Matrix<default_type, Eigen::Dynamic, 1> weights) {
+            assert (weights.rows() == 0 && "FIXME: MeanSquaredNoGradient is unweighted (3D)");
+          }
+
           template <class Params>
             default_type operator() (Params& params,
                                      const Eigen::Vector3& im1_point,
@@ -86,6 +94,11 @@ namespace MR
         class MeanSquared4D { MEMALIGN(MeanSquared4D<Im1Type,Im2Type>)
           public:
             MeanSquared4D ( ) {}
+
+            void set_weights (Eigen::Matrix<default_type, Eigen::Dynamic, 1> weights) {
+              mc_weights = weights;
+            }
+
             template <class Params>
             default_type operator() (Params& params,
                                      const Eigen::Vector3& im1_point,
@@ -95,12 +108,13 @@ namespace MR
 
               const ssize_t volumes = params.im1_image_interp->size(3);
 
-              Eigen::Matrix<typename Im1Type::value_type, Eigen::Dynamic, 3> im1_grad (volumes, 3);
-              Eigen::Matrix<typename Im2Type::value_type, Eigen::Dynamic, 3> im2_grad (volumes, 3);
-              Eigen::Matrix<typename Im1Type::value_type, Eigen::Dynamic, 1> im1_values (volumes);
-              Eigen::Matrix<typename Im1Type::value_type, Eigen::Dynamic, 1> diff_values (volumes);
-              Eigen::Matrix<typename Im2Type::value_type, Eigen::Dynamic, 1> im2_values (volumes);
-
+              if (im1_values.rows() != volumes) {
+                im1_values.resize (volumes);
+                im1_grad.resize (volumes, 3);
+                diff_values.resize (volumes);
+                im2_values.resize (volumes);
+                im2_grad.resize (volumes, 3);
+              }
 
               params.im1_image_interp->value_and_gradient_row_wrt_scanner (im1_values, im1_grad);
               if (im1_values.hasNaN())
@@ -110,8 +124,11 @@ namespace MR
               if (im2_values.hasNaN())
                 return 0.0;
 
-              const auto jacobian_vec = params.transformation.get_jacobian_vector_wrt_params (midway_point);
+              const Eigen::Matrix<default_type, 4, 1> jacobian_vec = params.transformation.get_jacobian_vector_wrt_params (midway_point);
               diff_values = im1_values - im2_values;
+
+              if (mc_weights.rows())
+                  diff_values.array() *= mc_weights.array();
 
               for (ssize_t i = 0; i < volumes; ++i) {
                 const Eigen::Vector3d g = diff_values[i] * (im1_grad.row(i) + im2_grad.row(i));
@@ -124,16 +141,21 @@ namespace MR
           }
 
           private:
-  //          Eigen::Matrix<typename Im1Type::value_type, Eigen::Dynamic, 3> im1_grad;
-  //          Eigen::Matrix<typename Im2Type::value_type, Eigen::Dynamic, 3> im2_grad;
-  //          Eigen::Matrix<typename Im1Type::value_type, Eigen::Dynamic, 1> im1_values, diff_values;
-  //          Eigen::Matrix<typename Im2Type::value_type, Eigen::Dynamic, 1> im2_values;
+            Eigen::Matrix<typename Im1Type::value_type, Eigen::Dynamic, 3> im1_grad;
+            Eigen::Matrix<typename Im2Type::value_type, Eigen::Dynamic, 3> im2_grad;
+            Eigen::Matrix<typename Im1Type::value_type, Eigen::Dynamic, 1> im1_values, diff_values;
+            Eigen::Matrix<typename Im2Type::value_type, Eigen::Dynamic, 1> im2_values;
+            Eigen::Matrix<default_type, Eigen::Dynamic, 1> mc_weights;
         };
 
       template <class Im1Type, class Im2Type>
         class MeanSquaredNoGradient4D { MEMALIGN(MeanSquaredNoGradient4D<Im1Type,Im2Type>)
           public:
             MeanSquaredNoGradient4D ( ) {}
+
+            void set_weights (Eigen::Matrix<default_type, Eigen::Dynamic, 1> weights) {
+              mc_weights = weights;
+            }
 
             template <class Params>
               default_type operator() (Params& params,
@@ -143,9 +165,10 @@ namespace MR
                                      Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
                 const ssize_t volumes = params.im1_image_interp->size(3);
 
-                Eigen::Matrix<typename Im1Type::value_type, Eigen::Dynamic, 1> im1_values (volumes);
-                Eigen::Matrix<typename Im2Type::value_type, Eigen::Dynamic, 1> im2_values (volumes);
-
+                if (im1_values.rows() != volumes) {
+                  im1_values.resize (volumes);
+                  im2_values.resize (volumes);
+                }
 
                 params.im1_image_interp->row (im1_values);
                 if (im1_values.hasNaN())
@@ -155,18 +178,21 @@ namespace MR
                 if (im2_values.hasNaN())
                   return 0.0;
 
-                return (im1_values - im2_values).squaredNorm() / (default_type)volumes;
+                im1_values -= im2_values;
+                if (mc_weights.rows())
+                  im1_values.array() *= mc_weights.array();
+
+                return im1_values.squaredNorm() / (default_type)volumes;
             }
+
+          private:
+            Eigen::Matrix<typename Im1Type::value_type, Eigen::Dynamic, 1> im1_values;
+            Eigen::Matrix<typename Im2Type::value_type, Eigen::Dynamic, 1> im2_values;
+            Eigen::Matrix<default_type, Eigen::Dynamic, 1> mc_weights;
         };
 
       template <class Im1Type, class Im2Type>
         class MeanSquaredVectorNoGradient4D { MEMALIGN(MeanSquaredVectorNoGradient4D<Im1Type,Im2Type>)
-          private:
-            const ssize_t volumes;
-            Eigen::Matrix<default_type, Eigen::Dynamic, 1> res;
-            Eigen::Matrix<typename Im1Type::value_type, Eigen::Dynamic, 1> im1_values;
-            Eigen::Matrix<typename Im1Type::value_type, Eigen::Dynamic, 1> im2_values;
-
           public:
             MeanSquaredVectorNoGradient4D () = delete;
             MeanSquaredVectorNoGradient4D ( const Im1Type im1, const Im2Type im2 ):
@@ -174,13 +200,17 @@ namespace MR
                 assert (im1.ndim() == 4);
                 assert (im1.ndim() == im2.ndim());
                 assert (im1.size(3) == im2.size(3));
-                res.resize (volumes);
+                diff.resize (volumes);
                 im1_values.resize (volumes);
                 im2_values.resize (volumes);
               }
 
             //type_trait to indicate return type of operator()
             using is_vector_type = int;
+
+            void set_weights (Eigen::Matrix<default_type, Eigen::Dynamic, 1> weights) {
+              mc_weights = weights;
+            }
 
             template <class Params>
               Eigen::Matrix<default_type, Eigen::Dynamic, 1> operator() (Params& params,
@@ -189,17 +219,33 @@ namespace MR
                                      const Eigen::Vector3& midway_point,
                                      Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
 
+              assert (volumes == params.im1_image_interp->size(3));
+
               im1_values = params.im1_image_interp->row (3);
-              if (im1_values.hasNaN())
-                return Eigen::MatrixXd::Zero (volumes, 1);
+              if (im1_values.hasNaN()) {
+                diff.setZero();
+                return diff;
+              }
 
               im2_values = params.im2_image_interp->row (3);
-              if (im2_values.hasNaN())
-                return Eigen::MatrixXd::Zero (volumes, 1);
+              if (im2_values.hasNaN()) {
+                diff.setZero();
+                return diff;
+              }
 
-              res = (im1_values - im2_values).array().square();
-              return res;
+              diff = im1_values - im2_values;
+              if (mc_weights.rows())
+                diff.array() *= mc_weights.array();
+
+              return diff.array().square();
             }
+
+          private:
+            const ssize_t volumes;
+            Eigen::Matrix<default_type, Eigen::Dynamic, 1> diff;
+            Eigen::Matrix<default_type, Eigen::Dynamic, 1> im1_values;
+            Eigen::Matrix<default_type, Eigen::Dynamic, 1> im2_values;
+            Eigen::Matrix<default_type, Eigen::Dynamic, 1> mc_weights;
         };
     }
   }
