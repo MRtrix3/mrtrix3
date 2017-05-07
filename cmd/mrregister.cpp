@@ -1104,9 +1104,9 @@ void run () {
             Registration::Transform::reorient ("reorienting ODFs", im1_midway, im1_midway, affine.get_transform_half(), Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
         } else { // rigid
           auto im1_midway = Image<default_type>::create (input1_midway_transformed_paths[idx], midway_header);
-          Filter::reslice<Interp::Cubic> (im1_image, im1_midway, affine.get_transform_half(), Adapter::AutoOverSample, 0.0);
+          Filter::reslice<Interp::Cubic> (im1_image, im1_midway, rigid.get_transform_half(), Adapter::AutoOverSample, 0.0);
           if (reorient_output)
-            Registration::Transform::reorient ("reorienting ODFs", im1_midway, im1_midway, affine.get_transform_half(), Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+            Registration::Transform::reorient ("reorienting ODFs", im1_midway, im1_midway, rigid.get_transform_half(), Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
         }
       }
     }
