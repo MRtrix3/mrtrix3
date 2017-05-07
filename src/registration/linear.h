@@ -548,30 +548,32 @@ namespace MR
             INFO (transform.info());
           }
 
-          template<class ImageType, class TransformType>
-          void transform_image_midway (const ImageType& input, const TransformType& transformation,
-            const bool do_reorientation, const bool input_is_one, const std::string& out_path, const Header& h_midway) {
-            if (do_reorientation and aPSF_directions.size() == 0)
-              throw Exception ("directions have to be calculated before reorientation");
+          // template<class ImageType, class TransformType>
+          // void transform_image_midway (const ImageType& input, const TransformType& transformation,
+          //   const bool do_reorientation, const bool input_is_one, const std::string& out_path, const Header& h_midway) {
+          //   if (do_reorientation and aPSF_directions.size() == 0)
+          //     throw Exception ("directions have to be calculated before reorientation");
 
-            Image<typename ImageType::value_type> image_midway;
-            Header midway_header (h_midway);
-            midway_header.ndim() = input.ndim();
-            for (size_t dim = 3; dim < input.ndim(); ++dim) {
-              midway_header.spacing(dim) = input.spacing(dim);
-              midway_header.size(dim) = input.size(dim);
-            }
-            image_midway = Image<typename ImageType::value_type>::create (out_path, midway_header).with_direct_io();
-            if (input_is_one) {
-              Filter::reslice<Interp::Cubic> (input, image_midway, transformation.get_transform_half(), Adapter::AutoOverSample, 0.0);
-              if (do_reorientation)
-                Transform::reorient ("reorienting...", image_midway, image_midway, transformation.get_transform_half(), aPSF_directions);
-            } else {
-              Filter::reslice<Interp::Cubic> (input, image_midway, transformation.get_transform_half_inverse(), Adapter::AutoOverSample, 0.0);
-              if (do_reorientation)
-                Transform::reorient ("reorienting...", image_midway, image_midway, transformation.get_transform_half_inverse(), aPSF_directions);
-            }
-          }
+          //   Image<typename ImageType::value_type> image_midway;
+          //   Header midway_header (h_midway);
+          //   midway_header.ndim() = input.ndim();
+          //   for (size_t dim = 3; dim < input.ndim(); ++dim) {
+          //     midway_header.spacing(dim) = input.spacing(dim);
+          //     midway_header.size(dim) = input.size(dim);
+          //   }
+          //   image_midway = Image<typename ImageType::value_type>::create (out_path, midway_header).with_direct_io();
+          //   if (input_is_one) {
+          //     Filter::reslice<Interp::Cubic> (input, image_midway, transformation.get_transform_half(), Adapter::AutoOverSample, 0.0);
+          //     if (do_reorientation)
+          //  //     60 directions by default!
+          //       Transform::reorient ("reorienting...", image_midway, image_midway, transformation.get_transform_half(), aPSF_directions);
+          //   } else {
+          //     Filter::reslice<Interp::Cubic> (input, image_midway, transformation.get_transform_half_inverse(), Adapter::AutoOverSample, 0.0);
+          //     if (do_reorientation)
+          //  //     60 directions by default!
+          //       Transform::reorient ("reorienting...", image_midway, image_midway, transformation.get_transform_half_inverse(), aPSF_directions);
+          //   }
+          // }
 
       protected:
         vector<StageSetting> stages;

@@ -139,12 +139,12 @@ namespace MR
       ssize_t lmax;  // maximum requested lmax
       bool do_reorientation; // registration treats this image as (possibly 4D) scalar image
       size_t image_nvols; // number of volumes in original image
-      ssize_t image_lmax; // lmax available in image, 0 if not an FOD image
+      ssize_t image_lmax; // lmax available in image (preloaded, might differ from original image), 0 if not an FOD image
       default_type weight;
 
-      MultiContrastSetting (): start (0), nvols (0), do_reorientation (false), weight(1.0) {}
+      MultiContrastSetting (): start (0), nvols (0), do_reorientation (false), weight (1.0) {}
       MultiContrastSetting (size_t image_nvols, bool do_reorientation = false, ssize_t limit_lmax = std::numeric_limits<ssize_t>::max()) :
-        start (0), nvols (image_nvols), do_reorientation (do_reorientation), weight(1.0) {
+        start (0), nvols (image_nvols), do_reorientation (do_reorientation), weight (1.0) {
           if (do_reorientation) {
             image_lmax = Math::SH::LforN (image_nvols);
             lmax = image_lmax;
