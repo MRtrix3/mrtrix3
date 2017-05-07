@@ -2,8 +2,8 @@ Windows installation
 ====================
 
 
-We outline the steps for installing *MRtrix3* for Windows using `MSYS2 
-<https://github.com/msys2/msys2/wiki>`__. 
+We outline the steps for installing *MRtrix3* for Windows using 
+`MSYS2 <https://github.com/msys2/msys2/wiki>`__. 
 Please consult the `MRtrix3 forum <http://community.mrtrix.org/>`__ if you
 encounter any issues with the configure, build or runtime operations of
 *MRtrix3*.
@@ -47,8 +47,7 @@ Install and update MSYS2
 
 1. Download and install the most recent 64-bit MSYS2 installer from
    http://msys2.github.io/ (msys2-x86\_64-\*.exe), and following the
-   installation instructions from the `MSYS2 wiki
-<https://github.com/msys2/msys2/wiki/MSYS2-installation>`__. 
+   installation instructions from the `MSYS2 wiki <https://github.com/msys2/msys2/wiki/MSYS2-installation>`__. 
 
 2. Run the program **'MinGW-w64 Win64 Shell'** from the start menu.
 
@@ -74,26 +73,26 @@ Install *MRtrix3* dependencies
 
         pacman -S git python pkg-config mingw-w64-x86_64-gcc mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5
     
-    Sometimes ``pacman`` may fail to find a particular package from any of
-    the available mirrors. If this occurs, you can download the relevant
-    package from `SourceForge <https://sourceforge.net/projects/msys2/files/REPOS/MINGW/x86_64/>`__:
-    place both the package file and corresponding .sig file into the
-    ``/var/cache/pacman/pkg`` directory, and repeat the ``pacman`` call above.
+   Sometimes ``pacman`` may fail to find a particular package from any of
+   the available mirrors. If this occurs, you can download the relevant
+   package from `SourceForge <https://sourceforge.net/projects/msys2/files/REPOS/MINGW/x86_64/>`__:
+   place both the package file and corresponding .sig file into the
+   ``/var/cache/pacman/pkg`` directory, and repeat the ``pacman`` call above.
 
-    Sometimes ``pacman`` may refuse to install a particular package, claiming e.g.::
+   Sometimes ``pacman`` may refuse to install a particular package, claiming e.g.::
 
-        error: failed to commit transaction (conflicting files)
-        mingw-w64-x86_64-eigen3: /mingw64 exists in filesystem
-        Errors occurred, no packages were upgraded.
+       error: failed to commit transaction (conflicting files)
+       mingw-w64-x86_64-eigen3: /mingw64 exists in filesystem
+       Errors occurred, no packages were upgraded.
 
-    Firstly, if the offending existing target is something trivial that can
-    be deleted, this is all that should be required. Otherwise, it is possible
-    that MSYS2 may mistake a _file_ existing on the filesystem as a
-    pre-existing _directory_; a good example is that quoted above, where
-    ``pacman`` claims that directory ``/mingw64`` exists, but it is in fact the
-    two files ``/mingw64.exe`` and ``/mingw64.ini`` that cause the issue.
-    Temporarily renaming these two files, then changing their names back after
-    ``pacman`` has completed the installation, should solve the problem.
+   Firstly, if the offending existing target is something trivial that can
+   be deleted, this is all that should be required. Otherwise, it is possible
+   that MSYS2 may mistake a _file_ existing on the filesystem as a
+   pre-existing _directory_; a good example is that quoted above, where
+   ``pacman`` claims that directory ``/mingw64`` exists, but it is in fact the
+   two files ``/mingw64.exe`` and ``/mingw64.ini`` that cause the issue.
+   Temporarily renaming these two files, then changing their names back after
+   ``pacman`` has completed the installation, should solve the problem.
 
 
 
@@ -191,7 +190,7 @@ target, e.g.::
 
     mklink C:\msys64\home\username\src\my_project\build C:\msys64\home\username\src\MRtrix3\build
 
-, and ``msys64`` should be able to interpret the softlink path correctly
+and ``msys64`` should be able to interpret the softlink path correctly
 (confirm with ``ls -la``).
 
 I have also found recently that the build script will not correctly detect use
