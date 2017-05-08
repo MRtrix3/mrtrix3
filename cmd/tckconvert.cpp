@@ -195,8 +195,7 @@ private:
 };
 
 
-class PLYWriter: public WriterInterface<float>
-{
+class PLYWriter: public WriterInterface<float> { MEMALIGN(PLYWriter)
 public:
     PLYWriter(const std::string& file, int increment = 1, float radius = 0.1, int sides = 5) : out(file), increment(increment), radius(radius), sides(sides) {
         vertexFilename = File::create_tempfile(0,".vertex");
