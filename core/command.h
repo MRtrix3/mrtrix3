@@ -31,7 +31,6 @@ extern "C" void R_main (int* cmdline_argc, char** cmdline_argv)
   ::MR::App::project_version = MRTRIX_PROJECT_VERSION;
 #endif
   SET_MRTRIX_PROJECT_VERSION 
-  ::MR::App::AUTHOR = "J-Donald Tournier (d.tournier@brain.org.au)"; 
   ::MR::App::DESCRIPTION.clear(); 
   ::MR::App::ARGUMENTS.clear(); 
   ::MR::App::OPTIONS.clear(); 
@@ -95,7 +94,7 @@ int main (int cmdline_argc, char** cmdline_argv)
   catch (int retval) { 
     return retval; 
   } 
-  return 0; 
+  return ::MR::App::exit_error_code;
 }
 
 #endif

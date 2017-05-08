@@ -40,6 +40,7 @@ namespace MR
 
     extern const char* mrtrix_version;
     extern int log_level;
+    extern int exit_error_code;
     extern std::string NAME;
     extern bool overwrite_files;
     extern void (*check_overwrite_files_func) (const std::string& name);

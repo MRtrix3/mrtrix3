@@ -29,6 +29,7 @@
 #include <sys/mman.h>
 #endif
 
+#include "app.h"
 #include "file/ofstream.h"
 #include "file/path.h"
 #include "file/mmap.h"
@@ -183,7 +184,7 @@ namespace MR
 
 
 
-    MMap::~MMap() noexcept (false)
+    MMap::~MMap()
     {
       if (!first) return;
       if (addr) {
@@ -199,11 +200,18 @@ namespace MR
       else {
         if (readwrite) {
           INFO ("writing back contents of mapped file \"" + Entry::name + "\"...");
-          File::OFStream out (Entry::name, std::ios::in | std::ios::out | std::ios::binary);
-          out.seekp (start, out.beg);
-          out.write ((char*) first, msize);
-          if (!out.good())
-            throw Exception ("error writing back contents of file \"" + Entry::name + "\": " + strerror(errno));
+          try {
+            File::OFStream out (Entry::name, std::ios::in | std::ios::out | std::ios::binary);
+            out.seekp (start, out.beg);
+            out.write ((char*) first, msize);
+            if (!out.good())
+              throw 1;
+          }
+          catch (...) {
+            FAIL ("error writing back contents of file \"" + Entry::name + "\": " + strerror(errno));
+            App::exit_error_code = 1;
+          }
+
         }
         delete [] first;
       }
