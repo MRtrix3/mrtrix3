@@ -1,0 +1,75 @@
+#!/usr/bin/env python
+
+# Script for registration
+
+
+# Make the corresponding MRtrix3 Python libraries available
+import inspect, os, sys
+lib_folder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile(inspect.currentframe()))[0], os.pardir, 'lib')))
+if not os.path.isdir(lib_folder):
+  sys.stderr.write('Unable to locate MRtrix3 Python libraries')
+  sys.exit(1)
+sys.path.insert(0, lib_folder)
+
+
+from mrtrix3 import app, image, path, run
+
+
+app.init('MRtrix3 (TODO@gmail.com)','Symmetric Registration')
+app.cmdline.addDescription('mrreg acts as a script for performing various types of registrations')
+
+app.cmdline.add_argument("input", nargs='+', action=app.cmdline.PlusSep, metavar=('input1','input2'), help='Pair of input images. Contrasts separated by plus sign. \
+        Example: wm1.mif wm2.mif + gm1.mif gm2.mif' )
+
+# General options
+common_options = app.cmdline.add_argument_group('General options')
+common_options.add_argument('-type', help='rigid, affine, rigid,affine, rigid,affine,nonlinear')
+common_options.add_argument('-lmax', help='The maximum harmonic degree(s)')
+common_options.add_argument('-mask1', help='Provide a mask for image1')
+common_options.add_argument('-mask2', help='Provide a mask for image2')
+# app.cmdline.flagMutuallyExclusiveOptions( [ 'grad', 'fslgrad' ] )
+
+# Import the command-line settings for all algorithms found in the relevant directory
+# algorithm.initialise()
+
+
+app.parse()
+
+
+# Sanitise some inputs, and get ready for data import
+if app.args.lmax:
+  try:
+    lmax = [ int(x) for x in app.args.lmax.split(',') ]
+    if any([lmax_value%2 for lmax_value in lmax]):
+      app.error('Value of lmax must be even')
+  except:
+    app.error('Parameter lmax must be a number')
+
+app.makeTempDir()
+
+# Get standard input data into the temporary directory
+run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('dwi.mif', True) + ' -stride 0,0,0,1' + grad_import_option)
+if app.args.mask:
+  run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + path.toTemp('mask.mif', True) + ' -datatype bit')
+
+app.gotoTempDir()
+
+
+# # Generate a brain mask (if necessary)
+# # Otherwise, check that the mask provided is appropriate
+# if os.path.exists('mask.mif'):
+#   dwi_size = [ int(x) for x in image.headerField('dwi.mif', 'size').split() ]
+#   mask_size = [ int(x) for x in image.headerField('mask.mif', 'size').split() ]
+#   if not mask_size[:3] == dwi_size[:3]:
+#     app.error('Dimensions of provided mask image do not match DWI')
+#   if int(image.statistic('mask.mif', 'count', 'mask.mif')) == 0:
+#     app.error('Input mask does not contain any voxels')
+# else:
+#   run.command('dwi2mask dwi.mif mask.mif')
+
+# From here, the script splits depending on what estimation algorithm is being used
+alg.execute()
+
+
+# Finalize for all algorithms
+app.complete()
