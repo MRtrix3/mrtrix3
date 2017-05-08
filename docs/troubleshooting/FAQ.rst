@@ -296,3 +296,17 @@ used in these figures, which I'll explain here in full.
       trick I used in this manuscript was to rotate the hue of the termination
       screenshot by 180 degrees: this provides a pseudo-random coloring of the
       termination points that contrasts well against the tracks.
+
+
+Linux: very slow performance when writing large images
+--------------------------------------------------
+This might be due to the Linux Disk Caching or the kernel's handling of `dirty pages <https://lonesysadmin.net/2013/12/22/better-linux-disk-caching-performance-vm-dirty_ratio/>`__.
+
+On Ubuntu, you can get your current dirty page handling settings with ``sysctl -a | grep dirty``. 
+Those settings can be modified in ``/etc/sysctl.conf`` by adding the following two lines to ``/etc/sysctl.conf``::
+
+    vm.dirty_background_ratio = 60
+    vm.dirty_ratio = 80
+
+``vm.dirty_background_ratio`` is a percentage fraction of your RAM and should be larger than the image to be written. 
+After changing ``/etc/sysctl.conf``, execute ``sysctl -p`` to configure the new kernel parameters at runtime. Depending on your system, these changes might not be persistent after reboot.
