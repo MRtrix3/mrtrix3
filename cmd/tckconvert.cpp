@@ -292,8 +292,6 @@ public:
         // Need at least 5 points, silently ignore...
         if (intck.size() < size_t(increment * 3)) { return true; }
 
-        std::cout << "Radius: " << radius << " Sides: " << sides << " Increment: " << increment << "\n";
-
         auto nSides = sides;
         Eigen::MatrixXf coords(nSides,2);
         Eigen::MatrixXi faces(nSides,6);
@@ -353,44 +351,6 @@ public:
             auto N = T.cross(globalNormal).normalized();
             auto B = T.cross(N).normalized();
             N = B.cross(T).normalized();
-
-            // auto w = s.cross(n).normalized();
-            // auto nP = w.cross(s).normalized();
-            // auto N = n.normalized();
-            // auto B = nP;
-            // auto T = w;
-
-            /*
-            auto prior = p;
-            auto next = p;
-                prior = tck[idx-1];
-                next = tck[idx+1];
-            auto T = (next - p).normalized();
-            auto T2 = (p - prior).normalized();
-            auto N = T.cross(T2).normalized();
-            auto B = T.cross(N).normalized();
-            */
-
-            if ( idx < 2 ) {
-                // std::cout << "\n\nidx: " << idx << "\n";
-                Eigen::IOFormat fmt(Eigen::StreamPrecision, 0, ", ", ", ", "", "", "[", "];");
-
-                std::cout << "p = " << p.format(fmt) << "\n";
-                // std::cout << "next = " << next.format(fmt) << "\n";
-                // std::cout << "prior = " << prior.format(fmt) << "\n";
-                // std::cout << "T = " << T.format(fmt) << "\n";
-                std::cout << "N = " << N.format(fmt) << "\n";
-                // std::cout << "B = " << B.format(fmt) << "\n";
-                // std::cout << "T2 = " << T2.format(fmt) << "\n";
-
-                Eigen::IOFormat OctaveFmt(Eigen::StreamPrecision, 0, ", ", ";\n", "", "", "[", "]");
-
-            //     std::cout << " coords = " << coords.format(OctaveFmt) << "\n";
-            //     std::cout << " faces = " << faces.format(OctaveFmt) << "\n";
-
-            //     auto sidePoint = p + radius * ( N * coords(0,0) + B * coords(0,1));
-            //     std::cout << "sidePoint = " << sidePoint.format(fmt) << "\n";
-            }
 
 
             // have our coordinate frame, now add circles
@@ -458,14 +418,16 @@ public:
             "property list uint8 int32 vertex_indices\n"
             "end_header\n";
 
-        std::ifstream vertexIF(vertexFilename);
+        std::ifstream vertexIF (vertexFilename);
         out << vertexIF.rdbuf();
         vertexIF.close();
-        std::ifstream faceIF(faceFilename);
+        File::unlink (vertexFilename.c_str());
+
+        std::ifstream faceIF (faceFilename);
         out << faceIF.rdbuf();
         faceIF.close();
-        std::remove ( vertexFilename.c_str() );
-        std::remove ( faceFilename.c_str() );
+        File::unlink (faceFilename.c_str());
+
         out.close();
     }
 
