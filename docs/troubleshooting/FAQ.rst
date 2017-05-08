@@ -253,17 +253,17 @@ used in these figures, which I'll explain here in full.
    contribute to the map, rather than the entire streamline. The easiest way to
    achieve this approach is with the ``tckmap`` command, using the
    ``-ends_only`` option.
-   
+
 -  Figures 5 and 7 display large dots at the streamline endpoints lying within
    the displayed slab, in conjunction with the streamlines themselves and a
    background image. Unfortunately this functionality is not yet
    implemented within *MRtrix3*, so duplicating this type of visualisation
    requires a bit of manual manipulation and software gymnastics:
-   
+
    -  Use the new ``tckresample`` command, with the ``-endpoints`` option,
       to generate a new track file that contains only the two endpoints of
       each streamline.
-   
+
    -  Load this track file into the *old MRtrix 0.2 version of ``mrview``*.
       This software can be acquired `here <https://github.com/jdtournier/mrtrix-0.2>`__.
       Note that you will likely want to *not* run the installation component
@@ -271,25 +271,25 @@ used in these figures, which I'll explain here in full.
       issues with conflicting commmand names between MRtrix versions. This
       does however mean that you will need to provide the full path to the
       MRtrix 0.2 ``mrview`` executable in order to run it.
-      
+
    -  Within the ``mrview`` tractography tool, enable the 'depth blend'
       option. This will display each streamline point as a dot, rather than
       drawing lines between the streamline points.
-   
+
    -  Adjust the brightness / contrast of the background image so that it is
       completely black.
-   
+
    -  Take a screenshot.
-   
+
    -  Remove the streamline endpoints track file from the tractography tool,
       and disable the 'depth blend' option (it's best to disable the 'depth
       blend' option before opening any larger track file).
-   
+
    -  Reset the windowing of the main image, and/or load the complete tracks
       file, and take an additional screenshot, making sure not to move the
       view focus or resize the ``mrview`` window (so that the two screenshots
       overlay on top of one another).
-   
+
    -  The two screenshots are then combined using image editing software such
       as GIMP. The colors of the termination points can also be modified
       independently before they are combined with the second screenshot. One
@@ -298,15 +298,79 @@ used in these figures, which I'll explain here in full.
       termination points that contrasts well against the tracks.
 
 
+Compiler error during build
+---------------------------
+
+If you encounter an error during the build process that resembles the following::
+
+    ERROR: (#/#) [CC] release/cmd/command.o
+
+    /usr/bin/g++-4.8 -c -std=c++11 -pthread -fPIC -I/home/user/mrtrix3/eigen -Wall -O2 -DNDEBUG -Isrc -Icmd -I./lib -Icmd cmd/command.cpp -o release/cmd/command.o
+
+    failed with output
+
+    g++-4.8: internal compiler error: Killed (program cc1plus)
+    Please submit a full bug report,
+    with preprocessed source if appropriate.
+    See for instructions.
+
+
+This is most typically caused by the compiler running out of RAM. This
+can be solved either through installing more RAM into your system, or
+by restricting the number of threads to be used during compilation::
+
+    NUMBER_OF_PROCESSORS=1 ./build
+
+
+
+Hanging on network file system when writing images
+--------------------------------------------------
+
+When any *MRtrix3* command must read or write image data, there are two
+primary mechanisms by which this is performed:
+
+1. `Memory mapping <https://en.wikipedia.org/wiki/Memory-mapped_file>`_:
+The operating system provides access to the contents of the file as
+though it were simply a block of data in memory, without needing to
+explicitly load all of the image data into RAM.
+
+2. Preload / delayed write-back: When opening an existing image, the
+entire image contents are loaded into a block of RAM. If an image is
+modified, or a new image created, this occurs entirely within RAM, with
+the image contents written to disk storage only at completion of the
+command.
+
+This design ensures that loading images for processing is as fast as
+possible and does not incur unnecessary RAM requirements, and writing
+files to disk is as efficient as possible as all data is written as a
+single contiguous block.
+
+Memory mapping will be used wherever possible. However one circumstance
+where this should *not* be used is when *write access* is required for
+the target file, and it is stored on a *network file system*: in this
+case, the command typically slows to a crawl (e.g. progressbar stays at
+0% indefinitely), as the memory-mapping implementation repeatedly
+performs small data writes and attempts to keep the entire image data
+synchronised.
+
+*MRtrix3* will now *test* the type of file system that a target image is
+stored on; and if it is a network-based system, it will *not* use
+memory-mapping for images that may be written to. *However*, if you
+experience the aforementioned slowdown in such a circumstance, it is
+possible that the particular configuration you are using is not being
+correctly detected or identified. If you are unfortunate enough to
+encounter this issue, please report to the developers the hardware
+configuration and file system type in use.
+
 Linux: very slow performance when writing large images
 --------------------------------------------------
 This might be due to the Linux Disk Caching or the kernel's handling of `dirty pages <https://lonesysadmin.net/2013/12/22/better-linux-disk-caching-performance-vm-dirty_ratio/>`__.
 
-On Ubuntu, you can get your current dirty page handling settings with ``sysctl -a | grep dirty``. 
+On Ubuntu, you can get your current dirty page handling settings with ``sysctl -a | grep dirty``.
 Those settings can be modified in ``/etc/sysctl.conf`` by adding the following two lines to ``/etc/sysctl.conf``::
 
     vm.dirty_background_ratio = 60
     vm.dirty_ratio = 80
 
-``vm.dirty_background_ratio`` is a percentage fraction of your RAM and should be larger than the image to be written. 
+``vm.dirty_background_ratio`` is a percentage fraction of your RAM and should be larger than the image to be written.
 After changing ``/etc/sysctl.conf``, execute ``sysctl -p`` to configure the new kernel parameters at runtime. Depending on your system, these changes might not be persistent after reboot.
