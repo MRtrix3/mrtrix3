@@ -207,8 +207,8 @@ namespace MR
           std::string info () {
             Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", "\n", "", "", "", "");
             INFO ("transformation:\n"+str(trafo.matrix().format(fmt)));
-            INFO ("transformation_half:\n"+str(trafo_half.matrix().format(fmt)));
-            INFO ("transformation_half_inverse:\n"+str(trafo_half_inverse.matrix().format(fmt)));
+            DEBUG ("transformation_half:\n"+str(trafo_half.matrix().format(fmt)));
+            DEBUG ("transformation_half_inverse:\n"+str(trafo_half_inverse.matrix().format(fmt)));
             return "centre: "+str(centre.transpose(),12);
           }
 

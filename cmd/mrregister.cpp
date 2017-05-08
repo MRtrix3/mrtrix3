@@ -1066,9 +1066,9 @@ void run () {
     if (do_nonlinear)
       midway_header = Header (*nl_registration.get_im1_to_mid());
     else if (do_affine)
-      midway_header = affine_registration.get_midway_header();
+      midway_header = compute_minimum_average_header (input1[0], input2[0], affine.get_transform_half_inverse(), affine.get_transform_half());
     else // rigid
-      midway_header = rigid_registration.get_midway_header();
+      midway_header = compute_minimum_average_header (input1[0], input2[0], rigid.get_transform_half_inverse(), rigid.get_transform_half());
     midway_header.datatype() = DataType::from_command_line (DataType::Float32);
 
     // process input1 then input2 to reduce memory consumption
