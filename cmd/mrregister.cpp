@@ -85,11 +85,11 @@ void usage ()
                     "rigid, affine, nonlinear, rigid_affine, rigid_nonlinear, affine_nonlinear, rigid_affine_nonlinear (Default: affine_nonlinear)")
     + Argument ("choice").type_choice (transformation_choices)
 
-  + Option ("transformed", "image1 after registration transformed to the space of image2. "
+  + Option ("transformed", "image1 after registration transformed and regridded to the space of image2. "
     "Note that -transformed needs to be repeated for each contrast if multi-constrast registration is used.").allow_multiple()
     + Argument ("image").type_image_out ()
 
-  + Option ("transformed_midway", "image1 and image2 after registration transformed to the midway space. "
+  + Option ("transformed_midway", "image1 and image2 after registration transformed and regridded to the midway space. "
     "Note that -transformed_midway needs to be repeated for each contrast if multi-constrast registration is used.").allow_multiple()
     + Argument ("image1_transformed").type_image_out ()
     + Argument ("image2_transformed").type_image_out ()
@@ -1027,7 +1027,7 @@ void run () {
         Image<value_type> im1_transformed = Image<value_type>::create (im1_transformed_paths[idx], transformed_header);
 
         const size_t nvols = im1_image.ndim() == 3 ? 1 : im1_image.size(3);
-        value_type val = (std::sqrt (float (1 + 8 * nvols)) - 3.0) / 4.0;
+        const value_type val = (std::sqrt (float (1 + 8 * nvols)) - 3.0) / 4.0;
         const bool reorient_output =  !reorientation_forbidden && (nvols > 1) && !(val - (int)val);
 
         if (do_nonlinear) {
@@ -1088,7 +1088,7 @@ void run () {
           midway_header.size(3) = im1_image.size(3);
 
         const size_t nvols = im1_image.ndim() == 3 ? 1 : im1_image.size(3);
-        value_type val = (std::sqrt (float (1 + 8 * nvols)) - 3.0) / 4.0;
+        const value_type val = (std::sqrt (float (1 + 8 * nvols)) - 3.0) / 4.0;
         const bool reorient_output =  !reorientation_forbidden && (nvols > 1) && !(val - (int)val);
 
         if (do_nonlinear) {
@@ -1127,7 +1127,7 @@ void run () {
           midway_header.size(3) = im2_image.size(3);
 
         const size_t nvols = im2_image.ndim() == 3 ? 1 : im2_image.size(3);
-        value_type val = (std::sqrt (float (1 + 8 * nvols)) - 3.0) / 4.0;
+        const value_type val = (std::sqrt (float (1 + 8 * nvols)) - 3.0) / 4.0;
         const bool reorient_output =  !reorientation_forbidden && (nvols > 1) && !(val - (int)val);
 
         if (do_nonlinear) {

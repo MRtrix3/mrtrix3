@@ -248,19 +248,19 @@ namespace MR
           private:
             FORCE_INLINE ParamType get_parameters () {
               // create resized midway image
-              vector<Eigen::Transform<default_type, 3, Eigen::Projective>> init_transforms;
-              {
-                Eigen::Transform<default_type, 3, Eigen::Projective> init_trafo_1 = local_trafo.get_transform_half_inverse();
-                Eigen::Transform<default_type, 3, Eigen::Projective> init_trafo_2 = local_trafo.get_transform_half();
-                init_transforms.push_back (init_trafo_1);
-                init_transforms.push_back (init_trafo_2);
-              }
-              auto padding = Eigen::Matrix<default_type, 4, 1>(1.0, 1.0, 1.0, 1.0);
-              int subsample = 1;
-              vector<Header> headers;
-              headers.push_back (Header (im1));
-              headers.push_back (Header (im2));
-              midway_image_header = compute_minimum_average_header (headers, subsample, padding, init_transforms);
+              // vector<Eigen::Transform<default_type, 3, Eigen::Projective>> init_transforms;
+              // {
+              //   Eigen::Transform<default_type, 3, Eigen::Projective> init_trafo_1 = ;
+              //   Eigen::Transform<default_type, 3, Eigen::Projective> init_trafo_2 = local_trafo.get_transform_half();
+              //   init_transforms.push_back (init_trafo_1);
+              //   init_transforms.push_back (init_trafo_2);
+              // }
+              // auto padding = Eigen::Matrix<default_type, 4, 1>(1.0, 1.0, 1.0, 1.0);
+              // int subsample = 1;
+              // vector<Header> headers;
+              // headers.push_back (Header (im1));
+              // headers.push_back (Header (im2));
+              midway_image_header = compute_minimum_average_header (im1, im2, local_trafo.get_transform_half_inverse(), local_trafo.get_transform_half());
 
               Filter::Resize midway_resize_filter (midway_image_header);
               midway_resize_filter.set_scale_factor (image_scale_factor);

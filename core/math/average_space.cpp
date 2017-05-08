@@ -254,9 +254,9 @@ namespace MR
   }
 
   Header compute_minimum_average_header (const vector<Header>& input_headers,
+                                         const vector<Eigen::Transform<default_type, 3, Eigen::Projective>>& transform_header_with,
                                          int voxel_subsampling,
-                                         const Eigen::Matrix<default_type, 4, 1>& padding,
-                                         const vector<Eigen::Transform<default_type, 3, Eigen::Projective>>& transform_header_with) {
+                                         Eigen::Matrix<default_type, 4, 1> padding) {
     Eigen::Transform<default_type, 3, Eigen::Projective> average_v2s_trafo;
     Eigen::Vector3d average_space_voxel_extent;
     Eigen::Vector3d projected_voxel_sizes;

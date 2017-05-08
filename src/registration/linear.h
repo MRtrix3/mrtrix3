@@ -393,11 +393,9 @@ namespace MR
                                    Interp::Nearest<ProcessedMaskType>>;
 
             Eigen::Matrix<typename TransformType::ParameterType, Eigen::Dynamic, 1> optimiser_weights = transform.get_optimiser_weights();
-            const Eigen::Matrix<default_type, 4, 1> midspace_padding = Eigen::Matrix<default_type, 4, 1>(1.0, 1.0, 1.0, 1.0);
-            const int midspace_voxel_subsampling = 1;
 
             // calculate midway (affine average) space which will be constant for each resolution level
-            midway_image_header = compute_minimum_average_header (im1_image, im2_image, transform, midspace_voxel_subsampling, midspace_padding);
+            midway_image_header = compute_minimum_average_header (im1_image, im2_image, transform.get_transform_half_inverse(), transform.get_transform_half());
 
             for (size_t istage = 0; istage < stages.size(); istage++) {
               auto& stage = stages[istage];
@@ -542,7 +540,7 @@ namespace MR
                 }
               }
               // update midway (affine average) space using the current transformations
-              midway_image_header = compute_minimum_average_header (im1_image, im2_image, parameters.transformation, midspace_voxel_subsampling, midspace_padding);
+              midway_image_header = compute_minimum_average_header (im1_image, im2_image, parameters.transformation.get_transform_half_inverse(), parameters.transformation.get_transform_half());
             }
             INFO("linear registration done");
             INFO (transform.info());

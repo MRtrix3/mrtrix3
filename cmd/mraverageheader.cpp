@@ -84,7 +84,7 @@ void run ()
     }
 
     vector<Eigen::Transform<default_type, 3, Eigen::Projective>> transform_header_with;
-    auto H = compute_minimum_average_header (headers_in, resolution, padding, transform_header_with);
+    auto H = compute_minimum_average_header (headers_in, transform_header_with, resolution, padding);
     H.datatype() = DataType::Bit;
     if (fill) {
       H.ndim() = dim;

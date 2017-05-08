@@ -76,18 +76,7 @@ namespace MR
               INFO ("Estimating halfway space");
               vector<Eigen::Transform<double, 3, Eigen::Projective>> init_transforms;
               // define transfomations that will be applied to the image header when the common space is calculated
-              {
-                Eigen::Transform<double, 3, Eigen::Projective> init_trafo_2 = linear_transform.get_transform_half();
-                Eigen::Transform<double, 3, Eigen::Projective> init_trafo_1 = linear_transform.get_transform_half_inverse();
-                init_transforms.push_back (init_trafo_2);
-                init_transforms.push_back (init_trafo_1);
-              }
-
-              auto padding = Eigen::Matrix<default_type, 4, 1>(0.0, 0.0, 0.0, 0.0);
-              vector<Header> headers;
-              headers.push_back (Header (im2_image));
-              headers.push_back (Header (im1_image));
-              midway_image_header = compute_minimum_average_header(headers, 1, padding, init_transforms);
+              midway_image_header = compute_minimum_average_header (im1_image, im2_image, linear_transform.get_transform_half_inverse(), linear_transform.get_transform_half());
             } else {
               // if initialising only perform optimisation at the full resolution level
               scale_factor.resize (1);
