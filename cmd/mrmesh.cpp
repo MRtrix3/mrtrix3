@@ -58,7 +58,7 @@ void run ()
     Surface::Algo::image2mesh_blocky (input, mesh);
 
   } else {
-    default_type threshold = 0.0f;
+    default_type threshold = 0.0;
     auto input = Image<float>::open (argument[0]);
     auto opt = get_options("threshold");
     if ( opt.size() ) {
