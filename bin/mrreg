@@ -14,16 +14,20 @@ sys.path.insert(0, lib_folder)
 
 from mrtrix3 import app, image, path, run
 
+choice_init = ['mass', 'search', 'matrix']
+choice_linear_type =['rigid', 'affine']
 
 app.init('MRtrix3 (TODO@gmail.com)','Symmetric Registration')
 app.cmdline.addDescription('mrreg acts as a script for performing various types of registrations')
 
-app.cmdline.add_argument("input", nargs='+', action=app.cmdline.PlusSep, metavar=('input1','input2'), help='Pair of input images. Contrasts separated by plus sign. \
-        Example: wm1.mif wm2.mif + gm1.mif gm2.mif' )
+app.cmdline.add_argument("input", nargs=2, metavar=('input1','input2'), help='Pair of input images.')
+
 
 # General options
 common_options = app.cmdline.add_argument_group('General options')
-common_options.add_argument('-type', help='rigid, affine, rigid,affine, rigid,affine,nonlinear')
+common_options.add_argument('-init', choices=choice_init, help='valid choices: '+', '.join(choice_init), default='mass')
+common_options.add_argument('-linear', choices=choice_linear_type, help='valid choices: '+', '.join(choice_linear_type), default='affine')
+common_options.add_argument('-nonlinear', action='store_true', help='run nonlinear registration')
 common_options.add_argument('-lmax', help='The maximum harmonic degree(s)')
 common_options.add_argument('-mask1', help='Provide a mask for image1')
 common_options.add_argument('-mask2', help='Provide a mask for image2')
@@ -35,7 +39,6 @@ common_options.add_argument('-mask2', help='Provide a mask for image2')
 
 app.parse()
 
-
 # Sanitise some inputs, and get ready for data import
 if app.args.lmax:
   try:
@@ -45,31 +48,34 @@ if app.args.lmax:
   except:
     app.error('Parameter lmax must be a number')
 
-app.makeTempDir()
+# app.makeTempDir()
+app.console("init: "+ str(app.args.init))
+app.console("linear: "+ str(app.args.linear))
+if app.args.nonlinear: app.console("nonlinear: "+ str(app.args.nonlinear))
+if app.args.lmax:
+  app.console("lmax: "+ app.args.lmax)
+  # if not (app.args.lmax)
+if app.args.mask1:
+  app.console("mask1: "+ app.args.mask1)
+if app.args.mask2:
+  app.console("mask2: "+ app.args.mask2)
+
+mask1 = None
+mask2 = None
+if app.args.mask1:
+  mask1 = path.fromUser(app.args.mask1, True)
+  # run.command([['mrconvert',path.fromUser(app.args.mask1, True),'-','-datatype', 'bit'],
+               # ['mrtransform','-',path.toTemp('mask1.mif', True),'-template',path.fromUser(app.args.input[0][0], True)]])
+if app.args.mask2:
+  mask2 = path.fromUser(app.args.mask2, True)
+  # run.command([['mrconvert',path.fromUser(app.args.mask2, True),'-','-datatype', 'bit'],
+               # ['mrtransform','-',path.toTemp('mask2.mif', True),'-template',path.fromUser(app.args.input[0][1], True)]])
 
 # Get standard input data into the temporary directory
-run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('dwi.mif', True) + ' -stride 0,0,0,1' + grad_import_option)
-if app.args.mask:
-  run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + path.toTemp('mask.mif', True) + ' -datatype bit')
-
-app.gotoTempDir()
+# run.command('mrreg_init ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('dwi.mif', True) + ' -stride 0,0,0,1' + grad_import_option)
 
 
-# # Generate a brain mask (if necessary)
-# # Otherwise, check that the mask provided is appropriate
-# if os.path.exists('mask.mif'):
-#   dwi_size = [ int(x) for x in image.headerField('dwi.mif', 'size').split() ]
-#   mask_size = [ int(x) for x in image.headerField('mask.mif', 'size').split() ]
-#   if not mask_size[:3] == dwi_size[:3]:
-#     app.error('Dimensions of provided mask image do not match DWI')
-#   if int(image.statistic('mask.mif', 'count', 'mask.mif')) == 0:
-#     app.error('Input mask does not contain any voxels')
-# else:
-#   run.command('dwi2mask dwi.mif mask.mif')
 
-# From here, the script splits depending on what estimation algorithm is being used
-alg.execute()
+# app.gotoTempDir()
 
-
-# Finalize for all algorithms
 app.complete()
