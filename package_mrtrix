@@ -64,9 +64,7 @@ EOF
     LIBS=$(for n in bin/*; do ldd $n; done | sed 's/(.*)$//g' | sed 's/^.*=>//g' | sort | uniq | grep -v 'mrtrix\|vdso\|libGL.so\|libEGL.so\|nvidia\|fglrx' | xargs)
     echo '    libraries identified:'
     for n in $LIBS; do
-      if [ ! -e $n ]; then
-        echo "warning: not all executables have dynamic libraries. Possibly skipping dependent libraries for some commands. This is expected if you built with -static";
-      else
+      if [ -e $n ]; then
         echo '        '$n;
         cp $n _package/mrtrix3/lib/
       fi
