@@ -340,7 +340,7 @@ for ifile, fname in enumerate(inFiles[0]):
     index = maskPrefixes.index(prefix)
     input.append(Input(fnames, prefix, dirs, contrasts, maskFiles[index], abspath(maskDir)))
   else:
-    input.append(Input(fname, prefix, dirs, contrasts))
+    input.append(Input(fnames, prefix, dirs, contrasts))
 
 
 noreorientation = app.args.noreorientation

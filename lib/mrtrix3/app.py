@@ -508,12 +508,12 @@ class Parser(argparse.ArgumentParser):
       import subprocess, os
       from mrtrix3.run import _mrtrix_bin_path
       p = subprocess.Popen([os.path.join(_mrtrix_bin_path,'mrinfo'),'-version'],stdout=subprocess.PIPE)
-      line = p.stdout.readline()
+      line = p.stdout.readline().decode()
       return line.replace('==','').replace('mrinfo','').lstrip().rstrip()
 
     w = textwrap.TextWrapper(width=80, initial_indent='     ', subsequent_indent='     ')
     w_arg = textwrap.TextWrapper(width=80, initial_indent='', subsequent_indent='                     ')
-    from _version import __version__
+    from ._version import __version__
 
     s = 'MRtrix ' + __version__ + '\t' + bold(self.prog) + '\t bin version: ' + appVersion() + '\n\n'
     s += '\n'
