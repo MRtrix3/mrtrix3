@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __dwi_tractography_scalar_file_h__
 #define __dwi_tractography_scalar_file_h__
@@ -65,7 +64,7 @@ namespace MR
 
 
       template <typename T = float> class ScalarReader : public __ReaderBase__
-      {
+      { NOMEMALIGN
         public:
           using value_type = T;
 
@@ -73,7 +72,7 @@ namespace MR
             open (file, "track scalars", properties);
           }
 
-          bool operator() (std::vector<value_type>& tck_scalar)
+          bool operator() (vector<value_type>& tck_scalar)
           {
             tck_scalar.clear();
 
@@ -160,7 +159,7 @@ namespace MR
        * */
       template <typename T = float>
       class ScalarWriter : public __WriterBase__<T>
-      {
+      { NOMEMALIGN
         public:
           using value_type = T;
           using __WriterBase__<T>::count;
@@ -198,13 +197,13 @@ namespace MR
           }
 
 
-          bool operator() (const std::vector<value_type>& tck_scalar)
+          bool operator() (const vector<value_type>& tck_scalar)
           {
             if (tck_scalar.size()) {
               if (buffer_size + tck_scalar.size() > buffer_capacity)
                 commit();
 
-              for (typename std::vector<value_type>::const_iterator i = tck_scalar.begin(); i != tck_scalar.end(); ++i)
+              for (typename vector<value_type>::const_iterator i = tck_scalar.begin(); i != tck_scalar.end(); ++i)
                 add_scalar (*i);
               add_scalar (delimiter());
               ++count;

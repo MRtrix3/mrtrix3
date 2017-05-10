@@ -1,2 +1,0 @@
-fixelthreshold afd.msf 0.5 tmp.msf -force && testing_diff_fixel tmp.msf fixelthreshold/out1.msf 1e-5
-fixelthreshold afd.msf 0.5 tmp.msf -crop -force && testing_diff_fixel tmp.msf fixelthreshold/out2.msf 1e-5

@@ -1,9 +1,14 @@
 .. _tckconvert:
 
 tckconvert
-===========
+===================
 
 Synopsis
+--------
+
+Convert between different track file formats
+
+Usage
 --------
 
 ::
@@ -15,8 +20,6 @@ Synopsis
 
 Description
 -----------
-
-Convert between different track file formats.
 
 The program currently supports MRtrix .tck files (input/output), ascii text files (input/output), and VTK polydata files (output only).
 
@@ -36,6 +39,15 @@ Options
 -  **-voxel2scanner reference** if specified, the properties of this image will be used to convert track point positions from voxel coordinates into real (scanner) coordinates.
 
 -  **-image2scanner reference** if specified, the properties of this image will be used to convert track point positions from image coordinates (in mm) into real (scanner) coordinates.
+
+Options specific to PLY writer
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-radius radius** radius of the streamlines
+
+-  **-sides sides** number of sides for streamlines
+
+-  **-increment increment** generate streamline points at every (increment) points
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -60,13 +72,18 @@ Standard options
 
 
 
-**Author:** Daan Christiaens (daan.christiaens@gmail.com), J-Donald Tournier (jdtournier@gmail.com), Philip Broser (philip.broser@me.com).
+**Author:** Daan Christiaens (daan.christiaens@kcl.ac.uk), J-Donald Tournier (jdtournier@gmail.com), Philip Broser (philip.broser@me.com).
 
-**Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
+**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors
 
-This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+MRtrix is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see www.mrtrix.org
+For more details, see http://www.mrtrix.org/.
+
 

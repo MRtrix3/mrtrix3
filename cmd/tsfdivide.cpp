@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -26,8 +24,7 @@ void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
-  DESCRIPTION
-  + "an application to divide corresponding values in track scalar files";
+  SYNOPSIS = "Divide corresponding values in track scalar files";
 
   ARGUMENTS
   + Argument ("input",  "the input track scalar file.").type_file_in()
@@ -48,15 +45,15 @@ void run ()
 
   DWI::Tractography::check_properties_match (properties1, properties2, "scalar", false);
 
-  std::vector<value_type> tck_scalar1;
-  std::vector<value_type> tck_scalar2;
+  vector<value_type> tck_scalar1;
+  vector<value_type> tck_scalar2;
   while (reader1 (tck_scalar1)) {
     if (!reader2 (tck_scalar2))
       break;
     if (tck_scalar1.size() != tck_scalar2.size())
       throw Exception ("track scalar length mismatch");
 
-    std::vector<value_type> tck_scalar_output (tck_scalar1.size());
+    vector<value_type> tck_scalar_output (tck_scalar1.size());
     for (size_t i = 0; i < tck_scalar1.size(); ++i) {
       if (tck_scalar2[i] == 0.0)
         tck_scalar_output[i] = 0;

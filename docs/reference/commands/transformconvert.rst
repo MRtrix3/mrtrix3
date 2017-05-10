@@ -1,9 +1,14 @@
 .. _transformconvert:
 
 transformconvert
-===========
+===================
 
 Synopsis
+--------
+
+Convert linear transformation matrices
+
+Usage
 --------
 
 ::
@@ -17,11 +22,7 @@ Synopsis
 Description
 -----------
 
-This command's function is to convert linear transformation matrices.
-
-It allows to convert the transformation matrix provided by FSL's flirt command 
-
-and ITK's linear transformation format to a format usable in MRtrix.
+This command allows to convert the transformation matrix provided by FSL's flirt command and ITK's linear transformation format to a format usable in MRtrix.
 
 Options
 -------
@@ -51,11 +52,16 @@ Standard options
 
 **Author:** Max Pietsch (maximilian.pietsch@kcl.ac.uk)
 
-**Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
+**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors
 
-This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+MRtrix is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see www.mrtrix.org
+For more details, see http://www.mrtrix.org/.
+
 

@@ -1,18 +1,15 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 
 #include "command.h"
@@ -36,8 +33,7 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "manually set the partial volume fractions in an ACT five-tissue-type (5TT) image using mask images";
+  SYNOPSIS = "Manually set the partial volume fractions in an ACT five-tissue-type (5TT) image using mask images";
 
   ARGUMENTS
   + Argument ("input",  "the 5TT image to be modified").type_image_in()
@@ -68,7 +64,7 @@ void usage ()
 
 
 class Modifier
-{
+{ MEMALIGN(Modifier)
   public:
     Modifier (Image<float>& input_image, Image<float>& output_image) :
         v_in  (input_image),

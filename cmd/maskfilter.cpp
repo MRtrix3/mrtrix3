@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -75,9 +73,9 @@ void usage ()
 {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au), David Raffelt (david.raffelt@florey.edu.au), Thijs Dhollander (thijs.dhollander@gmail.com) and J-Donald Tournier (jdtournier@gmail.com)";
 
-  DESCRIPTION
-  + "Perform filtering operations on 3D / 4D mask images."
+  SYNOPSIS = "Perform filtering operations on 3D / 4D mask images";
 
+  DESCRIPTION
   + "The available filters are: clean, connect, dilate, erode, median."
 
   + "Each filter has its own unique set of optional parameters.";
@@ -122,7 +120,7 @@ void run () {
   if (filter_index == 1) { // Connected components
     Filter::ConnectedComponents filter (input_image, std::string("applying connected-component filter to image ") + Path::basename (argument[0]));
     auto opt = get_options ("axes");
-    std::vector<int> axes;
+    vector<int> axes;
     if (opt.size()) {
       axes = opt[0][0];
       for (size_t d = 0; d < input_image.ndim(); d++)

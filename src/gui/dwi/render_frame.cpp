@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include <fstream>
 
@@ -20,21 +19,6 @@
 #include "app.h"
 #include "gui/dwi/render_frame.h"
 
-#define ROTATION_INC 0.004
-#define D2R 0.01745329252
-
-#define DIST_INC 0.005
-#define DIST_MIN 0.1
-#define DIST_MAX 10.0
-
-#define SCALE_INC 1.05
-#define SCALE_MIN 0.01
-#define SCALE_MAX 10.0
-
-#define ANGLE_INC 0.1
-#define ANGLE_MIN 1.0
-#define ANGLE_MAX 90.0
-
 namespace MR
 {
   namespace GUI
@@ -42,13 +26,38 @@ namespace MR
     namespace DWI
     {
 
+      namespace {
+
+        constexpr float RotationInc = 0.004f;
+        constexpr float Degrees2radians = 0.01745329252f;
+
+        constexpr float DistDefault = 0.3f;
+        constexpr float DistInc = 0.005f;
+
+        constexpr float ScaleInc = 1.05f;
+
+        constexpr float AngleDefault = 40.0f;
+        constexpr float AngleInc = 0.1f;
+        constexpr float AngleMin = 1.0f;
+        constexpr float AngleMax = 90.0f;
+
+
+        const Math::Versorf DefaultOrientation = Eigen::AngleAxisf (Math::pi_4, Eigen::Vector3f (0.0f, 0.0f, 1.0f)) * 
+                                                     Eigen::AngleAxisf (Math::pi/3.0f, Eigen::Vector3f (1.0f, 0.0f, 0.0f));
+        QFont get_font (QWidget* parent) {
+          QFont f = parent->font();
+          f.setPointSize (MR::File::Config::get_int ("FontSize", 10));
+          return f;
+        }
+      }
+
       RenderFrame::RenderFrame (QWidget* parent) :
         GL::Area (parent),
-        view_angle (40.0), distance (0.3), line_width (1.0), scale (1.0), 
+        view_angle (AngleDefault), distance (DistDefault), scale (NaN), 
         lmax_computed (0), lod_computed (0), mode (mode_t::SH), recompute_mesh (true), recompute_amplitudes (true),
         show_axes (true), hide_neg_values (true), color_by_dir (true), use_lighting (true),
-        normalise (false), font (parent->font()), projection (this, font),
-        orientation (Math::Versorf::unit()),
+        glfont (get_font (parent)), projection (this, glfont),
+        orientation (DefaultOrientation),
         focus (0.0, 0.0, 0.0), OS (0), OS_x (0), OS_y (0),
         renderer ((QGLWidget*)this)
       {
@@ -87,6 +96,7 @@ namespace MR
       void RenderFrame::initializeGL ()
       {
         GL::init();
+        glfont.initGL (false);
         renderer.initGL();
         gl::Enable (gl::DEPTH_TEST);
 
@@ -150,10 +160,10 @@ namespace MR
         gl::ClearColor (lighting->background_color[0], lighting->background_color[1], lighting->background_color[2], 0.0);
         gl::Clear (gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
-        float dist (1.0f / (distance * view_angle * D2R));
+        float dist (1.0f / (distance * view_angle * Degrees2radians));
         float near_ = (dist-3.0f > 0.001f ? dist-3.0f : 0.001f);
-        float horizontal = 2.0f * near_ * tan (0.5f*view_angle*D2R) * float (width()) / float (width()+height());
-        float vertical = 2.0f * near_ * tan (0.5f*view_angle*D2R) * float (height()) / float (width()+height());
+        float horizontal = 2.0f * near_ * tan (0.5f*view_angle*Degrees2radians) * float (width()) / float (width()+height());
+        float vertical = 2.0f * near_ * tan (0.5f*view_angle*Degrees2radians) * float (height()) / float (width()+height());
 
         GL::mat4 P;
         if (OS > 0) {
@@ -173,15 +183,15 @@ namespace MR
         GL::mat4 MV = GL::translate (0.0, 0.0, -dist) * GL::mat4 (M);
         projection.set (MV, P);
 
+        gl::Enable (gl::DEPTH_TEST);
         gl::DepthMask (gl::TRUE_);
 
         if (values.size()) {
           if (std::isfinite (values[0])) {
             gl::Disable (gl::BLEND);
 
-            float final_scale = scale;
-            if (normalise && std::isfinite (values[0]) && values[0] != 0.0)
-              final_scale /= values[0];
+            if (!std::isfinite (scale)) 
+              scale = 2.0f / values.norm();
 
             renderer.set_mode (mode);
 
@@ -194,7 +204,7 @@ namespace MR
               recompute_mesh = false;
             }
 
-            renderer.start (projection, *lighting, final_scale, use_lighting, color_by_dir, hide_neg_values);
+            renderer.start (projection, *lighting, scale, use_lighting, color_by_dir, hide_neg_values);
 
             if (recompute_amplitudes) {
               Eigen::Matrix<float, Eigen::Dynamic, 1> r_del_daz;
@@ -226,7 +236,6 @@ namespace MR
         }
 
         if (show_axes) {
-          gl::LineWidth (line_width);
           gl::BlendFunc (gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
           gl::Enable (gl::BLEND);
           gl::Enable (gl::LINE_SMOOTH);
@@ -240,6 +249,12 @@ namespace MR
 
           gl::Disable (gl::BLEND);
           gl::Disable (gl::LINE_SMOOTH);
+
+          if (text.size()) {
+            projection.setup_render_text (0.0f, 0.0f, 0.0f);
+            projection.render_text (10, 10, text);
+            projection.done_render_text();
+          }
         }
 
         // need to clear alpha channel when using QOpenGLWidget (Qt >= 5.4)
@@ -255,25 +270,17 @@ namespace MR
       }
 
 
-
-
-
-
-
-
-      void RenderFrame::mouseDoubleClickEvent (QMouseEvent* event)
-      {
-        if (event->modifiers() == Qt::NoModifier) {
-          if (event->buttons() == Qt::LeftButton) {
-            orientation = Math::Versorf::unit();
-            update();
-          }
-          else if (event->buttons() == Qt::MidButton) {
-            focus.setZero();
-            update();
-          }
-        }
+      void RenderFrame::reset_view () {
+        orientation = DefaultOrientation;
+        focus.setZero();
+        distance = DistDefault;
+        view_angle = AngleDefault;
+        update();
       }
+
+
+
+
 
 
       void RenderFrame::mousePressEvent (QMouseEvent* event)
@@ -293,7 +300,7 @@ namespace MR
             const Eigen::Vector3f x = projection.screen_to_model_direction (QPoint (-dx, dy), focus);
             const Eigen::Vector3f z = projection.screen_normal();
             const Eigen::Vector3f v = x.cross (z).normalized();
-            float angle = ROTATION_INC * std::sqrt (float (Math::pow2 (dx) + Math::pow2 (dy)));
+            float angle = RotationInc * std::sqrt (float (Math::pow2 (dx) + Math::pow2 (dy)));
             if (angle > Math::pi_2) angle = Math::pi_2;
             const Math::Versorf rot (Eigen::AngleAxisf (angle, v));
             orientation = rot * orientation;
@@ -304,17 +311,15 @@ namespace MR
             update();
           }
           else if (event->buttons() == Qt::RightButton) {
-            distance *= 1.0 - DIST_INC*dy;
-            if (distance < DIST_MIN) distance = DIST_MIN;
-            if (distance > DIST_MAX) distance = DIST_MAX;
+            distance *= 1.0 - DistInc*dy;
             update();
           }
         }
         else if (event->modifiers() == Qt::ControlModifier) {
           if (event->buttons() == Qt::RightButton) {
-            view_angle -= ANGLE_INC*dy;
-            if (view_angle < ANGLE_MIN) view_angle = ANGLE_MIN;
-            if (view_angle > ANGLE_MAX) view_angle = ANGLE_MAX;
+            view_angle -= AngleInc*dy;
+            if (view_angle < AngleMin) view_angle = AngleMin;
+            if (view_angle > AngleMax) view_angle = AngleMax;
             update();
           }
         }
@@ -323,10 +328,8 @@ namespace MR
       void RenderFrame::wheelEvent (QWheelEvent* event)
       {
         int scroll = event->delta() / 120;
-        for (int n = 0; n < scroll; n++) scale *= SCALE_INC;
-        for (int n = 0; n > scroll; n--) scale /= SCALE_INC;
-        if (scale > SCALE_MAX) scale = SCALE_MAX;
-        if (scale < SCALE_MIN) scale = SCALE_MIN;
+        for (int n = 0; n < scroll; n++) scale *= ScaleInc;
+        for (int n = 0; n > scroll; n--) scale /= ScaleInc;
         update();
       }
 

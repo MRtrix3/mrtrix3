@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -24,6 +22,7 @@
 
 #include "math/math.h"
 #include "math/SH.h"
+#include "math/ZSH.h"
 
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
@@ -44,8 +43,7 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  DESCRIPTION 
-    + "generate an appropriate response function from the image data for spherical deconvolution";
+  SYNOPSIS = "Generate an appropriate response function from the image data for spherical deconvolution";
 
   ARGUMENTS
     + Argument ("SH", "the spherical harmonic decomposition of the diffusion-weighted images").type_image_in()
@@ -56,7 +54,9 @@ void usage ()
   OPTIONS
 
     + Option ("lmax", "specify the maximum harmonic degree of the response function to estimate")
-      + Argument ("value").type_integer (0, 20);
+      + Argument ("value").type_integer (0, 20)
+    + Option ("dump", "dump the m=0 SH coefficients from all voxels in the mask to the output file, rather than their mean")
+      + Argument ("file").type_file_out();
 }
 
 
@@ -82,8 +82,16 @@ void run ()
     throw Exception ("input direction image \"" + std::string (argument[2]) + "\" must contain precisely 3 volumes");
 
   Eigen::VectorXd delta;
-  std::vector<value_type> response (lmax/2 + 1, 0.0);
+  Eigen::VectorXd response = Eigen::VectorXd::Zero (Math::ZSH::NforL (lmax));
   size_t count = 0;
+
+  File::OFStream dump_stream;
+  auto opt = get_options ("dump");
+  if (opt.size())
+    dump_stream.open (opt[0][0]);
+
+  Eigen::Matrix<value_type,Eigen::Dynamic,1,0,64> AL (lmax+1);
+  Math::Legendre::Plm_sph (AL, lmax, 0, value_type (1.0));
 
   auto loop = Loop ("estimating response function", SH, 0, 3);
   for (auto l = loop(mask, SH, dir); l; ++l) {
@@ -116,19 +124,23 @@ void run ()
         d_dot_s += s*delta[i];
         d_dot_d += Math::pow2 (delta[i]);
       }
-      response[l/2] += d_dot_s / d_dot_d;
+      value_type val = AL[l] * d_dot_s / d_dot_d;
+      response[Math::ZSH::index(l)] += val;
+
+      if (dump_stream.is_open()) 
+        dump_stream << val << " ";
     }
+    if (dump_stream.is_open()) 
+      dump_stream << "\n";
+
     ++count;
   }
 
-  Eigen::Matrix<value_type,Eigen::Dynamic,1,0,64> AL (lmax+1);
-  Math::Legendre::Plm_sph (AL, lmax, 0, value_type (1.0));
-  for (size_t l = 0; l < response.size(); l++)
-    response[l] *= AL[2*l] / count;
+  response /= count;
 
   if (std::string(argument[3]) == "-") {
-    for (auto r : response)
-      std::cout << r << " ";
+    for (ssize_t n = 0; n < response.size(); ++n)
+      std::cout << response[n] << " ";
     std::cout << "\n";
   }
   else {

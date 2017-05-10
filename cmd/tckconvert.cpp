@@ -1,19 +1,17 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
 
-
+#include <cstdio>
 #include "command.h"
 #include "file/ofstream.h"
 #include "file/name_parser.h"
@@ -27,13 +25,13 @@ using namespace MR::DWI::Tractography;
 
 void usage ()
 {
-  AUTHOR = "Daan Christiaens (daan.christiaens@gmail.com), "
+  AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk), "
            "J-Donald Tournier (jdtournier@gmail.com), "
            "Philip Broser (philip.broser@me.com).";
 
-  DESCRIPTION
-  + "Convert between different track file formats."
+  SYNOPSIS = "Convert between different track file formats";
 
+  DESCRIPTION
   + "The program currently supports MRtrix .tck files (input/output), "
     "ascii text files (input/output), and VTK polydata files (output only)."
 
@@ -69,13 +67,22 @@ void usage ()
   + Option ("image2scanner",
       "if specified, the properties of this image will be used to convert "
       "track point positions from image coordinates (in mm) into real (scanner) coordinates.")
-  +    Argument ("reference").type_image_in ();
+  +    Argument ("reference").type_image_in ()
 
+  + OptionGroup ("Options specific to PLY writer")
+
+  + Option ("radius", "radius of the streamlines")
+  +   Argument("radius").type_float(0.0f)
+
+  + Option ("sides", "number of sides for streamlines")
+  +   Argument("sides").type_integer(3,15)
+
+  + Option ("increment", "generate streamline points at every (increment) points")
+  +   Argument("increment").type_integer(1);
 }
 
 
-class VTKWriter: public WriterInterface<float>
-{
+class VTKWriter: public WriterInterface<float> { MEMALIGN(VTKWriter)
 public:
     VTKWriter(const std::string& file) : VTKout (file) {
         // create and write header of VTK output file:
@@ -124,7 +131,7 @@ public:
 private:
     File::OFStream VTKout;
     size_t offset_num_points;
-    std::vector<std::pair<size_t,size_t>> track_list;
+    vector<std::pair<size_t,size_t>> track_list;
     size_t current_index = 0;
 
 };
@@ -132,8 +139,7 @@ private:
 
 
 
-class ASCIIReader: public ReaderInterface<float>
-{
+class ASCIIReader: public ReaderInterface<float> { MEMALIGN(ASCIIReader)
 public:
     ASCIIReader(const std::string& file) {
       auto num = list.parse_scan_check(file);
@@ -160,8 +166,7 @@ private:
 };
 
 
-class ASCIIWriter: public WriterInterface<float>
-{
+class ASCIIWriter: public WriterInterface<float> { MEMALIGN(ASCIIWriter)
 public:
     ASCIIWriter(const std::string& file) {
         count.push_back(0);
@@ -185,10 +190,259 @@ public:
 
 private:
     File::NameParser parser;
-    std::vector<int> count;
+    vector<int> count;
 
 };
 
+
+class PLYWriter: public WriterInterface<float> { MEMALIGN(PLYWriter)
+public:
+    PLYWriter(const std::string& file, int increment = 1, float radius = 0.1, int sides = 5) : out(file), increment(increment), radius(radius), sides(sides) {
+        vertexFilename = File::create_tempfile(0,".vertex");
+        faceFilename = File::create_tempfile(0,".face");
+
+        vertexOF.open(vertexFilename);
+        faceOF.open(faceFilename);
+        num_faces = 0;
+        num_vertices = 0;
+
+    }
+
+    Eigen::Vector3f computeNormal ( const Streamline<float>& tck ) {
+        // copy coordinates to  matrix in Eigen format
+        size_t num_atoms = tck.size();
+        Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic > coord(3, num_atoms);
+        for (size_t i = 0; i < num_atoms; ++i) {
+            coord.col(i) = tck[i];
+        }
+
+        // calculate centroid
+        Eigen::Vector3 centroid(coord.row(0).mean(), coord.row(1).mean(), coord.row(2).mean());
+
+        // subtract centroid
+        coord.row(0).array() -= centroid(0);
+        coord.row(1).array() -= centroid(1);
+        coord.row(2).array() -= centroid(2);
+
+        // we only need the left-singular matrix here
+        //  http://math.stackexchange.com/questions/99299/best-fitting-plane-given-a-set-of-points
+        auto svd = coord.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV);
+        Eigen::Vector3f plane_normal = svd.matrixU().rightCols<1>();
+        return plane_normal;
+    }
+
+    void computeNormals ( const Streamline<float>& tck, Streamline<float>& normals) {
+        Eigen::Vector3f sPrev, sNext, pt1, pt2, n, normal;
+        sPrev = (tck[1] - tck[0]).normalized();
+
+        // Find a good starting normal
+        for (size_t idx = 1; idx < tck.size(); idx++) {
+            pt1 = tck[idx];
+            pt2 = tck[idx+1];
+            sNext = (pt2 - pt1).normalized();
+            n = sPrev.cross(sNext);
+            if ( n.norm() > 1.0E-3 ) {
+                normal = n;
+                sPrev = sNext;
+                break;
+            }
+        }
+        normal.normalize();  // vtkPolyLine.cxx:170
+        for (size_t idx = 0; idx < tck.size(); idx++) {
+            pt1 = tck[idx];
+            pt2 = tck[idx+1];
+            sNext = (pt2 - pt1).normalized();
+
+            // compute rotation vector vtkPolyLine.cxx:187
+            auto w = sPrev.cross(normal);
+            if ( w.norm() == 0.0 ) {
+                // copy the normal and continue
+                normals.push_back ( normal );
+                continue;
+            }
+            // compute rotation of line segment
+            auto q = sNext.cross(sPrev);
+            if ( q.norm() == 0.0 ) {
+                // copy the normal and continue
+                normals.push_back ( normal );
+                continue;
+            }
+            auto f1 = q.dot(normal);
+            auto f2 = 1.0 - ( f1 * f1 );
+            if ( f2 > 0.0 ) {
+                f2 = sqrt(1.0 - (f1*f1));
+            } else {
+                f2 = 0.0;
+            }
+
+            auto c = (sNext + sPrev).normalized();
+            w = c.cross(q);
+            c = sPrev.cross(q);
+            if ( ( normal.dot(c) * w.dot(c)) < 0 ) {
+                f2 = -1.0 * f2;
+            }
+            normals.push_back(normal);
+            sPrev = sNext;
+            normal = ( f1 * q ) + (f2 * w);
+        }
+    }
+
+
+    bool operator() (const Streamline<float>& intck) {
+        // Need at least 5 points, silently ignore...
+        if (intck.size() < size_t(increment * 3)) { return true; }
+
+        auto nSides = sides;
+        Eigen::MatrixXf coords(nSides,2);
+        Eigen::MatrixXi faces(nSides,6);
+        auto theta = 2.0 * Math::pi / float(nSides);
+        for ( auto i = 0; i < nSides; i++ ) {
+            coords(i,0) = cos((double)i*theta);
+            coords(i,1) = sin((double)i*theta);
+            // Face offsets
+            faces(i,0) = i;
+            faces(i,1) = (i+1) % nSides;
+            faces(i,2) = i+nSides;
+            faces(i,3) = (i+1) % nSides;
+            faces(i,4) = (i+1) % nSides + nSides;
+            faces(i,5) = i+nSides;
+        }
+
+        // to handle the increment, we want to keep the first 2 and last 2 points, but we can skip inside
+        Streamline<float> tck;
+
+        // Push on the first 2 points
+        tck.push_back(intck[0]);
+        tck.push_back(intck[1]);
+        for (size_t idx = 3; idx < intck.size() - 2; idx += increment) {
+            tck.push_back(intck[idx]);
+        }
+        tck.push_back(intck[intck.size()-2]);
+        tck.push_back(intck[intck.size()-1]);
+
+        Streamline<float> normals;
+        this->computeNormals(tck,normals);
+        auto globalNormal = computeNormal(tck);
+        Eigen::Vector3f sNext = tck[1] - tck[0];
+        auto isFirst = true;
+        for (size_t idx = 1; idx < tck.size() - 1; ++idx) {
+            auto isLast = idx == tck.size() - 2;
+
+            // vtkTubeFilter.cxx:386
+            Eigen::Vector3f p = tck[idx];
+            Eigen::Vector3f pNext = tck[idx+1];
+            Eigen::Vector3f sPrev = sNext;
+            sNext = pNext - p;
+            Eigen::Vector3f n = normals[idx];
+
+            sNext.normalize();
+            if ( sNext.norm() == 0.0 ) {
+                continue;
+            }
+
+            // Average vectors
+            Eigen::Vector3f s = ( sPrev + sNext ) / 2.0;
+            s.normalize();
+            if ( s.norm() == 0.0 ) {
+                s = sPrev.cross(n).normalized();
+            }
+
+            auto T = s;
+            auto N = T.cross(globalNormal).normalized();
+            auto B = T.cross(N).normalized();
+            N = B.cross(T).normalized();
+
+
+            // have our coordinate frame, now add circles
+            for ( auto sideIdx = 0; sideIdx < nSides; sideIdx++ ) {
+                auto sidePoint = p + radius * ( N * coords(sideIdx,0) + B * coords(sideIdx,1));
+                vertexOF << sidePoint[0] << " "<< sidePoint[1] << " " << sidePoint[2] << " ";
+                vertexOF << (int)( 255 * fabs(T[0])) << " " << (int)( 255 * fabs(T[1])) << " " << (int)( 255 * fabs(T[2])) << "\n";
+                if ( !isLast ) {
+                    faceOF << "3"
+                           << " " << num_vertices + faces(sideIdx,0)
+                           << " " << num_vertices + faces(sideIdx,1)
+                           << " " << num_vertices + faces(sideIdx,2) << "\n";
+                    faceOF << "3"
+                           << " " << num_vertices + faces(sideIdx,3)
+                           << " " << num_vertices + faces(sideIdx,4)
+                           << " " << num_vertices + faces(sideIdx,5) << "\n";
+                    num_faces += 2;
+                }
+            }
+            // Cap the first point, remebering the right hand rule
+            if ( isFirst ) {
+                for ( auto sideIdx = nSides - 1; sideIdx >= 2; --sideIdx ) {
+                    faceOF << "3"
+                           << " " << num_vertices + sideIdx
+                           << " " << num_vertices + sideIdx - 1
+                           << " " << num_vertices << "\n";
+                }
+                num_faces += nSides - 2;
+                isFirst = false;
+            }
+            if ( isLast ) {
+                // faceOF << "Writing end cap, num_vertices = " << num_vertices << "\n";
+                for ( auto sideIdx = 2; sideIdx <= nSides - 1; ++sideIdx ) {
+                    faceOF << "3"
+                           << " " << num_vertices
+                           << " " << num_vertices + sideIdx
+                           << " " << num_vertices + sideIdx - 1 << "\n";
+                }
+                num_faces += nSides - 2;
+            }
+            // We needed to maintain the number of vertices for the caps, now increment for the "circles"
+            num_vertices += nSides;
+        }
+        return true;
+    }
+
+    ~PLYWriter() {
+        // write out list of tracks:
+        vertexOF.close();
+        faceOF.close();
+
+        out <<
+            "ply\n"
+            "format ascii 1.0\n"
+            "comment written by tckconvert v" << mrtrix_version << "\n"
+            "comment part of the mtrix3 suite of tools (http://www.mrtrix.org/)\n"
+            "element vertex " << num_vertices << "\n"
+            "property float32 x\n"
+            "property float32 y\n"
+            "property float32 z\n"
+            "property uchar red\n"
+            "property uchar green\n"
+            "property uchar blue\n"
+            "element face " << num_faces << "\n"
+            "property list uint8 int32 vertex_indices\n"
+            "end_header\n";
+
+        std::ifstream vertexIF (vertexFilename);
+        out << vertexIF.rdbuf();
+        vertexIF.close();
+        File::unlink (vertexFilename.c_str());
+
+        std::ifstream faceIF (faceFilename);
+        out << faceIF.rdbuf();
+        faceIF.close();
+        File::unlink (faceFilename.c_str());
+
+        out.close();
+    }
+
+private:
+    std::string vertexFilename;
+    std::string faceFilename;
+    File::OFStream out;
+    File::OFStream vertexOF;
+    File::OFStream faceOF;
+    size_t num_vertices;
+    size_t num_faces;
+    int increment;
+    float radius;
+    int sides;
+};
 
 
 
@@ -225,6 +479,12 @@ void run ()
     }
     else if (has_suffix(argument[1], ".vtk")) {
         writer.reset( new VTKWriter(argument[1]) );
+    }
+    else if (has_suffix(argument[1], ".ply")) {
+        auto increment = get_options("increment").size() ? get_options("increment")[0][0].as_int() : 1;
+        auto radius = get_options("radius").size() ? get_options("radius")[0][0].as_float() : 0.1f;
+        auto sides = get_options("sides").size() ? get_options("sides")[0][0].as_int() : 5;
+        writer.reset( new PLYWriter(argument[1], increment, radius, sides) );
     }
     else if (has_suffix(argument[1], ".txt")) {
         writer.reset( new ASCIIWriter(argument[1]) );

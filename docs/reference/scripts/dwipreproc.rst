@@ -6,39 +6,61 @@ dwipreproc
 Synopsis
 --------
 
+Perform diffusion image pre-processing using FSL's eddy tool; including inhomogeneity distortion correction using FSL's topup tool if possible
+
+Usage
+--------
+
 ::
 
-    dwipreproc [ options ] pe_dir input output
+    dwipreproc input output [ options ]
 
--  *pe_dir*: The phase encode direction; can be a signed axis number (e.g. -0, 1, +2) or a code (e.g. AP, LR, IS)
 -  *input*: The input DWI series to be corrected
 -  *output*: The output corrected image series
 
 Description
 -----------
 
-Perform diffusion image pre-processing using FSL's eddy tool; including inhomogeneity distortion correction using FSL's topup tool if possible
+Note that this script does not perform any explicit registration between images provided to topup via the -se_epi option, and the DWI volumes provided to eddy. In some instances (motion between acquisitions) this can result in erroneous application of the inhomogeneity field during distortion correction. If this could potentially be a problem for your data, a possible solution is to insert the first b=0 DWI volume to be the first volume of the image file provided via the -se_epi option. This will hopefully be addressed within the script itself in a future update.
 
 Options
 -------
 
-Options for passing reversed phase-encode data; one of these options MUST be provided
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Options for specifying the acquisition phase-encoding design; note that one of the -rpe_* options MUST be provided
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-rpe_none** Specify explicitly that no reversed phase-encoding image data is provided; eddy will perform eddy current and motion correction only
+- **-rpe_none** Specify that no reversed phase-encoding image data is being provided; eddy will perform eddy current and motion correction only
 
-- **-rpe_pair forward reverse** Provide a pair of images to use for inhomogeneity field estimation; note that the FIRST of these two images must have the same phase-encode direction as the input DWIs
+- **-rpe_pair** Specify that a set of images (typically b=0 volumes) will be provided for use in inhomogeneity field estimation only (using the -se_epi option). It is assumed that the FIRST volume(s) of this image has the SAME phase-encoding direction as the input DWIs, and the LAST volume(s) has precisely the OPPOSITE phase encoding
 
-- **-rpe_all input_revpe** Provide a second DWI series identical to the input series, that has the opposite phase encoding; these will be combined in the output image
+- **-rpe_all** Specify that ALL DWIs have been acquired with opposing phase-encoding; this information will be used to perform a recombination of image volumes (each pair of volumes with the same b-vector but different phase encoding directions will be combined together into a single volume). It is assumed that the SECOND HALF of the volumes in the input DWIs have corresponding diffusion sensitisation directions to the FIRST HALF, but were acquired using precisely the opposite phase-encoding direction
 
-Options for the dwipreproc script
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- **-rpe_header** Specify that the phase-encoding information can be found in the image header(s), and that this is the information that the script should use
 
-- **-cuda** Use the CUDA version of eddy
+Other options for the dwipreproc script
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-pe_dir PE** Manually specify the phase encoding direction of the input series; can be a signed axis number (e.g. -0, 1, +2), an axis designator (e.g. RL, PA, IS), or NIfTI axis codes (e.g. i-, j, k)
+
+- **-readout_time time** Manually specify the total readout time of the input series (in seconds)
+
+- **-se_epi file** Provide an additional image series consisting of spin-echo EPI images, which is to be used exclusively by topup for estimating the inhomogeneity field (i.e. it will not form part of the output image series)
+
+- **-json_import JSON_file** Import image header information from an associated JSON file (may be necessary to determine phase encoding information)
+
+- **-eddy_options Options** Manually provide additional command-line options to the eddy command
+
+- **-cuda** Use the CUDA version of eddy (if available)
+
+Options for importing the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-grad** Provide a gradient table in MRtrix format
 
 - **-fslgrad bvecs bvals** Provide a gradient table in FSL bvecs/bvals format
+
+Options for exporting the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-export_grad_mrtrix grad** Export the final gradient table in MRtrix format
 
@@ -61,7 +83,9 @@ Standard options
 
 - **-quiet** Suppress all console output during script execution
 
-- **-verbose** Display additional information for every command invoked
+- **-info** Display additional information and progress for every command invoked
+
+- **-debug** Display additional debugging information over and above the output of -info
 
 References
 ^^^^^^^^^^
@@ -70,9 +94,9 @@ References
 
 * Smith, S. M.; Jenkinson, M.; Woolrich, M. W.; Beckmann, C. F.; Behrens, T. E.; Johansen-Berg, H.; Bannister, P. R.; De Luca, M.; Drobnjak, I.; Flitney, D. E.; Niazy, R. K.; Saunders, J.; Vickers, J.; Zhang, Y.; De Stefano, N.; Brady, J. M. & Matthews, P. M. Advances in functional and structural MR image analysis and implementation as FSL. NeuroImage, 2004, 23, S208-S219
 
-* If using -rpe_all option: Skare, S. & Bammer, R. Jacobian weighting of distortion corrected EPI data. Proceedings of the International Society for Magnetic Resonance in Medicine, 2010, 5063
+* If performing recombination of diffusion-weighted volume pairs with opposing phase encoding directions: Skare, S. & Bammer, R. Jacobian weighting of distortion corrected EPI data. Proceedings of the International Society for Magnetic Resonance in Medicine, 2010, 5063
 
-* If using -rpe_pair or -rpe_all options: Andersson, J. L.; Skare, S. & Ashburner, J. How to correct susceptibility distortions in spin-echo echo-planar images: application to diffusion tensor imaging. NeuroImage, 2003, 20, 870-888
+* If performing EPI susceptibility distortion correction: Andersson, J. L.; Skare, S. & Ashburner, J. How to correct susceptibility distortions in spin-echo echo-planar images: application to diffusion tensor imaging. NeuroImage, 2003, 20, 870-888
 
 --------------
 
@@ -80,15 +104,15 @@ References
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
+**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, You can obtain one at http://mozilla.org/MPL/2.0/
+file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 MRtrix is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+but WITHOUT ANY WARRANTY; without even the implied warranty
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see www.mrtrix.org
+For more details, see http://www.mrtrix.org/.
 
