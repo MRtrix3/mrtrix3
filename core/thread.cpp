@@ -13,6 +13,7 @@
 
 
 #include <thread>
+#include <atomic>
 
 #include "app.h"
 #include "thread.h"
@@ -64,6 +65,13 @@ namespace MR
     __Backend::__Backend () :
       refcount (0) {
         DEBUG ("initialising threads...");
+
+        std::atomic<uint8_t> a;
+        if (!a.is_lock_free()) 
+          WARN ("atomic operations on uint8_t are not lock-free - this may introduce instabilities in operation!");
+
+        if (sizeof (a) != sizeof (uint8_t)) 
+          WARN ("size of atomic<uint8_t> differs from that of uint8_t - this may introduce instabilities in operation!");
 
         previous_print_func = print;
         previous_report_to_user_func = report_to_user_func;
