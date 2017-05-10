@@ -41,10 +41,9 @@ read
   echo - collating MRtrix3 executables and library...
   set -e
   mkdir -p _package/mrtrix3/
-  cp -r release/bin/ _package/mrtrix3/
-  cp -r scripts _package/mrtrix3/
+  cp -r bin/ _package/mrtrix3/
   mkdir -p _package/mrtrix3/lib
-  cp release/lib/libmrtrix* _package/mrtrix3/lib/ || echo "no shared library found"
+  cp lib/libmrtrix-* _package/mrtrix3/lib/ || echo "no shared library found"
 
   [ ${1:-"x"} == "-standalone" ] && (
     mv _package/mrtrix3/{bin,exe}
@@ -62,7 +61,7 @@ EOF
     )
 
     echo - collating dependent system libraries...
-    LIBS=$(for n in release/bin/*; do ldd $n; done | sed 's/(.*)$//g' | sed 's/^.*=>//g' | sort | uniq | grep -v 'mrtrix\|vdso\|libGL.so\|libEGL.so\|nvidia\|fglrx' | xargs)
+    LIBS=$(for n in bin/*; do ldd $n; done | sed 's/(.*)$//g' | sed 's/^.*=>//g' | sort | uniq | grep -v 'mrtrix\|vdso\|libGL.so\|libEGL.so\|nvidia\|fglrx' | xargs)
     echo '    libraries identified:'
     for n in $LIBS; do
       if [ ! -e $n ]; then
@@ -108,7 +107,6 @@ On your target system, unpack mrtrix3.tar.gz using:
 
 $ tar xfz mrtrix3.tar.gz
 
-You should also add the mrtrix3/bin and mrtrix3/scripts folders to your PATH to finalise
-the installation.
+You should also add the mrtrix3/bin to your PATH to finalise the installation.
 EOF
 
