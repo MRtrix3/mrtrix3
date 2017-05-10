@@ -18,7 +18,7 @@
 
 #include "raw.h"
 #include "header.h"
-#include "file/nifti1_utils.h"
+#include "file/nifti_utils.h"
 
 #define MGH_HEADER_SIZE 90
 #define MGH_DATA_OFFSET 284
@@ -185,13 +185,13 @@ namespace MR
         {
           try {
             if (auto tr = fetch<float32> (in))
-              add_line (H.keyval()["comments"], "TR: "   + str (tr, 6) + "ms");
+              H.keyval()["MGH_TR"] = str(tr, 6);
             if (auto flip_angle = fetch<float32> (in)) // Radians in MGHO -> degrees in header
-              add_line (H.keyval()["comments"], "Flip: " + str (flip_angle * 180.0 / Math::pi, 6) + "deg");
-            if (auto te = fetch<float32> (in)) 
-              add_line (H.keyval()["comments"], "TE: "   + str (te, 6) + "ms");
-            if (auto ti = fetch<float32> (in)) 
-              add_line (H.keyval()["comments"], "TI: "   + str (ti, 6) + "ms");
+              H.keyval()["MGH_flip"] = str(flip_angle * 180.0 / Math::pi, 6);
+            if (auto te = fetch<float32> (in))
+              H.keyval()["MGH_TE"] = str(te, 6);
+            if (auto ti = fetch<float32> (in))
+              H.keyval()["MGH_TI"] = str(ti, 6);
 
             fetch<float32> (in); // fov - ignored
 
@@ -200,8 +200,12 @@ namespace MR
               auto size = fetch<int64_t> (in);
               std::string content (size, '\0');
               in.read (reinterpret_cast<char*> (&content[0]), size);
-              if (content.size())
-                add_line (H.keyval()["comments"], tag_ID_to_string (id) + ": " + content);
+              if (content.size()) {
+                if (id == 3) // MGH_TAG_CMDLINE
+                  add_line (H.keyval()["command_history"], content);
+                else
+                  add_line (H.keyval()["comments"], tag_ID_to_string (id) + ": " + content);
+              }
             } while (!in.eof());
 
           } catch (int) { }
@@ -220,7 +224,7 @@ namespace MR
           if (ndim > 4)
             throw Exception ("MGH file format does not support images of more than 4 dimensions");
 
-          std::vector<size_t> axes;
+          vector<size_t> axes;
           auto M = File::NIfTI::adjust_transform (H, axes);
 
           store<int32_t> (1, out); // version
@@ -295,21 +299,29 @@ namespace MR
           float32 te = 0.0f;         /*!< milliseconds */
           float32 ti = 0.0f;         /*!< milliseconds */
           float32 fov = 0.0f;        /*!< IGNORE THIS FIELD (data is inconsistent) */
-          std::vector<Tag> tags; /*!< variable length char strings */
+          vector<Tag> tags;          /*!< variable length char strings */
 
-          const auto comments = H.keyval().find("comments");
-          if (comments != H.keyval().end()) {
-            for (const auto i : split_lines (comments->second)) {
-              auto pos = i.find_first_of (": ");
-              const std::string key = i.substr (0, pos);
-              const std::string value = i.substr (pos+2);
-              if (key == "TR") tr = to<float32> (value); 
-              else if (key == "Flip") flip_angle = to<float32> (value) * Math::pi / 180.0;
-              else if (key == "TE") te = to<float32> (value);
-              else if (key == "TI") ti = to<float32> (value);
-              else {
-                auto id = string_to_tag_ID (key);
+          for (auto entry : H.keyval()) {
+            if (entry.first == "MGH_TR") {
+              tr = to<float32> (entry.second);
+            } else if (entry.first == "MGH_flip") {
+              flip_angle = to<float32> (entry.second) * Math::pi / 180.0;
+            } else if (entry.first == "MGH_TE") {
+              te = to<float32> (entry.second);
+            } else if (entry.first == "MGH_TI") {
+              ti = to<float32> (entry.second);
+            } else if (entry.first == "command_history") {
+              Tag tag;
+              tag.id = 3; // MGH_TAG_CMDLINE
+              tag.content = entry.second;
+              tags.push_back (tag);
+            } else if (entry.first == "comments") {
+              for (const auto i : split_lines (entry.second)) {
+                auto pos = i.find_first_of (": ");
+                const std::string key = i.substr (0, pos);
+                const auto id = string_to_tag_ID (key);
                 if (id) {
+                  const std::string value = i.substr (pos+2);
                   Tag tag;
                   tag.id = id;
                   tag.content = value;
