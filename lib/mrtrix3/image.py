@@ -26,7 +26,7 @@ def headerKeyValue(image_path, key):
   import subprocess
   from mrtrix3 import app, run
   command = [ run.exeName(run.versionMatch('mrinfo')), image_path, '-property', key ]
-  if app.verbosity > 1:
+  if app._verbosity > 1:
     app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
   proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
   result, err = proc.communicate()
