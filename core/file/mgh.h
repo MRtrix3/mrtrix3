@@ -184,6 +184,11 @@ namespace MR
         void read_other (Header& H, Input& in)
         {
           try {
+            // FreeSurfer file mriio.c indicates that reading the first five
+            //   single-precision floating-point numbers should terminate as
+            //   soon as one of them is null...
+            // However this is inconsistent with FreeSurfer's own MGH read
+            //   code, which always writes five floats regardless of their values...
             if (auto tr = fetch<float32> (in))
               H.keyval()["MGH_TR"] = str(tr, 6);
             if (auto flip_angle = fetch<float32> (in)) // Radians in MGHO -> degrees in header
@@ -197,14 +202,22 @@ namespace MR
 
             do {
               auto id = fetch<int32_t> (in);
-              auto size = fetch<int64_t> (in);
-              std::string content (size, '\0');
-              in.read (reinterpret_cast<char*> (&content[0]), size);
-              if (content.size()) {
-                if (id == 3) // MGH_TAG_CMDLINE
-                  add_line (H.keyval()["command_history"], content);
-                else
-                  add_line (H.keyval()["comments"], tag_ID_to_string (id) + ": " + content);
+              int64_t size;
+              if (id == 30) // MGH_TAG_OLD_MGH_XFORM
+                size = fetch<int32_t> (in) - 1;
+              else if (id == 20 || id == 4 || id == 1) // MGH_TAG_OLD_SURF_GEOM, MGH_TAG_OLD_USEREALRAS, MGH_TAG_OLD_COLORTABLE
+                size = 0;
+              else
+                size = fetch<int64_t> (in);
+              std::string content (size+1, '\0');
+              in.read (const_cast<char*> (content.data()), size);
+              if (content.size() > 1) {
+                if (id == 3) { // MGH_TAG_CMDLINE
+                  for (auto line : split_lines (content))
+                    add_line (H.keyval()["command_history"], line);
+                } else {
+                  H.keyval()[tag_ID_to_string(id)] = content;
+                }
               }
             } while (!in.eof());
 
@@ -288,10 +301,14 @@ namespace MR
       template <class Output>
         void write_other (const Header& H, Output& out)
         {
-          struct Tag
+          class Tag
           {
-            int32_t id;
-            std::string content;
+            public:
+              Tag() : id (0), content() { }
+              Tag (const int32_t i, const std::string& s) : id (i), content (s) { }
+              void set (const int32_t i, const std::string& s) { id = i; content = s; }
+              int32_t id;
+              std::string content;
           };
 
           float32 tr = 0.0f;         /*!< milliseconds */
@@ -299,9 +316,15 @@ namespace MR
           float32 te = 0.0f;         /*!< milliseconds */
           float32 ti = 0.0f;         /*!< milliseconds */
           float32 fov = 0.0f;        /*!< IGNORE THIS FIELD (data is inconsistent) */
+          Tag transform_tag;
           vector<Tag> tags;          /*!< variable length char strings */
+          Tag cmdline_tag;
 
           for (auto entry : H.keyval()) {
+            if (entry.first == "command_history")
+              cmdline_tag.set (3, entry.second); // MGH_TAG_CMDLINE
+            else if (entry.first.size() < 5 || entry.first.substr(0, 4) != "MGH_")
+              continue;
             if (entry.first == "MGH_TR") {
               tr = to<float32> (entry.second);
             } else if (entry.first == "MGH_flip") {
@@ -310,24 +333,12 @@ namespace MR
               te = to<float32> (entry.second);
             } else if (entry.first == "MGH_TI") {
               ti = to<float32> (entry.second);
-            } else if (entry.first == "command_history") {
-              Tag tag;
-              tag.id = 3; // MGH_TAG_CMDLINE
-              tag.content = entry.second;
-              tags.push_back (tag);
-            } else if (entry.first == "comments") {
-              for (const auto i : split_lines (entry.second)) {
-                auto pos = i.find_first_of (": ");
-                const std::string key = i.substr (0, pos);
-                const auto id = string_to_tag_ID (key);
-                if (id) {
-                  const std::string value = i.substr (pos+2);
-                  Tag tag;
-                  tag.id = id;
-                  tag.content = value;
-                  tags.push_back (tag);
-                }
-              }
+            } else {
+              const auto id = string_to_tag_ID (entry.first);
+              if (id == 31) // MGH_TAG_MGH_XFORM
+                transform_tag.set (31, entry.second);
+              else if (id)
+                tags.push_back (Tag (id, entry.second));
             }
           }
 
@@ -336,10 +347,28 @@ namespace MR
           store<float32> (te, out);
           store<float32> (ti, out);
           store<float32> (fov, out);
+          if (transform_tag.content.size()) {
+            store<int32_t> (transform_tag.id, out);
+            store<int64_t> (transform_tag.content.size(), out);
+            out.write (transform_tag.content.c_str(), transform_tag.content.size());
+          }
+          // FreeSurfer appears to write all other tag data in a single batch...
+          //   Not sure how it is prepared though.
+          // Nevertheless, their referenced code seems to write a single size field,
+          //   then a large batch of "tag data" all together; which is different to
+          //   what we're doing here. What I don't understand is how, if the size
+          //   of this "tag data" is the next thing written (and is only written if
+          //   non-zero), a reader function can distinguish this size entry from a
+          //   tag ID.
           for (const auto& tag : tags) {
             store<int32_t> (tag.id, out);
             store<int64_t> (tag.content.size(), out);
             out.write (tag.content.c_str(), tag.content.size());
+          }
+          if (cmdline_tag.content.size()) {
+            store<int32_t> (cmdline_tag.id, out);
+            store<int64_t> (cmdline_tag.content.size(), out);
+            out.write (cmdline_tag.content.c_str(), cmdline_tag.content.size());
           }
         }
 
