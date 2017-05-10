@@ -56,7 +56,7 @@ namespace MR
     //   return V;
     // }
 
-    class CopyFunctor4D {
+    class CopyFunctor4D { NOMEMALIGN
     public:
       CopyFunctor4D (size_t out_start_vol, size_t nvols) :
         start_vol (out_start_vol),
@@ -76,7 +76,7 @@ namespace MR
       size_t start_vol, nvols;
     };
 
-    class CopyFunctor3D {
+    class CopyFunctor3D { NOMEMALIGN
     public:
       CopyFunctor3D (size_t out_start_vol) :
         start_vol (out_start_vol) { }
@@ -118,8 +118,8 @@ namespace MR
       } else {
         for (size_t idx = 0; idx < n_images; idx++) {
           size_t ndim = input[idx].ndim();
-          std::vector<size_t> from (ndim, 0);
-          std::vector<size_t> size (ndim, 1);
+          vector<size_t> from (ndim, 0);
+          vector<size_t> size (ndim, 1);
           for (size_t dim = 0; dim < 3; ++dim)
             size[dim] = input[idx].size(dim);
           if (ndim==4)

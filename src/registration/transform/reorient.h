@@ -39,10 +39,10 @@ namespace MR
         return aPSF_matrix;
       }
 
-      FORCE_INLINE vector<std::vector<ssize_t>> multiContrastSetting2start_nvols (const vector<MultiContrastSetting>& mcsettings, size_t& max_n_SH)
+      FORCE_INLINE vector<vector<ssize_t>> multiContrastSetting2start_nvols (const vector<MultiContrastSetting>& mcsettings, size_t& max_n_SH)
       {
         max_n_SH = 0;
-        vector<std::vector<ssize_t>> start_nvols;
+        vector<vector<ssize_t>> start_nvols;
         if (mcsettings.size() != 0) {
           for (const auto & mc : mcsettings) {
             if (mc.do_reorientation && mc.lmax > 0) {
@@ -64,7 +64,7 @@ namespace MR
                         ssize_t max_n_SH,
                         const transform_type& linear_transform,
                         const Eigen::MatrixXd& directions,
-                        const vector<std::vector<ssize_t>>& vstart_nvols,
+                        const vector<vector<ssize_t>>& vstart_nvols,
                         const bool modulate) : fod (n_vol), max_n_SH (max_n_SH), start_nvols (vstart_nvols)
           {
             assert (n_vol > max_n_SH);
@@ -99,7 +99,7 @@ namespace MR
         protected:
           Eigen::VectorXd fod;
           ssize_t max_n_SH;
-          vector<std::vector<ssize_t>> start_nvols;
+          vector<vector<ssize_t>> start_nvols;
           Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> transform;
       };
 
@@ -157,7 +157,7 @@ namespace MR
                      vector<MultiContrastSetting> multi_contrast_settings = vector<MultiContrastSetting>())
       {
         assert (directions.cols() > directions.rows());
-        vector<std::vector<ssize_t>> start_nvols;
+        vector<vector<ssize_t>> start_nvols;
         size_t max_n_SH (0);
         if (multi_contrast_settings.size())
           start_nvols = multiContrastSetting2start_nvols (multi_contrast_settings, max_n_SH);
@@ -189,7 +189,7 @@ namespace MR
                      vector<MultiContrastSetting> multi_contrast_settings = vector<MultiContrastSetting>())
       {
         assert (directions.cols() > directions.rows());
-        vector<std::vector<ssize_t>> start_nvols;
+        vector<vector<ssize_t>> start_nvols;
         size_t max_n_SH (0);
         if (multi_contrast_settings.size())
           start_nvols = multiContrastSetting2start_nvols (multi_contrast_settings, max_n_SH);
@@ -214,7 +214,7 @@ namespace MR
                         ssize_t max_n_SH,
                         Image<default_type>& warp,
                         const Eigen::MatrixXd& directions,
-                        const vector<std::vector<ssize_t>>& vstart_nvols,
+                        const vector<vector<ssize_t>>& vstart_nvols,
                         const bool modulate) :
           max_n_SH (max_n_SH), n_dirs (directions.cols()), jacobian_adapter (warp), directions (directions),
           modulate (modulate), start_nvols (vstart_nvols), fod (n_vol)
@@ -276,7 +276,7 @@ namespace MR
             Adapter::Jacobian<Image<default_type> > jacobian_adapter;
             const Eigen::MatrixXd& directions;
             const bool modulate;
-            const vector<std::vector<ssize_t>> start_nvols;
+            const vector<vector<ssize_t>> start_nvols;
             Eigen::VectorXd fod;
             std::map<ssize_t, Eigen::MatrixXd> map_FOD_to_aPSF_transform;
             ssize_t max_n_SHvox;
@@ -345,7 +345,7 @@ namespace MR
       {
         assert (directions.cols() > directions.rows());
         check_dimensions (fod_image, warp, 0, 3);
-        vector<std::vector<ssize_t>> start_nvols;
+        vector<vector<ssize_t>> start_nvols;
         size_t max_n_SH (0);
         if (multi_contrast_settings.size())
           start_nvols = multiContrastSetting2start_nvols (multi_contrast_settings, max_n_SH);
@@ -369,7 +369,7 @@ namespace MR
       {
         assert (directions.cols() > directions.rows());
         check_dimensions (fod_image, warp, 0, 3);
-        vector<std::vector<ssize_t>> start_nvols;
+        vector<vector<ssize_t>> start_nvols;
         size_t max_n_SH (0);
         if (multi_contrast_settings.size())
           start_nvols = multiContrastSetting2start_nvols (multi_contrast_settings, max_n_SH);
