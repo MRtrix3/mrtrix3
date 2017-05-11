@@ -12,70 +12,123 @@ if not os.path.isdir(lib_folder):
 sys.path.insert(0, lib_folder)
 
 
+
 from mrtrix3 import app, image, path, run
 
 choice_init = ['mass', 'search', 'matrix']
 choice_linear_type =['rigid', 'affine']
 
-app.init('MRtrix3 (TODO@gmail.com)','Symmetric Registration')
+app.init('MRtrix3 (TODO@gmail.com)','Symmetric linear and nonlinear registration')
 app.cmdline.addDescription('mrreg acts as a script for performing various types of registrations')
 
-app.cmdline.add_argument("input", nargs=2, metavar=('input1','input2'), help='Pair of input images.')
+app.cmdline.add_argument("input", nargs='+', help='example: mrreg 1wm.mif 2wm.mif init[trans=mass] affine[lmax=0 scale=0.3] affine[lmax=2 scale=0.5] affine[lmax=4 scale=1] out[linear=trafo.txt] nl[lmax=0 scale=0.3] nl[lmax=2 scale=0.5] nl[lmax=4 scale=1] out[warp=warp.mif transformed_midway=1_transformed.mif 2_transformed.mif]')
 
-
-# General options
-common_options = app.cmdline.add_argument_group('General options')
-common_options.add_argument('-init', choices=choice_init, help='valid choices: '+', '.join(choice_init), default='mass')
-common_options.add_argument('-linear', choices=choice_linear_type, help='valid choices: '+', '.join(choice_linear_type), default='affine')
-common_options.add_argument('-nonlinear', action='store_true', help='run nonlinear registration')
-common_options.add_argument('-lmax', help='The maximum harmonic degree(s)')
-common_options.add_argument('-mask1', help='Provide a mask for image1')
-common_options.add_argument('-mask2', help='Provide a mask for image2')
+general_options = app.cmdline.add_argument_group('General options')
+# general_options.add_argument('-init', choices=choice_init, help='valid choices: '+', '.join(choice_init), default='mass')
+# general_options.add_argument('-linear', choices=choice_linear_type, help='valid choices: '+', '.join(choice_linear_type), default='affine')
+# general_options.add_argument('-nonlinear', action='store_true', help='run nonlinear registration')
+general_options.add_argument('-lmax', help='The maximum harmonic degree(s)')
+# general_options.add_argument('-mask1', help='Provide a mask for image1')
+# general_options.add_argument('-mask2', help='Provide a mask for image2')
 # app.cmdline.flagMutuallyExclusiveOptions( [ 'grad', 'fslgrad' ] )
 
-# Import the command-line settings for all algorithms found in the relevant directory
-# algorithm.initialise()
+# mmreg \
+# input[ "1 space.mif" 2.mif] \
+# init[translation=mass] \
+# affine[lmax=0 scale=0.3] affine[lmax=2 scale=0.5] affine[lmax=4 scale=1] \
+# nl[lmax=0 scale=0.3] nl[lmax=2 scale=0.5] nl[lmax=4 scale=1]
 
 
+DEBUG = True
+stages = []
+
+
+
+def debug(s):
+  if DEBUG:
+    print('\033[03;34m' +str(s) + '\033[0m')
+def quote_ws(s):
+  # return pipes.quote(s)
+  if s.count(' '):
+    debug('fixing quotes: '+str(s)+' --> '+'\''+s+'\'')
+    return '\''+s+'\''
+  return s
+
+debug("sys.argv")
+debug(sys.argv[1:])
+
+import re, subprocess, shlex, pipes
+# argument input[ "image 1.mif"] works but not input["image 1.mif"]
+# so here we split 'text["something quoted"' off as two arguments: 'text[' and "'something quoted'"
+bracket = re.compile('(\w+)\[(\w+.*)')
+args = []
+for a in sys.argv[1:]:
+  m = bracket.findall(a)
+  assert (len(m) < 2)
+  if not m:
+    args.append(a)
+  else:
+    debug('fix bracket '+a+' --> ' + str(m[0][0]) + '[ ' + str(m[0][1]))
+    args += [m[0][0]+'[', quote_ws(m[0][1])] # [quote_ws(s) for s in m[0]]
+debug("args:")
+debug(args)
+
+# stage parsing
+debug("stage parsing")
+p = re.compile('\W*(\w+)\[(.*?)\]')
+scmd = subprocess.list2cmdline(args)
+# scmd = ' '.join([pipes.quote(s) for s in args])
+debug("scmd:")
+debug(scmd)
+parsed = set()
+
+for m in p.finditer(scmd):
+  stage_options = []
+  debug(m.groups()[1])
+  stage_options = shlex.split(m.groups()[1]) # s.split('=')
+  # TODO what to do with what= val vs what=val vs what = val
+  if m.groups()[0] != 'input':
+    debug('stage: ' + m.groups()[0] + ': '+str(stage_options))
+  stages.append((m.groups()[0], stage_options))
+  parsed = parsed.union(set(range(*m.span())))
+toparse=''.join([scmd[i] for i in sorted(list(set(range(0,len(scmd))) - parsed))])
+
+### remove stages from sys.argv
+sys.argv = [sys.argv[0]] + toparse.split()
+# add dummy argument if no arguments were found to prevent showing help
+if len(stages) > 0 and len(toparse.split()) == 0:
+  sys.argv.append('%i[stages]'%len(stages))
+
+### command line parsing to handle options
 app.parse()
 
-# Sanitise some inputs, and get ready for data import
+
+
+### option parsing
 if app.args.lmax:
-  try:
-    lmax = [ int(x) for x in app.args.lmax.split(',') ]
-    if any([lmax_value%2 for lmax_value in lmax]):
-      app.error('Value of lmax must be even')
-  except:
-    app.error('Parameter lmax must be a number')
+  app.console('option: -lmax='+app.args.lmax)
 
-# app.makeTempDir()
-app.console("init: "+ str(app.args.init))
-app.console("linear: "+ str(app.args.linear))
-if app.args.nonlinear: app.console("nonlinear: "+ str(app.args.nonlinear))
-if app.args.lmax:
-  app.console("lmax: "+ app.args.lmax)
-  # if not (app.args.lmax)
-if app.args.mask1:
-  app.console("mask1: "+ app.args.mask1)
-if app.args.mask2:
-  app.console("mask2: "+ app.args.mask2)
+### remaining argument parsing
+arguments = shlex.split(toparse)
+if len(arguments) != 0 and len(arguments) != 2:
+  app.error('expected no argument. received: ' + toparse)
+if len(arguments):
+  stages.insert(0,('input',arguments))
 
-mask1 = None
-mask2 = None
-if app.args.mask1:
-  mask1 = path.fromUser(app.args.mask1, True)
-  # run.command([['mrconvert',path.fromUser(app.args.mask1, True),'-','-datatype', 'bit'],
-               # ['mrtransform','-',path.toTemp('mask1.mif', True),'-template',path.fromUser(app.args.input[0][0], True)]])
-if app.args.mask2:
-  mask2 = path.fromUser(app.args.mask2, True)
-  # run.command([['mrconvert',path.fromUser(app.args.mask2, True),'-','-datatype', 'bit'],
-               # ['mrtransform','-',path.toTemp('mask2.mif', True),'-template',path.fromUser(app.args.input[0][1], True)]])
+### remove input from processing stages
+images = []
+current_stages = []
+for stage in stages:
+  if stage[0] == 'input':
+    images.append(stage[1])
+  else:
+    current_stages.append(stage)
+stages = current_stages
+app.console ("input images:")
+app.console (str(images))
 
-# Get standard input data into the temporary directory
-# run.command('mrreg_init ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('dwi.mif', True) + ' -stride 0,0,0,1' + grad_import_option)
-
-
-
-# app.gotoTempDir()
-
+app.console ("stages:")
+for i, stage in enumerate(stages):
+  app.console ('%03i: ' % i +str(stage))
+  stage
 app.complete()
