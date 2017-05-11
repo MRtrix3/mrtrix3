@@ -39,10 +39,8 @@ general_options.add_argument('-lmax', help='The maximum harmonic degree(s)')
 # nl[lmax=0 scale=0.3] nl[lmax=2 scale=0.5] nl[lmax=4 scale=1]
 
 
-DEBUG = True
+DEBUG = False
 stages = []
-
-
 
 def debug(s):
   if DEBUG:
@@ -129,6 +127,76 @@ app.console (str(images))
 
 app.console ("stages:")
 for i, stage in enumerate(stages):
-  app.console ('%03i: ' % i +str(stage))
-  stage
+  debug ('%03i: ' % i +str(stage))
+
+class Sequence:
+  def __init__(self):
+    self.stages = []
+  def add(self, nxt):
+    if nxt.add_to_previous:
+      assert (len(stages))
+      self.stages[-1].options += nxt.add_to_previous
+    if nxt.get_command() is not None:
+      self.stages.append(nxt)
+  def info(self):
+    return ['%03i'%i+' '+str(s) for i, s in enumerate(self.stages)]
+
+class Stage:
+  In = dict()
+  Out = dict()
+  add_to_previous = None
+  def __init__(self, v):
+    self.name = v[0]
+    self.command = self.name
+    self.options = v[1]
+
+  def __module__(self):
+    return self.name
+
+  def __str__(self):
+    return "%s: command: %s, options: %s, input: %s output: %s" % (self.name, self.command, self.options, self.In, self.Out)
+
+  def get_command(self):
+    return [self.command] + self.options
+
+  def set_input(self, v):
+    assert(0)
+
+class INIT(Stage):
+  def __init__(self, v):
+    Stage.__init__(self, v)
+    self.In =  dict(arg0='user_input1.mif',arg1='user_input2.mif')
+    self.Out = dict(affine_out='affine.mat')
+    self.command = 'mrreg_init'
+
+class AFFINE(Stage):
+  def __init__(self, v):
+    Stage.__init__(self, v)
+    self.command = 'mrreg_linear'
+
+class OUT(Stage):
+  def __init__(self, v):
+    Stage.__init__(self, v)
+    self.command = None
+
+class RESIZE(Stage):
+  def __init__(self, v):
+    Stage.__init__(self, v)
+    self.command = 'mrresize'
+
+def get_class(t):
+  if not t[0].upper() in globals():
+    app.error('stage "'+t[0]+'" not defined')
+  # isinstance(Stage)
+  return globals()[t[0].upper()](t)
+# c = get_class(('init','translation=mass'))
+
+S = Sequence()
+for i, stage in enumerate(stages):
+  S.add(get_class(stage))
+for s in S.info():
+  app.console(s)
+
+
 app.complete()
+
