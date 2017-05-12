@@ -457,20 +457,11 @@ namespace MR
 
           // Start the function read_other() proper
           try {
-            // FreeSurfer file mriio.c indicates that reading the first five
-            //   single-precision floating-point numbers should terminate as
-            //   soon as one of them is null...
-            // However this is inconsistent with FreeSurfer's own MGH read
-            //   code, which always writes five floats regardless of their values...
-            if (auto tr = fetch<float32> (in))
-              H.keyval()["MGH_TR"] = str(tr, 6);
-            if (auto flip_angle = fetch<float32> (in)) // Radians in MGHO -> degrees in header
-              H.keyval()["MGH_flip"] = str(flip_angle * 180.0 / Math::pi, 6);
-            if (auto te = fetch<float32> (in))
-              H.keyval()["MGH_TE"] = str(te, 6);
-            if (auto ti = fetch<float32> (in))
-              H.keyval()["MGH_TI"] = str(ti, 6);
-
+            // fetch() will throw an int(1) straight away if these data don't exist
+            H.keyval()["MGH_TR"] = str(fetch<float32> (in), 6);
+            H.keyval()["MGH_flip"] = str(fetch<float32> (in) * 180.0 / Math::pi, 6); // Radians in MGHO -> degrees in header
+            H.keyval()["MGH_TE"] = str(fetch<float32> (in), 6);
+            H.keyval()["MGH_TI"] = str(fetch<float32> (in), 6);
             fetch<float32> (in); // fov - ignored
 
             do {
@@ -886,13 +877,15 @@ namespace MR
           std::string pe_dir ("UNKNOWN");
           float32 field_strength = NaN;
           std::string mri_frames, colour_table;
-          Tag cmdline_tag;
+          vector<Tag> cmdline_tags;
 
           for (auto entry : H.keyval()) {
-            if (entry.first == "command_history")
-              cmdline_tag.set (MGH_TAG_CMDLINE, entry.second);
-            else if (entry.first.size() < 5 || entry.first.substr(0, 4) != "MGH_")
+            if (entry.first == "command_history") {
+              for (auto line : split_lines (entry.second))
+                cmdline_tags.push_back (Tag (MGH_TAG_CMDLINE, line));
+            } else if (entry.first.size() < 5 || entry.first.substr(0, 4) != "MGH_") {
               continue;
+            }
             if (entry.first == "MGH_TR") {
               tr = to<float32> (entry.second);
             } else if (entry.first == "MGH_flip") {
@@ -930,6 +923,10 @@ namespace MR
               }
             }
           }
+
+          // Although we could theoretically avoid writing any metadata here at all if there were no interesting
+          //   data to write, the fact that "command_history" will always have at least one entry (corresponding
+          //   to the currently-executing command) means that MGH_TAG_CMDLINE will always have at least one entry
 
           store<float32> (tr, out);
           store<float32> (flip_angle, out);
@@ -978,10 +975,12 @@ namespace MR
               default: WARN ("Malformed colour table in header (incorrect number of columns); not written to output image"); break;
             }
           }
-          if (cmdline_tag.content.size()) {
-            store<int32_t> (cmdline_tag.id, out);
-            store<int64_t> (cmdline_tag.content.size()+1, out);
-            out.write (cmdline_tag.content.c_str(), cmdline_tag.content.size()+1);
+          if (cmdline_tags.size()) {
+            for (auto tag : cmdline_tags) {
+              store<int32_t> (tag.id, out);
+              store<int64_t> (tag.content.size()+1, out);
+              out.write (tag.content.c_str(), tag.content.size()+1);
+            }
           }
         }
 
