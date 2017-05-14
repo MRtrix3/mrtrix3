@@ -33,6 +33,7 @@ general_options = app.cmdline.add_argument_group('General options')
 # general_options.add_argument('-linear', choices=choice_linear_type, help='valid choices: '+', '.join(choice_linear_type), default='affine')
 # general_options.add_argument('-nonlinear', action='store_true', help='run nonlinear registration')
 general_options.add_argument('-lmax', help='The maximum harmonic degree(s)')
+general_options.add_argument('-dry_run', help='Test command line arguments', default=True)
 # general_options.add_argument('-mask1', help='Provide a mask for image1')
 # general_options.add_argument('-mask2', help='Provide a mask for image2')
 # app.cmdline.flagMutuallyExclusiveOptions( [ 'grad', 'fslgrad' ] )
@@ -141,19 +142,42 @@ stages = current_stages
 app.console ("input images:")
 app.console (str(images))
 
+if len(stages) == 0:
+  app.error('require at least one stage')
+
 debug ("stages:")
 for i, stage in enumerate(stages):
   debug ('%03i: ' % i +str(stage))
 
-# class Shared:
-#   def __init__(self):
-#     self.arg0 = None
-#     self.arg1 = None
+### define mutable variables each stage has access to
+class Shared:
+  def __init__(self):
+    self.istage = None
+    # input images at original resolution. used if im1 is None. underscore to omit from debug output
+    self._im1_fullres = None
+    self._im2_fullres = None
+    # resized input images
+    self.im1 = None
+    self.im2 = None
+    # linear and nonlinear transformations
+    self.affine = None
+    self.warp = None
+  # def __init__(self, dictionary):
+  #   for k, v in dictionary.items():
+  #     setattr(self, k, v)
+  #   self.set_to_defaults()
+
+  def __str__(self):
+    d = self.__dict__
+    return ', '.join([(str(k)+':'+str(d[k])) for k in sorted(d.keys()) if d[k] is not None and k[0] != '_'])
 
 class Stage:
-  # shared = Shared()
-  def make_command(self):
-    # ['arg', '=', 'val'] --> ['-arg', 'val']
+  # shared is a (mutable) class attribute --> shared is synchronised across all Stage instances
+  shared = Shared()
+
+  # parse the options and create the command to be executede
+  def mrtrix_options(self):
+    # converts ['arg', '=', 'val1', 'val2'] to ['-arg', 'val1', 'val2']
     cmd = []
     idx = set([i for i, x in enumerate(self.args) if x == "="])
     for i, arg in enumerate(self.args):
@@ -164,8 +188,16 @@ class Stage:
       else:
         cmd.append(arg)
     return cmd
-  # def get_command(self):
-  #   return [self.command] + self.args
+
+  # execute the stage. modify shared values if necessary. for instance output becomes input for next stage
+  def run (self, dry_run = False):
+    # set up command:
+    cmd = [self.command]
+    cmd += [self.shared.im1, self.shared.im2]
+    cmd += self.mrtrix_options()
+    # run it
+    print (cmd) if dry_run else run.command(cmd)
+    # modify shared variables
 
   def __init__(self, v):
     self.name = v[0]
@@ -176,64 +208,158 @@ class Stage:
     return self.name
 
   def __str__(self):
-    return "%s %s" % (self.name.ljust(9), self.make_command())
+    return "%s %s" % (self.name.ljust(9), str(self.args))
+
+  def info(self):
+    app.console('%03i: ' % self.shared.istage + str(self))
+    debug(self.shared)
 
 class Stage_INIT(Stage):
   def __init__(self, v):
     Stage.__init__(self, v)
     self.command = 'mrreg_init'
 
-class Stage_LIN(Stage):
-  def __init__(self, v):
-    Stage.__init__(self, v)
-    self.command = 'mrreg_lin'
-    self.name = 'linear'
-
-class Stage_OUT(Stage):
-  def __init__(self, v):
-    Stage.__init__(self, v)
-    self.command = None
-    self.warp_local = None
-    self.warp_out = None
-    self.trafo_local = None
-    self.trafo_out = None
-
-  def make_command(self):
-    opt = Stage.make_command(self)
-    cmd = []
-    if '-affine' in opt:
-      if not self.trafo_local:
-        app.error('output requested affine but no affine produced. options received: '+' '.join(self.args))
-      self.trafo_out = opt[opt.index('-affine')+1]
-      cmd.append(['cp',self.trafo_local,self.trafo_out])
-    if '-warp' in opt:
-      if not self.warp_local:
-        app.error('output requested warp but no warp produced. options received: '+' '.join(self.args))
-      self.warp_out = opt[opt.index('-warp')+1]
-      cmd.append(['cp',self.warp_local,self.warp_out])
-    if not self.trafo_out and not self.warp_out:
-      debug('args:'+str(self.args))
-      debug('opt:'+str(opt))
-      app.error('output requested without specifying which kind. use "affine=" or "warp=". options received: '+' '.join(self.args))
-    return cmd
-
-class Stage_NL(Stage):
-  def __init__(self, v):
-    Stage.__init__(self, v)
-    self.command = 'mrreg_nl'
-    self.name = 'nonlinear'
+  def run(self, dry_run = False):
+    istage = self.shared.istage
+    affine_out = '%03i.mat' % istage
+    if self.shared.im1:
+      assert (self.shared.im2 is not None)
+      args = [self.shared.im1, self.shared.im2]
+    else:
+      assert (self.shared._im1_fullres is not None)
+      assert (self.shared._im2_fullres is not None)
+      args = [self.shared._im1_fullres, self.shared._im2_fullres]
+    args += ['-affine_out', affine_out]
+    if self.args:
+      args += self.mrtrix_options()
+    cmd = [self.command] + args
+    print (cmd) if dry_run else run.command(cmd)
+    self.shared.affine = affine_out
 
 class Stage_RESIZE(Stage):
   def __init__(self, v):
     Stage.__init__(self, v)
     self.command = None
     self.scale = None
-
-  def make_command(self):
-    opt = Stage.make_command(self)
-    if not '-scale' in opt:
+  def run(self, dry_run = False):
+    opt = self.mrtrix_options()
+    scale = None
+    for i, o in enumerate(opt):
+      if o.startswith('-s'):
+        if len(opt)<i+2:
+          app.error('-scale option requires one argument. received: '+ str(opt))
+        scale = opt[i+1]
+    if not scale:
       app.warn('resize requested but no scale specified. using scale=1. options received: '+' '.join(self.args))
-    return opt + ['-scale','1']
+      scale = '1'
+    assert (self.shared._im1_fullres is not None)
+    assert (self.shared._im2_fullres is not None)
+    im1 = 'im1_%03i.mif' % self.shared.istage
+    im2 = 'im2_%03i.mif' % self.shared.istage
+    cmds = []
+    cmds.append([['mrresize', self.shared._im1_fullres, '-'] + ['-scale',scale],['mrfilter','-','smooth',im1]])
+    cmds.append([['mrresize', self.shared._im2_fullres, '-'] + ['-scale',scale],['mrfilter','-','smooth',im2]])
+    for cmd in cmds:
+      print (cmd) if dry_run else run.command(cmd)
+
+    self.shared.im1 = im1
+    self.shared.im2 = im2
+
+
+class Stage_LIN(Stage):
+  def __init__(self, v):
+    Stage.__init__(self, v)
+    self.command = 'mrreg_lin'
+    self.name = 'linear'
+  def run(self, dry_run = False):
+    if self.shared.warp:
+      app.warn('linear registration following nonlinear registration')
+    cmd = [self.command]
+    if self.shared.im1:
+      assert (self.shared.im2 is not None)
+      cmd += [self.shared.im1, self.shared.im2]
+    else:
+      assert (self.shared._im1_fullres is not None)
+      assert (self.shared._im2_fullres is not None)
+      cmd += [self.shared._im1_fullres, self.shared._im2_fullres]
+
+    if self.shared.affine:
+      cmd += ['-affine_in',self.shared.affine]
+    affine_out = '%03i.mat' % self.shared.istage
+    cmd += ['-affine_out', affine_out]
+    if self.args:
+      cmd += self.mrtrix_options()
+    print (cmd) if dry_run else run.command(cmd)
+    self.shared.affine = affine_out
+
+class Stage_NL(Stage):
+  def __init__(self, v):
+    Stage.__init__(self, v)
+    self.command = 'mrreg_nl'
+    self.name = 'nonlinear'
+  def run(self, dry_run = False):
+    cmd = [self.command]
+    if self.shared.im1:
+      assert (self.shared.im2 is not None)
+      cmd += [self.shared.im1, self.shared.im2]
+    else:
+      assert (self.shared._im1_fullres is not None)
+      assert (self.shared._im2_fullres is not None)
+      cmd += [self.shared._im1_fullres, self.shared._im2_fullres]
+
+    if self.shared.affine:
+      cmd += ['-affine_in',self.shared.affine]
+    elif self.shared.warp:
+      cmd += ['-warp_in',self.shared.warp]
+    warp_out = 'w%03i.mif' % self.shared.istage
+    cmd += ['-warp_out', warp_out]
+    if self.args:
+      cmd += self.mrtrix_options()
+    print (cmd) if dry_run else run.command(cmd)
+    self.shared.affine = None
+    self.shared.warp = warp_out
+
+class Stage_OUT(Stage):
+  def __init__(self, v):
+    Stage.__init__(self, v)
+    self.command = None
+  def run(self, dry_run = False):
+    import shutil
+    warp_out = None
+    trafo_out = None
+    opt = self.mrtrix_options()
+    if len(opt) < 1:
+      app.error('out: requires options')
+    skip_next = False
+    for i in range(len(opt)):
+      if skip_next:
+        continue
+      o = opt[i]
+      if o.startswith('-w'):
+        if len(opt) < i + 2:
+          app.error('out: -warp option requires one argument')
+        warp_out = opt[i+1]
+        skip_next = True
+      elif o.startswith('-a'):
+        if len(opt) < i + 2:
+          app.error('out: -affine option requires one argument')
+        trafo_out = opt[i+1]
+        skip_next = True
+      else:
+        app.error('out: unexpected option: '+str(opt))
+    if warp_out:
+      if not self.shared.warp:
+        app.error('out: warp requested but no warp generated')
+      app.checkOutputPath(warp_out)
+      cmd = [shutil.copy2,self.shared.warp,warp_out]
+      print (cmd) if dry_run else run.function(cmd)
+    if trafo_out:
+      if not self.shared.affine:
+        app.error('out: affine requested but no affine generated')
+      app.checkOutputPath(trafo_out)
+      cmd = [shutil.copy2,self.shared.affine,trafo_out]
+      print (cmd) if dry_run else run.function(cmd)
+
 
 def get_class(t):
   if not 'Stage_'+t[0].upper() in globals():
@@ -285,171 +411,42 @@ def multimethod(*types):
     return mm
   return register
 
-# from collections import defaultdict
-DEBUG=True
+DEBUG=app.args.debug
 
-class Sequence:
-  class var(object):
-    def set_to_defaults (self):
-      self.im1 = None
-      self.im2 = None
-      self.affine_in = None
-      self.affine_out = None
-      self.warp_in = None
-      self.warp_out = None
-      self.istage = 0
-    def __init__(self, dictionary):
-      if dictionary:
-        for k, v in dictionary.items():
-          setattr(self, k, v)
-        self.set_to_defaults()
-
-  def __init__(self, variables=None):
+class Algorithm:
+  def __init__(self):
     self.stages = []
-    self.var=self.var(variables)
 
   def add(self, nxt):
     self.stages.append(nxt)
 
-  def info(self):
-    d = self.var.__dict__
-    return ', '.join([(str(k)+':'+str(d[k])) for k in sorted(d.keys()) if d[k] is not None])
+  # def info(self):
+  #   d = self.var.__dict__
+  #   return ', '.join([(str(k)+':'+str(d[k])) for k in sorted(d.keys()) if d[k] is not None])
 
-  ### define rules between stages
-  # pre_hook: stage specific rules before stage is executed
-  # post_hook: stage specific rules after stage is executed
+  ### define rules between stages.
+  # pre_run_check: stage specific rules before stage is executed
   @multi
-  def pre_hook(self, obj):
+  def pre_run_check(self, obj):
     return obj.__class__
 
-  @multi
-  def post_hook(self, obj):
-    return obj.__class__
-
-  ## default rules
-  @method(pre_hook)
-  def pre_hook(self, *args, **kwargs):
-    # debug ('No pre_hook defined for '+args[0].name)
-    return None
-
-  @method(post_hook)
-  def post_hook(self, *args, **kwargs):
-    # debug ('No post_hook defined for '+args[0].name)
+  ## default rule
+  @method(pre_run_check)
+  def pre_run_check(self, *args, **kwargs):
+    # debug ('No pre_run_check defined for '+args[0].name)
     return None
 
   ## stage type specific rules
-  @method(pre_hook, Stage_INIT)
-  def pre_hook(self, obj):
-    debug ('pre_hook: '+obj.name)
-    istage = self.var.istage
-    stage = self.stages[istage]
-    if istage > 0:
-      for i in range(0, istage)[::-1]:
+  @method(pre_run_check, Stage_INIT)
+  def pre_run_check(self, obj):
+    debug ('pre_run_check: '+obj.name)
+    stage = self.stages[self.istage]
+    if self.istage > 0:
+      for i in range(0, self.istage)[::-1]:
         if self.stages[i].name == 'affine':
           app.error('init stage needs to be before affine stages')
-    self.var.affine_out = '%03i.mat' % istage
-    stage.args += ['-affine_out', self.var.affine_out]
-    if self.var.im1:
-      assert (self.var.im2 is not None)
-      stage.args.insert(0, self.var.im2)
-      stage.args.insert(0, self.var.im1)
-    else:
-      stage.args.insert(0, self.var.orig2)
-      stage.args.insert(0, self.var.orig1)
-    return True
+    return None
 
-  @method(post_hook, Stage_INIT)
-  def post_hook(self, obj):
-    debug ('post_hook: '+obj.name)
-    self.var.affine_in = self.var.affine_out
-    self.var.affine_out = None
-    return True
-
-  @method(pre_hook, Stage_RESIZE)
-  def pre_hook(self, obj):
-    debug ('pre_hook: '+obj.name)
-    istage = self.var.istage
-    if self.var.im1:
-      assert (self.var.im2 is not None)
-      debug('rm '+self.var.im1+'; rm '+self.var.im2)
-    self.var.im1 = 'im1_%003i.mif' % (istage)
-    self.var.im2 = 'im2_%003i.mif' % (istage)
-    return True
-  @method(post_hook, Stage_RESIZE)
-  def post_hook(self, obj):
-    return False
-
-  @method(pre_hook, Stage_LIN)
-  def pre_hook(self, obj):
-    debug ('pre_hook: '+obj.name)
-    istage = self.var.istage
-    stage = self.stages[istage]
-    if self.var.affine_in:
-      stage.args += ['-affine_in',self.var.affine_in]
-    self.var.affine_out = '%003i.mat' % (istage)
-    stage.args += ['-affine_out',self.var.affine_out]
-    if self.var.im1:
-      assert (self.var.im2 is not None)
-      stage.args.insert(0, self.var.im2)
-      stage.args.insert(0, self.var.im1)
-    else:
-      stage.args.insert(0, self.var.orig2)
-      stage.args.insert(0, self.var.orig1)
-    return True
-  @method(post_hook, Stage_LIN)
-  def post_hook(self, obj):
-    debug ('post_hook: '+obj.name)
-    self.var.affine_in = self.var.affine_out
-    self.var.affine_out = None
-    return True
-
-  @method(pre_hook, Stage_NL)
-  def pre_hook(self, obj):
-    debug ('pre_hook: '+obj.name)
-    istage = self.var.istage
-    stage = self.stages[istage]
-    self.var.affine_out = '%003i.mat' % (istage)
-    self.var.warp_out = 'w%003i.mif' % (istage)
-    if self.var.warp_in:
-      stage.args += ['-warp_in',self.var.warp_in]
-      if (self.var.affine_in):
-        debug('using warp, not affine')
-    elif self.var.affine_in:
-      stage.args += ['-affine_in',self.var.affine_in]
-    stage.args += ['-affine_out',self.var.affine_out,'-warp_out',self.var.warp_out]
-    if self.var.im1:
-      assert (self.var.im2 is not None)
-      stage.args.insert(0, self.var.im2)
-      stage.args.insert(0, self.var.im1)
-    else:
-      stage.args.insert(0, self.var.orig2)
-      stage.args.insert(0, self.var.orig1)
-    return True
-  @method(post_hook, Stage_NL)
-  def post_hook(self, obj):
-    debug ('post_hook: '+obj.name)
-    self.var.affine_in = self.var.affine_out
-    self.var.affine_out = None
-    self.var.warp_in = self.var.warp_out
-    self.var.warp_out = None
-    return True
-
-  @method(pre_hook, Stage_OUT)
-  def pre_hook(self, obj):
-    debug ('pre_hook: '+obj.name)
-    istage = self.var.istage
-    stage = self.stages[istage]
-    stage.trafo_local = self.var.affine_in
-    stage.warp_local = self.var.warp_in
-    return False
-
-
-  # @multimethod(INIT)
-  # def pre_hook(a):
-  #   debug('pre_hook '+a.name)
-  #   print self.var # does not work
-
-  ## rules for order of stages. no access to self.*
   @multimethod(Stage_INIT, Stage_INIT)
   def check(a, b):
     app.error ('stage "' +a.name+'" followed by "'+b.name+'"')
@@ -459,25 +456,31 @@ class Sequence:
     app.error ('stage "' +a.name+'" followed by "'+b.name+'"')
 
   def run (self):
-    self.var.set_to_defaults()
+    # self.stages[0].shared.set_to_defaults()
 
     for istage, cs in enumerate(self.stages):
+      self.istage = istage
+      cs.shared.istage = istage
+      self.pre_run_check(self.stages[istage])
+      # app.console ('%03i: '%istage+str(cs))
+      cs.info()
+      cs.run(dry_run = app.args.dry_run)
       ns = True if istage < len(self.stages) - 1 else None
-      self.var.istage = istage
-      if self.pre_hook(self.stages[istage]): debug(self.info())
-      app.console ('%03i: '%istage+str(self.stages[istage]))
       if ns:
         try:
           self.check(self.stages[istage],self.stages[istage+1])
         except TypeError:
           pass
-        if self.post_hook(self.stages[istage]): debug(self.info())
 
-S = Sequence(dict(orig1=images[0],orig2=images[1]))
+
+A = Algorithm()
 for i, s in enumerate(stages):
-  S.add(get_class(s))
+  A.add(get_class(s))
 
-S.run()
+A.stages[0].shared._im1_fullres=images[0]
+A.stages[0].shared._im2_fullres=images[1]
+
+A.run()
 
 
 app.complete()
