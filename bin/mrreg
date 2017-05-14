@@ -28,6 +28,14 @@ def quote_ws(s):
     return '\''+s+'\''
   return s
 
+def run_command(cmd, dry_run):
+  if dry_run:
+    print (cmd)
+  else:
+    # if app.args.info:
+      # cmd += ['-info']
+    run.command(cmd)
+
 import re, subprocess, shlex, pipes
 def parse_stages(argv):
   stages = []
@@ -181,7 +189,7 @@ class Stage:
     cmd += [self.shared.im1, self.shared.im2]
     cmd += self.mrtrix_options()
     # run it
-    print (cmd) if dry_run else run.command(cmd)
+    run_command(cmd, dry_run)
     # modify shared variables
     self.shared.im1 = 'im1_post_stage_'+str(self.shared.istage)+'.mif'
 
@@ -215,11 +223,11 @@ class Stage_INIT(Stage):
       assert (self.shared._im1_fullres is not None)
       assert (self.shared._im2_fullres is not None)
       args = [self.shared._im1_fullres, self.shared._im2_fullres]
-    args += ['-affine_out', affine_out]
+    args += [affine_out]
     if self.args:
       args += self.mrtrix_options()
     cmd = [self.command] + args
-    print (cmd) if dry_run else run.command(cmd)
+    run_command(cmd, dry_run)
     self.shared.affine = affine_out
 
 class Stage_RESIZE(Stage):
@@ -246,10 +254,11 @@ class Stage_RESIZE(Stage):
     cmds.append([['mrresize', self.shared._im1_fullres, '-'] + ['-scale',scale],['mrfilter','-','smooth',im1]])
     cmds.append([['mrresize', self.shared._im2_fullres, '-'] + ['-scale',scale],['mrfilter','-','smooth',im2]])
     for cmd in cmds:
-      print (cmd) if dry_run else run.command(cmd)
+      run_command(cmd, dry_run)
 
     self.shared.im1 = im1
     self.shared.im2 = im2
+
 
 
 class Stage_LIN(Stage):
@@ -270,12 +279,12 @@ class Stage_LIN(Stage):
       cmd += [self.shared._im1_fullres, self.shared._im2_fullres]
 
     if self.shared.affine:
-      cmd += ['-affine_in',self.shared.affine]
+      cmd += ['-affine_init_matrix',self.shared.affine]
     affine_out = '%03i.mat' % self.shared.istage
-    cmd += ['-affine_out', affine_out]
+    cmd += ['-affine', affine_out]
     if self.args:
       cmd += self.mrtrix_options()
-    print (cmd) if dry_run else run.command(cmd)
+    run_command(cmd, dry_run)
     self.shared.affine = affine_out
 
 class Stage_NL(Stage):
@@ -294,14 +303,14 @@ class Stage_NL(Stage):
       cmd += [self.shared._im1_fullres, self.shared._im2_fullres]
 
     if self.shared.affine:
-      cmd += ['-affine_in',self.shared.affine]
+      cmd += ['-affine',self.shared.affine]
     elif self.shared.warp:
-      cmd += ['-warp_in',self.shared.warp]
+      cmd += ['-nl_init',self.shared.warp]
     warp_out = 'w%03i.mif' % self.shared.istage
-    cmd += ['-warp_out', warp_out]
+    cmd += ['-nl_warp_full', warp_out]
     if self.args:
       cmd += self.mrtrix_options()
-    print (cmd) if dry_run else run.command(cmd)
+    run_command(cmd, dry_run)
     self.shared.affine = None
     self.shared.warp = warp_out
 
@@ -324,12 +333,12 @@ class Stage_OUT(Stage):
       if o.startswith('-w'):
         if len(opt) < i + 2:
           app.error('out: -warp option requires one argument')
-        warp_out = opt[i+1]
+        warp_out = path.fromUser(opt[i+1], False)
         skip_next = True
       elif o.startswith('-a'):
         if len(opt) < i + 2:
           app.error('out: -affine option requires one argument')
-        trafo_out = opt[i+1]
+        trafo_out = path.fromUser(opt[i+1], False)
         skip_next = True
       else:
         app.error('out: unexpected option: '+str(opt))
@@ -338,18 +347,17 @@ class Stage_OUT(Stage):
         app.error('out: warp requested but no warp generated')
       app.checkOutputPath(warp_out)
       cmd = [shutil.copy2,self.shared.warp,warp_out]
-      print (cmd) if dry_run else run.function(cmd)
+      print (cmd) if dry_run else run.function(*cmd)
     if trafo_out:
       if not self.shared.affine:
         app.error('out: affine requested but no affine generated')
       app.checkOutputPath(trafo_out)
       cmd = [shutil.copy2,self.shared.affine,trafo_out]
-      print (cmd) if dry_run else run.function(cmd)
+      print (cmd) if dry_run else run.function(*cmd)
 
 valid_stage_names = [x[6:].lower() for x in globals().keys() if x.startswith('Stage_')]
-default = dict(linear='init[translation=mass] resize[scale=0.3] lin[lmax=0] resize[scale=0.5] lin[lmax=2] resize[scale=1] lin[lmax=4]',
-  nonlinear='resize[scale=1] lin[lmax=4]\
-   resize[scale=0.3] nl[lmax=0] resize[scale=0.5] nl[lmax=2] resize[scale=1] nl[lmax=4]')
+default = dict(linear='init[-moments] lin[affine_scale=0.3] lin[affine_scale=0.5] lin[affine_scale=1]',
+  nonlinear='nl[nl_scale=0.3] nl[nl_scale=0.5] nl[nl_scale=1]')
 
 app.init('MRtrix3 (TODO@gmail.com)','Symmetric linear and nonlinear registration')
 app.cmdline.addDescription('mrreg acts as a wrapper script for linear and nonlinear registration tasks\n\
@@ -363,7 +371,7 @@ general_options = app.cmdline.add_argument_group('General options')
 # general_options.add_argument('-linear', choices=choice_linear_type, help='valid choices: '+', '.join(choice_linear_type), default='affine')
 # general_options.add_argument('-nonlinear', action='store_true', help='run nonlinear registration')
 general_options.add_argument('-lmax', help='The maximum harmonic degree(s)')
-general_options.add_argument('-dry_run', help='Test command line arguments', default=True)
+general_options.add_argument('-dry_run', help='Test command line arguments', default=False)
 # general_options.add_argument('-mask1', help='Provide a mask for image1')
 # general_options.add_argument('-mask2', help='Provide a mask for image2')
 # app.cmdline.flagMutuallyExclusiveOptions( [ 'grad', 'fslgrad' ] )
@@ -469,6 +477,7 @@ class Algorithm:
       # app.console ('%03i: '%istage+str(cs))
       cs.info()
       cs.run(dry_run = app.args.dry_run)
+      app.debug('done')
       ns = True if istage < len(self.stages) - 1 else None
       if ns:
         try:
@@ -497,9 +506,11 @@ for stage in stages:
   else:
     A.add(get_class(stage))
 
+app.makeTempDir()
+app.gotoTempDir()
 
-A.stages[0].shared._im1_fullres=images[0]
-A.stages[0].shared._im2_fullres=images[1]
+A.stages[0].shared._im1_fullres=path.fromUser(images[0], False)
+A.stages[0].shared._im2_fullres=path.fromUser(images[1], False)
 
 A.run()
 
