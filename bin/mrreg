@@ -12,40 +12,15 @@ if not os.path.isdir(lib_folder):
 sys.path.insert(0, lib_folder)
 
 
-
 from mrtrix3 import app, image, path, run
-
-choice_init = ['mass', 'search', 'matrix']
-choice_linear_type =['rigid', 'affine']
-
-app.init('MRtrix3 (TODO@gmail.com)','Symmetric linear and nonlinear registration')
-app.cmdline.addDescription('mrreg acts as a script for performing various types of registrations')
-
-app.cmdline.add_argument("input", nargs='+', help='example: mrreg \
-input[ "1 space.mif" 2.mif] \
-init[translation=mass] \
-resize[scale=0.3] \
-lin[lmax=0] lin[lmax=2] lin[lmax=4] \
-nl[lmax=0] nl[lmax=2] nl[lmax=4]')
-
-general_options = app.cmdline.add_argument_group('General options')
-# general_options.add_argument('-init', choices=choice_init, help='valid choices: '+', '.join(choice_init), default='mass')
-# general_options.add_argument('-linear', choices=choice_linear_type, help='valid choices: '+', '.join(choice_linear_type), default='affine')
-# general_options.add_argument('-nonlinear', action='store_true', help='run nonlinear registration')
-general_options.add_argument('-lmax', help='The maximum harmonic degree(s)')
-general_options.add_argument('-dry_run', help='Test command line arguments', default=True)
-# general_options.add_argument('-mask1', help='Provide a mask for image1')
-# general_options.add_argument('-mask2', help='Provide a mask for image2')
-# app.cmdline.flagMutuallyExclusiveOptions( [ 'grad', 'fslgrad' ] )
-
 
 global DEBUG
 DEBUG = False
-stages = []
 
 def debug(s):
   if DEBUG:
     print('\033[03;34m' +str(s) + '\033[0m')
+
 def quote_ws(s):
   # return pipes.quote(s)
   if s.count(' '):
@@ -53,101 +28,111 @@ def quote_ws(s):
     return '\''+s+'\''
   return s
 
-debug("sys.argv")
-debug(sys.argv[1:])
-
 import re, subprocess, shlex, pipes
-# argument input[ "image 1.mif"] works but not input["image 1.mif"]
-# so here we split 'text["something quoted"' off as two arguments: 'text[' and "'something quoted'"
-bracket = re.compile('(\w+)\[(\w+.*)')
-args = []
-for a in sys.argv[1:]:
-  m = bracket.findall(a)
-  assert (len(m) < 2)
-  if not m:
-    args.append(a)
-  else:
-    debug('fix bracket '+a+' --> ' + str(m[0][0]) + '[ ' + str(m[0][1]))
-    args += [m[0][0]+'[', quote_ws(m[0][1])] # [quote_ws(s) for s in m[0]]
-debug("args:")
-debug(args)
-
-# stage parsing
-debug("stage parsing")
-p = re.compile('\W*(\w+)\[(.*?)\]')
-scmd = subprocess.list2cmdline(args)
-# scmd = ' '.join([pipes.quote(s) for s in args])
-debug("scmd:")
-debug(scmd)
-parsed = set()
-
-for m in p.finditer(scmd):
-  stage_options = []
-  debug(m.groups()[1])
-  stage_options = shlex.split(m.groups()[1])
-  # here we split what=val into three arguments, stages need to join or process it.
-  # the following are equivalent: what=val, what = val, what= val, what =val
-  # this is to allow whitespaces between '=' and 'val' which allows shell tab completion
-  # invalid: what=, what =
-  s_args = []
-  for i, so in enumerate(stage_options):
-    idx = so.find('=')
-    if idx != -1:
-      if idx > 0:
-        s_args += [so[:idx]]
-      s_args += ['=']
-      if idx < len(so) - 1:
-        s_args += [so[idx+1:].lstrip()]
-      else: # check if next is an argument
-        if len(stage_options) - 1 == i or stage_options[i+1].find('=') != -1:
-          app.error('stage parsing failed. stage options using "=" need to be followed by values. stage: "'+ m.groups()[0]+'" options: '+str(stage_options))
+def parse_stages(argv):
+  stages = []
+  # argument input[ "image 1.mif"] works but not input["image 1.mif"]
+  # so here we split 'text["something quoted"' off as two arguments: 'text[' and "'something quoted'"
+  bracket = re.compile('(\w+)\[(\w+.*)')
+  args = []
+  for a in argv:
+    m = bracket.findall(a)
+    assert (len(m) < 2)
+    if not m:
+      args.append(a)
     else:
-      s_args.append(so)
-  if m.groups()[0] != 'input':
-    debug('stage: ' + m.groups()[0] + ': '+str(s_args))
-  stages.append((m.groups()[0], s_args))
-  parsed = parsed.union(set(range(*m.span())))
-toparse=''.join([scmd[i] for i in sorted(list(set(range(0,len(scmd))) - parsed))])
+      debug('fix bracket '+a+' --> ' + str(m[0][0]) + '[ ' + str(m[0][1]))
+      args += [m[0][0]+'[', quote_ws(m[0][1])] # [quote_ws(s) for s in m[0]]
+  debug("args:")
+  debug(args)
 
-### remove stages from sys.argv
-sys.argv = [sys.argv[0]] + toparse.split()
-# add dummy argument if no arguments were found to prevent showing help
-if len(stages) > 0 and len(toparse.split()) == 0:
-  sys.argv.append('%i[stages]'%len(stages))
+  # stage parsing
+  debug("stage parsing")
+  p = re.compile('\W*(\w+)\[(.*?)\]')
+  scmd = subprocess.list2cmdline(args)
+  # scmd = ' '.join([pipes.quote(s) for s in args])
+  debug("scmd:")
+  debug(scmd)
+  parsed = set()
 
-### command line parsing to handle options
-app.parse()
+  for m in p.finditer(scmd):
+    stage_options = []
+    debug(m.groups()[1])
+    stage_options = shlex.split(m.groups()[1])
+    # here we split what=val into three arguments, stages need to join or process it.
+    # the following are equivalent: what=val, what = val, what= val, what =val
+    # this is to allow whitespaces between '=' and 'val' which allows shell tab completion
+    # invalid: what=, what =
+    s_args = []
+    for i, so in enumerate(stage_options):
+      idx = so.find('=')
+      if idx != -1:
+        if idx > 0:
+          s_args += [so[:idx]]
+        s_args += ['=']
+        if idx < len(so) - 1:
+          s_args += [so[idx+1:].lstrip()]
+        else: # check if next is an argument
+          if len(stage_options) - 1 == i or stage_options[i+1].find('=') != -1:
+            app.error('stage parsing failed. stage options using "=" need to be followed by values. stage: "'+ m.groups()[0]+'" options: '+str(stage_options))
+      else:
+        s_args.append(so)
+    if m.groups()[0] != 'input':
+      debug('stage: ' + m.groups()[0] + ': '+str(s_args))
+    stages.append((m.groups()[0], s_args))
+    parsed = parsed.union(set(range(*m.span())))
+  toparse=''.join([scmd[i] for i in sorted(list(set(range(0,len(scmd))) - parsed))])
+  return toparse, stages
 
-### option parsing
-if app.args.lmax:
-  app.console('option: -lmax='+app.args.lmax)
+def get_class(t):
+  if not 'Stage_'+t[0].upper() in globals():
+    app.error('stage "'+t[0]+'" not defined')
+  return globals()['Stage_'+t[0].upper()](t)
+# c = get_class(('init','translation=mass'))
 
-# app.args.input quoted input get split but remain quoted --> join and split
-app.args.input = shlex.split(' '.join(app.args.input))
-### remaining argument parsing
-if len(app.args.input ) != 0 and len(app.args.input ) != 2:
-  app.error('expected no argument. received: ' + toparse)
-if len(app.args.input ):
-  stages.insert(0,('input',app.args.input ))
+## Multiple dispatch, single argument
+def multi(dispatch_fn):
+  def _inner(*args, **kwargs):
+    return _inner.__multi__.get(dispatch_fn(*args, **kwargs), _inner.__multi_default__)(*args, **kwargs)
+  _inner.__multi__ = {}
+  _inner.__multi_default__ = lambda *args, **kwargs: None  # Default default
+  return _inner
 
-### remove input from processing stages
-images = []
-current_stages = []
-for stage in stages:
-  if stage[0] == 'input':
-    images += (stage[1])
-  else:
-    current_stages.append(stage)
-stages = current_stages
-app.console ("input images:")
-app.console (str(images))
+def method(dispatch_fn, dispatch_key=None):
+  def apply_decorator(fn):
+    if dispatch_key is None: # Default case
+      dispatch_fn.__multi_default__ = fn
+    else:
+      dispatch_fn.__multi__[dispatch_key] = fn
+    return dispatch_fn
+  return apply_decorator
 
-if len(stages) == 0:
-  app.error('require at least one stage')
+## Multiple dispatch, multiple arguments
+registry = {}
+class MultiMethod(object):
+  def __init__(self, name):
+    self.name = name
+    self.typemap = {}
+  def __call__(self, *args):
+    types = tuple(arg.__class__ for arg in args)
+    function = self.typemap.get(types)
+    if function is None:
+      raise TypeError("no match")
+    return function(*args)
+  def register(self, types, function):
+    if types in self.typemap:
+      raise TypeError("duplicate registration")
+    self.typemap[types] = function
 
-debug ("stages:")
-for i, stage in enumerate(stages):
-  debug ('%03i: ' % i +str(stage))
+def multimethod(*types):
+  def register(function):
+    name = function.__name__
+    mm = registry.get(name)
+    if mm is None:
+      mm = registry[name] = MultiMethod(name)
+    mm.register(types, function)
+    return mm
+  return register
 
 ### define mutable variables each stage has access to
 class Shared:
@@ -189,7 +174,7 @@ class Stage:
         cmd.append(arg)
     return cmd
 
-  # execute the stage. modify shared values if necessary. for instance output becomes input for next stage
+  # execute the stage. modify shared values if necessary.
   def run (self, dry_run = False):
     # set up command:
     cmd = [self.command]
@@ -198,6 +183,7 @@ class Stage:
     # run it
     print (cmd) if dry_run else run.command(cmd)
     # modify shared variables
+    self.shared.im1 = 'im1_post_stage_'+str(self.shared.istage)+'.mif'
 
   def __init__(self, v):
     self.name = v[0]
@@ -208,7 +194,7 @@ class Stage:
     return self.name
 
   def __str__(self):
-    return "%s %s" % (self.name.ljust(9), str(self.args))
+    return "%s[%s]" % (self.name.ljust(9), ' '.join([str(x) for x in self.args]))
 
   def info(self):
     app.console('%03i: ' % self.shared.istage + str(self))
@@ -273,7 +259,7 @@ class Stage_LIN(Stage):
     self.name = 'linear'
   def run(self, dry_run = False):
     if self.shared.warp:
-      app.warn('linear registration following nonlinear registration')
+      app.warn('linear registration follows nonlinear registration. ignoring warp')
     cmd = [self.command]
     if self.shared.im1:
       assert (self.shared.im2 is not None)
@@ -360,58 +346,76 @@ class Stage_OUT(Stage):
       cmd = [shutil.copy2,self.shared.affine,trafo_out]
       print (cmd) if dry_run else run.function(cmd)
 
+valid_stage_names = [x[6:].lower() for x in globals().keys() if x.startswith('Stage_')]
+default = dict(linear='init[translation=mass] resize[scale=0.3] lin[lmax=0] resize[scale=0.5] lin[lmax=2] resize[scale=1] lin[lmax=4]',
+  nonlinear='resize[scale=1] lin[lmax=4]\
+   resize[scale=0.3] nl[lmax=0] resize[scale=0.5] nl[lmax=2] resize[scale=1] nl[lmax=4]')
 
-def get_class(t):
-  if not 'Stage_'+t[0].upper() in globals():
-    app.error('stage "'+t[0]+'" not defined')
-  return globals()['Stage_'+t[0].upper()](t)
-# c = get_class(('init','translation=mass'))
+app.init('MRtrix3 (TODO@gmail.com)','Symmetric linear and nonlinear registration')
+app.cmdline.addDescription('mrreg acts as a wrapper script for linear and nonlinear registration tasks\n\
+ valid stages are: '+'[] '.join(valid_stage_names)+'[].\n \
+ valid predefined configurations are: conf['+'] conf['.join(default.keys())+']')
 
-## Multiple dispatch, single argument
-def multi(dispatch_fn):
-  def _inner(*args, **kwargs):
-    return _inner.__multi__.get(dispatch_fn(*args, **kwargs), _inner.__multi_default__)(*args, **kwargs)
-  _inner.__multi__ = {}
-  _inner.__multi_default__ = lambda *args, **kwargs: None  # Default default
-  return _inner
+app.cmdline.add_argument("input", nargs='+', help='example: mrreg im1.mif im2.mif '+default['linear']+' out[affine=affine.txt]')
 
-def method(dispatch_fn, dispatch_key=None):
-  def apply_decorator(fn):
-    if dispatch_key is None: # Default case
-      dispatch_fn.__multi_default__ = fn
-    else:
-      dispatch_fn.__multi__[dispatch_key] = fn
-    return dispatch_fn
-  return apply_decorator
+general_options = app.cmdline.add_argument_group('General options')
+# general_options.add_argument('-init', choices=choice_init, help='valid choices: '+', '.join(choice_init), default='mass')
+# general_options.add_argument('-linear', choices=choice_linear_type, help='valid choices: '+', '.join(choice_linear_type), default='affine')
+# general_options.add_argument('-nonlinear', action='store_true', help='run nonlinear registration')
+general_options.add_argument('-lmax', help='The maximum harmonic degree(s)')
+general_options.add_argument('-dry_run', help='Test command line arguments', default=True)
+# general_options.add_argument('-mask1', help='Provide a mask for image1')
+# general_options.add_argument('-mask2', help='Provide a mask for image2')
+# app.cmdline.flagMutuallyExclusiveOptions( [ 'grad', 'fslgrad' ] )
 
-## Multiple dispatch, multiple arguments
-registry = {}
-class MultiMethod(object):
-  def __init__(self, name):
-    self.name = name
-    self.typemap = {}
-  def __call__(self, *args):
-    types = tuple(arg.__class__ for arg in args)
-    function = self.typemap.get(types)
-    if function is None:
-      raise TypeError("no match")
-    return function(*args)
-  def register(self, types, function):
-    if types in self.typemap:
-      raise TypeError("duplicate registration")
-    self.typemap[types] = function
+app.parse()
+DEBUG = app.args.debug
+debug("sys.argv")
+debug(sys.argv[1:])
 
-def multimethod(*types):
-  def register(function):
-    name = function.__name__
-    mm = registry.get(name)
-    if mm is None:
-      mm = registry[name] = MultiMethod(name)
-    mm.register(types, function)
-    return mm
-  return register
+toparse, stages = parse_stages(sys.argv[1:])
+### remove stages from sys.argv
+sys.argv = [sys.argv[0]] + toparse.split()
+# add dummy argument if no arguments were found to prevent showing help
+if len(stages) > 0 and len(toparse.split()) == 0:
+  sys.argv.append('%i[stages]'%len(stages))
+
+### command line parsing to handle options
+app.parse()
 
 DEBUG=app.args.debug
+
+### option parsing
+if app.args.lmax:
+  app.console('option: -lmax='+app.args.lmax)
+
+# app.args.input quoted input get split but remain quoted --> join and split
+app.args.input = shlex.split(' '.join(app.args.input))
+### remaining argument parsing
+if len(app.args.input ) != 0 and len(app.args.input ) != 2:
+  app.error('expected no argument. received: ' + toparse)
+if len(app.args.input ):
+  stages.insert(0,('input',app.args.input ))
+
+### remove input from processing stages
+images = []
+current_stages = []
+for stage in stages:
+  if stage[0] == 'input':
+    images += (stage[1])
+  else:
+    current_stages.append(stage)
+stages = current_stages
+app.console ("input images:")
+app.console (str(images))
+
+if len(stages) == 0:
+  app.error('require at least one stage')
+
+debug ("stages:")
+for i, stage in enumerate(stages):
+  debug ('%03i: ' % i +str(stage))
+
 
 class Algorithm:
   def __init__(self):
@@ -443,8 +447,8 @@ class Algorithm:
     stage = self.stages[self.istage]
     if self.istage > 0:
       for i in range(0, self.istage)[::-1]:
-        if self.stages[i].name == 'affine':
-          app.error('init stage needs to be before affine stages')
+        if self.stages[i].name == 'linear':
+          app.error('init stage after affine stage')
     return None
 
   @multimethod(Stage_INIT, Stage_INIT)
@@ -472,10 +476,27 @@ class Algorithm:
         except TypeError:
           pass
 
-
 A = Algorithm()
-for i, s in enumerate(stages):
-  A.add(get_class(s))
+for stage in stages:
+  to_add = None
+  if stage[0] == 'def':
+    if stage[1][0] not in default:
+      app.error('not defined default config:'+str(stage[1]))
+    to_add = shlex.split(default[stage[1][0]])
+  elif stage[0] == 'conf':
+    if not os.path.isfile(stage[1][0]):
+      app.error('could not open config file:'+str(stage[1]))
+    with open(stage[1][0],'r') as fc:
+      to_add = shlex.split(' '.join(fc.readlines()))
+  if to_add:
+    toparse_, sub_stages = parse_stages(to_add)
+    if toparse_:
+      app.error('unexpected argments:'+str(toparse_))
+    for s1 in sub_stages:
+      A.add(get_class(s1))
+  else:
+    A.add(get_class(stage))
+
 
 A.stages[0].shared._im1_fullres=images[0]
 A.stages[0].shared._im2_fullres=images[1]
