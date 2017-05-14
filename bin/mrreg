@@ -25,7 +25,7 @@ app.cmdline.add_argument("input", nargs='+', help='example: mrreg \
 input[ "1 space.mif" 2.mif] \
 init[translation=mass] \
 resize[scale=0.3] \
-affine[lmax=0] affine[lmax=2] affine[lmax=4] \
+lin[lmax=0] lin[lmax=2] lin[lmax=4] \
 nl[lmax=0] nl[lmax=2] nl[lmax=4]')
 
 general_options = app.cmdline.add_argument_group('General options')
@@ -83,11 +83,28 @@ parsed = set()
 for m in p.finditer(scmd):
   stage_options = []
   debug(m.groups()[1])
-  stage_options = shlex.split(m.groups()[1]) # s.split('=')
-  # TODO what to do with what= val vs what=val vs what = val
+  stage_options = shlex.split(m.groups()[1])
+  # here we split what=val into three arguments, stages need to join or process it.
+  # the following are equivalent: what=val, what = val, what= val, what =val
+  # this is to allow whitespaces between '=' and 'val' which allows shell tab completion
+  # invalid: what=, what =
+  s_args = []
+  for i, so in enumerate(stage_options):
+    idx = so.find('=')
+    if idx != -1:
+      if idx > 0:
+        s_args += [so[:idx]]
+      s_args += ['=']
+      if idx < len(so) - 1:
+        s_args += [so[idx+1:].lstrip()]
+      else: # check if next is an argument
+        if len(stage_options) - 1 == i or stage_options[i+1].find('=') != -1:
+          app.error('stage parsing failed. stage options using "=" need to be followed by values. stage: "'+ m.groups()[0]+'" options: '+str(stage_options))
+    else:
+      s_args.append(so)
   if m.groups()[0] != 'input':
-    debug('stage: ' + m.groups()[0] + ': '+str(stage_options))
-  stages.append((m.groups()[0], stage_options))
+    debug('stage: ' + m.groups()[0] + ': '+str(s_args))
+  stages.append((m.groups()[0], s_args))
   parsed = parsed.union(set(range(*m.span())))
 toparse=''.join([scmd[i] for i in sorted(list(set(range(0,len(scmd))) - parsed))])
 
@@ -104,12 +121,13 @@ app.parse()
 if app.args.lmax:
   app.console('option: -lmax='+app.args.lmax)
 
+# app.args.input quoted input get split but remain quoted --> join and split
+app.args.input = shlex.split(' '.join(app.args.input))
 ### remaining argument parsing
-arguments = shlex.split(toparse)
-if len(arguments) != 0 and len(arguments) != 2:
+if len(app.args.input ) != 0 and len(app.args.input ) != 2:
   app.error('expected no argument. received: ' + toparse)
-if len(arguments):
-  stages.insert(0,('input',arguments))
+if len(app.args.input ):
+  stages.insert(0,('input',app.args.input ))
 
 ### remove input from processing stages
 images = []
@@ -127,9 +145,28 @@ debug ("stages:")
 for i, stage in enumerate(stages):
   debug ('%03i: ' % i +str(stage))
 
+# class Shared:
+#   def __init__(self):
+#     self.arg0 = None
+#     self.arg1 = None
+
 class Stage:
-  In = dict()
-  Out = dict()
+  # shared = Shared()
+  def make_command(self):
+    # ['arg', '=', 'val'] --> ['-arg', 'val']
+    cmd = []
+    idx = set([i for i, x in enumerate(self.args) if x == "="])
+    for i, arg in enumerate(self.args):
+      if i+1 in idx:
+        cmd.append('-'+arg)
+      elif i in idx:
+        continue
+      else:
+        cmd.append(arg)
+    return cmd
+  # def get_command(self):
+  #   return [self.command] + self.args
+
   def __init__(self, v):
     self.name = v[0]
     self.command = self.name
@@ -139,28 +176,46 @@ class Stage:
     return self.name
 
   def __str__(self):
-    return "%s %s" % (self.name.ljust(9), self.args) # , self.In, self.Out) input: %s output: %s
-
-  def get_command(self):
-    return [self.command] + self.args
+    return "%s %s" % (self.name.ljust(9), self.make_command())
 
 class Stage_INIT(Stage):
   def __init__(self, v):
     Stage.__init__(self, v)
-    # self.In =  dict(arg0='user_input1.mif',arg1='user_input2.mif')
-    # self.Out = dict(affine_out='affine.mat')
     self.command = 'mrreg_init'
 
-class Stage_AFFINE(Stage):
+class Stage_LIN(Stage):
   def __init__(self, v):
     Stage.__init__(self, v)
     self.command = 'mrreg_lin'
-    self.name = 'affine'
+    self.name = 'linear'
 
 class Stage_OUT(Stage):
   def __init__(self, v):
     Stage.__init__(self, v)
-    self.command = 'output'
+    self.command = None
+    self.warp_local = None
+    self.warp_out = None
+    self.trafo_local = None
+    self.trafo_out = None
+
+  def make_command(self):
+    opt = Stage.make_command(self)
+    cmd = []
+    if '-affine' in opt:
+      if not self.trafo_local:
+        app.error('output requested affine but no affine produced. options received: '+' '.join(self.args))
+      self.trafo_out = opt[opt.index('-affine')+1]
+      cmd.append(['cp',self.trafo_local,self.trafo_out])
+    if '-warp' in opt:
+      if not self.warp_local:
+        app.error('output requested warp but no warp produced. options received: '+' '.join(self.args))
+      self.warp_out = opt[opt.index('-warp')+1]
+      cmd.append(['cp',self.warp_local,self.warp_out])
+    if not self.trafo_out and not self.warp_out:
+      debug('args:'+str(self.args))
+      debug('opt:'+str(opt))
+      app.error('output requested without specifying which kind. use "affine=" or "warp=". options received: '+' '.join(self.args))
+    return cmd
 
 class Stage_NL(Stage):
   def __init__(self, v):
@@ -171,12 +226,18 @@ class Stage_NL(Stage):
 class Stage_RESIZE(Stage):
   def __init__(self, v):
     Stage.__init__(self, v)
-    self.command = 'resize_then_smooth'
+    self.command = None
+    self.scale = None
+
+  def make_command(self):
+    opt = Stage.make_command(self)
+    if not '-scale' in opt:
+      app.warn('resize requested but no scale specified. using scale=1. options received: '+' '.join(self.args))
+    return opt + ['-scale','1']
 
 def get_class(t):
   if not 'Stage_'+t[0].upper() in globals():
-    app.error('stage "'+'Stage_'+t[0]+'" not defined')
-  # isinstance(Stage)
+    app.error('stage "'+t[0]+'" not defined')
   return globals()['Stage_'+t[0].upper()](t)
 # c = get_class(('init','translation=mass'))
 
@@ -237,7 +298,6 @@ class Sequence:
       self.warp_in = None
       self.warp_out = None
       self.istage = 0
-
     def __init__(self, dictionary):
       if dictionary:
         for k, v in dictionary.items():
@@ -319,7 +379,7 @@ class Sequence:
   def post_hook(self, obj):
     return False
 
-  @method(pre_hook, Stage_AFFINE)
+  @method(pre_hook, Stage_LIN)
   def pre_hook(self, obj):
     debug ('pre_hook: '+obj.name)
     istage = self.var.istage
@@ -336,7 +396,7 @@ class Sequence:
       stage.args.insert(0, self.var.orig2)
       stage.args.insert(0, self.var.orig1)
     return True
-  @method(post_hook, Stage_AFFINE)
+  @method(post_hook, Stage_LIN)
   def post_hook(self, obj):
     debug ('post_hook: '+obj.name)
     self.var.affine_in = self.var.affine_out
@@ -377,6 +437,10 @@ class Sequence:
   @method(pre_hook, Stage_OUT)
   def pre_hook(self, obj):
     debug ('pre_hook: '+obj.name)
+    istage = self.var.istage
+    stage = self.stages[istage]
+    stage.trafo_local = self.var.affine_in
+    stage.warp_local = self.var.warp_in
     return False
 
 
