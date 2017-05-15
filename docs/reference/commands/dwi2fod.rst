@@ -102,7 +102,7 @@ Tournier, J.-D.; Calamante, F., Gadian, D.G. & Connelly, A. Direct estimation of
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com) and Ben Jeurissen (ben.jeurissen@uantwerpen.be)
 
-**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors
+**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
