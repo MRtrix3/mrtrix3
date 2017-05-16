@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -27,9 +25,9 @@ using namespace App;
 
 void usage ()
 {
-  DESCRIPTION
-    + "Denoise DWI data and estimate the noise level based on the optimal threshold for PCA."
+  SYNOPSIS = "Denoise DWI data and estimate the noise level based on the optimal threshold for PCA";
     
+  DESCRIPTION
     + "DWI data denoising and noise map estimation by exploiting data redundancy in the PCA domain "
     "using the prior knowledge that the eigenspectrum of random covariance matrices is described by "
     "the universal Marchenko Pastur distribution."
@@ -39,16 +37,16 @@ void usage ()
     
     + "Note that this function does not correct for non-Gaussian noise biases.";
   
-  AUTHOR = "Daan Christiaens (daan.christiaens@kuleuven.be) & Jelle Veraart (jelle.veraart@nyumc.org) & J-Donald Tournier (jdtournier@gmail.com)";
+  AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk) & Jelle Veraart (jelle.veraart@nyumc.org) & J-Donald Tournier (jdtournier@gmail.com)";
   
   REFERENCES
     + "Veraart, J.; Novikov, D.S.; Christiaens, D.; Ades-aron, B.; Sijbers, J. & Fieremans, E. " // Internal
     "Denoising of diffusion MRI using random matrix theory. "
-    "NeuroImage, 2016, in press, doi: 10.1016/j.neuroimage.2016.08.016"
+    "NeuroImage, 2016, 142, 394-406, doi: 10.1016/j.neuroimage.2016.08.016"
 
     + "Veraart, J.; Fieremans, E. & Novikov, D.S. " // Internal
     "Diffusion MRI noise mapping using random matrix theory. "
-    "Magn. Res. Med., 2016, early view, doi: 10.1002/mrm.26059";
+    "Magn. Res. Med., 2016, 76(5), 1582-1593, doi: 10.1002/mrm.26059";
   
   ARGUMENTS
   + Argument ("dwi", "the input diffusion-weighted image.").type_image_in ()
@@ -86,14 +84,13 @@ void usage ()
 }
 
 
-typedef float value_type;
+using value_type = float;
 
 
 template <class ImageType>
-class DenoisingFunctor
-{
+class DenoisingFunctor { MEMALIGN(DenoisingFunctor)
   public:
-  DenoisingFunctor (ImageType& dwi, std::vector<int> extent, Image<bool>& mask, ImageType& noise)
+  DenoisingFunctor (ImageType& dwi, vector<int> extent, Image<bool>& mask, ImageType& noise)
     : extent {{extent[0]/2, extent[1]/2, extent[2]/2}},
       m (dwi.size(3)),
       n (extent[0]*extent[1]*extent[2]),
@@ -149,9 +146,9 @@ class DenoisingFunctor
       s.head (cutoff_p).setZero();
       s.tail (r-cutoff_p).setOnes();
       if (m <= n) 
-        X.col (n/2) = eig.eigenvectors() * s.asDiagonal() * eig.eigenvectors().adjoint() * X.col(n/2);
+        X.col (n/2) = eig.eigenvectors() * ( s.asDiagonal() * ( eig.eigenvectors().adjoint() * X.col(n/2) ));
       else 
-        X.col (n/2) = X * eig.eigenvectors() * s.asDiagonal() * eig.eigenvectors().adjoint().col(n/2);
+        X.col (n/2) = X * ( eig.eigenvectors() * ( s.asDiagonal() * eig.eigenvectors().adjoint().col(n/2) ));
     }
 
     // Store output
@@ -175,8 +172,8 @@ class DenoisingFunctor
     for (dwi.index(2) = pos[2]-extent[2]; dwi.index(2) <= pos[2]+extent[2]; ++dwi.index(2))
       for (dwi.index(1) = pos[1]-extent[1]; dwi.index(1) <= pos[1]+extent[1]; ++dwi.index(1))
         for (dwi.index(0) = pos[0]-extent[0]; dwi.index(0) <= pos[0]+extent[0]; ++dwi.index(0), ++k)
-          if (! is_out_of_bounds(dwi))
-            X.col(k) = dwi.row(3).template cast<float>();
+          if (! is_out_of_bounds(dwi,0,3))
+            X.col(k) = dwi.row(3);
     // reset image position
     dwi.index(0) = pos[0];
     dwi.index(1) = pos[1];
@@ -212,7 +209,7 @@ void run ()
   auto dwi_out = Image<value_type>::create (argument[1], header);
   
   opt = get_options("extent");
-  std::vector<int> extent = { DEFAULT_SIZE, DEFAULT_SIZE, DEFAULT_SIZE };
+  vector<int> extent = { DEFAULT_SIZE, DEFAULT_SIZE, DEFAULT_SIZE };
   if (opt.size()) {
     extent = parse_ints(opt[0][0]);
     if (extent.size() == 1)

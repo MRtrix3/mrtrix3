@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __dwi_tractography_tracking_exec_h__
 #define __dwi_tractography_tracking_exec_h__
@@ -51,7 +50,7 @@ namespace MR
 
         // TODO Try having ACT as a template boolean; allow compiler to optimise out branch statements
 
-        template <class Method> class Exec {
+        template <class Method> class Exec { MEMALIGN(Exec<Method>)
 
           public:
 
@@ -73,9 +72,9 @@ namespace MR
                   throw Exception ("Dynamic seeding requires setting the desired number of tracks using the -number option");
                 const size_t num_tracks = to<size_t>(max_num_tracks);
 
-                typedef Mapping::SetDixel SetDixel;
-                typedef Mapping::TrackMapperBase TckMapper;
-                typedef Seeding::WriteKernelDynamic Writer;
+                using SetDixel = Mapping::SetDixel;
+                using TckMapper = Mapping::TrackMapperBase;
+                using Writer = Seeding::WriteKernelDynamic;
 
                 DWI::Directions::FastLookupSet dirs (1281);
                 auto fod_data = Image<float>::open (fod_path);
@@ -116,11 +115,21 @@ namespace MR
 
             bool operator() (GeneratedTrack& item) {
               rng = &thread_local_RNG;
-              if (!gen_track (item))
+              if (!seed_track (item))
                 return false;
-              if (track_rejected (item))
+              if (track_excluded) {
+                item.set_status (GeneratedTrack::status_t::SEED_REJECTED);
+                S.add_rejection (INVALID_SEED);
+                return true;
+              }
+              gen_track (item);
+              if (track_rejected (item)) {
                 item.clear();
-              S.downsampler (item);
+                item.set_status (GeneratedTrack::status_t::TRACK_REJECTED);
+              } else {
+                S.downsampler (item);
+                item.set_status (GeneratedTrack::status_t::ACCEPTED);
+              }
               return true;
             }
 
@@ -131,7 +140,7 @@ namespace MR
             Math::RNG thread_local_RNG;
             Method method;
             bool track_excluded;
-            std::vector<bool> track_included;
+            vector<bool> track_included;
 
 
             term_t iterate ()
@@ -164,6 +173,7 @@ namespace MR
               return CONTINUE;
 
             }
+
 
 
             term_t iterate( GeneratedTrack& tck )
@@ -209,14 +219,13 @@ namespace MR
             }
 
 
-            bool gen_track (GeneratedTrack& tck)
+
+            bool seed_track (GeneratedTrack& tck)
             {
               tck.clear();
               track_excluded = false;
               track_included.assign (track_included.size(), false);
               method.dir = { NaN, NaN, NaN };
-
-              bool unidirectional = S.unidirectional;
 
               if (S.properties.seeds.is_finite()) {
 
@@ -224,21 +233,32 @@ namespace MR
                   return false;
                 if (!method.check_seed() || !method.init()) {
                   track_excluded = true;
-                  return true;
+                  tck.set_status (GeneratedTrack::status_t::SEED_REJECTED);
                 }
+                return true;
 
               } else {
 
                 for (size_t num_attempts = 0; num_attempts != MAX_NUM_SEED_ATTEMPTS; ++num_attempts) {
-                  if (S.properties.seeds.get_seed (method.pos, method.dir) && method.check_seed() && method.init())
-                    break;
+                  if (S.properties.seeds.get_seed (method.pos, method.dir)) {
+                    if (!(method.check_seed() && method.init())) {
+                      track_excluded = true;
+                      tck.set_status (GeneratedTrack::status_t::SEED_REJECTED);
+                    }
+                    return true;
+                  }
                 }
-                if (!method.pos.allFinite()) {
-                  FAIL ("Failed to find suitable seed point after " + str (MAX_NUM_SEED_ATTEMPTS) + " attempts - aborting");
-                  return false;
-                }
+                FAIL ("Failed to find suitable seed point after " + str (MAX_NUM_SEED_ATTEMPTS) + " attempts - aborting");
+                return false;
 
               }
+            }
+
+
+
+            bool gen_track (GeneratedTrack& tck)
+            {
+              bool unidirectional = S.unidirectional;
               if (S.is_act() && !unidirectional)
                 unidirectional = method.act().seed_is_unidirectional (method.pos, method.dir);
 
@@ -263,7 +283,6 @@ namespace MR
               }
 
               return true;
-
             }
 
 
@@ -390,7 +409,7 @@ namespace MR
 
               if (track_excluded) {
                 switch (termination) {
-                  case CALIBRATE_FAIL: case ENTER_CSF: case BAD_SIGNAL: case HIGH_CURVATURE:
+                  case CALIBRATOR: case ENTER_CSF: case BAD_SIGNAL: case HIGH_CURVATURE:
                     S.add_rejection (ACT_POOR_TERMINATION);
                     break;
                   case LENGTH_EXCEED:
@@ -439,7 +458,7 @@ namespace MR
                     track_excluded = true;
                     break;
 
-                  case CALIBRATE_FAIL: case BAD_SIGNAL: case HIGH_CURVATURE:
+                  case CALIBRATOR: case BAD_SIGNAL: case HIGH_CURVATURE:
                     if (method.act().sgm_depth)
                       termination = TERM_IN_SGM;
                     else if (!method.act().in_pathology())
@@ -465,7 +484,7 @@ namespace MR
                     track_excluded = true;
                     break;
 
-                  case CALIBRATE_FAIL: case BAD_SIGNAL: case HIGH_CURVATURE:
+                  case CALIBRATOR: case BAD_SIGNAL: case HIGH_CURVATURE:
                     if ( method.mact()._sgm_depth )
                     {
                       termination = TERM_IN_SGM;
@@ -487,7 +506,7 @@ namespace MR
                   case ENTER_CGM: case ENTER_CSF: case EXIT_SGM: case TERM_IN_SGM:
                     throw Exception ("\nFIXME: Have received ACT-based termination for non-ACT tracking in apply_priors()\n");
 
-                  case EXIT_IMAGE: case EXIT_MASK: case LENGTH_EXCEED: case CALIBRATE_FAIL: case BAD_SIGNAL: case HIGH_CURVATURE: case TRAVERSE_ALL_INCLUDE:
+                  case EXIT_IMAGE: case EXIT_MASK: case LENGTH_EXCEED: case CALIBRATOR: case BAD_SIGNAL: case HIGH_CURVATURE: case TRAVERSE_ALL_INCLUDE:
                     break;
 
                   case ENTER_EXCLUDE:
@@ -502,7 +521,7 @@ namespace MR
 
 
 
-            bool track_rejected (const std::vector<Eigen::Vector3f>& tck)
+            bool track_rejected (const vector<Eigen::Vector3f>& tck)
             {
 
               if (track_excluded)
@@ -565,7 +584,7 @@ namespace MR
 
 
 
-            bool satisfy_wm_requirement (const std::vector<Eigen::Vector3f>& tck)
+            bool satisfy_wm_requirement (const vector<Eigen::Vector3f>& tck)
             {
               // If using the Seed_test algorithm (indicated by max_num_points == 2), don't want to execute this check
               if (S.max_num_points == 2)
@@ -591,7 +610,7 @@ namespace MR
 
 
 
-            void truncate_exit_sgm (std::vector<Eigen::Vector3f>& tck)
+            void truncate_exit_sgm (vector<Eigen::Vector3f>& tck)
             {
               Interpolator<Image<float>>::type source (S.source);
               size_t sgm_start = 0;

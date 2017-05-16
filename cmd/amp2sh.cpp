@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -30,10 +28,12 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
+  SYNOPSIS = "Convert a set of amplitudes (defined along a set of corresponding directions) "
+    "to their spherical harmonic representation";
+
   DESCRIPTION
-  + "convert a set of amplitudes (defined along a set of corresponding directions) "
-    "to their spherical harmonic representation. The spherical harmonic decomposition is "
-    "calculated by least-squares linear fitting."
+  + "The spherical harmonic decomposition is calculated by least-squares linear fitting "
+    "to the amplitude data."
 
   + "The directions can be defined either as a DW gradient scheme (for example to compute "
     "the SH representation of the DW signal) or a set of [az el] pairs as output by the dirgen "
@@ -76,14 +76,14 @@ void usage ()
 #define RICIAN_POWER 2.25
 
 
-typedef float value_type;
+using value_type = float;
 
-class Amp2SHCommon {
+class Amp2SHCommon { MEMALIGN(Amp2SHCommon)
   public:
     template <class MatrixType>
       Amp2SHCommon (const MatrixType& sh2amp,
-          const std::vector<size_t>& bzeros, 
-          const std::vector<size_t>& dwis, 
+          const vector<size_t>& bzeros, 
+          const vector<size_t>& dwis, 
           bool normalise_to_bzero) :
         sh2amp (sh2amp), 
         amp2sh (Math::pinv (sh2amp)),
@@ -93,15 +93,15 @@ class Amp2SHCommon {
 
 
     Eigen::MatrixXd sh2amp, amp2sh;
-    const std::vector<size_t>& bzeros;
-    const std::vector<size_t>& dwis;
+    const vector<size_t>& bzeros;
+    const vector<size_t>& dwis;
     bool normalise;
 };
 
 
 
 
-class Amp2SH {
+class Amp2SH { MEMALIGN(Amp2SH)
   public:
     Amp2SH (const Amp2SHCommon& common) : 
       C (common), 
@@ -199,7 +199,7 @@ void run ()
   auto amp = Image<value_type>::open (argument[0]).with_direct_io (3);
   Header header (amp);
 
-  std::vector<size_t> bzeros, dwis;
+  vector<size_t> bzeros, dwis;
   Eigen::MatrixXd dirs;
   auto opt = get_options ("directions");
   if (opt.size()) {
@@ -208,7 +208,7 @@ void run ()
   else {
     auto hit = header.keyval().find ("directions");
     if (hit != header.keyval().end()) {
-      std::vector<default_type> dir_vector;
+      vector<default_type> dir_vector;
       for (auto line : split_lines (hit->second)) {
         auto v = parse_floats (line);
         dir_vector.insert (dir_vector.end(), v.begin(), v.end());
@@ -218,15 +218,18 @@ void run ()
         dirs(i/2, 0) = dir_vector[i];
         dirs(i/2, 1) = dir_vector[i+1];
       }
+      header.keyval()["basis_directions"] = hit->second;
+      header.keyval().erase (hit);
     } 
     else {
       auto grad = DWI::get_valid_DW_scheme (amp);
       DWI::Shells shells (grad);
-      shells.select_shells (true, true);
+      shells.select_shells (true, false, false);
       if (shells.smallest().is_bzero())
         bzeros = shells.smallest().get_volumes();
       dwis = shells.largest().get_volumes();
       dirs = DWI::gen_direction_matrix (grad, dwis);
+      DWI::stash_DW_scheme (header, grad);
     }
   }
 

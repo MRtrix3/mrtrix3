@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "gui/mrview/tool/connectome/connectome.h"
 
@@ -48,7 +47,7 @@ namespace MR
 
         Connectome::Connectome (Dock* parent) :
             Base (parent),
-            mat2vec (0),
+            mat2vec (nullptr),
             lighting (this),
             lighting_dock (nullptr),
             node_list (new Tool::Dock ("Connectome node list")),
@@ -830,7 +829,7 @@ namespace MR
             + Option ("connectome.init", "Initialise the connectome tool using a parcellation image.")
             +   Argument ("image").type_image_in()
 
-            + Option ("connectome.load", "Load a matrix file into the connectome tool.")
+            + Option ("connectome.load", "Load a matrix file into the connectome tool.").allow_multiple()
             +   Argument ("path").type_file_in();
 
         }
@@ -848,7 +847,7 @@ namespace MR
           }
           if (opt.opt->is ("connectome.load")) {
             try {
-              std::vector<std::string> list (1, opt[0]);
+              vector<std::string> list (1, opt[0]);
               add_matrices (list);
             } catch (Exception& e) { e.display(); }
             return true;
@@ -889,7 +888,7 @@ namespace MR
 
         void Connectome::matrix_open_slot ()
         {
-          std::vector<std::string> list = Dialog::File::get_files (&window(), "Select connectome file(s) to open");
+          vector<std::string> list = Dialog::File::get_files (&window(), "Select connectome file(s) to open");
           if (list.empty())
             return;
           add_matrices (list);
@@ -2244,9 +2243,9 @@ namespace MR
             buffer.reset (new MR::Image<node_t> (H.get_image<node_t>().with_direct_io()));
           }
           MR::Transform transform (H);
-          std::vector<Eigen::Vector3f> node_coms;
-          std::vector<size_t> node_volumes;
-          std::vector<Eigen::Array3i> node_lower_corners, node_upper_corners;
+          vector<Eigen::Vector3f> node_coms;
+          vector<size_t> node_volumes;
+          vector<Eigen::Array3i> node_lower_corners, node_upper_corners;
           size_t max_index = 0;
 
           {
@@ -2285,7 +2284,7 @@ namespace MR
             for (size_t node_index = 1; node_index <= max_index; ++node_index) {
               if (node_volumes[node_index]) {
 
-                std::vector<int> from (3), dim (3);
+                vector<int> from (3), dim (3);
                 for (size_t axis = 0; axis != 3; ++axis) {
                   from[axis] = node_lower_corners[node_index][axis];
                   dim[axis] = node_upper_corners[node_index][axis] - node_lower_corners[node_index][axis] + 1;
@@ -2304,13 +2303,13 @@ namespace MR
             }
           }
 
-          mat2vec = MR::Connectome::Mat2Vec (num_nodes());
+          mat2vec.reset (new MR::Connectome::Mat2Vec (num_nodes()));
 
           edges.clear();
-          edges.reserve (mat2vec.vec_size());
-          for (size_t edge_index = 0; edge_index != mat2vec.vec_size(); ++edge_index) {
-            const node_t one = mat2vec(edge_index).first + 1;
-            const node_t two = mat2vec(edge_index).second + 1;
+          edges.reserve (mat2vec->vec_size());
+          for (size_t edge_index = 0; edge_index != mat2vec->vec_size(); ++edge_index) {
+            const node_t one = (*mat2vec)(edge_index).first + 1;
+            const node_t two = (*mat2vec)(edge_index).second + 1;
             edges.push_back (Edge (one, two, nodes[one].get_com(), nodes[two].get_com()));
           }
 
@@ -2331,15 +2330,17 @@ namespace MR
           dynamic_cast<Node_list*>(node_list->tool)->initialize();
         }
 
-        void Connectome::add_matrices (const std::vector<std::string>& list)
+        void Connectome::add_matrices (const vector<std::string>& list)
         {
-          std::vector<FileDataVector> data;
+          vector<FileDataVector> data;
           for (size_t i = 0; i < list.size(); ++i) {
             try {
               MR::Connectome::matrix_type matrix = MR::load_matrix<default_type> (list[i]);
-              MR::Connectome::verify_matrix (matrix, num_nodes());
+              MR::Connectome::to_upper (matrix);
+              if (matrix.rows() != num_nodes())
+                throw Exception ("Matrix file \"" + Path::basename(list[i]) + "\" is incorrect size");
               FileDataVector temp;
-              mat2vec (matrix, temp);
+              mat2vec->M2V (matrix, temp);
               temp.calc_stats();
               temp.set_name (list[i]);
               data.push_back (std::move (temp));
@@ -2729,13 +2730,14 @@ namespace MR
           MR::Connectome::matrix_type temp;
           try {
             temp = MR::load_matrix<default_type> (path);
-            MR::Connectome::verify_matrix (temp, num_nodes());
+            MR::Connectome::to_upper (temp);
+            if (temp.rows() != num_nodes())
+              throw Exception ("Matrix file \"" + Path::basename(path) + "\" is incorrect size");
           } catch (Exception& e) {
             e.display();
             return false;
           }
-          data.clear();
-          mat2vec (temp, data);
+          mat2vec->M2V (temp, data);
           data.calc_stats();
           data.set_name (Path::basename (path));
           return true;
@@ -2824,7 +2826,7 @@ namespace MR
                 bool any = false, all = true;
                 for (node_t j = 1; j <= num_nodes(); ++j) {
                   if (selected_nodes[j]) {
-                    const float value = data[mat2vec (i-1, j-1)];
+                    const float value = data[(*mat2vec) (i-1, j-1)];
                     if (value >= threshold)
                       any = true;
                     else
@@ -2863,7 +2865,7 @@ namespace MR
                 bool any = false, all = true;
                 for (node_t j = 1; j <= num_nodes(); ++j) {
                   if (selected_nodes[j]) {
-                    const float value = node_values_from_file_visibility[mat2vec (i-1, j-1)];
+                    const float value = node_values_from_file_visibility[(*mat2vec) (i-1, j-1)];
                     if (value >= threshold)
                       any = true;
                     else
@@ -2933,7 +2935,7 @@ namespace MR
                   float min = std::numeric_limits<float>::infinity(), sum = 0.0f, max = -std::numeric_limits<float>::infinity();
                   for (node_t j = 1; j <= num_nodes(); ++j) {
                     if (selected_nodes[j]) {
-                      const float value = data[mat2vec (i-1, j-1)];
+                      const float value = data[(*mat2vec) (i-1, j-1)];
                       min = std::min (min, value);
                       sum += value;
                       max = std::max (max, value);
@@ -2988,7 +2990,7 @@ namespace MR
                   float min = std::numeric_limits<float>::infinity(), sum = 0.0f, max = -std::numeric_limits<float>::infinity();
                   for (node_t j = 1; j <= num_nodes(); ++j) {
                     if (selected_nodes[j]) {
-                      const float value = node_values_from_file_colour[mat2vec (i-1, j-1)];
+                      const float value = node_values_from_file_colour[(*mat2vec) (i-1, j-1)];
                       min = std::min (min, value);
                       sum += value;
                       max = std::max (max, value);
@@ -3049,7 +3051,7 @@ namespace MR
                   float min = std::numeric_limits<float>::infinity(), sum = 0.0f, max = -std::numeric_limits<float>::infinity();
                   for (node_t j = 1; j <= num_nodes(); ++j) {
                     if (selected_nodes[j]) {
-                      const float value = data[mat2vec (i-1, j-1)];
+                      const float value = data[(*mat2vec) (i-1, j-1)];
                       min = std::min (min, value);
                       sum += value;
                       max = std::max (max, value);
@@ -3103,7 +3105,7 @@ namespace MR
                   float min = std::numeric_limits<float>::infinity(), sum = 0.0f, max = -std::numeric_limits<float>::infinity();
                   for (node_t j = 1; j <= num_nodes(); ++j) {
                     if (selected_nodes[j]) {
-                      const float value = node_values_from_file_size[mat2vec (i-1, j-1)];
+                      const float value = node_values_from_file_size[(*mat2vec) (i-1, j-1)];
                       min = std::min (min, value);
                       sum += value;
                       max = std::max (max, value);
@@ -3153,7 +3155,7 @@ namespace MR
                   float min = std::numeric_limits<float>::infinity(), sum = 0.0f, max = -std::numeric_limits<float>::infinity();
                   for (node_t j = 1; j <= num_nodes(); ++j) {
                     if (selected_nodes[j]) {
-                      const float value = data[mat2vec (i-1, j-1)];
+                      const float value = data[(*mat2vec) (i-1, j-1)];
                       min = std::min (min, value);
                       sum += value;
                       max = std::max (max, value);
@@ -3219,7 +3221,7 @@ namespace MR
                   float min = std::numeric_limits<float>::infinity(), sum = 0.0f, max = -std::numeric_limits<float>::infinity();
                   for (node_t j = 1; j <= num_nodes(); ++j) {
                     if (selected_nodes[j]) {
-                      const float value = node_values_from_file_alpha[mat2vec (i-1, j-1)];
+                      const float value = node_values_from_file_alpha[(*mat2vec) (i-1, j-1)];
                       min = std::min (min, value);
                       sum += value;
                       max = std::max (max, value);
@@ -3484,11 +3486,11 @@ namespace MR
 
 
 
-        void Connectome::node_selection_changed (const std::vector<node_t>& list)
+        void Connectome::node_selection_changed (const vector<node_t>& list)
         {
           selected_nodes.clear();
           selected_node_count = list.size();
-          for (std::vector<node_t>::const_iterator n = list.begin(); n != list.end(); ++n)
+          for (vector<node_t>::const_iterator n = list.begin(); n != list.end(); ++n)
             selected_nodes[*n] = true;
           if (node_visibility == node_visibility_t::CONNECTOME || node_visibility == node_visibility_t::MATRIX_FILE) {
             if (selected_node_count >= 2) {

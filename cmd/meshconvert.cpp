@@ -1,18 +1,15 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 
 #include "command.h"
@@ -38,8 +35,7 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "convert meshes between different formats, and apply transformations.";
+  SYNOPSIS = "Convert meshes between different formats, and apply transformations";
 
   ARGUMENTS
   + Argument ("input",  "the input mesh file").type_file_in()
@@ -77,7 +73,7 @@ void run ()
   auto opt = get_options ("transform");
   if (opt.size()) {
     auto H = Header::open (opt[0][1]);
-    std::unique_ptr<Surface::Filter::VertexTransform> transform (new Surface::Filter::VertexTransform (H));
+    auto transform = make_unique<Surface::Filter::VertexTransform> (H);
     switch (int(opt[0][0])) {
       case 0: transform->set_first2real(); break;
       case 1: transform->set_real2first(); break;

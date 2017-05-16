@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __gui_mrview_image_h__
 #define __gui_mrview_image_h__
@@ -42,7 +41,7 @@ namespace MR
       }
 
       class ImageBase : public Volume
-      {
+      { MEMALIGN(ImageBase)
         public:
           ImageBase (MR::Header&&);
           virtual ~ImageBase();
@@ -57,12 +56,12 @@ namespace MR
 
         protected:
           GL::Texture texture2D[3];
-          std::vector<ssize_t> tex_positions;
+          vector<ssize_t> tex_positions;
 
       };
 
       class Image : public ImageBase
-      {
+      { MEMALIGN(Image)
         public:
           Image (MR::Header&&);
 
@@ -78,7 +77,7 @@ namespace MR
           cfloat nearest_neighbour_value (const Eigen::Vector3f&) const;
 
           const MR::Transform& transform() const { return linear_interp; }
-          const std::vector<std::string>& comments() const { return _comments; }
+          const vector<std::string>& comments() const { return _comments; }
 
           void reset_windowing (const int, const bool);
 
@@ -97,7 +96,7 @@ namespace MR
           template <typename T> void copy_texture_3D ();
           void copy_texture_3D_complex ();
 
-          std::vector<std::string> _comments;
+          vector<std::string> _comments;
 
       };
 

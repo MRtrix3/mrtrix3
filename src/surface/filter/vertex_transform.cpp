@@ -1,21 +1,19 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
 #include "surface/filter/vertex_transform.h"
-#include "file/nifti1_utils.h"
+#include "file/nifti_utils.h"
 
 #include "exception.h"
 
@@ -61,6 +59,7 @@ namespace MR
               Vertex v = in.vert(i);
               v = transform.scanner2image * v;
               v[0] = ((header.size(0)-1) * header.spacing(0)) - v[0];
+              vertices.push_back (std::move (v));
             }
             if (in.have_normals()) {
               for (size_t i = 0; i != V; ++i) {
@@ -90,7 +89,7 @@ namespace MR
             break;
 
           case transform_t::FS2REAL:
-            std::vector< size_t > axes( 3 );
+            vector< size_t > axes( 3 );
             auto M = File::NIfTI::adjust_transform( header, axes );
             Eigen::Vector3d cras( 3, 1 );
             for ( size_t i = 0; i < 3; i++ )

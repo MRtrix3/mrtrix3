@@ -1,19 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
-//#define GL_DEBUG
 
 #include <string>
 
@@ -97,9 +94,7 @@ namespace MR
 
           main_box->addWidget (list_view, 1);
 
-          layout = new HBoxLayout;
-          layout->setContentsMargins (0, 0, 0, 0);
-          layout->setSpacing (0);
+          GridLayout* grid_layout = new GridLayout;
 
           draw_button = new QToolButton (this);
           draw_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
@@ -110,7 +105,7 @@ namespace MR
           action->setEnabled (false);
           connect (action, SIGNAL (toggled(bool)), this, SLOT (draw_slot ()));
           draw_button->setDefaultAction (action);
-          layout->addWidget (draw_button, 1);
+          grid_layout->addWidget (draw_button, 0, 0, Qt::AlignCenter);
 
           undo_button = new QToolButton (this);
           undo_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
@@ -121,7 +116,7 @@ namespace MR
           action->setEnabled (false);
           connect (action, SIGNAL (triggered()), this, SLOT (undo_slot ()));
           undo_button->setDefaultAction (action);
-          layout->addWidget (undo_button, 1);
+          grid_layout->addWidget (undo_button, 0, 1, Qt::AlignRight);
 
           redo_button = new QToolButton (this);
           redo_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
@@ -132,13 +127,13 @@ namespace MR
           action->setEnabled (false);
           connect (action, SIGNAL (triggered()), this, SLOT (redo_slot ()));
           redo_button->setDefaultAction (action);
-          layout->addWidget (redo_button, 1);
+          grid_layout->addWidget (redo_button, 0, 2, Qt::AlignLeft);
 
-          main_box->addLayout (layout, 0);
+          main_box->addLayout (grid_layout, 0);
 
-          QGroupBox* group_box = new QGroupBox ("Draw mode");
+          QGroupBox* group_box = new QGroupBox ("Edit mode");
 
-          GridLayout* grid_layout = new GridLayout;
+          grid_layout = new GridLayout;
           group_box->setLayout (grid_layout);
 
           edit_mode_group = new QActionGroup (this);
@@ -146,30 +141,9 @@ namespace MR
           edit_mode_group->setEnabled (false);
           connect (edit_mode_group, SIGNAL (triggered (QAction*)), this, SLOT (select_edit_mode (QAction*)));
 
-          rectangle_button = new QToolButton (this);
-          rectangle_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
-          action = new QAction (QIcon (":/rectangle.svg"), tr ("Rectangle"), this);
-          action->setShortcut (tr ("Ctrl+R"));
-          action->setToolTip (tr ("Edit ROI using a rectangle"));
-          action->setCheckable (true);
-          action->setChecked (false);
-          edit_mode_group->addAction (action);
-          rectangle_button->setDefaultAction (action);
-          grid_layout->addWidget (rectangle_button, 0, 0);
-
-          fill_button = new QToolButton (this);
-          fill_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
-          action = new QAction (QIcon (":/fill.svg"), tr ("Fill"), this);
-          action->setShortcut (tr ("Ctrl+F"));
-          action->setToolTip (tr ("Fill ROI slice"));
-          action->setCheckable (true);
-          action->setChecked (false);
-          edit_mode_group->addAction (action);
-          fill_button->setDefaultAction (action);
-          grid_layout->addWidget (fill_button, 0, 1);
-
           brush_button = new QToolButton (this);
           brush_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
+          brush_button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
           action = new QAction (QIcon (":/brush.svg"), tr ("Brush"), this);
           action->setShortcut (tr ("Ctrl+B"));
           action->setToolTip (tr ("Edit ROI using a brush"));
@@ -177,15 +151,40 @@ namespace MR
           action->setChecked (true);
           edit_mode_group->addAction (action);
           brush_button->setDefaultAction (action);
-          grid_layout->addWidget (brush_button, 0, 2);
-          
-          QLabel* label = new QLabel (tr("brush size: "));
-          grid_layout->addWidget (label, 1, 0, 1, 2, Qt::AlignRight);
+          grid_layout->addWidget (brush_button, 0, 0, 1, 2);
+
+          QLabel* label = new QLabel (tr("size:"));
+          grid_layout->addWidget (label, 1, 0, Qt::AlignRight);
 
           brush_size_button = new AdjustButton (this);
+          brush_size_button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
           brush_size_button->setToolTip (tr ("Brush size (in mm)"));
           brush_size_button->setEnabled (true);
-          grid_layout->addWidget (brush_size_button, 1, 2);
+          grid_layout->addWidget (brush_size_button, 1, 1);
+
+          fill_button = new QToolButton (this);
+          fill_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
+          fill_button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+          action = new QAction (QIcon (":/fill.svg"), tr ("Fill"), this);
+          action->setShortcut (tr ("Ctrl+F"));
+          action->setToolTip (tr ("Fill ROI slice"));
+          action->setCheckable (true);
+          action->setChecked (false);
+          edit_mode_group->addAction (action);
+          fill_button->setDefaultAction (action);
+          grid_layout->addWidget (fill_button, 0, 2, 1, 2);
+
+          rectangle_button = new QToolButton (this);
+          rectangle_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
+          rectangle_button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+          action = new QAction (QIcon (":/rectangle.svg"), tr ("Rectangle"), this);
+          action->setShortcut (tr ("Ctrl+R"));
+          action->setToolTip (tr ("Edit ROI using a rectangle"));
+          action->setCheckable (true);
+          action->setChecked (false);
+          edit_mode_group->addAction (action);
+          rectangle_button->setDefaultAction (action);
+          grid_layout->addWidget (rectangle_button, 1, 2, 1, 2);
 
           main_box->addWidget (group_box, 0);
 
@@ -197,7 +196,7 @@ namespace MR
           slice_copy_group->setEnabled (false);
           connect (slice_copy_group, SIGNAL (triggered (QAction*)), this, SLOT (slice_copy_slot (QAction*)));
 
-          layout->addWidget (new QLabel ("Copy from slice: "), 0, Qt::AlignRight);
+          layout->addWidget (new QLabel ("Copy from slice: "), 1, Qt::AlignRight);
 
           copy_from_above_button = new QToolButton (this);
           copy_from_above_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
@@ -207,7 +206,7 @@ namespace MR
           action->setChecked (false);
           slice_copy_group->addAction (action);
           copy_from_above_button->setDefaultAction (action);
-          layout->addWidget (copy_from_above_button, 1);
+          layout->addWidget (copy_from_above_button, 1, Qt::AlignRight);
 
           copy_from_below_button = new QToolButton (this);
           copy_from_below_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
@@ -217,7 +216,7 @@ namespace MR
           action->setChecked (false);
           slice_copy_group->addAction (action);
           copy_from_below_button->setDefaultAction (action);
-          layout->addWidget (copy_from_below_button, 1);
+          layout->addWidget (copy_from_below_button, 1, Qt::AlignLeft);
 
           main_box->addLayout (layout, 0);
 
@@ -292,12 +291,12 @@ namespace MR
 
         void ROI::open_slot ()
         {
-          std::vector<std::string> names = Dialog::File::get_images (this, "Select ROI images to open");
+          vector<std::string> names = Dialog::File::get_images (this, "Select ROI images to open");
           if (names.empty())
             return;
-          std::vector<std::unique_ptr<MR::Header>> list;
+          vector<std::unique_ptr<MR::Header>> list;
           for (size_t n = 0; n < names.size(); ++n)
-            list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (names[n]))));
+            list.push_back (make_unique<MR::Header> (MR::Header::open (names[n])));
 
           load (list);
           in_insert_mode = false;
@@ -313,11 +312,11 @@ namespace MR
 
           const QMimeData* mimeData = event->mimeData();
           if (mimeData->hasUrls()) {
-            std::vector<std::unique_ptr<MR::Header>> list;
+            vector<std::unique_ptr<MR::Header>> list;
             QList<QUrl> urlList = mimeData->urls();
             for (int i = 0; i < urlList.size() && i < max_files; ++i) {
               try {
-                list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (urlList.at (i).path().toUtf8().constData()))));
+                list.push_back (make_unique<MR::Header> (MR::Header::open (urlList.at (i).path().toUtf8().constData())));
               }
               catch (Exception& e) {
                 e.display();
@@ -336,7 +335,7 @@ namespace MR
 
         void ROI::save (ROI_Item* roi)
         {
-          std::vector<GLubyte> data (roi->header().size(0) * roi->header().size(1) * roi->header().size(2));
+          vector<GLubyte> data (roi->header().size(0) * roi->header().size(1) * roi->header().size(2));
           { 
             MRView::GrabContext context;
             ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
@@ -394,7 +393,7 @@ namespace MR
 
 
 
-        void ROI::load (std::vector<std::unique_ptr<MR::Header>>& list)
+        void ROI::load (vector<std::unique_ptr<MR::Header>>& list)
         {
           list_model->load (list);
           list_view->selectionModel()->clear();
@@ -893,8 +892,8 @@ namespace MR
         bool ROI::process_commandline_option (const MR::App::ParsedOption& opt) 
         {
           if (opt.opt->is ("roi.load")) {
-            std::vector<std::unique_ptr<MR::Header>> list;
-            try { list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (opt[0])))); }
+            vector<std::unique_ptr<MR::Header>> list;
+            try { list.push_back (make_unique<MR::Header> (MR::Header::open (opt[0]))); }
             catch (Exception& e) { e.display(); }
             load (list);
             return true;

@@ -1,18 +1,15 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 
 #include <sstream>
@@ -49,7 +46,7 @@ using namespace MR::DWI::Tractography::Connectome;
 const char* file_outputs[] = { "per_edge", "per_node", "single", NULL };
 
 
-const OptionGroup OutputOptions = OptionGroup ("Options for determining the content / format of output files")
+const OptionGroup TrackOutputOptions = OptionGroup ("Options for determining the content / format of output files")
 
     + Option ("nodes", "only select tracks that involve a set of nodes of interest (provide as a comma-separated list of integers)")
       + Argument ("list").type_sequence_int()
@@ -89,8 +86,13 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
+  SYNOPSIS = "Extract streamlines from a tractogram based on their assignment to parcellated nodes";
+
   DESCRIPTION
-  + "extract streamlines from a tractogram based on their assignment to parcellated nodes";
+  + "The compulsory input file \"assignments_in\" should contain a text file where there is one row for each streamline, "
+    "and each row contains a list of numbers corresponding to the parcels to which that streamline was assigned "
+    "(most typically there will be two entries per streamline, one for each endpoint; but this is not strictly a requirement). "
+    "This file will most typically be generated using the tck2connectome command with the -out_assignments option.";
 
   ARGUMENTS
   + Argument ("tracks_in",      "the input track file").type_file_in()
@@ -99,7 +101,7 @@ void usage ()
 
 
   OPTIONS
-  + OutputOptions
+  + TrackOutputOptions
   + TrackWeightsOptions;
 
 }
@@ -113,9 +115,9 @@ void run ()
   Tractography::Properties properties;
   Tractography::Reader<float> reader (argument[0], properties);
 
-  std::vector< std::vector<node_t> > assignments_lists;
+  vector< vector<node_t> > assignments_lists;
   assignments_lists.reserve (to<size_t>(properties["count"]));
-  std::vector<NodePair> assignments_pairs;
+  vector<NodePair> assignments_pairs;
   bool nonpair_found = false;
   node_t max_node_index = 0;
   {
@@ -124,7 +126,7 @@ void run ()
     ProgressBar progress ("reading streamline assignments file");
     while (std::getline (stream, line)) {
       std::stringstream line_stream (line);
-      std::vector<node_t> nodes;
+      vector<node_t> nodes;
       while (1) {
         node_t n;
         line_stream >> n;
@@ -166,14 +168,14 @@ void run ()
   const bool keep_self = get_options ("keep_self").size();
 
   // Get the list of nodes of interest
-  std::vector<node_t> nodes;
+  vector<node_t> nodes;
   opt = get_options ("nodes");
   bool manual_node_list = false;
   if (opt.size()) {
     manual_node_list = true;
-    std::vector<int> data = parse_ints (opt[0][0]);
+    vector<int> data = parse_ints (opt[0][0]);
     bool zero_in_list = false;
-    for (std::vector<int>::const_iterator i = data.begin(); i != data.end(); ++i) {
+    for (vector<int>::const_iterator i = data.begin(); i != data.end(); ++i) {
       if (size_t(*i) > max_node_index) {
         WARN ("Node of interest " + str(*i) + " is above the maximum detected node index of " + str(max_node_index));
       } else {
@@ -206,8 +208,8 @@ void run ()
     // Load the node image, get the centres of mass
     // Generate exemplars - these can _only_ be done per edge, and requires a mutex per edge to multi-thread
     auto image = Image<node_t>::open (opt[0][0]);
-    std::vector<Eigen::Vector3f> COMs (max_node_index+1, Eigen::Vector3f (0.0f, 0.0f, 0.0f));
-    std::vector<size_t> volumes (max_node_index+1, 0);
+    vector<Eigen::Vector3f> COMs (max_node_index+1, Eigen::Vector3f (0.0f, 0.0f, 0.0f));
+    vector<size_t> volumes (max_node_index+1, 0);
     for (auto i = Loop() (image); i; ++i) {
       const node_t index = image.value();
       if (index) {
@@ -258,7 +260,7 @@ void run ()
       } else {
         // For each node in the list, write one file for an exemplar to every other node
         ProgressBar progress ("writing exemplars to files", nodes.size() * COMs.size());
-        for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
+        for (vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
           for (size_t i = first_node; i != COMs.size(); ++i) {
             generator.write (*n, i, prefix + str(*n) + "-" + str(i) + ".tck", weights_prefix.size() ? (weights_prefix + str(*n) + "-" + str(i) + ".csv") : "");
             ++progress;
@@ -267,7 +269,7 @@ void run ()
       }
     } else if (file_format == 1) { // One file per node
       ProgressBar progress ("writing exemplars to files", nodes.size());
-      for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
+      for (vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
         generator.write (*n, prefix + str(*n) + ".tck", weights_prefix.size() ? (weights_prefix + str(*n) + ".csv") : "");
         ++progress;
       }
@@ -303,7 +305,7 @@ void run ()
         INFO ("A total of " + str (writer.file_count()) + " output track files will be generated (one for each edge)");
         break;
       case 1: // One file per node
-        for (std::vector<node_t>::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
+        for (vector<node_t>::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
           writer.add (*i, prefix + str(*i) + ".tck", weights_prefix.size() ? (weights_prefix + str(*i) + ".csv") : "");
         INFO ("A total of " + str (writer.file_count()) + " output track files will be generated (one for each node)");
         break;

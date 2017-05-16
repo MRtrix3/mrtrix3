@@ -6,9 +6,14 @@ dwiintensitynorm
 Synopsis
 --------
 
+Performs a global DWI intensity normalisation on a group of subjects using the median b=0 white matter value as the reference
+
+Usage
+--------
+
 ::
 
-    dwiintensitynorm [ options ] input_dir mask_dir output_dir fa_template wm_mask
+    dwiintensitynorm input_dir mask_dir output_dir fa_template wm_mask [ options ]
 
 -  *input_dir*: The input directory containing all DWI images
 -  *mask_dir*: Input directory containing brain masks, corresponding to one per input image (with the same file name prefix)
@@ -19,7 +24,7 @@ Synopsis
 Description
 -----------
 
-Performs a global DWI intensity normalisation on a group of subjects using the median b=0 white matter value as the reference. The white matter mask is estimated from a population average FA template then warped back to each subject to perform the intensity normalisation. Note that bias field correction should be performed prior to this step.
+The white matter mask is estimated from a population average FA template then warped back to each subject to perform the intensity normalisation. Note that bias field correction should be performed prior to this step.
 
 Options
 -------
@@ -46,7 +51,9 @@ Standard options
 
 - **-quiet** Suppress all console output during script execution
 
-- **-verbose** Display additional information for every command invoked
+- **-info** Display additional information and progress for every command invoked
+
+- **-debug** Display additional debugging information over and above the output of -info
 
 --------------
 
@@ -54,15 +61,15 @@ Standard options
 
 **Author:** David Raffelt (david.raffelt@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
+**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, You can obtain one at http://mozilla.org/MPL/2.0/
+file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 MRtrix is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+but WITHOUT ANY WARRANTY; without even the implied warranty
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see www.mrtrix.org
+For more details, see http://www.mrtrix.org/.
 

@@ -16,7 +16,7 @@ if ~strncmp(L, 'mrtrix image', 12)
 end
 
 transform = [];
-DW_scheme = [];
+dw_scheme = [];
 
 while 1
   L = fgetl(f);
@@ -50,7 +50,7 @@ while 1
     elseif strcmp(key, 'file')
       file = value;
     elseif strcmp(key, 'dw_scheme')
-      DW_scheme(end+1,:) = str2num(char(split_strings (value, ',')))';
+      dw_scheme(end+1,:) = str2num(char(split_strings (value, ',')))';
     else 
       disp (['unknown key ''' key ''' - ignored']);
     end
@@ -64,8 +64,8 @@ if ~isempty(transform)
   image.transform(4,:) = [ 0 0 0 1 ];
 end
 
-if ~isempty(DW_scheme)
-  image.DW_scheme = DW_scheme;
+if ~isempty(dw_scheme)
+  image.dw_scheme = dw_scheme;
 end
 
 if ~isfield (image, 'dim') || ~exist ('file') || ...
