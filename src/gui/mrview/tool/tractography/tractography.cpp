@@ -288,11 +288,11 @@ namespace MR
         void Tractography::tractogram_open_slot ()
         {
 
-          std::vector<std::string> list = Dialog::File::get_files (this, "Select tractograms to open", "Tractograms (*.tck)");
+          MR::vector<std::string> list = Dialog::File::get_files (this, "Select tractograms to open", "Tractograms (*.tck)");
           add_tractogram(list);
         }
         
-        void Tractography::add_tractogram(std::vector<std::string>& list)
+        void Tractography::add_tractogram(MR::vector<std::string>& list)
         {
           if (list.empty())
           { return; }
@@ -712,7 +712,7 @@ namespace MR
 
           if (opt.opt->is ("tractography.load"))
           {
-            std::vector<std::string> list (1, std::string(opt[0]));
+            MR::vector<std::string> list (1, std::string(opt[0]));
             add_tractogram(list);
             return true;
           }
