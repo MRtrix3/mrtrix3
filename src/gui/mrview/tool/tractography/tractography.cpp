@@ -288,17 +288,22 @@ namespace MR
         void Tractography::tractogram_open_slot ()
         {
           std::vector<std::string> list = Dialog::File::get_files (this, "Select tractograms to open", "Tractograms (*.tck)");
-          if (list.empty())
+          add_tractogram(list);
+        }
+        
+        void Tractography::add_tractogram(std::vector<std::string>& list)
+        {
+            if (list.empty())
             return;
           try {
             tractogram_list_model->add_items (list, *this);
-            window().updateGL();
+            select_last_added_tractogram();
           }
           catch (Exception& E) {
             E.display();
           }
+          
         }
-
 
         void Tractography::dropEvent (QDropEvent* event)
         {
@@ -707,13 +712,7 @@ namespace MR
           if (opt.opt->is ("tractography.load"))
           {
             std::vector<std::string> list (1, std::string(opt[0]));
-            try
-            {
-              tractogram_list_model->add_items (list, *this);
-              select_last_added_tractogram();//select track file in the gui. Req for tractography.tsf_* to work
-              return true;
-            }
-            catch (Exception& E) { E.display(); }
+            add_tractogram(list);
             return true;
           }
 
